@@ -1,0 +1,129 @@
+name: Avisar hub (sincronização instantânea)
+
+# Onde instalar: no repositório DE ORIGEM do site (o que você edita), em
+# .github/workflows/. NÃO é no hub-control e NÃO é no espelho.
+# O que faz: a cada push, avisa o hub-control para espelhar na hora, em vez de
+# esperar a rede de segurança (cron de 2 em 2 horas).
+#
+# Este é o modelo do HUB. O da Blindagem é outro arquivo (sync-instantanea.yml)
+# e aponta para outro controle — os dois sistemas não se cruzam.
+#
+# Antes de usar, cadastre no repositório de origem o segredo HUB_DISPATCH_TOKEN:
+#   gh secret set HUB_DISPATCH_TOKEN --repo <owner>/<repo-de-origem>
+# O token deve ser fine-grained, com acesso APENAS a PROH-Media/hub-control e
+# APENAS a permissão "Actions: Read and write" (não lê nem escreve código algum).
+#
+# Instalado para o projeto barber-buzz-blades.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  issues: write
+
+concurrency:
+  group: avisar-hub
+  cancel-in-progress: true
+
+jobs:
+  avisar:
+    # Trava de segurança: o hub espelha este repositório inteiro, inclusive esta
+    # pasta. Sem a trava, a cópia no espelho também dispararia sincronizações.
+    # Troque pelo caminho do SEU repositório de origem.
+    if: github.repository == 'Proh2026Media/barber-buzz-blades'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SEGREDO: HUB_DISPATCH_TOKEN
+      TOKEN: ${{ secrets.HUB_DISPATCH_TOKEN }}
+      CONTROLE: PROH-Media/hub-control
+      ARQUIVO: hub-espelho.yml
+      RAMO: main
+      PROJETO: barber-buzz-blades
+    steps:
+      - name: Pedir espelhamento ao hub
+        run: |
+          set -euo pipefail
+          if [ -z "${TOKEN:-}" ]; then
+            echo "COD=vazio" >> "$GITHUB_ENV"
+            echo "::error::Segredo HUB_DISPATCH_TOKEN não cadastrado neste repositório."
+            exit 1
+          fi
+          # Chamada REST direta: usa apenas a permissão "Actions: write" do token.
+          # (o gh CLI precisaria ler a branch padrão, o que exigiria mais permissões)
+          COD=$(curl -s -o /tmp/resposta.txt -w '%{http_code}' -X POST \
+            -H "Authorization: Bearer ${TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${CONTROLE}/actions/workflows/${ARQUIVO}/dispatches" \
+            -d "{\"ref\":\"${RAMO}\",\"inputs\":{\"projeto\":\"${PROJETO}\"}}")
+          echo "COD=${COD}" >> "$GITHUB_ENV"
+          if [ "$COD" = "204" ]; then
+            echo "✅ Espelhamento solicitado — o site atualiza em ~1 minuto."
+          else
+            echo "::error::Falha ao pedir espelhamento (HTTP ${COD}): $(cat /tmp/resposta.txt)"
+            exit 1
+          fi
+      - name: Avisar que o gatilho parou
+        # So roda quando o passo acima falha. Abre um aviso (issue) NESTE
+        # repositorio usando o token nativo do GitHub - nenhuma credencial nova.
+        #
+        # Por que existe: em 19/08/2026 o token deste gatilho ficou invalido e
+        # ninguem percebeu por 4 dias. O alerta do repositorio de controle nao
+        # enxerga este workflow (workflow_run so ve o proprio repositorio), e a
+        # rede de seguranca por cron mascarava a falha: o backup continuava
+        # acontecendo, so que horas depois em vez de segundos.
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          case "${COD:-vazio}" in
+            vazio) DIAG="O segredo **${SEGREDO}** nao esta cadastrado neste repositorio." ;;
+            401)   DIAG="O token do segredo **${SEGREDO}** esta invalido ou foi revogado. E a causa mais comum: uma rotacao de credenciais costuma derrubar este token junto, sem avisar." ;;
+            403)   DIAG="O token existe, mas falta permissao: ele precisa de **Actions: Read and write** no repositorio de controle." ;;
+            404)   DIAG="Nao encontrou o repositorio de controle ou o arquivo do workflow. Pode ter sido renomeado, ou o token nao alcanca ele." ;;
+            *)     DIAG="Resposta inesperada do GitHub (HTTP ${COD})." ;;
+          esac
+          gh label create falha -c B60205 -d "Falha automatica" --force >/dev/null 2>&1 || true
+          TITULO="Gatilho de sincronizacao parado"
+          LISTA=$(gh issue list --repo "$REPO" --state open --limit 50 --json number,title 2>/dev/null || echo '[]')
+          NUM=$(jq -r --arg t "$TITULO" '[.[] | select(.title==$t)] | .[0].number // empty' <<<"$LISTA")
+          if [ -n "${NUM:-}" ]; then
+            gh issue comment "$NUM" --repo "$REPO" \
+              -b "Falhou de novo em $(date -u +'%d/%m %H:%M') UTC (HTTP ${COD:-vazio}) - ${URL}"
+            echo "Aviso #${NUM} atualizado."
+            exit 0
+          fi
+          {
+            printf 'O gatilho que avisa `%s` a cada push **parou de funcionar**.\n\n' "$CONTROLE"
+            printf '**O que aconteceu:** %s\n\n' "$DIAG"
+            printf '**O que isso quebra:** a sincronizacao deixou de ser imediata. O trabalho\n'
+            printf 'ainda chega ao destino pela rede de seguranca (o ciclo automatico), mas com\n'
+            printf 'horas de atraso em vez de segundos. **Nenhum dado se perde** - so a pressa.\n\n'
+            printf '**Como consertar:**\n\n'
+            printf '1. Crie um token em https://github.com/settings/personal-access-tokens/new\n'
+            printf '   - Resource owner: o dono de `%s`\n' "$CONTROLE"
+            printf '   - Repository access: **Only select repositories** -> `%s`\n' "$CONTROLE"
+            printf '   - Permissions -> Repository -> **Actions: Read and write**\n'
+            printf '   - Expiration: **No expiration**\n'
+            printf '2. Grave o token neste repositorio:\n\n'
+            printf '   ```\n   gh secret set %s --repo %s\n   ```\n\n' "$SEGREDO" "$REPO"
+            printf '3. Rode este workflow de novo (aba Actions -> Run workflow) para confirmar.\n\n'
+            printf 'Depois que voltar a funcionar, **feche este aviso**. Ele reabre sozinho se\n'
+            printf 'falhar de novo.\n\n'
+            printf 'Log desta falha: %s\n' "$URL"
+          } > "${RUNNER_TEMP:-/tmp}/corpo.md"
+          NOVA=$(gh issue create --repo "$REPO" --title "$TITULO" \
+            --body-file "${RUNNER_TEMP:-/tmp}/corpo.md")
+          # A etiqueta e so enfeite de organizacao. Ela fica DEPOIS da criacao e
+          # com || true de proposito: na primeira versao deste passo o aviso
+          # morria inteiro com "could not add label: 'falha' not found" porque a
+          # etiqueta nao existia no repositorio. Um alerta nao pode depender de
+          # enfeite para existir.
+          gh issue edit "$NOVA" --repo "$REPO" --add-label falha >/dev/null 2>&1 || true
+          echo "Aviso criado: $NOVA"
