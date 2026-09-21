@@ -19,7 +19,11 @@ export default defineConfig({
   // (import dinâmico dentro de try/catch, com process.env como reserva), mas o
   // Rollup tenta resolver o módulo na montagem e falha. Declarar como externo
   // mantém o import dinâmico: na Cloudflare funciona, no Node cai no catch.
+  // preset fixo em node-server: sem isto o padrão do Lovable é cloudflare-module,
+  // que gera um worker (wrangler.json) que o Node da Hostinger não roda (503).
+  // Dentro do Lovable nada muda — lá o preset é forçado para Cloudflare.
   nitro: {
+    preset: "node-server",
     rollupConfig: { external: ["cloudflare:workers"] },
   },
   vite: {
