@@ -14,7 +14,27 @@ dist-ssr
 .vinxi
 .tanstack/**
 .nitro
+supabase/.temp/
 *.local
+.local/
+
+# Credenciais locais (nunca no GitHub)
+print/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.backup
+*.bak
+scratch/
+fix.py
+
+# Infraestrutura local/privada
+supabase/README.md
+supabase/tests/waiting_concurrency.py
 
 # Wrangler / Cloudflare
 .wrangler/
@@ -25,6 +45,7 @@ dist-ssr
 !.vscode/extensions.json
 .idea
 .DS_Store
+._*
 *.suo
 *.ntvs*
 *.njsproj

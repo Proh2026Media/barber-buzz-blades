@@ -1,0 +1,31 @@
+-- After booking_reliability.sql, in the same transaction; always ROLLBACK.
+reset role;
+create temporary table staff_appointment as select gen_random_uuid() id;
+grant select on staff_appointment to authenticated;
+set local session_replication_role=replica;
+insert into appointments(id,barbershop_id,customer_id,service_id,staff_id,starts_at,ends_at,status)
+select target.id,c.shop_id,c.customer_a,c.service_id,c.staff_id,now()-interval '2 hours',now()-interval '90 minutes','completed' from booking_test_context c cross join staff_appointment target;
+set local session_replication_role=origin;
+select set_config('request.jwt.claim.sub',customer_a::text,true) from booking_test_context;
+select save_my_privacy(false,true,false);
+select set_config('request.jwt.claim.sub',shop_admin::text,true) from booking_test_context;
+set local role authenticated;
+create temporary table staff_response as select record_customer_survey_response(id,'satisfaction','5') id from staff_appointment;
+reset role;
+select pg_temp.check_booking_test((select source='shop_staff' and recorded_by=(select shop_admin from booking_test_context) and answer='5' from customer_surveys where id=(select id from staff_response)),'Staff response stores source, author and fixed answer');
+select set_config('request.jwt.claim.sub',customer_a::text,true) from booking_test_context;
+set local role authenticated;
+select pg_temp.check_booking_test(exists(select 1 from jsonb_array_elements(get_my_privacy()->'responses') r where r->>'source'='shop_staff'),'Customer sees response recorded by staff');
+select set_config('request.jwt.claim.sub',shop_admin::text,true) from booking_test_context;
+select pg_temp.expect_booking_error('select record_customer_survey_response(id,''improvement'',''none'') from staff_appointment','P0001','Staff response respects 30 day cooldown');
+reset role;
+update customer_privacy set last_survey_at=now()-interval '31 days' where user_id=(select customer_a from booking_test_context);
+update customer_surveys set shown_at=now()-interval '31 days' where id=(select id from staff_response);
+select set_config('request.jwt.claim.sub',outsider::text,true) from booking_test_context;
+set local role authenticated;
+select pg_temp.expect_booking_error('select record_customer_survey_response(id,''improvement'',''none'') from staff_appointment','P0001','Other shop cannot record response');
+select set_config('request.jwt.claim.sub',shop_admin::text,true) from booking_test_context;
+select pg_temp.expect_booking_error('select record_customer_survey_response(id,''satisfaction'',''excellent'') from staff_appointment','P0001','Nonstandard staff answer rejected');
+select pg_temp.expect_booking_error('select record_customer_survey_response(appointment_id,''satisfaction'',''5'') from booking_test_context','P0001','Active appointment cannot receive staff survey');
+reset role;
+select pg_temp.check_booking_test(not has_function_privilege('anon','public.record_customer_survey_response(uuid,text,text)','EXECUTE'),'Anonymous staff survey denied');

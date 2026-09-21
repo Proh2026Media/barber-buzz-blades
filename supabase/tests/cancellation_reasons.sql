@@ -1,0 +1,23 @@
+-- After booking_reliability.sql, in the same transaction; always ROLLBACK.
+reset role;
+select set_config('request.jwt.claim.sub', customer_a::text, true) from booking_test_context;
+set local role authenticated;
+create temporary table cancellation_target as select a.id from appointments a join booking_test_context c on a.customer_id=c.customer_a where a.status='pending' order by a.starts_at desc limit 1;
+select pg_temp.expect_booking_error('select cancel_appointment(id,''invalid'') from cancellation_target','P0001','Invalid cancellation reason rejected');
+select set_config('request.jwt.claim.sub', customer_b::text, true) from booking_test_context;
+select pg_temp.expect_booking_error('select cancel_appointment(id,null) from cancellation_target','P0001','Other customer cannot cancel appointment');
+select set_config('request.jwt.claim.sub', customer_a::text, true) from booking_test_context;
+select cancel_appointment(id,'schedule') from cancellation_target;
+select pg_temp.check_booking_test((select status='cancelled' from appointments where id=(select id from cancellation_target)),'Customer cancellation changes status');
+reset role;
+select pg_temp.check_booking_test((select reason='schedule' and source='customer' from appointment_cancellations where appointment_id=(select id from cancellation_target)),'Customer reason and source recorded');
+select set_config('request.jwt.claim.sub', customer_a::text, true) from booking_test_context;
+set local role authenticated;
+select pg_temp.check_booking_test(jsonb_array_length(get_appointment_cancellations(null))=1,'Customer reads own cancellation');
+select set_config('request.jwt.claim.sub', customer_b::text, true) from booking_test_context;
+select pg_temp.check_booking_test(jsonb_array_length(get_appointment_cancellations(null))=0,'Other customer cannot read cancellation');
+select set_config('request.jwt.claim.sub', shop_admin::text, true) from booking_test_context;
+select pg_temp.check_booking_test(jsonb_array_length(get_appointment_cancellations((select shop_id from booking_test_context)))=1,'Owner reads own shop cancellation');
+select pg_temp.expect_booking_error('select get_appointment_cancellations((select other_shop_id from booking_test_context))','P0001','Owner cannot read other shop cancellations');
+reset role;
+select pg_temp.check_booking_test(not has_function_privilege('anon','public.cancel_appointment(uuid,text)','EXECUTE'),'Anonymous cancellation denied');

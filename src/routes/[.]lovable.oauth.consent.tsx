@@ -12,7 +12,9 @@ type OAuthDetails = {
 };
 type OAuthResult = { redirect_url?: string | null; redirect_to?: string | null };
 interface OAuthApi {
-  getAuthorizationDetails: (id: string) => Promise<{ data: OAuthDetails | null; error: Error | null }>;
+  getAuthorizationDetails: (
+    id: string,
+  ) => Promise<{ data: OAuthDetails | null; error: Error | null }>;
   approveAuthorization: (id: string) => Promise<{ data: OAuthResult | null; error: Error | null }>;
   denyAuthorization: (id: string) => Promise<{ data: OAuthResult | null; error: Error | null }>;
 }
@@ -82,8 +84,8 @@ function Consent() {
       <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-lg">
         <h1 className="text-xl font-semibold">Conectar {clientName} à sua conta</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Isso permite que <strong>{clientName}</strong> use este app em seu nome, chamando
-          as ferramentas MCP disponibilizadas pela Arena.
+          Isso permite que <strong>{clientName}</strong> use este app em seu nome, chamando as
+          ferramentas MCP disponibilizadas pela Arena.
         </p>
         <p className="mt-3 text-xs text-muted-foreground">
           Isto não ignora as permissões e políticas de backend deste app.

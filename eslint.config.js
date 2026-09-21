@@ -6,7 +6,19 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist", ".output", ".vinxi"] },
+  {
+    ignores: [
+      "**/._*",
+      ".kilo/**",
+      ".nitro",
+      ".output",
+      ".tanstack",
+      ".vinxi",
+      ".wrangler",
+      "dist",
+      "supabase/.temp",
+    ],
+  },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],
@@ -37,4 +49,14 @@ export default tseslint.config(
     },
   },
   eslintPluginPrettier,
+  {
+    // The MCP Vite plugin regenerates these files on every dev/build startup.
+    // Keep semantic lint checks; formatting belongs to the generator.
+    files: [
+      "src/routes/mcp.ts",
+      "src/routes/\\[.mcp\\]/**/*.ts",
+      "src/routes/\\[.well-known\\]/oauth-protected-resource.ts",
+    ],
+    rules: { "prettier/prettier": "off" },
+  },
 );

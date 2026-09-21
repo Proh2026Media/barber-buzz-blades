@@ -5,15 +5,24 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build",
-    "build:dev": "vite build --mode development",
+    "build": "vite build && node scripts/copy-pwa.mjs",
+    "build:dev": "vite build --mode development && node scripts/copy-pwa.mjs",
     "preview": "vite preview",
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test src/lib/theme.test.ts src/lib/auth/session.test.ts src/lib/shop/appointments.test.ts src/lib/shop/branding.test.ts src/lib/shop/service-image.test.ts src/features/demo/model.test.ts src/features/insights/model.test.ts src/features/insights/occurrences.test.ts src/features/waiting/model.test.ts",
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/manrope": "^5.3.0",
+    "@fontsource-variable/montserrat": "^5.3.0",
+    "@fontsource-variable/nunito-sans": "^5.3.0",
+    "@fontsource-variable/roboto": "^5.3.0",
+    "@fontsource-variable/source-sans-3": "^5.3.0",
     "@hookform/resolvers": "^5.2.2",
     "@lovable.dev/mcp-js": "^0.22.2",
+    "@lucide/lab": "^0.7.0",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-aspect-ratio": "^1.1.8",
@@ -84,6 +93,7 @@
     "prettier": "^3.7.3",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "vite-plugin-pwa": "^1.3.0"
   }
 }

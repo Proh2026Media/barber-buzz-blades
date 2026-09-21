@@ -14,6 +14,20 @@ Continue developing this project in the [Lovable editor](https://lovable.dev/pro
 
 ## Development
 
+### Demonstração para o administrador global
+
+Em `/platform`, ligue **Modo demonstração** e clique em **Abrir demonstração**.
+A rota `/demo` permite alternar entre **Visão do cliente** e **Visão da barbearia**,
+simular reservas, confirmar/concluir atendimentos e experimentar serviços e profissionais.
+As duas visões compartilham os dados fictícios durante a prévia; concluir um atendimento
+do cliente demonstrativo concede 50 pontos uma única vez.
+
+O controle é exclusivo de `platform_admin` e fica salvo por usuário nesta aba do navegador.
+Use o interruptor na demonstração ou no painel global para desligá-la. Cada abertura da
+prévia começa com os exemplos iniciais, incluindo 250 pontos e relógio simulado às 09:00.
+Todas as operações da demonstração ficam em memória, sem ler ou gravar dados operacionais
+do Supabase. O login e a verificação de permissões continuam sendo reais.
+
 Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
 
 ```sh
