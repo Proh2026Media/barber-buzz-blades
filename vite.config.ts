@@ -14,6 +14,14 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // Hostinger monta como servidor Node (preset node-server), não Cloudflare.
+  // O @lovable.dev/mcp-js importa "cloudflare:workers" de forma OPCIONAL
+  // (import dinâmico dentro de try/catch, com process.env como reserva), mas o
+  // Rollup tenta resolver o módulo na montagem e falha. Declarar como externo
+  // mantém o import dinâmico: na Cloudflare funciona, no Node cai no catch.
+  nitro: {
+    rollupConfig: { external: ["cloudflare:workers"] },
+  },
   vite: {
     plugins: [
       mcpPlugin(),
