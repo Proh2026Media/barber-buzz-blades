@@ -4,7 +4,7 @@ Atualizado em **20/09/2026**. Este documento resume decisões e entregas da conv
 
 ## Comece aqui
 
-1. Ler `AGENTS.md`, `docs/mb-interface.md` e este documento.
+1. Ler `AGENTS.md`, `docs/mb-interface.md` e este documento. Para e-mail Titan, SMTP Coolify, login Google e domínio da API: [mb-operacao.md](mb-operacao.md).
 2. Inspecionar `git status` e os arquivos relevantes ao próximo pedido. O workspace tem muitas alterações e arquivos não rastreados que compõem o aplicativo; **não descartar nem sobrescrever esse trabalho**.
 3. Para retomar localmente, usar `npm run dev -- --host 0.0.0.0 --port 8080`. O endereço esperado é `http://localhost:8080`. Na última verificação de transição, a porta **não respondeu**; não presumir que o servidor continua ativo.
 4. Continuar a partir do próximo pedido do usuário. O pedido mais recente foi preparar esta transição; não houve autorização para implementar pagamentos/reembolsos agora.
@@ -33,6 +33,26 @@ Atualizado em **20/09/2026**. Este documento resume decisões e entregas da conv
 - Skill pessoal criada: `~/.codex/skills/mb/SKILL.md`; `/mb` é convenção textual do projeto, `$mb` é invocação da skill. Cópia portátil em `docs/mb-interface.md` para outros provedores.
 
 ## Entregas recentes e regras atuais
+
+### WhatsApp Evolution API (fase 1) — 22/09/2026
+
+- Migration `20260922010000_whatsapp_evolution.sql` aplicada no PostgreSQL remoto: `whatsapp_channels`, `whatsapp_outbox`, `auth_otp_challenges`, `profiles.whatsapp_*`, triggers de agendamento e lembretes.
+- Edge Functions no Coolify: `whatsapp-dispatch` (smoke OK), `whatsapp-channel`, `auth-otp`. Envs `EVOLUTION_API_URL` / `EVOLUTION_API_KEY`. Cron `/etc/cron.d/barba-whatsapp-dispatch`.
+- UI: Ajustes da loja (QR, dono/sócio), Perfil do cliente (número + opt-in), Auth com `shop` (e-mail ou WhatsApp para recovery).
+- Detalhes operacionais: [mb-operacao.md](mb-operacao.md) seção 5. Fora do escopo: broadcast, inbox, número único da plataforma.
+
+### Runbook operacional — 21/09/2026
+
+- Documentação completa em [mb-operacao.md](mb-operacao.md): Titan (DNS + `noreply`), SMTP no Coolify, OAuth Google, domínio `supabasebeauty`, checklist e texto pronto para outro agente. Google Workspace não é necessário; Google Agenda ainda não está no código. WhatsApp operacional (fase 1) documentado na mesma página.
+
+### Diagnóstico do login em produção (`beauty.contheiner.digital`) — 21/09/2026
+
+- O erro `Failed to fetch` foi reproduzido no domínio real com Chrome/CDP. O bundle publicado contém `https://awecrsklxaeqxctfxirt.supabase.co`, host que não resolve mais no DNS; por isso o navegador falha antes de receber uma resposta do Auth. Não é erro de senha nem do formulário.
+- Em 21/09/2026 o Traefik do serviço `supabase-barba-cabelo` já roteia `supabasebeauty.contheiner.digital` (router separado do alias `supabase-teste.proh.media`). O Auth mantém `GOTRUE_SITE_URL=https://beauty.contheiner.digital` e `GOTRUE_URI_ALLOW_LIST=https://beauty.contheiner.digital/**`.
+- O Let’s Encrypt do domínio novo ainda **não** fecha: o DNS autoritativo (`ns1/ns2.dns-parking.com`) responde NXDOMAIN para `supabasebeauty.contheiner.digital`. Criar no Hostinger um registro **A** único: `supabasebeauty` → `187.127.60.78`. Depois disso, o certificado emite e dá para virar `VITE_SUPABASE_URL` / `SUPABASE_PUBLIC_URL` para o domínio novo.
+- Enquanto isso, local e Coolify `SUPABASE_PUBLIC_URL` seguem em `https://supabase-teste.proh.media` para não quebrar o ambiente.
+- O bundle publicado em `beauty.contheiner.digital` ainda continha `https://awecrsklxaeqxctfxirt.supabase.co` (morto). Após o DNS/LE, configurar no host `VITE_SUPABASE_URL=https://supabasebeauty.contheiner.digital` + anon key do Coolify e republicar. Variáveis `SUPABASE_*` sem prefixo não substituem as `VITE_*` no navegador.
+- Não registrar chaves no documento. A chave publicável foi conferida apenas por tipo/comprimento; nenhuma senha, token ou chave foi exibida.
 
 ### Refinamento dos modelos Foto imersiva e Cartão sobre foto — 21/09/2026
 

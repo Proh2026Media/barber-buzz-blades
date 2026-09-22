@@ -1,6 +1,8 @@
 import { PrivacyCenter } from "@/features/insights/PrivacyCenter";
+import { ChangePasswordCard } from "@/features/auth/ChangePasswordCard";
 import { useEffect, useState } from "react";
-import { KeyRound, LogOut, User } from "lucide-react";
+import { LogOut, MessageCircle, User } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
 
@@ -8,16 +10,14 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
   const demo = useDemo();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [whatsappOptIn, setWhatsappOptIn] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [passwordBusy, setPasswordBusy] = useState(false);
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState("");
-  const [passwordMessage, setPasswordMessage] = useState("");
-  const [passwordError, setPasswordError] = useState<string | null>(null);
+
   useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -25,13 +25,15 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
         if (demo) {
           setName(demo.customerName);
           setEmail("cliente@demo.example");
+          setWhatsapp("(11) 99999-0000");
+          setWhatsappOptIn(true);
           return;
         }
         const { data, error: authError } = await supabase.auth.getUser();
         if (authError || !data.user) throw new Error("Não foi possível consultar sua conta.");
         const result = await supabase
           .from("profiles")
-          .select("full_name")
+          .select("full_name, whatsapp_e164, whatsapp_opt_in_at")
           .eq("id", data.user.id)
           .single();
         if (result.error) throw new Error("Não foi possível carregar seu perfil.");
@@ -39,6 +41,8 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
           setUserId(data.user.id);
           setName(result.data.full_name ?? "");
           setEmail(data.user.email ?? "");
+          setWhatsapp(result.data.whatsapp_e164 ?? "");
+          setWhatsappOptIn(Boolean(result.data.whatsapp_opt_in_at));
         }
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : "Falha ao carregar perfil.");
@@ -84,6 +88,35 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
     }
   }
 
+  async function saveWhatsApp(event: React.FormEvent) {
+    event.preventDefault();
+    if (demo) {
+      setMessage("Na demonstração o WhatsApp fica só nesta sessão.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    setMessage("");
+    try {
+      const { data, error: rpcError } = await supabase.rpc("save_my_whatsapp", {
+        p_raw: whatsapp,
+        p_opt_in: whatsappOptIn,
+      });
+      if (rpcError) throw rpcError;
+      setWhatsapp(data?.whatsapp_e164 ?? whatsapp);
+      setWhatsappOptIn(Boolean(data?.whatsapp_opt_in_at));
+      setMessage(
+        whatsappOptIn
+          ? "WhatsApp salvo. Você receberá avisos de horário neste número."
+          : "Preferência de WhatsApp atualizada.",
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível salvar o WhatsApp.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function signOut() {
     if (demo) {
       demo.exit();
@@ -98,33 +131,6 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
       return;
     }
     window.location.href = "/auth";
-  }
-
-  async function changePassword(event: React.FormEvent) {
-    event.preventDefault();
-    if (demo) return;
-    setPasswordError(null);
-    setPasswordMessage("");
-    if (newPassword.length < 6) {
-      setPasswordError("A senha precisa ter pelo menos 6 caracteres.");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setPasswordError("As senhas não coincidem.");
-      return;
-    }
-    setPasswordBusy(true);
-    try {
-      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
-      if (updateError) throw updateError;
-      setNewPassword("");
-      setConfirmPassword("");
-      setPasswordMessage("Senha atualizada.");
-    } catch (err) {
-      setPasswordError(err instanceof Error ? err.message : "Não foi possível atualizar a senha.");
-    } finally {
-      setPasswordBusy(false);
-    }
   }
 
   return (
@@ -165,73 +171,57 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
             </button>
           </form>
 
-          {!demo && (
-            <form
-              onSubmit={(event) => void changePassword(event)}
-              className="space-y-4 rounded-2xl border border-border bg-card p-4"
-              aria-label="Redefinir senha"
-            >
-              <div className="flex items-center gap-2">
-                <KeyRound className="size-4 text-gold" />
-                <h3 className="text-sm font-semibold">Redefinir senha</h3>
+          <form
+            onSubmit={(event) => void saveWhatsApp(event)}
+            className="space-y-4 rounded-2xl border border-border bg-card p-4"
+            aria-label="WhatsApp"
+          >
+            <div className="flex items-center gap-2">
+              <MessageCircle className="size-4 text-gold" />
+              <h3 className="text-sm font-semibold">WhatsApp</h3>
+            </div>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Usamos este número só para avisos de horário e códigos de acesso da barbearia, quando
+              você autorizar.
+            </p>
+            <label className="block space-y-2 text-sm font-semibold">
+              <span>Número com DDD</span>
+              <input
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                placeholder="(11) 99999-0000"
+                value={whatsapp}
+                disabled={busy || (!demo && !userId)}
+                onChange={(event) => {
+                  setWhatsapp(event.target.value);
+                  setMessage("");
+                }}
+                className="w-full rounded-xl border border-border bg-background px-3 py-2"
+              />
+            </label>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold">Receber avisos por WhatsApp</p>
+                <p className="text-xs text-muted-foreground">Confirmação, lembrete e remarcação.</p>
               </div>
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                Defina uma nova senha para esta conta. Mínimo de 6 caracteres.
-              </p>
-              <label className="block space-y-2 text-sm font-semibold">
-                <span>Nova senha</span>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  autoComplete="new-password"
-                  value={newPassword}
-                  disabled={passwordBusy}
-                  onChange={(event) => {
-                    setNewPassword(event.target.value);
-                    setPasswordMessage("");
-                    setPasswordError(null);
-                  }}
-                  className="w-full rounded-xl border border-border bg-background px-3 py-2"
-                />
-              </label>
-              <label className="block space-y-2 text-sm font-semibold">
-                <span>Confirmar nova senha</span>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  autoComplete="new-password"
-                  value={confirmPassword}
-                  disabled={passwordBusy}
-                  onChange={(event) => {
-                    setConfirmPassword(event.target.value);
-                    setPasswordMessage("");
-                    setPasswordError(null);
-                  }}
-                  className="w-full rounded-xl border border-border bg-background px-3 py-2"
-                />
-              </label>
-              {passwordError && (
-                <p role="alert" className="text-sm text-destructive">
-                  {passwordError}
-                </p>
-              )}
-              {passwordMessage && (
-                <p role="status" className="text-sm">
-                  {passwordMessage}
-                </p>
-              )}
-              <button
-                type="submit"
-                disabled={passwordBusy}
-                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
-              >
-                <KeyRound className="size-4" />
-                {passwordBusy ? "Salvando…" : "Salvar nova senha"}
-              </button>
-            </form>
-          )}
+              <Switch
+                checked={whatsappOptIn}
+                disabled={busy || (!demo && !userId)}
+                onCheckedChange={setWhatsappOptIn}
+                aria-label="Receber avisos por WhatsApp"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={busy || (!demo && !userId)}
+              className="w-full rounded-xl bg-primary p-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+            >
+              {busy ? "Salvando…" : "Salvar WhatsApp"}
+            </button>
+          </form>
+
+          {!demo && <ChangePasswordCard />}
 
           <PrivacyCenter />
           <button

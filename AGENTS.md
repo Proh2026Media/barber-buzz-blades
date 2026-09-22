@@ -19,3 +19,7 @@ A direção atual é uma interface moderna, intuitiva e acessível a diferentes 
 ## PWA
 
 O app é instalável (manifesto, service worker, ícones). Detalhes em [docs/pwa.md](docs/pwa.md).
+
+## Operação (Coolify, Titan, Google)
+
+Passo a passo de e-mail Titan, SMTP do Auth, login Google, domínio `supabasebeauty` e checklists: [docs/mb-operacao.md](docs/mb-operacao.md).

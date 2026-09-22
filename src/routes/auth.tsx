@@ -1,4 +1,4 @@
-import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail, Scissors, ShieldCheck } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail, MessageCircle, Scissors, ShieldCheck } from "lucide-react";
 import { Link, createFileRoute, useSearch } from "@tanstack/react-router";
 import { useEffect, useState, type CSSProperties } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,8 +18,10 @@ import {
   type BrandLoginLayout,
 } from "@/lib/shop/branding";
 import { BrandFontFace } from "@/features/shop/BrandFontFace";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 type AuthMode = "signin" | "signup" | "forgot" | "recovery";
+type RecoveryChannel = "email" | "whatsapp";
 
 type AuthBrand = {
   shopId: string | null;
@@ -107,6 +109,10 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [recoveryChannel, setRecoveryChannel] = useState<RecoveryChannel>("email");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
   const shopContext = resolveShopContext(next, shop, demo);
   const [brand, setBrand] = useState<AuthBrand>(
     shopContext.demo ? DEMO_AUTH_BRAND : DEFAULT_AUTH_BRAND,
@@ -218,6 +224,65 @@ function AuthPage() {
     setInfo(null);
     try {
       if (mode === "forgot") {
+        if (recoveryChannel === "whatsapp" && shopContext.shopRef) {
+          const base = import.meta.env.VITE_SUPABASE_URL || "";
+          if (!otpSent) {
+            const response = await fetch(`${base}/functions/v1/auth-otp`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "",
+              },
+              body: JSON.stringify({
+                action: "request",
+                shop: shopContext.shopRef,
+                channel: "whatsapp",
+                purpose: "recovery",
+                destination: whatsapp,
+              }),
+            });
+            const payload = (await response.json()) as { error?: string; message?: string };
+            if (!response.ok) throw new Error(payload.error || "Não foi possível enviar o código.");
+            setOtpSent(true);
+            setInfo(payload.message || "Se houver conta com este WhatsApp, enviamos um código.");
+            return;
+          }
+
+          const response = await fetch(`${base}/functions/v1/auth-otp`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "",
+            },
+            body: JSON.stringify({
+              action: "verify",
+              shop: shopContext.shopRef,
+              channel: "whatsapp",
+              purpose: "recovery",
+              destination: whatsapp,
+              code: otpCode,
+            }),
+          });
+          const payload = (await response.json()) as {
+            error?: string;
+            email?: string;
+            hashed_token?: string | null;
+            verification_type?: string;
+          };
+          if (!response.ok) throw new Error(payload.error || "Código inválido.");
+          if (!payload.hashed_token) throw new Error("Não foi possível validar o código.");
+          const { error: verifyError } = await supabase.auth.verifyOtp({
+            token_hash: payload.hashed_token,
+            type: "recovery",
+          });
+          if (verifyError) throw verifyError;
+          setMode("recovery");
+          setInfo("Código confirmado. Defina uma nova senha.");
+          setOtpSent(false);
+          setOtpCode("");
+          return;
+        }
+
         const redirectTo = `${window.location.origin}/auth?recovery=1${
           preferredNext ? `&next=${encodeURIComponent(preferredNext)}` : ""
         }`;
@@ -308,7 +373,9 @@ function AuthPage() {
     mode === "signup"
       ? "Leva menos de um minuto. Depois é só agendar e acompanhar seus horários."
       : mode === "forgot"
-        ? "Informe o email da conta. Enviaremos um link seguro para você."
+        ? recoveryChannel === "whatsapp"
+          ? "Informe o WhatsApp cadastrado. Enviaremos um código pela barbearia."
+          : "Informe o email da conta. Enviaremos um link seguro para você."
         : mode === "recovery"
           ? "Escolha uma senha nova para voltar a acessar o app."
           : "Acesso do cliente, da barbearia ou da plataforma.";
@@ -439,7 +506,41 @@ function AuthPage() {
           )}
 
           <form onSubmit={(e) => void handleSubmit(e)} className="space-y-5">
-            {mode !== "recovery" && (
+            {mode === "forgot" && shopContext.shopRef && (
+              <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1" role="tablist" aria-label="Canal de recuperação">
+                {(
+                  [
+                    { id: "email" as const, label: "E-mail", icon: Mail },
+                    { id: "whatsapp" as const, label: "WhatsApp", icon: MessageCircle },
+                  ] as const
+                ).map(({ id, label, icon: Icon }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    role="tab"
+                    aria-selected={recoveryChannel === id}
+                    onClick={() => {
+                      setRecoveryChannel(id);
+                      setOtpSent(false);
+                      setOtpCode("");
+                      setError(null);
+                      setInfo(null);
+                    }}
+                    className={`auth-brand-button flex min-h-11 items-center justify-center gap-2 text-sm font-semibold transition-colors ${
+                      recoveryChannel === id
+                        ? "bg-card text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Icon className="size-4" aria-hidden="true" />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {mode !== "recovery" &&
+              !(mode === "forgot" && recoveryChannel === "whatsapp" && shopContext.shopRef) && (
               <label className={labelClass}>
                 <span>Email</span>
                 <span className={fieldClass}>
@@ -458,6 +559,51 @@ function AuthPage() {
                   />
                 </span>
               </label>
+            )}
+
+            {mode === "forgot" && recoveryChannel === "whatsapp" && shopContext.shopRef && (
+              <>
+                <label className={labelClass}>
+                  <span>WhatsApp com DDD</span>
+                  <span className={fieldClass}>
+                    <MessageCircle
+                      className="ml-4 size-[18px] shrink-0 text-muted-foreground"
+                      aria-hidden="true"
+                    />
+                    <input
+                      type="tel"
+                      required
+                      inputMode="tel"
+                      autoComplete="tel"
+                      placeholder="(11) 99999-0000"
+                      value={whatsapp}
+                      onChange={(e) => setWhatsapp(e.target.value)}
+                      className={inputClass}
+                    />
+                  </span>
+                </label>
+                {otpSent && (
+                  <label className={labelClass}>
+                    <span>Código de 6 dígitos</span>
+                    <InputOTP
+                      maxLength={6}
+                      value={otpCode}
+                      onChange={setOtpCode}
+                      containerClassName="justify-between"
+                    >
+                      <InputOTPGroup className="gap-2">
+                        {Array.from({ length: 6 }).map((_, index) => (
+                          <InputOTPSlot
+                            key={index}
+                            index={index}
+                            className="auth-brand-control size-11 border border-border/70 text-base"
+                          />
+                        ))}
+                      </InputOTPGroup>
+                    </InputOTP>
+                  </label>
+                )}
+              </>
             )}
 
             {(mode === "signin" || mode === "signup" || mode === "recovery") && (
@@ -559,7 +705,11 @@ function AuthPage() {
                 {busy
                   ? "Aguarde…"
                   : mode === "forgot"
-                    ? "Enviar link"
+                    ? recoveryChannel === "whatsapp" && shopContext.shopRef
+                      ? otpSent
+                        ? "Confirmar código"
+                        : "Enviar código"
+                      : "Enviar link"
                     : mode === "recovery"
                       ? "Salvar nova senha"
                       : mode === "signup"

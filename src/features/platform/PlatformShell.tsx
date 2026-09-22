@@ -8,6 +8,7 @@ import {
   Building2,
   CirclePause,
   FlaskConical,
+  KeyRound,
   LayoutDashboard,
   LogOut,
   MessageSquareText,
@@ -30,6 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { BrandIdentityEditor } from "@/features/shop/BrandIdentityEditor";
 import { BrandFontFace } from "@/features/shop/BrandFontFace";
+import { ChangePasswordCard } from "@/features/auth/ChangePasswordCard";
 import { PlatformPermissionsEditor } from "./PlatformPermissionsEditor";
 import { DemoAccountMenu, DemoRoleSelector } from "@/features/demo/DemoAccountMenu";
 import { useDemoChrome } from "@/features/demo/chrome";
@@ -769,6 +771,19 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
             </p>
           )}
         </div>
+
+        {!demoMode && !demoChrome && (
+          <section className="space-y-3">
+            <div className="flex items-center gap-2">
+              <KeyRound className="size-4 text-gold" />
+              <h2 className="text-sm font-semibold">Sua conta</h2>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Altere a senha de acesso desta conta de administrador.
+            </p>
+            <ChangePasswordCard />
+          </section>
+        )}
       </main>
 
       <Dialog

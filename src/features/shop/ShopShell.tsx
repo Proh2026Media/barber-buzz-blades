@@ -10,6 +10,7 @@ import { BusinessInsights } from "@/features/insights/BusinessInsights";
 import { ProfessionalInsights } from "@/features/insights/ProfessionalInsights";
 import { TeamGovernance } from "./TeamGovernance";
 import { BrandIdentityEditor } from "@/features/shop/BrandIdentityEditor";
+import { WhatsAppSettingsCard } from "@/features/shop/WhatsAppSettingsCard";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -49,6 +50,7 @@ import {
   ChevronRight,
   CircleCheck,
   Clock3,
+  KeyRound,
   LogOut,
   MessageSquarePlus,
   Plus,
@@ -70,6 +72,7 @@ import type { Json } from "@/integrations/supabase/types";
 import { capabilitiesFor, type SessionProfile } from "@/lib/auth/session";
 import { brandCornerClass, brandFontScopeClass, brandVariables } from "@/lib/shop/branding";
 import { BrandFontFace } from "@/features/shop/BrandFontFace";
+import { ChangePasswordCard } from "@/features/auth/ChangePasswordCard";
 import { useDemo } from "@/features/demo/context";
 import {
   formatShopDate,
@@ -2626,6 +2629,9 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   <ChevronRight className="size-4 text-muted-foreground" />
                 </button>
               )}
+              {(!actor || actor.role === "owner" || actor.role === "partner" || !actor) && (
+                <WhatsAppSettingsCard shopId={shop.id} />
+              )}
               {!demo && actor && (
                 <TeamGovernance
                   key={governanceRevision}
@@ -2765,6 +2771,20 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
             </section>
           )}
         </div>
+
+        {!demo && (
+          <section className="space-y-3">
+            <div className="app-section-title">
+              <KeyRound />
+              <h2>Sua conta</h2>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Altere a senha de acesso desta conta. Vale para o painel da barbearia e para o restante
+              do sistema.
+            </p>
+            <ChangePasswordCard />
+          </section>
+        )}
       </main>
 
       <nav

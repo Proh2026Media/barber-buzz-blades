@@ -138,6 +138,8 @@ export type Database = {
           id: string;
           full_name: string | null;
           avatar_url: string | null;
+          whatsapp_e164: string | null;
+          whatsapp_opt_in_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -145,6 +147,8 @@ export type Database = {
           id: string;
           full_name?: string | null;
           avatar_url?: string | null;
+          whatsapp_e164?: string | null;
+          whatsapp_opt_in_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -152,6 +156,8 @@ export type Database = {
           id?: string;
           full_name?: string | null;
           avatar_url?: string | null;
+          whatsapp_e164?: string | null;
+          whatsapp_opt_in_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -597,11 +603,137 @@ export type Database = {
           },
         ];
       };
+      whatsapp_channels: {
+        Row: {
+          barbershop_id: string;
+          instance_name: string;
+          status: Database["public"]["Enums"]["whatsapp_channel_status"];
+          display_phone: string | null;
+          enabled: boolean;
+          notify_booking: boolean;
+          notify_reminder: boolean;
+          reminder_hours_before: number;
+          last_error: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          barbershop_id: string;
+          instance_name: string;
+          status?: Database["public"]["Enums"]["whatsapp_channel_status"];
+          display_phone?: string | null;
+          enabled?: boolean;
+          notify_booking?: boolean;
+          notify_reminder?: boolean;
+          reminder_hours_before?: number;
+          last_error?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["whatsapp_channels"]["Insert"]>;
+        Relationships: [];
+      };
+      whatsapp_outbox: {
+        Row: {
+          id: string;
+          barbershop_id: string;
+          to_e164: string;
+          template_key: string;
+          body: string;
+          payload: Json;
+          status: Database["public"]["Enums"]["whatsapp_outbox_status"];
+          provider_message_id: string | null;
+          error: string | null;
+          attempts: number;
+          dedupe_key: string;
+          scheduled_at: string;
+          sent_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          barbershop_id: string;
+          to_e164: string;
+          template_key: string;
+          body: string;
+          payload?: Json;
+          status?: Database["public"]["Enums"]["whatsapp_outbox_status"];
+          provider_message_id?: string | null;
+          error?: string | null;
+          attempts?: number;
+          dedupe_key: string;
+          scheduled_at?: string;
+          sent_at?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["whatsapp_outbox"]["Insert"]>;
+        Relationships: [];
+      };
+      auth_otp_challenges: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          barbershop_id: string;
+          channel: Database["public"]["Enums"]["auth_otp_channel"];
+          destination: string;
+          code_hash: string;
+          purpose: Database["public"]["Enums"]["auth_otp_purpose"];
+          expires_at: string;
+          consumed_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          barbershop_id: string;
+          channel: Database["public"]["Enums"]["auth_otp_channel"];
+          destination: string;
+          code_hash: string;
+          purpose: Database["public"]["Enums"]["auth_otp_purpose"];
+          expires_at: string;
+          consumed_at?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["auth_otp_challenges"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
+      shop_can_manage_whatsapp: { Args: { p_shop_id: string }; Returns: boolean };
+      normalize_br_whatsapp: { Args: { p_raw: string }; Returns: string };
+      save_my_whatsapp: {
+        Args: { p_raw: string; p_opt_in: boolean };
+        Returns: Database["public"]["Tables"]["profiles"]["Row"];
+      };
+      process_whatsapp_reminders: { Args: Record<string, never>; Returns: number };
+      claim_whatsapp_outbox: {
+        Args: { p_limit?: number };
+        Returns: Database["public"]["Tables"]["whatsapp_outbox"]["Row"][];
+      };
+      complete_whatsapp_outbox: {
+        Args: {
+          p_id: string;
+          p_ok: boolean;
+          p_provider_message_id?: string | null;
+          p_error?: string | null;
+        };
+        Returns: undefined;
+      };
+      enqueue_whatsapp_message: {
+        Args: {
+          p_shop_id: string;
+          p_to_e164: string;
+          p_template_key: string;
+          p_body: string;
+          p_dedupe_key: string;
+          p_payload?: Json;
+          p_scheduled_at?: string;
+        };
+        Returns: string;
+      };
       get_public_shop_branding: {
         Args: { p_shop_ref: string };
         Returns: {
@@ -803,6 +935,10 @@ export type Database = {
         | "reschedule_requested";
       shop_member_role: "owner" | "partner" | "associate" | "employee";
       shop_change_status: "pending" | "approved" | "rejected" | "cancelled";
+      whatsapp_channel_status: "disconnected" | "qr" | "connecting" | "open";
+      whatsapp_outbox_status: "pending" | "sending" | "sent" | "failed";
+      auth_otp_channel: "whatsapp" | "email";
+      auth_otp_purpose: "login" | "recovery";
     };
     CompositeTypes: {
       [_ in never]: never;
