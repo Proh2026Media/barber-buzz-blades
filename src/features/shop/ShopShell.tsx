@@ -14,6 +14,7 @@ import { WhatsAppSettingsCard } from "@/features/shop/WhatsAppSettingsCard";
 import { SlugRedirectsCard } from "@/features/shop/SlugRedirectsCard";
 import { ShopDepartureCard } from "@/features/shop/ShopDepartureCard";
 import { ShopDomainCard } from "@/features/shop/ShopDomainCard";
+import { GoogleIntegrationsCard } from "@/features/shop/GoogleIntegrationsCard";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -2653,6 +2654,9 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
               )}
               {(!actor || actor.role === "owner" || actor.role === "partner" || !actor) && (
                 <WhatsAppSettingsCard shopId={shop.id} />
+              )}
+              {!demo && (!actor || actor.role === "owner" || actor.role === "partner" || actor.role === "associate") && (
+                <GoogleIntegrationsCard returnPath="/shop" />
               )}
               {!demo && shop.id && (!actor || actor.role === "owner" || actor.role === "partner") && (
                 <ShopDomainCard shopId={shop.id} />

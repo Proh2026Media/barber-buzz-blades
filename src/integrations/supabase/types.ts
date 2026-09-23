@@ -550,28 +550,40 @@ export type Database = {
       loyalty_accounts: {
         Row: {
           user_id: string;
+          barbershop_id: string;
           points: number;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           user_id: string;
+          barbershop_id: string;
           points?: number;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           user_id?: string;
+          barbershop_id?: string;
           points?: number;
           created_at?: string;
           updated_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_accounts_barbershop_id_fkey";
+            columns: ["barbershop_id"];
+            isOneToOne: false;
+            referencedRelation: "barbershops";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       loyalty_ledger: {
         Row: {
           id: string;
           user_id: string;
+          barbershop_id: string;
           delta: number;
           reason: string;
           appointment_id: string | null;
@@ -580,6 +592,7 @@ export type Database = {
         Insert: {
           id?: string;
           user_id: string;
+          barbershop_id: string;
           delta: number;
           reason: string;
           appointment_id?: string | null;
@@ -588,6 +601,7 @@ export type Database = {
         Update: {
           id?: string;
           user_id?: string;
+          barbershop_id?: string;
           delta?: number;
           reason?: string;
           appointment_id?: string | null;
@@ -599,6 +613,13 @@ export type Database = {
             columns: ["appointment_id"];
             isOneToOne: false;
             referencedRelation: "appointments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "loyalty_ledger_barbershop_id_fkey";
+            columns: ["barbershop_id"];
+            isOneToOne: false;
+            referencedRelation: "barbershops";
             referencedColumns: ["id"];
           },
         ];
@@ -697,6 +718,74 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["auth_otp_challenges"]["Insert"]>;
         Relationships: [];
       };
+      google_connections: {
+        Row: {
+          id: string;
+          user_id: string;
+          google_email: string | null;
+          scopes: string[];
+          access_token: string;
+          refresh_token: string | null;
+          token_expires_at: string | null;
+          calendar_sync_enabled: boolean;
+          contacts_sync_enabled: boolean;
+          last_calendar_sync_at: string | null;
+          last_contacts_sync_at: string | null;
+          last_error: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          google_email?: string | null;
+          scopes?: string[];
+          access_token: string;
+          refresh_token?: string | null;
+          token_expires_at?: string | null;
+          calendar_sync_enabled?: boolean;
+          contacts_sync_enabled?: boolean;
+          last_calendar_sync_at?: string | null;
+          last_contacts_sync_at?: string | null;
+          last_error?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["google_connections"]["Insert"]>;
+        Relationships: [];
+      };
+      google_calendar_events: {
+        Row: {
+          id: string;
+          user_id: string;
+          google_event_id: string;
+          calendar_id: string;
+          title: string | null;
+          description: string | null;
+          starts_at: string;
+          ends_at: string;
+          all_day: boolean;
+          html_link: string | null;
+          raw: Json;
+          synced_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          google_event_id: string;
+          calendar_id?: string;
+          title?: string | null;
+          description?: string | null;
+          starts_at: string;
+          ends_at: string;
+          all_day?: boolean;
+          html_link?: string | null;
+          raw?: Json;
+          synced_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["google_calendar_events"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -733,6 +822,18 @@ export type Database = {
           p_scheduled_at?: string;
         };
         Returns: string;
+      };
+      get_my_google_connection: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
+      join_shop_as_customer: {
+        Args: { p_shop_ref: string };
+        Returns: Json;
+      };
+      get_shop_join_preview: {
+        Args: { p_shop_ref: string };
+        Returns: Json;
       };
       get_public_shop_branding: {
         Args: { p_shop_ref: string };

@@ -128,13 +128,21 @@ const matches = [
     min: "FT",
   },
 ];
+import { ShopJoinDialog } from "./ShopJoinDialog";
 import { ServiceIcon } from "@/components/ui/service-icon";
 
 function ArenaApp({
   headerActions,
   directBarberSlug,
   directShopSlug,
-}: { headerActions?: ReactNode; directBarberSlug?: string; directShopSlug?: string } = {}) {
+  promptJoin = false,
+}: {
+  headerActions?: ReactNode;
+  directBarberSlug?: string;
+  directShopSlug?: string;
+  /** Vindo do pós-login (?join=1); o diálogo também abre se o Host/?shop= apontar loja nova. */
+  promptJoin?: boolean;
+} = {}) {
   useScrollIndicators();
   const demo = useDemo();
   const demoChrome = useDemoChrome();
@@ -230,6 +238,11 @@ function ArenaApp({
   }, []);
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [joinOpen, setJoinOpen] = useState(false);
+  const [joinBusy, setJoinBusy] = useState(false);
+  const [joinShopName, setJoinShopName] = useState("");
+  const [joinShopRef, setJoinShopRef] = useState<string | null>(null);
+  const [catalogRevision, setCatalogRevision] = useState(0);
   // Valor inicial provisório: o efeito abaixo realinha ao fuso da barbearia
   // assim que ela é carregada.
   const [selectedDay, setSelectedDay] = useState(() =>
@@ -364,20 +377,21 @@ function ArenaApp({
       setPoints(demo.points);
       return;
     }
-    if (!userId) return;
+    if (!userId || !shopId) return;
     let cancelled = false;
     void (async () => {
       const { data, error } = await supabase
         .from("loyalty_accounts")
         .select("points")
         .eq("user_id", userId)
+        .eq("barbershop_id", shopId)
         .maybeSingle();
       if (!cancelled && !error) setPoints(data?.points ?? 0);
     })();
     return () => {
       cancelled = true;
     };
-  }, [demo, userId, tab, availabilityVersion]);
+  }, [demo, userId, shopId, tab, availabilityVersion]);
 
   useEffect(() => {
     if (demo) {
@@ -452,6 +466,7 @@ function ArenaApp({
       setStaff(demoStaff);
       setCatalogLoading(false);
       setCatalogError(null);
+      setJoinOpen(false);
       setServiceIdx(0);
       setStaffIdx(
         directBarberSlug
@@ -471,23 +486,101 @@ function ArenaApp({
         const profile = await getSessionProfile();
         if (!cancelled) {
           setCustomerName(profile?.profile?.full_name?.trim() || "Cliente");
-          setShopName(
-            profile?.memberships.find((m) => m.barbershop_id)?.barbershop?.name || "Sua barbearia",
-          );
         }
-        const membershipShopId =
-          profile?.memberships.find((m) => m.barbershop_id)?.barbershop_id ?? null;
-        if (!profile?.user.id || !membershipShopId) {
+        if (!profile?.user.id) {
           if (!cancelled) {
             setServices([]);
             setStaff([]);
-            setCatalogError("Nenhuma barbearia vinculada.");
+            setCatalogError("Sessão inválida. Entre novamente.");
           }
           return;
         }
-        let catalogShopId = membershipShopId;
+
+        const customerMemberships = profile.memberships.filter(
+          (m) => m.role === "customer" && m.barbershop_id,
+        );
+        let catalogShopId: string | null = null;
         let directStaffId: string | null = null;
-        if (directBarberSlug && directShopSlug) {
+        let pendingJoinRef: string | null = null;
+        let pendingJoinName = "";
+
+        // Contexto do link / Host tem prioridade sobre a “primeira” membership.
+        if (directShopSlug) {
+          const preview = await supabase.rpc("get_shop_join_preview", {
+            p_shop_ref: directShopSlug,
+          });
+          if (preview.error) throw preview.error;
+          const info = preview.data as {
+            found?: boolean;
+            shop_id?: string;
+            shop_name?: string;
+            shop_slug?: string;
+            is_member?: boolean;
+          } | null;
+
+          if (info?.found && info.shop_id) {
+            if (info.is_member) {
+              catalogShopId = info.shop_id;
+              if (!cancelled && info.shop_name) setShopName(info.shop_name);
+            } else {
+              pendingJoinRef = info.shop_slug || directShopSlug;
+              pendingJoinName = info.shop_name || "esta barbearia";
+            }
+          } else if (directBarberSlug) {
+            throw new Error("Link de barbearia inválido ou indisponível.");
+          }
+        }
+
+        if (!catalogShopId && !pendingJoinRef) {
+          catalogShopId = customerMemberships[0]?.barbershop_id ?? null;
+          if (!cancelled && customerMemberships[0]?.barbershop?.name) {
+            setShopName(customerMemberships[0].barbershop.name);
+          }
+        }
+
+        if (pendingJoinRef) {
+          if (!cancelled) {
+            setJoinShopRef(pendingJoinRef);
+            setJoinShopName(pendingJoinName);
+            setJoinOpen(true);
+            // Enquanto não confirma, mostra loja já vinculada (se houver) ou mensagem.
+            if (!catalogShopId && customerMemberships[0]?.barbershop_id) {
+              catalogShopId = customerMemberships[0].barbershop_id;
+              if (customerMemberships[0].barbershop?.name) {
+                setShopName(customerMemberships[0].barbershop.name);
+              }
+            }
+          }
+          // Se veio explicitamente com join=1 e não tem outra loja, não carrega catálogo errado.
+          if (!catalogShopId) {
+            if (!cancelled) {
+              setUserId(profile.user.id);
+              setShopId(null);
+              setServices([]);
+              setStaff([]);
+              setCatalogError(null);
+            }
+            return;
+          }
+        } else if (!cancelled) {
+          setJoinOpen(false);
+          setJoinShopRef(null);
+        }
+
+        if (!catalogShopId) {
+          if (!cancelled) {
+            setUserId(profile.user.id);
+            setShopId(null);
+            setServices([]);
+            setStaff([]);
+            setCatalogError(
+              "Nenhuma barbearia vinculada. Abra o link da barbearia para confirmar o acesso.",
+            );
+          }
+          return;
+        }
+
+        if (directBarberSlug && directShopSlug && !pendingJoinRef) {
           const resolved = await supabase.rpc("resolve_direct_booking_staff", {
             p_shop_slug: directShopSlug,
             p_staff_slug: directBarberSlug,
@@ -497,32 +590,31 @@ function ArenaApp({
             shop_id?: string;
             staff_id?: string;
             shop_name?: string;
-            shop_slug?: string;
             via_redirect?: boolean;
           };
           if (!target.staff_id || !target.shop_id) {
-            throw new Error(
-              "Este link pertence a outra barbearia ou não está disponível para sua conta.",
-            );
+            throw new Error("Este link de profissional não está disponível.");
           }
-          // Redirect pós-saída pode apontar para a loja atual do profissional.
           const hasDestMembership = profile.memberships.some(
             (m) => m.barbershop_id === target.shop_id && m.role === "customer",
           );
-          if (target.shop_id !== membershipShopId && !hasDestMembership && !target.via_redirect) {
-            throw new Error(
-              "Este link pertence a outra barbearia ou não está disponível para sua conta.",
-            );
-          }
-          if (hasDestMembership || target.shop_id === membershipShopId) {
+          if (hasDestMembership || target.shop_id === catalogShopId) {
             catalogShopId = target.shop_id;
+            directStaffId = target.staff_id;
+            if (!cancelled && target.shop_name) setShopName(target.shop_name);
           } else if (target.via_redirect) {
-            // Cliente ainda na loja antiga: mostra destino se já tiver membership; senão mantém origem
-            catalogShopId = membershipShopId;
+            // Cliente ainda sem vínculo no destino: o diálogo de join cobre o caso.
+            directStaffId = null;
+          } else {
+            // Sem membership: força join no destino do link.
+            if (!cancelled) {
+              setJoinShopRef(directShopSlug);
+              setJoinShopName(target.shop_name || "esta barbearia");
+              setJoinOpen(true);
+            }
           }
-          directStaffId = target.staff_id;
-          if (!cancelled && target.shop_name) setShopName(target.shop_name);
         }
+
         const [servicesResult, staffResult, loyaltyResult, settingsResult, shopResult] =
           await Promise.all([
             supabase
@@ -541,6 +633,7 @@ function ArenaApp({
               .from("loyalty_accounts")
               .select("points")
               .eq("user_id", profile.user.id)
+              .eq("barbershop_id", catalogShopId)
               .maybeSingle(),
             supabase
               .from("barbershop_settings")
@@ -549,21 +642,13 @@ function ArenaApp({
               )
               .eq("barbershop_id", catalogShopId)
               .single(),
-            // O fuso da loja define os horários oferecidos: sem ele, o cálculo
-            // usaria o fuso do aparelho de quem está reservando.
-            supabase
-              .from("barbershops")
-              .select("timezone")
-              .eq("id", catalogShopId)
-              .maybeSingle(),
+            supabase.from("barbershops").select("timezone").eq("id", catalogShopId).maybeSingle(),
           ]);
         if (servicesResult.error) throw servicesResult.error;
         if (staffResult.error) throw staffResult.error;
         if (loyaltyResult.error) throw loyaltyResult.error;
         let shopSettingsData = settingsResult.data;
         if (settingsResult.error) {
-          // Banco ainda sem a migration `floating_chrome`: recarrega sem a
-          // coluna e mantém o layout padrão em vez de derrubar o app.
           if (settingsResult.error.code !== "42703") throw settingsResult.error;
           const legacySettings = await supabase
             .from("barbershop_settings")
@@ -630,7 +715,52 @@ function ArenaApp({
     return () => {
       cancelled = true;
     };
-  }, [demo, directBarberSlug, directShopSlug]);
+  }, [demo, directBarberSlug, directShopSlug, promptJoin, catalogRevision]);
+
+  async function confirmShopJoin() {
+    if (!joinShopRef) return;
+    setJoinBusy(true);
+    try {
+      const { error } = await supabase.rpc("join_shop_as_customer", {
+        p_shop_ref: joinShopRef,
+      });
+      if (error) throw error;
+      setJoinOpen(false);
+      setJoinShopRef(null);
+      // Limpa ?join= da URL sem perder shop/barber.
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("join");
+        if (joinShopRef && !url.searchParams.get("shop")) {
+          url.searchParams.set("shop", joinShopRef);
+        }
+        window.history.replaceState({}, "", url.pathname + url.search);
+      } catch {
+        /* ignore */
+      }
+      setCatalogRevision((v) => v + 1);
+    } catch (err) {
+      setCatalogError(
+        err instanceof Error ? err.message : "Não foi possível vincular a barbearia.",
+      );
+      setJoinOpen(false);
+    } finally {
+      setJoinBusy(false);
+    }
+  }
+
+  function dismissShopJoin() {
+    setJoinOpen(false);
+    setJoinShopRef(null);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("join");
+      window.history.replaceState({}, "", url.pathname + url.search);
+    } catch {
+      /* ignore */
+    }
+    // Se não havia outra membership, o catálogo já mostrou o aviso.
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -1076,6 +1206,13 @@ function ArenaApp({
         }}
         onConfirm={() => void cancelAppointment()}
       />
+      <ShopJoinDialog
+        open={joinOpen}
+        shopName={joinShopName || "esta barbearia"}
+        busy={joinBusy}
+        onConfirm={() => void confirmShopJoin()}
+        onDismiss={dismissShopJoin}
+      />
       <svg width="0" height="0" className="absolute pointer-events-none">
         <defs>
           {/*
@@ -1222,6 +1359,7 @@ function ArenaApp({
           {tab === "pontos" && (
             <PointsHistory
               userId={userId}
+              shopId={shopId}
               points={points}
               currentLevel={tier.name}
               nextLevel={nextLevel}

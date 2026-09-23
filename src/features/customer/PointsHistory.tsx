@@ -9,11 +9,13 @@ import { NextLevelCard, type NextLevelSummary } from "./NextLevelCard";
 
 export function PointsHistory({
   userId,
+  shopId,
   points,
   currentLevel,
   nextLevel,
 }: {
   userId: string | null;
+  shopId?: string | null;
   points: number;
   currentLevel: string;
   nextLevel: NextLevelSummary | null;
@@ -37,6 +39,7 @@ export function PointsHistory({
           .map((id) => ({
             id,
             user_id: DEMO_CUSTOMER_ID,
+            barbershop_id: demo.shop.id,
             delta: 50,
             reason: "appointment_completed",
             appointment_id: id,
@@ -46,6 +49,7 @@ export function PointsHistory({
         {
           id: "demo-opening",
           user_id: DEMO_CUSTOMER_ID,
+          barbershop_id: demo.shop.id,
           delta: 250,
           reason: "demo_opening",
           appointment_id: null,
@@ -53,11 +57,12 @@ export function PointsHistory({
         },
       ]);
       setLoading(false);
-    } else if (userId) {
+    } else if (userId && shopId) {
       void supabase
         .from("loyalty_ledger")
         .select("*")
         .eq("user_id", userId)
+        .eq("barbershop_id", shopId)
         .order("created_at", { ascending: false })
         .order("id", { ascending: false })
         .limit(limit + 1)
@@ -74,7 +79,7 @@ export function PointsHistory({
     return () => {
       cancelled = true;
     };
-  }, [demo, userId, limit, version]);
+  }, [demo, userId, shopId, limit, version]);
   const visibleRows = rows.slice(0, limit);
 
   return (

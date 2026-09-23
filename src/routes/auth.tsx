@@ -1,8 +1,25 @@
-import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail, MessageCircle, Scissors, ShieldCheck } from "lucide-react";
+import {
+  ArrowRight,
+  Eye,
+  EyeOff,
+  LockKeyhole,
+  Mail,
+  MessageCircle,
+  Scissors,
+  ShieldCheck,
+} from "lucide-react";
 import { Link, createFileRoute, useSearch } from "@tanstack/react-router";
 import { useEffect, useState, type CSSProperties } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { resolvePostAuthPath } from "@/lib/auth/session";
+import {
+  buildPlatformAuthUrl,
+  currentOrigin,
+  isSafeReturnOriginShape,
+  needsAuthOriginBridge,
+  platformAuthOrigin,
+  redirectWithSessionToReturnOrigin,
+} from "@/lib/auth/return-origin";
 import {
   brandCornerClass,
   brandVariables,
@@ -68,14 +85,31 @@ export const Route = createFileRoute("/auth")({
   ssr: false,
   validateSearch: (
     s: Record<string, unknown>,
-  ): { next: string; recovery?: boolean; shop?: string; demo?: boolean } => {
+  ): {
+    next: string;
+    recovery?: boolean;
+    shop?: string;
+    demo?: boolean;
+    return_origin?: string;
+    oauth?: "google";
+    bridged?: boolean;
+  } => {
     const recovery = s.recovery === "1" || s.recovery === true || s.recovery === "true";
     const demo = s.demo === "1" || s.demo === true || s.demo === "true";
+    const bridged = s.bridged === "1" || s.bridged === true || s.bridged === "true";
+    const returnOrigin =
+      typeof s.return_origin === "string" && isSafeReturnOriginShape(s.return_origin.trim())
+        ? s.return_origin.trim()
+        : undefined;
+    const oauth = s.oauth === "google" ? ("google" as const) : undefined;
     return {
       next: typeof s.next === "string" ? s.next : "",
       ...(recovery ? { recovery: true as const } : {}),
       ...(typeof s.shop === "string" && s.shop.trim() ? { shop: s.shop.trim() } : {}),
       ...(demo ? { demo: true as const } : {}),
+      ...(returnOrigin ? { return_origin: returnOrigin } : {}),
+      ...(oauth ? { oauth } : {}),
+      ...(bridged ? { bridged: true as const } : {}),
     };
   },
   component: AuthPage,
@@ -101,7 +135,17 @@ function resolveShopContext(next: string, directShop?: string, directDemo?: bool
 }
 
 function AuthPage() {
-  const { next, recovery, shop, demo } = useSearch({ from: "/auth" });
+  const {
+    next,
+    recovery,
+    shop,
+    demo,
+    return_origin: returnOrigin,
+    oauth,
+    bridged,
+  } = useSearch({
+    from: "/auth",
+  });
   const [mode, setMode] = useState<AuthMode>(recovery ? "recovery" : "signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -123,6 +167,7 @@ function AuthPage() {
   const [brandLoading, setBrandLoading] = useState(
     Boolean(shopContext.shopRef) || typeof window !== "undefined",
   );
+  const [bridgeReady, setBridgeReady] = useState(!bridged);
 
   const preferredNext = isSafeNext(next) ? next : "";
 
@@ -130,9 +175,8 @@ function AuthPage() {
     let cancelled = false;
     void (async () => {
       if (shopContext.shopRef || shopContext.demo) return;
-      const { resolveShopFromCurrentHost, maybeRedirectToCanonical } = await import(
-        "@/lib/shop/host"
-      );
+      const { resolveShopFromCurrentHost, maybeRedirectToCanonical } =
+        await import("@/lib/shop/host");
       const resolved = await resolveShopFromCurrentHost();
       if (cancelled) return;
       if (maybeRedirectToCanonical(resolved)) return;
@@ -217,26 +261,149 @@ function AuthPage() {
         setError(null);
         setInfo("Defina uma nova senha para continuar.");
       }
+      if (event === "SIGNED_IN" && returnOrigin && !bridged && oauth !== "google") {
+        void redirectWithSessionToReturnOrigin({
+          returnOrigin,
+          shop: effectiveShopRef,
+          next: preferredNext || "/app",
+        });
+      }
     });
     return () => subscription.unsubscribe();
-  }, []);
+  }, [returnOrigin, bridged, oauth, effectiveShopRef, preferredNext]);
 
+  // Domínio próprio: tokens na hash vindos do apex → grava sessão local.
   useEffect(() => {
+    if (!bridged) {
+      setBridgeReady(true);
+      return;
+    }
     let cancelled = false;
-    (async () => {
-      if (mode === "recovery" || mode === "forgot") return;
-      const { data } = await supabase.auth.getSession();
-      if (!data.session || cancelled) return;
-      const path = await resolvePostAuthPath(preferredNext);
-      if (!cancelled) window.location.href = path;
+    void (async () => {
+      try {
+        const hash = typeof window !== "undefined" ? window.location.hash.replace(/^#/, "") : "";
+        const params = new URLSearchParams(hash);
+        const access_token = params.get("access_token");
+        const refresh_token = params.get("refresh_token");
+        if (access_token && refresh_token) {
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token,
+            refresh_token,
+          });
+          if (sessionError) throw sessionError;
+          window.history.replaceState(
+            {},
+            "",
+            `${window.location.pathname}${window.location.search}`,
+          );
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error ? err.message : "Falha ao restaurar a sessão neste domínio.",
+          );
+        }
+      } finally {
+        if (!cancelled) setBridgeReady(true);
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [preferredNext, mode]);
+  }, [bridged]);
+
+  // Apex: pedido vindo do link da loja para iniciar Google (allow list do GoTrue).
+  useEffect(() => {
+    if (oauth !== "google") return;
+    if (needsAuthOriginBridge()) return;
+    let cancelled = false;
+    void (async () => {
+      setBusy(true);
+      setInfo(
+        returnOrigin
+          ? "Abrindo Google… Depois você volta automaticamente para a barbearia."
+          : "Abrindo Google…",
+      );
+      try {
+        const params = new URLSearchParams();
+        if (preferredNext) params.set("next", preferredNext);
+        if (effectiveShopRef) params.set("shop", effectiveShopRef);
+        if (returnOrigin) params.set("return_origin", returnOrigin);
+        const qs = params.toString();
+        // Sempre o apex — único redirect confiável na allow list.
+        const redirectTo = `${platformAuthOrigin()}/auth${qs ? `?${qs}` : ""}`;
+        const { error: oauthError } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: { redirectTo },
+        });
+        if (oauthError) throw oauthError;
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Falha no Google");
+          setBusy(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [oauth, preferredNext, effectiveShopRef, returnOrigin]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!bridgeReady) return;
+      if (mode === "recovery" || mode === "forgot") return;
+      if (oauth === "google") return;
+      const { data } = await supabase.auth.getSession();
+      if (!data.session || cancelled) return;
+
+      if (
+        returnOrigin &&
+        (await redirectWithSessionToReturnOrigin({
+          returnOrigin,
+          shop: effectiveShopRef,
+          next: preferredNext || "/app",
+        }))
+      ) {
+        return;
+      }
+
+      const path = await resolvePostAuthPath(preferredNext);
+      if (cancelled) return;
+      if (effectiveShopRef && (path === "/app" || path.startsWith("/app"))) {
+        const url = new URL(path, window.location.origin);
+        if (!url.searchParams.get("shop")) url.searchParams.set("shop", effectiveShopRef);
+        url.searchParams.set("join", "1");
+        window.location.href = `${url.pathname}${url.search}`;
+        return;
+      }
+      window.location.href = path;
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [preferredNext, mode, effectiveShopRef, returnOrigin, oauth, bridgeReady]);
 
   async function goAfterAuth() {
+    if (
+      returnOrigin &&
+      (await redirectWithSessionToReturnOrigin({
+        returnOrigin,
+        shop: effectiveShopRef,
+        next: preferredNext || "/app",
+      }))
+    ) {
+      return;
+    }
     const path = await resolvePostAuthPath(preferredNext);
+    if (effectiveShopRef && (path === "/app" || path.startsWith("/app"))) {
+      const url = new URL(path, window.location.origin);
+      if (!url.searchParams.get("shop")) url.searchParams.set("shop", effectiveShopRef);
+      url.searchParams.set("join", "1");
+      window.location.href = `${url.pathname}${url.search}`;
+      return;
+    }
     window.location.href = path;
   }
 
@@ -306,9 +473,16 @@ function AuthPage() {
           return;
         }
 
-        const redirectTo = `${window.location.origin}/auth?recovery=1${
-          preferredNext ? `&next=${encodeURIComponent(preferredNext)}` : ""
-        }`;
+        const redirectTo = needsAuthOriginBridge()
+          ? buildPlatformAuthUrl({
+              shop: effectiveShopRef,
+              next: preferredNext || undefined,
+              returnOrigin: currentOrigin(),
+              recovery: true,
+            })
+          : `${window.location.origin}/auth?recovery=1${
+              preferredNext ? `&next=${encodeURIComponent(preferredNext)}` : ""
+            }${effectiveShopRef ? `&shop=${encodeURIComponent(effectiveShopRef)}` : ""}`;
         const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
         if (error) throw error;
         setInfo("Se existir uma conta com este email, enviamos o link para redefinir a senha.");
@@ -334,6 +508,21 @@ function AuthPage() {
         return;
       }
 
+      const emailRedirectTo = needsAuthOriginBridge()
+        ? buildPlatformAuthUrl({
+            shop: effectiveShopRef,
+            next: preferredNext || undefined,
+            returnOrigin: currentOrigin(),
+          })
+        : `${window.location.origin}/auth${
+            preferredNext || effectiveShopRef
+              ? `?${new URLSearchParams({
+                  ...(preferredNext ? { next: preferredNext } : {}),
+                  ...(effectiveShopRef ? { shop: effectiveShopRef } : {}),
+                }).toString()}`
+              : ""
+          }`;
+
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -341,13 +530,7 @@ function AuthPage() {
           data: {
             ...(effectiveShopRef ? { shop: effectiveShopRef } : {}),
           },
-          emailRedirectTo:
-            window.location.origin +
-            "/auth" +
-            (preferredNext ? `?next=${encodeURIComponent(preferredNext)}` : "") +
-            (effectiveShopRef
-              ? `${preferredNext ? "&" : "?"}shop=${encodeURIComponent(effectiveShopRef)}`
-              : ""),
+          emailRedirectTo,
         },
       });
       if (error) throw error;
@@ -365,10 +548,33 @@ function AuthPage() {
     setError(null);
     setInfo(null);
     try {
-      const redirectTo =
-        window.location.origin +
-        "/auth" +
-        (preferredNext ? `?next=${encodeURIComponent(preferredNext)}` : "");
+      // Subdomínio ou domínio próprio: OAuth no apex + volta com a sessão.
+      // Sem isso o GoTrue manda para beauty… e a loja fica sem login.
+      if (needsAuthOriginBridge()) {
+        let shopRef = effectiveShopRef;
+        if (!shopRef) {
+          try {
+            const { resolveShopFromCurrentHost } = await import("@/lib/shop/host");
+            const resolved = await resolveShopFromCurrentHost();
+            shopRef = resolved?.shop_slug ?? null;
+          } catch {
+            shopRef = null;
+          }
+        }
+        window.location.href = buildPlatformAuthUrl({
+          shop: shopRef,
+          next: preferredNext || "/app",
+          returnOrigin: currentOrigin(),
+          oauth: "google",
+        });
+        return;
+      }
+      const params = new URLSearchParams();
+      if (preferredNext) params.set("next", preferredNext);
+      if (effectiveShopRef) params.set("shop", effectiveShopRef);
+      if (returnOrigin) params.set("return_origin", returnOrigin);
+      const qs = params.toString();
+      const redirectTo = `${platformAuthOrigin()}/auth${qs ? `?${qs}` : ""}`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo },
@@ -537,7 +743,11 @@ function AuthPage() {
 
           <form onSubmit={(e) => void handleSubmit(e)} className="space-y-5">
             {mode === "forgot" && effectiveShopRef && (
-              <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1" role="tablist" aria-label="Canal de recuperação">
+              <div
+                className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1"
+                role="tablist"
+                aria-label="Canal de recuperação"
+              >
                 {(
                   [
                     { id: "email" as const, label: "E-mail", icon: Mail },
@@ -571,25 +781,25 @@ function AuthPage() {
 
             {mode !== "recovery" &&
               !(mode === "forgot" && recoveryChannel === "whatsapp" && effectiveShopRef) && (
-              <label className={labelClass}>
-                <span>Email</span>
-                <span className={fieldClass}>
-                  <Mail
-                    className="ml-4 size-[18px] shrink-0 text-muted-foreground"
-                    aria-hidden="true"
-                  />
-                  <input
-                    type="email"
-                    required
-                    autoComplete="email"
-                    placeholder="voce@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className={inputClass}
-                  />
-                </span>
-              </label>
-            )}
+                <label className={labelClass}>
+                  <span>Email</span>
+                  <span className={fieldClass}>
+                    <Mail
+                      className="ml-4 size-[18px] shrink-0 text-muted-foreground"
+                      aria-hidden="true"
+                    />
+                    <input
+                      type="email"
+                      required
+                      autoComplete="email"
+                      placeholder="voce@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className={inputClass}
+                    />
+                  </span>
+                </label>
+              )}
 
             {mode === "forgot" && recoveryChannel === "whatsapp" && effectiveShopRef && (
               <>

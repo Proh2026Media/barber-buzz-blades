@@ -131,7 +131,7 @@ update public.appointments set status = 'completed' where id = (select appointme
 
 select set_config('request.jwt.claim.sub', customer_a::text, true) from booking_test_context;
 select pg_temp.check_booking_test(
-  (select points = 50 from public.loyalty_accounts l join booking_test_context c on l.user_id = c.customer_a),
+  (select points = 50 from public.loyalty_accounts l join booking_test_context c on l.user_id = c.customer_a and l.barbershop_id = c.shop_id),
   'Completing, repeating and reopening the appointment awards exactly 50 points');
 select pg_temp.check_booking_test(
   (select count(*) = 1 from public.loyalty_ledger l join booking_test_context c on l.appointment_id = c.appointment_id),
@@ -145,7 +145,7 @@ update public.appointments set status = 'completed'
 where customer_id = (select customer_a from booking_test_context) and status = 'confirmed';
 select set_config('request.jwt.claim.sub', customer_a::text, true) from booking_test_context;
 select pg_temp.check_booking_test(
-  (select points = 100 from public.loyalty_accounts l join booking_test_context c on l.user_id = c.customer_a),
+  (select points = 100 from public.loyalty_accounts l join booking_test_context c on l.user_id = c.customer_a and l.barbershop_id = c.shop_id),
   'A different completed appointment awards another 50 points');
 
 insert into public.appointments (barbershop_id, customer_id, service_id, staff_id, starts_at, ends_at)
@@ -158,7 +158,7 @@ select pg_temp.check_booking_test(
     lateral public.get_staff_busy_intervals(c.staff_id, c.starts_at + interval '2 hours', c.starts_at + interval '3 hours')),
   'Cancelling releases the interval');
 select pg_temp.check_booking_test(
-  (select points = 100 from public.loyalty_accounts l join booking_test_context c on l.user_id = c.customer_a),
+  (select points = 100 from public.loyalty_accounts l join booking_test_context c on l.user_id = c.customer_a and l.barbershop_id = c.shop_id),
   'Cancelling does not award points');
 
 insert into public.appointments (barbershop_id, customer_id, service_id, staff_id, starts_at, ends_at)

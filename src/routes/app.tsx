@@ -2,25 +2,25 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArenaApp } from "@/features/customer/ArenaApp";
 import { requireSession } from "@/lib/auth/guards";
-import {
-  maybeRedirectToCanonical,
-  resolveShopFromCurrentHost,
-} from "@/lib/shop/host";
+import { maybeRedirectToCanonical, resolveShopFromCurrentHost } from "@/lib/shop/host";
 
 export const Route = createFileRoute("/app")({
   ssr: false,
   validateSearch: (search: Record<string, unknown>) => ({
     barber: typeof search.barber === "string" ? search.barber : undefined,
     shop: typeof search.shop === "string" ? search.shop : undefined,
+    join: search.join === "1" || search.join === true || search.join === "true" ? true : undefined,
   }),
-  beforeLoad: async () => {
-    await requireSession("/app");
+  beforeLoad: async ({ location }) => {
+    const search =
+      typeof location.searchStr === "string" && location.searchStr ? location.searchStr : "";
+    await requireSession(`/app${search}`);
   },
   component: AppRoute,
 });
 
 function AppRoute() {
-  const { barber, shop } = Route.useSearch();
+  const { barber, shop, join } = Route.useSearch();
   const [hostShop, setHostShop] = useState<string | undefined>(undefined);
   const [ready, setReady] = useState(Boolean(shop));
 
@@ -50,5 +50,9 @@ function AppRoute() {
     );
   }
 
-  return <ArenaApp directBarberSlug={barber} directShopSlug={shop || hostShop} />;
+  const effectiveShop = shop || hostShop;
+  // Sempre avalia o contexto da loja (Host ou ?shop=); o diálogo só aparece se ainda não for cliente.
+  return (
+    <ArenaApp directBarberSlug={barber} directShopSlug={effectiveShop} promptJoin={Boolean(join)} />
+  );
 }

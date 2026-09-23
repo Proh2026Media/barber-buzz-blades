@@ -1,6 +1,6 @@
 # MB — Operação (Coolify, Titan, Google)
 
-Atualizado em **21/09/2026**.  
+Atualizado em **23/09/2026**.  
 Passo a passo operacional do Barba & Cabelo: e-mail (Titan), Auth no Coolify, login Google e pendências de domínio. Linguagem curta, uma ação por etapa — no mesmo espírito do `/mb` (próximo passo claro, sem misturar assuntos).
 
 **Não versionar senhas, tokens nem chaves.** Preencher só no Coolify / gerenciador de senhas.
@@ -16,8 +16,8 @@ Passo a passo operacional do Barba & Cabelo: e-mail (Titan), Auth no Coolify, lo
 | API Supabase (hoje) | `https://supabase-teste.proh.media` | OK |
 | API Supabase (alvo) | `https://supabasebeauty.contheiner.digital` | Traefik pronto; **DNS A pendente** |
 | E-mail humano + SMTP | Titan (Hostinger) | **A configurar** |
-| Login Google (botão) | App pronto; OAuth no GoTrue | **A configurar** |
-| Sync Google Agenda | — | **Ainda não existe no código** |
+| Login Google (botão) | App pronto; OAuth no GoTrue | **A configurar no Coolify** |
+| Sync Google Agenda + Contatos | Edge `google-connect` + card em Ajustes | **Código pronto; falta Client ID/Secret + APIs** |
 | WhatsApp (Evolution) | Coolify `evolution-api` + funções no Supabase | **Fase 1 ligada** (por loja; ver seção 5) |
 | Notificações in-app | App | OK |
 | E-mail de agenda / lembretes | — | WhatsApp cobre o canal inicial; SMTP Titan ainda para Auth |
@@ -52,10 +52,11 @@ Detalhes extras do BaaS: [supabase/README.md](../supabase/README.md). Continuaç
 2. Coolify — SMTP do Auth + reinício
 3. Testar “Esqueci a senha”
 4. WhatsApp — conectar QR na loja + opt-in no perfil do cliente (seção 5)
-5. (Opcional) Login Google no Coolify
-6. DNS `supabasebeauty` → TLS → trocar URL pública
-7. Republicar app com `VITE_SUPABASE_*` corretos
-8. (Futuro) Google Agenda + e-mails de agendamento + broadcast WhatsApp
+5. (Opcional) Login Google no Coolify  
+6. Google Agenda + Contatos — Client ID, APIs e envs `GOOGLE_OAUTH_*` (seção 3.3)  
+7. DNS `supabasebeauty` → TLS → trocar URL pública  
+8. Republicar app com `VITE_SUPABASE_*` corretos  
+9. (Futuro) e-mails de agendamento + broadcast WhatsApp
 
 ---
 
@@ -185,25 +186,41 @@ Variáveis `SUPABASE_*` **sem** `VITE_` não entram no bundle do navegador.
 
 ---
 
-## 3. Login com Google (OAuth)
+## 3. Login com Google (OAuth) + Agenda/Contatos
 
-O botão no `/auth` já chama `signInWithOAuth({ provider: "google" })`. Falta habilitar no GoTrue.
+São **dois fluxos** no mesmo Client OAuth do Google Cloud:
 
-### 3.1 Google Cloud Console
+| Fluxo | Para quê | Quem guarda o token |
+|-------|----------|---------------------|
+| **A — Entrar com Google** | Identidade (login) | GoTrue / Auth |
+| **B — Agenda e Contatos** | Importar agenda e salvar contatos | Tabela `google_connections` + Edge `google-connect` |
+
+O botão no `/auth` já chama `signInWithOAuth({ provider: "google" })` (fluxo A).  
+Em **Ajustes da loja** o card **Google Agenda e Contatos** inicia o fluxo B.
+
+### 3.1 Google Cloud Console (uma vez)
 
 1. Criar (ou abrir) um projeto Google Cloud.
-2. **APIs & Services** → **OAuth consent screen** (External ou Internal, conforme a conta).
-3. **Credentials** → **Create OAuth client ID** → tipo **Web application**.
-4. **Authorized redirect URIs**:
-   - `https://supabase-teste.proh.media/auth/v1/callback`
+2. **APIs & Services** → **Library** → ativar:
+   - **Google Calendar API**
+   - **People API** (Contatos)
+3. **OAuth consent screen** (External ou Internal):
+   - App name, e-mail de suporte.
+   - Escopos: `openid`, `email`, `profile`, `.../auth/calendar`, `.../auth/contacts`.
+   - Em External, adicionar test users enquanto o app não estiver “em produção”.
+4. **Credentials** → **Create OAuth client ID** → tipo **Web application**.
+5. **Authorized redirect URIs** (todos):
+   - `https://supabase-teste.proh.media/auth/v1/callback` ← login (fluxo A)
+   - `https://beauty.contheiner.digital/auth/google-apps` ← Agenda/Contatos (fluxo B)
+   - (local, se testar) `http://localhost:8080/auth/google-apps`
    - (quando o domínio novo tiver TLS) `https://supabasebeauty.contheiner.digital/auth/v1/callback`
-5. Copiar **Client ID** e **Client Secret**.
+6. Copiar **Client ID** e **Client Secret**. Não versionar no Git.
 
 Não precisa Google Workspace.
 
-### 3.2 Coolify (Auth)
+### 3.2 Coolify — login (fluxo A / GoTrue)
 
-Acrescentar no `.env` do serviço (nomes exatos podem variar levemente conforme a versão da stack; o essencial é habilitar Google no GoTrue):
+No `.env` do serviço Auth / stack Supabase:
 
 ```text
 GOTRUE_EXTERNAL_GOOGLE_ENABLED=true
@@ -211,11 +228,41 @@ GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID=SEU_CLIENT_ID
 GOTRUE_EXTERNAL_GOOGLE_SECRET=SEU_CLIENT_SECRET
 ```
 
-Se a stack Coolify usar outro prefixo de env, alinhar ao `docker-compose` do serviço `supabase-auth` antes de reiniciar.
-
 1. Reiniciar `supabase-auth`.
 2. Testar botão Google em `/auth`.
-3. Redirect deve voltar para o app em `beauty.contheiner.digital` / localhost.
+3. Redirect deve voltar para `beauty.contheiner.digital` / localhost.
+
+### 3.3 Coolify — Agenda e Contatos (fluxo B)
+
+No mesmo serviço das Edge Functions (`supabase-barba-cabelo` / funções), acrescentar:
+
+```text
+GOOGLE_OAUTH_CLIENT_ID=SEU_CLIENT_ID
+GOOGLE_OAUTH_CLIENT_SECRET=SEU_CLIENT_SECRET
+GOOGLE_OAUTH_REDIRECT_URI=https://beauty.contheiner.digital/auth/google-apps
+APP_URL=https://beauty.contheiner.digital
+GOOGLE_OAUTH_STATE_SECRET=uma-string-longa-aleatoria
+```
+
+Pode reutilizar o mesmo Client ID/Secret do login.  
+Publicar a função `google-connect` e aplicar a migration `20260923140000_google_calendar_contacts.sql`.
+
+**Uso na UI**
+
+1. Entrar na loja → **Ajustes** → **Google Agenda e Contatos** → **Conectar Google**.
+2. Autorizar Agenda + Contatos na tela do Google.
+3. **Sincronizar agenda** importa eventos (~7 dias atrás a 60 à frente) em `google_calendar_events`.
+4. Preencher nome/telefone/e-mail → **Salvar contato** cria entrada no Google Contatos.
+
+### 3.4 Checklist Google
+
+- [ ] Calendar API + People API ativas  
+- [ ] Redirect URIs A e B no Client OAuth  
+- [ ] `GOTRUE_EXTERNAL_GOOGLE_*` no Auth + reinício  
+- [ ] `GOOGLE_OAUTH_*` nas Edge Functions + `google-connect` publicada  
+- [ ] Migration `google_connections` aplicada  
+- [ ] Login Google funciona em `/auth`  
+- [ ] Card em Ajustes conecta e sincroniza  
 
 ---
 
@@ -260,7 +307,9 @@ Atualizado em **22/09/2026**.
 | DNS | Cloudflare: `*.beauty` → `187.127.60.78` (DNS only) |
 | Proxy | Traefik no VPS (`wildcard-beauty.yaml`) → Hostinger `beauty.contheiner.digital` |
 | TLS | Let’s Encrypt no Traefik |
-| Auth | `ADDITIONAL_REDIRECT_URLS` com `https://*.beauty.contheiner.digital/**` |
+| Auth | `ADDITIONAL_REDIRECT_URLS` com `https://beauty.contheiner.digital/**` e `https://*.beauty.contheiner.digital/**` |
+
+Subdomínio `*.beauty…` e domínio próprio: o login Google **sempre** inicia no apex (`beauty…`) e devolve a sessão ao link da loja (`return_origin`). Não depende de wildcard na allow list. Código: `src/lib/auth/return-origin.ts`.
 
 **Bloqueio conhecido (22/09):** `beauty.contheiner.digital` está **sem registro A** na Cloudflare → Traefik não alcança a Hostinger → **HTTP 502** em `*.beauty…`. Criar na Cloudflare:
 
@@ -321,6 +370,7 @@ Atualizado em **22/09/2026**.
 | Sociedade | Outro sócio libera a carteira antes da saída |
 | Abrir mão | Clientes ficam; slug pode ser reutilizado pela loja |
 | Cadastro | `/auth?shop=slug` vincula o cliente à loja do link |
+| Multi-loja | Mesmo e-mail; link de outra loja pede confirmação; pontos **por barbearia** |
 
 ---
 
@@ -368,9 +418,12 @@ Lista de transmissão, campanhas, inbox de conversas, número único da platafor
 
 ### Google Agenda e e-mails de agendamento
 
-#### Google Agenda
+#### Google Agenda + Contatos
 
-**Não implementado.** A agenda do app é só no banco.
+Implementado (código): Edge `google-connect`, migration `google_connections` / `google_calendar_events`, UI em Ajustes.  
+Operação: seção **3.3**. Ainda depende de Client ID/Secret no Coolify e APIs ativas no Google Cloud.
+
+Não há ainda espelhamento automático de cada agendamento do app → Google Calendar (só importação sob demanda + salvar contato).
 
 #### E-mails operacionais (confirmação, lembrete)
 
@@ -391,7 +444,8 @@ Ainda não ligados por SMTP; WhatsApp cobre o canal operacional inicial quando a
 - [ ] SMTP preenchido  
 - [ ] `supabase-auth` reiniciado  
 - [ ] Reset de senha chega e o link funciona  
-- [ ] (Opcional) Google OAuth habilitado e botão funciona  
+- [ ] Google OAuth (login) habilitado e botão funciona  
+- [ ] `GOOGLE_OAUTH_*` + função `google-connect` (Agenda/Contatos)  
 
 ### WhatsApp / Evolution
 

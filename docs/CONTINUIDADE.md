@@ -1,38 +1,49 @@
 # Transição para a próxima IA — Barba & Cabelo
 
-Atualizado em **22/09/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
+Atualizado em **23/09/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
 ## Comece aqui
 
-1. Ler `AGENTS.md`, `docs/mb-interface.md` e este documento. Para e-mail Titan, SMTP Coolify, login Google e domínio da API: [mb-operacao.md](mb-operacao.md).
+1. Ler `AGENTS.md`, `docs/mb-interface.md` e este documento. Para e-mail Titan, SMTP Coolify, login Google, Agenda/Contatos e domínio da API: [mb-operacao.md](mb-operacao.md).
 2. Inspecionar `git status` e os arquivos relevantes ao próximo pedido. O workspace tem muitas alterações e arquivos não rastreados que compõem o aplicativo; **não descartar nem sobrescrever esse trabalho**.
-3. Para retomar localmente, usar `npm run dev -- --host 0.0.0.0 --port 8080`. O endereço esperado é `http://localhost:8080`. Na última verificação de transição, a porta **não respondeu**; não presumir que o servidor continua ativo.
-4. Continuar a partir do próximo pedido do usuário. O pedido mais recente foi preparar esta transição; não houve autorização para implementar pagamentos/reembolsos agora.
+3. Para retomar localmente, usar `npm run dev -- --host 0.0.0.0 --port 8080`. O endereço esperado é `http://localhost:8080`.
+4. Continuar a partir do próximo pedido do usuário.
 
 ## Projeto e ambiente
 
 - Pasta: `/Volumes/Alyson 1TB/OpenDesign/Barba & Cabelo` (o nome real contém `&`, não `&amp;`).
 - Stack: React 19, TypeScript, TanStack Start/Router, Vite, Tailwind, componentes Radix e Supabase.
 - Rotas principais: `/app` (cliente), `/shop` (barbearia), `/platform` (admin global), `/demo` (demo autorizado pelo admin).
-- Entradas: `src/features/customer/ArenaApp.tsx`, `src/features/shop/ShopShell.tsx`, `src/features/platform/PlatformShell.tsx`. Localizar o arquivo com `rg` caso a estrutura mude.
-- Tema compartilhado: `src/styles.css`; seletores de data/horário: `src/components/ui/schedule-picker.tsx`.
-- Demo: `src/features/demo/`, com 200 clientes fictícios, cenários variáveis e dados isolados dos reais.
-- Dados e instruções de infraestrutura: `supabase/README.md`. Credenciais ficam em arquivos locais/configuração; não copiar chaves, senhas ou tokens para respostas ou documentos.
-- Migrações recentes já foram aplicadas no banco remoto. **Não reaplicar cegamente**: várias não são idempotentes. Não houve implantação do frontend em produção nesta última entrega; houve build e execução local.
+- Dados e operação: [supabase/README.md](../supabase/README.md), [mb-operacao.md](mb-operacao.md). Não copiar chaves/senhas para o chat.
 
 ## Preferências do usuário
 
-- Conversar em português, com explicações diretas. O usuário prefere progresso concreto e pouca repetição de perguntas já respondidas.
-- Identidade de barbearia masculina, madura e moderna; interface intuitiva para todas as idades.
-- A preferência mais recente permite **cantos mais arredondados, consistentes** e substitui pedidos anteriores por cantos mais retos.
-- Cartões e áreas de leitura branco/off-white, distintos do fundo. Preservar gradientes de níveis/pontos; evitar rosado nos campos e filtros.
-- Botões importantes: fundo escuro, ícone + texto na cor da ação; confirmar azul, concluir verde, cancelar/excluir alerta. Tamanhos padronizados.
-- Navegação ativa sem linha inferior. Explicações próximas aos controles, sem redundância nem excesso de texto.
-- Preferir seletores visuais, liga/desliga e gestos apropriados; arrastar e soltar precisa de alternativa acessível. Evitar digitação desnecessária.
-- Rolagem interna ao app; barras discretas durante o uso e rolagem principal na extremidade direita. Serviços em grade de três colunas onde couber.
-- Skill pessoal criada: `~/.codex/skills/mb/SKILL.md`; `/mb` é convenção textual do projeto, `$mb` é invocação da skill. Cópia portátil em `docs/mb-interface.md` para outros provedores.
+- Português, progresso concreto, pouca repetição. Identidade de barbearia masculina, madura e moderna.
+- Cantos configuráveis (reto / semi / arredondado); semi como padrão até salvar outro. Cartões off-white; botões de ação com cores aprovadas. Skill `/mb` em `docs/mb-interface.md`.
 
 ## Entregas recentes e regras atuais
+
+### Auth cross-domain (domínio próprio) — 23/09/2026
+
+- Google/OAuth em domínio próprio falhava: GoTrue só aceita redirect em `beauty…` / `*.beauty…`, então o usuário caía no login do apex sem sessão no domínio da loja.
+- Ponte: domínio próprio → `beauty…/auth?oauth=google&return_origin=…&shop=…` → OAuth → tokens de volta ao domínio da loja (`bridged=1` + hash). Ver `src/lib/auth/return-origin.ts`.
+
+### Multi-loja por link + fidelidade por barbearia — 23/09/2026
+
+- Conta Auth única; cada loja é ambiente separado (catálogo, agenda, pontos).
+- Link/domínio define a afiliação: cliente já logado em loja nova vê diálogo **Usar esta barbearia?** (`join_shop_as_customer`).
+- Cadastro novo com `?shop=` / Host continua vinculando no `handle_new_user` sem diálogo.
+- Pós-login/Google com contexto de loja redireciona para `/app?shop=…&join=1`.
+- `loyalty_accounts` / `loyalty_ledger` passam a ser por `(user_id, barbershop_id)`. Migration `20260923160000_multi_shop_loyalty.sql`. “Levar carteira” mescla pontos origem→destino.
+
+### Google login + Agenda/Contatos — 23/09/2026
+
+- Login Google (GoTrue): botão em `/auth` pronto; falta `GOTRUE_EXTERNAL_GOOGLE_*` no Coolify Auth.
+- Agenda + Contatos (separado do login): migration `20260923140000_google_calendar_contacts.sql`, Edge `google-connect`, rota `/auth/google-apps`, card `GoogleIntegrationsCard` em Ajustes da loja.
+- Envs Edge: `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_OAUTH_REDIRECT_URI=https://beauty.contheiner.digital/auth/google-apps`, `APP_URL`, `GOOGLE_OAUTH_STATE_SECRET`.
+- Google Cloud: ativar Calendar API + People API; redirect URIs do login **e** `/auth/google-apps`. Passo a passo em [mb-operacao.md](mb-operacao.md) §3.
+- Pendente operacional: criar Client OAuth, colar secrets no Coolify, aplicar migration, publicar função.
+- Ainda não: espelhar cada agendamento do app automaticamente para o Google Calendar.
 
 ### Slugs automáticos, redirects e desvinculação — 22/09/2026
 
@@ -59,7 +70,7 @@ Atualizado em **22/09/2026**. Este documento resume decisões e entregas da conv
 
 ### Runbook operacional — 21/09/2026
 
-- Documentação completa em [mb-operacao.md](mb-operacao.md): Titan (DNS + `noreply`), SMTP no Coolify, OAuth Google, domínio `supabasebeauty`, checklist e texto pronto para outro agente. Google Workspace não é necessário; Google Agenda ainda não está no código. WhatsApp operacional (fase 1) documentado na mesma página.
+- Documentação completa em [mb-operacao.md](mb-operacao.md): Titan (DNS + `noreply`), SMTP no Coolify, OAuth Google (login + Agenda/Contatos), domínio `supabasebeauty`, checklist e texto pronto para outro agente. Google Workspace não é necessário. WhatsApp operacional (fase 1) documentado na mesma página.
 
 ### Diagnóstico do login em produção (`beauty.contheiner.digital`) — 21/09/2026
 
