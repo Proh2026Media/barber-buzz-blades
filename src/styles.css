@@ -3253,3 +3253,118 @@ body:has(.arena-workspace[class*="brand-corners-"])
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Prévia realista da página de login (editor de identidade). */
+.login-screen-preview-framed {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklch, var(--border) 75%, transparent);
+  border-radius: var(--panel-radius);
+  background: #141412;
+  box-shadow: 0 16px 40px rgb(20 20 18 / 0.18);
+  aspect-ratio: 16 / 10;
+  min-height: 16rem;
+}
+.login-screen-preview-framed .auth-workspace {
+  position: absolute;
+  inset: 0;
+  min-height: 100%;
+  height: 100%;
+  width: 100%;
+  pointer-events: none;
+  overflow: hidden;
+}
+.login-screen-preview-framed .auth-layout-split .auth-photo-layer {
+  min-height: 100%;
+}
+.login-screen-preview-framed .auth-photo-copy h2 {
+  font-size: clamp(1.35rem, 3.2vw, 2.4rem);
+}
+.login-screen-preview-framed .auth-brand-panel {
+  width: min(22rem, calc(100% - 1.5rem));
+}
+.login-screen-preview-framed .auth-brand-header {
+  padding-top: 1.25rem;
+}
+.login-screen-preview-framed .auth-form-body {
+  padding-top: 1rem;
+  padding-bottom: 1.25rem;
+}
+.login-screen-preview-full .auth-workspace {
+  min-height: 100%;
+}
+.login-preview-phone {
+  aspect-ratio: 390 / 780;
+  max-height: calc(100dvh - 7rem);
+  background: #141412;
+}
+.login-preview-phone .login-screen-preview-framed {
+  aspect-ratio: auto;
+  height: 100%;
+  min-height: 100%;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.login-preview-phone .auth-layout-cover,
+.login-preview-phone .auth-layout-card,
+.login-preview-phone .auth-layout-split {
+  /* Força o layout mobile da prévia mesmo em desktop largo. */
+  display: flex !important;
+  min-height: 100%;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  background: var(--card);
+}
+.login-preview-phone .auth-photo-layer {
+  position: relative !important;
+  inset: auto !important;
+  z-index: 0;
+  width: 100%;
+  min-height: 11rem;
+  flex: 0 0 11rem;
+}
+.login-preview-phone .auth-layout-split .auth-photo-layer {
+  min-height: 11rem;
+  flex-basis: 11rem;
+}
+.login-preview-phone .auth-photo-copy {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  width: 100%;
+  padding: 1rem 1rem 2.5rem;
+  align-self: start;
+}
+.login-preview-phone .auth-layout-card .auth-photo-copy {
+  display: none;
+}
+.login-preview-phone .auth-photo-copy-logo,
+.login-preview-phone .auth-photo-copy > p:last-child {
+  display: none;
+}
+.login-preview-phone .auth-photo-copy h2 {
+  margin-top: 0.2rem;
+  font-size: 1.55rem;
+}
+.login-preview-phone .auth-brand-panel {
+  position: relative;
+  z-index: 2;
+  width: calc(100% - 1.5rem) !important;
+  max-width: none;
+  margin: -2.25rem auto 1rem;
+  flex: 0 0 auto;
+}
+.login-preview-phone .auth-layout-split .auth-brand-panel {
+  margin-top: 0;
+  padding: 0 0.75rem 1rem;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.login-preview-phone .auth-layout-split::after {
+  display: none;
+}

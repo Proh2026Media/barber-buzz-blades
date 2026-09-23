@@ -4,6 +4,7 @@ import {
   Calendar,
   Camera,
   Check,
+  Eye,
   Home,
   ImagePlus,
   Palette,
@@ -49,6 +50,8 @@ import { BrandFontFace } from "./BrandFontFace";
 import { Switch } from "@/components/ui/switch";
 import { ServiceImageCropDialog } from "./ServiceImageCropDialog";
 import { LoginLayoutPreview } from "./LoginLayoutPreview";
+import { LoginScreenPreview } from "./LoginScreenPreview";
+import { LoginPreviewDialog } from "./LoginPreviewDialog";
 
 type BrandIdentityEditorProps = {
   /** Nome cadastrado da barbearia, usado quando o nome do cabeçalho fica vazio. */
@@ -89,6 +92,7 @@ export function BrandIdentityEditor({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [loginPreviewOpen, setLoginPreviewOpen] = useState(false);
 
   const savedKey = `${settings.barbershop_id}:${settings.updated_at}`;
   useEffect(() => {
@@ -475,14 +479,37 @@ export function BrandIdentityEditor({
           })}
         </div>
 
-        <div className="space-y-2">
-          <p className="text-xs font-semibold text-muted-foreground">Prévia ao vivo</p>
-          <LoginLayoutPreview
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground">Prévia realista</p>
+              <p className="text-[11px] text-muted-foreground">
+                Mostra a página de acesso com a foto, cores e cantos atuais do rascunho.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setLoginPreviewOpen(true)}
+              className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-3 text-xs font-bold hover:bg-muted"
+            >
+              <Eye className="size-4" aria-hidden="true" />
+              Ver como fica
+            </button>
+          </div>
+          <LoginScreenPreview
+            framed
             layout={draft.login_layout}
-            imageUrl={previewLoginImage}
+            shopName={previewName}
             logoUrl={previewLogo}
             logoBackgroundColor={draft.logo_background_color}
-            shopName={previewName}
+            loginImageUrl={previewLoginImage}
+            primaryColor={draft.primary_color}
+            accentColor={draft.accent_color}
+            fontFamily={draft.font_family}
+            customFontUrl={previewFontUrl}
+            headerFontWeight={draft.header_font_weight}
+            headerFontStyle={draft.header_font_style}
+            cornerStyle={draft.corner_style}
           />
         </div>
 
@@ -1048,6 +1075,24 @@ export function BrandIdentityEditor({
         outputName="login-1x1.webp"
         onCancel={() => setLoginCropSource(null)}
         onConfirm={useCroppedLoginImage}
+      />
+      <LoginPreviewDialog
+        open={loginPreviewOpen}
+        onOpenChange={setLoginPreviewOpen}
+        preview={{
+          layout: draft.login_layout,
+          shopName: previewName,
+          logoUrl: previewLogo,
+          logoBackgroundColor: draft.logo_background_color,
+          loginImageUrl: previewLoginImage,
+          primaryColor: draft.primary_color,
+          accentColor: draft.accent_color,
+          fontFamily: draft.font_family,
+          customFontUrl: previewFontUrl,
+          headerFontWeight: draft.header_font_weight,
+          headerFontStyle: draft.header_font_style,
+          cornerStyle: draft.corner_style,
+        }}
       />
     </form>
   );
