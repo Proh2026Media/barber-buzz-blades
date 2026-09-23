@@ -22,6 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   Dialog,
   DialogContent,
@@ -332,6 +333,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
           <h1 className="truncate text-lg font-extrabold tracking-tight">Plataforma Arena</h1>
         </div>
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <ThemeToggle />
           {headerActions}
           {demoMode || demoChrome ? (
             <>

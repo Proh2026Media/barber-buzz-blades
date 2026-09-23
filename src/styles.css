@@ -2620,8 +2620,13 @@ body:has(.arena-workspace[class*="brand-corners-"])
 .auth-input-wrap,
 .auth-google-action {
   overflow: hidden;
-  background: color-mix(in oklch, white 72%, var(--card));
+  background: var(--background);
   box-shadow: 0 1px 2px rgb(28 29 25 / 0.04);
+}
+.dark .auth-input-wrap,
+.dark .auth-google-action {
+  background: color-mix(in oklch, var(--muted) 70%, var(--card));
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
 }
 .auth-mode-tabs button[aria-selected="true"] {
   box-shadow:
@@ -2735,6 +2740,29 @@ body:has(.arena-workspace[class*="brand-corners-"])
   z-index: 2;
   color: var(--foreground);
   background: var(--card);
+}
+.auth-theme-toggle {
+  position: absolute;
+  top: max(0.85rem, env(safe-area-inset-top));
+  right: max(0.85rem, env(safe-area-inset-right));
+  z-index: 5;
+}
+.auth-theme-toggle .app-icon-button {
+  border: 1px solid color-mix(in oklch, white 28%, transparent);
+  background: color-mix(in oklch, var(--card) 82%, transparent);
+  color: var(--foreground);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.22);
+}
+.auth-layout-split .auth-theme-toggle .app-icon-button {
+  border-color: color-mix(in oklch, var(--border) 80%, transparent);
+  background: var(--card);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.08);
+}
+.auth-forgot-password {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.35rem;
 }
 .auth-layout-cover {
   grid-template-columns: minmax(0, 1fr) minmax(22rem, 29rem);

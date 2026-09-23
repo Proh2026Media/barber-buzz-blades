@@ -18,6 +18,7 @@ import {
   type BrandLoginLayout,
 } from "@/lib/shop/branding";
 import { BrandFontFace } from "@/features/shop/BrandFontFace";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 type AuthMode = "signin" | "signup" | "forgot" | "recovery";
@@ -431,6 +432,7 @@ function AuthPage() {
       data-brand-shop={brand.shopId ?? undefined}
     >
       <BrandFontFace url={brand.customFontUrl} />
+      <ThemeToggle className="auth-theme-toggle" />
       <div className="auth-photo-layer" aria-hidden="true">
         <img src={brand.loginImageUrl || DEFAULT_LOGIN_IMAGE} alt="" />
         <span />
@@ -635,10 +637,41 @@ function AuthPage() {
             )}
 
             {(mode === "signin" || mode === "signup" || mode === "recovery") && (
-              <label className={labelClass}>
-                <span className="flex items-center justify-between gap-3">
+              <div className="space-y-1">
+                <label className={labelClass}>
                   <span>{mode === "recovery" ? "Nova senha" : "Senha"}</span>
-                  {mode === "signin" && (
+                  <span className={fieldClass}>
+                    <LockKeyhole
+                      className="ml-4 size-[18px] shrink-0 text-muted-foreground"
+                      aria-hidden="true"
+                    />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      required
+                      minLength={6}
+                      autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                      placeholder="Mínimo 6 caracteres"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className={inputClass}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((current) => !current)}
+                      className="auth-brand-button mr-1.5 flex size-11 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
+                      aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                      aria-pressed={showPassword}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="size-[18px]" aria-hidden="true" />
+                      ) : (
+                        <Eye className="size-[18px]" aria-hidden="true" />
+                      )}
+                    </button>
+                  </span>
+                </label>
+                {mode === "signin" && (
+                  <div className="auth-forgot-password">
                     <button
                       type="button"
                       onClick={() => {
@@ -647,42 +680,13 @@ function AuthPage() {
                         setInfo(null);
                         setPassword("");
                       }}
-                      className="-my-3 inline-flex min-h-11 items-center px-1 text-xs font-semibold text-primary underline-offset-4 transition-colors hover:underline"
+                      className="inline-flex min-h-11 items-center px-1 text-xs font-semibold text-primary underline-offset-4 transition-colors hover:underline"
                     >
                       Esqueci a senha
                     </button>
-                  )}
-                </span>
-                <span className={fieldClass}>
-                  <LockKeyhole
-                    className="ml-4 size-[18px] shrink-0 text-muted-foreground"
-                    aria-hidden="true"
-                  />
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    required
-                    minLength={6}
-                    autoComplete={mode === "signin" ? "current-password" : "new-password"}
-                    placeholder="Mínimo 6 caracteres"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className={inputClass}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((current) => !current)}
-                    className="auth-brand-button mr-1.5 flex size-11 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
-                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                    aria-pressed={showPassword}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="size-[18px]" aria-hidden="true" />
-                    ) : (
-                      <Eye className="size-[18px]" aria-hidden="true" />
-                    )}
-                  </button>
-                </span>
-              </label>
+                  </div>
+                )}
+              </div>
             )}
 
             {mode === "recovery" && (

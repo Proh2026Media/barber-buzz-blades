@@ -16,6 +16,7 @@ import {
   Diamond,
 } from "lucide-react";
 import { useTheme } from "@/lib/use-theme";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export const Route = createFileRoute("/politica")({
   component: PoliticaSistemas,
@@ -50,7 +51,7 @@ function PoliticaSistemas() {
         <h1 className="text-sm font-black uppercase tracking-widest text-foreground">
           A Escala do Clube
         </h1>
-        <div className="w-10"></div>
+        <ThemeToggle />
       </header>
 
       <main className="p-6 max-w-xl mx-auto space-y-10">

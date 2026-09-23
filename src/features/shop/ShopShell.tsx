@@ -98,6 +98,7 @@ import {
 import { PartnerOverview } from "./PartnerOverview";
 import { ClientDirectory } from "./ClientDirectory";
 import { ServiceImageCropDialog } from "./ServiceImageCropDialog";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 type ShopShellProps = {
   profile: SessionProfile;
@@ -1442,6 +1443,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
           )}
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          <ThemeToggle />
           {headerActions}
           {profile.primaryRole === "platform_admin" && (
             <>

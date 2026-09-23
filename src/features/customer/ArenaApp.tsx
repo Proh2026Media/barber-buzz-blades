@@ -9,6 +9,8 @@ import { NextLevelCard, type NextLevelSummary } from "./NextLevelCard";
 import { CustomerRhythm } from "./CustomerRhythm";
 import { CustomerProfile } from "./CustomerProfile";
 import { useScrollIndicators } from "@/lib/use-scroll-indicators";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTheme } from "@/lib/use-theme";
 import { brandCornerClass, brandFontScopeClass, brandVariables } from "@/lib/shop/branding";
 import { BrandFontFace } from "@/features/shop/BrandFontFace";
@@ -139,7 +141,7 @@ function ArenaApp({
   const demoChrome = useDemoChrome();
   const [tab, setTab] = useState("dashboard");
   const [points, setPoints] = useState(0);
-  const { isDark: isDarkMode, toggleTheme } = useTheme();
+  const { isDark: isDarkMode } = useTheme();
   const [showVipInfo, setShowVipInfo] = useState(false);
   const [serviceIdx, setServiceIdx] = useState(0);
   const [staffIdx, setStaffIdx] = useState(0);
@@ -1173,15 +1175,7 @@ function ArenaApp({
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label={isDarkMode ? "Usar tema claro" : "Usar tema escuro"}
-            aria-pressed={isDarkMode}
-            className="app-icon-button"
-          >
-            {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-          </button>
+          <ThemeToggle />
           <button
             type="button"
             onClick={() => setTab("notifications")}
