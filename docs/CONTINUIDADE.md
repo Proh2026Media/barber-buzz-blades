@@ -23,10 +23,12 @@ Atualizado em **23/09/2026**. Este documento resume decisões e entregas da conv
 
 ## Entregas recentes e regras atuais
 
-### Auth cross-domain (domínio próprio) — 23/09/2026
+### Auth no domínio da loja (URL personalizada) — 23/09/2026
 
-- Google/OAuth em domínio próprio falhava: GoTrue só aceita redirect em `beauty…` / `*.beauty…`, então o usuário caía no login do apex sem sessão no domínio da loja.
-- Ponte: domínio próprio → `beauty…/auth?oauth=google&return_origin=…&shop=…` → OAuth → tokens de volta ao domínio da loja (`bridged=1` + hash). Ver `src/lib/auth/return-origin.ts`.
+- **Regra:** com domínio/subdomínio da loja, entrar e sair ficam nesse host. O apex (`beauty…`) só aparece quando não há URL personalizada.
+- Google no domínio próprio: GoTrue só aceita redirect em `beauty…`, então o OAuth roda num **pop-up** no apex; a aba principal **não navega** para beauty.
+- Handoff: `postMessage` → se o Google zerar `opener` (COOP), o pop-up volta só ele ao domínio da loja (`bridged=1` + hash) e avisa a aba principal via BroadcastChannel. Ver `src/lib/auth/return-origin.ts`.
+- Logout já usa `/auth` relativo (permanece no domínio da loja).
 
 ### Multi-loja por link + fidelidade por barbearia — 23/09/2026
 

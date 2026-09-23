@@ -309,7 +309,9 @@ Atualizado em **22/09/2026**.
 | TLS | Let’s Encrypt no Traefik |
 | Auth | `ADDITIONAL_REDIRECT_URLS` com `https://beauty.contheiner.digital/**` e `https://*.beauty.contheiner.digital/**` |
 
-Subdomínio `*.beauty…` e domínio próprio: o login Google **sempre** inicia no apex (`beauty…`) e devolve a sessão ao link da loja (`return_origin`). Não depende de wildcard na allow list. Código: `src/lib/auth/return-origin.ts`.
+Subdomínio `*.beauty…` e domínio próprio: o login Google abre um **pop-up** no apex (`beauty…`); a aba principal permanece no domínio da loja e recebe a sessão sem navegar para beauty. Logout usa `/auth` relativo. Código: `src/lib/auth/return-origin.ts`.
+
+**Allow list do Auth (Coolify):** manter `ADDITIONAL_REDIRECT_URLS` com `https://beauty.contheiner.digital/**` (o callback OAuth do pop-up). Domínio próprio **não** precisa entrar na allow list.
 
 **Bloqueio conhecido (22/09):** `beauty.contheiner.digital` está **sem registro A** na Cloudflare → Traefik não alcança a Hostinger → **HTTP 502** em `*.beauty…`. Criar na Cloudflare:
 

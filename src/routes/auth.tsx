@@ -13,16 +13,20 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { resolvePostAuthPath } from "@/lib/auth/session";
 import {
+  AUTH_POPUP_MESSAGE,
   buildPlatformAuthUrl,
+  consumeBridgedHashTokens,
   currentOrigin,
-  finishOAuthAndBridge,
+  finishPopupOAuthAndNotifyOpener,
+  handoffSessionSameOrigin,
+  isAuthPopupMessage,
   isSafeReturnOriginShape,
   needsAuthOriginBridge,
   peekAuthBridge,
+  platformAuthOrigin,
   platformOAuthCallbackUrl,
   resolveAuthBridge,
   stashAuthBridge,
-  redirectWithSessionToReturnOrigin,
 } from "@/lib/auth/return-origin";
 import {
   brandCornerClass,
@@ -97,10 +101,12 @@ export const Route = createFileRoute("/auth")({
     return_origin?: string;
     oauth?: "google";
     bridged?: boolean;
+    popup?: boolean;
   } => {
     const recovery = s.recovery === "1" || s.recovery === true || s.recovery === "true";
     const demo = s.demo === "1" || s.demo === true || s.demo === "true";
     const bridged = s.bridged === "1" || s.bridged === true || s.bridged === "true";
+    const popup = s.popup === "1" || s.popup === true || s.popup === "true";
     const returnOrigin =
       typeof s.return_origin === "string" && isSafeReturnOriginShape(s.return_origin.trim())
         ? s.return_origin.trim()
@@ -114,6 +120,7 @@ export const Route = createFileRoute("/auth")({
       ...(returnOrigin ? { return_origin: returnOrigin } : {}),
       ...(oauth ? { oauth } : {}),
       ...(bridged ? { bridged: true as const } : {}),
+      ...(popup ? { popup: true as const } : {}),
     };
   },
   component: AuthPage,
@@ -147,6 +154,7 @@ function AuthPage() {
     return_origin: returnOrigin,
     oauth,
     bridged,
+    popup,
   } = useSearch({
     from: "/auth",
   });
@@ -175,7 +183,7 @@ function AuthPage() {
 
   const preferredNext = isSafeNext(next) ? next : "";
 
-  // No apex: grava destino da loja assim que a URL chega (antes do Google).
+  // No apex (pop-up): grava destino da loja antes do Google.
   useEffect(() => {
     if (bridged) return;
     if (needsAuthOriginBridge()) return;
@@ -183,9 +191,10 @@ function AuthPage() {
       returnOrigin,
       shop: shop || effectiveShopRef,
       next: preferredNext || "/app",
+      popup: Boolean(popup),
     });
-    if (bridge) stashAuthBridge(bridge);
-  }, [returnOrigin, shop, effectiveShopRef, preferredNext, bridged]);
+    if (bridge) stashAuthBridge({ ...bridge, popup: Boolean(popup) || bridge.popup });
+  }, [returnOrigin, shop, effectiveShopRef, preferredNext, bridged, popup]);
 
   useEffect(() => {
     let cancelled = false;
@@ -268,6 +277,111 @@ function AuthPage() {
     if (recovery) setMode("recovery");
   }, [recovery]);
 
+  // Domínio da loja: recebe tokens do pop-up (postMessage / BroadcastChannel / storage).
+  useEffect(() => {
+    if (popup || !needsAuthOriginBridge()) return;
+
+    async function applySession(data: {
+      access_token: string;
+      refresh_token: string;
+    }) {
+      setBusy(true);
+      setInfo("Entrando…");
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+      });
+      if (sessionError) {
+        setError(sessionError.message);
+        setBusy(false);
+        return;
+      }
+      await goAfterAuthLocal();
+    }
+
+    function onMessage(event: MessageEvent) {
+      if (event.origin !== platformAuthOrigin() && event.origin !== window.location.origin) return;
+      if (!isAuthPopupMessage(event.data)) return;
+      void applySession(event.data);
+    }
+
+    function onStorage(event: StorageEvent) {
+      if (event.key !== "mb_auth_handoff_v1" || !event.newValue) return;
+      try {
+        const parsed = JSON.parse(event.newValue) as unknown;
+        if (isAuthPopupMessage(parsed)) void applySession(parsed);
+      } catch {
+        /* ignore */
+      }
+    }
+
+    let channel: BroadcastChannel | null = null;
+    try {
+      channel = new BroadcastChannel(AUTH_POPUP_MESSAGE);
+      channel.onmessage = (event) => {
+        if (isAuthPopupMessage(event.data)) void applySession(event.data);
+      };
+    } catch {
+      channel = null;
+    }
+
+    window.addEventListener("message", onMessage);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener("message", onMessage);
+      window.removeEventListener("storage", onStorage);
+      channel?.close();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [popup, preferredNext, effectiveShopRef]);
+
+  // Fallback: pop-up chegou ao domínio da loja com tokens na hash (Google zerou opener).
+  useEffect(() => {
+    if (!bridged) {
+      setBridgeReady(true);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const tokens = consumeBridgedHashTokens();
+        if (!tokens) {
+          if (!cancelled) setBridgeReady(true);
+          return;
+        }
+        setBusy(true);
+        setInfo("Entrando…");
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: tokens.access_token,
+          refresh_token: tokens.refresh_token,
+        });
+        if (sessionError) throw sessionError;
+        // Avisa a aba principal (mesmo domínio) e fecha o pop-up se houver opener.
+        handoffSessionSameOrigin(tokens);
+        if (window.opener && !window.opener.closed) {
+          try {
+            window.opener.postMessage(tokens, window.location.origin);
+          } catch {
+            /* ignore */
+          }
+          window.setTimeout(() => window.close(), 200);
+          return;
+        }
+        if (!cancelled) await goAfterAuthLocal();
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Falha ao concluir o login.");
+          setBusy(false);
+          setBridgeReady(true);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bridged]);
+
   useEffect(() => {
     const {
       data: { subscription },
@@ -277,87 +391,33 @@ function AuthPage() {
         setError(null);
         setInfo("Defina uma nova senha para continuar.");
       }
-      if (
-        (event === "SIGNED_IN" || event === "INITIAL_SESSION") &&
-        !bridged &&
-        oauth !== "google"
-      ) {
-        const bridge = resolveAuthBridge({
-          returnOrigin,
-          shop: effectiveShopRef,
-          next: preferredNext || "/app",
-        });
-        if (bridge?.returnOrigin && bridge.returnOrigin !== window.location.origin) {
-          void redirectWithSessionToReturnOrigin(bridge);
-        }
-      }
     });
     return () => subscription.unsubscribe();
-  }, [returnOrigin, bridged, oauth, effectiveShopRef, preferredNext]);
+  }, []);
 
-  // Domínio da loja: tokens na hash vindos do apex → grava sessão local.
   useEffect(() => {
-    if (!bridged) {
-      setBridgeReady(true);
-      return;
-    }
-    let cancelled = false;
-    void (async () => {
-      try {
-        const hash = typeof window !== "undefined" ? window.location.hash.replace(/^#/, "") : "";
-        const params = new URLSearchParams(hash);
-        const access_token = params.get("access_token");
-        const refresh_token = params.get("refresh_token");
-        if (access_token && refresh_token) {
-          const { error: sessionError } = await supabase.auth.setSession({
-            access_token,
-            refresh_token,
-          });
-          if (sessionError) throw sessionError;
-          window.history.replaceState(
-            {},
-            "",
-            `${window.location.pathname}${window.location.search}`,
-          );
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(
-            err instanceof Error ? err.message : "Falha ao restaurar a sessão neste domínio.",
-          );
-        }
-      } finally {
-        if (!cancelled) setBridgeReady(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    if (!bridged) setBridgeReady(true);
   }, [bridged]);
 
-  // Apex: pedido vindo do link da loja para iniciar Google.
+  // Pop-up no apex: inicia Google.
   useEffect(() => {
     if (oauth !== "google") return;
     if (needsAuthOriginBridge()) return;
     let cancelled = false;
     void (async () => {
       setBusy(true);
-      setInfo(
-        returnOrigin || peekAuthBridge()
-          ? "Abrindo Google… Depois você volta automaticamente para a barbearia."
-          : "Abrindo Google…",
-      );
+      setInfo("Abrindo Google…");
       try {
         const bridge = resolveAuthBridge({
           returnOrigin,
           shop: effectiveShopRef,
           next: preferredNext || "/app",
+          popup: Boolean(popup),
         });
-        if (bridge) stashAuthBridge(bridge);
-        // Redirect limpo — destino da loja fica no sessionStorage.
+        if (bridge) stashAuthBridge({ ...bridge, popup: Boolean(popup) || bridge.popup });
         const { error: oauthError } = await supabase.auth.signInWithOAuth({
           provider: "google",
-          options: { redirectTo: platformOAuthCallbackUrl() },
+          options: { redirectTo: platformOAuthCallbackUrl(Boolean(popup) || bridge?.popup) },
         });
         if (oauthError) throw oauthError;
       } catch (err) {
@@ -370,9 +430,9 @@ function AuthPage() {
     return () => {
       cancelled = true;
     };
-  }, [oauth, preferredNext, effectiveShopRef, returnOrigin]);
+  }, [oauth, preferredNext, effectiveShopRef, returnOrigin, popup]);
 
-  // Após Google (?code=) ou sessão já pronta: devolve à loja se houver ponte.
+  // Após Google no pop-up: notifica a aba da loja e fecha.
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -382,16 +442,21 @@ function AuthPage() {
 
       const hasCode =
         typeof window !== "undefined" && new URLSearchParams(window.location.search).has("code");
+      const inPopup = Boolean(popup || peekAuthBridge()?.popup);
 
-      if (hasCode || peekAuthBridge() || returnOrigin) {
+      if (inPopup && (hasCode || peekAuthBridge())) {
         setInfo("Concluindo login…");
-        const result = await finishOAuthAndBridge({
+        const result = await finishPopupOAuthAndNotifyOpener({
           returnOrigin,
           shop: effectiveShopRef,
           next: preferredNext || "/app",
+          popup: true,
         });
         if (cancelled) return;
-        if (result === "bridged") return;
+        if (result === "notified") {
+          setInfo("Pode fechar esta janela.");
+          return;
+        }
         if (result === "error") {
           setError("Não foi possível concluir o login com Google. Tente novamente.");
           setBusy(false);
@@ -399,51 +464,21 @@ function AuthPage() {
         }
       }
 
+      // Apex sem pop-up (uso direto em beauty…): fluxo normal.
+      if (needsAuthOriginBridge()) return;
+      if (inPopup) return;
+
       const { data } = await supabase.auth.getSession();
       if (!data.session || cancelled) return;
-
-      const bridge = resolveAuthBridge({
-        returnOrigin,
-        shop: effectiveShopRef,
-        next: preferredNext || "/app",
-      });
-      if (
-        bridge?.returnOrigin &&
-        bridge.returnOrigin !== window.location.origin &&
-        (await redirectWithSessionToReturnOrigin(bridge))
-      ) {
-        return;
-      }
-
-      const path = await resolvePostAuthPath(preferredNext);
-      if (cancelled) return;
-      if (effectiveShopRef && (path === "/app" || path.startsWith("/app"))) {
-        const url = new URL(path, window.location.origin);
-        if (!url.searchParams.get("shop")) url.searchParams.set("shop", effectiveShopRef);
-        url.searchParams.set("join", "1");
-        window.location.href = `${url.pathname}${url.search}`;
-        return;
-      }
-      window.location.href = path;
+      await goAfterAuthLocal();
     })();
     return () => {
       cancelled = true;
     };
-  }, [preferredNext, mode, effectiveShopRef, returnOrigin, oauth, bridgeReady]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preferredNext, mode, effectiveShopRef, returnOrigin, oauth, bridgeReady, popup]);
 
-  async function goAfterAuth() {
-    const bridge = resolveAuthBridge({
-      returnOrigin,
-      shop: effectiveShopRef,
-      next: preferredNext || "/app",
-    });
-    if (
-      bridge?.returnOrigin &&
-      bridge.returnOrigin !== window.location.origin &&
-      (await redirectWithSessionToReturnOrigin(bridge))
-    ) {
-      return;
-    }
+  async function goAfterAuthLocal() {
     const path = await resolvePostAuthPath(preferredNext);
     if (effectiveShopRef && (path === "/app" || path.startsWith("/app"))) {
       const url = new URL(path, window.location.origin);
@@ -453,6 +488,10 @@ function AuthPage() {
       return;
     }
     window.location.href = path;
+  }
+
+  async function goAfterAuth() {
+    await goAfterAuthLocal();
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -596,7 +635,7 @@ function AuthPage() {
     setError(null);
     setInfo(null);
     try {
-      // Subdomínio ou domínio próprio: OAuth no apex + volta com a sessão.
+      // Domínio da loja: pop-up no apex. A aba principal permanece no domínio personalizado.
       if (needsAuthOriginBridge()) {
         let shopRef = effectiveShopRef;
         if (!shopRef) {
@@ -609,28 +648,37 @@ function AuthPage() {
           }
         }
         const returnOriginValue = currentOrigin();
-        stashAuthBridge({
-          returnOrigin: returnOriginValue,
-          shop: shopRef || undefined,
-          next: preferredNext || "/app",
-        });
-        window.location.href = buildPlatformAuthUrl({
+        const popupUrl = buildPlatformAuthUrl({
           shop: shopRef,
           next: preferredNext || "/app",
           returnOrigin: returnOriginValue,
           oauth: "google",
+          popup: true,
         });
+        const popupWin = window.open(
+          popupUrl,
+          "mb-google-auth",
+          "width=480,height=720,menubar=no,toolbar=no,status=no",
+        );
+        if (!popupWin) {
+          setError("Permita pop-ups neste site para entrar com Google.");
+          setBusy(false);
+          return;
+        }
+        setInfo("Conclua o Google na janela que abriu. Esta página permanece na barbearia.");
+        const timer = window.setInterval(() => {
+          if (popupWin.closed) {
+            window.clearInterval(timer);
+            setBusy(false);
+            setInfo(null);
+          }
+        }, 600);
         return;
       }
-      const bridge = resolveAuthBridge({
-        returnOrigin,
-        shop: effectiveShopRef,
-        next: preferredNext || "/app",
-      });
-      if (bridge) stashAuthBridge(bridge);
+      // Apex beauty…: OAuth na mesma aba.
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: platformOAuthCallbackUrl() },
+        options: { redirectTo: platformOAuthCallbackUrl(false) },
       });
       if (error) throw error;
     } catch (err) {
@@ -673,6 +721,33 @@ function AuthPage() {
   const inputClass =
     "min-h-[3.25rem] min-w-0 flex-1 bg-transparent px-3 py-3 text-[15px] text-foreground outline-none placeholder:text-muted-foreground/60";
   const labelClass = "block space-y-2 text-sm font-semibold text-foreground/85";
+
+  if (popup) {
+    return (
+      <main className="mb-page flex min-h-dvh items-center justify-center bg-background px-6 text-foreground">
+        <div className="mb-panel w-full max-w-sm space-y-3 border border-border/70 bg-card p-8 text-center shadow-sm">
+          <p className="text-sm font-semibold text-foreground/80">Login Google</p>
+          <h1 className="text-xl font-semibold tracking-tight">
+            {error ? "Não foi possível entrar" : info || "Conectando…"}
+          </h1>
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          {!error ? (
+            <p className="text-sm text-muted-foreground">
+              Esta janela fecha sozinha. A barbearia continua aberta na outra aba.
+            </p>
+          ) : (
+            <button
+              type="button"
+              className="auth-brand-control mt-2 inline-flex min-h-11 w-full items-center justify-center bg-primary px-4 text-sm font-semibold text-primary-foreground"
+              onClick={() => window.close()}
+            >
+              Fechar
+            </button>
+          )}
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main
