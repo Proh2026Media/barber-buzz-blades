@@ -3,20 +3,9 @@
  * Preferir `shop-domain` (actions set | clear | verify) — esta função só faz verify + /add.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { dnsQuery } from "../_shared/dns.ts";
 import { domainManagerAdd } from "../_shared/domain-manager.ts";
 import { corsHeaders, json } from "../_shared/evolution.ts";
-
-type DnsAnswer = { data?: string; type?: number };
-
-async function dnsQuery(name: string, type: "TXT" | "CNAME" | "A"): Promise<string[]> {
-  const url = `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(name)}&type=${type}`;
-  const response = await fetch(url, { headers: { Accept: "application/dns-json" } });
-  if (!response.ok) return [];
-  const payload = (await response.json()) as { Answer?: DnsAnswer[] };
-  return (payload.Answer ?? [])
-    .map((a) => (a.data ?? "").replace(/^"|"$/g, "").replace(/\.$/, "").toLowerCase())
-    .filter(Boolean);
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
