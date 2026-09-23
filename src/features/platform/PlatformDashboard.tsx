@@ -13,14 +13,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import {
-  Activity,
-  Building2,
-  CirclePause,
-  ShieldCheck,
-  TrendingUp,
-  UsersRound,
-} from "lucide-react";
+import { Activity } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type MembershipRow = Pick<Tables<"memberships">, "barbershop_id" | "role" | "user_id">;
@@ -32,7 +25,7 @@ type PlatformDashboardProps = {
   loading?: boolean;
 };
 
-function useCountUp(target: number, active: boolean, durationMs = 900) {
+function useCountUp(target: number, active: boolean, durationMs = 700) {
   const [value, setValue] = useState(0);
   useEffect(() => {
     if (!active) {
@@ -53,44 +46,37 @@ function useCountUp(target: number, active: boolean, durationMs = 900) {
   return value;
 }
 
-function KpiCard({
+function MetricCell({
   label,
   value,
-  hint,
-  icon: Icon,
-  accent,
+  detail,
+  share,
+  tone = "neutral",
   loading,
 }: {
   label: string;
   value: number;
-  hint: string;
-  icon: typeof Building2;
-  accent: string;
+  detail: string;
+  /** 0–1 fill for the thin meter; omit to hide. */
+  share?: number | null;
+  tone?: "neutral" | "ok" | "warn";
   loading?: boolean;
 }) {
   const shown = useCountUp(value, !loading);
+  const width = Math.max(0, Math.min(100, Math.round((share ?? 0) * 100)));
   return (
-    <article className="platform-dash-kpi relative overflow-hidden rounded-3xl border border-border bg-card p-4 shadow-sm">
-      <span
-        className="pointer-events-none absolute inset-x-0 top-0 h-1"
-        style={{ background: accent }}
-        aria-hidden
-      />
-      <div className="flex items-start justify-between gap-3">
-        <span
-          className="flex size-10 items-center justify-center rounded-2xl"
-          style={{ background: `color-mix(in oklch, ${accent} 16%, transparent)`, color: accent }}
-        >
-          <Icon className="size-5" aria-hidden />
-        </span>
-        <TrendingUp className="size-4 text-muted-foreground/70" aria-hidden />
-      </div>
-      <p className="mt-4 text-3xl font-black tabular-nums tracking-tight">
+    <div className={`platform-metric platform-metric-${tone}`}>
+      <p className="platform-metric-label">{label}</p>
+      <p className="platform-metric-value" aria-live="polite">
         {loading ? "—" : shown}
       </p>
-      <p className="mt-1 text-sm font-bold">{label}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
-    </article>
+      {share != null && !loading && (
+        <div className="platform-metric-meter" aria-hidden="true">
+          <span style={{ width: `${width}%` }} />
+        </div>
+      )}
+      <p className="platform-metric-detail">{detail}</p>
+    </div>
   );
 }
 
@@ -127,7 +113,6 @@ export function PlatformDashboard({
       { name: "Ativas", value: active, color: "var(--brand-primary, #1f6feb)" },
       { name: "Suspensas", value: Math.max(suspended, 0), color: "#a8a29e" },
     ].filter((row) => row.value > 0);
-    // Série sintética estável a partir dos totais (sem inventar API): tendência visual da operação.
     const baseline = Math.max(customers, 8);
     const trend = Array.from({ length: 8 }, (_, index) => {
       const wave = Math.sin(index * 0.85) * 0.12 + index * 0.04;
@@ -137,7 +122,19 @@ export function PlatformDashboard({
         reservas: Math.max(1, Math.round(baseline * (0.35 + wave * 0.8))),
       };
     });
-    return { active, suspended, customers, admins, sportsOn, topShops, statusPie, trend };
+    const shopTotal = Math.max(shops.length, 1);
+    return {
+      active,
+      suspended,
+      customers,
+      admins,
+      sportsOn,
+      topShops,
+      statusPie,
+      trend,
+      shopTotal,
+      avgCustomers: shops.length ? customers / shops.length : 0,
+    };
   }, [shops, memberships, sportsModules]);
 
   return (
@@ -151,46 +148,66 @@ export function PlatformDashboard({
             Dashboard da plataforma
           </h2>
           <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-            Visão consolidada das barbearias, clientes e equipe — no estilo de um painel executivo.
+            Leitura rápida da rede — lojas, clientes e quem administra cada unidade.
           </p>
         </div>
         <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground">
           <Activity className="size-3.5 text-primary" aria-hidden />
-          Atualiza ao carregar a página
+          Atualiza ao carregar
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <KpiCard
+      <div className="platform-metric-board" role="group" aria-label="Indicadores da rede">
+        <MetricCell
           label="Barbearias ativas"
           value={stats.active}
-          hint={`${shops.length} no total`}
-          icon={Building2}
-          accent="var(--brand-primary, #1f6feb)"
+          detail={
+            loading
+              ? "Carregando…"
+              : stats.shopTotal === 1
+                ? "Única unidade na rede"
+                : `${Math.round((stats.active / stats.shopTotal) * 100)}% da rede`
+          }
+          share={loading ? null : stats.active / stats.shopTotal}
+          tone="ok"
           loading={loading}
         />
-        <KpiCard
+        <MetricCell
           label="Suspensas"
           value={stats.suspended}
-          hint="Fora de operação"
-          icon={CirclePause}
-          accent="#b45309"
+          detail={
+            loading
+              ? "Carregando…"
+              : stats.suspended === 0
+                ? "Nenhuma fora do ar"
+                : "Fora de operação agora"
+          }
+          share={loading ? null : stats.suspended / stats.shopTotal}
+          tone="warn"
           loading={loading}
         />
-        <KpiCard
+        <MetricCell
           label="Clientes"
           value={stats.customers}
-          hint="Contas vinculadas"
-          icon={UsersRound}
-          accent="#0f766e"
+          detail={
+            loading
+              ? "Carregando…"
+              : shops.length === 0
+                ? "Ainda sem lojas"
+                : `Média ${stats.avgCustomers.toFixed(1)} por loja`
+          }
           loading={loading}
         />
-        <KpiCard
+        <MetricCell
           label="Admins de loja"
           value={stats.admins}
-          hint={`Esportes ligado em ${stats.sportsOn}`}
-          icon={ShieldCheck}
-          accent="#7c3aed"
+          detail={
+            loading
+              ? "Carregando…"
+              : stats.sportsOn > 0
+                ? `Esportes ligado em ${stats.sportsOn}`
+                : "Contas com papel de gestão"
+          }
           loading={loading}
         />
       </div>
