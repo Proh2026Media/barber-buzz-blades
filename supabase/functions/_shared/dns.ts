@@ -1,13 +1,28 @@
-/** DNS-over-HTTPS helpers for Edge Runtime (avoid Deno.resolveDns — hangs in self-hosted). */
+/** DNS-over-HTTPS for Edge Runtime — never use Deno.resolveDns (hangs self-hosted). */
 
 export type DnsRecordType = "TXT" | "CNAME" | "A";
 
 type DnsAnswer = { data?: string; type?: number };
 
-const DNS_TIMEOUT_MS = 4_000;
+const DNS_TIMEOUT_MS = 2_500;
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`DNS timeout after ${ms}ms`)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
 
 function normalizeTxtPieces(raw: string): string {
-  // Cloudflare may return `"foo" "bar"` for long TXT; Google often a single quoted string.
   return raw
     .replace(/\\"/g, '"')
     .replace(/(^| )"([^"]*)"/g, "$1$2")
@@ -23,18 +38,27 @@ function normalizeAnswer(data: string, type: DnsRecordType): string {
 }
 
 async function fetchDnsJson(url: string): Promise<DnsAnswer[]> {
-  const response = await fetch(url, {
-    headers: { Accept: "application/dns-json" },
-    signal: AbortSignal.timeout(DNS_TIMEOUT_MS),
-  });
+  const response = await withTimeout(
+    fetch(url, { headers: { Accept: "application/dns-json" } }),
+    DNS_TIMEOUT_MS,
+  );
   if (!response.ok) return [];
-  const payload = (await response.json()) as { Answer?: DnsAnswer[] };
+  const payload = (await withTimeout(response.json(), DNS_TIMEOUT_MS)) as {
+    Answer?: DnsAnswer[];
+  };
   return payload.Answer ?? [];
 }
 
-/**
- * Resolve DNS via public DoH (Cloudflare, then Google). Never use Deno.resolveDns here.
- */
+async function queryEndpoint(url: string, type: DnsRecordType): Promise<string[]> {
+  try {
+    const answers = await fetchDnsJson(url);
+    return answers.map((a) => normalizeAnswer(a.data ?? "", type)).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+/** Resolve via Cloudflare and Google DoH in parallel; first non-empty wins. */
 export async function dnsQuery(name: string, type: DnsRecordType): Promise<string[]> {
   const host = name.replace(/\.$/, "").toLowerCase();
   if (!host) return [];
@@ -44,16 +68,9 @@ export async function dnsQuery(name: string, type: DnsRecordType): Promise<strin
     `https://dns.google/resolve?name=${encodeURIComponent(host)}&type=${type}`,
   ];
 
-  for (const url of endpoints) {
-    try {
-      const answers = await fetchDnsJson(url);
-      const values = answers
-        .map((a) => normalizeAnswer(a.data ?? "", type))
-        .filter(Boolean);
-      if (values.length > 0) return values;
-    } catch {
-      // try next resolver
-    }
+  const results = await Promise.all(endpoints.map((url) => queryEndpoint(url, type)));
+  for (const values of results) {
+    if (values.length > 0) return values;
   }
   return [];
 }

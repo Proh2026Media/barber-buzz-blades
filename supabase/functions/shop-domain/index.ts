@@ -21,6 +21,13 @@ Deno.serve(async (req) => {
     const platformHost = (Deno.env.get("PLATFORM_BASE_HOST") ?? "beauty.contheiner.digital")
       .toLowerCase()
       .replace(/\.$/, "");
+    const cnameTargets = (
+      Deno.env.get("DOMAIN_CNAME_TARGETS") ??
+      `dominios.${platformHost},${platformHost}`
+    )
+      .split(",")
+      .map((v) => v.trim().toLowerCase().replace(/\.$/, ""))
+      .filter(Boolean);
     if (!supabaseUrl || !serviceKey || !anonKey) return json({ error: "Missing Supabase env" }, 500);
 
     const authHeader = req.headers.get("Authorization");
@@ -117,26 +124,45 @@ Deno.serve(async (req) => {
 
     const txtHost = `_barba-verify.${domain}`;
     const expectedTxt = `barba-verify=${token}`.toLowerCase();
-    const txts = await dnsQuery(txtHost, "TXT");
-    const txtOk = txts.some((v) => v.includes(expectedTxt));
 
-    const cnames = await dnsQuery(domain, "CNAME");
-    const as = await dnsQuery(domain, "A");
-    const cnameOk = cnames.some((v) => v === platformHost || v.endsWith(`.${platformHost}`));
-    const platformAs = await dnsQuery(platformHost, "A");
-    const aOk = as.length > 0 && platformAs.some((ip) => as.includes(ip));
+    // Parallel DoH lookups — never sequential hangs that trip isolate wall-clock.
+    const [txts, cnames, as] = await Promise.all([
+      dnsQuery(txtHost, "TXT"),
+      dnsQuery(domain, "CNAME"),
+      dnsQuery(domain, "A"),
+    ]);
+    const txtOk = txts.some((v) => v.includes(expectedTxt));
+    const cnameOk = cnames.some(
+      (v) =>
+        cnameTargets.includes(v) ||
+        cnameTargets.some((t) => v === t || v.endsWith(`.${t}`)) ||
+        v === platformHost ||
+        v.endsWith(`.${platformHost}`),
+    );
+    let aOk = false;
+    if (!cnameOk && as.length > 0) {
+      const platformAs = await dnsQuery(platformHost, "A");
+      const targetHosts = cnameTargets.length ? cnameTargets : [platformHost];
+      const targetAs = (
+        await Promise.all(targetHosts.map((h) => dnsQuery(h, "A")))
+      ).flat();
+      const allowed = new Set([...platformAs, ...targetAs]);
+      aOk = as.some((ip) => allowed.has(ip));
+    }
 
     if (!txtOk) {
       await admin.rpc("mark_shop_domain_status", {
         p_shop_id: shopId,
         p_status: "error",
-        p_error: `TXT não encontrado em ${txtHost}. Espere a propagação DNS e tente de novo.`,
+        p_error: `TXT não encontrado em ${txtHost}. Esperado ${expectedTxt}. Visto: ${txts.join(" | ") || "(vazio)"}.`,
       });
       return json(
         {
           ok: false,
           txt_ok: false,
           cname_ok: cnameOk || aOk,
+          expected_txt: expectedTxt,
+          found_txt: txts,
           error: `Registre o TXT em ${txtHost} = ${expectedTxt}`,
         },
         422,
@@ -144,17 +170,20 @@ Deno.serve(async (req) => {
     }
 
     if (!cnameOk && !aOk) {
+      const targetHint = cnameTargets[0] ?? platformHost;
       await admin.rpc("mark_shop_domain_status", {
         p_shop_id: shopId,
         p_status: "error",
-        p_error: `Aponte ${domain} (CNAME) para ${platformHost} ou o mesmo IP do app.`,
+        p_error: `Aponte ${domain} (CNAME) para ${targetHint}. Visto: ${cnames.join(", ") || as.join(", ") || "(vazio)"}.`,
       });
       return json(
         {
           ok: false,
           txt_ok: true,
           cname_ok: false,
-          error: `CNAME ${domain} → ${platformHost} ainda não propagou.`,
+          found_cname: cnames,
+          found_a: as,
+          error: `CNAME ${domain} → ${targetHint} ainda não propagou.`,
         },
         422,
       );
