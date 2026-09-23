@@ -2633,7 +2633,7 @@ body:has(.arena-workspace[class*="brand-corners-"])
 }
 .auth-layout-cover .auth-divider-label,
 .auth-layout-card .auth-divider-label {
-  background: color-mix(in oklch, var(--card) 94%, transparent);
+  background: var(--card);
 }
 .auth-panel-footer {
   padding-top: 0.25rem;
@@ -2657,7 +2657,7 @@ body:has(.arena-workspace[class*="brand-corners-"])
 .auth-photo-layer {
   position: absolute;
   inset: 0;
-  z-index: -2;
+  z-index: 0;
   overflow: hidden;
 }
 .auth-photo-layer img {
@@ -2669,18 +2669,23 @@ body:has(.arena-workspace[class*="brand-corners-"])
   position: absolute;
   inset: 0;
   background: linear-gradient(
-    90deg,
-    rgb(13 14 12 / 0.82) 0%,
-    rgb(13 14 12 / 0.32) 55%,
-    transparent 78%
+    105deg,
+    rgb(13 14 12 / 0.9) 0%,
+    rgb(13 14 12 / 0.62) 42%,
+    rgb(13 14 12 / 0.28) 68%,
+    rgb(13 14 12 / 0.18) 100%
   );
 }
 .auth-photo-copy {
+  position: relative;
   z-index: 1;
   align-self: end;
   max-width: 35rem;
-  color: white;
+  color: #fff;
   text-wrap: balance;
+  text-shadow:
+    0 1px 2px rgb(0 0 0 / 0.55),
+    0 10px 28px rgb(0 0 0 / 0.35);
 }
 .auth-photo-copy-logo {
   display: grid;
@@ -2691,7 +2696,10 @@ body:has(.arena-workspace[class*="brand-corners-"])
   overflow: hidden;
   border-radius: var(--control-radius);
   color: var(--brand-primary);
-  box-shadow: 0 12px 32px rgb(0 0 0 / 0.24);
+  background: rgb(255 255 255 / 0.94);
+  box-shadow:
+    0 12px 32px rgb(0 0 0 / 0.28),
+    inset 0 0 0 1px rgb(255 255 255 / 0.7);
 }
 .auth-photo-copy-logo img {
   width: 100%;
@@ -2700,13 +2708,14 @@ body:has(.arena-workspace[class*="brand-corners-"])
   padding: 0.65rem;
 }
 .auth-photo-copy .auth-brand-name {
-  color: white;
+  color: #fff;
   font-size: 0.875rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 .auth-photo-copy h2 {
   margin-top: 0.45rem;
+  color: #fff;
   font-family: var(--brand-font);
   font-size: clamp(2.5rem, 5vw, 4.75rem);
   font-style: var(--brand-header-font-style);
@@ -2717,12 +2726,15 @@ body:has(.arena-workspace[class*="brand-corners-"])
 .auth-photo-copy > p:last-child {
   max-width: 30rem;
   margin-top: 1rem;
-  color: rgb(255 255 255 / 0.82);
+  color: rgb(255 255 255 / 0.92);
   font-size: 1rem;
   line-height: 1.6;
 }
 .auth-workspace .auth-brand-panel {
+  position: relative;
   z-index: 2;
+  color: var(--foreground);
+  background: var(--card);
 }
 .auth-layout-cover {
   grid-template-columns: minmax(0, 1fr) minmax(22rem, 29rem);
@@ -2736,14 +2748,13 @@ body:has(.arena-workspace[class*="brand-corners-"])
 }
 .auth-layout-cover .auth-brand-panel {
   grid-column: 2;
-  position: relative;
   width: min(27.5rem, calc(100vw - 3rem));
-  border-color: color-mix(in oklch, white 64%, var(--border));
-  background: color-mix(in oklch, white 88%, var(--card));
+  border-color: color-mix(in oklch, var(--border) 80%, white);
+  background: var(--card);
   box-shadow:
-    0 28px 72px rgb(12 12 10 / 0.3),
-    0 2px 8px rgb(12 12 10 / 0.1),
-    inset 0 1px 0 rgb(255 255 255 / 0.72);
+    0 28px 72px rgb(12 12 10 / 0.34),
+    0 2px 8px rgb(12 12 10 / 0.12),
+    inset 0 1px 0 rgb(255 255 255 / 0.85);
 }
 .auth-layout-cover .auth-brand-header,
 .auth-layout-cover .auth-form-body {
@@ -2782,12 +2793,19 @@ body:has(.arena-workspace[class*="brand-corners-"])
 .auth-layout-split .auth-photo-layer {
   position: relative;
   inset: auto;
+  z-index: 0;
   grid-column: 1;
   grid-row: 1;
   min-height: 100dvh;
 }
 .auth-layout-split .auth-photo-layer > span {
-  background: linear-gradient(0deg, rgb(13 14 12 / 0.76), transparent 66%);
+  background: linear-gradient(
+    0deg,
+    rgb(13 14 12 / 0.88) 0%,
+    rgb(13 14 12 / 0.42) 42%,
+    rgb(13 14 12 / 0.12) 72%,
+    transparent 100%
+  );
 }
 .auth-layout-split .auth-photo-copy {
   grid-column: 1;
@@ -2798,6 +2816,7 @@ body:has(.arena-workspace[class*="brand-corners-"])
 .auth-layout-split .auth-brand-panel {
   grid-column: 2;
   grid-row: 1;
+  z-index: 1;
   align-self: center;
   justify-self: center;
   width: 100%;
@@ -2808,7 +2827,7 @@ body:has(.arena-workspace[class*="brand-corners-"])
   box-shadow: none;
 }
 .auth-layout-split .auth-divider-label {
-  background: color-mix(in oklch, var(--card) 92%, white);
+  background: var(--card);
 }
 .auth-layout-split .auth-brand-header {
   border-bottom: 0;
@@ -2830,22 +2849,23 @@ body:has(.arena-workspace[class*="brand-corners-"])
   padding: clamp(1rem, 4vw, 3rem);
 }
 .auth-layout-card .auth-photo-layer > span {
-  background: rgb(13 14 12 / 0.46);
-  backdrop-filter: blur(2px);
+  background:
+    radial-gradient(80% 70% at 50% 45%, rgb(13 14 12 / 0.28), rgb(13 14 12 / 0.62)),
+    rgb(13 14 12 / 0.5);
+  backdrop-filter: blur(3px);
 }
 .auth-layout-card .auth-photo-copy {
   display: none;
 }
 .auth-layout-card .auth-brand-panel {
-  position: relative;
   width: min(30rem, calc(100vw - 2rem));
   max-width: 30rem;
-  border-color: color-mix(in oklch, white 66%, var(--border));
-  background: color-mix(in oklch, white 90%, var(--card));
+  border-color: color-mix(in oklch, var(--border) 80%, white);
+  background: var(--card);
   box-shadow:
-    0 34px 90px rgb(0 0 0 / 0.38),
-    0 3px 10px rgb(0 0 0 / 0.12),
-    inset 0 1px 0 rgb(255 255 255 / 0.76);
+    0 34px 90px rgb(0 0 0 / 0.42),
+    0 3px 10px rgb(0 0 0 / 0.14),
+    inset 0 1px 0 rgb(255 255 255 / 0.9);
 }
 .auth-layout-card .auth-brand-header {
   padding-top: 2rem;
@@ -2890,26 +2910,36 @@ body:has(.arena-workspace[class*="brand-corners-"])
 .login-model-preview-shade {
   position: absolute;
   inset: 0;
-  z-index: -2;
+  z-index: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 .login-model-preview-shade {
-  z-index: -1;
-  background: linear-gradient(90deg, rgb(14 15 13 / 0.68), rgb(14 15 13 / 0.12));
+  z-index: 1;
+  background: linear-gradient(
+    105deg,
+    rgb(14 15 13 / 0.88) 0%,
+    rgb(14 15 13 / 0.45) 48%,
+    rgb(14 15 13 / 0.22) 100%
+  );
 }
 .login-model-preview-brand {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-self: end;
   align-items: center;
   gap: 0.5rem;
   min-width: 0;
   padding: 1rem;
-  color: white;
+  color: #fff;
   font-family: var(--brand-font);
   font-size: 0.75rem;
   font-weight: var(--brand-header-font-weight);
+  text-shadow:
+    0 1px 2px rgb(0 0 0 / 0.55),
+    0 8px 18px rgb(0 0 0 / 0.35);
 }
 .login-model-preview-logo {
   display: grid;
@@ -2920,6 +2950,8 @@ body:has(.arena-workspace[class*="brand-corners-"])
   overflow: hidden;
   border-radius: var(--control-radius);
   color: var(--brand-primary);
+  background: rgb(255 255 255 / 0.95);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.22);
 }
 .login-model-preview-logo img {
   width: 100%;
@@ -2928,6 +2960,8 @@ body:has(.arena-workspace[class*="brand-corners-"])
   padding: 0.25rem;
 }
 .login-model-preview-form {
+  position: relative;
+  z-index: 2;
   display: flex;
   width: min(12rem, 40%);
   align-self: center;
@@ -2936,11 +2970,14 @@ body:has(.arena-workspace[class*="brand-corners-"])
   gap: 0.5rem;
   margin: 1rem;
   padding: 0.85rem;
+  border: 1px solid rgb(221 216 205 / 0.95);
   border-radius: var(--panel-radius);
-  background: rgb(250 249 246 / 0.96);
-  box-shadow: 0 10px 28px rgb(0 0 0 / 0.2);
+  background: #faf9f6;
+  color: #25251f;
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.24);
 }
 .login-model-preview-title {
+  color: #25251f;
   font-size: 0.8rem;
   font-weight: 800;
 }
@@ -2952,6 +2989,7 @@ body:has(.arena-workspace[class*="brand-corners-"])
   padding: 0 0.45rem;
   border: 1px solid #ddd8cd;
   border-radius: var(--control-radius);
+  background: #fff;
   color: #8a8378;
 }
 .login-model-preview-field svg {
@@ -2983,7 +3021,12 @@ body:has(.arena-workspace[class*="brand-corners-"])
   width: 53%;
 }
 .login-model-preview-split .login-model-preview-shade {
-  background: linear-gradient(0deg, rgb(14 15 13 / 0.62), transparent);
+  background: linear-gradient(
+    0deg,
+    rgb(14 15 13 / 0.86) 0%,
+    rgb(14 15 13 / 0.35) 45%,
+    transparent 100%
+  );
 }
 .login-model-preview-split .login-model-preview-brand {
   grid-column: 1;
@@ -2993,13 +3036,16 @@ body:has(.arena-workspace[class*="brand-corners-"])
   grid-row: 1;
   width: calc(100% - 1.5rem);
   margin: 0.75rem;
+  background: #faf9f6;
   box-shadow: none;
 }
 .login-model-preview-card {
   place-items: center;
 }
 .login-model-preview-card .login-model-preview-shade {
-  background: rgb(14 15 13 / 0.38);
+  background:
+    radial-gradient(80% 70% at 50% 45%, rgb(14 15 13 / 0.25), rgb(14 15 13 / 0.58)),
+    rgb(14 15 13 / 0.48);
 }
 .login-model-preview-card .login-model-preview-brand {
   display: none;
@@ -3007,6 +3053,7 @@ body:has(.arena-workspace[class*="brand-corners-"])
 .login-model-preview-card .login-model-preview-form {
   width: min(13rem, 52%);
   margin: 0;
+  background: #faf9f6;
 }
 .login-model-preview.is-compact .login-model-preview-brand {
   gap: 0.25rem;
