@@ -21,7 +21,7 @@ export type Database = {
         Insert: {
           id?: string;
           name: string;
-          slug: string;
+          slug?: string;
           status?: Database["public"]["Enums"]["barbershop_status"];
           timezone?: string;
           created_at?: string;
@@ -901,6 +901,86 @@ export type Database = {
       };
       resolve_direct_booking_staff: {
         Args: { p_shop_slug: string; p_staff_slug: string };
+        Returns: Json;
+      };
+      resolve_shop_by_slug: {
+        Args: { p_shop_ref: string };
+        Returns: string;
+      };
+      list_shop_slug_redirects: {
+        Args: { p_shop_id: string };
+        Returns: Json;
+      };
+      list_staff_slug_redirects: {
+        Args: { p_shop_id: string };
+        Returns: Json;
+      };
+      delete_shop_slug_redirect: {
+        Args: { p_redirect_id: string };
+        Returns: undefined;
+      };
+      delete_staff_slug_redirect: {
+        Args: { p_redirect_id: string };
+        Returns: undefined;
+      };
+      request_shop_departure: {
+        Args: {
+          p_shop_id: string;
+          p_mode: "take" | "forfeit";
+          p_dest_shop_id?: string | null;
+        };
+        Returns: Json;
+      };
+      approve_portfolio_release: {
+        Args: { p_request_id: string; p_note?: string | null };
+        Returns: Json;
+      };
+      reject_portfolio_release: {
+        Args: { p_request_id: string; p_note?: string | null };
+        Returns: Json;
+      };
+      complete_shop_departure: {
+        Args: { p_request_id: string };
+        Returns: undefined;
+      };
+      list_shop_departure_requests: {
+        Args: { p_shop_id: string };
+        Returns: Json;
+      };
+      create_own_barbershop: {
+        Args: { p_name: string };
+        Returns: Json;
+      };
+      resolve_shop_by_host: {
+        Args: { p_host: string };
+        Returns: Json;
+      };
+      get_shop_domain_settings: {
+        Args: { p_shop_id: string };
+        Returns: Json;
+      };
+      set_shop_custom_domain: {
+        Args: { p_shop_id: string; p_domain: string };
+        Returns: Json;
+      };
+      clear_shop_custom_domain: {
+        Args: { p_shop_id: string };
+        Returns: Json;
+      };
+      mark_shop_domain_status: {
+        Args: {
+          p_shop_id: string;
+          p_status: "none" | "pending_dns" | "active" | "error";
+          p_error?: string | null;
+        };
+        Returns: Json;
+      };
+      get_public_shop_branding_by_host: {
+        Args: { p_host: string };
+        Returns: Json;
+      };
+      list_active_custom_domains: {
+        Args: Record<string, never>;
         Returns: Json;
       };
       create_direct_appointment: {

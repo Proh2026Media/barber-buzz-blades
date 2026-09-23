@@ -107,38 +107,19 @@ Deno.serve(async (req) => {
       return json({ ok: true, channel: updated });
     }
 
-    if (action === "create" || action === "connect" || (!channel && action === "status")) {
-      const instanceName = channel?.instance_name ?? instanceNameForShop(shopId, shop.slug);
-      if (!channel) {
-        const { data: created, error: createError } = await admin
-          .from("whatsapp_channels")
-          .insert({
-            barbershop_id: shopId,
-            instance_name: instanceName,
-            status: "disconnected",
-          })
-          .select("*")
-          .single();
-        if (createError) return json({ error: createError.message }, 500);
-        channel = created;
-      }
-
-      try {
-        await evolutionFetch("/instance/create", {
-          method: "POST",
-          body: JSON.stringify({
-            instanceName: channel.instance_name,
-            integration: "WHATSAPP-BAILEYS",
-            qrcode: true,
-          }),
-        });
-      } catch (err) {
-        // Instância já existente é aceitável.
-        const message = err instanceof Error ? err.message : "";
-        if (!/already|exist|in use/i.test(message)) {
-          // Continua para connect mesmo assim em alguns casos.
-        }
-      }
+    const instanceName = channel?.instance_name ?? instanceNameForShop(shopId, shop.slug);
+    if (!channel) {
+      const { data: created, error: createError } = await admin
+        .from("whatsapp_channels")
+        .insert({
+          barbershop_id: shopId,
+          instance_name: instanceName,
+          status: "disconnected",
+        })
+        .select("*")
+        .single();
+      if (createError) return json({ error: createError.message }, 500);
+      channel = created;
     }
 
     if (!channel) return json({ error: "Canal não encontrado" }, 404);
@@ -146,6 +127,11 @@ Deno.serve(async (req) => {
     if (action === "logout") {
       try {
         await evolutionFetch(`/instance/logout/${channel.instance_name}`, { method: "DELETE" });
+      } catch {
+        /* ignore */
+      }
+      try {
+        await evolutionFetch(`/instance/delete/${channel.instance_name}`, { method: "DELETE" });
       } catch {
         /* ignore */
       }
@@ -161,27 +147,82 @@ Deno.serve(async (req) => {
     let qrcode: string | null = null;
     let displayPhone: string | null = channel.display_phone;
 
+    async function ensureInstance(): Promise<string | null> {
+      try {
+        const created = (await evolutionFetch("/instance/create", {
+          method: "POST",
+          body: JSON.stringify({
+            instanceName: channel!.instance_name,
+            integration: "WHATSAPP-BAILEYS",
+            qrcode: true,
+          }),
+        })) as { qrcode?: { base64?: string }; base64?: string };
+        const fromCreate =
+          created?.qrcode?.base64 ?? created?.base64 ?? null;
+        return typeof fromCreate === "string" ? fromCreate : null;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "";
+        // Já existe na Evolution: ok.
+        if (/already|exist|in use/i.test(message)) return null;
+        throw err;
+      }
+    }
+
+    function normalizeQr(raw: string | null | undefined): string | null {
+      if (!raw) return null;
+      if (raw.startsWith("data:")) return raw;
+      return `data:image/png;base64,${raw.replace(/^data:image\/png;base64,/, "")}`;
+    }
+
+    function isMissingInstance(err: unknown): boolean {
+      const message = err instanceof Error ? err.message : String(err ?? "");
+      return /does not exist|not found|404/i.test(message);
+    }
+
     if (action === "connect" || action === "create" || action === "status") {
       try {
-        const stateData = (await evolutionFetch(
-          `/instance/connectionState/${channel.instance_name}`,
-          { method: "GET" },
-        )) as { instance?: { state?: string }; state?: string };
+        // Garante a instância na Evolution (DB pode ter canal sem o recurso remoto).
+        if (action === "connect" || action === "create") {
+          qrcode = normalizeQr(await ensureInstance());
+        }
 
-        const state = mapEvolutionState(stateData?.instance?.state ?? stateData?.state);
+        let state: ReturnType<typeof mapEvolutionState> = "disconnected";
+        try {
+          const stateData = (await evolutionFetch(
+            `/instance/connectionState/${channel.instance_name}`,
+            { method: "GET" },
+          )) as { instance?: { state?: string }; state?: string };
+          state = mapEvolutionState(stateData?.instance?.state ?? stateData?.state);
+        } catch (err) {
+          if (!isMissingInstance(err)) throw err;
+          qrcode = normalizeQr(await ensureInstance()) ?? qrcode;
+          state = "disconnected";
+        }
 
         if (state !== "open" && (action === "connect" || action === "create" || state === "disconnected")) {
-          const connectData = (await evolutionFetch(`/instance/connect/${channel.instance_name}`, {
-            method: "GET",
-          })) as { base64?: string; qrcode?: { base64?: string }; code?: string };
+          try {
+            const connectData = (await evolutionFetch(`/instance/connect/${channel.instance_name}`, {
+              method: "GET",
+            })) as { base64?: string; qrcode?: { base64?: string }; code?: string };
 
-          qrcode =
-            connectData?.base64 ??
-            connectData?.qrcode?.base64 ??
-            (connectData?.code ? `data:image/png;base64,${connectData.code}` : null);
-
-          if (qrcode && !qrcode.startsWith("data:")) {
-            qrcode = `data:image/png;base64,${qrcode.replace(/^data:image\/png;base64,/, "")}`;
+            qrcode =
+              normalizeQr(
+                connectData?.base64 ??
+                  connectData?.qrcode?.base64 ??
+                  (connectData?.code ? connectData.code : null),
+              ) ?? qrcode;
+          } catch (err) {
+            if (!isMissingInstance(err)) throw err;
+            qrcode = normalizeQr(await ensureInstance()) ?? qrcode;
+            const connectData = (await evolutionFetch(`/instance/connect/${channel.instance_name}`, {
+              method: "GET",
+            })) as { base64?: string; qrcode?: { base64?: string }; code?: string };
+            qrcode =
+              normalizeQr(
+                connectData?.base64 ??
+                  connectData?.qrcode?.base64 ??
+                  (connectData?.code ? connectData.code : null),
+              ) ?? qrcode;
           }
         }
 

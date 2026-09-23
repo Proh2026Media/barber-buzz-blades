@@ -1,6 +1,6 @@
 # Transição para a próxima IA — Barba & Cabelo
 
-Atualizado em **20/09/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
+Atualizado em **22/09/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
 ## Comece aqui
 
@@ -33,6 +33,22 @@ Atualizado em **20/09/2026**. Este documento resume decisões e entregas da conv
 - Skill pessoal criada: `~/.codex/skills/mb/SKILL.md`; `/mb` é convenção textual do projeto, `$mb` é invocação da skill. Cópia portátil em `docs/mb-interface.md` para outros provedores.
 
 ## Entregas recentes e regras atuais
+
+### Slugs automáticos, redirects e desvinculação — 22/09/2026
+
+- Migration `20260922140000_slug_redirects_and_departure.sql` aplicada no PostgreSQL remoto.
+- Slug da loja e `booking_slug` do profissional são gerados do nome (`slugify_pt`); rename cria redirect **sem prazo** (só apaga na mão).
+- Saída com **levar carteira** (exclusivo): clientes da carteira mudam de membership para a loja destino; link antigo fica `locked` e continua resolvendo para o barbeiro atual. Sócio precisa de liberação do outro sócio. **Abrir mão** libera o slug para a loja reusar.
+- UI em Ajustes: `SlugRedirectsCard`, `ShopDepartureCard`. Cadastro com `?shop=` grava membership da loja do link (`handle_new_user` + metadata no `signUp`).
+- Regressão: `supabase/tests/slug_redirects_departure.sql`.
+
+### Domínios por barbearia — 22/09/2026
+
+- Migration `20260922150000_shop_custom_domains.sql`: `custom_domain`, status, token de verificação; RPCs `resolve_shop_by_host` (subdomínio **e** domínio próprio ativo), `set/clear/get_shop_domain_settings`.
+- Caminho A: `{slug}.beauty.contheiner.digital` (requer DNS/TLS wildcard no host do app).
+- Caminho B: domínio próprio com TXT + CNAME; UI em Ajustes (`ShopDomainCard`).
+- Edge Function `shop-domain` (set/clear/verify) chama domain-manager `POST /add` e `DELETE /remove` no servidor. Envs: `DOMAIN_MANAGER_URL`, `DOMAIN_MANAGER_API_KEY` (só Coolify). Descartar Nuxt `tenant.ts` / `/lookup`.
+- Auth/app resolvem loja pelo Host; parceiro copia link no subdomínio. Docs: [mb-operacao.md](mb-operacao.md) §5c.
 
 ### WhatsApp Evolution API (fase 1) — 22/09/2026
 

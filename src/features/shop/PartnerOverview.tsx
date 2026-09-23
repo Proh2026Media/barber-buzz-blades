@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
 import { RhythmDashboard, type RhythmPayload } from "@/features/insights/RhythmDashboard";
 import { ClientDirectory } from "./ClientDirectory";
+import { platformSubdomainUrl } from "@/lib/shop/host";
 
 type WalletEntry = {
   appointment_id: string;
@@ -47,7 +48,7 @@ export function PartnerOverview({
 
   const bookingLink = useMemo(() => {
     if (!shopSlug || !bookingSlug) return null;
-    return `${window.location.origin}/app?shop=${encodeURIComponent(shopSlug)}&barber=${encodeURIComponent(bookingSlug)}`;
+    return `${platformSubdomainUrl(shopSlug, "/app")}?barber=${encodeURIComponent(bookingSlug)}`;
   }, [shopSlug, bookingSlug]);
 
   useEffect(() => {

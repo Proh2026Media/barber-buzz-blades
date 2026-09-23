@@ -40,10 +40,16 @@ export async function evolutionFetch(path: string, init: RequestInit = {}) {
     data = { raw: text };
   }
   if (!response.ok) {
-    const message =
-      typeof data === "object" && data && "message" in data
-        ? String((data as { message: unknown }).message)
-        : text.slice(0, 300) || response.statusText;
+    let message = text.slice(0, 300) || response.statusText;
+    if (typeof data === "object" && data && "message" in data) {
+      const raw = (data as { message: unknown }).message;
+      message = Array.isArray(raw) ? raw.map(String).join(" ") : String(raw);
+    } else if (typeof data === "object" && data && "response" in data) {
+      const nested = (data as { response?: { message?: unknown } }).response?.message;
+      if (nested != null) {
+        message = Array.isArray(nested) ? nested.map(String).join(" ") : String(nested);
+      }
+    }
     throw new Error(message);
   }
   return data;

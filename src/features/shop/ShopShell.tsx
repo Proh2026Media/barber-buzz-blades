@@ -11,6 +11,9 @@ import { ProfessionalInsights } from "@/features/insights/ProfessionalInsights";
 import { TeamGovernance } from "./TeamGovernance";
 import { BrandIdentityEditor } from "@/features/shop/BrandIdentityEditor";
 import { WhatsAppSettingsCard } from "@/features/shop/WhatsAppSettingsCard";
+import { SlugRedirectsCard } from "@/features/shop/SlugRedirectsCard";
+import { ShopDepartureCard } from "@/features/shop/ShopDepartureCard";
+import { ShopDomainCard } from "@/features/shop/ShopDomainCard";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -890,12 +893,20 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         active: editingStaff?.active ?? true,
       };
       if (demo) {
+        const autoSlug = staffName
+          .trim()
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "")
+          .slice(0, 60);
         demo.dispatch({
           type: editingStaff ? "staff.edit" : "staff.add",
           staff: {
             ...staff,
             user_id: editingStaff?.user_id ?? null,
-            booking_slug: editingStaff?.booking_slug ?? null,
+            booking_slug: autoSlug || editingStaff?.booking_slug || "profissional",
             id: editingStaff?.id ?? crypto.randomUUID(),
             created_at: editingStaff?.created_at ?? demo.now.toISOString(),
             updated_at: demo.now.toISOString(),
@@ -907,7 +918,6 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
           {
             ...staff,
             id: editingStaff?.id,
-            booking_slug: editingStaff?.booking_slug,
           },
         );
         if (!applied) {
@@ -2365,6 +2375,16 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         placeholder="Nome de exibição"
                         className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
                       />
+                      <p className="text-xs text-muted-foreground">
+                        O link de agendamento é gerado automaticamente a partir do nome
+                        {editingStaff?.booking_slug ? (
+                          <>
+                            {" "}
+                            (atual: <span className="font-semibold">{editingStaff.booking_slug}</span>)
+                          </>
+                        ) : null}
+                        . Links antigos continuam redirecionando.
+                      </p>
                       {error && (
                         <p role="alert" className="text-sm text-destructive">
                           {error}
@@ -2631,6 +2651,29 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
               )}
               {(!actor || actor.role === "owner" || actor.role === "partner" || !actor) && (
                 <WhatsAppSettingsCard shopId={shop.id} />
+              )}
+              {!demo && shop.id && (!actor || actor.role === "owner" || actor.role === "partner") && (
+                <ShopDomainCard shopId={shop.id} />
+              )}
+              {!demo && shop.id && (
+                <SlugRedirectsCard
+                  shopId={shop.id}
+                  currentShopSlug={shop.slug}
+                  canManageShopRedirects={
+                    !actor || actor.role === "owner" || actor.role === "partner"
+                  }
+                />
+              )}
+              {!demo && shop.id && actor && (
+                <ShopDepartureCard
+                  shopId={shop.id}
+                  canApproveRelease={actor.role === "owner" || actor.role === "partner"}
+                  canRequestDeparture={
+                    actor.role === "owner" ||
+                    actor.role === "partner" ||
+                    actor.role === "associate"
+                  }
+                />
               )}
               {!demo && actor && (
                 <TeamGovernance

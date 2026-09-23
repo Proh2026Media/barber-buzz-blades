@@ -484,6 +484,7 @@ function ArenaApp({
           }
           return;
         }
+        let catalogShopId = membershipShopId;
         let directStaffId: string | null = null;
         if (directBarberSlug && directShopSlug) {
           const resolved = await supabase.rpc("resolve_direct_booking_staff", {
@@ -495,11 +496,28 @@ function ArenaApp({
             shop_id?: string;
             staff_id?: string;
             shop_name?: string;
+            shop_slug?: string;
+            via_redirect?: boolean;
           };
-          if (target.shop_id !== membershipShopId || !target.staff_id) {
+          if (!target.staff_id || !target.shop_id) {
             throw new Error(
               "Este link pertence a outra barbearia ou não está disponível para sua conta.",
             );
+          }
+          // Redirect pós-saída pode apontar para a loja atual do profissional.
+          const hasDestMembership = profile.memberships.some(
+            (m) => m.barbershop_id === target.shop_id && m.role === "customer",
+          );
+          if (target.shop_id !== membershipShopId && !hasDestMembership && !target.via_redirect) {
+            throw new Error(
+              "Este link pertence a outra barbearia ou não está disponível para sua conta.",
+            );
+          }
+          if (hasDestMembership || target.shop_id === membershipShopId) {
+            catalogShopId = target.shop_id;
+          } else if (target.via_redirect) {
+            // Cliente ainda na loja antiga: mostra destino se já tiver membership; senão mantém origem
+            catalogShopId = membershipShopId;
           }
           directStaffId = target.staff_id;
           if (!cancelled && target.shop_name) setShopName(target.shop_name);
@@ -509,13 +527,13 @@ function ArenaApp({
             supabase
               .from("services")
               .select("*")
-              .eq("barbershop_id", membershipShopId)
+              .eq("barbershop_id", catalogShopId)
               .eq("active", true)
               .order("created_at", { ascending: true }),
             supabase
               .from("staff")
               .select("*")
-              .eq("barbershop_id", membershipShopId)
+              .eq("barbershop_id", catalogShopId)
               .eq("active", true)
               .order("created_at", { ascending: true }),
             supabase
@@ -528,14 +546,14 @@ function ArenaApp({
               .select(
                 "display_name, logo_url, logo_background_color, font_family, custom_font_url, custom_font_name, custom_font_faces, font_scope, header_font_weight, header_font_style, corner_style, floating_chrome, primary_color, accent_color, tagline, booking_instructions, booking_horizon_days, survey_program_enabled, sports_enabled",
               )
-              .eq("barbershop_id", membershipShopId)
+              .eq("barbershop_id", catalogShopId)
               .single(),
             // O fuso da loja define os horários oferecidos: sem ele, o cálculo
             // usaria o fuso do aparelho de quem está reservando.
             supabase
               .from("barbershops")
               .select("timezone")
-              .eq("id", membershipShopId)
+              .eq("id", catalogShopId)
               .maybeSingle(),
           ]);
         if (servicesResult.error) throw servicesResult.error;
@@ -551,7 +569,7 @@ function ArenaApp({
             .select(
               "display_name, logo_url, logo_background_color, font_family, custom_font_url, custom_font_name, custom_font_faces, font_scope, header_font_weight, header_font_style, corner_style, primary_color, accent_color, tagline, booking_instructions, booking_horizon_days, survey_program_enabled, sports_enabled",
             )
-            .eq("barbershop_id", membershipShopId)
+            .eq("barbershop_id", catalogShopId)
             .single();
           if (legacySettings.error) throw legacySettings.error;
           shopSettingsData = { ...legacySettings.data, floating_chrome: false };
@@ -582,7 +600,7 @@ function ArenaApp({
             });
         }
         if (!cancelled) {
-          setShopId(membershipShopId);
+          setShopId(catalogShopId);
           setUserId(profile.user.id);
           setServices(availableServices);
           const availableStaff = staffResult.data ?? [];

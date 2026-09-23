@@ -248,6 +248,81 @@ Hoje o DNS autoritativo responde **NXDOMAIN** para esse host → Let’s Encrypt
 
 ---
 
+## 5c. Domínios por barbearia (subdomínio + domínio próprio)
+
+Atualizado em **22/09/2026**.
+
+### Caminho A — subdomínio automático
+
+| Item | Valor |
+|------|--------|
+| Padrão | `https://{slug}.beauty.contheiner.digital` |
+| DNS | Cloudflare: `*.beauty` → `187.127.60.78` (DNS only) |
+| Proxy | Traefik no VPS (`wildcard-beauty.yaml`) → Hostinger `beauty.contheiner.digital` |
+| TLS | Let’s Encrypt no Traefik |
+| Auth | `ADDITIONAL_REDIRECT_URLS` com `https://*.beauty.contheiner.digital/**` |
+
+**Bloqueio conhecido (22/09):** `beauty.contheiner.digital` está **sem registro A** na Cloudflare → Traefik não alcança a Hostinger → **HTTP 502** em `*.beauty…`. Criar na Cloudflare:
+
+| Nome | Tipo | Valor | Proxy |
+|------|------|-------|-------|
+| `beauty` | A | **IP do plano Hostinger** (hPanel → Plan details) | DNS only |
+
+Não use o IP do VPS no `beauty` apex — isso criaria loop. O VPS só recebe `*.beauty`; o apex `beauty` deve ir à Hostinger.
+
+Detalhe completo: [beauty-saas-infra.md](beauty-saas-infra.md).
+
+### Caminho B — domínio próprio
+
+O app é **TanStack Start** (não Nuxt). Descartar `tenant.ts` / `/lookup`: a barbearia é resolvida no browser via `resolve_shop_by_host` (subdomínio **e** domínio próprio ativo).
+
+1. Ajustes → **Domínio da barbearia** → informar o domínio.
+2. A Edge Function `shop-domain` grava no banco e chama o domain-manager `POST /add` (rota Traefik + TLS).
+3. DNS do cliente: CNAME → `beauty.contheiner.digital` + TXT `_barba-verify…`.
+4. **Verificar DNS** no painel (`shop-domain` action `verify` → marca `active` + reforça `/add`).
+5. Remover domínio: `shop-domain` action `clear` → limpa banco + `DELETE /remove`.
+6. Com status `active`, o subdomínio redireciona para o domínio próprio.
+
+**Envs no Coolify (Edge Functions / Supabase), nunca no frontend:**
+
+| Variável | Exemplo |
+|----------|---------|
+| `DOMAIN_MANAGER_URL` | `https://doowrlcfv9wjlh3rktmbshcb.beauty.contheiner.digital` |
+| `DOMAIN_MANAGER_API_KEY` | (chave do domain-manager — só no servidor) |
+
+Script manual de fallback (se a API falhar): `scripts/sync-traefik-custom-domains.sh`.
+
+### Checklist ops
+
+- [x] Wildcard DNS `*.beauty` (Cloudflare → VPS)
+- [x] Traefik `wildcard-beauty.yaml`
+- [x] Auth redirects `*.beauty…`
+- [x] `resolve_shop_by_host` cobre domínio próprio ativo
+- [x] Função `shop-domain` (set/clear/verify + domain-manager)
+- [ ] Envs `DOMAIN_MANAGER_URL` + `DOMAIN_MANAGER_API_KEY` no Coolify
+- [ ] Deploy da Edge Function `shop-domain`
+- [ ] Registro A `beauty` → IP Hostinger (desbloqueia 502)
+- [ ] Testar `https://{slug}.beauty…/auth` e `/app`
+- [ ] Testar domínio próprio de ponta a ponta
+
+---
+
+## 5b. Links, slugs e desvinculação
+
+Atualizado em **22/09/2026**.
+
+| Item | Comportamento |
+|------|----------------|
+| Slug da loja / barbeiro | Gerado automaticamente a partir do nome |
+| Rename | Cria redirect permanente do endereço antigo |
+| Apagar redirect | Só na mão (Ajustes → Links); locked não apaga pela loja |
+| Levar carteira | Exclusivo; destino obrigatório; link antigo travado |
+| Sociedade | Outro sócio libera a carteira antes da saída |
+| Abrir mão | Clientes ficam; slug pode ser reutilizado pela loja |
+| Cadastro | `/auth?shop=slug` vincula o cliente à loja do link |
+
+---
+
 ## 5. WhatsApp (Evolution API) — fase 1
 
 Atualizado em **22/09/2026**.

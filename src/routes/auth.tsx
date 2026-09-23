@@ -114,19 +114,40 @@ function AuthPage() {
   const [otpCode, setOtpCode] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const shopContext = resolveShopContext(next, shop, demo);
+  const [hostShopSlug, setHostShopSlug] = useState<string | null>(null);
+  const effectiveShopRef = shopContext.shopRef || hostShopSlug;
   const [brand, setBrand] = useState<AuthBrand>(
     shopContext.demo ? DEMO_AUTH_BRAND : DEFAULT_AUTH_BRAND,
   );
-  const [brandLoading, setBrandLoading] = useState(Boolean(shopContext.shopRef));
+  const [brandLoading, setBrandLoading] = useState(
+    Boolean(shopContext.shopRef) || typeof window !== "undefined",
+  );
 
   const preferredNext = isSafeNext(next) ? next : "";
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      if (shopContext.shopRef || shopContext.demo) return;
+      const { resolveShopFromCurrentHost, maybeRedirectToCanonical } = await import(
+        "@/lib/shop/host"
+      );
+      const resolved = await resolveShopFromCurrentHost();
+      if (cancelled) return;
+      if (maybeRedirectToCanonical(resolved)) return;
+      if (resolved?.shop_slug) setHostShopSlug(resolved.shop_slug);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [shopContext.demo, shopContext.shopRef]);
 
   useEffect(() => {
     let cancelled = false;
     const fallback = shopContext.demo ? DEMO_AUTH_BRAND : DEFAULT_AUTH_BRAND;
     setBrand(fallback);
 
-    if (!shopContext.shopRef) {
+    if (!effectiveShopRef) {
       setBrandLoading(false);
       return () => {
         cancelled = true;
@@ -137,13 +158,13 @@ function AuthPage() {
     void (async () => {
       try {
         const modern = await supabase.rpc("get_public_shop_branding_v2", {
-          p_shop_ref: shopContext.shopRef!,
+          p_shop_ref: effectiveShopRef,
         });
         let row = modern.data?.[0];
         let brandingError = modern.error;
         if (brandingError) {
           const legacy = await supabase.rpc("get_public_shop_branding", {
-            p_shop_ref: shopContext.shopRef!,
+            p_shop_ref: effectiveShopRef,
           });
           row = legacy.data?.[0]
             ? { ...legacy.data[0], login_layout: null, login_image_url: null }
@@ -151,35 +172,36 @@ function AuthPage() {
           brandingError = legacy.error;
         }
         if (cancelled) return;
-        if (!brandingError && row) {
-          setBrand({
-            shopId: row.shop_id,
-            shopName: row.shop_name,
-            displayName: row.display_name?.trim() || row.shop_name,
-            logoUrl: row.logo_url,
-            logoBackgroundColor: row.logo_background_color,
-            fontFamily: row.font_family || DEFAULT_FONT_FAMILY,
-            customFontUrl: row.custom_font_url,
-            headerFontWeight: row.header_font_weight ?? DEFAULT_HEADER_FONT_WEIGHT,
-            headerFontStyle: row.header_font_style || DEFAULT_HEADER_FONT_STYLE,
-            cornerStyle: row.corner_style || DEFAULT_CORNER_STYLE,
-            primaryColor: row.primary_color || DEFAULT_PRIMARY_COLOR,
-            accentColor: row.accent_color || DEFAULT_ACCENT_COLOR,
-            loginLayout: normalizeLoginLayout(row.login_layout),
-            loginImageUrl: row.login_image_url,
-          });
+        if (brandingError || !row) {
+          setBrand(fallback);
+          return;
         }
+        setBrand({
+          shopId: row.shop_id,
+          shopName: row.shop_name,
+          displayName: row.display_name?.trim() || row.shop_name,
+          logoUrl: row.logo_url,
+          logoBackgroundColor: row.logo_background_color,
+          fontFamily: row.font_family || DEFAULT_FONT_FAMILY,
+          customFontUrl: row.custom_font_url,
+          headerFontWeight: row.header_font_weight ?? DEFAULT_HEADER_FONT_WEIGHT,
+          headerFontStyle: row.header_font_style || DEFAULT_HEADER_FONT_STYLE,
+          cornerStyle: row.corner_style || DEFAULT_CORNER_STYLE,
+          primaryColor: row.primary_color || DEFAULT_PRIMARY_COLOR,
+          accentColor: row.accent_color || DEFAULT_ACCENT_COLOR,
+          loginLayout: normalizeLoginLayout(row.login_layout),
+          loginImageUrl: row.login_image_url,
+        });
       } catch {
-        // Mantém a identidade segura de fallback se a loja não puder ser consultada.
+        if (!cancelled) setBrand(fallback);
       } finally {
         if (!cancelled) setBrandLoading(false);
       }
     })();
-
     return () => {
       cancelled = true;
     };
-  }, [shopContext.demo, shopContext.shopRef]);
+  }, [shopContext.demo, effectiveShopRef]);
 
   useEffect(() => {
     if (recovery) setMode("recovery");
@@ -224,7 +246,7 @@ function AuthPage() {
     setInfo(null);
     try {
       if (mode === "forgot") {
-        if (recoveryChannel === "whatsapp" && shopContext.shopRef) {
+        if (recoveryChannel === "whatsapp" && effectiveShopRef) {
           const base = import.meta.env.VITE_SUPABASE_URL || "";
           if (!otpSent) {
             const response = await fetch(`${base}/functions/v1/auth-otp`, {
@@ -235,7 +257,7 @@ function AuthPage() {
               },
               body: JSON.stringify({
                 action: "request",
-                shop: shopContext.shopRef,
+                shop: effectiveShopRef,
                 channel: "whatsapp",
                 purpose: "recovery",
                 destination: whatsapp,
@@ -256,7 +278,7 @@ function AuthPage() {
             },
             body: JSON.stringify({
               action: "verify",
-              shop: shopContext.shopRef,
+              shop: effectiveShopRef,
               channel: "whatsapp",
               purpose: "recovery",
               destination: whatsapp,
@@ -315,10 +337,16 @@ function AuthPage() {
         email,
         password,
         options: {
+          data: {
+            ...(effectiveShopRef ? { shop: effectiveShopRef } : {}),
+          },
           emailRedirectTo:
             window.location.origin +
             "/auth" +
-            (preferredNext ? `?next=${encodeURIComponent(preferredNext)}` : ""),
+            (preferredNext ? `?next=${encodeURIComponent(preferredNext)}` : "") +
+            (effectiveShopRef
+              ? `${preferredNext ? "&" : "?"}shop=${encodeURIComponent(effectiveShopRef)}`
+              : ""),
         },
       });
       if (error) throw error;
@@ -506,7 +534,7 @@ function AuthPage() {
           )}
 
           <form onSubmit={(e) => void handleSubmit(e)} className="space-y-5">
-            {mode === "forgot" && shopContext.shopRef && (
+            {mode === "forgot" && effectiveShopRef && (
               <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1" role="tablist" aria-label="Canal de recuperação">
                 {(
                   [
@@ -540,7 +568,7 @@ function AuthPage() {
             )}
 
             {mode !== "recovery" &&
-              !(mode === "forgot" && recoveryChannel === "whatsapp" && shopContext.shopRef) && (
+              !(mode === "forgot" && recoveryChannel === "whatsapp" && effectiveShopRef) && (
               <label className={labelClass}>
                 <span>Email</span>
                 <span className={fieldClass}>
@@ -561,7 +589,7 @@ function AuthPage() {
               </label>
             )}
 
-            {mode === "forgot" && recoveryChannel === "whatsapp" && shopContext.shopRef && (
+            {mode === "forgot" && recoveryChannel === "whatsapp" && effectiveShopRef && (
               <>
                 <label className={labelClass}>
                   <span>WhatsApp com DDD</span>
@@ -705,7 +733,7 @@ function AuthPage() {
                 {busy
                   ? "Aguarde…"
                   : mode === "forgot"
-                    ? recoveryChannel === "whatsapp" && shopContext.shopRef
+                    ? recoveryChannel === "whatsapp" && effectiveShopRef
                       ? otpSent
                         ? "Confirmar código"
                         : "Enviar código"

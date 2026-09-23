@@ -184,14 +184,8 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
     setBusy(true);
     setError(null);
     try {
-      const normalized = slug
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9-]+/g, "-")
-        .replace(/^-+|-+$/g, "");
       const { error: insertError } = await supabase.from("barbershops").insert({
         name: name.trim(),
-        slug: normalized,
         status: "active",
       });
       if (insertError) throw insertError;
@@ -637,16 +631,25 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                       htmlFor={shopSlugFieldId}
                       className="block text-xs font-semibold text-muted-foreground"
                     >
-                      Endereço curto (link)
+                      Endereço do link (automático)
                     </label>
                     <input
                       id={shopSlugFieldId}
-                      required
-                      value={slug}
-                      onChange={(e) => setSlug(e.target.value)}
-                      placeholder="Ex.: barbearia-central"
-                      className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground"
+                      readOnly
+                      value={
+                        name
+                          .trim()
+                          .toLowerCase()
+                          .normalize("NFD")
+                          .replace(/[\u0300-\u036f]/g, "")
+                          .replace(/[^a-z0-9]+/g, "-")
+                          .replace(/^-+|-+$/g, "") || "…"
+                      }
+                      className="mt-1 w-full rounded-xl border border-input bg-muted/40 px-3 py-2 text-sm text-muted-foreground"
                     />
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Gerado a partir do nome. Renomear a loja cria redirect do endereço antigo.
+                    </p>
                   </div>
                   <button
                     type="submit"
