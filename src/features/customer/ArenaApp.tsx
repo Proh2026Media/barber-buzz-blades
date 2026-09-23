@@ -10,7 +10,6 @@ import { CustomerRhythm } from "./CustomerRhythm";
 import { CustomerProfile } from "./CustomerProfile";
 import { useScrollIndicators } from "@/lib/use-scroll-indicators";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTheme } from "@/lib/use-theme";
 import { brandCornerClass, brandFontScopeClass, brandVariables } from "@/lib/shop/branding";
 import { BrandFontFace } from "@/features/shop/BrandFontFace";

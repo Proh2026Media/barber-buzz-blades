@@ -3254,6 +3254,34 @@ body:has(.arena-workspace[class*="brand-corners-"])
   }
 }
 
+.platform-dash-kpi {
+  animation: platform-dash-rise 520ms ease-out both;
+}
+.platform-dash-kpi:nth-child(2) {
+  animation-delay: 60ms;
+}
+.platform-dash-kpi:nth-child(3) {
+  animation-delay: 120ms;
+}
+.platform-dash-kpi:nth-child(4) {
+  animation-delay: 180ms;
+}
+@keyframes platform-dash-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .platform-dash-kpi {
+    animation: none;
+  }
+}
+
 /* Prévia realista da página de login (editor de identidade). */
 .login-screen-preview-framed {
   position: relative;

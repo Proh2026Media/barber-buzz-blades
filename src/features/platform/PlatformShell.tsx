@@ -6,7 +6,6 @@ import { useCallback, useEffect, useId, useState, type CSSProperties, type React
 import { Link } from "@tanstack/react-router";
 import {
   Building2,
-  CirclePause,
   FlaskConical,
   KeyRound,
   LayoutDashboard,
@@ -16,9 +15,7 @@ import {
   Plus,
   Search,
   ShieldAlert,
-  ShieldCheck,
   UserPlus,
-  UsersRound,
   X,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
@@ -34,12 +31,29 @@ import { BrandIdentityEditor } from "@/features/shop/BrandIdentityEditor";
 import { BrandFontFace } from "@/features/shop/BrandFontFace";
 import { ChangePasswordCard } from "@/features/auth/ChangePasswordCard";
 import { PlatformPermissionsEditor } from "./PlatformPermissionsEditor";
+import { PlatformDashboard } from "./PlatformDashboard";
 import { DemoAccountMenu, DemoRoleSelector } from "@/features/demo/DemoAccountMenu";
+import { DemoTourHub } from "@/features/demo/DemoTourHub";
 import { useDemoChrome } from "@/features/demo/chrome";
+import { LoginPreviewDialog } from "@/features/shop/LoginPreviewDialog";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import type { SessionProfile } from "@/lib/auth/session";
-import { brandCornerClass, brandFontScopeClass, brandVariables } from "@/lib/shop/branding";
+import {
+  brandCornerClass,
+  brandFontScopeClass,
+  brandVariables,
+  DEFAULT_ACCENT_COLOR,
+  DEFAULT_CORNER_STYLE,
+  DEFAULT_FONT_FAMILY,
+  DEFAULT_HEADER_FONT_STYLE,
+  DEFAULT_HEADER_FONT_WEIGHT,
+  DEFAULT_PRIMARY_COLOR,
+  normalizeCornerStyle,
+  normalizeHeaderFontStyle,
+  normalizeHeaderFontWeight,
+  normalizeLoginLayout,
+} from "@/lib/shop/branding";
 
 type PlatformShellProps = {
   profile: SessionProfile;
@@ -94,6 +108,10 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
   const [brandSettings, setBrandSettings] = useState<Tables<"barbershop_settings"> | null>(null);
   const [brandLoading, setBrandLoading] = useState(false);
   const [demoShopId, setDemoShopId] = useState("");
+  const [loginTourOpen, setLoginTourOpen] = useState(false);
+  const [loginTourSettings, setLoginTourSettings] = useState<Tables<"barbershop_settings"> | null>(
+    null,
+  );
   const demoState = demoChrome?.state ?? null;
   const demoDispatch = demoChrome?.dispatch ?? null;
 
@@ -171,6 +189,27 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       setBrandSettings(data);
     }
     setBrandLoading(false);
+  }
+
+  async function openLoginTour() {
+    setError(null);
+    if (demoState) {
+      setLoginTourSettings(demoState.settings);
+      setLoginTourOpen(true);
+      return;
+    }
+    if (!demoShopId) return;
+    const { data, error: settingsError } = await supabase
+      .from("barbershop_settings")
+      .select("*")
+      .eq("barbershop_id", demoShopId)
+      .single();
+    if (settingsError) {
+      setError(settingsError.message);
+      return;
+    }
+    setLoginTourSettings(data);
+    setLoginTourOpen(true);
   }
 
   async function signOut() {
@@ -286,18 +325,13 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
     }
   }
 
-  const activeShops = shops.filter((shop) => shop.status === "active").length;
-  const suspendedShops = shops.length - activeShops;
-  const customerCount = memberships.filter((membership) => membership.role === "customer").length;
-  const shopAdminCount = memberships.filter(
-    (membership) => membership.role === "shop_admin",
-  ).length;
   const normalizedSearch = shopSearch.trim().toLocaleLowerCase("pt-BR");
   const filteredShops = shops.filter(
     (shop) =>
       (shopStatus === "all" || shop.status === shopStatus) &&
       `${shop.name} ${shop.slug}`.toLocaleLowerCase("pt-BR").includes(normalizedSearch),
   );
+  const demoShop = shops.find((shop) => shop.id === demoShopId) ?? null;
   // Na demonstração, a visão Plataforma representa a mesma barbearia fictícia
   // das visões Cliente e Barbearia. Assim, a opção visual salva no editor pode
   // ser conferida nos três shells sem aplicar a marca de uma loja ao admin
@@ -367,7 +401,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl space-y-6 p-4 pb-24">
+      <main className="mx-auto max-w-5xl space-y-6 p-4 pb-24">
         <div key={platformTab} className="mb-panel space-y-6">
           <nav
             aria-label="Áreas da administração"
@@ -394,76 +428,48 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
 
           {platformTab === "overview" && (
             <>
-              <section
-                aria-label="Resumo da plataforma"
-                className="grid grid-cols-2 gap-3 sm:grid-cols-4"
-              >
-                {[
-                  { label: "Barbearias ativas", value: activeShops, icon: Building2 },
-                  { label: "Suspensas", value: suspendedShops, icon: CirclePause },
-                  { label: "Clientes", value: customerCount, icon: UsersRound },
-                  { label: "Administradores", value: shopAdminCount, icon: ShieldCheck },
-                ].map(({ label, value, icon: Icon }) => (
-                  <article key={label} className="app-action-card relative overflow-hidden p-4">
-                    <Icon size={18} className="relative text-gold" />
-                    <p className="relative mt-4 text-2xl font-black">{loading ? "—" : value}</p>
-                    <p className="relative mt-1 text-xs font-medium text-muted-foreground">
-                      {label}
-                    </p>
-                  </article>
-                ))}
-              </section>
-              <section className="space-y-4 rounded-3xl border border-primary/20 bg-card p-5">
-                <div className="flex items-center gap-2">
-                  <FlaskConical size={18} className="text-primary" />
-                  <h2 className="text-sm font-semibold">
-                    {demoMode ? "Você está na demonstração" : "Demonstração"}
-                  </h2>
-                </div>
-                {demoMode ? (
+              <PlatformDashboard
+                shops={shops}
+                memberships={memberships}
+                sportsModules={sportsModules}
+                loading={loading}
+              />
+              {demoMode ? (
+                <section className="space-y-3 rounded-3xl border border-primary/20 bg-card p-5">
+                  <div className="flex items-center gap-2">
+                    <FlaskConical size={18} className="text-primary" />
+                    <h2 className="text-sm font-semibold">Você está no ambiente de teste</h2>
+                  </div>
                   <p className="text-sm leading-relaxed text-muted-foreground">
-                    Toque no ícone de perfil no canto do header para ver o perfil, trocar entre
-                    Admin, Barbearia e Cliente, ou sair da demonstração.
+                    Use o seletor no cabeçalho para saltar entre Admin, Barbearia (papéis) e Cliente.
+                    Tudo é sessão isolada — ao sair, a operação real permanece intacta.
                   </p>
-                ) : (
-                  <>
-                    <p className="text-sm leading-relaxed text-muted-foreground">
-                      Explore o app com clientes e reservas fictícios. Nada desta prévia altera a
-                      operação real.
-                    </p>
-                    <label className="block space-y-1.5 text-xs font-semibold text-muted-foreground">
-                      Barbearia da demonstração
-                      <select
-                        value={demoShopId}
-                        onChange={(event) => setDemoShopId(event.target.value)}
-                        className="min-h-12 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      >
-                        {shops.map((shop) => (
-                          <option key={shop.id} value={shop.id}>
-                            {shop.name}
-                            {shop.status === "suspended" ? " · suspensa" : ""}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <p className="text-xs leading-relaxed text-muted-foreground">
-                      Identidade, serviços, equipe e horários são copiados para uma sessão isolada.
-                      O cliente e as reservas continuam fictícios.
-                    </p>
-                    <Link
-                      to="/demo"
-                      search={{ shop: demoShopId || undefined }}
-                      aria-disabled={!demoShopId}
-                      onClick={(event) => {
-                        if (!demoShopId) event.preventDefault();
-                      }}
-                      className="flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground aria-disabled:pointer-events-none aria-disabled:opacity-50"
+                </section>
+              ) : (
+                <>
+                  <label className="block space-y-1.5 text-xs font-semibold text-muted-foreground">
+                    Barbearia usada no tour visual
+                    <select
+                      value={demoShopId}
+                      onChange={(event) => setDemoShopId(event.target.value)}
+                      className="min-h-12 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
-                      Abrir demonstração
-                    </Link>
-                  </>
-                )}
-              </section>
+                      {shops.map((shop) => (
+                        <option key={shop.id} value={shop.id}>
+                          {shop.name}
+                          {shop.status === "suspended" ? " · suspensa" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <DemoTourHub
+                    shopId={demoShopId}
+                    shopName={shops.find((shop) => shop.id === demoShopId)?.name}
+                    disabled={!demoShopId}
+                    onPreviewLogin={() => void openLoginTour()}
+                  />
+                </>
+              )}
             </>
           )}
 
@@ -826,6 +832,34 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
           </DialogScrollArea>
         </DialogContent>
       </Dialog>
+      {loginTourSettings && (
+        <LoginPreviewDialog
+          open={loginTourOpen}
+          onOpenChange={setLoginTourOpen}
+          preview={{
+            layout: normalizeLoginLayout(loginTourSettings.login_layout),
+            shopName:
+              loginTourSettings.display_name?.trim() ||
+              demoShop?.name ||
+              demoState?.shop.name ||
+              "Barbearia",
+            logoUrl: loginTourSettings.logo_url,
+            logoBackgroundColor: loginTourSettings.logo_background_color,
+            loginImageUrl: loginTourSettings.login_image_url,
+            primaryColor: loginTourSettings.primary_color || DEFAULT_PRIMARY_COLOR,
+            accentColor: loginTourSettings.accent_color || DEFAULT_ACCENT_COLOR,
+            fontFamily: loginTourSettings.font_family || DEFAULT_FONT_FAMILY,
+            customFontUrl: loginTourSettings.custom_font_url,
+            headerFontWeight: normalizeHeaderFontWeight(loginTourSettings.header_font_weight),
+            headerFontStyle:
+              normalizeHeaderFontStyle(loginTourSettings.header_font_style) ||
+              DEFAULT_HEADER_FONT_STYLE,
+            cornerStyle: normalizeCornerStyle(
+              loginTourSettings.corner_style ?? DEFAULT_CORNER_STYLE,
+            ),
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -10,7 +10,15 @@ import { DemoChromeContext, type DemoRole } from "./chrome";
 import { createDemoState, demoReducer, type DemoShopPreset } from "./model";
 import { DemoRoleSelector, DemoAccountMenu } from "./DemoAccountMenu";
 
-export function DemoWorkspace({ profile, shopId }: { profile: SessionProfile; shopId?: string }) {
+export function DemoWorkspace({
+  profile,
+  shopId,
+  initialRole = "customer",
+}: {
+  profile: SessionProfile;
+  shopId?: string;
+  initialRole?: DemoRole;
+}) {
   const [preset, setPreset] = useState<DemoShopPreset | null>(null);
   const [loading, setLoading] = useState(Boolean(shopId));
   const [error, setError] = useState<string | null>(null);
@@ -73,22 +81,34 @@ export function DemoWorkspace({ profile, shopId }: { profile: SessionProfile; sh
       </main>
     );
   }
-  return <ConfiguredDemoWorkspace profile={profile} preset={preset ?? undefined} />;
+  return (
+    <ConfiguredDemoWorkspace
+      profile={profile}
+      preset={preset ?? undefined}
+      initialRole={initialRole}
+    />
+  );
 }
 
 function ConfiguredDemoWorkspace({
   profile,
   preset,
+  initialRole = "customer",
 }: {
   profile: SessionProfile;
   preset?: DemoShopPreset;
+  initialRole?: DemoRole;
 }) {
   const navigate = useNavigate();
-  const [role, setRole] = useState<DemoRole>("customer");
+  const [role, setRole] = useState<DemoRole>(initialRole);
   const [openProfileRequest, setOpenProfileRequest] = useState(false);
   const [state, dispatch] = useReducer(demoReducer, undefined, () =>
     createDemoState(new Date(), preset),
   );
+
+  useEffect(() => {
+    setRole(initialRole);
+  }, [initialRole]);
 
   useEffect(() => {
     let last = Date.now();
@@ -188,6 +208,12 @@ function ConfiguredDemoWorkspace({
           qualquer sobra aqui encurta a tela e deixa a navegação flutuante fora
           da superfície do app (parecia cortada embaixo). */}
       <div className="demo-layout bg-background text-foreground">
+        <div className="border-b border-primary/20 bg-primary/10 px-4 py-2 text-center text-xs font-semibold text-foreground">
+          Ambiente de teste visual · dados fictícios ·{" "}
+          <button type="button" onClick={exit} className="underline underline-offset-2">
+            sair
+          </button>
+        </div>
         <div className="demo-content">{content}</div>
       </div>
     </DemoChromeContext.Provider>
