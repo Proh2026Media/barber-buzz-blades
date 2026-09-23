@@ -15,9 +15,13 @@ import { resolvePostAuthPath } from "@/lib/auth/session";
 import {
   buildPlatformAuthUrl,
   currentOrigin,
+  finishOAuthAndBridge,
   isSafeReturnOriginShape,
   needsAuthOriginBridge,
-  platformAuthOrigin,
+  peekAuthBridge,
+  platformOAuthCallbackUrl,
+  resolveAuthBridge,
+  stashAuthBridge,
   redirectWithSessionToReturnOrigin,
 } from "@/lib/auth/return-origin";
 import {
@@ -171,6 +175,18 @@ function AuthPage() {
 
   const preferredNext = isSafeNext(next) ? next : "";
 
+  // No apex: grava destino da loja assim que a URL chega (antes do Google).
+  useEffect(() => {
+    if (bridged) return;
+    if (needsAuthOriginBridge()) return;
+    const bridge = resolveAuthBridge({
+      returnOrigin,
+      shop: shop || effectiveShopRef,
+      next: preferredNext || "/app",
+    });
+    if (bridge) stashAuthBridge(bridge);
+  }, [returnOrigin, shop, effectiveShopRef, preferredNext, bridged]);
+
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -261,18 +277,25 @@ function AuthPage() {
         setError(null);
         setInfo("Defina uma nova senha para continuar.");
       }
-      if (event === "SIGNED_IN" && returnOrigin && !bridged && oauth !== "google") {
-        void redirectWithSessionToReturnOrigin({
+      if (
+        (event === "SIGNED_IN" || event === "INITIAL_SESSION") &&
+        !bridged &&
+        oauth !== "google"
+      ) {
+        const bridge = resolveAuthBridge({
           returnOrigin,
           shop: effectiveShopRef,
           next: preferredNext || "/app",
         });
+        if (bridge?.returnOrigin && bridge.returnOrigin !== window.location.origin) {
+          void redirectWithSessionToReturnOrigin(bridge);
+        }
       }
     });
     return () => subscription.unsubscribe();
   }, [returnOrigin, bridged, oauth, effectiveShopRef, preferredNext]);
 
-  // Domínio próprio: tokens na hash vindos do apex → grava sessão local.
+  // Domínio da loja: tokens na hash vindos do apex → grava sessão local.
   useEffect(() => {
     if (!bridged) {
       setBridgeReady(true);
@@ -312,7 +335,7 @@ function AuthPage() {
     };
   }, [bridged]);
 
-  // Apex: pedido vindo do link da loja para iniciar Google (allow list do GoTrue).
+  // Apex: pedido vindo do link da loja para iniciar Google.
   useEffect(() => {
     if (oauth !== "google") return;
     if (needsAuthOriginBridge()) return;
@@ -320,21 +343,21 @@ function AuthPage() {
     void (async () => {
       setBusy(true);
       setInfo(
-        returnOrigin
+        returnOrigin || peekAuthBridge()
           ? "Abrindo Google… Depois você volta automaticamente para a barbearia."
           : "Abrindo Google…",
       );
       try {
-        const params = new URLSearchParams();
-        if (preferredNext) params.set("next", preferredNext);
-        if (effectiveShopRef) params.set("shop", effectiveShopRef);
-        if (returnOrigin) params.set("return_origin", returnOrigin);
-        const qs = params.toString();
-        // Sempre o apex — único redirect confiável na allow list.
-        const redirectTo = `${platformAuthOrigin()}/auth${qs ? `?${qs}` : ""}`;
+        const bridge = resolveAuthBridge({
+          returnOrigin,
+          shop: effectiveShopRef,
+          next: preferredNext || "/app",
+        });
+        if (bridge) stashAuthBridge(bridge);
+        // Redirect limpo — destino da loja fica no sessionStorage.
         const { error: oauthError } = await supabase.auth.signInWithOAuth({
           provider: "google",
-          options: { redirectTo },
+          options: { redirectTo: platformOAuthCallbackUrl() },
         });
         if (oauthError) throw oauthError;
       } catch (err) {
@@ -349,22 +372,45 @@ function AuthPage() {
     };
   }, [oauth, preferredNext, effectiveShopRef, returnOrigin]);
 
+  // Após Google (?code=) ou sessão já pronta: devolve à loja se houver ponte.
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       if (!bridgeReady) return;
       if (mode === "recovery" || mode === "forgot") return;
       if (oauth === "google") return;
-      const { data } = await supabase.auth.getSession();
-      if (!data.session || cancelled) return;
 
-      if (
-        returnOrigin &&
-        (await redirectWithSessionToReturnOrigin({
+      const hasCode =
+        typeof window !== "undefined" && new URLSearchParams(window.location.search).has("code");
+
+      if (hasCode || peekAuthBridge() || returnOrigin) {
+        setInfo("Concluindo login…");
+        const result = await finishOAuthAndBridge({
           returnOrigin,
           shop: effectiveShopRef,
           next: preferredNext || "/app",
-        }))
+        });
+        if (cancelled) return;
+        if (result === "bridged") return;
+        if (result === "error") {
+          setError("Não foi possível concluir o login com Google. Tente novamente.");
+          setBusy(false);
+          return;
+        }
+      }
+
+      const { data } = await supabase.auth.getSession();
+      if (!data.session || cancelled) return;
+
+      const bridge = resolveAuthBridge({
+        returnOrigin,
+        shop: effectiveShopRef,
+        next: preferredNext || "/app",
+      });
+      if (
+        bridge?.returnOrigin &&
+        bridge.returnOrigin !== window.location.origin &&
+        (await redirectWithSessionToReturnOrigin(bridge))
       ) {
         return;
       }
@@ -386,13 +432,15 @@ function AuthPage() {
   }, [preferredNext, mode, effectiveShopRef, returnOrigin, oauth, bridgeReady]);
 
   async function goAfterAuth() {
+    const bridge = resolveAuthBridge({
+      returnOrigin,
+      shop: effectiveShopRef,
+      next: preferredNext || "/app",
+    });
     if (
-      returnOrigin &&
-      (await redirectWithSessionToReturnOrigin({
-        returnOrigin,
-        shop: effectiveShopRef,
-        next: preferredNext || "/app",
-      }))
+      bridge?.returnOrigin &&
+      bridge.returnOrigin !== window.location.origin &&
+      (await redirectWithSessionToReturnOrigin(bridge))
     ) {
       return;
     }
@@ -549,7 +597,6 @@ function AuthPage() {
     setInfo(null);
     try {
       // Subdomínio ou domínio próprio: OAuth no apex + volta com a sessão.
-      // Sem isso o GoTrue manda para beauty… e a loja fica sem login.
       if (needsAuthOriginBridge()) {
         let shopRef = effectiveShopRef;
         if (!shopRef) {
@@ -561,23 +608,29 @@ function AuthPage() {
             shopRef = null;
           }
         }
+        const returnOriginValue = currentOrigin();
+        stashAuthBridge({
+          returnOrigin: returnOriginValue,
+          shop: shopRef || undefined,
+          next: preferredNext || "/app",
+        });
         window.location.href = buildPlatformAuthUrl({
           shop: shopRef,
           next: preferredNext || "/app",
-          returnOrigin: currentOrigin(),
+          returnOrigin: returnOriginValue,
           oauth: "google",
         });
         return;
       }
-      const params = new URLSearchParams();
-      if (preferredNext) params.set("next", preferredNext);
-      if (effectiveShopRef) params.set("shop", effectiveShopRef);
-      if (returnOrigin) params.set("return_origin", returnOrigin);
-      const qs = params.toString();
-      const redirectTo = `${platformAuthOrigin()}/auth${qs ? `?${qs}` : ""}`;
+      const bridge = resolveAuthBridge({
+        returnOrigin,
+        shop: effectiveShopRef,
+        next: preferredNext || "/app",
+      });
+      if (bridge) stashAuthBridge(bridge);
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo },
+        options: { redirectTo: platformOAuthCallbackUrl() },
       });
       if (error) throw error;
     } catch (err) {

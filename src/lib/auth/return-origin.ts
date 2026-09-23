@@ -3,6 +3,14 @@
 import { PLATFORM_BASE_HOST } from "@/lib/shop/host";
 import { supabase } from "@/integrations/supabase/client";
 
+const BRIDGE_STORAGE_KEY = "mb_auth_bridge_v1";
+
+export type AuthBridgePayload = {
+  returnOrigin: string;
+  shop?: string;
+  next?: string;
+};
+
 export function platformAuthOrigin(): string {
   const fromEnv = (import.meta.env.VITE_APP_ORIGIN as string | undefined)?.trim();
   if (fromEnv) return fromEnv.replace(/\/$/, "");
@@ -38,9 +46,7 @@ export function isPlatformAuthOrigin(origin: string): boolean {
 
 /**
  * Qualquer host que não seja o apex precisa de ponte:
- * subdomínio `*.beauty…` e domínio próprio. O GoTrue em produção costuma
- * ter só `beauty…/**` na allow list — OAuth no subdomínio manda o usuário
- * para o apex e perde a sessão no link da loja.
+ * subdomínio `*.beauty…` e domínio próprio.
  */
 export function needsAuthOriginBridge(origin = currentOrigin()): boolean {
   return !isPlatformAuthOrigin(origin);
@@ -80,6 +86,65 @@ export async function isAllowedReturnOrigin(origin: string): Promise<boolean> {
   }
 }
 
+/** Persiste destino da loja no apex — sobrevive ao round-trip do Google mesmo se a URL perder query. */
+export function stashAuthBridge(payload: AuthBridgePayload): void {
+  if (typeof window === "undefined") return;
+  if (!isSafeReturnOriginShape(payload.returnOrigin)) return;
+  try {
+    sessionStorage.setItem(
+      BRIDGE_STORAGE_KEY,
+      JSON.stringify({
+        returnOrigin: payload.returnOrigin,
+        shop: payload.shop || undefined,
+        next: payload.next || "/app",
+      } satisfies AuthBridgePayload),
+    );
+  } catch {
+    /* private mode / quota */
+  }
+}
+
+export function peekAuthBridge(): AuthBridgePayload | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(BRIDGE_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as AuthBridgePayload;
+    if (!parsed?.returnOrigin || !isSafeReturnOriginShape(parsed.returnOrigin)) return null;
+    return {
+      returnOrigin: parsed.returnOrigin,
+      shop: parsed.shop || undefined,
+      next: parsed.next || "/app",
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function clearAuthBridge(): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.removeItem(BRIDGE_STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function resolveAuthBridge(fromUrl?: {
+  returnOrigin?: string | null;
+  shop?: string | null;
+  next?: string | null;
+}): AuthBridgePayload | null {
+  const stored = peekAuthBridge();
+  const returnOrigin = fromUrl?.returnOrigin || stored?.returnOrigin;
+  if (!returnOrigin || !isSafeReturnOriginShape(returnOrigin)) return null;
+  return {
+    returnOrigin,
+    shop: fromUrl?.shop || stored?.shop || undefined,
+    next: fromUrl?.next || stored?.next || "/app",
+  };
+}
+
 export function buildPlatformAuthUrl(opts: {
   shop?: string | null;
   next?: string | null;
@@ -95,6 +160,11 @@ export function buildPlatformAuthUrl(opts: {
   if (opts.recovery) params.set("recovery", "1");
   const qs = params.toString();
   return `${platformAuthOrigin()}/auth${qs ? `?${qs}` : ""}`;
+}
+
+/** Redirect limpo para o GoTrue (sem query) — a ponte fica no sessionStorage. */
+export function platformOAuthCallbackUrl(): string {
+  return `${platformAuthOrigin()}/auth`;
 }
 
 /** Monta hash implícito para o cliente no domínio destino detectar a sessão. */
@@ -136,6 +206,50 @@ export async function redirectWithSessionToReturnOrigin(opts: {
     refresh_token: session.refresh_token,
     expires_at: session.expires_at,
   });
+  clearAuthBridge();
   window.location.href = `${opts.returnOrigin}/auth${qs ? `?${qs}` : ""}#${hash}`;
   return true;
+}
+
+/** Troca o ?code= do PKCE e, se houver ponte, devolve à loja. */
+export async function finishOAuthAndBridge(fromUrl?: {
+  returnOrigin?: string | null;
+  shop?: string | null;
+  next?: string | null;
+}): Promise<"bridged" | "local" | "pending" | "error"> {
+  if (typeof window === "undefined") return "pending";
+
+  const url = new URL(window.location.href);
+  const code = url.searchParams.get("code");
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    url.searchParams.delete("code");
+    url.searchParams.delete("state");
+    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+    if (error) {
+      console.warn("[auth-bridge] exchangeCodeForSession:", error.message);
+    }
+  }
+
+  // PKCE / detectSessionInUrl pode concluir alguns ms depois.
+  let session = (await supabase.auth.getSession()).data.session;
+  if (!session) {
+    const deadline = Date.now() + 4000;
+    while (!session && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 200));
+      session = (await supabase.auth.getSession()).data.session;
+    }
+  }
+  if (!session) return code ? "error" : "pending";
+
+  const bridge = resolveAuthBridge(fromUrl);
+  if (bridge?.returnOrigin && bridge.returnOrigin !== currentOrigin()) {
+    const ok = await redirectWithSessionToReturnOrigin({
+      returnOrigin: bridge.returnOrigin,
+      shop: bridge.shop,
+      next: bridge.next,
+    });
+    return ok ? "bridged" : "local";
+  }
+  return "local";
 }
