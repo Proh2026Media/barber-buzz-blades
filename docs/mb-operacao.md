@@ -299,9 +299,10 @@ Script manual de fallback (se a API falhar): `scripts/sync-traefik-custom-domain
 - [x] Auth redirects `*.beauty…`
 - [x] `resolve_shop_by_host` cobre domínio próprio ativo
 - [x] Função `shop-domain` (set/clear/verify + domain-manager)
-- [ ] Envs `DOMAIN_MANAGER_URL` + `DOMAIN_MANAGER_API_KEY` no Coolify
-- [ ] Deploy da Edge Function `shop-domain`
-- [ ] Registro A `beauty` → IP Hostinger (desbloqueia 502)
+- [x] Envs `DOMAIN_MANAGER_URL` + `DOMAIN_MANAGER_API_KEY` no Coolify
+- [x] Deploy da Edge Function `shop-domain`
+- [ ] Registro A `beauty` → IP Hostinger (desbloqueia 502 em `*.beauty` se ainda falhar)
+- [ ] Hostinger rebuild do front (commit `cac9bc4` em `main`) — até lá UI só no local
 - [ ] Testar `https://{slug}.beauty…/auth` e `/app`
 - [ ] Testar domínio próprio de ponta a ponta
 
