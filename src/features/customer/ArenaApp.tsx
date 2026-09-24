@@ -1707,6 +1707,17 @@ function ArenaApp({
                               <span className="brand-content-title block break-words">
                                 {s.name}
                               </span>
+                              {s.description ? (
+                                <span
+                                  className={`line-clamp-2 text-[11px] font-medium ${
+                                    serviceIdx === i
+                                      ? "text-primary-foreground/75"
+                                      : "text-muted-foreground"
+                                  }`}
+                                >
+                                  {s.description}
+                                </span>
+                              ) : null}
                             </div>
                             <span
                               className={`mt-auto block text-xs font-medium ${serviceIdx === i ? "text-primary-foreground/80" : "text-muted-foreground"}`}
@@ -1756,12 +1767,38 @@ function ArenaApp({
                               aria-pressed={staffIdx === i}
                               className={`p-4 rounded-xl border text-left text-xs font-bold transition-all ${staffIdx === i ? "bg-primary text-primary-foreground border-primary" : "bg-muted/20 border-border text-foreground hover:border-primary/50"}`}
                             >
-                              <span className="flex items-center justify-between gap-2">
-                                <span className="break-words">{m.display_name}</span>
+                              <span className="flex items-center gap-2">
+                                {m.avatar_url ? (
+                                  <img
+                                    src={m.avatar_url}
+                                    alt=""
+                                    className="size-9 shrink-0 rounded-xl object-cover"
+                                  />
+                                ) : (
+                                  <span
+                                    className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
+                                      staffIdx === i ? "bg-primary-foreground/15" : "bg-muted"
+                                    }`}
+                                  >
+                                    <Scissors className="size-4" aria-hidden="true" />
+                                  </span>
+                                )}
+                                <span className="min-w-0 flex-1 break-words">{m.display_name}</span>
                                 {staffIdx === i && (
                                   <CheckCircle className="size-4 shrink-0" aria-hidden="true" />
                                 )}
                               </span>
+                              {m.bio ? (
+                                <span
+                                  className={`mt-2 line-clamp-2 text-[11px] font-medium ${
+                                    staffIdx === i
+                                      ? "text-primary-foreground/75"
+                                      : "text-muted-foreground"
+                                  }`}
+                                >
+                                  {m.bio}
+                                </span>
+                              ) : null}
                             </button>
                           ))}
                         </div>

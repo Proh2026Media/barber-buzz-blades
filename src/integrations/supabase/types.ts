@@ -323,6 +323,7 @@ export type Database = {
           price_cents: number;
           active: boolean;
           icon: string | null;
+          description: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -334,6 +335,7 @@ export type Database = {
           price_cents?: number;
           active?: boolean;
           icon?: string | null;
+          description?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -345,6 +347,7 @@ export type Database = {
           price_cents?: number;
           active?: boolean;
           icon?: string | null;
+          description?: string | null;
           created_at?: string;
           updated_at?: string;
         };

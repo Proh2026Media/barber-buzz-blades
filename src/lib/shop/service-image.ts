@@ -12,6 +12,26 @@ const EXTENSION_BY_TYPE: Record<string, string> = {
   "image/svg+xml": "svg",
 };
 
+function storageUploadError(error: unknown, label: string) {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  if (/bucket not found/i.test(message)) {
+    return new Error(
+      `O armazenamento de ${label} ainda não está configurado. Atualize a página e tente novamente.`,
+    );
+  }
+  if (/row-level security|violates|not allowed|403|401|jwt/i.test(message)) {
+    return new Error(
+      `Sem permissão para enviar ${label}. Entre de novo ou peça ao dono da loja.`,
+    );
+  }
+  if (/payload too large|maximum|2 ?mb|entity too large/i.test(message)) {
+    return new Error(`A imagem de ${label} deve ter no máximo 2 MB.`);
+  }
+  return new Error(
+    message.trim() || `Não foi possível enviar a imagem de ${label}. Tente outro arquivo.`,
+  );
+}
+
 export function isServiceImageSource(value: string | null | undefined): value is string {
   return Boolean(value && (/^https?:\/\//i.test(value) || value.startsWith("data:image/")));
 }
@@ -43,17 +63,30 @@ export function serviceImageToDataUrl(file: File) {
 }
 
 export async function uploadServiceImage(shopId: string, file: File) {
-  const extension = EXTENSION_BY_TYPE[file.type];
-  if (!extension) throw new Error("Formato de imagem não aceito.");
-
+  const extension = EXTENSION_BY_TYPE[file.type] ?? "webp";
   const path = `${shopId}/${crypto.randomUUID()}.${extension}`;
   const { error } = await supabase.storage.from(SERVICE_IMAGE_BUCKET).upload(path, file, {
     cacheControl: "3600",
-    contentType: file.type,
+    contentType: file.type || "image/webp",
     upsert: false,
   });
-  if (error) throw error;
+  if (error) throw storageUploadError(error, "serviço");
 
   const { data } = supabase.storage.from(SERVICE_IMAGE_BUCKET).getPublicUrl(path);
-  return data.publicUrl;
+  return `${data.publicUrl}?v=${Date.now()}`;
+}
+
+/** Foto do profissional: mesmo bucket de mídia da loja, pasta staff/. */
+export async function uploadStaffAvatar(shopId: string, file: File) {
+  const extension = EXTENSION_BY_TYPE[file.type] ?? "webp";
+  const path = `${shopId}/staff/${crypto.randomUUID()}.${extension}`;
+  const { error } = await supabase.storage.from(SERVICE_IMAGE_BUCKET).upload(path, file, {
+    cacheControl: "3600",
+    contentType: file.type || "image/webp",
+    upsert: false,
+  });
+  if (error) throw storageUploadError(error, "barbeiro");
+
+  const { data } = supabase.storage.from(SERVICE_IMAGE_BUCKET).getPublicUrl(path);
+  return `${data.publicUrl}?v=${Date.now()}`;
 }

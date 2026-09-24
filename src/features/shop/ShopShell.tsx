@@ -96,6 +96,7 @@ import {
   SERVICE_IMAGE_ACCEPT,
   serviceImageToDataUrl,
   uploadServiceImage,
+  uploadStaffAvatar,
   validateServiceImage,
 } from "@/lib/shop/service-image";
 import { PartnerOverview } from "./PartnerOverview";
@@ -262,6 +263,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   const [error, setError] = useState<string | null>(null);
 
   const [serviceName, setServiceName] = useState("");
+  const [serviceDescription, setServiceDescription] = useState("");
   const [serviceDuration, setServiceDuration] = useState("30");
   const [customDurationOpen, setCustomDurationOpen] = useState(false);
   const [servicePrice, setServicePrice] = useState("45");
@@ -272,6 +274,11 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   // O input de arquivo fica fora da tela; o botão visível dispara o seletor,
   // o que mantém o envio acessível por teclado.
   const iconInputRef = useRef<HTMLInputElement>(null);
+  const [staffAvatar, setStaffAvatar] = useState<string | null>(null);
+  const [staffBio, setStaffBio] = useState("");
+  const [uploadingStaffAvatar, setUploadingStaffAvatar] = useState(false);
+  const [staffImageToCrop, setStaffImageToCrop] = useState<File | null>(null);
+  const staffAvatarInputRef = useRef<HTMLInputElement>(null);
   // Identificadores estáveis para os rótulos do formulário de bloqueio.
   const blockStaffFieldId = useId();
   const blockReasonFieldId = useId();
@@ -631,6 +638,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       const service = {
         barbershop_id: shop.id,
         name: serviceName.trim(),
+        description: serviceDescription.trim() || null,
         duration_minutes: duration,
         price_cents: Math.round(priceReais * 100),
         active: editingService?.active ?? true,
@@ -694,6 +702,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       }
       setEditingService(null);
       setServiceName("");
+      setServiceDescription("");
       setServiceDuration("30");
       setCustomDurationOpen(false);
       setServicePrice("45");
@@ -742,6 +751,43 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       );
     } finally {
       setUploadingIcon(false);
+    }
+  }
+
+  function handleStaffAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !shop?.id) return;
+    const validationError = validateServiceImage(file);
+    if (validationError) {
+      setError(validationError);
+      e.target.value = "";
+      return;
+    }
+    setError(null);
+    setStaffImageToCrop(file);
+    e.target.value = "";
+  }
+
+  async function saveCroppedStaffAvatar(file: File) {
+    if (!shop?.id) return;
+    const validationError = validateServiceImage(file);
+    if (validationError) throw new Error(validationError);
+    setUploadingStaffAvatar(true);
+    setError(null);
+    try {
+      const image = demo
+        ? await serviceImageToDataUrl(file)
+        : await uploadStaffAvatar(shop.id, file);
+      setStaffAvatar(image);
+      setStaffImageToCrop(null);
+    } catch (cause) {
+      throw new Error(
+        cause instanceof Error && cause.message
+          ? cause.message
+          : "Não foi possível enviar a foto do barbeiro.",
+      );
+    } finally {
+      setUploadingStaffAvatar(false);
     }
   }
 
@@ -905,6 +951,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         display_name: staffName.trim(),
         booking_slug: desiredSlug,
         active: editingStaff?.active ?? true,
+        bio: staffBio.trim() || null,
+        avatar_url: staffAvatar,
       };
       if (demo) {
         demo.dispatch({
@@ -948,6 +996,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       setStaffName("");
       setStaffSlug("");
       setStaffSlugTouched(false);
+      setStaffBio("");
+      setStaffAvatar(null);
       setStaffFormOpen(false);
       await loadCatalog();
     } catch (err) {
@@ -1911,6 +1961,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   onClick={() => {
                     setEditingService(null);
                     setServiceName("");
+                    setServiceDescription("");
                     setServiceDuration("30");
                     setCustomDurationOpen(false);
                     setServicePrice("45");
@@ -1947,6 +1998,11 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       />
                       <div>
                         <p className="text-sm font-bold">{s.name}</p>
+                        {s.description ? (
+                          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                            {s.description}
+                          </p>
+                        ) : null}
                         <span
                           className={
                             s.active
@@ -1985,6 +2041,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         onClick={() => {
                           setEditingService(s);
                           setServiceName(s.name);
+                          setServiceDescription(s.description ?? "");
                           setServiceDuration(String(s.duration_minutes));
                           setServicePrice(String(s.price_cents / 100));
                           setServiceIcon(s.icon || "Scissors");
@@ -2057,6 +2114,21 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         placeholder="Nome"
                         className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
                       />
+                      <label htmlFor="service-description" className="block space-y-2 text-xs font-semibold">
+                        Descrição
+                        <textarea
+                          id="service-description"
+                          value={serviceDescription}
+                          onChange={(e) => setServiceDescription(e.target.value.slice(0, 500))}
+                          placeholder="O que o cliente precisa saber (opcional)"
+                          rows={3}
+                          maxLength={500}
+                          className="w-full resize-y rounded-xl border border-border bg-background px-3 py-2 text-sm font-normal"
+                        />
+                        <span className="block text-[11px] font-normal text-muted-foreground">
+                          {serviceDescription.length}/500
+                        </span>
+                      </label>
                       <div className="space-y-2">
                         <span className="block text-xs font-semibold">Duração</span>
                         <div className="flex flex-wrap gap-1.5">
@@ -2240,6 +2312,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                           onClick={() => {
                             setEditingService(null);
                             setServiceName("");
+                            setServiceDescription("");
                             setServiceDuration("30");
                             setCustomDurationOpen(false);
                             setServicePrice("45");
@@ -2259,6 +2332,15 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 onCancel={() => setServiceImageToCrop(null)}
                 onConfirm={saveCroppedServiceImage}
               />
+              <ServiceImageCropDialog
+                file={staffImageToCrop}
+                onCancel={() => setStaffImageToCrop(null)}
+                onConfirm={saveCroppedStaffAvatar}
+                title="Enquadrar foto do barbeiro"
+                description="A foto aparece no app do cliente ao escolher o profissional."
+                imageAlt="Prévia da foto do barbeiro"
+                outputName="barbeiro-1x1.webp"
+              />
             </section>
           )}
 
@@ -2276,6 +2358,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     setStaffName("");
                     setStaffSlug("");
                     setStaffSlugTouched(false);
+                    setStaffBio("");
+                    setStaffAvatar(null);
                     setError(null);
                     setStaffFormOpen(true);
                   }}
@@ -2300,17 +2384,32 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     key={member.id}
                     className="grid grid-cols-2 items-center gap-3 rounded-2xl border border-border bg-card p-4"
                   >
-                    <div className="col-span-2">
-                      <Users className="mb-2 size-9 rounded-xl bg-gold/10 p-2 text-gold" />
-                      <p className="text-sm font-bold">{member.display_name}</p>
-                      {member.booking_slug ? (
-                        <p className="font-mono text-xs text-muted-foreground">
-                          /{member.booking_slug}
+                    <div className="col-span-2 flex items-center gap-3">
+                      {member.avatar_url ? (
+                        <img
+                          src={member.avatar_url}
+                          alt=""
+                          className="size-12 shrink-0 rounded-2xl object-cover"
+                        />
+                      ) : (
+                        <Users className="size-12 shrink-0 rounded-2xl bg-gold/10 p-3 text-gold" />
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold">{member.display_name}</p>
+                        {member.booking_slug ? (
+                          <p className="font-mono text-xs text-muted-foreground">
+                            /{member.booking_slug}
+                          </p>
+                        ) : null}
+                        {member.bio ? (
+                          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                            {member.bio}
+                          </p>
+                        ) : null}
+                        <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                          {member.active ? "Disponível" : "Desativado"}
                         </p>
-                      ) : null}
-                      <p className="text-xs uppercase tracking-widest text-muted-foreground">
-                        {member.active ? "Disponível" : "Desativado"}
-                      </p>
+                      </div>
                     </div>
                     <button
                       disabled={busy}
@@ -2321,6 +2420,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         setStaffName(member.display_name);
                         setStaffSlug(member.booking_slug ?? slugifyPt(member.display_name));
                         setStaffSlugTouched(true);
+                        setStaffBio(member.bio ?? "");
+                        setStaffAvatar(member.avatar_url ?? null);
                         setError(null);
                         setStaffFormOpen(true);
                       }}
@@ -2427,6 +2528,73 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         <span className="font-semibold">/{staffSlug || "slug"}/</span> no domínio da
                         loja. Trocar o slug redireciona o link antigo.
                       </p>
+                      <div className="space-y-2">
+                        <span className="block text-xs font-semibold">Foto do barbeiro</span>
+                        <div className="flex flex-wrap items-center gap-3">
+                          {staffAvatar ? (
+                            <img
+                              src={staffAvatar}
+                              alt=""
+                              className="size-16 rounded-2xl object-cover"
+                            />
+                          ) : (
+                            <span className="flex size-16 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
+                              <Users className="size-6" />
+                            </span>
+                          )}
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              disabled={uploadingStaffAvatar || busy}
+                              onClick={() => staffAvatarInputRef.current?.click()}
+                              className="flex min-h-11 items-center gap-2 rounded-xl border border-dashed border-border px-3 text-xs font-semibold"
+                            >
+                              {uploadingStaffAvatar ? (
+                                <RefreshCw className="size-4 animate-spin" />
+                              ) : (
+                                <Upload className="size-4" />
+                              )}
+                              {staffAvatar ? "Trocar foto" : "Enviar foto"}
+                            </button>
+                            {staffAvatar && (
+                              <button
+                                type="button"
+                                disabled={busy}
+                                onClick={() => setStaffAvatar(null)}
+                                className="min-h-11 rounded-xl border border-border px-3 text-xs font-semibold text-muted-foreground"
+                              >
+                                Remover
+                              </button>
+                            )}
+                          </div>
+                          <input
+                            ref={staffAvatarInputRef}
+                            type="file"
+                            accept={SERVICE_IMAGE_ACCEPT}
+                            className="sr-only"
+                            onChange={handleStaffAvatarUpload}
+                            disabled={uploadingStaffAvatar}
+                          />
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">
+                          PNG, JPEG ou WebP · recorte quadrado · até 2 MB
+                        </p>
+                      </div>
+                      <label htmlFor="staff-bio" className="block space-y-2 text-xs font-semibold">
+                        Bio (opcional)
+                        <textarea
+                          id="staff-bio"
+                          value={staffBio}
+                          onChange={(e) => setStaffBio(e.target.value.slice(0, 280))}
+                          placeholder="Especialidades, estilo de atendimento…"
+                          rows={3}
+                          maxLength={280}
+                          className="w-full resize-y rounded-xl border border-border bg-background px-3 py-2 text-sm font-normal"
+                        />
+                        <span className="block text-[11px] font-normal text-muted-foreground">
+                          {staffBio.length}/280
+                        </span>
+                      </label>
                       {error && (
                         <p role="alert" className="text-sm text-destructive">
                           {error}
@@ -2452,6 +2620,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                             setStaffName("");
                             setStaffSlug("");
                             setStaffSlugTouched(false);
+                            setStaffBio("");
+                            setStaffAvatar(null);
                             setStaffFormOpen(false);
                           }}
                           className="text-sm underline"
