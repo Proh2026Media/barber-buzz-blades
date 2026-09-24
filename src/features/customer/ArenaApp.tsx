@@ -846,8 +846,17 @@ function ArenaApp({
           );
           setSlotsFor(selectionKey);
         }
-      } catch {
-        if (!cancelled) setSlotsError("Não foi possível consultar os horários. Tente novamente.");
+      } catch (err) {
+        if (!cancelled) {
+          const message = err instanceof Error ? err.message : "";
+          if (/not authorized|42501|permission|forbidden|403/i.test(message)) {
+            setSlotsError(
+              "Esta barbearia não está disponível para agendar no momento. Abra o link atualizado da loja ou fale com a equipe.",
+            );
+          } else {
+            setSlotsError("Não foi possível consultar os horários. Tente novamente.");
+          }
+        }
       } finally {
         if (!cancelled) setSlotsLoading(false);
       }
