@@ -610,17 +610,51 @@ function AuthPage() {
               : ""
           }`;
 
-      const { error } = await supabase.auth.signUp({
+      const signupWhatsapp = whatsapp.trim();
+      const { data: signUpData, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             ...(effectiveShopRef ? { shop: effectiveShopRef } : {}),
+            ...(signupWhatsapp ? { whatsapp: signupWhatsapp } : {}),
           },
           emailRedirectTo,
         },
       });
-      if (error) throw error;
+      if (error) {
+        const msg = error.message || "";
+        if (/confirmação|confirmation|sending.*email|enviando e-mail/i.test(msg)) {
+          throw new Error(
+            "Não conseguimos enviar o e-mail de confirmação agora. Tente de novo em instantes ou entre com Google.",
+          );
+        }
+        throw error;
+      }
+
+      // Com autoconfirm, a sessão já vem; grava WhatsApp para avisos da barbearia.
+      if (signUpData.session && signupWhatsapp) {
+        const { error: waError } = await supabase.rpc("save_my_whatsapp", {
+          p_raw: signupWhatsapp,
+          p_opt_in: true,
+        });
+        if (waError) {
+          setInfo(
+            "Conta criada. Abra Meu perfil e salve o WhatsApp para receber avisos de horário.",
+          );
+        }
+      }
+
+      if (signUpData.session) {
+        setInfo(
+          signupWhatsapp
+            ? "Conta criada. Você receberá avisos no WhatsApp quando a barbearia enviar."
+            : "Conta criada. Em Meu perfil você pode cadastrar o WhatsApp para avisos.",
+        );
+        await goAfterAuth();
+        return;
+      }
+
       setInfo("Confirme seu email e entre na conta.");
       setMode("signin");
     } catch (err) {
@@ -707,7 +741,9 @@ function AuthPage() {
 
   const subtitle =
     mode === "signup"
-      ? "Leva menos de um minuto. Depois é só agendar e acompanhar seus horários."
+      ? effectiveShopRef
+        ? "Crie a conta com e-mail e informe o WhatsApp para receber avisos de horário desta barbearia."
+        : "Leva menos de um minuto. Depois é só agendar e acompanhar seus horários."
       : mode === "forgot"
         ? recoveryChannel === "whatsapp"
           ? "Informe o WhatsApp cadastrado. Enviaremos um código pela barbearia."
@@ -972,6 +1008,36 @@ function AuthPage() {
                   </label>
                 )}
               </>
+            )}
+
+            {mode === "signup" && (
+              <label className={labelClass}>
+                <span>
+                  WhatsApp com DDD
+                  {effectiveShopRef ? " (para avisos de horário)" : " (opcional)"}
+                </span>
+                <span className={fieldClass}>
+                  <MessageCircle
+                    className="ml-4 size-[18px] shrink-0 text-muted-foreground"
+                    aria-hidden="true"
+                  />
+                  <input
+                    type="tel"
+                    required={Boolean(effectiveShopRef)}
+                    inputMode="tel"
+                    autoComplete="tel"
+                    placeholder="(11) 99999-0000"
+                    value={whatsapp}
+                    onChange={(e) => setWhatsapp(e.target.value)}
+                    className={inputClass}
+                  />
+                </span>
+                <span className="block text-xs font-normal text-muted-foreground">
+                  A barbearia envia confirmação e lembretes por este número (depois de conectar o
+                  WhatsApp dela em Ajustes). Não é o mesmo cadastro de{" "}
+                  <span className="font-semibold">/cadastrar</span> (abrir loja).
+                </span>
+              </label>
             )}
 
             {(mode === "signin" || mode === "signup" || mode === "recovery") && (
