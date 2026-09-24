@@ -1807,7 +1807,7 @@ function ArenaApp({
                             aria-pressed={serviceIdx === i}
                             className={
                               serviceView === "list"
-                                ? `flex min-h-14 w-full items-center gap-3 rounded-xl border px-3 py-3 text-left text-xs font-bold transition-all ${
+                                ? `flex min-h-14 w-full items-stretch overflow-hidden rounded-xl border p-0 text-left text-xs font-bold transition-all ${
                                     serviceIdx === i
                                       ? "border-primary bg-primary text-primary-foreground"
                                       : "border-border bg-muted/20 text-foreground hover:border-primary/50"
@@ -1821,40 +1821,52 @@ function ArenaApp({
                           >
                             {serviceView === "list" ? (
                               <>
-                                <ServiceIcon
-                                  icon={s.icon}
-                                  className="size-5 shrink-0"
-                                  imageClassName="size-10 shrink-0 rounded-xl"
-                                />
-                                <div className="min-w-0 flex-1">
-                                  <span className="brand-content-title block break-words">
-                                    {s.name}
-                                  </span>
-                                  {s.description ? (
-                                    <span
-                                      className={`mt-0.5 line-clamp-1 block text-[11px] font-medium ${
-                                        serviceIdx === i
-                                          ? "text-primary-foreground/75"
-                                          : "text-muted-foreground"
-                                      }`}
-                                    >
-                                      {s.description}
-                                    </span>
-                                  ) : null}
-                                </div>
                                 <span
-                                  className={`shrink-0 text-xs font-medium ${
-                                    serviceIdx === i
-                                      ? "text-primary-foreground/80"
-                                      : "text-muted-foreground"
+                                  className={`flex w-16 shrink-0 items-center justify-center overflow-hidden ${
+                                    serviceIdx === i ? "bg-primary-foreground/10" : "bg-muted/50"
                                   }`}
                                 >
-                                  {s.duration_minutes} min ·{" "}
-                                  {(s.price_cents / 100).toLocaleString("pt-BR", {
-                                    style: "currency",
-                                    currency: "BRL",
-                                  })}
+                                  <ServiceIcon
+                                    icon={s.icon}
+                                    className={`size-5 ${
+                                      serviceIdx === i
+                                        ? "text-primary-foreground"
+                                        : "text-muted-foreground"
+                                    }`}
+                                    imageClassName="size-full min-h-14 w-16 object-cover !rounded-none !p-0"
+                                  />
                                 </span>
+                                <div className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5">
+                                  <div className="min-w-0 flex-1">
+                                    <span className="brand-content-title block break-words">
+                                      {s.name}
+                                    </span>
+                                    {s.description ? (
+                                      <span
+                                        className={`mt-0.5 line-clamp-1 block text-[11px] font-medium ${
+                                          serviceIdx === i
+                                            ? "text-primary-foreground/75"
+                                            : "text-muted-foreground"
+                                        }`}
+                                      >
+                                        {s.description}
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                  <span
+                                    className={`shrink-0 text-xs font-medium ${
+                                      serviceIdx === i
+                                        ? "text-primary-foreground/80"
+                                        : "text-muted-foreground"
+                                    }`}
+                                  >
+                                    {s.duration_minutes} min ·{" "}
+                                    {(s.price_cents / 100).toLocaleString("pt-BR", {
+                                      style: "currency",
+                                      currency: "BRL",
+                                    })}
+                                  </span>
+                                </div>
                               </>
                             ) : (
                               <>
@@ -1944,7 +1956,7 @@ function ArenaApp({
                               aria-pressed={staffIdx === i}
                               className={
                                 staffView === "list"
-                                  ? `flex min-h-14 w-full items-center gap-3 rounded-xl border px-3 py-3 text-left text-xs font-bold transition-all ${
+                                  ? `flex min-h-14 w-full items-stretch overflow-hidden rounded-xl border p-0 text-left text-xs font-bold transition-all ${
                                       staffIdx === i
                                         ? "border-primary bg-primary text-primary-foreground"
                                         : "border-border bg-muted/20 text-foreground hover:border-primary/50"
@@ -1956,38 +1968,81 @@ function ArenaApp({
                                     }`
                               }
                             >
-                              <span className="flex items-center gap-2">
-                                {m.avatar_url ? (
-                                  <img
-                                    src={m.avatar_url}
-                                    alt=""
-                                    className="size-9 shrink-0 rounded-xl object-cover"
-                                  />
-                                ) : (
+                              {staffView === "list" ? (
+                                <>
                                   <span
-                                    className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
-                                      staffIdx === i ? "bg-primary-foreground/15" : "bg-muted"
+                                    className={`flex w-16 shrink-0 items-center justify-center overflow-hidden ${
+                                      staffIdx === i ? "bg-primary-foreground/10" : "bg-muted/50"
                                     }`}
                                   >
-                                    <Scissors className="size-4" aria-hidden="true" />
+                                    {m.avatar_url ? (
+                                      <img
+                                        src={m.avatar_url}
+                                        alt=""
+                                        className="size-full min-h-14 w-16 object-cover"
+                                      />
+                                    ) : (
+                                      <Scissors className="size-4" aria-hidden="true" />
+                                    )}
                                   </span>
-                                )}
-                                <span className="min-w-0 flex-1 break-words">{m.display_name}</span>
-                                {staffIdx === i && (
-                                  <CheckCircle className="size-4 shrink-0" aria-hidden="true" />
-                                )}
-                              </span>
-                              {m.bio ? (
-                                <span
-                                  className={`mt-2 line-clamp-2 text-[11px] font-medium ${
-                                    staffIdx === i
-                                      ? "text-primary-foreground/75"
-                                      : "text-muted-foreground"
-                                  }`}
-                                >
-                                  {m.bio}
-                                </span>
-                              ) : null}
+                                  <span className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2.5">
+                                    <span className="min-w-0 flex-1 break-words">
+                                      {m.display_name}
+                                      {m.bio ? (
+                                        <span
+                                          className={`mt-0.5 line-clamp-1 block text-[11px] font-medium ${
+                                            staffIdx === i
+                                              ? "text-primary-foreground/75"
+                                              : "text-muted-foreground"
+                                          }`}
+                                        >
+                                          {m.bio}
+                                        </span>
+                                      ) : null}
+                                    </span>
+                                    {staffIdx === i && (
+                                      <CheckCircle className="size-4 shrink-0" aria-hidden="true" />
+                                    )}
+                                  </span>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="flex items-center gap-2">
+                                    {m.avatar_url ? (
+                                      <img
+                                        src={m.avatar_url}
+                                        alt=""
+                                        className="size-9 shrink-0 rounded-xl object-cover"
+                                      />
+                                    ) : (
+                                      <span
+                                        className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
+                                          staffIdx === i ? "bg-primary-foreground/15" : "bg-muted"
+                                        }`}
+                                      >
+                                        <Scissors className="size-4" aria-hidden="true" />
+                                      </span>
+                                    )}
+                                    <span className="min-w-0 flex-1 break-words">
+                                      {m.display_name}
+                                    </span>
+                                    {staffIdx === i && (
+                                      <CheckCircle className="size-4 shrink-0" aria-hidden="true" />
+                                    )}
+                                  </span>
+                                  {m.bio ? (
+                                    <span
+                                      className={`mt-2 line-clamp-2 text-[11px] font-medium ${
+                                        staffIdx === i
+                                          ? "text-primary-foreground/75"
+                                          : "text-muted-foreground"
+                                      }`}
+                                    >
+                                      {m.bio}
+                                    </span>
+                                  ) : null}
+                                </>
+                              )}
                             </button>
                           ))}
                         </div>

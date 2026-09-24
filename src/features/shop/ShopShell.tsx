@@ -2044,26 +2044,38 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     className={
                       serviceView === "grid"
                         ? "grid grid-cols-2 items-center gap-3 rounded-2xl border border-border bg-card p-4"
-                        : "flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3"
+                        : "flex flex-wrap items-stretch overflow-hidden rounded-2xl border border-border bg-card"
                     }
                   >
                     <div
                       className={
                         serviceView === "grid"
                           ? "col-span-2 flex items-center gap-3"
-                          : "flex min-w-0 flex-1 items-center gap-3"
+                          : "flex min-w-0 flex-1 items-stretch"
                       }
                     >
-                      <ServiceIcon
-                        icon={s.icon}
-                        className="size-9 shrink-0 rounded-xl bg-gold/10 p-2 text-gold"
-                        imageClassName={
-                          serviceView === "grid"
-                            ? "size-18 shrink-0 rounded-2xl"
-                            : "size-12 shrink-0 rounded-xl"
+                      {serviceView === "list" ? (
+                        <span className="flex w-16 shrink-0 items-center justify-center overflow-hidden bg-gold/10">
+                          <ServiceIcon
+                            icon={s.icon}
+                            className="size-5 text-gold"
+                            imageClassName="size-full min-h-14 w-16 object-cover !rounded-none !p-0"
+                          />
+                        </span>
+                      ) : (
+                        <ServiceIcon
+                          icon={s.icon}
+                          className="size-9 shrink-0 rounded-xl bg-gold/10 p-2 text-gold"
+                          imageClassName="size-18 shrink-0 rounded-2xl"
+                        />
+                      )}
+                      <div
+                        className={
+                          serviceView === "list"
+                            ? "flex min-w-0 flex-1 flex-col justify-center gap-0.5 px-3 py-3"
+                            : "min-w-0"
                         }
-                      />
-                      <div className="min-w-0">
+                      >
                         <p className="text-sm font-bold">{s.name}</p>
                         {s.description ? (
                           <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
@@ -2081,7 +2093,13 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         </span>
                       </div>
                     </div>
-                    <div className={serviceView === "list" ? "shrink-0 text-right" : undefined}>
+                    <div
+                      className={
+                        serviceView === "list"
+                          ? "flex shrink-0 items-center px-3 py-3 text-right"
+                          : undefined
+                      }
+                    >
                       <p className="text-xs uppercase tracking-widest text-muted-foreground">
                         <span className="block text-lg font-bold tracking-normal text-foreground">
                           {formatPrice(s.price_cents)}
@@ -2096,7 +2114,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       className={
                         serviceView === "grid"
                           ? "flex justify-end"
-                          : "flex shrink-0 items-center gap-2"
+                          : "flex shrink-0 items-center gap-2 py-3 pr-3"
                       }
                     >
                       <Switch
@@ -2109,7 +2127,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     {canEditServices && (
                       <button
                         disabled={busy}
-                        className="action-button action-edit"
+                        className={`action-button action-edit ${serviceView === "list" ? "my-3 mr-1" : ""}`}
                         aria-label={`Editar ${s.name}`}
                         onClick={() => {
                           setEditingService(s);
@@ -2133,7 +2151,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                           setDeleteService(s);
                           setDeleteError(null);
                         }}
-                        className="action-button action-danger"
+                        className={`action-button action-danger ${serviceView === "list" ? "my-3 mr-3" : ""}`}
                       >
                         <Trash2 size={14} />
                         Excluir
@@ -2464,17 +2482,29 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     className={
                       staffView === "grid"
                         ? "grid grid-cols-2 items-center gap-3 rounded-2xl border border-border bg-card p-4"
-                        : "flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3"
+                        : "flex flex-wrap items-stretch overflow-hidden rounded-2xl border border-border bg-card"
                     }
                   >
                     <div
                       className={
                         staffView === "grid"
                           ? "col-span-2 flex items-center gap-3"
-                          : "flex min-w-0 flex-1 items-center gap-3"
+                          : "flex min-w-0 flex-1 items-stretch"
                       }
                     >
-                      {member.avatar_url ? (
+                      {staffView === "list" ? (
+                        <span className="flex w-16 shrink-0 items-center justify-center overflow-hidden bg-gold/10">
+                          {member.avatar_url ? (
+                            <img
+                              src={member.avatar_url}
+                              alt=""
+                              className="size-full min-h-14 w-16 object-cover"
+                            />
+                          ) : (
+                            <Users className="size-5 text-gold" />
+                          )}
+                        </span>
+                      ) : member.avatar_url ? (
                         <img
                           src={member.avatar_url}
                           alt=""
@@ -2483,7 +2513,13 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       ) : (
                         <Users className="size-12 shrink-0 rounded-2xl bg-gold/10 p-3 text-gold" />
                       )}
-                      <div className="min-w-0">
+                      <div
+                        className={
+                          staffView === "list"
+                            ? "flex min-w-0 flex-1 flex-col justify-center px-3 py-3"
+                            : "min-w-0"
+                        }
+                      >
                         <p className="text-sm font-bold">{member.display_name}</p>
                         {member.booking_slug ? (
                           <p className="font-mono text-xs text-muted-foreground">
@@ -2502,7 +2538,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     </div>
                     <button
                       disabled={busy}
-                      className="action-button action-edit"
+                      className={`action-button action-edit ${staffView === "list" ? "my-3" : ""}`}
                       aria-label={`Editar ${member.display_name}`}
                       onClick={() => {
                         setEditingStaff(member);
@@ -2524,7 +2560,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         setDeleteStaff(member);
                         setDeleteError(null);
                       }}
-                      className="action-button action-danger"
+                      className={`action-button action-danger ${staffView === "list" ? "my-3 mr-2" : ""}`}
                     >
                       <Trash2 size={14} />
                       Excluir
@@ -2533,7 +2569,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       className={
                         staffView === "grid"
                           ? "col-span-2 flex items-center justify-between text-xs text-muted-foreground"
-                          : "flex w-full items-center justify-between gap-3 text-xs text-muted-foreground sm:w-auto"
+                          : "flex items-center justify-between gap-3 px-3 py-3 text-xs text-muted-foreground sm:w-auto"
                       }
                     >
                       Aceitar reservas{" "}
