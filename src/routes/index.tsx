@@ -4,7 +4,7 @@ import { isPlatformApexHost, maybeRedirectToCanonical, resolveShopFromCurrentHos
 import { PlatformLanding } from "@/features/marketing/PlatformLanding";
 
 export const Route = createFileRoute("/")({
-  ssr: false,
+  // SSR ligado para crawlers (verificação OAuth Google) lerem a landing e os links legais.
   beforeLoad: async () => {
     const profile = await getSessionProfile();
     if (profile) {

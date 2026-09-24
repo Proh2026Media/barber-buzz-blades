@@ -9,7 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermosRouteImport } from './routes/termos'
 import { Route as ShopRouteImport } from './routes/shop'
+import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as PoliticaRouteImport } from './routes/politica'
 import { Route as PlatformRouteImport } from './routes/platform'
 import { Route as McpRouteImport } from './routes/mcp'
@@ -25,9 +27,19 @@ import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 
+const TermosRoute = TermosRouteImport.update({
+  id: '/termos',
+  path: '/termos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ShopRoute = ShopRouteImport.update({
   id: '/shop',
   path: '/shop',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacidadeRoute = PrivacidadeRouteImport.update({
+  id: '/privacidade',
+  path: '/privacidade',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PoliticaRoute = PoliticaRouteImport.update({
@@ -114,7 +126,9 @@ export interface FileRoutesByFullPath {
   '/mcp': typeof McpRoute
   '/platform': typeof PlatformRoute
   '/politica': typeof PoliticaRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/shop': typeof ShopRoute
+  '/termos': typeof TermosRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/auth/google-apps': typeof AuthGoogleAppsRoute
@@ -131,7 +145,9 @@ export interface FileRoutesByTo {
   '/mcp': typeof McpRoute
   '/platform': typeof PlatformRoute
   '/politica': typeof PoliticaRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/shop': typeof ShopRoute
+  '/termos': typeof TermosRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/auth/google-apps': typeof AuthGoogleAppsRoute
@@ -149,7 +165,9 @@ export interface FileRoutesById {
   '/mcp': typeof McpRoute
   '/platform': typeof PlatformRoute
   '/politica': typeof PoliticaRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/shop': typeof ShopRoute
+  '/termos': typeof TermosRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/auth/google-apps': typeof AuthGoogleAppsRoute
@@ -168,7 +186,9 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/platform'
     | '/politica'
+    | '/privacidade'
     | '/shop'
+    | '/termos'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/auth/google-apps'
@@ -185,7 +205,9 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/platform'
     | '/politica'
+    | '/privacidade'
     | '/shop'
+    | '/termos'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/auth/google-apps'
@@ -202,7 +224,9 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/platform'
     | '/politica'
+    | '/privacidade'
     | '/shop'
+    | '/termos'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/auth/google-apps'
@@ -220,7 +244,9 @@ export interface RootRouteChildren {
   McpRoute: typeof McpRoute
   PlatformRoute: typeof PlatformRoute
   PoliticaRoute: typeof PoliticaRoute
+  PrivacidadeRoute: typeof PrivacidadeRoute
   ShopRoute: typeof ShopRoute
+  TermosRoute: typeof TermosRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
@@ -229,11 +255,25 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/termos': {
+      id: '/termos'
+      path: '/termos'
+      fullPath: '/termos'
+      preLoaderRoute: typeof TermosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/shop': {
       id: '/shop'
       path: '/shop'
       fullPath: '/shop'
       preLoaderRoute: typeof ShopRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacidade': {
+      id: '/privacidade'
+      path: '/privacidade'
+      fullPath: '/privacidade'
+      preLoaderRoute: typeof PrivacidadeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/politica': {
@@ -357,7 +397,9 @@ const rootRouteChildren: RootRouteChildren = {
   McpRoute: McpRoute,
   PlatformRoute: PlatformRoute,
   PoliticaRoute: PoliticaRoute,
+  PrivacidadeRoute: PrivacidadeRoute,
   ShopRoute: ShopRoute,
+  TermosRoute: TermosRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,

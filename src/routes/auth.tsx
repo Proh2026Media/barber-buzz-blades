@@ -1200,12 +1200,19 @@ function AuthPage() {
               Ambiente protegido
             </p>
             <p>
-              Ao continuar, você concorda com a{" "}
+              Ao continuar, você concorda com os{" "}
               <Link
-                to="/politica"
+                to="/termos"
                 className="-my-3 inline-flex min-h-11 items-center font-semibold text-foreground underline-offset-2 hover:underline"
               >
-                política de privacidade
+                Termos de Uso
+              </Link>{" "}
+              e a{" "}
+              <Link
+                to="/privacidade"
+                className="-my-3 inline-flex min-h-11 items-center font-semibold text-foreground underline-offset-2 hover:underline"
+              >
+                Política de Privacidade
               </Link>
               .
             </p>

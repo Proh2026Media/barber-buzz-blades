@@ -3628,6 +3628,37 @@ body:has(.arena-workspace[class*="brand-corners-"])
 .platform-landing-cta-secondary:hover {
   background: color-mix(in oklch, #f4f1ea 14%, transparent);
 }
+.platform-landing-footer {
+  margin-top: auto;
+  padding-top: 2rem;
+  padding-bottom: 0.5rem;
+  animation: platform-landing-rise 0.7s ease-out 0.28s both;
+}
+.platform-landing-footer-text {
+  max-width: 28rem;
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: color-mix(in oklch, white 72%, transparent);
+}
+.platform-landing-footer-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+}
+.platform-landing-footer-nav a {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: color-mix(in oklch, white 88%, transparent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.platform-landing-footer-nav a:hover {
+  color: white;
+}
 .platform-landing-hint {
   margin: 1.25rem 0 0;
   max-width: 28rem;
@@ -3852,7 +3883,8 @@ body:has(.arena-workspace[class*="brand-corners-"])
   .platform-landing-title,
   .platform-landing-lead,
   .platform-landing-support,
-  .platform-landing-actions {
+  .platform-landing-actions,
+  .platform-landing-footer {
     animation: none;
   }
 }

@@ -51,6 +51,17 @@ export function PlatformLanding() {
             botão ao lado.
           </p>
         </section>
+
+        <footer className="platform-landing-footer">
+          <p className="platform-landing-footer-text">
+            Agendamento, fidelidade e gestão para barbearias — clientes reservam horários; a loja
+            organiza equipe, serviços e avisos.
+          </p>
+          <nav className="platform-landing-footer-nav" aria-label="Documentos legais">
+            <Link to="/privacidade">Política de Privacidade</Link>
+            <Link to="/termos">Termos de Uso</Link>
+          </nav>
+        </footer>
       </div>
     </main>
   );

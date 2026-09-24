@@ -11,6 +11,8 @@ const RESERVED = new Set([
   "platform",
   "demo",
   "politica",
+  "privacidade",
+  "termos",
   "cadastrar",
   "api",
   "assets",
