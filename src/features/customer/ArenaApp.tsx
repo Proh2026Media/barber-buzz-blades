@@ -646,19 +646,30 @@ function ArenaApp({
           ]);
         if (servicesResult.error) throw servicesResult.error;
         if (staffResult.error) throw staffResult.error;
-        if (loyaltyResult.error) throw loyaltyResult.error;
+        // Pontos são secundários: se a carteira falhar, o catálogo ainda carrega.
+        if (loyaltyResult.error) {
+          console.warn("[catalog] loyalty_accounts", loyaltyResult.error.message);
+        }
         let shopSettingsData = settingsResult.data;
         if (settingsResult.error) {
-          if (settingsResult.error.code !== "42703") throw settingsResult.error;
+          // PGRST116 = 0 rows with .single(); loja sem settings não deve derrubar o catálogo.
+          if (settingsResult.error.code === "PGRST116") {
+            shopSettingsData = null;
+          } else if (settingsResult.error.code !== "42703") {
+            throw settingsResult.error;
+          } else {
           const legacySettings = await supabase
             .from("barbershop_settings")
             .select(
               "display_name, logo_url, logo_background_color, font_family, custom_font_url, custom_font_name, custom_font_faces, font_scope, header_font_weight, header_font_style, corner_style, primary_color, accent_color, tagline, booking_instructions, booking_horizon_days, survey_program_enabled, sports_enabled",
             )
             .eq("barbershop_id", catalogShopId)
-            .single();
+            .maybeSingle();
           if (legacySettings.error) throw legacySettings.error;
-          shopSettingsData = { ...legacySettings.data, floating_chrome: false };
+          shopSettingsData = legacySettings.data
+            ? { ...legacySettings.data, floating_chrome: false }
+            : null;
+          }
         }
         if (shopResult.error) throw shopResult.error;
         let availableServices = servicesResult.data ?? [];
@@ -691,7 +702,7 @@ function ArenaApp({
           setServices(availableServices);
           const availableStaff = staffResult.data ?? [];
           setStaff(availableStaff);
-          setPoints(loyaltyResult.data?.points ?? 0);
+          setPoints(loyaltyResult.error ? 0 : (loyaltyResult.data?.points ?? 0));
           if (shopSettingsData) setShopSettings(shopSettingsData);
           setShopTimeZone(validTimeZone(shopResult.data?.timezone));
           setServiceIdx(0);
