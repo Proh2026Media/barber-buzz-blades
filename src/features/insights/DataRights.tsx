@@ -10,6 +10,7 @@ export type PrivacyRequest = {
   created_at: string;
   updated_at: string;
 };
+
 export function DataRights({ admin = false }: { admin?: boolean }) {
   const demo = useDemo();
   const [rows, setRows] = useState<PrivacyRequest[]>([]);
@@ -18,9 +19,16 @@ export function DataRights({ admin = false }: { admin?: boolean }) {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [confirm, setConfirm] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
   const [version, setVersion] = useState(0);
+
   useEffect(() => {
     let cancelled = false;
+    if (!admin) {
+      setRows([]);
+      setLoading(false);
+      return;
+    }
     if (demo) {
       setRows(demo.privacyRequests.filter((row) => row.status !== "cancelled"));
       setLoading(false);
@@ -30,18 +38,16 @@ export function DataRights({ admin = false }: { admin?: boolean }) {
     void (async () => {
       try {
         const { data, error: failure } = await supabase.rpc("list_privacy_requests", {
-          p_admin: admin,
+          p_admin: true,
         });
         if (cancelled) return;
         if (failure) {
           setError("Não foi possível consultar os pedidos.");
         } else {
-          // Uma resposta vazia sem erro não pode virar null: a lista é renderizada com map.
           setRows(Array.isArray(data) ? (data as unknown as PrivacyRequest[]) : []);
           setError("");
         }
       } catch {
-        // Sem este tratamento um erro de rede deixaria a tela carregando para sempre.
         if (cancelled) return;
         setError("Não foi possível consultar os pedidos.");
         setRows([]);
@@ -54,74 +60,102 @@ export function DataRights({ admin = false }: { admin?: boolean }) {
     };
   }, [demo, admin, version]);
 
-  async function perform(action: "download" | "request" | "cancelled" | "reviewing", id?: string) {
+  async function downloadData() {
     if (busy) return;
     setBusy(true);
     setError("");
     setMessage("");
     try {
-      if (action === "download") {
-        let data: unknown;
-        if (demo) {
-          const appointments = demo.appointments.filter(
-            (row) => row.customer_id === demo.customerId,
-          );
-          data = {
-            format_version: 1,
-            environment: "demo",
-            exported_at: new Date().toISOString(),
-            profile: { id: demo.customerId, name: demo.customerName },
-            appointments,
-            privacy: demo.privacy,
-            responses: demo.surveys,
-            requests: demo.privacyRequests,
-            points: demo.points,
-            prices: Object.fromEntries(appointments.map((row) => [row.id, demo.prices[row.id]])),
-          };
-        } else {
-          const result = await supabase.rpc("export_my_data");
-          if (result.error) throw result.error;
-          data = result.data;
-        }
-        const url = URL.createObjectURL(
-          new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }),
-        );
-        const anchor = document.createElement("a");
-        anchor.href = url;
-        anchor.download = `meus-dados-${new Date().toISOString().slice(0, 10)}.json`;
-        document.body.append(anchor);
-        anchor.click();
-        anchor.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-        setMessage("Arquivo preparado. Confira os downloads do navegador.");
+      let data: unknown;
+      if (demo) {
+        const appointments = demo.appointments.filter((row) => row.customer_id === demo.customerId);
+        data = {
+          format_version: 1,
+          environment: "demo",
+          exported_at: new Date().toISOString(),
+          profile: { id: demo.customerId, name: demo.customerName },
+          appointments,
+          privacy: demo.privacy,
+          responses: demo.surveys,
+          requests: demo.privacyRequests,
+          points: demo.points,
+          prices: Object.fromEntries(appointments.map((row) => [row.id, demo.prices[row.id]])),
+        };
       } else {
-        if (demo)
-          demo.dispatch({
-            type: "privacy.request",
-            status: action === "request" ? "requested" : action,
-            id,
-          });
-        else {
-          const result =
-            action === "request"
-              ? await supabase.rpc("request_account_deletion")
-              : await supabase.rpc("update_privacy_request", { p_id: id!, p_status: action });
-          if (result.error) throw result.error;
-        }
-        setConfirm(false);
-        setVersion((v) => v + 1);
-        setMessage(
-          action === "request"
-            ? "Pedido registrado. Sua conta continua ativa enquanto ele é analisado."
-            : "Pedido atualizado.",
-        );
+        const result = await supabase.rpc("export_my_data");
+        if (result.error) throw result.error;
+        data = result.data;
       }
+      const url = URL.createObjectURL(
+        new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }),
+      );
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `meus-dados-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setMessage("Arquivo preparado. Confira os downloads do navegador.");
     } catch {
       setError("Não foi possível concluir a operação. Tente novamente.");
     } finally {
       setBusy(false);
     }
   }
+
+  async function deleteAccountForever() {
+    if (busy || confirmText.trim().toUpperCase() !== "EXCLUIR") return;
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      if (demo) {
+        demo.dispatch({ type: "privacy.erase" });
+        setConfirm(false);
+        setConfirmText("");
+        setMessage("Na demonstração, dados opcionais foram limpos. Em produção a conta seria apagada.");
+        return;
+      }
+      const result = await supabase.rpc("delete_my_account");
+      if (result.error) throw result.error;
+      await supabase.auth.signOut();
+      window.location.assign("/");
+    } catch (err) {
+      const detail =
+        err && typeof err === "object" && "message" in err && typeof err.message === "string"
+          ? err.message
+          : "Não foi possível excluir a conta. Tente novamente.";
+      setError(detail);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function adminUpdate(action: "reviewing" | "cancelled", id: string) {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      if (demo) {
+        demo.dispatch({ type: "privacy.request", status: action, id });
+      } else {
+        const result = await supabase.rpc("update_privacy_request", {
+          p_id: id,
+          p_status: action,
+        });
+        if (result.error) throw result.error;
+      }
+      setVersion((v) => v + 1);
+      setMessage("Pedido atualizado.");
+    } catch {
+      setError("Não foi possível concluir a operação. Tente novamente.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <section
       aria-label={admin ? "Pedidos de privacidade" : "Acesso e exclusão dos meus dados"}
@@ -131,94 +165,125 @@ export function DataRights({ admin = false }: { admin?: boolean }) {
         <ShieldCheck className="size-5 text-primary" />
         {admin ? "Pedidos de privacidade" : "Seus dados, suas escolhas"}
       </h3>
+
       {!admin && (
         <>
           <p className="text-xs text-muted-foreground">
             Baixe uma cópia dos dados da sua conta, reservas, pontos e escolhas de privacidade.
           </p>
           <button
+            type="button"
             disabled={busy}
-            onClick={() => void perform("download")}
+            onClick={() => void downloadData()}
             className="flex items-center gap-2 rounded-xl border border-primary/30 px-4 py-3 text-sm font-semibold text-primary disabled:opacity-50"
           >
             <Download size={16} />
             Baixar meus dados
           </button>
-        </>
-      )}
-      {loading ? (
-        <p role="status" className="text-xs">
-          Consultando pedidos…
-        </p>
-      ) : (
-        <>
-          {rows.map((row) => (
-            <div key={row.id} className="space-y-2 rounded-xl border border-border p-3 text-xs">
-              <p className="font-semibold">
-                Exclusão de conta · {row.status === "reviewing" ? "Em análise" : "Solicitada"}
-              </p>
-              <p>
-                Protocolo: <span className="break-all">{row.id}</span>
-              </p>
-              <p>{new Date(row.created_at).toLocaleString("pt-BR")}</p>
-              {admin && <p className="break-all text-muted-foreground">Conta: {row.user_id}</p>}
-              {!admin && (
-                <p className="text-muted-foreground">
-                  O pedido ainda não excluiu sua conta ou seus agendamentos.
+
+          <div className="space-y-2 border-t border-border/60 pt-4">
+            <p className="text-xs text-muted-foreground">
+              Excluir a conta remove nome, e-mail, WhatsApp e dados pessoais. A barbearia pode
+              manter horários e frequência já registrados de forma anônima (sem vínculo com você).
+              Ação irreversível — sem suporte.
+            </p>
+            {!confirm ? (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setConfirm(true)}
+                className="text-xs font-semibold text-destructive underline"
+              >
+                Excluir minha conta permanentemente
+              </button>
+            ) : (
+              <div className="space-y-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-xs">
+                <p>
+                  Digite <span className="font-bold">EXCLUIR</span> para confirmar. Se você for dono
+                  ou sócio de uma loja, transfira a sociedade antes.
                 </p>
-              )}
-              {(!admin || row.status === "requested") && (
-                <button
-                  disabled={busy}
-                  onClick={() => void perform(admin ? "reviewing" : "cancelled", row.id)}
-                  className="font-semibold underline"
-                >
-                  {admin ? "Iniciar análise" : "Cancelar pedido"}
-                </button>
-              )}
-            </div>
-          ))}
-          {admin && rows.length === 0 && !error && (
-            <p className="text-xs text-muted-foreground">Nenhum pedido em aberto.</p>
-          )}
-          {!admin && rows.length === 0 && !error && (
-            <button
-              disabled={busy}
-              onClick={() => setConfirm(true)}
-              className="text-xs text-destructive underline"
-            >
-              Solicitar exclusão da conta
-            </button>
-          )}
-          {confirm && (
-            <div className="space-y-3 rounded-xl border border-destructive/30 p-3 text-xs">
-              <p>
-                Enviar um pedido de exclusão ao responsável pelo app? Sua conta e suas reservas
-                continuam ativas até a análise. Você poderá cancelar o pedido aqui.
-              </p>
-              <div className="flex gap-4">
-                <button
-                  disabled={busy}
-                  onClick={() => void perform("request")}
-                  className="font-bold text-destructive"
-                >
-                  Enviar pedido
-                </button>
-                <button disabled={busy} onClick={() => setConfirm(false)}>
-                  Voltar
-                </button>
+                <label className="block space-y-1">
+                  <span className="font-semibold text-foreground">Confirmação</span>
+                  <input
+                    value={confirmText}
+                    onChange={(event) => setConfirmText(event.target.value)}
+                    autoComplete="off"
+                    placeholder="EXCLUIR"
+                    className="flex min-h-11 w-full rounded-[var(--control-radius)] border border-border bg-background px-3 text-sm"
+                  />
+                </label>
+                <div className="flex flex-wrap gap-4">
+                  <button
+                    type="button"
+                    disabled={busy || confirmText.trim().toUpperCase() !== "EXCLUIR"}
+                    onClick={() => void deleteAccountForever()}
+                    className="font-bold text-destructive disabled:opacity-40"
+                  >
+                    Apagar conta agora
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => {
+                      setConfirm(false);
+                      setConfirmText("");
+                    }}
+                  >
+                    Voltar
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </>
       )}
-      <button
-        disabled={busy || loading}
-        onClick={() => setVersion((v) => v + 1)}
-        className="text-xs text-muted-foreground underline"
-      >
-        Atualizar pedidos
-      </button>
+
+      {admin &&
+        (loading ? (
+          <p role="status" className="text-xs">
+            Consultando pedidos…
+          </p>
+        ) : (
+          <>
+            {rows.map((row) => (
+              <div key={row.id} className="space-y-2 rounded-xl border border-border p-3 text-xs">
+                <p className="font-semibold">
+                  Exclusão de conta · {row.status === "reviewing" ? "Em análise" : "Solicitada"}
+                </p>
+                <p>
+                  Protocolo: <span className="break-all">{row.id}</span>
+                </p>
+                <p>{new Date(row.created_at).toLocaleString("pt-BR")}</p>
+                <p className="break-all text-muted-foreground">Conta: {row.user_id}</p>
+                {row.status === "requested" && (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void adminUpdate("reviewing", row.id)}
+                    className="font-semibold underline"
+                  >
+                    Iniciar análise
+                  </button>
+                )}
+              </div>
+            ))}
+            {rows.length === 0 && !error && (
+              <p className="text-xs text-muted-foreground">
+                Nenhum pedido legado em aberto. Clientes agora excluem a conta diretamente no
+                perfil.
+              </p>
+            )}
+            <button
+              type="button"
+              disabled={busy || loading}
+              onClick={() => setVersion((v) => v + 1)}
+              className="text-xs text-muted-foreground underline"
+            >
+              Atualizar pedidos
+            </button>
+          </>
+        ))}
+
       {error && (
         <p role="alert" className="text-xs text-destructive">
           {error}

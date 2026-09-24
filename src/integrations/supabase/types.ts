@@ -79,6 +79,7 @@ export type Database = {
           sports_enabled: boolean;
           waiting_enabled: boolean;
           waiting_cutoff_minutes: number;
+          staff_assignment_mode?: string;
           created_at: string;
           updated_at: string;
         };
@@ -107,6 +108,7 @@ export type Database = {
           sports_enabled?: boolean;
           waiting_enabled?: boolean;
           waiting_cutoff_minutes?: number;
+          staff_assignment_mode?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -135,6 +137,7 @@ export type Database = {
           sports_enabled?: boolean;
           waiting_enabled?: boolean;
           waiting_cutoff_minutes?: number;
+          staff_assignment_mode?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -948,6 +951,53 @@ export type Database = {
         Args: { p_shop_id: string; p_customer_id: string; p_preset: string };
         Returns: Json;
       };
+      get_client_notice_pending: {
+        Args: { p_shop_id: string; p_customer_id: string };
+        Returns: Json;
+      };
+      process_pending_client_notices: { Args: Record<string, never>; Returns: number };
+      expire_shop_change_requests: { Args: Record<string, never>; Returns: number };
+      list_pending_shop_changes: { Args: { p_shop_id: string }; Returns: Json };
+      set_favorite_staff: {
+        Args: { p_shop_id: string; p_staff_id: string | null };
+        Returns: Json;
+      };
+      pick_available_staff: {
+        Args: {
+          p_shop_id: string;
+          p_service_id: string;
+          p_starts_at: string;
+          p_ends_at: string;
+          p_prefer_staff_id?: string | null;
+        };
+        Returns: string;
+      };
+      suggest_partner_catalog: {
+        Args: {
+          p_shop_id: string;
+          p_service_id: string;
+          p_price_cents: number;
+          p_duration_minutes: number;
+          p_display_name?: string | null;
+        };
+        Returns: Json;
+      };
+      decide_partner_catalog_suggestion: {
+        Args: { p_suggestion_id: string; p_accept: boolean };
+        Returns: Json;
+      };
+      assign_account_manager_shop: {
+        Args: {
+          p_user_id: string;
+          p_shop_id: string;
+          p_can_view_dashboard?: boolean;
+        };
+        Returns: Json;
+      };
+      unassign_account_manager_shop: {
+        Args: { p_user_id: string; p_shop_id: string };
+        Returns: undefined;
+      };
       create_booking_series: {
         Args: {
           p_shop_id: string;
@@ -1096,6 +1146,7 @@ export type Database = {
         Returns: undefined;
       };
       erase_my_optional_data: { Args: Record<string, never>; Returns: undefined };
+      delete_my_account: { Args: Record<string, never>; Returns: Json };
 
       reschedule_own_appointment: {
         Args: {
@@ -1260,7 +1311,7 @@ export type Database = {
       };
     };
     Enums: {
-      app_role: "customer" | "shop_admin" | "platform_admin";
+      app_role: "customer" | "shop_admin" | "platform_admin" | "account_manager";
       barbershop_status: "active" | "suspended";
       appointment_status:
         | "pending"
@@ -1269,7 +1320,7 @@ export type Database = {
         | "completed"
         | "reschedule_requested";
       shop_member_role: "owner" | "partner" | "associate" | "employee";
-      shop_change_status: "pending" | "approved" | "rejected" | "cancelled";
+      shop_change_status: "pending" | "approved" | "rejected" | "cancelled" | "expired";
       whatsapp_channel_status: "disconnected" | "qr" | "connecting" | "open";
       whatsapp_outbox_status: "pending" | "sending" | "sent" | "failed";
       email_outbox_status: "pending" | "sending" | "sent" | "failed";
@@ -1406,7 +1457,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["customer", "shop_admin", "platform_admin"] as const,
+      app_role: ["customer", "shop_admin", "platform_admin", "account_manager"] as const,
       barbershop_status: ["active", "suspended"] as const,
       appointment_status: [
         "pending",

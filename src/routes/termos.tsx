@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { LegalPageShell } from "@/features/legal/LegalPageShell";
+import { PLATFORM_OPERATOR } from "@/features/legal/operator";
 
 export const Route = createFileRoute("/termos")({
   head: () => ({
@@ -100,8 +101,20 @@ function TermosPage() {
       <section className="space-y-3">
         <h2 className="text-lg font-bold text-foreground">7. Contato e alterações</h2>
         <p>
-          Dúvidas sobre estes termos: <strong>[E-MAIL DE CONTATO]</strong>. Operador:{" "}
-          <strong>[RAZÃO SOCIAL]</strong>, CNPJ <strong>[CNPJ]</strong>.
+          Dúvidas sobre estes termos:{" "}
+          <a
+            href={`mailto:${PLATFORM_OPERATOR.privacyEmail}`}
+            className="font-semibold text-foreground underline-offset-2 hover:underline"
+          >
+            {PLATFORM_OPERATOR.privacyEmail}
+          </a>
+          . Operador: <strong>{PLATFORM_OPERATOR.legalName}</strong>, CNPJ{" "}
+          <strong>{PLATFORM_OPERATOR.cnpj}</strong>.
+        </p>
+        <p>
+          Você pode excluir permanentemente a própria conta no app (Meu perfil), sem suporte. Dados
+          pessoais são removidos; registros operacionais anônimos de agenda/frequência podem
+          permanecer na barbearia.
         </p>
         <p>
           Podemos atualizar estes Termos periodicamente. A data no topo indica a versão vigente. O

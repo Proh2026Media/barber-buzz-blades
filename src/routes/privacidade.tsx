@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { LegalPageShell } from "@/features/legal/LegalPageShell";
+import { PLATFORM_OPERATOR } from "@/features/legal/operator";
 
 export const Route = createFileRoute("/privacidade")({
   head: () => ({
@@ -33,18 +34,25 @@ function PrivacidadePage() {
         </p>
         <ul className="list-disc space-y-1 pl-5">
           <li>
-            Razão social: <strong>[RAZÃO SOCIAL]</strong>
+            Razão social: <strong>{PLATFORM_OPERATOR.legalName}</strong>
           </li>
           <li>
-            CNPJ: <strong>[CNPJ]</strong>
+            CNPJ: <strong>{PLATFORM_OPERATOR.cnpj}</strong>
           </li>
           <li>
             E-mail de contato sobre privacidade:{" "}
-            <strong>[E-MAIL DE CONTATO]</strong>
+            <a
+              href={`mailto:${PLATFORM_OPERATOR.privacyEmail}`}
+              className="font-semibold text-foreground underline-offset-2 hover:underline"
+            >
+              {PLATFORM_OPERATOR.privacyEmail}
+            </a>
           </li>
         </ul>
         <p>
-          Use o e-mail acima para dúvidas, pedidos de acesso, correção ou exclusão de dados.
+          Use o e-mail acima para dúvidas, pedidos de acesso ou correção de dados. A exclusão
+          permanente da conta pode ser feita pelo próprio usuário no app (Meu perfil), sem abrir
+          chamado de suporte.
         </p>
       </section>
 
@@ -126,9 +134,20 @@ function PrivacidadePage() {
 
       <section className="space-y-3">
         <h2 className="text-lg font-bold text-foreground">
-          6. Como pedir exclusão ou desconectar o Google
+          6. Exclusão da conta e desconexão do Google
         </h2>
         <ul className="list-disc space-y-2 pl-5">
+          <li>
+            <strong>Excluir a conta permanentemente:</strong> em Meu perfil → Meus dados e
+            privacidade, o titular pode apagar a própria conta sem suporte. Nome, e-mail, WhatsApp
+            e demais dados pessoais são removidos. Registros de agenda e de frequência/atividade da
+            barbearia podem permanecer apenas de forma anônima (sem vínculo com a pessoa), para
+            estatísticas operacionais até a data da exclusão.
+          </li>
+          <li>
+            Se você for <strong>dono ou sócio</strong> de uma loja, transfira a sociedade ou saia
+            desse papel antes de excluir a conta.
+          </li>
           <li>
             <strong>Desconectar Agenda/Contatos:</strong> no painel da loja, em Ajustes → Google
             Agenda e Contatos, use a opção de desconectar. Isso revoga o uso dessa autorização no
@@ -147,10 +166,14 @@ function PrivacidadePage() {
             .
           </li>
           <li>
-            <strong>Exclusão de conta ou dados:</strong> solicite pelo e-mail{" "}
-            <strong>[E-MAIL DE CONTATO]</strong>. Atenderemos o pedido nos limites legais e
-            operacionais (por exemplo, registros necessários a obrigações legais podem ser
-            retidos pelo prazo exigido).
+            Dúvidas:{" "}
+            <a
+              href={`mailto:${PLATFORM_OPERATOR.privacyEmail}`}
+              className="font-semibold text-foreground underline-offset-2 hover:underline"
+            >
+              {PLATFORM_OPERATOR.privacyEmail}
+            </a>
+            .
           </li>
         </ul>
       </section>
