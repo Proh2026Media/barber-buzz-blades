@@ -70,10 +70,16 @@ async function hmacSign(secret: string, payload: string): Promise<string> {
   return toBase64Url(new Uint8Array(sig));
 }
 
-export async function buildOAuthState(userId: string, returnPath: string, secret: string): Promise<string> {
+export async function buildOAuthState(
+  userId: string,
+  returnPath: string,
+  secret: string,
+  returnOrigin?: string | null,
+): Promise<string> {
   const body = JSON.stringify({
     u: userId,
     r: returnPath || "/shop",
+    o: returnOrigin || null,
     e: Date.now() + 10 * 60 * 1000,
     n: crypto.randomUUID(),
   });
@@ -85,18 +91,52 @@ export async function buildOAuthState(userId: string, returnPath: string, secret
 export async function parseOAuthState(
   state: string,
   secret: string,
-): Promise<{ userId: string; returnPath: string } | null> {
+): Promise<{ userId: string; returnPath: string; returnOrigin: string | null } | null> {
   const [bodyB64, sig] = state.split(".");
   if (!bodyB64 || !sig) return null;
   const expected = await hmacSign(secret, bodyB64);
   if (expected !== sig) return null;
   try {
     const jsonText = new TextDecoder().decode(fromBase64Url(bodyB64));
-    const parsed = JSON.parse(jsonText) as { u?: string; r?: string; e?: number };
+    const parsed = JSON.parse(jsonText) as {
+      u?: string;
+      r?: string;
+      o?: string | null;
+      e?: number;
+    };
     if (!parsed.u || !parsed.e || parsed.e < Date.now()) return null;
-    return { userId: parsed.u, returnPath: parsed.r || "/shop" };
+    return {
+      userId: parsed.u,
+      returnPath: parsed.r || "/shop",
+      returnOrigin: typeof parsed.o === "string" && parsed.o ? parsed.o : null,
+    };
   } catch {
     return null;
+  }
+}
+
+/** Origem segura para voltar após OAuth (evita open redirect). */
+export function isSafeAppsReturnOrigin(origin: string, appUrl: string): boolean {
+  try {
+    const normalized = origin.replace(/\/$/, "");
+    const url = new URL(normalized);
+    if (url.origin !== normalized) return false;
+    const host = url.hostname.toLowerCase();
+    if (url.protocol !== "https:" && host !== "localhost" && host !== "127.0.0.1") {
+      return false;
+    }
+    if (host === "localhost" || host === "127.0.0.1") return true;
+    let appHost = "beauty.contheiner.digital";
+    try {
+      appHost = new URL(appUrl).hostname.toLowerCase();
+    } catch {
+      /* keep default */
+    }
+    if (host === appHost || host.endsWith(`.${appHost}`)) return true;
+    // Domínio próprio da loja
+    return host.includes(".") && !host.includes("..");
+  } catch {
+    return false;
   }
 }
 
@@ -107,7 +147,9 @@ export function authUrl(clientId: string, redirectUri: string, state: string): s
     response_type: "code",
     scope: GOOGLE_SCOPES.join(" "),
     access_type: "offline",
-    prompt: "consent",
+    // select_account: permite Gmail da Agenda distinto do login do app;
+    // consent: garante refresh_token mesmo se já houve autorização parcial.
+    prompt: "select_account consent",
     include_granted_scopes: "true",
     state,
   });

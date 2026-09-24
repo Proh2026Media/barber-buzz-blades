@@ -9,12 +9,15 @@ import {
   json,
   parseOAuthState,
   GOOGLE_SCOPES,
+  isSafeAppsReturnOrigin,
   corsHeaders,
 } from "../_shared/google.ts";
 
 type Body = {
   action?: "status" | "start" | "complete" | "disconnect" | "sync_calendar" | "save_contact";
   return_path?: string;
+  /** Origin da aba onde o usuário estava logado (ex.: domínio da loja). */
+  return_origin?: string;
   code?: string;
   state?: string;
   time_min?: string;
@@ -45,55 +48,38 @@ Deno.serve(async (req) => {
     }
 
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return json({ error: "Missing authorization" }, 401);
-    }
-
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-    const {
-      data: { user },
-      error: userError,
-    } = await userClient.auth.getUser();
-    if (userError || !user) return json({ error: "Invalid session" }, 401);
+    const body = (await req.json().catch(() => ({}))) as Body;
+    const action = body.action ?? "status";
 
     const admin = createClient(supabaseUrl, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    const body = (await req.json().catch(() => ({}))) as Body;
-    const action = body.action ?? "status";
-
-    if (action === "status") {
-      const { data } = await userClient.rpc("get_my_google_connection");
-      return json({ ok: true, connection: data ?? { connected: false } });
-    }
-
-    if (action === "start") {
-      const { clientId, redirectUri, stateSecret } = googleOAuthConfig();
-      const returnPath = (body.return_path ?? "/shop").startsWith("/")
-        ? (body.return_path ?? "/shop")
-        : "/shop";
-      const state = await buildOAuthState(user.id, returnPath, stateSecret);
-      return json({
-        ok: true,
-        url: authUrl(clientId, redirectUri, state),
-        redirect_uri: redirectUri,
-        scopes: GOOGLE_SCOPES,
-      });
-    }
-
+    // complete: pode rodar sem sessão no apex (cookie ficou no domínio da loja).
+    // O state HMAC amarra user_id + return_origin e expira em 10 min.
     if (action === "complete") {
-      const { clientId, clientSecret, redirectUri, stateSecret } = googleOAuthConfig();
+      const { clientId, clientSecret, redirectUri, stateSecret, appUrl } = googleOAuthConfig();
       const code = body.code?.trim();
       const state = body.state?.trim();
       if (!code || !state) return json({ error: "code and state required" }, 400);
 
       const parsed = await parseOAuthState(state, stateSecret);
-      if (!parsed || parsed.userId !== user.id) {
+      if (!parsed) {
         return json({ error: "Estado OAuth inválido ou expirado." }, 400);
+      }
+
+      // Se houver sessão, ela deve bater com o state (evita trocar conta no meio).
+      if (authHeader?.startsWith("Bearer ")) {
+        const userClient = createClient(supabaseUrl, anonKey, {
+          global: { headers: { Authorization: authHeader } },
+          auth: { persistSession: false, autoRefreshToken: false },
+        });
+        const {
+          data: { user },
+        } = await userClient.auth.getUser();
+        if (user && user.id !== parsed.userId) {
+          return json({ error: "Sessão diferente da que iniciou a conexão Google." }, 403);
+        }
       }
 
       const tokens = await exchangeCode(code, clientId, clientSecret, redirectUri);
@@ -106,11 +92,11 @@ Deno.serve(async (req) => {
       const { data: existing } = await admin
         .from("google_connections")
         .select("id, refresh_token")
-        .eq("user_id", user.id)
+        .eq("user_id", parsed.userId)
         .maybeSingle();
 
       const row = {
-        user_id: user.id,
+        user_id: parsed.userId,
         google_email: email,
         scopes,
         access_token: tokens.access_token,
@@ -128,11 +114,53 @@ Deno.serve(async (req) => {
         if (error) return json({ error: error.message }, 500);
       }
 
+      let returnOrigin = parsed.returnOrigin;
+      if (returnOrigin && !isSafeAppsReturnOrigin(returnOrigin, appUrl)) {
+        returnOrigin = null;
+      }
+
       return json({
         ok: true,
         connected: true,
         google_email: email,
         return_path: parsed.returnPath,
+        return_origin: returnOrigin || appUrl,
+      });
+    }
+
+    if (!authHeader?.startsWith("Bearer ")) {
+      return json({ error: "Missing authorization" }, 401);
+    }
+
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const {
+      data: { user },
+      error: userError,
+    } = await userClient.auth.getUser();
+    if (userError || !user) return json({ error: "Invalid session" }, 401);
+
+    if (action === "status") {
+      const { data } = await userClient.rpc("get_my_google_connection");
+      return json({ ok: true, connection: data ?? { connected: false } });
+    }
+
+    if (action === "start") {
+      const { clientId, redirectUri, stateSecret, appUrl } = googleOAuthConfig();
+      const returnPath = (body.return_path ?? "/shop").startsWith("/")
+        ? (body.return_path ?? "/shop")
+        : "/shop";
+      const rawOrigin = (body.return_origin ?? "").trim().replace(/\/$/, "");
+      const returnOrigin =
+        rawOrigin && isSafeAppsReturnOrigin(rawOrigin, appUrl) ? rawOrigin : appUrl;
+      const state = await buildOAuthState(user.id, returnPath, stateSecret, returnOrigin);
+      return json({
+        ok: true,
+        url: authUrl(clientId, redirectUri, state),
+        redirect_uri: redirectUri,
+        scopes: GOOGLE_SCOPES,
       });
     }
 

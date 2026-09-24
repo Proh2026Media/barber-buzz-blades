@@ -30,14 +30,36 @@ async function callGoogle(body: Record<string, unknown>) {
     },
     body: JSON.stringify(body),
   });
-  const payload = (await response.json()) as {
+  const raw = await response.text();
+  let payload: {
     error?: string;
+    msg?: string;
     connection?: GoogleConnectionStatus;
     url?: string;
     imported?: number;
     resourceName?: string | null;
-  };
-  if (!response.ok) throw new Error(payload.error || "Falha na integração Google");
+  } = {};
+  try {
+    payload = raw ? (JSON.parse(raw) as typeof payload) : {};
+  } catch {
+    throw new Error(
+      response.ok
+        ? "Resposta inválida do Google Connect."
+        : `Falha na integração Google (${response.status}). A função edge pode estar fora do ar.`,
+    );
+  }
+  if (!response.ok) {
+    const detail = payload.error || payload.msg || `HTTP ${response.status}`;
+    if (/entrypoint|InvalidWorkerCreation|BOOT_ERROR/i.test(detail)) {
+      throw new Error(
+        "Função google-connect indisponível no servidor. Publique a Edge Function e tente de novo.",
+      );
+    }
+    if (/Missing GOOGLE_OAUTH|Missing authorization|Invalid session/i.test(detail)) {
+      throw new Error(detail);
+    }
+    throw new Error(detail);
+  }
   return payload;
 }
 
@@ -119,7 +141,11 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
     setError(null);
     setMessage("");
     try {
-      const payload = await callGoogle({ action: "start", return_path: returnPath });
+      const payload = await callGoogle({
+        action: "start",
+        return_path: returnPath,
+        return_origin: typeof window !== "undefined" ? window.location.origin : undefined,
+      });
       if (!payload.url) throw new Error("URL de autorização ausente.");
       window.location.assign(payload.url);
     } catch (err) {
@@ -204,8 +230,16 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold">Google Agenda e Contatos</p>
           <p className="text-xs text-muted-foreground">
-            Conecte sua conta Google para importar a agenda e salvar clientes nos Contatos.
-            Isso é separado do botão “Entrar com Google” do login.
+            Conecte um Gmail para importar a agenda e salvar clientes nos Contatos. Pode ser
+            outra conta — não precisa ser o mesmo e-mail do login neste app.
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Se o Google mostrar “app não verificado”: clique em{" "}
+            <span className="font-semibold">Avançado</span> → continue no app. Para sumir o aviso
+            de vez, no Google Cloud (projeto do e-mail{" "}
+            <span className="font-semibold">9697media@gmail.com</span>) adicione o Gmail da Agenda
+            em <span className="font-semibold">OAuth consent → Test users</span>, ou publique a
+            verificação do app.
           </p>
         </div>
       </div>
@@ -218,6 +252,9 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
               <>
                 {" "}
                 como <span className="font-semibold">{connection.google_email}</span>
+                <span className="block text-xs text-muted-foreground">
+                  Conta da Agenda/Contatos (independente do login do sistema).
+                </span>
               </>
             ) : null}
           </p>
