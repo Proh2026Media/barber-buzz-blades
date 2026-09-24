@@ -76,6 +76,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import type { Json } from "@/integrations/supabase/types";
 import { capabilitiesFor, type SessionProfile } from "@/lib/auth/session";
 import { brandCornerClass, brandFontScopeClass, brandVariables } from "@/lib/shop/branding";
+import { useShopFavicon } from "@/lib/shop/favicon";
 import { BrandFontFace } from "@/features/shop/BrandFontFace";
 import { ChangePasswordCard } from "@/features/auth/ChangePasswordCard";
 import { useDemo } from "@/features/demo/context";
@@ -218,6 +219,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   const [businessHours, setBusinessHours] = useState<Tables<"business_hours">[]>([]);
   const [blocks, setBlocks] = useState<AvailabilityBlock[]>([]);
   const [settings, setSettings] = useState<Tables<"barbershop_settings"> | null>(null);
+  useShopFavicon(settings?.logo_url);
   const [settingsSaved, setSettingsSaved] = useState(false);
   const [brandOpen, setBrandOpen] = useState(false);
   const [governanceRevision, setGovernanceRevision] = useState(0);

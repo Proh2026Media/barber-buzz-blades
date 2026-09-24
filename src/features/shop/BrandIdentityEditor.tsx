@@ -37,6 +37,7 @@ import {
   validateBrandLogo,
   type BrandDraft,
 } from "@/lib/shop/branding";
+import { useShopFavicon } from "@/lib/shop/favicon";
 import { persistBrandIdentity } from "@/lib/shop/branding-persist";
 import {
   analyzeFontFiles,
@@ -142,6 +143,7 @@ export function BrandIdentityEditor({
     isBrandDraftDirty(draft, settings);
   const validationError = validateBrandDraft(draft);
   const previewLogo = logoPreviewUrl ?? draft.logo_url;
+  useShopFavicon(previewLogo);
   const previewLoginImage = loginImagePreviewUrl ?? draft.login_image_url ?? DEFAULT_LOGIN_IMAGE;
   const previewName = draft.display_name.trim() || shopName;
   const previewFontFaces = pendingFontFaces

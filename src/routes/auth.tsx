@@ -42,6 +42,7 @@ import {
   normalizeLoginLayout,
   type BrandLoginLayout,
 } from "@/lib/shop/branding";
+import { useShopFavicon } from "@/lib/shop/favicon";
 import { BrandFontFace } from "@/features/shop/BrandFontFace";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
@@ -180,6 +181,8 @@ function AuthPage() {
     Boolean(shopContext.shopRef) || typeof window !== "undefined",
   );
   const [bridgeReady, setBridgeReady] = useState(!bridged);
+
+  useShopFavicon(brand.logoUrl);
 
   const preferredNext = isSafeNext(next) ? next : "";
 

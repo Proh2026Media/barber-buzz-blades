@@ -12,6 +12,7 @@ import { useScrollIndicators } from "@/lib/use-scroll-indicators";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTheme } from "@/lib/use-theme";
 import { brandCornerClass, brandFontScopeClass, brandVariables } from "@/lib/shop/branding";
+import { useShopFavicon } from "@/lib/shop/favicon";
 import { BrandFontFace } from "@/features/shop/BrandFontFace";
 import { DatePicker } from "@/components/ui/schedule-picker";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -207,6 +208,7 @@ function ArenaApp({
     survey_program_enabled: true,
     sports_enabled: false,
   });
+  useShopFavicon(shopSettings.logo_url);
   const [userId, setUserId] = useState<string | null>(null);
   const [services, setServices] = useState<Tables<"services">[]>([]);
   const [staff, setStaff] = useState<Tables<"staff">[]>([]);
