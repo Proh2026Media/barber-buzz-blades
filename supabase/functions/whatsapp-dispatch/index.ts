@@ -22,8 +22,26 @@ Deno.serve(async (req) => {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    // Lembretes antes do lote de envio.
+    // Lembretes e extensão de séries recorrentes antes do lote de envio.
     await admin.rpc("process_whatsapp_reminders");
+    try {
+      await admin.rpc("extend_booking_series");
+    } catch {
+      /* ignore if migration not applied yet */
+    }
+
+    // Melhor esforço: despacha e-mails no mesmo cron.
+    try {
+      await fetch(`${supabaseUrl}/functions/v1/email-dispatch`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${serviceKey}`,
+          apikey: serviceKey,
+        },
+      });
+    } catch {
+      /* cron separado cobrirá */
+    }
 
     const { data: batch, error: claimError } = await admin.rpc("claim_whatsapp_outbox", {
       p_limit: 20,

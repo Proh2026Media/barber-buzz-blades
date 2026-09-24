@@ -2,7 +2,7 @@ import { AttendanceControls } from "@/features/insights/AttendanceControls";
 import { useWaiting } from "@/features/waiting/useWaiting";
 import { WaitingCards, WaitingSettings } from "@/features/waiting/WaitingUI";
 import { canHold } from "@/features/waiting/model";
-import { CatalogFilters, type CatalogStatus } from "./CatalogFilters";
+import { CatalogFilters, type CatalogStatus, type CatalogViewMode } from "./CatalogFilters";
 import { StaffSurveyDialog } from "@/features/insights/StaffSurveyDialog";
 import { CancellationDialog } from "@/features/insights/CancellationDialog";
 import { cancellationReasonLabel, type CancellationReason } from "@/features/insights/cancellation";
@@ -303,6 +303,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   const [staffQuery, setStaffQuery] = useState("");
   const [serviceStatus, setServiceStatus] = useState<CatalogStatus>("all");
   const [staffStatus, setStaffStatus] = useState<CatalogStatus>("all");
+  const [serviceView, setServiceView] = useState<CatalogViewMode>("grid");
+  const [staffView, setStaffView] = useState<CatalogViewMode>("grid");
   const [staffName, setStaffName] = useState("");
   const [staffSlug, setStaffSlug] = useState("");
   const [staffSlugTouched, setStaffSlugTouched] = useState(false);
@@ -450,6 +452,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
             ends_at: String(row.ends_at),
             status: row.status as Tables<"appointments">["status"],
             booked_price_cents: typeof row.price_cents === "number" ? row.price_cents : null,
+            public_token: "",
+            series_id: row.series_id ? String(row.series_id) : null,
             created_at: String(row.starts_at),
             updated_at: String(row.starts_at),
             service: row.service_name
@@ -616,6 +620,32 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       setAgendaRefresh((value) => value + 1);
     } catch {
       setError("Não foi possível cancelar o atendimento.");
+    } finally {
+      setUpdatingAppointment(null);
+    }
+  }
+
+  async function stopSeriesFromShop(seriesId: string) {
+    if (
+      !window.confirm(
+        "Parar a recorrência cancela todos os próximos horários desta série. Continuar?",
+      )
+    ) {
+      return;
+    }
+    setUpdatingAppointment(seriesId);
+    setError(null);
+    try {
+      if (demo) {
+        setError("Recorrência não está disponível na demonstração.");
+        return;
+      }
+      const result = await supabase.rpc("stop_booking_series", { p_series_id: seriesId });
+      if (result.error) throw result.error;
+      await loadCatalog();
+      setAgendaRefresh((value) => value + 1);
+    } catch {
+      setError("Não foi possível parar a recorrência.");
     } finally {
       setUpdatingAppointment(null);
     }
@@ -1765,6 +1795,11 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                             }[row.status]
                           }
                         </span>
+                        {row.series_id ? (
+                          <span className="mt-1 inline-flex rounded-full border border-gold/40 bg-gold/10 px-2 py-0.5 text-[10px] font-semibold text-gold">
+                            Recorrente
+                          </span>
+                        ) : null}
                       </div>
                     </div>
                     <div className="agenda-appointment-details">
@@ -1843,6 +1878,16 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                                 <X className="size-3.5" />
                                 Cancelar
                               </button>
+                              {row.series_id ? (
+                                <button
+                                  type="button"
+                                  disabled={updatingAppointment !== null}
+                                  onClick={() => void stopSeriesFromShop(row.series_id!)}
+                                  className="action-button action-danger"
+                                >
+                                  Parar recorrência
+                                </button>
+                              ) : null}
                             </>
                           )}
                           {row.status === "completed" &&
@@ -1983,20 +2028,42 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 active={services.filter((row) => row.active).length}
                 visible={visibleServices.length}
                 label="Buscar serviço"
+                viewMode={serviceView}
+                onViewMode={setServiceView}
               />
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div
+                className={
+                  serviceView === "grid"
+                    ? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+                    : "flex flex-col gap-2"
+                }
+              >
                 {visibleServices.map((s) => (
                   <div
                     key={s.id}
-                    className="grid grid-cols-2 items-center gap-3 rounded-2xl border border-border bg-card p-4"
+                    className={
+                      serviceView === "grid"
+                        ? "grid grid-cols-2 items-center gap-3 rounded-2xl border border-border bg-card p-4"
+                        : "flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3"
+                    }
                   >
-                    <div className="col-span-2 flex items-center gap-3">
+                    <div
+                      className={
+                        serviceView === "grid"
+                          ? "col-span-2 flex items-center gap-3"
+                          : "flex min-w-0 flex-1 items-center gap-3"
+                      }
+                    >
                       <ServiceIcon
                         icon={s.icon}
                         className="size-9 shrink-0 rounded-xl bg-gold/10 p-2 text-gold"
-                        imageClassName="size-18 shrink-0 rounded-2xl"
+                        imageClassName={
+                          serviceView === "grid"
+                            ? "size-18 shrink-0 rounded-2xl"
+                            : "size-12 shrink-0 rounded-xl"
+                        }
                       />
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-sm font-bold">{s.name}</p>
                         {s.description ? (
                           <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
@@ -2014,18 +2081,24 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         </span>
                       </div>
                     </div>
-                    <div>
+                    <div className={serviceView === "list" ? "shrink-0 text-right" : undefined}>
                       <p className="text-xs uppercase tracking-widest text-muted-foreground">
                         <span className="block text-lg font-bold tracking-normal text-foreground">
                           {formatPrice(s.price_cents)}
                         </span>
-                        <span className="mt-1 flex items-center gap-1">
+                        <span className="mt-1 flex items-center gap-1 sm:justify-end">
                           <Clock3 size={12} />
                           {s.duration_minutes} min
                         </span>
                       </p>
                     </div>
-                    <div className="flex justify-end">
+                    <div
+                      className={
+                        serviceView === "grid"
+                          ? "flex justify-end"
+                          : "flex shrink-0 items-center gap-2"
+                      }
+                    >
                       <Switch
                         disabled={busy || !canEditServices}
                         checked={s.active}
@@ -2377,14 +2450,30 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 active={staff.filter((row) => row.active).length}
                 visible={visibleStaff.length}
                 label="Buscar profissional"
+                viewMode={staffView}
+                onViewMode={setStaffView}
               />
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div
+                className={
+                  staffView === "grid" ? "grid gap-3 sm:grid-cols-2" : "flex flex-col gap-2"
+                }
+              >
                 {visibleStaff.map((member) => (
                   <div
                     key={member.id}
-                    className="grid grid-cols-2 items-center gap-3 rounded-2xl border border-border bg-card p-4"
+                    className={
+                      staffView === "grid"
+                        ? "grid grid-cols-2 items-center gap-3 rounded-2xl border border-border bg-card p-4"
+                        : "flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3"
+                    }
                   >
-                    <div className="col-span-2 flex items-center gap-3">
+                    <div
+                      className={
+                        staffView === "grid"
+                          ? "col-span-2 flex items-center gap-3"
+                          : "flex min-w-0 flex-1 items-center gap-3"
+                      }
+                    >
                       {member.avatar_url ? (
                         <img
                           src={member.avatar_url}
@@ -2440,7 +2529,13 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       <Trash2 size={14} />
                       Excluir
                     </button>
-                    <label className="col-span-2 flex items-center justify-between text-xs text-muted-foreground">
+                    <label
+                      className={
+                        staffView === "grid"
+                          ? "col-span-2 flex items-center justify-between text-xs text-muted-foreground"
+                          : "flex w-full items-center justify-between gap-3 text-xs text-muted-foreground sm:w-auto"
+                      }
+                    >
                       Aceitar reservas{" "}
                       <Switch
                         disabled={busy}

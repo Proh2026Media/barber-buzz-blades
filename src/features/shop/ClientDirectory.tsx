@@ -3,6 +3,7 @@ import { ChevronDown, ChevronRight, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
 import { ClientProfileModal } from "./ClientProfileModal";
+import { ClientNoticeBell } from "./ClientNoticeBell";
 
 type ClientRow = {
   customer_id: string;
@@ -150,24 +151,33 @@ export function ClientDirectory({
             <>
               <div className="space-y-2">
                 {visibleClients.map((client) => (
-                  <button
+                  <div
                     key={client.customer_id}
-                    type="button"
-                    onClick={() => setSelected(client)}
-                    aria-label={`Abrir perfil de ${client.customer_name ?? "cliente"}`}
-                    className="flex w-full items-center justify-between gap-3 rounded-xl border border-border bg-card p-3 text-left transition-colors hover:border-gold"
+                    className="flex items-center gap-2 rounded-xl border border-border bg-card p-2"
                   >
-                    <span className="min-w-0">
-                      <span className="block truncate text-sm font-semibold">
-                        {client.customer_name ?? "Cliente"}
+                    <button
+                      type="button"
+                      onClick={() => setSelected(client)}
+                      aria-label={`Abrir perfil de ${client.customer_name ?? "cliente"}`}
+                      className="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-lg p-2 text-left transition-colors hover:bg-muted/40"
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-semibold">
+                          {client.customer_name ?? "Cliente"}
+                        </span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {client.visits} {client.visits === 1 ? "visita" : "visitas"} ·{" "}
+                          {formatBRL(client.total_spent_cents)}
+                        </span>
                       </span>
-                      <span className="block truncate text-xs text-muted-foreground">
-                        {client.visits} {client.visits === 1 ? "visita" : "visitas"} ·{" "}
-                        {formatBRL(client.total_spent_cents)}
-                      </span>
-                    </span>
-                    <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-                  </button>
+                      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                    </button>
+                    <ClientNoticeBell
+                      shopId={shopId}
+                      customerId={client.customer_id}
+                      customerName={client.customer_name}
+                    />
+                  </div>
                 ))}
               </div>
 

@@ -23,6 +23,14 @@ Atualizado em **23/09/2026**. Este documento resume decisões e entregas da conv
 
 ## Entregas recentes e regras atuais
 
+### Templates WhatsApp + lista/grade no catálogo — 24/09/2026
+
+- Serviços e Equipe no painel da loja: toggle grade/lista (`CatalogFilters`).
+- App do cliente: toggle grade/lista (padrão serviços=lista, barbeiros=grade).
+- Mensagens de confirmação/remarcação/cancelamento/lembrete personalizáveis + `{{link_reserva}}`.
+- Migration `20260924160000_recurrence_notices_email_links.sql`: token público, e-mail outbox, avisos do barbeiro (sino), séries recorrentes.
+- Edge `email-dispatch`; cron WA também estende séries e dispara e-mail.
+
 ### Landing + cadastro self-serve com WhatsApp — 24/09/2026
 
 - Apex `beauty…/`: landing pública (`PlatformLanding`); logado redireciona ao painel do papel; host de loja vai para `/app`.

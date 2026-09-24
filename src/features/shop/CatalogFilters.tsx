@@ -1,6 +1,8 @@
 import { Search, X } from "lucide-react";
+import { CatalogViewToggle, type CatalogViewMode } from "./CatalogViewToggle";
 
 export type CatalogStatus = "all" | "active" | "paused";
+export type { CatalogViewMode };
 
 export function CatalogFilters({
   query,
@@ -11,6 +13,8 @@ export function CatalogFilters({
   active,
   visible,
   label,
+  viewMode = "grid",
+  onViewMode,
 }: {
   query: string;
   onQuery: (value: string) => void;
@@ -20,20 +24,25 @@ export function CatalogFilters({
   active: number;
   visible: number;
   label: string;
+  viewMode?: CatalogViewMode;
+  onViewMode?: (value: CatalogViewMode) => void;
 }) {
   return (
     <div className="catalog-filters space-y-3">
-      <label className="relative block">
-        <span className="sr-only">{label}</span>
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <input
-          type="search"
-          value={query}
-          onChange={(event) => onQuery(event.target.value)}
-          placeholder={label}
-          className="min-h-11 w-full rounded-xl border border-border bg-card py-3 pl-10 pr-12 text-sm"
-        />
-      </label>
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="relative min-w-[12rem] flex-1">
+          <span className="sr-only">{label}</span>
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => onQuery(event.target.value)}
+            placeholder={label}
+            className="min-h-11 w-full rounded-xl border border-border bg-card py-3 pl-10 pr-12 text-sm"
+          />
+        </label>
+        {onViewMode && <CatalogViewToggle viewMode={viewMode} onViewMode={onViewMode} />}
+      </div>
       <div className="flex flex-wrap items-center gap-2" aria-label="Filtrar disponibilidade">
         {(
           [

@@ -451,6 +451,8 @@ Atualizado em **22/09/2026**.
 1. **Perfil** → informar WhatsApp com DDD.
 2. Ativar **Receber avisos por WhatsApp**.
 3. Confirmação / remarcação / cancelamento e lembrete (padrão 24h) entram na fila `whatsapp_outbox`.
+4. Em **Ajustes → WhatsApp**, a loja edita os textos (placeholders `{{loja}}`, `{{servico}}`, `{{profissional}}`, `{{quando}}`, `{{cliente}}`, `{{link_reserva}}`). Sem customização, valem os padrões.
+5. Sino no card do cliente (diretório): envia aviso pré-definido por WhatsApp e e-mail (quando disponíveis).
 
 ### Recuperar senha por WhatsApp
 

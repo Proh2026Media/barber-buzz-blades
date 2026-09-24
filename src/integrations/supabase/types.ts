@@ -419,6 +419,8 @@ export type Database = {
           ends_at: string;
           status: Database["public"]["Enums"]["appointment_status"];
           booked_price_cents: number | null;
+          public_token: string;
+          series_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -432,6 +434,8 @@ export type Database = {
           ends_at: string;
           status?: Database["public"]["Enums"]["appointment_status"];
           booked_price_cents?: number | null;
+          public_token?: string;
+          series_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -445,6 +449,8 @@ export type Database = {
           ends_at?: string;
           status?: Database["public"]["Enums"]["appointment_status"];
           booked_price_cents?: number | null;
+          public_token?: string;
+          series_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -708,6 +714,102 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["whatsapp_outbox"]["Insert"]>;
         Relationships: [];
       };
+      whatsapp_message_templates: {
+        Row: {
+          barbershop_id: string;
+          template_key: string;
+          body: string;
+          updated_at: string;
+        };
+        Insert: {
+          barbershop_id: string;
+          template_key: string;
+          body: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["whatsapp_message_templates"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_message_templates_barbershop_id_fkey";
+            columns: ["barbershop_id"];
+            isOneToOne: false;
+            referencedRelation: "barbershops";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      email_outbox: {
+        Row: {
+          id: string;
+          barbershop_id: string;
+          to_email: string;
+          template_key: string;
+          subject: string;
+          body: string;
+          payload: Json;
+          status: Database["public"]["Enums"]["email_outbox_status"];
+          error: string | null;
+          attempts: number;
+          dedupe_key: string;
+          scheduled_at: string;
+          sent_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          barbershop_id: string;
+          to_email: string;
+          template_key: string;
+          subject: string;
+          body: string;
+          payload?: Json;
+          status?: Database["public"]["Enums"]["email_outbox_status"];
+          error?: string | null;
+          attempts?: number;
+          dedupe_key: string;
+          scheduled_at?: string;
+          sent_at?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["email_outbox"]["Insert"]>;
+        Relationships: [];
+      };
+      booking_series: {
+        Row: {
+          id: string;
+          barbershop_id: string;
+          customer_id: string;
+          service_id: string;
+          staff_id: string;
+          kind: Database["public"]["Enums"]["booking_series_kind"];
+          weekday: number | null;
+          interval_days: number | null;
+          local_time: string;
+          anchor_starts_at: string;
+          active: boolean;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          barbershop_id: string;
+          customer_id: string;
+          service_id: string;
+          staff_id: string;
+          kind: Database["public"]["Enums"]["booking_series_kind"];
+          weekday?: number | null;
+          interval_days?: number | null;
+          local_time: string;
+          anchor_starts_at: string;
+          active?: boolean;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["booking_series"]["Insert"]>;
+        Relationships: [];
+      };
       auth_otp_challenges: {
         Row: {
           id: string;
@@ -840,6 +942,32 @@ export type Database = {
           p_scheduled_at?: string;
         };
         Returns: string;
+      };
+      lookup_appointment_by_token: { Args: { p_token: string }; Returns: Json };
+      send_client_notice: {
+        Args: { p_shop_id: string; p_customer_id: string; p_preset: string };
+        Returns: Json;
+      };
+      create_booking_series: {
+        Args: {
+          p_shop_id: string;
+          p_service_id: string;
+          p_staff_id: string;
+          p_starts_at: string;
+          p_kind: string;
+          p_interval_days?: number | null;
+        };
+        Returns: Json;
+      };
+      stop_booking_series: { Args: { p_series_id: string }; Returns: undefined };
+      extend_booking_series: { Args: Record<string, never>; Returns: number };
+      claim_email_outbox: {
+        Args: { p_limit?: number };
+        Returns: Database["public"]["Tables"]["email_outbox"]["Row"][];
+      };
+      complete_email_outbox: {
+        Args: { p_id: string; p_ok: boolean; p_error?: string | null };
+        Returns: undefined;
       };
       get_my_google_connection: {
         Args: Record<string, never>;
@@ -1144,6 +1272,13 @@ export type Database = {
       shop_change_status: "pending" | "approved" | "rejected" | "cancelled";
       whatsapp_channel_status: "disconnected" | "qr" | "connecting" | "open";
       whatsapp_outbox_status: "pending" | "sending" | "sent" | "failed";
+      email_outbox_status: "pending" | "sending" | "sent" | "failed";
+      booking_series_kind: "weekday" | "interval_days";
+      booking_series_exception_reason:
+        | "skipped_busy"
+        | "cancelled"
+        | "rescheduled_out"
+        | "series_stopped";
       auth_otp_channel: "whatsapp" | "email";
       auth_otp_purpose: "login" | "recovery";
     };
@@ -1282,6 +1417,14 @@ export const Constants = {
       ] as const,
       shop_member_role: ["owner", "partner", "associate", "employee"] as const,
       shop_change_status: ["pending", "approved", "rejected", "cancelled"] as const,
+      email_outbox_status: ["pending", "sending", "sent", "failed"] as const,
+      booking_series_kind: ["weekday", "interval_days"] as const,
+      booking_series_exception_reason: [
+        "skipped_busy",
+        "cancelled",
+        "rescheduled_out",
+        "series_stopped",
+      ] as const,
     },
   },
 } as const;

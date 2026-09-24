@@ -8,6 +8,12 @@ import { PointsHistory } from "./PointsHistory";
 import { NextLevelCard, type NextLevelSummary } from "./NextLevelCard";
 import { CustomerRhythm } from "./CustomerRhythm";
 import { CustomerProfile } from "./CustomerProfile";
+import {
+  CatalogViewToggle,
+  readCatalogViewPreference,
+  writeCatalogViewPreference,
+  type CatalogViewMode,
+} from "@/features/shop/CatalogViewToggle";
 import { useScrollIndicators } from "@/lib/use-scroll-indicators";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTheme } from "@/lib/use-theme";
@@ -137,22 +143,32 @@ function ArenaApp({
   directBarberSlug,
   directShopSlug,
   promptJoin = false,
+  initialTab,
+  focusReservationToken,
 }: {
   headerActions?: ReactNode;
   directBarberSlug?: string;
   directShopSlug?: string;
   /** Vindo do pós-login (?join=1); o diálogo também abre se o Host/?shop= apontar loja nova. */
   promptJoin?: boolean;
+  initialTab?: string;
+  focusReservationToken?: string;
 } = {}) {
   useScrollIndicators();
   const demo = useDemo();
   const demoChrome = useDemoChrome();
-  const [tab, setTab] = useState("dashboard");
+  const [tab, setTab] = useState(initialTab ?? "dashboard");
+  const [focusToken] = useState(focusReservationToken);
   const [points, setPoints] = useState(0);
   const { isDark: isDarkMode } = useTheme();
   const [showVipInfo, setShowVipInfo] = useState(false);
   const [serviceIdx, setServiceIdx] = useState(0);
   const [staffIdx, setStaffIdx] = useState(0);
+  const [serviceView, setServiceView] = useState<CatalogViewMode>("list");
+  const [staffView, setStaffView] = useState<CatalogViewMode>("grid");
+  const [repeatEnabled, setRepeatEnabled] = useState(false);
+  const [repeatKind, setRepeatKind] = useState<"weekday" | "interval_days">("weekday");
+  const [repeatInterval, setRepeatInterval] = useState<7 | 15 | 21>(7);
   const [selectedSlotAt, setSelectedSlotAt] = useState<string | null>(null);
   const [bookingSummary, setBookingSummary] = useState<string | null>(null);
   const [bookingBusy, setBookingBusy] = useState(false);
@@ -212,6 +228,23 @@ function ArenaApp({
   const [userId, setUserId] = useState<string | null>(null);
   const [services, setServices] = useState<Tables<"services">[]>([]);
   const [staff, setStaff] = useState<Tables<"staff">[]>([]);
+
+  useEffect(() => {
+    if (!shopId) return;
+    setServiceView(readCatalogViewPreference(shopId, "services", "list"));
+    setStaffView(readCatalogViewPreference(shopId, "staff", "grid"));
+  }, [shopId]);
+
+  function changeServiceView(value: CatalogViewMode) {
+    setServiceView(value);
+    writeCatalogViewPreference(shopId, "services", value);
+  }
+
+  function changeStaffView(value: CatalogViewMode) {
+    setStaffView(value);
+    writeCatalogViewPreference(shopId, "staff", value);
+  }
+
   const [slots, setSlots] = useState<Date[]>([]);
   const [slotsFor, setSlotsFor] = useState("");
   const [slotsLoading, setSlotsLoading] = useState(false);
@@ -932,6 +965,8 @@ function ArenaApp({
             appointment: {
               ...booking,
               id: crypto.randomUUID(),
+              public_token: crypto.randomUUID().replace(/-/g, "").slice(0, 32),
+              series_id: null,
               created_at: demo.now.toISOString(),
               updated_at: demo.now.toISOString(),
             },
@@ -955,6 +990,16 @@ function ArenaApp({
           p_ends_at: booking.ends_at,
         });
         if (error) throw error;
+      } else if (repeatEnabled) {
+        const { error } = await supabase.rpc("create_booking_series", {
+          p_shop_id: shopId,
+          p_service_id: booking.service_id,
+          p_staff_id: booking.staff_id,
+          p_starts_at: booking.starts_at,
+          p_kind: repeatKind,
+          p_interval_days: repeatKind === "interval_days" ? repeatInterval : null,
+        });
+        if (error) throw error;
       } else {
         const { error } = await supabase.from("appointments").insert(booking);
         if (error) throw error;
@@ -964,8 +1009,14 @@ function ArenaApp({
         day: "2-digit",
         month: "2-digit",
       });
-      const summary = `${rescheduleId ? "Remarcado: " : ""}${selectedService.name} com ${selectedStaff.display_name} em ${dateLabel} às ${formatSlotLabel(selectedSlot, shopTimeZone)}. Reserva confirmada.`;
+      const repeatNote = repeatEnabled
+        ? repeatKind === "weekday"
+          ? " Recorrente: mesmo dia da semana."
+          : ` Recorrente: a cada ${repeatInterval} dias.`
+        : "";
+      const summary = `${rescheduleId ? "Remarcado: " : ""}${selectedService.name} com ${selectedStaff.display_name} em ${dateLabel} às ${formatSlotLabel(selectedSlot, shopTimeZone)}. Reserva confirmada.${repeatNote}`;
       setBookingSummary(summary);
+      setRepeatEnabled(false);
       setRescheduleId(null);
       setNotifications((n) => [
         {
@@ -1030,6 +1081,41 @@ function ArenaApp({
       setAppointmentBusy(null);
     }
   };
+
+  const stopSeries = async (seriesId: string) => {
+    if (
+      !window.confirm(
+        "Parar a recorrência cancela todos os próximos horários desta série. Continuar?",
+      )
+    ) {
+      return;
+    }
+    setAppointmentBusy(seriesId);
+    setAppointmentsError(null);
+    try {
+      if (demo) {
+        setAppointmentsError("Recorrência não está disponível na demonstração.");
+        return;
+      }
+      const { error } = await supabase.rpc("stop_booking_series", { p_series_id: seriesId });
+      if (error) throw error;
+      setAppointmentVersion((v) => v + 1);
+      setAvailabilityVersion((v) => v + 1);
+    } catch {
+      setAppointmentsError("Não foi possível parar a recorrência.");
+    } finally {
+      setAppointmentBusy(null);
+    }
+  };
+
+  useEffect(() => {
+    if (!focusToken || appointments.length === 0) return;
+    const match = appointments.find((row) => row.public_token === focusToken);
+    if (match) {
+      setTab("reservas");
+      setReservationFilter("upcoming");
+    }
+  }, [focusToken, appointments]);
 
   const beginReschedule = (row: CustomerAppointment) => {
     const serviceIndex = services.findIndex((item) => item.id === row.service_id);
@@ -1685,15 +1771,29 @@ function ArenaApp({
                     </section>
 
                     <section className="booking-section" aria-labelledby="booking-service">
-                      <h3 id="booking-service" className="booking-heading">
-                        Serviço
-                      </h3>
+                      <div className="flex items-center justify-between gap-2">
+                        <h3 id="booking-service" className="booking-heading">
+                          Serviço
+                        </h3>
+                        {services.length > 0 && (
+                          <CatalogViewToggle
+                            viewMode={serviceView}
+                            onViewMode={changeServiceView}
+                          />
+                        )}
+                      </div>
                       {!catalogLoading && !catalogError && services.length === 0 && (
                         <p role="status" className="text-sm text-muted-foreground">
                           Nenhum serviço disponível para agendar.
                         </p>
                       )}
-                      <div className="grid grid-cols-3 gap-2">
+                      <div
+                        className={
+                          serviceView === "list"
+                            ? "flex flex-col gap-2"
+                            : "grid grid-cols-2 gap-2 sm:grid-cols-3"
+                        }
+                      >
                         {services.map((s, i) => (
                           <button
                             key={s.id}
@@ -1705,47 +1805,109 @@ function ArenaApp({
                             }}
                             disabled={bookingBusy}
                             aria-pressed={serviceIdx === i}
-                            className={`min-w-0 flex flex-col gap-2 p-3 sm:p-4 rounded-xl border text-left text-xs font-bold transition-all ${serviceIdx === i ? "bg-primary text-primary-foreground border-primary" : "bg-muted/20 border-border text-foreground hover:border-primary/50"}`}
-                          >
-                            <div className="flex flex-col gap-1.5">
-                              <ServiceIcon
-                                icon={s.icon}
-                                className="mb-1 size-5"
-                                imageClassName="mb-1 size-10 rounded-xl"
-                              />
-                              <span className="brand-content-title block break-words">
-                                {s.name}
-                              </span>
-                              {s.description ? (
-                                <span
-                                  className={`line-clamp-2 text-[11px] font-medium ${
+                            className={
+                              serviceView === "list"
+                                ? `flex min-h-14 w-full items-center gap-3 rounded-xl border px-3 py-3 text-left text-xs font-bold transition-all ${
                                     serviceIdx === i
-                                      ? "text-primary-foreground/75"
+                                      ? "border-primary bg-primary text-primary-foreground"
+                                      : "border-border bg-muted/20 text-foreground hover:border-primary/50"
+                                  }`
+                                : `min-w-0 flex flex-col gap-2 rounded-xl border p-3 text-left text-xs font-bold transition-all sm:p-4 ${
+                                    serviceIdx === i
+                                      ? "border-primary bg-primary text-primary-foreground"
+                                      : "border-border bg-muted/20 text-foreground hover:border-primary/50"
+                                  }`
+                            }
+                          >
+                            {serviceView === "list" ? (
+                              <>
+                                <ServiceIcon
+                                  icon={s.icon}
+                                  className="size-5 shrink-0"
+                                  imageClassName="size-10 shrink-0 rounded-xl"
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <span className="brand-content-title block break-words">
+                                    {s.name}
+                                  </span>
+                                  {s.description ? (
+                                    <span
+                                      className={`mt-0.5 line-clamp-1 block text-[11px] font-medium ${
+                                        serviceIdx === i
+                                          ? "text-primary-foreground/75"
+                                          : "text-muted-foreground"
+                                      }`}
+                                    >
+                                      {s.description}
+                                    </span>
+                                  ) : null}
+                                </div>
+                                <span
+                                  className={`shrink-0 text-xs font-medium ${
+                                    serviceIdx === i
+                                      ? "text-primary-foreground/80"
                                       : "text-muted-foreground"
                                   }`}
                                 >
-                                  {s.description}
+                                  {s.duration_minutes} min ·{" "}
+                                  {(s.price_cents / 100).toLocaleString("pt-BR", {
+                                    style: "currency",
+                                    currency: "BRL",
+                                  })}
                                 </span>
-                              ) : null}
-                            </div>
-                            <span
-                              className={`mt-auto block text-xs font-medium ${serviceIdx === i ? "text-primary-foreground/80" : "text-muted-foreground"}`}
-                            >
-                              {s.duration_minutes} min ·{" "}
-                              {(s.price_cents / 100).toLocaleString("pt-BR", {
-                                style: "currency",
-                                currency: "BRL",
-                              })}
-                            </span>
+                              </>
+                            ) : (
+                              <>
+                                <div className="flex flex-col gap-1.5">
+                                  <ServiceIcon
+                                    icon={s.icon}
+                                    className="mb-1 size-5"
+                                    imageClassName="mb-1 size-10 rounded-xl"
+                                  />
+                                  <span className="brand-content-title block break-words">
+                                    {s.name}
+                                  </span>
+                                  {s.description ? (
+                                    <span
+                                      className={`line-clamp-2 text-[11px] font-medium ${
+                                        serviceIdx === i
+                                          ? "text-primary-foreground/75"
+                                          : "text-muted-foreground"
+                                      }`}
+                                    >
+                                      {s.description}
+                                    </span>
+                                  ) : null}
+                                </div>
+                                <span
+                                  className={`mt-auto block text-xs font-medium ${
+                                    serviceIdx === i
+                                      ? "text-primary-foreground/80"
+                                      : "text-muted-foreground"
+                                  }`}
+                                >
+                                  {s.duration_minutes} min ·{" "}
+                                  {(s.price_cents / 100).toLocaleString("pt-BR", {
+                                    style: "currency",
+                                    currency: "BRL",
+                                  })}
+                                </span>
+                              </>
+                            )}
                           </button>
                         ))}
                       </div>
                     </section>
 
                     <section className="booking-section" aria-labelledby="booking-staff">
-                      <h3 id="booking-staff" className="booking-heading">
-                        Barbeiro
-                      </h3>
+                      <div className="flex items-center justify-between gap-2">
+                        <h3 id="booking-staff" className="booking-heading">
+                          Barbeiro
+                        </h3>
+                        {!directBarberSlug && staff.length > 0 && (
+                          <CatalogViewToggle viewMode={staffView} onViewMode={changeStaffView} />
+                        )}
+                      </div>
                       {!catalogLoading && !catalogError && staff.length === 0 && (
                         <p role="status" className="text-sm text-muted-foreground">
                           Nenhum profissional disponível para agendar.
@@ -1762,7 +1924,13 @@ function ArenaApp({
                           </p>
                         </div>
                       ) : (
-                        <div className="grid grid-cols-2 gap-2">
+                        <div
+                          className={
+                            staffView === "list"
+                              ? "flex flex-col gap-2"
+                              : "grid grid-cols-2 gap-2"
+                          }
+                        >
                           {staff.map((m, i) => (
                             <button
                               key={m.id}
@@ -1774,7 +1942,19 @@ function ArenaApp({
                               }}
                               disabled={bookingBusy}
                               aria-pressed={staffIdx === i}
-                              className={`p-4 rounded-xl border text-left text-xs font-bold transition-all ${staffIdx === i ? "bg-primary text-primary-foreground border-primary" : "bg-muted/20 border-border text-foreground hover:border-primary/50"}`}
+                              className={
+                                staffView === "list"
+                                  ? `flex min-h-14 w-full items-center gap-3 rounded-xl border px-3 py-3 text-left text-xs font-bold transition-all ${
+                                      staffIdx === i
+                                        ? "border-primary bg-primary text-primary-foreground"
+                                        : "border-border bg-muted/20 text-foreground hover:border-primary/50"
+                                    }`
+                                  : `rounded-xl border p-4 text-left text-xs font-bold transition-all ${
+                                      staffIdx === i
+                                        ? "border-primary bg-primary text-primary-foreground"
+                                        : "border-border bg-muted/20 text-foreground hover:border-primary/50"
+                                    }`
+                              }
                             >
                               <span className="flex items-center gap-2">
                                 {m.avatar_url ? (
@@ -1924,6 +2104,63 @@ function ArenaApp({
                           · {formatSlotLabel(selectedSlot, shopTimeZone)} ·{" "}
                           {selectedService.duration_minutes} min
                         </p>
+                        {!rescheduleId && (
+                          <div className="space-y-2 border-t border-border/60 pt-3">
+                            <label className="flex items-center justify-between gap-3 text-sm font-semibold">
+                              Repetir horário
+                              <input
+                                type="checkbox"
+                                checked={repeatEnabled}
+                                onChange={(e) => setRepeatEnabled(e.target.checked)}
+                                className="size-5 accent-primary"
+                              />
+                            </label>
+                            {repeatEnabled && (
+                              <div className="space-y-2">
+                                <div className="flex flex-wrap gap-1.5">
+                                  <button
+                                    type="button"
+                                    aria-pressed={repeatKind === "weekday"}
+                                    onClick={() => setRepeatKind("weekday")}
+                                    className={`min-h-9 rounded-xl border px-3 text-xs font-bold ${
+                                      repeatKind === "weekday"
+                                        ? "border-primary bg-primary text-primary-foreground"
+                                        : "border-border text-muted-foreground"
+                                    }`}
+                                  >
+                                    Toda semana neste dia
+                                  </button>
+                                  {([7, 15, 21] as const).map((days) => (
+                                    <button
+                                      key={days}
+                                      type="button"
+                                      aria-pressed={
+                                        repeatKind === "interval_days" && repeatInterval === days
+                                      }
+                                      onClick={() => {
+                                        setRepeatKind("interval_days");
+                                        setRepeatInterval(days);
+                                      }}
+                                      className={`min-h-9 rounded-xl border px-3 text-xs font-bold ${
+                                        repeatKind === "interval_days" && repeatInterval === days
+                                          ? "border-primary bg-primary text-primary-foreground"
+                                          : "border-border text-muted-foreground"
+                                      }`}
+                                    >
+                                      A cada {days} dias
+                                    </button>
+                                  ))}
+                                </div>
+                                <p className="text-[11px] leading-relaxed text-muted-foreground">
+                                  Reservamos as próximas datas no período aberto da loja (
+                                  {shopSettings.booking_horizon_days} dias), sempre às{" "}
+                                  {formatSlotLabel(selectedSlot, shopTimeZone)}. Se algum dia
+                                  estiver ocupado, esse dia é pulado.
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </section>
                     )}
                     {bookingError && (
@@ -2066,6 +2303,11 @@ function ArenaApp({
                             {statusLabel[row.status]}
                           </span>
                         </div>
+                        {row.series_id ? (
+                          <p className="mt-2 inline-flex rounded-full border border-gold/40 bg-gold/10 px-2 py-0.5 text-[11px] font-semibold text-gold">
+                            Recorrente
+                          </p>
+                        ) : null}
                         <p className="mt-4 text-sm font-bold">
                           {formatShopDate(startsAt, shopTimeZone, {
                             weekday: "long",
@@ -2092,7 +2334,7 @@ function ArenaApp({
                                 definitivamente.
                               </p>
                             )}
-                            <div className="mt-4 flex gap-2">
+                            <div className="mt-4 flex flex-wrap gap-2">
                               <button
                                 disabled={appointmentBusy !== null}
                                 onClick={() => beginReschedule(row)}
@@ -2108,6 +2350,16 @@ function ArenaApp({
                                 <X className="size-4" />
                                 {appointmentBusy === row.id ? "Cancelando..." : "Cancelar"}
                               </button>
+                              {row.series_id ? (
+                                <button
+                                  type="button"
+                                  disabled={appointmentBusy !== null}
+                                  onClick={() => void stopSeries(row.series_id!)}
+                                  className="w-full rounded-xl border border-border px-3 py-2 text-xs font-bold disabled:opacity-50"
+                                >
+                                  Parar recorrência
+                                </button>
+                              ) : null}
                             </div>
                           </>
                         )}
