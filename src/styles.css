@@ -3523,6 +3523,13 @@ body:has(.arena-workspace[class*="brand-corners-"])
   max-width: 40rem;
   margin-inline: auto;
   width: 100%;
+  justify-content: flex-start;
+}
+.platform-landing-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 .platform-landing-top {
   margin-bottom: 2.5rem;
@@ -3629,8 +3636,9 @@ body:has(.arena-workspace[class*="brand-corners-"])
   background: color-mix(in oklch, #f4f1ea 14%, transparent);
 }
 .platform-landing-footer {
-  margin-top: auto;
-  padding-top: 2rem;
+  flex-shrink: 0;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
   padding-bottom: 0.5rem;
   animation: platform-landing-rise 0.7s ease-out 0.28s both;
 }
