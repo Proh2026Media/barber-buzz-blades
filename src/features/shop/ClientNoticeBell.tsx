@@ -64,7 +64,9 @@ export function ClientNoticeBell({
         p_customer_id: customerId,
         p_preset: preset,
       });
-      if (rpcError) throw rpcError;
+      if (rpcError) {
+        throw new Error(rpcError.message || "Não foi possível enviar o aviso.");
+      }
       const channels = (data as { channels?: string[] } | null)?.channels ?? [];
       setMessage(
         channels.length
@@ -73,7 +75,13 @@ export function ClientNoticeBell({
       );
       setOpen(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível enviar o aviso.");
+      const detail =
+        err instanceof Error
+          ? err.message
+          : err && typeof err === "object" && "message" in err
+            ? String((err as { message: unknown }).message)
+            : null;
+      setError(detail || "Não foi possível enviar o aviso.");
     } finally {
       setBusy(false);
     }
@@ -108,8 +116,9 @@ export function ClientNoticeBell({
         >
           <DialogTitle className="text-base font-extrabold">Enviar aviso</DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Escolha um aviso para {customerName ?? "o cliente"}. Envia no WhatsApp e no e-mail
-            quando disponíveis.
+            Escolha um aviso para {customerName ?? "o cliente"}. Envia no WhatsApp (número + opt-in
+            no perfil e canal da loja conectado) e/ou no e-mail da conta. No máximo 1 aviso a cada
+            30 minutos por cliente.
           </DialogDescription>
           <div className="mt-3 space-y-2">
             {PRESETS.map((preset) => (
