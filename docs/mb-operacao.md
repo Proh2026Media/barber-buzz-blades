@@ -295,9 +295,54 @@ Hoje o DNS autoritativo responde **NXDOMAIN** para esse host → Let’s Encrypt
 
 ---
 
+## 5d. Cadastro self-serve (landing + WhatsApp da plataforma)
+
+Atualizado em **24/09/2026**.
+
+### O que o barbeiro faz
+
+1. Abrir `https://beauty.contheiner.digital/` (landing).
+2. **Abrir minha barbearia** → `/cadastrar`.
+3. Preencher nome da loja, nome, e-mail, senha e WhatsApp.
+4. Receber código no WhatsApp (número da **plataforma**, não da loja).
+5. Confirmar → conta + loja (dono) → painel `/shop`.
+
+Admin continua podendo criar/convidar em `/platform`.
+
+### Coolify / Evolution (obrigatório para o OTP)
+
+1. No Coolify, envs das Edge Functions:
+
+```text
+EVOLUTION_API_URL=https://evolutionapi.contheiner.digital
+EVOLUTION_API_KEY=…
+PLATFORM_EVOLUTION_INSTANCE=platform-barba
+```
+
+2. Publicar funções `register-shop` e `platform-whatsapp`.
+3. Aplicar migration `20260924120000_platform_signup_otp.sql`.
+4. No app: **Plataforma → Visão geral → WhatsApp da plataforma → Conectar WhatsApp** (QR). Não precisa entrar no painel Evolution no dia a dia.
+
+### Checklist
+
+- [ ] `PLATFORM_EVOLUTION_INSTANCE` no Coolify
+- [ ] Funções `register-shop` e `platform-whatsapp` publicadas
+- [ ] Migration de OTP signup aplicada
+- [ ] Admin conectou QR em Plataforma → Visão geral
+- [ ] Teste ponta a ponta em `/cadastrar` com número real
+
+---
+
 ## 5c. Domínios por barbearia (subdomínio + domínio próprio)
 
-Atualizado em **22/09/2026**.
+Atualizado em **23/09/2026**.
+
+### Endereço público e link do barbeiro
+
+- Com domínio próprio **ativo**, ele é o endereço público principal (`shopPublicOrigin`).
+- Sem domínio próprio, usa o automático `https://{slug}.beauty.contheiner.digital/app`.
+- Parceiro copia `…/app?barber={booking_slug}`. Paths legados no host da loja (`/ezequiel`) redirecionam para o mesmo.
+- Em **Equipe**, o slug do profissional é editável. Em **Plataforma → Barbearias**, botão remonta a Externa (Ezequiel + Tiago) via `admin_reset_externa_barbearia`. O site WordPress `externabarbearia.com.br` foi só referência de conteúdo — não entra como domínio do sistema até a loja configurar em Ajustes.
 
 ### Caminho A — subdomínio automático
 

@@ -25,6 +25,7 @@ import {
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import { useScrollIndicators } from "@/lib/use-scroll-indicators";
+import { isValidBookingSlug, slugifyPt } from "@/lib/shop/slugify";
 import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
@@ -294,6 +295,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   const [serviceStatus, setServiceStatus] = useState<CatalogStatus>("all");
   const [staffStatus, setStaffStatus] = useState<CatalogStatus>("all");
   const [staffName, setStaffName] = useState("");
+  const [staffSlug, setStaffSlug] = useState("");
+  const [staffSlugTouched, setStaffSlugTouched] = useState(false);
   const [blockDate, setBlockDate] = useState(() =>
     shopDateKey(new Date(), validTimeZone(shop?.timezone)),
   );
@@ -827,6 +830,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       if (editingStaff?.id === deleteStaff.id) {
         setEditingStaff(null);
         setStaffName("");
+        setStaffSlug("");
+        setStaffSlugTouched(false);
       }
       setDeleteStaff(null);
       if (!demo) await loadCatalog();
@@ -889,26 +894,23 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     setError(null);
     try {
       if (!staffName.trim()) throw new Error("Informe o nome do profissional.");
+      const desiredSlug = slugifyPt(staffSlug || staffName);
+      if (!desiredSlug || !isValidBookingSlug(desiredSlug)) {
+        throw new Error("Informe um slug válido (letras minúsculas, números e hífen).");
+      }
       const staff = {
         barbershop_id: shop.id,
         display_name: staffName.trim(),
+        booking_slug: desiredSlug,
         active: editingStaff?.active ?? true,
       };
       if (demo) {
-        const autoSlug = staffName
-          .trim()
-          .toLowerCase()
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-+|-+$/g, "")
-          .slice(0, 60);
         demo.dispatch({
           type: editingStaff ? "staff.edit" : "staff.add",
           staff: {
             ...staff,
             user_id: editingStaff?.user_id ?? null,
-            booking_slug: autoSlug || editingStaff?.booking_slug || "profissional",
+            booking_slug: desiredSlug,
             id: editingStaff?.id ?? crypto.randomUUID(),
             created_at: editingStaff?.created_at ?? demo.now.toISOString(),
             updated_at: demo.now.toISOString(),
@@ -942,6 +944,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       }
       setEditingStaff(null);
       setStaffName("");
+      setStaffSlug("");
+      setStaffSlugTouched(false);
       setStaffFormOpen(false);
       await loadCatalog();
     } catch (err) {
@@ -1875,6 +1879,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     staffId={actor.staff_id}
                     shopSlug={shop.slug}
                     bookingSlug={actor.staff?.booking_slug}
+                    customDomain={shop.custom_domain}
+                    customDomainStatus={shop.custom_domain_status}
                   />
                 </div>
               )}
@@ -2266,6 +2272,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   onClick={() => {
                     setEditingStaff(null);
                     setStaffName("");
+                    setStaffSlug("");
+                    setStaffSlugTouched(false);
                     setError(null);
                     setStaffFormOpen(true);
                   }}
@@ -2293,6 +2301,11 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     <div className="col-span-2">
                       <Users className="mb-2 size-9 rounded-xl bg-gold/10 p-2 text-gold" />
                       <p className="text-sm font-bold">{member.display_name}</p>
+                      {member.booking_slug ? (
+                        <p className="font-mono text-xs text-muted-foreground">
+                          /{member.booking_slug}
+                        </p>
+                      ) : null}
                       <p className="text-xs uppercase tracking-widest text-muted-foreground">
                         {member.active ? "Disponível" : "Desativado"}
                       </p>
@@ -2304,6 +2317,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       onClick={() => {
                         setEditingStaff(member);
                         setStaffName(member.display_name);
+                        setStaffSlug(member.booking_slug ?? slugifyPt(member.display_name));
+                        setStaffSlugTouched(true);
                         setError(null);
                         setStaffFormOpen(true);
                       }}
@@ -2361,7 +2376,9 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     <DialogTitle>
                       {editingStaff ? "Editar profissional" : "Novo profissional"}
                     </DialogTitle>
-                    <DialogDescription>Nome que o cliente verá ao agendar.</DialogDescription>
+                    <DialogDescription>
+                      Nome e slug do link que o cliente usa para agendar com este profissional.
+                    </DialogDescription>
                     <form
                       id="staff-form"
                       onSubmit={createStaff}
@@ -2374,19 +2391,39 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         id="staff-name"
                         required
                         value={staffName}
-                        onChange={(e) => setStaffName(e.target.value)}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setStaffName(next);
+                          if (!staffSlugTouched) setStaffSlug(slugifyPt(next));
+                        }}
                         placeholder="Nome de exibição"
                         className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
                       />
+                      <label htmlFor="staff-slug" className="block text-xs font-semibold">
+                        Slug do link
+                      </label>
+                      <input
+                        id="staff-slug"
+                        required
+                        value={staffSlug}
+                        onChange={(e) => {
+                          setStaffSlugTouched(true);
+                          setStaffSlug(slugifyPt(e.target.value));
+                        }}
+                        placeholder="ex.: ezequiel"
+                        className="w-full rounded-xl border border-border bg-background px-3 py-2 font-mono text-sm"
+                        autoCapitalize="off"
+                        autoCorrect="off"
+                        spellCheck={false}
+                      />
                       <p className="text-xs text-muted-foreground">
-                        O link de agendamento é gerado automaticamente a partir do nome
-                        {editingStaff?.booking_slug ? (
-                          <>
-                            {" "}
-                            (atual: <span className="font-semibold">{editingStaff.booking_slug}</span>)
-                          </>
-                        ) : null}
-                        . Links antigos continuam redirecionando.
+                        Link:{" "}
+                        <span className="font-semibold">
+                          …/app?barber={staffSlug || "slug"}
+                        </span>
+                        {" · "}também funciona{" "}
+                        <span className="font-semibold">/{staffSlug || "slug"}/</span> no domínio da
+                        loja. Trocar o slug redireciona o link antigo.
                       </p>
                       {error && (
                         <p role="alert" className="text-sm text-destructive">
@@ -2411,6 +2448,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                           onClick={() => {
                             setEditingStaff(null);
                             setStaffName("");
+                            setStaffSlug("");
+                            setStaffSlugTouched(false);
                             setStaffFormOpen(false);
                           }}
                           className="text-sm underline"

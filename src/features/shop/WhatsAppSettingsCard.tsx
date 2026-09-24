@@ -91,6 +91,26 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
     void refresh();
   }, [refresh]);
 
+  useEffect(() => {
+    if (!qrOpen || channel?.status === "open") return;
+    const timer = window.setInterval(() => {
+      void (async () => {
+        try {
+          const payload = await callChannel({ action: "status", barbershop_id: shopId });
+          setChannel(payload.channel ?? null);
+          setQrcode(payload.qrcode ?? null);
+          if (payload.channel?.status === "open") {
+            setQrOpen(false);
+            setMessage("WhatsApp conectado.");
+          }
+        } catch {
+          /* ignore polling errors */
+        }
+      })();
+    }, 4000);
+    return () => window.clearInterval(timer);
+  }, [qrOpen, channel?.status, shopId]);
+
   async function connect() {
     if (demo) {
       setMessage("Na demonstração o WhatsApp aparece conectado.");

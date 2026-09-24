@@ -14,8 +14,10 @@ import { Route as PoliticaRouteImport } from './routes/politica'
 import { Route as PlatformRouteImport } from './routes/platform'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as DemoRouteImport } from './routes/demo'
+import { Route as CadastrarRouteImport } from './routes/cadastrar'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
+import { Route as BarberSlugRouteImport } from './routes/$barberSlug'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthGoogleAppsRouteImport } from './routes/auth.google-apps'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
@@ -48,6 +50,11 @@ const DemoRoute = DemoRouteImport.update({
   path: '/demo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CadastrarRoute = CadastrarRouteImport.update({
+  id: '/cadastrar',
+  path: '/cadastrar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -56,6 +63,11 @@ const AuthRoute = AuthRouteImport.update({
 const AppRoute = AppRouteImport.update({
   id: '/app',
   path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BarberSlugRoute = BarberSlugRouteImport.update({
+  id: '/$barberSlug',
+  path: '/$barberSlug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -94,8 +106,10 @@ const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/$barberSlug': typeof BarberSlugRoute
   '/app': typeof AppRoute
   '/auth': typeof AuthRouteWithChildren
+  '/cadastrar': typeof CadastrarRoute
   '/demo': typeof DemoRoute
   '/mcp': typeof McpRoute
   '/platform': typeof PlatformRoute
@@ -109,8 +123,10 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/$barberSlug': typeof BarberSlugRoute
   '/app': typeof AppRoute
   '/auth': typeof AuthRouteWithChildren
+  '/cadastrar': typeof CadastrarRoute
   '/demo': typeof DemoRoute
   '/mcp': typeof McpRoute
   '/platform': typeof PlatformRoute
@@ -125,8 +141,10 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/$barberSlug': typeof BarberSlugRoute
   '/app': typeof AppRoute
   '/auth': typeof AuthRouteWithChildren
+  '/cadastrar': typeof CadastrarRoute
   '/demo': typeof DemoRoute
   '/mcp': typeof McpRoute
   '/platform': typeof PlatformRoute
@@ -142,8 +160,10 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/$barberSlug'
     | '/app'
     | '/auth'
+    | '/cadastrar'
     | '/demo'
     | '/mcp'
     | '/platform'
@@ -157,8 +177,10 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/$barberSlug'
     | '/app'
     | '/auth'
+    | '/cadastrar'
     | '/demo'
     | '/mcp'
     | '/platform'
@@ -172,8 +194,10 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/$barberSlug'
     | '/app'
     | '/auth'
+    | '/cadastrar'
     | '/demo'
     | '/mcp'
     | '/platform'
@@ -188,8 +212,10 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BarberSlugRoute: typeof BarberSlugRoute
   AppRoute: typeof AppRoute
   AuthRoute: typeof AuthRouteWithChildren
+  CadastrarRoute: typeof CadastrarRoute
   DemoRoute: typeof DemoRoute
   McpRoute: typeof McpRoute
   PlatformRoute: typeof PlatformRoute
@@ -238,6 +264,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cadastrar': {
+      id: '/cadastrar'
+      path: '/cadastrar'
+      fullPath: '/cadastrar'
+      preLoaderRoute: typeof CadastrarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -250,6 +283,13 @@ declare module '@tanstack/react-router' {
       path: '/app'
       fullPath: '/app'
       preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$barberSlug': {
+      id: '/$barberSlug'
+      path: '/$barberSlug'
+      fullPath: '/$barberSlug'
+      preLoaderRoute: typeof BarberSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -309,8 +349,10 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BarberSlugRoute: BarberSlugRoute,
   AppRoute: AppRoute,
   AuthRoute: AuthRouteWithChildren,
+  CadastrarRoute: CadastrarRoute,
   DemoRoute: DemoRoute,
   McpRoute: McpRoute,
   PlatformRoute: PlatformRoute,

@@ -1,14 +1,31 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { getSessionProfile, homeForRole } from "@/lib/auth/session";
+import { isPlatformApexHost, maybeRedirectToCanonical, resolveShopFromCurrentHost } from "@/lib/shop/host";
+import { PlatformLanding } from "@/features/marketing/PlatformLanding";
 
 export const Route = createFileRoute("/")({
   ssr: false,
   beforeLoad: async () => {
     const profile = await getSessionProfile();
-    if (!profile) {
+    if (profile) {
+      throw redirect({ to: homeForRole(profile.primaryRole) });
+    }
+
+    if (typeof window !== "undefined" && !isPlatformApexHost()) {
+      const resolved = await resolveShopFromCurrentHost();
+      if (maybeRedirectToCanonical(resolved)) return;
+      if (resolved?.shop_slug) {
+        throw redirect({
+          to: "/app",
+          search: { shop: resolved.shop_slug, barber: undefined, join: undefined },
+        });
+      }
       throw redirect({ to: "/auth", search: { next: "/" } });
     }
-    throw redirect({ to: homeForRole(profile.primaryRole) });
   },
-  component: () => null,
+  component: IndexPage,
 });
+
+function IndexPage() {
+  return <PlatformLanding />;
+}

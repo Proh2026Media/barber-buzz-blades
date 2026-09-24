@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
 import { RhythmDashboard, type RhythmPayload } from "@/features/insights/RhythmDashboard";
 import { ClientDirectory } from "./ClientDirectory";
-import { platformSubdomainUrl } from "@/lib/shop/host";
+import { shopPublicOrigin } from "@/lib/shop/host";
 
 type WalletEntry = {
   appointment_id: string;
@@ -33,11 +33,15 @@ export function PartnerOverview({
   staffId,
   shopSlug,
   bookingSlug,
+  customDomain,
+  customDomainStatus,
 }: {
   shopId: string;
   staffId: string;
   shopSlug: string | null | undefined;
   bookingSlug: string | null | undefined;
+  customDomain?: string | null;
+  customDomainStatus?: string | null;
 }) {
   const demo = useDemo();
   const [wallet, setWallet] = useState<WalletPayload | null>(null);
@@ -45,11 +49,40 @@ export function PartnerOverview({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [resolvedDomain, setResolvedDomain] = useState<{
+    domain: string | null;
+    status: string | null;
+  }>({ domain: customDomain ?? null, status: customDomainStatus ?? null });
+
+  useEffect(() => {
+    if (demo || customDomain != null || customDomainStatus != null) {
+      setResolvedDomain({ domain: customDomain ?? null, status: customDomainStatus ?? null });
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const { data } = await supabase.rpc("get_shop_domain_settings", { p_shop_id: shopId });
+      if (cancelled || !data || typeof data !== "object") return;
+      const row = data as { custom_domain?: string | null; custom_domain_status?: string | null };
+      setResolvedDomain({
+        domain: row.custom_domain ?? null,
+        status: row.custom_domain_status ?? null,
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [demo, shopId, customDomain, customDomainStatus]);
 
   const bookingLink = useMemo(() => {
     if (!shopSlug || !bookingSlug) return null;
-    return `${platformSubdomainUrl(shopSlug, "/app")}?barber=${encodeURIComponent(bookingSlug)}`;
-  }, [shopSlug, bookingSlug]);
+    const origin = shopPublicOrigin({
+      slug: shopSlug,
+      customDomain: resolvedDomain.domain,
+      customDomainStatus: resolvedDomain.status,
+    });
+    return `${origin}/app?barber=${encodeURIComponent(bookingSlug)}`;
+  }, [shopSlug, bookingSlug, resolvedDomain.domain, resolvedDomain.status]);
 
   useEffect(() => {
     let cancelled = false;

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, Copy, Globe2, RefreshCw, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { PLATFORM_BASE_HOST } from "@/lib/shop/host";
+import { PLATFORM_BASE_HOST, shopPublicOrigin } from "@/lib/shop/host";
 
 type DomainSettings = {
   shop_id: string;
@@ -169,6 +169,15 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
   }
 
   const platformUrl = settings?.platform_url ?? `https://….${PLATFORM_BASE_HOST}`;
+  const publicOrigin = settings
+    ? shopPublicOrigin({
+        slug: settings.shop_slug,
+        customDomain: settings.custom_domain,
+        customDomainStatus: settings.custom_domain_status,
+      })
+    : null;
+  const publicUrl = publicOrigin ? `${publicOrigin}/app` : null;
+  const customActive = settings?.custom_domain_status === "active" && Boolean(settings.custom_domain);
   const instructions = settings?.dns_instructions;
 
   return (
@@ -180,13 +189,35 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
         <div>
           <h3 className="text-sm font-bold">Domínio da barbearia</h3>
           <p className="text-xs text-muted-foreground">
-            Todo mundo ganha um endereço automático. Opcionalmente, use o domínio próprio da loja.
+            Todo mundo ganha um endereço automático. Com domínio próprio ativo, ele vira o endereço
+            público principal (links de parceiro e da loja).
           </p>
         </div>
       </div>
 
+      {publicUrl && (
+        <div className="space-y-2 rounded-2xl border border-primary/25 bg-primary/5 p-3">
+          <p className="text-xs font-semibold">
+            Endereço público {customActive ? "(domínio próprio)" : "(automático)"}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <code className="min-w-0 flex-1 truncate rounded-xl bg-muted/50 px-3 py-2 text-xs">
+              {publicUrl}
+            </code>
+            <button
+              type="button"
+              className="action-button"
+              onClick={() => void copyText("public", publicUrl)}
+            >
+              <Copy size={14} />
+              {copied === "public" ? "Copiado" : "Copiar"}
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-2 rounded-2xl border border-border bg-background p-3">
-        <p className="text-xs font-semibold">Endereço automático (já disponível após DNS wildcard)</p>
+        <p className="text-xs font-semibold">Endereço automático (subdomínio da plataforma)</p>
         <div className="flex flex-wrap items-center gap-2">
           <code className="min-w-0 flex-1 truncate rounded-xl bg-muted/50 px-3 py-2 text-xs">
             {platformUrl}

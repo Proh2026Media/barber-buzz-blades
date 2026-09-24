@@ -15,6 +15,11 @@ export type Database = {
           slug: string;
           status: Database["public"]["Enums"]["barbershop_status"];
           timezone: string;
+          custom_domain: string | null;
+          custom_domain_status: "none" | "pending_dns" | "active" | "error";
+          domain_verify_token: string | null;
+          domain_verified_at: string | null;
+          domain_last_error: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -24,6 +29,11 @@ export type Database = {
           slug?: string;
           status?: Database["public"]["Enums"]["barbershop_status"];
           timezone?: string;
+          custom_domain?: string | null;
+          custom_domain_status?: "none" | "pending_dns" | "active" | "error";
+          domain_verify_token?: string | null;
+          domain_verified_at?: string | null;
+          domain_last_error?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -33,6 +43,11 @@ export type Database = {
           slug?: string;
           status?: Database["public"]["Enums"]["barbershop_status"];
           timezone?: string;
+          custom_domain?: string | null;
+          custom_domain_status?: "none" | "pending_dns" | "active" | "error";
+          domain_verify_token?: string | null;
+          domain_verified_at?: string | null;
+          domain_last_error?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1058,6 +1073,14 @@ export type Database = {
       };
       get_shop_domain_settings: {
         Args: { p_shop_id: string };
+        Returns: Json;
+      };
+      shop_has_booking_slug: {
+        Args: { p_shop_id: string; p_booking_slug: string };
+        Returns: boolean;
+      };
+      admin_reset_externa_barbearia: {
+        Args: { p_confirm: string };
         Returns: Json;
       };
       set_shop_custom_domain: {

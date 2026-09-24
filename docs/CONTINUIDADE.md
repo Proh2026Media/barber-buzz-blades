@@ -23,6 +23,19 @@ Atualizado em **23/09/2026**. Este documento resume decisões e entregas da conv
 
 ## Entregas recentes e regras atuais
 
+### Landing + cadastro self-serve com WhatsApp — 24/09/2026
+
+- Apex `beauty…/`: landing pública (`PlatformLanding`); logado redireciona ao painel do papel; host de loja vai para `/app`.
+- `/cadastrar`: nome da loja, responsável, e-mail, senha, WhatsApp → OTP → cria conta + loja (dono).
+- Edge `register-shop` + migration `20260924120000_platform_signup_otp.sql`. Envio via `PLATFORM_EVOLUTION_INSTANCE` (WhatsApp da plataforma). Ver [mb-operacao.md](mb-operacao.md) §5d.
+
+### Domínio público + slug do barbeiro — 23/09/2026
+
+- Link do parceiro e “endereço público” preferem o **domínio próprio ativo**; senão usam `*.beauty…`. Ver `shopPublicOrigin` em `src/lib/shop/host.ts`.
+- Formulário de profissional: campo **Slug do link** editável (`booking_slug`); rename gera redirect. Migration `20260923180000_booking_slug_manual_and_externa.sql`.
+- Path legado no domínio da loja: `/$barberSlug` (ex. `/ezequiel/`) → `/app?barber=ezequiel` (trailing slash normalizado).
+- Externa Barbearia: RPC `admin_reset_externa_barbearia('RESET_EXTERNA')` (botão em Plataforma → Barbearias) limpa agenda/serviços/equipe e cria Ezequiel + Tiago. O site `externabarbearia.com.br` foi só fonte de informação (WordPress); **não** é domínio do app até configurar em Ajustes. Links ficam em `*.beauty…`.
+
 ### Auth no domínio da loja (URL personalizada) — 23/09/2026
 
 - **Regra:** com domínio/subdomínio da loja, entrar e sair ficam nesse host. O apex (`beauty…`) só aparece quando não há URL personalizada.

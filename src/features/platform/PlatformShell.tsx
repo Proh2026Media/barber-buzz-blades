@@ -30,6 +30,7 @@ import {
 import { BrandIdentityEditor } from "@/features/shop/BrandIdentityEditor";
 import { BrandFontFace } from "@/features/shop/BrandFontFace";
 import { ChangePasswordCard } from "@/features/auth/ChangePasswordCard";
+import { PlatformWhatsAppCard } from "./PlatformWhatsAppCard";
 import { PlatformPermissionsEditor } from "./PlatformPermissionsEditor";
 import { PlatformDashboard } from "./PlatformDashboard";
 import { DemoAccountMenu, DemoRoleSelector } from "@/features/demo/DemoAccountMenu";
@@ -112,6 +113,8 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
   const [loginTourSettings, setLoginTourSettings] = useState<Tables<"barbershop_settings"> | null>(
     null,
   );
+  const [externaBusy, setExternaBusy] = useState(false);
+  const [externaMessage, setExternaMessage] = useState<string | null>(null);
   const demoState = demoChrome?.state ?? null;
   const demoDispatch = demoChrome?.dispatch ?? null;
 
@@ -215,6 +218,40 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
   async function signOut() {
     await supabase.auth.signOut();
     window.location.href = "/auth";
+  }
+
+  async function resetExternaBarbearia() {
+    if (demoMode) {
+      setExternaMessage("Indisponível no ambiente de demonstração.");
+      return;
+    }
+    const ok = window.confirm(
+      "Isso apaga agenda, serviços e equipe da Externa Barbearia e recria Ezequiel + Tiago. Continuar?",
+    );
+    if (!ok) return;
+    setExternaBusy(true);
+    setExternaMessage(null);
+    setError(null);
+    try {
+      const { data, error: rpcError } = await supabase.rpc("admin_reset_externa_barbearia", {
+        p_confirm: "RESET_EXTERNA",
+      });
+      if (rpcError) throw rpcError;
+      const row = data as {
+        shop_slug?: string;
+        deleted_appointments?: number;
+        deleted_staff?: number;
+        public_links?: string[];
+      } | null;
+      setExternaMessage(
+        `Externa remontada (slug ${row?.shop_slug ?? "externa-barbearia"}). Removidos ${row?.deleted_appointments ?? 0} horários e ${row?.deleted_staff ?? 0} profissionais. Links: ${(row?.public_links ?? []).slice(0, 2).join(" · ")}`,
+      );
+      await loadShops();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao remontar a Externa.");
+    } finally {
+      setExternaBusy(false);
+    }
   }
 
   async function createShop(e: React.FormEvent) {
@@ -434,6 +471,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                 sportsModules={sportsModules}
                 loading={loading}
               />
+              {!demoMode && <PlatformWhatsAppCard />}
               {demoMode ? (
                 <section className="space-y-3 rounded-3xl border border-primary/20 bg-card p-5">
                   <div className="flex items-center gap-2">
@@ -495,6 +533,32 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
 
           {platformTab === "shops" && (
             <div className="space-y-6">
+              {!demoMode && (
+                <section className="space-y-3 rounded-3xl border border-amber-500/30 bg-amber-500/5 p-4">
+                  <h3 className="text-sm font-bold">Externa Barbearia</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Limpa agenda, serviços e equipe; cria os parceiros Ezequiel e Tiago com slugs{" "}
+                    <code className="font-mono">ezequiel</code> /{" "}
+                    <code className="font-mono">tiago</code>. Os links ficam no endereço do sistema
+                    (<code className="font-mono">*.beauty…</code>). O site{" "}
+                    <code className="font-mono">externabarbearia.com.br</code> foi só referência — não
+                    é domínio do app até configurar em Ajustes.
+                  </p>
+                  <button
+                    type="button"
+                    disabled={externaBusy}
+                    className="action-button action-danger"
+                    onClick={() => void resetExternaBarbearia()}
+                  >
+                    {externaBusy ? "Remontando…" : "Remontar Externa (Ezequiel + Tiago)"}
+                  </button>
+                  {externaMessage && (
+                    <p className="text-sm text-foreground" role="status">
+                      {externaMessage}
+                    </p>
+                  )}
+                </section>
+              )}
               <section className="space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
