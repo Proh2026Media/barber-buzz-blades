@@ -9,6 +9,8 @@ import { cancellationReasonLabel, type CancellationReason } from "@/features/ins
 import { BusinessInsights } from "@/features/insights/BusinessInsights";
 import { ProfessionalInsights } from "@/features/insights/ProfessionalInsights";
 import { TeamGovernance } from "./TeamGovernance";
+import { PartnerCatalogSuggestions } from "./PartnerCatalogSuggestions";
+import { ShopTeamAccessCard } from "./ShopTeamAccessCard";
 import { BrandIdentityEditor } from "@/features/shop/BrandIdentityEditor";
 import { WhatsAppSettingsCard } from "@/features/shop/WhatsAppSettingsCard";
 import { SlugRedirectsCard } from "@/features/shop/SlugRedirectsCard";
@@ -158,8 +160,6 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   useEffect(() => {
     if (!actor) return;
     window.localStorage.setItem("arena:active-shop-actor", actor.id);
-    setCapabilities(null);
-    setGovernanceMode(null);
     let active = true;
     if (demo) {
       const mode = actor.role === "owner" ? "single" : actor.role === "partner" ? "equal" : null;
@@ -173,17 +173,47 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       );
       return;
     }
-    void supabase
-      .rpc("get_shop_access_context", { p_shop_id: actor.barbershop_id })
-      .then(({ data, error }) => {
-        if (!active || error || !data || typeof data !== "object" || Array.isArray(data)) return;
-        const context = data as { governance_mode?: unknown; can_apply_protected_change?: unknown };
-        const mode = ["single", "equal", "majority"].includes(String(context.governance_mode))
-          ? (context.governance_mode as SessionProfile["governanceMode"])
-          : null;
-        setGovernanceMode(mode);
-        setCapabilities(capabilitiesFor(actor, mode, context.can_apply_protected_change === true));
-      });
+    void Promise.all([
+      supabase.rpc("get_shop_access_context", { p_shop_id: actor.barbershop_id }),
+      supabase.rpc("get_my_shop_permissions", { p_shop_id: actor.barbershop_id }),
+    ]).then(([contextResult, permissionResult]) => {
+      if (!active) return;
+      let mode: SessionProfile["governanceMode"] = null;
+      let canApply = false;
+      if (
+        !contextResult.error &&
+        contextResult.data &&
+        typeof contextResult.data === "object" &&
+        !Array.isArray(contextResult.data)
+      ) {
+        const context = contextResult.data as {
+          governance_mode?: unknown;
+          can_apply_protected_change?: unknown;
+        };
+        if (["single", "equal", "majority"].includes(String(context.governance_mode))) {
+          mode = context.governance_mode as SessionProfile["governanceMode"];
+        }
+        canApply = context.can_apply_protected_change === true;
+      }
+      let permissions: Record<string, boolean> | null = null;
+      if (
+        !permissionResult.error &&
+        permissionResult.data &&
+        typeof permissionResult.data === "object" &&
+        !Array.isArray(permissionResult.data)
+      ) {
+        const payload = permissionResult.data as { permissions?: unknown };
+        if (
+          payload.permissions &&
+          typeof payload.permissions === "object" &&
+          !Array.isArray(payload.permissions)
+        ) {
+          permissions = payload.permissions as Record<string, boolean>;
+        }
+      }
+      setGovernanceMode(mode);
+      setCapabilities(capabilitiesFor(actor, mode, canApply, permissions));
+    });
     return () => {
       active = false;
     };
@@ -704,6 +734,18 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
           { onConflict: "staff_id,service_id" },
         );
         if (ownCatalogError) throw ownCatalogError;
+        const suggest = window.confirm(
+          "Personalização salva. Sugerir este preço/duração aos outros parceiros?",
+        );
+        if (suggest && actor.staff_id) {
+          await supabase.rpc("suggest_partner_catalog", {
+            p_shop_id: shop.id,
+            p_service_id: editingService.id,
+            p_price_cents: service.price_cents,
+            p_duration_minutes: service.duration_minutes,
+            p_display_name: service.name,
+          });
+        }
       } else if (actor && capabilities?.canProposeOperations) {
         const applied = await submitProtectedChange(
           editingService ? "service.update" : "service.create",
@@ -1227,6 +1269,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
             survey_program_enabled: next.survey_program_enabled,
             waiting_enabled: next.waiting_enabled,
             waiting_cutoff_minutes: next.waiting_cutoff_minutes,
+            staff_assignment_mode:
+              (next as { staff_assignment_mode?: string }).staff_assignment_mode ?? "client_pick",
           });
           setSettingsSaved(applied);
         }
@@ -1320,11 +1364,13 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   // Ajustes da loja continuam restritos a quem gerencia a operação inteira.
   const canManageShopSettings = !actor || !!capabilities?.manageOperations;
   const canViewMoney = !actor || !!capabilities?.viewMoney;
-  // Identidade visual: dono, sócio e parceiro personalizam a própria barbearia;
-  // o contratado não.
-  const canManageBranding = !actor || actor.role !== "employee";
+  // Identidade visual só da marca da loja: dono/co-dono com poder de aplicar.
+  const canManageBranding =
+    !actor || !!capabilities?.canApplyOperations || actor.role === "owner" || actor.role === "partner";
 
   useEffect(() => {
+    // Só redireciona com capacidades já resolvidas — evita bounce enquanto a matriz carrega.
+    if (actor && !capabilities) return;
     if (tab === "servicos" && !canEditServices) setTab("agenda");
     if (tab === "equipe" && !canManageTeam) setTab("agenda");
     if (tab === "horarios" && !canManageOperations) setTab("agenda");
@@ -1338,6 +1384,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     canManageShopSettings,
     agendaScope,
     actor,
+    capabilities,
     capabilities?.viewFullShop,
   ]);
 
@@ -1350,6 +1397,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       { id: "configuracoes" as const, icon: Settings2, label: "Ajustes" },
     ] as const
   ).filter(({ id }) => {
+    if (id === "servicos") return canEditServices;
     if (id === "equipe") return canManageTeam;
     if (id === "horarios") return canManageOperations;
     if (id === "configuracoes") return canManageShopSettings;
@@ -1519,7 +1567,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     {candidate.role === "owner"
                       ? "Dono"
                       : candidate.role === "partner"
-                        ? "Sócio"
+                        ? "Co-dono"
                         : candidate.role === "associate"
                           ? "Parceiro"
                           : "Contratado"}
@@ -1970,15 +2018,18 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 </section>
               )}
               {actor?.role === "associate" && shop?.id && actor.staff_id && (
-                <div className="rounded-2xl border border-primary/20 bg-card p-4">
-                  <PartnerOverview
-                    shopId={shop.id}
-                    staffId={actor.staff_id}
-                    shopSlug={shop.slug}
-                    bookingSlug={actor.staff?.booking_slug}
-                    customDomain={shop.custom_domain}
-                    customDomainStatus={shop.custom_domain_status}
-                  />
+                <div className="space-y-3">
+                  <div className="rounded-2xl border border-primary/20 bg-card p-4">
+                    <PartnerOverview
+                      shopId={shop.id}
+                      staffId={actor.staff_id}
+                      shopSlug={shop.slug}
+                      bookingSlug={actor.staff?.booking_slug}
+                      customDomain={shop.custom_domain}
+                      customDomainStatus={shop.custom_domain_status}
+                    />
+                  </div>
+                  <PartnerCatalogSuggestions shopId={shop.id} staffId={actor.staff_id} />
                 </div>
               )}
               {actor && (actor.role === "owner" || actor.role === "partner") && shop?.id && (
@@ -2471,6 +2522,22 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 viewMode={staffView}
                 onViewMode={setStaffView}
               />
+              {!demo &&
+                shop.id &&
+                actor &&
+                (actor.role === "owner" || actor.role === "partner") && (
+                  <ShopTeamAccessCard
+                    shopId={shop.id}
+                    canApplyProtected={!!capabilities?.canApplyOperations}
+                    canEditSociety={
+                      actor.role === "owner" || actor.role === "partner"
+                    }
+                    onChanged={() => {
+                      setGovernanceRevision((value) => value + 1);
+                      void loadCatalog();
+                    }}
+                  />
+                )}
               <div
                 className={
                   staffView === "grid" ? "grid gap-3 sm:grid-cols-2" : "flex flex-col gap-2"
@@ -3125,6 +3192,38 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         {days} dias
                       </option>
                     ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label
+                    htmlFor="staff-assignment-mode"
+                    className="text-xs font-semibold text-muted-foreground"
+                  >
+                    Escolha do barbeiro no agendamento
+                  </label>
+                  <select
+                    id="staff-assignment-mode"
+                    value={
+                      (settings as { staff_assignment_mode?: string }).staff_assignment_mode ??
+                      "client_pick"
+                    }
+                    onChange={(event) => {
+                      setSettingsSaved(false);
+                      setSettings({
+                        ...settings,
+                        staff_assignment_mode: event.target.value,
+                      } as typeof settings);
+                    }}
+                    className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm"
+                  >
+                    <option value="client_pick">Cliente escolhe o profissional</option>
+                    <option value="favorite_then_pick">
+                      Preferir barbeiro favorito, senão disponíveis
+                    </option>
+                    <option value="random_available">
+                      Qualquer profissional disponível (aleatório)
+                    </option>
                   </select>
                 </div>
 

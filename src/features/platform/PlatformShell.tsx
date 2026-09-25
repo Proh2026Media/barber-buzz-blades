@@ -32,6 +32,7 @@ import { BrandFontFace } from "@/features/shop/BrandFontFace";
 import { ChangePasswordCard } from "@/features/auth/ChangePasswordCard";
 import { PlatformWhatsAppCard } from "./PlatformWhatsAppCard";
 import { PlatformPermissionsEditor } from "./PlatformPermissionsEditor";
+import { AccountManagersPanel } from "./AccountManagersPanel";
 import { PlatformDashboard } from "./PlatformDashboard";
 import { DemoAccountMenu, DemoRoleSelector } from "@/features/demo/DemoAccountMenu";
 import { DemoTourHub } from "@/features/demo/DemoTourHub";
@@ -68,8 +69,9 @@ type InviteResult = {
   created?: boolean;
   temporary_password?: string | null;
   error?: string;
+  status?: string;
   barbershop?: { name: string; slug: string };
-  role?: "partner" | "associate" | "employee";
+  role?: "owner" | "partner" | "associate" | "employee";
   ownership_percent?: number | null;
 };
 
@@ -90,7 +92,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteShopId, setInviteShopId] = useState("");
   const [inviteName, setInviteName] = useState("");
-  const [inviteRole, setInviteRole] = useState<"partner" | "associate" | "employee">("employee");
+  const [inviteRole, setInviteRole] = useState<"owner" | "associate" | "employee">("employee");
   const [inviteOwnership, setInviteOwnership] = useState("50");
   const [inviteBusy, setInviteBusy] = useState(false);
   // Identificadores estáveis para associar rótulos visíveis aos campos dos formulários.
@@ -335,7 +337,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
             barbershop_id: inviteShopId,
             full_name: inviteName.trim() || undefined,
             role: inviteRole,
-            ownership_percent: inviteRole === "partner" ? Number(inviteOwnership) : undefined,
+            ownership_percent: inviteRole === "owner" ? Number(inviteOwnership) : undefined,
           },
         },
       );
@@ -350,7 +352,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
         );
       } else {
         setInviteMessage(
-          `${data?.email ?? inviteEmail} foi vinculado à equipe de ${shopLabel} como ${inviteRole === "partner" ? "sócio" : inviteRole === "associate" ? "parceiro" : "contratado"}.`,
+          `${data?.email ?? inviteEmail} foi vinculado à equipe de ${shopLabel} como ${inviteRole === "owner" ? "co-dono" : inviteRole === "associate" ? "parceiro" : "contratado"}${data?.status === "pending" ? " (pendente de aprovação)" : ""}.`,
         );
       }
       setInviteEmail("");
@@ -803,9 +805,9 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                   >
                     <option value="employee">Contratado · agenda e score próprios</option>
                     <option value="associate">Parceiro · operação e valores próprios</option>
-                    <option value="partner">Sócio · visão completa da unidade</option>
+                    <option value="owner">Co-dono · sociedade da unidade</option>
                   </select>
-                  {inviteRole === "partner" && (
+                  {inviteRole === "owner" && (
                     <label className="block text-xs font-semibold">
                       Participação societária (%)
                       <input
@@ -819,7 +821,8 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                         className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
                       />
                       <span className="mt-1 block font-normal text-muted-foreground">
-                        A participação informada é transferida do dono atual.
+                        A participação informada é transferida do dono atual. Majoritário (&gt;50%)
+                        aplica sozinho; igualitário e minoritário pedem aprovação.
                       </span>
                     </label>
                   )}
@@ -837,6 +840,8 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                   </button>
                 </form>
               </section>
+
+              {!demoMode && <AccountManagersPanel shops={shops} />}
             </div>
           )}
 

@@ -1,6 +1,6 @@
 # Transição para a próxima IA — Barba & Cabelo
 
-Atualizado em **23/09/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
+Atualizado em **25/09/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
 ## Comece aqui
 
@@ -8,6 +8,26 @@ Atualizado em **23/09/2026**. Este documento resume decisões e entregas da conv
 2. Inspecionar `git status` e os arquivos relevantes ao próximo pedido. O workspace tem muitas alterações e arquivos não rastreados que compõem o aplicativo; **não descartar nem sobrescrever esse trabalho**.
 3. Para retomar localmente, usar `npm run dev -- --host 0.0.0.0 --port 8080`. O endereço esperado é `http://localhost:8080`.
 4. Continuar a partir do próximo pedido do usuário.
+
+## Entrega — sociedade e acessos pelo dono (25/09/2026)
+
+- Migration `20260925140000_shop_society_founder_and_team.sql` (aplicada no Coolify): `founded_by_user_id`, `shop_add_member` / `shop_update_member` / `transfer_shop_founder` / `list_shop_team_members`; `platform_add_shop_member` aceita gerente da loja; `member.add` no `apply_shop_change`.
+- Edge `invite-shop-admin` e `register-shop` atualizadas no volume (dono/co-dono convida; cadastro grava fundador).
+- UI: `ShopTeamAccessCard` + `ShopPermissionsMatrix` na aba Equipe; plataforma reutiliza a matriz.
+- Regra: dono controla níveis/sociedade no app; admin e gerente têm override total; fundador ancorado até transferência.
+
+## Entrega em andamento — governança / avisos / booking (24/09/2026)
+
+Plano: [plano-governanca-sociedade-gerente.md](plano-governanca-sociedade-gerente.md).
+
+**Aplicado no remoto (24/09):**
+- Migrations `20260924170000_*` e `20260924180000_*` no Postgres Coolify
+- Edge `google-connect`, `email-dispatch`, `whatsapp-dispatch`, `register-shop`, `invite-shop-admin` no volume Coolify + restart
+
+**Google Agenda/Contatos:** a falha “Falha na integração Google” vinha do `google-connect` ausente no volume (entrypoint). Função publicada; envs `GOOGLE_OAUTH_*` já estavam no container. Não há integração Google Drive neste app — o card é Agenda + Contatos.
+
+**OAuth Agenda — sessão perdida ao voltar (24/09):** o redirect do Google cai no apex `beauty…`, mas o cookie de login fica no host da loja. Correção: `complete` valida só o state HMAC (sem exigir Bearer); state inclui `return_origin`; callback `/auth/google-apps` redireciona de volta à origem da loja. Edge já no Coolify; **frontend Hostinger precisa republish** (`auth.google-apps` + `GoogleIntegrationsCard` com `return_origin`). Aviso “app não verificado”: Test users no OAuth consent (projeto `9697media@gmail.com`) ou Avançado.
+
 
 ## Projeto e ambiente
 

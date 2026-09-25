@@ -20,6 +20,8 @@ export type Database = {
           domain_verify_token: string | null;
           domain_verified_at: string | null;
           domain_last_error: string | null;
+          society_intent?: string | null;
+          founded_by_user_id?: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -34,6 +36,8 @@ export type Database = {
           domain_verify_token?: string | null;
           domain_verified_at?: string | null;
           domain_last_error?: string | null;
+          society_intent?: string | null;
+          founded_by_user_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -48,6 +52,8 @@ export type Database = {
           domain_verify_token?: string | null;
           domain_verified_at?: string | null;
           domain_last_error?: string | null;
+          society_intent?: string | null;
+          founded_by_user_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1308,6 +1314,45 @@ export type Database = {
           p_display_name?: string | null;
         };
         Returns: string;
+      };
+      shop_add_member: {
+        Args: {
+          p_shop_id: string;
+          p_user_id: string;
+          p_role: Database["public"]["Enums"]["shop_member_role"];
+          p_ownership_percent?: number | null;
+          p_display_name?: string | null;
+        };
+        Returns: Json;
+      };
+      shop_update_member: {
+        Args: {
+          p_shop_id: string;
+          p_member_id: string;
+          p_role?: Database["public"]["Enums"]["shop_member_role"] | null;
+          p_ownership_percent?: number | null;
+          p_active?: boolean | null;
+        };
+        Returns: Json;
+      };
+      transfer_shop_founder: {
+        Args: {
+          p_shop_id: string;
+          p_new_founder_user_id: string;
+        };
+        Returns: Json;
+      };
+      list_shop_team_members: {
+        Args: { p_shop_id: string };
+        Returns: Json;
+      };
+      can_apply_protected_change: {
+        Args: { p_shop_id: string };
+        Returns: boolean;
+      };
+      is_account_manager_of: {
+        Args: { p_shop_id: string };
+        Returns: boolean;
       };
     };
     Enums: {

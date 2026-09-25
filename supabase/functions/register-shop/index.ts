@@ -17,6 +17,8 @@ type Body = {
   full_name?: string;
   email?: string;
   password?: string;
+  /** single | majority | equal | minority — intenção de sociedade no cadastro */
+  society_intent?: string;
 };
 
 async function sha256Hex(value: string) {
@@ -249,10 +251,20 @@ Deno.serve(async (req) => {
         })
         .eq("id", userId);
 
+      const societyIntentRaw = (body.society_intent ?? "single").trim();
+      const societyIntent = ["single", "majority", "equal", "minority"].includes(societyIntentRaw)
+        ? societyIntentRaw
+        : "single";
+
       // Espelha create_own_barbershop com service role.
       const { data: shopRow, error: shopError } = await admin
         .from("barbershops")
-        .insert({ name: shopName, status: "active" })
+        .insert({
+          name: shopName,
+          status: "active",
+          society_intent: societyIntent,
+          founded_by_user_id: userId,
+        })
         .select("id, slug")
         .single();
       if (shopError || !shopRow) {
