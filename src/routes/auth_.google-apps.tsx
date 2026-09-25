@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { platformAuthOrigin } from "@/lib/auth/return-origin";
 
-export const Route = createFileRoute("/auth/google-apps")({
+export const Route = createFileRoute("/auth_/google-apps")({
   ssr: false,
   validateSearch: (s: Record<string, unknown>) => ({
     code: typeof s.code === "string" ? s.code : "",

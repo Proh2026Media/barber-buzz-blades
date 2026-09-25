@@ -21,7 +21,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as BarberSlugRouteImport } from './routes/$barberSlug'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthGoogleAppsRouteImport } from './routes/auth.google-apps'
+import { Route as AuthGoogleAppsRouteImport } from './routes/auth_.google-apps'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
@@ -88,9 +88,9 @@ const IndexRoute = IndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthGoogleAppsRoute = AuthGoogleAppsRouteImport.update({
-  id: '/google-apps',
-  path: '/google-apps',
-  getParentRoute: () => AuthRoute,
+  id: '/auth_/google-apps',
+  path: '/auth/google-apps',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const Char91DotwellKnownChar93OauthProtectedResourceRoute =
   Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
@@ -120,7 +120,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$barberSlug': typeof BarberSlugRoute
   '/app': typeof AppRoute
-  '/auth': typeof AuthRouteWithChildren
+  '/auth': typeof AuthRoute
   '/cadastrar': typeof CadastrarRoute
   '/demo': typeof DemoRoute
   '/mcp': typeof McpRoute
@@ -139,7 +139,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$barberSlug': typeof BarberSlugRoute
   '/app': typeof AppRoute
-  '/auth': typeof AuthRouteWithChildren
+  '/auth': typeof AuthRoute
   '/cadastrar': typeof CadastrarRoute
   '/demo': typeof DemoRoute
   '/mcp': typeof McpRoute
@@ -159,7 +159,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/$barberSlug': typeof BarberSlugRoute
   '/app': typeof AppRoute
-  '/auth': typeof AuthRouteWithChildren
+  '/auth': typeof AuthRoute
   '/cadastrar': typeof CadastrarRoute
   '/demo': typeof DemoRoute
   '/mcp': typeof McpRoute
@@ -170,7 +170,7 @@ export interface FileRoutesById {
   '/termos': typeof TermosRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
-  '/auth/google-apps': typeof AuthGoogleAppsRoute
+  '/auth_/google-apps': typeof AuthGoogleAppsRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
 }
@@ -229,7 +229,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
-    | '/auth/google-apps'
+    | '/auth_/google-apps'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
   fileRoutesById: FileRoutesById
@@ -238,7 +238,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BarberSlugRoute: typeof BarberSlugRoute
   AppRoute: typeof AppRoute
-  AuthRoute: typeof AuthRouteWithChildren
+  AuthRoute: typeof AuthRoute
   CadastrarRoute: typeof CadastrarRoute
   DemoRoute: typeof DemoRoute
   McpRoute: typeof McpRoute
@@ -249,6 +249,7 @@ export interface RootRouteChildren {
   TermosRoute: typeof TermosRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  AuthGoogleAppsRoute: typeof AuthGoogleAppsRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
 }
@@ -339,12 +340,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth/google-apps': {
-      id: '/auth/google-apps'
-      path: '/google-apps'
+    '/auth_/google-apps': {
+      id: '/auth_/google-apps'
+      path: '/auth/google-apps'
       fullPath: '/auth/google-apps'
       preLoaderRoute: typeof AuthGoogleAppsRouteImport
-      parentRoute: typeof AuthRoute
+      parentRoute: typeof rootRouteImport
     }
     '/.well-known/oauth-protected-resource': {
       id: '/.well-known/oauth-protected-resource'
@@ -377,21 +378,11 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AuthRouteChildren {
-  AuthGoogleAppsRoute: typeof AuthGoogleAppsRoute
-}
-
-const AuthRouteChildren: AuthRouteChildren = {
-  AuthGoogleAppsRoute: AuthGoogleAppsRoute,
-}
-
-const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BarberSlugRoute: BarberSlugRoute,
   AppRoute: AppRoute,
-  AuthRoute: AuthRouteWithChildren,
+  AuthRoute: AuthRoute,
   CadastrarRoute: CadastrarRoute,
   DemoRoute: DemoRoute,
   McpRoute: McpRoute,
@@ -403,6 +394,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  AuthGoogleAppsRoute: AuthGoogleAppsRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
 }
