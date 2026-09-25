@@ -9,6 +9,15 @@ type GoogleConnectionStatus = {
   last_calendar_sync_at?: string | null;
   last_contacts_sync_at?: string | null;
   last_error?: string | null;
+  selected_calendar_id?: string | null;
+  selected_calendar_name?: string | null;
+};
+
+type GoogleCalendarOption = {
+  id: string;
+  name: string;
+  primary?: boolean;
+  access_role?: string | null;
 };
 
 type GoogleIntegrationsCardProps = {
@@ -38,6 +47,11 @@ async function callGoogle(body: Record<string, unknown>) {
     url?: string;
     imported?: number;
     resourceName?: string | null;
+    calendars?: GoogleCalendarOption[];
+    selected_calendar_id?: string | null;
+    selected_calendar_name?: string | null;
+    calendar_id?: string | null;
+    calendar_name?: string | null;
   } = {};
   try {
     payload = raw ? (JSON.parse(raw) as typeof payload) : {};
@@ -77,15 +91,52 @@ function formatWhen(value?: string | null) {
   }
 }
 
+const DEMO_CALENDARS: GoogleCalendarOption[] = [
+  { id: "primary", name: "Agenda principal", primary: true },
+  { id: "trabalho@demo.local", name: "Trabalho (demo)" },
+  { id: "pessoal@demo.local", name: "Pessoal (demo)" },
+];
+
 export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrationsCardProps) {
   const demo = useDemo();
   const [connection, setConnection] = useState<GoogleConnectionStatus>({ connected: false });
+  const [calendars, setCalendars] = useState<GoogleCalendarOption[]>([]);
   const [busy, setBusy] = useState(false);
+  const [loadingCalendars, setLoadingCalendars] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [contactEmail, setContactEmail] = useState("");
+
+  const applySelectedCalendar = useCallback(
+    (calendarId?: string | null, calendarName?: string | null) => {
+      setConnection((current) => ({
+        ...current,
+        selected_calendar_id: calendarId ?? current.selected_calendar_id ?? "primary",
+        selected_calendar_name: calendarName ?? current.selected_calendar_name ?? null,
+      }));
+    },
+    [],
+  );
+
+  const loadCalendars = useCallback(async () => {
+    if (demo) {
+      setCalendars(DEMO_CALENDARS);
+      applySelectedCalendar("primary", "Agenda principal");
+      return;
+    }
+    setLoadingCalendars(true);
+    try {
+      const payload = await callGoogle({ action: "list_calendars" });
+      setCalendars(payload.calendars ?? []);
+      applySelectedCalendar(payload.selected_calendar_id, payload.selected_calendar_name);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível listar as agendas.");
+    } finally {
+      setLoadingCalendars(false);
+    }
+  }, [applySelectedCalendar, demo]);
 
   const refresh = useCallback(async () => {
     if (demo) {
@@ -95,20 +146,30 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
         last_calendar_sync_at: new Date().toISOString(),
         last_contacts_sync_at: null,
         last_error: null,
+        selected_calendar_id: "primary",
+        selected_calendar_name: "Agenda principal",
       });
+      setCalendars(DEMO_CALENDARS);
       return;
     }
     setBusy(true);
     setError(null);
     try {
       const payload = await callGoogle({ action: "status" });
-      setConnection(payload.connection ?? { connected: false });
+      const next = payload.connection ?? { connected: false };
+      setConnection(next);
+      if (next.connected) {
+        setBusy(false);
+        await loadCalendars();
+        return;
+      }
+      setCalendars([]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível consultar o Google.");
     } finally {
       setBusy(false);
     }
-  }, [demo]);
+  }, [demo, loadCalendars]);
 
   useEffect(() => {
     void refresh();
@@ -118,7 +179,7 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
     const params = new URLSearchParams(window.location.search);
     const google = params.get("google");
     if (google === "connected") {
-      setMessage("Google Agenda e Contatos conectados.");
+      setMessage("Google Agenda e Contatos conectados. Escolha a agenda abaixo.");
       void refresh();
       params.delete("google");
       const next = `${window.location.pathname}${params.toString() ? `?${params}` : ""}`;
@@ -157,6 +218,7 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
   async function disconnect() {
     if (demo) {
       setConnection({ connected: false });
+      setCalendars([]);
       setMessage("Google desconectado (demo).");
       return;
     }
@@ -165,9 +227,34 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
     try {
       await callGoogle({ action: "disconnect" });
       setConnection({ connected: false });
+      setCalendars([]);
       setMessage("Google desconectado.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao desconectar");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function chooseCalendar(calendarId: string) {
+    if (!calendarId) return;
+    if (demo) {
+      const picked = DEMO_CALENDARS.find((item) => item.id === calendarId);
+      applySelectedCalendar(calendarId, picked?.name ?? calendarId);
+      setMessage(`Agenda selecionada: ${picked?.name ?? calendarId}`);
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    setMessage("");
+    try {
+      const payload = await callGoogle({ action: "set_calendar", calendar_id: calendarId });
+      applySelectedCalendar(payload.selected_calendar_id, payload.selected_calendar_name);
+      setMessage(
+        `Agenda selecionada: ${payload.selected_calendar_name || payload.selected_calendar_id}`,
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao escolher a agenda");
     } finally {
       setBusy(false);
     }
@@ -178,12 +265,21 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
       setMessage("Agenda sincronizada (demo).");
       return;
     }
+    if (!connection.selected_calendar_id) {
+      setError("Escolha qual agenda Google usar antes de sincronizar.");
+      return;
+    }
     setBusy(true);
     setError(null);
     setMessage("");
     try {
       const payload = await callGoogle({ action: "sync_calendar" });
-      setMessage(`${payload.imported ?? 0} eventos importados da Agenda Google.`);
+      const label =
+        payload.calendar_name ||
+        connection.selected_calendar_name ||
+        connection.selected_calendar_id ||
+        "Agenda Google";
+      setMessage(`${payload.imported ?? 0} eventos importados de “${label}”.`);
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao sincronizar agenda");
@@ -221,6 +317,12 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
     }
   }
 
+  const selectedCalendarId = connection.selected_calendar_id || "";
+  const selectedCalendarLabel =
+    connection.selected_calendar_name ||
+    calendars.find((item) => item.id === selectedCalendarId)?.name ||
+    null;
+
   return (
     <section className="app-action-card space-y-4 p-5" aria-label="Google Agenda e Contatos">
       <div className="flex items-start gap-3">
@@ -230,7 +332,7 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold">Google Agenda e Contatos</p>
           <p className="text-xs text-muted-foreground">
-            Conecte um Gmail para importar a agenda e salvar clientes nos Contatos. Pode ser
+            Conecte um Gmail, escolha qual agenda importar e salve clientes nos Contatos. Pode ser
             outra conta — não precisa ser o mesmo e-mail do login neste app.
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
@@ -261,6 +363,15 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
         ) : (
           <p className="text-muted-foreground">Ainda não conectado.</p>
         )}
+        {connection.connected ? (
+          <p className="mt-2 text-sm">
+            Agenda em uso:{" "}
+            <span className="font-semibold">
+              {selectedCalendarLabel ||
+                (loadingCalendars ? "Carregando…" : "Escolha uma agenda abaixo")}
+            </span>
+          </p>
+        ) : null}
         {connection.last_error ? (
           <p className="mt-1 text-xs text-destructive">{connection.last_error}</p>
         ) : null}
@@ -271,6 +382,48 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
           </ul>
         ) : null}
       </div>
+
+      {connection.connected ? (
+        <div className="space-y-2">
+          <label className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Qual agenda sincronizar?
+          </label>
+          <select
+            className="h-11 w-full rounded-[var(--control-radius)] border border-border/70 bg-background px-3 text-sm"
+            value={selectedCalendarId}
+            disabled={busy || loadingCalendars || calendars.length === 0}
+            onChange={(event) => void chooseCalendar(event.target.value)}
+            aria-label="Selecionar agenda Google"
+          >
+            {calendars.length === 0 ? (
+              <option value="">
+                {loadingCalendars ? "Carregando agendas…" : "Nenhuma agenda encontrada"}
+              </option>
+            ) : (
+              calendars.map((calendar) => (
+                <option key={calendar.id} value={calendar.id}>
+                  {calendar.name}
+                  {calendar.primary ? " (principal)" : ""}
+                </option>
+              ))
+            )}
+          </select>
+          <p className="text-xs text-muted-foreground">
+            A sincronização importa só a agenda escolhida. Você pode trocar depois sem reconectar.
+          </p>
+          {calendars.length === 0 && !loadingCalendars ? (
+            <button
+              type="button"
+              className="inline-flex min-h-11 items-center gap-2 rounded-[var(--button-radius)] border border-border/70 bg-background px-4 text-sm font-semibold text-foreground disabled:opacity-50"
+              disabled={busy}
+              onClick={() => void loadCalendars()}
+            >
+              <RefreshCw className="size-4" aria-hidden />
+              Recarregar agendas
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="flex flex-wrap gap-2">
         {!connection.connected ? (
@@ -288,7 +441,7 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
             <button
               type="button"
               className="inline-flex min-h-11 items-center gap-2 rounded-[var(--button-radius)] bg-foreground px-4 text-sm font-semibold text-background disabled:opacity-50"
-              disabled={busy}
+              disabled={busy || !selectedCalendarId}
               onClick={() => void syncCalendar()}
             >
               <RefreshCw className={`size-4 ${busy ? "animate-spin" : ""}`} aria-hidden />

@@ -14,7 +14,15 @@ import {
 } from "../_shared/google.ts";
 
 type Body = {
-  action?: "status" | "start" | "complete" | "disconnect" | "sync_calendar" | "save_contact";
+  action?:
+    | "status"
+    | "start"
+    | "complete"
+    | "disconnect"
+    | "list_calendars"
+    | "set_calendar"
+    | "sync_calendar"
+    | "save_contact";
   return_path?: string;
   /** Origin da aba onde o usuário estava logado (ex.: domínio da loja). */
   return_origin?: string;
@@ -22,12 +30,23 @@ type Body = {
   state?: string;
   time_min?: string;
   time_max?: string;
+  /** ID da agenda Google (ex.: primary ou e-mail do calendário). */
+  calendar_id?: string;
   contact?: {
     name?: string;
     email?: string;
     phone?: string;
     notes?: string;
   };
+};
+
+type GoogleCalendarListItem = {
+  id?: string;
+  summary?: string;
+  primary?: boolean;
+  accessRole?: string;
+  backgroundColor?: string;
+  foregroundColor?: string;
 };
 
 Deno.serve(async (req) => {
@@ -184,7 +203,117 @@ Deno.serve(async (req) => {
     const { clientId, clientSecret } = googleOAuthConfig();
     const accessToken = await ensureFreshAccessToken(admin, connection, clientId, clientSecret);
 
+    if (action === "list_calendars") {
+      const listRes = await fetch(
+        "https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=reader&maxResults=250",
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+      const listData = (await listRes.json()) as {
+        error?: { message?: string };
+        items?: GoogleCalendarListItem[];
+      };
+      if (!listRes.ok) {
+        const msg = listData.error?.message || "Falha ao listar agendas Google";
+        await admin
+          .from("google_connections")
+          .update({ last_error: msg, updated_at: new Date().toISOString() })
+          .eq("id", connection.id);
+        return json({ error: msg }, 502);
+      }
+
+      const calendars = (listData.items ?? [])
+        .filter((item): item is GoogleCalendarListItem & { id: string } => Boolean(item.id))
+        .map((item) => ({
+          id: item.id,
+          name: item.summary?.trim() || item.id,
+          primary: Boolean(item.primary),
+          access_role: item.accessRole ?? null,
+          background_color: item.backgroundColor ?? null,
+        }))
+        .sort((a, b) => {
+          if (a.primary !== b.primary) return a.primary ? -1 : 1;
+          return a.name.localeCompare(b.name, "pt-BR");
+        });
+
+      const selectedId =
+        (typeof connection.selected_calendar_id === "string" &&
+          connection.selected_calendar_id.trim()) ||
+        "primary";
+      const selected =
+        calendars.find((c) => c.id === selectedId) ||
+        calendars.find((c) => c.primary) ||
+        calendars[0] ||
+        null;
+
+      // Se ainda está em "primary" sem nome, grava o summary real da principal.
+      if (
+        selected &&
+        (!connection.selected_calendar_name || connection.selected_calendar_id === "primary")
+      ) {
+        await admin
+          .from("google_connections")
+          .update({
+            selected_calendar_id: selected.id,
+            selected_calendar_name: selected.name,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", connection.id);
+      }
+
+      return json({
+        ok: true,
+        calendars,
+        selected_calendar_id: selected?.id ?? selectedId,
+        selected_calendar_name: selected?.name ?? connection.selected_calendar_name ?? null,
+      });
+    }
+
+    if (action === "set_calendar") {
+      const calendarId = body.calendar_id?.trim();
+      if (!calendarId) return json({ error: "Informe a agenda (calendar_id)." }, 400);
+
+      const listRes = await fetch(
+        "https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=reader&maxResults=250",
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+      const listData = (await listRes.json()) as {
+        error?: { message?: string };
+        items?: GoogleCalendarListItem[];
+      };
+      if (!listRes.ok) {
+        const msg = listData.error?.message || "Falha ao validar agenda Google";
+        return json({ error: msg }, 502);
+      }
+
+      const match = (listData.items ?? []).find((item) => item.id === calendarId);
+      if (!match?.id) {
+        return json({ error: "Essa agenda não está disponível nesta conta Google." }, 400);
+      }
+
+      const name = match.summary?.trim() || match.id;
+      const { error } = await admin
+        .from("google_connections")
+        .update({
+          selected_calendar_id: match.id,
+          selected_calendar_name: name,
+          last_error: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", connection.id);
+      if (error) return json({ error: error.message }, 500);
+
+      return json({
+        ok: true,
+        selected_calendar_id: match.id,
+        selected_calendar_name: name,
+      });
+    }
+
     if (action === "sync_calendar") {
+      const calendarId =
+        (typeof connection.selected_calendar_id === "string" &&
+          connection.selected_calendar_id.trim()) ||
+        "primary";
       const timeMin = body.time_min ?? new Date(Date.now() - 7 * 86400000).toISOString();
       const timeMax = body.time_max ?? new Date(Date.now() + 60 * 86400000).toISOString();
       const params = new URLSearchParams({
@@ -195,7 +324,7 @@ Deno.serve(async (req) => {
         maxResults: "250",
       });
       const calRes = await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`,
+        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?${params}`,
         { headers: { Authorization: `Bearer ${accessToken}` } },
       );
       const calData = (await calRes.json()) as {
@@ -230,7 +359,7 @@ Deno.serve(async (req) => {
           {
             user_id: user.id,
             google_event_id: item.id,
-            calendar_id: "primary",
+            calendar_id: calendarId,
             title: item.summary ?? null,
             description: item.description ?? null,
             starts_at: startsAt,
@@ -254,7 +383,14 @@ Deno.serve(async (req) => {
         })
         .eq("id", connection.id);
 
-      return json({ ok: true, imported: upserted, from: timeMin, to: timeMax });
+      return json({
+        ok: true,
+        imported: upserted,
+        from: timeMin,
+        to: timeMax,
+        calendar_id: calendarId,
+        calendar_name: connection.selected_calendar_name ?? null,
+      });
     }
 
     if (action === "save_contact") {
