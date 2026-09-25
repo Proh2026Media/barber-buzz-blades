@@ -336,12 +336,11 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
             outra conta — não precisa ser o mesmo e-mail do login neste app.
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
-            Se o Google mostrar “app não verificado”: clique em{" "}
-            <span className="font-semibold">Avançado</span> → continue no app. Para sumir o aviso
-            de vez, no Google Cloud (projeto do e-mail{" "}
-            <span className="font-semibold">9697media@gmail.com</span>) adicione o Gmail da Agenda
-            em <span className="font-semibold">OAuth consent → Test users</span>, ou publique a
-            verificação do app.
+            A marca Barba & Cabelo já está verificada e o app em produção. A verificação dos
+            escopos sensíveis (Agenda e Contatos) já foi enviada e está em análise no Google —
+            o aviso “app não verificado” só some quando essa análise for aprovada. Se ainda
+            aparecer, use <span className="font-semibold">Avançado</span> → continuar para Barba
+            & Cabelo; a conexão funciona normalmente.
           </p>
         </div>
       </div>
