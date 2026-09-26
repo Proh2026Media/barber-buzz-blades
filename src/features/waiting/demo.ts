@@ -191,6 +191,8 @@ export function waitingDemoAction(
         ends_at: end,
         status: "confirmed",
         booked_price_cents: s.price_cents,
+        public_token: appointmentId.replace(/-/g, ""),
+        series_id: null,
         created_at: state.now.toISOString(),
         updated_at: state.now.toISOString(),
       },

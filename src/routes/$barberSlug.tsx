@@ -45,7 +45,13 @@ export const Route = createFileRoute("/$barberSlug")({
 
     throw redirect({
       to: "/app",
-      search: { barber: raw, shop: resolution.shop_slug, join: undefined },
+      search: {
+        barber: raw,
+        shop: resolution.shop_slug,
+        join: undefined,
+        tab: undefined,
+        reserva: undefined,
+      },
     });
   },
   component: () => null,

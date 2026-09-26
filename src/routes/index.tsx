@@ -1,6 +1,10 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { getSessionProfile, homeForRole } from "@/lib/auth/session";
-import { isPlatformApexHost, maybeRedirectToCanonical, resolveShopFromCurrentHost } from "@/lib/shop/host";
+import {
+  isPlatformApexHost,
+  maybeRedirectToCanonical,
+  resolveShopFromCurrentHost,
+} from "@/lib/shop/host";
 import { PlatformLanding } from "@/features/marketing/PlatformLanding";
 
 export const Route = createFileRoute("/")({
@@ -17,7 +21,13 @@ export const Route = createFileRoute("/")({
       if (resolved?.shop_slug) {
         throw redirect({
           to: "/app",
-          search: { shop: resolved.shop_slug, barber: undefined, join: undefined },
+          search: {
+            shop: resolved.shop_slug,
+            barber: undefined,
+            join: undefined,
+            tab: undefined,
+            reserva: undefined,
+          },
         });
       }
       throw redirect({ to: "/auth", search: { next: "/" } });

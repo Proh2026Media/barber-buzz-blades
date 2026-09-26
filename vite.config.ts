@@ -24,6 +24,7 @@ export default defineConfig({
   // Dentro do Lovable nada muda — lá o preset é forçado para Cloudflare.
   nitro: {
     preset: "node-server",
+    // @ts-expect-error o tipo do Lovable omite rollupConfig, mas o Nitro o repassa ao Rollup.
     rollupConfig: { external: ["cloudflare:workers"] },
   },
   vite: {

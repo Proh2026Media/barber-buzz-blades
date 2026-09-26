@@ -51,7 +51,13 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
   now.setHours(9, 0, 0, 0);
   const stamp = now.toISOString();
   const shopId = "demo-shop";
-  const common = { barbershop_id: shopId, active: true, created_at: stamp, updated_at: stamp };
+  const common = {
+    barbershop_id: shopId,
+    active: true,
+    description: null,
+    created_at: stamp,
+    updated_at: stamp,
+  };
   const time = (hour: number, minute = 0) => {
     const value = new Date(now);
     if (value.getDay() === 0) value.setDate(value.getDate() + 1);
@@ -153,6 +159,11 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
       slug: "arena-demo",
       status: "active",
       timezone: "America/Sao_Paulo",
+      custom_domain: null,
+      custom_domain_status: "none",
+      domain_verify_token: null,
+      domain_verified_at: null,
+      domain_last_error: null,
       created_at: stamp,
       updated_at: stamp,
     },
@@ -343,6 +354,8 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
         ends_at: new Date(slot.start.getTime() + service.duration_minutes * 60000).toISOString(),
         status: "completed",
         booked_price_cents: service.price_cents,
+        public_token: `demo-token-${index}-${visit}`,
+        series_id: null,
         created_at: stamp,
         updated_at: stamp,
       });
@@ -360,6 +373,8 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
         ends_at: new Date(future.start.getTime() + service.duration_minutes * 60000).toISOString(),
         status: "confirmed",
         booked_price_cents: service.price_cents,
+        public_token: `demo-token-${index}-upcoming`,
+        series_id: null,
         created_at: stamp,
         updated_at: stamp,
       });
