@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "node --test src/lib/theme.test.ts src/lib/auth/session.test.ts src/lib/shop/appointments.test.ts src/lib/shop/branding.test.ts src/lib/shop/service-image.test.ts src/features/demo/model.test.ts src/features/insights/model.test.ts src/features/insights/occurrences.test.ts src/features/waiting/model.test.ts src/lib/whatsapp/templates.test.ts src/lib/auth/friendly-error.test.ts",
+    "test": "node --test src/lib/theme.test.ts src/lib/auth/session.test.ts src/lib/shop/appointments.test.ts src/lib/shop/branding.test.ts src/lib/shop/service-image.test.ts src/features/demo/model.test.ts src/features/insights/model.test.ts src/features/insights/occurrences.test.ts src/features/waiting/model.test.ts src/lib/whatsapp/templates.test.ts src/lib/auth/friendly-error.test.ts src/lib/i18n/translate.test.ts",
     "format": "prettier --write ."
   },
   "dependencies": {

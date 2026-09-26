@@ -45,6 +45,8 @@ import {
 } from "@/lib/shop/branding";
 import { useShopFavicon } from "@/lib/shop/favicon";
 import { BrandFontFace } from "@/features/shop/BrandFontFace";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { t as tNow, useI18n } from "@/lib/i18n";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
@@ -160,6 +162,7 @@ function AuthPage() {
   } = useSearch({
     from: "/auth",
   });
+  const { t } = useI18n();
   const [mode, setMode] = useState<AuthMode>(recovery ? "recovery" : "signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -287,13 +290,13 @@ function AuthPage() {
 
     async function applySession(data: { access_token: string; refresh_token: string }) {
       setBusy(true);
-      setInfo("Entrando…");
+      setInfo(tNow("auth.info.signingIn"));
       const { error: sessionError } = await supabase.auth.setSession({
         access_token: data.access_token,
         refresh_token: data.refresh_token,
       });
       if (sessionError) {
-        setError(friendlyAuthError(sessionError, "Não foi possível entrar. Tente novamente."));
+        setError(friendlyAuthError(sessionError, tNow("auth.error.signinFailed")));
         setBusy(false);
         return;
       }
@@ -351,7 +354,7 @@ function AuthPage() {
           return;
         }
         setBusy(true);
-        setInfo("Entrando…");
+        setInfo(tNow("auth.info.signingIn"));
         const { error: sessionError } = await supabase.auth.setSession({
           access_token: tokens.access_token,
           refresh_token: tokens.refresh_token,
@@ -371,7 +374,7 @@ function AuthPage() {
         if (!cancelled) await goAfterAuthLocal();
       } catch (err) {
         if (!cancelled) {
-          setError(friendlyAuthError(err, "Não foi possível concluir o login."));
+          setError(friendlyAuthError(err, tNow("auth.error.loginNotCompleted")));
           setBusy(false);
           setBridgeReady(true);
         }
@@ -390,7 +393,7 @@ function AuthPage() {
       if (event === "PASSWORD_RECOVERY") {
         setMode("recovery");
         setError(null);
-        setInfo("Defina uma nova senha para continuar.");
+        setInfo(tNow("auth.info.setNewPassword"));
       }
     });
     return () => subscription.unsubscribe();
@@ -407,7 +410,7 @@ function AuthPage() {
     let cancelled = false;
     void (async () => {
       setBusy(true);
-      setInfo("Abrindo Google…");
+      setInfo(tNow("auth.info.openingGoogle"));
       try {
         const bridge = resolveAuthBridge({
           returnOrigin,
@@ -423,7 +426,7 @@ function AuthPage() {
         if (oauthError) throw oauthError;
       } catch (err) {
         if (!cancelled) {
-          setError(friendlyAuthError(err, "Não foi possível entrar com Google. Tente novamente."));
+          setError(friendlyAuthError(err, tNow("auth.error.google")));
           setBusy(false);
         }
       }
@@ -446,7 +449,7 @@ function AuthPage() {
       const inPopup = Boolean(popup || peekAuthBridge()?.popup);
 
       if (inPopup && (hasCode || peekAuthBridge())) {
-        setInfo("Concluindo login…");
+        setInfo(tNow("auth.info.finishingLogin"));
         const result = await finishPopupOAuthAndNotifyOpener({
           returnOrigin,
           shop: effectiveShopRef,
@@ -455,11 +458,11 @@ function AuthPage() {
         });
         if (cancelled) return;
         if (result === "notified") {
-          setInfo("Pode fechar esta janela.");
+          setInfo(tNow("auth.info.canClose"));
           return;
         }
         if (result === "error") {
-          setError("Não foi possível concluir o login com Google. Tente novamente.");
+          setError(tNow("auth.error.googlePopup"));
           setBusy(false);
           return;
         }
@@ -520,9 +523,9 @@ function AuthPage() {
               }),
             });
             const payload = (await response.json()) as { error?: string; message?: string };
-            if (!response.ok) throw new Error(payload.error || "Não foi possível enviar o código.");
+            if (!response.ok) throw new Error(payload.error || tNow("auth.error.sendCode"));
             setOtpSent(true);
-            setInfo(payload.message || "Se houver conta com este WhatsApp, enviamos um código.");
+            setInfo(tNow("auth.info.codeSentIfAccount"));
             return;
           }
 
@@ -547,15 +550,15 @@ function AuthPage() {
             hashed_token?: string | null;
             verification_type?: string;
           };
-          if (!response.ok) throw new Error(payload.error || "Código inválido.");
-          if (!payload.hashed_token) throw new Error("Não foi possível validar o código.");
+          if (!response.ok) throw new Error(payload.error || tNow("auth.error.invalidCode"));
+          if (!payload.hashed_token) throw new Error(tNow("auth.error.validateCode"));
           const { error: verifyError } = await supabase.auth.verifyOtp({
             token_hash: payload.hashed_token,
             type: "recovery",
           });
           if (verifyError) throw verifyError;
           setMode("recovery");
-          setInfo("Código confirmado. Defina uma nova senha.");
+          setInfo(tNow("auth.info.codeConfirmed"));
           setOtpSent(false);
           setOtpCode("");
           return;
@@ -573,18 +576,18 @@ function AuthPage() {
             }${effectiveShopRef ? `&shop=${encodeURIComponent(effectiveShopRef)}` : ""}`;
         const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
         if (error) throw error;
-        setInfo("Se existir uma conta com este email, enviamos o link para redefinir a senha.");
+        setInfo(tNow("auth.info.resetLinkSent"));
         return;
       }
 
       if (mode === "recovery") {
-        if (password.length < 6) throw new Error("A senha precisa ter pelo menos 6 caracteres.");
-        if (password !== passwordConfirm) throw new Error("As senhas não coincidem.");
+        if (password.length < 6) throw new Error(tNow("errors.passwordShort"));
+        if (password !== passwordConfirm) throw new Error(tNow("auth.error.passwordMismatch"));
         const { error } = await supabase.auth.updateUser({ password });
         if (error) throw error;
         setPassword("");
         setPasswordConfirm("");
-        setInfo("Senha atualizada. Entrando…");
+        setInfo(tNow("auth.info.passwordUpdated"));
         await goAfterAuth();
         return;
       }
@@ -626,9 +629,7 @@ function AuthPage() {
       if (error) {
         const msg = error.message || "";
         if (/confirmação|confirmation|sending.*email|enviando e-mail/i.test(msg)) {
-          throw new Error(
-            "Não conseguimos enviar o e-mail de confirmação agora. Tente de novo em instantes ou entre com Google.",
-          );
+          throw new Error(tNow("auth.error.confirmationEmail"));
         }
         throw error;
       }
@@ -640,26 +641,24 @@ function AuthPage() {
           p_opt_in: true,
         });
         if (waError) {
-          setInfo(
-            "Conta criada. Abra Meu perfil e salve o WhatsApp para receber avisos de horário.",
-          );
+          setInfo(tNow("auth.info.createdSaveWhatsapp"));
         }
       }
 
       if (signUpData.session) {
         setInfo(
           signupWhatsapp
-            ? "Conta criada. Você receberá avisos no WhatsApp quando a barbearia enviar."
-            : "Conta criada. Em Meu perfil você pode cadastrar o WhatsApp para avisos.",
+            ? tNow("auth.info.createdWithWhatsapp")
+            : tNow("auth.info.createdNoWhatsapp"),
         );
         await goAfterAuth();
         return;
       }
 
-      setInfo("Confirme seu email e entre na conta.");
+      setInfo(tNow("auth.info.confirmEmail"));
       setMode("signin");
     } catch (err) {
-      setError(friendlyAuthError(err, "Não foi possível entrar. Tente novamente."));
+      setError(friendlyAuthError(err, tNow("auth.error.signinFailed")));
     } finally {
       setBusy(false);
     }
@@ -696,11 +695,11 @@ function AuthPage() {
           "width=480,height=720,menubar=no,toolbar=no,status=no",
         );
         if (!popupWin) {
-          setError("Permita pop-ups neste site para entrar com Google.");
+          setError(tNow("auth.error.allowPopups"));
           setBusy(false);
           return;
         }
-        setInfo("Conclua o Google na janela que abriu. Esta página permanece na barbearia.");
+        setInfo(tNow("auth.info.finishGooglePopup"));
         const timer = window.setInterval(() => {
           if (popupWin.closed) {
             window.clearInterval(timer);
@@ -717,41 +716,41 @@ function AuthPage() {
       });
       if (error) throw error;
     } catch (err) {
-      setError(friendlyAuthError(err, "Não foi possível entrar com Google. Tente novamente."));
+      setError(friendlyAuthError(err, tNow("auth.error.google")));
       setBusy(false);
     }
   }
 
   const eyebrow =
     mode === "signup"
-      ? "Comece hoje"
+      ? t("auth.eyebrow.signup")
       : mode === "forgot"
-        ? "Recuperar acesso"
+        ? t("auth.eyebrow.forgot")
         : mode === "recovery"
-          ? "Quase lá"
-          : "Bem-vindo de volta";
+          ? t("auth.eyebrow.recovery")
+          : t("auth.eyebrow.signin");
 
   const title =
     mode === "signup"
-      ? "Crie sua conta"
+      ? t("auth.title.signup")
       : mode === "forgot"
-        ? "Redefinir senha"
+        ? t("auth.title.forgot")
         : mode === "recovery"
-          ? "Nova senha"
-          : "Acesse sua conta";
+          ? t("auth.title.recovery")
+          : t("auth.title.signin");
 
   const subtitle =
     mode === "signup"
       ? effectiveShopRef
-        ? "Crie a conta com e-mail e informe o WhatsApp para receber avisos de horário desta barbearia."
-        : "Leva menos de um minuto. Depois é só agendar e acompanhar seus horários."
+        ? t("auth.subtitle.signupShop")
+        : t("auth.subtitle.signup")
       : mode === "forgot"
         ? recoveryChannel === "whatsapp"
-          ? "Informe o WhatsApp cadastrado. Enviaremos um código pela barbearia."
-          : "Informe o email da conta. Enviaremos um link seguro para você."
+          ? t("auth.subtitle.forgotWhatsapp")
+          : t("auth.subtitle.forgotEmail")
         : mode === "recovery"
-          ? "Escolha uma senha nova para voltar a acessar o app."
-          : "Acesso do cliente, da barbearia ou da plataforma.";
+          ? t("auth.subtitle.recovery")
+          : t("auth.subtitle.signin");
 
   const fieldClass =
     "auth-input-wrap auth-brand-control flex min-h-[3.25rem] items-center border border-border/70 transition-[border-color,box-shadow] duration-200 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10";
@@ -763,22 +762,20 @@ function AuthPage() {
     return (
       <main className="mb-page flex min-h-dvh items-center justify-center bg-background px-6 text-foreground">
         <div className="mb-panel w-full max-w-sm space-y-3 border border-border/70 bg-card p-8 text-center shadow-sm">
-          <p className="text-sm font-semibold text-foreground/80">Login Google</p>
+          <p className="text-sm font-semibold text-foreground/80">{t("auth.popup.title")}</p>
           <h1 className="text-xl font-semibold tracking-tight">
-            {error ? "Não foi possível entrar" : info || "Conectando…"}
+            {error ? t("auth.popup.failed") : info || t("auth.popup.connecting")}
           </h1>
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
           {!error ? (
-            <p className="text-sm text-muted-foreground">
-              Esta janela fecha sozinha. A barbearia continua aberta na outra aba.
-            </p>
+            <p className="text-sm text-muted-foreground">{t("auth.popup.autoClose")}</p>
           ) : (
             <button
               type="button"
               className="auth-brand-control mt-2 inline-flex min-h-11 w-full items-center justify-center bg-primary px-4 text-sm font-semibold text-primary-foreground"
               onClick={() => window.close()}
             >
-              Fechar
+              {t("common.close")}
             </button>
           )}
         </div>
@@ -803,12 +800,18 @@ function AuthPage() {
       data-brand-shop={brand.shopId ?? undefined}
     >
       <BrandFontFace url={brand.customFontUrl} />
-      <ThemeToggle className="auth-theme-toggle" />
+      <div className="auth-theme-toggle">
+        <LanguageSwitcher />
+        <ThemeToggle />
+      </div>
       <div className="auth-photo-layer" aria-hidden="true">
         <img src={brand.loginImageUrl || DEFAULT_LOGIN_IMAGE} alt="" />
         <span />
       </div>
-      <section className="auth-photo-copy" aria-label={`Boas-vindas de ${brand.displayName}`}>
+      <section
+        className="auth-photo-copy"
+        aria-label={t("auth.welcomeRegion", { name: brand.displayName })}
+      >
         <div
           className="auth-photo-copy-logo"
           style={{
@@ -822,8 +825,8 @@ function AuthPage() {
           )}
         </div>
         <p className="auth-brand-name">{brand.displayName}</p>
-        <h2>Seu cuidado começa aqui.</h2>
-        <p>Agende, acompanhe seus horários e aproveite os benefícios da sua barbearia.</p>
+        <h2>{t("auth.hero.title")}</h2>
+        <p>{t("auth.hero.text")}</p>
       </section>
       <div className="auth-brand-panel mb-panel w-full max-w-md overflow-hidden border border-border/70 bg-card shadow-[0_24px_60px_color-mix(in_oklch,#1c1d19_14%,transparent)]">
         <div className="auth-brand-header px-6 pt-8 sm:px-10 sm:pt-12">
@@ -839,7 +842,7 @@ function AuthPage() {
               {brand.logoUrl ? (
                 <img
                   src={brand.logoUrl}
-                  alt={`Logo de ${brand.displayName}`}
+                  alt={t("auth.logoAlt", { name: brand.displayName })}
                   className="size-full object-contain p-2"
                 />
               ) : (
@@ -859,7 +862,7 @@ function AuthPage() {
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">{eyebrow}</p>
             {shopContext.demo && (
               <span className="auth-brand-control border border-border/70 bg-muted/60 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                Demonstração
+                {t("common.demo")}
               </span>
             )}
           </div>
@@ -876,12 +879,12 @@ function AuthPage() {
             <div
               className="auth-mode-tabs auth-brand-control grid grid-cols-2 gap-1 bg-muted/70 p-1"
               role="tablist"
-              aria-label="Modo de acesso"
+              aria-label={t("auth.modeTabs")}
             >
               {(
                 [
-                  ["signin", "Entrar"],
-                  ["signup", "Cadastrar"],
+                  ["signin", t("auth.tab.signin")],
+                  ["signup", t("auth.tab.signup")],
                 ] as const
               ).map(([id, label]) => (
                 <button
@@ -911,12 +914,16 @@ function AuthPage() {
               <div
                 className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1"
                 role="tablist"
-                aria-label="Canal de recuperação"
+                aria-label={t("auth.recoveryChannel")}
               >
                 {(
                   [
-                    { id: "email" as const, label: "E-mail", icon: Mail },
-                    { id: "whatsapp" as const, label: "WhatsApp", icon: MessageCircle },
+                    { id: "email" as const, label: t("auth.channel.email"), icon: Mail },
+                    {
+                      id: "whatsapp" as const,
+                      label: t("auth.channel.whatsapp"),
+                      icon: MessageCircle,
+                    },
                   ] as const
                 ).map(({ id, label, icon: Icon }) => (
                   <button
@@ -947,7 +954,7 @@ function AuthPage() {
             {mode !== "recovery" &&
               !(mode === "forgot" && recoveryChannel === "whatsapp" && effectiveShopRef) && (
                 <label className={labelClass}>
-                  <span>Email</span>
+                  <span>{t("auth.field.email")}</span>
                   <span className={fieldClass}>
                     <Mail
                       className="ml-4 size-[18px] shrink-0 text-muted-foreground"
@@ -957,7 +964,7 @@ function AuthPage() {
                       type="email"
                       required
                       autoComplete="email"
-                      placeholder="voce@email.com"
+                      placeholder={t("auth.field.emailPlaceholder")}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className={inputClass}
@@ -969,7 +976,7 @@ function AuthPage() {
             {mode === "forgot" && recoveryChannel === "whatsapp" && effectiveShopRef && (
               <>
                 <label className={labelClass}>
-                  <span>WhatsApp com DDD</span>
+                  <span>{t("auth.field.whatsapp")}</span>
                   <span className={fieldClass}>
                     <MessageCircle
                       className="ml-4 size-[18px] shrink-0 text-muted-foreground"
@@ -989,7 +996,7 @@ function AuthPage() {
                 </label>
                 {otpSent && (
                   <label className={labelClass}>
-                    <span>Código de 6 dígitos</span>
+                    <span>{t("auth.field.otp")}</span>
                     <InputOTP
                       maxLength={6}
                       value={otpCode}
@@ -1014,8 +1021,9 @@ function AuthPage() {
             {mode === "signup" && (
               <label className={labelClass}>
                 <span>
-                  WhatsApp com DDD
-                  {effectiveShopRef ? " (para avisos de horário)" : " (opcional)"}
+                  {effectiveShopRef
+                    ? t("auth.field.whatsappSignupShop")
+                    : t("auth.field.whatsappSignupOptional")}
                 </span>
                 <span className={fieldClass}>
                   <MessageCircle
@@ -1034,12 +1042,11 @@ function AuthPage() {
                   />
                 </span>
                 <span className="block text-xs font-normal text-muted-foreground">
-                  A barbearia envia confirmação e lembretes por este número (depois de conectar o
-                  WhatsApp dela em Ajustes). Cadastro para{" "}
+                  {t("auth.signupHint.before")}{" "}
                   <Link to="/cadastrar" className="font-semibold underline">
-                    abrir uma barbearia
+                    {t("auth.signupHint.link")}
                   </Link>{" "}
-                  é outro formulário.
+                  {t("auth.signupHint.after")}
                 </span>
               </label>
             )}
@@ -1047,7 +1054,9 @@ function AuthPage() {
             {(mode === "signin" || mode === "signup" || mode === "recovery") && (
               <div className="space-y-1">
                 <label className={labelClass}>
-                  <span>{mode === "recovery" ? "Nova senha" : "Senha"}</span>
+                  <span>
+                    {mode === "recovery" ? t("auth.field.newPassword") : t("auth.field.password")}
+                  </span>
                   <span className={fieldClass}>
                     <LockKeyhole
                       className="ml-4 size-[18px] shrink-0 text-muted-foreground"
@@ -1058,7 +1067,7 @@ function AuthPage() {
                       required
                       minLength={6}
                       autoComplete={mode === "signin" ? "current-password" : "new-password"}
-                      placeholder="Mínimo 6 caracteres"
+                      placeholder={t("auth.field.passwordPlaceholder")}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className={inputClass}
@@ -1067,7 +1076,7 @@ function AuthPage() {
                       type="button"
                       onClick={() => setShowPassword((current) => !current)}
                       className="auth-brand-button mr-1.5 flex size-11 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
-                      aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                      aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
                       aria-pressed={showPassword}
                     >
                       {showPassword ? (
@@ -1090,7 +1099,7 @@ function AuthPage() {
                       }}
                       className="inline-flex min-h-11 items-center px-1 text-xs font-semibold text-primary underline-offset-4 transition-colors hover:underline"
                     >
-                      Esqueci a senha
+                      {t("auth.forgot")}
                     </button>
                   </div>
                 )}
@@ -1099,7 +1108,7 @@ function AuthPage() {
 
             {mode === "recovery" && (
               <label className={labelClass}>
-                <span>Confirmar nova senha</span>
+                <span>{t("auth.field.confirmPassword")}</span>
                 <span className={fieldClass}>
                   <LockKeyhole
                     className="ml-4 size-[18px] shrink-0 text-muted-foreground"
@@ -1110,7 +1119,7 @@ function AuthPage() {
                     required
                     minLength={6}
                     autoComplete="new-password"
-                    placeholder="Repita a senha"
+                    placeholder={t("auth.field.confirmPlaceholder")}
                     value={passwordConfirm}
                     onChange={(e) => setPasswordConfirm(e.target.value)}
                     className={inputClass}
@@ -1143,18 +1152,18 @@ function AuthPage() {
             >
               <span>
                 {busy
-                  ? "Aguarde…"
+                  ? t("common.wait")
                   : mode === "forgot"
                     ? recoveryChannel === "whatsapp" && effectiveShopRef
                       ? otpSent
-                        ? "Confirmar código"
-                        : "Enviar código"
-                      : "Enviar link"
+                        ? t("auth.submit.confirmCode")
+                        : t("auth.submit.sendCode")
+                      : t("auth.submit.sendLink")
                     : mode === "recovery"
-                      ? "Salvar nova senha"
+                      ? t("auth.submit.saveNewPassword")
                       : mode === "signup"
-                        ? "Criar conta"
-                        : "Entrar"}
+                        ? t("auth.submit.signup")
+                        : t("auth.submit.signin")}
               </span>
               {!busy && <ArrowRight className="size-4" aria-hidden="true" />}
             </button>
@@ -1167,10 +1176,10 @@ function AuthPage() {
                   setOtpSent(false);
                   setOtpCode("");
                   setError(null);
-                  setInfo("Toque em Enviar código para receber um código novo no WhatsApp.");
+                  setInfo(t("auth.info.resendHint"));
                 }}
               >
-                Enviar código de novo
+                {t("auth.resendCode")}
               </button>
             )}
           </form>
@@ -1187,14 +1196,16 @@ function AuthPage() {
               }}
               className="auth-brand-button min-h-11 w-full text-center text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
             >
-              Voltar ao entrar
+              {t("auth.backToSignin")}
             </button>
           )}
 
           {(mode === "signin" || mode === "signup") && (
             <>
               <div className="relative text-center text-xs font-medium text-muted-foreground">
-                <span className="auth-divider-label relative z-10 px-3">ou continue com</span>
+                <span className="auth-divider-label relative z-10 px-3">
+                  {t("auth.orContinue")}
+                </span>
                 <span className="absolute inset-x-0 top-1/2 h-px bg-border" aria-hidden />
               </div>
 
@@ -1205,7 +1216,7 @@ function AuthPage() {
                 className="auth-brand-button auth-google-action flex min-h-[3.25rem] w-full items-center justify-center gap-3 border border-border/70 px-3 text-[15px] font-semibold text-foreground transition-colors hover:border-foreground/25 hover:bg-muted/50 disabled:opacity-50"
               >
                 <GoogleMark />
-                Continuar com Google
+                {t("auth.google")}
               </button>
             </>
           )}
@@ -1213,22 +1224,22 @@ function AuthPage() {
           <div className="auth-panel-footer space-y-2 text-center text-xs text-muted-foreground">
             <p className="flex items-center justify-center gap-1.5 font-medium">
               <ShieldCheck className="size-3.5 text-gold" aria-hidden="true" />
-              Ambiente protegido
+              {t("auth.protected")}
             </p>
             <p>
-              Ao continuar, você concorda com os{" "}
+              {t("auth.terms.before")}{" "}
               <Link
                 to="/termos"
                 className="-my-3 inline-flex min-h-11 items-center font-semibold text-foreground underline-offset-2 hover:underline"
               >
-                Termos de Uso
+                {t("auth.terms.link")}
               </Link>{" "}
-              e a{" "}
+              {t("auth.terms.and")}{" "}
               <Link
                 to="/privacidade"
                 className="-my-3 inline-flex min-h-11 items-center font-semibold text-foreground underline-offset-2 hover:underline"
               >
-                Política de Privacidade
+                {t("auth.privacy.link")}
               </Link>
               .
             </p>

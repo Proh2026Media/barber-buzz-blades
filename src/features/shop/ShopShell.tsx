@@ -81,6 +81,7 @@ import { brandCornerClass, brandFontScopeClass, brandVariables } from "@/lib/sho
 import { useShopFavicon } from "@/lib/shop/favicon";
 import { BrandFontFace } from "@/features/shop/BrandFontFace";
 import { ChangePasswordCard } from "@/features/auth/ChangePasswordCard";
+import { LanguageSettingsCard } from "@/components/LanguageSettingsCard";
 import { useDemo } from "@/features/demo/context";
 import {
   formatShopDate,
@@ -3271,6 +3272,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
               </form>
             </section>
           )}
+          {tab === "configuracoes" && <LanguageSettingsCard />}
         </div>
 
         {!demo && (

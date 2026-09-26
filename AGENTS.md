@@ -1,5 +1,9 @@
 # Orientações persistentes do projeto
 
+## Idioma (regra obrigatória)
+
+Toda comunicação com o usuário e todo tratamento no projeto — respostas, resumos, perguntas, commits, documentação e textos do sistema — em **português do Brasil (pt-BR)**. O sistema tem troca de idioma (pt-BR padrão, pt-PT, en-US, en-GB, es); texto novo de interface entra pelo dicionário em `src/lib/i18n/`. Regra Cursor: [.cursor/rules/idioma.mdc](.cursor/rules/idioma.mdc).
+
 ## Retomada de contexto
 
 Ao assumir o projeto em outro chat ou provedor, ler primeiro [docs/CONTINUIDADE.md](docs/CONTINUIDADE.md), com estado das entregas, regras aprovadas, validações e pendências.

@@ -1,6 +1,6 @@
 # Transição para a próxima IA — Barba & Cabelo
 
-Atualizado em **25/09/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
+Atualizado em **26/09/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
 ## Comece aqui
 
@@ -8,6 +8,11 @@ Atualizado em **25/09/2026**. Este documento resume decisões e entregas da conv
 2. Inspecionar `git status` e os arquivos relevantes ao próximo pedido. O workspace tem muitas alterações e arquivos não rastreados que compõem o aplicativo; **não descartar nem sobrescrever esse trabalho**.
 3. Para retomar localmente, usar `npm run dev -- --host 0.0.0.0 --port 8080`. O endereço esperado é `http://localhost:8080`.
 4. Continuar a partir do próximo pedido do usuário.
+
+## Entrega — idiomas, fase 1 (26/09/2026)
+
+- Regra obrigatória: toda comunicação com o usuário e todo texto do sistema em pt-BR por padrão (`.cursor/rules/idioma.mdc`, `AGENTS.md`).
+- Troca de idioma (pt-BR, pt-PT, en-US, en-GB, es) com ou sem login. Texto novo de interface deve entrar em `src/lib/i18n/messages/pt-BR.ts` e nos outros quatro dicionários. Detalhes e pendências em [mb-revisao.md](mb-revisao.md#idiomas-fase-1--26092026).
 
 ## Entrega — revisão MB usabilidade (26/09/2026)
 

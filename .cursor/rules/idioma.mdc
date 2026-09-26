@@ -1,0 +1,11 @@
+---
+description: Idioma — toda comunicação e tratamento em português do Brasil (pt-BR)
+alwaysApply: true
+---
+
+# Idioma: pt-BR em tudo
+
+- **Comunicação com o usuário:** responder sempre em português do Brasil — mensagens, resumos, perguntas, planos, relatórios, mensagens de commit e documentação. Nunca responder em inglês, mesmo quando o pedido, o código ou a ferramenta estiverem em inglês.
+- **Sistema:** o idioma principal é **pt-BR**. Todo texto novo de interface, erro, aviso, e-mail e WhatsApp nasce em pt-BR.
+- **Idiomas suportados no sistema:** pt-BR (padrão), pt-PT, en-US (global), en-GB e es. Texto de interface novo deve entrar pelo dicionário de traduções (`src/lib/i18n/`), com pt-BR como fonte e as demais línguas preenchidas; não deixar texto fixo fora do dicionário nas telas já traduzidas.
+- Termos técnicos só quando não houver equivalente comum; explicar em linguagem cotidiana.

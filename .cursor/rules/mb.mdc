@@ -38,4 +38,4 @@ Público principal: celular, pouca familiaridade com tecnologia. A pessoa precis
 - Inventariar jornadas se a revisão for global; priorizar bloqueio → uso frequente → refinamento.
 - Corrigir componentes compartilhados quando o problema se repetir.
 - Não inventar offline, reembolso ou integrações sem suporte real.
-- Linguagem cotidiana em PT-BR; evitar jargão técnico na jornada comum.
+- Linguagem cotidiana em PT-BR; evitar jargão técnico na jornada comum. Idioma e traduções: ver `.cursor/rules/idioma.mdc`.

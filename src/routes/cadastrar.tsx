@@ -3,7 +3,9 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, MessageCircle, Scissors, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { DEFAULT_LOGIN_IMAGE } from "@/lib/shop/branding";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
+import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
 
 type Step = "dados" | "otp" | "conta";
 
@@ -31,18 +33,19 @@ async function callRegisterShop(body: Record<string, unknown>) {
     email?: string;
     shop_slug?: string;
   };
-  if (!response.ok) throw new Error(payload.error || "Falha no cadastro");
+  if (!response.ok) throw new Error(payload.error || tNow("register.failed"));
   return payload;
 }
 
-const STEPS: { id: Step; label: string }[] = [
-  { id: "dados", label: "Dados" },
-  { id: "otp", label: "WhatsApp" },
-  { id: "conta", label: "Pronto" },
+const STEPS: { id: Step; label: MessageKey }[] = [
+  { id: "dados", label: "register.step.data" },
+  { id: "otp", label: "register.step.whatsapp" },
+  { id: "conta", label: "register.step.done" },
 ];
 
 function CadastrarPage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [step, setStep] = useState<Step>("dados");
   const [shopName, setShopName] = useState("");
   const [fullName, setFullName] = useState("");
@@ -73,19 +76,19 @@ function CadastrarPage() {
     if (!fromResend) setInfo(null);
     try {
       if (!shopName.trim() || !fullName.trim() || !email.trim() || password.length < 6) {
-        throw new Error("Preencha barbearia, nome, e-mail e senha (mín. 6).");
+        throw new Error(t("register.errorFillAll"));
       }
-      if (!whatsapp.trim()) throw new Error("Informe o WhatsApp com DDD.");
+      if (!whatsapp.trim()) throw new Error(t("register.errorWhatsapp"));
       const payload = await callRegisterShop({
         action: "request",
         destination: whatsapp.trim(),
       });
       setDestination(payload.destination || whatsapp.trim());
-      setInfo(payload.message || "Código enviado no WhatsApp.");
+      setInfo(t("register.codeSent"));
       setStep("otp");
       setResendIn(60);
     } catch (err) {
-      setError(friendlyAuthError(err, "Não foi possível enviar o código."));
+      setError(friendlyAuthError(err, t("register.errorSendCode")));
     } finally {
       setBusy(false);
     }
@@ -108,12 +111,12 @@ function CadastrarPage() {
         destination: destination || whatsapp.trim(),
         code: otpCode.trim(),
       });
-      if (!payload.verification_token) throw new Error("Verificação incompleta.");
-      setInfo("WhatsApp confirmado. Finalizando o cadastro…");
+      if (!payload.verification_token) throw new Error(t("register.errorIncomplete"));
+      setInfo(t("register.confirmedFinishing"));
       setStep("conta");
       await finishRegister(payload.verification_token);
     } catch (err) {
-      setError(friendlyAuthError(err, "Código inválido ou vencido. Peça um código novo."));
+      setError(friendlyAuthError(err, t("register.errorInvalidCode")));
       setBusy(false);
     }
   }
@@ -136,13 +139,13 @@ function CadastrarPage() {
         password,
       });
       if (signError) {
-        setInfo("Barbearia criada. Entre com o e-mail e a senha.");
+        setInfo(t("register.createdSignIn"));
         await navigate({ to: "/auth", search: { next: "/shop" } });
         return;
       }
       await navigate({ to: "/shop" });
     } catch (err) {
-      setError(friendlyAuthError(err, "Não foi possível criar a barbearia. Tente novamente."));
+      setError(friendlyAuthError(err, t("register.errorCreate")));
     } finally {
       setBusy(false);
     }
@@ -150,6 +153,9 @@ function CadastrarPage() {
 
   return (
     <main className="platform-register mb-page min-h-dvh text-foreground">
+      <div className="auth-theme-toggle">
+        <LanguageSwitcher />
+      </div>
       <div className="platform-register-photo" aria-hidden="true">
         <img src={DEFAULT_LOGIN_IMAGE} alt="" />
         <span />
@@ -158,7 +164,7 @@ function CadastrarPage() {
       <div className="platform-register-stage">
         <Link to="/" className="platform-register-back">
           <ArrowLeft className="size-4" aria-hidden="true" />
-          Voltar
+          {t("common.back")}
         </Link>
 
         <div className="platform-register-panel">
@@ -168,48 +174,47 @@ function CadastrarPage() {
             </span>
             <div>
               <p className="platform-register-brand-name">Barba &amp; Cabelo</p>
-              <p className="text-xs text-muted-foreground">Abrir minha barbearia</p>
+              <p className="text-xs text-muted-foreground">{t("register.subtitle")}</p>
             </div>
           </div>
 
-          <ol className="platform-register-steps" aria-label="Etapas do cadastro">
+          <ol className="platform-register-steps" aria-label={t("register.stepsLabel")}>
             {STEPS.map((row, index) => {
               const state = index < stepIndex ? "done" : index === stepIndex ? "current" : "todo";
               return (
                 <li key={row.id} data-state={state}>
                   <span aria-hidden="true">{index + 1}</span>
-                  {row.label}
+                  {t(row.label)}
                 </li>
               );
             })}
           </ol>
 
           <h1 className="platform-register-title">
-            {step === "dados" && "Dados da sua loja"}
-            {step === "otp" && "Confirme o WhatsApp"}
-            {step === "conta" && "Quase lá"}
+            {step === "dados" && t("register.title.data")}
+            {step === "otp" && t("register.title.otp")}
+            {step === "conta" && t("register.title.done")}
           </h1>
           <p className="platform-register-lead">
-            {step === "dados" &&
-              "Preencha os dados. Em seguida enviamos um código no WhatsApp para confirmar."}
-            {step === "otp" && "Digite o código de 6 dígitos que enviamos agora."}
-            {step === "conta" && "Criando sua conta e a barbearia…"}
+            {step === "dados" && t("register.lead.data")}
+            {step === "otp" && t("register.lead.otp")}
+            {step === "conta" && t("register.lead.done")}
           </p>
 
           {step === "dados" && (
             <form onSubmit={sendCode} className="platform-register-form">
               <label className="platform-register-label">
-                Nome da barbearia
+                {t("register.shopName")}
                 <input
                   required
                   value={shopName}
                   onChange={(e) => setShopName(e.target.value)}
                   className="platform-register-input"
-                  placeholder="Ex.: Externa Barbearia"
+                  placeholder={t("register.shopNamePlaceholder")}
                 />
               </label>
               <fieldset className="platform-register-label">
-                <legend className="mb-2 text-sm font-semibold">Há sociedade?</legend>
+                <legend className="mb-2 text-sm font-semibold">{t("register.society")}</legend>
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
@@ -218,7 +223,7 @@ function CadastrarPage() {
                       !hasSociety ? "border-primary bg-primary/10 text-primary" : "border-border"
                     }`}
                   >
-                    Não — sou o único dono
+                    {t("register.societySolo")}
                   </button>
                   <button
                     type="button"
@@ -227,31 +232,28 @@ function CadastrarPage() {
                       hasSociety ? "border-primary bg-primary/10 text-primary" : "border-border"
                     }`}
                   >
-                    Sim
+                    {t("register.societyYes")}
                   </button>
                 </div>
                 {hasSociety && (
                   <div className="mt-3 space-y-2">
-                    <p className="text-xs text-muted-foreground">
-                      Como é a sociedade? (convidará os co-donos depois; majoritário tem acesso
-                      total, os demais pedem aprovação.)
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t("register.societyHint")}</p>
                     {(
                       [
                         {
                           id: "majority" as const,
-                          label: "Majoritária",
-                          hint: "Alguém com mais de 50% decide sozinho.",
+                          label: t("register.society.majority"),
+                          hint: t("register.society.majorityHint"),
                         },
                         {
                           id: "equal" as const,
-                          label: "Igualitária",
-                          hint: "Participações iguais — mudanças pedem acordo.",
+                          label: t("register.society.equal"),
+                          hint: t("register.society.equalHint"),
                         },
                         {
                           id: "minority" as const,
-                          label: "Minoritária",
-                          hint: "Você começa como minoritário e propõe mudanças.",
+                          label: t("register.society.minority"),
+                          hint: t("register.society.minorityHint"),
                         },
                       ] as const
                     ).map((option) => (
@@ -273,18 +275,18 @@ function CadastrarPage() {
                 )}
               </fieldset>
               <label className="platform-register-label">
-                Seu nome
+                {t("register.fullName")}
                 <input
                   required
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   className="platform-register-input"
-                  placeholder="Como os clientes vão te chamar"
+                  placeholder={t("register.fullNamePlaceholder")}
                 />
               </label>
               <div className="platform-register-grid">
                 <label className="platform-register-label">
-                  E-mail
+                  {t("register.email")}
                   <input
                     required
                     type="email"
@@ -295,7 +297,7 @@ function CadastrarPage() {
                   />
                 </label>
                 <label className="platform-register-label">
-                  Senha
+                  {t("register.password")}
                   <input
                     required
                     type="password"
@@ -308,7 +310,7 @@ function CadastrarPage() {
                 </label>
               </div>
               <label className="platform-register-label">
-                WhatsApp (com DDD)
+                {t("register.whatsapp")}
                 <input
                   required
                   inputMode="tel"
@@ -320,10 +322,10 @@ function CadastrarPage() {
               </label>
               <p className="platform-register-note">
                 <MessageCircle className="size-3.5 shrink-0" aria-hidden="true" />
-                Usamos este número só para confirmar o cadastro e avisos importantes da conta.
+                {t("register.whatsappNote")}
               </p>
               <button type="submit" disabled={busy} className="platform-register-submit">
-                {busy ? "Enviando…" : "Enviar código no WhatsApp"}
+                {busy ? t("register.sending") : t("register.sendCode")}
               </button>
             </form>
           )}
@@ -331,11 +333,11 @@ function CadastrarPage() {
           {step === "otp" && (
             <form onSubmit={verifyCode} className="platform-register-form">
               <p className="platform-register-otp-dest">
-                Código enviado para{" "}
+                {t("register.codeSentTo")}{" "}
                 <span className="font-semibold text-foreground">{destination}</span>
               </p>
               <label className="platform-register-label">
-                Código de 6 dígitos
+                {t("register.otp")}
                 <input
                   required
                   inputMode="numeric"
@@ -352,7 +354,7 @@ function CadastrarPage() {
                 disabled={busy || otpCode.length !== 6}
                 className="platform-register-submit"
               >
-                {busy ? "Confirmando…" : "Confirmar e criar barbearia"}
+                {busy ? t("register.confirming") : t("register.confirm")}
               </button>
               <button
                 type="button"
@@ -360,7 +362,9 @@ function CadastrarPage() {
                 className="platform-register-linkish min-h-11"
                 onClick={() => void requestOtp(true)}
               >
-                {resendIn > 0 ? `Enviar código de novo (${resendIn}s)` : "Enviar código de novo"}
+                {resendIn > 0
+                  ? t("register.resendIn", { seconds: resendIn })
+                  : t("register.resend")}
               </button>
               <button
                 type="button"
@@ -372,7 +376,7 @@ function CadastrarPage() {
                   setResendIn(0);
                 }}
               >
-                Voltar e corrigir dados
+                {t("register.backToData")}
               </button>
             </form>
           )}
@@ -380,7 +384,7 @@ function CadastrarPage() {
           {step === "conta" && (
             <div className="platform-register-finishing" role="status">
               <ShieldCheck className="size-8 text-gold" aria-hidden="true" />
-              <p>{busy ? "Criando conta e barbearia…" : info}</p>
+              <p>{busy ? t("register.creating") : info}</p>
             </div>
           )}
 
@@ -396,9 +400,9 @@ function CadastrarPage() {
           )}
 
           <p className="platform-register-footer">
-            Já tem conta?{" "}
+            {t("register.haveAccount")}{" "}
             <Link to="/auth" search={{ next: "/shop" }}>
-              Entrar
+              {t("register.signin")}
             </Link>
           </p>
         </div>

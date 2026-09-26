@@ -1,41 +1,44 @@
-/** Mensagens de acesso em linguagem cotidiana (MB). */
+import { t } from "../i18n/use-i18n.ts";
+import type { MessageKey } from "../i18n/translate.ts";
 
-const PATTERNS: Array<{ test: RegExp; message: string }> = [
+/** Mensagens de acesso em linguagem cotidiana (MB), no idioma escolhido. */
+
+const PATTERNS: Array<{ test: RegExp; message: MessageKey }> = [
   {
     test: /invalid login credentials|invalid_credentials|email.*password/i,
-    message: "E-mail ou senha incorretos. Confira e tente de novo.",
+    message: "errors.invalidCredentials",
   },
   {
     test: /email not confirmed|not confirmed/i,
-    message: "Confirme seu e-mail antes de entrar. Veja a caixa de entrada e o spam.",
+    message: "errors.emailNotConfirmed",
   },
   {
     test: /user already registered|already been registered/i,
-    message: "Este e-mail já tem conta. Entre com a senha ou recupere o acesso.",
+    message: "errors.alreadyRegistered",
   },
   {
     test: /should be different from the old password|same.*password/i,
-    message: "A nova senha precisa ser diferente da atual.",
+    message: "errors.samePassword",
   },
   {
     test: /password should be at least|password.*(too short|weak)/i,
-    message: "A senha precisa ter pelo menos 6 caracteres.",
+    message: "errors.passwordShort",
   },
   {
     test: /otp|token|code.*(expired|invalid)|invalid.*(otp|token|code)/i,
-    message: "Código inválido ou vencido. Peça um código novo e tente outra vez.",
+    message: "errors.invalidCode",
   },
   {
     test: /rate limit|too many|exceeded/i,
-    message: "Muitas tentativas seguidas. Aguarde um minuto e tente de novo.",
+    message: "errors.rateLimit",
   },
   {
     test: /network|fetch failed|failed to fetch|timeout/i,
-    message: "Sem conexão no momento. Verifique a internet e tente novamente.",
+    message: "errors.network",
   },
   {
     test: /session|jwt|expired|refresh/i,
-    message: "Sua sessão expirou. Entre novamente para continuar.",
+    message: "errors.sessionExpired",
   },
 ];
 
@@ -50,17 +53,17 @@ export function friendlyAuthError(raw: unknown, fallback?: string): string {
           : "";
 
   if (!text.trim()) {
-    return fallback ?? "Não foi possível continuar. Tente novamente.";
+    return fallback ?? t("errors.generic");
   }
 
   for (const entry of PATTERNS) {
-    if (entry.test.test(text)) return entry.message;
+    if (entry.test.test(text)) return t(entry.message);
   }
 
   // Evita jargão técnico na jornada comum.
   if (/supabase|postgres|rpc|edge|function|http\s*\d+/i.test(text)) {
-    return fallback ?? "Não foi possível continuar. Tente novamente.";
+    return fallback ?? t("errors.generic");
   }
 
-  return text.length > 160 ? (fallback ?? "Não foi possível continuar. Tente novamente.") : text;
+  return text.length > 160 ? (fallback ?? t("errors.generic")) : text;
 }

@@ -1,4 +1,7 @@
-/** Mensagens de integração (Google, WhatsApp) em linguagem cotidiana. */
+import { t } from "../i18n/use-i18n.ts";
+import type { MessageKey } from "../i18n/translate.ts";
+
+/** Mensagens de integração (Google, WhatsApp) em linguagem cotidiana, no idioma escolhido. */
 
 function rawText(raw: unknown): string {
   if (raw instanceof Error) return raw.message;
@@ -9,35 +12,34 @@ function rawText(raw: unknown): string {
   return "";
 }
 
-const PATTERNS: Array<{ test: RegExp; message: string }> = [
+const PATTERNS: Array<{ test: RegExp; message: MessageKey }> = [
   {
     test: /session|expirad|expired|entre novamente|invalid session|missing authorization/i,
-    message: "Sua sessão expirou. Entre de novo e tente conectar outra vez.",
+    message: "errors.integration.session",
   },
   {
     test: /entrypoint|InvalidWorkerCreation|BOOT_ERROR|edge function|fora do ar|indisponível no servidor/i,
-    message:
-      "A conexão com o serviço está temporariamente indisponível. Tente de novo em alguns minutos.",
+    message: "errors.integration.unavailable",
   },
   {
     test: /Missing GOOGLE_OAUTH|oauth.*config|client.?id/i,
-    message: "A conexão com o Google ainda não está pronta neste ambiente. Fale com o suporte.",
+    message: "errors.integration.googleNotReady",
   },
   {
     test: /Escolha qual agenda|calendar_id|informe a agenda/i,
-    message: "Escolha qual agenda usar antes de sincronizar.",
+    message: "errors.integration.chooseCalendar",
   },
   {
     test: /não está disponível nesta conta|calendar.*not/i,
-    message: "Essa agenda não está disponível nesta conta Google. Escolha outra.",
+    message: "errors.integration.calendarUnavailable",
   },
   {
     test: /qr|desconect|logout|instance/i,
-    message: "A conexão do WhatsApp caiu ou o QR expirou. Toque em Conectar e escaneie de novo.",
+    message: "errors.integration.whatsappDisconnected",
   },
   {
     test: /network|fetch failed|failed to fetch|timeout|502|503|504/i,
-    message: "Sem conexão no momento. Verifique a internet e tente novamente.",
+    message: "errors.network",
   },
 ];
 
@@ -45,7 +47,7 @@ export function friendlyIntegrationError(raw: unknown, fallback: string): string
   const text = rawText(raw).trim();
   if (!text) return fallback;
   for (const entry of PATTERNS) {
-    if (entry.test.test(text)) return entry.message;
+    if (entry.test.test(text)) return t(entry.message);
   }
   if (/supabase|postgres|rpc|http\s*\d+|stack|trace|deno/i.test(text)) {
     return fallback;
@@ -55,5 +57,5 @@ export function friendlyIntegrationError(raw: unknown, fallback: string): string
 
 export function friendlyChannelLastError(raw: string | null | undefined): string | null {
   if (!raw?.trim()) return null;
-  return friendlyIntegrationError(raw, "Houve um problema na última conexão. Tente reconectar.");
+  return friendlyIntegrationError(raw, t("errors.integration.lastError"));
 }

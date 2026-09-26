@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { themeBootstrapScript } from "../lib/theme";
+import { localeBootstrapScript } from "../lib/i18n/locale";
 import { PwaRegister } from "../lib/pwa";
 import { PwaInstallBanner } from "../components/pwa-install-banner";
 
@@ -102,7 +103,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary" },
     ],
     // Applies the saved theme before the first paint; kept in sync with `useTheme`.
-    scripts: [{ children: themeBootstrapScript }],
+    scripts: [{ children: themeBootstrapScript }, { children: localeBootstrapScript }],
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "manifest", href: "/manifest.webmanifest" },

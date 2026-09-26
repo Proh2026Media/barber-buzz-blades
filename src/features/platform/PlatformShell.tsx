@@ -30,6 +30,7 @@ import {
 import { BrandIdentityEditor } from "@/features/shop/BrandIdentityEditor";
 import { BrandFontFace } from "@/features/shop/BrandFontFace";
 import { ChangePasswordCard } from "@/features/auth/ChangePasswordCard";
+import { LanguageSettingsCard } from "@/components/LanguageSettingsCard";
 import { PlatformWhatsAppCard } from "./PlatformWhatsAppCard";
 import { PlatformPermissionsEditor } from "./PlatformPermissionsEditor";
 import { AccountManagersPanel } from "./AccountManagersPanel";
@@ -481,8 +482,8 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                     <h2 className="text-sm font-semibold">Você está no ambiente de teste</h2>
                   </div>
                   <p className="text-sm leading-relaxed text-muted-foreground">
-                    Use o seletor no cabeçalho para saltar entre Admin, Barbearia (papéis) e Cliente.
-                    Tudo é sessão isolada — ao sair, a operação real permanece intacta.
+                    Use o seletor no cabeçalho para saltar entre Admin, Barbearia (papéis) e
+                    Cliente. Tudo é sessão isolada — ao sair, a operação real permanece intacta.
                   </p>
                 </section>
               ) : (
@@ -543,8 +544,8 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                     <code className="font-mono">ezequiel</code> /{" "}
                     <code className="font-mono">tiago</code>. Os links ficam no endereço do sistema
                     (<code className="font-mono">*.beauty…</code>). O site{" "}
-                    <code className="font-mono">externabarbearia.com.br</code> foi só referência — não
-                    é domínio do app até configurar em Ajustes.
+                    <code className="font-mono">externabarbearia.com.br</code> foi só referência —
+                    não é domínio do app até configurar em Ajustes.
                   </p>
                   <button
                     type="button"
@@ -862,6 +863,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
               Altere a senha de acesso desta conta de administrador.
             </p>
             <ChangePasswordCard />
+            <LanguageSettingsCard />
           </section>
         )}
       </main>

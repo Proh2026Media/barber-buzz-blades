@@ -1,5 +1,6 @@
 import { PrivacyCenter } from "@/features/insights/PrivacyCenter";
 import { ChangePasswordCard } from "@/features/auth/ChangePasswordCard";
+import { LanguageSettingsCard } from "@/components/LanguageSettingsCard";
 import { useEffect, useState } from "react";
 import { LogOut, MessageCircle, User } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
@@ -221,6 +222,8 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
               {busy ? "Salvando…" : "Salvar WhatsApp"}
             </button>
           </form>
+
+          <LanguageSettingsCard />
 
           {!demo && <ChangePasswordCard />}
 

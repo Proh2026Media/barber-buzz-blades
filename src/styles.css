@@ -2742,6 +2742,8 @@ body:has(.arena-workspace[class*="brand-corners-"])
   background: var(--card);
 }
 .auth-theme-toggle {
+  display: flex;
+  gap: 0.5rem;
   position: absolute;
   top: max(0.85rem, env(safe-area-inset-top));
   right: max(0.85rem, env(safe-area-inset-right));
@@ -3170,7 +3172,7 @@ body:has(.arena-workspace[class*="brand-corners-"])
     top: 0;
     left: 0;
     width: 100%;
-    padding: max(1.25rem, env(safe-area-inset-top)) 1.25rem 3rem;
+    padding: max(1.25rem, env(safe-area-inset-top)) 7.25rem 3rem 1.25rem;
   }
   .auth-layout-split .auth-photo-copy-logo,
   .auth-layout-split .auth-photo-copy > p:last-child {
@@ -3532,6 +3534,10 @@ body:has(.arena-workspace[class*="brand-corners-"])
   justify-content: center;
 }
 .platform-landing-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
   margin-bottom: 2.5rem;
 }
 .platform-landing-brand,

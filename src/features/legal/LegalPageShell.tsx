@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ChevronLeft, Scissors } from "lucide-react";
 import type { ReactNode } from "react";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 type LegalPageShellProps = {
   title: string;
@@ -27,7 +28,7 @@ export function LegalPageShell({ title, updatedAt, children }: LegalPageShellPro
             </span>
             <span className="truncate">Barba &amp; Cabelo</span>
           </p>
-          <span className="w-11" aria-hidden="true" />
+          <LanguageSwitcher buttonClassName="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--control-radius)] border border-border/60 bg-muted/40 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" />
         </div>
       </header>
 
@@ -40,14 +41,26 @@ export function LegalPageShell({ title, updatedAt, children }: LegalPageShellPro
       </main>
 
       <footer className="border-t border-border/60 px-4 py-6 text-center text-xs text-muted-foreground sm:px-6">
-        <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2" aria-label="Documentos legais">
-          <Link to="/privacidade" className="min-h-11 inline-flex items-center font-semibold text-foreground underline-offset-2 hover:underline">
+        <nav
+          className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2"
+          aria-label="Documentos legais"
+        >
+          <Link
+            to="/privacidade"
+            className="min-h-11 inline-flex items-center font-semibold text-foreground underline-offset-2 hover:underline"
+          >
             Política de Privacidade
           </Link>
-          <Link to="/termos" className="min-h-11 inline-flex items-center font-semibold text-foreground underline-offset-2 hover:underline">
+          <Link
+            to="/termos"
+            className="min-h-11 inline-flex items-center font-semibold text-foreground underline-offset-2 hover:underline"
+          >
             Termos de Uso
           </Link>
-          <Link to="/" className="min-h-11 inline-flex items-center font-semibold text-foreground underline-offset-2 hover:underline">
+          <Link
+            to="/"
+            className="min-h-11 inline-flex items-center font-semibold text-foreground underline-offset-2 hover:underline"
+          >
             Início
           </Link>
         </nav>

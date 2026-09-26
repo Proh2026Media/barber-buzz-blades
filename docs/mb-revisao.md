@@ -46,7 +46,18 @@ Atualizado em **26/09/2026**. Fonte: [mb-interface.md](mb-interface.md). Regra: 
   - Aba Conta: `aria-current="page"` e faixa “Você está em Perfil”.
   - Editor WhatsApp: pílulas de 18px no texto, prévia formatada, troca de dado, restaurar com confirmação. **Corrigido:** menu da pílula abria fora da tela (âncora `fixed` dentro de cartão com transform); itens do menu com 44px e “(atual)” para leitor de tela; texto “alguns emojis contam como dois”.
   - Aviso do Google: cabe no celular; “Agora não” fecha sem iniciar o OAuth. **Corrigido:** o X de fechar das janelas (componente compartilhado) tinha 16px de largura — agora 44×44.
+- Auditoria automática no celular (painel da loja e app do cliente): nenhum texto em inglês nem botão sem nome. **Corrigido:** interruptores (componente compartilhado) com área de toque 44×44 sem mudar o visual; alternador Grade/Lista, motivos de bloqueio em Horários e filtros de Esportes com 44px.
 - **Não** executado: aparelho físico, teclado virtual real, leitor de tela real, conexão lenta; OAuth do Google até o fim (exige conta Google e altera dados reais).
+
+## Idiomas (fase 1 — 26/09/2026)
+
+- Idiomas: Português (Brasil, padrão), Português (Portugal), English (US), English (UK) e Español. Escolha salva no aparelho (`arena:locale`); pt-BR remove a chave.
+- Estrutura em `src/lib/i18n/`: dicionários em `messages/` (pt-BR é a fonte e define as chaves), `translate()` com `{variável}` e reserva em pt-BR, `useI18n()` para telas e `t()` para mensagens fora do React. O atributo `lang` da página acompanha a escolha (script no `__root.tsx`).
+- Onde trocar: seletor no topo das páginas públicas (início, login, cadastro da barbearia, termos, privacidade, política) e cartão **Idioma** nos ajustes (Conta do cliente, Ajustes da barbearia, painel da plataforma).
+- Traduzido: início, login completo (inclui recuperação e mensagens), cadastro da barbearia, botão de tema, mensagens amigáveis de erro de acesso e de integrações. Demais telas logadas continuam em pt-BR e o cartão avisa isso quando outro idioma está ativo.
+- Teste automático garante que todos os idiomas têm as mesmas chaves e as mesmas variáveis (99/99).
+- Verificado no navegador 390×844: troca pelo menu e pelo cartão, persistência entre páginas, leitura dos itens com 44px, volta ao pt-BR. Limitação conhecida: no primeiro carregamento aparece pt-BR por um instante antes de aplicar o idioma salvo (o servidor sempre entrega pt-BR).
+- Próximas fases: app do cliente, painel da barbearia, painel da plataforma, datas/valores com `intlLocale`, textos jurídicos.
 
 ## Documentação incorporada
 
