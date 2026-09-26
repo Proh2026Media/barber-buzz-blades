@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Briefcase, Link2, Trash2 } from "lucide-react";
 import {
   AlertDialog,
@@ -32,6 +32,7 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [removeTarget, setRemoveTarget] = useState<Assignment | null>(null);
+  const removeTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   const load = useCallback(async () => {
     const client = supabase as unknown as {
@@ -248,7 +249,10 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => setRemoveTarget(row)}
+                onClick={(event) => {
+                  removeTriggerRef.current = event.currentTarget;
+                  setRemoveTarget(row);
+                }}
                 className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl border border-border text-muted-foreground hover:text-destructive"
                 aria-label={`Remover ${row.label ?? "gerente"} de ${row.shop_name ?? "a barbearia"}`}
               >
@@ -276,7 +280,13 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
           if (!open && !busy) setRemoveTarget(null);
         }}
       >
-        <AlertDialogContent className="max-w-md rounded-[var(--panel-radius)]">
+        <AlertDialogContent
+          className="max-w-md rounded-[var(--panel-radius)]"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            if (removeTriggerRef.current?.isConnected) removeTriggerRef.current.focus();
+          }}
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>Remover este gerente da barbearia?</AlertDialogTitle>
             <AlertDialogDescription className="text-left text-sm leading-relaxed">

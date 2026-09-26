@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ClipboardList } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 import { questions } from "./model";
 
 const metadata = {
@@ -45,11 +46,12 @@ export function SurveyCatalog({ compact = false }: { compact?: boolean }) {
   const keys = Object.keys(questions) as (keyof typeof questions)[];
   const [selected, setSelected] = useState<keyof typeof questions>("discovery");
   const question = questions[selected];
+  const { t } = useI18n();
 
   if (compact) {
     return (
       <details className="rounded-xl border border-border bg-background/60 p-3 text-sm">
-        <summary className="cursor-pointer font-semibold">Ver as perguntas disponíveis</summary>
+        <summary className="cursor-pointer py-3 font-semibold">{t("surveys.seeAvailable")}</summary>
         <div className="mt-3 space-y-3">
           {keys.map((key) => (
             <div key={key} className="border-t border-border pt-3 first:border-0 first:pt-0">
@@ -57,10 +59,7 @@ export function SurveyCatalog({ compact = false }: { compact?: boolean }) {
               <p className="mt-1 text-xs text-muted-foreground">{questions[key].title}</p>
             </div>
           ))}
-          <p className="text-xs text-muted-foreground">
-            Ativar pesquisas não mostra todas de uma vez. O sistema escolhe somente uma pergunta
-            elegível e respeita pelo menos 30 dias entre exibições.
-          </p>
+          <p className="text-xs text-muted-foreground">{t("surveys.oneAtATime")}</p>
         </div>
       </details>
     );

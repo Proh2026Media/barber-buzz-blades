@@ -7,9 +7,11 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
+import { t as tNow, useI18n } from "@/lib/i18n";
 
 export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void }) {
   const demo = useDemo();
+  const { t } = useI18n();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -32,13 +34,13 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
           return;
         }
         const { data, error: authError } = await supabase.auth.getUser();
-        if (authError || !data.user) throw new Error("Não foi possível consultar sua conta.");
+        if (authError || !data.user) throw new Error(tNow("profile.errorLoadAccount"));
         const result = await supabase
           .from("profiles")
           .select("full_name, whatsapp_e164, whatsapp_opt_in_at")
           .eq("id", data.user.id)
           .single();
-        if (result.error) throw new Error("Não foi possível carregar seu perfil.");
+        if (result.error) throw new Error(tNow("profile.errorLoad"));
         if (!cancelled) {
           setUserId(data.user.id);
           setName(result.data.full_name ?? "");
@@ -47,7 +49,7 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
           setWhatsappOptIn(Boolean(result.data.whatsapp_opt_in_at));
         }
       } catch (err) {
-        if (!cancelled) setError(friendlyAuthError(err, "Não foi possível carregar seu perfil."));
+        if (!cancelled) setError(friendlyAuthError(err, tNow("profile.errorLoad")));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -62,7 +64,7 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
     event.preventDefault();
     const normalized = name.trim();
     if (!normalized || normalized.length > 100) {
-      setError("Informe um nome de até 100 caracteres.");
+      setError(t("profile.errorName"));
       return;
     }
     setBusy(true);
@@ -71,20 +73,20 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
     try {
       if (demo) demo.dispatch({ type: "profile.save", name: normalized });
       else {
-        if (!userId) throw new Error("Sua conta não foi carregada. Abra o perfil novamente.");
+        if (!userId) throw new Error(t("profile.errorNotLoaded"));
         const result = await supabase
           .from("profiles")
           .update({ full_name: normalized })
           .eq("id", userId)
           .select("id")
           .single();
-        if (result.error) throw new Error("Não foi possível salvar. Tente novamente.");
+        if (result.error) throw new Error(t("profile.errorSave"));
       }
       setName(normalized);
       onSaved?.(normalized);
-      setMessage("Perfil atualizado.");
+      setMessage(t("profile.saved"));
     } catch (err) {
-      setError(friendlyAuthError(err, "Não foi possível salvar. Tente novamente."));
+      setError(friendlyAuthError(err, t("profile.errorSave")));
     } finally {
       setBusy(false);
     }
@@ -93,7 +95,7 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
   async function saveWhatsApp(event: React.FormEvent) {
     event.preventDefault();
     if (demo) {
-      setMessage("Na demonstração o WhatsApp fica só nesta sessão.");
+      setMessage(t("profile.whatsappDemo"));
       return;
     }
     setBusy(true);
@@ -107,13 +109,9 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
       if (rpcError) throw rpcError;
       setWhatsapp(data?.whatsapp_e164 ?? whatsapp);
       setWhatsappOptIn(Boolean(data?.whatsapp_opt_in_at));
-      setMessage(
-        whatsappOptIn
-          ? "WhatsApp salvo. Você receberá avisos de horário neste número."
-          : "Preferência de WhatsApp atualizada.",
-      );
+      setMessage(whatsappOptIn ? t("profile.whatsappSavedOptIn") : t("profile.whatsappSaved"));
     } catch (err) {
-      setError(friendlyAuthError(err, "Não foi possível salvar o WhatsApp."));
+      setError(friendlyAuthError(err, t("profile.errorWhatsapp")));
     } finally {
       setBusy(false);
     }
@@ -128,7 +126,7 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
     setError(null);
     const { error: signOutError } = await supabase.auth.signOut();
     if (signOutError) {
-      setError("Não foi possível sair. Tente novamente.");
+      setError(t("profile.errorSignOut"));
       setBusy(false);
       return;
     }
@@ -137,21 +135,21 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
 
   return (
     <section className="space-y-5">
-      <h2 className="text-xl font-bold">Meu perfil</h2>
+      <h2 className="text-xl font-bold">{t("profile.title")}</h2>
       {loading ? (
-        <p role="status">Carregando perfil…</p>
+        <p role="status">{t("profile.loading")}</p>
       ) : (
         <>
           <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4">
-            <User className="size-8 text-gold" />
+            <User className="size-8 text-gold" aria-hidden="true" />
             <div>
-              <p className="text-xs font-semibold text-muted-foreground">Conta de acesso</p>
+              <p className="text-xs font-semibold text-muted-foreground">{t("profile.account")}</p>
               <p className="break-all text-xs text-muted-foreground">{email}</p>
             </div>
           </div>
           <form onSubmit={save} className="space-y-4 rounded-2xl border border-border bg-card p-4">
             <label className="block space-y-2 text-sm font-semibold">
-              <span>Nome completo</span>
+              <span>{t("profile.fullName")}</span>
               <input
                 required
                 maxLength={100}
@@ -169,7 +167,7 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
               disabled={busy || (!demo && !userId)}
               className="w-full rounded-xl bg-primary p-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
             >
-              {busy ? "Aguarde…" : "Salvar perfil"}
+              {busy ? t("common.wait") : t("profile.save")}
             </button>
           </form>
 
@@ -179,15 +177,14 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
             aria-label="WhatsApp"
           >
             <div className="flex items-center gap-2">
-              <MessageCircle className="size-4 text-gold" />
+              <MessageCircle className="size-4 text-gold" aria-hidden="true" />
               <h3 className="text-sm font-semibold">WhatsApp</h3>
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Usamos este número só para avisos de horário e códigos de acesso da barbearia, quando
-              você autorizar.
+              {t("profile.whatsappHint")}
             </p>
             <label className="block space-y-2 text-sm font-semibold">
-              <span>Número com DDD</span>
+              <span>{t("profile.whatsappNumber")}</span>
               <input
                 type="tel"
                 inputMode="tel"
@@ -204,14 +201,14 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
             </label>
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold">Receber avisos por WhatsApp</p>
-                <p className="text-xs text-muted-foreground">Confirmação, lembrete e remarcação.</p>
+                <p className="text-sm font-semibold">{t("profile.whatsappOptIn")}</p>
+                <p className="text-xs text-muted-foreground">{t("profile.whatsappOptInHint")}</p>
               </div>
               <Switch
                 checked={whatsappOptIn}
                 disabled={busy || (!demo && !userId)}
                 onCheckedChange={setWhatsappOptIn}
-                aria-label="Receber avisos por WhatsApp"
+                aria-label={t("profile.whatsappOptIn")}
               />
             </div>
             <button
@@ -219,7 +216,7 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
               disabled={busy || (!demo && !userId)}
               className="w-full rounded-xl bg-primary p-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
             >
-              {busy ? "Salvando…" : "Salvar WhatsApp"}
+              {busy ? t("common.saving") : t("profile.saveWhatsapp")}
             </button>
           </form>
 
@@ -232,10 +229,10 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
             type="button"
             disabled={busy}
             onClick={() => void signOut()}
-            className="flex items-center gap-2 rounded-xl border border-border p-3 text-sm"
+            className="flex min-h-11 items-center gap-2 rounded-xl border border-border p-3 text-sm"
           >
-            <LogOut className="size-4" />
-            {demo ? "Sair da demonstração" : "Sair da conta"}
+            <LogOut className="size-4" aria-hidden="true" />
+            {demo ? t("profile.exitDemo") : t("profile.signOut")}
           </button>
         </>
       )}

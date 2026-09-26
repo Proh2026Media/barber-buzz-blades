@@ -2,7 +2,15 @@ import { DataRights } from "@/features/insights/DataRights";
 import { SurveyCatalog } from "@/features/insights/SurveyCatalog";
 import { BusinessInsights } from "@/features/insights/BusinessInsights";
 import { useScrollIndicators } from "@/lib/use-scroll-indicators";
-import { useCallback, useEffect, useId, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { Link } from "@tanstack/react-router";
 import {
   Building2,
@@ -110,6 +118,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
   const [shopStatus, setShopStatus] = useState<"all" | "active" | "suspended">("all");
   const [statusTarget, setStatusTarget] = useState<Tables<"barbershops"> | null>(null);
   const [statusBusy, setStatusBusy] = useState(false);
+  const statusTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [platformTab, setPlatformTab] = useState<"overview" | "shops" | "insights" | "permissions">(
     "overview",
   );
@@ -709,7 +718,10 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                             </span>
                             <button
                               type="button"
-                              onClick={() => setStatusTarget(shop)}
+                              onClick={(event) => {
+                                statusTriggerRef.current = event.currentTarget;
+                                setStatusTarget(shop);
+                              }}
                               aria-label={
                                 shop.status === "active"
                                   ? `Suspender ${shop.name}`
@@ -938,7 +950,13 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
           if (!open && !statusBusy) setStatusTarget(null);
         }}
       >
-        <AlertDialogContent className="max-w-md rounded-[var(--panel-radius)]">
+        <AlertDialogContent
+          className="max-w-md rounded-[var(--panel-radius)]"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            statusTriggerRef.current?.focus();
+          }}
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>
               {statusTarget?.status === "active"

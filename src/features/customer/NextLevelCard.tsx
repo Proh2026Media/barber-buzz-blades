@@ -1,4 +1,5 @@
 import { Trophy } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 export type NextLevelSummary = {
   name: string;
@@ -19,19 +20,22 @@ export function NextLevelCard({
   nextLevel: NextLevelSummary | null;
   showMaxState?: boolean;
 }) {
+  const { t } = useI18n();
   if (!nextLevel && !showMaxState) return null;
 
   return (
-    <section className="app-action-card space-y-4 p-5" aria-label="Evolução de nível">
+    <section className="app-action-card space-y-4 p-5" aria-label={t("level.region")}>
       {nextLevel ? (
         <>
           <div className="flex items-end justify-between gap-4">
             <div className="min-w-0">
               <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 <Trophy className="size-3.5 shrink-0 text-gold" aria-hidden="true" />
-                Próximo nível: {nextLevel.name}
+                {t("level.next", { name: nextLevel.name })}
               </p>
-              <p className="mt-1 text-sm font-bold">Faltam {nextLevel.pointsRemaining} pontos</p>
+              <p className="mt-1 text-sm font-bold">
+                {t("level.remaining", { points: nextLevel.pointsRemaining })}
+              </p>
             </div>
             <p className="shrink-0 text-sm font-bold tabular-nums">
               {nextLevel.progress.toFixed(0)}%
@@ -40,7 +44,7 @@ export function NextLevelCard({
           <div
             className="h-2 w-full overflow-hidden rounded-full border border-border/50 bg-muted"
             role="progressbar"
-            aria-label={`Progresso para o nível ${nextLevel.name}`}
+            aria-label={t("level.progress", { name: nextLevel.name })}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={Math.round(nextLevel.progress)}
@@ -52,7 +56,7 @@ export function NextLevelCard({
           </div>
           <div className="pt-1">
             <p className="mb-1 text-xs font-semibold text-muted-foreground">
-              Privilégios do novo nível:
+              {t("level.benefits")}
             </p>
             <p className="text-xs font-medium leading-relaxed">{nextLevel.benefit}</p>
           </div>
@@ -63,9 +67,9 @@ export function NextLevelCard({
             <Trophy className="size-5" aria-hidden="true" />
           </span>
           <div>
-            <p className="text-sm font-bold">Nível máximo alcançado</p>
+            <p className="text-sm font-bold">{t("level.maxTitle")}</p>
             <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-              Você já chegou ao topo do programa de fidelidade.
+              {t("level.maxText")}
             </p>
           </div>
         </div>

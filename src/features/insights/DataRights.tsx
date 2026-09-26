@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Download, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
+import { friendlyAuthError } from "@/lib/auth/friendly-error";
+import { useI18n } from "@/lib/i18n";
 
 export type PrivacyRequest = {
   id: string;
@@ -13,6 +15,8 @@ export type PrivacyRequest = {
 
 export function DataRights({ admin = false }: { admin?: boolean }) {
   const demo = useDemo();
+  const { t } = useI18n();
+  const confirmWord = t("dataRights.confirmWord");
   const [rows, setRows] = useState<PrivacyRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -96,16 +100,16 @@ export function DataRights({ admin = false }: { admin?: boolean }) {
       anchor.click();
       anchor.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      setMessage("Arquivo preparado. Confira os downloads do navegador.");
+      setMessage(t("dataRights.downloaded"));
     } catch {
-      setError("Não foi possível concluir a operação. Tente novamente.");
+      setError(t("dataRights.errorGeneric"));
     } finally {
       setBusy(false);
     }
   }
 
   async function deleteAccountForever() {
-    if (busy || confirmText.trim().toUpperCase() !== "EXCLUIR") return;
+    if (busy || confirmText.trim().toUpperCase() !== confirmWord) return;
     setBusy(true);
     setError("");
     setMessage("");
@@ -114,7 +118,7 @@ export function DataRights({ admin = false }: { admin?: boolean }) {
         demo.dispatch({ type: "privacy.erase" });
         setConfirm(false);
         setConfirmText("");
-        setMessage("Na demonstração, dados opcionais foram limpos. Em produção a conta seria apagada.");
+        setMessage(t("dataRights.deleteDemo"));
         return;
       }
       const result = await supabase.rpc("delete_my_account");
@@ -122,11 +126,7 @@ export function DataRights({ admin = false }: { admin?: boolean }) {
       await supabase.auth.signOut();
       window.location.assign("/");
     } catch (err) {
-      const detail =
-        err && typeof err === "object" && "message" in err && typeof err.message === "string"
-          ? err.message
-          : "Não foi possível excluir a conta. Tente novamente.";
-      setError(detail);
+      setError(friendlyAuthError(err, t("dataRights.deleteError")));
     } finally {
       setBusy(false);
     }
@@ -158,68 +158,64 @@ export function DataRights({ admin = false }: { admin?: boolean }) {
 
   return (
     <section
-      aria-label={admin ? "Pedidos de privacidade" : "Acesso e exclusão dos meus dados"}
+      aria-label={admin ? "Pedidos de privacidade" : t("dataRights.region")}
       className="space-y-4 rounded-2xl border border-border bg-card p-4"
     >
       <h3 className="flex items-center gap-2 text-sm font-bold">
-        <ShieldCheck className="size-5 text-primary" />
-        {admin ? "Pedidos de privacidade" : "Seus dados, suas escolhas"}
+        <ShieldCheck className="size-5 text-primary" aria-hidden="true" />
+        {admin ? "Pedidos de privacidade" : t("dataRights.title")}
       </h3>
 
       {!admin && (
         <>
-          <p className="text-xs text-muted-foreground">
-            Baixe uma cópia dos dados da sua conta, reservas, pontos e escolhas de privacidade.
-          </p>
+          <p className="text-xs text-muted-foreground">{t("dataRights.downloadHint")}</p>
           <button
             type="button"
             disabled={busy}
             onClick={() => void downloadData()}
-            className="flex items-center gap-2 rounded-xl border border-primary/30 px-4 py-3 text-sm font-semibold text-primary disabled:opacity-50"
+            className="flex min-h-11 items-center gap-2 rounded-xl border border-primary/30 px-4 py-3 text-sm font-semibold text-primary disabled:opacity-50"
           >
-            <Download size={16} />
-            Baixar meus dados
+            <Download size={16} aria-hidden="true" />
+            {t("dataRights.download")}
           </button>
 
           <div className="space-y-2 border-t border-border/60 pt-4">
-            <p className="text-xs text-muted-foreground">
-              Excluir a conta remove nome, e-mail, WhatsApp e dados pessoais. A barbearia pode
-              manter horários e frequência já registrados de forma anônima (sem vínculo com você).
-              Ação irreversível — sem suporte.
-            </p>
+            <p className="text-xs text-muted-foreground">{t("dataRights.deleteHint")}</p>
             {!confirm ? (
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => setConfirm(true)}
-                className="text-xs font-semibold text-destructive underline"
+                className="min-h-11 text-xs font-semibold text-destructive underline"
               >
-                Excluir minha conta permanentemente
+                {t("dataRights.deleteStart")}
               </button>
             ) : (
               <div className="space-y-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-xs">
                 <p>
-                  Digite <span className="font-bold">EXCLUIR</span> para confirmar. Se você for dono
-                  ou sócio de uma loja, transfira a sociedade antes.
+                  {t("dataRights.confirmBefore")} <span className="font-bold">{confirmWord}</span>{" "}
+                  {t("dataRights.confirmAfter")}
                 </p>
                 <label className="block space-y-1">
-                  <span className="font-semibold text-foreground">Confirmação</span>
+                  <span className="font-semibold text-foreground">
+                    {t("dataRights.confirmLabel")}
+                  </span>
                   <input
                     value={confirmText}
                     onChange={(event) => setConfirmText(event.target.value)}
                     autoComplete="off"
-                    placeholder="EXCLUIR"
+                    placeholder={confirmWord}
                     className="flex min-h-11 w-full rounded-[var(--control-radius)] border border-border bg-background px-3 text-sm"
                   />
                 </label>
                 <div className="flex flex-wrap gap-4">
                   <button
                     type="button"
-                    disabled={busy || confirmText.trim().toUpperCase() !== "EXCLUIR"}
+                    disabled={busy || confirmText.trim().toUpperCase() !== confirmWord}
                     onClick={() => void deleteAccountForever()}
-                    className="font-bold text-destructive disabled:opacity-40"
+                    className="min-h-11 font-bold text-destructive disabled:opacity-40"
                   >
-                    Apagar conta agora
+                    {t("dataRights.deleteNow")}
                   </button>
                   <button
                     type="button"
@@ -228,8 +224,9 @@ export function DataRights({ admin = false }: { admin?: boolean }) {
                       setConfirm(false);
                       setConfirmText("");
                     }}
+                    className="min-h-11"
                   >
-                    Voltar
+                    {t("common.back")}
                   </button>
                 </div>
               </div>

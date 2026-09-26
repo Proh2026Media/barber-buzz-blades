@@ -5,10 +5,12 @@ import { ShieldCheck } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
+import { t as tNow, useI18n } from "@/lib/i18n";
 import { defaultPrivacy, questions, type PrivacyPreferences, type Survey } from "./model";
 
 export function PrivacyCenter() {
   const demo = useDemo();
+  const { t, intlLocale } = useI18n();
   const [preferences, setPreferences] = useState<PrivacyPreferences>(defaultPrivacy);
   const [responses, setResponses] = useState<Survey[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,7 +30,7 @@ export function PrivacyCenter() {
     setLoading(true);
     void supabase.rpc("get_my_privacy").then(({ data, error: failure }) => {
       if (cancelled) return;
-      if (failure) setError("Não foi possível carregar suas escolhas. Tente novamente.");
+      if (failure) setError(tNow("privacy.errorLoad"));
       else {
         const value = data as unknown as { preferences: PrivacyPreferences; responses: Survey[] };
         setPreferences(value.preferences);
@@ -64,63 +66,44 @@ export function PrivacyCenter() {
         setResponses([]);
         setConfirmErase(false);
       }
-      setMessage(
-        erase
-          ? "Respostas e registros opcionais excluídos. As opções foram desligadas."
-          : "Suas escolhas foram salvas.",
-      );
+      setMessage(erase ? t("privacy.erased") : t("privacy.saved"));
     } catch {
-      setError("Não foi possível salvar. Suas escolhas anteriores continuam valendo.");
+      setError(t("privacy.errorSave"));
     } finally {
       setBusy(false);
     }
   }
   return (
     <section
-      aria-label="Meus dados e privacidade"
+      aria-label={t("privacy.title")}
       className="space-y-4 rounded-2xl border border-primary/20 bg-card p-4"
     >
       <h3 className="flex items-center gap-2 font-bold">
-        <ShieldCheck className="size-5 text-primary" />
-        Meus dados e privacidade
+        <ShieldCheck className="size-5 text-primary" aria-hidden="true" />
+        {t("privacy.title")}
       </h3>
       <div className="space-y-2 text-xs leading-relaxed text-muted-foreground">
         <p>
-          <strong>1. Essenciais:</strong> conta, reservas e histórico de atendimento permitem
-          prestar o serviço.
+          <strong>{t("privacy.essentialLabel")}</strong> {t("privacy.essentialText")}
         </p>
         <p>
-          <strong>2. Uso opcional:</strong> com sua escolha, registramos tentativas de confirmar
-          reservas, sucessos e falhas para melhorar o app. Não registramos o que você digita.
+          <strong>{t("privacy.usageLabel")}</strong> {t("privacy.usageText")}
         </p>
         <p>
-          <strong>3. Pesquisas opcionais:</strong> uma pergunta por vez, no máximo a cada 30 dias.
-          Você pode pular.
+          <strong>{t("privacy.surveysLabel")}</strong> {t("privacy.surveysText")}
         </p>
       </div>
       {loading ? (
         <p role="status" className="text-sm">
-          Carregando escolhas…
+          {t("privacy.loading")}
         </p>
       ) : (
         <>
           {(
             [
-              [
-                "analytics",
-                "Ajudar a melhorar o app",
-                "Permitir registros opcionais de uso. Ao desligar e salvar, os registros detalhados anteriores são apagados.",
-              ],
-              [
-                "surveys",
-                "Participar de pesquisas",
-                "Receber perguntas discretas sobre preferências, sem interromper suas reservas.",
-              ],
-              [
-                "marketing",
-                "Receber ofertas",
-                "Permitir comunicações promocionais. Avisos de reservas são separados.",
-              ],
+              ["analytics", t("privacy.analytics"), t("privacy.analyticsHint")],
+              ["surveys", t("privacy.surveys"), t("privacy.surveysHint")],
+              ["marketing", t("privacy.marketing"), t("privacy.marketingHint")],
             ] as const
           ).map(([key, label, description]) => (
             <label
@@ -146,23 +129,20 @@ export function PrivacyCenter() {
             type="button"
             disabled={busy || !!error}
             onClick={() => void save()}
-            className="w-full rounded-xl bg-primary p-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+            className="min-h-11 w-full rounded-xl bg-primary p-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
           >
-            {busy ? "Salvando…" : "Salvar escolhas"}
+            {busy ? t("common.saving") : t("privacy.save")}
           </button>
           <SurveyCatalog compact />
           <section
-            aria-label="Minhas respostas"
+            aria-label={t("privacy.myAnswers")}
             className="rounded-xl border border-border bg-background/60 p-4 text-sm"
           >
-            <h4 className="font-semibold">Minhas respostas</h4>
+            <h4 className="font-semibold">{t("privacy.myAnswers")}</h4>
             {!responses.some((row) => row.state === "answered") && (
               <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                Você ainda não tem respostas salvas. Para receber perguntas opcionais, ative
-                “Participar de pesquisas” e toque em “Salvar escolhas”. Elas aparecem no Início
-                quando você estiver elegível, respeitando o intervalo mínimo de 30 dias.
-                {demo &&
-                  " No demo, as respostas ficam apenas nesta sessão e são reiniciadas ao entrar novamente."}
+                {t("privacy.noAnswers")}
+                {demo && t("privacy.demoAnswers")}
               </p>
             )}
             <div className="mt-3 space-y-3">
@@ -173,22 +153,23 @@ export function PrivacyCenter() {
                     <p>{questions[row.question]?.title}</p>
                     {row.source === "shop_staff" && (
                       <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-                        Informado por você à equipe
+                        {t("privacy.toldStaff")}
                       </p>
                     )}
                     {row.appointment_starts_at && (
                       <p className="text-xs text-muted-foreground">
-                        Atendimento de{" "}
-                        {new Date(row.appointment_starts_at).toLocaleString("pt-BR", {
-                          dateStyle: "short",
-                          timeStyle: "short",
+                        {t("privacy.appointmentOf", {
+                          date: new Date(row.appointment_starts_at).toLocaleString(intlLocale, {
+                            dateStyle: "short",
+                            timeStyle: "short",
+                          }),
                         })}
                       </p>
                     )}
                     <p className="text-xs text-muted-foreground">
                       {(questions[row.question]?.options as Record<string, string>)?.[
                         row.answer ?? ""
-                      ] ?? "Não informado"}
+                      ] ?? t("privacy.notInformed")}
                     </p>
                   </div>
                 ))}
@@ -199,26 +180,29 @@ export function PrivacyCenter() {
             type="button"
             onClick={() => setConfirmErase(true)}
             disabled={busy}
-            className="text-xs text-destructive underline"
+            className="min-h-11 text-xs text-destructive underline"
           >
-            Apagar respostas e dados opcionais
+            {t("privacy.erase")}
           </button>
           {confirmErase && (
             <div className="space-y-3 rounded-xl border border-destructive/30 p-3 text-xs">
-              <p>
-                Apagar respostas e registros opcionais? As reservas, sua conta e o histórico das
-                escolhas de privacidade serão preservados.
-              </p>
+              <p>{t("privacy.eraseConfirmText")}</p>
               <div className="flex gap-4">
                 <button
+                  type="button"
                   disabled={busy}
                   onClick={() => void save(true)}
-                  className="font-bold text-destructive"
+                  className="min-h-11 font-bold text-destructive"
                 >
-                  Confirmar exclusão
+                  {t("privacy.eraseConfirm")}
                 </button>
-                <button disabled={busy} onClick={() => setConfirmErase(false)}>
-                  Voltar
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => setConfirmErase(false)}
+                  className="min-h-11"
+                >
+                  {t("common.back")}
                 </button>
               </div>
             </div>
@@ -229,13 +213,14 @@ export function PrivacyCenter() {
         <div role="alert" className="text-xs text-destructive">
           {error}{" "}
           <button
+            type="button"
             onClick={() => {
               setError("");
               setVersion((v) => v + 1);
             }}
-            className="underline"
+            className="min-h-11 underline"
           >
-            Tentar novamente
+            {t("common.retry")}
           </button>
         </div>
       )}

@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
+import { useI18n } from "@/lib/i18n";
 import { DEMO_CUSTOMER_ID } from "@/features/demo/model";
 import { RhythmDashboard, type RhythmPayload } from "@/features/insights/RhythmDashboard";
 
 /** Ritmo do cliente: frequência de retorno, dia e horário que costuma ir. */
 export function CustomerRhythm({ shopId }: { shopId: string | null }) {
   const demo = useDemo();
+  const { t } = useI18n();
   const [rhythm, setRhythm] = useState<RhythmPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -81,16 +83,16 @@ export function CustomerRhythm({ shopId }: { shopId: string | null }) {
   if (loading) {
     return (
       <p role="status" className="text-sm text-muted-foreground">
-        Calculando seu ritmo…
+        {t("rhythm.loading")}
       </p>
     );
   }
   if (error) {
     return (
       <p role="alert" className="text-sm text-destructive">
-        Não foi possível calcular seu ritmo.
+        {t("rhythm.error")}
       </p>
     );
   }
-  return <RhythmDashboard rhythm={rhythm} title="Seu ritmo" />;
+  return <RhythmDashboard rhythm={rhythm} title={t("rhythm.title")} />;
 }

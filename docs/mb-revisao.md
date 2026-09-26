@@ -57,7 +57,8 @@ Atualizado em **26/09/2026**. Fonte: [mb-interface.md](mb-interface.md). Regra: 
 - Traduzido: início, login completo (inclui recuperação e mensagens), cadastro da barbearia, botão de tema, mensagens amigáveis de erro de acesso e de integrações. Demais telas logadas continuam em pt-BR e o cartão avisa isso quando outro idioma está ativo.
 - Teste automático garante que todos os idiomas têm as mesmas chaves e as mesmas variáveis (99/99).
 - Verificado no navegador 390×844: troca pelo menu e pelo cartão, persistência entre páginas, leitura dos itens com 44px, volta ao pt-BR. Limitação conhecida: no primeiro carregamento aparece pt-BR por um instante antes de aplicar o idioma salvo (o servidor sempre entrega pt-BR).
-- Próximas fases: app do cliente, painel da barbearia, painel da plataforma, datas/valores com `intlLocale`, textos jurídicos.
+- **Fase 2 (em andamento):** área Conta do cliente traduzida — navegação inferior e faixa “Você está em”, Perfil, troca de senha, pontos e níveis, Seu ritmo (dias da semana e valores pelo idioma), entrar em outra barbearia, Privacidade, direitos sobre os dados (palavra de confirmação por idioma: EXCLUIR/ELIMINAR/DELETE) e resumo das pesquisas. Conferido no navegador 390×844 em inglês e espanhol. Faltam: agendar, reservas, início, esportes, conteúdo das pesquisas e a parte administrativa de dados.
+- Próximas fases: resto do app do cliente, painel da barbearia, painel da plataforma, datas/valores com `intlLocale`, textos jurídicos.
 
 ## Painel da plataforma (26/09/2026)
 
@@ -68,7 +69,7 @@ Auditoria no celular (390×844) das abas Visão geral, Barbearias, Acessos e Rel
 - **Corrigido (linguagem):** “admin global”, “admins”, “dashboard” e fuso “America/Sao_Paulo” trocados por “administrador da plataforma”, “administradores”, “painel de números” e “Horário Padrão de Brasília”.
 - **Corrigido:** erros do banco apareciam crus (podiam vir em inglês). Agora passam pela mensagem amigável, que também reconhece falta de permissão e registro duplicado e troca texto em inglês desconhecido pela frase padrão (101/101 testes).
 - Verificado sem alterar dados reais: a confirmação de suspender foi aberta e fechada com “Voltar”; a barbearia continuou ativa.
-- Pendente: ao fechar essas confirmações o foco do teclado não volta ao botão que as abriu.
+- **Corrigido no código:** ao fechar as confirmações de suspender e de remover gerente, o foco do teclado volta ao botão que as abriu. Ainda não conferido no navegador (o painel real exige login de administrador).
 
 ## Documentação incorporada
 

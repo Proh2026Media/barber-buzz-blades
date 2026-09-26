@@ -1,5 +1,6 @@
 import { SurveyCard } from "@/features/insights/SurveyCard";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
+import { useI18n } from "@/lib/i18n";
 import { useWaiting } from "@/features/waiting/useWaiting";
 import { WaitingCards, WaitingNotices } from "@/features/waiting/WaitingUI";
 import { blocksSlot } from "@/features/waiting/model";
@@ -165,6 +166,7 @@ function ArenaApp({
 } = {}) {
   useScrollIndicators();
   const demo = useDemo();
+  const { t } = useI18n();
   const demoChrome = useDemoChrome();
   const [tab, setTab] = useState(initialTab ?? "dashboard");
   const [focusToken] = useState(focusReservationToken);
@@ -1417,11 +1419,13 @@ function ArenaApp({
   };
 
   const navItems: NavItemProps[] = [
-    { id: "dashboard", icon: Compass, label: "Início" },
-    { id: "agenda", icon: Calendar, label: "Agendar" },
-    { id: "reservas", icon: Clock3, label: "Reservas" },
-    ...(shopSettings.sports_enabled ? [{ id: "esportes", icon: Feather, label: "Esportes" }] : []),
-    { id: "perfil", icon: User, label: "Conta" },
+    { id: "dashboard", icon: Compass, label: t("nav.home") },
+    { id: "agenda", icon: Calendar, label: t("nav.book") },
+    { id: "reservas", icon: Clock3, label: t("nav.bookings") },
+    ...(shopSettings.sports_enabled
+      ? [{ id: "esportes" as const, icon: Feather, label: t("nav.sports") }]
+      : []),
+    { id: "perfil", icon: User, label: t("nav.account") },
   ];
   const activeNavIndex = navItems.findIndex((item) => {
     if (item.id === "perfil") {
@@ -1431,11 +1435,11 @@ function ArenaApp({
   });
   const accountWhere =
     tab === "perfil"
-      ? "Perfil"
+      ? t("nav.profile")
       : tab === "pontos"
-        ? "Pontos"
+        ? t("nav.points")
         : tab === "notifications"
-          ? "Avisos"
+          ? t("nav.notices")
           : null;
 
   return (
@@ -1613,8 +1617,10 @@ function ArenaApp({
             onClick={() => setTab("notifications")}
             aria-label={
               unreadNotifications > 0
-                ? `Avisos, ${unreadNotifications} não ${unreadNotifications === 1 ? "lido" : "lidos"}`
-                : "Avisos"
+                ? t(unreadNotifications === 1 ? "nav.noticesUnreadOne" : "nav.noticesUnreadMany", {
+                    count: unreadNotifications,
+                  })
+                : t("nav.notices")
             }
             aria-current={tab === "notifications" ? "page" : undefined}
             className={`app-icon-button relative ${tab === "notifications" ? "app-nav-current" : ""}`}
@@ -1638,7 +1644,7 @@ function ArenaApp({
           ) : (
             <button
               type="button"
-              aria-label="Minha conta"
+              aria-label={t("nav.myAccount")}
               aria-current={tab === "perfil" || tab === "pontos" ? "page" : undefined}
               onClick={() => setTab("perfil")}
               className={`app-icon-button ${tab === "perfil" || tab === "pontos" ? "app-nav-current" : ""}`}
@@ -1653,14 +1659,14 @@ function ArenaApp({
       <main className="p-4 max-w-xl mx-auto">
         {accountWhere ? (
           <p className="mb-3 text-xs font-semibold text-muted-foreground" role="status">
-            Você está em <span className="text-foreground">{accountWhere}</span>
+            {t("nav.youAreIn")} <span className="text-foreground">{accountWhere}</span>
             {" · "}
             <button
               type="button"
-              className="font-semibold text-primary underline-offset-2 hover:underline"
+              className="-my-3 inline-flex min-h-11 items-center font-semibold text-primary underline-offset-2 hover:underline"
               onClick={() => setTab("dashboard")}
             >
-              Voltar ao início
+              {t("nav.backHome")}
             </button>
           </p>
         ) : null}
@@ -2806,7 +2812,7 @@ function ArenaApp({
       <nav
         className="app-mobile-nav app-mobile-nav-floating fixed left-4 right-4 z-40 mx-auto grid max-w-3xl overflow-hidden"
         style={{ gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))` }}
-        aria-label="Navegação principal"
+        aria-label={t("nav.main")}
       >
         <span
           aria-hidden

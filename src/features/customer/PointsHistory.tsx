@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { useDemo } from "@/features/demo/context";
 import { DEMO_CUSTOMER_ID } from "@/features/demo/model";
+import { useI18n } from "@/lib/i18n";
 import { NextLevelCard, type NextLevelSummary } from "./NextLevelCard";
 
 export function PointsHistory({
@@ -21,6 +22,7 @@ export function PointsHistory({
   nextLevel: NextLevelSummary | null;
 }) {
   const demo = useDemo();
+  const { t, intlLocale } = useI18n();
   const [rows, setRows] = useState<Tables<"loyalty_ledger">[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -91,11 +93,9 @@ export function PointsHistory({
           </span>
           <div>
             <h2 id="points-history-title" className="text-2xl font-extrabold tracking-tight">
-              Extrato de pontos
+              {t("points.title")}
             </h2>
-            <p className="text-xs text-muted-foreground">
-              Acompanhe seu saldo, sua evolução e cada movimentação.
-            </p>
+            <p className="text-xs text-muted-foreground">{t("points.subtitle")}</p>
           </div>
         </div>
       </header>
@@ -105,14 +105,14 @@ export function PointsHistory({
         <div className="relative flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
-              Saldo disponível
+              {t("points.balance")}
             </p>
             <p className="mt-1 text-4xl font-black tabular-nums tracking-tight sm:text-5xl">
-              {points} <span className="text-sm font-bold tracking-normal">pontos</span>
+              {points} <span className="text-sm font-bold tracking-normal">{t("points.unit")}</span>
             </p>
             <span className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-gold/25 bg-gold/10 px-3 py-1.5 text-xs font-bold text-gold">
               <Trophy className="size-3.5" aria-hidden="true" />
-              Nível {currentLevel}
+              {t("points.level", { level: currentLevel })}
             </span>
           </div>
           <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-gold/25 bg-gold/10 text-gold shadow-sm">
@@ -125,13 +125,13 @@ export function PointsHistory({
 
       {error ? (
         <div role="alert" className="app-action-card space-y-3 p-4">
-          <p className="text-sm font-semibold">Não foi possível carregar o extrato.</p>
+          <p className="text-sm font-semibold">{t("points.error")}</p>
           <button
             type="button"
             onClick={() => setVersion((v) => v + 1)}
             className="min-h-11 rounded-xl border border-border px-4 text-sm font-bold hover:bg-muted"
           >
-            Tentar novamente
+            {t("common.retry")}
           </button>
         </div>
       ) : (
@@ -139,8 +139,8 @@ export function PointsHistory({
           {!loading && rows.length === 0 && (
             <EmptyState
               tone="waiting"
-              title="Nenhuma movimentação registrada"
-              description="Quando você concluir atendimentos, os pontos entram neste extrato."
+              title={t("points.emptyTitle")}
+              description={t("points.emptyText")}
             />
           )}
           {(loading || rows.length > 0) && (
@@ -148,13 +148,15 @@ export function PointsHistory({
               <div className="flex items-end justify-between gap-3">
                 <div>
                   <h3 id="points-movements-title" className="text-base font-extrabold">
-                    Movimentações
+                    {t("points.movements")}
                   </h3>
-                  <p className="text-xs text-muted-foreground">Mais recentes primeiro</p>
+                  <p className="text-xs text-muted-foreground">{t("points.newestFirst")}</p>
                 </div>
                 {!loading && (
                   <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-bold text-muted-foreground">
-                    {visibleRows.length} {visibleRows.length === 1 ? "registro" : "registros"}
+                    {t(visibleRows.length === 1 ? "points.recordOne" : "points.recordMany", {
+                      count: visibleRows.length,
+                    })}
                   </span>
                 )}
               </div>
@@ -179,13 +181,13 @@ export function PointsHistory({
                       <div className="min-w-0">
                         <p className="truncate text-sm font-bold">
                           {row.reason === "appointment_completed"
-                            ? "Atendimento concluído"
+                            ? t("points.reason.completed")
                             : row.reason === "demo_opening"
-                              ? "Saldo inicial da demonstração"
-                              : "Ajuste de pontos"}
+                              ? t("points.reason.demo")
+                              : t("points.reason.adjust")}
                         </p>
                         <p className="mt-0.5 text-xs text-muted-foreground">
-                          {new Date(row.created_at).toLocaleString("pt-BR", {
+                          {new Date(row.created_at).toLocaleString(intlLocale, {
                             dateStyle: "medium",
                             timeStyle: "short",
                           })}
@@ -199,7 +201,7 @@ export function PointsHistory({
                         {row.delta > 0 ? "+" : ""}
                         {row.delta}
                         <span className="ml-1 block text-[10px] font-bold uppercase tracking-wider text-muted-foreground sm:inline">
-                          pts
+                          {t("points.short")}
                         </span>
                       </span>
                     </article>
@@ -210,7 +212,7 @@ export function PointsHistory({
           )}
           {loading && (
             <p role="status" className="app-action-card p-4 text-sm text-muted-foreground">
-              Carregando extrato…
+              {t("points.loading")}
             </p>
           )}
           {rows.length > limit && (
@@ -220,7 +222,7 @@ export function PointsHistory({
               onClick={() => setLimit((n) => n + 20)}
               className="min-h-12 w-full rounded-xl border border-border bg-card px-4 text-sm font-bold hover:bg-muted disabled:opacity-60"
             >
-              Carregar mais
+              {t("common.loadMore")}
             </button>
           )}
         </>

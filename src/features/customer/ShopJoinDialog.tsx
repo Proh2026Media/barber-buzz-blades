@@ -8,6 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useI18n } from "@/lib/i18n";
 
 type ShopJoinDialogProps = {
   open: boolean;
@@ -25,6 +26,7 @@ export function ShopJoinDialog({
   onConfirm,
   onDismiss,
 }: ShopJoinDialogProps) {
+  const { t } = useI18n();
   return (
     <AlertDialog
       open={open}
@@ -34,16 +36,15 @@ export function ShopJoinDialog({
     >
       <AlertDialogContent className="max-w-md rounded-[var(--panel-radius)]">
         <AlertDialogHeader>
-          <AlertDialogTitle>Usar esta barbearia?</AlertDialogTitle>
+          <AlertDialogTitle>{t("join.title")}</AlertDialogTitle>
           <AlertDialogDescription className="text-left text-sm leading-relaxed">
-            Você abriu o link de <span className="font-semibold text-foreground">{shopName}</span>.
-            Confirmar vincula sua conta a esta barbearia. Pontos e reservas ficam separados por
-            estabelecimento.
+            {t("join.textBefore")} <span className="font-semibold text-foreground">{shopName}</span>
+            . {t("join.textAfter")}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="gap-2 sm:gap-2">
           <AlertDialogCancel disabled={busy} onClick={onDismiss}>
-            Agora não
+            {t("join.notNow")}
           </AlertDialogCancel>
           <AlertDialogAction
             disabled={busy}
@@ -52,7 +53,7 @@ export function ShopJoinDialog({
               onConfirm();
             }}
           >
-            {busy ? "Confirmando…" : "Confirmar barbearia"}
+            {busy ? t("join.confirming") : t("join.confirm")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

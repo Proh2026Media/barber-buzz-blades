@@ -2,12 +2,14 @@ import { useState } from "react";
 import { KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
+import { useI18n } from "@/lib/i18n";
 
 type ChangePasswordCardProps = {
   className?: string;
 };
 
 export function ChangePasswordCard({ className }: ChangePasswordCardProps) {
+  const { t } = useI18n();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -19,11 +21,11 @@ export function ChangePasswordCard({ className }: ChangePasswordCardProps) {
     setError(null);
     setMessage("");
     if (newPassword.length < 6) {
-      setError("A senha precisa ter pelo menos 6 caracteres.");
+      setError(t("errors.passwordShort"));
       return;
     }
     if (newPassword !== confirmPassword) {
-      setError("As senhas não coincidem.");
+      setError(t("auth.error.passwordMismatch"));
       return;
     }
     setBusy(true);
@@ -32,9 +34,9 @@ export function ChangePasswordCard({ className }: ChangePasswordCardProps) {
       if (updateError) throw updateError;
       setNewPassword("");
       setConfirmPassword("");
-      setMessage("Senha atualizada.");
+      setMessage(t("password.saved"));
     } catch (err) {
-      setError(friendlyAuthError(err, "Não foi possível atualizar a senha."));
+      setError(friendlyAuthError(err, t("password.error")));
     } finally {
       setBusy(false);
     }
@@ -44,17 +46,15 @@ export function ChangePasswordCard({ className }: ChangePasswordCardProps) {
     <form
       onSubmit={(event) => void changePassword(event)}
       className={`space-y-4 rounded-2xl border border-border bg-card p-4 ${className ?? ""}`}
-      aria-label="Redefinir senha"
+      aria-label={t("password.title")}
     >
       <div className="flex items-center gap-2">
-        <KeyRound className="size-4 text-gold" />
-        <h3 className="text-sm font-semibold">Redefinir senha</h3>
+        <KeyRound className="size-4 text-gold" aria-hidden="true" />
+        <h3 className="text-sm font-semibold">{t("password.title")}</h3>
       </div>
-      <p className="text-xs leading-relaxed text-muted-foreground">
-        Defina uma nova senha para esta conta. Mínimo de 6 caracteres.
-      </p>
+      <p className="text-xs leading-relaxed text-muted-foreground">{t("password.hint")}</p>
       <label className="block space-y-2 text-sm font-semibold">
-        <span>Nova senha</span>
+        <span>{t("password.new")}</span>
         <input
           type="password"
           required
@@ -71,7 +71,7 @@ export function ChangePasswordCard({ className }: ChangePasswordCardProps) {
         />
       </label>
       <label className="block space-y-2 text-sm font-semibold">
-        <span>Confirmar nova senha</span>
+        <span>{t("password.confirm")}</span>
         <input
           type="password"
           required
@@ -102,8 +102,8 @@ export function ChangePasswordCard({ className }: ChangePasswordCardProps) {
         disabled={busy}
         className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
       >
-        <KeyRound className="size-4" />
-        {busy ? "Salvando…" : "Salvar nova senha"}
+        <KeyRound className="size-4" aria-hidden="true" />
+        {busy ? t("common.saving") : t("password.save")}
       </button>
     </form>
   );

@@ -1,11 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link2, MessageCircle, QrCode, RefreshCw, Unplug } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 
 type PlatformWaStatus = "disconnected" | "qr" | "connecting" | "open";
@@ -148,8 +143,7 @@ export function PlatformWhatsAppCard() {
         <div className="min-w-0 flex-1">
           <h3 className="text-sm font-bold">WhatsApp da plataforma</h3>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-            Número que envia o código no cadastro (
-            <code className="font-mono">/cadastrar</code>
+            Número que envia o código no cadastro (<code className="font-mono">/cadastrar</code>
             ). Instância Evolution no Coolify
             {instanceName ? (
               <>
@@ -221,9 +215,7 @@ export function PlatformWhatsAppCard() {
           {message}
         </p>
       )}
-      {lastError && (
-        <p className="text-xs text-muted-foreground">Último erro: {lastError}</p>
-      )}
+      {lastError && <p className="text-xs text-muted-foreground">Último erro: {lastError}</p>}
 
       <Dialog open={qrOpen} onOpenChange={setQrOpen}>
         <DialogContent className="max-w-sm rounded-3xl border-border bg-card p-5">
@@ -239,7 +231,9 @@ export function PlatformWhatsAppCard() {
               className="mx-auto mt-2 size-56 rounded-2xl"
             />
           ) : (
-            <p className="text-sm text-muted-foreground">QR indisponível. Toque em Conectar novamente.</p>
+            <p className="text-sm text-muted-foreground">
+              QR indisponível. Toque em Conectar novamente.
+            </p>
           )}
           <button
             type="button"
