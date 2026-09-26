@@ -9,6 +9,7 @@ import { DemoContext } from "./context";
 import { DemoChromeContext, type DemoRole } from "./chrome";
 import { createDemoState, demoReducer, type DemoShopPreset } from "./model";
 import { DemoRoleSelector, DemoAccountMenu } from "./DemoAccountMenu";
+import { t as tNow, useI18n } from "@/lib/i18n";
 
 export function DemoWorkspace({
   profile,
@@ -19,6 +20,7 @@ export function DemoWorkspace({
   shopId?: string;
   initialRole?: DemoRole;
 }) {
+  const { t } = useI18n();
   const [preset, setPreset] = useState<DemoShopPreset | null>(null);
   const [loading, setLoading] = useState(Boolean(shopId));
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +40,7 @@ export function DemoWorkspace({
       const problem =
         shop.error ?? settings.error ?? services.error ?? staff.error ?? businessHours.error;
       if (problem || !shop.data || !settings.data) {
-        setError("Não foi possível preparar esta barbearia para a demonstração.");
+        setError(tNow("demo.ws.prepareError"));
       } else {
         setPreset({
           shop: shop.data,
@@ -59,7 +61,7 @@ export function DemoWorkspace({
     return (
       <main className="flex min-h-screen items-center justify-center bg-background p-6 text-foreground">
         <p role="status" className="text-sm font-semibold text-muted-foreground">
-          Preparando demonstração da barbearia…
+          {t("demo.ws.preparing")}
         </p>
       </main>
     );
@@ -75,7 +77,7 @@ export function DemoWorkspace({
             to="/platform"
             className="flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
           >
-            Voltar e escolher outra
+            {t("demo.ws.backChooseAnother")}
           </Link>
         </div>
       </main>
@@ -99,6 +101,7 @@ function ConfiguredDemoWorkspace({
   preset?: DemoShopPreset;
   initialRole?: DemoRole;
 }) {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [role, setRole] = useState<DemoRole>(initialRole);
   const [openProfileRequest, setOpenProfileRequest] = useState(false);
@@ -209,9 +212,9 @@ function ConfiguredDemoWorkspace({
           da superfície do app (parecia cortada embaixo). */}
       <div className="demo-layout bg-background text-foreground">
         <div className="border-b border-primary/20 bg-primary/10 px-4 py-2 text-center text-xs font-semibold text-foreground">
-          Ambiente de teste visual · dados fictícios ·{" "}
+          {t("demo.ws.banner")}{" "}
           <button type="button" onClick={exit} className="underline underline-offset-2">
-            sair
+            {t("demo.ws.exit")}
           </button>
         </div>
         <div className="demo-content">{content}</div>

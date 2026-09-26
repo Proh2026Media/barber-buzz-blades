@@ -3,6 +3,7 @@ import { ClipboardPen, Save, X } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useDemo } from "@/features/demo/context";
 import { supabase } from "@/integrations/supabase/client";
+import { t as tNow, useI18n } from "@/lib/i18n";
 import { parseDelay, validateOccurrence, type Occurrence } from "./occurrences";
 
 export function AttendanceControls({
@@ -21,6 +22,7 @@ export function AttendanceControls({
   onChanged: () => void;
 }) {
   const demo = useDemo();
+  const { t } = useI18n();
   const [facts, setFacts] = useState<Occurrence>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -45,7 +47,7 @@ export function AttendanceControls({
     setLoaded(false);
     void supabase.rpc("get_appointment_attendance", { p_id: id }).then(({ data, error }) => {
       if (cancelled) return;
-      setError(error ? "Não foi possível consultar as ocorrências." : "");
+      setError(error ? tNow("ins.att.loadError") : "");
       if (!error) {
         setFacts((data ?? {}) as Occurrence);
         setLoaded(true);
@@ -87,15 +89,14 @@ export function AttendanceControls({
           p_shop_delay: s,
           p_no_show: noShow,
         });
-        if (result.error)
-          throw new Error("Não foi possível salvar. Atualize a agenda e tente novamente.");
+        if (result.error) throw new Error(t("ins.att.saveError"));
       }
       setOpen(false);
       setConfirmNoShow(false);
       setVersion((v) => v + 1);
       onChanged();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Não foi possível salvar.");
+      setError(e instanceof Error ? e.message : t("ins.att.saveErrorShort"));
     } finally {
       setBusy(false);
     }
@@ -107,22 +108,22 @@ export function AttendanceControls({
         {facts.no_show_at ||
         facts.customer_delay_minutes != null ||
         facts.shop_delay_minutes != null
-          ? "Ocorrência registrada"
-          : "Ocorrências · opcional"}
+          ? t("ins.att.recorded")
+          : t("ins.att.optional")}
       </summary>
       {facts.no_show_at ? (
-        <p className="py-2 text-destructive">Não compareceu</p>
+        <p className="py-2 text-destructive">{t("ins.att.noShow")}</p>
       ) : (
         <>
           {facts.customer_delay_minutes != null && (
-            <p>Cliente: {facts.customer_delay_minutes} min de atraso</p>
+            <p>{t("ins.att.customerDelay", { minutes: facts.customer_delay_minutes })}</p>
           )}
           {facts.shop_delay_minutes != null && (
-            <p>Barbearia: {facts.shop_delay_minutes} min de atraso</p>
+            <p>{t("ins.att.shopDelay", { minutes: facts.shop_delay_minutes })}</p>
           )}
           {error && !open && (
             <p role="alert">
-              {error} <button onClick={() => setVersion((v) => v + 1)}>Tentar novamente</button>
+              {error} <button onClick={() => setVersion((v) => v + 1)}>{t("common.retry")}</button>
             </p>
           )}
           <button
@@ -138,8 +139,8 @@ export function AttendanceControls({
           >
             <ClipboardPen className="size-4" />
             {facts.customer_delay_minutes != null || facts.shop_delay_minutes != null
-              ? "Editar ocorrência"
-              : "Registrar ocorrência"}
+              ? t("ins.att.edit")
+              : t("ins.att.record")}
           </button>
         </>
       )}
@@ -150,10 +151,8 @@ export function AttendanceControls({
         }}
       >
         <DialogContent className="max-h-[85dvh] overflow-y-auto bg-card">
-          <DialogTitle>Ocorrência do atendimento</DialogTitle>
-          <DialogDescription>
-            Opcional. Deixe vazio para não informar ou remover um atraso.
-          </DialogDescription>
+          <DialogTitle>{t("ins.att.dialogTitle")}</DialogTitle>
+          <DialogDescription>{t("ins.att.dialogHint")}</DialogDescription>
           <form
             className="space-y-4"
             onSubmit={(event) => {
@@ -162,7 +161,7 @@ export function AttendanceControls({
             }}
           >
             <label className="block space-y-2 text-sm">
-              Atraso do cliente (min)
+              {t("ins.att.customerDelayLabel")}
               <input
                 disabled={busy}
                 type="number"
@@ -177,11 +176,11 @@ export function AttendanceControls({
                 className="w-full rounded-lg border p-3"
               />
               <span className="block text-xs text-muted-foreground">
-                Chegada após o horário marcado.
+                {t("ins.att.customerDelayHint")}
               </span>
             </label>
             <label className="block space-y-2 text-sm">
-              Atraso da barbearia (min)
+              {t("ins.att.shopDelayLabel")}
               <input
                 disabled={busy}
                 type="number"
@@ -196,8 +195,7 @@ export function AttendanceControls({
                 className="w-full rounded-lg border p-3"
               />
               <span className="block text-xs text-muted-foreground">
-                Do horário marcado ou da chegada, o que acontecer depois, até o início. Não inclua o
-                atraso do cliente.
+                {t("ins.att.shopDelayHint")}
               </span>
             </label>
             {error && (
@@ -207,7 +205,7 @@ export function AttendanceControls({
             )}
             <button disabled={busy} className="action-button action-confirm w-full">
               <Save className="size-4" />
-              {busy ? "Salvando…" : "Salvar ocorrência"}
+              {busy ? t("common.saving") : t("ins.att.save")}
             </button>
           </form>
           {noShowAllowed &&
@@ -215,23 +213,21 @@ export function AttendanceControls({
             !shop.trim() &&
             (confirmNoShow ? (
               <div className="space-y-3">
-                <p className="text-sm">
-                  Registrar falta encerra esta reserva sem pontos. Confirmar?
-                </p>
+                <p className="text-sm">{t("ins.att.noShowConfirmText")}</p>
                 <button
                   disabled={busy}
                   className="action-button action-danger"
                   onClick={() => void save(true)}
                 >
                   <X className="size-4" />
-                  Confirmar falta
+                  {t("ins.att.noShowConfirm")}
                 </button>
                 <button
                   disabled={busy}
                   className="action-button ml-2"
                   onClick={() => setConfirmNoShow(false)}
                 >
-                  Voltar
+                  {t("common.back")}
                 </button>
               </div>
             ) : (
@@ -241,7 +237,7 @@ export function AttendanceControls({
                 onClick={() => setConfirmNoShow(true)}
               >
                 <X className="size-4" />
-                Não compareceu
+                {t("ins.att.noShow")}
               </button>
             ))}
         </DialogContent>

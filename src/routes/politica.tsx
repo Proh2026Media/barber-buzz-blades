@@ -18,6 +18,9 @@ import {
 import { useTheme } from "@/lib/use-theme";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LegalCourtesyNotice } from "@/features/legal/LegalPageShell";
+import { legalRichText } from "@/features/legal/rich-text";
+import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/politica")({
   component: PoliticaSistemas,
@@ -25,6 +28,7 @@ export const Route = createFileRoute("/politica")({
 
 function PoliticaSistemas() {
   const { isDark: isDarkMode } = useTheme();
+  const { t } = useI18n();
   return (
     <div className="min-h-screen bg-background text-foreground font-sans pb-10">
       <svg width="0" height="0" className="absolute pointer-events-none">
@@ -46,11 +50,12 @@ function PoliticaSistemas() {
         <Link
           to="/"
           className="p-2.5 rounded-2xl bg-muted/30 text-muted-foreground hover:text-foreground transition-all border border-border/50"
+          aria-label={t("legal.back")}
         >
           <ChevronLeft size={20} />
         </Link>
         <h1 className="text-sm font-black uppercase tracking-widest text-foreground">
-          A Escala do Clube
+          {t("legal.club.header")}
         </h1>
         <div className="flex items-center gap-2">
           <LanguageSwitcher />
@@ -59,14 +64,17 @@ function PoliticaSistemas() {
       </header>
 
       <main className="p-6 max-w-xl mx-auto space-y-10">
+        <LegalCourtesyNotice />
         {/* Intro */}
         <section className="text-center space-y-2">
           <div className="h-16 w-16 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto text-primary border border-primary/20 mb-4 shadow-xl">
             <Crown size={32} />
           </div>
-          <h2 className="text-2xl font-black uppercase tracking-tighter">O Padrão de Excelência</h2>
+          <h2 className="text-2xl font-black uppercase tracking-tighter">
+            {t("legal.club.heroTitle")}
+          </h2>
           <p className="text-muted-foreground text-sm font-medium leading-relaxed italic">
-            Conheça os níveis de exclusividade e como sua fidelidade é recompensada em cada passo.
+            {t("legal.club.heroBody")}
           </p>
         </section>
 
@@ -75,7 +83,7 @@ function PoliticaSistemas() {
           <div className="flex items-center gap-2">
             <div className="h-1 w-8 bg-primary rounded-full"></div>
             <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary">
-              1. Níveis de Status
+              {t("legal.club.s1Title")}
             </h3>
           </div>
 
@@ -89,24 +97,24 @@ function PoliticaSistemas() {
                 </div>
                 <div>
                   <h3 className="font-black uppercase tracking-widest text-sm text-gradient-silver">
-                    Nível Classic
+                    {t("legal.club.level", { name: "Classic" })}
                   </h3>
                   <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
-                    0 - 99 Pontos
+                    {t("legal.club.pointsRange", { min: 0, max: 99 })}
                   </p>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed mb-4">
-                O alicerce da Arena: Tradição e manutenção impecável do seu estilo (Prata Metálico).
+                {t("legal.club.classicBody")}
               </p>
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-[10px] font-black text-foreground/80">
-                  <CheckCircle size={10} className="text-gradient-silver" /> Manutenção do visual
-                  com excelência
+                  <CheckCircle size={10} className="text-gradient-silver" />{" "}
+                  {t("legal.club.classicPerk1")}
                 </div>
                 <div className="flex items-center gap-2 text-[10px] font-black text-foreground/80">
-                  <CheckCircle size={10} className="text-gradient-silver" /> Agendamento
-                  simplificado via App
+                  <CheckCircle size={10} className="text-gradient-silver" />{" "}
+                  {t("legal.club.classicPerk2")}
                 </div>
               </div>
             </div>
@@ -120,25 +128,24 @@ function PoliticaSistemas() {
                 </div>
                 <div>
                   <h3 className="font-black uppercase tracking-widest text-sm text-gradient-bronze">
-                    Nível Select
+                    {t("legal.club.level", { name: "Select" })}
                   </h3>
                   <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
-                    100 - 299 Pontos
+                    {t("legal.club.pointsRange", { min: 100, max: 299 })}
                   </p>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed mb-4">
-                Conveniência e agilidade: Prioridade na agenda e lugar cativo na Arena (Bronze
-                Metálico).
+                {t("legal.club.selectBody")}
               </p>
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-[10px] font-black text-foreground/80">
-                  <CheckCircle size={10} className="text-gradient-bronze" /> Flexibilidade extra em
-                  horários
+                  <CheckCircle size={10} className="text-gradient-bronze" />{" "}
+                  {t("legal.club.selectPerk1")}
                 </div>
                 <div className="flex items-center gap-2 text-[10px] font-black text-foreground/80">
-                  <CheckCircle size={10} className="text-gradient-bronze" /> Atendimento prioritário
-                  no Lounge
+                  <CheckCircle size={10} className="text-gradient-bronze" />{" "}
+                  {t("legal.club.selectPerk2")}
                 </div>
               </div>
             </div>
@@ -152,25 +159,24 @@ function PoliticaSistemas() {
                 </div>
                 <div>
                   <h3 className="font-black uppercase tracking-widest text-sm text-gradient-gold">
-                    Nível Privilege
+                    {t("legal.club.level", { name: "Privilege" })}
                   </h3>
                   <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
-                    300 - 499 Pontos
+                    {t("legal.club.pointsRange", { min: 300, max: 499 })}
                   </p>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed mb-4">
-                Um novo patamar de regalias: Descontos em produtos premium e atendimento elite (Ouro
-                Metálico).
+                {t("legal.club.privilegeBody")}
               </p>
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-[10px] font-black text-foreground/80">
-                  <CheckCircle size={10} className="text-gradient-gold" /> 10% OFF em produtos de
-                  cuidado pessoal
+                  <CheckCircle size={10} className="text-gradient-gold" />{" "}
+                  {t("legal.club.privilegePerk1")}
                 </div>
                 <div className="flex items-center gap-2 text-[10px] font-black text-foreground/80">
-                  <CheckCircle size={10} className="text-gradient-gold" /> Bebida de cortesia em
-                  cada visita
+                  <CheckCircle size={10} className="text-gradient-gold" />{" "}
+                  {t("legal.club.privilegePerk2")}
                 </div>
               </div>
             </div>
@@ -195,16 +201,15 @@ function PoliticaSistemas() {
                 </div>
                 <div>
                   <h3 className="font-black uppercase tracking-widest text-sm text-gradient-hologram">
-                    Nível Exclusive
+                    {t("legal.club.level", { name: "Exclusive" })}
                   </h3>
                   <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">
-                    500+ Pontos ou Assinatura
+                    {t("legal.club.exclusiveRange")}
                   </p>
                 </div>
               </div>
               <p className="text-xs text-foreground/90 font-medium leading-relaxed mb-5">
-                O topo da experiência Arena Barber Club: Acesso total e benefícios irrestritos
-                (Holograma).
+                {t("legal.club.exclusiveBody")}
               </p>
               <ul className="space-y-3">
                 <li className="text-[10px] font-black flex items-center gap-3">
@@ -220,9 +225,7 @@ function PoliticaSistemas() {
                       }}
                     />
                   </div>
-                  <span className="text-gradient-hologram">
-                    Cortes Ilimitados Mensais (Plano Exclusivo)
-                  </span>
+                  <span className="text-gradient-hologram">{t("legal.club.exclusivePerk1")}</span>
                 </li>
                 <li className="text-[10px] font-black flex items-center gap-3">
                   <div
@@ -237,9 +240,7 @@ function PoliticaSistemas() {
                       }}
                     />
                   </div>
-                  <span className="text-gradient-hologram">
-                    Acesso Irrestrito ao Lounge VIP Exclusive
-                  </span>
+                  <span className="text-gradient-hologram">{t("legal.club.exclusivePerk2")}</span>
                 </li>
                 <li className="text-[10px] font-black flex items-center gap-3">
                   <div
@@ -254,9 +255,7 @@ function PoliticaSistemas() {
                       }}
                     />
                   </div>
-                  <span className="text-gradient-hologram">
-                    Prioridade Máxima em todos os horários
-                  </span>
+                  <span className="text-gradient-hologram">{t("legal.club.exclusivePerk3")}</span>
                 </li>
               </ul>
             </div>
@@ -268,7 +267,7 @@ function PoliticaSistemas() {
           <div className="flex items-center gap-2">
             <div className="h-1 w-8 bg-primary rounded-full"></div>
             <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary">
-              2. Pontos vs Assinatura
+              {t("legal.club.s2Title")}
             </h3>
           </div>
           <div className="grid grid-cols-1 gap-4">
@@ -276,14 +275,13 @@ function PoliticaSistemas() {
               <div className="flex items-center gap-2 mb-3">
                 <Trophy size={16} className="text-primary" />
                 <h5 className="text-[10px] font-black uppercase tracking-widest">
-                  Acúmulo Vitalício
+                  {t("legal.club.lifetimeTitle")}
                 </h5>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Reconhecimento pela sua presença contínua. Pontos são vitalícios e te fazem subir de
-                nível organicamente.
+                {t("legal.club.lifetimeBody")}
                 <span className="block mt-2 font-black text-foreground bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20 inline-block">
-                  R$ 1,00 = 1 Ponto
+                  {t("legal.club.pointRate")}
                 </span>
               </p>
             </div>
@@ -294,13 +292,15 @@ function PoliticaSistemas() {
               <div className="flex items-center gap-2 mb-3">
                 <Star size={16} fill="currentColor" className="text-[#D4AF37]" />
                 <h5 className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">
-                  Assinatura Exclusive
+                  {t("legal.club.subscriptionTitle")}
                 </h5>
               </div>
               <p className="text-xs text-foreground/80 leading-relaxed">
-                O topo da hierarquia instantaneamente. Libera o{" "}
-                <span className="font-black text-[#D4AF37]">Plano de Cortes Ilimitados</span> e
-                acesso total ao Lounge VIP. Ideal para quem quer o melhor sem esperar.
+                {legalRichText(t("legal.club.subscriptionBody"), {
+                  plan: (
+                    <span className="font-black text-[#D4AF37]">{t("legal.club.planName")}</span>
+                  ),
+                })}
               </p>
             </div>
           </div>

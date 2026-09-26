@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
+import { useI18n } from "@/lib/i18n";
 import { questions, type Survey } from "./model";
 
 const allowedQuestions = [
@@ -33,6 +34,7 @@ export function StaffSurveyDialog({
   onSaved: () => void;
 }) {
   const demo = useDemo();
+  const { t } = useI18n();
   const [question, setQuestion] = useState<AllowedQuestion>("satisfaction");
   const [answer, setAnswer] = useState("");
   const [busy, setBusy] = useState(false);
@@ -40,7 +42,7 @@ export function StaffSurveyDialog({
   const options = useMemo(() => questions[question].options as Record<string, string>, [question]);
   async function save() {
     if (!appointment || !answer) {
-      setError("Selecione a resposta informada pelo cliente.");
+      setError(t("ins.staff.pickAnswer"));
       return;
     }
     setBusy(true);
@@ -77,9 +79,7 @@ export function StaffSurveyDialog({
       onSaved();
       onClose();
     } catch {
-      setError(
-        "Não foi possível registrar. O cliente precisa permitir pesquisas e estar fora do intervalo de 30 dias.",
-      );
+      setError(t("ins.staff.error"));
     } finally {
       setBusy(false);
     }
@@ -100,16 +100,13 @@ export function StaffSurveyDialog({
     >
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Registrar resposta do cliente</AlertDialogTitle>
-          <AlertDialogDescription>
-            Use somente uma resposta declarada pelo cliente durante o atendimento. O registro será
-            identificado como feito pela equipe.
-          </AlertDialogDescription>
+          <AlertDialogTitle>{t("ins.staff.title")}</AlertDialogTitle>
+          <AlertDialogDescription>{t("ins.staff.body")}</AlertDialogDescription>
         </AlertDialogHeader>
         <label className="space-y-2 text-sm font-semibold">
-          <span>Pergunta realizada</span>
+          <span>{t("ins.staff.question")}</span>
           <select
-            aria-label="Pergunta realizada"
+            aria-label={t("ins.staff.question")}
             value={question}
             disabled={busy}
             onChange={(event) => {
@@ -127,15 +124,15 @@ export function StaffSurveyDialog({
           </select>
         </label>
         <label className="space-y-2 text-sm font-semibold">
-          <span>Resposta informada</span>
+          <span>{t("ins.staff.answer")}</span>
           <select
-            aria-label="Resposta informada"
+            aria-label={t("ins.staff.answer")}
             value={answer}
             disabled={busy}
             onChange={(event) => setAnswer(event.target.value)}
             className="w-full rounded-xl border border-border bg-background px-3 py-3"
           >
-            <option value="">Selecione</option>
+            <option value="">{t("ins.staff.select")}</option>
             {Object.entries(options).map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
@@ -154,14 +151,14 @@ export function StaffSurveyDialog({
             onClick={onClose}
             className="rounded-xl border border-border px-4 py-2 text-sm font-semibold"
           >
-            Voltar
+            {t("common.back")}
           </button>
           <button
             disabled={busy || !answer}
             onClick={() => void save()}
             className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
           >
-            {busy ? "Salvando…" : "Registrar resposta"}
+            {busy ? t("common.saving") : t("ins.staff.save")}
           </button>
         </AlertDialogFooter>
       </AlertDialogContent>

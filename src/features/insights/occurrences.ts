@@ -1,3 +1,5 @@
+import { t } from "../../lib/i18n/index.ts";
+
 export type Occurrence = {
   arrived_at?: string | null;
   started_at?: string | null;
@@ -12,7 +14,7 @@ export function parseDelay(value: string): number | null {
   if (!value.trim()) return null;
   const number = Number(value);
   if (!Number.isInteger(number) || number < 1 || number > 1440)
-    throw new Error("Informe minutos inteiros entre 1 e 1.440.");
+    throw new Error(t("ins.occ.delayRange"));
   return number;
 }
 
@@ -29,7 +31,7 @@ export function validateOccurrence(
     !["pending", "confirmed", "completed"].includes(appointment.status) ||
     current.no_show_at
   )
-    throw new Error("Ocorrência indisponível para este atendimento.");
+    throw new Error(t("ins.occ.unavailable"));
   for (const value of [customer, shop]) if (value !== null) parseDelay(String(value));
   if (
     noShow &&
@@ -42,5 +44,5 @@ export function validateOccurrence(
       current.arrived_at ||
       current.started_at)
   )
-    throw new Error("Não é possível registrar falta com atrasos ou presença registrados.");
+    throw new Error(t("ins.occ.noShowConflict"));
 }

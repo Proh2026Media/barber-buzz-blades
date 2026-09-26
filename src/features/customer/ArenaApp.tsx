@@ -220,8 +220,8 @@ function ArenaApp({
   const bookingLock = useRef(false);
   const [sportFilter, setSportFilter] = useState<"all" | "football" | "nba">("all");
   const [shopId, setShopId] = useState<string | null>(null);
-  const [customerName, setCustomerName] = useState("Cliente");
-  const [shopName, setShopName] = useState("Sua barbearia");
+  const [customerName, setCustomerName] = useState("");
+  const [shopName, setShopName] = useState("");
   /** Fuso da barbearia: define os horários oferecidos, independente do aparelho. */
   const [shopTimeZone, setShopTimeZone] = useState<string>(DEFAULT_SHOP_TIMEZONE);
   const [shopSettings, setShopSettings] = useState<
@@ -510,14 +510,13 @@ function ArenaApp({
           .eq("customer_id", userId)
           .order("starts_at", { ascending: false });
         if (cancelled) return;
-        if (error) setAppointmentsError("Não foi possível carregar seus agendamentos.");
+        if (error) setAppointmentsError(tNow("cust.appointmentsLoadError"));
         else {
           setAppointments(data ?? []);
           loadedAppointmentsUser.current = userId;
         }
       } catch {
-        if (!cancelled)
-          setAppointmentsError("Não foi possível atualizar seus agendamentos. Tente novamente.");
+        if (!cancelled) setAppointmentsError(tNow("cust.appointmentsRefreshError"));
       } finally {
         if (!cancelled) {
           setAppointmentsLoading(false);
@@ -562,13 +561,13 @@ function ArenaApp({
       try {
         const profile = await getSessionProfile();
         if (!cancelled) {
-          setCustomerName(profile?.profile?.full_name?.trim() || "Cliente");
+          setCustomerName(profile?.profile?.full_name?.trim() || "");
         }
         if (!profile?.user.id) {
           if (!cancelled) {
             setServices([]);
             setStaff([]);
-            setCatalogError("Sessão inválida. Entre novamente.");
+            setCatalogError(tNow("cust.sessionInvalid"));
           }
           return;
         }
@@ -601,10 +600,10 @@ function ArenaApp({
               if (!cancelled && info.shop_name) setShopName(info.shop_name);
             } else {
               pendingJoinRef = info.shop_slug || directShopSlug;
-              pendingJoinName = info.shop_name || "esta barbearia";
+              pendingJoinName = info.shop_name || "";
             }
           } else if (directBarberSlug) {
-            throw new Error("Link de barbearia inválido ou indisponível.");
+            throw new Error(tNow("cust.shopLinkInvalid"));
           }
         }
 
@@ -650,9 +649,7 @@ function ArenaApp({
             setShopId(null);
             setServices([]);
             setStaff([]);
-            setCatalogError(
-              "Nenhuma barbearia vinculada. Abra o link da barbearia para confirmar o acesso.",
-            );
+            setCatalogError(tNow("cust.noShopLinked"));
           }
           return;
         }
@@ -670,7 +667,7 @@ function ArenaApp({
             via_redirect?: boolean;
           };
           if (!target.staff_id || !target.shop_id) {
-            throw new Error("Este link de profissional não está disponível.");
+            throw new Error(tNow("cust.staffLinkUnavailable"));
           }
           const hasDestMembership = profile.memberships.some(
             (m) => m.barbershop_id === target.shop_id && m.role === "customer",
@@ -686,7 +683,7 @@ function ArenaApp({
             // Sem membership: força join no destino do link.
             if (!cancelled) {
               setJoinShopRef(directShopSlug);
-              setJoinShopName(target.shop_name || "esta barbearia");
+              setJoinShopName(target.shop_name || "");
               setJoinOpen(true);
             }
           }
@@ -849,9 +846,7 @@ function ArenaApp({
         }
       } catch (err) {
         if (!cancelled) {
-          setCatalogError(
-            friendlyAuthError(err, "Não foi possível carregar os serviços. Tente novamente."),
-          );
+          setCatalogError(friendlyAuthError(err, tNow("cust.catalogLoadError")));
         }
       } finally {
         if (!cancelled) setCatalogLoading(false);
@@ -885,7 +880,7 @@ function ArenaApp({
       }
       setCatalogRevision((v) => v + 1);
     } catch (err) {
-      setCatalogError(friendlyAuthError(err, "Não foi possível vincular a barbearia."));
+      setCatalogError(friendlyAuthError(err, t("cust.joinError")));
       setJoinOpen(false);
     } finally {
       setJoinBusy(false);
@@ -1076,13 +1071,13 @@ function ArenaApp({
         });
         if (pickError) throw pickError;
         if (!picked) {
-          throw new Error("Nenhum profissional disponível neste horário. Escolha outro.");
+          throw new Error(t("cust.noStaffAtTime"));
         }
         staffId = picked as string;
         staffName =
           staff.find((row) => row.id === staffId)?.display_name ?? t("booking.anyStaffFallback");
       }
-      if (!staffId) throw new Error("Selecione um profissional.");
+      if (!staffId) throw new Error(t("cust.pickStaff"));
 
       const booking = {
         barbershop_id: shopId,
@@ -1536,7 +1531,7 @@ function ArenaApp({
       </AlertDialog>
       <ShopJoinDialog
         open={joinOpen}
-        shopName={joinShopName || "esta barbearia"}
+        shopName={joinShopName || t("cust.thisShop")}
         busy={joinBusy}
         onConfirm={() => void confirmShopJoin()}
         onDismiss={dismissShopJoin}
@@ -1613,7 +1608,9 @@ function ArenaApp({
             >
               <img
                 src={shopSettings.logo_url}
-                alt={`Logo de ${shopSettings.display_name?.trim() || shopName}`}
+                alt={t("cust.logoAlt", {
+                  name: shopSettings.display_name?.trim() || shopName || t("cust.shopFallback"),
+                })}
                 className="brand-header-logo"
               />
             </span>
@@ -1631,7 +1628,7 @@ function ArenaApp({
           )}
           <div className="flex min-w-0 flex-col justify-center">
             <h1 className="brand-header-title truncate text-sm font-bold tracking-tight text-foreground leading-tight">
-              {shopSettings.display_name?.trim() || shopName}
+              {shopSettings.display_name?.trim() || shopName || t("cust.shopFallback")}
             </h1>
             <p className="mt-1 truncate text-[11px] font-medium text-primary">
               {shopSettings.tagline}
@@ -1732,7 +1729,7 @@ function ArenaApp({
                       {t("home.member")}
                     </p>
                     <h2 className="brand-loyalty-name text-2xl sm:text-3xl break-words">
-                      {customerName}
+                      {customerName || t("cust.customerFallback")}
                     </h2>
                   </div>
                   <div className="shrink-0 flex flex-col items-end">
@@ -2603,7 +2600,7 @@ function ArenaApp({
                     onClick={() => setAppointmentsNotice(null)}
                     className="-m-2 inline-flex min-h-11 min-w-11 items-center justify-center text-xs font-semibold text-muted-foreground"
                   >
-                    Ok
+                    {t("cust.ok")}
                   </button>
                 </div>
               )}

@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
 import { ClientProfileModal } from "./ClientProfileModal";
 import { ClientNoticeBell } from "./ClientNoticeBell";
+import { useI18n } from "@/lib/i18n";
 
 type ClientRow = {
   customer_id: string;
@@ -15,8 +16,12 @@ type ClientRow = {
 
 const PAGE_SIZE = 25;
 
-function formatBRL(cents: number) {
-  return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+function formatBRL(cents: number, intlLocale: string) {
+  return (cents / 100).toLocaleString(intlLocale, {
+    style: "currency",
+    currency: "BRL",
+    currencyDisplay: "narrowSymbol",
+  });
 }
 
 /**
@@ -35,6 +40,7 @@ export function ClientDirectory({
   scope: "own" | "shop";
   title: string;
 }) {
+  const { t, intlLocale } = useI18n();
   const demo = useDemo();
   const [clients, setClients] = useState<ClientRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -139,14 +145,14 @@ export function ClientDirectory({
         <>
           {loading ? (
             <p role="status" className="text-sm text-muted-foreground">
-              Carregando clientes…
+              {t("team.clients.loading")}
             </p>
           ) : error ? (
             <p role="alert" className="text-sm text-destructive">
-              Não foi possível carregar os clientes.
+              {t("team.clients.loadError")}
             </p>
           ) : clients.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhum cliente registrado ainda.</p>
+            <p className="text-sm text-muted-foreground">{t("team.clients.empty")}</p>
           ) : (
             <>
               <div className="space-y-2">
@@ -158,16 +164,25 @@ export function ClientDirectory({
                     <button
                       type="button"
                       onClick={() => setSelected(client)}
-                      aria-label={`Abrir perfil de ${client.customer_name ?? "cliente"}`}
+                      aria-label={t("team.clients.openProfile", {
+                        name: client.customer_name ?? t("team.clients.clientLower"),
+                      })}
                       className="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-lg p-2 text-left transition-colors hover:bg-muted/40"
                     >
                       <span className="min-w-0">
                         <span className="block truncate text-sm font-semibold">
-                          {client.customer_name ?? "Cliente"}
+                          {client.customer_name ?? t("team.partner.clientFallback")}
                         </span>
                         <span className="block truncate text-xs text-muted-foreground">
-                          {client.visits} {client.visits === 1 ? "visita" : "visitas"} ·{" "}
-                          {formatBRL(client.total_spent_cents)}
+                          {t(
+                            client.visits === 1
+                              ? "team.clients.visitOne"
+                              : "team.clients.visitMany",
+                            {
+                              count: client.visits,
+                            },
+                          )}{" "}
+                          · {formatBRL(client.total_spent_cents, intlLocale)}
                         </span>
                       </span>
                       <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
@@ -190,7 +205,7 @@ export function ClientDirectory({
                   onClick={() => setVisible((count) => Math.min(count + PAGE_SIZE, clients.length))}
                   className="w-full rounded-xl border border-border p-3 text-xs font-semibold text-muted-foreground hover:bg-muted"
                 >
-                  Carregar mais ({clients.length - visible} restantes)
+                  {t("team.clients.loadMore", { count: clients.length - visible })}
                 </button>
               )}
             </>

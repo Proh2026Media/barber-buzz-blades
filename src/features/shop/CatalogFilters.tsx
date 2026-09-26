@@ -1,4 +1,5 @@
 import { Search, X } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 import { CatalogViewToggle, type CatalogViewMode } from "./CatalogViewToggle";
 
 export type CatalogStatus = "all" | "active" | "paused";
@@ -27,6 +28,7 @@ export function CatalogFilters({
   viewMode?: CatalogViewMode;
   onViewMode?: (value: CatalogViewMode) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="catalog-filters space-y-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -43,12 +45,12 @@ export function CatalogFilters({
         </label>
         {onViewMode && <CatalogViewToggle viewMode={viewMode} onViewMode={onViewMode} />}
       </div>
-      <div className="flex flex-wrap items-center gap-2" aria-label="Filtrar disponibilidade">
+      <div className="flex flex-wrap items-center gap-2" aria-label={t("brand.catalog.filterAria")}>
         {(
           [
-            { id: "all", name: "Todos", count: total },
-            { id: "active", name: "Ativos", count: active },
-            { id: "paused", name: "Pausados", count: total - active },
+            { id: "all", name: t("brand.catalog.all"), count: total },
+            { id: "active", name: t("brand.catalog.active"), count: active },
+            { id: "paused", name: t("brand.catalog.paused"), count: total - active },
           ] as const
         ).map(({ id, name, count }) => (
           <button
@@ -71,12 +73,12 @@ export function CatalogFilters({
             }}
             className="flex min-h-11 items-center gap-1 px-2 text-xs font-semibold text-muted-foreground"
           >
-            <X className="size-3.5" /> Limpar
+            <X className="size-3.5" /> {t("brand.catalog.clear")}
           </button>
         )}
       </div>
       <p role="status" className="text-xs text-muted-foreground">
-        {visible} de {total} resultados
+        {t("brand.catalog.results", { visible, total })}
       </p>
     </div>
   );

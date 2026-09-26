@@ -3,12 +3,8 @@ import { Check, Clock3, ShieldCheck, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json, Tables } from "@/integrations/supabase/types";
 import type { SessionProfile } from "@/lib/auth/session";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
 
 type ChangeRequest = Tables<"shop_change_requests"> & {
   expires_at?: string | null;
@@ -16,28 +12,33 @@ type ChangeRequest = Tables<"shop_change_requests"> & {
   checklist?: Json;
 };
 
-const kindLabels: Record<string, string> = {
-  "service.create": "Criar serviço",
-  "service.update": "Alterar serviço",
-  "service.toggle": "Alterar disponibilidade do serviço",
-  "service.delete": "Excluir serviço",
-  "staff.create": "Adicionar profissional",
-  "staff.update": "Alterar profissional",
-  "staff.toggle": "Alterar disponibilidade do profissional",
-  "staff.delete": "Excluir profissional",
-  "hours.replace": "Alterar horários da barbearia",
-  "availability.create": "Criar bloqueio de agenda",
-  "availability.delete": "Excluir bloqueio de agenda",
-  "settings.operational": "Alterar configurações operacionais",
-  "member.add": "Convidar membro da equipe",
-  "member.update": "Alterar papel ou participação societária",
+const kindKeys: Record<string, MessageKey> = {
+  "service.create": "team.gov.kind.serviceCreate",
+  "service.update": "team.gov.kind.serviceUpdate",
+  "service.toggle": "team.gov.kind.serviceToggle",
+  "service.delete": "team.gov.kind.serviceDelete",
+  "staff.create": "team.gov.kind.staffCreate",
+  "staff.update": "team.gov.kind.staffUpdate",
+  "staff.toggle": "team.gov.kind.staffToggle",
+  "staff.delete": "team.gov.kind.staffDelete",
+  "hours.replace": "team.gov.kind.hoursReplace",
+  "availability.create": "team.gov.kind.availabilityCreate",
+  "availability.delete": "team.gov.kind.availabilityDelete",
+  "settings.operational": "team.gov.kind.settingsOperational",
+  "member.add": "team.gov.kind.memberAdd",
+  "member.update": "team.gov.kind.memberUpdate",
 };
+
+function kindLabel(kind: string): string | undefined {
+  const key = kindKeys[kind];
+  return key ? tNow(key) : undefined;
+}
 
 function payloadSummary(payload: Json) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) return "";
   const values = payload as Record<string, Json | undefined>;
   const name = values.name ?? values.display_name;
-  return typeof name === "string" && name.trim() ? name : "Revise os detalhes antes de decidir.";
+  return typeof name === "string" && name.trim() ? name : tNow("team.gov.reviewDetails");
 }
 
 function checklistItems(request: ChangeRequest): { kind: string; summary: string }[] {
@@ -60,9 +61,9 @@ function checklistItems(request: ChangeRequest): { kind: string; summary: string
 function remainingLabel(expiresAt: string | null | undefined) {
   if (!expiresAt) return null;
   const ms = new Date(expiresAt).getTime() - Date.now();
-  if (ms <= 0) return "Expirado";
+  if (ms <= 0) return tNow("team.gov.expired");
   const mins = Math.ceil(ms / 60000);
-  return mins <= 1 ? "Fecha em 1 min" : `Fecha em ${mins} min`;
+  return tNow("team.gov.closesIn", { mins: Math.max(1, mins) });
 }
 
 export function TeamGovernance({
@@ -74,6 +75,7 @@ export function TeamGovernance({
   profile: SessionProfile;
   onChanged?: () => void;
 }) {
+  const { t, intlLocale } = useI18n();
   const [requests, setRequests] = useState<ChangeRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -133,12 +135,12 @@ export function TeamGovernance({
       const result = data as { status?: string; remaining_approvals?: number } | null;
       setMessage(
         result?.status === "expired"
-          ? "Esta janela de 30 minutos já fechou. Nada foi aplicado."
+          ? t("team.gov.windowClosed")
           : result?.status === "pending"
-            ? `Sua aprovação foi registrada. Ainda faltam ${result.remaining_approvals ?? 1} aprovação(ões).`
+            ? t("team.gov.approvalRecorded", { count: result.remaining_approvals ?? 1 })
             : approve
-              ? "Mudança aprovada e aplicada."
-              : "Mudança recusada. Nada foi aplicado.",
+              ? t("team.gov.approved")
+              : t("team.gov.rejected"),
       );
       await load();
       onChanged?.();
@@ -149,7 +151,7 @@ export function TeamGovernance({
   async function cancel(request: ChangeRequest) {
     setBusyId(request.id);
     const { error } = await supabase.rpc("cancel_shop_change", { p_request_id: request.id });
-    setMessage(error ? error.message : "Solicitação cancelada. Nada foi aplicado.");
+    setMessage(error ? error.message : t("team.gov.requestCancelled"));
     if (!error) await load();
     setBusyId(null);
   }
@@ -164,16 +166,16 @@ export function TeamGovernance({
         </span>
         <div>
           <h3 id="governance-title" className="font-bold">
-            Decisões da sociedade
+            {t("team.gov.title")}
           </h3>
           <p className="mt-1 text-xs text-muted-foreground">
             {profile.governanceMode === "equal"
-              ? "Mudanças operacionais só entram após aprovação dos demais co-donos. A identidade visual segue a mesma regra."
+              ? t("team.gov.modeEqual")
               : profile.governanceMode === "majority"
                 ? profile.capabilities?.canApplyOperations
-                  ? "Você é majoritário e aplica mudanças operacionais diretamente."
-                  : "Como minoritário, suas mudanças abrem pedido para o majoritário aprovar."
-                : "A gestão operacional pode ser aplicada diretamente pelo responsável."}
+                  ? t("team.gov.modeMajorityOwner")
+                  : t("team.gov.modeMajorityMinor")
+                : t("team.gov.modeDirect")}
           </p>
         </div>
         {pending.length > 0 && (
@@ -182,17 +184,19 @@ export function TeamGovernance({
             onClick={() => setPopupOpen(true)}
             className="ml-auto rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-bold text-amber-700 dark:text-amber-300"
           >
-            {pending.length} pendente{pending.length === 1 ? "" : "s"}
+            {t(pending.length === 1 ? "team.gov.pendingOne" : "team.gov.pendingMany", {
+              count: pending.length,
+            })}
           </button>
         )}
       </div>
       {loading ? (
         <p role="status" className="text-xs text-muted-foreground">
-          Carregando decisões…
+          {t("team.gov.loading")}
         </p>
       ) : pending.length === 0 ? (
         <p className="rounded-xl border border-dashed border-border p-3 text-xs text-muted-foreground">
-          Nenhuma mudança aguarda aprovação.
+          {t("team.gov.empty")}
         </p>
       ) : (
         <div className="space-y-2">
@@ -209,19 +213,21 @@ export function TeamGovernance({
                   <Clock3 className="mt-0.5 size-4 shrink-0 text-amber-600" />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-bold">
-                      {kindLabels[request.kind] ?? "Mudança operacional"}
-                      {request.source === "account_manager" ? " · Gerente de conta" : ""}
+                      {kindLabel(request.kind) ?? t("team.gov.kind.fallback")}
+                      {request.source === "account_manager"
+                        ? ` · ${t("team.gov.accountManager")}`
+                        : ""}
                     </p>
                     <ul className="mt-1 space-y-0.5 text-xs text-muted-foreground">
                       {items.map((item, index) => (
                         <li key={`${request.id}-${index}`}>
-                          ☐ {kindLabels[item.kind] ?? item.kind}: {item.summary}
+                          ☐ {kindLabel(item.kind) ?? item.kind}: {item.summary}
                         </li>
                       ))}
                     </ul>
                     <p className="mt-1 text-[11px] text-muted-foreground">
-                      {own ? "Solicitada por você" : "Solicitada por outro"} ·{" "}
-                      {new Date(request.created_at).toLocaleString("pt-BR")}
+                      {own ? t("team.gov.requestedByYou") : t("team.gov.requestedByOther")} ·{" "}
+                      {new Date(request.created_at).toLocaleString(intlLocale)}
                       {timer ? ` · ${timer}` : ""}
                     </p>
                   </div>
@@ -234,7 +240,7 @@ export function TeamGovernance({
                       onClick={() => void cancel(request)}
                       className="action-button action-danger"
                     >
-                      <X className="size-4" /> Cancelar pedido
+                      <X className="size-4" /> {t("team.gov.cancelRequest")}
                     </button>
                   ) : (
                     <>
@@ -244,7 +250,7 @@ export function TeamGovernance({
                         onClick={() => void decide(request, false)}
                         className="action-button action-danger"
                       >
-                        <X className="size-4" /> Recusar
+                        <X className="size-4" /> {t("team.gov.decline")}
                       </button>
                       <button
                         type="button"
@@ -252,7 +258,7 @@ export function TeamGovernance({
                         onClick={() => void decide(request, true)}
                         className="action-button action-confirm"
                       >
-                        <Check className="size-4" /> Aprovar
+                        <Check className="size-4" /> {t("team.gov.approve")}
                       </button>
                     </>
                   )}
@@ -270,24 +276,24 @@ export function TeamGovernance({
 
       <Dialog open={popupOpen && pending.length > 0} onOpenChange={setPopupOpen}>
         <DialogContent className="max-w-md rounded-3xl border-border bg-card p-5">
-          <DialogTitle className="text-base font-extrabold">Checklist de alterações</DialogTitle>
+          <DialogTitle className="text-base font-extrabold">
+            {t("team.gov.checklistTitle")}
+          </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Revise o que foi proposto. Pedidos do gerente de conta fecham sozinhos em até 30 minutos.
+            {t("team.gov.checklistHint")}
           </DialogDescription>
           <div className="mt-3 max-h-72 space-y-2 overflow-y-auto">
             {pending.map((request) => (
               <div key={`popup-${request.id}`} className="rounded-xl border border-border p-3">
                 <p className="text-sm font-semibold">
-                  {kindLabels[request.kind] ?? request.kind}
+                  {kindLabel(request.kind) ?? request.kind}
                   {remainingLabel(request.expires_at)
                     ? ` · ${remainingLabel(request.expires_at)}`
                     : ""}
                 </p>
                 <ul className="mt-1 space-y-0.5 text-xs text-muted-foreground">
                   {checklistItems(request).map((item, index) => (
-                    <li key={`popup-item-${request.id}-${index}`}>
-                      ☐ {item.summary}
-                    </li>
+                    <li key={`popup-item-${request.id}-${index}`}>☐ {item.summary}</li>
                   ))}
                 </ul>
               </div>

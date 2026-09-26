@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Briefcase, Link2, Trash2 } from "lucide-react";
 import {
   AlertDialog,
@@ -11,6 +11,13 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import type { Tables } from "@/integrations/supabase/types";
+import { useI18n } from "@/lib/i18n";
+
+function richText(template: string, nodes: Record<string, ReactNode>) {
+  return template
+    .split(/\{(\w+)\}/g)
+    .map((part, i) => (i % 2 === 1 ? <Fragment key={i}>{nodes[part] ?? part}</Fragment> : part));
+}
 
 type Assignment = {
   user_id: string;
@@ -22,6 +29,7 @@ type Assignment = {
 };
 
 export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[] }) {
+  const { t } = useI18n();
   const emailFieldId = useId();
   const shopFieldId = useId();
   const [email, setEmail] = useState("");
@@ -50,9 +58,7 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
       .select("user_id, barbershop_id, can_view_dashboard, created_at")
       .order("created_at", { ascending: false });
     if (loadError) {
-      setError(
-        friendlyAuthError(loadError, "Não foi possível carregar os gerentes. Tente novamente."),
-      );
+      setError(friendlyAuthError(loadError, t("plat.mgr.loadError")));
       setRows([]);
       return;
     }
@@ -73,7 +79,7 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
       }),
     );
     setRows(enriched);
-  }, [shops]);
+  }, [shops, t]);
 
   useEffect(() => {
     void load();
@@ -87,7 +93,7 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
     setMessage(null);
     try {
       const normalized = email.trim().toLowerCase();
-      if (!normalized || !shopId) throw new Error("Informe e-mail e barbearia.");
+      if (!normalized || !shopId) throw new Error(t("plat.mgr.missingFields"));
 
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
@@ -115,18 +121,20 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
         created?: boolean;
         temporary_password?: string | null;
       };
-      if (!response.ok)
-        throw new Error(payload.error || "Não foi possível vincular o gerente. Tente novamente.");
+      if (!response.ok) throw new Error(payload.error || t("plat.mgr.linkError"));
 
       setMessage(
         payload.created && payload.temporary_password
-          ? `${payload.email ?? normalized} criado. Senha temporária: ${payload.temporary_password}`
-          : `${payload.email ?? normalized} vinculado como gerente de conta.`,
+          ? t("plat.mgr.created", {
+              email: payload.email ?? normalized,
+              password: payload.temporary_password,
+            })
+          : t("plat.mgr.linked", { email: payload.email ?? normalized }),
       );
       setEmail("");
       await load();
     } catch (err) {
-      setError(friendlyAuthError(err, "Não foi possível vincular o gerente. Tente novamente."));
+      setError(friendlyAuthError(err, t("plat.mgr.linkError")));
     } finally {
       setBusy(false);
     }
@@ -141,11 +149,14 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
       p_shop_id: row.barbershop_id,
     });
     if (removeError) {
-      setError(
-        friendlyAuthError(removeError, "Não foi possível remover o vínculo. Tente novamente."),
-      );
+      setError(friendlyAuthError(removeError, t("plat.mgr.removeError")));
     } else {
-      setMessage(`${row.label ?? "Gerente"} não gerencia mais ${row.shop_name ?? "a barbearia"}.`);
+      setMessage(
+        t("plat.mgr.removed", {
+          name: row.label ?? t("plat.mgr.managerFallback"),
+          shop: row.shop_name ?? t("plat.mgr.shopFallback"),
+        }),
+      );
       await load();
     }
     setBusy(false);
@@ -159,11 +170,8 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
           <Briefcase className="size-5" />
         </span>
         <div>
-          <h3 className="text-sm font-semibold">Gerentes de conta</h3>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Pessoas da equipe da plataforma que cuidam de uma barbearia. O que elas mudarem na loja
-            espera a aprovação do dono (prazo de 30 min).
-          </p>
+          <h3 className="text-sm font-semibold">{t("plat.mgr.title")}</h3>
+          <p className="mt-1 text-xs text-muted-foreground">{t("plat.mgr.intro")}</p>
         </div>
       </div>
 
@@ -173,7 +181,7 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
             htmlFor={emailFieldId}
             className="block text-xs font-semibold text-muted-foreground"
           >
-            E-mail do gerente
+            {t("plat.mgr.email")}
           </label>
           <input
             id={emailFieldId}
@@ -182,7 +190,7 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
-            placeholder="gerente@exemplo.com"
+            placeholder={t("plat.mgr.emailPlaceholder")}
           />
         </div>
         <div>
@@ -190,7 +198,7 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
             htmlFor={shopFieldId}
             className="block text-xs font-semibold text-muted-foreground"
           >
-            Barbearia
+            {t("plat.common.shop")}
           </label>
           <select
             id={shopFieldId}
@@ -199,7 +207,7 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
             onChange={(e) => setShopId(e.target.value)}
             className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
           >
-            <option value="">Selecione</option>
+            <option value="">{t("plat.mgr.select")}</option>
             {shops
               .filter((s) => s.status === "active")
               .map((shop) => (
@@ -216,7 +224,7 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
             onChange={(e) => setCanViewDashboard(e.target.checked)}
             className="size-5 shrink-0 accent-[var(--primary)]"
           />
-          Pode ver o painel de números da loja (sem editar)
+          {t("plat.mgr.canView")}
         </label>
         <button
           type="submit"
@@ -224,14 +232,14 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
           className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground disabled:opacity-50"
         >
           <Link2 className="size-4" />
-          {busy ? "Vinculando…" : "Vincular gerente"}
+          {busy ? t("plat.mgr.linking") : t("plat.mgr.link")}
         </button>
       </form>
 
       <div className="space-y-2">
         {rows.length === 0 ? (
           <p className="rounded-xl border border-dashed border-border p-3 text-xs text-muted-foreground">
-            Nenhum gerente vinculado ainda.
+            {t("plat.mgr.empty")}
           </p>
         ) : (
           rows.map((row) => (
@@ -243,7 +251,7 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
                 <p className="truncate text-sm font-semibold">{row.label}</p>
                 <p className="truncate text-xs text-muted-foreground">
                   {row.shop_name}
-                  {row.can_view_dashboard ? " · vê o painel de números" : ""}
+                  {row.can_view_dashboard ? t("plat.mgr.seesDashboard") : ""}
                 </p>
               </div>
               <button
@@ -254,7 +262,10 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
                   setRemoveTarget(row);
                 }}
                 className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl border border-border text-muted-foreground hover:text-destructive"
-                aria-label={`Remover ${row.label ?? "gerente"} de ${row.shop_name ?? "a barbearia"}`}
+                aria-label={t("plat.mgr.removeAria", {
+                  name: row.label ?? t("plat.mgr.managerFallbackLower"),
+                  shop: row.shop_name ?? t("plat.mgr.shopFallback"),
+                })}
               >
                 <Trash2 className="size-4" aria-hidden="true" />
               </button>
@@ -288,12 +299,14 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
           }}
         >
           <AlertDialogHeader>
-            <AlertDialogTitle>Remover este gerente da barbearia?</AlertDialogTitle>
+            <AlertDialogTitle>{t("plat.mgr.removeTitle")}</AlertDialogTitle>
             <AlertDialogDescription className="text-left text-sm leading-relaxed">
-              <span className="font-semibold text-foreground">{removeTarget?.label}</span> deixa de
-              acessar{" "}
-              <span className="font-semibold text-foreground">{removeTarget?.shop_name}</span>. A
-              conta da pessoa continua existindo e você pode vincular de novo depois.
+              {richText(t("plat.mgr.removeBody"), {
+                name: <span className="font-semibold text-foreground">{removeTarget?.label}</span>,
+                shop: (
+                  <span className="font-semibold text-foreground">{removeTarget?.shop_name}</span>
+                ),
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
@@ -303,7 +316,7 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
               onClick={() => setRemoveTarget(null)}
               className="min-h-11 rounded-xl border border-border px-4 text-sm font-semibold disabled:opacity-50"
             >
-              Manter gerente
+              {t("plat.mgr.keep")}
             </button>
             <button
               type="button"
@@ -312,7 +325,7 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
               className="action-button action-danger min-h-11 disabled:opacity-50"
             >
               <Trash2 className="size-4" aria-hidden="true" />
-              {busy ? "Removendo…" : "Remover gerente"}
+              {busy ? t("plat.mgr.removing") : t("plat.mgr.remove")}
             </button>
           </AlertDialogFooter>
         </AlertDialogContent>

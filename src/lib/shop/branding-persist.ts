@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
+import { t } from "@/lib/i18n";
 import { brandDraftToSettings, type BrandDraft } from "./branding";
 import {
   normalizeFontFaces,
@@ -13,18 +14,16 @@ export const FONT_BUCKET = "barbershop-fonts";
 function storageError(error: unknown, label: string) {
   const message = error instanceof Error ? error.message : String(error);
   if (/bucket not found/i.test(message)) {
-    return new Error(
-      `O armazenamento de ${label} ainda não está configurado. Atualize a página e tente novamente.`,
-    );
+    return new Error(t("brand.upload.bucketMissing", { label }));
   }
-  return error instanceof Error ? error : new Error(`Não foi possível enviar ${label}.`);
+  return error instanceof Error ? error : new Error(t("brand.upload.sendFailed", { label }));
 }
 
 export function fileAsDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error("Não foi possível ler o arquivo selecionado."));
+    reader.onerror = () => reject(new Error(t("brand.upload.readFile")));
     reader.readAsDataURL(file);
   });
 }
@@ -37,7 +36,7 @@ export async function uploadShopLogo(shopId: string, file: File) {
     upsert: true,
     cacheControl: "3600",
   });
-  if (error) throw storageError(error, "logos");
+  if (error) throw storageError(error, t("brand.upload.labelLogos"));
   const { data } = supabase.storage.from(LOGO_BUCKET).getPublicUrl(path);
   return `${data.publicUrl}?v=${Date.now()}`;
 }
@@ -50,7 +49,7 @@ export async function uploadShopLoginImage(shopId: string, file: File) {
     upsert: true,
     cacheControl: "3600",
   });
-  if (error) throw storageError(error, "imagens do login");
+  if (error) throw storageError(error, t("brand.upload.labelLoginImages"));
   const { data } = supabase.storage.from(LOGO_BUCKET).getPublicUrl(path);
   return `${data.publicUrl}?v=${Date.now()}`;
 }
@@ -103,7 +102,7 @@ export async function uploadShopFontFaces(shopId: string, faces: PendingBrandFon
         upsert: false,
         cacheControl: "31536000",
       });
-      if (error) throw storageError(error, "fontes");
+      if (error) throw storageError(error, t("brand.upload.labelFonts"));
       uploaded.push(path);
       const { data } = supabase.storage.from(FONT_BUCKET).getPublicUrl(path);
       records.push({

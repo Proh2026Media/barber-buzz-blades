@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState, type ReactNode } from "react";
 import { CalendarDays, Link2, RefreshCw, ShieldCheck, Unplug, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
+import { t as tNow, useI18n } from "@/lib/i18n";
 import {
   Dialog,
   DialogContent,
@@ -39,7 +40,7 @@ type GoogleIntegrationsCardProps = {
 async function callGoogle(body: Record<string, unknown>) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData.session?.access_token;
-  if (!token) throw new Error("Sessão expirada. Entre novamente.");
+  if (!token) throw new Error(tNow("integr.err.session"));
 
   const base = import.meta.env.VITE_SUPABASE_URL || "";
   const response = await fetch(`${base}/functions/v1/google-connect`, {
@@ -70,26 +71,21 @@ async function callGoogle(body: Record<string, unknown>) {
   } catch {
     throw new Error(
       response.ok
-        ? "Resposta inválida do Google Connect."
-        : `Falha na integração Google (${response.status}). A função edge pode estar fora do ar.`,
+        ? tNow("integr.google.errInvalidResponse")
+        : tNow("integr.google.errUnavailable", { status: response.status }),
     );
   }
   if (!response.ok) {
     const detail = payload.error || payload.msg || `HTTP ${response.status}`;
-    throw new Error(
-      friendlyIntegrationError(
-        detail,
-        "Não foi possível concluir a ação no Google. Tente novamente.",
-      ),
-    );
+    throw new Error(friendlyIntegrationError(detail, tNow("integr.google.errAction")));
   }
   return payload;
 }
 
-function formatWhen(value?: string | null) {
-  if (!value) return "Ainda não";
+function formatWhen(value: string | null | undefined, intlLocale: string, notYet: string) {
+  if (!value) return notYet;
   try {
-    return new Date(value).toLocaleString("pt-BR", {
+    return new Date(value).toLocaleString(intlLocale, {
       day: "2-digit",
       month: "short",
       hour: "2-digit",
@@ -100,6 +96,12 @@ function formatWhen(value?: string | null) {
   }
 }
 
+function richText(template: string, nodes: Record<string, ReactNode>) {
+  return template
+    .split(/\{(\w+)\}/g)
+    .map((part, i) => (i % 2 === 1 ? <Fragment key={i}>{nodes[part] ?? part}</Fragment> : part));
+}
+
 const DEMO_CALENDARS: GoogleCalendarOption[] = [
   { id: "primary", name: "Agenda principal", primary: true },
   { id: "trabalho@demo.local", name: "Trabalho (demo)" },
@@ -108,6 +110,7 @@ const DEMO_CALENDARS: GoogleCalendarOption[] = [
 
 export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrationsCardProps) {
   const demo = useDemo();
+  const { t, intlLocale } = useI18n();
   const [connection, setConnection] = useState<GoogleConnectionStatus>({ connected: false });
   const [calendars, setCalendars] = useState<GoogleCalendarOption[]>([]);
   const [busy, setBusy] = useState(false);
@@ -145,7 +148,7 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
         payload.selected_calendar_name ?? null,
       );
     } catch (err) {
-      setError(friendlyIntegrationError(err, "Não foi possível listar as agendas."));
+      setError(friendlyIntegrationError(err, tNow("integr.google.errListCalendars")));
     } finally {
       setLoadingCalendars(false);
     }
@@ -178,7 +181,7 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
       }
       setCalendars([]);
     } catch (err) {
-      setError(friendlyIntegrationError(err, "Não foi possível consultar o Google."));
+      setError(friendlyIntegrationError(err, tNow("integr.google.errStatus")));
     } finally {
       setBusy(false);
     }
@@ -192,15 +195,13 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
     const params = new URLSearchParams(window.location.search);
     const google = params.get("google");
     if (google === "connected") {
-      setMessage("Google conectado. Agora escolha qual agenda sincronizar.");
+      setMessage(tNow("integr.google.connectedChoose"));
       void refresh();
       params.delete("google");
       const next = `${window.location.pathname}${params.toString() ? `?${params}` : ""}`;
       window.history.replaceState({}, "", next);
     } else if (google === "error") {
-      setError(
-        friendlyIntegrationError(params.get("reason"), "Não foi possível conectar o Google."),
-      );
+      setError(friendlyIntegrationError(params.get("reason"), tNow("integr.google.errConnect")));
       params.delete("google");
       params.delete("reason");
       const next = `${window.location.pathname}${params.toString() ? `?${params}` : ""}`;
@@ -210,7 +211,7 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
 
   async function connect() {
     if (demo) {
-      setMessage("Na demonstração o Google aparece conectado. Escolha uma agenda abaixo.");
+      setMessage(t("integr.google.demoConnected"));
       setConsentOpen(false);
       setConnection({
         connected: true,
@@ -233,10 +234,10 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
         return_path: returnPath,
         return_origin: typeof window !== "undefined" ? window.location.origin : undefined,
       });
-      if (!payload.url) throw new Error("URL de autorização ausente.");
+      if (!payload.url) throw new Error(t("integr.google.errNoUrl"));
       window.location.assign(payload.url);
     } catch (err) {
-      setError(friendlyIntegrationError(err, "Falha ao iniciar OAuth Google"));
+      setError(friendlyIntegrationError(err, t("integr.google.errStart")));
       setBusy(false);
       setConsentOpen(false);
     }
@@ -246,7 +247,7 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
     if (demo) {
       setConnection({ connected: false });
       setCalendars([]);
-      setMessage("Google desconectado (demo).");
+      setMessage(t("integr.google.disconnectedDemo"));
       return;
     }
     setBusy(true);
@@ -255,9 +256,9 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
       await callGoogle({ action: "disconnect" });
       setConnection({ connected: false });
       setCalendars([]);
-      setMessage("Google desconectado.");
+      setMessage(t("integr.google.disconnected"));
     } catch (err) {
-      setError(friendlyIntegrationError(err, "Falha ao desconectar"));
+      setError(friendlyIntegrationError(err, t("integr.google.errDisconnect")));
     } finally {
       setBusy(false);
     }
@@ -271,7 +272,7 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
     if (demo) {
       const picked = DEMO_CALENDARS.find((item) => item.id === calendarId);
       applySelectedCalendar(calendarId, picked?.name ?? calendarId);
-      setMessage(`Agenda selecionada: ${picked?.name ?? calendarId}`);
+      setMessage(t("integr.google.calendarSelected", { name: picked?.name ?? calendarId }));
       return;
     }
     setBusy(true);
@@ -281,10 +282,12 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
       const payload = await callGoogle({ action: "set_calendar", calendar_id: calendarId });
       applySelectedCalendar(payload.selected_calendar_id, payload.selected_calendar_name);
       setMessage(
-        `Agenda selecionada: ${payload.selected_calendar_name || payload.selected_calendar_id}`,
+        t("integr.google.calendarSelected", {
+          name: payload.selected_calendar_name || payload.selected_calendar_id || calendarId,
+        }),
       );
     } catch (err) {
-      setError(friendlyIntegrationError(err, "Falha ao escolher a agenda"));
+      setError(friendlyIntegrationError(err, t("integr.google.errChoose")));
     } finally {
       setBusy(false);
     }
@@ -293,14 +296,14 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
   async function syncCalendar() {
     if (demo) {
       if (!connection.selected_calendar_id) {
-        setError("Escolha qual agenda Google usar antes de sincronizar.");
+        setError(t("integr.google.chooseFirst"));
         return;
       }
-      setMessage("Agenda sincronizada (demo).");
+      setMessage(t("integr.google.syncedDemo"));
       return;
     }
     if (!connection.selected_calendar_id) {
-      setError("Escolha qual agenda Google usar antes de sincronizar.");
+      setError(t("integr.google.chooseFirst"));
       return;
     }
     setBusy(true);
@@ -312,11 +315,11 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
         payload.calendar_name ||
         connection.selected_calendar_name ||
         connection.selected_calendar_id ||
-        "Agenda Google";
-      setMessage(`${payload.imported ?? 0} eventos importados de “${label}”.`);
+        t("integr.google.calendarFallback");
+      setMessage(t("integr.google.imported", { count: payload.imported ?? 0, name: label }));
       await refresh();
     } catch (err) {
-      setError(friendlyIntegrationError(err, "Falha ao sincronizar agenda"));
+      setError(friendlyIntegrationError(err, t("integr.google.errSync")));
     } finally {
       setBusy(false);
     }
@@ -324,7 +327,7 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
 
   async function saveContact() {
     if (demo) {
-      setMessage("Contato salvo no Google Contatos (demo).");
+      setMessage(t("integr.google.contactSavedDemo"));
       return;
     }
     setBusy(true);
@@ -339,13 +342,13 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
           email: contactEmail,
         },
       });
-      setMessage("Contato salvo no Google Contatos.");
+      setMessage(t("integr.google.contactSaved"));
       setContactName("");
       setContactPhone("");
       setContactEmail("");
       await refresh();
     } catch (err) {
-      setError(friendlyIntegrationError(err, "Falha ao salvar contato"));
+      setError(friendlyIntegrationError(err, t("integr.google.errContact")));
     } finally {
       setBusy(false);
     }
@@ -359,43 +362,42 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
   const hasChosenCalendar = Boolean(selectedCalendarId);
 
   return (
-    <section className="app-action-card space-y-4 p-5" aria-label="Google Agenda e Contatos">
+    <section className="app-action-card space-y-4 p-5" aria-label={t("integr.google.title")}>
       <div className="flex items-start gap-3">
         <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--control-radius)] bg-muted text-foreground">
           <CalendarDays className="size-5" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold">Google Agenda e Contatos</p>
-          <p className="text-xs text-muted-foreground">
-            Conecte um Gmail, escolha qual agenda importar e salve clientes nos Contatos. Pode ser
-            outra conta — não precisa ser o mesmo e-mail do login neste app.
-          </p>
+          <p className="text-sm font-bold">{t("integr.google.title")}</p>
+          <p className="text-xs text-muted-foreground">{t("integr.google.intro")}</p>
         </div>
       </div>
 
       <div className="rounded-[var(--control-radius)] border border-border/60 bg-background/80 px-3 py-3 text-sm">
         {connection.connected ? (
           <p>
-            Conectado
             {connection.google_email ? (
               <>
-                {" "}
-                como <span className="font-semibold">{connection.google_email}</span>
+                {richText(t("integr.google.connectedAs"), {
+                  email: <span className="font-semibold">{connection.google_email}</span>,
+                })}
                 <span className="block text-xs text-muted-foreground">
-                  Conta da Agenda/Contatos (independente do login do sistema).
+                  {t("integr.google.accountNote")}
                 </span>
               </>
-            ) : null}
+            ) : (
+              t("integr.google.connected")
+            )}
           </p>
         ) : (
-          <p className="text-muted-foreground">Ainda não conectado.</p>
+          <p className="text-muted-foreground">{t("integr.google.notConnected")}</p>
         )}
         {connection.connected ? (
           <p className="mt-2 text-sm">
-            Agenda em uso:{" "}
+            {t("integr.google.inUse")}{" "}
             <span className="font-semibold">
               {selectedCalendarLabel ||
-                (loadingCalendars ? "Carregando…" : "Nenhuma escolhida — selecione abaixo")}
+                (loadingCalendars ? t("integr.google.loading") : t("integr.google.noneChosen"))}
             </span>
           </p>
         ) : null}
@@ -406,8 +408,24 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
         ) : null}
         {connection.connected ? (
           <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-            <li>Última sincronização da agenda: {formatWhen(connection.last_calendar_sync_at)}</li>
-            <li>Último contato salvo: {formatWhen(connection.last_contacts_sync_at)}</li>
+            <li>
+              {t("integr.google.lastSync", {
+                when: formatWhen(
+                  connection.last_calendar_sync_at,
+                  intlLocale,
+                  t("integr.google.notYet"),
+                ),
+              })}
+            </li>
+            <li>
+              {t("integr.google.lastContact", {
+                when: formatWhen(
+                  connection.last_contacts_sync_at,
+                  intlLocale,
+                  t("integr.google.notYet"),
+                ),
+              })}
+            </li>
           </ul>
         ) : null}
       </div>
@@ -415,29 +433,28 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
       {connection.connected ? (
         <div className="space-y-2">
           <label className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Qual agenda sincronizar?
+            {t("integr.google.whichCalendar")}
           </label>
           <select
             className="h-11 w-full rounded-[var(--control-radius)] border border-border/70 bg-background px-3 text-sm"
             value={selectedCalendarId}
             disabled={busy || loadingCalendars || calendars.length === 0}
             onChange={(event) => void chooseCalendar(event.target.value)}
-            aria-label="Selecionar agenda Google"
+            aria-label={t("integr.google.selectAria")}
           >
             <option value="">
-              {loadingCalendars ? "Carregando agendas…" : "Selecione uma agenda…"}
+              {loadingCalendars
+                ? t("integr.google.loadingCalendars")
+                : t("integr.google.selectPlaceholder")}
             </option>
             {calendars.map((calendar) => (
               <option key={calendar.id} value={calendar.id}>
                 {calendar.name}
-                {calendar.primary ? " (principal)" : ""}
+                {calendar.primary ? ` (${t("integr.google.primary")})` : ""}
               </option>
             ))}
           </select>
-          <p className="text-xs text-muted-foreground">
-            Nenhuma agenda é escolhida automaticamente. Você decide qual sincronizar — pode ser a
-            principal ou qualquer outra da conta.
-          </p>
+          <p className="text-xs text-muted-foreground">{t("integr.google.selectHint")}</p>
           {calendars.length === 0 && !loadingCalendars ? (
             <button
               type="button"
@@ -446,7 +463,7 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
               onClick={() => void loadCalendars()}
             >
               <RefreshCw className="size-4" aria-hidden />
-              Recarregar agendas
+              {t("integr.google.reloadCalendars")}
             </button>
           ) : null}
         </div>
@@ -461,7 +478,7 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
             onClick={() => setConsentOpen(true)}
           >
             <Link2 className="size-4" aria-hidden />
-            Conectar Google
+            {t("integr.google.connect")}
           </button>
         ) : (
           <>
@@ -472,7 +489,7 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
               onClick={() => void syncCalendar()}
             >
               <RefreshCw className={`size-4 ${busy ? "animate-spin" : ""}`} aria-hidden />
-              Sincronizar agenda
+              {t("integr.google.sync")}
             </button>
             <button
               type="button"
@@ -481,7 +498,7 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
               onClick={() => void disconnect()}
             >
               <Unplug className="size-4" aria-hidden />
-              Desconectar
+              {t("integr.disconnect")}
             </button>
           </>
         )}
@@ -490,21 +507,21 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
       {connection.connected ? (
         <div className="space-y-3 border-t border-border/50 pt-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Salvar no Google Contatos
+            {t("integr.google.saveToContacts")}
           </p>
           <div className="grid gap-2 sm:grid-cols-3">
             <label className="block text-xs">
-              <span className="mb-1 block text-muted-foreground">Nome</span>
+              <span className="mb-1 block text-muted-foreground">{t("integr.google.name")}</span>
               <input
                 className="h-11 w-full rounded-[var(--control-radius)] border border-border/70 bg-background px-3 text-sm"
                 value={contactName}
                 onChange={(e) => setContactName(e.target.value)}
-                placeholder="Cliente"
+                placeholder={t("integr.google.namePlaceholder")}
                 disabled={busy}
               />
             </label>
             <label className="block text-xs">
-              <span className="mb-1 block text-muted-foreground">Telefone</span>
+              <span className="mb-1 block text-muted-foreground">{t("integr.google.phone")}</span>
               <input
                 className="h-11 w-full rounded-[var(--control-radius)] border border-border/70 bg-background px-3 text-sm"
                 value={contactPhone}
@@ -514,7 +531,7 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
               />
             </label>
             <label className="block text-xs">
-              <span className="mb-1 block text-muted-foreground">E-mail</span>
+              <span className="mb-1 block text-muted-foreground">{t("integr.google.email")}</span>
               <input
                 className="h-11 w-full rounded-[var(--control-radius)] border border-border/70 bg-background px-3 text-sm"
                 value={contactEmail}
@@ -531,7 +548,7 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
             onClick={() => void saveContact()}
           >
             <UserPlus className="size-4" aria-hidden />
-            Salvar contato
+            {t("integr.google.saveContact")}
           </button>
         </div>
       ) : null}
@@ -546,48 +563,51 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
               <ShieldCheck className="size-5" aria-hidden />
             </div>
             <DialogTitle className="text-base font-extrabold leading-snug">
-              Antes de conectar a Agenda Google
+              {t("integr.google.consentTitle")}
             </DialogTitle>
             <DialogDescription asChild>
               <div className="space-y-3 text-sm leading-relaxed text-muted-foreground">
                 <p>
-                  Em seguida o Google pode mostrar o aviso{" "}
-                  <span className="font-semibold text-foreground">
-                    “O Google não verificou este app”
-                  </span>
-                  . Isso é esperado: estamos em fase de teste e implementação, e a verificação dos
-                  acessos à Agenda e aos Contatos já foi enviada e está em análise pelo Google.
+                  {richText(t("integr.google.consentP1"), {
+                    warning: (
+                      <span className="font-semibold text-foreground">
+                        {t("integr.google.consentWarning")}
+                      </span>
+                    ),
+                  })}
                 </p>
                 <p>
-                  A segurança dos seus dados é prioridade. O Barba &amp; Cabelo{" "}
-                  <span className="font-semibold text-foreground">
-                    não coleta informações além do necessário
-                  </span>{" "}
-                  para a integração funcionar — apenas o que a sincronização da agenda e dos
-                  contatos precisa para operar no sistema.
+                  {richText(t("integr.google.consentP2"), {
+                    strong: (
+                      <span className="font-semibold text-foreground">
+                        {t("integr.google.consentStrong")}
+                      </span>
+                    ),
+                  })}
                 </p>
                 <div className="rounded-[var(--control-radius)] border border-border/70 bg-muted/40 px-3 py-3 text-xs text-foreground">
-                  <p className="font-semibold">Como seguir com segurança nessa tela do Google</p>
+                  <p className="font-semibold">{t("integr.google.consentStepsTitle")}</p>
                   <ol className="mt-2 list-decimal space-y-1.5 pl-4 text-muted-foreground">
                     <li>
-                      Toque em <span className="font-semibold text-foreground">Avançado</span>{" "}
-                      (canto inferior esquerdo).
+                      {richText(t("integr.google.consentStep1"), {
+                        advanced: (
+                          <span className="font-semibold text-foreground">
+                            {t("integr.google.consentAdvanced")}
+                          </span>
+                        ),
+                      })}
                     </li>
                     <li>
-                      Depois escolha continuar para{" "}
-                      <span className="font-semibold text-foreground">Barba &amp; Cabelo</span> (o
-                      Google pode marcar como “não seguro” até aprovar a verificação).
+                      {richText(t("integr.google.consentStep2"), {
+                        app: (
+                          <span className="font-semibold text-foreground">Barba &amp; Cabelo</span>
+                        ),
+                      })}
                     </li>
-                    <li>
-                      Autorize apenas Agenda e Contatos e volte para escolher qual agenda
-                      sincronizar.
-                    </li>
+                    <li>{t("integr.google.consentStep3")}</li>
                   </ol>
                 </div>
-                <p className="text-xs">
-                  Ao continuar, você confirma que está ciente desse aviso temporário e deseja seguir
-                  com a conexão.
-                </p>
+                <p className="text-xs">{t("integr.google.consentConfirm")}</p>
               </div>
             </DialogDescription>
           </DialogHeader>
@@ -598,7 +618,7 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
               disabled={busy}
               onClick={() => setConsentOpen(false)}
             >
-              Agora não
+              {t("integr.google.notNow")}
             </button>
             <button
               type="button"
@@ -607,7 +627,7 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
               onClick={() => void connect()}
             >
               <Link2 className="size-4" aria-hidden />
-              Estou ciente — conectar
+              {t("integr.google.acceptConnect")}
             </button>
           </DialogFooter>
         </DialogContent>

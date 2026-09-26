@@ -12,6 +12,7 @@ import {
   WHATSAPP_TEMPLATE_VAR_HELP,
   type WhatsAppTemplateVar,
 } from "@/lib/whatsapp/templates";
+import { t as tNow, useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 const ALLOWED = new Set<string>(WHATSAPP_TEMPLATE_VARS);
@@ -42,7 +43,10 @@ function createChip(key: WhatsAppTemplateVar): HTMLSpanElement {
   chip.draggable = true;
   chip.tabIndex = 0;
   chip.setAttribute("role", "button");
-  chip.setAttribute("aria-label", `${WHATSAPP_TEMPLATE_VAR_HELP[key].chip}. Toque para trocar.`);
+  chip.setAttribute(
+    "aria-label",
+    tNow("integr.chip.aria", { name: tNow(WHATSAPP_TEMPLATE_VAR_HELP[key].chipKey) }),
+  );
   chip.className = cn(
     "whatsapp-var-chip",
     "mx-0.5 inline-flex max-w-[9.5rem] select-none items-center truncate align-baseline",
@@ -50,7 +54,7 @@ function createChip(key: WhatsAppTemplateVar): HTMLSpanElement {
     "text-[10px] font-semibold leading-4 text-foreground",
     "cursor-grab active:cursor-grabbing",
   );
-  chip.textContent = WHATSAPP_TEMPLATE_VAR_HELP[key].chip;
+  chip.textContent = tNow(WHATSAPP_TEMPLATE_VAR_HELP[key].chipKey);
   return chip;
 }
 
@@ -171,6 +175,8 @@ function insertNodeAtCaret(root: HTMLElement, node: Node) {
 
 export const WhatsAppChipEditor = forwardRef<WhatsAppChipEditorHandle, WhatsAppChipEditorProps>(
   function WhatsAppChipEditor({ value, onChange, className, "aria-label": ariaLabel }, ref) {
+    const { t, locale } = useI18n();
+    const lastLocaleRef = useRef(locale);
     const editorRef = useRef<HTMLDivElement>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
     const lastValueRef = useRef(value);
@@ -191,10 +197,16 @@ export const WhatsAppChipEditor = forwardRef<WhatsAppChipEditorHandle, WhatsAppC
     useEffect(() => {
       const root = editorRef.current;
       if (!root) return;
-      if (value === lastValueRef.current && root.childNodes.length > 0) return;
+      if (
+        value === lastValueRef.current &&
+        locale === lastLocaleRef.current &&
+        root.childNodes.length > 0
+      )
+        return;
       fillEditor(root, value);
       lastValueRef.current = value;
-    }, [value]);
+      lastLocaleRef.current = locale;
+    }, [value, locale]);
 
     useImperativeHandle(ref, () => ({
       insertVariable(key) {
@@ -266,7 +278,7 @@ export const WhatsAppChipEditor = forwardRef<WhatsAppChipEditorHandle, WhatsAppC
           ref={editorRef}
           role="textbox"
           aria-multiline="true"
-          aria-label={ariaLabel ?? "Texto da mensagem"}
+          aria-label={ariaLabel ?? t("integr.tpl.textLabel")}
           contentEditable
           suppressContentEditableWarning
           spellCheck
@@ -376,7 +388,7 @@ export const WhatsAppChipEditor = forwardRef<WhatsAppChipEditorHandle, WhatsAppC
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="min-w-[11rem] rounded-xl">
             <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground">
-              Trocar dado
+              {t("integr.chip.menuTitle")}
             </DropdownMenuLabel>
             {WHATSAPP_TEMPLATE_VARS.map((key) => (
               <DropdownMenuItem
@@ -385,8 +397,10 @@ export const WhatsAppChipEditor = forwardRef<WhatsAppChipEditorHandle, WhatsAppC
                 onSelect={() => replaceChipVar(key)}
               >
                 <span className={cn(key === menuKey && "font-bold")}>
-                  {WHATSAPP_TEMPLATE_VAR_HELP[key].chip}
-                  {key === menuKey && <span className="sr-only"> (atual)</span>}
+                  {t(WHATSAPP_TEMPLATE_VAR_HELP[key].chipKey)}
+                  {key === menuKey && (
+                    <span className="sr-only"> ({t("integr.chip.current")})</span>
+                  )}
                 </span>
               </DropdownMenuItem>
             ))}
@@ -395,7 +409,7 @@ export const WhatsAppChipEditor = forwardRef<WhatsAppChipEditorHandle, WhatsAppC
               className="min-h-11 rounded-lg text-sm text-destructive focus:text-destructive"
               onSelect={removeChip}
             >
-              Remover
+              {t("integr.chip.remove")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

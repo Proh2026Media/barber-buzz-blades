@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Crown, Link2, RefreshCw, UserPlus, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ShopPermissionsMatrix } from "@/features/shop/ShopPermissionsMatrix";
+import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
 
 type TeamMember = {
   id: string;
@@ -18,11 +19,11 @@ type TeamMember = {
 
 type InviteRole = "employee" | "associate" | "owner";
 
-const ROLE_LABEL: Record<string, string> = {
-  owner: "Dono / Co-dono",
-  partner: "Co-dono (legado)",
-  associate: "Parceiro",
-  employee: "Contratado",
+const ROLE_LABEL_KEY: Record<string, MessageKey> = {
+  owner: "team.perm.role.owner",
+  partner: "team.perm.role.partner",
+  associate: "team.perm.role.associate",
+  employee: "team.perm.role.employee",
 };
 
 type ShopTeamAccessCardProps = {
@@ -35,7 +36,7 @@ type ShopTeamAccessCardProps = {
 async function inviteMember(body: Record<string, unknown>) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData.session?.access_token;
-  if (!token) throw new Error("Sessão expirada. Entre novamente.");
+  if (!token) throw new Error(tNow("team.access.sessionExpired"));
 
   const base = import.meta.env.VITE_SUPABASE_URL || "";
   const response = await fetch(`${base}/functions/v1/invite-shop-admin`, {
@@ -57,7 +58,7 @@ async function inviteMember(body: Record<string, unknown>) {
   try {
     payload = raw ? (JSON.parse(raw) as typeof payload) : {};
   } catch {
-    throw new Error(`Falha ao convidar (${response.status}).`);
+    throw new Error(tNow("team.access.inviteFailedStatus", { status: response.status }));
   }
   if (!response.ok) {
     throw new Error(payload.error || `HTTP ${response.status}`);
@@ -71,6 +72,7 @@ export function ShopTeamAccessCard({
   canEditSociety,
   onChanged,
 }: ShopTeamAccessCardProps) {
+  const { t } = useI18n();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -93,7 +95,7 @@ export function ShopTeamAccessCard({
       setMembers(Array.isArray(data) ? (data as TeamMember[]) : []);
     } catch (err) {
       setMembers([]);
-      setError(err instanceof Error ? err.message : "Não foi possível carregar a equipe.");
+      setError(err instanceof Error ? err.message : tNow("team.access.loadError"));
     } finally {
       setLoading(false);
     }
@@ -120,10 +122,10 @@ export function ShopTeamAccessCard({
       const pending = payload.status === "pending";
       setMessage(
         pending
-          ? `${payload.email ?? inviteEmail} ficou pendente de aprovação do outro co-dono.`
-          : `${payload.email ?? inviteEmail} foi vinculado à equipe.` +
+          ? t("team.access.invitePending", { email: payload.email ?? inviteEmail })
+          : t("team.access.inviteLinked", { email: payload.email ?? inviteEmail }) +
               (payload.temporary_password
-                ? ` Senha temporária: ${payload.temporary_password}`
+                ? ` ${t("team.access.tempPassword", { password: payload.temporary_password })}`
                 : ""),
       );
       setInviteEmail("");
@@ -132,7 +134,7 @@ export function ShopTeamAccessCard({
       await load();
       onChanged?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao convidar");
+      setError(err instanceof Error ? err.message : t("team.access.inviteFailed"));
     } finally {
       setBusy(false);
     }
@@ -144,7 +146,7 @@ export function ShopTeamAccessCard({
   ) {
     if (!canEditSociety || busy) return;
     if (member.is_founder && (patch.active === false || (patch.role && patch.role !== "owner"))) {
-      setError("O fundador não pode ser rebaixado ou desativado. Transfira a fundação antes.");
+      setError(t("team.access.founderLocked"));
       return;
     }
     setBusy(true);
@@ -164,14 +166,12 @@ export function ShopTeamAccessCard({
           ? String((data as { status?: string }).status)
           : "applied";
       setMessage(
-        status === "pending"
-          ? "Alteração enviada para aprovação da sociedade."
-          : "Membro atualizado.",
+        status === "pending" ? t("team.access.changeSent") : t("team.access.memberUpdated"),
       );
       await load();
       onChanged?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao atualizar membro");
+      setError(err instanceof Error ? err.message : t("team.access.updateFailed"));
     } finally {
       setBusy(false);
     }
@@ -180,7 +180,7 @@ export function ShopTeamAccessCard({
   async function transferFounder(member: TeamMember) {
     if (!canEditSociety || busy || !member.active) return;
     if (member.role !== "owner" && member.role !== "partner") {
-      setError("O novo fundador precisa ser dono/co-dono.");
+      setError(t("team.access.founderMustBeOwner"));
       return;
     }
     setBusy(true);
@@ -192,28 +192,25 @@ export function ShopTeamAccessCard({
         p_new_founder_user_id: member.user_id,
       });
       if (failure) throw failure;
-      setMessage(`Fundação transferida para ${member.display_name}.`);
+      setMessage(t("team.access.founderTransferred", { name: member.display_name }));
       await load();
       onChanged?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao transferir fundação");
+      setError(err instanceof Error ? err.message : t("team.access.transferFailed"));
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <section className="app-action-card space-y-5 p-5" aria-label="Equipe e acessos">
+    <section className="app-action-card space-y-5 p-5" aria-label={t("team.access.aria")}>
       <div className="flex items-start gap-3">
         <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--control-radius)] bg-muted text-foreground">
           <Users className="size-5" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold">Equipe, sociedade e acessos</p>
-          <p className="text-xs text-muted-foreground">
-            Convide contratados, parceiros e co-donos. A conta fundadora ancora a sociedade;
-            mudanças em sociedade igualitária pedem aprovação.
-          </p>
+          <p className="text-sm font-bold">{t("team.access.title")}</p>
+          <p className="text-xs text-muted-foreground">{t("team.access.hint")}</p>
         </div>
         <button
           type="button"
@@ -222,18 +219,21 @@ export function ShopTeamAccessCard({
           onClick={() => void load()}
         >
           <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
-          Atualizar
+          {t("team.access.refresh")}
         </button>
       </div>
 
       {canEditSociety ? (
-        <form onSubmit={(event) => void handleInvite(event)} className="space-y-3 border-t border-border/50 pt-4">
+        <form
+          onSubmit={(event) => void handleInvite(event)}
+          className="space-y-3 border-t border-border/50 pt-4"
+        >
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Convidar para a equipe
+            {t("team.access.inviteTitle")}
           </p>
           <div className="grid gap-2 sm:grid-cols-2">
             <label className="block text-xs">
-              <span className="mb-1 block text-muted-foreground">E-mail</span>
+              <span className="mb-1 block text-muted-foreground">{t("team.access.email")}</span>
               <input
                 required
                 type="email"
@@ -241,37 +241,39 @@ export function ShopTeamAccessCard({
                 onChange={(e) => setInviteEmail(e.target.value)}
                 className="h-11 w-full rounded-[var(--control-radius)] border border-border/70 bg-background px-3 text-sm"
                 disabled={busy}
-                placeholder="pessoa@email.com"
+                placeholder={t("team.access.emailPlaceholder")}
               />
             </label>
             <label className="block text-xs">
-              <span className="mb-1 block text-muted-foreground">Nome</span>
+              <span className="mb-1 block text-muted-foreground">{t("team.access.name")}</span>
               <input
                 value={inviteName}
                 onChange={(e) => setInviteName(e.target.value)}
                 className="h-11 w-full rounded-[var(--control-radius)] border border-border/70 bg-background px-3 text-sm"
                 disabled={busy}
-                placeholder="Opcional"
+                placeholder={t("team.access.optional")}
               />
             </label>
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
             <label className="block text-xs">
-              <span className="mb-1 block text-muted-foreground">Papel</span>
+              <span className="mb-1 block text-muted-foreground">{t("team.access.role")}</span>
               <select
                 value={inviteRole}
                 onChange={(e) => setInviteRole(e.target.value as InviteRole)}
                 className="h-11 w-full rounded-[var(--control-radius)] border border-border/70 bg-background px-3 text-sm"
                 disabled={busy}
               >
-                <option value="employee">Contratado</option>
-                <option value="associate">Parceiro</option>
-                <option value="owner">Co-dono (sociedade)</option>
+                <option value="employee">{t("team.perm.role.employee")}</option>
+                <option value="associate">{t("team.perm.role.associate")}</option>
+                <option value="owner">{t("team.access.roleOwnerPartnership")}</option>
               </select>
             </label>
             {inviteRole === "owner" ? (
               <label className="block text-xs">
-                <span className="mb-1 block text-muted-foreground">Participação (%)</span>
+                <span className="mb-1 block text-muted-foreground">
+                  {t("team.access.ownership")}
+                </span>
                 <input
                   required
                   type="number"
@@ -287,9 +289,7 @@ export function ShopTeamAccessCard({
             ) : null}
           </div>
           {!canApplyProtected ? (
-            <p className="text-xs text-muted-foreground">
-              Nesta sociedade o convite pode ficar pendente até outro co-dono aprovar.
-            </p>
+            <p className="text-xs text-muted-foreground">{t("team.access.invitePendingHint")}</p>
           ) : null}
           <button
             type="submit"
@@ -297,23 +297,23 @@ export function ShopTeamAccessCard({
             className="inline-flex min-h-11 items-center gap-2 rounded-[var(--button-radius)] bg-foreground px-4 text-sm font-semibold text-background disabled:opacity-50"
           >
             <UserPlus className="size-4" />
-            {busy ? "Convidando…" : "Convidar"}
+            {busy ? t("team.access.inviting") : t("team.access.invite")}
           </button>
         </form>
       ) : (
         <p className="border-t border-border/50 pt-4 text-xs text-muted-foreground">
-          Somente dono/co-dono com poder de aplicar (ou após aprovação) gerencia a sociedade aqui.
+          {t("team.access.readOnlyHint")}
         </p>
       )}
 
       <div className="space-y-2 border-t border-border/50 pt-4">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Membros
+          {t("team.access.members")}
         </p>
         {loading ? (
-          <p className="text-sm text-muted-foreground">Carregando equipe…</p>
+          <p className="text-sm text-muted-foreground">{t("team.access.loading")}</p>
         ) : members.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhum membro encontrado.</p>
+          <p className="text-sm text-muted-foreground">{t("team.access.empty")}</p>
         ) : (
           <ul className="space-y-2">
             {members.map((member) => (
@@ -328,22 +328,23 @@ export function ShopTeamAccessCard({
                       {member.is_founder ? (
                         <span className="ml-2 inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
                           <Crown className="size-3.5" aria-hidden />
-                          Fundador
+                          {t("team.access.founder")}
                         </span>
                       ) : null}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {member.email || "Sem e-mail"} · {ROLE_LABEL[member.role] ?? member.role}
+                      {member.email || t("team.access.noEmail")} ·{" "}
+                      {ROLE_LABEL_KEY[member.role] ? t(ROLE_LABEL_KEY[member.role]) : member.role}
                       {member.ownership_percent != null
                         ? ` · ${Number(member.ownership_percent)}%`
                         : ""}
-                      {!member.active ? " · inativo" : ""}
+                      {!member.active ? ` · ${t("team.access.inactive")}` : ""}
                     </p>
                   </div>
                   {canEditSociety ? (
                     <div className="flex flex-wrap gap-2">
                       <select
-                        aria-label={`Papel de ${member.display_name}`}
+                        aria-label={t("team.access.roleOf", { name: member.display_name })}
                         className="h-10 rounded-[var(--control-radius)] border border-border/70 bg-background px-2 text-xs"
                         value={member.role === "partner" ? "owner" : member.role}
                         disabled={busy || member.is_founder}
@@ -359,9 +360,9 @@ export function ShopTeamAccessCard({
                           });
                         }}
                       >
-                        <option value="employee">Contratado</option>
-                        <option value="associate">Parceiro</option>
-                        <option value="owner">Co-dono</option>
+                        <option value="employee">{t("team.perm.role.employee")}</option>
+                        <option value="associate">{t("team.perm.role.associate")}</option>
+                        <option value="owner">{t("team.access.roleOwner")}</option>
                       </select>
                       <button
                         type="button"
@@ -369,7 +370,7 @@ export function ShopTeamAccessCard({
                         disabled={busy || member.is_founder}
                         onClick={() => void updateMember(member, { active: !member.active })}
                       >
-                        {member.active ? "Desativar" : "Reativar"}
+                        {member.active ? t("team.access.deactivate") : t("team.access.reactivate")}
                       </button>
                       {!member.is_founder &&
                       member.active &&
@@ -379,10 +380,10 @@ export function ShopTeamAccessCard({
                           className="inline-flex h-10 items-center gap-1 rounded-[var(--button-radius)] border border-border/70 px-3 text-xs font-semibold disabled:opacity-50"
                           disabled={busy}
                           onClick={() => void transferFounder(member)}
-                          title="Transferir fundação"
+                          title={t("team.access.transferTitle")}
                         >
                           <Link2 className="size-3.5" />
-                          Tornar fundador
+                          {t("team.access.makeFounder")}
                         </button>
                       ) : null}
                     </div>
@@ -395,10 +396,7 @@ export function ShopTeamAccessCard({
       </div>
 
       <div className="border-t border-border/50 pt-4">
-        <ShopPermissionsMatrix
-          shopId={shopId}
-          canEdit={canApplyProtected || canEditSociety}
-        />
+        <ShopPermissionsMatrix shopId={shopId} canEdit={canApplyProtected || canEditSociety} />
       </div>
 
       {message ? (

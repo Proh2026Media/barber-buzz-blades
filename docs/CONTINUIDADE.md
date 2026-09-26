@@ -9,10 +9,11 @@ Atualizado em **26/09/2026**. Este documento resume decisões e entregas da conv
 3. Para retomar localmente, usar `npm run dev -- --host 0.0.0.0 --port 8080`. O endereço esperado é `http://localhost:8080`.
 4. Continuar a partir do próximo pedido do usuário.
 
-## Entrega — idiomas, fase 1 (26/09/2026)
+## Entrega — idiomas, sistema completo (26/09/2026)
 
 - Regra obrigatória: toda comunicação com o usuário e todo texto do sistema em pt-BR por padrão (`.cursor/rules/idioma.mdc`, `AGENTS.md`).
-- Troca de idioma (pt-BR, pt-PT, en-US, en-GB, es) com ou sem login. Texto novo de interface deve entrar em `src/lib/i18n/messages/pt-BR.ts` e nos outros quatro dicionários. Detalhes e pendências em [mb-revisao.md](mb-revisao.md#idiomas-fase-1--26092026).
+- Troca de idioma (pt-BR, pt-PT, en-US, en-GB, es) com ou sem login, cobrindo **todo o sistema**: páginas públicas, login/cadastro, app do cliente, painel da barbearia, painel da plataforma, demonstração, pesquisas, lista de espera e textos jurídicos (com aviso de tradução de cortesia fora do pt-BR). Texto novo de interface deve entrar em `src/lib/i18n/messages/pt-BR.ts` e nos outros quatro dicionários; o teste `translate.test.ts` exige as mesmas chaves e variáveis em todos.
+- Continuam em pt-BR de propósito: conteúdo enviado a clientes (modelos de WhatsApp), dados cadastrados pela barbearia (serviços, bios, recados), dados fictícios da demonstração, título/descrição da página no HTML do servidor. Motivos rápidos de bloqueio de agenda são gravados no idioma de quem cria. Detalhes em [mb-revisao.md](mb-revisao.md#idiomas-fase-1--26092026).
 
 ## Entrega — revisão MB usabilidade (26/09/2026)
 

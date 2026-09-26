@@ -1,6 +1,13 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useState } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { t as tNow, useI18n } from "@/lib/i18n";
+
+function richText(template: string, nodes: Record<string, ReactNode>) {
+  return template
+    .split(/\{(\w+)\}/g)
+    .map((part, i) => (i % 2 === 1 ? <Fragment key={i}>{nodes[part] ?? part}</Fragment> : part));
+}
 
 // Minimal typed shim for the beta supabase.auth.oauth namespace.
 type OAuthClient = { name?: string };
@@ -45,13 +52,16 @@ export const Route = createFileRoute("/.lovable/oauth/consent")({
   errorComponent: ({ error }) => (
     <main className="flex min-h-screen items-center justify-center bg-background p-6 text-foreground">
       <p className="max-w-md text-sm text-destructive">
-        Não foi possível carregar esta autorização: {String((error as Error)?.message ?? error)}
+        {tNow("app.consent.loadError", {
+          detail: String((error as Error)?.message ?? error),
+        })}
       </p>
     </main>
   ),
 });
 
 function Consent() {
+  const { t } = useI18n();
   const details = Route.useLoaderData();
   const { authorization_id } = Route.useSearch();
   const [busy, setBusy] = useState(false);
@@ -71,25 +81,22 @@ function Consent() {
     const target = data?.redirect_url ?? data?.redirect_to;
     if (!target) {
       setBusy(false);
-      setError("Servidor de autorização não retornou redirecionamento.");
+      setError(t("app.consent.noRedirect"));
       return;
     }
     window.location.href = target;
   }
 
-  const clientName = details?.client?.name ?? "um app";
+  const clientName = details?.client?.name ?? t("app.consent.anApp");
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4 text-foreground">
       <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-lg">
-        <h1 className="text-xl font-semibold">Conectar {clientName} à sua conta</h1>
+        <h1 className="text-xl font-semibold">{t("app.consent.title", { client: clientName })}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Isso permite que <strong>{clientName}</strong> use este app em seu nome, chamando as
-          ferramentas MCP disponibilizadas pela Arena.
+          {richText(t("app.consent.body"), { client: <strong>{clientName}</strong> })}
         </p>
-        <p className="mt-3 text-xs text-muted-foreground">
-          Isto não ignora as permissões e políticas de backend deste app.
-        </p>
+        <p className="mt-3 text-xs text-muted-foreground">{t("app.consent.note")}</p>
         {error && (
           <p className="mt-3 text-sm text-destructive" role="alert">
             {error}
@@ -101,14 +108,14 @@ function Consent() {
             onClick={() => decide(true)}
             className="flex-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
-            {busy ? "..." : "Aprovar"}
+            {busy ? "..." : t("app.consent.approve")}
           </button>
           <button
             disabled={busy}
             onClick={() => decide(false)}
             className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium hover:bg-accent disabled:opacity-50"
           >
-            Recusar
+            {t("app.consent.deny")}
           </button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import type { DemoState } from "../demo/model";
+import { t } from "../../lib/i18n/index.ts";
 import { blocksSlot, canHold, type SlotWait, type WaitAction, type WaitingEvent } from "./model.ts";
 
 export type DemoWait = SlotWait & { customer_id: string | null; original_customer_id: string };
@@ -99,7 +100,7 @@ export function waitingDemoAction(
   const state = advanceWaits(input);
   const w = state.waits.find((row) => row.id === id);
   if (!w || !blocksSlot(w, state.now) || Date.parse(w.starts_at) <= +state.now)
-    throw new Error("A espera já foi encerrada.");
+    throw new Error(t("wait.err.closed"));
   const change = (changes: Partial<DemoWait>, kind?: string) => ({
     ...state,
     waits: state.waits.map((row) => (row.id === id ? { ...row, ...changes } : row)),
@@ -112,13 +113,13 @@ export function waitingDemoAction(
       Date.parse(w.hold_until) <= +state.now ||
       w.original_customer_id === state.customerId
     )
-      throw new Error("Esta vaga não está disponível para entrar na espera.");
+      throw new Error(t("wait.err.joinUnavailable"));
     if (
       !s ||
       s.duration_minutes * 60000 > Date.parse(w.ends_at) - Date.parse(w.starts_at) ||
       !state.staff.some((row) => row.id === w.staff_id && row.active)
     )
-      throw new Error("Serviço indisponível para este intervalo.");
+      throw new Error(t("wait.err.serviceInterval"));
     return change({
       customer_id: state.customerId,
       mine: true,
@@ -135,7 +136,7 @@ export function waitingDemoAction(
       a.starts_at !== w.starts_at ||
       a.staff_id !== w.staff_id
     )
-      throw new Error("A reserva original não pode mais ser restaurada.");
+      throw new Error(t("wait.err.notRestorable"));
     return {
       ...change({ state: "restored" }, "restored"),
       appointments: state.appointments.map((row) =>
@@ -143,7 +144,7 @@ export function waitingDemoAction(
       ),
     };
   }
-  if (w.customer_id !== state.customerId) throw new Error("Esta espera pertence a outro cliente.");
+  if (w.customer_id !== state.customerId) throw new Error(t("wait.err.otherCustomer"));
   if (action === "leave")
     return change(
       Date.parse(w.hold_until) > +state.now
@@ -152,14 +153,14 @@ export function waitingDemoAction(
       "left",
     );
   if (Date.parse(w.hold_until) > +state.now || Date.parse(w.claim_until) <= +state.now)
-    throw new Error("A vaga ainda não foi liberada ou o prazo terminou.");
+    throw new Error(t("wait.err.notReleased"));
   const s = state.services.find((row) => row.id === w.service_id && row.active);
   if (
     !s ||
     s.duration_minutes * 60000 > Date.parse(w.ends_at) - Date.parse(w.starts_at) ||
     !state.staff.some((row) => row.id === w.staff_id && row.active)
   )
-    throw new Error("Serviço ou profissional indisponível.");
+    throw new Error(t("wait.err.serviceOrStaff"));
   const end = new Date(Date.parse(w.starts_at) + s.duration_minutes * 60000).toISOString();
   const hours = state.businessHours.find((row) => row.weekday === new Date(w.starts_at).getDay());
   const time = (value: string) => new Date(value).toTimeString().slice(0, 5);
@@ -174,7 +175,7 @@ export function waitingDemoAction(
         row.ends_at > w.starts_at,
     )
   )
-    throw new Error("O horário não está mais disponível.");
+    throw new Error(t("wait.err.slotGone"));
   const appointmentId = crypto.randomUUID();
   return {
     ...change({ state: "claimed" }, "claimed"),

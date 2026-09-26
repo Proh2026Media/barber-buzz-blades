@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { BarChart3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
+import { useI18n } from "@/lib/i18n";
 import { cancellationReasonLabel, type CancellationReason } from "./cancellation";
 import { questions } from "./model";
 import { DEFAULT_SHOP_TIMEZONE, shopDayRange } from "@/lib/shop/appointments";
@@ -44,6 +45,7 @@ export function BusinessInsights({
   timeZone?: string;
 }) {
   const demo = useDemo();
+  const { t, intlLocale } = useI18n();
   const [summary, setSummary] = useState<Summary | null>(null);
   const [error, setError] = useState(false);
   const [version, setVersion] = useState(0);
@@ -191,49 +193,49 @@ export function BusinessInsights({
   return (
     <section
       className="space-y-3 rounded-2xl border border-primary/20 bg-card p-4"
-      aria-label="Indicadores de acompanhamento"
+      aria-label={t("ins.biz.aria")}
     >
       <div className="flex items-center justify-between gap-3">
         <h3 className="flex items-center gap-2 text-sm font-bold">
           <BarChart3 className="size-5 text-primary" />
-          Acompanhamento {day ? "do dia" : "dos últimos 30 dias"}
+          {day ? t("ins.biz.titleDay") : t("ins.biz.title30")}
         </h3>
         <button
           disabled={loading}
           onClick={() => setVersion((v) => v + 1)}
           className="text-xs underline"
         >
-          Atualizar
+          {t("ins.biz.refresh")}
         </button>
       </div>
       {loading ? (
         <p role="status" className="text-xs">
-          Carregando indicadores…
+          {t("ins.biz.loading")}
         </p>
       ) : error ? (
         <p role="alert" className="text-xs text-destructive">
-          Não foi possível carregar os indicadores.
+          {t("ins.biz.loadError")}
         </p>
       ) : (
         summary && (
           <>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {[
-                ["Clientes atendidos ou agendados", summary.customers],
-                ["Reservas", summary.bookings],
-                ["Concluídos", summary.completed],
-                ["Cancelados", summary.cancelled],
-                ["Não compareceram", summary.no_shows],
+                [t("ins.biz.customers"), summary.customers],
+                [t("ins.biz.bookings"), summary.bookings],
+                [t("ins.biz.completed"), summary.completed],
+                [t("ins.biz.cancelled"), summary.cancelled],
+                [t("ins.biz.noShows"), summary.no_shows],
                 [
-                  `Atraso do cliente · ${delays.customer_sample} registros`,
+                  t("ins.biz.customerDelay", { count: delays.customer_sample }),
                   delays.customer_mean === null
-                    ? "Sem registros"
+                    ? t("ins.biz.noRecords")
                     : `${Math.round(delays.customer_mean)} min`,
                 ],
                 [
-                  `Atraso da barbearia · ${delays.shop_sample} registros`,
+                  t("ins.biz.shopDelay", { count: delays.shop_sample }),
                   delays.shop_mean === null
-                    ? "Sem registros"
+                    ? t("ins.biz.noRecords")
                     : `${Math.round(delays.shop_mean)} min`,
                 ],
               ].map(([label, value]) => (
@@ -243,56 +245,56 @@ export function BusinessInsights({
                 </div>
               ))}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Médias apenas dos atrasos informados. Ausência de registro não indica pontualidade.
-            </p>
+            <p className="text-xs text-muted-foreground">{t("ins.biz.delayNote")}</p>
             <p className="text-sm">
-              Valor reservado dos concluídos:{" "}
+              {t("ins.biz.completedValue")}{" "}
               <strong>
-                {(summary.quoted_completed_cents / 100).toLocaleString("pt-BR", {
+                {(summary.quoted_completed_cents / 100).toLocaleString(intlLocale, {
                   style: "currency",
                   currency: "BRL",
+                  currencyDisplay: "narrowSymbol",
                 })}
               </strong>
             </p>
             <p className="text-xs text-muted-foreground">
-              {summary.missing_price} reservas sem preço histórico registrado. Espera calculada com{" "}
-              {summary.wait_sample} registros da equipe. Valores reservados não confirmam pagamento.
+              {t("ins.biz.priceNote", {
+                missing: summary.missing_price,
+                sample: summary.wait_sample,
+              })}
             </p>
             <details className="text-xs">
-              <summary className="cursor-pointer font-semibold">Uso opcional do app</summary>
+              <summary className="cursor-pointer font-semibold">{t("ins.biz.usage")}</summary>
               <div className="mt-2 space-y-1">
-                <p>Tentativas de confirmar reserva: {summary.usage.booking_started ?? 0}</p>
-                <p>Confirmações bem-sucedidas: {summary.usage.booking_succeeded ?? 0}</p>
-                <p>Falhas de confirmação: {summary.usage.booking_failed ?? 0}</p>
-                <p className="text-muted-foreground">
-                  Somente clientes que permitiram a coleta. São eventos de uso, não a contagem
-                  oficial de reservas.
+                <p>{t("ins.biz.usageStarted", { count: summary.usage.booking_started ?? 0 })}</p>
+                <p>
+                  {t("ins.biz.usageSucceeded", { count: summary.usage.booking_succeeded ?? 0 })}
                 </p>
+                <p>{t("ins.biz.usageFailed", { count: summary.usage.booking_failed ?? 0 })}</p>
+                <p className="text-muted-foreground">{t("ins.biz.usageNote")}</p>
               </div>
             </details>
             <details className="text-xs" open={!day}>
-              <summary className="cursor-pointer font-semibold">Experiência dos clientes</summary>
+              <summary className="cursor-pointer font-semibold">{t("ins.biz.experience")}</summary>
               <div className="mt-3 space-y-4">
                 <div>
-                  <p className="font-semibold">Avaliação dos atendimentos</p>
+                  <p className="font-semibold">{t("ins.biz.rating")}</p>
                   {summary.rating_sample >= 5 && summary.rating_average !== null ? (
                     <>
                       <p className="mt-1 text-2xl font-bold text-primary">
-                        {Number(summary.rating_average).toLocaleString("pt-BR", {
+                        {Number(summary.rating_average).toLocaleString(intlLocale, {
                           minimumFractionDigits: 1,
                           maximumFractionDigits: 2,
                         })}{" "}
-                        <span className="text-sm text-muted-foreground">de 5</span>
+                        <span className="text-sm text-muted-foreground">{t("ins.biz.outOf5")}</span>
                       </p>
                       <MetricRows
                         values={summary.rating_distribution}
                         labels={{
-                          "1": "1 estrela",
-                          "2": "2 estrelas",
-                          "3": "3 estrelas",
-                          "4": "4 estrelas",
-                          "5": "5 estrelas",
+                          "1": t("ins.biz.star1"),
+                          "2": t("ins.biz.stars", { count: 2 }),
+                          "3": t("ins.biz.stars", { count: 3 }),
+                          "4": t("ins.biz.stars", { count: 4 }),
+                          "5": t("ins.biz.stars", { count: 5 }),
                         }}
                       />
                     </>
@@ -301,7 +303,7 @@ export function BusinessInsights({
                   )}
                 </div>
                 <div>
-                  <p className="font-semibold">Pontos indicados para melhoria</p>
+                  <p className="font-semibold">{t("ins.biz.improvement")}</p>
                   {summary.improvement_sample >= 5 ? (
                     <MetricRows
                       values={summary.improvement_counts}
@@ -312,7 +314,7 @@ export function BusinessInsights({
                   )}
                 </div>
                 <div>
-                  <p className="font-semibold">Motivos de cancelamento informados</p>
+                  <p className="font-semibold">{t("ins.biz.cancelReasons")}</p>
                   {summary.cancellation_reason_sample >= 5 ? (
                     <MetricRows
                       values={summary.cancellation_reason_counts}
@@ -328,7 +330,7 @@ export function BusinessInsights({
                   )}
                 </div>
                 <div>
-                  <p className="font-semibold">Interesse em novos serviços</p>
+                  <p className="font-semibold">{t("ins.catalog.name.service_interest")}</p>
                   {serviceInterest.sample >= 5 ? (
                     <MetricRows
                       values={serviceInterest.counts}
@@ -338,9 +340,7 @@ export function BusinessInsights({
                     <InsufficientSample count={serviceInterest.sample} />
                   )}
                 </div>
-                <p className="text-muted-foreground">
-                  Resultados agregados. “Prefiro não responder” não entra nas distribuições.
-                </p>
+                <p className="text-muted-foreground">{t("ins.biz.aggregateNote")}</p>
               </div>
             </details>
           </>
@@ -351,9 +351,10 @@ export function BusinessInsights({
 }
 
 function InsufficientSample({ count }: { count: number }) {
+  const { t } = useI18n();
   return (
     <p className="mt-1 text-muted-foreground">
-      {count} {count === 1 ? "resposta" : "respostas"}. O resultado aparece a partir de 5.
+      {t(count === 1 ? "ins.biz.sampleOne" : "ins.biz.sampleMany", { count })}
     </p>
   );
 }

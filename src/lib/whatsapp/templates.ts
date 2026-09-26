@@ -1,5 +1,7 @@
 /** Modelos e validação de mensagens WhatsApp (especificação do produto). */
 
+import { t, type MessageKey } from "../i18n/index.ts";
+
 export type WhatsAppTemplateKey =
   | "booking.confirmed"
   | "booking.cancelled"
@@ -17,21 +19,42 @@ export const WHATSAPP_TEMPLATE_VARS = [
 
 export type WhatsAppTemplateVar = (typeof WHATSAPP_TEMPLATE_VARS)[number];
 
-export const WHATSAPP_TEMPLATE_VAR_HELP: Record<
-  WhatsAppTemplateVar,
-  { chip: string; label: string; example: string }
-> = {
-  loja: { chip: "Loja", label: "Nome da barbearia", example: "Barba & Cabelo" },
-  serviço: { chip: "Serviço", label: "Serviço reservado", example: "Corte e barba" },
-  profissional: { chip: "Profissional", label: "Nome do profissional", example: "Rafael" },
-  quando: { chip: "Quando", label: "Data e horário", example: "26/09/2026 às 14h30" },
-  cliente: { chip: "Cliente", label: "Nome do cliente", example: "João" },
+/** Rótulos exibidos no editor (chaves do dicionário); o token gravado continua {{chave}}. */
+export const WHATSAPP_TEMPLATE_VAR_HELP = {
+  loja: {
+    chipKey: "integr.var.shop.chip",
+    labelKey: "integr.var.shop.label",
+    example: "Barba & Cabelo",
+  },
+  serviço: {
+    chipKey: "integr.var.service.chip",
+    labelKey: "integr.var.service.label",
+    example: "Corte e barba",
+  },
+  profissional: {
+    chipKey: "integr.var.staff.chip",
+    labelKey: "integr.var.staff.label",
+    example: "Rafael",
+  },
+  quando: {
+    chipKey: "integr.var.when.chip",
+    labelKey: "integr.var.when.label",
+    example: "26/09/2026 às 14h30",
+  },
+  cliente: {
+    chipKey: "integr.var.client.chip",
+    labelKey: "integr.var.client.label",
+    example: "João",
+  },
   link_reserva: {
-    chip: "Link",
-    label: "Link para o cliente gerenciar o horário",
+    chipKey: "integr.var.link.chip",
+    labelKey: "integr.var.link.label",
     example: "https://example.com/reserva/abc123",
   },
-};
+} as const satisfies Record<
+  WhatsAppTemplateVar,
+  { chipKey: MessageKey; labelKey: MessageKey; example: string }
+>;
 
 export const DEFAULT_WHATSAPP_BODIES: Record<WhatsAppTemplateKey, string> = {
   "booking.confirmed": `✂️ *Horário confirmado!*
@@ -119,20 +142,20 @@ export function validateWhatsAppTemplate(body: string): string[] {
   const normalized = normalizeWhatsAppTemplate(body);
 
   if (!normalized.trim()) {
-    errors.push("A mensagem não pode ficar vazia.");
+    errors.push(t("integr.tpl.errEmpty"));
   }
 
   const length = whatsappCodePointLength(normalized);
   if (length > 1000) {
-    errors.push(`Passou do limite: ${length} de 1.000 caracteres.`);
+    errors.push(t("integr.tpl.errTooLong", { length }));
   }
 
   for (const key of findWhatsAppPlaceholders(normalized)) {
     if (!ALLOWED_VAR_SET.has(key)) {
       errors.push(
         key.trim() === ""
-          ? "Há chaves {{ }} incompletas."
-          : `Variável desconhecida: {{${key}}}. Use só as seis permitidas.`,
+          ? t("integr.tpl.errIncomplete")
+          : t("integr.tpl.errUnknownVar", { token: `{{${key}}}` }),
       );
     }
   }
@@ -142,24 +165,22 @@ export function validateWhatsAppTemplate(body: string): string[] {
   const withoutUrls = withoutVars.replace(/https?:\/\/\S+/gi, "§");
 
   if (/\*\*[^*]+\*\*/.test(withoutUrls) || /__[^_]+__/.test(withoutUrls)) {
-    errors.push("Para negrito use *texto*, não **texto** nem __texto__.");
+    errors.push(t("integr.tpl.errBold"));
   }
   if (/~~[^~]+~~/.test(withoutUrls)) {
-    errors.push("Para tachado use ~texto~, não ~~texto~~.");
+    errors.push(t("integr.tpl.errStrike"));
   }
   if (/\[([^\]]+)\]\(([^)]+)\)/.test(withoutVars)) {
-    errors.push("Não use links Markdown [texto](url). Coloque a URL completa em uma linha.");
+    errors.push(t("integr.tpl.errMdLink"));
   }
   if (/<\/?[a-z][^>]*>/i.test(withoutUrls)) {
-    errors.push("Não use HTML na mensagem.");
+    errors.push(t("integr.tpl.errHtml"));
   }
   if (/^#{1,6}\s/m.test(withoutUrls)) {
-    errors.push("Não use títulos com #. Prefira *negrito*.");
+    errors.push(t("integr.tpl.errHeading"));
   }
   if (/```(?:json|text|md|html|js|ts)\b/i.test(withoutUrls)) {
-    errors.push(
-      "Remova cercas de documentação (```text). Três crases só para monoespaçado intencional.",
-    );
+    errors.push(t("integr.tpl.errFence"));
   }
 
   return errors;

@@ -7,6 +7,7 @@ import {
   type BrandCornerStyle,
   type BrandLoginLayout,
 } from "@/lib/shop/branding";
+import { useI18n } from "@/lib/i18n";
 import { BrandFontFace } from "./BrandFontFace";
 
 export type LoginScreenPreviewProps = {
@@ -47,6 +48,7 @@ export function LoginScreenPreview({
   framed = false,
   className = "",
 }: LoginScreenPreviewProps) {
+  const { t } = useI18n();
   const style = brandVariables(
     primaryColor,
     accentColor,
@@ -85,8 +87,8 @@ export function LoginScreenPreview({
               {logoUrl ? <img src={logoUrl} alt="" /> : <Scissors className="size-7" />}
             </div>
             <p className="auth-brand-name">{shopName}</p>
-            <h2>Seu cuidado começa aqui.</h2>
-            <p>Agende, acompanhe seus horários e aproveite os benefícios da sua barbearia.</p>
+            <h2>{t("auth.hero.title")}</h2>
+            <p>{t("auth.hero.text")}</p>
           </section>
         )}
 
@@ -98,8 +100,7 @@ export function LoginScreenPreview({
                   className="auth-brand-logo flex size-11 shrink-0 items-center justify-center overflow-hidden"
                   style={{
                     backgroundColor:
-                      logoBackgroundColor ??
-                      "color-mix(in oklch, var(--brand-primary) 8%, white)",
+                      logoBackgroundColor ?? "color-mix(in oklch, var(--brand-primary) 8%, white)",
                   }}
                 >
                   {logoUrl ? (
@@ -112,38 +113,38 @@ export function LoginScreenPreview({
               </div>
             )}
             <p className="auth-eyebrow text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
-              Bem-vindo de volta
+              {t("auth.eyebrow.signin")}
             </p>
             <h3 className="mt-2 text-2xl font-extrabold tracking-tight text-foreground">
-              Acesse sua conta
+              {t("auth.title.signin")}
             </h3>
-            <p className="mt-1.5 text-sm text-muted-foreground">
-              Acesso do cliente, da barbearia ou da plataforma.
-            </p>
+            <p className="mt-1.5 text-sm text-muted-foreground">{t("auth.subtitle.signin")}</p>
             <div
               className="auth-mode-tabs auth-brand-control mt-5 grid grid-cols-2 gap-1 bg-muted/70 p-1"
               role="presentation"
             >
               <span className="auth-brand-button flex min-h-11 items-center justify-center bg-card text-sm font-semibold text-foreground shadow-sm">
-                Entrar
+                {t("auth.tab.signin")}
               </span>
               <span className="auth-brand-button flex min-h-11 items-center justify-center text-sm font-semibold text-muted-foreground">
-                Cadastrar
+                {t("auth.tab.signup")}
               </span>
             </div>
           </div>
 
           <div className="auth-form-body space-y-4 px-6 pb-8 pt-5 sm:px-8">
             <label className="block space-y-2 text-sm font-semibold text-foreground/85">
-              <span>Email</span>
+              <span>{t("auth.field.email")}</span>
               <span className="auth-input-wrap auth-brand-control flex min-h-[3.25rem] items-center border border-border/70">
                 <Mail className="ml-4 size-[18px] shrink-0 text-muted-foreground" />
-                <span className="px-3 text-[15px] text-muted-foreground/70">voce@email.com</span>
+                <span className="px-3 text-[15px] text-muted-foreground/70">
+                  {t("auth.field.emailPlaceholder")}
+                </span>
               </span>
             </label>
             <div className="space-y-1">
               <label className="block space-y-2 text-sm font-semibold text-foreground/85">
-                <span>Senha</span>
+                <span>{t("auth.field.password")}</span>
                 <span className="auth-input-wrap auth-brand-control flex min-h-[3.25rem] items-center border border-border/70">
                   <LockKeyhole className="ml-4 size-[18px] shrink-0 text-muted-foreground" />
                   <span className="min-w-0 flex-1 px-3 text-[15px] text-muted-foreground/70">
@@ -156,16 +157,16 @@ export function LoginScreenPreview({
               </label>
               <div className="auth-forgot-password">
                 <span className="inline-flex min-h-9 items-center px-1 text-xs font-semibold text-primary">
-                  Esqueci a senha
+                  {t("auth.forgot")}
                 </span>
               </div>
             </div>
             <span className="auth-primary-action auth-brand-button mt-1 flex min-h-[3.25rem] w-full items-center justify-center gap-2 bg-primary px-4 text-[15px] font-semibold text-primary-foreground">
-              Entrar
+              {t("auth.submit.signin")}
               <ArrowRight className="size-4" />
             </span>
             <p className="auth-panel-footer text-center text-[11px] text-muted-foreground">
-              Ambiente protegido · Prévia
+              {t("auth.protected")} · {t("brand.preview.tag")}
             </p>
           </div>
         </div>

@@ -5,6 +5,7 @@ import { useDemo } from "@/features/demo/context";
 import { RhythmDashboard, type RhythmPayload } from "@/features/insights/RhythmDashboard";
 import { ClientDirectory } from "./ClientDirectory";
 import { shopPublicOrigin } from "@/lib/shop/host";
+import { t as tNow, useI18n } from "@/lib/i18n";
 
 type WalletEntry = {
   appointment_id: string;
@@ -20,8 +21,12 @@ type WalletPayload = {
   entries: WalletEntry[];
 };
 
-function formatBRL(cents: number) {
-  return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+function formatBRL(cents: number, intlLocale: string) {
+  return (cents / 100).toLocaleString(intlLocale, {
+    style: "currency",
+    currency: "BRL",
+    currencyDisplay: "narrowSymbol",
+  });
 }
 
 /**
@@ -43,6 +48,7 @@ export function PartnerOverview({
   customDomain?: string | null;
   customDomainStatus?: string | null;
 }) {
+  const { t, intlLocale } = useI18n();
   const demo = useDemo();
   const [wallet, setWallet] = useState<WalletPayload | null>(null);
   const [rhythm, setRhythm] = useState<RhythmPayload | null>(null);
@@ -130,7 +136,9 @@ export function PartnerOverview({
         const date = new Date(row.starts_at);
         weekdays.set(date.getDay(), (weekdays.get(date.getDay()) ?? 0) + 1);
         hours.set(date.getHours(), (hours.get(date.getHours()) ?? 0) + 1);
-        const name = demo.services.find((s) => s.id === row.service_id)?.name ?? "Serviço";
+        const name =
+          demo.services.find((s) => s.id === row.service_id)?.name ??
+          tNow("team.partner.serviceFallback");
         services.set(name, (services.get(name) ?? 0) + 1);
       }
       const top = (map: Map<number, number>) =>
@@ -187,7 +195,7 @@ export function PartnerOverview({
   if (loading) {
     return (
       <p role="status" className="text-sm text-muted-foreground">
-        Carregando sua carteira…
+        {t("team.partner.loading")}
       </p>
     );
   }
@@ -199,11 +207,9 @@ export function PartnerOverview({
         <div className="rounded-2xl border border-border bg-card p-4">
           <p className="mb-2 flex items-center gap-2 text-sm font-bold">
             <Link2 className="size-4 text-gold" />
-            Seu link de agendamento
+            {t("team.partner.linkTitle")}
           </p>
-          <p className="text-xs text-muted-foreground">
-            Envie para sua cartela de clientes reservar direto com você.
-          </p>
+          <p className="text-xs text-muted-foreground">{t("team.partner.linkHint")}</p>
           <div className="mt-3 flex items-center gap-2">
             <code className="min-w-0 flex-1 truncate rounded-lg bg-muted px-3 py-2 text-xs">
               {bookingLink}
@@ -214,7 +220,7 @@ export function PartnerOverview({
               className="flex shrink-0 items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-semibold hover:bg-muted"
             >
               <Copy className="size-3.5" />
-              {copied ? "Copiado" : "Copiar"}
+              {copied ? t("team.partner.copied") : t("team.partner.copy")}
             </button>
           </div>
         </div>
@@ -224,21 +230,21 @@ export function PartnerOverview({
       <details className="group rounded-2xl border border-border bg-card p-4">
         <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-bold [&::-webkit-details-marker]:hidden">
           <Wallet className="size-4 text-gold" />
-          <span className="flex-1">Sua carteira</span>
+          <span className="flex-1">{t("team.partner.wallet")}</span>
           <span className="text-xs font-semibold text-muted-foreground">
-            {formatBRL(wallet?.total_completed_cents ?? 0)}
+            {formatBRL(wallet?.total_completed_cents ?? 0, intlLocale)}
           </span>
           <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
         </summary>
         <div className="mt-3 grid grid-cols-2 gap-3">
           <div>
-            <p className="text-xs text-muted-foreground">Atendimentos</p>
+            <p className="text-xs text-muted-foreground">{t("team.partner.appointments")}</p>
             <p className="text-2xl font-bold tabular-nums">{wallet?.completed_count ?? 0}</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Produzido</p>
+            <p className="text-xs text-muted-foreground">{t("team.partner.produced")}</p>
             <p className="text-2xl font-bold tabular-nums">
-              {formatBRL(wallet?.total_completed_cents ?? 0)}
+              {formatBRL(wallet?.total_completed_cents ?? 0, intlLocale)}
             </p>
           </div>
         </div>
@@ -250,17 +256,19 @@ export function PartnerOverview({
                 className="flex items-center justify-between gap-3 text-sm"
               >
                 <div className="min-w-0">
-                  <p className="truncate font-semibold">{entry.customer_name ?? "Cliente"}</p>
+                  <p className="truncate font-semibold">
+                    {entry.customer_name ?? t("team.partner.clientFallback")}
+                  </p>
                   <p className="truncate text-xs text-muted-foreground">
                     {entry.service_name} ·{" "}
-                    {new Date(entry.starts_at).toLocaleString("pt-BR", {
+                    {new Date(entry.starts_at).toLocaleString(intlLocale, {
                       dateStyle: "short",
                       timeStyle: "short",
                     })}
                   </p>
                 </div>
                 <span className="shrink-0 font-bold tabular-nums">
-                  {formatBRL(entry.amount_cents)}
+                  {formatBRL(entry.amount_cents, intlLocale)}
                 </span>
               </div>
             ))}
@@ -270,19 +278,24 @@ export function PartnerOverview({
 
       {/* Clientes (expansível) */}
       <div className="rounded-2xl border border-border bg-card p-4">
-        <ClientDirectory shopId={shopId} staffId={staffId} scope="own" title="Seus clientes" />
+        <ClientDirectory
+          shopId={shopId}
+          staffId={staffId}
+          scope="own"
+          title={t("team.partner.yourClients")}
+        />
       </div>
 
       {/* Ritmo */}
       {error ? (
         <p role="alert" className="text-sm text-destructive">
-          Não foi possível carregar sua carteira. Tente novamente.
+          {t("team.partner.loadError")}
         </p>
       ) : (
         <RhythmDashboard
           rhythm={rhythm}
-          title="Ritmo dos seus clientes"
-          dayLabel="Dia em que seus clientes mais vêm"
+          title={t("team.partner.rhythmTitle")}
+          dayLabel={t("team.partner.rhythmDay")}
         />
       )}
     </div>

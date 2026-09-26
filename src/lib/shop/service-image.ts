@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { t } from "../i18n/index.ts";
 
 export const SERVICE_IMAGE_BUCKET = "barbershop-services";
 export const SERVICE_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
@@ -12,24 +13,20 @@ const EXTENSION_BY_TYPE: Record<string, string> = {
   "image/svg+xml": "svg",
 };
 
-function storageUploadError(error: unknown, label: string) {
+function storageUploadError(error: unknown, kind: "service" | "staff") {
   const message = error instanceof Error ? error.message : String(error ?? "");
+  const label =
+    kind === "service" ? t("brand.upload.labelServicePhotos") : t("brand.upload.labelStaffPhotos");
   if (/bucket not found/i.test(message)) {
-    return new Error(
-      `O armazenamento de ${label} ainda não está configurado. Atualize a página e tente novamente.`,
-    );
+    return new Error(t("brand.upload.bucketMissing", { label }));
   }
   if (/row-level security|violates|not allowed|403|401|jwt/i.test(message)) {
-    return new Error(
-      `Sem permissão para enviar ${label}. Entre de novo ou peça ao dono da loja.`,
-    );
+    return new Error(t("brand.upload.noPermission", { label }));
   }
   if (/payload too large|maximum|2 ?mb|entity too large/i.test(message)) {
-    return new Error(`A imagem de ${label} deve ter no máximo 2 MB.`);
+    return new Error(t("brand.validate.imageSize"));
   }
-  return new Error(
-    message.trim() || `Não foi possível enviar a imagem de ${label}. Tente outro arquivo.`,
-  );
+  return new Error(message.trim() || t("brand.upload.failed"));
 }
 
 export function isServiceImageSource(value: string | null | undefined): value is string {
@@ -38,13 +35,13 @@ export function isServiceImageSource(value: string | null | undefined): value is
 
 export function validateServiceImage(file: File): string | null {
   if (!EXTENSION_BY_TYPE[file.type]) {
-    return "Use uma imagem PNG, JPEG, WebP ou SVG.";
+    return t("brand.validate.imageType");
   }
   if (file.size > SERVICE_IMAGE_MAX_BYTES) {
-    return "A imagem deve ter no máximo 2 MB.";
+    return t("brand.validate.imageSize");
   }
   if (file.size === 0) {
-    return "A imagem selecionada está vazia.";
+    return t("brand.validate.imageEmpty");
   }
   return null;
 }
@@ -55,9 +52,9 @@ export function serviceImageToDataUrl(file: File) {
     reader.addEventListener("load", () =>
       typeof reader.result === "string"
         ? resolve(reader.result)
-        : reject(new Error("Não foi possível ler a imagem.")),
+        : reject(new Error(t("brand.upload.readImage"))),
     );
-    reader.addEventListener("error", () => reject(new Error("Não foi possível ler a imagem.")));
+    reader.addEventListener("error", () => reject(new Error(t("brand.upload.readImage"))));
     reader.readAsDataURL(file);
   });
 }
@@ -70,7 +67,7 @@ export async function uploadServiceImage(shopId: string, file: File) {
     contentType: file.type || "image/webp",
     upsert: false,
   });
-  if (error) throw storageUploadError(error, "serviço");
+  if (error) throw storageUploadError(error, "service");
 
   const { data } = supabase.storage.from(SERVICE_IMAGE_BUCKET).getPublicUrl(path);
   return `${data.publicUrl}?v=${Date.now()}`;
@@ -85,7 +82,7 @@ export async function uploadStaffAvatar(shopId: string, file: File) {
     contentType: file.type || "image/webp",
     upsert: false,
   });
-  if (error) throw storageUploadError(error, "barbeiro");
+  if (error) throw storageUploadError(error, "staff");
 
   const { data } = supabase.storage.from(SERVICE_IMAGE_BUCKET).getPublicUrl(path);
   return `${data.publicUrl}?v=${Date.now()}`;

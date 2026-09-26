@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { themeBootstrapScript } from "../lib/theme";
 import { localeBootstrapScript } from "../lib/i18n/locale";
+import { useI18n } from "../lib/i18n";
 import { PwaRegister } from "../lib/pwa";
 import { PwaInstallBanner } from "../components/pwa-install-banner";
 
@@ -21,20 +22,19 @@ const APP_DESCRIPTION =
   "Agendamento, fidelidade e gestão para barbearias: reserve seu horário, acompanhe pontos e organize a agenda da equipe.";
 
 function NotFoundComponent() {
+  const { t } = useI18n();
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-semibold tracking-tight text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Página não encontrada</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          O endereço que você abriu não existe ou foi movido.
-        </p>
+        <h2 className="mt-4 text-xl font-semibold text-foreground">{t("app.notFound.title")}</h2>
+        <p className="mt-2 text-sm text-muted-foreground">{t("app.notFound.body")}</p>
         <div className="mt-6">
           <Link
             to="/"
             className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Voltar ao início
+            {t("app.common.backHome")}
           </Link>
         </div>
       </div>
@@ -45,6 +45,7 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
+  const { t } = useI18n();
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
@@ -53,11 +54,9 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          Esta página não carregou
+          {t("app.error.title")}
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Algo deu errado do nosso lado. Tente novamente ou volte ao início.
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">{t("app.error.body")}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
@@ -66,13 +65,13 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             }}
             className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Tentar novamente
+            {t("app.error.retry")}
           </button>
           <a
             href="/"
             className="inline-flex min-h-11 items-center justify-center rounded-xl border border-input bg-background px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
           >
-            Voltar ao início
+            {t("app.common.backHome")}
           </a>
         </div>
       </div>

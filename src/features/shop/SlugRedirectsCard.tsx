@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState, type ReactNode } from "react";
 import { Link2, Lock, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useI18n } from "@/lib/i18n";
 
 type ShopRedirect = {
   id: string;
@@ -18,6 +19,12 @@ type StaffRedirect = {
   created_at: string;
 };
 
+function richText(template: string, nodes: Record<string, ReactNode>) {
+  return template
+    .split(/\{(\w+)\}/g)
+    .map((part, i) => (i % 2 === 1 ? <Fragment key={i}>{nodes[part] ?? part}</Fragment> : part));
+}
+
 type SlugRedirectsCardProps = {
   shopId: string;
   currentShopSlug?: string | null;
@@ -29,6 +36,7 @@ export function SlugRedirectsCard({
   currentShopSlug,
   canManageShopRedirects = true,
 }: SlugRedirectsCardProps) {
+  const { t } = useI18n();
   const [shopRedirects, setShopRedirects] = useState<ShopRedirect[]>([]);
   const [staffRedirects, setStaffRedirects] = useState<StaffRedirect[]>([]);
   const [busy, setBusy] = useState(false);
@@ -66,7 +74,7 @@ export function SlugRedirectsCard({
       if (rpcError) throw rpcError;
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao remover redirect.");
+      setError(err instanceof Error ? err.message : t("integr.redirects.errRemove"));
     } finally {
       setBusy(false);
     }
@@ -82,7 +90,7 @@ export function SlugRedirectsCard({
       if (rpcError) throw rpcError;
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao remover redirect.");
+      setError(err instanceof Error ? err.message : t("integr.redirects.errRemove"));
     } finally {
       setBusy(false);
     }
@@ -97,17 +105,13 @@ export function SlugRedirectsCard({
           <Link2 size={18} />
         </span>
         <div>
-          <h3 className="text-sm font-bold">Links e redirecionamentos</h3>
+          <h3 className="text-sm font-bold">{t("integr.redirects.title")}</h3>
           <p className="text-xs text-muted-foreground">
-            O endereço atual é gerado pelo nome
-            {currentShopSlug ? (
-              <>
-                {" "}
-                (<span className="font-semibold text-foreground">/{currentShopSlug}</span>)
-              </>
-            ) : null}
-            . Links antigos continuam válidos até você apagá-los. Links travados (saída com
-            carteira) não podem ser alterados pela loja.
+            {currentShopSlug
+              ? richText(t("integr.redirects.introSlug"), {
+                  slug: <span className="font-semibold text-foreground">/{currentShopSlug}</span>,
+                })
+              : t("integr.redirects.intro")}
           </p>
         </div>
       </div>
@@ -119,7 +123,7 @@ export function SlugRedirectsCard({
       )}
 
       {empty ? (
-        <p className="text-xs text-muted-foreground">Nenhum redirecionamento ativo.</p>
+        <p className="text-xs text-muted-foreground">{t("integr.redirects.empty")}</p>
       ) : (
         <ul className="space-y-2">
           {shopRedirects.map((row) => (
@@ -130,21 +134,26 @@ export function SlugRedirectsCard({
               <div>
                 <p className="font-semibold">/{row.from_slug}</p>
                 <p className="text-xs text-muted-foreground">
-                  {row.locked ? "Travado" : "Redirect de loja"} → /{currentShopSlug}
+                  {row.locked ? t("integr.redirects.locked") : t("integr.redirects.shopRedirect")} →
+                  /{currentShopSlug}
                 </p>
               </div>
               {row.locked || !canManageShopRedirects ? (
-                <Lock size={16} className="text-muted-foreground" aria-label="Travado" />
+                <Lock
+                  size={16}
+                  className="text-muted-foreground"
+                  aria-label={t("integr.redirects.locked")}
+                />
               ) : (
                 <button
                   type="button"
                   disabled={busy}
                   className="action-button action-danger"
-                  aria-label={`Apagar redirect /${row.from_slug}`}
+                  aria-label={t("integr.redirects.deleteShopAria", { slug: row.from_slug })}
                   onClick={() => void removeShopRedirect(row.id)}
                 >
                   <Trash2 size={14} />
-                  Apagar
+                  {t("integr.redirects.delete")}
                 </button>
               )}
             </li>
@@ -160,22 +169,28 @@ export function SlugRedirectsCard({
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {row.locked
-                    ? "Travado (profissional saiu com a carteira)"
-                    : "Redirect de profissional"}
+                    ? t("integr.redirects.lockedStaff")
+                    : t("integr.redirects.staffRedirect")}
                 </p>
               </div>
               {row.locked ? (
-                <Lock size={16} className="text-muted-foreground" aria-label="Travado" />
+                <Lock
+                  size={16}
+                  className="text-muted-foreground"
+                  aria-label={t("integr.redirects.locked")}
+                />
               ) : canManageShopRedirects ? (
                 <button
                   type="button"
                   disabled={busy}
                   className="action-button action-danger"
-                  aria-label={`Apagar redirect do barbeiro ${row.from_booking_slug}`}
+                  aria-label={t("integr.redirects.deleteStaffAria", {
+                    slug: row.from_booking_slug,
+                  })}
                   onClick={() => void removeStaffRedirect(row.id)}
                 >
                   <Trash2 size={14} />
-                  Apagar
+                  {t("integr.redirects.delete")}
                 </button>
               ) : null}
             </li>

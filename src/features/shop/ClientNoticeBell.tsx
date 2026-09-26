@@ -1,42 +1,50 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { Bell, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
 
 const PRESETS = [
   {
     id: "reminder_next" as const,
-    title: "Lembrete do próximo horário",
-    hint: "Avisa sobre o próximo atendimento marcado.",
+    titleKey: "team.notice.reminderNext",
+    hintKey: "team.notice.reminderNextHint",
   },
   {
     id: "confirm_today" as const,
-    title: "Confirmar se vem hoje",
-    hint: "Pede confirmação para o horário de hoje.",
+    titleKey: "team.notice.confirmToday",
+    hintKey: "team.notice.confirmTodayHint",
   },
   {
     id: "slot_open" as const,
-    title: "Vaga disponível",
-    hint: "Informa que abriu uma vaga.",
+    titleKey: "team.notice.slotOpen",
+    hintKey: "team.notice.slotOpenHint",
   },
   {
     id: "shop_hello" as const,
-    title: "Aviso da loja",
-    hint: "Mensagem curta e genérica da barbearia.",
+    titleKey: "team.notice.shopHello",
+    hintKey: "team.notice.shopHelloHint",
   },
-];
+] as const satisfies readonly { id: string; titleKey: MessageKey; hintKey: MessageKey }[];
 
 type NoticePreset = (typeof PRESETS)[number]["id"];
 
+function richText(template: string, nodes: Record<string, ReactNode>) {
+  return template
+    .split(/\{(\w+)\}/g)
+    .map((part, i) => (i % 2 === 1 ? <Fragment key={i}>{nodes[part] ?? part}</Fragment> : part));
+}
+
 function formatWait(seconds: number) {
   const m = Math.max(1, Math.ceil(seconds / 60));
-  return m === 1 ? "1 minuto" : `${m} minutos`;
+  return m === 1 ? tNow("team.notice.minuteOne") : tNow("team.notice.minutes", { count: m });
+}
+
+function channelLabel(channel: string) {
+  if (channel === "whatsapp") return "WhatsApp";
+  if (channel === "email") return tNow("team.notice.channelEmail");
+  return channel;
 }
 
 export function ClientNoticeBell({
@@ -48,6 +56,7 @@ export function ClientNoticeBell({
   customerId: string;
   customerName: string | null;
 }) {
+  const { t } = useI18n();
   const demo = useDemo();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -82,7 +91,7 @@ export function ClientNoticeBell({
     setMessage(null);
     try {
       if (demo) {
-        setMessage("Na demonstração o aviso só aparece aqui.");
+        setMessage(t("team.notice.demo"));
         setOpen(false);
         return;
       }
@@ -92,7 +101,7 @@ export function ClientNoticeBell({
         p_preset: preset,
       });
       if (rpcError) {
-        throw new Error(rpcError.message || "Não foi possível enviar o aviso.");
+        throw new Error(rpcError.message || t("team.notice.sendError"));
       }
       const result = data as {
         channels?: string[];
@@ -104,9 +113,7 @@ export function ClientNoticeBell({
         const wait = Number(result.wait_seconds) || 0;
         setPendingPreset(result.preset ?? preset);
         setWaitSeconds(wait);
-        setMessage(
-          `Agendado — envia automaticamente em ${formatWait(wait)} (último aviso escolhido).`,
-        );
+        setMessage(t("team.notice.queued", { wait: formatWait(wait) }));
         setOpen(false);
         return;
       }
@@ -115,8 +122,10 @@ export function ClientNoticeBell({
       setWaitSeconds(0);
       setMessage(
         channels.length
-          ? `Enviado por ${channels.join(" e ")}.`
-          : "Aviso registrado.",
+          ? t("team.notice.sentBy", {
+              channels: channels.map(channelLabel).join(t("team.notice.and")),
+            })
+          : t("team.notice.recorded"),
       );
       setOpen(false);
     } catch (err) {
@@ -126,13 +135,14 @@ export function ClientNoticeBell({
           : err && typeof err === "object" && "message" in err
             ? String((err as { message: unknown }).message)
             : null;
-      setError(detail || "Não foi possível enviar o aviso.");
+      setError(detail || t("team.notice.sendError"));
     } finally {
       setBusy(false);
     }
   }
 
-  const pendingLabel = PRESETS.find((row) => row.id === pendingPreset)?.title;
+  const pendingKey = PRESETS.find((row) => row.id === pendingPreset)?.titleKey;
+  const pendingLabel = pendingKey ? t(pendingKey) : undefined;
 
   return (
     <>
@@ -143,8 +153,10 @@ export function ClientNoticeBell({
           setOpen(true);
           setError(null);
         }}
-        aria-label={`Enviar aviso para ${customerName ?? "cliente"}`}
-        title={pendingPreset ? "Aviso agendado" : "Enviar aviso"}
+        aria-label={t("team.notice.sendTo", {
+          name: customerName ?? t("team.clients.clientLower"),
+        })}
+        title={pendingPreset ? t("team.notice.scheduledTitle") : t("team.notice.send")}
         className={`flex size-10 shrink-0 items-center justify-center rounded-xl border ${
           pendingPreset
             ? "border-gold text-gold"
@@ -165,16 +177,16 @@ export function ClientNoticeBell({
           className="max-w-sm rounded-3xl border-border bg-card p-5"
           onClick={(event) => event.stopPropagation()}
         >
-          <DialogTitle className="text-base font-extrabold">Enviar aviso</DialogTitle>
+          <DialogTitle className="text-base font-extrabold">{t("team.notice.send")}</DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Escolha um aviso para {customerName ?? "o cliente"}. Envia no WhatsApp e/ou e-mail. Se
-            ainda estiver no intervalo de 30 minutos, o último gatilho fica agendado e sai
-            automaticamente.
+            {t("team.notice.description", { name: customerName ?? t("team.notice.theClient") })}
           </DialogDescription>
           {pendingPreset && (
             <p className="mt-2 rounded-xl border border-gold/40 bg-gold/10 px-3 py-2 text-xs text-foreground">
-              Agendado: <strong>{pendingLabel ?? pendingPreset}</strong>
-              {waitSeconds > 0 ? ` — envia em ${formatWait(waitSeconds)}.` : "."}
+              {richText(t("team.notice.scheduled"), {
+                name: <strong>{pendingLabel ?? pendingPreset}</strong>,
+              })}
+              {waitSeconds > 0 ? t("team.notice.sendsIn", { wait: formatWait(waitSeconds) }) : "."}
             </p>
           )}
           <div className="mt-3 space-y-2">
@@ -186,14 +198,14 @@ export function ClientNoticeBell({
                 onClick={() => void send(preset.id)}
                 className="flex w-full flex-col gap-0.5 rounded-xl border border-border px-3 py-3 text-left hover:border-primary disabled:opacity-50"
               >
-                <span className="text-sm font-semibold">{preset.title}</span>
-                <span className="text-xs text-muted-foreground">{preset.hint}</span>
+                <span className="text-sm font-semibold">{t(preset.titleKey)}</span>
+                <span className="text-xs text-muted-foreground">{t(preset.hintKey)}</span>
               </button>
             ))}
           </div>
           {busy && (
             <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="size-3.5 animate-spin" /> Enviando…
+              <Loader2 className="size-3.5 animate-spin" /> {t("team.notice.sending")}
             </p>
           )}
           {error && (

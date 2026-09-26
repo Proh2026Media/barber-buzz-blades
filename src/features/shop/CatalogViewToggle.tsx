@@ -1,4 +1,5 @@
 import { LayoutGrid, List } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 export type CatalogViewMode = "grid" | "list";
 
@@ -12,16 +13,17 @@ export function CatalogViewToggle({
   onViewMode: (value: CatalogViewMode) => void;
   className?: string;
 }) {
+  const { t } = useI18n();
   return (
     <div
       className={`flex shrink-0 gap-1 rounded-xl border border-border bg-card p-1 ${className}`}
       role="group"
-      aria-label="Modo de visualização"
+      aria-label={t("brand.catalog.viewAria")}
     >
       {(
         [
-          { id: "grid" as const, label: "Grade", icon: LayoutGrid },
-          { id: "list" as const, label: "Lista", icon: List },
+          { id: "grid" as const, label: t("brand.catalog.grid"), icon: LayoutGrid },
+          { id: "list" as const, label: t("brand.catalog.list"), icon: List },
         ] as const
       ).map(({ id, label: name, icon: Icon }) => (
         <button

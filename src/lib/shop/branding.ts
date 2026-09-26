@@ -1,5 +1,6 @@
 import type { Tables } from "@/integrations/supabase/types";
 import type { Json } from "@/integrations/supabase/types";
+import { t, type MessageKey } from "../i18n/index.ts";
 import { normalizeFontFaces, type BrandFontFaceRecord } from "./font-files.ts";
 
 export const DEFAULT_PRIMARY_COLOR = "#292925";
@@ -18,37 +19,37 @@ export const BRAND_FONT_OPTIONS = [
   {
     value: "inter",
     label: "Inter",
-    hint: "Neutra e limpa. Padrão do sistema.",
+    hintKey: "brand.fontOption.inter",
     stack: '"Inter Variable", "Inter", system-ui, sans-serif',
   },
   {
     value: "manrope",
     label: "Manrope",
-    hint: "Geométrica e moderna, com traço leve.",
+    hintKey: "brand.fontOption.manrope",
     stack: '"Manrope Variable", "Manrope", system-ui, sans-serif',
   },
   {
     value: "montserrat",
     label: "Montserrat",
-    hint: "Marcante e ampla, boa para títulos fortes.",
+    hintKey: "brand.fontOption.montserrat",
     stack: '"Montserrat Variable", "Montserrat", system-ui, sans-serif',
   },
   {
     value: "nunito-sans",
     label: "Nunito Sans",
-    hint: "Amigável e arredondada, fácil de ler.",
+    hintKey: "brand.fontOption.nunitoSans",
     stack: '"Nunito Sans Variable", "Nunito Sans", system-ui, sans-serif',
   },
   {
     value: "source-sans-3",
     label: "Source Sans 3",
-    hint: "Compacta e discreta, foco em textos.",
+    hintKey: "brand.fontOption.sourceSans3",
     stack: '"Source Sans 3 Variable", "Source Sans 3", system-ui, sans-serif',
   },
   {
     value: "roboto",
     label: "Roboto",
-    hint: "Familiar no Android, sólida e direta.",
+    hintKey: "brand.fontOption.roboto",
     stack: '"Roboto Variable", "Roboto", system-ui, sans-serif',
   },
 ] as const;
@@ -61,54 +62,54 @@ export type BrandLoginLayout = "cover" | "split" | "card";
 
 export const BRAND_LOGIN_LAYOUT_OPTIONS: {
   value: BrandLoginLayout;
-  label: string;
-  hint: string;
+  labelKey: MessageKey;
+  hintKey: MessageKey;
 }[] = [
   {
     value: "cover",
-    label: "Foto imersiva",
-    hint: "A imagem ocupa toda a tela e envolve o acesso.",
+    labelKey: "brand.layout.cover",
+    hintKey: "brand.layout.coverHint",
   },
   {
     value: "split",
-    label: "Foto e formulário",
-    hint: "Divide a tela para deixar marca e acesso lado a lado.",
+    labelKey: "brand.layout.split",
+    hintKey: "brand.layout.splitHint",
   },
   {
     value: "card",
-    label: "Cartão sobre foto",
-    hint: "Destaca o formulário em um cartão central sobre a imagem.",
+    labelKey: "brand.layout.card",
+    hintKey: "brand.layout.cardHint",
   },
 ];
 
 export const BRAND_CORNER_OPTIONS: {
   value: BrandCornerStyle;
-  label: string;
-  hint: string;
+  labelKey: MessageKey;
+  hintKey: MessageKey;
   controlRadius: string;
   panelRadius: string;
   buttonRadius: string;
 }[] = [
   {
     value: "square",
-    label: "Retos",
-    hint: "Visual preciso, sem arredondamento nos componentes.",
+    labelKey: "brand.corner.square",
+    hintKey: "brand.corner.squareHint",
     controlRadius: "0rem",
     panelRadius: "0rem",
     buttonRadius: "0rem",
   },
   {
     value: "soft",
-    label: "Semi arredondados",
-    hint: "Equilíbrio atual entre moderno e discreto.",
+    labelKey: "brand.corner.soft",
+    hintKey: "brand.corner.softHint",
     controlRadius: "0.9rem",
     panelRadius: "1.35rem",
     buttonRadius: "0.9rem",
   },
   {
     value: "round",
-    label: "Arredondados",
-    hint: "Botões em formato cápsula e painéis mais suaves.",
+    labelKey: "brand.corner.round",
+    hintKey: "brand.corner.roundHint",
     controlRadius: "1.2rem",
     panelRadius: "2rem",
     buttonRadius: "999px",
@@ -117,39 +118,39 @@ export const BRAND_CORNER_OPTIONS: {
 
 export const BRAND_FONT_SCOPE_OPTIONS: {
   value: BrandFontScope;
-  label: string;
-  hint: string;
+  labelKey: MessageKey;
+  hintKey: MessageKey;
 }[] = [
   {
     value: "header",
-    label: "Somente cabeçalho",
-    hint: "Nome da barbearia no topo do app.",
+    labelKey: "brand.fontScope.header",
+    hintKey: "brand.fontScope.headerHint",
   },
   {
     value: "titles",
-    label: "Cabeçalho e títulos",
-    hint: "Também usa em títulos de seções e nomes de serviços.",
+    labelKey: "brand.fontScope.titles",
+    hintKey: "brand.fontScope.titlesHint",
   },
 ];
 
 /** Paleta curada para barbearias: tons escuros para a cor principal e quentes para destaque. */
 export const BRAND_PALETTE = [
-  { value: "#292925", name: "Carvão" },
-  { value: "#111827", name: "Grafite" },
-  { value: "#1F4E5F", name: "Petróleo" },
-  { value: "#234E70", name: "Marinho" },
-  { value: "#3D5A40", name: "Verde musgo" },
-  { value: "#4A3728", name: "Café" },
-  { value: "#553C9A", name: "Ametista" },
-  { value: "#7C2D12", name: "Ferrugem" },
-  { value: "#9F1239", name: "Vinho" },
-  { value: "#0F766E", name: "Esmeralda" },
-  { value: "#8A602F", name: "Bronze" },
-  { value: "#C58B36", name: "Ouro" },
-  { value: "#B45309", name: "Âmbar" },
-  { value: "#C2410C", name: "Cobre" },
-  { value: "#4F46E5", name: "Índigo" },
-  { value: "#0284C7", name: "Azul céu" },
+  { value: "#292925", nameKey: "brand.palette.charcoal" },
+  { value: "#111827", nameKey: "brand.palette.graphite" },
+  { value: "#1F4E5F", nameKey: "brand.palette.petrol" },
+  { value: "#234E70", nameKey: "brand.palette.navy" },
+  { value: "#3D5A40", nameKey: "brand.palette.moss" },
+  { value: "#4A3728", nameKey: "brand.palette.coffee" },
+  { value: "#553C9A", nameKey: "brand.palette.amethyst" },
+  { value: "#7C2D12", nameKey: "brand.palette.rust" },
+  { value: "#9F1239", nameKey: "brand.palette.wine" },
+  { value: "#0F766E", nameKey: "brand.palette.emerald" },
+  { value: "#8A602F", nameKey: "brand.palette.bronze" },
+  { value: "#C58B36", nameKey: "brand.palette.gold" },
+  { value: "#B45309", nameKey: "brand.palette.amber" },
+  { value: "#C2410C", nameKey: "brand.palette.copper" },
+  { value: "#4F46E5", nameKey: "brand.palette.indigo" },
+  { value: "#0284C7", nameKey: "brand.palette.sky" },
 ] as const;
 
 export const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
@@ -173,11 +174,17 @@ export function normalizeBrandColor(value: string | null | undefined, fallback: 
   return value && HEX_COLOR_PATTERN.test(value) ? value.toUpperCase() : fallback;
 }
 
-export function validateBrandLogo(file: { type: string; size: number }) {
+/** Valida o logo ou outra imagem da marca (`kind` muda só a mensagem de tamanho). */
+export function validateBrandLogo(
+  file: { type: string; size: number },
+  kind: "logo" | "image" = "logo",
+) {
   if (!(LOGO_MIME_TYPES as readonly string[]).includes(file.type)) {
-    return "Use uma imagem PNG, JPEG, WebP ou SVG.";
+    return t("brand.validate.imageType");
   }
-  if (file.size > LOGO_MAX_BYTES) return "O logo deve ter no máximo 2 MB.";
+  if (file.size > LOGO_MAX_BYTES) {
+    return kind === "logo" ? t("brand.validate.logoSize") : t("brand.validate.imageSize");
+  }
   return null;
 }
 
@@ -185,9 +192,9 @@ export function validateBrandFont(file: { type: string; size: number; name?: str
   const extension = file.name?.split(".").pop()?.toLowerCase();
   const supportedExtension = ["woff2", "woff", "ttf", "otf"].includes(extension ?? "");
   if (!(CUSTOM_FONT_MIME_TYPES as readonly string[]).includes(file.type) && !supportedExtension) {
-    return "Use uma fonte WOFF2, WOFF, TTF ou OTF.";
+    return t("brand.validate.fontType");
   }
-  if (file.size > CUSTOM_FONT_MAX_BYTES) return "A fonte deve ter no máximo 5 MB.";
+  if (file.size > CUSTOM_FONT_MAX_BYTES) return t("brand.validate.fontSize");
   return null;
 }
 
@@ -456,18 +463,18 @@ export function isBrandDraftDirty(draft: BrandDraft, settings: BrandSource) {
 /** Retorna a mensagem de erro do rascunho ou null quando está pronto para salvar. */
 export function validateBrandDraft(draft: BrandDraft) {
   if (!HEX_COLOR_PATTERN.test(draft.primary_color) || !HEX_COLOR_PATTERN.test(draft.accent_color)) {
-    return "Revise as cores. Use o formato hexadecimal #RRGGBB.";
+    return t("brand.validate.colors");
   }
   if (
     draft.logo_background_color !== null &&
     !HEX_COLOR_PATTERN.test(draft.logo_background_color)
   ) {
-    return "Revise o fundo da logo. Use o formato hexadecimal #RRGGBB.";
+    return t("brand.validate.logoBg");
   }
-  if (draft.display_name.trim().length > 80) return "O nome do cabeçalho tem no máximo 80 letras.";
+  if (draft.display_name.trim().length > 80) return t("brand.validate.nameLength");
   const tagline = draft.tagline.trim();
   if (tagline.length === 0 || tagline.length > 60) {
-    return "A frase abaixo do nome precisa ter entre 1 e 60 letras.";
+    return t("brand.validate.tagline");
   }
   return null;
 }

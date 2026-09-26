@@ -72,6 +72,7 @@ export function DatePicker({
 }
 
 export function TimePicker({ value, onChange, label, disabled }: Props) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(value.slice(0, 5));
   const [hour, minute] = draft.split(":");
@@ -105,8 +106,8 @@ export function TimePicker({ value, onChange, label, disabled }: Props) {
         </p>
         <div className="grid grid-cols-2 gap-3">
           {[
-            { title: "Hora", count: 24, selected: hour },
-            { title: "Minuto", count: 60, selected: minute },
+            { title: t("ui.time.hour"), count: 24, selected: hour },
+            { title: t("ui.time.minute"), count: 60, selected: minute },
           ].map((column, index) => (
             <div key={column.title}>
               <p className="mb-2 text-xs text-muted-foreground">{column.title}</p>
@@ -142,7 +143,7 @@ export function TimePicker({ value, onChange, label, disabled }: Props) {
             setOpen(false);
           }}
         >
-          Confirmar horário
+          {t("ui.time.confirm")}
         </button>
       </PopoverContent>
     </Popover>
@@ -240,6 +241,7 @@ export function DurationPicker({
   onChange: (value: number) => void;
   disabled?: boolean;
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(value);
   const hours = Math.floor(draft / 60);
@@ -260,7 +262,7 @@ export function DurationPicker({
           type="button"
           disabled={disabled}
           className="waiting-cutoff-pill"
-          aria-label={`Escolher antecedência: ${value} minutos`}
+          aria-label={t("ui.duration.choose", { minutes: value })}
           aria-haspopup="dialog"
         >
           {value < 60
@@ -276,20 +278,18 @@ export function DurationPicker({
         align="end"
       >
         <p className="flex items-center gap-2 font-semibold">
-          <Clock3 className="size-4 text-gold" /> Antecedência mínima
+          <Clock3 className="size-4 text-gold" /> {t("ui.duration.title")}
         </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Role as colunas ou use as setas do teclado.
-        </p>
+        <p className="mt-1 text-xs text-muted-foreground">{t("ui.duration.hint")}</p>
         <div className="relative mt-4 grid grid-cols-2 gap-3">
           <WheelColumn
-            label="Horas"
+            label={t("ui.duration.hours")}
             values={hourValues}
             value={hours}
             onChange={(nextHours) => setDraft(nextHours === 24 ? 1440 : nextHours * 60 + minutes)}
           />
           <WheelColumn
-            label="Minutos"
+            label={t("ui.duration.minutes")}
             values={minuteValues}
             value={minutes}
             onChange={(nextMinutes) => setDraft(hours * 60 + nextMinutes)}
@@ -306,7 +306,7 @@ export function DurationPicker({
             setOpen(false);
           }}
         >
-          Confirmar antecedência
+          {t("ui.duration.confirm")}
         </button>
       </PopoverContent>
     </Popover>

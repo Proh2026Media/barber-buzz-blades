@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { t } from "@/lib/i18n";
 import { useDemo } from "../demo/context";
 import { waitingDemoAction } from "./demo";
 import { blocksSlot, type WaitAction, type WaitingSnapshot } from "./model";
@@ -76,7 +77,7 @@ export function useWaiting(shopId: string | null | undefined, admin = false) {
       setError(
         error instanceof Error
           ? error.message
-          : ((error as { message?: string }).message ?? "Não foi possível atualizar a espera."),
+          : ((error as { message?: string }).message ?? t("wait.err.update")),
       );
       return false;
     } finally {

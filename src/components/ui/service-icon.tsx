@@ -152,13 +152,17 @@ import {
 } from "@lucide/lab";
 
 import { ServiceGlyph, type ServiceGlyphId } from "./service-glyphs";
+import { t, type MessageKey } from "@/lib/i18n";
 import { isServiceImageSource } from "@/lib/shop/service-image";
 import { cn } from "@/lib/utils";
 
 export type ServiceIconEntry = {
   /** Valor persistido no banco. */
   id: string;
+  /** Nome no idioma atual (lido na hora). */
   label: string;
+  /** Nome original em pt-BR, também usado na busca. */
+  baseLabel?: string;
   /** Termos extras para a busca do seletor. */
   keywords?: string;
   lucide?: LucideIcon;
@@ -168,9 +172,33 @@ export type ServiceIconEntry = {
 
 export type ServiceIconGroup = {
   id: string;
+  /** Nome no idioma atual (lido na hora). */
   label: string;
   icons: ServiceIconEntry[];
 };
+
+/** Chave do dicionário derivada do nome em pt-BR (ex.: "Tesoura e pente" → brand.icon.tesouraEPente). */
+function iconLabelKey(label: string) {
+  const words = label
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
+  const slug = words.map((word, index) => (index ? word[0]!.toUpperCase() + word.slice(1) : word));
+  return `brand.icon.${slug.join("")}` as MessageKey;
+}
+
+/** Troca o rótulo fixo por um que acompanha o idioma escolhido, sem mudar o formato do objeto. */
+function withTranslatedLabel<T extends { label: string }>(item: T): T & { baseLabel: string } {
+  const baseLabel = item.label;
+  const copy = { ...item, baseLabel };
+  Object.defineProperty(copy, "label", {
+    enumerable: true,
+    get: () => t(iconLabelKey(baseLabel)),
+  });
+  return copy;
+}
 
 const lab = (id: string, label: string, node: IconNode, keywords: string): ServiceIconEntry => ({
   id: `lab:${id}`,
@@ -186,7 +214,7 @@ const glyph = (id: ServiceGlyphId, label: string, keywords: string): ServiceIcon
   glyph: id,
 });
 
-export const SERVICE_ICON_GROUPS: ServiceIconGroup[] = [
+const BASE_SERVICE_ICON_GROUPS: ServiceIconGroup[] = [
   {
     id: "cabelo",
     label: "Cabelo",
@@ -446,6 +474,15 @@ export const SERVICE_ICON_GROUPS: ServiceIconGroup[] = [
   },
 ];
 
+export const SERVICE_ICON_GROUPS: ServiceIconGroup[] = BASE_SERVICE_ICON_GROUPS.map((group) =>
+  withTranslatedLabel({ ...group, icons: group.icons.map(withTranslatedLabel) }),
+);
+
+/** Nome traduzido de uma categoria do catálogo, pelo identificador. */
+export function serviceIconGroupLabel(groupId: string) {
+  return SERVICE_ICON_GROUPS.find((group) => group.id === groupId)?.label ?? groupId;
+}
+
 /** Lista plana, mantida para compatibilidade com buscas e testes existentes. */
 export const SERVICE_ICONS: ServiceIconEntry[] = SERVICE_ICON_GROUPS.flatMap(
   (group) => group.icons,
@@ -458,14 +495,16 @@ export function searchServiceIcons(query: string): ServiceIconEntry[] {
   const term = query.trim().toLowerCase();
   if (!term) return SERVICE_ICONS;
   return SERVICE_ICONS.filter((entry) =>
-    `${entry.label} ${entry.id} ${entry.keywords ?? ""}`.toLowerCase().includes(term),
+    `${entry.label} ${entry.baseLabel ?? ""} ${entry.id} ${entry.keywords ?? ""}`
+      .toLowerCase()
+      .includes(term),
   );
 }
 
 export function serviceIconLabel(id: string | null | undefined) {
-  if (!id) return "Tesoura";
-  if (isServiceImageSource(id)) return "Imagem personalizada";
-  return ICON_BY_ID.get(id)?.label ?? "Tesoura";
+  if (!id) return t("brand.icon.tesoura");
+  if (isServiceImageSource(id)) return t("brand.icon.imagemPersonalizada");
+  return ICON_BY_ID.get(id)?.label ?? t("brand.icon.tesoura");
 }
 
 export function ServiceIcon({

@@ -1,3 +1,5 @@
+import { t } from "../i18n/index.ts";
+
 export type BrandFontStyle = "normal" | "italic";
 
 export type BrandFontFaceRecord = {
@@ -15,9 +17,9 @@ export type PendingBrandFontFace = Omit<BrandFontFaceRecord, "url"> & {
 function validateSelectedFont(file: File) {
   const extension = file.name.split(".").pop()?.toLowerCase();
   if (!["woff2", "woff", "ttf", "otf"].includes(extension ?? "")) {
-    return "Use uma fonte WOFF2, WOFF, TTF ou OTF.";
+    return t("brand.validate.fontType");
   }
-  if (file.size > 5 * 1024 * 1024) return "A fonte deve ter no máximo 5 MB.";
+  if (file.size > 5 * 1024 * 1024) return t("brand.validate.fontSize");
   return null;
 }
 
@@ -82,10 +84,10 @@ export function analyzeFontFiles(files: File[]) {
   const fontFiles = files.filter(
     (file) => !file.name.startsWith("._") && file.name !== ".DS_Store",
   );
-  if (fontFiles.length === 0) return { error: "Escolha pelo menos um arquivo de fonte." } as const;
-  if (fontFiles.length > 12) return { error: "Envie no máximo 12 arquivos por família." } as const;
+  if (fontFiles.length === 0) return { error: t("brand.fontFiles.none") } as const;
+  if (fontFiles.length > 12) return { error: t("brand.fontFiles.tooMany") } as const;
   if (fontFiles.reduce((sum, file) => sum + file.size, 0) > 20 * 1024 * 1024) {
-    return { error: "A família completa deve ter no máximo 20 MB." } as const;
+    return { error: t("brand.fontFiles.tooBig") } as const;
   }
   for (const file of fontFiles) {
     const error = validateSelectedFont(file);
@@ -96,10 +98,7 @@ export function analyzeFontFiles(files: File[]) {
   const family = inferred[0]!.family;
   const differentFamily = inferred.some((item) => comparable(item.family) !== comparable(family));
   if (differentFamily) {
-    return {
-      error:
-        "Os arquivos parecem pertencer a famílias diferentes. Selecione apenas os pesos e estilos da mesma família.",
-    } as const;
+    return { error: t("brand.fontFiles.mixed") } as const;
   }
   const duplicate = inferred.some((item, index) =>
     inferred.some(
@@ -108,7 +107,7 @@ export function analyzeFontFiles(files: File[]) {
     ),
   );
   if (duplicate) {
-    return { error: "Há dois arquivos com o mesmo peso e estilo na seleção." } as const;
+    return { error: t("brand.fontFiles.duplicate") } as const;
   }
 
   return {
@@ -156,5 +155,5 @@ export function fontFaceLabel(face: Pick<BrandFontFaceRecord, "weight" | "style"
     800: "Extra Bold",
     900: "Black",
   };
-  return `${weights[face.weight] ?? face.weight}${face.style === "italic" ? " Itálico" : ""}`;
+  return `${weights[face.weight] ?? face.weight}${face.style === "italic" ? ` ${t("brand.font.italic")}` : ""}`;
 }

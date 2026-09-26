@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useDemo } from "@/features/demo/context";
 import { supabase } from "@/integrations/supabase/client";
+import { useI18n } from "@/lib/i18n";
 import { nextSurvey, questions, type Survey } from "./model";
 
 export function SurveyCard({ enabled = true }: { enabled?: boolean }) {
   const demo = useDemo();
+  const { t, intlLocale } = useI18n();
   const [survey, setSurvey] = useState<Survey | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -60,7 +62,7 @@ export function SurveyCard({ enabled = true }: { enabled?: boolean }) {
       }
       setSurvey(null);
     } catch {
-      setError("Não foi possível salvar sua resposta. Tente novamente.");
+      setError(t("ins.card.saveError"));
     } finally {
       setBusy(false);
     }
@@ -70,19 +72,20 @@ export function SurveyCard({ enabled = true }: { enabled?: boolean }) {
   if (!question) return null;
   return (
     <section
-      aria-label="Pesquisa opcional"
+      aria-label={t("ins.card.aria")}
       className="space-y-3 rounded-2xl border border-primary/20 bg-card p-4"
     >
       <p className="text-xs font-bold uppercase tracking-wider text-primary">
-        Pesquisa opcional · 1 pergunta
+        {t("ins.card.badge")}
       </p>
       <h3 className="text-sm font-semibold">{question.title}</h3>
       {survey.appointment_starts_at && (
         <p className="text-xs text-muted-foreground">
-          Atendimento de{" "}
-          {new Date(survey.appointment_starts_at).toLocaleString("pt-BR", {
-            dateStyle: "short",
-            timeStyle: "short",
+          {t("ins.card.appointmentOf", {
+            date: new Date(survey.appointment_starts_at).toLocaleString(intlLocale, {
+              dateStyle: "short",
+              timeStyle: "short",
+            }),
           })}
         </p>
       )}
@@ -103,7 +106,7 @@ export function SurveyCard({ enabled = true }: { enabled?: boolean }) {
         onClick={() => void answer(null)}
         className="text-xs text-muted-foreground underline"
       >
-        Agora não
+        {t("ins.card.notNow")}
       </button>
       {error && (
         <p role="alert" className="text-xs text-destructive">

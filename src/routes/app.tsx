@@ -5,6 +5,7 @@ import { ReservationAccessGate } from "@/features/customer/ReservationAccessGate
 import { requireSession } from "@/lib/auth/guards";
 import { getSessionProfile } from "@/lib/auth/session";
 import { maybeRedirectToCanonical, resolveShopFromCurrentHost } from "@/lib/shop/host";
+import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/app")({
   ssr: false,
@@ -32,6 +33,7 @@ export const Route = createFileRoute("/app")({
 function AppRoute() {
   const { barber, shop, join, tab, reserva } = Route.useSearch();
   const ctx = Route.useRouteContext() as { guestReservation?: boolean };
+  const { t } = useI18n();
   const [hostShop, setHostShop] = useState<string | undefined>(undefined);
   const [ready, setReady] = useState(Boolean(shop));
   const [guestDone, setGuestDone] = useState(false);
@@ -57,7 +59,7 @@ function AppRoute() {
   if (!ready) {
     return (
       <div className="flex min-h-dvh items-center justify-center text-sm text-muted-foreground">
-        Carregando…
+        {t("app.loading")}
       </div>
     );
   }

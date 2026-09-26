@@ -3,7 +3,7 @@ import { Download, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
-import { useI18n } from "@/lib/i18n";
+import { t as tNow, useI18n } from "@/lib/i18n";
 
 export type PrivacyRequest = {
   id: string;
@@ -15,7 +15,7 @@ export type PrivacyRequest = {
 
 export function DataRights({ admin = false }: { admin?: boolean }) {
   const demo = useDemo();
-  const { t } = useI18n();
+  const { t, intlLocale } = useI18n();
   const confirmWord = t("dataRights.confirmWord");
   const [rows, setRows] = useState<PrivacyRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,14 +46,14 @@ export function DataRights({ admin = false }: { admin?: boolean }) {
         });
         if (cancelled) return;
         if (failure) {
-          setError("Não foi possível consultar os pedidos.");
+          setError(tNow("ins.rights.loadError"));
         } else {
           setRows(Array.isArray(data) ? (data as unknown as PrivacyRequest[]) : []);
           setError("");
         }
       } catch {
         if (cancelled) return;
-        setError("Não foi possível consultar os pedidos.");
+        setError(tNow("ins.rights.loadError"));
         setRows([]);
       } finally {
         if (!cancelled) setLoading(false);
@@ -148,9 +148,9 @@ export function DataRights({ admin = false }: { admin?: boolean }) {
         if (result.error) throw result.error;
       }
       setVersion((v) => v + 1);
-      setMessage("Pedido atualizado.");
+      setMessage(t("ins.rights.updated"));
     } catch {
-      setError("Não foi possível concluir a operação. Tente novamente.");
+      setError(t("ins.rights.actionError"));
     } finally {
       setBusy(false);
     }
@@ -158,12 +158,12 @@ export function DataRights({ admin = false }: { admin?: boolean }) {
 
   return (
     <section
-      aria-label={admin ? "Pedidos de privacidade" : t("dataRights.region")}
+      aria-label={admin ? t("ins.rights.title") : t("dataRights.region")}
       className="space-y-4 rounded-2xl border border-border bg-card p-4"
     >
       <h3 className="flex items-center gap-2 text-sm font-bold">
         <ShieldCheck className="size-5 text-primary" aria-hidden="true" />
-        {admin ? "Pedidos de privacidade" : t("dataRights.title")}
+        {admin ? t("ins.rights.title") : t("dataRights.title")}
       </h3>
 
       {!admin && (
@@ -238,20 +238,27 @@ export function DataRights({ admin = false }: { admin?: boolean }) {
       {admin &&
         (loading ? (
           <p role="status" className="text-xs">
-            Consultando pedidos…
+            {t("ins.rights.loading")}
           </p>
         ) : (
           <>
             {rows.map((row) => (
               <div key={row.id} className="space-y-2 rounded-xl border border-border p-3 text-xs">
                 <p className="font-semibold">
-                  Exclusão de conta · {row.status === "reviewing" ? "Em análise" : "Solicitada"}
+                  {t("ins.rights.deletion", {
+                    status:
+                      row.status === "reviewing"
+                        ? t("ins.rights.reviewing")
+                        : t("ins.rights.requested"),
+                  })}
                 </p>
                 <p>
-                  Protocolo: <span className="break-all">{row.id}</span>
+                  {t("ins.rights.protocol")} <span className="break-all">{row.id}</span>
                 </p>
-                <p>{new Date(row.created_at).toLocaleString("pt-BR")}</p>
-                <p className="break-all text-muted-foreground">Conta: {row.user_id}</p>
+                <p>{new Date(row.created_at).toLocaleString(intlLocale)}</p>
+                <p className="break-all text-muted-foreground">
+                  {t("ins.rights.account", { id: row.user_id })}
+                </p>
                 {row.status === "requested" && (
                   <button
                     type="button"
@@ -259,16 +266,13 @@ export function DataRights({ admin = false }: { admin?: boolean }) {
                     onClick={() => void adminUpdate("reviewing", row.id)}
                     className="font-semibold underline"
                   >
-                    Iniciar análise
+                    {t("ins.rights.startReview")}
                   </button>
                 )}
               </div>
             ))}
             {rows.length === 0 && !error && (
-              <p className="text-xs text-muted-foreground">
-                Nenhum pedido legado em aberto. Clientes agora excluem a conta diretamente no
-                perfil.
-              </p>
+              <p className="text-xs text-muted-foreground">{t("ins.rights.empty")}</p>
             )}
             <button
               type="button"
@@ -276,7 +280,7 @@ export function DataRights({ admin = false }: { admin?: boolean }) {
               onClick={() => setVersion((v) => v + 1)}
               className="text-xs text-muted-foreground underline"
             >
-              Atualizar pedidos
+              {t("ins.rights.refresh")}
             </button>
           </>
         ))}

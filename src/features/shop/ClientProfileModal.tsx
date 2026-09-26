@@ -3,6 +3,7 @@ import { X, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
 import { RhythmDashboard, type RhythmPayload } from "@/features/insights/RhythmDashboard";
+import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
 
 export type ClientHistoryRow = {
   appointment_id: string;
@@ -25,21 +26,25 @@ export type ClientProfilePayload = {
   history: ClientHistoryRow[];
 };
 
-const STATUS_LABEL: Record<string, string> = {
-  pending: "Em revisão",
-  reschedule_requested: "Remarcação solicitada",
-  confirmed: "Confirmado",
-  completed: "Concluído",
-  cancelled: "Cancelado",
+const STATUS_KEY: Record<string, MessageKey> = {
+  pending: "status.pending",
+  reschedule_requested: "status.reschedule_requested",
+  confirmed: "status.confirmed",
+  completed: "status.completed",
+  cancelled: "status.cancelled",
 };
 
-function formatBRL(cents: number) {
-  return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+function formatBRL(cents: number, intlLocale: string) {
+  return (cents / 100).toLocaleString(intlLocale, {
+    style: "currency",
+    currency: "BRL",
+    currencyDisplay: "narrowSymbol",
+  });
 }
 
-function formatDate(iso: string | null) {
+function formatDate(iso: string | null, intlLocale: string) {
   if (!iso) return "—";
-  return new Date(iso).toLocaleString("pt-BR", { dateStyle: "medium", timeStyle: "short" });
+  return new Date(iso).toLocaleString(intlLocale, { dateStyle: "medium", timeStyle: "short" });
 }
 
 /**
@@ -57,6 +62,7 @@ export function ClientProfileModal({
   customerName: string | null;
   onClose: () => void;
 }) {
+  const { t, intlLocale } = useI18n();
   const demo = useDemo();
   const [profile, setProfile] = useState<ClientProfilePayload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -87,7 +93,9 @@ export function ClientProfileModal({
         const date = new Date(row.starts_at);
         weekdays.set(date.getDay(), (weekdays.get(date.getDay()) ?? 0) + 1);
         hours.set(date.getHours(), (hours.get(date.getHours()) ?? 0) + 1);
-        const name = demo.services.find((s) => s.id === row.service_id)?.name ?? "Serviço";
+        const name =
+          demo.services.find((s) => s.id === row.service_id)?.name ??
+          tNow("team.partner.serviceFallback");
         services.set(name, (services.get(name) ?? 0) + 1);
       }
       const top = (map: Map<number, number>) =>
@@ -167,7 +175,9 @@ export function ClientProfileModal({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={`Perfil de ${profile?.customer_name ?? customerName ?? "cliente"}`}
+        aria-label={t("team.profile.aria", {
+          name: profile?.customer_name ?? customerName ?? t("team.clients.clientLower"),
+        })}
         className="flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border border-border bg-card shadow-2xl sm:rounded-3xl"
       >
         <div className="flex items-center justify-between border-b border-border p-4">
@@ -177,15 +187,15 @@ export function ClientProfileModal({
             </div>
             <div className="min-w-0">
               <h2 className="truncate text-base font-bold">
-                {profile?.customer_name ?? customerName ?? "Cliente"}
+                {profile?.customer_name ?? customerName ?? t("team.partner.clientFallback")}
               </h2>
-              <p className="text-xs text-muted-foreground">Perfil e histórico</p>
+              <p className="text-xs text-muted-foreground">{t("team.profile.subtitle")}</p>
             </div>
           </div>
           <button
             ref={closeButton}
             onClick={onClose}
-            aria-label="Fechar perfil"
+            aria-label={t("team.profile.close")}
             className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-muted/80"
           >
             <X className="size-5" />
@@ -195,11 +205,11 @@ export function ClientProfileModal({
         <div className="dialog-scroll-area flex-1 space-y-5 overflow-y-auto p-5">
           {loading ? (
             <p role="status" className="text-sm text-muted-foreground">
-              Carregando perfil…
+              {t("team.profile.loading")}
             </p>
           ) : error || !profile ? (
             <p role="alert" className="text-sm text-destructive">
-              Não foi possível carregar o perfil do cliente.
+              {t("team.profile.loadError")}
             </p>
           ) : (
             <>
@@ -207,32 +217,42 @@ export function ClientProfileModal({
                 <div className="app-action-card p-3">
                   <p className="text-2xl font-bold tabular-nums">{profile.visits}</p>
                   <p className="text-xs text-muted-foreground">
-                    {profile.visits === 1 ? "visita" : "visitas"}
+                    {profile.visits === 1
+                      ? t("team.profile.visitOne")
+                      : t("team.profile.visitMany")}
                   </p>
                 </div>
                 <div className="app-action-card p-3">
                   <p className="text-2xl font-bold tabular-nums">
-                    {formatBRL(profile.total_spent_cents)}
+                    {formatBRL(profile.total_spent_cents, intlLocale)}
                   </p>
-                  <p className="text-xs text-muted-foreground">total gasto</p>
+                  <p className="text-xs text-muted-foreground">{t("team.profile.totalSpent")}</p>
                 </div>
               </div>
 
               <div className="flex items-center justify-between rounded-xl bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
-                <span>Primeira visita: {formatDate(profile.first_visit)}</span>
-                <span>Última: {formatDate(profile.last_visit)}</span>
+                <span>
+                  {t("team.profile.firstVisit", {
+                    date: formatDate(profile.first_visit, intlLocale),
+                  })}
+                </span>
+                <span>
+                  {t("team.profile.lastVisit", {
+                    date: formatDate(profile.last_visit, intlLocale),
+                  })}
+                </span>
               </div>
 
               <RhythmDashboard
                 rhythm={profile.rhythm}
-                title="Ritmo do cliente"
-                dayLabel="Dia em que o cliente costuma ir"
+                title={t("team.profile.rhythmTitle")}
+                dayLabel={t("team.profile.rhythmDay")}
               />
 
               <section className="space-y-2">
-                <h3 className="text-sm font-bold">Histórico de agendamentos</h3>
+                <h3 className="text-sm font-bold">{t("team.profile.history")}</h3>
                 {profile.history.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nenhum agendamento registrado.</p>
+                  <p className="text-sm text-muted-foreground">{t("team.profile.historyEmpty")}</p>
                 ) : (
                   profile.history.map((row) => (
                     <div
@@ -241,19 +261,19 @@ export function ClientProfileModal({
                     >
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold">
-                          {row.service_name ?? "Serviço"}
+                          {row.service_name ?? t("team.partner.serviceFallback")}
                         </p>
                         <p className="truncate text-xs text-muted-foreground">
-                          {formatDate(row.starts_at)}
+                          {formatDate(row.starts_at, intlLocale)}
                           {row.staff_name ? ` · ${row.staff_name}` : ""}
                         </p>
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
                         <span className={`status-pill status-${row.status}`}>
-                          {STATUS_LABEL[row.status] ?? row.status}
+                          {STATUS_KEY[row.status] ? t(STATUS_KEY[row.status]) : row.status}
                         </span>
                         <span className="text-xs font-bold tabular-nums">
-                          {formatBRL(row.amount_cents)}
+                          {formatBRL(row.amount_cents, intlLocale)}
                         </span>
                       </div>
                     </div>

@@ -12,55 +12,56 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { DemoRole } from "@/features/demo/chrome";
+import { useI18n, type MessageKey } from "@/lib/i18n";
 
 export type DemoSceneId = DemoRole | "login";
 
 const scenes: {
   id: DemoSceneId;
-  label: string;
-  hint: string;
+  labelKey: MessageKey;
+  hintKey: MessageKey;
   icon: LucideIcon;
 }[] = [
   {
     id: "customer",
-    label: "App do cliente",
-    hint: "Agendar, pontos e perfil como o cliente vê",
+    labelKey: "demo.scene.customer",
+    hintKey: "demo.scene.customerHint",
     icon: Smartphone,
   },
   {
     id: "owner",
-    label: "Dono da loja",
-    hint: "Agenda, equipe, ajustes e identidade",
+    labelKey: "demo.scene.owner",
+    hintKey: "demo.scene.ownerHint",
     icon: Building2,
   },
   {
     id: "partner",
-    label: "Sócio",
-    hint: "Gestão compartilhada da barbearia",
+    labelKey: "demo.scene.partner",
+    hintKey: "demo.scene.partnerHint",
     icon: Handshake,
   },
   {
     id: "associate",
-    label: "Parceiro",
-    hint: "Carteira e operação do profissional",
+    labelKey: "demo.scene.associate",
+    hintKey: "demo.scene.associateHint",
     icon: Briefcase,
   },
   {
     id: "employee",
-    label: "Contratado",
-    hint: "Agenda e atendimento do dia",
+    labelKey: "demo.scene.employee",
+    hintKey: "demo.scene.employeeHint",
     icon: Scissors,
   },
   {
     id: "platform",
-    label: "Administrador da plataforma",
-    hint: "Painel da plataforma em modo teste",
+    labelKey: "demo.scene.platform",
+    hintKey: "demo.scene.platformHint",
     icon: Shield,
   },
   {
     id: "login",
-    label: "Página de login",
-    hint: "Como a loja aparece antes de entrar",
+    labelKey: "demo.scene.login",
+    hintKey: "demo.scene.loginHint",
     icon: LogIn,
   },
 ];
@@ -77,6 +78,7 @@ type DemoTourHubProps = {
  * num tour visual isolado, sem alterar a operação real.
  */
 export function DemoTourHub({ shopId, shopName, disabled, onPreviewLogin }: DemoTourHubProps) {
+  const { t } = useI18n();
   return (
     <section className="space-y-4 rounded-3xl border border-primary/25 bg-card p-5 shadow-sm">
       <div className="flex items-start gap-3">
@@ -84,10 +86,9 @@ export function DemoTourHub({ shopId, shopName, disabled, onPreviewLogin }: Demo
           <FlaskConical className="size-5" aria-hidden />
         </span>
         <div className="min-w-0">
-          <h2 className="text-sm font-bold">Ambiente de teste visual</h2>
+          <h2 className="text-sm font-bold">{t("demo.hub.title")}</h2>
           <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-            Entre em qualquer tela como o usuário final veria — com dados fictícios
-            {shopName ? ` baseados em ${shopName}` : ""}. Nada aqui altera a operação real.
+            {shopName ? t("demo.hub.bodyShop", { shop: shopName }) : t("demo.hub.body")}
           </p>
         </div>
       </div>
@@ -109,11 +110,11 @@ export function DemoTourHub({ shopId, shopName, disabled, onPreviewLogin }: Demo
                 </span>
                 <span className="min-w-0">
                   <span className="flex items-center gap-1.5 text-sm font-bold">
-                    {scene.label}
+                    {t(scene.labelKey)}
                     <Eye className="size-3.5 text-muted-foreground" aria-hidden />
                   </span>
                   <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
-                    {scene.hint}
+                    {t(scene.hintKey)}
                   </span>
                 </span>
               </button>
@@ -134,9 +135,9 @@ export function DemoTourHub({ shopId, shopName, disabled, onPreviewLogin }: Demo
                 <Icon className="size-4" aria-hidden />
               </span>
               <span className="min-w-0">
-                <span className="block text-sm font-bold">{scene.label}</span>
+                <span className="block text-sm font-bold">{t(scene.labelKey)}</span>
                 <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
-                  {scene.hint}
+                  {t(scene.hintKey)}
                 </span>
               </span>
             </Link>

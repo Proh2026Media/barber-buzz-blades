@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Check, Lightbulb, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useI18n } from "@/lib/i18n";
 
 type Suggestion = {
   id: string;
@@ -22,6 +23,7 @@ export function PartnerCatalogSuggestions({
   shopId: string;
   staffId: string;
 }) {
+  const { t, intlLocale } = useI18n();
   const [rows, setRows] = useState<Suggestion[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -30,9 +32,18 @@ export function PartnerCatalogSuggestions({
     const client = supabase as unknown as {
       from: (table: string) => {
         select: (columns: string) => {
-          eq: (column: string, value: string) => {
-            eq: (column: string, value: string) => {
-              eq: (column: string, value: string) => {
+          eq: (
+            column: string,
+            value: string,
+          ) => {
+            eq: (
+              column: string,
+              value: string,
+            ) => {
+              eq: (
+                column: string,
+                value: string,
+              ) => {
                 order: (
                   column: string,
                   opts: { ascending: boolean },
@@ -87,7 +98,7 @@ export function PartnerCatalogSuggestions({
     });
     if (error) setMessage(error.message);
     else {
-      setMessage(accept ? "Sugestão aplicada aos seus serviços." : "Sugestão mantida de lado.");
+      setMessage(accept ? t("team.suggest.applied") : t("team.suggest.kept"));
       await load();
     }
     setBusyId(null);
@@ -103,22 +114,24 @@ export function PartnerCatalogSuggestions({
         </span>
         <div>
           <h3 id="partner-suggestions-title" className="font-bold">
-            Sugestões de outros parceiros
+            {t("team.suggest.title")}
           </h3>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Aceite para espelhar preço/duração no seu catálogo, ou mantenha a personalização própria.
-          </p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("team.suggest.hint")}</p>
         </div>
       </div>
       <div className="space-y-2">
         {rows.map((row) => (
           <article key={row.id} className="rounded-2xl border border-border bg-background/60 p-3">
-            <p className="text-sm font-bold">{row.proposed_display_name || row.serviceName || "Serviço"}</p>
+            <p className="text-sm font-bold">
+              {row.proposed_display_name || row.serviceName || t("team.partner.serviceFallback")}
+            </p>
             <p className="text-xs text-muted-foreground">
-              De {row.fromName ?? "parceiro"} · {row.proposed_duration_minutes} min ·{" "}
-              {(row.proposed_price_cents / 100).toLocaleString("pt-BR", {
+              {t("team.suggest.from", { name: row.fromName ?? t("team.suggest.partnerFallback") })}{" "}
+              · {row.proposed_duration_minutes} min ·{" "}
+              {(row.proposed_price_cents / 100).toLocaleString(intlLocale, {
                 style: "currency",
                 currency: "BRL",
+                currencyDisplay: "narrowSymbol",
               })}
             </p>
             <div className="mt-3 flex flex-wrap justify-end gap-2">
@@ -128,7 +141,7 @@ export function PartnerCatalogSuggestions({
                 onClick={() => void decide(row.id, false)}
                 className="action-button action-danger"
               >
-                <X className="size-4" /> Manter o meu
+                <X className="size-4" /> {t("team.suggest.keepMine")}
               </button>
               <button
                 type="button"
@@ -136,7 +149,7 @@ export function PartnerCatalogSuggestions({
                 onClick={() => void decide(row.id, true)}
                 className="action-button action-confirm"
               >
-                <Check className="size-4" /> Aceitar
+                <Check className="size-4" /> {t("team.suggest.accept")}
               </button>
             </div>
           </article>

@@ -15,6 +15,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { useDemo } from "@/features/demo/context";
+import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
 import {
   friendlyChannelLastError,
   friendlyIntegrationError,
@@ -43,33 +44,37 @@ type WhatsAppSettingsCardProps = {
   shopId: string;
 };
 
-const TEMPLATE_META: Array<{ key: WhatsAppTemplateKey; title: string; hint: string }> = [
+const TEMPLATE_META: Array<{
+  key: WhatsAppTemplateKey;
+  titleKey: MessageKey;
+  hintKey: MessageKey;
+}> = [
   {
     key: "booking.confirmed",
-    title: "Confirmação",
-    hint: "Enviada ao criar ou confirmar o horário.",
+    titleKey: "integr.wa.tplConfirmed",
+    hintKey: "integr.wa.tplConfirmedHint",
   },
   {
     key: "booking.rescheduled",
-    title: "Remarcação",
-    hint: "Enviada quando muda data, profissional ou serviço.",
+    titleKey: "integr.wa.tplRescheduled",
+    hintKey: "integr.wa.tplRescheduledHint",
   },
   {
     key: "booking.cancelled",
-    title: "Cancelamento",
-    hint: "Enviada quando o horário é cancelado.",
+    titleKey: "integr.wa.tplCancelled",
+    hintKey: "integr.wa.tplCancelledHint",
   },
   {
     key: "booking.reminder",
-    title: "Lembrete",
-    hint: "Enviada antes do atendimento (conforme horas do lembrete).",
+    titleKey: "integr.wa.tplReminder",
+    hintKey: "integr.wa.tplReminderHint",
   },
 ];
 
 async function callChannel(body: Record<string, unknown>) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData.session?.access_token;
-  if (!token) throw new Error("Sessão expirada. Entre novamente.");
+  if (!token) throw new Error(tNow("integr.err.session"));
 
   const base = import.meta.env.VITE_SUPABASE_URL || "";
   const response = await fetch(`${base}/functions/v1/whatsapp-channel`, {
@@ -86,19 +91,20 @@ async function callChannel(body: Record<string, unknown>) {
     channel?: Channel;
     qrcode?: string | null;
   };
-  if (!response.ok) throw new Error(payload.error || "Falha no WhatsApp");
+  if (!response.ok) throw new Error(payload.error || tNow("integr.wa.errGeneric"));
   return payload;
 }
 
-const statusLabel: Record<Channel["status"], string> = {
-  disconnected: "Desconectado",
-  qr: "Aguardando QR",
-  connecting: "Conectando…",
-  open: "Conectado",
-};
+const statusKey = {
+  disconnected: "integr.wa.status.disconnected",
+  qr: "integr.wa.status.qr",
+  connecting: "integr.wa.status.connecting",
+  open: "integr.wa.status.open",
+} as const satisfies Record<Channel["status"], MessageKey>;
 
 export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
   const demo = useDemo();
+  const { t } = useI18n();
   const editorRef = useRef<WhatsAppChipEditorHandle>(null);
   const [channel, setChannel] = useState<Channel | null>(null);
   const [qrcode, setQrcode] = useState<string | null>(null);
@@ -165,7 +171,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
       setQrcode(payload.qrcode ?? null);
       await loadTemplates();
     } catch (err) {
-      setError(friendlyIntegrationError(err, "Não foi possível consultar o WhatsApp."));
+      setError(friendlyIntegrationError(err, tNow("integr.wa.errStatus")));
     } finally {
       setBusy(false);
     }
@@ -185,7 +191,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
           setQrcode(payload.qrcode ?? null);
           if (payload.channel?.status === "open") {
             setQrOpen(false);
-            setMessage("WhatsApp conectado.");
+            setMessage(tNow("integr.wa.connected"));
           }
         } catch {
           /* ignore polling errors */
@@ -197,7 +203,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
 
   async function connect() {
     if (demo) {
-      setMessage("Na demonstração o WhatsApp aparece conectado.");
+      setMessage(t("integr.wa.demoConnected"));
       return;
     }
     setBusy(true);
@@ -209,12 +215,10 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
       setQrcode(payload.qrcode ?? null);
       if (payload.qrcode) setQrOpen(true);
       setMessage(
-        payload.channel?.status === "open"
-          ? "WhatsApp conectado."
-          : "Escaneie o QR Code no celular com o WhatsApp da barbearia.",
+        payload.channel?.status === "open" ? t("integr.wa.connected") : t("integr.wa.scanQr"),
       );
     } catch (err) {
-      setError(friendlyIntegrationError(err, "Falha ao conectar."));
+      setError(friendlyIntegrationError(err, t("integr.wa.errConnect")));
     } finally {
       setBusy(false);
     }
@@ -228,9 +232,9 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
       const payload = await callChannel({ action: "logout", barbershop_id: shopId });
       setChannel(payload.channel ?? null);
       setQrcode(null);
-      setMessage("WhatsApp desconectado.");
+      setMessage(t("integr.wa.disconnected"));
     } catch (err) {
-      setError(friendlyIntegrationError(err, "Falha ao desconectar."));
+      setError(friendlyIntegrationError(err, t("integr.wa.errDisconnect")));
     } finally {
       setBusy(false);
     }
@@ -254,9 +258,9 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
         enabled: patch.enabled ?? channel.enabled,
       });
       setChannel(payload.channel ?? null);
-      setMessage("Preferências salvas.");
+      setMessage(t("integr.wa.prefsSaved"));
     } catch (err) {
-      setError(friendlyIntegrationError(err, "Não foi possível salvar."));
+      setError(friendlyIntegrationError(err, t("integr.wa.errSave")));
     } finally {
       setBusy(false);
     }
@@ -265,7 +269,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
   async function saveTemplates() {
     if (demo) {
       setTemplatesDirty(false);
-      setMessage("Na demonstração as mensagens ficam só nesta sessão.");
+      setMessage(t("integr.wa.demoTemplates"));
       return;
     }
     setBusy(true);
@@ -275,7 +279,8 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
         const body = normalizeWhatsAppTemplate(templates[key]);
         const issues = validateWhatsAppTemplate(body);
         if (issues.length) {
-          throw new Error(`${TEMPLATE_META.find((m) => m.key === key)?.title}: ${issues[0]}`);
+          const meta = TEMPLATE_META.find((m) => m.key === key);
+          throw new Error(`${meta ? t(meta.titleKey) : key}: ${issues[0]}`);
         }
         return { barbershop_id: shopId, template_key: key, body };
       });
@@ -284,9 +289,9 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
         .upsert(rows, { onConflict: "barbershop_id,template_key" });
       if (upsertError) throw upsertError;
       setTemplatesDirty(false);
-      setMessage("Textos do WhatsApp salvos.");
+      setMessage(t("integr.wa.templatesSaved"));
     } catch (err) {
-      setError(friendlyIntegrationError(err, "Não foi possível salvar as mensagens."));
+      setError(friendlyIntegrationError(err, t("integr.wa.errSaveTemplates")));
     } finally {
       setBusy(false);
     }
@@ -314,9 +319,10 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
     }));
     setTemplatesDirty(true);
     setRestoreOpen(false);
-    setMessage("Modelo padrão restaurado neste rascunho. Salve para aplicar.");
+    setMessage(t("integr.wa.restored"));
   }
 
+  const activeMeta = TEMPLATE_META.find((m) => m.key === activeTemplate) ?? TEMPLATE_META[0];
   const activeBody = templates[activeTemplate];
   const activeLength = whatsappCodePointLength(activeBody);
   const activeErrors = validateWhatsAppTemplate(activeBody);
@@ -330,17 +336,16 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
       <div className="flex items-start gap-3">
         <MessageCircle className="mt-0.5 size-5 text-gold" />
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-semibold">WhatsApp da barbearia</h3>
+          <h3 className="text-sm font-semibold">{t("integr.wa.title")}</h3>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-            Conecte o número da loja para avisar clientes sobre horários e enviar códigos de acesso.
-            Cada barbearia usa o próprio WhatsApp.
+            {t("integr.wa.intro")}
           </p>
         </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <span className="rounded-full border border-border px-2.5 py-1 font-semibold">
-          {channel ? statusLabel[channel.status] : "Não configurado"}
+          {channel ? t(statusKey[channel.status]) : t("integr.wa.notConfigured")}
         </span>
         {channel?.display_phone && (
           <span className="text-muted-foreground">{channel.display_phone}</span>
@@ -355,7 +360,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
           className="flex min-h-11 items-center gap-2 rounded-xl bg-primary px-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
         >
           <QrCode className="size-4" />
-          {channel?.status === "open" ? "Reconectar" : "Conectar WhatsApp"}
+          {channel?.status === "open" ? t("integr.wa.reconnect") : t("integr.wa.connect")}
         </button>
         <button
           type="button"
@@ -364,7 +369,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
           className="flex min-h-11 items-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold disabled:opacity-50"
         >
           <RefreshCw className={`size-4 ${busy ? "animate-spin" : ""}`} />
-          Atualizar
+          {t("integr.refresh")}
         </button>
         {channel?.status === "open" && (
           <button
@@ -374,7 +379,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
             className="flex min-h-11 items-center gap-2 rounded-xl border border-destructive/40 px-3 text-sm font-semibold text-destructive disabled:opacity-50"
           >
             <Unplug className="size-4" />
-            Desconectar
+            {t("integr.disconnect")}
           </button>
         )}
         {qrcode && (
@@ -384,7 +389,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
             className="flex min-h-11 items-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold"
           >
             <Link2 className="size-4" />
-            Ver QR
+            {t("integr.wa.showQr")}
           </button>
         )}
       </div>
@@ -393,44 +398,40 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
         <div className="space-y-3 border-t border-border/60 pt-3">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold">Avisos de horário</p>
-              <p className="text-xs text-muted-foreground">
-                Confirmação, remarcação e cancelamento.
-              </p>
+              <p className="text-sm font-semibold">{t("integr.wa.bookingAlerts")}</p>
+              <p className="text-xs text-muted-foreground">{t("integr.wa.bookingAlertsHint")}</p>
             </div>
             <Switch
               checked={channel.notify_booking}
               disabled={busy}
               onCheckedChange={(checked) => void saveSettings({ notify_booking: checked })}
-              aria-label="Avisos de horário"
+              aria-label={t("integr.wa.bookingAlerts")}
             />
           </div>
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold">Lembrete</p>
+              <p className="text-sm font-semibold">{t("integr.wa.reminder")}</p>
               <p className="text-xs text-muted-foreground">
-                Aviso antes do atendimento ({channel.reminder_hours_before}h).
+                {t("integr.wa.reminderHint", { hours: channel.reminder_hours_before })}
               </p>
             </div>
             <Switch
               checked={channel.notify_reminder}
               disabled={busy}
               onCheckedChange={(checked) => void saveSettings({ notify_reminder: checked })}
-              aria-label="Lembrete de horário"
+              aria-label={t("integr.wa.reminderAria")}
             />
           </div>
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold">Canal ativo</p>
-              <p className="text-xs text-muted-foreground">
-                Pausa todos os envios sem desconectar.
-              </p>
+              <p className="text-sm font-semibold">{t("integr.wa.channelActive")}</p>
+              <p className="text-xs text-muted-foreground">{t("integr.wa.channelActiveHint")}</p>
             </div>
             <Switch
               checked={channel.enabled}
               disabled={busy}
               onCheckedChange={(checked) => void saveSettings({ enabled: checked })}
-              aria-label="Canal ativo"
+              aria-label={t("integr.wa.channelActive")}
             />
           </div>
         </div>
@@ -438,13 +439,10 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
 
       <div className="space-y-3 border-t border-border/60 pt-3">
         <div>
-          <p className="text-sm font-semibold">Textos das mensagens</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Toque nas pílulas para inserir o nome da loja, serviço, data e demais dados na mensagem.
-            Máximo 1.000 caracteres (alguns emojis contam como dois).
-          </p>
+          <p className="text-sm font-semibold">{t("integr.wa.textsTitle")}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("integr.wa.textsHint")}</p>
         </div>
-        <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Tipo de mensagem">
+        <div className="flex flex-wrap gap-1.5" role="tablist" aria-label={t("integr.wa.typeAria")}>
           {TEMPLATE_META.map((item) => (
             <button
               key={item.key}
@@ -458,30 +456,32 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
                   : "border-border bg-background text-muted-foreground hover:border-primary/50"
               }`}
             >
-              {item.title}
+              {t(item.titleKey)}
             </button>
           ))}
         </div>
-        <p className="text-xs text-muted-foreground">
-          {TEMPLATE_META.find((item) => item.key === activeTemplate)?.hint}
-        </p>
+        <p className="text-xs text-muted-foreground">{t(activeMeta.hintKey)}</p>
 
         <div className="space-y-1.5">
-          <p className="text-xs font-semibold text-muted-foreground">Inserir na mensagem</p>
-          <div className="flex flex-wrap gap-2" aria-label="Inserir dado na mensagem">
+          <p className="text-xs font-semibold text-muted-foreground">
+            {t("integr.wa.insertTitle")}
+          </p>
+          <div className="flex flex-wrap gap-2" aria-label={t("integr.wa.insertAria")}>
             {WHATSAPP_TEMPLATE_VARS.map((key) => {
               const help = WHATSAPP_TEMPLATE_VAR_HELP[key];
+              const chip = t(help.chipKey);
+              const label = t(help.labelKey);
               return (
                 <button
                   key={key}
                   type="button"
-                  title={`${help.label}. Ex.: ${help.example}`}
-                  aria-label={`Inserir ${help.chip}: ${help.label}`}
+                  title={t("integr.wa.varTitle", { label, example: help.example })}
+                  aria-label={t("integr.wa.varAria", { chip, label })}
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => insertVariable(key)}
                   className="inline-flex min-h-9 items-center rounded-full border border-primary/25 bg-primary/10 px-3.5 text-xs font-semibold text-foreground transition-colors hover:border-primary/50 hover:bg-primary/15"
                 >
-                  {help.chip}
+                  {chip}
                 </button>
               );
             })}
@@ -491,36 +491,37 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
         <div className="flex flex-wrap gap-1.5">
           {(
             [
-              ["*", "Negrito"],
-              ["_", "Itálico"],
-              ["~", "Tachado"],
+              ["*", "integr.wa.bold"],
+              ["_", "integr.wa.italic"],
+              ["~", "integr.wa.strike"],
             ] as const
-          ).map(([mark, label]) => (
+          ).map(([mark, labelKey]) => (
             <button
               key={mark}
               type="button"
-              aria-label={label}
+              aria-label={t(labelKey)}
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => applyWrap(mark)}
               className="min-h-9 rounded-xl border border-border bg-background px-3 text-xs font-semibold"
             >
-              {label}
+              {t(labelKey)}
             </button>
           ))}
         </div>
 
         <div className="block space-y-2">
-          <span className="text-xs font-semibold text-muted-foreground">Texto da mensagem</span>
+          <span className="text-xs font-semibold text-muted-foreground">
+            {t("integr.tpl.textLabel")}
+          </span>
           <WhatsAppChipEditor
             key={activeTemplate}
             ref={editorRef}
             value={activeBody}
             onChange={updateActiveBody}
-            aria-label="Texto da mensagem"
+            aria-label={t("integr.tpl.textLabel")}
           />
           <p className="text-[11px] text-muted-foreground">
-            Toque numa pílula no texto para trocar o dado ou remover. Arraste para reposicionar.{" "}
-            {activeLength} / 1.000
+            {t("integr.wa.editorHint")} {t("integr.wa.charCount", { count: activeLength })}
           </p>
         </div>
 
@@ -535,7 +536,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
         <div className="rounded-xl border border-dashed border-border bg-muted/30 p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              {previewMode === "preview" ? "Prévia · dados de exemplo" : "Texto original"}
+              {previewMode === "preview" ? t("integr.wa.previewSample") : t("integr.wa.source")}
             </p>
             <div className="flex gap-1">
               <button
@@ -548,7 +549,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
                     : "border border-border"
                 }`}
               >
-                Prévia
+                {t("integr.wa.preview")}
               </button>
               <button
                 type="button"
@@ -560,7 +561,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
                     : "border border-border"
                 }`}
               >
-                Texto original
+                {t("integr.wa.source")}
               </button>
             </div>
           </div>
@@ -582,7 +583,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
             onClick={() => void saveTemplates()}
             className="min-h-11 rounded-xl bg-primary px-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
           >
-            Salvar textos
+            {t("integr.wa.saveTexts")}
           </button>
           <button
             type="button"
@@ -590,7 +591,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
             onClick={() => setRestoreOpen(true)}
             className="min-h-11 rounded-xl border border-border px-3 text-sm font-semibold disabled:opacity-50"
           >
-            Restaurar modelo padrão
+            {t("integr.wa.restoreDefault")}
           </button>
         </div>
       </div>
@@ -616,27 +617,25 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
             onClick={() => void connect()}
             className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold disabled:opacity-50"
           >
-            Reconectar WhatsApp
+            {t("integr.wa.reconnectWa")}
           </button>
         </div>
       )}
 
       <Dialog open={qrOpen} onOpenChange={setQrOpen}>
         <DialogContent className="max-w-sm rounded-3xl border-border bg-card p-5">
-          <DialogTitle className="text-base font-extrabold">Escaneie o QR Code</DialogTitle>
+          <DialogTitle className="text-base font-extrabold">{t("integr.wa.qrTitle")}</DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            No celular: WhatsApp → Aparelhos conectados → Conectar um aparelho.
+            {t("integr.wa.qrSteps")}
           </DialogDescription>
           {qrcode ? (
             <img
               src={qrcode}
-              alt="QR Code do WhatsApp"
+              alt={t("integr.wa.qrAlt")}
               className="mx-auto mt-2 size-56 rounded-2xl"
             />
           ) : (
-            <p className="text-sm text-muted-foreground">
-              QR indisponível. Toque em Conectar novamente.
-            </p>
+            <p className="text-sm text-muted-foreground">{t("integr.wa.qrUnavailable")}</p>
           )}
           <button
             type="button"
@@ -644,7 +643,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
             onClick={() => void refresh()}
             className="mt-2 min-h-11 w-full rounded-xl border border-border text-sm font-semibold"
           >
-            Já escaneei — atualizar status
+            {t("integr.wa.scanned")}
           </button>
         </DialogContent>
       </Dialog>
@@ -652,15 +651,14 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
       <AlertDialog open={restoreOpen} onOpenChange={setRestoreOpen}>
         <AlertDialogContent className="rounded-3xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Restaurar modelo padrão?</AlertDialogTitle>
+            <AlertDialogTitle>{t("integr.wa.restoreTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              O texto atual de “{TEMPLATE_META.find((m) => m.key === activeTemplate)?.title}” será
-              substituído pelo modelo oficial. Alterações não salvas neste rascunho serão perdidas.
+              {t("integr.wa.restoreBody", { name: t(activeMeta.titleKey) })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmRestore}>Restaurar</AlertDialogAction>
+            <AlertDialogCancel>{t("integr.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRestore}>{t("integr.wa.restore")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

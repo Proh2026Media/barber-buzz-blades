@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Check, Crop, Move, RotateCcw, ZoomIn } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
+import { useI18n } from "@/lib/i18n";
 import { SERVICE_IMAGE_CROP_SIZE } from "@/lib/shop/service-image";
 import { getSquareCropRect } from "@/lib/shop/service-image-crop";
 
@@ -13,9 +14,9 @@ export function ServiceImageCropDialog({
   file,
   onCancel,
   onConfirm,
-  title = "Enquadrar foto",
-  description = "A foto será salva em formato quadrado. Arraste para escolher a posição e use o zoom para aproximar.",
-  imageAlt = "Prévia da foto do serviço",
+  title,
+  description,
+  imageAlt,
   outputName = "servico-1x1.webp",
 }: {
   file: File | null;
@@ -26,6 +27,7 @@ export function ServiceImageCropDialog({
   imageAlt?: string;
   outputName?: string;
 }) {
+  const { t } = useI18n();
   const imageUrl = useMemo(() => (file ? URL.createObjectURL(file) : ""), [file]);
   const imageRef = useRef<HTMLImageElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -100,7 +102,7 @@ export function ServiceImageCropDialog({
       canvas.width = SERVICE_IMAGE_CROP_SIZE;
       canvas.height = SERVICE_IMAGE_CROP_SIZE;
       const context = canvas.getContext("2d");
-      if (!context) throw new Error("Seu navegador não conseguiu preparar o recorte.");
+      if (!context) throw new Error(t("brand.crop.errorCanvas"));
       context.imageSmoothingEnabled = true;
       context.imageSmoothingQuality = "high";
       context.drawImage(
@@ -116,15 +118,14 @@ export function ServiceImageCropDialog({
       );
       const blob = await new Promise<Blob>((resolve, reject) =>
         canvas.toBlob(
-          (result) =>
-            result ? resolve(result) : reject(new Error("Não foi possível concluir o recorte.")),
+          (result) => (result ? resolve(result) : reject(new Error(t("brand.crop.errorFinish")))),
           "image/webp",
           0.9,
         ),
       );
       await onConfirm(new File([blob], outputName, { type: blob.type }));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Não foi possível recortar a imagem.");
+      setError(cause instanceof Error ? cause.message : t("brand.crop.errorGeneric"));
     } finally {
       setSaving(false);
     }
@@ -136,9 +137,11 @@ export function ServiceImageCropDialog({
         <div className="space-y-4 p-5 sm:p-6">
           <div className="pr-8">
             <DialogTitle className="flex items-center gap-2">
-              <Crop className="size-5 text-gold" /> {title}
+              <Crop className="size-5 text-gold" /> {title ?? t("brand.crop.title")}
             </DialogTitle>
-            <DialogDescription className="mt-1">{description}</DialogDescription>
+            <DialogDescription className="mt-1">
+              {description ?? t("brand.crop.description")}
+            </DialogDescription>
           </div>
 
           <div
@@ -146,7 +149,7 @@ export function ServiceImageCropDialog({
             className="service-crop-viewport"
             tabIndex={0}
             role="application"
-            aria-label="Área de recorte quadrada. Arraste a foto ou use as setas do teclado para reposicionar."
+            aria-label={t("brand.crop.areaAria")}
             onKeyDown={(event) => {
               const distance = event.shiftKey ? 16 : 4;
               const movements: Record<string, Offset> = {
@@ -189,7 +192,7 @@ export function ServiceImageCropDialog({
               <img
                 ref={imageRef}
                 src={imageUrl}
-                alt={imageAlt}
+                alt={imageAlt ?? t("brand.crop.alt")}
                 draggable={false}
                 onLoad={(event) =>
                   setNaturalSize({
@@ -206,14 +209,14 @@ export function ServiceImageCropDialog({
             )}
             <div className="service-crop-grid" aria-hidden />
             <span className="service-crop-hint" aria-hidden>
-              <Move className="size-4" /> Arraste para enquadrar
+              <Move className="size-4" /> {t("brand.crop.dragHint")}
             </span>
           </div>
 
           <div className="rounded-2xl border border-border bg-card p-3">
             <div className="flex items-center justify-between gap-3">
               <label id={zoomLabelId} className="flex items-center gap-2 text-sm font-semibold">
-                <ZoomIn className="size-4 text-gold" /> Zoom
+                <ZoomIn className="size-4 text-gold" /> {t("brand.crop.zoom")}
               </label>
               <output className="text-xs font-bold tabular-nums text-muted-foreground">
                 {Math.round(zoom * 100)}%
@@ -226,7 +229,7 @@ export function ServiceImageCropDialog({
               step={0.01}
               value={[zoom]}
               aria-labelledby={zoomLabelId}
-              aria-valuetext={`${Math.round(zoom * 100)} por cento`}
+              aria-valuetext={t("brand.crop.zoomValue", { value: Math.round(zoom * 100) })}
               onValueChange={([value]) => setZoom(value ?? 1)}
             />
             <button
@@ -237,7 +240,7 @@ export function ServiceImageCropDialog({
                 setOffset({ x: 0, y: 0 });
               }}
             >
-              <RotateCcw className="size-4" /> Centralizar novamente
+              <RotateCcw className="size-4" /> {t("brand.crop.recenter")}
             </button>
           </div>
 
@@ -254,7 +257,7 @@ export function ServiceImageCropDialog({
               disabled={saving}
               onClick={onCancel}
             >
-              Voltar
+              {t("brand.crop.back")}
             </button>
             <button
               type="button"
@@ -262,7 +265,7 @@ export function ServiceImageCropDialog({
               disabled={saving}
               onClick={() => void confirmCrop()}
             >
-              <Check className="size-4" /> {saving ? "Salvando…" : "Usar foto"}
+              <Check className="size-4" /> {saving ? t("brand.save.saving") : t("brand.crop.use")}
             </button>
           </div>
         </div>

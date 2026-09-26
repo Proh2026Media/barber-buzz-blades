@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
+import { useI18n } from "@/lib/i18n";
 
 type Lookup = {
   appointment_id: string;
@@ -26,6 +27,7 @@ export function ReservationAccessGate({
   shopSlug?: string;
   onAuthenticated: () => void;
 }) {
+  const { t, intlLocale } = useI18n();
   const [lookup, setLookup] = useState<Lookup | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [phone, setPhone] = useState("");
@@ -69,10 +71,10 @@ export function ReservationAccessGate({
         }),
       });
       const payload = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(payload.error || "Falha ao enviar código");
+      if (!response.ok) throw new Error(payload.error || t("gate.sendFailed"));
       setStep("code");
     } catch (err) {
-      setError(friendlyAuthError(err, "Não foi possível enviar o código."));
+      setError(friendlyAuthError(err, t("gate.sendError")));
     } finally {
       setBusy(false);
     }
@@ -103,9 +105,9 @@ export function ReservationAccessGate({
         hashed_token?: string;
         verification_type?: string;
       };
-      if (!response.ok) throw new Error(payload.error || "Código inválido");
+      if (!response.ok) throw new Error(payload.error || t("gate.invalidCode"));
 
-      if (!payload.hashed_token) throw new Error("Sessão indisponível. Tente de novo.");
+      if (!payload.hashed_token) throw new Error(t("gate.sessionUnavailable"));
 
       const { error: verifyError } = await supabase.auth.verifyOtp({
         token_hash: payload.hashed_token,
@@ -117,13 +119,11 @@ export function ReservationAccessGate({
       const uid = sessionData.session?.user?.id;
       if (!uid || !lookup || uid !== lookup.customer_id) {
         await supabase.auth.signOut();
-        throw new Error(
-          "Este WhatsApp não é o da reserva. Use o número cadastrado nesta barbearia.",
-        );
+        throw new Error(t("gate.wrongPhone"));
       }
       onAuthenticated();
     } catch (err) {
-      setError(friendlyAuthError(err, "Não foi possível entrar."));
+      setError(friendlyAuthError(err, t("gate.signInError")));
     } finally {
       setBusy(false);
     }
@@ -132,7 +132,7 @@ export function ReservationAccessGate({
   if (!loaded) {
     return (
       <p role="status" className="p-6 text-sm text-muted-foreground">
-        Abrindo reserva…
+        {t("gate.opening")}
       </p>
     );
   }
@@ -140,10 +140,8 @@ export function ReservationAccessGate({
   if (!lookup) {
     return (
       <div className="space-y-3 p-6">
-        <h2 className="text-lg font-bold">Reserva não encontrada</h2>
-        <p className="text-sm text-muted-foreground">
-          O link pode ter expirado ou estar incorreto. Peça um novo aviso à barbearia.
-        </p>
+        <h2 className="text-lg font-bold">{t("gate.notFoundTitle")}</h2>
+        <p className="text-sm text-muted-foreground">{t("gate.notFoundBody")}</p>
       </div>
     );
   }
@@ -151,20 +149,22 @@ export function ReservationAccessGate({
   return (
     <div className="mx-auto max-w-md space-y-4 p-6">
       <div>
-        <h2 className="text-lg font-bold">Sua reserva</h2>
+        <h2 className="text-lg font-bold">{t("gate.title")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          {lookup.shop_name} · {lookup.service_name} com {lookup.staff_name}
+          {t("gate.summary", {
+            shop: lookup.shop_name ?? "",
+            service: lookup.service_name ?? "",
+            staff: lookup.staff_name ?? "",
+          })}
         </p>
         <p className="mt-1 text-sm font-semibold">
-          {new Date(lookup.starts_at).toLocaleString("pt-BR", {
+          {new Date(lookup.starts_at).toLocaleString(intlLocale, {
             dateStyle: "medium",
             timeStyle: "short",
           })}
         </p>
       </div>
-      <p className="text-sm text-muted-foreground">
-        Para ver ou alterar, informe o WhatsApp cadastrado nesta barbearia. Enviaremos um código.
-      </p>
+      <p className="text-sm text-muted-foreground">{t("gate.intro")}</p>
       {step === "phone" ? (
         <form
           className="space-y-3"
@@ -174,7 +174,7 @@ export function ReservationAccessGate({
           }}
         >
           <label className="block space-y-1 text-xs font-semibold">
-            WhatsApp com DDD
+            {t("gate.phoneLabel")}
             <input
               required
               inputMode="tel"
@@ -189,7 +189,7 @@ export function ReservationAccessGate({
             disabled={busy}
             className="min-h-11 w-full rounded-xl bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-50"
           >
-            Receber código
+            {t("gate.getCode")}
           </button>
         </form>
       ) : (
@@ -201,7 +201,7 @@ export function ReservationAccessGate({
           }}
         >
           <label className="block space-y-1 text-xs font-semibold">
-            Código de 6 dígitos
+            {t("gate.codeLabel")}
             <input
               required
               inputMode="numeric"
@@ -217,7 +217,7 @@ export function ReservationAccessGate({
             disabled={busy || code.length !== 6}
             className="min-h-11 w-full rounded-xl bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-50"
           >
-            Entrar e ver reserva
+            {t("gate.submit")}
           </button>
           <button
             type="button"
@@ -225,7 +225,7 @@ export function ReservationAccessGate({
             onClick={() => void sendCode()}
             className="min-h-11 w-full rounded-xl border border-border text-sm font-semibold disabled:opacity-50"
           >
-            Enviar código de novo
+            {t("gate.resend")}
           </button>
           <button
             type="button"
@@ -233,7 +233,7 @@ export function ReservationAccessGate({
             onClick={() => setStep("phone")}
             className="min-h-11 w-full text-sm font-semibold text-muted-foreground"
           >
-            Trocar número
+            {t("gate.changePhone")}
           </button>
         </form>
       )}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
-import { useI18n } from "@/lib/i18n";
+import { t as tNow, useI18n } from "@/lib/i18n";
 import { DEMO_CUSTOMER_ID } from "@/features/demo/model";
 import { RhythmDashboard, type RhythmPayload } from "@/features/insights/RhythmDashboard";
 
@@ -36,7 +36,7 @@ export function CustomerRhythm({ shopId }: { shopId: string | null }) {
         const date = new Date(row.starts_at);
         weekdays.set(date.getDay(), (weekdays.get(date.getDay()) ?? 0) + 1);
         hours.set(date.getHours(), (hours.get(date.getHours()) ?? 0) + 1);
-        const name = demo.services.find((s) => s.id === row.service_id)?.name ?? "Serviço";
+        const name = demo.services.find((s) => s.id === row.service_id)?.name ?? tNow("booking.serviceFallback");
         services.set(name, (services.get(name) ?? 0) + 1);
       }
       const top = (map: Map<number, number>) =>

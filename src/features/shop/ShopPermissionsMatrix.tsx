@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Check, Save, RefreshCw } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
+import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
 
 type PermissionMeta = {
   permission: string;
@@ -18,23 +19,23 @@ type PermissionsPayload = {
   matrix: Matrix;
 };
 
-const ROLE_COLUMNS: { id: string; label: string }[] = [
-  { id: "owner", label: "Dono / Co-dono" },
-  { id: "partner", label: "Co-dono (legado)" },
-  { id: "associate", label: "Parceiro" },
-  { id: "employee", label: "Contratado" },
+const ROLE_COLUMNS: { id: string; labelKey: MessageKey }[] = [
+  { id: "owner", labelKey: "team.perm.role.owner" },
+  { id: "partner", labelKey: "team.perm.role.partner" },
+  { id: "associate", labelKey: "team.perm.role.associate" },
+  { id: "employee", labelKey: "team.perm.role.employee" },
 ];
 
 const SERVICE_ACCESS = {
   permission: "services",
-  label: "Serviços",
-  description: "Nível de acesso ao catálogo de serviços da unidade",
+  labelKey: "team.perm.services",
+  descriptionKey: "team.perm.servicesHint",
   manageAll: "manage_services",
   manageOwn: "manage_own_services",
   options: [
-    { value: "view", label: "Ver", title: "Somente visualização" },
-    { value: "own", label: "Próprios", title: "Gerenciar próprios serviços" },
-    { value: "all", label: "Tudo", title: "Gerenciar todo o catálogo" },
+    { value: "view", labelKey: "team.perm.level.view", titleKey: "team.perm.level.viewTitle" },
+    { value: "own", labelKey: "team.perm.level.own", titleKey: "team.perm.level.ownTitle" },
+    { value: "all", labelKey: "team.perm.level.all", titleKey: "team.perm.level.allTitle" },
   ],
 } as const;
 
@@ -58,9 +59,12 @@ type ShopPermissionsMatrixProps = {
 export function ShopPermissionsMatrix({
   shopId,
   canEdit = true,
-  title = "Níveis de acesso",
-  description = "Defina o que cada perfil da equipe pode fazer nesta barbearia. Em sociedade igualitária, salvar pode exigir aprovação do outro co-dono.",
+  title: titleProp,
+  description: descriptionProp,
 }: ShopPermissionsMatrixProps) {
+  const { t } = useI18n();
+  const title = titleProp ?? t("team.perm.title");
+  const description = descriptionProp ?? t("team.perm.description");
   const [catalog, setCatalog] = useState<PermissionMeta[]>([]);
   const [matrix, setMatrix] = useState<Matrix>({});
   const [saved, setSaved] = useState(false);
@@ -86,7 +90,7 @@ export function ShopPermissionsMatrix({
     } catch {
       setCatalog([]);
       setMatrix({});
-      setError("Não foi possível carregar as permissões desta barbearia.");
+      setError(tNow("team.perm.loadError"));
     } finally {
       setLoading(false);
     }
@@ -136,9 +140,7 @@ export function ShopPermissionsMatrix({
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch {
-      setError(
-        "Não foi possível salvar. Sociedades igualitárias precisam da aprovação do outro co-dono.",
-      );
+      setError(t("team.perm.saveError"));
     } finally {
       setBusy(false);
     }
@@ -165,7 +167,7 @@ export function ShopPermissionsMatrix({
           className="inline-flex min-h-11 items-center gap-2 rounded-[var(--button-radius)] border border-border/70 bg-background px-3 text-xs font-semibold disabled:opacity-50"
         >
           <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
-          Recarregar
+          {t("team.perm.reload")}
         </button>
       </div>
 
@@ -177,11 +179,11 @@ export function ShopPermissionsMatrix({
 
       {loading ? (
         <p role="status" className="text-sm text-muted-foreground">
-          Carregando permissões…
+          {t("team.perm.loading")}
         </p>
       ) : catalog.length === 0 ? (
         <p role="status" className="text-sm text-muted-foreground">
-          Sem permissões para exibir.
+          {t("team.perm.empty")}
         </p>
       ) : (
         <div className="overflow-x-auto rounded-[var(--control-radius)] border border-border/60 bg-background/80">
@@ -189,11 +191,11 @@ export function ShopPermissionsMatrix({
             <thead>
               <tr className="border-b border-border/60 bg-muted/30">
                 <th scope="col" className="w-[32%] p-3 font-semibold">
-                  Permissão
+                  {t("team.perm.permission")}
                 </th>
                 {ROLE_COLUMNS.map((role) => (
                   <th key={role.id} scope="col" className="p-2 text-center font-semibold">
-                    {role.label}
+                    {t(role.labelKey)}
                   </th>
                 ))}
               </tr>
@@ -201,13 +203,18 @@ export function ShopPermissionsMatrix({
             <tbody>
               <tr className="border-b border-border/40">
                 <td className="p-3">
-                  <p className="font-bold">{SERVICE_ACCESS.label}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{SERVICE_ACCESS.description}</p>
+                  <p className="font-bold">{t(SERVICE_ACCESS.labelKey)}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {t(SERVICE_ACCESS.descriptionKey)}
+                  </p>
                 </td>
                 {ROLE_COLUMNS.map((role) => (
                   <td key={role.id} className="p-2 text-center">
                     <select
-                      aria-label={`${SERVICE_ACCESS.label} para ${role.label}`}
+                      aria-label={t("team.perm.forRole", {
+                        permission: t(SERVICE_ACCESS.labelKey),
+                        role: t(role.labelKey),
+                      })}
                       value={serviceLevelFor(matrix, role.id)}
                       disabled={busy || !canEdit}
                       onChange={(event) =>
@@ -216,8 +223,8 @@ export function ShopPermissionsMatrix({
                       className="w-full rounded-[var(--control-radius)] border border-border/70 bg-background px-1.5 py-1.5 text-xs font-semibold"
                     >
                       {SERVICE_ACCESS.options.map((option) => (
-                        <option key={option.value} value={option.value} title={option.title}>
-                          {option.label}
+                        <option key={option.value} value={option.value} title={t(option.titleKey)}>
+                          {t(option.labelKey)}
                         </option>
                       ))}
                     </select>
@@ -238,7 +245,10 @@ export function ShopPermissionsMatrix({
                       <td key={role.id} className="p-2 text-center">
                         <div className="flex justify-center">
                           <Switch
-                            aria-label={`${entry.label} para ${role.label}`}
+                            aria-label={t("team.perm.forRole", {
+                              permission: entry.label,
+                              role: t(role.labelKey),
+                            })}
                             checked={checked}
                             disabled={busy || !canEdit || locked}
                             onCheckedChange={(value) =>
@@ -265,7 +275,7 @@ export function ShopPermissionsMatrix({
             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--button-radius)] bg-foreground px-4 text-sm font-semibold text-background disabled:opacity-50"
           >
             {saved ? <Check className="size-4" /> : <Save className="size-4" />}
-            {busy ? "Salvando…" : saved ? "Permissões salvas" : "Salvar permissões"}
+            {busy ? t("team.perm.saving") : saved ? t("team.perm.saved") : t("team.perm.save")}
           </button>
         </div>
       ) : null}

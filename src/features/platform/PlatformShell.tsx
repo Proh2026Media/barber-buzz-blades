@@ -3,6 +3,7 @@ import { SurveyCatalog } from "@/features/insights/SurveyCatalog";
 import { BusinessInsights } from "@/features/insights/BusinessInsights";
 import { useScrollIndicators } from "@/lib/use-scroll-indicators";
 import {
+  Fragment,
   useCallback,
   useEffect,
   useId,
@@ -61,6 +62,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import type { SessionProfile } from "@/lib/auth/session";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
+import { t as tNow, useI18n } from "@/lib/i18n";
 import {
   brandCornerClass,
   brandFontScopeClass,
@@ -96,9 +98,9 @@ type InviteResult = {
 };
 
 /** "America/Sao_Paulo" → "Horário de Brasília"; mantém o código se o navegador não souber o nome. */
-function friendlyTimeZone(timeZone: string) {
+function friendlyTimeZone(timeZone: string, locale: string) {
   try {
-    const part = new Intl.DateTimeFormat("pt-BR", { timeZone, timeZoneName: "longGeneric" })
+    const part = new Intl.DateTimeFormat(locale, { timeZone, timeZoneName: "longGeneric" })
       .formatToParts(new Date())
       .find((item) => item.type === "timeZoneName");
     return part?.value ?? timeZone;
@@ -107,8 +109,15 @@ function friendlyTimeZone(timeZone: string) {
   }
 }
 
+function richText(template: string, nodes: Record<string, ReactNode>) {
+  return template
+    .split(/\{(\w+)\}/g)
+    .map((part, i) => (i % 2 === 1 ? <Fragment key={i}>{nodes[part] ?? part}</Fragment> : part));
+}
+
 export function PlatformShell({ profile, headerActions, demoMode = false }: PlatformShellProps) {
   useScrollIndicators();
+  const { t, intlLocale } = useI18n();
   const demoChrome = useDemoChrome();
   const [shops, setShops] = useState<Tables<"barbershops">[]>([]);
   const [memberships, setMemberships] = useState<
@@ -179,9 +188,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
     ]);
     const loadError = shopsResult.error || membershipsResult.error || modulesResult.error;
     if (loadError) {
-      setError(
-        friendlyAuthError(loadError, "Não foi possível carregar as barbearias. Tente novamente."),
-      );
+      setError(friendlyAuthError(loadError, tNow("plat.shell.loadError")));
     } else {
       setShops(shopsResult.data ?? []);
       setMemberships(membershipsResult.data ?? []);
@@ -225,12 +232,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       .eq("barbershop_id", shop.id)
       .single();
     if (settingsError) {
-      setError(
-        friendlyAuthError(
-          settingsError,
-          "Não foi possível abrir a personalização. Tente novamente.",
-        ),
-      );
+      setError(friendlyAuthError(settingsError, t("plat.shell.brandOpenError")));
       setBrandShop(null);
     } else {
       setBrandSettings(data);
@@ -252,12 +254,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       .eq("barbershop_id", demoShopId)
       .single();
     if (settingsError) {
-      setError(
-        friendlyAuthError(
-          settingsError,
-          "Não foi possível abrir a prévia do login. Tente novamente.",
-        ),
-      );
+      setError(friendlyAuthError(settingsError, t("plat.shell.loginPreviewError")));
       return;
     }
     setLoginTourSettings(data);
@@ -271,12 +268,10 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
 
   async function resetExternaBarbearia() {
     if (demoMode) {
-      setExternaMessage("Indisponível no ambiente de demonstração.");
+      setExternaMessage(t("plat.shell.demoUnavailable"));
       return;
     }
-    const ok = window.confirm(
-      "Isso apaga agenda, serviços e equipe da Externa Barbearia e recria Ezequiel + Tiago. Continuar?",
-    );
+    const ok = window.confirm(t("plat.externa.confirm"));
     if (!ok) return;
     setExternaBusy(true);
     setExternaMessage(null);
@@ -293,11 +288,16 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
         public_links?: string[];
       } | null;
       setExternaMessage(
-        `Externa remontada (slug ${row?.shop_slug ?? "externa-barbearia"}). Removidos ${row?.deleted_appointments ?? 0} horários e ${row?.deleted_staff ?? 0} profissionais. Links: ${(row?.public_links ?? []).slice(0, 2).join(" · ")}`,
+        t("plat.externa.done", {
+          slug: row?.shop_slug ?? "externa-barbearia",
+          appointments: row?.deleted_appointments ?? 0,
+          staff: row?.deleted_staff ?? 0,
+          links: (row?.public_links ?? []).slice(0, 2).join(" · "),
+        }),
       );
       await loadShops();
     } catch (err) {
-      setError(friendlyAuthError(err, "Não foi possível remontar a Externa. Tente novamente."));
+      setError(friendlyAuthError(err, t("plat.externa.error")));
     } finally {
       setExternaBusy(false);
     }
@@ -319,7 +319,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       setSlug("");
       await loadShops();
     } catch (err) {
-      setError(friendlyAuthError(err, "Não foi possível criar a barbearia. Tente novamente."));
+      setError(friendlyAuthError(err, t("plat.shell.createError")));
     } finally {
       setBusy(false);
     }
@@ -344,9 +344,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       setError(
         friendlyAuthError(
           updateError,
-          next === "suspended"
-            ? "Não foi possível suspender a barbearia. Tente novamente."
-            : "Não foi possível reativar a barbearia. Tente novamente.",
+          next === "suspended" ? t("plat.status.suspendError") : t("plat.status.reactivateError"),
         ),
       );
     } else await loadShops();
@@ -370,7 +368,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       if (result.error) throw result.error;
       setSportsModules((current) => ({ ...current, [shopId]: enabled }));
     } catch {
-      setError("Não foi possível alterar o módulo Esportes.");
+      setError(t("plat.shops.sportsError"));
     } finally {
       setModuleBusy(null);
     }
@@ -387,7 +385,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) throw sessionError;
       const token = sessionData.session?.access_token;
-      if (!token) throw new Error("Sessão inválida");
+      if (!token) throw new Error(t("plat.invite.invalidSession"));
 
       const { data, error: fnError } = await supabase.functions.invoke<InviteResult>(
         "invite-shop-admin",
@@ -405,20 +403,33 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       if (fnError) throw fnError;
       if (data?.error) throw new Error(data.error);
 
-      const shopLabel = data?.barbershop?.name ?? "loja";
+      const shopLabel = data?.barbershop?.name ?? t("plat.invite.shopFallback");
       if (data?.created && data.temporary_password) {
         setInviteMessage(
-          `Profissional criado para ${data.email} em ${shopLabel}. Senha temporária: ${data.temporary_password}`,
+          t("plat.invite.created", {
+            email: data.email ?? inviteEmail,
+            shop: shopLabel,
+            password: data.temporary_password,
+          }),
         );
       } else {
         setInviteMessage(
-          `${data?.email ?? inviteEmail} foi vinculado à equipe de ${shopLabel} como ${inviteRole === "owner" ? "co-dono" : inviteRole === "associate" ? "parceiro" : "contratado"}${data?.status === "pending" ? " (pendente de aprovação)" : ""}.`,
+          t(data?.status === "pending" ? "plat.invite.linkedPending" : "plat.invite.linked", {
+            email: data?.email ?? inviteEmail,
+            shop: shopLabel,
+            role:
+              inviteRole === "owner"
+                ? t("plat.invite.roleOwner")
+                : inviteRole === "associate"
+                  ? t("plat.invite.roleAssociate")
+                  : t("plat.invite.roleEmployee"),
+          }),
         );
       }
       setInviteEmail("");
       setInviteName("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao convidar admin");
+      setError(err instanceof Error ? err.message : t("plat.invite.error"));
     } finally {
       setInviteBusy(false);
     }
@@ -462,8 +473,10 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       )}
       <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur-xl px-4 py-4 flex items-center justify-between">
         <div className="min-w-0">
-          <p className="text-xs font-bold text-gold">Gestão global</p>
-          <h1 className="truncate text-lg font-extrabold tracking-tight">Plataforma Arena</h1>
+          <p className="text-xs font-bold text-gold">{t("plat.header.eyebrow")}</p>
+          <h1 className="truncate text-lg font-extrabold tracking-tight">
+            {t("plat.header.title")}
+          </h1>
         </div>
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <ThemeToggle />
@@ -480,19 +493,23 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
               </span>
               <Link
                 to="/shop"
-                aria-label="Abrir gestão da loja"
+                aria-label={t("plat.header.openShop")}
                 className="app-icon-button sm:hidden"
               >
                 <Building2 size={20} />
               </Link>
               <Link
                 to="/shop"
-                aria-label="Abrir gestão da loja"
+                aria-label={t("plat.header.openShop")}
                 className="hidden text-xs font-semibold text-muted-foreground hover:text-foreground sm:inline"
               >
-                Loja
+                {t("plat.header.shop")}
               </Link>
-              <button onClick={signOut} aria-label="Sair" className="app-icon-button">
+              <button
+                onClick={signOut}
+                aria-label={t("plat.header.signOut")}
+                className="app-icon-button"
+              >
                 <LogOut size={18} />
               </button>
             </>
@@ -503,14 +520,14 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       <main className="mx-auto max-w-5xl space-y-6 p-4 pb-24">
         <div key={platformTab} className="mb-panel space-y-6">
           <nav
-            aria-label="Áreas da administração"
+            aria-label={t("plat.tabs.aria")}
             className="grid grid-cols-4 gap-1 rounded-2xl border border-border/70 bg-card/80 p-1.5 shadow-sm"
           >
             {[
-              { id: "overview" as const, label: "Visão geral", icon: LayoutDashboard },
-              { id: "shops" as const, label: "Barbearias", icon: Building2 },
-              { id: "permissions" as const, label: "Acessos", icon: ShieldAlert },
-              { id: "insights" as const, label: "Relatórios", icon: MessageSquareText },
+              { id: "overview" as const, label: t("plat.tabs.overview"), icon: LayoutDashboard },
+              { id: "shops" as const, label: t("plat.tabs.shops"), icon: Building2 },
+              { id: "permissions" as const, label: t("plat.tabs.permissions"), icon: ShieldAlert },
+              { id: "insights" as const, label: t("plat.tabs.insights"), icon: MessageSquareText },
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
@@ -538,17 +555,16 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                 <section className="space-y-3 rounded-3xl border border-primary/20 bg-card p-5">
                   <div className="flex items-center gap-2">
                     <FlaskConical size={18} className="text-primary" />
-                    <h2 className="text-sm font-semibold">Você está no ambiente de teste</h2>
+                    <h2 className="text-sm font-semibold">{t("plat.demo.title")}</h2>
                   </div>
                   <p className="text-sm leading-relaxed text-muted-foreground">
-                    Use o seletor no cabeçalho para alternar entre Plataforma, Barbearia (papéis) e
-                    Cliente. Tudo é sessão isolada — ao sair, a operação real permanece intacta.
+                    {t("plat.demo.body")}
                   </p>
                 </section>
               ) : (
                 <>
                   <label className="block space-y-1.5 text-xs font-semibold text-muted-foreground">
-                    Barbearia usada no tour visual
+                    {t("plat.tour.shopLabel")}
                     <select
                       value={demoShopId}
                       onChange={(event) => setDemoShopId(event.target.value)}
@@ -557,7 +573,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                       {shops.map((shop) => (
                         <option key={shop.id} value={shop.id}>
                           {shop.name}
-                          {shop.status === "suspended" ? " · suspensa" : ""}
+                          {shop.status === "suspended" ? t("plat.shops.suspendedSuffix") : ""}
                         </option>
                       ))}
                     </select>
@@ -578,7 +594,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
               <div className="rounded-lg border border-border bg-card p-4">
                 <div className="app-section-title">
                   <MessageSquareText />
-                  <h2>Relatórios e pesquisas</h2>
+                  <h2>{t("plat.insights.title")}</h2>
                 </div>
               </div>
               <BusinessInsights />
@@ -599,12 +615,12 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                 <section className="space-y-3 rounded-3xl border border-amber-500/30 bg-amber-500/5 p-4">
                   <h3 className="text-sm font-bold">Externa Barbearia</h3>
                   <p className="text-xs text-muted-foreground">
-                    Limpa agenda, serviços e equipe; cria os parceiros Ezequiel e Tiago com slugs{" "}
-                    <code className="font-mono">ezequiel</code> /{" "}
-                    <code className="font-mono">tiago</code>. Os links ficam no endereço do sistema
-                    (<code className="font-mono">*.beauty…</code>). O site{" "}
-                    <code className="font-mono">externabarbearia.com.br</code> foi só referência —
-                    não é domínio do app até configurar em Ajustes.
+                    {richText(t("plat.externa.hint"), {
+                      ezequiel: <code className="font-mono">ezequiel</code>,
+                      tiago: <code className="font-mono">tiago</code>,
+                      domain: <code className="font-mono">*.beauty…</code>,
+                      site: <code className="font-mono">externabarbearia.com.br</code>,
+                    })}
                   </p>
                   <button
                     type="button"
@@ -612,7 +628,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                     className="action-button action-danger"
                     onClick={() => void resetExternaBarbearia()}
                   >
-                    {externaBusy ? "Remontando…" : "Remontar Externa (Ezequiel + Tiago)"}
+                    {externaBusy ? t("plat.externa.busy") : t("plat.externa.action")}
                   </button>
                   {externaMessage && (
                     <p className="text-sm text-foreground" role="status">
@@ -625,43 +641,45 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <Building2 size={18} className="text-primary" />
-                    <h2 className="text-xl font-extrabold tracking-tight">Barbearias</h2>
+                    <h2 className="text-xl font-extrabold tracking-tight">
+                      {t("plat.shops.title")}
+                    </h2>
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    {filteredShops.length} de {shops.length}
+                    {t("plat.shops.count", { shown: filteredShops.length, total: shops.length })}
                   </span>
                 </div>
                 <div className="grid gap-2 sm:grid-cols-[1fr_180px]">
                   <label className="relative">
-                    <span className="sr-only">Buscar barbearia</span>
+                    <span className="sr-only">{t("plat.shops.search")}</span>
                     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <input
                       type="search"
                       value={shopSearch}
                       onChange={(event) => setShopSearch(event.target.value)}
-                      placeholder="Nome ou endereço da página"
+                      placeholder={t("plat.shops.searchPlaceholder")}
                       className="w-full rounded-xl border border-input bg-background py-3 pl-10 pr-3 text-sm"
                     />
                   </label>
                   <select
-                    aria-label="Filtrar por situação"
+                    aria-label={t("plat.shops.filterAria")}
                     value={shopStatus}
                     onChange={(event) => setShopStatus(event.target.value as typeof shopStatus)}
                     className="rounded-xl border border-input bg-background px-3 py-3 text-sm"
                   >
-                    <option value="all">Todas as situações</option>
-                    <option value="active">Ativas</option>
-                    <option value="suspended">Suspensas</option>
+                    <option value="all">{t("plat.shops.filterAll")}</option>
+                    <option value="active">{t("plat.shops.filterActive")}</option>
+                    <option value="suspended">{t("plat.shops.filterSuspended")}</option>
                   </select>
                 </div>
 
                 {loading ? (
-                  <p className="text-sm text-muted-foreground">Carregando...</p>
+                  <p className="text-sm text-muted-foreground">{t("plat.common.loading")}</p>
                 ) : shops.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nenhuma barbearia ainda.</p>
+                  <p className="text-sm text-muted-foreground">{t("plat.shops.empty")}</p>
                 ) : filteredShops.length === 0 ? (
                   <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-                    Nenhuma barbearia corresponde aos filtros.
+                    {t("plat.shops.noMatch")}
                   </p>
                 ) : (
                   <div className="space-y-2">
@@ -687,22 +705,24 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                                 checked={sportsModules[shop.id] ?? false}
                                 disabled={moduleBusy !== null}
                                 onCheckedChange={(enabled) => void toggleSports(shop.id, enabled)}
-                                aria-label={`Módulo Esportes em ${shop.name}`}
+                                aria-label={t("plat.shops.sportsAria", { name: shop.name })}
                               />
-                              Módulo Esportes
+                              {t("plat.shops.sports")}
                             </label>
                             <p className="text-xs uppercase tracking-widest text-muted-foreground">
                               /{shop.slug}
                             </p>
                             <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
                               <span className="rounded-full bg-muted px-2 py-1">
-                                {customers} clientes
+                                {t("plat.shops.customers", { count: customers })}
                               </span>
                               <span className="rounded-full bg-muted px-2 py-1">
-                                {admins} {admins === 1 ? "administrador" : "administradores"}
+                                {t(admins === 1 ? "plat.shops.adminOne" : "plat.shops.adminMany", {
+                                  count: admins,
+                                })}
                               </span>
                               <span className="rounded-full bg-muted px-2 py-1">
-                                {friendlyTimeZone(shop.timezone)}
+                                {friendlyTimeZone(shop.timezone, intlLocale)}
                               </span>
                             </div>
                           </div>
@@ -714,7 +734,9 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                                   : "bg-muted text-muted-foreground"
                               }`}
                             >
-                              {shop.status === "active" ? "Ativa" : "Suspensa"}
+                              {shop.status === "active"
+                                ? t("plat.shops.active")
+                                : t("plat.shops.suspended")}
                             </span>
                             <button
                               type="button"
@@ -724,8 +746,8 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                               }}
                               aria-label={
                                 shop.status === "active"
-                                  ? `Suspender ${shop.name}`
-                                  : `Reativar ${shop.name}`
+                                  ? t("plat.status.suspendAria", { name: shop.name })
+                                  : t("plat.status.reactivateAria", { name: shop.name })
                               }
                               className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-3 text-xs font-bold hover:bg-muted"
                             >
@@ -737,7 +759,9 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                               ) : (
                                 <PlayCircle className="size-4 text-primary" aria-hidden="true" />
                               )}
-                              {shop.status === "active" ? "Suspender" : "Reativar"}
+                              {shop.status === "active"
+                                ? t("plat.status.suspend")
+                                : t("plat.status.reactivate")}
                             </button>
                             <button
                               type="button"
@@ -745,7 +769,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                               className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-3 text-xs font-bold hover:bg-muted"
                             >
                               <Palette className="size-4 text-primary" aria-hidden="true" />
-                              Personalizar
+                              {t("plat.shops.customize")}
                             </button>
                           </div>
                         </div>
@@ -758,7 +782,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
               <section className="space-y-4 rounded-3xl border border-border bg-card p-5">
                 <div className="flex items-center gap-2">
                   <Plus size={16} className="text-primary" />
-                  <h3 className="text-sm font-semibold">Nova barbearia</h3>
+                  <h3 className="text-sm font-semibold">{t("plat.newShop.title")}</h3>
                 </div>
                 <form onSubmit={createShop} className="space-y-3">
                   <div>
@@ -766,14 +790,14 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                       htmlFor={shopNameFieldId}
                       className="block text-xs font-semibold text-muted-foreground"
                     >
-                      Nome da barbearia
+                      {t("plat.newShop.name")}
                     </label>
                     <input
                       id={shopNameFieldId}
                       required
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="Ex.: Barbearia Central"
+                      placeholder={t("plat.newShop.namePlaceholder")}
                       className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground"
                     />
                   </div>
@@ -782,7 +806,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                       htmlFor={shopSlugFieldId}
                       className="block text-xs font-semibold text-muted-foreground"
                     >
-                      Endereço do link (automático)
+                      {t("plat.newShop.slug")}
                     </label>
                     <input
                       id={shopSlugFieldId}
@@ -799,7 +823,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                       className="mt-1 w-full rounded-xl border border-input bg-muted/40 px-3 py-2 text-sm text-muted-foreground"
                     />
                     <p className="mt-1 text-[11px] text-muted-foreground">
-                      Gerado a partir do nome. Renomear a loja cria redirect do endereço antigo.
+                      {t("plat.newShop.slugHint")}
                     </p>
                   </div>
                   <button
@@ -807,7 +831,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                     disabled={busy}
                     className="w-full rounded-xl bg-primary py-3 text-xs font-semibold text-primary-foreground disabled:opacity-50"
                   >
-                    {busy ? "Criando..." : "Criar barbearia"}
+                    {busy ? t("plat.newShop.busy") : t("plat.newShop.submit")}
                   </button>
                 </form>
               </section>
@@ -815,7 +839,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
               <section className="space-y-4 rounded-3xl border border-border bg-card p-5">
                 <div className="flex items-center gap-2">
                   <UserPlus size={16} className="text-primary" />
-                  <h3 className="text-sm font-semibold">Adicionar profissional à equipe</h3>
+                  <h3 className="text-sm font-semibold">{t("plat.invite.title")}</h3>
                 </div>
                 <form onSubmit={inviteShopAdmin} className="space-y-3">
                   <div>
@@ -823,7 +847,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                       htmlFor={inviteEmailFieldId}
                       className="block text-xs font-semibold text-muted-foreground"
                     >
-                      E-mail do profissional
+                      {t("plat.invite.email")}
                     </label>
                     <input
                       id={inviteEmailFieldId}
@@ -831,7 +855,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                       type="email"
                       value={inviteEmail}
                       onChange={(e) => setInviteEmail(e.target.value)}
-                      placeholder="nome@exemplo.com"
+                      placeholder={t("plat.invite.emailPlaceholder")}
                       className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground"
                     />
                   </div>
@@ -840,13 +864,13 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                       htmlFor={inviteNameFieldId}
                       className="block text-xs font-semibold text-muted-foreground"
                     >
-                      Nome do profissional
+                      {t("plat.invite.name")}
                     </label>
                     <input
                       id={inviteNameFieldId}
                       value={inviteName}
                       onChange={(e) => setInviteName(e.target.value)}
-                      placeholder="Opcional"
+                      placeholder={t("plat.invite.optional")}
                       className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground"
                     />
                   </div>
@@ -855,7 +879,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                       htmlFor={inviteShopFieldId}
                       className="block text-xs font-semibold text-muted-foreground"
                     >
-                      Barbearia
+                      {t("plat.common.shop")}
                     </label>
                     <select
                       id={inviteShopFieldId}
@@ -864,7 +888,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                       onChange={(e) => setInviteShopId(e.target.value)}
                       className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground"
                     >
-                      <option value="">Selecione a barbearia</option>
+                      <option value="">{t("plat.invite.selectShop")}</option>
                       {shops
                         .filter((s) => s.status === "active")
                         .map((shop) => (
@@ -878,15 +902,15 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                     value={inviteRole}
                     onChange={(event) => setInviteRole(event.target.value as typeof inviteRole)}
                     className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
-                    aria-label="Papel do profissional"
+                    aria-label={t("plat.invite.roleAria")}
                   >
-                    <option value="employee">Contratado · agenda e score próprios</option>
-                    <option value="associate">Parceiro · operação e valores próprios</option>
-                    <option value="owner">Co-dono · sociedade da unidade</option>
+                    <option value="employee">{t("plat.invite.optEmployee")}</option>
+                    <option value="associate">{t("plat.invite.optAssociate")}</option>
+                    <option value="owner">{t("plat.invite.optOwner")}</option>
                   </select>
                   {inviteRole === "owner" && (
                     <label className="block text-xs font-semibold">
-                      Participação societária (%)
+                      {t("plat.invite.ownership")}
                       <input
                         required
                         type="number"
@@ -898,8 +922,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                         className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
                       />
                       <span className="mt-1 block font-normal text-muted-foreground">
-                        A participação informada é transferida do dono atual. Majoritário (&gt;50%)
-                        aplica sozinho; igualitário e minoritário pedem aprovação.
+                        {t("plat.invite.ownershipHint")}
                       </span>
                     </label>
                   )}
@@ -913,7 +936,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                     disabled={inviteBusy || shops.length === 0}
                     className="w-full rounded-xl bg-primary py-3 text-xs font-semibold text-primary-foreground disabled:opacity-50"
                   >
-                    {inviteBusy ? "Adicionando..." : "Adicionar à equipe"}
+                    {inviteBusy ? t("plat.invite.busy") : t("plat.invite.submit")}
                   </button>
                 </form>
               </section>
@@ -933,11 +956,9 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
           <section className="space-y-3">
             <div className="flex items-center gap-2">
               <KeyRound className="size-4 text-gold" />
-              <h2 className="text-sm font-semibold">Sua conta</h2>
+              <h2 className="text-sm font-semibold">{t("plat.account.title")}</h2>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Altere a senha de acesso desta conta de administrador.
-            </p>
+            <p className="text-xs text-muted-foreground">{t("plat.account.hint")}</p>
             <ChangePasswordCard />
             <LanguageSettingsCard />
           </section>
@@ -960,13 +981,17 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
           <AlertDialogHeader>
             <AlertDialogTitle>
               {statusTarget?.status === "active"
-                ? `Suspender ${statusTarget?.name ?? "a barbearia"}?`
-                : `Reativar ${statusTarget?.name ?? "a barbearia"}?`}
+                ? t("plat.status.suspendTitle", {
+                    name: statusTarget?.name ?? t("plat.status.theShop"),
+                  })
+                : t("plat.status.reactivateTitle", {
+                    name: statusTarget?.name ?? t("plat.status.theShop"),
+                  })}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-left text-sm leading-relaxed">
               {statusTarget?.status === "active"
-                ? "O link e o domínio da barbearia param de abrir e ninguém consegue agendar até você reativar. Nenhum dado é apagado."
-                : "O link e o domínio voltam a abrir e os clientes podem agendar de novo."}
+                ? t("plat.status.suspendBody")
+                : t("plat.status.reactivateBody")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
@@ -976,7 +1001,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
               onClick={() => setStatusTarget(null)}
               className="min-h-11 rounded-xl border border-border px-4 text-sm font-semibold disabled:opacity-50"
             >
-              Voltar
+              {t("plat.common.back")}
             </button>
             <button
               type="button"
@@ -992,10 +1017,10 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                 <PlayCircle className="size-4" aria-hidden="true" />
               )}
               {statusBusy
-                ? "Salvando…"
+                ? t("plat.common.saving")
                 : statusTarget?.status === "active"
-                  ? "Suspender barbearia"
-                  : "Reativar barbearia"}
+                  ? t("plat.status.suspendConfirm")
+                  : t("plat.status.reactivateConfirm")}
             </button>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1013,13 +1038,13 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
         <DialogContent className="max-h-[92dvh] w-[calc(100vw-1.5rem)] max-w-2xl overflow-hidden rounded-3xl border-border bg-card p-0">
           <DialogScrollArea className="grid max-h-[calc(92dvh-2px)] gap-4 overflow-y-auto p-5 sm:p-6">
             <DialogTitle className="text-lg font-extrabold tracking-tight">
-              Personalizar {brandShop?.name ?? "barbearia"}
+              {t("plat.brand.title", { name: brandShop?.name ?? t("plat.brand.shopFallback") })}
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              O que você salvar aqui vale na hora para a equipe e para os clientes desta barbearia.
+              {t("plat.brand.hint")}
             </DialogDescription>
             {brandLoading || !brandShop || !brandSettings ? (
-              <p className="text-sm text-muted-foreground">Carregando identidade…</p>
+              <p className="text-sm text-muted-foreground">{t("plat.brand.loading")}</p>
             ) : (
               <BrandIdentityEditor
                 key={brandShop.id}
@@ -1046,7 +1071,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
               loginTourSettings.display_name?.trim() ||
               demoShop?.name ||
               demoState?.shop.name ||
-              "Barbearia",
+              t("plat.brand.shopNameFallback"),
             logoUrl: loginTourSettings.logo_url,
             logoBackgroundColor: loginTourSettings.logo_background_color,
             loginImageUrl: loginTourSettings.login_image_url,

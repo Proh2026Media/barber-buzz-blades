@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Download, X } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -18,6 +19,7 @@ function isStandalone() {
 
 /** Banner discreto para instalar o app como PWA (quando o navegador permitir). */
 export function PwaInstallBanner() {
+  const { t } = useI18n();
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
 
@@ -47,8 +49,8 @@ export function PwaInstallBanner() {
           <Download className="size-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold tracking-tight">Instalar o app</p>
-          <p className="text-xs text-muted-foreground">Abra na tela inicial, como um aplicativo.</p>
+          <p className="text-sm font-semibold tracking-tight">{t("ui.pwa.title")}</p>
+          <p className="text-xs text-muted-foreground">{t("ui.pwa.hint")}</p>
         </div>
         <button
           type="button"
@@ -62,11 +64,11 @@ export function PwaInstallBanner() {
             })();
           }}
         >
-          Instalar
+          {t("ui.pwa.install")}
         </button>
         <button
           type="button"
-          aria-label="Dispensar instalação"
+          aria-label={t("ui.pwa.dismiss")}
           className="app-icon-button size-9 shrink-0"
           onClick={() => {
             try {

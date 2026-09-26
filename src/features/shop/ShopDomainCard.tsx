@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, Copy, Globe2, RefreshCw, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useI18n, type MessageKey } from "@/lib/i18n";
 import { PLATFORM_BASE_HOST, shopPublicOrigin } from "@/lib/shop/host";
 
 type DomainSettings = {
@@ -22,18 +23,19 @@ type DomainSettings = {
   } | null;
 };
 
-const statusLabel: Record<DomainSettings["custom_domain_status"], string> = {
-  none: "Sem domínio próprio",
-  pending_dns: "Aguardando DNS",
-  active: "Ativo",
-  error: "Erro na verificação",
-};
+const statusKey = {
+  none: "integr.domain.status.none",
+  pending_dns: "integr.domain.status.pending_dns",
+  active: "integr.domain.status.active",
+  error: "integr.domain.status.error",
+} as const satisfies Record<DomainSettings["custom_domain_status"], MessageKey>;
 
 type ShopDomainCardProps = {
   shopId: string;
 };
 
 export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
+  const { t } = useI18n();
   const [settings, setSettings] = useState<DomainSettings | null>(null);
   const [domainInput, setDomainInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -65,14 +67,14 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
       setCopied(label);
       window.setTimeout(() => setCopied(""), 1500);
     } catch {
-      setError("Não foi possível copiar.");
+      setError(t("integr.domain.errCopy"));
     }
   }
 
   async function callShopDomain(body: Record<string, string>) {
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData.session?.access_token;
-    if (!token) throw new Error("Sessão expirada.");
+    if (!token) throw new Error(t("integr.err.session"));
     const base = import.meta.env.VITE_SUPABASE_URL || "";
     const response = await fetch(`${base}/functions/v1/shop-domain`, {
       method: "POST",
@@ -89,7 +91,7 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
       warning?: string | null;
       settings?: DomainSettings;
     };
-    if (!response.ok) throw new Error(payload.error || "Falha na operação de domínio.");
+    if (!response.ok) throw new Error(payload.error || t("integr.domain.errGeneric"));
     return payload;
   }
 
@@ -108,11 +110,11 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
       else await load();
       setMessage(
         payload.warning
-          ? `Domínio salvo. Configure o DNS e Verifique. Aviso: ${payload.warning}`
-          : "Domínio salvo. Configure o DNS e clique em Verificar.",
+          ? t("integr.domain.savedWarning", { warning: payload.warning })
+          : t("integr.domain.saved"),
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao salvar domínio.");
+      setError(err instanceof Error ? err.message : t("integr.domain.errSave"));
     } finally {
       setBusy(false);
     }
@@ -132,11 +134,11 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
       setDomainInput("");
       setMessage(
         payload.warning
-          ? `Domínio removido. Aviso: ${payload.warning}`
-          : "Domínio próprio removido.",
+          ? t("integr.domain.removedWarning", { warning: payload.warning })
+          : t("integr.domain.removed"),
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao remover.");
+      setError(err instanceof Error ? err.message : t("integr.domain.errRemove"));
     } finally {
       setBusy(false);
     }
@@ -156,12 +158,12 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
       setMessage(
         payload.ok
           ? payload.warning
-            ? `Domínio verificado. Aviso: ${payload.warning}`
-            : "Domínio verificado e ativo."
-          : payload.error || "Verifique o DNS.",
+            ? t("integr.domain.verifiedWarning", { warning: payload.warning })
+            : t("integr.domain.verifiedActive")
+          : payload.error || t("integr.domain.checkDnsHint"),
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha na verificação.");
+      setError(err instanceof Error ? err.message : t("integr.domain.errVerify"));
       await load();
     } finally {
       setBusy(false);
@@ -177,7 +179,8 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
       })
     : null;
   const publicUrl = publicOrigin ? `${publicOrigin}/app` : null;
-  const customActive = settings?.custom_domain_status === "active" && Boolean(settings.custom_domain);
+  const customActive =
+    settings?.custom_domain_status === "active" && Boolean(settings.custom_domain);
   const instructions = settings?.dns_instructions;
 
   return (
@@ -187,18 +190,15 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
           <Globe2 size={18} />
         </span>
         <div>
-          <h3 className="text-sm font-bold">Domínio da barbearia</h3>
-          <p className="text-xs text-muted-foreground">
-            Todo mundo ganha um endereço automático. Com domínio próprio ativo, ele vira o endereço
-            público principal (links de parceiro e da loja).
-          </p>
+          <h3 className="text-sm font-bold">{t("integr.domain.title")}</h3>
+          <p className="text-xs text-muted-foreground">{t("integr.domain.intro")}</p>
         </div>
       </div>
 
       {publicUrl && (
         <div className="space-y-2 rounded-2xl border border-primary/25 bg-primary/5 p-3">
           <p className="text-xs font-semibold">
-            Endereço público {customActive ? "(domínio próprio)" : "(automático)"}
+            {customActive ? t("integr.domain.publicCustom") : t("integr.domain.publicAuto")}
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <code className="min-w-0 flex-1 truncate rounded-xl bg-muted/50 px-3 py-2 text-xs">
@@ -210,14 +210,14 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
               onClick={() => void copyText("public", publicUrl)}
             >
               <Copy size={14} />
-              {copied === "public" ? "Copiado" : "Copiar"}
+              {copied === "public" ? t("integr.domain.copied") : t("integr.domain.copy")}
             </button>
           </div>
         </div>
       )}
 
       <div className="space-y-2 rounded-2xl border border-border bg-background p-3">
-        <p className="text-xs font-semibold">Endereço automático (subdomínio da plataforma)</p>
+        <p className="text-xs font-semibold">{t("integr.domain.autoAddress")}</p>
         <div className="flex flex-wrap items-center gap-2">
           <code className="min-w-0 flex-1 truncate rounded-xl bg-muted/50 px-3 py-2 text-xs">
             {platformUrl}
@@ -228,32 +228,38 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
             onClick={() => void copyText("platform", platformUrl)}
           >
             <Copy size={14} />
-            {copied === "platform" ? "Copiado" : "Copiar"}
+            {copied === "platform" ? t("integr.domain.copied") : t("integr.domain.copy")}
           </button>
         </div>
       </div>
 
-      <form onSubmit={saveDomain} className="space-y-3 rounded-2xl border border-border bg-background p-3">
-        <p className="text-xs font-semibold">Domínio próprio (opcional)</p>
+      <form
+        onSubmit={saveDomain}
+        className="space-y-3 rounded-2xl border border-border bg-background p-3"
+      >
+        <p className="text-xs font-semibold">{t("integr.domain.custom")}</p>
         <label htmlFor="custom-domain" className="block text-xs text-muted-foreground">
-          Ex.: agenda.minhabarbearia.com.br
+          {t("integr.domain.example")}
         </label>
         <input
           id="custom-domain"
           value={domainInput}
           onChange={(e) => setDomainInput(e.target.value)}
-          placeholder="agenda.minhaloja.com.br"
+          placeholder={t("integr.domain.placeholder")}
           className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm"
         />
         {settings && settings.custom_domain_status !== "none" && (
           <p className="text-xs text-muted-foreground">
-            Status: <span className="font-semibold text-foreground">{statusLabel[settings.custom_domain_status]}</span>
+            {t("integr.domain.statusLabel")}{" "}
+            <span className="font-semibold text-foreground">
+              {t(statusKey[settings.custom_domain_status])}
+            </span>
             {settings.domain_last_error ? ` — ${settings.domain_last_error}` : null}
           </p>
         )}
         <div className="flex flex-wrap gap-2">
           <button type="submit" disabled={busy} className="action-button">
-            Salvar domínio
+            {t("integr.domain.save")}
           </button>
           {settings?.custom_domain && (
             <>
@@ -264,7 +270,7 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
                 onClick={() => void verifyDomain()}
               >
                 <RefreshCw size={14} />
-                Verificar DNS
+                {t("integr.domain.verify")}
               </button>
               <button
                 type="button"
@@ -273,7 +279,7 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
                 onClick={() => void clearDomain()}
               >
                 <Trash2 size={14} />
-                Remover
+                {t("integr.domain.remove")}
               </button>
             </>
           )}
@@ -282,7 +288,7 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
 
       {instructions && (
         <div className="space-y-2 rounded-2xl border border-dashed border-border p-3 text-xs">
-          <p className="font-semibold">No DNS do seu domínio, crie:</p>
+          <p className="font-semibold">{t("integr.domain.dnsCreate")}</p>
           <ol className="list-decimal space-y-2 pl-4 text-muted-foreground">
             <li>
               <span className="text-foreground">CNAME</span>{" "}
@@ -293,7 +299,7 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
                 className="ml-2 underline"
                 onClick={() => void copyText("cname", instructions.cname_target)}
               >
-                copiar alvo
+                {t("integr.domain.copyTarget")}
               </button>
             </li>
             <li>
@@ -305,16 +311,14 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
                 className="ml-2 underline"
                 onClick={() => void copyText("txt", instructions.txt_value)}
               >
-                copiar valor
+                {t("integr.domain.copyValue")}
               </button>
             </li>
           </ol>
-          <p className="text-muted-foreground">
-            Propagação pode levar alguns minutos. Depois clique em Verificar DNS.
-          </p>
+          <p className="text-muted-foreground">{t("integr.domain.propagation")}</p>
           {settings?.custom_domain_status === "active" && (
             <p className="flex items-center gap-1 font-semibold text-foreground">
-              <CheckCircle2 size={14} /> Domínio verificado
+              <CheckCircle2 size={14} /> {t("integr.domain.verified")}
             </p>
           )}
         </div>

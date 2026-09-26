@@ -1,11 +1,7 @@
 import { useState } from "react";
 import { Monitor, Smartphone, X } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { useI18n } from "@/lib/i18n";
 import { LoginScreenPreview, type LoginScreenPreviewProps } from "./LoginScreenPreview";
 
 type LoginPreviewDialogProps = {
@@ -16,6 +12,7 @@ type LoginPreviewDialogProps = {
 
 /** Prévia em tela cheia: desktop ou celular, como o cliente verá no /auth. */
 export function LoginPreviewDialog({ open, onOpenChange, preview }: LoginPreviewDialogProps) {
+  const { t } = useI18n();
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
 
   return (
@@ -26,15 +23,17 @@ export function LoginPreviewDialog({ open, onOpenChange, preview }: LoginPreview
       >
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-4 py-3">
           <div className="min-w-0">
-            <DialogTitle className="truncate text-sm font-bold">Prévia do login</DialogTitle>
+            <DialogTitle className="truncate text-sm font-bold">
+              {t("brand.loginPreview.title")}
+            </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              Como a página de acesso aparece de verdade. Nada é enviado nesta tela.
+              {t("brand.loginPreview.description")}
             </DialogDescription>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <div
               role="group"
-              aria-label="Tamanho da prévia"
+              aria-label={t("brand.loginPreview.sizeAria")}
               className="flex rounded-xl border border-border bg-muted/60 p-1"
             >
               <button
@@ -48,7 +47,7 @@ export function LoginPreviewDialog({ open, onOpenChange, preview }: LoginPreview
                 }`}
               >
                 <Monitor className="size-4" aria-hidden="true" />
-                Desktop
+                {t("brand.loginPreview.desktop")}
               </button>
               <button
                 type="button"
@@ -61,14 +60,14 @@ export function LoginPreviewDialog({ open, onOpenChange, preview }: LoginPreview
                 }`}
               >
                 <Smartphone className="size-4" aria-hidden="true" />
-                Celular
+                {t("brand.loginPreview.mobile")}
               </button>
             </div>
             <button
               type="button"
               onClick={() => onOpenChange(false)}
               className="app-icon-button"
-              aria-label="Fechar prévia"
+              aria-label={t("brand.loginPreview.close")}
             >
               <X size={20} />
             </button>

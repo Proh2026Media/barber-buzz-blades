@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 import { Check, ChevronDown, Pipette, RotateCcw } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useI18n } from "@/lib/i18n";
 import {
   BRAND_PALETTE,
   HEX_COLOR_PATTERN,
@@ -30,10 +31,12 @@ export function BrandColorPicker({
   description,
   value,
   defaultValue,
-  sampleText = "Agendar horário",
+  sampleText,
   allowEmpty = false,
   onChange,
 }: BrandColorPickerProps) {
+  const { t, intlLocale } = useI18n();
+  const sample = sampleText ?? t("brand.color.sample");
   const hexId = useId();
   const nativeId = useId();
   const [open, setOpen] = useState(false);
@@ -42,7 +45,8 @@ export function BrandColorPicker({
   const invalid = !isEmpty && !HEX_COLOR_PATTERN.test(value);
   const foreground = contrastingForeground(validValue);
   const ratio = contrastRatio(foreground, validValue);
-  const paletteName = BRAND_PALETTE.find((entry) => entry.value === validValue)?.name;
+  const paletteEntry = BRAND_PALETTE.find((entry) => entry.value === validValue);
+  const paletteName = paletteEntry ? t(paletteEntry.nameKey) : undefined;
   const isDefault = isEmpty || validValue === defaultValue.toUpperCase();
 
   return (
@@ -51,7 +55,7 @@ export function BrandColorPicker({
         <PopoverTrigger asChild>
           <button
             type="button"
-            aria-label={`${label}: ${paletteName ?? validValue}. Abrir seletor de cor`}
+            aria-label={t("brand.color.triggerAria", { label, value: paletteName ?? validValue })}
             aria-expanded={open}
             className="brand-color-trigger group flex min-h-[4.5rem] w-full items-stretch gap-0 overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm transition hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
@@ -67,12 +71,12 @@ export function BrandColorPicker({
                 <span className="block text-sm font-bold text-foreground">{label}</span>
                 <span className="block truncate text-xs text-muted-foreground">
                   {isEmpty ? (
-                    "Sem fundo (transparente)"
+                    t("brand.color.transparent")
                   ) : (
                     <>
                       {paletteName ? `${paletteName} · ` : ""}
                       <span className="font-mono">{validValue}</span>
-                      {isDefault ? " · padrão" : ""}
+                      {isDefault ? ` · ${t("brand.color.defaultTag")}` : ""}
                     </>
                   )}
                 </span>
@@ -102,28 +106,36 @@ export function BrandColorPicker({
                 </span>
               </div>
               <div className="flex items-end justify-between gap-3">
-                <p className="text-base font-extrabold">{sampleText}</p>
+                <p className="text-base font-extrabold">{sample}</p>
                 <p className="text-[11px] font-semibold opacity-80">
-                  Leitura {ratio >= 4.5 ? "ótima" : ratio >= 3 ? "boa" : "fraca"} ·{" "}
-                  {ratio.toFixed(1)}:1
+                  {t("brand.color.reading", {
+                    level:
+                      ratio >= 4.5
+                        ? t("brand.color.readingGreat")
+                        : ratio >= 3
+                          ? t("brand.color.readingGood")
+                          : t("brand.color.readingWeak"),
+                  })}{" "}
+                  · {ratio.toFixed(1)}:1
                 </p>
               </div>
             </div>
 
             <fieldset>
               <legend className="mb-2 text-xs font-semibold text-muted-foreground">
-                Paleta sugerida
+                {t("brand.color.palette")}
               </legend>
               <div className="grid grid-cols-8 gap-1.5">
                 {BRAND_PALETTE.map((entry) => {
                   const selected = validValue === entry.value;
+                  const name = t(entry.nameKey);
                   return (
                     <button
                       key={entry.value}
                       type="button"
-                      aria-label={`${entry.name} ${entry.value}`}
+                      aria-label={`${name} ${entry.value}`}
                       aria-pressed={selected}
-                      title={entry.name}
+                      title={name}
                       onClick={() => onChange(entry.value)}
                       className={`flex aspect-square min-h-10 items-center justify-center rounded-xl border border-black/10 shadow-sm transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${selected ? "ring-2 ring-ring ring-offset-2" : ""}`}
                       style={{ backgroundColor: entry.value }}
@@ -144,7 +156,7 @@ export function BrandColorPicker({
             <div className="grid grid-cols-[1fr_auto] items-end gap-2">
               <div className="space-y-1.5">
                 <label htmlFor={hexId} className="text-xs font-semibold text-muted-foreground">
-                  Código da cor
+                  {t("brand.color.hexLabel")}
                 </label>
                 <input
                   id={hexId}
@@ -168,12 +180,14 @@ export function BrandColorPicker({
                 className="relative flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-border bg-background px-3 text-xs font-bold transition hover:bg-muted focus-within:ring-2 focus-within:ring-ring"
               >
                 <Pipette className="size-4" aria-hidden="true" />
-                Outra cor
+                {t("brand.color.other")}
                 <input
                   id={nativeId}
                   type="color"
                   value={validValue}
-                  aria-label={`Escolher ${label.toLocaleLowerCase("pt-BR")} livremente`}
+                  aria-label={t("brand.color.nativeAria", {
+                    label: label.toLocaleLowerCase(intlLocale),
+                  })}
                   onChange={(event) => onChange(event.target.value.toUpperCase())}
                   className="absolute inset-0 size-full cursor-pointer opacity-0"
                 />
@@ -181,7 +195,7 @@ export function BrandColorPicker({
             </div>
             {invalid && (
               <p id={`${hexId}-error`} className="-mt-2 text-xs font-medium text-destructive">
-                Use o formato #RRGGBB, por exemplo {defaultValue}.
+                {t("brand.color.invalid", { example: defaultValue })}
               </p>
             )}
 
@@ -193,14 +207,16 @@ export function BrandColorPicker({
                 className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-background px-3 text-sm font-bold transition hover:bg-muted disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <RotateCcw className="size-4" aria-hidden="true" />
-                {allowEmpty && defaultValue === "" ? "Sem fundo" : "Padrão"}
+                {allowEmpty && defaultValue === ""
+                  ? t("brand.color.noBackground")
+                  : t("brand.color.default")}
               </button>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
                 className="flex min-h-11 flex-1 items-center justify-center rounded-xl bg-primary px-3 text-sm font-bold text-primary-foreground transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                Pronto
+                {t("brand.color.done")}
               </button>
             </div>
           </div>

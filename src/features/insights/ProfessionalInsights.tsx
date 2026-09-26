@@ -3,6 +3,7 @@ import { BarChart3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { DEFAULT_SHOP_TIMEZONE, shopDayRange } from "@/lib/shop/appointments";
 import { useDemo } from "@/features/demo/context";
+import { useI18n } from "@/lib/i18n";
 
 type Metrics = {
   bookings: number;
@@ -32,6 +33,7 @@ export function ProfessionalInsights({
   role?: "owner" | "partner" | "associate" | "employee" | null;
 }) {
   const demo = useDemo();
+  const { t, intlLocale } = useI18n();
   const [data, setData] = useState<Result | null>(null);
   const [error, setError] = useState(false);
 
@@ -91,28 +93,28 @@ export function ProfessionalInsights({
   return (
     <section
       className="space-y-3 rounded-2xl border border-primary/20 bg-card p-4"
-      aria-label="Meu desempenho"
+      aria-label={t("ins.pro.title")}
     >
       <h3 className="flex items-center gap-2 text-sm font-bold">
         <BarChart3 className="size-5 text-primary" />
-        Meu desempenho
+        {t("ins.pro.title")}
       </h3>
       {error ? (
         <p role="alert" className="text-xs text-destructive">
-          Não foi possível carregar os indicadores.
+          {t("ins.biz.loadError")}
         </p>
       ) : !data ? (
         <p role="status" className="text-xs text-muted-foreground">
-          Carregando indicadores…
+          {t("ins.biz.loading")}
         </p>
       ) : (
         <>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {[
-              ["Atendimentos", data.own.bookings],
-              ["Concluídos", data.own.completed],
-              ["Cancelados", data.own.cancelled],
-              ["Clientes", data.own.customers],
+              [t("ins.pro.appointments"), data.own.bookings],
+              [t("ins.biz.completed"), data.own.completed],
+              [t("ins.biz.cancelled"), data.own.cancelled],
+              [t("ins.pro.customers"), data.own.customers],
             ].map(([label, value]) => (
               <div key={label} className="rounded-xl border border-border bg-background/60 p-3">
                 <p className="text-lg font-bold">{value}</p>
@@ -122,30 +124,30 @@ export function ProfessionalInsights({
           </div>
           {data.own.quoted_cents !== null && (
             <p className="text-sm">
-              Valor dos serviços concluídos:{" "}
+              {t("ins.pro.completedValue")}{" "}
               <strong>
-                {(data.own.quoted_cents / 100).toLocaleString("pt-BR", {
+                {(data.own.quoted_cents / 100).toLocaleString(intlLocale, {
                   style: "currency",
                   currency: "BRL",
+                  currencyDisplay: "narrowSymbol",
                 })}
               </strong>
             </p>
           )}
           {data.scope === "own_score" && (
-            <p className="text-xs text-muted-foreground">
-              Valores financeiros não fazem parte do acesso de contratado.
-            </p>
+            <p className="text-xs text-muted-foreground">{t("ins.pro.noMoney")}</p>
           )}
           {data.global && Object.keys(data.global).length > 0 && (
             <div className="rounded-xl border border-border bg-muted/20 p-3">
-              <p className="text-xs font-bold">Visão geral anonimizada da barbearia</p>
+              <p className="text-xs font-bold">{t("ins.pro.globalTitle")}</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {data.global.bookings} atendimentos · {data.global.completed} concluídos ·{" "}
-                {data.global.cancelled} cancelados
+                {t("ins.pro.globalLine", {
+                  bookings: data.global.bookings,
+                  completed: data.global.completed,
+                  cancelled: data.global.cancelled,
+                })}
               </p>
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                Sem nomes ou divisão por profissional. Exibida somente com amostra mínima.
-              </p>
+              <p className="mt-1 text-[11px] text-muted-foreground">{t("ins.pro.globalNote")}</p>
             </div>
           )}
         </>

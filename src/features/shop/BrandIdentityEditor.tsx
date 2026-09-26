@@ -17,6 +17,7 @@ import {
   Upload,
 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import { useI18n } from "@/lib/i18n";
 import {
   BRAND_FONT_OPTIONS,
   BRAND_FONT_SCOPE_OPTIONS,
@@ -76,6 +77,7 @@ export function BrandIdentityEditor({
   onSaved,
   audience = "shop",
 }: BrandIdentityEditorProps) {
+  const { t } = useI18n();
   const nameId = useId();
   const taglineId = useId();
   const fileInput = useRef<HTMLInputElement>(null);
@@ -227,9 +229,9 @@ export function BrandIdentityEditor({
 
   function chooseLoginImage(file: File | null | undefined) {
     if (!file) return;
-    const problem = validateBrandLogo(file);
+    const problem = validateBrandLogo(file, "image");
     if (problem) {
-      setError(problem.replace("logo", "imagem"));
+      setError(problem);
       return;
     }
     setError(null);
@@ -259,7 +261,7 @@ export function BrandIdentityEditor({
   function acceptFonts(files: File[]) {
     if (!files.length) return;
     const result = analyzeFontFiles(files);
-    if (result.error) {
+    if (result.error !== null) {
       setError(result.error);
       return;
     }
@@ -339,7 +341,7 @@ export function BrandIdentityEditor({
       onSaved(next);
       setSaved(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao salvar a identidade visual.");
+      setError(err instanceof Error ? err.message : t("brand.save.error"));
     } finally {
       setBusy(false);
     }
@@ -351,17 +353,17 @@ export function BrandIdentityEditor({
       <div className="app-section-title">
         <Palette />
         <div>
-          <h3>Identidade visual</h3>
+          <h3>{t("brand.editor.title")}</h3>
           <p className="mt-1 text-xs font-normal text-muted-foreground">
             {audience === "platform"
-              ? "Logo, nome, fonte e cores que os clientes e a equipe desta barbearia veem."
-              : "Personalize a marca sem comprometer a leitura do restante do app."}
+              ? t("brand.editor.subtitlePlatform")
+              : t("brand.editor.subtitleShop")}
           </p>
         </div>
       </div>
 
       {/* Prévia ao vivo */}
-      <section aria-label="Prévia da identidade" className="space-y-2">
+      <section aria-label={t("brand.preview.aria")} className="space-y-2">
         <div
           className={`brand-preview overflow-hidden rounded-3xl border border-border bg-card shadow-md ${brandFontScopeClass(draft.font_scope)} ${brandCornerClass(draft.corner_style)} ${draft.floating_chrome ? "brand-chrome-floating" : ""}`}
           style={previewStyle}
@@ -384,7 +386,7 @@ export function BrandIdentityEditor({
                 {previewName}
               </p>
               <p className="truncate text-[11px] font-medium text-primary">
-                {draft.tagline.trim() || "Sua frase aparece aqui"}
+                {draft.tagline.trim() || t("brand.preview.taglinePlaceholder")}
               </p>
             </div>
             <span className="flex size-9 items-center justify-center rounded-full bg-muted text-muted-foreground">
@@ -395,25 +397,27 @@ export function BrandIdentityEditor({
             <div className="flex items-center justify-between gap-3 rounded-2xl border border-gold/40 bg-gold/10 px-3 py-2.5">
               <span className="flex items-center gap-2 text-xs font-bold text-gold">
                 <Star className="size-4" />
-                Cliente VIP · 250 pontos
+                {t("brand.preview.vip")}
               </span>
               <Sparkles className="size-4 text-gold" />
             </div>
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="brand-content-title text-sm font-bold">Próximo horário livre</p>
-                <p className="text-xs text-muted-foreground">Hoje às 15h com Bruno</p>
+                <p className="brand-content-title text-sm font-bold">
+                  {t("brand.preview.nextSlot")}
+                </p>
+                <p className="text-xs text-muted-foreground">{t("brand.preview.nextSlotDetail")}</p>
               </div>
               <span className="flex min-h-10 shrink-0 items-center rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground">
-                Agendar
+                {t("brand.preview.book")}
               </span>
             </div>
           </div>
           <div className="brand-preview-footer grid grid-cols-3 border-t border-border/60 bg-background/60 px-2 py-1.5 text-[10px] font-semibold">
             {[
-              { label: "Início", icon: Home, active: true },
-              { label: "Agenda", icon: Calendar, active: false },
-              { label: "Pontos", icon: Star, active: false },
+              { label: t("brand.preview.navHome"), icon: Home, active: true },
+              { label: t("brand.preview.navSchedule"), icon: Calendar, active: false },
+              { label: t("brand.preview.navPoints"), icon: Star, active: false },
             ].map(({ label, icon: Icon, active }) => (
               <span
                 key={label}
@@ -425,25 +429,21 @@ export function BrandIdentityEditor({
             ))}
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">
-          A prévia muda na hora. O app só é atualizado quando você salvar.
-        </p>
+        <p className="text-xs text-muted-foreground">{t("brand.preview.liveHint")}</p>
       </section>
 
       {/* Página de acesso */}
       <section className="space-y-4" aria-labelledby={`${nameId}-login`}>
         <div>
           <h4 id={`${nameId}-login`} className="text-sm font-bold">
-            Página de acesso
+            {t("brand.login.title")}
           </h4>
-          <p className="text-xs text-muted-foreground">
-            Escolha como a foto e o formulário aparecem para clientes e equipe antes de entrar.
-          </p>
+          <p className="text-xs text-muted-foreground">{t("brand.login.hint")}</p>
         </div>
 
         <div
           role="radiogroup"
-          aria-label="Modelo da página de acesso"
+          aria-label={t("brand.login.modelAria")}
           className="grid gap-2 sm:grid-cols-3"
         >
           {BRAND_LOGIN_LAYOUT_OPTIONS.map((option) => {
@@ -470,11 +470,11 @@ export function BrandIdentityEditor({
                   shopName={previewName}
                 />
                 <span className="mt-2 flex items-center justify-between gap-2 text-xs font-bold">
-                  {option.label}
+                  {t(option.labelKey)}
                   {selected && <Check className="size-4 text-primary" aria-hidden="true" />}
                 </span>
                 <span className="mt-1 block text-[11px] leading-snug text-muted-foreground">
-                  {option.hint}
+                  {t(option.hintKey)}
                 </span>
               </button>
             );
@@ -484,9 +484,11 @@ export function BrandIdentityEditor({
         <div className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p className="text-xs font-semibold text-muted-foreground">Prévia realista</p>
+              <p className="text-xs font-semibold text-muted-foreground">
+                {t("brand.login.realPreview")}
+              </p>
               <p className="text-[11px] text-muted-foreground">
-                Mostra a página de acesso com a foto, cores e cantos atuais do rascunho.
+                {t("brand.login.realPreviewHint")}
               </p>
             </div>
             <button
@@ -495,7 +497,7 @@ export function BrandIdentityEditor({
               className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-3 text-xs font-bold hover:bg-muted"
             >
               <Eye className="size-4" aria-hidden="true" />
-              Ver como fica
+              {t("brand.login.seeIt")}
             </button>
           </div>
           <LoginScreenPreview
@@ -521,9 +523,9 @@ export function BrandIdentityEditor({
               <Camera className="size-5" aria-hidden="true" />
             </span>
             <span className="min-w-0">
-              <span className="block text-sm font-bold">Foto do login</span>
+              <span className="block text-sm font-bold">{t("brand.login.photo")}</span>
               <span className="block text-xs leading-relaxed text-muted-foreground">
-                PNG, JPEG ou WebP até 2 MB. Você escolhe o enquadramento antes de salvar.
+                {t("brand.login.photoHint")}
               </span>
             </span>
           </div>
@@ -545,7 +547,9 @@ export function BrandIdentityEditor({
               className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-3 text-xs font-bold hover:bg-muted"
             >
               <ImagePlus className="size-4" />
-              {draft.login_image_url || loginImageFile ? "Trocar foto" : "Enviar foto"}
+              {draft.login_image_url || loginImageFile
+                ? t("brand.login.changePhoto")
+                : t("brand.login.uploadPhoto")}
             </button>
             {(draft.login_image_url || loginImageFile) && (
               <button
@@ -553,7 +557,7 @@ export function BrandIdentityEditor({
                 onClick={removeLoginImage}
                 className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-3 text-xs font-bold text-destructive hover:bg-destructive/10"
               >
-                <Trash2 className="size-4" /> Padrão
+                <Trash2 className="size-4" /> {t("brand.login.default")}
               </button>
             )}
           </div>
@@ -563,7 +567,7 @@ export function BrandIdentityEditor({
       {/* Logo e nome */}
       <section className="space-y-4" aria-labelledby={`${nameId}-section`}>
         <h4 id={`${nameId}-section`} className="text-sm font-bold">
-          Logo e nome
+          {t("brand.logo.section")}
         </h4>
         <div className="grid gap-4 sm:grid-cols-[auto_1fr] sm:items-start">
           <div
@@ -580,19 +584,23 @@ export function BrandIdentityEditor({
             <button
               type="button"
               onClick={() => fileInput.current?.click()}
-              aria-label={previewLogo ? "Trocar logo" : "Escolher logo"}
+              aria-label={previewLogo ? t("brand.logo.changeAria") : t("brand.logo.chooseAria")}
               className="group relative flex size-28 items-center justify-center overflow-hidden rounded-2xl border border-border bg-white shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {previewLogo ? (
-                <img src={previewLogo} alt="Logo atual" className="size-full object-contain p-2" />
+                <img
+                  src={previewLogo}
+                  alt={t("brand.logo.currentAlt")}
+                  className="size-full object-contain p-2"
+                />
               ) : (
                 <span className="flex flex-col items-center gap-1 text-muted-foreground">
                   <ImagePlus className="size-7" />
-                  <span className="text-[11px] font-semibold">Sem logo</span>
+                  <span className="text-[11px] font-semibold">{t("brand.logo.none")}</span>
                 </span>
               )}
               <span className="absolute inset-x-0 bottom-0 bg-black/60 py-1 text-[11px] font-bold text-white opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100">
-                {previewLogo ? "Trocar" : "Escolher"}
+                {previewLogo ? t("brand.logo.change") : t("brand.logo.choose")}
               </span>
             </button>
             <input
@@ -613,7 +621,7 @@ export function BrandIdentityEditor({
                 className="flex min-h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs font-bold hover:bg-muted"
               >
                 <ImagePlus className="size-3.5" />
-                {previewLogo ? "Trocar" : "Escolher"}
+                {previewLogo ? t("brand.logo.change") : t("brand.logo.choose")}
               </button>
               {previewLogo && (
                 <button
@@ -622,19 +630,19 @@ export function BrandIdentityEditor({
                   className="flex min-h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs font-bold text-destructive hover:bg-destructive/10"
                 >
                   <Trash2 className="size-3.5" />
-                  Remover
+                  {t("brand.common.remove")}
                 </button>
               )}
             </div>
             <p className="max-w-[11rem] text-[11px] leading-snug text-muted-foreground">
-              PNG, JPEG, WebP ou SVG até 2 MB. Quadrado fica melhor.
+              {t("brand.logo.hint")}
             </p>
           </div>
 
           <div className="space-y-4">
             <div className="space-y-1.5">
               <label htmlFor={nameId} className="text-xs font-semibold text-muted-foreground">
-                Nome no cabeçalho
+                {t("brand.name.label")}
               </label>
               <input
                 id={nameId}
@@ -645,12 +653,12 @@ export function BrandIdentityEditor({
                 className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
               <p className="text-xs text-muted-foreground">
-                Vazio usa o nome cadastrado: {shopName}.
+                {t("brand.name.emptyHint", { name: shopName })}
               </p>
             </div>
             <div className="space-y-1.5">
               <label htmlFor={taglineId} className="text-xs font-semibold text-muted-foreground">
-                Frase abaixo do nome
+                {t("brand.tagline.label")}
               </label>
               <input
                 id={taglineId}
@@ -675,19 +683,19 @@ export function BrandIdentityEditor({
           <Type className="mt-0.5 size-4 text-primary" aria-hidden="true" />
           <div>
             <h4 id={`${nameId}-font`} className="text-sm font-bold">
-              Fonte da marca
+              {t("brand.font.title")}
             </h4>
-            <p className="text-xs text-muted-foreground">
-              O texto geral, campos e botões continuam em Inter para preservar a leitura.
-            </p>
+            <p className="text-xs text-muted-foreground">{t("brand.font.hint")}</p>
           </div>
         </div>
 
         <div className="space-y-2">
-          <p className="text-xs font-semibold text-muted-foreground">Onde usar</p>
+          <p className="text-xs font-semibold text-muted-foreground">
+            {t("brand.font.whereLabel")}
+          </p>
           <div
             role="radiogroup"
-            aria-label="Onde aplicar a fonte da marca"
+            aria-label={t("brand.font.whereAria")}
             className="grid gap-2 sm:grid-cols-2"
           >
             {BRAND_FONT_SCOPE_OPTIONS.map((scope) => {
@@ -706,11 +714,11 @@ export function BrandIdentityEditor({
                   }`}
                 >
                   <span className="flex items-center justify-between gap-2 text-sm font-bold">
-                    {scope.label}
+                    {t(scope.labelKey)}
                     {selected && <Check className="size-4 text-primary" aria-hidden="true" />}
                   </span>
                   <span className="mt-1 block text-[11px] leading-snug text-muted-foreground">
-                    {scope.hint}
+                    {t(scope.hintKey)}
                   </span>
                 </button>
               );
@@ -721,11 +729,8 @@ export function BrandIdentityEditor({
         <div className="rounded-2xl border border-border bg-background/70 p-3" style={previewStyle}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-bold">Enviar fonte própria</p>
-              <p className="text-[11px] text-muted-foreground">
-                Uma fonte avulsa ou até 12 arquivos WOFF2, WOFF, TTF ou OTF da mesma família. O
-                nome, peso e estilo são reconhecidos mesmo quando o arquivo contém hash.
-              </p>
+              <p className="text-sm font-bold">{t("brand.font.upload")}</p>
+              <p className="text-[11px] text-muted-foreground">{t("brand.font.uploadHint")}</p>
             </div>
             <button
               type="button"
@@ -733,7 +738,7 @@ export function BrandIdentityEditor({
               className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-4 text-xs font-bold hover:bg-muted"
             >
               <Upload className="size-4" />
-              {previewFontUrl ? "Trocar fonte/família" : "Escolher arquivos"}
+              {previewFontUrl ? t("brand.font.changeFiles") : t("brand.font.chooseFiles")}
             </button>
           </div>
           <input
@@ -754,18 +759,20 @@ export function BrandIdentityEditor({
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="truncate text-xs font-bold">
-                      {draft.custom_font_name || "Fonte personalizada"}
+                      {draft.custom_font_name || t("brand.font.customFallback")}
                     </p>
                     <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
-                      {recognizedFontKind === "family" ? "Família reconhecida" : "Fonte avulsa"}
+                      {recognizedFontKind === "family"
+                        ? t("brand.font.familyDetected")
+                        : t("brand.font.single")}
                     </span>
                   </div>
                   <p className="mt-0.5 text-[11px] text-muted-foreground">
                     {previewFontFaces.length > 1
-                      ? `${previewFontFaces.length} variações prontas para títulos com peso correto.`
+                      ? t("brand.font.variations", { count: previewFontFaces.length })
                       : recognizedFontKind === "family"
-                        ? "Arquivo variável reconhecido como uma família de pesos."
-                        : "Fonte avulsa: um único arquivo será usado nos títulos escolhidos."}
+                        ? t("brand.font.variableDetected")
+                        : t("brand.font.singleHint")}
                   </p>
                 </div>
                 <button
@@ -774,7 +781,7 @@ export function BrandIdentityEditor({
                   className="flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg px-2 text-xs font-bold text-destructive hover:bg-destructive/10"
                 >
                   <Trash2 className="size-3.5" />
-                  Remover
+                  {t("brand.common.remove")}
                 </button>
               </div>
               <div className="mt-2 flex flex-wrap gap-1.5">
@@ -803,15 +810,13 @@ export function BrandIdentityEditor({
         <div className="space-y-2">
           <div>
             <p className="text-xs font-semibold text-muted-foreground">
-              Peso e estilo no cabeçalho
+              {t("brand.font.weightTitle")}
             </p>
-            <p className="text-[11px] text-muted-foreground">
-              Escolha uma variação da família. A prévia mostra exatamente como o nome ficará.
-            </p>
+            <p className="text-[11px] text-muted-foreground">{t("brand.font.weightHint")}</p>
           </div>
           <div
             role="radiogroup"
-            aria-label="Peso e estilo da fonte no cabeçalho"
+            aria-label={t("brand.font.weightAria")}
             className="flex flex-wrap gap-2"
             style={previewStyle}
           >
@@ -850,9 +855,13 @@ export function BrandIdentityEditor({
 
         <div>
           <p className="mb-2 text-xs font-semibold text-muted-foreground">
-            Ou escolha da biblioteca
+            {t("brand.font.library")}
           </p>
-          <div role="radiogroup" aria-label="Fonte do app" className="grid gap-2 sm:grid-cols-2">
+          <div
+            role="radiogroup"
+            aria-label={t("brand.font.libraryAria")}
+            className="grid gap-2 sm:grid-cols-2"
+          >
             {BRAND_FONT_OPTIONS.map((font) => {
               const selected =
                 !previewFontUrl && normalizeBrandFont(draft.font_family) === font.value;
@@ -879,7 +888,7 @@ export function BrandIdentityEditor({
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-bold">{font.label}</span>
                     <span className="block text-[11px] leading-snug text-muted-foreground">
-                      {font.hint}
+                      {t(font.hintKey)}
                     </span>
                   </span>
                   {selected && (
@@ -896,16 +905,13 @@ export function BrandIdentityEditor({
       <section className="space-y-3" aria-labelledby={`${nameId}-corners`}>
         <div>
           <h4 id={`${nameId}-corners`} className="text-sm font-bold">
-            Formato dos cantos
+            {t("brand.corners.title")}
           </h4>
-          <p className="text-xs text-muted-foreground">
-            Aplica o mesmo estilo a botões, campos, cartões e janelas para manter a interface
-            consistente.
-          </p>
+          <p className="text-xs text-muted-foreground">{t("brand.corners.hint")}</p>
         </div>
         <div
           role="radiogroup"
-          aria-label="Formato dos cantos do sistema"
+          aria-label={t("brand.corners.aria")}
           className="grid gap-2 sm:grid-cols-3"
         >
           {BRAND_CORNER_OPTIONS.map((option) => {
@@ -935,11 +941,11 @@ export function BrandIdentityEditor({
                   />
                 </span>
                 <span className="flex items-center justify-between gap-2 text-xs font-bold">
-                  {option.label}
+                  {t(option.labelKey)}
                   {selected && <Check className="size-4 text-primary" aria-hidden="true" />}
                 </span>
                 <span className="mt-1 block text-[11px] leading-snug text-muted-foreground">
-                  {option.hint}
+                  {t(option.hintKey)}
                 </span>
               </button>
             );
@@ -951,23 +957,21 @@ export function BrandIdentityEditor({
       <section className="space-y-3" aria-labelledby={`${nameId}-chrome`}>
         <div>
           <h4 id={`${nameId}-chrome`} className="text-sm font-bold">
-            Cabeçalho e rodapé
+            {t("brand.chrome.title")}
           </h4>
-          <p className="text-xs text-muted-foreground">
-            Escolha se as barras ficam alinhadas às bordas ou afastadas igualmente da janela.
-          </p>
+          <p className="text-xs text-muted-foreground">{t("brand.chrome.hint")}</p>
         </div>
         <label className="flex min-h-16 cursor-pointer items-center justify-between gap-4 rounded-2xl border border-border bg-background px-4 py-3">
           <span className="min-w-0">
-            <span className="block text-sm font-bold">Modo flutuante</span>
+            <span className="block text-sm font-bold">{t("brand.chrome.floating")}</span>
             <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">
-              Usa 1 rem de espaço nas laterais, no topo e na base — o mesmo recuo atual do menu.
+              {t("brand.chrome.floatingHint")}
             </span>
           </span>
           <Switch
             checked={draft.floating_chrome}
             onCheckedChange={(checked) => update({ floating_chrome: checked })}
-            aria-label="Usar cabeçalho e rodapé flutuantes"
+            aria-label={t("brand.chrome.floatingAria")}
           />
         </label>
       </section>
@@ -976,31 +980,27 @@ export function BrandIdentityEditor({
       <section className="space-y-3" aria-labelledby={`${nameId}-colors`}>
         <div>
           <h4 id={`${nameId}-colors`} className="text-sm font-bold">
-            Cores do sistema
+            {t("brand.colors.title")}
           </h4>
-          <p className="text-xs text-muted-foreground">
-            Valem para o painel e para o app do cliente. Avisos de sucesso, erro e cancelamento
-            mantêm cores próprias.
-          </p>
+          <p className="text-xs text-muted-foreground">{t("brand.colors.hint")}</p>
           <p className="mt-2 rounded-xl border border-emerald-600/20 bg-emerald-600/10 px-3 py-2 text-[11px] font-semibold leading-relaxed text-emerald-800 dark:text-emerald-300">
-            Contraste automático ativo: o sistema escolhe texto e ícones claros ou escuros e reforça
-            a cor quando ela ficaria camuflada, sem alterar a cor de fundo da marca.
+            {t("brand.colors.contrast")}
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <BrandColorPicker
-            label="Cor principal"
-            description="Botões, seleções, foco e navegação ativa."
+            label={t("brand.colors.primary")}
+            description={t("brand.colors.primaryHint")}
             value={draft.primary_color}
             defaultValue={DEFAULT_PRIMARY_COLOR}
             onChange={(value) => update({ primary_color: value })}
           />
           <BrandColorPicker
-            label="Cor de destaque"
-            description="Detalhes, indicadores e fidelidade."
+            label={t("brand.colors.accent")}
+            description={t("brand.colors.accentHint")}
             value={draft.accent_color}
             defaultValue={DEFAULT_ACCENT_COLOR}
-            sampleText="Cliente VIP"
+            sampleText={t("brand.colors.vipSample")}
             onChange={(value) => update({ accent_color: value })}
           />
         </div>
@@ -1010,21 +1010,18 @@ export function BrandIdentityEditor({
       <section className="space-y-3" aria-labelledby={`${nameId}-logo-bg`}>
         <div>
           <h4 id={`${nameId}-logo-bg`} className="text-sm font-bold">
-            Fundo da logo
+            {t("brand.logoBg.title")}
           </h4>
-          <p className="text-xs text-muted-foreground">
-            Cor que preenche o quadrado da logo no cabeçalho. Use quando a logo não tem fundo
-            próprio (transparente); deixe vazio para manter transparente.
-          </p>
+          <p className="text-xs text-muted-foreground">{t("brand.logoBg.hint")}</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <BrandColorPicker
-            label="Fundo da logo"
-            description="Atrás da logo no cabeçalho do cliente."
+            label={t("brand.logoBg.title")}
+            description={t("brand.logoBg.pickerHint")}
             value={draft.logo_background_color ?? ""}
             defaultValue=""
             allowEmpty
-            sampleText="Logo"
+            sampleText={t("brand.logoBg.sample")}
             onChange={(value) => update({ logo_background_color: value || null })}
           />
         </div>
@@ -1040,12 +1037,12 @@ export function BrandIdentityEditor({
         <div className="flex items-center justify-between gap-3">
           <p role="status" className="min-w-0 truncate text-xs font-semibold text-muted-foreground">
             {busy
-              ? "Salvando…"
+              ? t("brand.save.saving")
               : dirty
-                ? "Alterações ainda não salvas"
+                ? t("brand.save.unsaved")
                 : saved
-                  ? "Identidade salva. Já aparece no app."
-                  : "Tudo salvo"}
+                  ? t("brand.save.saved")
+                  : t("brand.save.allSaved")}
           </p>
           <div className="flex shrink-0 gap-2">
             {dirty && !busy && (
@@ -1055,7 +1052,7 @@ export function BrandIdentityEditor({
                 className="flex min-h-11 items-center gap-1.5 rounded-xl border border-border bg-background px-3 text-xs font-bold hover:bg-muted"
               >
                 <Undo2 className="size-4" />
-                Descartar
+                {t("brand.save.discard")}
               </button>
             )}
             <button
@@ -1064,16 +1061,16 @@ export function BrandIdentityEditor({
               className="flex min-h-11 items-center gap-1.5 rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
             >
               <Check className="size-4" />
-              {busy ? "Salvando…" : "Salvar identidade"}
+              {busy ? t("brand.save.saving") : t("brand.save.submit")}
             </button>
           </div>
         </div>
       </div>
       <ServiceImageCropDialog
         file={loginCropSource}
-        title="Enquadrar foto do login"
-        description="Arraste para escolher o ponto principal. O recorte quadrado se adapta aos três modelos sem perder qualidade."
-        imageAlt="Prévia da foto da página de acesso"
+        title={t("brand.loginCrop.title")}
+        description={t("brand.loginCrop.description")}
+        imageAlt={t("brand.loginCrop.alt")}
         outputName="login-1x1.webp"
         onCancel={() => setLoginCropSource(null)}
         onConfirm={useCroppedLoginImage}

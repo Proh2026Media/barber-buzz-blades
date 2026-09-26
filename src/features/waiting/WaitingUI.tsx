@@ -13,8 +13,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { Tables } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
+import { useI18n } from "@/lib/i18n";
 import { useDemo } from "../demo/context";
-import { cutoffExample, eventLabels, remaining } from "./model";
+import { cutoffExample, eventLabel, remaining } from "./model";
 import type { WaitingController } from "./useWaiting";
 
 const WAITING_CUTOFF_MAX = 1440;
@@ -45,6 +46,7 @@ export function WaitingSettings({
   onSaveRequest?: (enabled: boolean, cutoff: number) => Promise<"applied" | "pending">;
 }) {
   const demo = useDemo();
+  const { t } = useI18n();
   const [enabled, setEnabled] = useState(settings.waiting_enabled);
   const [cutoff, setCutoff] = useState(settings.waiting_cutoff_minutes);
   const [confirm, setConfirm] = useState(false);
@@ -131,17 +133,17 @@ export function WaitingSettings({
     }
   }
   return (
-    <section className="app-action-card space-y-4 p-5" aria-label="Agenda: espera por horário">
+    <section className="app-action-card space-y-4 p-5" aria-label={t("wait.settings.aria")}>
       <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="text-xs text-muted-foreground">Agenda</p>
+          <p className="text-xs text-muted-foreground">{t("wait.settings.section")}</p>
           <h3 className="font-bold flex items-center gap-2">
             <Clock3 className="size-4" />
-            Espera por horário
+            {t("wait.settings.title")}
           </h3>
         </div>
         <Switch
-          aria-label="Ativar espera por horário"
+          aria-label={t("wait.settings.toggle")}
           checked={enabled}
           disabled={busy}
           onCheckedChange={(value) => {
@@ -151,13 +153,13 @@ export function WaitingSettings({
         />
       </div>
       <div className="flex flex-wrap gap-2 text-xs font-semibold">
-        <span className="rounded-lg bg-muted px-3 py-2">Retenção · 10 min</span>
-        <span className="rounded-lg bg-muted px-3 py-2">Confirmação · 5 min</span>
+        <span className="rounded-lg bg-muted px-3 py-2">{t("wait.settings.hold")}</span>
+        <span className="rounded-lg bg-muted px-3 py-2">{t("wait.settings.claim")}</span>
       </div>
       <div className="rounded-2xl border border-border bg-card p-4">
         <div className="flex items-center justify-between gap-3">
           <label id="waiting-cutoff-label" className="text-sm font-semibold">
-            Antecedência mínima
+            {t("wait.settings.cutoff")}
           </label>
           <DurationPicker
             value={cutoff}
@@ -245,7 +247,10 @@ export function WaitingSettings({
               aria-valuenow={cutoff}
               aria-labelledby="waiting-cutoff-label"
               aria-describedby="waiting-cutoff-help"
-              aria-valuetext={`${cutoff} minutos${precisionMode ? ", modo de precisão" : ""}`}
+              aria-valuetext={t(
+                precisionMode ? "wait.settings.valueTextPrecise" : "wait.settings.valueText",
+                { minutes: cutoff },
+              )}
               className="waiting-cutoff-thumb rounded-full"
               style={{ left: `${cutoffPosition}%` }}
               onKeyDown={(event) => {
@@ -276,26 +281,16 @@ export function WaitingSettings({
           <span>24h</span>
         </div>
         <p id="waiting-cutoff-help" className="sr-only" aria-live="polite">
-          {precisionMode
-            ? "Modo de precisão ativo. Solte o controle para voltar ao modo normal."
-            : "Mantenha o controle pressionado por 3 segundos para ajustar com mais precisão."}
+          {precisionMode ? t("wait.settings.precisionOn") : t("wait.settings.precisionHint")}
         </p>
       </div>
-      <p className="text-sm leading-relaxed text-muted-foreground">
-        Quando você retirar uma confirmação, o horário poderá receber um interessado durante 10
-        minutos. Se for liberado, ele terá 5 minutos para confirmar. Esse processo só começa quando
-        os 15 minutos completos cabem antes da antecedência mínima configurada. Fora dessa condição,
-        o horário é liberado imediatamente.
-      </p>
+      <p className="text-sm leading-relaxed text-muted-foreground">{t("wait.settings.explain")}</p>
       {valid && (
         <p className="rounded-xl border border-border bg-muted p-3 text-xs leading-relaxed">
           {cutoffExample(cutoff)}
         </p>
       )}
-      <p className="text-xs text-muted-foreground">
-        Novas regras de antecedência valem para novas esperas. Desligar encerra todas as esperas em
-        andamento.
-      </p>
+      <p className="text-xs text-muted-foreground">{t("wait.settings.rulesNote")}</p>
       {error && (
         <p role="alert" className="text-sm text-destructive">
           {error}
@@ -308,11 +303,11 @@ export function WaitingSettings({
         onClick={() => (settings.waiting_enabled && !enabled ? setConfirm(true) : void save())}
       >
         <Save className="size-4" />
-        {busy ? "Salvando…" : "Salvar espera"}
+        {busy ? t("common.saving") : t("wait.settings.save")}
       </button>
       {saved && (
         <p role="status" className="text-sm">
-          Configuração salva ou enviada para aprovação.
+          {t("wait.settings.saved")}
         </p>
       )}
       <AlertDialog
@@ -323,21 +318,18 @@ export function WaitingSettings({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Desligar espera por horário?</AlertDialogTitle>
-            <AlertDialogDescription>
-              As esperas em andamento serão encerradas e seus horários liberados. Os interessados
-              serão avisados. Reservas já confirmadas serão mantidas.
-            </AlertDialogDescription>
+            <AlertDialogTitle>{t("wait.settings.offTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("wait.settings.offBody")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={busy}>Voltar</AlertDialogCancel>
+            <AlertDialogCancel disabled={busy}>{t("common.back")}</AlertDialogCancel>
             <button
               className="action-button action-danger"
               disabled={busy}
               onClick={() => void save()}
             >
               <X className="size-4" />
-              Desligar e liberar
+              {t("wait.settings.offConfirm")}
             </button>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -363,6 +355,7 @@ export function WaitingCards({
   appointmentId?: string;
   onChanged?: () => void;
 }) {
+  const { t, intlLocale } = useI18n();
   const { waits, now, busy, error, act } = controller;
   const rows = waits.filter((w) => {
     const d = new Date(w.starts_at);
@@ -381,7 +374,7 @@ export function WaitingCards({
   if (!rows.length)
     return error && mode !== "shop" ? (
       <p role="alert" className="rounded-xl bg-card p-3 text-sm text-destructive">
-        Espera: {error}
+        {t("wait.card.errorPrefix", { error })}
       </p>
     ) : null;
   return (
@@ -394,33 +387,34 @@ export function WaitingCards({
               <h3 className="flex items-center gap-2 text-sm font-semibold">
                 <Clock3 className="size-4 text-gold" />
                 {mode === "opportunities"
-                  ? "Pode ser liberado"
+                  ? t("wait.card.mayOpen")
                   : holding
-                    ? "Horário em espera"
-                    : "Vaga exclusiva"}
+                    ? t("wait.card.holding")
+                    : t("wait.card.exclusive")}
               </h3>
               <span className="mb-waiting-timer rounded-xl bg-muted px-2.5 py-1 text-xs font-bold tabular-nums text-gold">
                 {remaining(holding ? w.hold_until : w.claim_until, now)}
               </span>
             </div>
             <p className="text-sm">
-              {new Date(w.starts_at).toLocaleDateString("pt-BR")} ·{" "}
-              {new Date(w.starts_at).toLocaleTimeString("pt-BR", {
+              {new Date(w.starts_at).toLocaleDateString(intlLocale)} ·{" "}
+              {new Date(w.starts_at).toLocaleTimeString(intlLocale, {
                 hour: "2-digit",
                 minute: "2-digit",
               })}{" "}
-              · {staff.find((s) => s.id === w.staff_id)?.display_name ?? "Profissional"}
+              ·{" "}
+              {staff.find((s) => s.id === w.staff_id)?.display_name ?? t("wait.card.staffFallback")}
             </p>
             <p className="text-xs text-muted-foreground">
               {mode === "opportunities"
-                ? "Um interessado por vaga. Se liberada, você terá 5 minutos para confirmar."
+                ? t("wait.card.oppHint")
                 : mode === "shop"
                   ? w.has_interest
-                    ? "Um cliente aguardando."
-                    : "Ainda sem interessado."
+                    ? t("wait.card.shopWaiting")
+                    : t("wait.card.shopNone")
                   : holding
-                    ? "Você é o único interessado. Aguarde a liberação."
-                    : "Confirme antes de o prazo terminar para garantir o horário."}
+                    ? t("wait.card.mineHolding")
+                    : t("wait.card.mineClaim")}
             </p>
             <div className="flex flex-wrap gap-2">
               {mode === "opportunities" && (
@@ -434,7 +428,7 @@ export function WaitingCards({
                   }
                 >
                   <UserPlus className="size-4" />
-                  Tenho interesse
+                  {t("wait.card.join")}
                 </button>
               )}
               {mode === "mine" && !holding && (
@@ -448,7 +442,7 @@ export function WaitingCards({
                   }
                 >
                   <Check className="size-4" />
-                  Confirmar horário
+                  {t("wait.card.claim")}
                 </button>
               )}
               {mode === "mine" && (
@@ -462,7 +456,7 @@ export function WaitingCards({
                   }
                 >
                   <X className="size-4" />
-                  Desistir
+                  {t("wait.card.leave")}
                 </button>
               )}
               {mode === "shop" && holding && w.restorable && (
@@ -476,7 +470,7 @@ export function WaitingCards({
                   }
                 >
                   <RotateCcw className="size-4" />
-                  Restaurar confirmação
+                  {t("wait.card.restore")}
                 </button>
               )}
             </div>
@@ -493,28 +487,35 @@ export function WaitingCards({
 }
 
 export function WaitingNotices({ controller }: { controller: WaitingController }) {
+  const { t, intlLocale } = useI18n();
   if (!controller.events.length) return null;
   return (
     <section
       className="rounded-2xl border border-border bg-card p-4 space-y-3"
-      aria-label="Avisos da espera"
+      aria-label={t("wait.notices.title")}
     >
-      <h3 className="font-bold text-sm">Avisos da espera</h3>
+      <h3 className="font-bold text-sm">{t("wait.notices.title")}</h3>
       {controller.events.slice(0, 10).map((e) => (
         <div key={e.id} className="border-t border-border pt-3">
           <p className="text-sm">
             {e.kind === "exclusive" && e.deadline && Date.parse(e.deadline) <= +controller.now
-              ? "A vaga foi oferecida a você. O prazo dessa oferta já terminou."
-              : (eventLabels[e.kind] ?? e.kind)}
+              ? t("wait.notices.expiredOffer")
+              : eventLabel(e.kind)}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Horário:{" "}
-            {new Date(e.starts_at).toLocaleString("pt-BR", {
-              dateStyle: "short",
-              timeStyle: "short",
+            {t("wait.notices.time", {
+              time: new Date(e.starts_at).toLocaleString(intlLocale, {
+                dateStyle: "short",
+                timeStyle: "short",
+              }),
             })}
             {e.kind === "exclusive" && e.deadline && Date.parse(e.deadline) > +controller.now
-              ? ` · Confirme até ${new Date(e.deadline).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
+              ? ` · ${t("wait.notices.confirmBy", {
+                  time: new Date(e.deadline).toLocaleTimeString(intlLocale, {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }),
+                })}`
               : ""}
           </p>
         </div>

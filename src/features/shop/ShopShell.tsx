@@ -39,6 +39,7 @@ import {
 import { DatePicker, TimePicker } from "@/components/ui/schedule-picker";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
+  Fragment,
   useEffect,
   useId,
   useMemo,
@@ -73,6 +74,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import type { Json } from "@/integrations/supabase/types";
@@ -84,8 +86,8 @@ import { ChangePasswordCard } from "@/features/auth/ChangePasswordCard";
 import { LanguageSettingsCard } from "@/components/LanguageSettingsCard";
 import { useDemo } from "@/features/demo/context";
 import {
-  formatShopDate,
-  formatSlotLabel,
+  formatShopDate as formatShopDateIn,
+  formatSlotLabel as formatSlotLabelIn,
   shopDateKey,
   shopDateTime,
   shopDayRange,
@@ -93,7 +95,12 @@ import {
   validTimeZone,
 } from "@/lib/shop/appointments";
 
-import { ServiceIcon, SERVICE_ICON_GROUPS, searchServiceIcons } from "@/components/ui/service-icon";
+import {
+  ServiceIcon,
+  SERVICE_ICON_GROUPS,
+  searchServiceIcons,
+  serviceIconGroupLabel,
+} from "@/components/ui/service-icon";
 import {
   isServiceImageSource,
   SERVICE_IMAGE_ACCEPT,
@@ -123,7 +130,15 @@ type AvailabilityBlock = Tables<"availability_blocks"> & {
   staff: Pick<Tables<"staff">, "display_name"> | null;
 };
 
-const weekdays = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+const weekdays = [
+  "shop.weekday.0",
+  "shop.weekday.1",
+  "shop.weekday.2",
+  "shop.weekday.3",
+  "shop.weekday.4",
+  "shop.weekday.5",
+  "shop.weekday.6",
+] as const satisfies readonly MessageKey[];
 
 function defaultHours(shopId: string): Tables<"business_hours">[] {
   const stamp = new Date().toISOString();
@@ -139,12 +154,30 @@ function defaultHours(shopId: string): Tables<"business_hours">[] {
   }));
 }
 
-function formatPrice(cents: number) {
-  return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+function richText(template: string, nodes: Record<string, ReactNode>) {
+  return template
+    .split(/\{(\w+)\}/g)
+    .map((part, i) => (i % 2 === 1 ? <Fragment key={i}>{nodes[part] ?? part}</Fragment> : part));
+}
+
+function formatPrice(cents: number, locale: string) {
+  return (cents / 100).toLocaleString(locale, {
+    style: "currency",
+    currency: "BRL",
+    currencyDisplay: "narrowSymbol",
+  });
 }
 
 export function ShopShell({ profile, headerActions }: ShopShellProps) {
   useScrollIndicators();
+  const { t, intlLocale } = useI18n();
+  const formatShopDate = (
+    date: Date | string,
+    timeZone: string,
+    options: Intl.DateTimeFormatOptions,
+  ) => formatShopDateIn(date, timeZone, options, intlLocale);
+  const formatSlotLabel = (date: Date, timeZone?: string) =>
+    formatSlotLabelIn(date, timeZone, intlLocale);
   const demo = useDemo();
   const [selectedActorId, setSelectedActorId] = useState(() => {
     const saved =
@@ -490,7 +523,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
             service: row.service_name
               ? { name: String(row.service_name), price_cents: Number(row.price_cents ?? 0) }
               : null,
-            staff: { display_name: String(row.staff_name ?? "Profissional") },
+            staff: { display_name: String(row.staff_name ?? t("shop.staffFallback")) },
             customer: row.customer_name ? { full_name: String(row.customer_name) } : null,
             visibility: row.visibility === "full" ? "full" : "busy",
           };
@@ -530,13 +563,13 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
           .lte("starts_at", shopDayRange(agendaDay, shopTimeZone).end.toISOString())
           .order("starts_at", { ascending: true });
         if (cancelled) return;
-        if (result.error) setError("Não foi possível atualizar a agenda. Tente novamente.");
+        if (result.error) setError(tNow("shop.error.refreshAgenda"));
         else {
           setAppointments(result.data ?? []);
           setError(null);
         }
       } catch {
-        if (!cancelled) setError("Não foi possível atualizar a agenda. Tente novamente.");
+        if (!cancelled) setError(tNow("shop.error.refreshAgenda"));
       } finally {
         running = false;
         if (!cancelled) setRefreshingAgenda(false);
@@ -578,7 +611,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   }
 
   async function submitProtectedChange(kind: string, payload: Json) {
-    if (!shop?.id) throw new Error("Barbearia não encontrada.");
+    if (!shop?.id) throw new Error(t("shop.error.shopNotFound"));
     const { data, error: requestError } = await supabase.rpc("request_shop_change", {
       p_shop_id: shop.id,
       p_kind: kind,
@@ -589,13 +622,11 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     if (result?.status === "pending") {
       setError(null);
       setSettingsSaved(false);
-      setGovernanceMessage(
-        "Mudança enviada aos demais sócios. Nada será alterado até a aprovação.",
-      );
+      setGovernanceMessage(t("shop.governance.pending"));
       setGovernanceRevision((value) => value + 1);
       return false;
     }
-    setGovernanceMessage("Mudança aplicada.");
+    setGovernanceMessage(t("shop.governance.applied"));
     return true;
   }
 
@@ -624,7 +655,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       await loadCatalog();
       await waiting.refresh();
     } catch {
-      setError("Não foi possível alterar o atendimento. Atualize a agenda e tente novamente.");
+      setError(t("shop.error.changeAppointment"));
     } finally {
       setUpdatingAppointment(null);
     }
@@ -650,25 +681,21 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       setCancelReason("");
       setAgendaRefresh((value) => value + 1);
     } catch {
-      setError("Não foi possível cancelar o atendimento.");
+      setError(t("shop.error.cancelAppointment"));
     } finally {
       setUpdatingAppointment(null);
     }
   }
 
   async function stopSeriesFromShop(seriesId: string) {
-    if (
-      !window.confirm(
-        "Parar a recorrência cancela todos os próximos horários desta série. Continuar?",
-      )
-    ) {
+    if (!window.confirm(t("shop.confirm.stopSeries"))) {
       return;
     }
     setUpdatingAppointment(seriesId);
     setError(null);
     try {
       if (demo) {
-        setError("Recorrência não está disponível na demonstração.");
+        setError(t("shop.error.seriesDemo"));
         return;
       }
       const result = await supabase.rpc("stop_booking_series", { p_series_id: seriesId });
@@ -676,7 +703,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       await loadCatalog();
       setAgendaRefresh((value) => value + 1);
     } catch {
-      setError("Não foi possível parar a recorrência.");
+      setError(t("shop.error.stopSeries"));
     } finally {
       setUpdatingAppointment(null);
     }
@@ -692,10 +719,12 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     try {
       const duration = Number(serviceDuration);
       const priceReais = Number(servicePrice.replace(",", "."));
-      if (!Number.isInteger(duration) || duration <= 0) throw new Error("Duração inválida");
-      if (!Number.isFinite(priceReais) || priceReais < 0) throw new Error("Preço inválido");
-      if (!serviceName.trim()) throw new Error("Informe o nome do serviço.");
-      if (!servicePrice.trim()) throw new Error("Informe o preço.");
+      if (!Number.isInteger(duration) || duration <= 0)
+        throw new Error(t("shop.error.invalidDuration"));
+      if (!Number.isFinite(priceReais) || priceReais < 0)
+        throw new Error(t("shop.error.invalidPrice"));
+      if (!serviceName.trim()) throw new Error(t("shop.error.serviceNameRequired"));
+      if (!servicePrice.trim()) throw new Error(t("shop.error.priceRequired"));
       const service = {
         barbershop_id: shop.id,
         name: serviceName.trim(),
@@ -717,9 +746,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         });
       } else if (actor?.role === "associate") {
         if (!editingService || !actor.staff_id) {
-          throw new Error(
-            "O parceiro pode personalizar serviços existentes, mas não criar o catálogo global.",
-          );
+          throw new Error(t("shop.error.associateNoCreate"));
         }
         const { error: ownCatalogError } = await supabase.from("staff_services").upsert(
           {
@@ -735,9 +762,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
           { onConflict: "staff_id,service_id" },
         );
         if (ownCatalogError) throw ownCatalogError;
-        const suggest = window.confirm(
-          "Personalização salva. Sugerir este preço/duração aos outros parceiros?",
-        );
+        const suggest = window.confirm(t("shop.confirm.suggestCatalog"));
         if (suggest && actor.staff_id) {
           await supabase.rpc("suggest_partner_catalog", {
             p_shop_id: shop.id,
@@ -760,7 +785,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
           return;
         }
       } else if (actor) {
-        throw new Error("Seu papel não permite alterar serviços.");
+        throw new Error(t("shop.error.roleServices"));
       } else {
         const { error: insertError } = editingService
           ? await supabase
@@ -783,7 +808,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       setServiceFormOpen(false);
       await loadCatalog();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao criar serviço");
+      setError(err instanceof Error ? err.message : t("shop.error.createService"));
     } finally {
       setBusy(false);
     }
@@ -818,9 +843,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       setServiceImageToCrop(null);
     } catch (cause) {
       throw new Error(
-        cause instanceof Error && cause.message
-          ? cause.message
-          : "Não foi possível enviar a imagem. Verifique o arquivo e tente novamente.",
+        cause instanceof Error && cause.message ? cause.message : t("shop.error.uploadImage"),
       );
     } finally {
       setUploadingIcon(false);
@@ -855,9 +878,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       setStaffImageToCrop(null);
     } catch (cause) {
       throw new Error(
-        cause instanceof Error && cause.message
-          ? cause.message
-          : "Não foi possível enviar a foto do barbeiro.",
+        cause instanceof Error && cause.message ? cause.message : t("shop.error.uploadStaffPhoto"),
       );
     } finally {
       setUploadingStaffAvatar(false);
@@ -871,9 +892,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     try {
       if (demo) {
         if (demo.appointments.some((row) => row.service_id === deleteService.id))
-          throw new Error(
-            "Este serviço possui agendamentos. Desative-o para preservar o histórico.",
-          );
+          throw new Error(t("shop.error.serviceHasBookings"));
         demo.dispatch({ type: "service.delete", id: deleteService.id });
       } else if (actor && capabilities?.canProposeOperations) {
         const applied = await submitProtectedChange("service.delete", { id: deleteService.id });
@@ -882,7 +901,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
           return;
         }
       } else if (actor) {
-        throw new Error("Seu papel não permite excluir serviços.");
+        throw new Error(t("shop.error.roleDeleteServices"));
       } else {
         const result = await supabase
           .from("services")
@@ -894,8 +913,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         if (result.error)
           throw new Error(
             result.error.code === "23503"
-              ? "Este serviço possui agendamentos. Desative-o para preservar o histórico."
-              : "Não foi possível excluir o serviço. Tente novamente.",
+              ? t("shop.error.serviceHasBookings")
+              : t("shop.error.deleteService"),
           );
       }
       if (editingService?.id === deleteService.id) {
@@ -908,7 +927,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       setDeleteService(null);
       if (!demo) await loadCatalog();
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : "Falha ao excluir.");
+      setDeleteError(err instanceof Error ? err.message : t("shop.error.deleteFailed"));
     } finally {
       setBusy(false);
     }
@@ -921,9 +940,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     try {
       if (demo) {
         if (demo.appointments.some((row) => row.staff_id === deleteStaff.id))
-          throw new Error(
-            "Este profissional possui agendamentos. Desative-o para preservar o histórico.",
-          );
+          throw new Error(t("shop.error.staffHasBookings"));
         demo.dispatch({ type: "staff.delete", id: deleteStaff.id });
       } else if (actor && capabilities?.canProposeOperations) {
         const applied = await submitProtectedChange("staff.delete", { id: deleteStaff.id });
@@ -932,7 +949,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
           return;
         }
       } else if (actor) {
-        throw new Error("Seu papel não permite excluir profissionais.");
+        throw new Error(t("shop.error.roleDeleteStaff"));
       } else {
         const result = await supabase
           .from("staff")
@@ -944,8 +961,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         if (result.error)
           throw new Error(
             result.error.code === "23503"
-              ? "Este profissional possui agendamentos. Desative-o para preservar o histórico."
-              : "Não foi possível excluir o profissional. Tente novamente.",
+              ? t("shop.error.staffHasBookings")
+              : t("shop.error.deleteStaff"),
           );
       }
       if (editingStaff?.id === deleteStaff.id) {
@@ -957,7 +974,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       setDeleteStaff(null);
       if (!demo) await loadCatalog();
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : "Falha ao excluir.");
+      setDeleteError(err instanceof Error ? err.message : t("shop.error.deleteFailed"));
     } finally {
       setBusy(false);
     }
@@ -991,9 +1008,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         await loadCatalog();
       } catch (changeError) {
         setError(
-          changeError instanceof Error
-            ? changeError.message
-            : "Não foi possível alterar o serviço.",
+          changeError instanceof Error ? changeError.message : t("shop.error.toggleService"),
         );
       }
       return;
@@ -1014,10 +1029,10 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     setBusy(true);
     setError(null);
     try {
-      if (!staffName.trim()) throw new Error("Informe o nome do profissional.");
+      if (!staffName.trim()) throw new Error(t("shop.error.staffNameRequired"));
       const desiredSlug = slugifyPt(staffSlug || staffName);
       if (!desiredSlug || !isValidBookingSlug(desiredSlug)) {
-        throw new Error("Informe um slug válido (letras minúsculas, números e hífen).");
+        throw new Error(t("shop.error.invalidSlug"));
       }
       const staff = {
         barbershop_id: shop.id,
@@ -1052,7 +1067,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
           return;
         }
       } else if (actor) {
-        throw new Error("Seu papel não permite alterar a equipe.");
+        throw new Error(t("shop.error.roleTeam"));
       } else {
         const { error: insertError } = editingStaff
           ? await supabase
@@ -1074,7 +1089,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       setStaffFormOpen(false);
       await loadCatalog();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao criar barbeiro");
+      setError(err instanceof Error ? err.message : t("shop.error.createStaff"));
     } finally {
       setBusy(false);
     }
@@ -1090,11 +1105,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         await submitProtectedChange("staff.toggle", { id: row.id, active: !row.active });
         await loadCatalog();
       } catch (changeError) {
-        setError(
-          changeError instanceof Error
-            ? changeError.message
-            : "Não foi possível alterar o profissional.",
-        );
+        setError(changeError instanceof Error ? changeError.message : t("shop.error.toggleStaff"));
       }
       return;
     }
@@ -1119,7 +1130,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     try {
       for (const row of businessHours) {
         if (row.is_open && row.closes_at <= row.opens_at) {
-          throw new Error(`${weekdays[row.weekday]}: o fechamento deve ser após a abertura.`);
+          throw new Error(t("shop.error.closeAfterOpen", { day: t(weekdays[row.weekday]) }));
         }
       }
       if (demo) {
@@ -1135,7 +1146,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         });
         if (!applied) return;
       } else if (actor) {
-        throw new Error("Seu papel não permite alterar o funcionamento da barbearia.");
+        throw new Error(t("shop.error.roleHours"));
       } else {
         const payload = businessHours.map(({ weekday, is_open, opens_at, closes_at }) => ({
           barbershop_id: shop.id,
@@ -1151,7 +1162,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       }
       await loadCatalog();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao salvar horários");
+      setError(err instanceof Error ? err.message : t("shop.error.saveHours"));
     } finally {
       setBusy(false);
     }
@@ -1166,7 +1177,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       // O horário digitado é a hora da parede da loja; converte para o instante correto.
       const startsAt = shopDateTime(blockDate, `${blockStart}:00`, shopTimeZone);
       const endsAt = shopDateTime(blockDate, `${blockEnd}:00`, shopTimeZone);
-      if (endsAt <= startsAt) throw new Error("O fim do bloqueio deve ser após o início.");
+      if (endsAt <= startsAt) throw new Error(t("shop.error.blockEndAfterStart"));
       const block = {
         barbershop_id: shop.id,
         staff_id: blockStaffId || null,
@@ -1186,9 +1197,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         const { error: insertError } = await supabase.from("availability_blocks").insert(block);
         if (insertError) throw insertError;
       } else if (actor) {
-        throw new Error(
-          "Você só pode bloquear a própria agenda quando essa permissão estiver disponível.",
-        );
+        throw new Error(t("shop.error.ownBlockOnly"));
       } else {
         const { error: insertError } = await supabase.from("availability_blocks").insert(block);
         if (insertError) throw insertError;
@@ -1197,7 +1206,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       setBlockCustomOpen(false);
       await loadCatalog();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao criar bloqueio");
+      setError(err instanceof Error ? err.message : t("shop.error.createBlock"));
     } finally {
       setBusy(false);
     }
@@ -1211,11 +1220,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       try {
         await submitProtectedChange("availability.delete", { id });
       } catch (changeError) {
-        setError(
-          changeError instanceof Error
-            ? changeError.message
-            : "Não foi possível excluir o bloqueio.",
-        );
+        setError(changeError instanceof Error ? changeError.message : t("shop.error.deleteBlock"));
       }
     } else if (actor?.role === "associate") {
       const { error: deleteError } = await supabase
@@ -1225,7 +1230,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         .eq("staff_id", actor.staff_id);
       if (deleteError) setError(deleteError.message);
     } else if (actor) {
-      setError("Seu papel não permite excluir este bloqueio.");
+      setError(t("shop.error.roleDeleteBlock"));
     } else {
       const { error: deleteError } = await supabase
         .from("availability_blocks")
@@ -1276,7 +1281,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
           setSettingsSaved(applied);
         }
       } else if (actor) {
-        throw new Error("Seu papel não permite alterar as configurações da barbearia.");
+        throw new Error(t("shop.error.roleSettings"));
       } else {
         const { data, error: updateError } = await supabase
           .from("barbershop_settings")
@@ -1295,9 +1300,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       if (!actor) setSettingsSaved(true);
     } catch (settingsError) {
       setError(
-        settingsError instanceof Error
-          ? settingsError.message
-          : "Não foi possível salvar as configurações.",
+        settingsError instanceof Error ? settingsError.message : t("shop.error.saveSettings"),
       );
     } finally {
       setBusy(false);
@@ -1347,7 +1350,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   const isAgendaToday = agendaDay === agendaToday;
   const agendaDayLabel = (() => {
     const [year, month, day] = agendaDay.split("-").map(Number);
-    return new Intl.DateTimeFormat("pt-BR", {
+    return new Intl.DateTimeFormat(intlLocale, {
       weekday: "long",
       day: "2-digit",
       month: "long",
@@ -1394,11 +1397,11 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
 
   const shopNavItems = (
     [
-      { id: "agenda" as const, icon: Calendar, label: "Agenda" },
-      { id: "servicos" as const, icon: Scissors, label: "Serviços" },
-      { id: "equipe" as const, icon: Users, label: "Equipe" },
-      { id: "horarios" as const, icon: Clock3, label: "Horários" },
-      { id: "configuracoes" as const, icon: Settings2, label: "Ajustes" },
+      { id: "agenda" as const, icon: Calendar, label: t("shop.nav.agenda") },
+      { id: "servicos" as const, icon: Scissors, label: t("shop.nav.services") },
+      { id: "equipe" as const, icon: Users, label: t("shop.nav.team") },
+      { id: "horarios" as const, icon: Clock3, label: t("shop.nav.hours") },
+      { id: "configuracoes" as const, icon: Settings2, label: t("shop.nav.settings") },
     ] as const
   ).filter(({ id }) => {
     if (id === "servicos") return canEditServices;
@@ -1437,7 +1440,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Retirar confirmação?</AlertDialogTitle>
+            <AlertDialogTitle>{t("shop.withdraw.title")}</AlertDialogTitle>
             <AlertDialogDescription>
               {withdrawTarget &&
               settings &&
@@ -1447,13 +1450,15 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 settings.waiting_enabled,
                 settings.waiting_cutoff_minutes,
               )
-                ? "O horário ficará retido por 10 minutos. Um interessado poderá aguardar e terá 5 minutos para confirmar após a liberação. Você poderá restaurar a confirmação durante a retenção."
-                : "O horário será liberado imediatamente: a espera está desligada ou não há antecedência suficiente."}{" "}
-              O cliente poderá remarcar ou cancelar definitivamente.
+                ? t("shop.withdraw.bodyHold")
+                : t("shop.withdraw.bodyRelease")}{" "}
+              {t("shop.withdraw.bodyTail")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={!!updatingAppointment}>Voltar</AlertDialogCancel>
+            <AlertDialogCancel disabled={!!updatingAppointment}>
+              {t("common.back")}
+            </AlertDialogCancel>
             <button
               disabled={!!updatingAppointment}
               className="action-button action-danger"
@@ -1465,7 +1470,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
               }}
             >
               <X className="size-4" />
-              Retirar confirmação
+              {t("shop.withdraw.confirm")}
             </button>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1476,8 +1481,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         reason={cancelReason}
         summary={
           cancelTarget
-            ? `${cancelTarget.service?.name ?? "Serviço"} · ${
-                cancelTarget.customer?.full_name ?? "Cliente"
+            ? `${cancelTarget.service?.name ?? t("shop.serviceFallback")} · ${
+                cancelTarget.customer?.full_name ?? t("shop.customerFallback")
               } · ${formatSlotLabel(new Date(cancelTarget.starts_at), shopTimeZone)}`
             : null
         }
@@ -1502,10 +1507,9 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir serviço?</AlertDialogTitle>
+            <AlertDialogTitle>{t("shop.deleteService.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              O serviço “{deleteService?.name}” será removido do catálogo. Esta ação não pode ser
-              desfeita.
+              {t("shop.deleteService.body", { name: deleteService?.name ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           {deleteError && (
@@ -1514,14 +1518,14 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
             </p>
           )}
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={busy}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={busy}>{t("shop.cancel")}</AlertDialogCancel>
             <button
               disabled={busy}
               onClick={() => void confirmDeleteService()}
               className="action-button action-danger"
             >
               <Trash2 className="size-4" />
-              {busy ? "Excluindo…" : "Excluir serviço"}
+              {busy ? t("shop.deleting") : t("shop.deleteService.confirm")}
             </button>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1534,10 +1538,9 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir profissional?</AlertDialogTitle>
+            <AlertDialogTitle>{t("shop.deleteStaff.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              O profissional “{deleteStaff?.display_name}” será removido da equipe. Os bloqueios
-              deste profissional também serão removidos. Esta ação não pode ser desfeita.
+              {t("shop.deleteStaff.body", { name: deleteStaff?.display_name ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           {deleteError && (
@@ -1546,27 +1549,27 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
             </p>
           )}
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={busy}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={busy}>{t("shop.cancel")}</AlertDialogCancel>
             <button
               disabled={busy}
               onClick={() => void confirmDeleteStaff()}
               className="action-button action-danger"
             >
               <Trash2 className="size-4" />
-              {busy ? "Excluindo…" : "Excluir profissional"}
+              {busy ? t("shop.deleting") : t("shop.deleteStaff.confirm")}
             </button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
       <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur-xl px-4 py-4 flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-xs font-bold text-gold">Gestão da barbearia</p>
+          <p className="text-xs font-bold text-gold">{t("shop.header.kicker")}</p>
           <h1 className="truncate text-lg font-extrabold tracking-tight">
-            {shop?.name ?? "Sua barbearia"}
+            {shop?.name ?? t("shop.header.shopFallback")}
           </h1>
           {!demo && profile.shopActors.length > 1 && (
             <label className="mt-1 block text-[11px] text-muted-foreground">
-              <span className="sr-only">Barbearia ativa</span>
+              <span className="sr-only">{t("shop.header.activeShop")}</span>
               <select
                 value={actor?.id ?? ""}
                 onChange={(event) => setSelectedActorId(event.target.value)}
@@ -1574,14 +1577,14 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
               >
                 {profile.shopActors.map((candidate) => (
                   <option key={candidate.id} value={candidate.id}>
-                    {candidate.barbershop?.name ?? "Barbearia"} ·{" "}
+                    {candidate.barbershop?.name ?? t("shop.header.shopName")} ·{" "}
                     {candidate.role === "owner"
-                      ? "Dono"
+                      ? t("shop.role.owner")
                       : candidate.role === "partner"
-                        ? "Co-dono"
+                        ? t("shop.role.partner")
                         : candidate.role === "associate"
-                          ? "Parceiro"
-                          : "Contratado"}
+                          ? t("shop.role.associate")
+                          : t("shop.role.employee")}
                   </option>
                 ))}
               </select>
@@ -1595,7 +1598,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
             <>
               <Link
                 to="/platform"
-                aria-label="Abrir painel da plataforma"
+                aria-label={t("shop.header.platformAria")}
                 className="app-icon-button sm:hidden"
               >
                 <ShieldCheck size={20} />
@@ -1604,11 +1607,15 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 to="/platform"
                 className="hidden text-xs font-semibold text-muted-foreground hover:text-foreground sm:inline"
               >
-                Plataforma
+                {t("shop.header.platform")}
               </Link>
             </>
           )}
-          <button onClick={signOut} aria-label="Sair" className="app-icon-button">
+          <button
+            onClick={signOut}
+            aria-label={t("shop.header.signOut")}
+            className="app-icon-button"
+          >
             <LogOut size={18} />
           </button>
         </div>
@@ -1619,8 +1626,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
           {!shop && (
             <EmptyState
               tone="scissors"
-              title="Nenhuma barbearia vinculada"
-              description="Esta conta ainda não tem uma loja associada para gerenciar."
+              title={t("shop.noShop.title")}
+              description={t("shop.noShop.description")}
             />
           )}
           {error && <p className="text-sm text-destructive">{error}</p>}
@@ -1632,13 +1639,13 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
               {governanceMessage}
             </p>
           )}
-          {loading && <p className="text-sm text-muted-foreground">Carregando...</p>}
+          {loading && <p className="text-sm text-muted-foreground">{t("shop.loading")}</p>}
 
           {tab === "agenda" && shop && (
             <section className="mb-stagger space-y-4">
               <div className="app-section-title">
                 <Calendar />
-                <h2>Agenda</h2>
+                <h2>{t("shop.nav.agenda")}</h2>
                 {!demo && (
                   <button
                     type="button"
@@ -1647,21 +1654,21 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted-foreground disabled:opacity-50"
                   >
                     <RefreshCw className={`size-3.5 ${refreshingAgenda ? "animate-spin" : ""}`} />
-                    {refreshingAgenda ? "Atualizando…" : "Atualizar"}
+                    {refreshingAgenda ? t("shop.agenda.refreshing") : t("shop.agenda.refresh")}
                   </button>
                 )}
               </div>
 
               <div className="agenda-toolbar app-action-card p-3 sm:p-4">
                 {actor && capabilities?.viewFullShop && (
-                  <div className="agenda-scope" aria-label="Escopo da agenda">
+                  <div className="agenda-scope" aria-label={t("shop.agenda.scopeAria")}>
                     <button
                       type="button"
                       aria-pressed={agendaScope === "mine"}
                       onClick={() => setAgendaScope("mine")}
                     >
                       <Calendar className="size-4" />
-                      Minha agenda
+                      {t("shop.agenda.mine")}
                     </button>
                     <button
                       type="button"
@@ -1669,7 +1676,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       onClick={() => setAgendaScope("team")}
                     >
                       <Users className="size-4" />
-                      Equipe
+                      {t("shop.nav.team")}
                     </button>
                   </div>
                 )}
@@ -1677,8 +1684,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 <div className="agenda-date-navigation">
                   <button
                     type="button"
-                    aria-label="Ver dia anterior"
-                    title="Dia anterior"
+                    aria-label={t("shop.agenda.prevDayAria")}
+                    title={t("shop.agenda.prevDay")}
                     onClick={() => moveAgendaDay(-1)}
                     className="app-icon-button agenda-date-arrow"
                   >
@@ -1686,11 +1693,11 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   </button>
                   <div className="agenda-date-current">
                     <span className="agenda-date-caption">
-                      {isAgendaToday ? "Hoje" : "Data selecionada"}
+                      {isAgendaToday ? t("shop.agenda.today") : t("shop.agenda.selectedDate")}
                     </span>
                     <DatePicker
                       compact
-                      label="Escolher outra data"
+                      label={t("shop.agenda.pickDate")}
                       value={agendaDay}
                       onChange={setAgendaDay}
                       displayValue={agendaDayLabel}
@@ -1698,8 +1705,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   </div>
                   <button
                     type="button"
-                    aria-label="Ver próximo dia"
-                    title="Próximo dia"
+                    aria-label={t("shop.agenda.nextDayAria")}
+                    title={t("shop.agenda.nextDay")}
                     onClick={() => moveAgendaDay(1)}
                     className="app-icon-button agenda-date-arrow"
                   >
@@ -1712,7 +1719,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     onClick={() => setAgendaDay(agendaToday)}
                     className="agenda-today-button"
                   >
-                    Hoje
+                    {t("shop.agenda.today")}
                   </button>
                 </div>
               </div>
@@ -1730,7 +1737,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
               <details className="app-action-card group overflow-hidden" open>
                 <summary className="flex min-h-14 list-none items-center gap-3 px-4 text-sm font-bold [&::-webkit-details-marker]:hidden">
                   <BarChart3 className="size-5 text-gold" />
-                  <span className="flex-1">Indicadores do dia</span>
+                  <span className="flex-1">{t("shop.agenda.insights")}</span>
                   <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
                 </summary>
                 <div className="border-t border-border/70 p-3">
@@ -1750,28 +1757,28 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
 
               <div className="agenda-filters space-y-3 rounded-2xl border border-border bg-card p-4">
                 <label className="block space-y-1 text-xs font-semibold">
-                  <span className="sr-only">Buscar atendimento</span>
+                  <span className="sr-only">{t("shop.agenda.searchLabel")}</span>
                   <span className="relative block">
                     <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                     <input
                       type="search"
                       value={agendaSearch}
                       onChange={(event) => setAgendaSearch(event.target.value)}
-                      placeholder="Buscar cliente ou serviço"
+                      placeholder={t("shop.agenda.searchPlaceholder")}
                       className="w-full rounded-xl border border-border bg-background py-2 pl-10 pr-3 text-sm"
                     />
                   </span>
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <label className="min-w-0 space-y-1 text-xs font-semibold">
-                    <span>Profissional</span>
+                    <span>{t("shop.staffFallback")}</span>
                     <select
-                      aria-label="Profissional"
+                      aria-label={t("shop.staffFallback")}
                       value={agendaStaff}
                       onChange={(event) => setAgendaStaff(event.target.value)}
                       className="w-full rounded-xl border border-border bg-background px-2 py-2 text-sm"
                     >
-                      <option value="">Toda a equipe</option>
+                      <option value="">{t("shop.agenda.allTeam")}</option>
                       {staff.map((member) => (
                         <option key={member.id} value={member.id}>
                           {member.display_name}
@@ -1780,25 +1787,30 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     </select>
                   </label>
                   <label className="min-w-0 space-y-1 text-xs font-semibold">
-                    <span>Status</span>
+                    <span>{t("shop.agenda.status")}</span>
                     <select
-                      aria-label="Status"
+                      aria-label={t("shop.agenda.status")}
                       value={agendaStatus}
                       onChange={(event) => setAgendaStatus(event.target.value)}
                       className="w-full rounded-xl border border-border bg-background px-2 py-2 text-sm"
                     >
-                      <option value="">Todos</option>
-                      <option value="pending">Em revisão</option>
-                      <option value="reschedule_requested">Remarcação solicitada</option>
-                      <option value="confirmed">Confirmado</option>
-                      <option value="completed">Concluído</option>
-                      <option value="cancelled">Cancelado</option>
+                      <option value="">{t("shop.agenda.allStatuses")}</option>
+                      <option value="pending">{t("status.pending")}</option>
+                      <option value="reschedule_requested">
+                        {t("status.reschedule_requested")}
+                      </option>
+                      <option value="confirmed">{t("status.confirmed")}</option>
+                      <option value="completed">{t("status.completed")}</option>
+                      <option value="cancelled">{t("status.cancelled")}</option>
                     </select>
                   </label>
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span role="status">
-                    {filteredAppointments.length} de {appointments.length} atendimentos
+                    {t("shop.agenda.count", {
+                      shown: filteredAppointments.length,
+                      total: appointments.length,
+                    })}
                   </span>
                   {(agendaSearch || agendaStaff || agendaStatus) && (
                     <button
@@ -1809,54 +1821,46 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       }}
                       className="underline"
                     >
-                      Limpar filtros
+                      {t("shop.agenda.clearFilters")}
                     </button>
                   )}
                 </div>
               </div>
-              <div className="agenda-list" aria-label="Atendimentos do dia">
+              <div className="agenda-list" aria-label={t("shop.agenda.listAria")}>
                 {filteredAppointments.length > 0 && (
                   <div className="agenda-list-heading" aria-hidden="true">
-                    <span>Horário</span>
-                    <span>Cliente</span>
-                    <span>Serviço</span>
-                    <span>Profissional</span>
-                    <span>Status</span>
+                    <span>{t("shop.agenda.time")}</span>
+                    <span>{t("shop.customerFallback")}</span>
+                    <span>{t("shop.serviceFallback")}</span>
+                    <span>{t("shop.staffFallback")}</span>
+                    <span>{t("shop.agenda.status")}</span>
                   </div>
                 )}
                 {filteredAppointments.map((row) => (
                   <article key={row.id} className="agenda-appointment app-action-card">
                     <div className="agenda-appointment-summary">
-                      <div className="agenda-time" aria-label="Horário">
+                      <div className="agenda-time" aria-label={t("shop.agenda.time")}>
                         <Clock3 className="size-4" />
                         <span>{formatSlotLabel(new Date(row.starts_at), shopTimeZone)}</span>
                       </div>
-                      <div className="agenda-client" data-label="Cliente">
-                        <p>{row.customer?.full_name ?? "Cliente"}</p>
+                      <div className="agenda-client" data-label={t("shop.customerFallback")}>
+                        <p>{row.customer?.full_name ?? t("shop.customerFallback")}</p>
                       </div>
-                      <div className="agenda-detail" data-label="Serviço">
+                      <div className="agenda-detail" data-label={t("shop.serviceFallback")}>
                         <Scissors className="size-4" />
-                        <span>{row.service?.name ?? "Serviço"}</span>
+                        <span>{row.service?.name ?? t("shop.serviceFallback")}</span>
                       </div>
-                      <div className="agenda-detail" data-label="Profissional">
+                      <div className="agenda-detail" data-label={t("shop.staffFallback")}>
                         <Users className="size-4" />
                         <span>{row.staff?.display_name ?? "—"}</span>
                       </div>
-                      <div className="agenda-status" data-label="Status">
+                      <div className="agenda-status" data-label={t("shop.agenda.status")}>
                         <span className={`status-pill status-${row.status}`}>
-                          {
-                            {
-                              pending: "Em revisão",
-                              reschedule_requested: "Remarcação solicitada",
-                              confirmed: "Confirmado",
-                              completed: "Concluído",
-                              cancelled: "Cancelado",
-                            }[row.status]
-                          }
+                          {t(`status.${row.status}` as MessageKey)}
                         </span>
                         {row.series_id ? (
                           <span className="mt-1 inline-flex rounded-full border border-gold/40 bg-gold/10 px-2 py-0.5 text-[10px] font-semibold text-gold">
-                            Recorrente
+                            {t("shop.agenda.recurring")}
                           </span>
                         ) : null}
                       </div>
@@ -1874,16 +1878,14 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       )}
                       {row.visibility === "busy" && (
                         <p className="rounded-xl bg-muted/30 p-3 text-xs text-muted-foreground">
-                          Horário ocupado por outro profissional. Os dados do cliente, serviço e
-                          valores permanecem privados.
+                          {t("shop.agenda.busyPrivate")}
                         </p>
                       )}
                       {row.status === "cancelled" && cancellationDetails[row.id] && (
                         <p className="border-t border-border pt-2 text-xs text-muted-foreground">
-                          Cancelado pelo{" "}
                           {cancellationDetails[row.id].source === "customer"
-                            ? "cliente"
-                            : "estabelecimento"}
+                            ? t("shop.agenda.cancelledByCustomer")
+                            : t("shop.agenda.cancelledByShop")}
                           {` · ${cancellationReasonLabel(cancellationDetails[row.id].reason)}`}
                         </p>
                       )}
@@ -1896,7 +1898,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                               className="action-button action-danger"
                             >
                               <X className="size-4" />
-                              Cancelar definitivamente
+                              {t("shop.agenda.cancelForGood")}
                             </button>
                           )}
                           {row.status === "confirmed" && (
@@ -1906,7 +1908,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                               className="action-button action-danger"
                             >
                               <X className="size-4" />
-                              Retirar confirmação
+                              {t("shop.withdraw.confirm")}
                             </button>
                           )}
                           {row.status === "pending" && (
@@ -1916,7 +1918,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                               className="action-button action-confirm"
                             >
                               <Check className="size-3.5" />
-                              Confirmar
+                              {t("shop.agenda.confirm")}
                             </button>
                           )}
                           {(row.status === "pending" || row.status === "confirmed") && (
@@ -1927,7 +1929,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                                 className="action-button action-success"
                               >
                                 <CircleCheck className="size-3.5" />
-                                Concluir
+                                {t("shop.agenda.complete")}
                               </button>
                               <button
                                 onClick={() => setCancelTarget(row)}
@@ -1935,7 +1937,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                                 className="action-button action-danger"
                               >
                                 <X className="size-3.5" />
-                                Cancelar
+                                {t("shop.cancel")}
                               </button>
                               {row.series_id ? (
                                 <button
@@ -1944,7 +1946,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                                   onClick={() => void stopSeriesFromShop(row.series_id!)}
                                   className="action-button action-danger"
                                 >
-                                  Parar recorrência
+                                  {t("shop.agenda.stopSeries")}
                                 </button>
                               ) : null}
                             </>
@@ -1956,15 +1958,14 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                                 className="flex min-h-9 items-center gap-1.5 rounded-xl border border-primary/30 px-3 text-xs font-bold text-primary"
                               >
                                 <MessageSquarePlus className="size-3.5" />
-                                Registrar opinião
+                                {t("shop.agenda.feedback")}
                               </button>
                             )}
                         </div>
                       )}
                       {(row.status === "pending" || row.status === "confirmed") && (
                         <p className="text-xs text-muted-foreground">
-                          Conclua somente se o cliente foi atendido: essa ação concede pontos. Em
-                          caso de falta, use Ocorrências.
+                          {t("shop.agenda.completeHint")}
                         </p>
                       )}
                     </div>
@@ -1975,13 +1976,13 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     tone="calendar"
                     title={
                       appointments.length
-                        ? "Nenhum atendimento corresponde aos filtros"
-                        : "Nenhum agendamento nesta data"
+                        ? t("shop.agenda.emptyFilteredTitle")
+                        : t("shop.agenda.emptyDayTitle")
                     }
                     description={
                       appointments.length
-                        ? "Ajuste a busca, o profissional ou o status para ver outros horários."
-                        : "Troque o dia ou aguarde novas reservas dos clientes."
+                        ? t("shop.agenda.emptyFilteredHint")
+                        : t("shop.agenda.emptyDayHint")
                     }
                   />
                 )}
@@ -1990,26 +1991,28 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
               {/* Extras: valores e visão do parceiro, abaixo da lista. */}
               {canViewMoney && (
                 <section
-                  aria-label="Resumo de valores do dia"
+                  aria-label={t("shop.money.aria")}
                   className="space-y-3 rounded-2xl border border-primary/20 bg-card p-4"
                 >
-                  <h3 className="text-sm font-bold">Resumo do dia</h3>
+                  <h3 className="text-sm font-bold">{t("shop.money.title")}</h3>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <p className="text-xs text-muted-foreground">Serviços concluídos</p>
+                      <p className="text-xs text-muted-foreground">{t("shop.money.completed")}</p>
                       <p className="mt-1 text-xl font-bold text-emerald-600 dark:text-emerald-400">
-                        {formatPrice(completedValue)}
+                        {formatPrice(completedValue, intlLocale)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Ainda agendado</p>
+                      <p className="text-xs text-muted-foreground">{t("shop.money.expected")}</p>
                       <p className="mt-1 text-xl font-bold text-primary">
-                        {formatPrice(expectedValue)}
+                        {formatPrice(expectedValue, intlLocale)}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
-                    <span className="text-xs text-muted-foreground">Cancelamentos</span>
+                    <span className="text-xs text-muted-foreground">
+                      {t("shop.money.cancellations")}
+                    </span>
                     <button
                       type="button"
                       onClick={() => {
@@ -2018,14 +2021,12 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         setAgendaStaff("");
                       }}
                       className="action-button action-danger"
-                      aria-label={`Ver ${cancelledCount} cancelamentos do dia`}
+                      aria-label={t("shop.money.cancellationsAria", { count: cancelledCount })}
                     >
                       {cancelledCount}
                     </button>
                   </div>
-                  <p className="text-[11px] text-muted-foreground">
-                    Estimativa com os preços atuais.
-                  </p>
+                  <p className="text-[11px] text-muted-foreground">{t("shop.money.estimate")}</p>
                 </section>
               )}
               {actor?.role === "associate" && shop?.id && actor.staff_id && (
@@ -2049,7 +2050,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     shopId={shop.id}
                     staffId={actor.staff_id}
                     scope="shop"
-                    title="Clientes da barbearia"
+                    title={t("shop.clients.title")}
                   />
                 </div>
               )}
@@ -2060,7 +2061,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
             <section className="space-y-4">
               <div className="app-section-title">
                 <Scissors />
-                <h2>Serviços</h2>
+                <h2>{t("shop.nav.services")}</h2>
                 <button
                   type="button"
                   disabled={busy}
@@ -2078,7 +2079,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   }}
                 >
                   <Plus className="size-4" />
-                  Adicionar
+                  {t("shop.add")}
                 </button>
               </div>
               <CatalogFilters
@@ -2089,7 +2090,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 total={services.length}
                 active={services.filter((row) => row.active).length}
                 visible={visibleServices.length}
-                label="Buscar serviço"
+                label={t("shop.services.search")}
                 viewMode={serviceView}
                 onViewMode={setServiceView}
               />
@@ -2151,7 +2152,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                               : "text-xs text-muted-foreground"
                           }
                         >
-                          {s.active ? "Disponível" : "Pausado"}
+                          {s.active ? t("shop.services.available") : t("shop.services.paused")}
                         </span>
                       </div>
                     </div>
@@ -2164,7 +2165,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     >
                       <p className="text-xs uppercase tracking-widest text-muted-foreground">
                         <span className="block text-lg font-bold tracking-normal text-foreground">
-                          {formatPrice(s.price_cents)}
+                          {formatPrice(s.price_cents, intlLocale)}
                         </span>
                         <span className="mt-1 flex items-center gap-1 sm:justify-end">
                           <Clock3 size={12} />
@@ -2183,14 +2184,14 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         disabled={busy || !canEditServices}
                         checked={s.active}
                         onCheckedChange={() => void toggleService(s)}
-                        aria-label={`Ativar ${s.name}`}
+                        aria-label={t("shop.activateAria", { name: s.name })}
                       />
                     </div>
                     {canEditServices && (
                       <button
                         disabled={busy}
                         className={`action-button action-edit ${serviceView === "list" ? "my-3 mr-1" : ""}`}
-                        aria-label={`Editar ${s.name}`}
+                        aria-label={t("shop.editAria", { name: s.name })}
                         onClick={() => {
                           setEditingService(s);
                           setServiceName(s.name);
@@ -2202,13 +2203,13 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                           setServiceFormOpen(true);
                         }}
                       >
-                        <Pencil className="size-4" /> Editar
+                        <Pencil className="size-4" /> {t("shop.edit")}
                       </button>
                     )}
                     {canChangeGlobalCatalog && (
                       <button
                         disabled={busy}
-                        aria-label={`Excluir ${s.name}`}
+                        aria-label={t("shop.deleteAria", { name: s.name })}
                         onClick={() => {
                           setDeleteService(s);
                           setDeleteError(null);
@@ -2216,7 +2217,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         className={`action-button action-danger ${serviceView === "list" ? "my-3 mr-3" : ""}`}
                       >
                         <Trash2 size={14} />
-                        Excluir
+                        {t("shop.delete")}
                       </button>
                     )}
                   </div>
@@ -2224,8 +2225,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 {visibleServices.length === 0 && !loading && (
                   <p className="col-span-full rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
                     {services.length
-                      ? "Nenhum serviço corresponde aos filtros."
-                      : "Adicione seu primeiro serviço pelo botão acima."}
+                      ? t("shop.services.emptyFiltered")
+                      : t("shop.services.emptyFirst")}
                   </p>
                 )}
               </div>
@@ -2249,34 +2250,38 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   }}
                 >
                   <DialogScrollArea className="grid max-h-[calc(85dvh-2px)] gap-4 overflow-y-auto p-6">
-                    <DialogTitle>{editingService ? "Editar serviço" : "Novo serviço"}</DialogTitle>
-                    <DialogDescription>Nome, duração e valor para o agendamento.</DialogDescription>
+                    <DialogTitle>
+                      {editingService
+                        ? t("shop.serviceForm.editTitle")
+                        : t("shop.serviceForm.newTitle")}
+                    </DialogTitle>
+                    <DialogDescription>{t("shop.serviceForm.description")}</DialogDescription>
                     <form
                       id="service-form"
                       onSubmit={createService}
                       className="space-y-3 rounded-2xl border border-border bg-card p-4"
                     >
                       <label htmlFor="service-name" className="block text-xs font-semibold">
-                        Nome do serviço
+                        {t("shop.serviceForm.name")}
                       </label>
                       <input
                         id="service-name"
                         required
                         value={serviceName}
                         onChange={(e) => setServiceName(e.target.value)}
-                        placeholder="Nome"
+                        placeholder={t("shop.serviceForm.namePlaceholder")}
                         className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
                       />
                       <label
                         htmlFor="service-description"
                         className="block space-y-2 text-xs font-semibold"
                       >
-                        Descrição
+                        {t("shop.serviceForm.details")}
                         <textarea
                           id="service-description"
                           value={serviceDescription}
                           onChange={(e) => setServiceDescription(e.target.value.slice(0, 500))}
-                          placeholder="O que o cliente precisa saber (opcional)"
+                          placeholder={t("shop.serviceForm.detailsPlaceholder")}
                           rows={3}
                           maxLength={500}
                           className="w-full resize-y rounded-xl border border-border bg-background px-3 py-2 text-sm font-normal"
@@ -2286,7 +2291,9 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         </span>
                       </label>
                       <div className="space-y-2">
-                        <span className="block text-xs font-semibold">Duração</span>
+                        <span className="block text-xs font-semibold">
+                          {t("shop.serviceForm.duration")}
+                        </span>
                         <div className="flex flex-wrap gap-1.5">
                           {["15", "20", "30", "45", "60", "90", "120"].map((minutes) => (
                             <button
@@ -2316,12 +2323,14 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                                 : "border-dashed border-border bg-background text-muted-foreground hover:border-primary/50"
                             }`}
                           >
-                            Personalizado
+                            {t("shop.custom")}
                           </button>
                         </div>
                         {customDurationOpen && (
                           <label className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 p-2">
-                            <span className="text-xs font-semibold">Duração personalizada</span>
+                            <span className="text-xs font-semibold">
+                              {t("shop.serviceForm.customDuration")}
+                            </span>
                             <input
                               type="number"
                               min={5}
@@ -2338,12 +2347,12 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         )}
                       </div>
                       <label className="space-y-2 text-xs font-semibold">
-                        Preço (R$)
+                        {t("shop.serviceForm.price")}
                         <input
                           required
                           value={servicePrice}
                           onChange={(e) => setServicePrice(e.target.value)}
-                          placeholder="Preço (R$)"
+                          placeholder={t("shop.serviceForm.price")}
                           inputMode="decimal"
                           className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
                         />
@@ -2351,7 +2360,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
 
                       <div className="space-y-2 pt-2">
                         <span className="block text-xs font-semibold">
-                          Imagem ou ícone do serviço
+                          {t("shop.serviceForm.image")}
                         </span>
                         <div className="relative">
                           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -2359,7 +2368,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                             type="search"
                             value={serviceIconQuery}
                             onChange={(e) => setServiceIconQuery(e.target.value)}
-                            placeholder="Buscar ícone (ex.: navalha, unha, massagem)"
+                            placeholder={t("shop.serviceForm.iconSearch")}
                             className="w-full rounded-xl border border-border bg-background py-2 pl-9 pr-3 text-sm"
                           />
                         </div>
@@ -2368,8 +2377,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                             type="button"
                             onClick={() => iconInputRef.current?.click()}
                             disabled={uploadingIcon}
-                            aria-label="Enviar foto ou imagem do serviço"
-                            title="Enviar foto ou imagem do serviço"
+                            aria-label={t("shop.serviceForm.uploadAria")}
+                            title={t("shop.serviceForm.uploadAria")}
                             className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-background px-3 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted disabled:opacity-60"
                           >
                             {uploadingIcon ? (
@@ -2377,7 +2386,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                             ) : (
                               <>
                                 <Upload className="size-4" />
-                                Enviar foto
+                                {t("shop.uploadPhoto")}
                               </>
                             )}
                           </button>
@@ -2391,20 +2400,25 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                           />
                           <span className="text-[11px] text-muted-foreground">
                             {serviceIconQuery.trim()
-                              ? `${filteredIconGroups.reduce((total, group) => total + group.icons.length, 0)} ícones encontrados`
-                              : "PNG, JPEG, WebP ou SVG · recorte quadrado · até 2 MB"}
+                              ? t("shop.serviceForm.iconsFound", {
+                                  count: filteredIconGroups.reduce(
+                                    (total, group) => total + group.icons.length,
+                                    0,
+                                  ),
+                                })
+                              : t("shop.serviceForm.imageHint")}
                           </span>
                         </div>
                         <div className="app-service-icon-picker max-h-64 space-y-3 overflow-y-auto rounded-xl border border-border bg-muted/30 p-3">
                           {filteredIconGroups.length === 0 && (
                             <p className="py-4 text-center text-xs text-muted-foreground">
-                              Nenhum ícone com esse nome. Tente outro termo ou envie uma imagem.
+                              {t("shop.serviceForm.noIcons")}
                             </p>
                           )}
                           {filteredIconGroups.map((group) => (
                             <div key={group.id} className="space-y-2">
                               <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                                {group.label}
+                                {serviceIconGroupLabel(group.id)}
                               </p>
                               <div className="flex flex-wrap gap-2">
                                 {group.icons.map((preset) => {
@@ -2439,11 +2453,11 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                           <div className="mt-2 flex items-center gap-2 rounded-xl border border-border p-2">
                             <img
                               src={serviceIcon}
-                              alt="Ícone personalizado"
+                              alt={t("shop.serviceForm.customIconAlt")}
                               className="size-12 rounded-xl bg-muted object-cover"
                             />
                             <span className="text-[10px] text-muted-foreground">
-                              Imagem personalizada
+                              {t("shop.serviceForm.customImage")}
                             </span>
                           </div>
                         )}
@@ -2459,7 +2473,11 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         disabled={busy}
                         className="w-full rounded-xl bg-primary py-3 text-xs font-semibold text-primary-foreground disabled:opacity-60"
                       >
-                        {busy ? "Salvando..." : editingService ? "Salvar serviço" : "Criar serviço"}
+                        {busy
+                          ? t("common.saving")
+                          : editingService
+                            ? t("shop.serviceForm.save")
+                            : t("shop.serviceForm.create")}
                       </button>
                       {editingService && (
                         <button
@@ -2476,7 +2494,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                           }}
                           className="text-sm underline"
                         >
-                          Cancelar edição
+                          {t("shop.cancelEdit")}
                         </button>
                       )}
                     </form>
@@ -2492,9 +2510,9 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 file={staffImageToCrop}
                 onCancel={() => setStaffImageToCrop(null)}
                 onConfirm={saveCroppedStaffAvatar}
-                title="Enquadrar foto do barbeiro"
-                description="A foto aparece no app do cliente ao escolher o profissional."
-                imageAlt="Prévia da foto do barbeiro"
+                title={t("shop.staffCrop.title")}
+                description={t("shop.staffCrop.description")}
+                imageAlt={t("shop.staffCrop.alt")}
                 outputName="barbeiro-1x1.webp"
               />
             </section>
@@ -2504,7 +2522,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
             <section className="space-y-4">
               <div className="app-section-title">
                 <Users />
-                <h2>Equipe</h2>
+                <h2>{t("shop.nav.team")}</h2>
                 <button
                   type="button"
                   disabled={busy}
@@ -2521,7 +2539,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   }}
                 >
                   <Plus className="size-4" />
-                  Adicionar
+                  {t("shop.add")}
                 </button>
               </div>
               <CatalogFilters
@@ -2532,7 +2550,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 total={staff.length}
                 active={staff.filter((row) => row.active).length}
                 visible={visibleStaff.length}
-                label="Buscar profissional"
+                label={t("shop.staff.search")}
                 viewMode={staffView}
                 onViewMode={setStaffView}
               />
@@ -2611,14 +2629,14 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                           </p>
                         ) : null}
                         <p className="text-xs uppercase tracking-widest text-muted-foreground">
-                          {member.active ? "Disponível" : "Desativado"}
+                          {member.active ? t("shop.services.available") : t("shop.staff.disabled")}
                         </p>
                       </div>
                     </div>
                     <button
                       disabled={busy}
                       className={`action-button action-edit ${staffView === "list" ? "my-3" : ""}`}
-                      aria-label={`Editar ${member.display_name}`}
+                      aria-label={t("shop.editAria", { name: member.display_name })}
                       onClick={() => {
                         setEditingStaff(member);
                         setStaffName(member.display_name);
@@ -2630,11 +2648,11 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         setStaffFormOpen(true);
                       }}
                     >
-                      <Pencil className="size-4" /> Editar
+                      <Pencil className="size-4" /> {t("shop.edit")}
                     </button>
                     <button
                       disabled={busy}
-                      aria-label={`Excluir ${member.display_name}`}
+                      aria-label={t("shop.deleteAria", { name: member.display_name })}
                       onClick={() => {
                         setDeleteStaff(member);
                         setDeleteError(null);
@@ -2642,7 +2660,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       className={`action-button action-danger ${staffView === "list" ? "my-3 mr-2" : ""}`}
                     >
                       <Trash2 size={14} />
-                      Excluir
+                      {t("shop.delete")}
                     </button>
                     <label
                       className={
@@ -2651,21 +2669,19 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                           : "flex items-center justify-between gap-3 px-3 py-3 text-xs text-muted-foreground sm:w-auto"
                       }
                     >
-                      Aceitar reservas{" "}
+                      {t("shop.staff.acceptBookings")}{" "}
                       <Switch
                         disabled={busy}
                         checked={member.active}
                         onCheckedChange={() => void toggleStaff(member)}
-                        aria-label={`Ativar ${member.display_name}`}
+                        aria-label={t("shop.activateAria", { name: member.display_name })}
                       />
                     </label>
                   </div>
                 ))}
                 {visibleStaff.length === 0 && !loading && (
                   <p className="col-span-full rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-                    {staff.length
-                      ? "Nenhum profissional corresponde aos filtros."
-                      : "Adicione seu primeiro profissional pelo botão acima."}
+                    {staff.length ? t("shop.staff.emptyFiltered") : t("shop.staff.emptyFirst")}
                   </p>
                 )}
               </div>
@@ -2687,18 +2703,16 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 >
                   <DialogScrollArea className="grid max-h-[calc(85dvh-2px)] gap-4 overflow-y-auto p-6">
                     <DialogTitle>
-                      {editingStaff ? "Editar profissional" : "Novo profissional"}
+                      {editingStaff ? t("shop.staffForm.editTitle") : t("shop.staffForm.newTitle")}
                     </DialogTitle>
-                    <DialogDescription>
-                      Nome e slug do link que o cliente usa para agendar com este profissional.
-                    </DialogDescription>
+                    <DialogDescription>{t("shop.staffForm.description")}</DialogDescription>
                     <form
                       id="staff-form"
                       onSubmit={createStaff}
                       className="space-y-3 rounded-2xl border border-border bg-card p-4"
                     >
                       <label htmlFor="staff-name" className="block text-xs font-semibold">
-                        Nome do profissional
+                        {t("shop.staffForm.name")}
                       </label>
                       <input
                         id="staff-name"
@@ -2709,11 +2723,11 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                           setStaffName(next);
                           if (!staffSlugTouched) setStaffSlug(slugifyPt(next));
                         }}
-                        placeholder="Nome de exibição"
+                        placeholder={t("shop.staffForm.namePlaceholder")}
                         className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
                       />
                       <label htmlFor="staff-slug" className="block text-xs font-semibold">
-                        Slug do link
+                        {t("shop.staffForm.slug")}
                       </label>
                       <input
                         id="staff-slug"
@@ -2723,21 +2737,28 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                           setStaffSlugTouched(true);
                           setStaffSlug(slugifyPt(e.target.value));
                         }}
-                        placeholder="ex.: ezequiel"
+                        placeholder={t("shop.staffForm.slugPlaceholder")}
                         className="w-full rounded-xl border border-border bg-background px-3 py-2 font-mono text-sm"
                         autoCapitalize="off"
                         autoCorrect="off"
                         spellCheck={false}
                       />
                       <p className="text-xs text-muted-foreground">
-                        Link:{" "}
-                        <span className="font-semibold">…/app?barber={staffSlug || "slug"}</span>
-                        {" · "}também funciona{" "}
-                        <span className="font-semibold">/{staffSlug || "slug"}/</span> no domínio da
-                        loja. Trocar o slug redireciona o link antigo.
+                        {richText(t("shop.staffForm.linkHint"), {
+                          appLink: (
+                            <span className="font-semibold">
+                              …/app?barber={staffSlug || "slug"}
+                            </span>
+                          ),
+                          domainLink: (
+                            <span className="font-semibold">/{staffSlug || "slug"}/</span>
+                          ),
+                        })}
                       </p>
                       <div className="space-y-2">
-                        <span className="block text-xs font-semibold">Foto do barbeiro</span>
+                        <span className="block text-xs font-semibold">
+                          {t("shop.staffForm.photo")}
+                        </span>
                         <div className="flex flex-wrap items-center gap-3">
                           {staffAvatar ? (
                             <img
@@ -2762,7 +2783,9 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                               ) : (
                                 <Upload className="size-4" />
                               )}
-                              {staffAvatar ? "Trocar foto" : "Enviar foto"}
+                              {staffAvatar
+                                ? t("shop.staffForm.changePhoto")
+                                : t("shop.uploadPhoto")}
                             </button>
                             {staffAvatar && (
                               <button
@@ -2771,7 +2794,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                                 onClick={() => setStaffAvatar(null)}
                                 className="min-h-11 rounded-xl border border-border px-3 text-xs font-semibold text-muted-foreground"
                               >
-                                Remover
+                                {t("shop.staffForm.removePhoto")}
                               </button>
                             )}
                           </div>
@@ -2785,16 +2808,16 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                           />
                         </div>
                         <p className="text-[11px] text-muted-foreground">
-                          PNG, JPEG ou WebP · recorte quadrado · até 2 MB
+                          {t("shop.staffForm.photoHint")}
                         </p>
                       </div>
                       <label htmlFor="staff-bio" className="block space-y-2 text-xs font-semibold">
-                        Bio (opcional)
+                        {t("shop.staffForm.bio")}
                         <textarea
                           id="staff-bio"
                           value={staffBio}
                           onChange={(e) => setStaffBio(e.target.value.slice(0, 280))}
-                          placeholder="Especialidades, estilo de atendimento…"
+                          placeholder={t("shop.staffForm.bioPlaceholder")}
                           rows={3}
                           maxLength={280}
                           className="w-full resize-y rounded-xl border border-border bg-background px-3 py-2 text-sm font-normal"
@@ -2814,10 +2837,10 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         className="w-full rounded-xl bg-primary py-3 text-xs font-semibold text-primary-foreground disabled:opacity-60"
                       >
                         {busy
-                          ? "Salvando..."
+                          ? t("common.saving")
                           : editingStaff
-                            ? "Salvar profissional"
-                            : "Criar barbeiro"}
+                            ? t("shop.staffForm.save")
+                            : t("shop.staffForm.create")}
                       </button>
                       {editingStaff && (
                         <button
@@ -2834,7 +2857,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                           }}
                           className="text-sm underline"
                         >
-                          Cancelar edição
+                          {t("shop.cancelEdit")}
                         </button>
                       )}
                     </form>
@@ -2849,12 +2872,12 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
               <div>
                 <div className="app-section-title">
                   <Clock3 />
-                  <h2>Horários</h2>
+                  <h2>{t("shop.nav.hours")}</h2>
                 </div>
               </div>
               <div className="space-y-3 rounded-2xl border border-border bg-card p-4">
                 <h3 className="text-xs font-semibold text-muted-foreground">
-                  Funcionamento semanal
+                  {t("shop.hours.weekly")}
                 </h3>
                 {businessHours.map((row) => (
                   <div
@@ -2864,32 +2887,36 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     <label className="flex items-center gap-2 text-sm font-semibold">
                       <Switch
                         checked={row.is_open}
-                        aria-label={`${weekdays[row.weekday]} aberto`}
+                        aria-label={t("shop.hours.openAria", { day: t(weekdays[row.weekday]) })}
                         disabled={busy}
                         onCheckedChange={(checked) =>
                           updateHours(row.weekday, { is_open: checked })
                         }
                       />
-                      {weekdays[row.weekday]}
+                      {t(weekdays[row.weekday])}
                     </label>
                     {row.is_open ? (
                       <div className="col-span-2 flex items-center gap-2 sm:col-span-1">
                         <TimePicker
-                          label="Abertura"
+                          label={t("shop.hours.opens")}
                           value={row.opens_at.slice(0, 5)}
                           disabled={busy}
                           onChange={(value) => updateHours(row.weekday, { opens_at: value })}
                         />
-                        <span className="text-xs text-muted-foreground">até</span>
+                        <span className="text-xs text-muted-foreground">
+                          {t("shop.hours.until")}
+                        </span>
                         <TimePicker
-                          label="Fechamento"
+                          label={t("shop.hours.closes")}
                           value={row.closes_at.slice(0, 5)}
                           disabled={busy}
                           onChange={(value) => updateHours(row.weekday, { closes_at: value })}
                         />
                       </div>
                     ) : (
-                      <span className="text-xs font-semibold text-muted-foreground">Fechado</span>
+                      <span className="text-xs font-semibold text-muted-foreground">
+                        {t("shop.hours.closed")}
+                      </span>
                     )}
                   </div>
                 ))}
@@ -2898,7 +2925,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   disabled={busy}
                   className="w-full rounded-xl bg-primary py-3 text-xs font-semibold text-primary-foreground disabled:opacity-60"
                 >
-                  {busy ? "Salvando..." : "Salvar funcionamento"}
+                  {busy ? t("common.saving") : t("shop.hours.save")}
                 </button>
               </div>
 
@@ -2907,32 +2934,37 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 className="space-y-3 rounded-2xl border border-border bg-card p-4"
               >
                 <div>
-                  <h3 className="text-xs font-semibold text-muted-foreground">Novo bloqueio</h3>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Feriado, pausa ou indisponibilidade de um profissional.
-                  </p>
+                  <h3 className="text-xs font-semibold text-muted-foreground">
+                    {t("shop.block.newTitle")}
+                  </h3>
+                  <p className="mt-1 text-xs text-muted-foreground">{t("shop.block.newHint")}</p>
                 </div>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                   <DatePicker
-                    label="Data do bloqueio"
+                    label={t("shop.block.date")}
                     value={blockDate}
                     onChange={setBlockDate}
                     disabled={busy}
                   />
                   <TimePicker
-                    label="Início"
+                    label={t("shop.block.start")}
                     value={blockStart}
                     onChange={setBlockStart}
                     disabled={busy}
                   />
-                  <TimePicker label="Fim" value={blockEnd} onChange={setBlockEnd} disabled={busy} />
+                  <TimePicker
+                    label={t("shop.block.end")}
+                    value={blockEnd}
+                    onChange={setBlockEnd}
+                    disabled={busy}
+                  />
                 </div>
                 <div>
                   <label
                     htmlFor={blockStaffFieldId}
                     className="block text-xs font-semibold text-muted-foreground"
                   >
-                    Profissional afetado
+                    {t("shop.block.staff")}
                   </label>
                   <select
                     id={blockStaffFieldId}
@@ -2940,10 +2972,10 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     onChange={(e) => setBlockStaffId(e.target.value)}
                     className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground"
                   >
-                    <option value="">Toda a barbearia</option>
+                    <option value="">{t("shop.block.wholeShop")}</option>
                     {staff.map((member) => (
                       <option key={member.id} value={member.id}>
-                        Somente {member.display_name}
+                        {t("shop.block.onlyStaff", { name: member.display_name })}
                       </option>
                     ))}
                   </select>
@@ -2953,10 +2985,15 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     htmlFor={blockReasonFieldId}
                     className="block text-xs font-semibold text-muted-foreground"
                   >
-                    Motivo
+                    {t("shop.block.reason")}
                   </label>
                   <div className="mt-1 flex flex-wrap gap-1.5">
-                    {["Feriado", "Pausa", "Manutenção", "Falta do profissional"].map((reason) => (
+                    {[
+                      t("shop.block.reasonHoliday"),
+                      t("shop.block.reasonBreak"),
+                      t("shop.block.reasonMaintenance"),
+                      t("shop.block.reasonAbsence"),
+                    ].map((reason) => (
                       <button
                         key={reason}
                         type="button"
@@ -2987,17 +3024,19 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                           : "border-dashed border-border bg-background text-muted-foreground hover:border-primary/50"
                       }`}
                     >
-                      Personalizado
+                      {t("shop.custom")}
                     </button>
                   </div>
                   {blockCustomOpen && (
                     <label className="mt-2 flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 p-2">
-                      <span className="text-xs font-semibold">Qual o motivo?</span>
+                      <span className="text-xs font-semibold">
+                        {t("shop.block.reasonQuestion")}
+                      </span>
                       <input
                         id={blockReasonFieldId}
                         value={blockReason}
                         onChange={(e) => setBlockReason(e.target.value)}
-                        placeholder="Escreva o motivo"
+                        placeholder={t("shop.block.reasonPlaceholder")}
                         className="min-w-0 flex-1 rounded-lg border border-border bg-background px-2 py-1 text-sm text-foreground"
                       />
                     </label>
@@ -3008,32 +3047,38 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   disabled={busy}
                   className="w-full rounded-xl bg-primary py-3 text-xs font-semibold text-primary-foreground disabled:opacity-60"
                 >
-                  {busy ? "Salvando..." : "Bloquear período"}
+                  {busy ? t("common.saving") : t("shop.block.submit")}
                 </button>
               </form>
 
               <div className="space-y-2">
-                <h3 className="text-xs font-semibold text-muted-foreground">Próximos bloqueios</h3>
+                <h3 className="text-xs font-semibold text-muted-foreground">
+                  {t("shop.block.upcoming")}
+                </h3>
                 {blocks.map((block) => (
                   <div
                     key={block.id}
                     className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3"
                   >
                     <div>
-                      <p className="text-sm font-bold">{block.reason ?? "Agenda bloqueada"}</p>
+                      <p className="text-sm font-bold">
+                        {block.reason ?? t("shop.block.defaultReason")}
+                      </p>
                       <p className="text-xs uppercase tracking-widest text-muted-foreground">
-                        {formatShopDate(block.starts_at, shopTimeZone, {
-                          dateStyle: "short",
-                          timeStyle: "short",
-                        })}{" "}
-                        até {formatSlotLabel(new Date(block.ends_at), shopTimeZone)} ·{" "}
-                        {block.staff?.display_name ?? "Toda a equipe"}
+                        {t("shop.block.range", {
+                          start: formatShopDate(block.starts_at, shopTimeZone, {
+                            dateStyle: "short",
+                            timeStyle: "short",
+                          }),
+                          end: formatSlotLabel(new Date(block.ends_at), shopTimeZone),
+                          who: block.staff?.display_name ?? t("shop.agenda.allTeam"),
+                        })}
                       </p>
                     </div>
                     <button
                       onClick={() => void deleteBlock(block.id)}
                       disabled={busy}
-                      aria-label="Excluir bloqueio"
+                      aria-label={t("shop.block.deleteAria")}
                       className="action-button action-danger"
                     >
                       <Trash2 size={16} />
@@ -3041,7 +3086,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   </div>
                 ))}
                 {blocks.length === 0 && (
-                  <p className="text-sm text-muted-foreground">Nenhum bloqueio futuro.</p>
+                  <p className="text-sm text-muted-foreground">{t("shop.block.empty")}</p>
                 )}
               </div>
             </section>
@@ -3052,7 +3097,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
               <div>
                 <div className="app-section-title">
                   <Settings2 />
-                  <h2>Ajustes</h2>
+                  <h2>{t("shop.nav.settings")}</h2>
                 </div>
               </div>
               {canManageBranding && (
@@ -3063,9 +3108,9 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 >
                   <Palette className="size-5 text-gold" />
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-bold">Identidade visual</span>
+                    <span className="block text-sm font-bold">{t("shop.settings.brand")}</span>
                     <span className="block text-xs text-muted-foreground">
-                      Logo, nome, fonte, cores e fundo da logo da barbearia.
+                      {t("shop.settings.brandHint")}
                     </span>
                   </span>
                   <ChevronRight className="size-4 text-muted-foreground" />
@@ -3138,7 +3183,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     htmlFor="shop-tagline"
                     className="text-xs font-semibold text-muted-foreground"
                   >
-                    Frase abaixo do nome
+                    {t("shop.settings.tagline")}
                   </label>
                   <input
                     id="shop-tagline"
@@ -3151,9 +3196,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     }}
                     className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Aparece no cabeçalho do aplicativo do cliente.
-                  </p>
+                  <p className="text-xs text-muted-foreground">{t("shop.settings.taglineHint")}</p>
                 </div>
 
                 <div className="space-y-2">
@@ -3161,7 +3204,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     htmlFor="booking-instructions"
                     className="text-xs font-semibold text-muted-foreground"
                   >
-                    Orientação para o agendamento
+                    {t("shop.settings.instructions")}
                   </label>
                   <textarea
                     id="booking-instructions"
@@ -3172,7 +3215,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       setSettingsSaved(false);
                       setSettings({ ...settings, booking_instructions: event.target.value });
                     }}
-                    placeholder="Ex.: chegue 5 minutos antes."
+                    placeholder={t("shop.settings.instructionsPlaceholder")}
                     className="w-full resize-none rounded-xl border border-border bg-background px-3 py-3 text-sm"
                   />
                   <p className="text-right text-xs text-muted-foreground">
@@ -3185,7 +3228,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     htmlFor="booking-horizon"
                     className="text-xs font-semibold text-muted-foreground"
                   >
-                    Agenda aberta por
+                    {t("shop.settings.horizon")}
                   </label>
                   <select
                     id="booking-horizon"
@@ -3201,7 +3244,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   >
                     {[7, 14, 21, 30].map((days) => (
                       <option key={days} value={days}>
-                        {days} dias
+                        {t("shop.settings.days", { days })}
                       </option>
                     ))}
                   </select>
@@ -3212,7 +3255,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     htmlFor="staff-assignment-mode"
                     className="text-xs font-semibold text-muted-foreground"
                   >
-                    Escolha do barbeiro no agendamento
+                    {t("shop.settings.assignment")}
                   </label>
                   <select
                     id="staff-assignment-mode"
@@ -3229,22 +3272,17 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     }}
                     className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm"
                   >
-                    <option value="client_pick">Cliente escolhe o profissional</option>
-                    <option value="favorite_then_pick">
-                      Preferir barbeiro favorito, senão disponíveis
-                    </option>
-                    <option value="random_available">
-                      Qualquer profissional disponível (aleatório)
-                    </option>
+                    <option value="client_pick">{t("shop.settings.assignClient")}</option>
+                    <option value="favorite_then_pick">{t("shop.settings.assignFavorite")}</option>
+                    <option value="random_available">{t("shop.settings.assignRandom")}</option>
                   </select>
                 </div>
 
                 <div className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-background/60 p-4">
                   <div>
-                    <p className="text-sm font-bold">Pesquisas com clientes</p>
+                    <p className="text-sm font-bold">{t("shop.settings.surveys")}</p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Controla o programa da barbearia. A escolha individual de cada cliente
-                      continua sendo respeitada.
+                      {t("shop.settings.surveysHint")}
                     </p>
                   </div>
                   <Switch
@@ -3253,7 +3291,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       setSettingsSaved(false);
                       setSettings({ ...settings, survey_program_enabled: checked });
                     }}
-                    aria-label="Ativar pesquisas com clientes"
+                    aria-label={t("shop.settings.surveysAria")}
                   />
                 </div>
 
@@ -3262,11 +3300,11 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   disabled={busy}
                   className="w-full rounded-xl bg-primary py-3 text-xs font-semibold text-primary-foreground disabled:opacity-60"
                 >
-                  {busy ? "Salvando..." : "Salvar configurações"}
+                  {busy ? t("common.saving") : t("shop.settings.save")}
                 </button>
                 {settingsSaved && (
                   <p role="status" className="text-center text-xs font-semibold text-primary">
-                    Configurações salvas.
+                    {t("shop.settings.saved")}
                   </p>
                 )}
               </form>
@@ -3279,12 +3317,9 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
           <section className="space-y-3">
             <div className="app-section-title">
               <KeyRound />
-              <h2>Sua conta</h2>
+              <h2>{t("shop.account.title")}</h2>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Altere a senha de acesso desta conta. Vale para o painel da barbearia e para o
-              restante do sistema.
-            </p>
+            <p className="text-xs text-muted-foreground">{t("shop.account.hint")}</p>
             <ChangePasswordCard />
           </section>
         )}
@@ -3293,7 +3328,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       <nav
         className="app-mobile-nav app-mobile-nav-floating fixed left-4 right-4 z-40 mx-auto grid max-w-3xl overflow-hidden"
         style={{ gridTemplateColumns: `repeat(${shopNavItems.length}, minmax(0, 1fr))` }}
-        aria-label="Navegação principal"
+        aria-label={t("shop.nav.aria")}
       >
         <span
           aria-hidden
@@ -3326,13 +3361,13 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         <DialogContent className="max-h-[92dvh] w-[calc(100vw-1.5rem)] max-w-2xl overflow-hidden rounded-3xl border-border bg-card p-0">
           <DialogScrollArea className="grid max-h-[calc(92dvh-2px)] gap-4 overflow-y-auto p-5 sm:p-6">
             <DialogTitle className="text-lg font-extrabold tracking-tight">
-              Identidade visual
+              {t("shop.settings.brand")}
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              O que você salvar aqui vale na hora para a equipe e para os clientes desta barbearia.
+              {t("shop.brand.description")}
             </DialogDescription>
             {!shop || !settings ? (
-              <p className="text-sm text-muted-foreground">Carregando identidade…</p>
+              <p className="text-sm text-muted-foreground">{t("shop.brand.loading")}</p>
             ) : (
               <BrandIdentityEditor
                 key={shop.id}

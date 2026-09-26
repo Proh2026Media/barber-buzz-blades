@@ -1,102 +1,57 @@
+import { t, type MessageKey } from "../../lib/i18n/index.ts";
+
 export type PrivacyPreferences = { analytics: boolean; surveys: boolean; marketing: boolean };
 export const defaultPrivacy: PrivacyPreferences = {
   analytics: false,
   surveys: false,
   marketing: false,
 };
-export const questions = {
-  satisfaction: {
-    title: "Como você avalia este atendimento?",
-    options: {
-      "1": "1 · Muito insatisfeito",
-      "2": "2 · Insatisfeito",
-      "3": "3 · Nem satisfeito nem insatisfeito",
-      "4": "4 · Satisfeito",
-      "5": "5 · Muito satisfeito",
-      skip: "Prefiro não responder",
-    },
-  },
-  improvement: {
-    title: "Qual ponto mais precisa melhorar neste atendimento?",
-    options: {
-      result: "Resultado do serviço",
-      punctuality: "Pontualidade",
-      service: "Atendimento",
-      comfort: "Conforto",
-      booking: "Facilidade de agendar",
-      none: "Nenhum",
-      other: "Outro",
-      skip: "Prefiro não responder",
-    },
-  },
-  discovery: {
-    title: "Como você conheceu esta barbearia?",
-    options: {
-      referral: "Indicação",
-      walk_by: "Passando pelo local",
-      google: "Google",
-      instagram: "Instagram",
-      other: "Outro",
-      skip: "Prefiro não responder",
-    },
-  },
-  period: {
-    title: "Qual período costuma ser melhor para você?",
-    options: {
-      morning: "Manhã",
-      afternoon: "Tarde",
-      evening: "Noite",
-      varies: "Varia",
-      skip: "Prefiro não responder",
-    },
-  },
-  professional: {
-    title: "Como você prefere escolher o profissional?",
-    options: {
-      same: "Sempre o mesmo",
-      available: "Primeiro disponível",
-      by_service: "Depende do serviço",
-      no_preference: "Sem preferência",
-      skip: "Prefiro não responder",
-    },
-  },
-  frequency: {
-    title: "Com que frequência você gostaria de visitar a barbearia?",
-    options: {
-      up_to_15: "Até 15 dias",
-      "16_to_30": "De 16 a 30 dias",
-      "31_to_60": "De 31 a 60 dias",
-      over_60: "Mais de 60 dias",
-      // "Sem frequência definida" é uma resposta válida (não ausência de resposta).
-      none: "Sem frequência definida",
-      skip: "Prefiro não responder",
-    },
-  },
-  conversation: {
-    title: "Durante o atendimento, você prefere…",
-    options: {
-      talk: "Conversar",
-      quiet: "Mais silêncio",
-      decide_on_day: "Decidir no dia",
-      no_preference: "Sem preferência",
-      skip: "Prefiro não responder",
-    },
-  },
-  service_interest: {
-    title: "Qual serviço você gostaria de encontrar na barbearia?",
-    options: {
-      eyebrow: "Design de sobrancelha",
-      facial: "Limpeza de pele",
-      hydration: "Hidratação capilar",
-      coloring: "Coloração",
-      manicure: "Manicure",
-      massage: "Massagem",
-      none: "Nenhum destes",
-      other: "Outro",
-      skip: "Prefiro não responder",
-    },
-  },
+const questionOptions = {
+  satisfaction: ["1", "2", "3", "4", "5", "skip"],
+  improvement: ["result", "punctuality", "service", "comfort", "booking", "none", "other", "skip"],
+  discovery: ["referral", "walk_by", "google", "instagram", "other", "skip"],
+  period: ["morning", "afternoon", "evening", "varies", "skip"],
+  professional: ["same", "available", "by_service", "no_preference", "skip"],
+  // "Sem frequência definida" (none) é uma resposta válida (não ausência de resposta).
+  frequency: ["up_to_15", "16_to_30", "31_to_60", "over_60", "none", "skip"],
+  conversation: ["talk", "quiet", "decide_on_day", "no_preference", "skip"],
+  service_interest: [
+    "eyebrow",
+    "facial",
+    "hydration",
+    "coloring",
+    "manicure",
+    "massage",
+    "none",
+    "other",
+    "skip",
+  ],
 } as const;
+type QuestionKey = keyof typeof questionOptions;
+type Question<K extends QuestionKey> = {
+  readonly title: string;
+  readonly options: { readonly [O in (typeof questionOptions)[K][number]]: string };
+};
+
+/** Textos lidos no idioma atual a cada acesso (nunca congelados ao carregar o módulo). */
+function localizedQuestion<K extends QuestionKey>(key: K): Question<K> {
+  const options = {};
+  for (const option of questionOptions[key])
+    Object.defineProperty(options, option, {
+      enumerable: true,
+      get: () => t(`ins.q.${key}.${option}` as MessageKey),
+    });
+  return {
+    get title() {
+      return t(`ins.q.${key}.title` as MessageKey);
+    },
+    options: options as Question<K>["options"],
+  };
+}
+
+export const questions = Object.fromEntries(
+  (Object.keys(questionOptions) as QuestionKey[]).map((key) => [key, localizedQuestion(key)]),
+) as { readonly [K in QuestionKey]: Question<K> };
 export type Survey = {
   id: string;
   question: keyof typeof questions;

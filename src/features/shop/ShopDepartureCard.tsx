@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { LogOut, UserMinus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useI18n } from "@/lib/i18n";
 
 type DepartureRequest = {
   id: string;
@@ -33,6 +34,7 @@ export function ShopDepartureCard({
   canApproveRelease = false,
   canRequestDeparture = true,
 }: ShopDepartureCardProps) {
+  const { t, intlLocale } = useI18n();
   const [mode, setMode] = useState<"take" | "forfeit">("forfeit");
   const [destShopId, setDestShopId] = useState("");
   const [newShopName, setNewShopName] = useState("");
@@ -81,7 +83,7 @@ export function ShopDepartureCard({
 
   async function createDestinationShop() {
     if (!newShopName.trim()) {
-      setError("Informe o nome da nova barbearia.");
+      setError(t("team.departure.nameRequired"));
       return;
     }
     setBusy(true);
@@ -92,12 +94,12 @@ export function ShopDepartureCard({
       });
       if (rpcError) throw rpcError;
       const payload = data as { shop_id?: string };
-      if (!payload.shop_id) throw new Error("Não foi possível criar a barbearia.");
+      if (!payload.shop_id) throw new Error(t("team.departure.createError"));
       setDestShopId(payload.shop_id);
-      setMessage("Nova barbearia criada. Confirme a desvinculação para levar a carteira.");
+      setMessage(t("team.departure.created"));
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao criar barbearia.");
+      setError(err instanceof Error ? err.message : t("team.departure.createFailed"));
     } finally {
       setBusy(false);
     }
@@ -109,7 +111,7 @@ export function ShopDepartureCard({
     setMessage("");
     try {
       if (mode === "take" && !destShopId) {
-        throw new Error("Escolha ou crie a barbearia de destino antes de levar a carteira.");
+        throw new Error(t("team.departure.destRequired"));
       }
       const { data, error: rpcError } = await supabase.rpc("request_shop_departure", {
         p_shop_id: shopId,
@@ -119,17 +121,15 @@ export function ShopDepartureCard({
       if (rpcError) throw rpcError;
       const payload = data as { status?: string };
       if (payload.status === "pending_release") {
-        setMessage("Pedido enviado. Aguarde o outro sócio liberar a carteira.");
+        setMessage(t("team.departure.sent"));
       } else {
         setMessage(
-          mode === "take"
-            ? "Desvinculação concluída. Sua carteira foi para a nova loja; o link antigo ficou travado."
-            : "Desvinculação concluída. Você abriu mão da carteira nesta loja.",
+          mode === "take" ? t("team.departure.doneTake") : t("team.departure.doneForfeit"),
         );
       }
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha na desvinculação.");
+      setError(err instanceof Error ? err.message : t("team.departure.failed"));
     } finally {
       setBusy(false);
     }
@@ -144,10 +144,10 @@ export function ShopDepartureCard({
         { p_request_id: id, p_note: null },
       );
       if (rpcError) throw rpcError;
-      setMessage(approve ? "Carteira liberada e saída concluída." : "Pedido rejeitado.");
+      setMessage(approve ? t("team.departure.released") : t("team.departure.rejected"));
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao decidir.");
+      setError(err instanceof Error ? err.message : t("team.departure.decideFailed"));
     } finally {
       setBusy(false);
     }
@@ -160,17 +160,14 @@ export function ShopDepartureCard({
           <UserMinus size={18} />
         </span>
         <div>
-          <h3 className="text-sm font-bold">Desvincular da barbearia</h3>
-          <p className="text-xs text-muted-foreground">
-            Leve sua carteira com exclusividade ou abra mão dela. Em sociedade, o outro sócio
-            precisa liberar a carteira. O link antigo fica travado quando você leva os clientes.
-          </p>
+          <h3 className="text-sm font-bold">{t("team.departure.title")}</h3>
+          <p className="text-xs text-muted-foreground">{t("team.departure.hint")}</p>
         </div>
       </div>
 
       {canApproveRelease && pending.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs font-semibold">Pedidos aguardando liberação</p>
+          <p className="text-xs font-semibold">{t("team.departure.pendingTitle")}</p>
           {pending
             .filter((row) => row.status === "pending_release")
             .map((row) => (
@@ -180,10 +177,12 @@ export function ShopDepartureCard({
               >
                 <div>
                   <p className="text-sm font-semibold">
-                    {row.requester_name || row.staff_name || "Sócio"}
+                    {row.requester_name || row.staff_name || t("team.departure.partnerFallback")}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Quer levar a carteira · {new Date(row.created_at).toLocaleString("pt-BR")}
+                    {t("team.departure.wantsToTake", {
+                      date: new Date(row.created_at).toLocaleString(intlLocale),
+                    })}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -193,7 +192,7 @@ export function ShopDepartureCard({
                     className="action-button"
                     onClick={() => void decide(row.id, true)}
                   >
-                    Liberar
+                    {t("team.departure.release")}
                   </button>
                   <button
                     type="button"
@@ -201,7 +200,7 @@ export function ShopDepartureCard({
                     className="action-button action-danger"
                     onClick={() => void decide(row.id, false)}
                   >
-                    Recusar
+                    {t("team.departure.decline")}
                   </button>
                 </div>
               </div>
@@ -212,7 +211,7 @@ export function ShopDepartureCard({
       {canRequestDeparture && (
         <div className="space-y-3 rounded-2xl border border-border bg-background p-3">
           <fieldset className="space-y-2">
-            <legend className="text-xs font-semibold">O que fazer com a carteira?</legend>
+            <legend className="text-xs font-semibold">{t("team.departure.question")}</legend>
             <label className="flex items-center gap-2 text-sm">
               <input
                 type="radio"
@@ -220,7 +219,7 @@ export function ShopDepartureCard({
                 checked={mode === "forfeit"}
                 onChange={() => setMode("forfeit")}
               />
-              Abrir mão — clientes ficam nesta loja
+              {t("team.departure.forfeit")}
             </label>
             <label className="flex items-center gap-2 text-sm">
               <input
@@ -229,14 +228,14 @@ export function ShopDepartureCard({
                 checked={mode === "take"}
                 onChange={() => setMode("take")}
               />
-              Levar carteira — exclusivo para mim
+              {t("team.departure.take")}
             </label>
           </fieldset>
 
           {mode === "take" && (
             <div className="space-y-2">
               <label htmlFor="dest-shop" className="block text-xs font-semibold">
-                Barbearia de destino
+                {t("team.departure.destination")}
               </label>
               <select
                 id="dest-shop"
@@ -244,21 +243,19 @@ export function ShopDepartureCard({
                 onChange={(e) => setDestShopId(e.target.value)}
                 className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm"
               >
-                <option value="">Selecione…</option>
+                <option value="">{t("team.departure.select")}</option>
                 {destShops.map((shop) => (
                   <option key={shop.id} value={shop.id}>
                     {shop.name} (/{shop.slug})
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-muted-foreground">
-                Ou crie uma barbearia própria agora:
-              </p>
+              <p className="text-xs text-muted-foreground">{t("team.departure.orCreate")}</p>
               <div className="flex gap-2">
                 <input
                   value={newShopName}
                   onChange={(e) => setNewShopName(e.target.value)}
-                  placeholder="Nome da nova barbearia"
+                  placeholder={t("team.departure.newNamePlaceholder")}
                   className="min-w-0 flex-1 rounded-xl border border-border bg-card px-3 py-2 text-sm"
                 />
                 <button
@@ -267,7 +264,7 @@ export function ShopDepartureCard({
                   className="action-button"
                   onClick={() => void createDestinationShop()}
                 >
-                  Criar
+                  {t("team.departure.create")}
                 </button>
               </div>
             </div>
@@ -280,7 +277,7 @@ export function ShopDepartureCard({
             onClick={() => void requestDeparture()}
           >
             <LogOut size={14} />
-            Confirmar desvinculação
+            {t("team.departure.confirm")}
           </button>
         </div>
       )}

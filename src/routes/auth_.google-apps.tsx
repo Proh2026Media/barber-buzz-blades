@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { platformAuthOrigin } from "@/lib/auth/return-origin";
+import { t as tNow } from "@/lib/i18n";
 
 export const Route = createFileRoute("/auth_/google-apps")({
   ssr: false,
@@ -18,7 +19,7 @@ export const Route = createFileRoute("/auth_/google-apps")({
 
 function GoogleAppsCallback() {
   const { code, state, error: oauthError, error_description } = Route.useSearch();
-  const [message, setMessage] = useState("Conectando Google Agenda e Contatos…");
+  const [message, setMessage] = useState(() => tNow("app.google.connecting"));
 
   useEffect(() => {
     let cancelled = false;
@@ -38,8 +39,8 @@ function GoogleAppsCallback() {
       if (oauthError) {
         const denied =
           oauthError === "access_denied"
-            ? "Conexão cancelada no Google. Se apareceu “app não verificado”, use Avançado → continuar."
-            : `Google recusou: ${error_description || oauthError}`;
+            ? tNow("app.google.denied")
+            : tNow("app.google.refused", { detail: error_description || oauthError });
         setMessage(denied);
         window.setTimeout(() => {
           goBack("/shop", fallbackOrigin, { google: "error", reason: denied });
@@ -47,7 +48,7 @@ function GoogleAppsCallback() {
         return;
       }
       if (!code || !state) {
-        setMessage("Resposta do Google incompleta.");
+        setMessage(tNow("app.google.incomplete"));
         window.setTimeout(() => {
           goBack("/shop", fallbackOrigin, {});
         }, 1600);
@@ -74,10 +75,10 @@ function GoogleAppsCallback() {
           return_path?: string;
           return_origin?: string;
         };
-        if (!response.ok) throw new Error(payload.error || "Falha ao concluir OAuth Google");
+        if (!response.ok) throw new Error(payload.error || tNow("app.google.completeFailed"));
 
         if (cancelled) return;
-        setMessage("Google conectado. Voltando à barbearia…");
+        setMessage(tNow("app.google.connected"));
         const path = payload.return_path || "/shop";
         const origin = payload.return_origin || fallbackOrigin;
         window.setTimeout(() => {
@@ -85,7 +86,7 @@ function GoogleAppsCallback() {
         }, 500);
       } catch (err) {
         if (cancelled) return;
-        const detail = err instanceof Error ? err.message : "Falha na conexão Google";
+        const detail = err instanceof Error ? err.message : tNow("app.google.failed");
         setMessage(detail);
         window.setTimeout(() => {
           goBack("/shop", fallbackOrigin, { google: "error", reason: detail });
