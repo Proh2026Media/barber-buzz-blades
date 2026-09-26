@@ -313,6 +313,7 @@ function ArenaApp({
   const [appointmentsLoadedFor, setAppointmentsLoadedFor] = useState<string | null>(null);
   const handledInitialSchedule = useRef<string | null>(null);
   const [appointmentsError, setAppointmentsError] = useState<string | null>(null);
+  const [appointmentsNotice, setAppointmentsNotice] = useState<string | null>(null);
   const [appointmentVersion, setAppointmentVersion] = useState(0);
   const [appointmentBusy, setAppointmentBusy] = useState<string | null>(null);
   const [rescheduleId, setRescheduleId] = useState<string | null>(null);
@@ -1172,11 +1173,19 @@ function ArenaApp({
     }
   };
 
+  const describeAppointment = (row: CustomerAppointment) =>
+    `${row.service?.name ?? "Serviço"} com ${row.staff?.display_name ?? "profissional"} em ${formatShopDate(
+      row.starts_at,
+      shopTimeZone,
+      { weekday: "short", day: "2-digit", month: "2-digit" },
+    )} às ${formatSlotLabel(new Date(row.starts_at), shopTimeZone)}`;
+
   const cancelAppointment = async () => {
     const row = cancelTarget;
     if (!row) return;
     setAppointmentBusy(row.id);
     setAppointmentsError(null);
+    setAppointmentsNotice(null);
     try {
       if (demo)
         demo.dispatch({
@@ -1196,6 +1205,9 @@ function ArenaApp({
       setAvailabilityVersion((v) => v + 1);
       setCancelTarget(null);
       setCancelReason("");
+      setAppointmentsNotice(
+        `Horário cancelado: ${describeAppointment(row)}. O horário foi liberado.`,
+      );
     } catch {
       setAppointmentsError("Não foi possível cancelar. Atualize a lista e tente novamente.");
     } finally {
@@ -1206,6 +1218,7 @@ function ArenaApp({
   const stopSeries = async (seriesId: string) => {
     setAppointmentBusy(seriesId);
     setAppointmentsError(null);
+    setAppointmentsNotice(null);
     try {
       if (demo) {
         setAppointmentsError("Recorrência não está disponível na demonstração.");
@@ -1216,6 +1229,9 @@ function ArenaApp({
       setAppointmentVersion((v) => v + 1);
       setAvailabilityVersion((v) => v + 1);
       setStopSeriesTarget(null);
+      setAppointmentsNotice(
+        "Repetição encerrada. Os próximos horários dessa série foram cancelados.",
+      );
     } catch {
       setAppointmentsError("Não foi possível parar a recorrência. Tente novamente.");
     } finally {
@@ -1442,17 +1458,7 @@ function ArenaApp({
         open={!!cancelTarget}
         busy={appointmentBusy !== null}
         reason={cancelReason}
-        summary={
-          cancelTarget
-            ? `${cancelTarget.service?.name ?? "Serviço"} com ${
-                cancelTarget.staff?.display_name ?? "profissional"
-              } em ${formatShopDate(cancelTarget.starts_at, shopTimeZone, {
-                weekday: "short",
-                day: "2-digit",
-                month: "2-digit",
-              })} às ${formatSlotLabel(new Date(cancelTarget.starts_at), shopTimeZone)}`
-            : null
-        }
+        summary={cancelTarget ? describeAppointment(cancelTarget) : null}
         onReason={setCancelReason}
         onCancel={() => {
           setCancelTarget(null);
@@ -2561,6 +2567,22 @@ function ArenaApp({
                 <p className="text-xs text-destructive" role="alert">
                   {appointmentsError}
                 </p>
+              )}
+              {appointmentsNotice && !appointmentsError && (
+                <div
+                  role="status"
+                  className="flex items-start gap-2 border border-emerald-600/30 bg-card p-3 text-sm rounded-lg"
+                >
+                  <CheckCircle className="mt-0.5 size-4 shrink-0 text-emerald-700 dark:text-emerald-300" />
+                  <p className="flex-1 leading-relaxed">{appointmentsNotice}</p>
+                  <button
+                    type="button"
+                    onClick={() => setAppointmentsNotice(null)}
+                    className="-m-2 inline-flex min-h-11 min-w-11 items-center justify-center text-xs font-semibold text-muted-foreground"
+                  >
+                    Ok
+                  </button>
+                </div>
               )}
               {appointmentsLoading ? (
                 <p className="text-xs text-muted-foreground">Carregando agendamentos...</p>

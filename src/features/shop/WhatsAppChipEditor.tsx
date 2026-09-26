@@ -172,6 +172,7 @@ function insertNodeAtCaret(root: HTMLElement, node: Node) {
 export const WhatsAppChipEditor = forwardRef<WhatsAppChipEditorHandle, WhatsAppChipEditorProps>(
   function WhatsAppChipEditor({ value, onChange, className, "aria-label": ariaLabel }, ref) {
     const editorRef = useRef<HTMLDivElement>(null);
+    const wrapperRef = useRef<HTMLDivElement>(null);
     const lastValueRef = useRef(value);
     const draggingChipRef = useRef<HTMLSpanElement | null>(null);
     const [menuOpen, setMenuOpen] = useState(false);
@@ -227,9 +228,13 @@ export const WhatsAppChipEditor = forwardRef<WhatsAppChipEditorHandle, WhatsAppC
       const key = chip.getAttribute(CHIP_ATTR);
       if (!key || !isVarKey(key)) return;
       const rect = chip.getBoundingClientRect();
+      const base = wrapperRef.current?.getBoundingClientRect();
       setMenuKey(key);
       setMenuChip(chip);
-      setAnchorPos({ x: rect.left + rect.width / 2, y: rect.bottom + 4 });
+      setAnchorPos({
+        x: rect.left - (base?.left ?? 0),
+        y: rect.bottom - (base?.top ?? 0) + 4,
+      });
       setMenuOpen(true);
     }
 
@@ -256,7 +261,7 @@ export const WhatsAppChipEditor = forwardRef<WhatsAppChipEditorHandle, WhatsAppC
     }
 
     return (
-      <>
+      <div ref={wrapperRef} className="relative">
         <div
           ref={editorRef}
           role="textbox"
@@ -365,7 +370,7 @@ export const WhatsAppChipEditor = forwardRef<WhatsAppChipEditorHandle, WhatsAppC
               type="button"
               aria-hidden
               tabIndex={-1}
-              className="pointer-events-none fixed h-px w-px opacity-0"
+              className="pointer-events-none absolute !h-px !min-h-0 !w-px !min-w-0 overflow-hidden !p-0 opacity-0"
               style={{ left: anchorPos.x, top: anchorPos.y }}
             />
           </DropdownMenuTrigger>
@@ -376,24 +381,25 @@ export const WhatsAppChipEditor = forwardRef<WhatsAppChipEditorHandle, WhatsAppC
             {WHATSAPP_TEMPLATE_VARS.map((key) => (
               <DropdownMenuItem
                 key={key}
-                className="rounded-lg text-sm"
+                className="min-h-11 rounded-lg text-sm"
                 onSelect={() => replaceChipVar(key)}
               >
                 <span className={cn(key === menuKey && "font-bold")}>
                   {WHATSAPP_TEMPLATE_VAR_HELP[key].chip}
+                  {key === menuKey && <span className="sr-only"> (atual)</span>}
                 </span>
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              className="rounded-lg text-sm text-destructive focus:text-destructive"
+              className="min-h-11 rounded-lg text-sm text-destructive focus:text-destructive"
               onSelect={removeChip}
             >
               Remover
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </>
+      </div>
     );
   },
 );

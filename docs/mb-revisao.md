@@ -38,7 +38,13 @@ Atualizado em **26/09/2026**. Fonte: [mb-interface.md](mb-interface.md). Regra: 
 - Testes automáticos novos para modelos de WhatsApp e mensagens de erro (95/95). Encontraram e corrigiram: link Markdown `[texto](url)` passava sem aviso na validação.
 - `npm run typecheck` completo sem erros (corrigidos os tipos antigos da demonstração, rotas e `vite.config.ts`).
 - Publicado no Hostinger (build concluído); em produção, senha errada mostra a mensagem amigável.
-- **Não** executado: telas logadas (reserva, cancelamento, aba Conta, editor WhatsApp, popup Google) — `/demo` exige login de administrador; aparelho físico, teclado virtual, leitor de tela, conexão lenta.
+- Telas logadas no navegador emulado 390×844 (demo e painel real, sem salvar nada):
+  - Reserva: resumo antes de confirmar, horário e botão ≥ 44px, sucesso “Horário reservado” com próximo passo.
+  - Cancelamento: janela com resumo e botões nomeados; Esc fecha sem cancelar. **Corrigido:** após cancelar não havia confirmação — agora aparece “Horário cancelado: …” (e aviso ao parar repetição).
+  - Aba Conta: `aria-current="page"` e faixa “Você está em Perfil”.
+  - Editor WhatsApp: pílulas de 18px no texto, prévia formatada, troca de dado, restaurar com confirmação. **Corrigido:** menu da pílula abria fora da tela (âncora `fixed` dentro de cartão com transform); itens do menu com 44px e “(atual)” para leitor de tela; texto “alguns emojis contam como dois”.
+  - Aviso do Google: cabe no celular; “Agora não” fecha sem iniciar o OAuth. **Corrigido:** o X de fechar das janelas (componente compartilhado) tinha 16px de largura — agora 44×44.
+- **Não** executado: aparelho físico, teclado virtual real, leitor de tela real, conexão lenta; OAuth do Google até o fim (exige conta Google e altera dados reais).
 
 ## Documentação incorporada
 

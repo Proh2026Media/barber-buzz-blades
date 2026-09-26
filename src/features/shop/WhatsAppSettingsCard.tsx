@@ -441,7 +441,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
           <p className="text-sm font-semibold">Textos das mensagens</p>
           <p className="mt-1 text-xs text-muted-foreground">
             Toque nas pílulas para inserir o nome da loja, serviço, data e demais dados na mensagem.
-            Máximo 1.000 caracteres (emojis contam mais de um).
+            Máximo 1.000 caracteres (alguns emojis contam como dois).
           </p>
         </div>
         <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Tipo de mensagem">
