@@ -8,7 +8,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useI18n } from "@/lib/i18n";
-import { useReturnFocus } from "@/lib/use-return-focus";
 import {
   cancellationReasonText,
   cancellationReasons,
@@ -34,7 +33,6 @@ export function CancellationDialog({
   summary?: string | null;
 }) {
   const { t } = useI18n();
-  const returnFocus = useReturnFocus();
   return (
     <AlertDialog
       open={open}
@@ -42,7 +40,7 @@ export function CancellationDialog({
         if (!value && !busy) onCancel();
       }}
     >
-      <AlertDialogContent className="rounded-3xl" {...returnFocus}>
+      <AlertDialogContent className="rounded-3xl">
         <AlertDialogHeader>
           <AlertDialogTitle>{t("cancel.title")}</AlertDialogTitle>
           <AlertDialogDescription asChild>

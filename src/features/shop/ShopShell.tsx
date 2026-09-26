@@ -2020,7 +2020,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         setAgendaSearch("");
                         setAgendaStaff("");
                       }}
-                      className="action-button action-danger"
+                      className="action-button action-danger min-w-11 justify-center"
                       aria-label={t("shop.money.cancellationsAria", { count: cancelledCount })}
                     >
                       {cancelledCount}
@@ -2369,7 +2369,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                             value={serviceIconQuery}
                             onChange={(e) => setServiceIconQuery(e.target.value)}
                             placeholder={t("shop.serviceForm.iconSearch")}
-                            className="w-full rounded-xl border border-border bg-background py-2 pl-9 pr-3 text-sm"
+                            aria-label={t("shop.serviceForm.iconSearch")}
+                            className="min-h-11 w-full rounded-xl border border-border bg-background py-2 pl-9 pr-3 text-sm"
                           />
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
@@ -2431,7 +2432,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                                       title={preset.label}
                                       aria-label={preset.label}
                                       aria-pressed={isSelected}
-                                      className={`flex size-10 items-center justify-center rounded-xl border transition-colors ${
+                                      className={`flex size-11 items-center justify-center rounded-xl border transition-colors ${
                                         isSelected
                                           ? "border-primary bg-primary/10 text-primary"
                                           : "border-border bg-background text-muted-foreground hover:bg-muted"

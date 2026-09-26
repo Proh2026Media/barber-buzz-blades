@@ -256,7 +256,8 @@ export function ShopDepartureCard({
                   value={newShopName}
                   onChange={(e) => setNewShopName(e.target.value)}
                   placeholder={t("team.departure.newNamePlaceholder")}
-                  className="min-w-0 flex-1 rounded-xl border border-border bg-card px-3 py-2 text-sm"
+                  aria-label={t("team.departure.newNamePlaceholder")}
+                  className="min-h-11 min-w-0 flex-1 rounded-xl border border-border bg-card px-3 py-2 text-sm"
                 />
                 <button
                   type="button"

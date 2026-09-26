@@ -213,7 +213,11 @@ function ConfiguredDemoWorkspace({
       <div className="demo-layout bg-background text-foreground">
         <div className="border-b border-primary/20 bg-primary/10 px-4 py-2 text-center text-xs font-semibold text-foreground">
           {t("demo.ws.banner")}{" "}
-          <button type="button" onClick={exit} className="underline underline-offset-2">
+          <button
+            type="button"
+            onClick={exit}
+            className="relative px-1 underline underline-offset-2 before:absolute before:-inset-x-3 before:-inset-y-3.5 before:content-['']"
+          >
             {t("demo.ws.exit")}
           </button>
         </div>

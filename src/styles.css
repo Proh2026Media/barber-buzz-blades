@@ -672,8 +672,11 @@ body:has(.arena-workspace) input:-webkit-autofill {
   color: #4d514a;
   border-color: #cccfc8;
 }
-.arena-workspace input:not([type="checkbox"]):not([type="color"]):not([type="file"]),
-.arena-workspace select {
+.arena-workspace input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]),
+.arena-workspace select,
+body:has(.arena-workspace)
+  :is([role="dialog"], [role="alertdialog"])
+  :is(input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]), select) {
   min-height: 44px;
 }
 .arena-workspace button:focus-visible {

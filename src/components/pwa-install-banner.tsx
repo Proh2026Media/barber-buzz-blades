@@ -69,7 +69,7 @@ export function PwaInstallBanner() {
         <button
           type="button"
           aria-label={t("ui.pwa.dismiss")}
-          className="app-icon-button size-9 shrink-0"
+          className="app-icon-button size-11 shrink-0"
           onClick={() => {
             try {
               sessionStorage.setItem(DISMISS_KEY, "1");

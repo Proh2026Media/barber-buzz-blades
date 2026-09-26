@@ -543,7 +543,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
                 type="button"
                 aria-pressed={previewMode === "preview"}
                 onClick={() => setPreviewMode("preview")}
-                className={`min-h-8 rounded-lg px-2 text-[11px] font-semibold ${
+                className={`min-h-11 rounded-lg px-3 text-xs font-semibold ${
                   previewMode === "preview"
                     ? "bg-primary text-primary-foreground"
                     : "border border-border"
@@ -555,7 +555,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
                 type="button"
                 aria-pressed={previewMode === "source"}
                 onClick={() => setPreviewMode("source")}
-                className={`min-h-8 rounded-lg px-2 text-[11px] font-semibold ${
+                className={`min-h-11 rounded-lg px-3 text-xs font-semibold ${
                   previewMode === "source"
                     ? "bg-primary text-primary-foreground"
                     : "border border-border"

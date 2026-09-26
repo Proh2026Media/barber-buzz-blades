@@ -432,10 +432,14 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
 
       {connection.connected ? (
         <div className="space-y-2">
-          <label className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <label
+            htmlFor="google-calendar-choice"
+            className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+          >
             {t("integr.google.whichCalendar")}
           </label>
           <select
+            id="google-calendar-choice"
             className="h-11 w-full rounded-[var(--control-radius)] border border-border/70 bg-background px-3 text-sm"
             value={selectedCalendarId}
             disabled={busy || loadingCalendars || calendars.length === 0}

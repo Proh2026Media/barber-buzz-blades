@@ -77,6 +77,17 @@ Auditoria no celular (390×844) das abas Visão geral, Barbearias, Acessos e Rel
 - Verificado sem alterar dados reais: a confirmação de suspender foi aberta e fechada com “Voltar”; a barbearia continuou ativa.
 - **Corrigido no código:** ao fechar as confirmações de suspender e de remover gerente, o foco do teclado volta ao botão que as abriu. Ainda não conferido no navegador (o painel real exige login de administrador).
 
+## Varredura geral — toque, nomes, largura e foco (26/09/2026)
+
+Checagem automática na demonstração, em todas as abas do painel da barbearia e do app do cliente, em 390×844 e 320×640: áreas de toque abaixo de 44px, botões sem nome, campos sem rótulo e conteúdo saindo pela lateral. Nas duas larguras, nenhuma tela teve rolagem lateral nem conteúdo cortado.
+
+- **Corrigido (componente compartilhado):** toda janela (`Dialog` e `AlertDialog`) agora devolve o foco ao botão que a abriu ao fechar, e as confirmações levam o foco para o primeiro controle ao abrir. Antes isso dependia de cada tela, e 16 janelas não faziam. Conferido no navegador: editar/excluir/adicionar serviço, editar/excluir profissional e cancelar reserva no app do cliente — foco entra na janela e volta ao botão com Esc.
+- **Corrigido (toque):** “Ocorrências” da presença (32px → 44px), botão “Tentar de novo” da presença, contador de cancelamentos do dia (38px de largura → 44px), “Prévia/Texto original” do WhatsApp (32px → 44px), ícones do formulário de serviço (40px → 44px), fechar do banner de instalação (36px → 44px), remover logotipo/fonte na identidade visual (36px → 44px) e “sair” da faixa da demonstração (área de toque ampliada sem mudar a faixa).
+- **Corrigido (campos):** campos dentro de janelas também passam a ter no mínimo 44px de altura (regra global que valia só fora das janelas).
+- **Corrigido (rótulos):** escolha de agenda do Google, nome da nova barbearia na saída do sócio e busca de ícone do serviço agora têm nome lido pelo leitor de tela.
+- Conferido e mantido: interruptores (36×20 visíveis) e o marcador da antecedência já têm área de toque invisível de 48px.
+- Só pelo código (não aparecem na demonstração): ajustes de identidade, domínio, integrações Google, saída do sócio e painel da plataforma real.
+
 ## Documentação incorporada
 
 - `docs/mb-interface.md` consolidado (26/09/2026).

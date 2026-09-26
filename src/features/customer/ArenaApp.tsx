@@ -25,7 +25,6 @@ import {
   type CatalogViewMode,
 } from "@/features/shop/CatalogViewToggle";
 import { useScrollIndicators } from "@/lib/use-scroll-indicators";
-import { useReturnFocus } from "@/lib/use-return-focus";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTheme } from "@/lib/use-theme";
 import { brandCornerClass, brandFontScopeClass, brandVariables } from "@/lib/shop/branding";
@@ -181,7 +180,6 @@ function ArenaApp({
   useScrollIndicators();
   const demo = useDemo();
   const { t, intlLocale } = useI18n();
-  const stopSeriesFocus = useReturnFocus();
   const formatShopDate = (
     date: Date | string,
     timeZone: string,
@@ -1502,7 +1500,7 @@ function ArenaApp({
           if (!open && appointmentBusy === null) setStopSeriesTarget(null);
         }}
       >
-        <AlertDialogContent className="rounded-3xl" {...stopSeriesFocus}>
+        <AlertDialogContent className="rounded-3xl">
           <AlertDialogHeader>
             <AlertDialogTitle>{t("bookings.stopRepeatTitle")}</AlertDialogTitle>
             <AlertDialogDescription>{t("bookings.stopRepeatBody")}</AlertDialogDescription>

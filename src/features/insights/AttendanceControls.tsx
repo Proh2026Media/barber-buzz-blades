@@ -104,7 +104,7 @@ export function AttendanceControls({
   if (!editable && !facts.no_show_at) return null;
   return (
     <details className="border-t border-border pt-2 text-xs">
-      <summary className="cursor-pointer py-2 font-semibold">
+      <summary className="flex min-h-11 cursor-pointer items-center py-2 font-semibold">
         {facts.no_show_at ||
         facts.customer_delay_minutes != null ||
         facts.shop_delay_minutes != null
@@ -123,7 +123,14 @@ export function AttendanceControls({
           )}
           {error && !open && (
             <p role="alert">
-              {error} <button onClick={() => setVersion((v) => v + 1)}>{t("common.retry")}</button>
+              {error}{" "}
+              <button
+                type="button"
+                className="min-h-11 px-2 font-semibold underline underline-offset-2"
+                onClick={() => setVersion((v) => v + 1)}
+              >
+                {t("common.retry")}
+              </button>
             </p>
           )}
           <button

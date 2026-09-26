@@ -618,7 +618,7 @@ export function BrandIdentityEditor({
               <button
                 type="button"
                 onClick={() => fileInput.current?.click()}
-                className="flex min-h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs font-bold hover:bg-muted"
+                className="flex min-h-11 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs font-bold hover:bg-muted"
               >
                 <ImagePlus className="size-3.5" />
                 {previewLogo ? t("brand.logo.change") : t("brand.logo.choose")}
@@ -627,7 +627,7 @@ export function BrandIdentityEditor({
                 <button
                   type="button"
                   onClick={removeLogo}
-                  className="flex min-h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs font-bold text-destructive hover:bg-destructive/10"
+                  className="flex min-h-11 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs font-bold text-destructive hover:bg-destructive/10"
                 >
                   <Trash2 className="size-3.5" />
                   {t("brand.common.remove")}
@@ -778,7 +778,7 @@ export function BrandIdentityEditor({
                 <button
                   type="button"
                   onClick={removeCustomFont}
-                  className="flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg px-2 text-xs font-bold text-destructive hover:bg-destructive/10"
+                  className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg px-2 text-xs font-bold text-destructive hover:bg-destructive/10"
                 >
                   <Trash2 className="size-3.5" />
                   {t("brand.common.remove")}
