@@ -2296,7 +2296,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                                 setCustomDurationOpen(false);
                               }}
                               aria-pressed={serviceDuration === minutes}
-                              className={`min-h-9 rounded-xl border px-3 text-xs font-bold transition-colors ${
+                              className={`min-h-11 rounded-xl border px-3 text-xs font-bold transition-colors ${
                                 serviceDuration === minutes
                                   ? "border-primary bg-primary text-primary-foreground"
                                   : "border-border bg-background text-muted-foreground hover:border-primary/50"
@@ -2309,7 +2309,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                             type="button"
                             onClick={() => setCustomDurationOpen((value) => !value)}
                             aria-pressed={customDurationOpen}
-                            className={`min-h-9 rounded-xl border px-3 text-xs font-bold transition-colors ${
+                            className={`min-h-11 rounded-xl border px-3 text-xs font-bold transition-colors ${
                               customDurationOpen
                                 ? "border-primary bg-primary text-primary-foreground"
                                 : "border-dashed border-border bg-background text-muted-foreground hover:border-primary/50"
@@ -2964,7 +2964,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                           setBlockCustomOpen(false);
                         }}
                         aria-pressed={blockReason === reason}
-                        className={`min-h-9 rounded-xl border px-3 text-xs font-bold transition-colors ${
+                        className={`min-h-11 rounded-xl border px-3 text-xs font-bold transition-colors ${
                           blockReason === reason
                             ? "border-primary bg-primary text-primary-foreground"
                             : "border-border bg-background text-muted-foreground hover:border-primary/50"
@@ -2980,7 +2980,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         setBlockReason("");
                       }}
                       aria-pressed={blockCustomOpen}
-                      className={`min-h-9 rounded-xl border px-3 text-xs font-bold transition-colors ${
+                      className={`min-h-11 rounded-xl border px-3 text-xs font-bold transition-colors ${
                         blockCustomOpen
                           ? "border-primary bg-primary text-primary-foreground"
                           : "border-dashed border-border bg-background text-muted-foreground hover:border-primary/50"

@@ -31,7 +31,7 @@ export function CatalogViewToggle({
           aria-label={name}
           title={name}
           onClick={() => onViewMode(id)}
-          className={`flex min-h-9 min-w-9 items-center justify-center rounded-lg transition-colors ${
+          className={`flex min-h-11 min-w-11 items-center justify-center rounded-lg transition-colors ${
             viewMode === id
               ? "bg-primary text-primary-foreground"
               : "text-muted-foreground hover:bg-muted"

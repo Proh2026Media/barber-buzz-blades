@@ -2732,7 +2732,8 @@ function ArenaApp({
                     key={f}
                     onClick={() => setSportFilter(f)}
                     aria-pressed={sportFilter === f}
-                    className={`text-xs uppercase font-bold px-4 py-2 rounded-xl border transition-all whitespace-nowrap ${sportFilter === f ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-foreground hover:border-primary/50"}`}
+                    type="button"
+                    className={`min-h-11 text-xs uppercase font-bold px-4 py-2 rounded-xl border transition-all whitespace-nowrap ${sportFilter === f ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-foreground hover:border-primary/50"}`}
                   >
                     {f}
                   </button>

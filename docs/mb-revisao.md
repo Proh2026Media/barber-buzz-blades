@@ -14,6 +14,8 @@ Atualizado em **26/09/2026**. Fonte: [mb-interface.md](mb-interface.md). Regra: 
 | Configurações WhatsApp / Google | Loja | Feito — erros traduzidos + reconectar |
 | Cadastro de loja OTP | Dono | Feito — reenvio com cooldown 60s |
 | Cantos / identidade visual | Loja | Já alinhado ao perfil MB (não alterado) |
+| Agenda / Serviços / Equipe / Horários | Equipe | Auditoria de toque, rótulos e textos no celular — ajustado toque |
+| Esportes | Cliente | Filtros com 44px |
 
 ## Achados e tratamento
 
