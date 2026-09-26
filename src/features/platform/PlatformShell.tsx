@@ -12,12 +12,22 @@ import {
   LogOut,
   MessageSquareText,
   Palette,
+  PauseCircle,
+  PlayCircle,
   Plus,
   Search,
   ShieldAlert,
   UserPlus,
   X,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import {
@@ -42,6 +52,7 @@ import { LoginPreviewDialog } from "@/features/shop/LoginPreviewDialog";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import type { SessionProfile } from "@/lib/auth/session";
+import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import {
   brandCornerClass,
   brandFontScopeClass,
@@ -76,6 +87,18 @@ type InviteResult = {
   ownership_percent?: number | null;
 };
 
+/** "America/Sao_Paulo" → "Horário de Brasília"; mantém o código se o navegador não souber o nome. */
+function friendlyTimeZone(timeZone: string) {
+  try {
+    const part = new Intl.DateTimeFormat("pt-BR", { timeZone, timeZoneName: "longGeneric" })
+      .formatToParts(new Date())
+      .find((item) => item.type === "timeZoneName");
+    return part?.value ?? timeZone;
+  } catch {
+    return timeZone;
+  }
+}
+
 export function PlatformShell({ profile, headerActions, demoMode = false }: PlatformShellProps) {
   useScrollIndicators();
   const demoChrome = useDemoChrome();
@@ -85,6 +108,8 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
   >([]);
   const [shopSearch, setShopSearch] = useState("");
   const [shopStatus, setShopStatus] = useState<"all" | "active" | "suspended">("all");
+  const [statusTarget, setStatusTarget] = useState<Tables<"barbershops"> | null>(null);
+  const [statusBusy, setStatusBusy] = useState(false);
   const [platformTab, setPlatformTab] = useState<"overview" | "shops" | "insights" | "permissions">(
     "overview",
   );
@@ -143,10 +168,12 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       supabase.from("memberships").select("barbershop_id, role, user_id"),
       supabase.from("barbershop_settings").select("barbershop_id, sports_enabled"),
     ]);
-    if (shopsResult.error) setError(shopsResult.error.message);
-    else if (membershipsResult.error) setError(membershipsResult.error.message);
-    else if (modulesResult.error) setError(modulesResult.error.message);
-    else {
+    const loadError = shopsResult.error || membershipsResult.error || modulesResult.error;
+    if (loadError) {
+      setError(
+        friendlyAuthError(loadError, "Não foi possível carregar as barbearias. Tente novamente."),
+      );
+    } else {
       setShops(shopsResult.data ?? []);
       setMemberships(membershipsResult.data ?? []);
       setSportsModules(
@@ -189,7 +216,12 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       .eq("barbershop_id", shop.id)
       .single();
     if (settingsError) {
-      setError(settingsError.message);
+      setError(
+        friendlyAuthError(
+          settingsError,
+          "Não foi possível abrir a personalização. Tente novamente.",
+        ),
+      );
       setBrandShop(null);
     } else {
       setBrandSettings(data);
@@ -211,7 +243,12 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       .eq("barbershop_id", demoShopId)
       .single();
     if (settingsError) {
-      setError(settingsError.message);
+      setError(
+        friendlyAuthError(
+          settingsError,
+          "Não foi possível abrir a prévia do login. Tente novamente.",
+        ),
+      );
       return;
     }
     setLoginTourSettings(data);
@@ -251,7 +288,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       );
       await loadShops();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao remontar a Externa.");
+      setError(friendlyAuthError(err, "Não foi possível remontar a Externa. Tente novamente."));
     } finally {
       setExternaBusy(false);
     }
@@ -273,7 +310,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       setSlug("");
       await loadShops();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao criar barbearia");
+      setError(friendlyAuthError(err, "Não foi possível criar a barbearia. Tente novamente."));
     } finally {
       setBusy(false);
     }
@@ -283,14 +320,27 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
     const next = shop.status === "active" ? "suspended" : "active";
     if (demoDispatch) {
       demoDispatch({ type: "shop.update", shop: { status: next } });
+      setStatusTarget(null);
       return;
     }
+    setStatusBusy(true);
+    setError(null);
     const { error: updateError } = await supabase
       .from("barbershops")
       .update({ status: next })
       .eq("id", shop.id);
-    if (updateError) setError(updateError.message);
-    else await loadShops();
+    setStatusBusy(false);
+    setStatusTarget(null);
+    if (updateError) {
+      setError(
+        friendlyAuthError(
+          updateError,
+          next === "suspended"
+            ? "Não foi possível suspender a barbearia. Tente novamente."
+            : "Não foi possível reativar a barbearia. Tente novamente.",
+        ),
+      );
+    } else await loadShops();
   }
 
   async function toggleSports(shopId: string, enabled: boolean) {
@@ -482,7 +532,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                     <h2 className="text-sm font-semibold">Você está no ambiente de teste</h2>
                   </div>
                   <p className="text-sm leading-relaxed text-muted-foreground">
-                    Use o seletor no cabeçalho para saltar entre Admin, Barbearia (papéis) e
+                    Use o seletor no cabeçalho para alternar entre Plataforma, Barbearia (papéis) e
                     Cliente. Tudo é sessão isolada — ao sair, a operação real permanece intacta.
                   </p>
                 </section>
@@ -640,21 +690,15 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                                 {customers} clientes
                               </span>
                               <span className="rounded-full bg-muted px-2 py-1">
-                                {admins} admins
+                                {admins} {admins === 1 ? "administrador" : "administradores"}
                               </span>
                               <span className="rounded-full bg-muted px-2 py-1">
-                                {shop.timezone}
+                                {friendlyTimeZone(shop.timezone)}
                               </span>
                             </div>
                           </div>
                           <div className="flex flex-wrap items-center gap-2 sm:flex-col sm:items-end">
-                            <button
-                              onClick={() => void toggleStatus(shop)}
-                              aria-label={
-                                shop.status === "active"
-                                  ? `Suspender ${shop.name}`
-                                  : `Reativar ${shop.name}`
-                              }
+                            <span
                               className={`rounded-full px-3 py-1 text-xs font-semibold ${
                                 shop.status === "active"
                                   ? "bg-primary/10 text-primary"
@@ -662,13 +706,33 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                               }`}
                             >
                               {shop.status === "active" ? "Ativa" : "Suspensa"}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setStatusTarget(shop)}
+                              aria-label={
+                                shop.status === "active"
+                                  ? `Suspender ${shop.name}`
+                                  : `Reativar ${shop.name}`
+                              }
+                              className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-3 text-xs font-bold hover:bg-muted"
+                            >
+                              {shop.status === "active" ? (
+                                <PauseCircle
+                                  className="size-4 text-destructive"
+                                  aria-hidden="true"
+                                />
+                              ) : (
+                                <PlayCircle className="size-4 text-primary" aria-hidden="true" />
+                              )}
+                              {shop.status === "active" ? "Suspender" : "Reativar"}
                             </button>
                             <button
                               type="button"
                               onClick={() => void openBranding(shop)}
                               className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-3 text-xs font-bold hover:bg-muted"
                             >
-                              <Palette className="size-4 text-primary" />
+                              <Palette className="size-4 text-primary" aria-hidden="true" />
                               Personalizar
                             </button>
                           </div>
@@ -867,6 +931,57 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
           </section>
         )}
       </main>
+
+      <AlertDialog
+        open={statusTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !statusBusy) setStatusTarget(null);
+        }}
+      >
+        <AlertDialogContent className="max-w-md rounded-[var(--panel-radius)]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {statusTarget?.status === "active"
+                ? `Suspender ${statusTarget?.name ?? "a barbearia"}?`
+                : `Reativar ${statusTarget?.name ?? "a barbearia"}?`}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-left text-sm leading-relaxed">
+              {statusTarget?.status === "active"
+                ? "O link e o domínio da barbearia param de abrir e ninguém consegue agendar até você reativar. Nenhum dado é apagado."
+                : "O link e o domínio voltam a abrir e os clientes podem agendar de novo."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <button
+              type="button"
+              disabled={statusBusy}
+              onClick={() => setStatusTarget(null)}
+              className="min-h-11 rounded-xl border border-border px-4 text-sm font-semibold disabled:opacity-50"
+            >
+              Voltar
+            </button>
+            <button
+              type="button"
+              disabled={statusBusy}
+              onClick={() => statusTarget && void toggleStatus(statusTarget)}
+              className={`action-button min-h-11 disabled:opacity-50 ${
+                statusTarget?.status === "active" ? "action-danger" : "action-confirm"
+              }`}
+            >
+              {statusTarget?.status === "active" ? (
+                <PauseCircle className="size-4" aria-hidden="true" />
+              ) : (
+                <PlayCircle className="size-4" aria-hidden="true" />
+              )}
+              {statusBusy
+                ? "Salvando…"
+                : statusTarget?.status === "active"
+                  ? "Suspender barbearia"
+                  : "Reativar barbearia"}
+            </button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog
         open={!!brandShop}

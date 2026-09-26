@@ -33,6 +33,14 @@ const PATTERNS: Array<{ test: RegExp; message: MessageKey }> = [
     message: "errors.rateLimit",
   },
   {
+    test: /permission denied|row-level security|not allowed|forbidden|42501/i,
+    message: "errors.permission",
+  },
+  {
+    test: /duplicate key|already exists|23505/i,
+    message: "errors.duplicate",
+  },
+  {
     test: /network|fetch failed|failed to fetch|timeout/i,
     message: "errors.network",
   },
@@ -41,6 +49,10 @@ const PATTERNS: Array<{ test: RegExp; message: MessageKey }> = [
     message: "errors.sessionExpired",
   },
 ];
+
+const ENGLISH_HINT =
+  /\b(the|is|not|for|with|does|cannot|could|unable|invalid|failed|error|denied|missing|unknown|violates|column|relation)\b/i;
+const PORTUGUESE_HINT = /[ãõçáéíóúâêô]|\b(não|você|para|com|está|foi)\b/i;
 
 export function friendlyAuthError(raw: unknown, fallback?: string): string {
   const text =
@@ -62,6 +74,11 @@ export function friendlyAuthError(raw: unknown, fallback?: string): string {
 
   // Evita jargão técnico na jornada comum.
   if (/supabase|postgres|rpc|edge|function|http\s*\d+/i.test(text)) {
+    return fallback ?? t("errors.generic");
+  }
+
+  // Mensagem técnica em inglês que não reconhecemos: melhor a frase padrão do que texto estrangeiro.
+  if (ENGLISH_HINT.test(text) && !PORTUGUESE_HINT.test(text)) {
     return fallback ?? t("errors.generic");
   }
 

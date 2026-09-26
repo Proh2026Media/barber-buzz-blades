@@ -58,3 +58,26 @@ test("channel last error is hidden when empty and translated otherwise", () => {
   assert.equal(friendlyChannelLastError("  "), null);
   assert.match(friendlyChannelLastError("fetch failed") ?? "", /Sem conexão/);
 });
+
+test("permission and duplicate database errors become everyday Portuguese", () => {
+  assert.match(
+    friendlyAuthError('new row violates row-level security policy for table "barbershops"'),
+    /não tem permissão/,
+  );
+  assert.match(friendlyAuthError("permission denied for table profiles"), /não tem permissão/);
+  assert.match(
+    friendlyAuthError('duplicate key value violates unique constraint "barbershops_slug_key"'),
+    /já está cadastrado/,
+  );
+});
+
+test("unrecognized English errors fall back instead of showing foreign text", () => {
+  assert.equal(
+    friendlyAuthError("Could not find the column in the schema cache", "Tente de novo."),
+    "Tente de novo.",
+  );
+  assert.equal(
+    friendlyAuthError("Barbearia sem horário disponível"),
+    "Barbearia sem horário disponível",
+  );
+});

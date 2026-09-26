@@ -206,4 +206,6 @@ export const enUS: Record<MessageKey, string> = {
   "register.creating": "Creating account and barbershop…",
   "register.haveAccount": "Already have an account?",
   "register.signin": "Sign in",
+  "errors.permission": "You don't have permission to do this with this account.",
+  "errors.duplicate": "This is already registered. Check the details and try again.",
 };

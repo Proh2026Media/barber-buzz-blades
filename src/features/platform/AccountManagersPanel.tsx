@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import { Briefcase, Link2, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Assignment = {
@@ -22,6 +31,7 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<Assignment | null>(null);
 
   const load = useCallback(async () => {
     const client = supabase as unknown as {
@@ -39,7 +49,9 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
       .select("user_id, barbershop_id, can_view_dashboard, created_at")
       .order("created_at", { ascending: false });
     if (loadError) {
-      setError(loadError.message);
+      setError(
+        friendlyAuthError(loadError, "Não foi possível carregar os gerentes. Tente novamente."),
+      );
       setRows([]);
       return;
     }
@@ -78,7 +90,7 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
 
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
-      if (!token) throw new Error("Sessão inválida");
+      if (!token) throw new Error("session expired");
 
       const base = import.meta.env.VITE_SUPABASE_URL || "";
       const response = await fetch(`${base}/functions/v1/invite-shop-admin`, {
@@ -102,7 +114,8 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
         created?: boolean;
         temporary_password?: string | null;
       };
-      if (!response.ok) throw new Error(payload.error || "Falha ao vincular gerente");
+      if (!response.ok)
+        throw new Error(payload.error || "Não foi possível vincular o gerente. Tente novamente.");
 
       setMessage(
         payload.created && payload.temporary_password
@@ -112,7 +125,7 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
       setEmail("");
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao vincular gerente");
+      setError(friendlyAuthError(err, "Não foi possível vincular o gerente. Tente novamente."));
     } finally {
       setBusy(false);
     }
@@ -121,16 +134,21 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
   async function remove(row: Assignment) {
     setBusy(true);
     setError(null);
+    setMessage(null);
     const { error: removeError } = await supabase.rpc("unassign_account_manager_shop", {
       p_user_id: row.user_id,
       p_shop_id: row.barbershop_id,
     });
-    if (removeError) setError(removeError.message);
-    else {
-      setMessage("Vínculo removido.");
+    if (removeError) {
+      setError(
+        friendlyAuthError(removeError, "Não foi possível remover o vínculo. Tente novamente."),
+      );
+    } else {
+      setMessage(`${row.label ?? "Gerente"} não gerencia mais ${row.shop_name ?? "a barbearia"}.`);
       await load();
     }
     setBusy(false);
+    setRemoveTarget(null);
   }
 
   return (
@@ -142,14 +160,18 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
         <div>
           <h3 className="text-sm font-semibold">Gerentes de conta</h3>
           <p className="mt-1 text-xs text-muted-foreground">
-            Equipe do admin global. Alterações na loja pedem aprovação do dono (janela de 30 min).
+            Pessoas da equipe da plataforma que cuidam de uma barbearia. O que elas mudarem na loja
+            espera a aprovação do dono (prazo de 30 min).
           </p>
         </div>
       </div>
 
       <form onSubmit={assign} className="space-y-3">
         <div>
-          <label htmlFor={emailFieldId} className="block text-xs font-semibold text-muted-foreground">
+          <label
+            htmlFor={emailFieldId}
+            className="block text-xs font-semibold text-muted-foreground"
+          >
             E-mail do gerente
           </label>
           <input
@@ -163,7 +185,10 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
           />
         </div>
         <div>
-          <label htmlFor={shopFieldId} className="block text-xs font-semibold text-muted-foreground">
+          <label
+            htmlFor={shopFieldId}
+            className="block text-xs font-semibold text-muted-foreground"
+          >
             Barbearia
           </label>
           <select
@@ -183,13 +208,14 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
               ))}
           </select>
         </div>
-        <label className="flex items-center gap-2 text-xs font-semibold">
+        <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm font-semibold">
           <input
             type="checkbox"
             checked={canViewDashboard}
             onChange={(e) => setCanViewDashboard(e.target.checked)}
+            className="size-5 shrink-0 accent-[var(--primary)]"
           />
-          Liberar dashboard da loja (somente leitura)
+          Pode ver o painel de números da loja (sem editar)
         </label>
         <button
           type="submit"
@@ -216,29 +242,71 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
                 <p className="truncate text-sm font-semibold">{row.label}</p>
                 <p className="truncate text-xs text-muted-foreground">
                   {row.shop_name}
-                  {row.can_view_dashboard ? " · dashboard liberado" : ""}
+                  {row.can_view_dashboard ? " · vê o painel de números" : ""}
                 </p>
               </div>
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => void remove(row)}
-                className="inline-flex size-9 items-center justify-center rounded-xl border border-border text-muted-foreground hover:text-destructive"
-                aria-label="Remover vínculo"
+                onClick={() => setRemoveTarget(row)}
+                className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl border border-border text-muted-foreground hover:text-destructive"
+                aria-label={`Remover ${row.label ?? "gerente"} de ${row.shop_name ?? "a barbearia"}`}
               >
-                <Trash2 className="size-4" />
+                <Trash2 className="size-4" aria-hidden="true" />
               </button>
             </article>
           ))
         )}
       </div>
 
-      {message ? <p className="text-xs font-semibold text-primary">{message}</p> : null}
+      {message ? (
+        <p role="status" className="text-xs font-semibold text-primary">
+          {message}
+        </p>
+      ) : null}
       {error ? (
         <p role="alert" className="text-xs text-destructive">
           {error}
         </p>
       ) : null}
+
+      <AlertDialog
+        open={removeTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !busy) setRemoveTarget(null);
+        }}
+      >
+        <AlertDialogContent className="max-w-md rounded-[var(--panel-radius)]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover este gerente da barbearia?</AlertDialogTitle>
+            <AlertDialogDescription className="text-left text-sm leading-relaxed">
+              <span className="font-semibold text-foreground">{removeTarget?.label}</span> deixa de
+              acessar{" "}
+              <span className="font-semibold text-foreground">{removeTarget?.shop_name}</span>. A
+              conta da pessoa continua existindo e você pode vincular de novo depois.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setRemoveTarget(null)}
+              className="min-h-11 rounded-xl border border-border px-4 text-sm font-semibold disabled:opacity-50"
+            >
+              Manter gerente
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => removeTarget && void remove(removeTarget)}
+              className="action-button action-danger min-h-11 disabled:opacity-50"
+            >
+              <Trash2 className="size-4" aria-hidden="true" />
+              {busy ? "Removendo…" : "Remover gerente"}
+            </button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

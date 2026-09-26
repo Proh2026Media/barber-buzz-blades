@@ -208,4 +208,6 @@ export const es: Record<MessageKey, string> = {
   "register.creating": "Creando cuenta y barbería…",
   "register.haveAccount": "¿Ya tienes cuenta?",
   "register.signin": "Entrar",
+  "errors.permission": "No tienes permiso para hacer esto con esta cuenta.",
+  "errors.duplicate": "Esto ya está registrado. Revisa los datos e inténtalo de nuevo.",
 };

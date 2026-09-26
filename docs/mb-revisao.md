@@ -59,6 +59,17 @@ Atualizado em **26/09/2026**. Fonte: [mb-interface.md](mb-interface.md). Regra: 
 - Verificado no navegador 390×844: troca pelo menu e pelo cartão, persistência entre páginas, leitura dos itens com 44px, volta ao pt-BR. Limitação conhecida: no primeiro carregamento aparece pt-BR por um instante antes de aplicar o idioma salvo (o servidor sempre entrega pt-BR).
 - Próximas fases: app do cliente, painel da barbearia, painel da plataforma, datas/valores com `intlLocale`, textos jurídicos.
 
+## Painel da plataforma (26/09/2026)
+
+Auditoria no celular (390×844) das abas Visão geral, Barbearias, Acessos e Relatórios: nenhum botão sem nome.
+
+- **Corrigido (bloqueio):** o selo “Ativa” era, na verdade, o botão que suspendia a barbearia num toque, sem aviso. Agora o selo só mostra a situação e há o botão **Suspender/Reativar** (44px), que abre uma confirmação dizendo o que acontece: o link e o domínio param de abrir, ninguém agenda, nenhum dado é apagado. Conferido no código que as rotas públicas e a agenda exigem barbearia ativa.
+- **Corrigido:** remover gerente de conta pedia só um toque num botão de 36px; agora tem 44px e confirmação com nome da pessoa e da loja. A caixa de marcar do gerente tinha 13px; agora a linha inteira (44px) marca.
+- **Corrigido (linguagem):** “admin global”, “admins”, “dashboard” e fuso “America/Sao_Paulo” trocados por “administrador da plataforma”, “administradores”, “painel de números” e “Horário Padrão de Brasília”.
+- **Corrigido:** erros do banco apareciam crus (podiam vir em inglês). Agora passam pela mensagem amigável, que também reconhece falta de permissão e registro duplicado e troca texto em inglês desconhecido pela frase padrão (101/101 testes).
+- Verificado sem alterar dados reais: a confirmação de suspender foi aberta e fechada com “Voltar”; a barbearia continuou ativa.
+- Pendente: ao fechar essas confirmações o foco do teclado não volta ao botão que as abriu.
+
 ## Documentação incorporada
 
 - `docs/mb-interface.md` consolidado (26/09/2026).

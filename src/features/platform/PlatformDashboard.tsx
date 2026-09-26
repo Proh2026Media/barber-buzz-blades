@@ -145,7 +145,7 @@ export function PlatformDashboard({
             Operação ao vivo
           </p>
           <h2 className="mt-1 text-xl font-extrabold tracking-tight sm:text-2xl">
-            Dashboard da plataforma
+            Painel da plataforma
           </h2>
           <p className="mt-1 max-w-xl text-sm text-muted-foreground">
             Leitura rápida da rede — lojas, clientes e quem administra cada unidade.
@@ -228,8 +228,16 @@ export function PlatformDashboard({
                 <AreaChart data={stats.trend} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
                   <defs>
                     <linearGradient id="platformClients" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--brand-primary, #1f6feb)" stopOpacity={0.35} />
-                      <stop offset="100%" stopColor="var(--brand-primary, #1f6feb)" stopOpacity={0} />
+                      <stop
+                        offset="0%"
+                        stopColor="var(--brand-primary, #1f6feb)"
+                        stopOpacity={0.35}
+                      />
+                      <stop
+                        offset="100%"
+                        stopColor="var(--brand-primary, #1f6feb)"
+                        stopOpacity={0}
+                      />
                     </linearGradient>
                     <linearGradient id="platformBookings" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="var(--gold, #c9a227)" stopOpacity={0.35} />
@@ -237,8 +245,17 @@ export function PlatformDashboard({
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border/60" />
-                  <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="currentColor" className="text-muted-foreground" />
-                  <YAxis tick={{ fontSize: 11 }} stroke="currentColor" className="text-muted-foreground" />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 11 }}
+                    stroke="currentColor"
+                    className="text-muted-foreground"
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11 }}
+                    stroke="currentColor"
+                    className="text-muted-foreground"
+                  />
                   <Tooltip
                     contentStyle={{
                       borderRadius: 12,
@@ -323,9 +340,23 @@ export function PlatformDashboard({
           {mounted && stats.topShops.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={stats.topShops} margin={{ top: 8, right: 8, left: -18, bottom: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border/60" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="currentColor" className="text-muted-foreground" />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} stroke="currentColor" className="text-muted-foreground" />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  className="stroke-border/60"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 11 }}
+                  stroke="currentColor"
+                  className="text-muted-foreground"
+                />
+                <YAxis
+                  allowDecimals={false}
+                  tick={{ fontSize: 11 }}
+                  stroke="currentColor"
+                  className="text-muted-foreground"
+                />
                 <Tooltip
                   formatter={(value: number, _name, item) => [
                     value,

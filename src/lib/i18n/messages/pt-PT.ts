@@ -208,4 +208,6 @@ export const ptPT: Record<MessageKey, string> = {
   "register.creating": "A criar conta e barbearia…",
   "register.haveAccount": "Já tem conta?",
   "register.signin": "Entrar",
+  "errors.permission": "Não tem permissão para fazer isto com esta conta.",
+  "errors.duplicate": "Isto já está registado. Verifique os dados e tente novamente.",
 };

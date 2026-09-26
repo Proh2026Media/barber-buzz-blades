@@ -53,7 +53,7 @@ const scenes: {
   },
   {
     id: "platform",
-    label: "Admin global",
+    label: "Administrador da plataforma",
     hint: "Painel da plataforma em modo teste",
     icon: Shield,
   },

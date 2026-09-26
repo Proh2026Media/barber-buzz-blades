@@ -203,6 +203,8 @@ export const ptBR = {
   "register.creating": "Criando conta e barbearia…",
   "register.haveAccount": "Já tem conta?",
   "register.signin": "Entrar",
+  "errors.permission": "Você não tem permissão para fazer isso com esta conta.",
+  "errors.duplicate": "Isso já está cadastrado. Confira os dados e tente de novo.",
 } as const;
 
 export type MessageKey = keyof typeof ptBR;

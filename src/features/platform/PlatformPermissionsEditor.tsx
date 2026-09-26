@@ -19,9 +19,9 @@ export function PlatformPermissionsEditor({ shops }: { shops: Tables<"barbershop
           Hierarquia e Permissões
         </h2>
         <p className="text-sm text-muted-foreground">
-          O <strong>Admin Global</strong> e o <strong>gerente de conta</strong> da unidade têm
-          acesso total. O dono/co-dono também edita níveis e sociedade no painel da loja. Aqui você
-          define o que cada perfil da equipe faz na barbearia escolhida.
+          O <strong>administrador da plataforma</strong> e o <strong>gerente de conta</strong> da
+          unidade têm acesso total. O dono/co-dono também edita níveis e sociedade no painel da
+          loja. Aqui você define o que cada perfil da equipe faz na barbearia escolhida.
         </p>
       </div>
 
