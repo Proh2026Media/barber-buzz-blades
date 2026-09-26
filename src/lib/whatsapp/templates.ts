@@ -147,7 +147,7 @@ export function validateWhatsAppTemplate(body: string): string[] {
   if (/~~[^~]+~~/.test(withoutUrls)) {
     errors.push("Para tachado use ~texto~, não ~~texto~~.");
   }
-  if (/\[([^\]]+)\]\(([^)]+)\)/.test(withoutUrls)) {
+  if (/\[([^\]]+)\]\(([^)]+)\)/.test(withoutVars)) {
     errors.push("Não use links Markdown [texto](url). Coloque a URL completa em uma linha.");
   }
   if (/<\/?[a-z][^>]*>/i.test(withoutUrls)) {

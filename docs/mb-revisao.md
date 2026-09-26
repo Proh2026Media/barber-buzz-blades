@@ -35,7 +35,9 @@ Atualizado em **26/09/2026**. Fonte: [mb-interface.md](mb-interface.md). Regra: 
 
 - Lint e tipos sem erros nos arquivos alterados; 80/80 testes; `npm run build` concluído.
 - Navegador emulado 390×844: `/auth` renderiza; senha errada agora mostra “E-mail ou senha incorretos…” (antes “Invalid login credentials”) e preserva e-mail/senha. `/cadastrar` renderiza (envio de código não disparado para não mandar WhatsApp real).
-- `tsc` ainda acusa erros antigos fora desta revisão: `features/demo/model.ts`, `features/waiting/demo.ts`, `routes/$barberSlug.tsx`, `routes/index.tsx`, `vite.config.ts`.
+- Testes automáticos novos para modelos de WhatsApp e mensagens de erro (95/95). Encontraram e corrigiram: link Markdown `[texto](url)` passava sem aviso na validação.
+- `npm run typecheck` completo sem erros (corrigidos os tipos antigos da demonstração, rotas e `vite.config.ts`).
+- Publicado no Hostinger (build concluído); em produção, senha errada mostra a mensagem amigável.
 - **Não** executado: telas logadas (reserva, cancelamento, aba Conta, editor WhatsApp, popup Google) — `/demo` exige login de administrador; aparelho físico, teclado virtual, leitor de tela, conexão lenta.
 
 ## Documentação incorporada
