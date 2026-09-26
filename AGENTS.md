@@ -4,13 +4,18 @@
 
 Ao assumir o projeto em outro chat ou provedor, ler primeiro [docs/CONTINUIDADE.md](docs/CONTINUIDADE.md), com estado das entregas, regras aprovadas, validações e pendências.
 
-## Interface — `/mb`
+## Interface — `/mb` e diretrizes MB
 
 Neste projeto, `/mb` é o atalho textual para aplicar a skill `mb`, também invocável como `$mb`.
-Antes de desenvolver ou revisar interfaces, ler `~/.codex/skills/mb/SKILL.md`. Para outro provedor ou ambiente sem essa skill instalada, usar a cópia portátil [docs/mb-interface.md](docs/mb-interface.md).
-Esse atalho é uma convenção do projeto; não é uma rota do aplicativo nem exige um comando nativo na interface do Codex.
 
-A direção atual é uma interface moderna, intuitiva e acessível a diferentes idades, com controles visuais e explicações curtas. O sistema deve se adaptar integralmente aos três modos de canto configuráveis — retos, semi arredondados e arredondados — usando semi arredondados como padrão até o usuário escolher e salvar outro. Aplicar o modo escolhido de forma consistente a botões, campos, cartões, janelas, cabeçalhos e rodapés. Preservar uma identidade visual consolidada entre páginas e estados, sem oscilações arbitrárias de tipografia, cor, espaçamento ou elevação. Manter os cartões off-white, os gradientes de fidelidade e as cores de ação aprovadas.
+**Fonte completa (ler antes de mudanças de UI/fluxos):** [docs/mb-interface.md](docs/mb-interface.md)  
+**Regra Cursor (sempre ativa):** [.cursor/rules/mb.mdc](.cursor/rules/mb.mdc)  
+**Skill empacotada:** [.cursor/skills/mb/](.cursor/skills/mb/)  
+Cópia legada no ambiente Codex: `~/.codex/skills/mb/SKILL.md` (preferir a versão do repositório quando divergir).
+
+A direção atual é uma interface moderna, intuitiva e acessível a diferentes idades e níveis de familiaridade com tecnologia — uso principal no celular —, com controles visuais e explicações curtas. O sistema deve se adaptar integralmente aos três modos de canto configuráveis — retos, semi arredondados e arredondados — usando semi arredondados como padrão até o usuário escolher e salvar outro. Aplicar o modo escolhido de forma consistente a botões, campos, cartões, janelas, cabeçalhos e rodapés. Preservar uma identidade visual consolidada entre páginas e estados, sem oscilações arbitrárias de tipografia, cor, espaçamento ou elevação. Manter os cartões off-white, os gradientes de fidelidade e as cores de ação aprovadas.
+
+Registro da revisão MB em andamento: [docs/mb-revisao.md](docs/mb-revisao.md).
 
 ## Ideias para desenvolvimento futuro
 

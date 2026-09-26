@@ -250,9 +250,17 @@ Publicar a função `google-connect` e aplicar a migration `20260923140000_googl
 **Uso na UI**
 
 1. Entrar na loja → **Ajustes** → **Google Agenda e Contatos** → **Conectar Google**.
-2. Autorizar Agenda + Contatos na tela do Google.
-3. **Sincronizar agenda** importa eventos (~7 dias atrás a 60 à frente) em `google_calendar_events`.
-4. Preencher nome/telefone/e-mail → **Salvar contato** cria entrada no Google Contatos.
+2. Se aparecer **“O Google não verificou este app”** (app em modo teste):
+   - **Correção definitiva (recomendado em teste):** Google Cloud Console → projeto do OAuth (`9697media@gmail.com`) → **APIs & Services → OAuth consent screen → Test users** → **Add users** com o Gmail que vai autorizar a Agenda (pode ser outro e-mail).
+   - **Atalho pontual:** na tela do aviso, **Avançado** → **Ir para … (não seguro)**.
+   - Produção: publicar o app e passar pela verificação Google (escopos de Agenda/Contatos são sensíveis).
+3. Na tela de contas Google, **escolha o Gmail da Agenda** — pode ser outro e-mail; não precisa ser o do login no Barba & Cabelo.
+4. Autorizar Agenda + Contatos.
+5. O retorno volta ao **mesmo domínio da loja** onde você estava logado (a sessão não fica no apex `beauty…`).
+6. **Sincronizar agenda** importa eventos (~7 dias atrás a 60 à frente) em `google_calendar_events`.
+7. Preencher nome/telefone/e-mail → **Salvar contato** cria entrada no Google Contatos.
+
+O login do app e a conexão Agenda/Contatos são vínculos separados: a sessão do sistema fica no `auth.uid()`; o Gmail da Agenda fica só em `google_connections.google_email`.
 
 ### 3.4 Checklist Google
 

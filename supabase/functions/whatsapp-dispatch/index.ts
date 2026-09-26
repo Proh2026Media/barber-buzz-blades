@@ -29,6 +29,16 @@ Deno.serve(async (req) => {
     } catch {
       /* ignore if migration not applied yet */
     }
+    try {
+      await admin.rpc("process_pending_client_notices");
+    } catch {
+      /* ignore if migration not applied yet */
+    }
+    try {
+      await admin.rpc("expire_shop_change_requests");
+    } catch {
+      /* ignore if migration not applied yet */
+    }
 
     // Melhor esforço: despacha e-mails no mesmo cron.
     try {
@@ -56,6 +66,7 @@ Deno.serve(async (req) => {
       to_e164: string;
       body: string;
       attempts: number;
+      payload?: { staff_id?: string };
     }>;
 
     let sent = 0;
@@ -64,11 +75,34 @@ Deno.serve(async (req) => {
     for (const row of rows) {
       const { data: channel } = await admin
         .from("whatsapp_channels")
-        .select("instance_name, status, enabled")
+        .select("instance_name, status, enabled, staff_id")
         .eq("barbershop_id", row.barbershop_id)
+        .is("staff_id", null)
         .maybeSingle();
 
-      if (!channel?.enabled || channel.status !== "open" || !channel.instance_name) {
+      // Fallback: canal do staff no payload, senão qualquer canal da loja.
+      let resolved = channel;
+      const preferStaff = row.payload?.staff_id;
+      if ((!resolved?.enabled || resolved.status !== "open") && preferStaff) {
+        const { data: staffChannel } = await admin
+          .from("whatsapp_channels")
+          .select("instance_name, status, enabled, staff_id")
+          .eq("barbershop_id", row.barbershop_id)
+          .eq("staff_id", preferStaff)
+          .maybeSingle();
+        resolved = staffChannel;
+      }
+      if (!resolved) {
+        const { data: anyChannel } = await admin
+          .from("whatsapp_channels")
+          .select("instance_name, status, enabled, staff_id")
+          .eq("barbershop_id", row.barbershop_id)
+          .limit(1)
+          .maybeSingle();
+        resolved = anyChannel;
+      }
+
+      if (!resolved?.enabled || resolved.status !== "open" || !resolved.instance_name) {
         await admin.rpc("complete_whatsapp_outbox", {
           p_id: row.id,
           p_ok: false,
@@ -79,7 +113,7 @@ Deno.serve(async (req) => {
       }
 
       try {
-        const result = (await evolutionFetch(`/message/sendText/${channel.instance_name}`, {
+        const result = (await evolutionFetch(`/message/sendText/${resolved.instance_name}`, {
           method: "POST",
           body: JSON.stringify({
             number: digitsOnlyPhone(row.to_e164),

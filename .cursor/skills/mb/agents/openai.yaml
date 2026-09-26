@@ -1,0 +1,14 @@
+interface:
+  display_name: MB — Sistemas fáceis de usar
+  short_description: Fluxos claros, foco no celular e linguagem simples
+  default_prompt: Use $mb para criar ou revisar a lógica e a interface deste fluxo
+    para usuários finais, priorizando o celular, clareza e acessibilidade.
+  icon_small: assets/icon.svg
+  icon_large: assets/icon.svg
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

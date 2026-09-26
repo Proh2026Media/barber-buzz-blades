@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { friendlyAuthError } from "@/lib/auth/friendly-error";
 
 type ChangePasswordCardProps = {
   className?: string;
@@ -33,7 +34,7 @@ export function ChangePasswordCard({ className }: ChangePasswordCardProps) {
       setConfirmPassword("");
       setMessage("Senha atualizada.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível atualizar a senha.");
+      setError(friendlyAuthError(err, "Não foi possível atualizar a senha."));
     } finally {
       setBusy(false);
     }

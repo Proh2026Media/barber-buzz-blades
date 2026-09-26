@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { friendlyAuthError } from "@/lib/auth/friendly-error";
 
 type Lookup = {
   appointment_id: string;
@@ -71,7 +72,7 @@ export function ReservationAccessGate({
       if (!response.ok) throw new Error(payload.error || "Falha ao enviar código");
       setStep("code");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível enviar o código.");
+      setError(friendlyAuthError(err, "Não foi possível enviar o código."));
     } finally {
       setBusy(false);
     }
@@ -122,7 +123,7 @@ export function ReservationAccessGate({
       }
       onAuthenticated();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível entrar.");
+      setError(friendlyAuthError(err, "Não foi possível entrar."));
     } finally {
       setBusy(false);
     }
@@ -217,6 +218,14 @@ export function ReservationAccessGate({
             className="min-h-11 w-full rounded-xl bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-50"
           >
             Entrar e ver reserva
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void sendCode()}
+            className="min-h-11 w-full rounded-xl border border-border text-sm font-semibold disabled:opacity-50"
+          >
+            Enviar código de novo
           </button>
           <button
             type="button"

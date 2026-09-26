@@ -133,6 +133,7 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
       sports_enabled: true,
       waiting_enabled: false,
       waiting_cutoff_minutes: 30,
+      staff_assignment_mode: "client_pick",
       created_at: stamp,
       updated_at: stamp,
     },

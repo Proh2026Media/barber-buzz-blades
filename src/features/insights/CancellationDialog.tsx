@@ -16,6 +16,7 @@ export function CancellationDialog({
   onReason,
   onCancel,
   onConfirm,
+  summary,
 }: {
   open: boolean;
   busy: boolean;
@@ -23,6 +24,8 @@ export function CancellationDialog({
   onReason: (value: CancellationReason | "") => void;
   onCancel: () => void;
   onConfirm: () => void;
+  /** Serviço, data e horário da reserva que será cancelada. */
+  summary?: string | null;
 }) {
   return (
     <AlertDialog
@@ -31,12 +34,21 @@ export function CancellationDialog({
         if (!value && !busy) onCancel();
       }}
     >
-      <AlertDialogContent>
+      <AlertDialogContent className="rounded-3xl">
         <AlertDialogHeader>
-          <AlertDialogTitle>Cancelar agendamento?</AlertDialogTitle>
-          <AlertDialogDescription>
-            O motivo é opcional e ajuda a melhorar horários e serviços. Você pode continuar sem
-            informar.
+          <AlertDialogTitle>Cancelar este agendamento?</AlertDialogTitle>
+          <AlertDialogDescription asChild>
+            <div className="space-y-2 text-sm text-muted-foreground">
+              {summary ? (
+                <p className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-foreground">
+                  {summary}
+                </p>
+              ) : null}
+              <p>
+                O horário será liberado. O motivo é opcional e ajuda a melhorar a agenda — você pode
+                continuar sem informar.
+              </p>
+            </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <label className="space-y-2 text-sm font-semibold">
@@ -46,7 +58,7 @@ export function CancellationDialog({
             value={reason}
             disabled={busy}
             onChange={(event) => onReason(event.target.value as CancellationReason | "")}
-            className="w-full rounded-xl border border-border bg-background px-3 py-3"
+            className="min-h-11 w-full rounded-xl border border-border bg-background px-3 py-3"
           >
             <option value="">Prefiro não informar</option>
             {Object.entries(cancellationReasons).map(([value, label]) => (
@@ -56,23 +68,23 @@ export function CancellationDialog({
             ))}
           </select>
         </label>
-        <AlertDialogFooter>
+        <AlertDialogFooter className="gap-2">
           <button
             type="button"
             disabled={busy}
             onClick={onCancel}
-            className="rounded-xl border border-border px-4 py-2 text-sm font-semibold"
+            className="min-h-11 rounded-xl border border-border px-4 text-sm font-semibold disabled:opacity-50"
           >
-            Voltar
+            Manter agendamento
           </button>
           <button
             type="button"
             disabled={busy}
             onClick={onConfirm}
-            className="action-button action-danger"
+            className="action-button action-danger min-h-11 disabled:opacity-50"
           >
             <X className="size-4" />
-            {busy ? "Cancelando…" : "Confirmar cancelamento"}
+            {busy ? "Cancelando…" : "Cancelar agendamento"}
           </button>
         </AlertDialogFooter>
       </AlertDialogContent>

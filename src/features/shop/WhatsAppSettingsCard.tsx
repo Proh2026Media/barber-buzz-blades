@@ -1,28 +1,49 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link2, MessageCircle, QrCode, RefreshCw, Unplug } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { useDemo } from "@/features/demo/context";
+import {
+  friendlyChannelLastError,
+  friendlyIntegrationError,
+} from "@/lib/integrations/friendly-error";
+import {
+  DEFAULT_WHATSAPP_BODIES,
+  SAMPLE_WHATSAPP_VARS,
+  WHATSAPP_TEMPLATE_VARS,
+  WHATSAPP_TEMPLATE_VAR_HELP,
+  normalizeWhatsAppTemplate,
+  renderWhatsAppTemplate,
+  validateWhatsAppTemplate,
+  whatsappCodePointLength,
+  type WhatsAppTemplateKey,
+  type WhatsAppTemplateVar,
+} from "@/lib/whatsapp/templates";
+import { WhatsAppFormattedPreview } from "@/features/shop/WhatsAppFormattedPreview";
+import {
+  WhatsAppChipEditor,
+  type WhatsAppChipEditorHandle,
+} from "@/features/shop/WhatsAppChipEditor";
 
 type Channel = Tables<"whatsapp_channels">;
-type TemplateKey =
-  | "booking.confirmed"
-  | "booking.cancelled"
-  | "booking.rescheduled"
-  | "booking.reminder";
 
 type WhatsAppSettingsCardProps = {
   shopId: string;
 };
 
-const TEMPLATE_META: Array<{ key: TemplateKey; title: string; hint: string }> = [
+const TEMPLATE_META: Array<{ key: WhatsAppTemplateKey; title: string; hint: string }> = [
   {
     key: "booking.confirmed",
     title: "Confirmação",
@@ -44,42 +65,6 @@ const TEMPLATE_META: Array<{ key: TemplateKey; title: string; hint: string }> = 
     hint: "Enviada antes do atendimento (conforme horas do lembrete).",
   },
 ];
-
-const DEFAULT_BODIES: Record<TemplateKey, string> = {
-  "booking.confirmed":
-    "{{loja}}\nSeu horário está confirmado.\n{{servico}} com {{profissional}}\n{{quando}}\n\nGerenciar: {{link_reserva}}",
-  "booking.cancelled":
-    "{{loja}}\nSeu horário foi cancelado.\n{{servico}} — {{quando}}\n\n{{link_reserva}}",
-  "booking.rescheduled":
-    "{{loja}}\nSeu horário foi remarcado.\n{{servico}} com {{profissional}}\nNovo horário: {{quando}}\n\n{{link_reserva}}",
-  "booking.reminder":
-    "{{loja}}\nLembrete do seu horário.\n{{servico}} com {{profissional}}\n{{quando}}\n\n{{link_reserva}}",
-};
-
-const PLACEHOLDER_HELP =
-  "Use {{loja}}, {{servico}}, {{profissional}}, {{quando}}, {{cliente}} e {{link_reserva}}. Máximo 1000 caracteres.";
-
-function previewBody(body: string) {
-  const sample: Record<string, string> = {
-    loja: "Barbearia Exemplo",
-    shop: "Barbearia Exemplo",
-    servico: "Corte",
-    service: "Corte",
-    profissional: "João",
-    staff: "João",
-    quando: "24/09/2026 às 15:00",
-    when: "24/09/2026 às 15:00",
-    cliente: "Carlos",
-    customer: "Carlos",
-    link_reserva: "https://exemplo.beauty.contheiner.digital/app?tab=reservas&reserva=abc",
-    link: "https://exemplo.beauty.contheiner.digital/app?tab=reservas&reserva=abc",
-  };
-  let result = body;
-  for (const [key, value] of Object.entries(sample)) {
-    result = result.split(`{{${key}}}`).join(value);
-  }
-  return result.replace(/\{\{[a-z_]+\}\}/gi, "").trim();
-}
 
 async function callChannel(body: Record<string, unknown>) {
   const { data: sessionData } = await supabase.auth.getSession();
@@ -114,19 +99,24 @@ const statusLabel: Record<Channel["status"], string> = {
 
 export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
   const demo = useDemo();
+  const editorRef = useRef<WhatsAppChipEditorHandle>(null);
   const [channel, setChannel] = useState<Channel | null>(null);
   const [qrcode, setQrcode] = useState<string | null>(null);
   const [qrOpen, setQrOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState("");
-  const [templates, setTemplates] = useState<Record<TemplateKey, string>>({ ...DEFAULT_BODIES });
-  const [activeTemplate, setActiveTemplate] = useState<TemplateKey>("booking.confirmed");
+  const [templates, setTemplates] = useState<Record<WhatsAppTemplateKey, string>>({
+    ...DEFAULT_WHATSAPP_BODIES,
+  });
+  const [activeTemplate, setActiveTemplate] = useState<WhatsAppTemplateKey>("booking.confirmed");
   const [templatesDirty, setTemplatesDirty] = useState(false);
+  const [previewMode, setPreviewMode] = useState<"preview" | "source">("preview");
+  const [restoreOpen, setRestoreOpen] = useState(false);
 
   const loadTemplates = useCallback(async () => {
     if (demo) {
-      setTemplates({ ...DEFAULT_BODIES });
+      setTemplates({ ...DEFAULT_WHATSAPP_BODIES });
       setTemplatesDirty(false);
       return;
     }
@@ -135,15 +125,14 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
       .select("template_key, body")
       .eq("barbershop_id", shopId);
     if (loadError) {
-      // Migration ainda não aplicada: segue com os textos padrão.
-      setTemplates({ ...DEFAULT_BODIES });
+      setTemplates({ ...DEFAULT_WHATSAPP_BODIES });
       setTemplatesDirty(false);
       return;
     }
-    const next = { ...DEFAULT_BODIES };
+    const next = { ...DEFAULT_WHATSAPP_BODIES };
     for (const row of data ?? []) {
       if (row.template_key in next) {
-        next[row.template_key as TemplateKey] = row.body;
+        next[row.template_key as WhatsAppTemplateKey] = row.body;
       }
     }
     setTemplates(next);
@@ -176,7 +165,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
       setQrcode(payload.qrcode ?? null);
       await loadTemplates();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível consultar o WhatsApp.");
+      setError(friendlyIntegrationError(err, "Não foi possível consultar o WhatsApp."));
     } finally {
       setBusy(false);
     }
@@ -225,7 +214,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
           : "Escaneie o QR Code no celular com o WhatsApp da barbearia.",
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao conectar.");
+      setError(friendlyIntegrationError(err, "Falha ao conectar."));
     } finally {
       setBusy(false);
     }
@@ -241,7 +230,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
       setQrcode(null);
       setMessage("WhatsApp desconectado.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao desconectar.");
+      setError(friendlyIntegrationError(err, "Falha ao desconectar."));
     } finally {
       setBusy(false);
     }
@@ -267,7 +256,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
       setChannel(payload.channel ?? null);
       setMessage("Preferências salvas.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível salvar.");
+      setError(friendlyIntegrationError(err, "Não foi possível salvar."));
     } finally {
       setBusy(false);
     }
@@ -282,14 +271,14 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
     setBusy(true);
     setError(null);
     try {
-      const rows = TEMPLATE_META.map(({ key }) => ({
-        barbershop_id: shopId,
-        template_key: key,
-        body: templates[key].trim().slice(0, 1000),
-      }));
-      for (const row of rows) {
-        if (!row.body) throw new Error("Nenhuma mensagem pode ficar vazia.");
-      }
+      const rows = TEMPLATE_META.map(({ key }) => {
+        const body = normalizeWhatsAppTemplate(templates[key]);
+        const issues = validateWhatsAppTemplate(body);
+        if (issues.length) {
+          throw new Error(`${TEMPLATE_META.find((m) => m.key === key)?.title}: ${issues[0]}`);
+        }
+        return { barbershop_id: shopId, template_key: key, body };
+      });
       const { error: upsertError } = await supabase
         .from("whatsapp_message_templates")
         .upsert(rows, { onConflict: "barbershop_id,template_key" });
@@ -297,21 +286,44 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
       setTemplatesDirty(false);
       setMessage("Textos do WhatsApp salvos.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível salvar as mensagens.");
+      setError(friendlyIntegrationError(err, "Não foi possível salvar as mensagens."));
     } finally {
       setBusy(false);
     }
   }
 
-  function resetActiveTemplate() {
-    setTemplates((current) => ({
-      ...current,
-      [activeTemplate]: DEFAULT_BODIES[activeTemplate],
-    }));
+  function updateActiveBody(next: string) {
+    setTemplates((current) => ({ ...current, [activeTemplate]: next }));
     setTemplatesDirty(true);
   }
 
+  function insertVariable(key: WhatsAppTemplateVar) {
+    editorRef.current?.insertVariable(key);
+    editorRef.current?.focus();
+  }
+
+  function applyWrap(wrapper: "*" | "_" | "~") {
+    editorRef.current?.applyWrap(wrapper);
+    editorRef.current?.focus();
+  }
+
+  function confirmRestore() {
+    setTemplates((current) => ({
+      ...current,
+      [activeTemplate]: DEFAULT_WHATSAPP_BODIES[activeTemplate],
+    }));
+    setTemplatesDirty(true);
+    setRestoreOpen(false);
+    setMessage("Modelo padrão restaurado neste rascunho. Salve para aplicar.");
+  }
+
   const activeBody = templates[activeTemplate];
+  const activeLength = whatsappCodePointLength(activeBody);
+  const activeErrors = validateWhatsAppTemplate(activeBody);
+  const previewFilled = renderWhatsAppTemplate(activeBody, SAMPLE_WHATSAPP_VARS);
+  const canSave =
+    templatesDirty &&
+    TEMPLATE_META.every(({ key }) => validateWhatsAppTemplate(templates[key]).length === 0);
 
   return (
     <section className="space-y-4 rounded-2xl border border-border bg-card p-4">
@@ -382,7 +394,9 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold">Avisos de horário</p>
-              <p className="text-xs text-muted-foreground">Confirmação, remarcação e cancelamento.</p>
+              <p className="text-xs text-muted-foreground">
+                Confirmação, remarcação e cancelamento.
+              </p>
             </div>
             <Switch
               checked={channel.notify_booking}
@@ -408,7 +422,9 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold">Canal ativo</p>
-              <p className="text-xs text-muted-foreground">Pausa todos os envios sem desconectar.</p>
+              <p className="text-xs text-muted-foreground">
+                Pausa todos os envios sem desconectar.
+              </p>
             </div>
             <Switch
               checked={channel.enabled}
@@ -423,7 +439,10 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
       <div className="space-y-3 border-t border-border/60 pt-3">
         <div>
           <p className="text-sm font-semibold">Textos das mensagens</p>
-          <p className="mt-1 text-xs text-muted-foreground">{PLACEHOLDER_HELP}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Toque nas pílulas para inserir o nome da loja, serviço, data e demais dados na mensagem.
+            Máximo 1.000 caracteres (emojis contam mais de um).
+          </p>
         </div>
         <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Tipo de mensagem">
           {TEMPLATE_META.map((item) => (
@@ -433,7 +452,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
               role="tab"
               aria-selected={activeTemplate === item.key}
               onClick={() => setActiveTemplate(item.key)}
-              className={`min-h-9 rounded-xl border px-3 text-xs font-bold transition-colors ${
+              className={`min-h-9 rounded-full border px-3.5 text-xs font-bold transition-colors ${
                 activeTemplate === item.key
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-border bg-background text-muted-foreground hover:border-primary/50"
@@ -446,31 +465,120 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
         <p className="text-xs text-muted-foreground">
           {TEMPLATE_META.find((item) => item.key === activeTemplate)?.hint}
         </p>
-        <label className="block space-y-2">
-          <span className="sr-only">Texto da mensagem</span>
-          <textarea
-            value={activeBody}
-            onChange={(event) => {
-              const value = event.target.value.slice(0, 1000);
-              setTemplates((current) => ({ ...current, [activeTemplate]: value }));
-              setTemplatesDirty(true);
-            }}
-            rows={5}
-            maxLength={1000}
-            className="w-full resize-y rounded-xl border border-border bg-background px-3 py-2 text-sm"
-          />
-          <span className="block text-[11px] text-muted-foreground">{activeBody.length}/1000</span>
-        </label>
-        <div className="rounded-xl border border-dashed border-border bg-muted/30 p-3">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Prévia
-          </p>
-          <p className="mt-2 whitespace-pre-wrap text-sm">{previewBody(activeBody) || "—"}</p>
+
+        <div className="space-y-1.5">
+          <p className="text-xs font-semibold text-muted-foreground">Inserir na mensagem</p>
+          <div className="flex flex-wrap gap-2" aria-label="Inserir dado na mensagem">
+            {WHATSAPP_TEMPLATE_VARS.map((key) => {
+              const help = WHATSAPP_TEMPLATE_VAR_HELP[key];
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  title={`${help.label}. Ex.: ${help.example}`}
+                  aria-label={`Inserir ${help.chip}: ${help.label}`}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => insertVariable(key)}
+                  className="inline-flex min-h-9 items-center rounded-full border border-primary/25 bg-primary/10 px-3.5 text-xs font-semibold text-foreground transition-colors hover:border-primary/50 hover:bg-primary/15"
+                >
+                  {help.chip}
+                </button>
+              );
+            })}
+          </div>
         </div>
+
+        <div className="flex flex-wrap gap-1.5">
+          {(
+            [
+              ["*", "Negrito"],
+              ["_", "Itálico"],
+              ["~", "Tachado"],
+            ] as const
+          ).map(([mark, label]) => (
+            <button
+              key={mark}
+              type="button"
+              aria-label={label}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => applyWrap(mark)}
+              className="min-h-9 rounded-xl border border-border bg-background px-3 text-xs font-semibold"
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div className="block space-y-2">
+          <span className="text-xs font-semibold text-muted-foreground">Texto da mensagem</span>
+          <WhatsAppChipEditor
+            key={activeTemplate}
+            ref={editorRef}
+            value={activeBody}
+            onChange={updateActiveBody}
+            aria-label="Texto da mensagem"
+          />
+          <p className="text-[11px] text-muted-foreground">
+            Toque numa pílula no texto para trocar o dado ou remover. Arraste para reposicionar.{" "}
+            {activeLength} / 1.000
+          </p>
+        </div>
+
+        {activeErrors.length > 0 && (
+          <ul className="space-y-1 text-xs text-destructive" role="alert">
+            {activeErrors.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        )}
+
+        <div className="rounded-xl border border-dashed border-border bg-muted/30 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {previewMode === "preview" ? "Prévia · dados de exemplo" : "Texto original"}
+            </p>
+            <div className="flex gap-1">
+              <button
+                type="button"
+                aria-pressed={previewMode === "preview"}
+                onClick={() => setPreviewMode("preview")}
+                className={`min-h-8 rounded-lg px-2 text-[11px] font-semibold ${
+                  previewMode === "preview"
+                    ? "bg-primary text-primary-foreground"
+                    : "border border-border"
+                }`}
+              >
+                Prévia
+              </button>
+              <button
+                type="button"
+                aria-pressed={previewMode === "source"}
+                onClick={() => setPreviewMode("source")}
+                className={`min-h-8 rounded-lg px-2 text-[11px] font-semibold ${
+                  previewMode === "source"
+                    ? "bg-primary text-primary-foreground"
+                    : "border border-border"
+                }`}
+              >
+                Texto original
+              </button>
+            </div>
+          </div>
+          <div className="mx-auto mt-3 max-w-[280px] rounded-2xl border border-border bg-background px-3 py-3 shadow-sm">
+            {previewMode === "preview" ? (
+              <WhatsAppFormattedPreview text={previewFilled} className="text-sm" />
+            ) : (
+              <p className="whitespace-pre-wrap break-words font-mono text-sm leading-relaxed">
+                {activeBody || "—"}
+              </p>
+            )}
+          </div>
+        </div>
+
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            disabled={busy || !templatesDirty}
+            disabled={busy || !canSave}
             onClick={() => void saveTemplates()}
             className="min-h-11 rounded-xl bg-primary px-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
           >
@@ -479,10 +587,10 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
           <button
             type="button"
             disabled={busy}
-            onClick={resetActiveTemplate}
+            onClick={() => setRestoreOpen(true)}
             className="min-h-11 rounded-xl border border-border px-3 text-sm font-semibold disabled:opacity-50"
           >
-            Restaurar padrão
+            Restaurar modelo padrão
           </button>
         </div>
       </div>
@@ -498,7 +606,19 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
         </p>
       )}
       {channel?.last_error && (
-        <p className="text-xs text-muted-foreground">Último erro: {channel.last_error}</p>
+        <div className="space-y-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3">
+          <p className="text-sm text-destructive" role="status">
+            {friendlyChannelLastError(channel.last_error)}
+          </p>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void connect()}
+            className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold disabled:opacity-50"
+          >
+            Reconectar WhatsApp
+          </button>
+        </div>
       )}
 
       <Dialog open={qrOpen} onOpenChange={setQrOpen}>
@@ -508,9 +628,15 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
             No celular: WhatsApp → Aparelhos conectados → Conectar um aparelho.
           </DialogDescription>
           {qrcode ? (
-            <img src={qrcode} alt="QR Code do WhatsApp" className="mx-auto mt-2 size-56 rounded-2xl" />
+            <img
+              src={qrcode}
+              alt="QR Code do WhatsApp"
+              className="mx-auto mt-2 size-56 rounded-2xl"
+            />
           ) : (
-            <p className="text-sm text-muted-foreground">QR indisponível. Toque em Conectar novamente.</p>
+            <p className="text-sm text-muted-foreground">
+              QR indisponível. Toque em Conectar novamente.
+            </p>
           )}
           <button
             type="button"
@@ -522,6 +648,22 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
           </button>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={restoreOpen} onOpenChange={setRestoreOpen}>
+        <AlertDialogContent className="rounded-3xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restaurar modelo padrão?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O texto atual de “{TEMPLATE_META.find((m) => m.key === activeTemplate)?.title}” será
+              substituído pelo modelo oficial. Alterações não salvas neste rascunho serão perdidas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRestore}>Restaurar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

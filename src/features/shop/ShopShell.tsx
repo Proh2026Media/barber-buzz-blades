@@ -1366,7 +1366,10 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   const canViewMoney = !actor || !!capabilities?.viewMoney;
   // Identidade visual só da marca da loja: dono/co-dono com poder de aplicar.
   const canManageBranding =
-    !actor || !!capabilities?.canApplyOperations || actor.role === "owner" || actor.role === "partner";
+    !actor ||
+    !!capabilities?.canApplyOperations ||
+    actor.role === "owner" ||
+    actor.role === "partner";
 
   useEffect(() => {
     // Só redireciona com capacidades já resolvidas — evita bounce enquanto a matriz carrega.
@@ -1470,6 +1473,13 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         open={!!cancelTarget}
         busy={updatingAppointment !== null}
         reason={cancelReason}
+        summary={
+          cancelTarget
+            ? `${cancelTarget.service?.name ?? "Serviço"} · ${
+                cancelTarget.customer?.full_name ?? "Cliente"
+              } · ${formatSlotLabel(new Date(cancelTarget.starts_at), shopTimeZone)}`
+            : null
+        }
         onReason={setCancelReason}
         onCancel={() => {
           setCancelTarget(null);
@@ -2256,7 +2266,10 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         placeholder="Nome"
                         className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
                       />
-                      <label htmlFor="service-description" className="block space-y-2 text-xs font-semibold">
+                      <label
+                        htmlFor="service-description"
+                        className="block space-y-2 text-xs font-semibold"
+                      >
                         Descrição
                         <textarea
                           id="service-description"
@@ -2529,9 +2542,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   <ShopTeamAccessCard
                     shopId={shop.id}
                     canApplyProtected={!!capabilities?.canApplyOperations}
-                    canEditSociety={
-                      actor.role === "owner" || actor.role === "partner"
-                    }
+                    canEditSociety={actor.role === "owner" || actor.role === "partner"}
                     onChanged={() => {
                       setGovernanceRevision((value) => value + 1);
                       void loadCatalog();
@@ -2719,9 +2730,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       />
                       <p className="text-xs text-muted-foreground">
                         Link:{" "}
-                        <span className="font-semibold">
-                          …/app?barber={staffSlug || "slug"}
-                        </span>
+                        <span className="font-semibold">…/app?barber={staffSlug || "slug"}</span>
                         {" · "}também funciona{" "}
                         <span className="font-semibold">/{staffSlug || "slug"}/</span> no domínio da
                         loja. Trocar o slug redireciona o link antigo.
@@ -3064,12 +3073,16 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
               {(!actor || actor.role === "owner" || actor.role === "partner" || !actor) && (
                 <WhatsAppSettingsCard shopId={shop.id} />
               )}
-              {!demo && (!actor || actor.role === "owner" || actor.role === "partner" || actor.role === "associate") && (
-                <GoogleIntegrationsCard returnPath="/shop" />
-              )}
-              {!demo && shop.id && (!actor || actor.role === "owner" || actor.role === "partner") && (
-                <ShopDomainCard shopId={shop.id} />
-              )}
+              {!demo &&
+                (!actor ||
+                  actor.role === "owner" ||
+                  actor.role === "partner" ||
+                  actor.role === "associate") && <GoogleIntegrationsCard returnPath="/shop" />}
+              {!demo &&
+                shop.id &&
+                (!actor || actor.role === "owner" || actor.role === "partner") && (
+                  <ShopDomainCard shopId={shop.id} />
+                )}
               {!demo && shop.id && (
                 <SlugRedirectsCard
                   shopId={shop.id}
@@ -3084,9 +3097,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   shopId={shop.id}
                   canApproveRelease={actor.role === "owner" || actor.role === "partner"}
                   canRequestDeparture={
-                    actor.role === "owner" ||
-                    actor.role === "partner" ||
-                    actor.role === "associate"
+                    actor.role === "owner" || actor.role === "partner" || actor.role === "associate"
                   }
                 />
               )}
@@ -3269,8 +3280,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
               <h2>Sua conta</h2>
             </div>
             <p className="text-xs text-muted-foreground">
-              Altere a senha de acesso desta conta. Vale para o painel da barbearia e para o restante
-              do sistema.
+              Altere a senha de acesso desta conta. Vale para o painel da barbearia e para o
+              restante do sistema.
             </p>
             <ChangePasswordCard />
           </section>

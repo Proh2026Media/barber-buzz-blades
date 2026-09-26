@@ -5,6 +5,7 @@ import { LogOut, MessageCircle, User } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
+import { friendlyAuthError } from "@/lib/auth/friendly-error";
 
 export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void }) {
   const demo = useDemo();
@@ -45,7 +46,7 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
           setWhatsappOptIn(Boolean(result.data.whatsapp_opt_in_at));
         }
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Falha ao carregar perfil.");
+        if (!cancelled) setError(friendlyAuthError(err, "Não foi possível carregar seu perfil."));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -82,7 +83,7 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
       onSaved?.(normalized);
       setMessage("Perfil atualizado.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao salvar.");
+      setError(friendlyAuthError(err, "Não foi possível salvar. Tente novamente."));
     } finally {
       setBusy(false);
     }
@@ -111,7 +112,7 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
           : "Preferência de WhatsApp atualizada.",
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível salvar o WhatsApp.");
+      setError(friendlyAuthError(err, "Não foi possível salvar o WhatsApp."));
     } finally {
       setBusy(false);
     }

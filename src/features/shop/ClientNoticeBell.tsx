@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Bell, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
@@ -34,6 +34,11 @@ const PRESETS = [
 
 type NoticePreset = (typeof PRESETS)[number]["id"];
 
+function formatWait(seconds: number) {
+  const m = Math.max(1, Math.ceil(seconds / 60));
+  return m === 1 ? "1 minuto" : `${m} minutos`;
+}
+
 export function ClientNoticeBell({
   shopId,
   customerId,
@@ -48,6 +53,28 @@ export function ClientNoticeBell({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [pendingPreset, setPendingPreset] = useState<string | null>(null);
+  const [waitSeconds, setWaitSeconds] = useState(0);
+
+  async function refreshPending() {
+    if (demo) return;
+    const { data } = await supabase.rpc("get_client_notice_pending", {
+      p_shop_id: shopId,
+      p_customer_id: customerId,
+    });
+    if (!data || typeof data !== "object" || Array.isArray(data)) return;
+    const payload = data as {
+      pending?: { preset?: string } | null;
+      wait_seconds?: number;
+    };
+    setPendingPreset(payload.pending?.preset ?? null);
+    setWaitSeconds(Number(payload.wait_seconds) || 0);
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    void refreshPending();
+  }, [open, shopId, customerId]);
 
   async function send(preset: NoticePreset) {
     setBusy(true);
@@ -67,7 +94,25 @@ export function ClientNoticeBell({
       if (rpcError) {
         throw new Error(rpcError.message || "Não foi possível enviar o aviso.");
       }
-      const channels = (data as { channels?: string[] } | null)?.channels ?? [];
+      const result = data as {
+        channels?: string[];
+        status?: string;
+        wait_seconds?: number;
+        preset?: string;
+      } | null;
+      if (result?.status === "queued") {
+        const wait = Number(result.wait_seconds) || 0;
+        setPendingPreset(result.preset ?? preset);
+        setWaitSeconds(wait);
+        setMessage(
+          `Agendado — envia automaticamente em ${formatWait(wait)} (último aviso escolhido).`,
+        );
+        setOpen(false);
+        return;
+      }
+      const channels = result?.channels ?? [];
+      setPendingPreset(null);
+      setWaitSeconds(0);
       setMessage(
         channels.length
           ? `Enviado por ${channels.join(" e ")}.`
@@ -87,6 +132,8 @@ export function ClientNoticeBell({
     }
   }
 
+  const pendingLabel = PRESETS.find((row) => row.id === pendingPreset)?.title;
+
   return (
     <>
       <button
@@ -97,8 +144,12 @@ export function ClientNoticeBell({
           setError(null);
         }}
         aria-label={`Enviar aviso para ${customerName ?? "cliente"}`}
-        title="Enviar aviso"
-        className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border text-muted-foreground hover:border-gold hover:text-gold"
+        title={pendingPreset ? "Aviso agendado" : "Enviar aviso"}
+        className={`flex size-10 shrink-0 items-center justify-center rounded-xl border ${
+          pendingPreset
+            ? "border-gold text-gold"
+            : "border-border text-muted-foreground hover:border-gold hover:text-gold"
+        }`}
       >
         <Bell className="size-4" />
       </button>
@@ -116,10 +167,16 @@ export function ClientNoticeBell({
         >
           <DialogTitle className="text-base font-extrabold">Enviar aviso</DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Escolha um aviso para {customerName ?? "o cliente"}. Envia no WhatsApp (número + opt-in
-            no perfil e canal da loja conectado) e/ou no e-mail da conta. No máximo 1 aviso a cada
-            30 minutos por cliente.
+            Escolha um aviso para {customerName ?? "o cliente"}. Envia no WhatsApp e/ou e-mail. Se
+            ainda estiver no intervalo de 30 minutos, o último gatilho fica agendado e sai
+            automaticamente.
           </DialogDescription>
+          {pendingPreset && (
+            <p className="mt-2 rounded-xl border border-gold/40 bg-gold/10 px-3 py-2 text-xs text-foreground">
+              Agendado: <strong>{pendingLabel ?? pendingPreset}</strong>
+              {waitSeconds > 0 ? ` — envia em ${formatWait(waitSeconds)}.` : "."}
+            </p>
+          )}
           <div className="mt-3 space-y-2">
             {PRESETS.map((preset) => (
               <button

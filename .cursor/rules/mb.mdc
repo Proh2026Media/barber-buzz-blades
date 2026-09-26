@@ -1,0 +1,41 @@
+---
+description: Diretrizes MB — uso fácil no celular, linguagem simples e interface consistente (Barba & Cabelo)
+alwaysApply: true
+---
+
+# MB — Barba & Cabelo
+
+Fonte completa: [docs/mb-interface.md](docs/mb-interface.md). Skill empacotada: `.cursor/skills/mb/`. Antes de alterar UI, fluxos ou textos, consultar as seções relevantes desse documento (não só este resumo).
+
+## Público e missão
+
+Público principal: celular, pouca familiaridade com tecnologia. A pessoa precisa saber **onde está, o que pode fazer, o próximo passo, o que acontecerá e se deu certo** — sem tutorial obrigatório.
+
+## Compromissos (sempre)
+
+1. Começar pela tarefa e pelo resultado; depois a tela.
+2. Projetar primeiro para celular; adaptar tablet/desktop.
+3. Uma ação principal clara por contexto (verbo + objeto).
+4. Explicar consequências no ponto da decisão.
+5. Pedir só dados necessários; preservar o preenchido em erro.
+6. Escolher o controle pela decisão (não trocar tudo por chips/interruptores).
+7. Ícones e imagens apoiam; rótulos acessíveis sempre.
+8. Estado real: não chamar de “confirmado” o que ainda é pedido/pendente.
+9. Evitar duplicação e perda de dados; recuperação compreensível.
+10. Preservar identidade, dados, permissões e regras de negócio.
+11. Toque, teclado e tecnologias assistivas — não só cor ou gesto.
+12. Relatar só o que foi verificado de fato.
+
+## Barba & Cabelo (visual)
+
+- Inter no sistema; fonte de marca só no cabeçalho / escopo configurado.
+- Cantos: retos / **semi (padrão efetivo)** / arredondados — consistentes em botões, campos, cartões e janelas.
+- Cartões off-white; gradientes de níveis/pontos; botões de ação escuros com cor de ação (confirmar azul, concluir verde, cancelar alerta).
+- Sem linha inferior rejeitada na navegação ativa; sem tons rosados em campos/filtros.
+
+## Ao implementar
+
+- Inventariar jornadas se a revisão for global; priorizar bloqueio → uso frequente → refinamento.
+- Corrigir componentes compartilhados quando o problema se repetir.
+- Não inventar offline, reembolso ou integrações sem suporte real.
+- Linguagem cotidiana em PT-BR; evitar jargão técnico na jornada comum.

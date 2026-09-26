@@ -29,13 +29,14 @@ export type SessionProfile = {
 };
 
 export function homeForRole(role: AppRole): "/app" | "/shop" | "/platform" {
-  if (role === "platform_admin") return "/platform";
+  if (role === "platform_admin" || role === "account_manager") return "/platform";
   if (role === "shop_admin") return "/shop";
   return "/app";
 }
 
 export function pickPrimaryRole(memberships: Membership[]): AppRole {
   if (memberships.some((m) => m.role === "platform_admin")) return "platform_admin";
+  if (memberships.some((m) => m.role === "account_manager")) return "account_manager";
   if (memberships.some((m) => m.role === "shop_admin")) return "shop_admin";
   return "customer";
 }

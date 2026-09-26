@@ -121,6 +121,9 @@ Deno.serve(async (req) => {
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token ?? existing?.refresh_token ?? null,
         token_expires_at: tokenExpiresAt,
+        // Agenda só após escolha explícita do usuário (não assume a principal).
+        selected_calendar_id: null,
+        selected_calendar_name: null,
         last_error: null,
         updated_at: new Date().toISOString(),
       };
@@ -236,35 +239,18 @@ Deno.serve(async (req) => {
         });
 
       const selectedId =
-        (typeof connection.selected_calendar_id === "string" &&
-          connection.selected_calendar_id.trim()) ||
-        "primary";
-      const selected =
-        calendars.find((c) => c.id === selectedId) ||
-        calendars.find((c) => c.primary) ||
-        calendars[0] ||
-        null;
-
-      // Se ainda está em "primary" sem nome, grava o summary real da principal.
-      if (
-        selected &&
-        (!connection.selected_calendar_name || connection.selected_calendar_id === "primary")
-      ) {
-        await admin
-          .from("google_connections")
-          .update({
-            selected_calendar_id: selected.id,
-            selected_calendar_name: selected.name,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", connection.id);
-      }
+        typeof connection.selected_calendar_id === "string"
+          ? connection.selected_calendar_id.trim()
+          : "";
+      const selected = selectedId
+        ? calendars.find((c) => c.id === selectedId) ?? null
+        : null;
 
       return json({
         ok: true,
         calendars,
-        selected_calendar_id: selected?.id ?? selectedId,
-        selected_calendar_name: selected?.name ?? connection.selected_calendar_name ?? null,
+        selected_calendar_id: selected?.id ?? null,
+        selected_calendar_name: selected?.name ?? null,
       });
     }
 
@@ -311,9 +297,15 @@ Deno.serve(async (req) => {
 
     if (action === "sync_calendar") {
       const calendarId =
-        (typeof connection.selected_calendar_id === "string" &&
-          connection.selected_calendar_id.trim()) ||
-        "primary";
+        typeof connection.selected_calendar_id === "string"
+          ? connection.selected_calendar_id.trim()
+          : "";
+      if (!calendarId) {
+        return json(
+          { error: "Escolha qual agenda Google sincronizar antes de continuar." },
+          400,
+        );
+      }
       const timeMin = body.time_min ?? new Date(Date.now() - 7 * 86400000).toISOString();
       const timeMax = body.time_max ?? new Date(Date.now() + 60 * 86400000).toISOString();
       const params = new URLSearchParams({

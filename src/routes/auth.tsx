@@ -12,6 +12,7 @@ import { Link, createFileRoute, useSearch } from "@tanstack/react-router";
 import { useEffect, useState, type CSSProperties } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { resolvePostAuthPath } from "@/lib/auth/session";
+import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import {
   AUTH_POPUP_MESSAGE,
   buildPlatformAuthUrl,
@@ -284,10 +285,7 @@ function AuthPage() {
   useEffect(() => {
     if (popup || !needsAuthOriginBridge()) return;
 
-    async function applySession(data: {
-      access_token: string;
-      refresh_token: string;
-    }) {
+    async function applySession(data: { access_token: string; refresh_token: string }) {
       setBusy(true);
       setInfo("Entrando…");
       const { error: sessionError } = await supabase.auth.setSession({
@@ -295,7 +293,7 @@ function AuthPage() {
         refresh_token: data.refresh_token,
       });
       if (sessionError) {
-        setError(sessionError.message);
+        setError(friendlyAuthError(sessionError, "Não foi possível entrar. Tente novamente."));
         setBusy(false);
         return;
       }
@@ -373,7 +371,7 @@ function AuthPage() {
         if (!cancelled) await goAfterAuthLocal();
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Falha ao concluir o login.");
+          setError(friendlyAuthError(err, "Não foi possível concluir o login."));
           setBusy(false);
           setBridgeReady(true);
         }
@@ -425,7 +423,7 @@ function AuthPage() {
         if (oauthError) throw oauthError;
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Falha no Google");
+          setError(friendlyAuthError(err, "Não foi possível entrar com Google. Tente novamente."));
           setBusy(false);
         }
       }
@@ -661,7 +659,7 @@ function AuthPage() {
       setInfo("Confirme seu email e entre na conta.");
       setMode("signin");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha na autenticação");
+      setError(friendlyAuthError(err, "Não foi possível entrar. Tente novamente."));
     } finally {
       setBusy(false);
     }
@@ -719,7 +717,7 @@ function AuthPage() {
       });
       if (error) throw error;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha no Google");
+      setError(friendlyAuthError(err, "Não foi possível entrar com Google. Tente novamente."));
       setBusy(false);
     }
   }
@@ -1037,8 +1035,11 @@ function AuthPage() {
                 </span>
                 <span className="block text-xs font-normal text-muted-foreground">
                   A barbearia envia confirmação e lembretes por este número (depois de conectar o
-                  WhatsApp dela em Ajustes). Não é o mesmo cadastro de{" "}
-                  <span className="font-semibold">/cadastrar</span> (abrir loja).
+                  WhatsApp dela em Ajustes). Cadastro para{" "}
+                  <Link to="/cadastrar" className="font-semibold underline">
+                    abrir uma barbearia
+                  </Link>{" "}
+                  é outro formulário.
                 </span>
               </label>
             )}
@@ -1157,6 +1158,21 @@ function AuthPage() {
               </span>
               {!busy && <ArrowRight className="size-4" aria-hidden="true" />}
             </button>
+            {mode === "forgot" && recoveryChannel === "whatsapp" && effectiveShopRef && otpSent && (
+              <button
+                type="button"
+                disabled={busy}
+                className="auth-brand-button mt-2 flex min-h-11 w-full items-center justify-center border border-border px-4 text-sm font-semibold disabled:opacity-50"
+                onClick={() => {
+                  setOtpSent(false);
+                  setOtpCode("");
+                  setError(null);
+                  setInfo("Toque em Enviar código para receber um código novo no WhatsApp.");
+                }}
+              >
+                Enviar código de novo
+              </button>
+            )}
           </form>
 
           {(mode === "forgot" || mode === "recovery") && (

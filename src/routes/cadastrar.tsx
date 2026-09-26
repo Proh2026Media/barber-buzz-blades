@@ -1,8 +1,9 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, MessageCircle, Scissors, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { DEFAULT_LOGIN_IMAGE } from "@/lib/shop/branding";
+import { friendlyAuthError } from "@/lib/auth/friendly-error";
 
 type Step = "dados" | "otp" | "conta";
 
@@ -48,20 +49,28 @@ function CadastrarPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
+  const [hasSociety, setHasSociety] = useState(false);
+  const [societyType, setSocietyType] = useState<"majority" | "equal" | "minority">("majority");
   const [otpCode, setOtpCode] = useState("");
   const [destination, setDestination] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [resendIn, setResendIn] = useState(0);
+
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const timer = window.setTimeout(() => setResendIn((value) => Math.max(0, value - 1)), 1000);
+    return () => window.clearTimeout(timer);
+  }, [resendIn]);
 
   const stepIndex = STEPS.findIndex((row) => row.id === step);
 
-  async function sendCode(e: React.FormEvent) {
-    e.preventDefault();
+  async function requestOtp(fromResend = false) {
     if (busy) return;
     setBusy(true);
     setError(null);
-    setInfo(null);
+    if (!fromResend) setInfo(null);
     try {
       if (!shopName.trim() || !fullName.trim() || !email.trim() || password.length < 6) {
         throw new Error("Preencha barbearia, nome, e-mail e senha (mín. 6).");
@@ -74,11 +83,17 @@ function CadastrarPage() {
       setDestination(payload.destination || whatsapp.trim());
       setInfo(payload.message || "Código enviado no WhatsApp.");
       setStep("otp");
+      setResendIn(60);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível enviar o código.");
+      setError(friendlyAuthError(err, "Não foi possível enviar o código."));
     } finally {
       setBusy(false);
     }
+  }
+
+  async function sendCode(e: React.FormEvent) {
+    e.preventDefault();
+    await requestOtp(false);
   }
 
   async function verifyCode(e: React.FormEvent) {
@@ -98,7 +113,7 @@ function CadastrarPage() {
       setStep("conta");
       await finishRegister(payload.verification_token);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Código inválido.");
+      setError(friendlyAuthError(err, "Código inválido ou vencido. Peça um código novo."));
       setBusy(false);
     }
   }
@@ -114,6 +129,7 @@ function CadastrarPage() {
         full_name: fullName.trim(),
         email: email.trim(),
         password,
+        society_intent: hasSociety ? societyType : "single",
       });
       const { error: signError } = await supabase.auth.signInWithPassword({
         email: payload.email || email.trim(),
@@ -126,7 +142,7 @@ function CadastrarPage() {
       }
       await navigate({ to: "/shop" });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao criar a barbearia.");
+      setError(friendlyAuthError(err, "Não foi possível criar a barbearia. Tente novamente."));
     } finally {
       setBusy(false);
     }
@@ -158,8 +174,7 @@ function CadastrarPage() {
 
           <ol className="platform-register-steps" aria-label="Etapas do cadastro">
             {STEPS.map((row, index) => {
-              const state =
-                index < stepIndex ? "done" : index === stepIndex ? "current" : "todo";
+              const state = index < stepIndex ? "done" : index === stepIndex ? "current" : "todo";
               return (
                 <li key={row.id} data-state={state}>
                   <span aria-hidden="true">{index + 1}</span>
@@ -193,6 +208,70 @@ function CadastrarPage() {
                   placeholder="Ex.: Externa Barbearia"
                 />
               </label>
+              <fieldset className="platform-register-label">
+                <legend className="mb-2 text-sm font-semibold">Há sociedade?</legend>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setHasSociety(false)}
+                    className={`rounded-xl border px-3 py-2 text-sm font-semibold ${
+                      !hasSociety ? "border-primary bg-primary/10 text-primary" : "border-border"
+                    }`}
+                  >
+                    Não — sou o único dono
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setHasSociety(true)}
+                    className={`rounded-xl border px-3 py-2 text-sm font-semibold ${
+                      hasSociety ? "border-primary bg-primary/10 text-primary" : "border-border"
+                    }`}
+                  >
+                    Sim
+                  </button>
+                </div>
+                {hasSociety && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      Como é a sociedade? (convidará os co-donos depois; majoritário tem acesso
+                      total, os demais pedem aprovação.)
+                    </p>
+                    {(
+                      [
+                        {
+                          id: "majority" as const,
+                          label: "Majoritária",
+                          hint: "Alguém com mais de 50% decide sozinho.",
+                        },
+                        {
+                          id: "equal" as const,
+                          label: "Igualitária",
+                          hint: "Participações iguais — mudanças pedem acordo.",
+                        },
+                        {
+                          id: "minority" as const,
+                          label: "Minoritária",
+                          hint: "Você começa como minoritário e propõe mudanças.",
+                        },
+                      ] as const
+                    ).map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => setSocietyType(option.id)}
+                        className={`flex w-full flex-col rounded-xl border px-3 py-2 text-left ${
+                          societyType === option.id
+                            ? "border-primary bg-primary/10"
+                            : "border-border"
+                        }`}
+                      >
+                        <span className="text-sm font-semibold">{option.label}</span>
+                        <span className="text-xs text-muted-foreground">{option.hint}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </fieldset>
               <label className="platform-register-label">
                 Seu nome
                 <input
@@ -277,11 +356,20 @@ function CadastrarPage() {
               </button>
               <button
                 type="button"
+                disabled={busy || resendIn > 0}
+                className="platform-register-linkish min-h-11"
+                onClick={() => void requestOtp(true)}
+              >
+                {resendIn > 0 ? `Enviar código de novo (${resendIn}s)` : "Enviar código de novo"}
+              </button>
+              <button
+                type="button"
                 disabled={busy}
                 className="platform-register-linkish"
                 onClick={() => {
                   setStep("dados");
                   setOtpCode("");
+                  setResendIn(0);
                 }}
               >
                 Voltar e corrigir dados

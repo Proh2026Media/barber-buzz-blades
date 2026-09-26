@@ -111,7 +111,7 @@ export function TimePicker({ value, onChange, label, disabled }: Props) {
                       key={part}
                       type="button"
                       aria-pressed={column.selected === part}
-                      className="rounded-lg py-2 text-sm tabular-nums hover:bg-accent/30 aria-pressed:bg-primary aria-pressed:text-primary-foreground"
+                      className="min-h-11 rounded-lg py-2 text-sm tabular-nums hover:bg-accent/30 aria-pressed:bg-primary aria-pressed:text-primary-foreground"
                       onClick={() =>
                         setDraft(index === 0 ? `${part}:${minute}` : `${hour}:${part}`)
                       }
@@ -126,7 +126,7 @@ export function TimePicker({ value, onChange, label, disabled }: Props) {
         </div>
         <button
           type="button"
-          className="mt-4 w-full rounded-xl bg-primary py-2 text-sm font-semibold text-primary-foreground"
+          className="mt-4 min-h-11 w-full rounded-xl bg-primary py-2 text-sm font-semibold text-primary-foreground"
           onClick={() => {
             onChange(draft);
             setOpen(false);

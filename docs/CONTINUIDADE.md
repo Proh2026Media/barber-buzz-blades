@@ -9,6 +9,20 @@ Atualizado em **25/09/2026**. Este documento resume decisões e entregas da conv
 3. Para retomar localmente, usar `npm run dev -- --host 0.0.0.0 --port 8080`. O endereço esperado é `http://localhost:8080`.
 4. Continuar a partir do próximo pedido do usuário.
 
+## Entrega — revisão MB usabilidade (26/09/2026)
+
+- Fonte consolidada em `docs/mb-interface.md`; regra `.cursor/rules/mb.mdc` (`alwaysApply`); skill em `.cursor/skills/mb/`.
+- Registro: [mb-revisao.md](mb-revisao.md).
+- Código (rodada 1): linguagem de sucesso do agendamento, preservação de horário em erro, cancelamento/recorrência com contexto, erros de acesso amigáveis, alvos de toque.
+- Código (rodada 2): aba **Conta** + “Você está em…”; reenvio OTP em `/cadastrar` (60s); erros Google/WhatsApp traduzidos com ação de reconectar.
+
+## Entrega — WhatsApp modelos + Google Agenda (25/09/2026)
+
+- Modelos oficiais de WhatsApp (confirmação/remarcação/cancelamento/lembrete) com `{{serviço}}` literal, chips, validação, restauração com confirmação e prévia. Migration `20260925160000_whatsapp_templates_and_calendar_choice.sql` **aplicada no Postgres Coolify** — **não sobrescreve** textos personalizados já salvos.
+- Popup de consentimento antes de “Conectar Google”: explica o aviso “app não verificado”, fase de teste/análise no Google, prioridade de privacidade e passos (Avançado → continuar).
+- Agenda: **sem pré-seleção da principal**. Após OAuth o usuário escolhe a agenda; sync bloqueado até a escolha. Coluna `selected_calendar_id` passa a aceitar null.
+- Edge `google-connect` atualizada no volume Coolify + restart. **Frontend Hostinger:** republicar após commit/push.
+
 ## Entrega — sociedade e acessos pelo dono (25/09/2026)
 
 - Migration `20260925140000_shop_society_founder_and_team.sql` (aplicada no Coolify): `founded_by_user_id`, `shop_add_member` / `shop_update_member` / `transfer_shop_founder` / `list_shop_team_members`; `platform_add_shop_member` aceita gerente da loja; `member.add` no `apply_shop_change`.

@@ -1,9 +1,18 @@
 import { SurveyCard } from "@/features/insights/SurveyCard";
+import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { useWaiting } from "@/features/waiting/useWaiting";
 import { WaitingCards, WaitingNotices } from "@/features/waiting/WaitingUI";
 import { blocksSlot } from "@/features/waiting/model";
 import { CancellationDialog } from "@/features/insights/CancellationDialog";
 import { cancellationReasonLabel, type CancellationReason } from "@/features/insights/cancellation";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { PointsHistory } from "./PointsHistory";
 import { NextLevelCard, type NextLevelSummary } from "./NextLevelCard";
 import { CustomerRhythm } from "./CustomerRhythm";
@@ -164,6 +173,11 @@ function ArenaApp({
   const [showVipInfo, setShowVipInfo] = useState(false);
   const [serviceIdx, setServiceIdx] = useState(0);
   const [staffIdx, setStaffIdx] = useState(0);
+  const [anyAvailable, setAnyAvailable] = useState(false);
+  const [favoriteStaffId, setFavoriteStaffId] = useState<string | null>(null);
+  const [staffAssignmentMode, setStaffAssignmentMode] = useState<
+    "client_pick" | "favorite_then_pick" | "random_available"
+  >("client_pick");
   const [serviceView, setServiceView] = useState<CatalogViewMode>("list");
   const [staffView, setStaffView] = useState<CatalogViewMode>("grid");
   const [repeatEnabled, setRepeatEnabled] = useState(false);
@@ -304,6 +318,7 @@ function ArenaApp({
   const [rescheduleId, setRescheduleId] = useState<string | null>(null);
   const [cancelTarget, setCancelTarget] = useState<CustomerAppointment | null>(null);
   const [cancelReason, setCancelReason] = useState<CancellationReason | "">("");
+  const [stopSeriesTarget, setStopSeriesTarget] = useState<string | null>(null);
   const [cancellationDetails, setCancellationDetails] = useState<
     Record<string, { reason: CancellationReason | null; source: "customer" | "shop" }>
   >({});
@@ -361,11 +376,11 @@ function ArenaApp({
       cancelled = true;
     };
   }, [demo, shopId, availabilityVersion]);
-  const selectedStaff = staff[staffIdx] ?? null;
+  const selectedStaff = anyAvailable ? null : (staff[staffIdx] ?? null);
   const selectedServiceId = selectedService?.id;
   const selectedServiceDuration = selectedService?.duration_minutes;
-  const selectedStaffId = selectedStaff?.id;
-  const selectionKey = `${shopId}:${selectedServiceId}:${selectedStaffId}:${selectedDay}`;
+  const selectedStaffId = anyAvailable ? null : selectedStaff?.id;
+  const selectionKey = `${shopId}:${selectedServiceId}:${selectedStaffId ?? "any"}:${selectedDay}:${anyAvailable ? "1" : "0"}`;
   // Chaves de data no fuso da loja: evitam qualquer conversão pelo fuso do aparelho.
   const bookingDayKeys = buildBookingDateKeys(
     demo?.now ?? new Date(),
@@ -673,7 +688,7 @@ function ArenaApp({
             supabase
               .from("barbershop_settings")
               .select(
-                "display_name, logo_url, logo_background_color, font_family, custom_font_url, custom_font_name, custom_font_faces, font_scope, header_font_weight, header_font_style, corner_style, floating_chrome, primary_color, accent_color, tagline, booking_instructions, booking_horizon_days, survey_program_enabled, sports_enabled",
+                "display_name, logo_url, logo_background_color, font_family, custom_font_url, custom_font_name, custom_font_faces, font_scope, header_font_weight, header_font_style, corner_style, floating_chrome, primary_color, accent_color, tagline, booking_instructions, booking_horizon_days, survey_program_enabled, sports_enabled, staff_assignment_mode",
               )
               .eq("barbershop_id", catalogShopId)
               .single(),
@@ -693,17 +708,21 @@ function ArenaApp({
           } else if (settingsResult.error.code !== "42703") {
             throw settingsResult.error;
           } else {
-          const legacySettings = await supabase
-            .from("barbershop_settings")
-            .select(
-              "display_name, logo_url, logo_background_color, font_family, custom_font_url, custom_font_name, custom_font_faces, font_scope, header_font_weight, header_font_style, corner_style, primary_color, accent_color, tagline, booking_instructions, booking_horizon_days, survey_program_enabled, sports_enabled",
-            )
-            .eq("barbershop_id", catalogShopId)
-            .maybeSingle();
-          if (legacySettings.error) throw legacySettings.error;
-          shopSettingsData = legacySettings.data
-            ? { ...legacySettings.data, floating_chrome: false }
-            : null;
+            const legacySettings = await supabase
+              .from("barbershop_settings")
+              .select(
+                "display_name, logo_url, logo_background_color, font_family, custom_font_url, custom_font_name, custom_font_faces, font_scope, header_font_weight, header_font_style, corner_style, primary_color, accent_color, tagline, booking_instructions, booking_horizon_days, survey_program_enabled, sports_enabled",
+              )
+              .eq("barbershop_id", catalogShopId)
+              .maybeSingle();
+            if (legacySettings.error) throw legacySettings.error;
+            shopSettingsData = legacySettings.data
+              ? {
+                  ...legacySettings.data,
+                  floating_chrome: false,
+                  staff_assignment_mode: "client_pick",
+                }
+              : null;
           }
         }
         if (shopResult.error) throw shopResult.error;
@@ -739,20 +758,73 @@ function ArenaApp({
           setStaff(availableStaff);
           setPoints(loyaltyResult.error ? 0 : (loyaltyResult.data?.points ?? 0));
           if (shopSettingsData) setShopSettings(shopSettingsData);
+          const modeRaw = (shopSettingsData as { staff_assignment_mode?: string } | null)
+            ?.staff_assignment_mode;
+          const mode =
+            modeRaw === "favorite_then_pick" || modeRaw === "random_available"
+              ? modeRaw
+              : "client_pick";
+          setStaffAssignmentMode(mode);
+
+          let favoriteId: string | null = null;
+          if (!demo && profile.user.id) {
+            const pref = await (
+              supabase as unknown as {
+                from: (t: string) => {
+                  select: (c: string) => {
+                    eq: (
+                      a: string,
+                      b: string,
+                    ) => {
+                      eq: (
+                        a: string,
+                        b: string,
+                      ) => {
+                        maybeSingle: () => Promise<{
+                          data: { favorite_staff_id: string | null } | null;
+                        }>;
+                      };
+                    };
+                  };
+                };
+              }
+            )
+              .from("customer_shop_preferences")
+              .select("favorite_staff_id")
+              .eq("user_id", profile.user.id)
+              .eq("barbershop_id", catalogShopId)
+              .maybeSingle();
+            favoriteId = pref.data?.favorite_staff_id ?? null;
+            setFavoriteStaffId(favoriteId);
+          }
+
           setShopTimeZone(validTimeZone(shopResult.data?.timezone));
           setServiceIdx(0);
-          setStaffIdx(
-            directStaffId
-              ? Math.max(
-                  0,
-                  availableStaff.findIndex((row) => row.id === directStaffId),
-                )
-              : 0,
-          );
+          if (directStaffId) {
+            setAnyAvailable(false);
+            setStaffIdx(
+              Math.max(
+                0,
+                availableStaff.findIndex((row) => row.id === directStaffId),
+              ),
+            );
+          } else if (mode === "random_available") {
+            setAnyAvailable(true);
+            setStaffIdx(0);
+          } else if (mode === "favorite_then_pick" && favoriteId) {
+            const favIdx = availableStaff.findIndex((row) => row.id === favoriteId);
+            setAnyAvailable(false);
+            setStaffIdx(favIdx >= 0 ? favIdx : 0);
+          } else {
+            setAnyAvailable(false);
+            setStaffIdx(0);
+          }
         }
       } catch (err) {
         if (!cancelled) {
-          setCatalogError(err instanceof Error ? err.message : "Falha ao carregar catálogo");
+          setCatalogError(
+            friendlyAuthError(err, "Não foi possível carregar os serviços. Tente novamente."),
+          );
         }
       } finally {
         if (!cancelled) setCatalogLoading(false);
@@ -786,9 +858,7 @@ function ArenaApp({
       }
       setCatalogRevision((v) => v + 1);
     } catch (err) {
-      setCatalogError(
-        err instanceof Error ? err.message : "Não foi possível vincular a barbearia.",
-      );
+      setCatalogError(friendlyAuthError(err, "Não foi possível vincular a barbearia."));
       setJoinOpen(false);
     } finally {
       setJoinBusy(false);
@@ -812,7 +882,7 @@ function ArenaApp({
     let cancelled = false;
     (async () => {
       setSlotsError(null);
-      if (!selectedServiceId || !selectedServiceDuration || !selectedStaffId) {
+      if (!selectedServiceId || !selectedServiceDuration || (!selectedStaffId && !anyAvailable)) {
         setSlotsLoading(false);
         return;
       }
@@ -851,21 +921,55 @@ function ArenaApp({
           return;
         }
         const dayRange = shopDayRange(selectedDay, shopTimeZone);
-        const [busyResult, hoursResult] = await Promise.all([
+        const hoursResult = await supabase
+          .from("business_hours")
+          .select("is_open, opens_at, closes_at")
+          .eq("barbershop_id", shopId!)
+          .eq("weekday", weekdayForDateKey(selectedDay))
+          .maybeSingle();
+        if (hoursResult.error) throw hoursResult.error;
+
+        if (anyAvailable) {
+          const staffIds = staff.map((row) => row.id);
+          const busyLists = await Promise.all(
+            staffIds.map((id) =>
+              supabase.rpc("get_staff_busy_intervals", {
+                p_staff_id: id,
+                p_starts_at: dayRange.start.toISOString(),
+                p_ends_at: dayRange.end.toISOString(),
+              }),
+            ),
+          );
+          const firstError = busyLists.find((row) => row.error)?.error;
+          if (firstError) throw firstError;
+          const union = new Map<string, Date>();
+          for (const busy of busyLists) {
+            for (const slot of buildSlotsForWindow(
+              selectedDay,
+              selectedServiceDuration,
+              busy.data ?? [],
+              hoursResult.data,
+              new Date(),
+              shopTimeZone,
+            )) {
+              union.set(slot.toISOString(), slot);
+            }
+          }
+          if (!cancelled) {
+            setSlots([...union.values()].sort((a, b) => a.getTime() - b.getTime()));
+            setSlotsFor(selectionKey);
+          }
+          return;
+        }
+
+        const [busyResult] = await Promise.all([
           supabase.rpc("get_staff_busy_intervals", {
-            p_staff_id: selectedStaffId,
+            p_staff_id: selectedStaffId!,
             p_starts_at: dayRange.start.toISOString(),
             p_ends_at: dayRange.end.toISOString(),
           }),
-          supabase
-            .from("business_hours")
-            .select("is_open, opens_at, closes_at")
-            .eq("barbershop_id", shopId!)
-            .eq("weekday", weekdayForDateKey(selectedDay))
-            .maybeSingle(),
         ]);
         if (busyResult.error) throw busyResult.error;
-        if (hoursResult.error) throw hoursResult.error;
         if (!cancelled) {
           setSlots(
             buildSlotsForWindow(
@@ -901,6 +1005,8 @@ function ArenaApp({
     selectedServiceDuration,
     selectedServiceId,
     selectedStaffId,
+    anyAvailable,
+    staff,
     selectionKey,
     availabilityVersion,
     demo,
@@ -919,15 +1025,8 @@ function ArenaApp({
   }
 
   const confirmBooking = async () => {
-    if (
-      bookingLock.current ||
-      !shopId ||
-      !userId ||
-      !selectedService ||
-      !selectedStaff ||
-      !selectedSlot
-    )
-      return;
+    if (bookingLock.current || !shopId || !userId || !selectedService || !selectedSlot) return;
+    if (!anyAvailable && !selectedStaff) return;
     if (selectedSlot.getTime() <= (demo?.now.getTime() ?? Date.now())) {
       setBookingError("O horário selecionado já passou. Escolha outro horário.");
       setAvailabilityVersion((v) => v + 1);
@@ -939,11 +1038,32 @@ function ArenaApp({
     setBookingError(null);
     try {
       const endsAt = new Date(selectedSlot.getTime() + selectedService.duration_minutes * 60_000);
+      let staffId = selectedStaff?.id ?? null;
+      let staffName = selectedStaff?.display_name ?? "profissional";
+      if (anyAvailable && !demo) {
+        const prefer = staffAssignmentMode === "favorite_then_pick" ? favoriteStaffId : null;
+        const { data: picked, error: pickError } = await supabase.rpc("pick_available_staff", {
+          p_shop_id: shopId,
+          p_service_id: selectedService.id,
+          p_starts_at: selectedSlot.toISOString(),
+          p_ends_at: endsAt.toISOString(),
+          p_prefer_staff_id: prefer,
+        });
+        if (pickError) throw pickError;
+        if (!picked) {
+          throw new Error("Nenhum profissional disponível neste horário. Escolha outro.");
+        }
+        staffId = picked as string;
+        staffName =
+          staff.find((row) => row.id === staffId)?.display_name ?? "profissional disponível";
+      }
+      if (!staffId) throw new Error("Selecione um profissional.");
+
       const booking = {
         barbershop_id: shopId,
         customer_id: userId,
         service_id: selectedService.id,
-        staff_id: selectedStaff.id,
+        staff_id: staffId,
         starts_at: selectedSlot.toISOString(),
         ends_at: endsAt.toISOString(),
         status: "confirmed" as const,
@@ -1014,14 +1134,18 @@ function ArenaApp({
           ? " Recorrente: mesmo dia da semana."
           : ` Recorrente: a cada ${repeatInterval} dias.`
         : "";
-      const summary = `${rescheduleId ? "Remarcado: " : ""}${selectedService.name} com ${selectedStaff.display_name} em ${dateLabel} às ${formatSlotLabel(selectedSlot, shopTimeZone)}. Reserva confirmada.${repeatNote}`;
+      const summary = `${rescheduleId ? "Remarcado: " : ""}${selectedService.name} com ${staffName} em ${dateLabel} às ${formatSlotLabel(selectedSlot, shopTimeZone)}.${repeatNote}`;
       setBookingSummary(summary);
       setRepeatEnabled(false);
       setRescheduleId(null);
+      setSlotsFor("");
+      setSelectedSlotAt(null);
+      setAvailabilityVersion((v) => v + 1);
+      setAppointmentVersion((v) => v + 1);
       setNotifications((n) => [
         {
           id: Date.now(),
-          title: rescheduleId ? "Agendamento remarcado" : "Agendamento confirmado",
+          title: rescheduleId ? "Horário remarcado" : "Horário reservado",
           text: summary,
           time: (demo?.now ?? new Date()).toLocaleTimeString("pt-BR", {
             hour: "2-digit",
@@ -1039,13 +1163,10 @@ function ArenaApp({
           ? "Este horário acabou de ser reservado. Escolha outro horário."
           : code === "22023"
             ? "O horário selecionado já passou. Escolha outro horário."
-            : "Não foi possível agendar. Consulte os horários e tente novamente.",
+            : "Não foi possível agendar. Atualize os horários e tente novamente.",
       );
-    } finally {
-      setSlotsFor("");
-      setSelectedSlotAt(null);
       setAvailabilityVersion((v) => v + 1);
-      setAppointmentVersion((v) => v + 1);
+    } finally {
       bookingLock.current = false;
       setBookingBusy(false);
     }
@@ -1083,13 +1204,6 @@ function ArenaApp({
   };
 
   const stopSeries = async (seriesId: string) => {
-    if (
-      !window.confirm(
-        "Parar a recorrência cancela todos os próximos horários desta série. Continuar?",
-      )
-    ) {
-      return;
-    }
     setAppointmentBusy(seriesId);
     setAppointmentsError(null);
     try {
@@ -1101,8 +1215,9 @@ function ArenaApp({
       if (error) throw error;
       setAppointmentVersion((v) => v + 1);
       setAvailabilityVersion((v) => v + 1);
+      setStopSeriesTarget(null);
     } catch {
-      setAppointmentsError("Não foi possível parar a recorrência.");
+      setAppointmentsError("Não foi possível parar a recorrência. Tente novamente.");
     } finally {
       setAppointmentBusy(null);
     }
@@ -1263,29 +1378,49 @@ function ArenaApp({
     label: string;
   };
 
-  const NavItem = ({ id, icon: Icon, label }: NavItemProps) => (
-    <button
-      type="button"
-      onClick={() => setTab(id)}
-      aria-pressed={tab === id}
-      className={`relative z-10 flex min-w-0 flex-col items-center justify-center p-2.5 ${
-        tab === id ? "app-nav-current" : "text-muted-foreground hover:text-foreground"
-      }`}
-    >
-      <Icon
-        className={`mb-1.5 h-5 w-5 transition-transform duration-300 ease-out ${tab === id ? "scale-110" : ""}`}
-      />
-      <span className="text-xs font-semibold">{label}</span>
-    </button>
-  );
+  const NavItem = ({ id, icon: Icon, label }: NavItemProps) => {
+    const accountTabs =
+      id === "perfil" && (tab === "perfil" || tab === "pontos" || tab === "notifications");
+    const pressed = tab === id || accountTabs;
+    return (
+      <button
+        type="button"
+        onClick={() => setTab(id)}
+        aria-pressed={pressed}
+        aria-current={pressed ? "page" : undefined}
+        className={`relative z-10 flex min-w-0 flex-col items-center justify-center p-2.5 ${
+          pressed ? "app-nav-current" : "text-muted-foreground hover:text-foreground"
+        }`}
+      >
+        <Icon
+          className={`mb-1.5 h-5 w-5 transition-transform duration-300 ease-out ${pressed ? "scale-110" : ""}`}
+        />
+        <span className="text-xs font-semibold">{label}</span>
+      </button>
+    );
+  };
 
   const navItems: NavItemProps[] = [
     { id: "dashboard", icon: Compass, label: "Início" },
     { id: "agenda", icon: Calendar, label: "Agendar" },
     { id: "reservas", icon: Clock3, label: "Reservas" },
     ...(shopSettings.sports_enabled ? [{ id: "esportes", icon: Feather, label: "Esportes" }] : []),
+    { id: "perfil", icon: User, label: "Conta" },
   ];
-  const activeNavIndex = navItems.findIndex((item) => item.id === tab);
+  const activeNavIndex = navItems.findIndex((item) => {
+    if (item.id === "perfil") {
+      return tab === "perfil" || tab === "pontos" || tab === "notifications";
+    }
+    return item.id === tab;
+  });
+  const accountWhere =
+    tab === "perfil"
+      ? "Perfil"
+      : tab === "pontos"
+        ? "Pontos"
+        : tab === "notifications"
+          ? "Avisos"
+          : null;
 
   return (
     <div
@@ -1307,6 +1442,17 @@ function ArenaApp({
         open={!!cancelTarget}
         busy={appointmentBusy !== null}
         reason={cancelReason}
+        summary={
+          cancelTarget
+            ? `${cancelTarget.service?.name ?? "Serviço"} com ${
+                cancelTarget.staff?.display_name ?? "profissional"
+              } em ${formatShopDate(cancelTarget.starts_at, shopTimeZone, {
+                weekday: "short",
+                day: "2-digit",
+                month: "2-digit",
+              })} às ${formatSlotLabel(new Date(cancelTarget.starts_at), shopTimeZone)}`
+            : null
+        }
         onReason={setCancelReason}
         onCancel={() => {
           setCancelTarget(null);
@@ -1314,6 +1460,42 @@ function ArenaApp({
         }}
         onConfirm={() => void cancelAppointment()}
       />
+      <AlertDialog
+        open={!!stopSeriesTarget}
+        onOpenChange={(open) => {
+          if (!open && appointmentBusy === null) setStopSeriesTarget(null);
+        }}
+      >
+        <AlertDialogContent className="rounded-3xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Parar a recorrência?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Todos os próximos horários desta série serão cancelados. Os atendimentos já passados
+              permanecem no histórico.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <button
+              type="button"
+              disabled={appointmentBusy !== null}
+              className="min-h-11 rounded-xl border border-border px-4 text-sm font-semibold"
+              onClick={() => setStopSeriesTarget(null)}
+            >
+              Manter recorrência
+            </button>
+            <button
+              type="button"
+              disabled={appointmentBusy !== null || !stopSeriesTarget}
+              className="action-button action-danger min-h-11"
+              onClick={() => {
+                if (stopSeriesTarget) void stopSeries(stopSeriesTarget);
+              }}
+            >
+              {appointmentBusy ? "Cancelando…" : "Parar e cancelar próximos"}
+            </button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <ShopJoinDialog
         open={joinOpen}
         shopName={joinShopName || "esta barbearia"}
@@ -1425,10 +1607,11 @@ function ArenaApp({
             onClick={() => setTab("notifications")}
             aria-label={
               unreadNotifications > 0
-                ? `Notificações, ${unreadNotifications} não ${unreadNotifications === 1 ? "lida" : "lidas"}`
-                : "Notificações"
+                ? `Avisos, ${unreadNotifications} não ${unreadNotifications === 1 ? "lido" : "lidos"}`
+                : "Avisos"
             }
-            className="app-icon-button relative"
+            aria-current={tab === "notifications" ? "page" : undefined}
+            className={`app-icon-button relative ${tab === "notifications" ? "app-nav-current" : ""}`}
           >
             <Bell size={20} />
             {unreadNotifications > 0 && (
@@ -1449,9 +1632,10 @@ function ArenaApp({
           ) : (
             <button
               type="button"
-              aria-label="Meu perfil"
+              aria-label="Minha conta"
+              aria-current={tab === "perfil" || tab === "pontos" ? "page" : undefined}
               onClick={() => setTab("perfil")}
-              className="app-icon-button"
+              className={`app-icon-button ${tab === "perfil" || tab === "pontos" ? "app-nav-current" : ""}`}
             >
               <User size={20} />
             </button>
@@ -1461,6 +1645,19 @@ function ArenaApp({
 
       {/* Main Viewport */}
       <main className="p-4 max-w-xl mx-auto">
+        {accountWhere ? (
+          <p className="mb-3 text-xs font-semibold text-muted-foreground" role="status">
+            Você está em <span className="text-foreground">{accountWhere}</span>
+            {" · "}
+            <button
+              type="button"
+              className="font-semibold text-primary underline-offset-2 hover:underline"
+              onClick={() => setTab("dashboard")}
+            >
+              Voltar ao início
+            </button>
+          </p>
+        ) : null}
         <div key={tab} className="mb-panel">
           {tab === "perfil" && <CustomerProfile onSaved={setCustomerName} />}
           {tab === "perfil" && <CustomerRhythm shopId={shopId} />}
@@ -1643,9 +1840,13 @@ function ArenaApp({
                 >
                   <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
                     <CheckCircle className="size-5" />
-                    Reserva confirmada
+                    Horário reservado
                   </div>
                   <p className="text-sm leading-relaxed">{bookingSummary}</p>
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    Você pode acompanhar, remarcar ou cancelar em Reservas. A barbearia pode pedir
+                    alteração se precisar.
+                  </p>
                   <button
                     type="button"
                     onClick={() => {
@@ -1683,14 +1884,15 @@ function ArenaApp({
                     {catalogError && <p className="text-xs text-destructive">{catalogError}</p>}
 
                     {rescheduleId && (
-                      <div className="flex items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4 text-xs">
-                        <span className="font-bold">Escolha o novo horário da reserva.</span>
+                      <div className="flex flex-col gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
+                        <span className="font-semibold">Escolha o novo horário da reserva.</span>
                         <button
+                          type="button"
                           disabled={bookingBusy}
                           onClick={() => setRescheduleId(null)}
-                          className="font-bold text-muted-foreground underline"
+                          className="min-h-11 rounded-xl border border-border bg-background px-4 text-sm font-semibold text-foreground"
                         >
-                          Sair
+                          Voltar sem remarcar
                         </button>
                       </div>
                     )}
@@ -1938,31 +2140,66 @@ function ArenaApp({
                       ) : (
                         <div
                           className={
-                            staffView === "list"
-                              ? "flex flex-col gap-2"
-                              : "grid grid-cols-2 gap-2"
+                            staffView === "list" ? "flex flex-col gap-2" : "grid grid-cols-2 gap-2"
                           }
                         >
-                          {staff.map((m, i) => (
+                          {(staffAssignmentMode === "random_available" ||
+                            staffAssignmentMode === "favorite_then_pick") && (
                             <button
-                              key={m.id}
+                              type="button"
                               onClick={() => {
-                                setStaffIdx(i);
+                                setAnyAvailable(true);
                                 setSelectedSlotAt(null);
                                 setBookingSummary(null);
                                 setBookingError(null);
                               }}
                               disabled={bookingBusy}
-                              aria-pressed={staffIdx === i}
+                              aria-pressed={anyAvailable}
+                              className={`rounded-xl border p-4 text-left text-xs font-bold transition-all ${
+                                anyAvailable
+                                  ? "border-primary bg-primary text-primary-foreground"
+                                  : "border-border bg-muted/20 text-foreground hover:border-primary/50"
+                              } ${staffView === "list" ? "col-span-full" : "col-span-2"}`}
+                            >
+                              Qualquer profissional disponível
+                              {staffAssignmentMode === "favorite_then_pick" && favoriteStaffId
+                                ? " (preferindo o favorito)"
+                                : ""}
+                            </button>
+                          )}
+                          {staff.map((m, i) => (
+                            <button
+                              key={m.id}
+                              onClick={() => {
+                                setAnyAvailable(false);
+                                setStaffIdx(i);
+                                setSelectedSlotAt(null);
+                                setBookingSummary(null);
+                                setBookingError(null);
+                                if (
+                                  !demo &&
+                                  shopId &&
+                                  userId &&
+                                  staffAssignmentMode === "favorite_then_pick"
+                                ) {
+                                  void supabase.rpc("set_favorite_staff", {
+                                    p_shop_id: shopId,
+                                    p_staff_id: m.id,
+                                  });
+                                  setFavoriteStaffId(m.id);
+                                }
+                              }}
+                              disabled={bookingBusy}
+                              aria-pressed={!anyAvailable && staffIdx === i}
                               className={
                                 staffView === "list"
                                   ? `flex min-h-14 w-full items-stretch overflow-hidden rounded-xl border p-0 text-left text-xs font-bold transition-all ${
-                                      staffIdx === i
+                                      !anyAvailable && staffIdx === i
                                         ? "border-primary bg-primary text-primary-foreground"
                                         : "border-border bg-muted/20 text-foreground hover:border-primary/50"
                                     }`
                                   : `rounded-xl border p-4 text-left text-xs font-bold transition-all ${
-                                      staffIdx === i
+                                      !anyAvailable && staffIdx === i
                                         ? "border-primary bg-primary text-primary-foreground"
                                         : "border-border bg-muted/20 text-foreground hover:border-primary/50"
                                     }`
@@ -2053,7 +2290,7 @@ function ArenaApp({
                       <h3 id="booking-time" className="booking-heading">
                         Horário
                       </h3>
-                      {!selectedService || !selectedStaff ? (
+                      {!selectedService || (!selectedStaff && !anyAvailable) ? (
                         <p className="text-sm text-muted-foreground">
                           Os horários aparecem quando há serviço e profissional disponíveis.
                         </p>
@@ -2126,121 +2363,146 @@ function ArenaApp({
                       day={selectedDay}
                       onChanged={() => setTab("reservas")}
                     />
-                    {selectedSlot && selectedService && selectedStaff && !bookingSummary && (
-                      <section
-                        aria-label="Resumo da reserva"
-                        className="rounded-2xl border border-gold/30 bg-card p-4 space-y-3"
-                      >
-                        <p className="flex items-center gap-2 text-sm font-bold">
-                          <Calendar className="size-4 text-gold" />
-                          Sua reserva
-                        </p>
-                        <div className="flex justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-semibold">{selectedService.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {selectedStaff.display_name}
+                    {selectedSlot &&
+                      selectedService &&
+                      (selectedStaff || anyAvailable) &&
+                      !bookingSummary && (
+                        <section
+                          aria-label="Resumo da reserva"
+                          className="rounded-2xl border border-gold/30 bg-card p-4 space-y-3"
+                        >
+                          <p className="flex items-center gap-2 text-sm font-bold">
+                            <Calendar className="size-4 text-gold" />
+                            Sua reserva
+                          </p>
+                          <div className="flex justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-semibold">{selectedService.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {anyAvailable
+                                  ? "Qualquer profissional disponível"
+                                  : selectedStaff?.display_name}
+                              </p>
+                            </div>
+                            <p className="text-sm font-bold">
+                              {(selectedService.price_cents / 100).toLocaleString("pt-BR", {
+                                style: "currency",
+                                currency: "BRL",
+                              })}
                             </p>
                           </div>
-                          <p className="text-sm font-bold">
-                            {(selectedService.price_cents / 100).toLocaleString("pt-BR", {
-                              style: "currency",
-                              currency: "BRL",
-                            })}
+                          <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Clock3 className="size-4" />
+                            {formatShopDate(selectedSlot, shopTimeZone, {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                            })}{" "}
+                            · {formatSlotLabel(selectedSlot, shopTimeZone)} ·{" "}
+                            {selectedService.duration_minutes} min
                           </p>
-                        </div>
-                        <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Clock3 className="size-4" />
-                          {formatShopDate(selectedSlot, shopTimeZone, {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "numeric",
-                          })}{" "}
-                          · {formatSlotLabel(selectedSlot, shopTimeZone)} ·{" "}
-                          {selectedService.duration_minutes} min
-                        </p>
-                        {!rescheduleId && (
-                          <div className="space-y-2 border-t border-border/60 pt-3">
-                            <label className="flex items-center justify-between gap-3 text-sm font-semibold">
-                              Repetir horário
-                              <input
-                                type="checkbox"
-                                checked={repeatEnabled}
-                                onChange={(e) => setRepeatEnabled(e.target.checked)}
-                                className="size-5 accent-primary"
-                              />
-                            </label>
-                            {repeatEnabled && (
-                              <div className="space-y-2">
-                                <div className="flex flex-wrap gap-1.5">
-                                  <button
-                                    type="button"
-                                    aria-pressed={repeatKind === "weekday"}
-                                    onClick={() => setRepeatKind("weekday")}
-                                    className={`min-h-9 rounded-xl border px-3 text-xs font-bold ${
-                                      repeatKind === "weekday"
-                                        ? "border-primary bg-primary text-primary-foreground"
-                                        : "border-border text-muted-foreground"
-                                    }`}
-                                  >
-                                    Toda semana neste dia
-                                  </button>
-                                  {([7, 15, 21] as const).map((days) => (
+                          {!rescheduleId && (
+                            <div className="space-y-2 border-t border-border/60 pt-3">
+                              <label className="flex items-center justify-between gap-3 text-sm font-semibold">
+                                Repetir horário
+                                <input
+                                  type="checkbox"
+                                  checked={repeatEnabled}
+                                  onChange={(e) => setRepeatEnabled(e.target.checked)}
+                                  className="size-5 accent-primary"
+                                />
+                              </label>
+                              {repeatEnabled && (
+                                <div className="space-y-2">
+                                  <div className="flex flex-wrap gap-1.5">
                                     <button
-                                      key={days}
                                       type="button"
-                                      aria-pressed={
-                                        repeatKind === "interval_days" && repeatInterval === days
-                                      }
-                                      onClick={() => {
-                                        setRepeatKind("interval_days");
-                                        setRepeatInterval(days);
-                                      }}
+                                      aria-pressed={repeatKind === "weekday"}
+                                      onClick={() => setRepeatKind("weekday")}
                                       className={`min-h-9 rounded-xl border px-3 text-xs font-bold ${
-                                        repeatKind === "interval_days" && repeatInterval === days
+                                        repeatKind === "weekday"
                                           ? "border-primary bg-primary text-primary-foreground"
                                           : "border-border text-muted-foreground"
                                       }`}
                                     >
-                                      A cada {days} dias
+                                      Toda semana neste dia
                                     </button>
-                                  ))}
+                                    {([7, 15, 21] as const).map((days) => (
+                                      <button
+                                        key={days}
+                                        type="button"
+                                        aria-pressed={
+                                          repeatKind === "interval_days" && repeatInterval === days
+                                        }
+                                        onClick={() => {
+                                          setRepeatKind("interval_days");
+                                          setRepeatInterval(days);
+                                        }}
+                                        className={`min-h-9 rounded-xl border px-3 text-xs font-bold ${
+                                          repeatKind === "interval_days" && repeatInterval === days
+                                            ? "border-primary bg-primary text-primary-foreground"
+                                            : "border-border text-muted-foreground"
+                                        }`}
+                                      >
+                                        A cada {days} dias
+                                      </button>
+                                    ))}
+                                  </div>
+                                  <p className="text-[11px] leading-relaxed text-muted-foreground">
+                                    Reservamos as próximas datas no período aberto da loja (
+                                    {shopSettings.booking_horizon_days} dias), sempre às{" "}
+                                    {formatSlotLabel(selectedSlot, shopTimeZone)}. Se algum dia
+                                    estiver ocupado, esse dia é pulado.
+                                  </p>
                                 </div>
-                                <p className="text-[11px] leading-relaxed text-muted-foreground">
-                                  Reservamos as próximas datas no período aberto da loja (
-                                  {shopSettings.booking_horizon_days} dias), sempre às{" "}
-                                  {formatSlotLabel(selectedSlot, shopTimeZone)}. Se algum dia
-                                  estiver ocupado, esse dia é pulado.
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </section>
-                    )}
+                              )}
+                            </div>
+                          )}
+                        </section>
+                      )}
                     {bookingError && (
-                      <p
+                      <div
                         role="alert"
-                        className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
+                        className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
                       >
-                        {bookingError}
-                      </p>
+                        <p>{bookingError}</p>
+                        <button
+                          type="button"
+                          className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground"
+                          onClick={() => {
+                            setBookingError(null);
+                            setSlotsFor("");
+                            setSelectedSlotAt(null);
+                            setAvailabilityVersion((v) => v + 1);
+                          }}
+                        >
+                          Atualizar horários
+                        </button>
+                      </div>
                     )}
-                    {!selectedSlot && !bookingBusy && selectedService && selectedStaff && (
-                      <p className="text-center text-xs text-muted-foreground">
-                        Selecione um horário para continuar.
-                      </p>
-                    )}
+                    {!selectedSlot &&
+                      !bookingBusy &&
+                      selectedService &&
+                      (selectedStaff || anyAvailable) && (
+                        <p className="text-center text-xs text-muted-foreground">
+                          Escolha um horário para continuar.
+                        </p>
+                      )}
                     <button
                       onClick={() => void confirmBooking()}
-                      disabled={!selectedService || !selectedStaff || !selectedSlot || bookingBusy}
+                      disabled={
+                        !selectedService ||
+                        (!selectedStaff && !anyAvailable) ||
+                        !selectedSlot ||
+                        bookingBusy
+                      }
                       className="min-h-12 w-full rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
                     >
                       {bookingBusy
-                        ? "Enviando…"
+                        ? "Reservando…"
                         : rescheduleId
                           ? "Confirmar remarcação"
-                          : "Confirmar reserva"}
+                          : "Reservar este horário"}
                     </button>
                   </div>
                 </>
@@ -2409,7 +2671,7 @@ function ArenaApp({
                                 <button
                                   type="button"
                                   disabled={appointmentBusy !== null}
-                                  onClick={() => void stopSeries(row.series_id!)}
+                                  onClick={() => setStopSeriesTarget(row.series_id!)}
                                   className="w-full rounded-xl border border-border px-3 py-2 text-xs font-bold disabled:opacity-50"
                                 >
                                   Parar recorrência
@@ -2484,7 +2746,7 @@ function ArenaApp({
               <WaitingNotices controller={waiting} />
               <div className="app-section-title">
                 <Bell />
-                <h2>Notificações</h2>
+                <h2>Avisos</h2>
               </div>
               <div className="space-y-3">
                 {notifications.length === 0 ? (
