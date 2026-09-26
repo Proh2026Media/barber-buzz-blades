@@ -1,6 +1,6 @@
 import { SurveyCard } from "@/features/insights/SurveyCard";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
-import { useI18n } from "@/lib/i18n";
+import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
 import { useWaiting } from "@/features/waiting/useWaiting";
 import { WaitingCards, WaitingNotices } from "@/features/waiting/WaitingUI";
 import { blocksSlot } from "@/features/waiting/model";
@@ -25,6 +25,7 @@ import {
   type CatalogViewMode,
 } from "@/features/shop/CatalogViewToggle";
 import { useScrollIndicators } from "@/lib/use-scroll-indicators";
+import { useReturnFocus } from "@/lib/use-return-focus";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTheme } from "@/lib/use-theme";
 import { brandCornerClass, brandFontScopeClass, brandVariables } from "@/lib/shop/branding";
@@ -33,7 +34,7 @@ import { BrandFontFace } from "@/features/shop/BrandFontFace";
 import { DatePicker } from "@/components/ui/schedule-picker";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Link } from "@tanstack/react-router";
-import { useState, useEffect, useRef, type ReactNode } from "react";
+import { Fragment, useState, useEffect, useRef, type ReactNode } from "react";
 import {
   Bell,
   Calendar,
@@ -78,8 +79,8 @@ import {
   buildSlotsForWindow,
   buildBookingDateKeys,
   dateFromLocalKey,
-  formatShopDate,
-  formatSlotLabel,
+  formatShopDate as formatShopDateIn,
+  formatSlotLabel as formatSlotLabelIn,
   shiftDateKey,
   shopDateKey,
   shopDateTime,
@@ -95,13 +96,26 @@ type CustomerAppointment = Tables<"appointments"> & {
   barbershop: Pick<Tables<"barbershops">, "name"> | null;
 };
 
-const statusLabel: Record<Tables<"appointments">["status"], string> = {
-  pending: "Em revisão",
-  reschedule_requested: "Remarcação solicitada",
-  confirmed: "Confirmado",
-  cancelled: "Cancelado",
-  completed: "Concluído",
+const statusKey = {
+  pending: "status.pending",
+  reschedule_requested: "status.reschedule_requested",
+  confirmed: "status.confirmed",
+  cancelled: "status.cancelled",
+  completed: "status.completed",
+} as const satisfies Record<Tables<"appointments">["status"], MessageKey>;
+
+const matchStatusKey: Record<string, MessageKey> = {
+  "AO VIVO": "sports.live",
+  PRORROGAÇÃO: "sports.extraTime",
+  ENC: "sports.final",
 };
+
+/** Troca `{nome}` do texto traduzido por elementos (ex.: trechos em negrito). */
+function richText(template: string, nodes: Record<string, ReactNode>) {
+  return template
+    .split(/\{(\w+)\}/g)
+    .map((part, i) => (i % 2 === 1 ? <Fragment key={i}>{nodes[part] ?? part}</Fragment> : part));
+}
 
 const matches = [
   {
@@ -166,7 +180,21 @@ function ArenaApp({
 } = {}) {
   useScrollIndicators();
   const demo = useDemo();
-  const { t } = useI18n();
+  const { t, intlLocale } = useI18n();
+  const stopSeriesFocus = useReturnFocus();
+  const formatShopDate = (
+    date: Date | string,
+    timeZone: string,
+    options: Intl.DateTimeFormatOptions,
+  ) => formatShopDateIn(date, timeZone, options, intlLocale);
+  const formatSlotLabel = (date: Date, timeZone?: string) =>
+    formatSlotLabelIn(date, timeZone, intlLocale);
+  const formatMoney = (cents: number) =>
+    (cents / 100).toLocaleString(intlLocale, {
+      style: "currency",
+      currency: "BRL",
+      currencyDisplay: "narrowSymbol",
+    });
   const demoChrome = useDemoChrome();
   const [tab, setTab] = useState(initialTab ?? "dashboard");
   const [focusToken] = useState(focusReservationToken);
@@ -190,7 +218,7 @@ function ArenaApp({
   const [bookingBusy, setBookingBusy] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
   const bookingLock = useRef(false);
-  const [sportFilter, setSportFilter] = useState("Todos");
+  const [sportFilter, setSportFilter] = useState<"all" | "football" | "nba">("all");
   const [shopId, setShopId] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState("Cliente");
   const [shopName, setShopName] = useState("Sua barbearia");
@@ -352,11 +380,7 @@ function ArenaApp({
   }, [demo, userId, appointmentVersion]);
 
   const filteredMatches = (demo ? matches : []).filter((m) =>
-    sportFilter === "Todos"
-      ? true
-      : sportFilter === "NBA"
-        ? m.league === "NBA"
-        : m.league !== "NBA",
+    sportFilter === "all" ? true : sportFilter === "nba" ? m.league === "NBA" : m.league !== "NBA",
   );
 
   const selectedService = services[serviceIdx] ?? null;
@@ -990,11 +1014,9 @@ function ArenaApp({
         if (!cancelled) {
           const message = err instanceof Error ? err.message : "";
           if (/not authorized|42501|permission|forbidden|403/i.test(message)) {
-            setSlotsError(
-              "Esta barbearia não está disponível para agendar no momento. Abra o link atualizado da loja ou fale com a equipe.",
-            );
+            setSlotsError(tNow("booking.errorShopUnavailable"));
           } else {
-            setSlotsError("Não foi possível consultar os horários. Tente novamente.");
+            setSlotsError(tNow("booking.errorTimes"));
           }
         }
       } finally {
@@ -1031,7 +1053,7 @@ function ArenaApp({
     if (bookingLock.current || !shopId || !userId || !selectedService || !selectedSlot) return;
     if (!anyAvailable && !selectedStaff) return;
     if (selectedSlot.getTime() <= (demo?.now.getTime() ?? Date.now())) {
-      setBookingError("O horário selecionado já passou. Escolha outro horário.");
+      setBookingError(t("booking.errorPast"));
       setAvailabilityVersion((v) => v + 1);
       return;
     }
@@ -1042,7 +1064,7 @@ function ArenaApp({
     try {
       const endsAt = new Date(selectedSlot.getTime() + selectedService.duration_minutes * 60_000);
       let staffId = selectedStaff?.id ?? null;
-      let staffName = selectedStaff?.display_name ?? "profissional";
+      let staffName = selectedStaff?.display_name ?? t("booking.staffFallback");
       if (anyAvailable && !demo) {
         const prefer = staffAssignmentMode === "favorite_then_pick" ? favoriteStaffId : null;
         const { data: picked, error: pickError } = await supabase.rpc("pick_available_staff", {
@@ -1058,7 +1080,7 @@ function ArenaApp({
         }
         staffId = picked as string;
         staffName =
-          staff.find((row) => row.id === staffId)?.display_name ?? "profissional disponível";
+          staff.find((row) => row.id === staffId)?.display_name ?? t("booking.anyStaffFallback");
       }
       if (!staffId) throw new Error("Selecione um profissional.");
 
@@ -1134,10 +1156,18 @@ function ArenaApp({
       });
       const repeatNote = repeatEnabled
         ? repeatKind === "weekday"
-          ? " Recorrente: mesmo dia da semana."
-          : ` Recorrente: a cada ${repeatInterval} dias.`
+          ? ` ${t("booking.repeatWeekdayNote")}`
+          : ` ${t("booking.repeatIntervalNote", { days: repeatInterval })}`
         : "";
-      const summary = `${rescheduleId ? "Remarcado: " : ""}${selectedService.name} com ${staffName} em ${dateLabel} às ${formatSlotLabel(selectedSlot, shopTimeZone)}.${repeatNote}`;
+      const summary = `${rescheduleId ? t("booking.rescheduledPrefix") : ""}${t(
+        "booking.describe",
+        {
+          service: selectedService.name,
+          staff: staffName,
+          date: dateLabel,
+          time: formatSlotLabel(selectedSlot, shopTimeZone),
+        },
+      )}.${repeatNote}`;
       setBookingSummary(summary);
       setRepeatEnabled(false);
       setRescheduleId(null);
@@ -1148,9 +1178,9 @@ function ArenaApp({
       setNotifications((n) => [
         {
           id: Date.now(),
-          title: rescheduleId ? "Horário remarcado" : "Horário reservado",
+          title: rescheduleId ? t("booking.rescheduled") : t("booking.reserved"),
           text: summary,
-          time: (demo?.now ?? new Date()).toLocaleTimeString("pt-BR", {
+          time: (demo?.now ?? new Date()).toLocaleTimeString(intlLocale, {
             hour: "2-digit",
             minute: "2-digit",
           }),
@@ -1163,10 +1193,10 @@ function ArenaApp({
       const code = err && typeof err === "object" && "code" in err ? err.code : null;
       setBookingError(
         code === "23P01"
-          ? "Este horário acabou de ser reservado. Escolha outro horário."
+          ? t("booking.errorTaken")
           : code === "22023"
-            ? "O horário selecionado já passou. Escolha outro horário."
-            : "Não foi possível agendar. Atualize os horários e tente novamente.",
+            ? t("booking.errorPast")
+            : t("booking.errorGeneric"),
       );
       setAvailabilityVersion((v) => v + 1);
     } finally {
@@ -1176,11 +1206,16 @@ function ArenaApp({
   };
 
   const describeAppointment = (row: CustomerAppointment) =>
-    `${row.service?.name ?? "Serviço"} com ${row.staff?.display_name ?? "profissional"} em ${formatShopDate(
-      row.starts_at,
-      shopTimeZone,
-      { weekday: "short", day: "2-digit", month: "2-digit" },
-    )} às ${formatSlotLabel(new Date(row.starts_at), shopTimeZone)}`;
+    t("booking.describe", {
+      service: row.service?.name ?? t("booking.serviceFallback"),
+      staff: row.staff?.display_name ?? t("booking.staffFallback"),
+      date: formatShopDate(row.starts_at, shopTimeZone, {
+        weekday: "short",
+        day: "2-digit",
+        month: "2-digit",
+      }),
+      time: formatSlotLabel(new Date(row.starts_at), shopTimeZone),
+    });
 
   const cancelAppointment = async () => {
     const row = cancelTarget;
@@ -1207,11 +1242,9 @@ function ArenaApp({
       setAvailabilityVersion((v) => v + 1);
       setCancelTarget(null);
       setCancelReason("");
-      setAppointmentsNotice(
-        `Horário cancelado: ${describeAppointment(row)}. O horário foi liberado.`,
-      );
+      setAppointmentsNotice(t("bookings.cancelledNotice", { summary: describeAppointment(row) }));
     } catch {
-      setAppointmentsError("Não foi possível cancelar. Atualize a lista e tente novamente.");
+      setAppointmentsError(t("bookings.cancelError"));
     } finally {
       setAppointmentBusy(null);
     }
@@ -1223,7 +1256,7 @@ function ArenaApp({
     setAppointmentsNotice(null);
     try {
       if (demo) {
-        setAppointmentsError("Recorrência não está disponível na demonstração.");
+        setAppointmentsError(t("bookings.repeatDemo"));
         return;
       }
       const { error } = await supabase.rpc("stop_booking_series", { p_series_id: seriesId });
@@ -1231,11 +1264,9 @@ function ArenaApp({
       setAppointmentVersion((v) => v + 1);
       setAvailabilityVersion((v) => v + 1);
       setStopSeriesTarget(null);
-      setAppointmentsNotice(
-        "Repetição encerrada. Os próximos horários dessa série foram cancelados.",
-      );
+      setAppointmentsNotice(t("bookings.repeatStopped"));
     } catch {
-      setAppointmentsError("Não foi possível parar a recorrência. Tente novamente.");
+      setAppointmentsError(t("bookings.repeatStopError"));
     } finally {
       setAppointmentBusy(null);
     }
@@ -1290,7 +1321,7 @@ function ArenaApp({
         greeting: "Bem-vindo ao topo, Membro Exclusive.",
         minPoints: 500,
         nextAt: null,
-        benefit: "Prioridade máxima e acesso às experiências mais exclusivas do clube.",
+        benefit: t("tier.exclusive.benefit"),
       };
     if (pts >= 300)
       return {
@@ -1306,7 +1337,7 @@ function ArenaApp({
         greeting: "Bom dia, Membro Privilege.",
         minPoints: 300,
         nextAt: 500,
-        benefit: "Descontos em produtos e uma experiência de atendimento premium.",
+        benefit: t("tier.privilege.benefit"),
       };
     if (pts >= 100)
       return {
@@ -1322,7 +1353,7 @@ function ArenaApp({
         greeting: "Olá, Membro Select.",
         minPoints: 100,
         nextAt: 300,
-        benefit: "Prioridade na agenda e lugar cativo na experiência da barbearia.",
+        benefit: t("tier.select.benefit"),
       };
     return {
       key: "classic",
@@ -1336,7 +1367,7 @@ function ArenaApp({
       greeting: "Bem-vindo, Membro Classic.",
       minPoints: 0,
       nextAt: 100,
-      benefit: "Você acumula pontos enquanto mantém o cuidado com o seu visual.",
+      benefit: t("tier.classic.benefit"),
     };
   };
 
@@ -1476,13 +1507,10 @@ function ArenaApp({
           if (!open && appointmentBusy === null) setStopSeriesTarget(null);
         }}
       >
-        <AlertDialogContent className="rounded-3xl">
+        <AlertDialogContent className="rounded-3xl" {...stopSeriesFocus}>
           <AlertDialogHeader>
-            <AlertDialogTitle>Parar a recorrência?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Todos os próximos horários desta série serão cancelados. Os atendimentos já passados
-              permanecem no histórico.
-            </AlertDialogDescription>
+            <AlertDialogTitle>{t("bookings.stopRepeatTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("bookings.stopRepeatBody")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
             <button
@@ -1491,7 +1519,7 @@ function ArenaApp({
               className="min-h-11 rounded-xl border border-border px-4 text-sm font-semibold"
               onClick={() => setStopSeriesTarget(null)}
             >
-              Manter recorrência
+              {t("bookings.keepRepeat")}
             </button>
             <button
               type="button"
@@ -1501,7 +1529,7 @@ function ArenaApp({
                 if (stopSeriesTarget) void stopSeries(stopSeriesTarget);
               }}
             >
-              {appointmentBusy ? "Cancelando…" : "Parar e cancelar próximos"}
+              {appointmentBusy ? t("bookings.cancelling") : t("bookings.stopRepeatConfirm")}
             </button>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1701,7 +1729,7 @@ function ArenaApp({
                 <div className="flex justify-between items-start relative z-10">
                   <div className="min-w-0 pr-4">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                      Membro
+                      {t("home.member")}
                     </p>
                     <h2 className="brand-loyalty-name text-2xl sm:text-3xl break-words">
                       {customerName}
@@ -1719,7 +1747,7 @@ function ArenaApp({
                 <div className="flex justify-between items-end mt-2 relative z-10">
                   <div>
                     <p className="text-sm font-semibold text-muted-foreground mb-1">
-                      Saldo de pontos
+                      {t("home.pointsBalance")}
                     </p>
                     <p
                       className={`text-4xl sm:text-5xl font-black tabular-nums tracking-tight ${tier.colorClass}`}
@@ -1732,7 +1760,9 @@ function ArenaApp({
                     className={`mb-loyalty-tier-mark mb-loyalty-tier-${tier.key} flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm mb-1`}
                   >
                     <tier.icon className="size-4" />
-                    <span className="text-xs font-bold whitespace-nowrap">Nível {tier.name}</span>
+                    <span className="text-xs font-bold whitespace-nowrap">
+                      {t("tier.level", { name: tier.name })}
+                    </span>
                   </div>
                 </div>
               </section>
@@ -1751,9 +1781,9 @@ function ArenaApp({
                     <Receipt className="size-4" />
                   </span>
                   <span>
-                    <span className="block text-sm font-bold">Extrato de pontos</span>
+                    <span className="block text-sm font-bold">{t("home.pointsStatement")}</span>
                     <span className="block text-xs text-muted-foreground">
-                      Veja quando você ganhou ou perdeu pontos
+                      {t("home.pointsStatementHint")}
                     </span>
                   </span>
                 </span>
@@ -1763,7 +1793,7 @@ function ArenaApp({
               {/* Card 3: Próximo atendimento */}
               <section
                 className="app-action-card cursor-pointer hover:border-gold transition-colors"
-                aria-label="Próximo atendimento"
+                aria-label={t("home.next")}
                 onClick={() => {
                   setReservationFilter("upcoming");
                   setTab("reservas");
@@ -1781,13 +1811,13 @@ function ArenaApp({
                 <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
                   <h3 className="flex items-center gap-2 text-sm font-bold">
                     <Calendar className="size-4" />
-                    Próximo atendimento
+                    {t("home.next")}
                   </h3>
                 </div>
                 <div className="p-5">
                   {appointmentsLoading ? (
                     <p role="status" className="text-sm text-muted-foreground">
-                      Consultando sua agenda…
+                      {t("home.loadingSchedule")}
                     </p>
                   ) : appointmentsError ? (
                     <p role="alert" className="text-sm text-destructive">
@@ -1813,22 +1843,25 @@ function ArenaApp({
                             {formatSlotLabel(new Date(nextAppointment.starts_at), shopTimeZone)}
                           </p>
                           <p className="text-sm font-bold mt-0.5">
-                            {nextAppointment.service?.name ?? "Serviço"}
+                            {nextAppointment.service?.name ?? t("booking.serviceFallback")}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            Com {nextAppointment.staff?.display_name ?? "Profissional"}
+                            {t("home.withStaff", {
+                              name:
+                                nextAppointment.staff?.display_name ?? t("bookings.staffFallback"),
+                            })}
                           </p>
                         </div>
                       </div>
                       <span className={`status-pill status-${nextAppointment.status}`}>
-                        {statusLabel[nextAppointment.status]}
+                        {t(statusKey[nextAppointment.status])}
                       </span>
                     </div>
                   ) : (
                     <EmptyState
                       tone="calendar"
-                      title="Nenhum horário marcado"
-                      description="Escolha um dia, um serviço e um barbeiro em poucos toques."
+                      title={t("home.emptyTitle")}
+                      description={t("home.emptyHint")}
                       className="border-0 bg-transparent px-0 py-2 shadow-none"
                     />
                   )}
@@ -1843,7 +1876,7 @@ function ArenaApp({
             <div className="space-y-6">
               <div className="app-section-title">
                 <Calendar />
-                <h2>{rescheduleId ? "Remarcar atendimento" : "Agendar atendimento"}</h2>
+                <h2>{rescheduleId ? t("booking.titleReschedule") : t("booking.title")}</h2>
               </div>
               {bookingSummary && (
                 <section
@@ -1852,12 +1885,11 @@ function ArenaApp({
                 >
                   <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
                     <CheckCircle className="size-5" />
-                    Horário reservado
+                    {t("booking.reserved")}
                   </div>
                   <p className="text-sm leading-relaxed">{bookingSummary}</p>
                   <p className="text-xs leading-relaxed text-muted-foreground">
-                    Você pode acompanhar, remarcar ou cancelar em Reservas. A barbearia pode pedir
-                    alteração se precisar.
+                    {t("booking.doneHint")}
                   </p>
                   <button
                     type="button"
@@ -1867,7 +1899,7 @@ function ArenaApp({
                     }}
                     className="min-h-11 w-full rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground"
                   >
-                    Acompanhar reserva
+                    {t("booking.track")}
                   </button>
                   <button
                     type="button"
@@ -1877,7 +1909,7 @@ function ArenaApp({
                     }}
                     className="min-h-11 w-full text-sm font-semibold"
                   >
-                    Marcar outro horário
+                    {t("booking.another")}
                   </button>
                 </section>
               )}
@@ -1891,32 +1923,32 @@ function ArenaApp({
                   )}
                   <div className="space-y-4">
                     {catalogLoading && (
-                      <p className="text-xs text-muted-foreground">Carregando catálogo...</p>
+                      <p className="text-xs text-muted-foreground">{t("booking.loadingCatalog")}</p>
                     )}
                     {catalogError && <p className="text-xs text-destructive">{catalogError}</p>}
 
                     {rescheduleId && (
                       <div className="flex flex-col gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
-                        <span className="font-semibold">Escolha o novo horário da reserva.</span>
+                        <span className="font-semibold">{t("booking.pickNewTime")}</span>
                         <button
                           type="button"
                           disabled={bookingBusy}
                           onClick={() => setRescheduleId(null)}
                           className="min-h-11 rounded-xl border border-border bg-background px-4 text-sm font-semibold text-foreground"
                         >
-                          Voltar sem remarcar
+                          {t("booking.keepTime")}
                         </button>
                       </div>
                     )}
 
                     <section className="booking-section" aria-labelledby="booking-date">
                       <h3 id="booking-date" className="booking-heading">
-                        Data
+                        {t("booking.date")}
                       </h3>
                       <DatePicker
                         compact
                         disabled={bookingBusy}
-                        label="Escolher no calendário"
+                        label={t("booking.pickCalendar")}
                         value={selectedDay}
                         onChange={(value) => {
                           setSelectedDay(value);
@@ -1959,11 +1991,11 @@ function ArenaApp({
                                 setBookingError(null);
                               }}
                               aria-pressed={selected}
-                              aria-label={`${weekday}, ${dayNumber} de ${month}`}
+                              aria-label={t("booking.dayAria", { weekday, day: dayNumber, month })}
                               className={`app-day-chip ${selected ? "app-day-chip-selected" : ""}`}
                             >
                               <span className="block text-[10px] font-bold uppercase tracking-wide opacity-80">
-                                {index === 0 ? "Hoje" : weekday}
+                                {index === 0 ? t("booking.today") : weekday}
                               </span>
                               <span className="mt-0.5 block text-xl font-black leading-none tabular-nums">
                                 {dayNumber}
@@ -1987,7 +2019,7 @@ function ArenaApp({
                     <section className="booking-section" aria-labelledby="booking-service">
                       <div className="flex items-center justify-between gap-2">
                         <h3 id="booking-service" className="booking-heading">
-                          Serviço
+                          {t("booking.service")}
                         </h3>
                         {services.length > 0 && (
                           <CatalogViewToggle
@@ -1998,7 +2030,7 @@ function ArenaApp({
                       </div>
                       {!catalogLoading && !catalogError && services.length === 0 && (
                         <p role="status" className="text-sm text-muted-foreground">
-                          Nenhum serviço disponível para agendar.
+                          {t("booking.noServices")}
                         </p>
                       )}
                       <div
@@ -2074,11 +2106,7 @@ function ArenaApp({
                                         : "text-muted-foreground"
                                     }`}
                                   >
-                                    {s.duration_minutes} min ·{" "}
-                                    {(s.price_cents / 100).toLocaleString("pt-BR", {
-                                      style: "currency",
-                                      currency: "BRL",
-                                    })}
+                                    {s.duration_minutes} min · {formatMoney(s.price_cents)}
                                   </span>
                                 </div>
                               </>
@@ -2112,11 +2140,7 @@ function ArenaApp({
                                       : "text-muted-foreground"
                                   }`}
                                 >
-                                  {s.duration_minutes} min ·{" "}
-                                  {(s.price_cents / 100).toLocaleString("pt-BR", {
-                                    style: "currency",
-                                    currency: "BRL",
-                                  })}
+                                  {s.duration_minutes} min · {formatMoney(s.price_cents)}
                                 </span>
                               </>
                             )}
@@ -2128,7 +2152,7 @@ function ArenaApp({
                     <section className="booking-section" aria-labelledby="booking-staff">
                       <div className="flex items-center justify-between gap-2">
                         <h3 id="booking-staff" className="booking-heading">
-                          Barbeiro
+                          {t("booking.staff")}
                         </h3>
                         {!directBarberSlug && staff.length > 0 && (
                           <CatalogViewToggle viewMode={staffView} onViewMode={changeStaffView} />
@@ -2136,17 +2160,17 @@ function ArenaApp({
                       </div>
                       {!catalogLoading && !catalogError && staff.length === 0 && (
                         <p role="status" className="text-sm text-muted-foreground">
-                          Nenhum profissional disponível para agendar.
+                          {t("booking.noStaff")}
                         </p>
                       )}
                       {directBarberSlug && selectedStaff ? (
                         <div className="rounded-2xl border border-primary/25 bg-primary/5 p-4">
                           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                            Link direto do profissional
+                            {t("booking.directLink")}
                           </p>
                           <p className="mt-1 font-bold">{selectedStaff.display_name}</p>
                           <p className="mt-1 text-xs text-muted-foreground">
-                            Este agendamento está vinculado a este barbeiro.
+                            {t("booking.directLinkHint")}
                           </p>
                         </div>
                       ) : (
@@ -2173,9 +2197,9 @@ function ArenaApp({
                                   : "border-border bg-muted/20 text-foreground hover:border-primary/50"
                               } ${staffView === "list" ? "col-span-full" : "col-span-2"}`}
                             >
-                              Qualquer profissional disponível
+                              {t("booking.anyStaff")}
                               {staffAssignmentMode === "favorite_then_pick" && favoriteStaffId
-                                ? " (preferindo o favorito)"
+                                ? ` ${t("booking.preferFavorite")}`
                                 : ""}
                             </button>
                           )}
@@ -2300,14 +2324,14 @@ function ArenaApp({
 
                     <section className="booking-section" aria-labelledby="booking-time">
                       <h3 id="booking-time" className="booking-heading">
-                        Horário
+                        {t("booking.time")}
                       </h3>
                       {!selectedService || (!selectedStaff && !anyAvailable) ? (
                         <p className="text-sm text-muted-foreground">
-                          Os horários aparecem quando há serviço e profissional disponíveis.
+                          {t("booking.timesNeedChoice")}
                         </p>
                       ) : slotsLoading && slotsFor !== selectionKey ? (
-                        <p className="text-xs text-muted-foreground">Consultando horários...</p>
+                        <p className="text-xs text-muted-foreground">{t("booking.loadingTimes")}</p>
                       ) : slotsError ? (
                         <div className="space-y-2">
                           <p className="text-xs text-destructive" role="alert">
@@ -2317,19 +2341,17 @@ function ArenaApp({
                             className="text-xs underline"
                             onClick={() => setAvailabilityVersion((v) => v + 1)}
                           >
-                            Tentar novamente
+                            {t("common.retry")}
                           </button>
                         </div>
                       ) : availableSlots.length === 0 ? (
-                        <p className="text-xs text-muted-foreground">
-                          Sem horários livres. Escolha outra data ou outro barbeiro.
-                        </p>
+                        <p className="text-xs text-muted-foreground">{t("booking.noTimes")}</p>
                       ) : (
                         <div className="space-y-4 p-1">
                           {[
-                            { label: "Manhã", from: 0, to: 12, icon: Sun },
-                            { label: "Tarde", from: 12, to: 18, icon: Sun },
-                            { label: "Noite", from: 18, to: 24, icon: Moon },
+                            { label: t("booking.morning"), from: 0, to: 12, icon: Sun },
+                            { label: t("booking.afternoon"), from: 12, to: 18, icon: Sun },
+                            { label: t("booking.evening"), from: 18, to: 24, icon: Moon },
                           ].map(({ label, from, to, icon: Icon }) => {
                             const periodSlots = availableSlots.filter(
                               (slot) => slot.getHours() >= from && slot.getHours() < to,
@@ -2380,27 +2402,22 @@ function ArenaApp({
                       (selectedStaff || anyAvailable) &&
                       !bookingSummary && (
                         <section
-                          aria-label="Resumo da reserva"
+                          aria-label={t("booking.summaryAria")}
                           className="rounded-2xl border border-gold/30 bg-card p-4 space-y-3"
                         >
                           <p className="flex items-center gap-2 text-sm font-bold">
                             <Calendar className="size-4 text-gold" />
-                            Sua reserva
+                            {t("booking.yourBooking")}
                           </p>
                           <div className="flex justify-between gap-3">
                             <div>
                               <p className="text-sm font-semibold">{selectedService.name}</p>
                               <p className="text-xs text-muted-foreground">
-                                {anyAvailable
-                                  ? "Qualquer profissional disponível"
-                                  : selectedStaff?.display_name}
+                                {anyAvailable ? t("booking.anyStaff") : selectedStaff?.display_name}
                               </p>
                             </div>
                             <p className="text-sm font-bold">
-                              {(selectedService.price_cents / 100).toLocaleString("pt-BR", {
-                                style: "currency",
-                                currency: "BRL",
-                              })}
+                              {formatMoney(selectedService.price_cents)}
                             </p>
                           </div>
                           <p className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -2416,7 +2433,7 @@ function ArenaApp({
                           {!rescheduleId && (
                             <div className="space-y-2 border-t border-border/60 pt-3">
                               <label className="flex items-center justify-between gap-3 text-sm font-semibold">
-                                Repetir horário
+                                {t("booking.repeat")}
                                 <input
                                   type="checkbox"
                                   checked={repeatEnabled}
@@ -2437,7 +2454,7 @@ function ArenaApp({
                                           : "border-border text-muted-foreground"
                                       }`}
                                     >
-                                      Toda semana neste dia
+                                      {t("booking.everyWeek")}
                                     </button>
                                     {([7, 15, 21] as const).map((days) => (
                                       <button
@@ -2456,15 +2473,15 @@ function ArenaApp({
                                             : "border-border text-muted-foreground"
                                         }`}
                                       >
-                                        A cada {days} dias
+                                        {t("booking.everyDays", { days })}
                                       </button>
                                     ))}
                                   </div>
                                   <p className="text-[11px] leading-relaxed text-muted-foreground">
-                                    Reservamos as próximas datas no período aberto da loja (
-                                    {shopSettings.booking_horizon_days} dias), sempre às{" "}
-                                    {formatSlotLabel(selectedSlot, shopTimeZone)}. Se algum dia
-                                    estiver ocupado, esse dia é pulado.
+                                    {t("booking.repeatHint", {
+                                      days: shopSettings.booking_horizon_days,
+                                      time: formatSlotLabel(selectedSlot, shopTimeZone),
+                                    })}
                                   </p>
                                 </div>
                               )}
@@ -2488,7 +2505,7 @@ function ArenaApp({
                             setAvailabilityVersion((v) => v + 1);
                           }}
                         >
-                          Atualizar horários
+                          {t("booking.refreshTimes")}
                         </button>
                       </div>
                     )}
@@ -2497,7 +2514,7 @@ function ArenaApp({
                       selectedService &&
                       (selectedStaff || anyAvailable) && (
                         <p className="text-center text-xs text-muted-foreground">
-                          Escolha um horário para continuar.
+                          {t("booking.chooseTime")}
                         </p>
                       )}
                     <button
@@ -2511,10 +2528,10 @@ function ArenaApp({
                       className="min-h-12 w-full rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
                     >
                       {bookingBusy
-                        ? "Reservando…"
+                        ? t("booking.booking")
                         : rescheduleId
-                          ? "Confirmar remarcação"
-                          : "Reservar este horário"}
+                          ? t("booking.confirmReschedule")
+                          : t("booking.confirm")}
                     </button>
                   </div>
                 </>
@@ -2534,7 +2551,7 @@ function ArenaApp({
               <div>
                 <div className="app-section-title">
                   <Clock3 />
-                  <h2>Meus agendamentos</h2>
+                  <h2>{t("bookings.title")}</h2>
                 </div>
                 {!demo && (
                   <button
@@ -2543,17 +2560,17 @@ function ArenaApp({
                     onClick={() => setAppointmentVersion((version) => version + 1)}
                     className="mt-3 rounded-xl border border-border px-4 py-2 text-xs font-semibold disabled:opacity-50"
                   >
-                    {appointmentsRefreshing ? "Conferindo…" : "Conferir agora"}
+                    {appointmentsRefreshing ? t("bookings.checking") : t("bookings.checkNow")}
                   </button>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-2" aria-label="Filtrar agendamentos">
+              <div className="grid grid-cols-2 gap-2" aria-label={t("bookings.filterAria")}>
                 {(
                   [
-                    { id: "upcoming", label: "Próximos" },
-                    { id: "history", label: "Histórico" },
-                    { id: "completed", label: "Concluídos" },
-                    { id: "cancelled", label: "Cancelados" },
+                    { id: "upcoming", label: t("bookings.upcoming") },
+                    { id: "history", label: t("bookings.history") },
+                    { id: "completed", label: t("bookings.completed") },
+                    { id: "cancelled", label: t("bookings.cancelled") },
                   ] as const
                 ).map(({ id, label }) => (
                   <button
@@ -2591,27 +2608,27 @@ function ArenaApp({
                 </div>
               )}
               {appointmentsLoading ? (
-                <p className="text-xs text-muted-foreground">Carregando agendamentos...</p>
+                <p className="text-xs text-muted-foreground">{t("bookings.loading")}</p>
               ) : visibleReservations.length === 0 &&
                 appointmentsError ? null : visibleReservations.length === 0 ? (
                 <EmptyState
                   tone="calendar"
                   title={
                     reservationFilter === "upcoming"
-                      ? "Você não tem próximos agendamentos"
-                      : "Nenhum agendamento neste filtro"
+                      ? t("bookings.emptyUpcoming")
+                      : t("bookings.emptyFilter")
                   }
                   description={
                     reservationFilter === "upcoming"
-                      ? "Reserve um horário e ele aparece aqui com status e opções de gestão."
-                      : "Troque o filtro ou marque um novo atendimento."
+                      ? t("bookings.emptyUpcomingHint")
+                      : t("bookings.emptyFilterHint")
                   }
                   action={
                     <button
                       onClick={() => setTab("agenda")}
                       className="flex min-h-11 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
                     >
-                      Agendar agora
+                      {t("bookings.bookNow")}
                     </button>
                   }
                 />
@@ -2637,20 +2654,22 @@ function ArenaApp({
                                 className="size-4 text-gold"
                                 imageClassName="size-8 rounded-lg"
                               />
-                              <p className="text-sm font-black">{row.service?.name ?? "Serviço"}</p>
+                              <p className="text-sm font-black">
+                                {row.service?.name ?? t("booking.serviceFallback")}
+                              </p>
                             </div>
                             <p className="mt-1 text-xs text-muted-foreground">
-                              {row.barbershop?.name ?? "Barbearia"} ·{" "}
-                              {row.staff?.display_name ?? "Profissional"}
+                              {row.barbershop?.name ?? t("bookings.shopFallback")} ·{" "}
+                              {row.staff?.display_name ?? t("bookings.staffFallback")}
                             </p>
                           </div>
                           <span className={`status-pill status-${row.status}`}>
-                            {statusLabel[row.status]}
+                            {t(statusKey[row.status])}
                           </span>
                         </div>
                         {row.series_id ? (
                           <p className="mt-2 inline-flex rounded-full border border-gold/40 bg-gold/10 px-2 py-0.5 text-[11px] font-semibold text-gold">
-                            Recorrente
+                            {t("bookings.recurring")}
                           </p>
                         ) : null}
                         <p className="mt-4 text-sm font-bold">
@@ -2660,14 +2679,13 @@ function ArenaApp({
                             month: "long",
                             year: "numeric",
                           })}{" "}
-                          às {formatSlotLabel(startsAt, shopTimeZone)}
+                          {t("booking.atTime", { time: formatSlotLabel(startsAt, shopTimeZone) })}
                         </p>
                         {row.status === "cancelled" && cancellationDetails[row.id] && (
                           <p className="mt-2 text-xs text-muted-foreground">
-                            Cancelado pela{" "}
                             {cancellationDetails[row.id].source === "customer"
-                              ? "pessoa cliente"
-                              : "barbearia"}
+                              ? t("bookings.cancelledByCustomer")
+                              : t("bookings.cancelledByShop")}
                             {` · ${cancellationReasonLabel(cancellationDetails[row.id].reason)}`}
                           </p>
                         )}
@@ -2675,8 +2693,7 @@ function ArenaApp({
                           <>
                             {row.status === "reschedule_requested" && (
                               <p className="mt-3 text-sm text-muted-foreground">
-                                A barbearia retirou a confirmação. Remarque ou cancele
-                                definitivamente.
+                                {t("bookings.shopRemovedConfirmation")}
                               </p>
                             )}
                             <div className="mt-4 flex flex-wrap gap-2">
@@ -2685,7 +2702,7 @@ function ArenaApp({
                                 onClick={() => beginReschedule(row)}
                                 className="flex-1 rounded-xl border border-border px-3 py-2 text-xs font-bold disabled:opacity-50"
                               >
-                                Remarcar
+                                {t("bookings.reschedule")}
                               </button>
                               <button
                                 disabled={appointmentBusy !== null}
@@ -2693,7 +2710,9 @@ function ArenaApp({
                                 className="action-button action-danger"
                               >
                                 <X className="size-4" />
-                                {appointmentBusy === row.id ? "Cancelando..." : "Cancelar"}
+                                {appointmentBusy === row.id
+                                  ? t("bookings.cancelling")
+                                  : t("bookings.cancel")}
                               </button>
                               {row.series_id ? (
                                 <button
@@ -2702,7 +2721,7 @@ function ArenaApp({
                                   onClick={() => setStopSeriesTarget(row.series_id!)}
                                   className="w-full rounded-xl border border-border px-3 py-2 text-xs font-bold disabled:opacity-50"
                                 >
-                                  Parar recorrência
+                                  {t("bookings.stopRepeat")}
                                 </button>
                               ) : null}
                             </div>
@@ -2720,20 +2739,22 @@ function ArenaApp({
             <div className="space-y-6">
               {!demo && (
                 <p className="rounded-lg border border-border bg-card p-4 text-sm">
-                  Módulo Esportes ativo. A programação de jogos ainda não foi configurada.
+                  {t("sports.notConfigured")}
                 </p>
               )}
-              {demo && (
-                <p className="text-xs text-muted-foreground">
-                  Placares fictícios para demonstração.
-                </p>
-              )}
+              {demo && <p className="text-xs text-muted-foreground">{t("sports.demoNote")}</p>}
               <div className="app-section-title">
                 <Feather />
-                <h2>Noticiário e resultados</h2>
+                <h2>{t("sports.title")}</h2>
               </div>
               <div className="flex space-x-2 overflow-x-auto pb-2 border-b border-border">
-                {["Todos", "Futebol", "NBA"].map((f) => (
+                {(
+                  [
+                    { id: "all", label: t("sports.all") },
+                    { id: "football", label: t("sports.football") },
+                    { id: "nba", label: "NBA" },
+                  ] as const
+                ).map(({ id: f, label }) => (
                   <button
                     key={f}
                     onClick={() => setSportFilter(f)}
@@ -2741,7 +2762,7 @@ function ArenaApp({
                     type="button"
                     className={`min-h-11 text-xs uppercase font-bold px-4 py-2 rounded-xl border transition-all whitespace-nowrap ${sportFilter === f ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-foreground hover:border-primary/50"}`}
                   >
-                    {f}
+                    {label}
                   </button>
                 ))}
               </div>
@@ -2753,7 +2774,7 @@ function ArenaApp({
                   >
                     <div className="flex justify-between items-center mb-4">
                       <span className="text-xs text-muted-foreground font-bold uppercase">
-                        {m.league} · {m.status}
+                        {m.league} · {t(matchStatusKey[m.status])}
                       </span>
                     </div>
                     <div className="flex items-center justify-between font-bold text-sm">
@@ -2775,14 +2796,14 @@ function ArenaApp({
               <WaitingNotices controller={waiting} />
               <div className="app-section-title">
                 <Bell />
-                <h2>Avisos</h2>
+                <h2>{t("nav.notices")}</h2>
               </div>
               <div className="space-y-3">
                 {notifications.length === 0 ? (
                   <EmptyState
                     tone="bell"
-                    title="Tudo quieto por aqui"
-                    description="Avisos de espera, reservas e novidades da barbearia aparecem neste espaço."
+                    title={t("notices.emptyTitle")}
+                    description={t("notices.emptyHint")}
                   />
                 ) : (
                   notifications.map((n) => (
@@ -2850,6 +2871,7 @@ const VipInfoModal = ({
 }) => {
   const closeButton = useRef<HTMLButtonElement>(null);
   const dialog = useRef<HTMLDivElement>(null);
+  const { t } = useI18n();
   useEffect(() => {
     if (!isOpen) return;
     const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -2902,13 +2924,13 @@ const VipInfoModal = ({
           <div className="flex items-center gap-2">
             <Trophy className="text-primary size-5" />
             <h3 id="vip-benefits-title" className="font-bold text-foreground">
-              Clube de Benefícios
+              {t("club.title")}
             </h3>
           </div>
           <button
             ref={closeButton}
             onClick={onClose}
-            aria-label="Fechar o clube de benefícios"
+            aria-label={t("club.close")}
             className="flex size-11 items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
           >
             <X size={18} />
@@ -2917,20 +2939,26 @@ const VipInfoModal = ({
 
         <div className="dialog-scroll-area flex-1 space-y-6 overflow-y-auto p-5">
           <section>
-            <h4 className="mb-3 text-sm font-semibold text-foreground">Como acumular</h4>
+            <h4 className="mb-3 text-sm font-semibold text-foreground">{t("club.howToEarn")}</h4>
             <div className="space-y-3">
               <div className="bg-muted/30 p-3 rounded-2xl border border-border/50">
                 <p className="text-xs font-medium leading-relaxed">
-                  Cada <span className="font-bold text-foreground">R$ 1,00 gasto</span> em serviços
-                  ou produtos equivale a <span className="font-bold text-primary">1 Ponto</span>.
+                  {richText(t("club.earnSpend"), {
+                    amount: (
+                      <span className="font-bold text-foreground">{t("club.amountSpent")}</span>
+                    ),
+                    points: <span className="font-bold text-primary">{t("club.onePoint")}</span>,
+                  })}
                 </p>
               </div>
               {sportsEnabled && (
                 <div className="flex items-start gap-3 bg-muted/30 p-3 rounded-2xl border border-border/50">
                   <Star size={16} className="text-primary mt-0.5" />
                   <p className="text-xs font-medium leading-relaxed">
-                    Check-in em <span className="font-bold text-foreground">dias de jogo</span> na
-                    Arena garante <span className="font-bold text-primary">10 Pontos</span> bônus.
+                    {richText(t("club.earnCheckin"), {
+                      days: <span className="font-bold text-foreground">{t("club.gameDays")}</span>,
+                      points: <span className="font-bold text-primary">{t("club.tenPoints")}</span>,
+                    })}
                   </p>
                 </div>
               )}
@@ -2938,7 +2966,7 @@ const VipInfoModal = ({
           </section>
 
           <section>
-            <h4 className="mb-3 text-sm font-semibold text-foreground">Níveis do clube</h4>
+            <h4 className="mb-3 text-sm font-semibold text-foreground">{t("club.levels")}</h4>
             <div className="space-y-4">
               {/* Classic */}
               <div className="bg-muted/40 p-4 rounded-2xl border border-border/60 shadow-sm group hover:bg-muted/60 transition-all">
@@ -2954,7 +2982,7 @@ const VipInfoModal = ({
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed pl-9">
-                  O alicerce: Tradição e manutenção impecável do seu visual (Prata Metálico).
+                  {t("club.classic")}
                 </p>
               </div>
 
@@ -2972,7 +3000,7 @@ const VipInfoModal = ({
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed pl-9">
-                  Conveniência: Prioridade na agenda e lugar cativo na Arena (Bronze Metálico).
+                  {t("club.select")}
                 </p>
               </div>
 
@@ -2990,7 +3018,7 @@ const VipInfoModal = ({
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed pl-9">
-                  Experiência: Descontos em produtos e atendimento premium (Ouro Metálico).
+                  {t("club.privilege")}
                 </p>
               </div>
 
@@ -3016,21 +3044,18 @@ const VipInfoModal = ({
                     <span className="text-gradient-hologram">Exclusive</span>
                   </span>
                   <span className="text-xs font-black text-black bg-hologram-metallic px-3 py-0.5 rounded-full shadow-md">
-                    500+ pts ou Assinatura
+                    {t("club.exclusiveRange")}
                   </span>
                 </div>
                 <ul className="space-y-1.5">
                   <li className="text-xs font-bold flex items-center gap-2">
-                    <CheckCircle size={10} className="text-gradient-hologram" /> Prioridade máxima
-                    nos horários disputados
+                    <CheckCircle size={10} className="text-gradient-hologram" /> {t("club.perk1")}
                   </li>
                   <li className="text-xs font-bold flex items-center gap-2 text-foreground/80">
-                    <CheckCircle size={10} className="text-gradient-hologram" /> Acesso irrestrito
-                    ao Lounge VIP
+                    <CheckCircle size={10} className="text-gradient-hologram" /> {t("club.perk2")}
                   </li>
                   <li className="text-xs font-bold flex items-center gap-2 text-foreground/80">
-                    <CheckCircle size={10} className="text-gradient-hologram" /> Plano de Cortes
-                    Ilimitados (Exclusivo)
+                    <CheckCircle size={10} className="text-gradient-hologram" /> {t("club.perk3")}
                   </li>
                 </ul>
               </div>
@@ -3039,13 +3064,17 @@ const VipInfoModal = ({
 
           <div className="rounded-2xl border border-border bg-card p-4 text-center">
             <p className="text-sm font-semibold tracking-tight text-foreground">
-              Por que assinar o Sócio Arena?
+              {t("club.whyTitle")}
             </p>
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              Diferente dos pontos, a assinatura garante benefícios{" "}
-              <span className="font-semibold text-foreground">imediatos</span> e exclusivos como o{" "}
-              <span className="font-semibold text-foreground">Corte Ilimitado mensal</span> e acesso
-              ao Lounge VIP.
+              {richText(t("club.whyBody"), {
+                immediate: (
+                  <span className="font-semibold text-foreground">{t("club.immediate")}</span>
+                ),
+                unlimited: (
+                  <span className="font-semibold text-foreground">{t("club.unlimited")}</span>
+                ),
+              })}
             </p>
           </div>
         </div>
@@ -3056,13 +3085,13 @@ const VipInfoModal = ({
             onClick={onClose}
             className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-border bg-background py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
           >
-            Política completa <ChevronRight size={14} />
+            {t("club.fullPolicy")} <ChevronRight size={14} />
           </Link>
           <button
             onClick={onClose}
             className="flex min-h-12 w-full items-center justify-center rounded-xl bg-foreground py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90"
           >
-            Entendido
+            {t("club.gotIt")}
           </button>
         </div>
       </div>

@@ -129,8 +129,9 @@ export function formatShopDate(
   date: Date | string,
   timeZone: string,
   options: Intl.DateTimeFormatOptions,
+  locale = "pt-BR",
 ) {
-  return new Intl.DateTimeFormat("pt-BR", {
+  return new Intl.DateTimeFormat(locale, {
     ...options,
     timeZone: validTimeZone(timeZone),
   }).format(new Date(date));
@@ -197,8 +198,8 @@ export function buildDaySlots(
   );
 }
 
-export function formatSlotLabel(d: Date, timeZone?: string) {
-  return d.toLocaleTimeString("pt-BR", {
+export function formatSlotLabel(d: Date, timeZone?: string, locale = "pt-BR") {
+  return d.toLocaleTimeString(locale, {
     hour: "2-digit",
     minute: "2-digit",
     ...(timeZone ? { timeZone: validTimeZone(timeZone) } : {}),

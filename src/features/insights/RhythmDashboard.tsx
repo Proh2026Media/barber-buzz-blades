@@ -23,7 +23,11 @@ function weekdayNames(locale: string, weekday: "long" | "narrow") {
 const MIN_SAMPLE = 3;
 
 function formatBRL(cents: number, locale: string) {
-  return (cents / 100).toLocaleString(locale, { style: "currency", currency: "BRL" });
+  return (cents / 100).toLocaleString(locale, {
+    style: "currency",
+    currency: "BRL",
+    currencyDisplay: "narrowSymbol",
+  });
 }
 
 function Stat({

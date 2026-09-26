@@ -23,4 +23,8 @@ export const enGB: Record<MessageKey, string> = {
   "register.errorWhatsapp": "Enter your WhatsApp number with dialling code.",
   "profile.whatsappNumber": "Number with dialling code",
   "level.maxText": "You've reached the top of the loyalty programme.",
+  "booking.dayAria": "{weekday}, {day} {month}",
+  "sports.football": "Football",
+  "sports.extraTime": "Extra time",
+  "sports.final": "Full time",
 };

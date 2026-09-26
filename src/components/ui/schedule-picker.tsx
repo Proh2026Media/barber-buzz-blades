@@ -1,9 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { CalendarDays, Clock3, ChevronDown } from "lucide-react";
-import { ptBR } from "date-fns/locale";
+import { enGB, enUS, es, pt, ptBR } from "date-fns/locale";
 import { Calendar } from "./calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 import { dateFromLocalKey, localDateKey } from "@/lib/shop/appointments";
+import { useI18n, type Locale } from "@/lib/i18n";
+
+const CALENDAR_LOCALE = {
+  "pt-BR": ptBR,
+  "pt-PT": pt,
+  "en-US": enUS,
+  "en-GB": enGB,
+  es,
+} satisfies Record<Locale, typeof ptBR>;
 
 type Props = {
   value: string;
@@ -25,6 +34,7 @@ export function DatePicker({
   displayValue,
 }: Props & { min?: Date; max?: Date }) {
   const [open, setOpen] = useState(false);
+  const { locale, intlLocale } = useI18n();
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -33,7 +43,7 @@ export function DatePicker({
           <span className="flex-1 text-left">
             {!compact && <span className="block text-xs text-muted-foreground">{label}</span>}
             <span className="font-semibold">
-              {displayValue ?? dateFromLocalKey(value).toLocaleDateString("pt-BR")}
+              {displayValue ?? dateFromLocalKey(value).toLocaleDateString(intlLocale)}
             </span>
           </span>
           <ChevronDown className="size-4" />
@@ -44,7 +54,7 @@ export function DatePicker({
         align="start"
       >
         <Calendar
-          locale={ptBR}
+          locale={CALENDAR_LOCALE[locale]}
           disabled={[...(min ? [{ before: min }] : []), ...(max ? [{ after: max }] : [])]}
           mode="single"
           selected={dateFromLocalKey(value)}

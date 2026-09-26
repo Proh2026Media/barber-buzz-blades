@@ -7,7 +7,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { cancellationReasons, type CancellationReason } from "./cancellation";
+import { useI18n } from "@/lib/i18n";
+import { useReturnFocus } from "@/lib/use-return-focus";
+import {
+  cancellationReasonText,
+  cancellationReasons,
+  type CancellationReason,
+} from "./cancellation";
 
 export function CancellationDialog({
   open,
@@ -27,6 +33,8 @@ export function CancellationDialog({
   /** Serviço, data e horário da reserva que será cancelada. */
   summary?: string | null;
 }) {
+  const { t } = useI18n();
+  const returnFocus = useReturnFocus();
   return (
     <AlertDialog
       open={open}
@@ -34,9 +42,9 @@ export function CancellationDialog({
         if (!value && !busy) onCancel();
       }}
     >
-      <AlertDialogContent className="rounded-3xl">
+      <AlertDialogContent className="rounded-3xl" {...returnFocus}>
         <AlertDialogHeader>
-          <AlertDialogTitle>Cancelar este agendamento?</AlertDialogTitle>
+          <AlertDialogTitle>{t("cancel.title")}</AlertDialogTitle>
           <AlertDialogDescription asChild>
             <div className="space-y-2 text-sm text-muted-foreground">
               {summary ? (
@@ -44,26 +52,23 @@ export function CancellationDialog({
                   {summary}
                 </p>
               ) : null}
-              <p>
-                O horário será liberado. O motivo é opcional e ajuda a melhorar a agenda — você pode
-                continuar sem informar.
-              </p>
+              <p>{t("cancel.body")}</p>
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <label className="space-y-2 text-sm font-semibold">
-          <span>Motivo do cancelamento</span>
+          <span>{t("cancel.reasonLabel")}</span>
           <select
-            aria-label="Motivo do cancelamento"
+            aria-label={t("cancel.reasonLabel")}
             value={reason}
             disabled={busy}
             onChange={(event) => onReason(event.target.value as CancellationReason | "")}
             className="min-h-11 w-full rounded-xl border border-border bg-background px-3 py-3"
           >
-            <option value="">Prefiro não informar</option>
-            {Object.entries(cancellationReasons).map(([value, label]) => (
+            <option value="">{t("cancel.reasonNone")}</option>
+            {(Object.keys(cancellationReasons) as CancellationReason[]).map((value) => (
               <option key={value} value={value}>
-                {label}
+                {cancellationReasonText(value)}
               </option>
             ))}
           </select>
@@ -75,7 +80,7 @@ export function CancellationDialog({
             onClick={onCancel}
             className="min-h-11 rounded-xl border border-border px-4 text-sm font-semibold disabled:opacity-50"
           >
-            Manter agendamento
+            {t("cancel.keep")}
           </button>
           <button
             type="button"
@@ -84,7 +89,7 @@ export function CancellationDialog({
             className="action-button action-danger min-h-11 disabled:opacity-50"
           >
             <X className="size-4" />
-            {busy ? "Cancelando…" : "Cancelar agendamento"}
+            {busy ? t("bookings.cancelling") : t("cancel.confirm")}
           </button>
         </AlertDialogFooter>
       </AlertDialogContent>
