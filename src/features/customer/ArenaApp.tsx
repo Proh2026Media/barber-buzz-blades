@@ -1815,9 +1815,16 @@ function ArenaApp({
                       {t("home.loadingSchedule")}
                     </p>
                   ) : appointmentsError ? (
-                    <p role="alert" className="text-sm text-destructive">
-                      {appointmentsError}
-                    </p>
+                    <div role="alert" className="space-y-3 text-sm text-destructive">
+                      <p>{appointmentsError}</p>
+                      <button
+                        type="button"
+                        onClick={() => setAppointmentVersion((version) => version + 1)}
+                        className="action-button"
+                      >
+                        {t("common.retry")}
+                      </button>
+                    </div>
                   ) : nextAppointment ? (
                     <div className="space-y-4">
                       <div className="flex items-center gap-4">

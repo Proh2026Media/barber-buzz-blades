@@ -95,6 +95,14 @@ Checagem automática na demonstração, em todas as abas do painel da barbearia 
 - **Ajustado:** no idioma inglês, o tradutor só esconde mensagens com vocabulário técnico do banco; mensagens do próprio sistema em inglês continuam aparecendo (teste novo).
 - **Corrigido (estado real):** na saída do sócio, se a lista de outras barbearias falhasse ao carregar, ela aparecia vazia como se não houvesse opção; agora avisa o erro.
 
+## Estados de vazio, carregando e erro (27/09/2026)
+
+Conferido pelo código: agenda, serviços, equipe, bloqueios, reservas, início, avisos, extrato de pontos, clientes, plataforma, permissões, decisões da equipe e redirecionamentos já têm mensagem de “carregando” e de “nada aqui ainda” com próximo passo. As consultas ao banco devolvem erro (não travam) quando a conexão cai.
+
+- **Corrigido (recuperação):** erro ao carregar sem saída ganhou **Tentar novamente** em: lista de clientes, perfil do cliente, carteira do sócio, números do profissional e cartão “Próximo atendimento” do início do cliente. Reservas, números da barbearia e presença já tinham como atualizar.
+- **Corrigido (estado real):** a lista de clientes mostrava “0” no título quando o carregamento falhava; agora o número só aparece quando a lista carregou.
+- Conferido na demonstração (390×844): lista e perfil de clientes abrem normalmente; início do cliente normal. Os avisos de erro só aparecem com falha real de conexão, então não foram vistos no navegador.
+
 ## Documentação incorporada
 
 - `docs/mb-interface.md` consolidado (26/09/2026).

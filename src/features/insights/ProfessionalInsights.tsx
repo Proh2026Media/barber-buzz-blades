@@ -36,9 +36,12 @@ export function ProfessionalInsights({
   const { t, intlLocale } = useI18n();
   const [data, setData] = useState<Result | null>(null);
   const [error, setError] = useState(false);
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
     let active = true;
+    setError(false);
+    setData(null);
 
     if (demo) {
       // Demonstração: deriva os indicadores do profissional a partir dos
@@ -81,15 +84,20 @@ export function ProfessionalInsights({
         p_from: range.start.toISOString(),
         p_to: new Date(range.end.getTime() + 1).toISOString(),
       })
-      .then((result) => {
-        if (!active) return;
-        setError(!!result.error);
-        setData(result.error ? null : (result.data as unknown as Result));
-      });
+      .then(
+        (result) => {
+          if (!active) return;
+          setError(!!result.error);
+          setData(result.error ? null : (result.data as unknown as Result));
+        },
+        () => {
+          if (active) setError(true);
+        },
+      );
     return () => {
       active = false;
     };
-  }, [demo, day, revision, shopId, staffId, role]);
+  }, [demo, day, revision, retry, shopId, staffId, role]);
   return (
     <section
       className="space-y-3 rounded-2xl border border-primary/20 bg-card p-4"
@@ -100,9 +108,12 @@ export function ProfessionalInsights({
         {t("ins.pro.title")}
       </h3>
       {error ? (
-        <p role="alert" className="text-xs text-destructive">
-          {t("ins.biz.loadError")}
-        </p>
+        <div role="alert" className="space-y-2 text-xs text-destructive">
+          <p>{t("ins.biz.loadError")}</p>
+          <button type="button" onClick={() => setRetry((n) => n + 1)} className="action-button">
+            {t("common.retry")}
+          </button>
+        </div>
       ) : !data ? (
         <p role="status" className="text-xs text-muted-foreground">
           {t("ins.biz.loading")}

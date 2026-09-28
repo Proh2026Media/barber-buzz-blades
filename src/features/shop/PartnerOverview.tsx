@@ -54,6 +54,7 @@ export function PartnerOverview({
   const [rhythm, setRhythm] = useState<RhythmPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [retry, setRetry] = useState(0);
   const [copied, setCopied] = useState(false);
   const [resolvedDomain, setResolvedDomain] = useState<{
     domain: string | null;
@@ -182,7 +183,7 @@ export function PartnerOverview({
     return () => {
       cancelled = true;
     };
-  }, [demo, shopId, staffId]);
+  }, [demo, shopId, staffId, retry]);
 
   function copyLink() {
     if (!bookingLink) return;
@@ -288,9 +289,12 @@ export function PartnerOverview({
 
       {/* Ritmo */}
       {error ? (
-        <p role="alert" className="text-sm text-destructive">
-          {t("team.partner.loadError")}
-        </p>
+        <div role="alert" className="space-y-2 text-sm text-destructive">
+          <p>{t("team.partner.loadError")}</p>
+          <button type="button" onClick={() => setRetry((n) => n + 1)} className="action-button">
+            {t("common.retry")}
+          </button>
+        </div>
       ) : (
         <RhythmDashboard
           rhythm={rhythm}

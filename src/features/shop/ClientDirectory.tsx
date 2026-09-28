@@ -48,6 +48,7 @@ export function ClientDirectory({
   const [selected, setSelected] = useState<ClientRow | null>(null);
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(PAGE_SIZE);
+  const [reloadKey, setReloadKey] = useState(0);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -99,7 +100,7 @@ export function ClientDirectory({
     return () => {
       cancelled = true;
     };
-  }, [demo, shopId, staffId, scope]);
+  }, [demo, shopId, staffId, scope, reloadKey]);
 
   // Carregamento infinito por rolagem: quando o sentinela aparece, libera mais 25.
   useEffect(() => {
@@ -131,7 +132,7 @@ export function ClientDirectory({
       >
         <Users className="size-4 text-gold" />
         <span className="flex-1 text-left">{title}</span>
-        {!loading && (
+        {!loading && !error && (
           <span className="text-xs font-semibold text-muted-foreground">{clients.length}</span>
         )}
         {open ? (
@@ -148,9 +149,16 @@ export function ClientDirectory({
               {t("team.clients.loading")}
             </p>
           ) : error ? (
-            <p role="alert" className="text-sm text-destructive">
-              {t("team.clients.loadError")}
-            </p>
+            <div role="alert" className="space-y-2 text-sm text-destructive">
+              <p>{t("team.clients.loadError")}</p>
+              <button
+                type="button"
+                onClick={() => setReloadKey((key) => key + 1)}
+                className="action-button"
+              >
+                {t("common.retry")}
+              </button>
+            </div>
           ) : clients.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("team.clients.empty")}</p>
           ) : (

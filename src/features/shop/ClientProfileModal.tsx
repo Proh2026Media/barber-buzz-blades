@@ -67,6 +67,7 @@ export function ClientProfileModal({
   const [profile, setProfile] = useState<ClientProfilePayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [retry, setRetry] = useState(0);
   const closeButton = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -154,7 +155,7 @@ export function ClientProfileModal({
     return () => {
       cancelled = true;
     };
-  }, [demo, shopId, customerId, customerName]);
+  }, [demo, shopId, customerId, customerName, retry]);
 
   useEffect(() => {
     closeButton.current?.focus();
@@ -208,9 +209,16 @@ export function ClientProfileModal({
               {t("team.profile.loading")}
             </p>
           ) : error || !profile ? (
-            <p role="alert" className="text-sm text-destructive">
-              {t("team.profile.loadError")}
-            </p>
+            <div role="alert" className="space-y-2 text-sm text-destructive">
+              <p>{t("team.profile.loadError")}</p>
+              <button
+                type="button"
+                onClick={() => setRetry((n) => n + 1)}
+                className="action-button"
+              >
+                {t("common.retry")}
+              </button>
+            </div>
           ) : (
             <>
               <div className="grid grid-cols-2 gap-3">
