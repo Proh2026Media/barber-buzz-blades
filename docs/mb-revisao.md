@@ -88,6 +88,13 @@ Checagem automática na demonstração, em todas as abas do painel da barbearia 
 - Conferido e mantido: interruptores (36×20 visíveis) e o marcador da antecedência já têm área de toque invisível de 48px.
 - Só pelo código (não aparecem na demonstração): ajustes de identidade, domínio, integrações Google, saída do sócio e painel da plataforma real.
 
+## Link direto do barbeiro e mensagens de erro (27/09/2026)
+
+- **Corrigido (link do barbeiro):** um link para profissional que não existe mais na barbearia (link antigo do WordPress, profissional que saiu) caía num “404” genérico, sem caminho para agendar. Agora mostra “Não encontramos esse profissional”, explica o motivo provável e oferece **Agendar com outro profissional** na mesma barbearia. Enquanto consulta, aparece “Abrindo a agenda…” em vez de tela em branco. Falha de conexão deixou de ser tratada como “não encontrado” e vai para a tela de erro com “Tentar de novo”.
+- **Corrigido (linguagem):** 35 pontos do painel da barbearia, da plataforma, da presença e das integrações mostravam o texto cru do erro do servidor (podia vir em inglês ou com jargão do banco). Agora passam pelo tradutor de erros amigáveis, que reconhece permissão, duplicado, conexão e sessão, e mantém as mensagens próprias do sistema.
+- **Ajustado:** no idioma inglês, o tradutor só esconde mensagens com vocabulário técnico do banco; mensagens do próprio sistema em inglês continuam aparecendo (teste novo).
+- **Corrigido (estado real):** na saída do sócio, se a lista de outras barbearias falhasse ao carregar, ela aparecia vazia como se não houvesse opção; agora avisa o erro.
+
 ## Documentação incorporada
 
 - `docs/mb-interface.md` consolidado (26/09/2026).

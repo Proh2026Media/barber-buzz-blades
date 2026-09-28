@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { friendlyAuthError } from "./friendly-error.ts";
+import { LOCALE_STORAGE_KEY } from "../i18n/locale.ts";
 import {
   friendlyChannelLastError,
   friendlyIntegrationError,
@@ -69,6 +70,24 @@ test("permission and duplicate database errors become everyday Portuguese", () =
     friendlyAuthError('duplicate key value violates unique constraint "barbershops_slug_key"'),
     /já está cadastrado/,
   );
+});
+
+test("in English, screen messages pass through and only database jargon falls back", () => {
+  const store = new Map([[LOCALE_STORAGE_KEY, "en-US"]]);
+  const g = globalThis as { window?: unknown };
+  g.window = { localStorage: { getItem: (key: string) => store.get(key) ?? null } };
+  try {
+    assert.equal(
+      friendlyAuthError("This time is no longer available.", "Try again."),
+      "This time is no longer available.",
+    );
+    assert.equal(
+      friendlyAuthError('null value in column "name" violates not-null constraint', "Try again."),
+      "Try again.",
+    );
+  } finally {
+    delete g.window;
+  }
 });
 
 test("unrecognized English errors fall back instead of showing foreign text", () => {

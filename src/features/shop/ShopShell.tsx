@@ -113,6 +113,7 @@ import { PartnerOverview } from "./PartnerOverview";
 import { ClientDirectory } from "./ClientDirectory";
 import { ServiceImageCropDialog } from "./ServiceImageCropDialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { friendlyAuthError } from "@/lib/auth/friendly-error";
 
 type ShopShellProps = {
   profile: SessionProfile;
@@ -808,7 +809,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       setServiceFormOpen(false);
       await loadCatalog();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("shop.error.createService"));
+      setError(friendlyAuthError(err, t("shop.error.createService")));
     } finally {
       setBusy(false);
     }
@@ -927,7 +928,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       setDeleteService(null);
       if (!demo) await loadCatalog();
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : t("shop.error.deleteFailed"));
+      setDeleteError(friendlyAuthError(err, t("shop.error.deleteFailed")));
     } finally {
       setBusy(false);
     }
@@ -974,7 +975,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       setDeleteStaff(null);
       if (!demo) await loadCatalog();
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : t("shop.error.deleteFailed"));
+      setDeleteError(friendlyAuthError(err, t("shop.error.deleteFailed")));
     } finally {
       setBusy(false);
     }
@@ -998,7 +999,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         },
         { onConflict: "staff_id,service_id" },
       );
-      if (ownCatalogError) setError(ownCatalogError.message);
+      if (ownCatalogError) setError(friendlyAuthError(ownCatalogError));
       else await loadCatalog();
       return;
     }
@@ -1017,7 +1018,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       .from("services")
       .update({ active: !row.active })
       .eq("id", row.id);
-    if (updateError) setError(updateError.message);
+    if (updateError) setError(friendlyAuthError(updateError));
     else await loadCatalog();
   }
 
@@ -1089,7 +1090,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       setStaffFormOpen(false);
       await loadCatalog();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("shop.error.createStaff"));
+      setError(friendlyAuthError(err, t("shop.error.createStaff")));
     } finally {
       setBusy(false);
     }
@@ -1113,7 +1114,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       .from("staff")
       .update({ active: !row.active })
       .eq("id", row.id);
-    if (updateError) setError(updateError.message);
+    if (updateError) setError(friendlyAuthError(updateError));
     else await loadCatalog();
   }
 
@@ -1162,7 +1163,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       }
       await loadCatalog();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("shop.error.saveHours"));
+      setError(friendlyAuthError(err, t("shop.error.saveHours")));
     } finally {
       setBusy(false);
     }
@@ -1206,7 +1207,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       setBlockCustomOpen(false);
       await loadCatalog();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("shop.error.createBlock"));
+      setError(friendlyAuthError(err, t("shop.error.createBlock")));
     } finally {
       setBusy(false);
     }
@@ -1228,7 +1229,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         .delete()
         .eq("id", id)
         .eq("staff_id", actor.staff_id);
-      if (deleteError) setError(deleteError.message);
+      if (deleteError) setError(friendlyAuthError(deleteError));
     } else if (actor) {
       setError(t("shop.error.roleDeleteBlock"));
     } else {
@@ -1236,7 +1237,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         .from("availability_blocks")
         .delete()
         .eq("id", id);
-      if (deleteError) setError(deleteError.message);
+      if (deleteError) setError(friendlyAuthError(deleteError));
     }
     await loadCatalog();
     setBusy(false);
@@ -1294,7 +1295,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
           .eq("barbershop_id", settings.barbershop_id)
           .select("*")
           .single();
-        if (updateError) setError(updateError.message);
+        if (updateError) setError(friendlyAuthError(updateError));
         else setSettings(data);
       }
       if (!actor) setSettingsSaved(true);

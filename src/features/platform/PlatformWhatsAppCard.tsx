@@ -3,6 +3,7 @@ import { Link2, MessageCircle, QrCode, RefreshCw, Unplug } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
+import { friendlyIntegrationError } from "@/lib/integrations/friendly-error";
 
 type PlatformWaStatus = "disconnected" | "qr" | "connecting" | "open";
 
@@ -78,7 +79,7 @@ export function PlatformWhatsAppCard() {
       const payload = await callPlatformWhatsApp("status");
       apply(payload);
     } catch (err) {
-      setError(err instanceof Error ? err.message : tNow("integr.wa.errStatus"));
+      setError(friendlyIntegrationError(err, tNow("integr.wa.errStatus")));
     } finally {
       setBusy(false);
     }
@@ -121,7 +122,7 @@ export function PlatformWhatsAppCard() {
           : t("integr.platformWa.scanQr"),
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("integr.wa.errConnect"));
+      setError(friendlyIntegrationError(err, t("integr.wa.errConnect")));
     } finally {
       setBusy(false);
     }
@@ -136,7 +137,7 @@ export function PlatformWhatsAppCard() {
       setQrcode(null);
       setMessage(t("integr.platformWa.disconnected"));
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("integr.wa.errDisconnect"));
+      setError(friendlyIntegrationError(err, t("integr.wa.errDisconnect")));
     } finally {
       setBusy(false);
     }

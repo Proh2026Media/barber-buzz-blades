@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Check, Lightbulb, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
+import { friendlyAuthError } from "@/lib/auth/friendly-error";
 
 type Suggestion = {
   id: string;
@@ -64,7 +65,7 @@ export function PartnerCatalogSuggestions({
       .eq("status", "pending")
       .order("created_at", { ascending: false });
     if (error) {
-      setMessage(error.message);
+      setMessage(friendlyAuthError(error));
       setRows([]);
       return;
     }
@@ -96,7 +97,7 @@ export function PartnerCatalogSuggestions({
       p_suggestion_id: id,
       p_accept: accept,
     });
-    if (error) setMessage(error.message);
+    if (error) setMessage(friendlyAuthError(error));
     else {
       setMessage(accept ? t("team.suggest.applied") : t("team.suggest.kept"));
       await load();

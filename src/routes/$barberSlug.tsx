@@ -1,4 +1,5 @@
-import { createFileRoute, redirect, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, notFound } from "@tanstack/react-router";
+import { useI18n } from "@/lib/i18n";
 import { resolveShopFromCurrentHost } from "@/lib/shop/host";
 import { supabase } from "@/integrations/supabase/client";
 import { isValidBookingSlug } from "@/lib/shop/slugify";
@@ -41,7 +42,8 @@ export const Route = createFileRoute("/$barberSlug")({
       p_shop_id: resolution.shop_id,
       p_booking_slug: raw,
     });
-    if (error || !data) throw notFound();
+    if (error) throw new Error(error.message);
+    if (!data) return { missingInShop: resolution.shop_slug ?? undefined };
 
     throw redirect({
       to: "/app",
@@ -54,5 +56,48 @@ export const Route = createFileRoute("/$barberSlug")({
       },
     });
   },
-  component: () => null,
+  pendingComponent: BarberLinkOpening,
+  component: BarberLinkMissing,
 });
+
+function BarberLinkOpening() {
+  const { t } = useI18n();
+  return (
+    <div
+      role="status"
+      className="flex min-h-dvh items-center justify-center bg-background px-4 text-sm text-muted-foreground"
+    >
+      {t("app.barberLink.opening")}
+    </div>
+  );
+}
+
+function BarberLinkMissing() {
+  const { t } = useI18n();
+  const { missingInShop } = Route.useRouteContext() as { missingInShop?: string };
+  return (
+    <div className="flex min-h-dvh items-center justify-center bg-background px-4">
+      <div className="max-w-md text-center">
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">
+          {t("app.barberLink.missingTitle")}
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">{t("app.barberLink.missingBody")}</p>
+        <div className="mt-6">
+          <Link
+            to="/app"
+            search={{
+              barber: undefined,
+              shop: missingInShop,
+              join: undefined,
+              tab: undefined,
+              reserva: undefined,
+            }}
+            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            {t("app.barberLink.book")}
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}

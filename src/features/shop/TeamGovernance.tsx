@@ -5,6 +5,7 @@ import type { Json, Tables } from "@/integrations/supabase/types";
 import type { SessionProfile } from "@/lib/auth/session";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
+import { friendlyAuthError } from "@/lib/auth/friendly-error";
 
 type ChangeRequest = Tables<"shop_change_requests"> & {
   expires_at?: string | null;
@@ -130,7 +131,7 @@ export function TeamGovernance({
       p_approve: approve,
       p_note: null,
     });
-    if (error) setMessage(error.message);
+    if (error) setMessage(friendlyAuthError(error));
     else {
       const result = data as { status?: string; remaining_approvals?: number } | null;
       setMessage(

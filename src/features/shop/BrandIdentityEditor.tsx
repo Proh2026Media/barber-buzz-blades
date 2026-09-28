@@ -54,6 +54,7 @@ import { ServiceImageCropDialog } from "./ServiceImageCropDialog";
 import { LoginLayoutPreview } from "./LoginLayoutPreview";
 import { LoginScreenPreview } from "./LoginScreenPreview";
 import { LoginPreviewDialog } from "./LoginPreviewDialog";
+import { friendlyAuthError } from "@/lib/auth/friendly-error";
 
 type BrandIdentityEditorProps = {
   /** Nome cadastrado da barbearia, usado quando o nome do cabeçalho fica vazio. */
@@ -341,7 +342,7 @@ export function BrandIdentityEditor({
       onSaved(next);
       setSaved(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("brand.save.error"));
+      setError(friendlyAuthError(err, t("brand.save.error")));
     } finally {
       setBusy(false);
     }

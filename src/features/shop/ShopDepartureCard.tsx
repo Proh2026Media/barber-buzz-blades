@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { LogOut, UserMinus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useI18n } from "@/lib/i18n";
+import { t as tNow, useI18n } from "@/lib/i18n";
+import { friendlyAuthError } from "@/lib/auth/friendly-error";
 
 type DepartureRequest = {
   id: string;
@@ -50,26 +51,34 @@ export function ShopDepartureCard({
       const { data, error: listError } = await supabase.rpc("list_shop_departure_requests", {
         p_shop_id: shopId,
       });
-      if (listError) setError(listError.message);
+      if (listError) setError(friendlyAuthError(listError));
       else setPending((data as DepartureRequest[]) ?? []);
     }
 
     const { data: sessionProfile } = await supabase.auth.getUser();
     const userId = sessionProfile.user?.id;
     if (userId) {
-      const { data: actors } = await supabase
+      const { data: actors, error: actorsError } = await supabase
         .from("shop_members")
         .select("barbershop_id")
         .eq("user_id", userId)
         .eq("active", true)
         .neq("barbershop_id", shopId);
+      if (actorsError) {
+        setError(friendlyAuthError(actorsError, tNow("team.departure.loadShopsFailed")));
+        return;
+      }
       const ids = (actors ?? []).map((row) => row.barbershop_id).filter(Boolean);
       if (ids.length) {
-        const { data: shops } = await supabase
+        const { data: shops, error: shopsError } = await supabase
           .from("barbershops")
           .select("id, name, slug")
           .in("id", ids)
           .eq("status", "active");
+        if (shopsError) {
+          setError(friendlyAuthError(shopsError, tNow("team.departure.loadShopsFailed")));
+          return;
+        }
         setDestShops(shops ?? []);
       } else {
         setDestShops([]);
@@ -99,7 +108,7 @@ export function ShopDepartureCard({
       setMessage(t("team.departure.created"));
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("team.departure.createFailed"));
+      setError(friendlyAuthError(err, t("team.departure.createFailed")));
     } finally {
       setBusy(false);
     }
@@ -129,7 +138,7 @@ export function ShopDepartureCard({
       }
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("team.departure.failed"));
+      setError(friendlyAuthError(err, t("team.departure.failed")));
     } finally {
       setBusy(false);
     }
@@ -147,7 +156,7 @@ export function ShopDepartureCard({
       setMessage(approve ? t("team.departure.released") : t("team.departure.rejected"));
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("team.departure.decideFailed"));
+      setError(friendlyAuthError(err, t("team.departure.decideFailed")));
     } finally {
       setBusy(false);
     }

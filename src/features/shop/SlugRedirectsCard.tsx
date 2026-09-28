@@ -2,6 +2,7 @@ import { Fragment, useCallback, useEffect, useState, type ReactNode } from "reac
 import { Link2, Lock, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
+import { friendlyAuthError } from "@/lib/auth/friendly-error";
 
 type ShopRedirect = {
   id: string;
@@ -74,7 +75,7 @@ export function SlugRedirectsCard({
       if (rpcError) throw rpcError;
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("integr.redirects.errRemove"));
+      setError(friendlyAuthError(err, t("integr.redirects.errRemove")));
     } finally {
       setBusy(false);
     }
@@ -90,7 +91,7 @@ export function SlugRedirectsCard({
       if (rpcError) throw rpcError;
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("integr.redirects.errRemove"));
+      setError(friendlyAuthError(err, t("integr.redirects.errRemove")));
     } finally {
       setBusy(false);
     }

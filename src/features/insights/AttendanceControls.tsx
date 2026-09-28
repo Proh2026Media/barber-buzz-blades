@@ -5,6 +5,7 @@ import { useDemo } from "@/features/demo/context";
 import { supabase } from "@/integrations/supabase/client";
 import { t as tNow, useI18n } from "@/lib/i18n";
 import { parseDelay, validateOccurrence, type Occurrence } from "./occurrences";
+import { friendlyAuthError } from "@/lib/auth/friendly-error";
 
 export function AttendanceControls({
   id,
@@ -96,7 +97,7 @@ export function AttendanceControls({
       setVersion((v) => v + 1);
       onChanged();
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("ins.att.saveErrorShort"));
+      setError(friendlyAuthError(e, t("ins.att.saveErrorShort")));
     } finally {
       setBusy(false);
     }

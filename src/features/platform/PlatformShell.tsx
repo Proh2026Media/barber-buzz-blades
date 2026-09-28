@@ -429,7 +429,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       setInviteEmail("");
       setInviteName("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("plat.invite.error"));
+      setError(friendlyAuthError(err, t("plat.invite.error")));
     } finally {
       setInviteBusy(false);
     }

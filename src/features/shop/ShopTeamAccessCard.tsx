@@ -3,6 +3,7 @@ import { Crown, Link2, RefreshCw, UserPlus, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ShopPermissionsMatrix } from "@/features/shop/ShopPermissionsMatrix";
 import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
+import { friendlyAuthError } from "@/lib/auth/friendly-error";
 
 type TeamMember = {
   id: string;
@@ -95,7 +96,7 @@ export function ShopTeamAccessCard({
       setMembers(Array.isArray(data) ? (data as TeamMember[]) : []);
     } catch (err) {
       setMembers([]);
-      setError(err instanceof Error ? err.message : tNow("team.access.loadError"));
+      setError(friendlyAuthError(err, tNow("team.access.loadError")));
     } finally {
       setLoading(false);
     }
@@ -134,7 +135,7 @@ export function ShopTeamAccessCard({
       await load();
       onChanged?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("team.access.inviteFailed"));
+      setError(friendlyAuthError(err, t("team.access.inviteFailed")));
     } finally {
       setBusy(false);
     }
@@ -171,7 +172,7 @@ export function ShopTeamAccessCard({
       await load();
       onChanged?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("team.access.updateFailed"));
+      setError(friendlyAuthError(err, t("team.access.updateFailed")));
     } finally {
       setBusy(false);
     }
@@ -196,7 +197,7 @@ export function ShopTeamAccessCard({
       await load();
       onChanged?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("team.access.transferFailed"));
+      setError(friendlyAuthError(err, t("team.access.transferFailed")));
     } finally {
       setBusy(false);
     }

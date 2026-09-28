@@ -3,6 +3,7 @@ import { CheckCircle2, Copy, Globe2, RefreshCw, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { PLATFORM_BASE_HOST, shopPublicOrigin } from "@/lib/shop/host";
+import { friendlyAuthError } from "@/lib/auth/friendly-error";
 
 type DomainSettings = {
   shop_id: string;
@@ -49,7 +50,7 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
       p_shop_id: shopId,
     });
     if (rpcError) {
-      setError(rpcError.message);
+      setError(friendlyAuthError(rpcError));
       return;
     }
     const row = data as DomainSettings;
@@ -114,7 +115,7 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
           : t("integr.domain.saved"),
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("integr.domain.errSave"));
+      setError(friendlyAuthError(err, t("integr.domain.errSave")));
     } finally {
       setBusy(false);
     }
@@ -138,7 +139,7 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
           : t("integr.domain.removed"),
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("integr.domain.errRemove"));
+      setError(friendlyAuthError(err, t("integr.domain.errRemove")));
     } finally {
       setBusy(false);
     }
@@ -163,7 +164,7 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
           : payload.error || t("integr.domain.checkDnsHint"),
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("integr.domain.errVerify"));
+      setError(friendlyAuthError(err, t("integr.domain.errVerify")));
       await load();
     } finally {
       setBusy(false);

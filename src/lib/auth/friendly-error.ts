@@ -1,4 +1,4 @@
-import { t } from "../i18n/use-i18n.ts";
+import { getLocale, t } from "../i18n/use-i18n.ts";
 import type { MessageKey } from "../i18n/translate.ts";
 
 /** Mensagens de acesso em linguagem cotidiana (MB), no idioma escolhido. */
@@ -53,6 +53,9 @@ const PATTERNS: Array<{ test: RegExp; message: MessageKey }> = [
 const ENGLISH_HINT =
   /\b(the|is|not|for|with|does|cannot|could|unable|invalid|failed|error|denied|missing|unknown|violates|column|relation)\b/i;
 const PORTUGUESE_HINT = /[ãõçáéíóúâêô]|\b(não|você|para|com|está|foi)\b/i;
+/** Em inglês a tela já fala inglês: só o vocabulário do banco denuncia mensagem técnica. */
+const TECHNICAL_HINT =
+  /\b(violates|column|relation|constraint|schema|null value|syntax|exception|undefined|stack)\b/i;
 
 export function friendlyAuthError(raw: unknown, fallback?: string): string {
   const text =
@@ -78,7 +81,10 @@ export function friendlyAuthError(raw: unknown, fallback?: string): string {
   }
 
   // Mensagem técnica em inglês que não reconhecemos: melhor a frase padrão do que texto estrangeiro.
-  if (ENGLISH_HINT.test(text) && !PORTUGUESE_HINT.test(text)) {
+  const foreign = getLocale().startsWith("en")
+    ? TECHNICAL_HINT.test(text)
+    : ENGLISH_HINT.test(text) && !PORTUGUESE_HINT.test(text);
+  if (foreign) {
     return fallback ?? t("errors.generic");
   }
 
