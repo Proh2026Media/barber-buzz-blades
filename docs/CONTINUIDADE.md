@@ -21,6 +21,8 @@ Atualizado em **26/09/2026**. Este documento resume decisões e entregas da conv
 - Registro: [mb-revisao.md](mb-revisao.md).
 - Código (rodada 1): linguagem de sucesso do agendamento, preservação de horário em erro, cancelamento/recorrência com contexto, erros de acesso amigáveis, alvos de toque.
 - Código (rodada 2): aba **Conta** + “Você está em…”; reenvio OTP em `/cadastrar` (60s); erros Google/WhatsApp traduzidos com ação de reconectar.
+- Rodadas 26–27/09 (publicadas): foco centralizado em `Dialog`/`AlertDialog` (`useDialogFocus` em `src/lib/use-return-focus.ts` — entra ao abrir, volta ao botão ao fechar; não repetir por tela); alvos de 44px (campos em janelas por regra global em `styles.css`); link de profissional inexistente em `/$barberSlug` com tela própria e “Agendar com outro profissional”; erros do servidor sempre por `friendlyAuthError`/`friendlyIntegrationError` (nunca `err.message` cru); “Tentar novamente” nos erros de carregamento. Sem rolagem lateral em 320 e 390px.
+- Pendente que depende do usuário: teste em aparelho real (teclado, leitor de tela, rede lenta); painel real da plataforma no navegador (login admin); `externabarbearia.com.br` ainda aponta para o WordPress, então links antigos (`/ezequiel/`) não chegam ao app.
 
 ## Entrega — WhatsApp modelos + Google Agenda (25/09/2026)
 
