@@ -35,7 +35,7 @@ Atualizado em **26/09/2026**. Este documento resume decisões e entregas da conv
 
 ## E-mail — login SMTP recusado + fila resiliente (29/09/2026)
 
-- **Causa confirmada:** `smtp.hostinger.com` responde normalmente (587 e 465), mas recusa o login com `535 authentication failed` para o usuário `…@contheiner.digital` configurado em `SMTP_*` (Edge) **e** `GOTRUE_SMTP_*` (Auth) — mesma senha nos dois. Logo, e-mails do login (confirmação, recuperação de senha) também falham. **Depende do usuário:** conferir/redefinir a senha da caixa no hPanel e atualizar `SMTP_PASS` e `GOTRUE_SMTP_PASS` no Coolify (reiniciar os dois serviços). Passo a passo em [mb-operacao.md](mb-operacao.md).
+- **Causa confirmada:** `smtp.hostinger.com` recusava o login (`535`) com a senha configurada em `SMTP_*` (Edge) e `GOTRUE_SMTP_*` (Auth). **Resolvido pelo usuário em 29/09:** senha atualizada no Coolify; login SMTP verificado com `235 Authentication successful` nos dois serviços. Envio real de e-mail ainda não observado (fila vazia no momento da checagem).
 - Fila corrigida (migration `20260929150000_email_outbox_recovery.sql`, **aplicada**): `claimed_at`; envio interrompido há 10 min volta à fila; falha tenta de novo com intervalo (5, 10, 15, 20 min) até 5 vezes; aviso com mais de 24h de atraso é descartado. Os 2 e-mails travados desde 24/09 foram descartados por isso.
 - `email-dispatch` só conecta ao SMTP quando há e-mail na fila, para no primeiro login recusado e grava motivo claro em pt-BR. Publicado no Coolify; o erro por minuto sumiu do log.
 - Teste: `supabase/tests/email_outbox_recovery.sql` (6 verificações, ROLLBACK no banco real).
