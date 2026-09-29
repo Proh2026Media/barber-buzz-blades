@@ -24,6 +24,16 @@ Atualizado em **26/09/2026**. Este documento resume decisões e entregas da conv
 - Rodadas 26–27/09 (publicadas): foco centralizado em `Dialog`/`AlertDialog` (`useDialogFocus` em `src/lib/use-return-focus.ts` — entra ao abrir, volta ao botão ao fechar; não repetir por tela); alvos de 44px (campos em janelas por regra global em `styles.css`); link de profissional inexistente em `/$barberSlug` com tela própria e “Agendar com outro profissional”; erros do servidor sempre por `friendlyAuthError`/`friendlyIntegrationError` (nunca `err.message` cru); “Tentar novamente” nos erros de carregamento. Sem rolagem lateral em 320 e 390px.
 - Pendente que depende do usuário: teste em aparelho real (teclado, leitor de tela, rede lenta); painel real da plataforma no navegador (login admin); `externabarbearia.com.br` ainda aponta para o WordPress, então links antigos (`/ezequiel/`) não chegam ao app.
 
+## Entrega — cópia dos agendamentos para a Agenda Google (29/09/2026)
+
+- Em **Ajustes → Google Agenda e Contatos**, depois de escolher a agenda, cada pessoa decide: **Não copiar** (padrão), **Só os meus atendimentos** ou **Todos da barbearia** (só dono/sócio; o banco recusa para os demais).
+- Novo horário, remarcação, troca de profissional/serviço e mudança de status atualizam o evento; cancelado ou “deixou de valer” (desligou, trocou de profissional) retira o evento. Pendente/remarcação aparece como “(a confirmar)”. Desconectar não apaga o que já foi copiado. Editar no Google não altera a reserva; a importação ignora eventos criados pelo app (`extendedProperties.private.barbaCabeloAppointmentId`).
+- Banco: migration `20260929130000_google_calendar_push.sql` **aplicada no Postgres Coolify** — `google_connections.push_scope`, fila `google_calendar_pushes` (sem acesso de usuário), gatilho `appointments_google_push_trg` protegido (a reserva nunca falha pela cópia), RPCs `set_google_calendar_push`, `claim_/complete_google_calendar_push` (só service role, até 5 tentativas). `get_my_google_connection` traz `push_scope`, `push_pending`, `push_failed`, `push_last_error`.
+- Envio: Edge `google-calendar-dispatch` (id de evento fixo por agendamento+pessoa, então repetir não duplica); chamada pelo `whatsapp-dispatch` a cada minuto (cron do host). Publicado no volume Coolify + restart; resposta verificada `{"ok":true,...}`.
+- Teste de regressão: `supabase/tests/google_calendar_push.sql` (11 verificações, rodado com ROLLBACK no banco real).
+- Não verificado ainda: envio real para uma agenda Google (depende do dono ligar a opção na própria conta). A conexão existente segue em **Não copiar**.
+- Observado no log (anterior a esta entrega): `email-dispatch` falha a cada minuto com `SMTPConnection ... invalid cmd` (SMTP) — conferir credenciais/porta do e-mail em [mb-operacao.md](mb-operacao.md).
+
 ## Entrega — WhatsApp modelos + Google Agenda (25/09/2026)
 
 - Modelos oficiais de WhatsApp (confirmação/remarcação/cancelamento/lembrete) com `{{serviço}}` literal, chips, validação, restauração com confirmação e prévia. Migration `20260925160000_whatsapp_templates_and_calendar_choice.sql` **aplicada no Postgres Coolify** — **não sobrescreve** textos personalizados já salvos.
@@ -108,7 +118,7 @@ Plano: [plano-governanca-sociedade-gerente.md](plano-governanca-sociedade-gerent
 - Envs Edge: `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_OAUTH_REDIRECT_URI=https://beauty.contheiner.digital/auth/google-apps`, `APP_URL`, `GOOGLE_OAUTH_STATE_SECRET`.
 - Google Cloud: ativar Calendar API + People API; redirect URIs do login **e** `/auth/google-apps`. Passo a passo em [mb-operacao.md](mb-operacao.md) §3.
 - Pendente operacional: criar Client OAuth, colar secrets no Coolify, aplicar migration, publicar função.
-- Ainda não: espelhar cada agendamento do app automaticamente para o Google Calendar.
+- Cópia automática dos agendamentos para o Google Calendar: entregue em 29/09/2026 (ver seção no topo).
 
 ### Slugs automáticos, redirects e desvinculação — 22/09/2026
 

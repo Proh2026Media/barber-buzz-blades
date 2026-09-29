@@ -3125,7 +3125,12 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 (!actor ||
                   actor.role === "owner" ||
                   actor.role === "partner" ||
-                  actor.role === "associate") && <GoogleIntegrationsCard returnPath="/shop" />}
+                  actor.role === "associate") && (
+                  <GoogleIntegrationsCard
+                    returnPath="/shop"
+                    canCopyWholeShop={!actor || actor.role === "owner" || actor.role === "partner"}
+                  />
+                )}
               {!demo &&
                 shop.id &&
                 (!actor || actor.role === "owner" || actor.role === "partner") && (

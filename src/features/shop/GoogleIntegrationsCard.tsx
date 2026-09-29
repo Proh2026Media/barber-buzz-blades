@@ -24,7 +24,13 @@ type GoogleConnectionStatus = {
   last_error?: string | null;
   selected_calendar_id?: string | null;
   selected_calendar_name?: string | null;
+  push_scope?: PushScope;
+  push_failed?: number;
+  push_pending?: number;
+  push_last_error?: string | null;
 };
+
+type PushScope = "off" | "mine" | "shop";
 
 type GoogleCalendarOption = {
   id: string;
@@ -35,6 +41,8 @@ type GoogleCalendarOption = {
 
 type GoogleIntegrationsCardProps = {
   returnPath?: string;
+  /** Dono/sócio podem copiar todos os atendimentos da barbearia. */
+  canCopyWholeShop?: boolean;
 };
 
 async function callGoogle(body: Record<string, unknown>) {
@@ -108,8 +116,12 @@ const DEMO_CALENDARS: GoogleCalendarOption[] = [
   { id: "pessoal@demo.local", name: "Pessoal (demo)" },
 ];
 
-export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrationsCardProps) {
+export function GoogleIntegrationsCard({
+  returnPath = "/shop",
+  canCopyWholeShop = false,
+}: GoogleIntegrationsCardProps) {
   const demo = useDemo();
+  const isDemo = Boolean(demo);
   const { t, intlLocale } = useI18n();
   const [connection, setConnection] = useState<GoogleConnectionStatus>({ connected: false });
   const [calendars, setCalendars] = useState<GoogleCalendarOption[]>([]);
@@ -134,7 +146,7 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
   );
 
   const loadCalendars = useCallback(async () => {
-    if (demo) {
+    if (isDemo) {
       setCalendars(DEMO_CALENDARS);
       applySelectedCalendar(null, null);
       return;
@@ -152,10 +164,10 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
     } finally {
       setLoadingCalendars(false);
     }
-  }, [applySelectedCalendar, demo]);
+  }, [applySelectedCalendar, isDemo]);
 
   const refresh = useCallback(async () => {
-    if (demo) {
+    if (isDemo) {
       setConnection({
         connected: true,
         google_email: "demo@gmail.com",
@@ -185,7 +197,7 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
     } finally {
       setBusy(false);
     }
-  }, [demo, loadCalendars]);
+  }, [isDemo, loadCalendars]);
 
   useEffect(() => {
     void refresh();
@@ -320,6 +332,30 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
       await refresh();
     } catch (err) {
       setError(friendlyIntegrationError(err, t("integr.google.errSync")));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function changePush(scope: PushScope) {
+    if (scope === (connection.push_scope ?? "off")) return;
+    if (demo) {
+      setConnection((current) => ({ ...current, push_scope: scope }));
+      setMessage(t("integr.push.demo"));
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    setMessage("");
+    try {
+      const { error: rpcError } = await supabase.rpc("set_google_calendar_push", {
+        p_scope: scope,
+      });
+      if (rpcError) throw rpcError;
+      setConnection((current) => ({ ...current, push_scope: scope }));
+      setMessage(scope === "off" ? t("integr.push.savedOff") : t("integr.push.savedOn"));
+    } catch (err) {
+      setError(friendlyIntegrationError(err, t("integr.push.errSave")));
     } finally {
       setBusy(false);
     }
@@ -471,6 +507,70 @@ export function GoogleIntegrationsCard({ returnPath = "/shop" }: GoogleIntegrati
             </button>
           ) : null}
         </div>
+      ) : null}
+
+      {connection.connected ? (
+        <fieldset className="space-y-2" disabled={busy || !hasChosenCalendar}>
+          <legend className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {t("integr.push.title")}
+          </legend>
+          <p className="text-xs text-muted-foreground">{t("integr.push.intro")}</p>
+          {!hasChosenCalendar ? (
+            <p className="text-xs font-semibold text-foreground">{t("integr.push.chooseFirst")}</p>
+          ) : null}
+          <div className="grid gap-2">
+            {(
+              [
+                { id: "off", label: t("integr.push.off"), hint: t("integr.push.offHint") },
+                { id: "mine", label: t("integr.push.mine"), hint: t("integr.push.mineHint") },
+                ...(canCopyWholeShop || connection.push_scope === "shop"
+                  ? [{ id: "shop", label: t("integr.push.shop"), hint: t("integr.push.shopHint") }]
+                  : []),
+              ] as { id: PushScope; label: string; hint: string }[]
+            ).map((option) => {
+              const checked = (connection.push_scope ?? "off") === option.id;
+              return (
+                <label
+                  key={option.id}
+                  className={`flex min-h-11 cursor-pointer items-start gap-3 rounded-[var(--control-radius)] border px-3 py-3 text-sm has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60 ${
+                    checked
+                      ? "border-foreground bg-background"
+                      : "border-border/70 bg-background/60"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="google-calendar-push"
+                    value={option.id}
+                    checked={checked}
+                    onChange={() => void changePush(option.id)}
+                    className="mt-0.5 size-4 shrink-0 accent-foreground"
+                  />
+                  <span className="min-w-0">
+                    <span className="block font-semibold">{option.label}</span>
+                    <span className="block text-xs text-muted-foreground">{option.hint}</span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+          {connection.push_pending ? (
+            <p role="status" className="text-xs text-muted-foreground">
+              {t("integr.push.pending", { count: connection.push_pending })}
+            </p>
+          ) : null}
+          {connection.push_failed ? (
+            <p role="alert" className="text-xs text-destructive">
+              {t("integr.push.failed", {
+                count: connection.push_failed,
+                reason:
+                  friendlyChannelLastError(connection.push_last_error) ??
+                  t("integr.google.errAction"),
+              })}
+            </p>
+          ) : null}
+          <p className="text-xs text-muted-foreground">{t("integr.push.note")}</p>
+        </fieldset>
       ) : null}
 
       <div className="flex flex-wrap gap-2">

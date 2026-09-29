@@ -242,9 +242,7 @@ Deno.serve(async (req) => {
         typeof connection.selected_calendar_id === "string"
           ? connection.selected_calendar_id.trim()
           : "";
-      const selected = selectedId
-        ? calendars.find((c) => c.id === selectedId) ?? null
-        : null;
+      const selected = selectedId ? (calendars.find((c) => c.id === selectedId) ?? null) : null;
 
       return json({
         ok: true,
@@ -301,10 +299,7 @@ Deno.serve(async (req) => {
           ? connection.selected_calendar_id.trim()
           : "";
       if (!calendarId) {
-        return json(
-          { error: "Escolha qual agenda Google sincronizar antes de continuar." },
-          400,
-        );
+        return json({ error: "Escolha qual agenda Google sincronizar antes de continuar." }, 400);
       }
       const timeMin = body.time_min ?? new Date(Date.now() - 7 * 86400000).toISOString();
       const timeMax = body.time_max ?? new Date(Date.now() + 60 * 86400000).toISOString();
@@ -328,6 +323,7 @@ Deno.serve(async (req) => {
           htmlLink?: string;
           start?: { dateTime?: string; date?: string };
           end?: { dateTime?: string; date?: string };
+          extendedProperties?: { private?: Record<string, string> };
         }>;
       };
       if (!calRes.ok) {
@@ -343,7 +339,10 @@ Deno.serve(async (req) => {
       let upserted = 0;
       for (const item of items) {
         if (!item.id) continue;
-        const startsAt = item.start?.dateTime ?? (item.start?.date ? `${item.start.date}T00:00:00Z` : null);
+        // Eventos criados pelo próprio app (cópia dos agendamentos) não voltam como importados.
+        if (item.extendedProperties?.private?.barbaCabeloAppointmentId) continue;
+        const startsAt =
+          item.start?.dateTime ?? (item.start?.date ? `${item.start.date}T00:00:00Z` : null);
         const endsAt = item.end?.dateTime ?? (item.end?.date ? `${item.end.date}T00:00:00Z` : null);
         if (!startsAt || !endsAt) continue;
         const allDay = Boolean(item.start?.date && !item.start?.dateTime);

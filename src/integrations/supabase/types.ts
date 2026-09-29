@@ -1029,6 +1029,10 @@ export type Database = {
         Args: Record<string, never>;
         Returns: Json;
       };
+      set_google_calendar_push: {
+        Args: { p_scope: string };
+        Returns: Json;
+      };
       join_shop_as_customer: {
         Args: { p_shop_ref: string };
         Returns: Json;

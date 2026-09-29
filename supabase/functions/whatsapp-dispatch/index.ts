@@ -53,6 +53,20 @@ Deno.serve(async (req) => {
       /* cron separado cobrirá */
     }
 
+    // Melhor esforço: cópias para a Agenda Google no mesmo cron.
+    try {
+      await fetch(`${supabaseUrl}/functions/v1/google-calendar-dispatch`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${serviceKey}`,
+          apikey: serviceKey,
+        },
+        signal: AbortSignal.timeout(15_000),
+      });
+    } catch {
+      /* próxima rodada tenta de novo */
+    }
+
     const { data: batch, error: claimError } = await admin.rpc("claim_whatsapp_outbox", {
       p_limit: 20,
     });
@@ -121,8 +135,7 @@ Deno.serve(async (req) => {
           }),
         })) as { key?: { id?: string }; message?: { key?: { id?: string } } };
 
-        const providerId =
-          result?.key?.id ?? result?.message?.key?.id ?? null;
+        const providerId = result?.key?.id ?? result?.message?.key?.id ?? null;
 
         await admin.rpc("complete_whatsapp_outbox", {
           p_id: row.id,
