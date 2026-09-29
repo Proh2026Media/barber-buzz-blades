@@ -55,6 +55,12 @@ select service_id, shop_id, 'Test cut', 30, 4500 from booking_test_context;
 insert into public.staff (id, barbershop_id, display_name)
 select staff_id, shop_id, 'Test barber' from booking_test_context
 union all select other_staff_id, other_shop_id, 'Other barber' from booking_test_context;
+-- Desde a governança da equipe, administrar a loja exige ser dono na equipe profissional.
+insert into public.staff (barbershop_id, display_name, user_id, active)
+select shop_id, 'Test owner', shop_admin, false from booking_test_context;
+insert into public.shop_members (barbershop_id, user_id, staff_id, role, ownership_percent)
+select c.shop_id, c.shop_admin, s.id, 'owner'::public.shop_member_role, 100
+from booking_test_context c join public.staff s on s.user_id = c.shop_admin and s.barbershop_id = c.shop_id;
 
 select set_config('request.jwt.claim.sub', customer_a::text, true) from booking_test_context;
 set local role authenticated;

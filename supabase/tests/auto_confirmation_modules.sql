@@ -1,5 +1,6 @@
 -- Run after booking_reliability.sql and optional_occurrences.sql in a rollback transaction.
 reset role;
+select set_config('request.jwt.claim.sub','',true);
 -- Independent future reservation for withdrawal and rescheduling.
 update business_hours set is_open=true where barbershop_id=(select shop_id from booking_test_context);
 delete from availability_blocks where barbershop_id=(select shop_id from booking_test_context);

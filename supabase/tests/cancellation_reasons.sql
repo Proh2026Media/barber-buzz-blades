@@ -2,7 +2,8 @@
 reset role;
 select set_config('request.jwt.claim.sub', customer_a::text, true) from booking_test_context;
 set local role authenticated;
-create temporary table cancellation_target as select a.id from appointments a join booking_test_context c on a.customer_id=c.customer_a where a.status='pending' order by a.starts_at desc limit 1;
+create temporary table cancellation_target as select a.id from appointments a join booking_test_context c on a.customer_id=c.customer_a where a.status in ('pending','confirmed') and a.starts_at > now() order by a.starts_at desc limit 1;
+select pg_temp.check_booking_test((select count(*)=1 from cancellation_target),'Cancellation test has an active appointment');
 select pg_temp.expect_booking_error('select cancel_appointment(id,''invalid'') from cancellation_target','P0001','Invalid cancellation reason rejected');
 select set_config('request.jwt.claim.sub', customer_b::text, true) from booking_test_context;
 select pg_temp.expect_booking_error('select cancel_appointment(id,null) from cancellation_target','P0001','Other customer cannot cancel appointment');

@@ -29,6 +29,7 @@ select pg_temp.check_booking_test(next_customer_survey() is null, 'Erasure canno
 reset role;
 select pg_temp.check_booking_test((select count(*) = 0 from customer_usage_events where user_id = (select customer_a from booking_test_context)), 'Withdrawal removes usage records');
 select pg_temp.check_booking_test((select quoted_price_cents = 4500 from appointment_facts where appointment_id = (select appointment_id from booking_test_context)), 'Booking price captured');
+select set_config('request.jwt.claim.sub','',true);
 update services set price_cents = 9900 where id = (select service_id from booking_test_context);
 select pg_temp.check_booking_test((select quoted_price_cents = 4500 from appointment_facts where appointment_id = (select appointment_id from booking_test_context)), 'Catalog edits preserve historical price');
 select pg_temp.check_booking_test((select count(*) > 0 from appointment_history where appointment_id = (select appointment_id from booking_test_context)), 'Operational changes audited');

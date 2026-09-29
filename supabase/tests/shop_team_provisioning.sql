@@ -26,8 +26,9 @@ select pg_temp.check_provision(
   exists(select 1 from shop_members m join provision_context c on m.user_id=c.employee_id where m.role='employee' and m.ownership_percent is null),
   'Platform provisions employee without financial ownership');
 select pg_temp.check_provision(
-  exists(select 1 from shop_members m join provision_context c on m.user_id=c.partner_id where m.role='partner' and m.ownership_percent=40),
-  'Platform provisions partner with requested share');
+  exists(select 1 from shop_members m join provision_context c on m.user_id=c.partner_id where m.role='owner' and m.ownership_percent=40)
+  and exists(select 1 from shop_members m join provision_context c on m.user_id=c.owner_id where m.ownership_percent=60),
+  'Platform provisions co-owner with requested share and rebalances founder');
 select pg_temp.check_provision(
   exists(select 1 from shop_members m join provision_context c on m.user_id=c.owner_id where m.role='owner' and m.ownership_percent=60),
   'Partner share is transferred from current owner');

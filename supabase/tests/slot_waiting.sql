@@ -1,5 +1,6 @@
 -- Run after booking_reliability.sql in the same rollback-only transaction.
 reset role;
+select set_config('request.jwt.claim.sub','',true);
 delete from availability_blocks where barbershop_id=(select shop_id from booking_test_context);
 update business_hours set is_open=true where barbershop_id=(select shop_id from booking_test_context);
 create temporary table wait_test(id uuid,wait_id uuid);

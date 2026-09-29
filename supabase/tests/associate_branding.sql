@@ -1,5 +1,5 @@
--- Regressão: parceiro edita identidade visual, não edita o operacional.
--- Rodar depois de 20260918020000_* na mesma transação; sempre ROLLBACK.
+-- Regressão: identidade visual é só da marca (dono/sócio); parceiro não edita visual nem operacional.
+-- Regra desde 20260924180000_* (plano de governança). Sempre ROLLBACK.
 create temporary table brand_test_context as
 select gen_random_uuid() shop_id, gen_random_uuid() owner_id, gen_random_uuid() associate_id,
   gen_random_uuid() owner_staff, gen_random_uuid() associate_staff;
@@ -35,27 +35,34 @@ insert into public.shop_members(barbershop_id, user_id, staff_id, role, ownershi
 select shop_id, owner_id, owner_staff, 'owner'::public.shop_member_role, 100::numeric from brand_test_context union all
 select shop_id, associate_id, associate_staff, 'associate'::public.shop_member_role, null::numeric from brand_test_context;
 
+select set_config('brand.shop_id', :'shop_id', true);
 set local role authenticated;
 
 -- ---------------------------------------------------------------------------
--- Parceiro edita a identidade visual
+-- Parceiro NÃO edita a identidade visual (marca é só da sociedade)
 -- ---------------------------------------------------------------------------
 select set_config('request.jwt.claim.sub', :'associate_id', true);
-update public.barbershop_settings
-set display_name = 'Nova Marca', logo_background_color = '#112233'
-where barbershop_id = :'shop_id';
+do $$ begin
+  update public.barbershop_settings
+  set display_name = 'Nova Marca', logo_background_color = '#112233'
+  where barbershop_id = current_setting('brand.shop_id')::uuid;
+exception when others then null; end $$;
 select pg_temp.check_brand(
-  (select display_name = 'Nova Marca' and logo_background_color = '#112233'
+  (select display_name is distinct from 'Nova Marca'
    from public.barbershop_settings where barbershop_id = :'shop_id'),
-  'Parceiro edita nome e fundo da logo');
+  'Parceiro não edita nome e fundo da logo');
 
 -- ---------------------------------------------------------------------------
 -- Parceiro NÃO edita o operacional (fora da lista de visual)
 -- ---------------------------------------------------------------------------
 select set_config('request.jwt.claim.sub', :'associate_id', true);
-select pg_temp.expect_brand_error(
-  format('update public.barbershop_settings set booking_horizon_days = 30 where barbershop_id = %L', :'shop_id'),
-  '42501', 'Parceiro é bloqueado em mudança operacional');
+do $$ begin
+  update public.barbershop_settings set booking_horizon_days = 30
+  where barbershop_id = current_setting('brand.shop_id')::uuid;
+exception when others then null; end $$;
+select pg_temp.check_brand(
+  (select booking_horizon_days is distinct from 30 from public.barbershop_settings where barbershop_id = :'shop_id'),
+  'Parceiro é bloqueado em mudança operacional');
 
 -- ---------------------------------------------------------------------------
 -- Dono continua editando visual livremente (governança single)

@@ -64,9 +64,10 @@ select pg_temp.check_team(
 select pg_temp.check_team(exists(select 1 from services where name='Majority applied'),'Majority change persisted');
 
 select set_config('request.jwt.claim.sub',partner_id::text,true) from team_test_context;
-select pg_temp.expect_team_error(
-  'select request_shop_change(shop_id,''service.create'',''{"name":"Blocked minority","duration_minutes":30,"price_cents":1}''::jsonb) from team_test_context',
-  '42501','Minority partner cannot change operation');
+select pg_temp.check_team(
+  (select request_shop_change(shop_id,'service.create','{"name":"Blocked minority","duration_minutes":30,"price_cents":1}'::jsonb)->>'status'='pending' from team_test_context),
+  'Minority partner change waits for approval');
+select pg_temp.check_team(not exists(select 1 from services where name='Blocked minority'),'Minority change is not applied directly');
 
 select set_config('request.jwt.claim.sub',employee_id::text,true) from team_test_context;
 select pg_temp.check_team(

@@ -33,6 +33,13 @@ Atualizado em **26/09/2026**. Este documento resume decisões e entregas da conv
 - Teste de regressão: `supabase/tests/google_calendar_push.sql` (11 verificações, rodado com ROLLBACK no banco real).
 - Não verificado ainda: envio real para uma agenda Google (depende do dono ligar a opção na própria conta). A conexão existente segue em **Não copiar**.
 
+## Permissões da equipe — dois defeitos corrigidos + testes do banco em dia (29/09/2026)
+
+- **Grave — mudanças protegidas pela tela falhavam desde 24/09:** havia duas versões de `request_shop_change` (3 e 5 argumentos); a API respondia `PGRST203` (não sabe qual escolher) e todo `submitProtectedChange` de dono/sócio (criar serviço, bloqueio, equipe, horários) dava erro. Migration `20260929180000_request_shop_change_single.sql` (**aplicada**) remove a versão de 3 argumentos, que só repassava para a de 5 com os mesmos padrões. Conferido pela API: a função volta a ser encontrada.
+- **Parceiro/contratado não conseguiam bloquear a própria agenda nem ajustar o próprio preço:** `guard_protected_shop_change` recusava antes das políticas "próprias" valerem. Migration `20260929170000_guard_own_professional_rows.sql` (**aplicada**) libera só a linha do próprio profissional (`availability_blocks`, `staff_services`, `staff`); colega, catálogo da loja e identidade visual continuam barrados. Teste novo `guard_own_professional_rows.sql` (7).
+- Testes desatualizados ajustados às regras aprovadas: minoritário abre pedido (não é recusado); "sócio" provisionado vira co-dono e reajusta o fundador; parceiro não edita identidade visual; administrador precisa estar em `shop_members`; preparação dos testes limpa o login simulado antes de gravar como postgres.
+- Rodar os testes: cada arquivo em `begin … rollback`. Os que usam `booking_test_context` rodam na mesma transação depois de `booking_reliability.sql`; `auto_confirmation_modules.sql` também depois de `optional_occurrences.sql`. Não rodar `reset_externa_barbearia.sql` (script de limpeza, não teste). Resultado em 29/09: todos passaram.
+
 ## E-mail — login SMTP recusado + fila resiliente (29/09/2026)
 
 - **Causa confirmada:** `smtp.hostinger.com` recusava o login (`535`) com a senha configurada em `SMTP_*` (Edge) e `GOTRUE_SMTP_*` (Auth). **Resolvido pelo usuário em 29/09:** senha atualizada no Coolify; login SMTP verificado com `235 Authentication successful` nos dois serviços. Envio real de e-mail ainda não observado (fila vazia no momento da checagem).
