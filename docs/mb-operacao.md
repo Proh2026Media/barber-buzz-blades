@@ -160,6 +160,15 @@ O `docker-compose` mapeia isso para `GOTRUE_SMTP_*`.
    - `GOTRUE_SMTP_USER=noreply@…`
    - `GOTRUE_SITE_URL=https://beauty.contheiner.digital`
 
+### 2.3.1 Estado em 29/09/2026 — login recusado
+
+Hoje está configurado `SMTP_HOST=smtp.hostinger.com`, porta 587, usuário `…@contheiner.digital`, remetente `noreply@contheiner.digital`. O servidor responde, mas **recusa o login (535)**. Corrigir:
+
+1. hPanel → **E-mails** → caixa usada em `SMTP_USER` → redefinir a senha (ou confirmar a atual).
+2. Coolify → serviço `supabase-barba-cabelo` → atualizar `SMTP_PASS` (vale para o Auth e para as funções).
+3. Reiniciar o serviço (Auth + Edge functions).
+4. Testar com **Esqueci a senha** (2.4). A fila de e-mails do app tenta de novo sozinha a cada minuto.
+
 ### 2.4 Testar reset de senha
 
 1. Abrir login do app (`/auth`).

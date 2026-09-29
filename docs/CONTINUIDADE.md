@@ -32,7 +32,13 @@ Atualizado em **26/09/2026**. Este documento resume decisões e entregas da conv
 - Envio: Edge `google-calendar-dispatch` (id de evento fixo por agendamento+pessoa, então repetir não duplica); chamada pelo `whatsapp-dispatch` a cada minuto (cron do host). Publicado no volume Coolify + restart; resposta verificada `{"ok":true,...}`.
 - Teste de regressão: `supabase/tests/google_calendar_push.sql` (11 verificações, rodado com ROLLBACK no banco real).
 - Não verificado ainda: envio real para uma agenda Google (depende do dono ligar a opção na própria conta). A conexão existente segue em **Não copiar**.
-- Observado no log (anterior a esta entrega): `email-dispatch` falha a cada minuto com `SMTPConnection ... invalid cmd` (SMTP) — conferir credenciais/porta do e-mail em [mb-operacao.md](mb-operacao.md).
+
+## E-mail — login SMTP recusado + fila resiliente (29/09/2026)
+
+- **Causa confirmada:** `smtp.hostinger.com` responde normalmente (587 e 465), mas recusa o login com `535 authentication failed` para o usuário `…@contheiner.digital` configurado em `SMTP_*` (Edge) **e** `GOTRUE_SMTP_*` (Auth) — mesma senha nos dois. Logo, e-mails do login (confirmação, recuperação de senha) também falham. **Depende do usuário:** conferir/redefinir a senha da caixa no hPanel e atualizar `SMTP_PASS` e `GOTRUE_SMTP_PASS` no Coolify (reiniciar os dois serviços). Passo a passo em [mb-operacao.md](mb-operacao.md).
+- Fila corrigida (migration `20260929150000_email_outbox_recovery.sql`, **aplicada**): `claimed_at`; envio interrompido há 10 min volta à fila; falha tenta de novo com intervalo (5, 10, 15, 20 min) até 5 vezes; aviso com mais de 24h de atraso é descartado. Os 2 e-mails travados desde 24/09 foram descartados por isso.
+- `email-dispatch` só conecta ao SMTP quando há e-mail na fila, para no primeiro login recusado e grava motivo claro em pt-BR. Publicado no Coolify; o erro por minuto sumiu do log.
+- Teste: `supabase/tests/email_outbox_recovery.sql` (6 verificações, ROLLBACK no banco real).
 
 ## Entrega — WhatsApp modelos + Google Agenda (25/09/2026)
 
