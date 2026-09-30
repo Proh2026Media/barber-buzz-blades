@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Salva e envia o trabalho ao fim de cada rodada e devolve a vez.
 #   scripts/autossave.sh <ferramenta>
-# Envia só para o origin (GitHub). Publicar o site continua manual: git push hostinger HEAD:main.
+# Envia ao origin (GitHub). Atenção: o hub-control espelha o origin no hostinger, então isto publica o site.
 # Nunca inclui .env nem arquivos ._* do macOS.
 set -u
 ferramenta="${1:-desconhecida}"

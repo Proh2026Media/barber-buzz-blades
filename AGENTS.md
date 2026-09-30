@@ -40,8 +40,10 @@ Só uma ferramenta (Cursor, Codex, Claude Code etc.) edita o projeto por vez. A 
 1. **Ao começar:** `git pull --ff-only origin main`. Se falhar, **não editar** até a conexão voltar — editar sobre uma cópia desatualizada foi o que já apagou entregas publicadas.
 2. **Pegar a vez:** `scripts/vez.sh pedir <ferramenta> "o que vai fazer"`. Se responder "vez: com outra", esperar; não editar.
 3. **Antes de cada edição:** `scripts/vez.sh checar <ferramenta>` (renova a vez; sai com erro se ela for de outra ferramenta).
-4. **Ao terminar:** `scripts/autossave.sh <ferramenta>` — salva, envia ao `origin` e devolve a vez. Não inclui `.env` nem `._*` e **não publica o site**; publicar continua manual (`git push hostinger HEAD:main`).
-5. **Nunca** usar `git push --force` na `main` de nenhum remoto.
+4. **Ao terminar:** `scripts/autossave.sh <ferramenta>` — salva, envia ao `origin` e devolve a vez. Não inclui `.env` nem `._*`.
+5. **Enviar ao `origin` publica o site:** a cada envio, o fluxo `.github/workflows/sync-instantanea-hub.yml` avisa o `PROH-Media/hub-control`, que espelha o `origin` no `hostinger` (`PROH-Media/barber-buzz-blades`), e o Hostinger compila. Só enviar trabalho verificado (checagem de tipos e montagem).
+6. **Nunca** enviar só ao `hostinger`: o espelho copia o `origin` por cima e desfaz a publicação (foi o que tirou o site do ar em 29/09). O `origin` é a fonte da verdade.
+7. **Nunca** usar `git push --force` na `main` de nenhum remoto.
 
 A vez vence sozinha após 30 minutos sem renovação (`VEZ_PRAZO_MIN`), para uma ferramenta travada não bloquear as outras. Ver quem está com ela: `scripts/vez.sh status`. Soltar à mão (só quando a outra ferramenta com certeza parou): `scripts/vez.sh liberar <dono-atual>`.
 
