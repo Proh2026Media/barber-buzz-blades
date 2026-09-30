@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "bash -c 'ROOT=\"$(git rev-parse --show-toplevel 2>/dev/null)\" || exit 0; cd \"$ROOT\" || exit 0; git pull --ff-only --quiet origin main 2>/dev/null || echo \"ATENCAO: nao consegui puxar da main — nao inicie edicoes ate a conexao voltar (AGENTS.md secao 9).\"; scripts/vez.sh pedir cursor \"sessao Cursor\" >/dev/null 2>&1 || true'"
+      }
+    ],
+    "preToolUse": [
+      {
+        "command": "bash scripts/cursor-pretool-vez.sh",
+        "failClosed": true
+      }
+    ],
+    "stop": [
+      {
+        "command": "bash -c 'cd \"$(git rev-parse --show-toplevel 2>/dev/null)\" 2>/dev/null && scripts/autossave.sh cursor || true'",
+        "loop_limit": 3
+      }
+    ]
+  }
+}

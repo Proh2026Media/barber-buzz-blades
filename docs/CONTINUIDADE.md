@@ -33,6 +33,20 @@ Atualizado em **26/09/2026**. Este documento resume decisões e entregas da conv
 - Teste de regressão: `supabase/tests/google_calendar_push.sql` (11 verificações, rodado com ROLLBACK no banco real).
 - Não verificado ainda: envio real para uma agenda Google (depende do dono ligar a opção na própria conta). A conexão existente segue em **Não copiar**.
 
+## Vez entre ferramentas + incidente de envio forçado (29/09/2026)
+
+- **Incidente:** entre 15h39 e 21h25 alguém (outra máquina/ferramenta; não há outra cópia do repositório neste Mac) fez envio forçado da `main` do `origin` e do `hostinger` para `28a5406` (25/09), apagando 19 salvamentos e tirando do site as entregas de 26–29/09. Restaurado com envio normal de `35325ac` aos dois remotos.
+- **Prevenção:** regra da vez — `AGENTS.md` seção 9, `scripts/vez.sh` (vez no ramo `vez` do GitHub, troca atômica, vence em 30 min), `scripts/autossave.sh` (salva e envia só ao `origin`; não publica) e `.cursor/hooks.json` (puxa e pede a vez ao abrir, bloqueia sem a vez, autossave ao fim da resposta). Testado: pedir/checar/liberar, bloqueio de outra ferramenta, disputa simultânea (só uma ganha) e retomada de vez vencida.
+- Outras ferramentas (Codex, Claude Code) precisam seguir a seção 9 manualmente ou ganhar ganchos próprios.
+
+## Varredura de saúde — tela × banco × servidor (29/09/2026)
+
+- **Defeito corrigido — marca da loja no login:** `get_public_shop_branding_v2` e a legada devolviam erro `42804` para **toda loja existente** (`header_font_weight` é `smallint`, a função anuncia `integer`); o login com `?shop=` caía no visual padrão. Migration `20260929190000_public_branding_font_weight_type.sql` (**aplicada**); conferido pela API sem login: Arena Barber e Externa Barbearia voltam com a marca. `get_public_shop_branding_by_host` já funcionava.
+- Conferido sem divergência: as 71 funções do banco chamadas pela tela existem, com nomes de parâmetros e permissão para logado; as 66 migrations do repositório têm tabelas/colunas/funções/gatilhos presentes no banco; as 10 Edge functions usadas estão publicadas e idênticas às do repositório.
+- Registro da API (Kong, 48h): sem erros de usuários além dos acima. “Esqueci a senha” às 13h20/13h22 respondeu 200 em ~2 s (envio SMTP ok após a troca de senha); 429 é só a trava de 1 minuto.
+- Tarefas agendadas do sistema saudáveis (`barba-slot-waiting`: 11 falhas em 7 dias, última 23/09 durante reinícios; retenção diária ok; despacho WhatsApp/e-mail/Google a cada minuto).
+- **Aguardando o usuário:** crontab do root (instalado 03/09, antes deste projeto) chama a cada 15 min `…/functions/v1/google-drive/share-expire`, função que não existe aqui (192 erros 500 em 48h, inofensivos). Provavelmente de outro projeto; não removido sem confirmação.
+
 ## Permissões da equipe — dois defeitos corrigidos + testes do banco em dia (29/09/2026)
 
 - **Grave — mudanças protegidas pela tela falhavam desde 24/09:** havia duas versões de `request_shop_change` (3 e 5 argumentos); a API respondia `PGRST203` (não sabe qual escolher) e todo `submitProtectedChange` de dono/sócio (criar serviço, bloqueio, equipe, horários) dava erro. Migration `20260929180000_request_shop_change_single.sql` (**aplicada**) remove a versão de 3 argumentos, que só repassava para a de 5 com os mesmos padrões. Conferido pela API: a função volta a ser encontrada.
