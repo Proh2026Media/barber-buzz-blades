@@ -33,9 +33,15 @@ Atualizado em **26/09/2026**. Este documento resume decisões e entregas da conv
 - Teste de regressão: `supabase/tests/google_calendar_push.sql` (11 verificações, rodado com ROLLBACK no banco real).
 - Não verificado ainda: envio real para uma agenda Google (depende do dono ligar a opção na própria conta). A conexão existente segue em **Não copiar**.
 
+## Endereço do servidor mudou — `supabase-teste` agora é outro servidor (29/09/2026, noite)
+
+- Às ~19h12 o serviço da barbearia no Coolify foi reconfigurado (fora deste chat): endereço oficial passou a ser **`https://supabase-barbearia.proh.media`** (`API_EXTERNAL_URL`); `supabasebeauty.contheiner.digital` segue no mesmo servidor (é o que o site publicado usa). **`supabase-teste.proh.media` agora leva ao Flow TEST** (`jp4s2rsvrthdronl3ws71asj`) — não usar.
+- Corrigido: `/etc/cron.d/barba-whatsapp-dispatch` chamava `supabase-teste` e recebia 500 desde ~19h28 (WhatsApp, e-mail e Google parados); agora chama `supabase-barbearia` e responde 200 (cópia em `/root/barba-whatsapp-dispatch.bak-20260929`). `.env` local também apontado para o endereço novo.
+- **Quebrado pela reconfiguração (aguarda decisão):** o `.env` do serviço voltou a uma base de 22/09 — sumiram `GOTRUE_EXTERNAL_GOOGLE_*` (login com Google desligado: "provider is not enabled"), `GOOGLE_OAUTH_*` (Google Agenda/Contatos), `APP_URL`, `PLATFORM_EVOLUTION_INSTANCE`; `ENABLE_EMAIL_AUTOCONFIRM` virou `false`. SMTP Titan (`noreply@beauty.contheiner.digital`) recusa a senha (535) — às 13h30 funcionava. Cópias com os valores antigos em `/data/coolify/services/z2dbb7dkyzhc8vjiywq34mhn/.env.bak-*` (Google em `.env.bak-google-newproject-20260924-200257`).
+
 ## Vez entre ferramentas + incidente de envio forçado (29/09/2026)
 
-- **Incidente:** entre 15h39 e 21h25 alguém (outra máquina/ferramenta; não há outra cópia do repositório neste Mac) fez envio forçado da `main` do `origin` e do `hostinger` para `28a5406` (25/09), apagando 19 salvamentos e tirando do site as entregas de 26–29/09. Restaurado com envio normal de `35325ac` aos dois remotos.
+- **Incidente:** por volta de 19h20 a `main` do `hostinger` foi rebobinada para `28a5406` (25/09), fora desta máquina, tirando do site as entregas de 26–29/09. O `origin` não foi forçado: estava parado em `28a5406` desde 25/09 porque as entregas do dia só tinham ido ao `hostinger` — provável cópia do `origin` desatualizado por cima do `hostinger`. Restaurado com envio normal de `35325ac` aos dois remotos. Manter o `origin` sempre em dia (o autossave faz isso). Existe ainda a cópia de trabalho do Kilo Code em `.kilo/worktrees/olivine-gallimimus` (parada em `28a5406` desde 27/09; não enviou nada).
 - **Prevenção:** regra da vez — `AGENTS.md` seção 9, `scripts/vez.sh` (vez no ramo `vez` do GitHub, troca atômica, vence em 30 min), `scripts/autossave.sh` (salva e envia só ao `origin`; não publica) e `.cursor/hooks.json` (puxa e pede a vez ao abrir, bloqueia sem a vez, autossave ao fim da resposta). Testado: pedir/checar/liberar, bloqueio de outra ferramenta, disputa simultânea (só uma ganha) e retomada de vez vencida.
 - Outras ferramentas (Codex, Claude Code) precisam seguir a seção 9 manualmente ou ganhar ganchos próprios.
 

@@ -52,6 +52,8 @@ function createSupabaseClient() {
     },
     auth: {
       storage: typeof window !== "undefined" ? localStorage : undefined,
+      // Nome fixo: trocar o endereço em VITE_SUPABASE_URL não pode desconectar quem já entrou.
+      storageKey: "sb-supabasebeauty-auth-token",
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
