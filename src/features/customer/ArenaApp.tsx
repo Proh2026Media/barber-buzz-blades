@@ -192,6 +192,11 @@ function ArenaApp({
 } = {}) {
   useScrollIndicators();
   const demo = useDemo();
+  // O estado da demonstração ganha objeto novo a cada tique do relógio; o catálogo
+  // só pode recarregar quando a loja muda, senão desfaz a escolha do cliente.
+  const demoRef = useRef(demo);
+  demoRef.current = demo;
+  const demoShopId = demo?.shop.id ?? null;
   const { t, intlLocale } = useI18n();
   const formatShopDate = (
     date: Date | string,
@@ -601,6 +606,7 @@ function ArenaApp({
   }, [demo, userId, appointmentVersion]);
 
   useEffect(() => {
+    const demo = demoShopId ? demoRef.current : null;
     if (demo) {
       setShopId(demo.shop.id);
       setCustomerName(demo.customerName);
@@ -946,7 +952,7 @@ function ArenaApp({
     return () => {
       cancelled = true;
     };
-  }, [demo, directBarberSlug, directShopSlug, promptJoin, catalogRevision]);
+  }, [demoShopId, directBarberSlug, directShopSlug, promptJoin, catalogRevision]);
 
   async function confirmShopJoin() {
     if (!joinShopRef) return;
