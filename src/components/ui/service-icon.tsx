@@ -12,6 +12,7 @@
  * complementares, e o nome puro do Lucide para a base (compatível com dados antigos).
  */
 
+import { useState } from "react";
 import {
   Activity,
   AudioLines,
@@ -518,12 +519,25 @@ export function ServiceIcon({
   imageClassName?: string;
 }) {
   const entry = icon ? ICON_BY_ID.get(icon) : undefined;
+  const [brokenImage, setBrokenImage] = useState<string | null>(null);
 
-  if (!icon) return <Scissors className={className} />;
+  if (!icon || brokenImage === icon) return <Scissors className={className} />;
 
   if (isServiceImageSource(icon)) {
+    // Preenche o quadro e corta só o excesso, qualquer que seja a proporção da foto.
     return (
-      <img src={icon} alt="" className={cn(imageClassName ?? className, "object-cover !p-0")} />
+      <img
+        src={icon}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        onError={() => setBrokenImage(icon)}
+        className={cn(
+          "block shrink-0 aspect-square",
+          imageClassName ?? className,
+          "object-cover object-center !p-0",
+        )}
+      />
     );
   }
 

@@ -25,6 +25,7 @@ import { useI18n } from "@/lib/i18n";
 import { brandCornerClass, brandVariables, DEFAULT_LOGIN_IMAGE } from "@/lib/shop/branding";
 import { BrandFontFace } from "@/features/shop/BrandFontFace";
 import { ServiceIcon } from "@/components/ui/service-icon";
+import { StaffPhoto } from "@/components/ui/staff-photo";
 import {
   instagramUrl,
   mapsUrl,
@@ -279,20 +280,18 @@ export function ShopLandingView({
                   className="relative flex flex-col gap-3 rounded-[var(--panel-radius)] border border-border bg-card p-4 transition-colors hover:border-foreground/30"
                 >
                   <div className="flex items-start gap-3">
-                    {member.avatar_url ? (
-                      <img
-                        src={member.avatar_url}
-                        alt=""
-                        className="size-14 shrink-0 rounded-full object-cover"
-                      />
-                    ) : (
-                      <span
-                        className="flex size-14 shrink-0 items-center justify-center rounded-full bg-muted text-lg font-bold"
-                        aria-hidden
-                      >
-                        {member.name.slice(0, 1).toUpperCase()}
-                      </span>
-                    )}
+                    <StaffPhoto
+                      src={member.avatar_url}
+                      className="size-14 rounded-full"
+                      fallback={
+                        <span
+                          className="flex size-14 shrink-0 items-center justify-center rounded-full bg-muted text-lg font-bold"
+                          aria-hidden
+                        >
+                          {member.name.slice(0, 1).toUpperCase()}
+                        </span>
+                      }
+                    />
                     <div className="min-w-0 flex-1 space-y-1">
                       <h3 className="font-bold">{member.name}</h3>
                       {member.bio && <p className="text-sm text-muted-foreground">{member.bio}</p>}

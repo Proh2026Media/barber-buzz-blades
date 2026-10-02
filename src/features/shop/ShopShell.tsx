@@ -122,6 +122,8 @@ import {
 import { PartnerOverview } from "./PartnerOverview";
 import { ClientDirectory } from "./ClientDirectory";
 import { ServiceImageCropDialog } from "./ServiceImageCropDialog";
+import { PORTRAIT_FOCUS_Y } from "@/lib/shop/service-image-crop";
+import { StaffPhoto } from "@/components/ui/staff-photo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 
@@ -2472,7 +2474,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                             <img
                               src={serviceIcon}
                               alt={t("shop.serviceForm.customIconAlt")}
-                              className="size-12 rounded-xl bg-muted object-cover"
+                              className="aspect-square size-12 shrink-0 rounded-xl bg-muted object-cover object-center"
                             />
                             <span className="text-[10px] text-muted-foreground">
                               {t("shop.serviceForm.customImage")}
@@ -2600,24 +2602,20 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     >
                       {staffView === "list" ? (
                         <span className="flex w-16 shrink-0 items-center justify-center overflow-hidden bg-gold/10">
-                          {member.avatar_url ? (
-                            <img
-                              src={member.avatar_url}
-                              alt=""
-                              className="size-full min-h-14 w-16 object-cover"
-                            />
-                          ) : (
-                            <Users className="size-5 text-gold" />
-                          )}
+                          <StaffPhoto
+                            src={member.avatar_url}
+                            className="size-full min-h-14 w-16"
+                            fallback={<Users className="size-5 text-gold" />}
+                          />
                         </span>
-                      ) : member.avatar_url ? (
-                        <img
-                          src={member.avatar_url}
-                          alt=""
-                          className="size-12 shrink-0 rounded-2xl object-cover"
-                        />
                       ) : (
-                        <Users className="size-12 shrink-0 rounded-2xl bg-gold/10 p-3 text-gold" />
+                        <StaffPhoto
+                          src={member.avatar_url}
+                          className="size-12 rounded-2xl"
+                          fallback={
+                            <Users className="size-12 shrink-0 rounded-2xl bg-gold/10 p-3 text-gold" />
+                          }
+                        />
                       )}
                       <div
                         className={
@@ -2769,17 +2767,15 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                           {t("shop.staffForm.photo")}
                         </span>
                         <div className="flex flex-wrap items-center gap-3">
-                          {staffAvatar ? (
-                            <img
-                              src={staffAvatar}
-                              alt=""
-                              className="size-16 rounded-2xl object-cover"
-                            />
-                          ) : (
-                            <span className="flex size-16 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-                              <Users className="size-6" />
-                            </span>
-                          )}
+                          <StaffPhoto
+                            src={staffAvatar}
+                            className="size-16 rounded-2xl"
+                            fallback={
+                              <span className="flex size-16 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
+                                <Users className="size-6" />
+                              </span>
+                            }
+                          />
                           <div className="flex flex-wrap gap-2">
                             <button
                               type="button"
@@ -2881,6 +2877,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 description={t("shop.staffCrop.description")}
                 imageAlt={t("shop.staffCrop.alt")}
                 outputName="barbeiro-1x1.webp"
+                focusY={PORTRAIT_FOCUS_Y}
               />
             </section>
           )}

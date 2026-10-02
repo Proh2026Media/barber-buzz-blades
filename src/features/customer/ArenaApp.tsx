@@ -168,6 +168,7 @@ const matches = [
 ];
 import { ShopJoinDialog } from "./ShopJoinDialog";
 import { ServiceIcon } from "@/components/ui/service-icon";
+import { StaffPhoto } from "@/components/ui/staff-photo";
 
 function ArenaApp({
   headerActions,
@@ -2254,15 +2255,11 @@ function ArenaApp({
                                       staffIdx === i ? "bg-primary-foreground/10" : "bg-muted/50"
                                     }`}
                                   >
-                                    {m.avatar_url ? (
-                                      <img
-                                        src={m.avatar_url}
-                                        alt=""
-                                        className="size-full min-h-14 w-16 object-cover"
-                                      />
-                                    ) : (
-                                      <Scissors className="size-4" aria-hidden="true" />
-                                    )}
+                                    <StaffPhoto
+                                      src={m.avatar_url}
+                                      className="size-full min-h-14 w-16"
+                                      fallback={<Scissors className="size-4" aria-hidden="true" />}
+                                    />
                                   </span>
                                   <span className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2.5">
                                     <span className="min-w-0 flex-1 break-words">
@@ -2287,21 +2284,19 @@ function ArenaApp({
                               ) : (
                                 <>
                                   <span className="flex items-center gap-2">
-                                    {m.avatar_url ? (
-                                      <img
-                                        src={m.avatar_url}
-                                        alt=""
-                                        className="size-9 shrink-0 rounded-xl object-cover"
-                                      />
-                                    ) : (
-                                      <span
-                                        className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
-                                          staffIdx === i ? "bg-primary-foreground/15" : "bg-muted"
-                                        }`}
-                                      >
-                                        <Scissors className="size-4" aria-hidden="true" />
-                                      </span>
-                                    )}
+                                    <StaffPhoto
+                                      src={m.avatar_url}
+                                      className="size-9 rounded-xl"
+                                      fallback={
+                                        <span
+                                          className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
+                                            staffIdx === i ? "bg-primary-foreground/15" : "bg-muted"
+                                          }`}
+                                        >
+                                          <Scissors className="size-4" aria-hidden="true" />
+                                        </span>
+                                      }
+                                    />
                                     <span className="min-w-0 flex-1 break-words">
                                       {m.display_name}
                                     </span>

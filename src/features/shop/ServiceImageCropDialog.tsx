@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Slider } from "@/components/ui/slider";
 import { useI18n } from "@/lib/i18n";
 import { SERVICE_IMAGE_CROP_SIZE } from "@/lib/shop/service-image";
-import { getSquareCropRect } from "@/lib/shop/service-image-crop";
+import { getSquareCropRect, initialCropOffset } from "@/lib/shop/service-image-crop";
 
 type Offset = { x: number; y: number };
 
@@ -18,6 +18,7 @@ export function ServiceImageCropDialog({
   description,
   imageAlt,
   outputName = "servico-1x1.webp",
+  focusY = 0.5,
 }: {
   file: File | null;
   onCancel: () => void;
@@ -26,11 +27,15 @@ export function ServiceImageCropDialog({
   description?: string;
   imageAlt?: string;
   outputName?: string;
+  /** Altura (0 = topo, 0,5 = meio) que o corte automático deixa no centro do quadro. */
+  focusY?: number;
 }) {
   const { t } = useI18n();
   const imageUrl = useMemo(() => (file ? URL.createObjectURL(file) : ""), [file]);
   const imageRef = useRef<HTMLImageElement>(null);
-  const viewportRef = useRef<HTMLDivElement>(null);
+  // O quadro só existe depois que a janela monta; a medida segue o elemento, não o arquivo.
+  const [viewportEl, setViewportEl] = useState<HTMLDivElement | null>(null);
+  const autoFrameRef = useRef(false);
   const dragRef = useRef<{ pointerId: number; x: number; y: number; offset: Offset } | null>(null);
   const zoomLabelId = useId();
   const [naturalSize, setNaturalSize] = useState({ width: 1, height: 1 });
@@ -50,14 +55,14 @@ export function ServiceImageCropDialog({
   }, [file]);
 
   useEffect(() => {
-    const viewport = viewportRef.current;
+    const viewport = viewportEl;
     if (!viewport) return;
     const update = () => setViewportSize(viewport.clientWidth || 300);
     update();
     const observer = new ResizeObserver(update);
     observer.observe(viewport);
     return () => observer.disconnect();
-  }, [file]);
+  }, [viewportEl]);
 
   const geometry = useMemo(() => {
     const baseScale = Math.max(viewportSize / naturalSize.width, viewportSize / naturalSize.height);
@@ -71,11 +76,25 @@ export function ServiceImageCropDialog({
     };
   }, [naturalSize, viewportSize, zoom]);
 
-  const moveTo = (next: Offset) =>
+  useEffect(() => {
+    if (!autoFrameRef.current) return;
+    setOffset(
+      initialCropOffset({
+        naturalWidth: naturalSize.width,
+        naturalHeight: naturalSize.height,
+        viewportSize,
+        focusY,
+      }),
+    );
+  }, [naturalSize, viewportSize, focusY]);
+
+  const moveTo = (next: Offset) => {
+    autoFrameRef.current = false;
     setOffset({
       x: clamp(next.x, -geometry.maxX, geometry.maxX),
       y: clamp(next.y, -geometry.maxY, geometry.maxY),
     });
+  };
 
   useEffect(() => {
     setOffset((current) => ({
@@ -145,7 +164,7 @@ export function ServiceImageCropDialog({
           </div>
 
           <div
-            ref={viewportRef}
+            ref={setViewportEl}
             className="service-crop-viewport"
             tabIndex={0}
             role="application"
@@ -194,12 +213,14 @@ export function ServiceImageCropDialog({
                 src={imageUrl}
                 alt={imageAlt ?? t("brand.crop.alt")}
                 draggable={false}
-                onLoad={(event) =>
-                  setNaturalSize({
+                onLoad={(event) => {
+                  const natural = {
                     width: event.currentTarget.naturalWidth,
                     height: event.currentTarget.naturalHeight,
-                  })
-                }
+                  };
+                  autoFrameRef.current = true;
+                  setNaturalSize(natural);
+                }}
                 style={{
                   width: geometry.width,
                   height: geometry.height,
@@ -230,14 +251,25 @@ export function ServiceImageCropDialog({
               value={[zoom]}
               aria-labelledby={zoomLabelId}
               aria-valuetext={t("brand.crop.zoomValue", { value: Math.round(zoom * 100) })}
-              onValueChange={([value]) => setZoom(value ?? 1)}
+              onValueChange={([value]) => {
+                autoFrameRef.current = false;
+                setZoom(value ?? 1);
+              }}
             />
             <button
               type="button"
               className="mt-1 flex min-h-11 items-center gap-2 text-xs font-semibold text-muted-foreground"
               onClick={() => {
                 setZoom(1);
-                setOffset({ x: 0, y: 0 });
+                autoFrameRef.current = true;
+                setOffset(
+                  initialCropOffset({
+                    naturalWidth: naturalSize.width,
+                    naturalHeight: naturalSize.height,
+                    viewportSize,
+                    focusY,
+                  }),
+                );
               }}
             >
               <RotateCcw className="size-4" /> {t("brand.crop.recenter")}

@@ -1,5 +1,31 @@
 export type SquareCropRect = { x: number; y: number; size: number };
 
+/** Foto de pessoa: o rosto costuma ficar acima do meio, então o corte inicial sobe um pouco. */
+export const PORTRAIT_FOCUS_Y = 0.4;
+
+/**
+ * Posição inicial do enquadramento com zoom 1: a imagem cobre o quadro inteiro e o centro do
+ * corte fica em `focusY` (0 = topo, 0,5 = meio) da altura original, sem sair da foto.
+ */
+export function initialCropOffset({
+  naturalWidth,
+  naturalHeight,
+  viewportSize,
+  focusY = 0.5,
+}: {
+  naturalWidth: number;
+  naturalHeight: number;
+  viewportSize: number;
+  focusY?: number;
+}) {
+  const safeViewport = Math.max(1, viewportSize);
+  const scale = Math.max(safeViewport / naturalWidth, safeViewport / naturalHeight);
+  const height = naturalHeight * scale;
+  const maxY = Math.max(0, (height - safeViewport) / 2);
+  const y = Math.min(maxY, Math.max(-maxY, (0.5 - focusY) * height));
+  return { x: 0, y: Object.is(y, -0) ? 0 : y };
+}
+
 /** Converte o enquadramento visto no editor para o recorte na imagem original. */
 export function getSquareCropRect({
   naturalWidth,

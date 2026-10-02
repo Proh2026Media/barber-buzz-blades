@@ -1,6 +1,60 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getSquareCropRect } from "./service-image-crop.ts";
+import { getSquareCropRect, initialCropOffset, PORTRAIT_FOCUS_Y } from "./service-image-crop.ts";
+
+test("initial crop covers and centers, nudging portraits of people upward", () => {
+  const sizes = { viewportSize: 300 };
+  assert.deepEqual(initialCropOffset({ naturalWidth: 1600, naturalHeight: 900, ...sizes }), {
+    x: 0,
+    y: 0,
+  });
+  assert.deepEqual(initialCropOffset({ naturalWidth: 900, naturalHeight: 1600, ...sizes }), {
+    x: 0,
+    y: 0,
+  });
+  assert.deepEqual(
+    initialCropOffset({
+      naturalWidth: 1600,
+      naturalHeight: 900,
+      focusY: PORTRAIT_FOCUS_Y,
+      ...sizes,
+    }),
+    { x: 0, y: 0 },
+  );
+
+  const offset = initialCropOffset({
+    naturalWidth: 900,
+    naturalHeight: 1600,
+    focusY: PORTRAIT_FOCUS_Y,
+    ...sizes,
+  });
+  const crop = getSquareCropRect({
+    naturalWidth: 900,
+    naturalHeight: 1600,
+    viewportSize: 300,
+    zoom: 1,
+    offsetX: offset.x,
+    offsetY: offset.y,
+  });
+  assert.equal(crop.size, 900);
+  assert.equal(Math.round(crop.y + crop.size / 2), Math.round(1600 * PORTRAIT_FOCUS_Y));
+
+  const extreme = initialCropOffset({
+    naturalWidth: 900,
+    naturalHeight: 1600,
+    focusY: 0,
+    ...sizes,
+  });
+  const top = getSquareCropRect({
+    naturalWidth: 900,
+    naturalHeight: 1600,
+    viewportSize: 300,
+    zoom: 1,
+    offsetX: extreme.x,
+    offsetY: extreme.y,
+  });
+  assert.equal(Math.round(top.y), 0);
+});
 
 test("square crop centers and covers landscape and portrait images", () => {
   assert.deepEqual(
