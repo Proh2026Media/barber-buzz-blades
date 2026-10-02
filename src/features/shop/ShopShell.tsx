@@ -2524,15 +2524,6 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 onCancel={() => setServiceImageToCrop(null)}
                 onConfirm={saveCroppedServiceImage}
               />
-              <ServiceImageCropDialog
-                file={staffImageToCrop}
-                onCancel={() => setStaffImageToCrop(null)}
-                onConfirm={saveCroppedStaffAvatar}
-                title={t("shop.staffCrop.title")}
-                description={t("shop.staffCrop.description")}
-                imageAlt={t("shop.staffCrop.alt")}
-                outputName="barbeiro-1x1.webp"
-              />
             </section>
           )}
 
@@ -2882,6 +2873,15 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   </DialogScrollArea>
                 </DialogContent>
               </Dialog>
+              <ServiceImageCropDialog
+                file={staffImageToCrop}
+                onCancel={() => setStaffImageToCrop(null)}
+                onConfirm={saveCroppedStaffAvatar}
+                title={t("shop.staffCrop.title")}
+                description={t("shop.staffCrop.description")}
+                imageAlt={t("shop.staffCrop.alt")}
+                outputName="barbeiro-1x1.webp"
+              />
             </section>
           )}
 

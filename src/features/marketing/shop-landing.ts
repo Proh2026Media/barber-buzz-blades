@@ -60,6 +60,8 @@ export type LandingService = {
   description: string;
   duration_minutes: number;
   price_cents: number;
+  /** Nome do ícone do catálogo ou endereço da foto do serviço. */
+  icon: string | null;
 };
 
 export type LandingHours = {
@@ -167,6 +169,7 @@ export function parseLandingData(raw: Json | null | undefined): LandingData | nu
       description: str(row.description),
       duration_minutes: num(row.duration_minutes),
       price_cents: num(row.price_cents),
+      icon: strOrNull(row.icon),
     })),
   };
 }

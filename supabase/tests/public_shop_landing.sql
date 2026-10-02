@@ -1,5 +1,6 @@
 -- Página pública da barbearia: só dados da loja, nada de cliente.
--- Rodar depois de 20261002120000_public_shop_landing.sql, numa transação; sempre ROLLBACK.
+-- Rodar depois de 20261002120000_public_shop_landing.sql e 20261002170000_public_shop_landing_team_cards.sql,
+-- numa transação; sempre ROLLBACK.
 create temporary table land_ctx as
 select gen_random_uuid() shop_id, gen_random_uuid() owner_id, gen_random_uuid() cust_id,
   gen_random_uuid() staff_a, gen_random_uuid() staff_b, gen_random_uuid() service_id,
@@ -113,6 +114,30 @@ select pg_temp.check_land(
 select pg_temp.check_land(
   jsonb_array_length(public.get_public_shop_landing(:'slug') -> 'services') = 0,
   'Sem serviços quando a loja esconde esse bloco');
+select pg_temp.check_land(
+  (select bool_and(s ? 'bio' and s ? 'avatar_url' and s ? 'booking_slug')
+   from jsonb_array_elements(public.get_public_shop_landing(:'slug') -> 'staff') s)
+  and jsonb_array_length(public.get_public_shop_landing(:'slug') -> 'staff') = 2,
+  'Cartão da equipe continua com foto, apresentação e endereço de agendamento sem os horários');
+reset role;
+update public.barbershop_settings set landing = '{"show_staff":false}'::jsonb
+where barbershop_id = :'shop_id';
+set local role anon;
+select pg_temp.check_land(
+  jsonb_array_length(public.get_public_shop_landing(:'slug') -> 'staff') = 0,
+  'Equipe escondida não manda nenhum profissional, mesmo com horários de hoje ligados');
+reset role;
+update public.services set icon = 'https://exemplo.invalid/corte.webp' where id = :'service_id';
+update public.barbershop_settings set landing = '{}'::jsonb where barbershop_id = :'shop_id';
+set local role anon;
+select pg_temp.check_land(
+  public.get_public_shop_landing(:'slug') -> 'services' -> 0 ->> 'icon' = 'https://exemplo.invalid/corte.webp',
+  'Serviço leva a foto ou o ícone escolhido');
+select pg_temp.check_land(
+  (select bool_and(s ->> 'name' in ('Barbeiro A', 'Barbeiro B') and s ->> 'booking_slug' like 'barbeiro-_')
+   from jsonb_array_elements(public.get_public_shop_landing(:'slug') -> 'staff') s)
+  and public.get_public_shop_landing(:'slug') -> 'staff' -> 0 ->> 'bio' = 'Degradê',
+  'Profissional vem com nome, apresentação e endereço de agendamento');
 reset role;
 update public.barbershop_settings set landing = '{"enabled":false}'::jsonb where barbershop_id = :'shop_id';
 set local role anon;

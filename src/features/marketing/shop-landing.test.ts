@@ -23,9 +23,15 @@ test("landing data needs a shop", () => {
   const data = parseLandingData({
     shop: { id: "s1", name: "Loja", slug: "loja" },
     staff: [{ name: "Ana", free_today: ["10:00", 3, "10:30"] }],
+    services: [
+      { name: "Corte", icon: "Scissors" },
+      { name: "Barba", icon: "" },
+    ],
   });
   assert.equal(data?.shop.timezone, "America/Sao_Paulo");
   assert.deepEqual(data?.staff[0].free_today, ["10:00", "10:30"]);
+  assert.equal(data?.services[0].icon, "Scissors");
+  assert.equal(data?.services[1].icon, null);
 });
 
 test("landing validation mirrors the database", () => {
