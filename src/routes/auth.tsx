@@ -399,6 +399,40 @@ function AuthPage() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Link de e-mail já usado ou vencido: o Auth devolve o erro no endereço.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    const hash = new URLSearchParams(url.hash.replace(/^#/, ""));
+    const errorCode = url.searchParams.get("error_code") || hash.get("error_code");
+    const errorName = url.searchParams.get("error") || hash.get("error");
+    if (errorCode !== "otp_expired" && !(recovery && errorName)) return;
+
+    let cancelled = false;
+    void (async () => {
+      const { data } = await supabase.auth.getSession();
+      if (cancelled) return;
+      for (const key of ["error", "error_code", "error_description"]) url.searchParams.delete(key);
+      url.hash = "";
+      if (data.session && recovery) {
+        window.history.replaceState(window.history.state, "", url.toString());
+        setMode("recovery");
+        setError(null);
+        setInfo(tNow("auth.info.setNewPassword"));
+        return;
+      }
+      url.searchParams.delete("recovery");
+      window.history.replaceState(window.history.state, "", url.toString());
+      setMode("forgot");
+      setInfo(null);
+      setError(tNow("auth.error.linkExpired"));
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (!bridged) setBridgeReady(true);
   }, [bridged]);

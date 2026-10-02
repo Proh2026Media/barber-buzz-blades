@@ -85,6 +85,8 @@ export const ptPT: Record<MessageKey, string> = {
   "auth.privacy.link": "Política de Privacidade",
   "auth.info.signingIn": "A entrar…",
   "auth.info.setNewPassword": "Defina uma nova palavra-passe para continuar.",
+  "auth.error.linkExpired":
+    "Esta ligação já foi usada ou expirou. Se já criou a nova palavra-passe, basta entrar. Caso contrário, peça uma nova ligação abaixo.",
   "auth.info.openingGoogle": "A abrir o Google…",
   "auth.info.finishingLogin": "A concluir o início de sessão…",
   "auth.info.canClose": "Pode fechar esta janela.",

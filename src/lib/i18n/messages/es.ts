@@ -84,6 +84,8 @@ export const es: Record<MessageKey, string> = {
   "auth.privacy.link": "Política de privacidad",
   "auth.info.signingIn": "Entrando…",
   "auth.info.setNewPassword": "Define una nueva contraseña para continuar.",
+  "auth.error.linkExpired":
+    "Este enlace ya se usó o venció. Si ya creaste tu nueva contraseña, solo inicia sesión. Si no, pide un nuevo enlace abajo.",
   "auth.info.openingGoogle": "Abriendo Google…",
   "auth.info.finishingLogin": "Finalizando el inicio de sesión…",
   "auth.info.canClose": "Ya puedes cerrar esta ventana.",

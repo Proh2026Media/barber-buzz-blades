@@ -82,6 +82,8 @@ export const ptBR = {
   "auth.privacy.link": "Política de Privacidade",
   "auth.info.signingIn": "Entrando…",
   "auth.info.setNewPassword": "Defina uma nova senha para continuar.",
+  "auth.error.linkExpired":
+    "Este link já foi usado ou venceu. Se você já criou a nova senha, é só entrar. Se não, peça um novo link abaixo.",
   "auth.info.openingGoogle": "Abrindo Google…",
   "auth.info.finishingLogin": "Concluindo login…",
   "auth.info.canClose": "Pode fechar esta janela.",

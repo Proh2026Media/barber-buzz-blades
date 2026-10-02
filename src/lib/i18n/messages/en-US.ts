@@ -84,6 +84,8 @@ export const enUS: Record<MessageKey, string> = {
   "auth.privacy.link": "Privacy Policy",
   "auth.info.signingIn": "Signing in…",
   "auth.info.setNewPassword": "Set a new password to continue.",
+  "auth.error.linkExpired":
+    "This link has already been used or has expired. If you already created your new password, just sign in. Otherwise, request a new link below.",
   "auth.info.openingGoogle": "Opening Google…",
   "auth.info.finishingLogin": "Finishing sign-in…",
   "auth.info.canClose": "You can close this window.",
