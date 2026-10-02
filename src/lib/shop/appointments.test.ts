@@ -7,10 +7,14 @@ import {
   buildSlotsForWindow,
   dateFromLocalKey,
   localDateKey,
+  minutesLabel,
+  previewSlotMinutes,
   shopDateKey,
   shopDateTime,
   shopDayRange,
+  slotRuleFromSettings,
   termsFor,
+  type SlotRule,
 } from "./appointments.ts";
 
 const day = new Date(2030, 0, 15);
@@ -201,6 +205,102 @@ test("matches the database rule (cenário de supabase/tests/booking_rules_single
     assert.ok(!labels.includes(hidden), hidden);
   }
 });
+
+describeModes();
+
+function describeModes() {
+  // Mesmo cenário de supabase/tests/slot_offer_mode.sql: 09:00–19:00, Corte 09:00–09:30
+  // e almoço da loja 12:30–13:15.
+  const hours = { is_open: true, opens_at: "09:00", closes_at: "19:00" };
+  const lunch = [busy(12, 30, 13, 15)];
+  const label = (slots: Date[]) =>
+    slots.map(
+      (slot) =>
+        `${String(slot.getHours()).padStart(2, "0")}:${String(slot.getMinutes()).padStart(2, "0")}`,
+    );
+  const slotsFor = (duration: number, rule: SlotRule) =>
+    label(buildSlotsForWindow(day, duration, [busy(9, 0, 9, 30)], hours, at(8), undefined, rule));
+
+  test("flexible mode: Combo right after the Corte and again when lunch ends", () => {
+    const slots = slotsFor(60, { mode: "flexible", stepMinutes: 15, blocks: lunch });
+    assert.equal(slots[0], "09:30");
+    for (const shown of ["09:45", "11:30", "13:15", "13:30", "18:00"])
+      assert.ok(slots.includes(shown));
+    for (const hidden of ["09:00", "11:45", "12:00", "12:15", "18:15"])
+      assert.ok(!slots.includes(hidden), hidden);
+  });
+
+  test("literal mode: steps of the service length, restarting after lunch", () => {
+    assert.deepEqual(slotsFor(60, { mode: "literal", stepMinutes: 15, blocks: lunch }), [
+      "10:00",
+      "11:00",
+      "13:15",
+      "14:15",
+      "15:15",
+      "16:15",
+      "17:15",
+    ]);
+    const corte = slotsFor(30, { mode: "literal", stepMinutes: 15, blocks: lunch });
+    assert.deepEqual(corte.slice(0, 3), ["09:30", "10:00", "10:30"]);
+    assert.ok(corte.includes("13:45") && !corte.includes("13:30") && !corte.includes("18:30"));
+  });
+
+  test("custom mode: the shop chooses the step", () => {
+    const twenty = slotsFor(60, { mode: "custom", stepMinutes: 20, blocks: lunch });
+    assert.deepEqual(twenty.slice(0, 6), ["09:40", "10:00", "10:20", "10:40", "11:00", "11:20"]);
+    assert.ok(["13:15", "13:35", "17:55"].every((value) => twenty.includes(value)));
+    assert.ok(!twenty.includes("11:40") && !twenty.includes("18:00"));
+    assert.deepEqual(slotsFor(30, { mode: "custom", stepMinutes: 60, blocks: lunch }), [
+      "10:00",
+      "11:00",
+      "12:00",
+      "13:15",
+      "14:15",
+      "15:15",
+      "16:15",
+      "17:15",
+      "18:15",
+    ]);
+  });
+
+  test("settings fall back to the flexible mode and allowed steps", () => {
+    assert.deepEqual(slotRuleFromSettings(null), { mode: "flexible", stepMinutes: 15 });
+    assert.deepEqual(slotRuleFromSettings({ slot_mode: "custom", slot_step_minutes: 25 }), {
+      mode: "custom",
+      stepMinutes: 15,
+    });
+    assert.deepEqual(slotRuleFromSettings({ slot_mode: "literal", slot_step_minutes: 30 }), {
+      mode: "literal",
+      stepMinutes: 30,
+    });
+  });
+
+  test("settings preview matches the explanation example", () => {
+    const afterCorte: Array<[number, number]> = [[540, 570]];
+    const flexible = previewSlotMinutes(
+      "09:00",
+      "19:00",
+      60,
+      { mode: "flexible", stepMinutes: 15 },
+      afterCorte,
+    );
+    const literal = previewSlotMinutes(
+      "09:00",
+      "19:00",
+      60,
+      { mode: "literal", stepMinutes: 15 },
+      afterCorte,
+    );
+    assert.equal(minutesLabel(flexible[0]), "9:30");
+    assert.equal(minutesLabel(literal[0]), "10:00");
+    assert.deepEqual(
+      previewSlotMinutes("09:00", "12:00", 60, { mode: "literal", stepMinutes: 15 }).map(
+        minutesLabel,
+      ),
+      ["9:00", "10:00", "11:00"],
+    );
+  });
+}
 
 test("staff terms decide duration, price and who does the service", () => {
   const service = { id: "corte", duration_minutes: 30, price_cents: 5000 };

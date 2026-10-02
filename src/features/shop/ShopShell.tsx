@@ -19,6 +19,7 @@ import { ShopDomainCard } from "@/features/shop/settings/ShopDomainCard";
 import { GoogleIntegrationsCard } from "@/features/shop/settings/GoogleIntegrationsCard";
 import { SettingsHub } from "@/features/shop/settings/SettingsHub";
 import { LandingEditor } from "@/features/shop/settings/LandingEditor";
+import { SlotModeNotice, SlotModeSettings } from "@/features/shop/settings/SlotModeSettings";
 import { shopPublicOrigin } from "@/lib/shop/host";
 import {
   readSectionFromUrl,
@@ -103,6 +104,7 @@ import {
   shopDayRange,
   shiftDateKey,
   validTimeZone,
+  type SlotMode,
 } from "@/lib/shop/appointments";
 
 import {
@@ -1319,6 +1321,37 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     }
   }
 
+  async function saveSlotMode(mode: SlotMode, stepMinutes: number): Promise<"applied" | "pending"> {
+    if (!settings) throw new Error(t("shop.error.saveSettings"));
+    const change = { slot_mode: mode, slot_step_minutes: stepMinutes };
+    if (demo) {
+      const next = { ...settings, ...change };
+      demo.dispatch({ type: "settings.save", settings: next });
+      setSettings(next);
+      return "applied";
+    }
+    if (actor && capabilities?.canProposeOperations) {
+      const applied = await submitProtectedChange("settings.operational", change);
+      if (applied) await loadCatalog();
+      return applied ? "applied" : "pending";
+    }
+    if (actor) throw new Error(t("shop.error.roleSettings"));
+    const { data, error: updateError } = await supabase
+      .from("barbershop_settings")
+      .update(change)
+      .eq("barbershop_id", settings.barbershop_id)
+      .select("*")
+      .single();
+    if (updateError) throw updateError;
+    setSettings(data);
+    return "applied";
+  }
+
+  function openSlotModeSettings() {
+    setTab("configuracoes");
+    setSettingsSection("agendamento");
+  }
+
   const completedValue = appointments.reduce(
     (total, row) => total + (row.status === "completed" ? (row.service?.price_cents ?? 0) : 0),
     0,
@@ -2118,6 +2151,13 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 label={t("shop.services.search")}
                 viewMode={serviceView}
                 onViewMode={setServiceView}
+              />
+              <SlotModeNotice
+                settings={settings}
+                services={services}
+                hours={businessHours}
+                context="services"
+                onOpenSettings={canManageShopSettings ? openSlotModeSettings : undefined}
               />
               <div
                 className={
@@ -2949,6 +2989,13 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   {busy ? t("common.saving") : t("shop.hours.save")}
                 </button>
               </div>
+              <SlotModeNotice
+                settings={settings}
+                services={services}
+                hours={businessHours}
+                context="hours"
+                onOpenSettings={canManageShopSettings ? openSlotModeSettings : undefined}
+              />
 
               <form
                 onSubmit={createBlock}
@@ -3167,6 +3214,12 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   if (section === "agendamento") {
                     return (
                       <>
+                        <SlotModeSettings
+                          settings={settings}
+                          services={services}
+                          hours={businessHours}
+                          onSave={saveSlotMode}
+                        />
                         <WaitingSettings
                           settings={settings}
                           onSaved={setSettings}

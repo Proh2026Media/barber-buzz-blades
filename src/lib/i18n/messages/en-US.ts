@@ -2530,4 +2530,55 @@ export const enUS: Record<MessageKey, string> = {
   "landingEditor.previewLoading": "Building the preview…",
   "landingEditor.previewHintDemo":
     "In the demo the free times are examples. Buttons are inactive here.",
+
+  "slots.section": "Client schedule",
+  "slots.title": "How times are offered",
+  "slots.intro":
+    "Choose how the app builds the list of times from your opening hours and each service's length.",
+  "slots.default": "Default",
+  "slots.selected": "Selected",
+  "slots.mode.flexible.title": "Flexible · every 15 min",
+  "slots.mode.flexible.text":
+    "Tries a start every 15 minutes and shows only those where the whole service fits.",
+  "slots.mode.literal.title": "Service length",
+  "slots.mode.literal.text": "Back-to-back times the length of each service, counted from opening.",
+  "slots.mode.custom.title": "Custom · you pick the interval",
+  "slots.mode.custom.text":
+    "Tries a start every {step} minutes and shows only those where the whole service fits.",
+  "slots.cardExample": "E.g. {service} ({minutes} min): {list}…",
+  "slots.example.short": "Haircut",
+  "slots.example.long": "Combo",
+  "slots.step.label": "Try a start every",
+  "slots.step.option": "{minutes} minutes",
+  "slots.preview.title": "Example with your schedule",
+  "slots.preview.opening": "Opening at {time} · first times for {service} ({minutes} min):",
+  "slots.preview.listAria": "First times offered",
+  "slots.preview.after":
+    "If there is already a {short} from {start} to {end}, the {long} shows from {first}.",
+  "slots.preview.afterNone":
+    "If there is already a {short} from {start} to {end}, the {long} no longer fits that day.",
+  "slots.consequence.flexible":
+    "More options and less idle time. The list gets longer and a short gap may remain between appointments.",
+  "slots.consequence.literal":
+    "A tidier schedule, at the pace of the services. Fewer options: after a shorter service there may be idle time until the next slot.",
+  "slots.consequence.custom":
+    "You choose the balance: a shorter interval gives more options; a longer one keeps the schedule tidier. A short gap may remain.",
+  "slots.breaks": "After a block (such as lunch), counting starts again when it ends.",
+  "slots.scope":
+    "Applies to the app, each professional's link, “Any professional” and the shop page. Existing appointments don't change.",
+  "slots.save": "Save how times are offered",
+  "slots.status.applied": "Done. Clients now see times this way.",
+  "slots.status.pending": "Request sent. The change applies once it's approved.",
+  "slots.status.error": "Couldn't save. Check your connection and try again.",
+  "slots.notice.title": "How this becomes a time for clients",
+  "slots.notice.hours": "Opening hours mark where counting the times starts and ends.",
+  "slots.notice.services":
+    "Each service's length sets how much free time it needs in the schedule.",
+  "slots.notice.flexible":
+    "Every 15 minutes: the system tries {tested}… and shows only the times where the whole service fits before the next commitment or closing. E.g. with a {short} from {start} to {end}, a {minutes}-min {long} shows at {first} (with service length, only at {literalFirst}). More options and less idle time; the list gets longer and a short gap may remain.",
+  "slots.notice.literal":
+    "Service length: counting from opening, a {minutes}-min {long} shows at {list}… E.g. with a {short} from {start} to {end}, the {long} only shows at {first}. A tidier schedule; idle time may remain after a shorter service. After a block, counting starts again.",
+  "slots.notice.custom":
+    "Every {step} minutes: the system tries {tested}… and shows only the times where the whole service fits before the next commitment or closing. E.g. with a {short} from {start} to {end}, a {minutes}-min {long} shows at {first}. A shorter interval gives more options; a longer one keeps the schedule tidier.",
+  "slots.notice.link": "Change how times are offered",
 };

@@ -2548,6 +2548,58 @@ export const ptBR = {
   "landingEditor.previewLoading": "Montando a prévia…",
   "landingEditor.previewHintDemo":
     "Na demonstração os horários livres são de exemplo. Os botões ficam inativos aqui.",
+
+  "slots.section": "Agenda do cliente",
+  "slots.title": "Como os horários aparecem",
+  "slots.intro":
+    "Escolha como o app monta a lista de horários a partir do expediente e da duração de cada serviço.",
+  "slots.default": "Padrão",
+  "slots.selected": "Escolhido",
+  "slots.mode.flexible.title": "Flexível · de 15 em 15 min",
+  "slots.mode.flexible.text":
+    "Testa um horário a cada 15 minutos e mostra só os que cabem o serviço inteiro.",
+  "slots.mode.literal.title": "No tamanho do serviço",
+  "slots.mode.literal.text":
+    "Horários seguidos, do tamanho de cada serviço, contados a partir da abertura.",
+  "slots.mode.custom.title": "Ajustável · você escolhe o intervalo",
+  "slots.mode.custom.text":
+    "Testa um horário a cada {step} minutos e mostra só os que cabem o serviço inteiro.",
+  "slots.cardExample": "Ex.: {service} ({minutes} min): {list}…",
+  "slots.example.short": "Corte",
+  "slots.example.long": "Combo",
+  "slots.step.label": "Testar um horário a cada",
+  "slots.step.option": "{minutes} minutos",
+  "slots.preview.title": "Exemplo com a sua agenda",
+  "slots.preview.opening": "Abertura às {time} · primeiros horários de {service} ({minutes} min):",
+  "slots.preview.listAria": "Primeiros horários oferecidos",
+  "slots.preview.after":
+    "Se já houver um {short} das {start} às {end}, o {long} aparece a partir das {first}.",
+  "slots.preview.afterNone":
+    "Se já houver um {short} das {start} às {end}, o {long} não cabe mais neste dia.",
+  "slots.consequence.flexible":
+    "Mais opções e menos tempo vazio. A lista fica maior e pode sobrar um intervalo curto entre atendimentos.",
+  "slots.consequence.literal":
+    "Agenda mais redonda, no ritmo dos serviços. Menos opções: depois de um serviço mais curto pode sobrar tempo vazio até o próximo horário.",
+  "slots.consequence.custom":
+    "Você escolhe o equilíbrio: intervalo menor dá mais opções; maior deixa a agenda mais redonda. Pode sobrar um intervalo curto.",
+  "slots.breaks": "Depois de um bloqueio (como o almoço), a contagem recomeça quando ele termina.",
+  "slots.scope":
+    "Vale para o app, o link de cada profissional, “Qualquer profissional” e a página da barbearia. Agendamentos já marcados não mudam.",
+  "slots.save": "Salvar forma dos horários",
+  "slots.status.applied": "Pronto. Os clientes já veem os horários desta forma.",
+  "slots.status.pending": "Pedido enviado. A mudança vale quando for aprovada.",
+  "slots.status.error": "Não foi possível salvar. Confira a conexão e tente de novo.",
+  "slots.notice.title": "Como isso vira horário para o cliente",
+  "slots.notice.hours": "O expediente marca onde a contagem dos horários começa e termina.",
+  "slots.notice.services":
+    "A duração de cada serviço define quanto tempo livre ele precisa na agenda.",
+  "slots.notice.flexible":
+    "De 15 em 15 minutos: o sistema testa {tested}… e mostra só os horários em que o serviço inteiro cabe antes do próximo compromisso ou do fechamento. Ex.: com um {short} das {start} às {end}, um {long} de {minutes} min aparece às {first} (no tamanho do serviço, só às {literalFirst}). Mais opções e menos tempo vazio; a lista fica maior e pode sobrar um intervalo curto.",
+  "slots.notice.literal":
+    "No tamanho do serviço: contando da abertura, um {long} de {minutes} min aparece em {list}… Ex.: com um {short} das {start} às {end}, o {long} só aparece às {first}. Agenda mais redonda; pode sobrar tempo vazio depois de um serviço mais curto. Depois de um bloqueio, a contagem recomeça.",
+  "slots.notice.custom":
+    "A cada {step} minutos: o sistema testa {tested}… e mostra só os horários em que o serviço inteiro cabe antes do próximo compromisso ou do fechamento. Ex.: com um {short} das {start} às {end}, um {long} de {minutes} min aparece às {first}. Intervalo menor dá mais opções; maior deixa a agenda mais redonda.",
+  "slots.notice.link": "Mudar a forma dos horários",
 } as const;
 
 export type MessageKey = keyof typeof ptBR;

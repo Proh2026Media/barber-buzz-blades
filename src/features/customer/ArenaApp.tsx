@@ -84,6 +84,7 @@ import {
   filterReservations,
   type ReservationFilter,
   buildSlotsForWindow,
+  slotRuleFromSettings,
   buildBookingDateKeys,
   dateFromLocalKey,
   formatShopDate as formatShopDateIn,
@@ -1026,7 +1027,6 @@ function ArenaApp({
               selectedServiceDuration,
               [
                 ...occupied,
-                ...blocks,
                 ...demo.waits.filter(
                   (w) => blocksSlot(w, demo.now) && w.staff_id === selectedStaffId,
                 ),
@@ -1034,6 +1034,7 @@ function ArenaApp({
               hours,
               demo.now,
               shopTimeZone,
+              { ...slotRuleFromSettings(demo.settings), blocks },
             ),
           );
           setSlotsFor(selectionKey);

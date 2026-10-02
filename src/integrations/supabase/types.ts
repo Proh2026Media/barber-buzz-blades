@@ -88,6 +88,8 @@ export type Database = {
           waiting_enabled: boolean;
           waiting_cutoff_minutes: number;
           staff_assignment_mode?: string;
+          slot_mode: string;
+          slot_step_minutes: number;
           created_at: string;
           updated_at: string;
         };
@@ -119,6 +121,8 @@ export type Database = {
           waiting_enabled?: boolean;
           waiting_cutoff_minutes?: number;
           staff_assignment_mode?: string;
+          slot_mode?: string;
+          slot_step_minutes?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -150,6 +154,8 @@ export type Database = {
           waiting_enabled?: boolean;
           waiting_cutoff_minutes?: number;
           staff_assignment_mode?: string;
+          slot_mode?: string;
+          slot_step_minutes?: number;
           created_at?: string;
           updated_at?: string;
         };

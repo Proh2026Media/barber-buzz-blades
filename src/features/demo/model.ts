@@ -183,6 +183,8 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
       waiting_enabled: false,
       waiting_cutoff_minutes: 30,
       staff_assignment_mode: "client_pick",
+      slot_mode: "flexible",
+      slot_step_minutes: 15,
       created_at: stamp,
       updated_at: stamp,
     },

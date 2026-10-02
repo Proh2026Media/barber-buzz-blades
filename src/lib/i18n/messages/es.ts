@@ -2563,4 +2563,59 @@ export const es: Record<MessageKey, string> = {
   "landingEditor.previewLoading": "Armando la vista previa…",
   "landingEditor.previewHintDemo":
     "En la demostración los horarios libres son de ejemplo. Los botones quedan inactivos aquí.",
+
+  "slots.section": "Agenda del cliente",
+  "slots.title": "Cómo aparecen los horarios",
+  "slots.intro":
+    "Elige cómo la app arma la lista de horarios a partir del horario de atención y la duración de cada servicio.",
+  "slots.default": "Predeterminado",
+  "slots.selected": "Elegido",
+  "slots.mode.flexible.title": "Flexible · cada 15 min",
+  "slots.mode.flexible.text":
+    "Prueba un horario cada 15 minutos y muestra solo los que caben el servicio completo.",
+  "slots.mode.literal.title": "Según la duración del servicio",
+  "slots.mode.literal.text":
+    "Horarios seguidos, del tamaño de cada servicio, contados desde la apertura.",
+  "slots.mode.custom.title": "Ajustable · tú eliges el intervalo",
+  "slots.mode.custom.text":
+    "Prueba un horario cada {step} minutos y muestra solo los que caben el servicio completo.",
+  "slots.cardExample": "Ej.: {service} ({minutes} min): {list}…",
+  "slots.example.short": "Corte",
+  "slots.example.long": "Combo",
+  "slots.step.label": "Probar un horario cada",
+  "slots.step.option": "{minutes} minutos",
+  "slots.preview.title": "Ejemplo con tu agenda",
+  "slots.preview.opening":
+    "Apertura a las {time} · primeros horarios de {service} ({minutes} min):",
+  "slots.preview.listAria": "Primeros horarios ofrecidos",
+  "slots.preview.after":
+    "Si ya hay un {short} de {start} a {end}, el {long} aparece desde las {first}.",
+  "slots.preview.afterNone":
+    "Si ya hay un {short} de {start} a {end}, el {long} ya no cabe ese día.",
+  "slots.consequence.flexible":
+    "Más opciones y menos tiempo vacío. La lista es más larga y puede quedar un hueco corto entre citas.",
+  "slots.consequence.literal":
+    "Agenda más ordenada, al ritmo de los servicios. Menos opciones: después de un servicio más corto puede quedar tiempo vacío hasta el siguiente horario.",
+  "slots.consequence.custom":
+    "Tú eliges el equilibrio: un intervalo menor da más opciones; uno mayor deja la agenda más ordenada. Puede quedar un hueco corto.",
+  "slots.breaks":
+    "Después de un bloqueo (como el almuerzo), la cuenta vuelve a empezar cuando termina.",
+  "slots.scope":
+    "Vale para la app, el enlace de cada profesional, “Cualquier profesional” y la página de la barbería. Las citas ya reservadas no cambian.",
+  "slots.save": "Guardar forma de los horarios",
+  "slots.status.applied": "Listo. Los clientes ya ven los horarios de esta forma.",
+  "slots.status.pending": "Solicitud enviada. El cambio vale cuando sea aprobado.",
+  "slots.status.error": "No se pudo guardar. Revisa la conexión e inténtalo de nuevo.",
+  "slots.notice.title": "Cómo esto se convierte en horario para el cliente",
+  "slots.notice.hours":
+    "El horario de atención marca dónde empieza y termina la cuenta de horarios.",
+  "slots.notice.services":
+    "La duración de cada servicio define cuánto tiempo libre necesita en la agenda.",
+  "slots.notice.flexible":
+    "Cada 15 minutos: el sistema prueba {tested}… y muestra solo los horarios en que el servicio completo cabe antes del siguiente compromiso o del cierre. Ej.: con un {short} de {start} a {end}, un {long} de {minutes} min aparece a las {first} (según la duración del servicio, solo a las {literalFirst}). Más opciones y menos tiempo vacío; la lista es más larga y puede quedar un hueco corto.",
+  "slots.notice.literal":
+    "Según la duración del servicio: contando desde la apertura, un {long} de {minutes} min aparece a las {list}… Ej.: con un {short} de {start} a {end}, el {long} solo aparece a las {first}. Agenda más ordenada; puede quedar tiempo vacío después de un servicio más corto. Después de un bloqueo, la cuenta vuelve a empezar.",
+  "slots.notice.custom":
+    "Cada {step} minutos: el sistema prueba {tested}… y muestra solo los horarios en que el servicio completo cabe antes del siguiente compromiso o del cierre. Ej.: con un {short} de {start} a {end}, un {long} de {minutes} min aparece a las {first}. Un intervalo menor da más opciones; uno mayor deja la agenda más ordenada.",
+  "slots.notice.link": "Cambiar la forma de los horarios",
 };

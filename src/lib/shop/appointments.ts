@@ -137,8 +137,43 @@ export function formatShopDate(
   }).format(new Date(date));
 }
 
-/** Mesma grade de `available_slots_internal` no banco: candidatos a cada 15 min desde a abertura. */
+/** Passo do modo flexível (padrão), o mesmo de `shop_slot_step` no banco. */
 export const SLOT_STEP_MINUTES = 15;
+
+/** Forma de oferecer os horários (`barbershop_settings.slot_mode`). */
+export type SlotMode = "flexible" | "literal" | "custom";
+export const SLOT_MODES: readonly SlotMode[] = ["flexible", "literal", "custom"];
+/** Intervalos aceitos no modo ajustável (`slot_step_minutes`). */
+export const SLOT_STEP_OPTIONS = [10, 15, 20, 30, 45, 60] as const;
+
+export type SlotRule = {
+  mode: SlotMode;
+  stepMinutes: number;
+  /** Bloqueios (almoço, folga): a contagem recomeça no fim de cada um. */
+  blocks?: Array<{ starts_at: string; ends_at: string }>;
+};
+
+export function slotRuleFromSettings(
+  settings: { slot_mode?: string | null; slot_step_minutes?: number | null } | null | undefined,
+): SlotRule {
+  const mode = SLOT_MODES.includes(settings?.slot_mode as SlotMode)
+    ? (settings!.slot_mode as SlotMode)
+    : "flexible";
+  const step = (SLOT_STEP_OPTIONS as readonly number[]).includes(settings?.slot_step_minutes ?? 0)
+    ? settings!.slot_step_minutes!
+    : SLOT_STEP_MINUTES;
+  return { mode, stepMinutes: step };
+}
+
+/** Passo da grade para um serviço: 15 (flexível), a duração (literal) ou o escolhido (ajustável). */
+export function slotStepFor(
+  rule: Pick<SlotRule, "mode" | "stepMinutes"> | undefined,
+  duration: number,
+) {
+  if (rule?.mode === "literal") return Math.max(1, duration);
+  if (rule?.mode === "custom") return rule.stepMinutes;
+  return SLOT_STEP_MINUTES;
+}
 
 export type ServiceTerms = {
   staff_id: string;
@@ -162,7 +197,11 @@ export function termsFor(
   return row ? { duration_minutes: row.duration_minutes, price_cents: row.price_cents } : null;
 }
 
-/** Candidatos de 15 em 15 minutos que cabem o serviço inteiro antes de ocupado ou fechamento. */
+/**
+ * Mesma regra de `slot_candidate_starts` + `available_slots_internal` no banco: a grade da loja
+ * (15 em 15, tamanho do serviço ou intervalo escolhido) contada a partir da abertura e de novo no
+ * fim de cada bloqueio; só os inícios em que o serviço inteiro cabe antes de ocupado ou fechamento.
+ */
 export function buildSlotsForWindow(
   day: Date | string,
   durationMinutes: number,
@@ -170,6 +209,7 @@ export function buildSlotsForWindow(
   window: BusinessWindow | null,
   now = new Date(),
   timeZone?: string,
+  rule?: SlotRule,
 ): Date[] {
   if (!window?.is_open || !Number.isInteger(durationMinutes) || durationMinutes <= 0) return [];
   const opening = timeParts(window.opens_at);
@@ -187,21 +227,59 @@ export function buildSlotsForWindow(
   if (!timeZone) end.setHours(closing.hour, closing.minute, 0, 0);
   if (end <= start) return [];
 
+  const durationMs = durationMinutes * 60_000;
+  const stepMs = slotStepFor(rule, durationMinutes) * 60_000;
+  const windows: Array<[number, number]> = [];
+  let cursor = start.getTime();
+  const blocks = (rule?.blocks ?? [])
+    .map((b) => [new Date(b.starts_at).getTime(), new Date(b.ends_at).getTime()] as const)
+    .filter(([bStart, bEnd]) => bStart < end.getTime() && bEnd > start.getTime())
+    .sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  for (const [bStart, bEnd] of blocks) {
+    if (bStart > cursor) windows.push([cursor, bStart]);
+    cursor = Math.max(cursor, bEnd);
+  }
+  if (cursor < end.getTime()) windows.push([cursor, end.getTime()]);
+
+  const taken = [...busy, ...(rule?.blocks ?? [])].map(
+    (b) => [new Date(b.starts_at).getTime(), new Date(b.ends_at).getTime()] as const,
+  );
   const slots: Date[] = [];
-  for (
-    let cursor = new Date(start);
-    cursor.getTime() + durationMinutes * 60_000 <= end.getTime();
-    cursor = new Date(cursor.getTime() + SLOT_STEP_MINUTES * 60_000)
-  ) {
-    const slotEnd = new Date(cursor.getTime() + durationMinutes * 60_000);
-    const overlaps = busy.some((b) => {
-      const bStart = new Date(b.starts_at).getTime();
-      const bEnd = new Date(b.ends_at).getTime();
-      return cursor.getTime() < bEnd && slotEnd.getTime() > bStart;
-    });
-    if (!overlaps && cursor.getTime() > now.getTime()) slots.push(new Date(cursor));
+  for (const [from, to] of windows) {
+    for (let at = from; at + durationMs <= to; at += stepMs) {
+      const overlaps = taken.some(([bStart, bEnd]) => at < bEnd && at + durationMs > bStart);
+      if (!overlaps && at > now.getTime()) slots.push(new Date(at));
+    }
   }
   return slots;
+}
+
+/**
+ * Exemplo para a tela de Ajustes, em minutos do dia: inícios de um serviço numa janela
+ * (ex.: 9:00–19:00) com atendimentos opcionais, sem relógio nem fuso.
+ */
+export function previewSlotMinutes(
+  opensAt: string,
+  closesAt: string,
+  durationMinutes: number,
+  rule: Pick<SlotRule, "mode" | "stepMinutes">,
+  busy: Array<[number, number]> = [],
+): number[] {
+  const opening = timeParts(opensAt);
+  const closing = timeParts(closesAt);
+  if (!opening || !closing || !Number.isInteger(durationMinutes) || durationMinutes <= 0) return [];
+  const from = opening.hour * 60 + opening.minute;
+  const to = closing.hour * 60 + closing.minute;
+  const step = slotStepFor(rule, durationMinutes);
+  const result: number[] = [];
+  for (let at = from; at + durationMinutes <= to; at += step) {
+    if (!busy.some(([bStart, bEnd]) => at < bEnd && at + durationMinutes > bStart)) result.push(at);
+  }
+  return result;
+}
+
+export function minutesLabel(minutes: number) {
+  return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}`;
 }
 
 /** Build open slots for a local calendar day (09:00–19:00), on the 15-minute grid. */
