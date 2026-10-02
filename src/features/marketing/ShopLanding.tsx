@@ -9,6 +9,7 @@ import {
 import { Link } from "@tanstack/react-router";
 import {
   CalendarClock,
+  ChevronRight,
   Clock3,
   Instagram,
   Loader2,
@@ -23,6 +24,7 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useI18n } from "@/lib/i18n";
 import { brandCornerClass, brandVariables, DEFAULT_LOGIN_IMAGE } from "@/lib/shop/branding";
 import { BrandFontFace } from "@/features/shop/BrandFontFace";
+import { ServiceIcon } from "@/components/ui/service-icon";
 import {
   instagramUrl,
   mapsUrl,
@@ -160,9 +162,8 @@ export function ShopLandingView({
       currencyDisplay: "narrowSymbol",
     });
 
-  const staffWithSlots = data.staff.filter((member) => member.free_today.length > 0);
-  const showToday = landing.enabled && landing.show_today && data.staff.length > 0;
   const showStaff = landing.enabled && landing.show_staff && data.staff.length > 0;
+  const showToday = showStaff && landing.show_today;
   const showServices = landing.enabled && landing.show_services && data.services.length > 0;
   const showHours = landing.enabled && landing.show_hours && data.hours.length > 0;
   const contact = {
@@ -258,100 +259,93 @@ export function ShopLandingView({
       </header>
 
       <main className="mx-auto max-w-3xl space-y-8 px-4 py-8 pb-28">
-        {showToday && (
-          <section aria-labelledby="landing-today" className="space-y-3">
-            <div className="flex items-center gap-2">
-              <CalendarClock className="size-5 text-gold" aria-hidden />
-              <h2 id="landing-today" className="text-lg font-extrabold tracking-tight">
-                {t("shopLanding.todayTitle")}
-              </h2>
-            </div>
-            {staffWithSlots.length === 0 ? (
-              <p className="rounded-[var(--panel-radius)] border border-border bg-card p-4 text-sm text-muted-foreground">
-                {today.is_open && open.kind !== "closed"
-                  ? t("shopLanding.todayFull")
-                  : t("shopLanding.todayClosed")}
-              </p>
-            ) : (
-              <ul className="space-y-3">
-                {staffWithSlots.map((member) => (
-                  <li
-                    key={member.name}
-                    className="space-y-2 rounded-[var(--panel-radius)] border border-border bg-card p-4"
-                  >
-                    <p className="text-sm font-bold">{member.name}</p>
-                    <ul
-                      className="flex flex-wrap gap-2"
-                      aria-label={t("shopLanding.slotsOf", { name: member.name })}
-                    >
-                      {member.free_today.slice(0, SLOTS_SHOWN).map((time) => (
-                        <li key={time}>
-                          <LoginLink
-                            slug={shop.slug}
-                            preview={preview}
-                            barber={member.booking_slug}
-                            className="inline-flex min-h-11 items-center rounded-[var(--control-radius)] border border-border bg-background px-3 text-sm font-semibold tabular-nums"
-                          >
-                            {time}
-                          </LoginLink>
-                        </li>
-                      ))}
-                      {member.free_today.length > SLOTS_SHOWN && (
-                        <li className="inline-flex min-h-11 items-center px-2 text-xs text-muted-foreground">
-                          {t("shopLanding.moreSlots", {
-                            n: member.free_today.length - SLOTS_SHOWN,
-                          })}
-                        </li>
-                      )}
-                    </ul>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <p className="text-xs text-muted-foreground">{t("shopLanding.todayHint")}</p>
-          </section>
-        )}
-
         {showStaff && (
           <section aria-labelledby="landing-staff" className="space-y-3">
-            <div className="flex items-center gap-2">
-              <UserRound className="size-5 text-gold" aria-hidden />
-              <h2 id="landing-staff" className="text-lg font-extrabold tracking-tight">
-                {t("shopLanding.staffTitle")}
-              </h2>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <UserRound className="size-5 text-gold" aria-hidden />
+                <h2 id="landing-staff" className="text-lg font-extrabold tracking-tight">
+                  {t("shopLanding.staffTitle")}
+                </h2>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {t(showToday ? "shopLanding.staffHintToday" : "shopLanding.staffHint")}
+              </p>
             </div>
             <ul className="grid gap-3 sm:grid-cols-2">
               {data.staff.map((member) => (
                 <li
-                  key={member.name}
-                  className="flex items-start gap-3 rounded-[var(--panel-radius)] border border-border bg-card p-4"
+                  key={member.booking_slug ?? member.name}
+                  className="relative flex flex-col gap-3 rounded-[var(--panel-radius)] border border-border bg-card p-4 transition-colors hover:border-foreground/30"
                 >
-                  {member.avatar_url ? (
-                    <img
-                      src={member.avatar_url}
-                      alt=""
-                      className="size-14 shrink-0 rounded-full object-cover"
-                    />
-                  ) : (
-                    <span
-                      className="flex size-14 shrink-0 items-center justify-center rounded-full bg-muted text-lg font-bold"
-                      aria-hidden
-                    >
-                      {member.name.slice(0, 1).toUpperCase()}
-                    </span>
-                  )}
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <p className="font-bold">{member.name}</p>
-                    {member.bio && <p className="text-sm text-muted-foreground">{member.bio}</p>}
-                    <LoginLink
-                      slug={shop.slug}
-                      preview={preview}
-                      barber={member.booking_slug}
-                      className="inline-flex min-h-11 items-center text-sm font-bold text-[var(--brand-accent-readable)] underline-offset-4 hover:underline"
-                    >
-                      {t("shopLanding.bookWith", { name: member.name.split(" ")[0] })}
-                    </LoginLink>
+                  <div className="flex items-start gap-3">
+                    {member.avatar_url ? (
+                      <img
+                        src={member.avatar_url}
+                        alt=""
+                        className="size-14 shrink-0 rounded-full object-cover"
+                      />
+                    ) : (
+                      <span
+                        className="flex size-14 shrink-0 items-center justify-center rounded-full bg-muted text-lg font-bold"
+                        aria-hidden
+                      >
+                        {member.name.slice(0, 1).toUpperCase()}
+                      </span>
+                    )}
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <h3 className="font-bold">{member.name}</h3>
+                      {member.bio && <p className="text-sm text-muted-foreground">{member.bio}</p>}
+                    </div>
                   </div>
+                  {showToday &&
+                    (member.free_today.length > 0 ? (
+                      <div className="space-y-1.5">
+                        <p className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                          <CalendarClock className="size-3.5" aria-hidden />
+                          {t("shopLanding.todayTitle")}
+                        </p>
+                        <ul
+                          className="flex flex-wrap gap-2"
+                          aria-label={t("shopLanding.slotsOf", { name: member.name })}
+                        >
+                          {member.free_today.slice(0, SLOTS_SHOWN).map((time) => (
+                            <li key={time}>
+                              <LoginLink
+                                slug={shop.slug}
+                                preview={preview}
+                                barber={member.booking_slug}
+                                className="relative z-10 inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--control-radius)] border border-border bg-background px-3 text-sm font-semibold tabular-nums hover:border-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              >
+                                {time}
+                              </LoginLink>
+                            </li>
+                          ))}
+                          {member.free_today.length > SLOTS_SHOWN && (
+                            <li className="inline-flex min-h-11 items-center px-2 text-xs text-muted-foreground">
+                              {t("shopLanding.moreSlots", {
+                                n: member.free_today.length - SLOTS_SHOWN,
+                              })}
+                            </li>
+                          )}
+                        </ul>
+                      </div>
+                    ) : (
+                      <p className="rounded-[var(--control-radius)] bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+                        {today.is_open && open.kind !== "closed"
+                          ? t("shopLanding.memberNoSlots")
+                          : t("shopLanding.memberClosed")}
+                      </p>
+                    ))}
+                  <LoginLink
+                    slug={shop.slug}
+                    preview={preview}
+                    barber={member.booking_slug}
+                    className="mt-auto inline-flex min-h-11 items-center gap-1 self-start text-sm font-bold text-[var(--brand-accent-readable)] after:absolute after:inset-0 after:rounded-[var(--panel-radius)] after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
+                  >
+                    {t("shopLanding.bookWith", { name: member.name.split(" ")[0] })}
+                    <ChevronRight className="size-4" aria-hidden />
+                  </LoginLink>
                 </li>
               ))}
             </ul>
@@ -368,8 +362,15 @@ export function ShopLandingView({
             </div>
             <ul className="divide-y divide-border rounded-[var(--panel-radius)] border border-border bg-card">
               {data.services.map((service) => (
-                <li key={service.name} className="flex items-start justify-between gap-3 p-4">
-                  <div className="min-w-0">
+                <li key={service.name} className="flex items-center gap-3 p-4">
+                  <span className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-[var(--control-radius)] bg-muted text-muted-foreground">
+                    <ServiceIcon
+                      icon={service.icon}
+                      className="size-6"
+                      imageClassName="size-full object-cover"
+                    />
+                  </span>
+                  <div className="min-w-0 flex-1">
                     <p className="font-semibold">{service.name}</p>
                     {service.description && (
                       <p className="text-xs text-muted-foreground">{service.description}</p>

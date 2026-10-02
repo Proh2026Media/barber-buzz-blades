@@ -2470,13 +2470,14 @@ export const ptBR = {
   "shopLanding.ctaHint":
     "Primeira vez? Você cria sua conta com o WhatsApp ou e-mail no próximo passo.",
   "shopLanding.todayTitle": "Livres hoje",
-  "shopLanding.todayFull": "A agenda de hoje está cheia. Entre para ver os próximos dias.",
-  "shopLanding.todayClosed": "Sem atendimento hoje. Entre para ver os próximos dias.",
   "shopLanding.slotsOf": "Horários livres com {name}",
   "shopLanding.moreSlots": "e mais {n}",
-  "shopLanding.todayHint":
-    "Os horários mudam conforme as reservas e se atualizam sozinhos. Toque em um para entrar e reservar.",
   "shopLanding.staffTitle": "Nossa equipe",
+  "shopLanding.staffHint": "Toque no profissional para entrar e agendar com ele.",
+  "shopLanding.staffHintToday":
+    "Toque no profissional ou em um horário de hoje para entrar e agendar com ele. Os horários se atualizam sozinhos.",
+  "shopLanding.memberNoSlots": "Sem horários livres hoje. Toque para ver os próximos dias.",
+  "shopLanding.memberClosed": "Sem atendimento hoje. Toque para ver os próximos dias.",
   "shopLanding.bookWith": "Agendar com {name}",
   "shopLanding.servicesTitle": "Serviços",
   "shopLanding.minutes": "{n} min",
@@ -2518,10 +2519,13 @@ export const ptBR = {
   "landingEditor.photoHint":
     "A foto de fundo é a mesma da tela de entrada. Troque em Identidade visual → Entrada.",
   "landingEditor.blocksTitle": "O que aparece na página",
-  "landingEditor.showToday": "Horários livres de hoje",
-  "landingEditor.showTodayHint": "Atualiza sozinho conforme as reservas. Não mostra quem reservou.",
+  "landingEditor.showToday": "Horários livres de hoje no cartão",
+  "landingEditor.showTodayHint":
+    "Mostra no cartão de cada profissional os horários ainda livres hoje. Atualiza sozinho e não mostra quem reservou.",
+  "landingEditor.showTodayNeedsStaff": "Ligue “Equipe” para mostrar os horários de hoje.",
   "landingEditor.showStaff": "Equipe",
-  "landingEditor.showStaffHint": "Foto, nome e apresentação de cada profissional.",
+  "landingEditor.showStaffHint":
+    "Um cartão por profissional, com foto, nome e apresentação. Tocar no cartão leva ao agendamento com ele.",
   "landingEditor.showServices": "Serviços e preços",
   "landingEditor.showServicesHint": "Os serviços ativos, com duração e valor.",
   "landingEditor.showHours": "Horário de funcionamento",

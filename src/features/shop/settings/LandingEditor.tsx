@@ -29,8 +29,8 @@ const PROBLEM_KEY: Record<LandingProblem, MessageKey> = {
 };
 
 const TOGGLES = [
-  { key: "show_today", label: "landingEditor.showToday", hint: "landingEditor.showTodayHint" },
   { key: "show_staff", label: "landingEditor.showStaff", hint: "landingEditor.showStaffHint" },
+  { key: "show_today", label: "landingEditor.showToday", hint: "landingEditor.showTodayHint" },
   {
     key: "show_services",
     label: "landingEditor.showServices",
@@ -117,6 +117,7 @@ export function LandingEditor({
             description: row.description ?? "",
             duration_minutes: row.duration_minutes,
             price_cents: row.price_cents,
+            icon: row.icon ?? null,
           })),
       });
       return;
@@ -348,23 +349,34 @@ export function LandingEditor({
             className="space-y-2 rounded-2xl border border-border bg-card p-4 disabled:opacity-60"
           >
             <legend className="px-1 text-sm font-bold">{t("landingEditor.blocksTitle")}</legend>
-            {TOGGLES.map((toggle) => (
-              <label
-                key={toggle.key}
-                className="flex items-start justify-between gap-3 rounded-xl p-2"
-              >
-                <span>
-                  <span className="block text-sm font-semibold">{t(toggle.label)}</span>
-                  <span className="block text-xs text-muted-foreground">{t(toggle.hint)}</span>
-                </span>
-                <Switch
-                  checked={draft[toggle.key]}
-                  disabled={!draft.enabled}
-                  onCheckedChange={(value) => update(toggle.key, value)}
-                  aria-label={t(toggle.label)}
-                />
-              </label>
-            ))}
+            {TOGGLES.map((toggle) => {
+              // Os horários de hoje aparecem dentro do cartão de cada profissional.
+              const nested = toggle.key === "show_today";
+              const disabled = !draft.enabled || (nested && !draft.show_staff);
+              return (
+                <label
+                  key={toggle.key}
+                  className={`flex items-start justify-between gap-3 rounded-xl p-2 ${
+                    nested ? "ml-4 border-l-2 border-border pl-3" : ""
+                  } ${disabled ? "opacity-60" : ""}`}
+                >
+                  <span>
+                    <span className="block text-sm font-semibold">{t(toggle.label)}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {nested && !draft.show_staff
+                        ? t("landingEditor.showTodayNeedsStaff")
+                        : t(toggle.hint)}
+                    </span>
+                  </span>
+                  <Switch
+                    checked={draft[toggle.key] && !(nested && !draft.show_staff)}
+                    disabled={disabled}
+                    onCheckedChange={(value) => update(toggle.key, value)}
+                    aria-label={t(toggle.label)}
+                  />
+                </label>
+              );
+            })}
           </fieldset>
 
           {problem && (

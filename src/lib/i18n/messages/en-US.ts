@@ -2454,13 +2454,14 @@ export const enUS: Record<MessageKey, string> = {
   "shopLanding.ctaHint":
     "First time? You'll create your account with WhatsApp or email in the next step.",
   "shopLanding.todayTitle": "Free today",
-  "shopLanding.todayFull": "Today is fully booked. Sign in to see the next days.",
-  "shopLanding.todayClosed": "No appointments today. Sign in to see the next days.",
   "shopLanding.slotsOf": "Free times with {name}",
   "shopLanding.moreSlots": "and {n} more",
-  "shopLanding.todayHint":
-    "Times change as people book and update on their own. Tap one to sign in and book.",
   "shopLanding.staffTitle": "Our team",
+  "shopLanding.staffHint": "Tap a professional to sign in and book with them.",
+  "shopLanding.staffHintToday":
+    "Tap a professional or one of today's times to sign in and book with them. Times update on their own.",
+  "shopLanding.memberNoSlots": "No free times today. Tap to see the next days.",
+  "shopLanding.memberClosed": "No appointments today. Tap to see the next days.",
   "shopLanding.bookWith": "Book with {name}",
   "shopLanding.servicesTitle": "Services",
   "shopLanding.minutes": "{n} min",
@@ -2501,10 +2502,13 @@ export const enUS: Record<MessageKey, string> = {
   "landingEditor.photoHint":
     "The background photo is the same as the sign-in screen. Change it in Brand identity → Sign-in.",
   "landingEditor.blocksTitle": "What shows on the page",
-  "landingEditor.showToday": "Today's free times",
-  "landingEditor.showTodayHint": "Updates on its own as people book. Never shows who booked.",
+  "landingEditor.showToday": "Today's free times on the card",
+  "landingEditor.showTodayHint":
+    "Shows each professional's remaining free times today on their card. Updates on its own and never shows who booked.",
+  "landingEditor.showTodayNeedsStaff": "Turn on “Team” to show today's times.",
   "landingEditor.showStaff": "Team",
-  "landingEditor.showStaffHint": "Photo, name and bio of each professional.",
+  "landingEditor.showStaffHint":
+    "One card per professional, with photo, name and bio. Tapping the card starts a booking with them.",
   "landingEditor.showServices": "Services and prices",
   "landingEditor.showServicesHint": "Active services with duration and price.",
   "landingEditor.showHours": "Opening hours",

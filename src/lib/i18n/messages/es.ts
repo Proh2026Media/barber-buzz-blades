@@ -2484,13 +2484,14 @@ export const es: Record<MessageKey, string> = {
   "shopLanding.ctaHint":
     "¿Primera vez? Creas tu cuenta con WhatsApp o correo en el siguiente paso.",
   "shopLanding.todayTitle": "Libres hoy",
-  "shopLanding.todayFull": "La agenda de hoy está llena. Entra para ver los próximos días.",
-  "shopLanding.todayClosed": "Sin atención hoy. Entra para ver los próximos días.",
   "shopLanding.slotsOf": "Horarios libres con {name}",
   "shopLanding.moreSlots": "y {n} más",
-  "shopLanding.todayHint":
-    "Los horarios cambian con las reservas y se actualizan solos. Toca uno para entrar y reservar.",
   "shopLanding.staffTitle": "Nuestro equipo",
+  "shopLanding.staffHint": "Toca al profesional para entrar y reservar con él.",
+  "shopLanding.staffHintToday":
+    "Toca al profesional o un horario de hoy para entrar y reservar con él. Los horarios se actualizan solos.",
+  "shopLanding.memberNoSlots": "Sin horarios libres hoy. Toca para ver los próximos días.",
+  "shopLanding.memberClosed": "Sin atención hoy. Toca para ver los próximos días.",
   "shopLanding.bookWith": "Reservar con {name}",
   "shopLanding.servicesTitle": "Servicios",
   "shopLanding.minutes": "{n} min",
@@ -2532,10 +2533,13 @@ export const es: Record<MessageKey, string> = {
   "landingEditor.photoHint":
     "La foto de fondo es la misma de la pantalla de entrada. Cámbiala en Identidad visual → Entrada.",
   "landingEditor.blocksTitle": "Qué aparece en la página",
-  "landingEditor.showToday": "Horarios libres de hoy",
-  "landingEditor.showTodayHint": "Se actualiza solo con las reservas. No muestra quién reservó.",
+  "landingEditor.showToday": "Horarios libres de hoy en la tarjeta",
+  "landingEditor.showTodayHint":
+    "Muestra en la tarjeta de cada profesional los horarios que siguen libres hoy. Se actualiza solo y no muestra quién reservó.",
+  "landingEditor.showTodayNeedsStaff": "Activa “Equipo” para mostrar los horarios de hoy.",
   "landingEditor.showStaff": "Equipo",
-  "landingEditor.showStaffHint": "Foto, nombre y presentación de cada profesional.",
+  "landingEditor.showStaffHint":
+    "Una tarjeta por profesional, con foto, nombre y presentación. Tocar la tarjeta inicia la reserva con él.",
   "landingEditor.showServices": "Servicios y precios",
   "landingEditor.showServicesHint": "Los servicios activos, con duración y precio.",
   "landingEditor.showHours": "Horario de atención",
