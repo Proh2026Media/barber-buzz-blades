@@ -80,7 +80,15 @@ maquina=$(hostname -s 2>/dev/null || hostname)
 desde=$desde
 desde_legivel=$(date -r "$desde" '+%d/%m %H:%M' 2>/dev/null || date -d "@$desde" '+%d/%m %H:%M')
 renovado=$t"
-  gravar_remoto "$conteudo" "vez: $ferramenta" || { echo "vez: outra ferramenta pegou a vez agora" >&2; return 1; }
+  if ! gravar_remoto "$conteudo" "vez: $ferramenta"; then
+    # Chamadas simultâneas da mesma ferramenta disputam a gravação; vale quem ficou com a vez.
+    if buscar_remoto && ! livre "$ESTADO" && [ "$(campo dono "$ESTADO")" = "$ferramenta" ]; then
+      gravar_cache "$ferramenta" "$(campo renovado "$ESTADO")"
+      return 0
+    fi
+    echo "vez: outra ferramenta pegou a vez agora" >&2
+    return 1
+  fi
   gravar_cache "$ferramenta" "$t"
   return 0
 }
