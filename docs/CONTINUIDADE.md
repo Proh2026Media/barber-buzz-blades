@@ -9,6 +9,22 @@ Atualizado em **26/09/2026**. Este documento resume decisões e entregas da conv
 3. Para retomar localmente, usar `npm run dev -- --host 0.0.0.0 --port 8080`. O endereço esperado é `http://localhost:8080`.
 4. Continuar a partir do próximo pedido do usuário.
 
+## Entrega — clube de pontos, página da barbearia e Ajustes reorganizados (02/10/2026)
+
+- **Permissões das funções restauradas:** a cópia do banco para o stack novo tinha perdido os `REVOKE`s — funções com privilégio elevado estavam liberadas para visitantes anônimos. Migration `20261002105000_restore_function_grants.sql` (**aplicada**) reaplica cada `GRANT`/`REVOKE` declarado nas migrations anteriores.
+- **Clube de pontos como módulo** (`20261002110000_loyalty_program_module.sql`, **aplicada**; teste `loyalty_program_module.sql`, 46):
+  - Ligado/desligado por loja **só pelo admin da plataforma** (Plataforma → Barbearias, igual ao de esportes). Lojas que já tinham pontos ficaram ligadas. Desligado: congela créditos e novos resgates, sem apagar saldo nem histórico; o app do cliente esconde cartão, nível e extrato.
+  - Regra padrão = níveis Classic/Select/Privilege/Exclusive (0/100/300/500) e 50 pontos por atendimento. A loja pode criar a **versão dela** (nomes, faixas, benefícios, pontos por atendimento, bônus de boas-vindas).
+  - Proteções do cliente: crédito único por atendimento concluído e bônus único; cada crédito grava a versão da regra (mudar a regra não mexe no que já foi creditado); nível pelo total ganho na vida (trocar por prêmio não derruba nível); saldo nunca negativo; ajuste manual só dono/sócio, motivo ≥ 10 caracteres e limite de ±1000; resgate reserva os pontos e devolve se cancelado ou não entregue em 30 dias; até 3 resgates pendentes.
+  - Página dedicada `/shop/pontos` (`src/features/loyalty/LoyaltyAdminPage.tsx`; atalho em Ajustes → Clube de pontos): Regras, Prêmios, Resgates e Clientes (ajuste manual com prévia do saldo). Regras e prêmios só para dono/sócio.
+  - Cliente: Extrato de pontos com “Trocar pontos” (`CustomerRewards.tsx`), confirmação explicando reserva/30 dias/devolução e opção de desistir. A janela “Como funciona o clube” mostra a regra real da loja; saíram as promessas sem suporte (R$ 1 = 1 ponto, assinatura, lounge).
+- **Página da barbearia** (`20261002120000_public_shop_landing.sql`, **aplicada**; teste `public_shop_landing.sql`, 24, inclui privacidade):
+  - Aparece para visitante sem login na **raiz do endereço da loja** e em `/b/<slug>` (`ShopLanding.tsx`). Mostra capa (foto do login), logo, aberto/fechado, “Livres hoje” por profissional (até 12 horários, descontando atendimentos, bloqueios e reservas da espera; atualiza a cada 60 s), equipe, serviços, horário de funcionamento, sobre/contatos e “Entrar e agendar” (`/auth?next=/app?shop=…`).
+  - Dados vêm de `get_public_shop_landing(p_shop_ref, p_host)` (anon), sem dado de cliente ou de conta. Configuração em `barbershop_settings.landing` (validada por `landing_config_valid`; conta como mudança visual na regra de aprovação).
+  - Editor em Ajustes → Aparência → “Página da barbearia” (`LandingEditor.tsx`): liga/desliga, título, sobre, endereço, Instagram, WhatsApp, quais blocos mostrar, prévia ao vivo (lado a lado no computador; Editar/Prévia no celular), copiar/abrir link.
+- **Ajustes reorganizados** em grupos com subtelas (`?secao=`, `src/features/shop/settings/`); editor de identidade visual em etapas com prévia sempre visível.
+- Verificado em 02/10: tipos, 115 testes unitários, lint sem erros, build; testes do banco (pontos 46, página 24, booking 29, privacidade 43, ocorrências 45, autoconfirmação 57 em cadeia) em transação com rollback. No navegador (390×844): página pública real em `/b/arena-barber`; editor e troca de pontos na demonstração; `/shop/pontos` com dados simulados (sem sessão local, não foi vista com login real).
+
 ## Entrega — idiomas, sistema completo (26/09/2026)
 
 - Regra obrigatória: toda comunicação com o usuário e todo texto do sistema em pt-BR por padrão (`.cursor/rules/idioma.mdc`, `AGENTS.md`).
@@ -63,7 +79,7 @@ Atualizado em **26/09/2026**. Este documento resume decisões e entregas da conv
 - **Grave — mudanças protegidas pela tela falhavam desde 24/09:** havia duas versões de `request_shop_change` (3 e 5 argumentos); a API respondia `PGRST203` (não sabe qual escolher) e todo `submitProtectedChange` de dono/sócio (criar serviço, bloqueio, equipe, horários) dava erro. Migration `20260929180000_request_shop_change_single.sql` (**aplicada**) remove a versão de 3 argumentos, que só repassava para a de 5 com os mesmos padrões. Conferido pela API: a função volta a ser encontrada.
 - **Parceiro/contratado não conseguiam bloquear a própria agenda nem ajustar o próprio preço:** `guard_protected_shop_change` recusava antes das políticas "próprias" valerem. Migration `20260929170000_guard_own_professional_rows.sql` (**aplicada**) libera só a linha do próprio profissional (`availability_blocks`, `staff_services`, `staff`); colega, catálogo da loja e identidade visual continuam barrados. Teste novo `guard_own_professional_rows.sql` (7).
 - Testes desatualizados ajustados às regras aprovadas: minoritário abre pedido (não é recusado); "sócio" provisionado vira co-dono e reajusta o fundador; parceiro não edita identidade visual; administrador precisa estar em `shop_members`; preparação dos testes limpa o login simulado antes de gravar como postgres.
-- Rodar os testes: cada arquivo em `begin … rollback`. Os que usam `booking_test_context` rodam na mesma transação depois de `booking_reliability.sql`; `auto_confirmation_modules.sql` também depois de `optional_occurrences.sql`. Não rodar `reset_externa_barbearia.sql` (script de limpeza, não teste). Resultado em 29/09: todos passaram.
+- Rodar os testes: cada arquivo em `begin … rollback`. Os que usam `booking_test_context` rodam na mesma transação depois de `booking_reliability.sql`; `auto_confirmation_modules.sql` também depois de `optional_occurrences.sql`. Resultado em 29/09: todos passaram.
 
 ## E-mail — login SMTP recusado + fila resiliente (29/09/2026)
 
@@ -132,7 +148,8 @@ Plano: [plano-governanca-sociedade-gerente.md](plano-governanca-sociedade-gerent
 - Link do parceiro e “endereço público” preferem o **domínio próprio ativo**; senão usam `*.beauty…`. Ver `shopPublicOrigin` em `src/lib/shop/host.ts`.
 - Formulário de profissional: campo **Slug do link** editável (`booking_slug`); rename gera redirect. Migration `20260923180000_booking_slug_manual_and_externa.sql`.
 - Path legado no domínio da loja: `/$barberSlug` (ex. `/ezequiel/`) → `/app?barber=ezequiel` (trailing slash normalizado).
-- Externa Barbearia: RPC `admin_reset_externa_barbearia('RESET_EXTERNA')` (botão em Plataforma → Barbearias) limpa agenda/serviços/equipe e cria Ezequiel + Tiago. O site `externabarbearia.com.br` foi só fonte de informação (WordPress); **não** é domínio do app até configurar em Ajustes. Links ficam em `*.beauty…`.
+- Externa Barbearia: remontada uma vez em 02/10/2026 com Ezequiel (`ezequiel`) e Tiago (`tiago`); o botão e a função `admin_reset_externa_barbearia` foram removidos (migration `20261002100000_drop_reset_externa.sql`).
+- Certificado dos subdomínios das lojas: o `HostRegexp` do `wildcard-beauty.yaml` não emite certificado por host (o Traefik entregava o "TRAEFIK DEFAULT CERT"). Em 02/10 foi criado `/data/coolify/proxy/dynamic/beauty-shop-certs.yaml` com um roteador `Host(...)` por loja (arena-barber, externabarbearia). **Ao criar loja nova, acrescentar o roteador dela nesse arquivo.** O site `externabarbearia.com.br` foi só fonte de informação (WordPress); **não** é domínio do app até configurar em Ajustes. Links ficam em `*.beauty…`.
 
 ### Auth no domínio da loja (URL personalizada) — 23/09/2026
 

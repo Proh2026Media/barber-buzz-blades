@@ -10,8 +10,48 @@ import {
   type DemoWait,
 } from "../waiting/demo.ts";
 import { blocksSlot, type WaitAction, type WaitingEvent } from "../waiting/model.ts";
+import type { LoyaltyReward } from "../loyalty/program.ts";
 
 export const DEMO_CUSTOMER_ID = "demo-customer";
+
+export type DemoRedemption = {
+  id: string;
+  reward_id: string;
+  reward_name: string;
+  cost_points: number;
+  status: "pending" | "cancelled";
+  created_at: string;
+  expires_at: string;
+};
+
+export const DEMO_REWARDS: LoyaltyReward[] = [
+  {
+    id: "demo-reward-beard",
+    name: "Barba grátis",
+    description: "Uma barba completa por conta da casa.",
+    cost_points: 150,
+    active: true,
+    sort_order: 0,
+  },
+  {
+    id: "demo-reward-cut",
+    name: "Corte grátis",
+    description: "Um corte de cabelo por conta da casa.",
+    cost_points: 400,
+    active: true,
+    sort_order: 1,
+  },
+];
+
+/** Total ganho na vida: saldo atual mais o que está reservado em resgates. */
+export function demoLifetimePoints(state: Pick<DemoState, "points" | "redemptions">) {
+  return (
+    state.points +
+    state.redemptions
+      .filter((row) => row.status === "pending")
+      .reduce((sum, row) => sum + row.cost_points, 0)
+  );
+}
 
 export type DemoState = {
   waits: DemoWait[];
@@ -36,6 +76,7 @@ export type DemoState = {
   customerName: string;
   points: number;
   awarded: string[];
+  redemptions: DemoRedemption[];
 };
 
 export type DemoShopPreset = {
@@ -137,6 +178,8 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
       booking_horizon_days: 14,
       survey_program_enabled: true,
       sports_enabled: true,
+      loyalty_enabled: true,
+      landing: {},
       waiting_enabled: false,
       waiting_cutoff_minutes: 30,
       staff_assignment_mode: "client_pick",
@@ -259,6 +302,7 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
     customerName: customers[0].name,
     points: 250,
     awarded: [],
+    redemptions: [],
   };
   if (preset) {
     state.shop = { ...preset.shop, name: `${preset.shop.name} · Demo`, status: "active" };
@@ -437,6 +481,8 @@ export type DemoAction =
   | { type: "settings.save"; settings: Tables<"barbershop_settings"> }
   | { type: "shop.update"; shop: Partial<Pick<Tables<"barbershops">, "name" | "status">> }
   | { type: "clock.advance"; milliseconds: number }
+  | { type: "loyalty.redeem"; rewardId: string }
+  | { type: "loyalty.cancel"; id: string }
   | { type: "waiting.action"; id: string; action: WaitAction; serviceId?: string };
 
 export function demoReducer(state: DemoState, action: DemoAction): DemoState {
@@ -446,6 +492,40 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
       return advanceWaits({ ...state, now: new Date(+state.now + action.milliseconds) });
     case "waiting.action":
       return waitingDemoAction(state, action.id, action.action, action.serviceId);
+    case "loyalty.redeem": {
+      const reward = DEMO_REWARDS.find((row) => row.id === action.rewardId && row.active);
+      const pending = state.redemptions.filter((row) => row.status === "pending").length;
+      if (!reward || state.points < reward.cost_points || pending >= 3) return state;
+      return {
+        ...state,
+        points: state.points - reward.cost_points,
+        redemptions: [
+          {
+            id: `demo-redemption-${state.redemptions.length + 1}`,
+            reward_id: reward.id,
+            reward_name: reward.name,
+            cost_points: reward.cost_points,
+            status: "pending",
+            created_at: state.now.toISOString(),
+            expires_at: new Date(+state.now + 30 * 86_400_000).toISOString(),
+          },
+          ...state.redemptions,
+        ],
+      };
+    }
+    case "loyalty.cancel": {
+      const target = state.redemptions.find(
+        (row) => row.id === action.id && row.status === "pending",
+      );
+      if (!target) return state;
+      return {
+        ...state,
+        points: state.points + target.cost_points,
+        redemptions: state.redemptions.map((row) =>
+          row.id === target.id ? { ...row, status: "cancelled" } : row,
+        ),
+      };
+    }
     case "survey.record":
       return state.privacy.surveys
         ? {

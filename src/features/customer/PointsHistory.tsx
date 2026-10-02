@@ -1,12 +1,29 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { ArrowDownRight, ArrowUpRight, ReceiptText, Sparkles, Trophy } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { useDemo } from "@/features/demo/context";
 import { DEMO_CUSTOMER_ID } from "@/features/demo/model";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, type MessageKey } from "@/lib/i18n";
 import { NextLevelCard, type NextLevelSummary } from "./NextLevelCard";
+
+function ledgerReasonKey(reason: string): MessageKey {
+  switch (reason) {
+    case "appointment_completed":
+      return "points.reason.completed";
+    case "welcome_bonus":
+      return "points.reason.welcome";
+    case "reward_redeemed":
+      return "points.reason.redeemed";
+    case "reward_refunded":
+      return "points.reason.refunded";
+    case "demo_opening":
+      return "points.reason.demo";
+    default:
+      return "points.reason.adjust";
+  }
+}
 
 export function PointsHistory({
   userId,
@@ -14,12 +31,17 @@ export function PointsHistory({
   points,
   currentLevel,
   nextLevel,
+  refreshKey = 0,
+  children,
 }: {
   userId: string | null;
   shopId?: string | null;
   points: number;
   currentLevel: string;
   nextLevel: NextLevelSummary | null;
+  refreshKey?: number;
+  /** Conteúdo entre o resumo do nível e o extrato (ex.: prêmios para trocar). */
+  children?: ReactNode;
 }) {
   const demo = useDemo();
   const { t, intlLocale } = useI18n();
@@ -45,6 +67,10 @@ export function PointsHistory({
             delta: 50,
             reason: "appointment_completed",
             appointment_id: id,
+            program_version: null,
+            note: null,
+            actor_id: null,
+            redemption_id: null,
             created_at:
               demo.appointments.find((row) => row.id === id)?.ends_at ?? demo.now.toISOString(),
           })),
@@ -55,6 +81,10 @@ export function PointsHistory({
           delta: 250,
           reason: "demo_opening",
           appointment_id: null,
+          program_version: null,
+          note: null,
+          actor_id: null,
+          redemption_id: null,
           created_at: demo.now.toISOString(),
         },
       ]);
@@ -81,7 +111,7 @@ export function PointsHistory({
     return () => {
       cancelled = true;
     };
-  }, [demo, userId, shopId, limit, version]);
+  }, [demo, userId, shopId, limit, version, refreshKey]);
   const visibleRows = rows.slice(0, limit);
 
   return (
@@ -122,6 +152,8 @@ export function PointsHistory({
       </div>
 
       <NextLevelCard nextLevel={nextLevel} showMaxState />
+
+      {children}
 
       {error ? (
         <div role="alert" className="app-action-card space-y-3 p-4">
@@ -180,12 +212,11 @@ export function PointsHistory({
                       </span>
                       <div className="min-w-0">
                         <p className="truncate text-sm font-bold">
-                          {row.reason === "appointment_completed"
-                            ? t("points.reason.completed")
-                            : row.reason === "demo_opening"
-                              ? t("points.reason.demo")
-                              : t("points.reason.adjust")}
+                          {t(ledgerReasonKey(row.reason))}
                         </p>
+                        {row.reason === "reward_redeemed" && row.note && (
+                          <p className="truncate text-xs text-muted-foreground">{row.note}</p>
+                        )}
                         <p className="mt-0.5 text-xs text-muted-foreground">
                           {new Date(row.created_at).toLocaleString(intlLocale, {
                             dateStyle: "medium",

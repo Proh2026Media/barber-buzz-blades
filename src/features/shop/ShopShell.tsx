@@ -8,15 +8,23 @@ import { CancellationDialog } from "@/features/insights/CancellationDialog";
 import { cancellationReasonLabel, type CancellationReason } from "@/features/insights/cancellation";
 import { BusinessInsights } from "@/features/insights/BusinessInsights";
 import { ProfessionalInsights } from "@/features/insights/ProfessionalInsights";
-import { TeamGovernance } from "./TeamGovernance";
+import { TeamGovernance } from "@/features/shop/settings/TeamGovernance";
 import { PartnerCatalogSuggestions } from "./PartnerCatalogSuggestions";
 import { ShopTeamAccessCard } from "./ShopTeamAccessCard";
 import { BrandIdentityEditor } from "@/features/shop/BrandIdentityEditor";
-import { WhatsAppSettingsCard } from "@/features/shop/WhatsAppSettingsCard";
-import { SlugRedirectsCard } from "@/features/shop/SlugRedirectsCard";
-import { ShopDepartureCard } from "@/features/shop/ShopDepartureCard";
-import { ShopDomainCard } from "@/features/shop/ShopDomainCard";
-import { GoogleIntegrationsCard } from "@/features/shop/GoogleIntegrationsCard";
+import { WhatsAppSettingsCard } from "@/features/shop/settings/WhatsAppSettingsCard";
+import { SlugRedirectsCard } from "@/features/shop/settings/SlugRedirectsCard";
+import { ShopDepartureCard } from "@/features/shop/settings/ShopDepartureCard";
+import { ShopDomainCard } from "@/features/shop/settings/ShopDomainCard";
+import { GoogleIntegrationsCard } from "@/features/shop/settings/GoogleIntegrationsCard";
+import { SettingsHub } from "@/features/shop/settings/SettingsHub";
+import { LandingEditor } from "@/features/shop/settings/LandingEditor";
+import { shopPublicOrigin } from "@/lib/shop/host";
+import {
+  readSectionFromUrl,
+  useSettingsSection,
+  type SettingsSection,
+} from "@/features/shop/settings/section";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -58,6 +66,8 @@ import {
   ChevronRight,
   CircleCheck,
   Clock3,
+  Gift,
+  Globe2,
   KeyRound,
   LogOut,
   MessageSquarePlus,
@@ -268,7 +278,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   const shopTimeZone = validTimeZone(shop?.timezone);
 
   const [tab, setTab] = useState<"agenda" | "servicos" | "equipe" | "horarios" | "configuracoes">(
-    "agenda",
+    () => (readSectionFromUrl() ? "configuracoes" : "agenda"),
   );
   const [agendaRefresh, setAgendaRefresh] = useState(0);
   const [refreshingAgenda, setRefreshingAgenda] = useState(false);
@@ -287,7 +297,9 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   const [settings, setSettings] = useState<Tables<"barbershop_settings"> | null>(null);
   useShopFavicon(settings?.logo_url);
   const [settingsSaved, setSettingsSaved] = useState(false);
+  const [settingsSection, setSettingsSection] = useSettingsSection(tab === "configuracoes");
   const [brandOpen, setBrandOpen] = useState(false);
+  const [landingOpen, setLandingOpen] = useState(false);
   const [governanceRevision, setGovernanceRevision] = useState(0);
   const [governanceMessage, setGovernanceMessage] = useState<string | null>(null);
   const waiting = useWaiting(shop?.id, true);
@@ -1252,53 +1264,45 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     try {
       const next = {
         ...settings,
-        tagline: settings.tagline.trim(),
+        booking_instructions: settings.booking_instructions.trim(),
         updated_at: new Date().toISOString(),
       };
+      const assignmentMode =
+        (next as { staff_assignment_mode?: string }).staff_assignment_mode ?? "client_pick";
       if (demo) {
         demo.dispatch({ type: "settings.save", settings: next });
         setSettings(next);
+        setSettingsSaved(true);
       } else if (actor && capabilities?.canProposeOperations) {
-        const visualResult = await supabase
-          .from("barbershop_settings")
-          .update({
-            tagline: next.tagline,
-          })
-          .eq("barbershop_id", settings.barbershop_id)
-          .select("*")
-          .single();
-        if (visualResult.error) setError(visualResult.error.message);
-        else {
-          setSettings(visualResult.data);
-          const applied = await submitProtectedChange("settings.operational", {
-            booking_instructions: next.booking_instructions.trim(),
-            booking_horizon_days: next.booking_horizon_days,
-            survey_program_enabled: next.survey_program_enabled,
-            waiting_enabled: next.waiting_enabled,
-            waiting_cutoff_minutes: next.waiting_cutoff_minutes,
-            staff_assignment_mode:
-              (next as { staff_assignment_mode?: string }).staff_assignment_mode ?? "client_pick",
-          });
-          setSettingsSaved(applied);
-        }
+        const applied = await submitProtectedChange("settings.operational", {
+          booking_instructions: next.booking_instructions,
+          booking_horizon_days: next.booking_horizon_days,
+          survey_program_enabled: next.survey_program_enabled,
+          waiting_enabled: next.waiting_enabled,
+          waiting_cutoff_minutes: next.waiting_cutoff_minutes,
+          staff_assignment_mode: assignmentMode,
+        });
+        setSettingsSaved(applied);
       } else if (actor) {
         throw new Error(t("shop.error.roleSettings"));
       } else {
         const { data, error: updateError } = await supabase
           .from("barbershop_settings")
           .update({
-            tagline: next.tagline,
-            booking_instructions: next.booking_instructions.trim(),
+            booking_instructions: next.booking_instructions,
             booking_horizon_days: next.booking_horizon_days,
             survey_program_enabled: next.survey_program_enabled,
+            staff_assignment_mode: assignmentMode,
           })
           .eq("barbershop_id", settings.barbershop_id)
           .select("*")
           .single();
         if (updateError) setError(friendlyAuthError(updateError));
-        else setSettings(data);
+        else {
+          setSettings(data);
+          setSettingsSaved(true);
+        }
       }
-      if (!actor) setSettingsSaved(true);
     } catch (settingsError) {
       setError(
         settingsError instanceof Error ? settingsError.message : t("shop.error.saveSettings"),
@@ -1375,6 +1379,18 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     !!capabilities?.canApplyOperations ||
     actor.role === "owner" ||
     actor.role === "partner";
+  const canManageShopChannels = !actor || actor.role === "owner" || actor.role === "partner";
+  const settingsSections: SettingsSection[] = [
+    ...(canManageBranding ? (["aparencia"] as const) : []),
+    "agendamento",
+    ...(!demo ? (["pontos"] as const) : []),
+    ...(canManageShopChannels || (!demo && actor?.role === "associate")
+      ? (["avisos"] as const)
+      : []),
+    ...(!demo ? (["enderecos"] as const) : []),
+    ...(!demo && actor ? (["equipe"] as const) : []),
+    "idioma",
+  ];
 
   useEffect(() => {
     // Só redireciona com capacidades já resolvidas — evita bounce enquanto a matriz carrega.
@@ -3102,222 +3118,265 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   <h2>{t("shop.nav.settings")}</h2>
                 </div>
               </div>
-              {canManageBranding && (
-                <button
-                  type="button"
-                  onClick={() => setBrandOpen(true)}
-                  className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left transition hover:border-primary/40"
-                >
-                  <Palette className="size-5 text-gold" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-bold">{t("shop.settings.brand")}</span>
-                    <span className="block text-xs text-muted-foreground">
-                      {t("shop.settings.brandHint")}
-                    </span>
-                  </span>
-                  <ChevronRight className="size-4 text-muted-foreground" />
-                </button>
-              )}
-              {(!actor || actor.role === "owner" || actor.role === "partner" || !actor) && (
-                <WhatsAppSettingsCard shopId={shop.id} />
-              )}
-              {!demo &&
-                (!actor ||
-                  actor.role === "owner" ||
-                  actor.role === "partner" ||
-                  actor.role === "associate") && (
-                  <GoogleIntegrationsCard
-                    returnPath="/shop"
-                    canCopyWholeShop={!actor || actor.role === "owner" || actor.role === "partner"}
-                  />
-                )}
-              {!demo &&
-                shop.id &&
-                (!actor || actor.role === "owner" || actor.role === "partner") && (
-                  <ShopDomainCard shopId={shop.id} />
-                )}
-              {!demo && shop.id && (
-                <SlugRedirectsCard
-                  shopId={shop.id}
-                  currentShopSlug={shop.slug}
-                  canManageShopRedirects={
-                    !actor || actor.role === "owner" || actor.role === "partner"
+              <SettingsHub
+                sections={settingsSections}
+                section={settingsSection}
+                onSectionChange={setSettingsSection}
+                renderSection={(section) => {
+                  if (section === "aparencia") {
+                    return (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setBrandOpen(true)}
+                          className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left transition hover:border-primary/40"
+                        >
+                          <Palette className="size-5 text-gold" />
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-bold">
+                              {t("shop.settings.brand")}
+                            </span>
+                            <span className="block text-xs text-muted-foreground">
+                              {t("shop.settings.brandHint")}
+                            </span>
+                          </span>
+                          <ChevronRight className="size-4 text-muted-foreground" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setLandingOpen(true)}
+                          className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left transition hover:border-primary/40"
+                        >
+                          <Globe2 className="size-5 text-gold" />
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-bold">
+                              {t("landingEditor.title")}
+                            </span>
+                            <span className="block text-xs text-muted-foreground">
+                              {t("landingEditor.cardHint")}
+                            </span>
+                          </span>
+                          <ChevronRight className="size-4 text-muted-foreground" />
+                        </button>
+                      </>
+                    );
                   }
-                />
-              )}
-              {!demo && shop.id && actor && (
-                <ShopDepartureCard
-                  shopId={shop.id}
-                  canApproveRelease={actor.role === "owner" || actor.role === "partner"}
-                  canRequestDeparture={
-                    actor.role === "owner" || actor.role === "partner" || actor.role === "associate"
+                  if (section === "agendamento") {
+                    return (
+                      <>
+                        <WaitingSettings
+                          settings={settings}
+                          onSaved={setSettings}
+                          onSaveRequest={
+                            !demo && actor
+                              ? async (enabled, cutoff) => {
+                                  const applied = await submitProtectedChange(
+                                    "settings.operational",
+                                    {
+                                      waiting_enabled: enabled,
+                                      waiting_cutoff_minutes: cutoff,
+                                    },
+                                  );
+                                  if (applied) await loadCatalog();
+                                  return applied ? "applied" : "pending";
+                                }
+                              : undefined
+                          }
+                        />
+                        <form
+                          onSubmit={saveSettings}
+                          className="space-y-5 rounded-2xl border border-border bg-card p-5"
+                        >
+                          <div className="space-y-2">
+                            <label
+                              htmlFor="booking-instructions"
+                              className="text-xs font-semibold text-muted-foreground"
+                            >
+                              {t("shop.settings.instructions")}
+                            </label>
+                            <textarea
+                              id="booking-instructions"
+                              maxLength={240}
+                              rows={3}
+                              value={settings.booking_instructions}
+                              onChange={(event) => {
+                                setSettingsSaved(false);
+                                setSettings({
+                                  ...settings,
+                                  booking_instructions: event.target.value,
+                                });
+                              }}
+                              placeholder={t("shop.settings.instructionsPlaceholder")}
+                              className="w-full resize-none rounded-xl border border-border bg-background px-3 py-3 text-sm"
+                            />
+                            <p className="text-right text-xs text-muted-foreground">
+                              {settings.booking_instructions.length}/240
+                            </p>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label
+                              htmlFor="booking-horizon"
+                              className="text-xs font-semibold text-muted-foreground"
+                            >
+                              {t("shop.settings.horizon")}
+                            </label>
+                            <select
+                              id="booking-horizon"
+                              value={settings.booking_horizon_days}
+                              onChange={(event) => {
+                                setSettingsSaved(false);
+                                setSettings({
+                                  ...settings,
+                                  booking_horizon_days: Number(event.target.value),
+                                });
+                              }}
+                              className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm"
+                            >
+                              {[7, 14, 21, 30].map((days) => (
+                                <option key={days} value={days}>
+                                  {t("shop.settings.days", { days })}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label
+                              htmlFor="staff-assignment-mode"
+                              className="text-xs font-semibold text-muted-foreground"
+                            >
+                              {t("shop.settings.assignment")}
+                            </label>
+                            <select
+                              id="staff-assignment-mode"
+                              value={
+                                (settings as { staff_assignment_mode?: string })
+                                  .staff_assignment_mode ?? "client_pick"
+                              }
+                              onChange={(event) => {
+                                setSettingsSaved(false);
+                                setSettings({
+                                  ...settings,
+                                  staff_assignment_mode: event.target.value,
+                                } as typeof settings);
+                              }}
+                              className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm"
+                            >
+                              <option value="client_pick">{t("shop.settings.assignClient")}</option>
+                              <option value="favorite_then_pick">
+                                {t("shop.settings.assignFavorite")}
+                              </option>
+                              <option value="random_available">
+                                {t("shop.settings.assignRandom")}
+                              </option>
+                            </select>
+                          </div>
+
+                          <div className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-background/60 p-4">
+                            <div>
+                              <p className="text-sm font-bold">{t("shop.settings.surveys")}</p>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {t("shop.settings.surveysHint")}
+                              </p>
+                            </div>
+                            <Switch
+                              checked={settings.survey_program_enabled}
+                              onCheckedChange={(checked) => {
+                                setSettingsSaved(false);
+                                setSettings({ ...settings, survey_program_enabled: checked });
+                              }}
+                              aria-label={t("shop.settings.surveysAria")}
+                            />
+                          </div>
+
+                          <button
+                            type="submit"
+                            disabled={busy}
+                            className="w-full rounded-xl bg-primary py-3 text-xs font-semibold text-primary-foreground disabled:opacity-60"
+                          >
+                            {busy ? t("common.saving") : t("shop.settings.save")}
+                          </button>
+                          {settingsSaved && (
+                            <p
+                              role="status"
+                              className="text-center text-xs font-semibold text-primary"
+                            >
+                              {t("shop.settings.saved")}
+                            </p>
+                          )}
+                        </form>
+                      </>
+                    );
                   }
-                />
-              )}
-              {!demo && actor && (
-                <TeamGovernance
-                  key={governanceRevision}
-                  shopId={shop.id}
-                  profile={effectiveProfile}
-                  onChanged={() => {
-                    setGovernanceRevision((value) => value + 1);
-                    void loadCatalog();
-                  }}
-                />
-              )}
-              <WaitingSettings
-                settings={settings}
-                onSaved={setSettings}
-                onSaveRequest={
-                  !demo && actor
-                    ? async (enabled, cutoff) => {
-                        const applied = await submitProtectedChange("settings.operational", {
-                          waiting_enabled: enabled,
-                          waiting_cutoff_minutes: cutoff,
-                        });
-                        if (applied) await loadCatalog();
-                        return applied ? "applied" : "pending";
-                      }
-                    : undefined
-                }
+                  if (section === "pontos") {
+                    return (
+                      <div className="space-y-3 rounded-2xl border border-border bg-card p-4">
+                        <p className="text-sm text-muted-foreground">
+                          {t("shop.settings.pontos.text")}
+                        </p>
+                        <a href="/shop/pontos" className="action-button action-confirm w-full">
+                          <Gift className="size-4" aria-hidden />
+                          {t("shop.settings.pontos.open")}
+                        </a>
+                      </div>
+                    );
+                  }
+                  if (section === "avisos") {
+                    return (
+                      <>
+                        {canManageShopChannels && <WhatsAppSettingsCard shopId={shop.id} />}
+                        {!demo && (canManageShopChannels || actor?.role === "associate") && (
+                          <GoogleIntegrationsCard
+                            returnPath="/shop?secao=avisos"
+                            canCopyWholeShop={canManageShopChannels}
+                          />
+                        )}
+                      </>
+                    );
+                  }
+                  if (section === "enderecos") {
+                    return (
+                      <>
+                        {canManageShopChannels && <ShopDomainCard shopId={shop.id} />}
+                        <SlugRedirectsCard
+                          shopId={shop.id}
+                          currentShopSlug={shop.slug}
+                          canManageShopRedirects={canManageShopChannels}
+                        />
+                      </>
+                    );
+                  }
+                  if (section === "equipe" && actor) {
+                    return (
+                      <>
+                        <TeamGovernance
+                          key={governanceRevision}
+                          shopId={shop.id}
+                          profile={effectiveProfile}
+                          onChanged={() => {
+                            setGovernanceRevision((value) => value + 1);
+                            void loadCatalog();
+                          }}
+                        />
+                        <ShopDepartureCard
+                          shopId={shop.id}
+                          canApproveRelease={actor.role === "owner" || actor.role === "partner"}
+                          canRequestDeparture={
+                            actor.role === "owner" ||
+                            actor.role === "partner" ||
+                            actor.role === "associate"
+                          }
+                        />
+                      </>
+                    );
+                  }
+                  if (section === "idioma") return <LanguageSettingsCard />;
+                  return null;
+                }}
               />
-              <form
-                onSubmit={saveSettings}
-                className="space-y-5 rounded-2xl border border-border bg-card p-5"
-              >
-                <div className="space-y-2">
-                  <label
-                    htmlFor="shop-tagline"
-                    className="text-xs font-semibold text-muted-foreground"
-                  >
-                    {t("shop.settings.tagline")}
-                  </label>
-                  <input
-                    id="shop-tagline"
-                    required
-                    maxLength={60}
-                    value={settings.tagline}
-                    onChange={(event) => {
-                      setSettingsSaved(false);
-                      setSettings({ ...settings, tagline: event.target.value });
-                    }}
-                    className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm"
-                  />
-                  <p className="text-xs text-muted-foreground">{t("shop.settings.taglineHint")}</p>
-                </div>
-
-                <div className="space-y-2">
-                  <label
-                    htmlFor="booking-instructions"
-                    className="text-xs font-semibold text-muted-foreground"
-                  >
-                    {t("shop.settings.instructions")}
-                  </label>
-                  <textarea
-                    id="booking-instructions"
-                    maxLength={240}
-                    rows={3}
-                    value={settings.booking_instructions}
-                    onChange={(event) => {
-                      setSettingsSaved(false);
-                      setSettings({ ...settings, booking_instructions: event.target.value });
-                    }}
-                    placeholder={t("shop.settings.instructionsPlaceholder")}
-                    className="w-full resize-none rounded-xl border border-border bg-background px-3 py-3 text-sm"
-                  />
-                  <p className="text-right text-xs text-muted-foreground">
-                    {settings.booking_instructions.length}/240
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <label
-                    htmlFor="booking-horizon"
-                    className="text-xs font-semibold text-muted-foreground"
-                  >
-                    {t("shop.settings.horizon")}
-                  </label>
-                  <select
-                    id="booking-horizon"
-                    value={settings.booking_horizon_days}
-                    onChange={(event) => {
-                      setSettingsSaved(false);
-                      setSettings({
-                        ...settings,
-                        booking_horizon_days: Number(event.target.value),
-                      });
-                    }}
-                    className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm"
-                  >
-                    {[7, 14, 21, 30].map((days) => (
-                      <option key={days} value={days}>
-                        {t("shop.settings.days", { days })}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <label
-                    htmlFor="staff-assignment-mode"
-                    className="text-xs font-semibold text-muted-foreground"
-                  >
-                    {t("shop.settings.assignment")}
-                  </label>
-                  <select
-                    id="staff-assignment-mode"
-                    value={
-                      (settings as { staff_assignment_mode?: string }).staff_assignment_mode ??
-                      "client_pick"
-                    }
-                    onChange={(event) => {
-                      setSettingsSaved(false);
-                      setSettings({
-                        ...settings,
-                        staff_assignment_mode: event.target.value,
-                      } as typeof settings);
-                    }}
-                    className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm"
-                  >
-                    <option value="client_pick">{t("shop.settings.assignClient")}</option>
-                    <option value="favorite_then_pick">{t("shop.settings.assignFavorite")}</option>
-                    <option value="random_available">{t("shop.settings.assignRandom")}</option>
-                  </select>
-                </div>
-
-                <div className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-background/60 p-4">
-                  <div>
-                    <p className="text-sm font-bold">{t("shop.settings.surveys")}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {t("shop.settings.surveysHint")}
-                    </p>
-                  </div>
-                  <Switch
-                    checked={settings.survey_program_enabled}
-                    onCheckedChange={(checked) => {
-                      setSettingsSaved(false);
-                      setSettings({ ...settings, survey_program_enabled: checked });
-                    }}
-                    aria-label={t("shop.settings.surveysAria")}
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={busy}
-                  className="w-full rounded-xl bg-primary py-3 text-xs font-semibold text-primary-foreground disabled:opacity-60"
-                >
-                  {busy ? t("common.saving") : t("shop.settings.save")}
-                </button>
-                {settingsSaved && (
-                  <p role="status" className="text-center text-xs font-semibold text-primary">
-                    {t("shop.settings.saved")}
-                  </p>
-                )}
-              </form>
             </section>
           )}
-          {tab === "configuracoes" && <LanguageSettingsCard />}
         </div>
 
         {!demo && (
@@ -3362,6 +3421,35 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
           </button>
         ))}
       </nav>
+
+      <Dialog open={landingOpen} onOpenChange={setLandingOpen}>
+        <DialogContent className="max-h-[92dvh] w-[calc(100vw-1.5rem)] max-w-5xl overflow-hidden rounded-3xl border-border bg-card p-0">
+          <DialogScrollArea className="grid max-h-[calc(92dvh-2px)] gap-4 overflow-y-auto p-5 sm:p-6">
+            <DialogTitle className="text-lg font-extrabold tracking-tight">
+              {t("landingEditor.title")}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              {t("landingEditor.description")}
+            </DialogDescription>
+            {!shop || !settings ? (
+              <p className="text-sm text-muted-foreground">{t("shop.brand.loading")}</p>
+            ) : (
+              <LandingEditor
+                key={shop.id}
+                shopId={shop.id}
+                shopSlug={shop.slug}
+                publicUrl={shopPublicOrigin({
+                  slug: shop.slug,
+                  customDomain: shop.custom_domain,
+                  customDomainStatus: shop.custom_domain_status,
+                })}
+                settings={settings}
+                onSaved={setSettings}
+              />
+            )}
+          </DialogScrollArea>
+        </DialogContent>
+      </Dialog>
 
       {/* Identidade visual: dono, sócio e parceiro personalizam a barbearia. */}
       <Dialog open={brandOpen} onOpenChange={setBrandOpen}>

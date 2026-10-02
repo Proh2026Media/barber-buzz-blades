@@ -3,7 +3,6 @@ import { SurveyCatalog } from "@/features/insights/SurveyCatalog";
 import { BusinessInsights } from "@/features/insights/BusinessInsights";
 import { useScrollIndicators } from "@/lib/use-scroll-indicators";
 import {
-  Fragment,
   useCallback,
   useEffect,
   useId,
@@ -109,12 +108,6 @@ function friendlyTimeZone(timeZone: string, locale: string) {
   }
 }
 
-function richText(template: string, nodes: Record<string, ReactNode>) {
-  return template
-    .split(/\{(\w+)\}/g)
-    .map((part, i) => (i % 2 === 1 ? <Fragment key={i}>{nodes[part] ?? part}</Fragment> : part));
-}
-
 export function PlatformShell({ profile, headerActions, demoMode = false }: PlatformShellProps) {
   useScrollIndicators();
   const { t, intlLocale } = useI18n();
@@ -150,6 +143,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [sportsModules, setSportsModules] = useState<Record<string, boolean>>({});
+  const [loyaltyModules, setLoyaltyModules] = useState<Record<string, boolean>>({});
   const [moduleBusy, setModuleBusy] = useState<string | null>(null);
   const [brandShop, setBrandShop] = useState<Tables<"barbershops"> | null>(null);
   const [brandSettings, setBrandSettings] = useState<Tables<"barbershop_settings"> | null>(null);
@@ -159,8 +153,6 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
   const [loginTourSettings, setLoginTourSettings] = useState<Tables<"barbershop_settings"> | null>(
     null,
   );
-  const [externaBusy, setExternaBusy] = useState(false);
-  const [externaMessage, setExternaMessage] = useState<string | null>(null);
   const demoState = demoChrome?.state ?? null;
   const demoDispatch = demoChrome?.dispatch ?? null;
 
@@ -176,6 +168,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
         { barbershop_id: demoState.shop.id, role: "shop_admin" as const, user_id: "demo-admin" },
       ]);
       setSportsModules({ [demoState.shop.id]: demoState.settings.sports_enabled });
+      setLoyaltyModules({ [demoState.shop.id]: demoState.settings.loyalty_enabled });
       setInviteShopId(demoState.shop.id);
       setLoading(false);
       return;
@@ -184,7 +177,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
     const [shopsResult, membershipsResult, modulesResult] = await Promise.all([
       supabase.from("barbershops").select("*").order("created_at", { ascending: true }),
       supabase.from("memberships").select("barbershop_id, role, user_id"),
-      supabase.from("barbershop_settings").select("barbershop_id, sports_enabled"),
+      supabase.from("barbershop_settings").select("barbershop_id, sports_enabled, loyalty_enabled"),
     ]);
     const loadError = shopsResult.error || membershipsResult.error || modulesResult.error;
     if (loadError) {
@@ -195,6 +188,11 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       setSportsModules(
         Object.fromEntries(
           (modulesResult.data ?? []).map((row) => [row.barbershop_id, row.sports_enabled]),
+        ),
+      );
+      setLoyaltyModules(
+        Object.fromEntries(
+          (modulesResult.data ?? []).map((row) => [row.barbershop_id, row.loyalty_enabled]),
         ),
       );
       setInviteShopId((current) => current || shopsResult.data?.[0]?.id || "");
@@ -266,43 +264,6 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
     window.location.href = "/auth";
   }
 
-  async function resetExternaBarbearia() {
-    if (demoMode) {
-      setExternaMessage(t("plat.shell.demoUnavailable"));
-      return;
-    }
-    const ok = window.confirm(t("plat.externa.confirm"));
-    if (!ok) return;
-    setExternaBusy(true);
-    setExternaMessage(null);
-    setError(null);
-    try {
-      const { data, error: rpcError } = await supabase.rpc("admin_reset_externa_barbearia", {
-        p_confirm: "RESET_EXTERNA",
-      });
-      if (rpcError) throw rpcError;
-      const row = data as {
-        shop_slug?: string;
-        deleted_appointments?: number;
-        deleted_staff?: number;
-        public_links?: string[];
-      } | null;
-      setExternaMessage(
-        t("plat.externa.done", {
-          slug: row?.shop_slug ?? "externa-barbearia",
-          appointments: row?.deleted_appointments ?? 0,
-          staff: row?.deleted_staff ?? 0,
-          links: (row?.public_links ?? []).slice(0, 2).join(" · "),
-        }),
-      );
-      await loadShops();
-    } catch (err) {
-      setError(friendlyAuthError(err, t("plat.externa.error")));
-    } finally {
-      setExternaBusy(false);
-    }
-  }
-
   async function createShop(e: React.FormEvent) {
     e.preventDefault();
     // Duplo clique ou dois Enter no mesmo tick inseririam duas barbearias.
@@ -369,6 +330,30 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       setSportsModules((current) => ({ ...current, [shopId]: enabled }));
     } catch {
       setError(t("plat.shops.sportsError"));
+    } finally {
+      setModuleBusy(null);
+    }
+  }
+
+  async function toggleLoyalty(shopId: string, enabled: boolean) {
+    if (demoDispatch && demoState) {
+      demoDispatch({
+        type: "settings.save",
+        settings: { ...demoState.settings, loyalty_enabled: enabled },
+      });
+      return;
+    }
+    setModuleBusy(shopId);
+    setError(null);
+    try {
+      const result = await supabase.rpc("set_shop_loyalty_module", {
+        p_shop_id: shopId,
+        p_enabled: enabled,
+      });
+      if (result.error) throw result.error;
+      setLoyaltyModules((current) => ({ ...current, [shopId]: enabled }));
+    } catch {
+      setError(t("plat.shops.loyaltyError"));
     } finally {
       setModuleBusy(null);
     }
@@ -611,32 +596,6 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
 
           {platformTab === "shops" && (
             <div className="space-y-6">
-              {!demoMode && (
-                <section className="space-y-3 rounded-3xl border border-amber-500/30 bg-amber-500/5 p-4">
-                  <h3 className="text-sm font-bold">Externa Barbearia</h3>
-                  <p className="text-xs text-muted-foreground">
-                    {richText(t("plat.externa.hint"), {
-                      ezequiel: <code className="font-mono">ezequiel</code>,
-                      tiago: <code className="font-mono">tiago</code>,
-                      domain: <code className="font-mono">*.beauty…</code>,
-                      site: <code className="font-mono">externabarbearia.com.br</code>,
-                    })}
-                  </p>
-                  <button
-                    type="button"
-                    disabled={externaBusy}
-                    className="action-button action-danger"
-                    onClick={() => void resetExternaBarbearia()}
-                  >
-                    {externaBusy ? t("plat.externa.busy") : t("plat.externa.action")}
-                  </button>
-                  {externaMessage && (
-                    <p className="text-sm text-foreground" role="status">
-                      {externaMessage}
-                    </p>
-                  )}
-                </section>
-              )}
               <section className="space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
@@ -708,6 +667,20 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                                 aria-label={t("plat.shops.sportsAria", { name: shop.name })}
                               />
                               {t("plat.shops.sports")}
+                            </label>
+                            <label className="mb-3 flex items-center gap-3 text-sm">
+                              <Switch
+                                checked={loyaltyModules[shop.id] ?? false}
+                                disabled={moduleBusy !== null}
+                                onCheckedChange={(enabled) => void toggleLoyalty(shop.id, enabled)}
+                                aria-label={t("plat.shops.loyaltyAria", { name: shop.name })}
+                              />
+                              <span>
+                                {t("plat.shops.loyalty")}
+                                <span className="block text-xs text-muted-foreground">
+                                  {t("plat.shops.loyaltyHint")}
+                                </span>
+                              </span>
                             </label>
                             <p className="text-xs uppercase tracking-widest text-muted-foreground">
                               /{shop.slug}

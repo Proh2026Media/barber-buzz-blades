@@ -83,6 +83,8 @@ export type Database = {
           booking_horizon_days: number;
           survey_program_enabled: boolean;
           sports_enabled: boolean;
+          loyalty_enabled: boolean;
+          landing: Json;
           waiting_enabled: boolean;
           waiting_cutoff_minutes: number;
           staff_assignment_mode?: string;
@@ -112,6 +114,8 @@ export type Database = {
           booking_horizon_days?: number;
           survey_program_enabled?: boolean;
           sports_enabled?: boolean;
+          loyalty_enabled?: boolean;
+          landing?: Json;
           waiting_enabled?: boolean;
           waiting_cutoff_minutes?: number;
           staff_assignment_mode?: string;
@@ -141,6 +145,8 @@ export type Database = {
           booking_horizon_days?: number;
           survey_program_enabled?: boolean;
           sports_enabled?: boolean;
+          loyalty_enabled?: boolean;
+          landing?: Json;
           waiting_enabled?: boolean;
           waiting_cutoff_minutes?: number;
           staff_assignment_mode?: string;
@@ -585,6 +591,7 @@ export type Database = {
           user_id: string;
           barbershop_id: string;
           points: number;
+          lifetime_points: number;
           created_at: string;
           updated_at: string;
         };
@@ -592,6 +599,7 @@ export type Database = {
           user_id: string;
           barbershop_id: string;
           points?: number;
+          lifetime_points?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -599,6 +607,7 @@ export type Database = {
           user_id?: string;
           barbershop_id?: string;
           points?: number;
+          lifetime_points?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -612,6 +621,117 @@ export type Database = {
           },
         ];
       };
+      loyalty_programs: {
+        Row: {
+          barbershop_id: string;
+          mode: string;
+          points_per_visit: number;
+          welcome_bonus: number;
+          tiers: Json;
+          version: number;
+          updated_by: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          barbershop_id: string;
+          mode?: string;
+          points_per_visit?: number;
+          welcome_bonus?: number;
+          tiers?: Json;
+          version?: number;
+          updated_by?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          barbershop_id?: string;
+          mode?: string;
+          points_per_visit?: number;
+          welcome_bonus?: number;
+          tiers?: Json;
+          version?: number;
+          updated_by?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      loyalty_rewards: {
+        Row: {
+          id: string;
+          barbershop_id: string;
+          name: string;
+          description: string;
+          cost_points: number;
+          active: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          barbershop_id: string;
+          name: string;
+          description?: string;
+          cost_points: number;
+          active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          barbershop_id?: string;
+          name?: string;
+          description?: string;
+          cost_points?: number;
+          active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      loyalty_redemptions: {
+        Row: {
+          id: string;
+          barbershop_id: string;
+          user_id: string;
+          reward_id: string | null;
+          reward_name: string;
+          cost_points: number;
+          status: string;
+          created_at: string;
+          expires_at: string;
+          resolved_at: string | null;
+          resolved_by: string | null;
+        };
+        Insert: {
+          id?: string;
+          barbershop_id: string;
+          user_id: string;
+          reward_id?: string | null;
+          reward_name: string;
+          cost_points: number;
+          status?: string;
+          created_at?: string;
+          expires_at?: string;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+        };
+        Update: {
+          id?: string;
+          barbershop_id?: string;
+          user_id?: string;
+          reward_id?: string | null;
+          reward_name?: string;
+          cost_points?: number;
+          status?: string;
+          created_at?: string;
+          expires_at?: string;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+        };
+        Relationships: [];
+      };
       loyalty_ledger: {
         Row: {
           id: string;
@@ -620,6 +740,10 @@ export type Database = {
           delta: number;
           reason: string;
           appointment_id: string | null;
+          program_version: number | null;
+          note: string | null;
+          actor_id: string | null;
+          redemption_id: string | null;
           created_at: string;
         };
         Insert: {
@@ -629,6 +753,10 @@ export type Database = {
           delta: number;
           reason: string;
           appointment_id?: string | null;
+          program_version?: number | null;
+          note?: string | null;
+          actor_id?: string | null;
+          redemption_id?: string | null;
           created_at?: string;
         };
         Update: {
@@ -638,6 +766,10 @@ export type Database = {
           delta?: number;
           reason?: string;
           appointment_id?: string | null;
+          program_version?: number | null;
+          note?: string | null;
+          actor_id?: string | null;
+          redemption_id?: string | null;
           created_at?: string;
         };
         Relationships: [
@@ -1058,6 +1190,11 @@ export type Database = {
           accent_color: string | null;
         }[];
       };
+      get_public_shop_landing: {
+        Args: { p_shop_ref?: string | null; p_host?: string | null };
+        Returns: Json;
+      };
+      landing_config_valid: { Args: { p: Json }; Returns: boolean };
       get_public_shop_branding_v2: {
         Args: { p_shop_ref: string };
         Returns: {
@@ -1116,6 +1253,72 @@ export type Database = {
       };
       get_waiting_state: { Args: { p_shop_id: string }; Returns: Json };
       get_appointment_attendance: { Args: { p_id: string }; Returns: Json };
+      set_shop_loyalty_module: {
+        Args: { p_shop_id: string; p_enabled: boolean };
+        Returns: undefined;
+      };
+      get_shop_loyalty_program: {
+        Args: { p_shop_id: string };
+        Returns: Json;
+      };
+      list_shop_loyalty_customers: {
+        Args: { p_shop_id: string; p_search?: string | null; p_limit?: number };
+        Returns: {
+          user_id: string;
+          full_name: string;
+          points: number;
+          lifetime_points: number;
+          updated_at: string;
+        }[];
+      };
+      list_shop_loyalty_redemptions: {
+        Args: { p_shop_id: string; p_status?: string | null };
+        Returns: {
+          id: string;
+          user_id: string;
+          full_name: string;
+          reward_name: string;
+          cost_points: number;
+          status: string;
+          created_at: string;
+          expires_at: string;
+          resolved_at: string | null;
+        }[];
+      };
+      save_loyalty_program: {
+        Args: {
+          p_shop_id: string;
+          p_mode: string;
+          p_points_per_visit: number | null;
+          p_welcome_bonus: number | null;
+          p_tiers: Json | null;
+        };
+        Returns: Json;
+      };
+      save_loyalty_reward: {
+        Args: {
+          p_shop_id: string;
+          p_reward_id: string | null;
+          p_name: string;
+          p_description: string;
+          p_cost_points: number;
+          p_active: boolean;
+          p_sort_order?: number;
+        };
+        Returns: string;
+      };
+      adjust_loyalty_points: {
+        Args: { p_shop_id: string; p_user_id: string; p_delta: number; p_reason: string };
+        Returns: number;
+      };
+      request_loyalty_redemption: {
+        Args: { p_reward_id: string };
+        Returns: string;
+      };
+      resolve_loyalty_redemption: {
+        Args: { p_redemption_id: string; p_action: string };
+        Returns: string;
+      };
       set_shop_sports_module: {
         Args: { p_shop_id: string; p_enabled: boolean };
         Returns: undefined;
@@ -1270,10 +1473,6 @@ export type Database = {
       shop_has_booking_slug: {
         Args: { p_shop_id: string; p_booking_slug: string };
         Returns: boolean;
-      };
-      admin_reset_externa_barbearia: {
-        Args: { p_confirm: string };
-        Returns: Json;
       };
       set_shop_custom_domain: {
         Args: { p_shop_id: string; p_domain: string };

@@ -15,6 +15,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { PointsHistory } from "./PointsHistory";
+import { CustomerRewards } from "@/features/loyalty/CustomerRewards";
+import {
+  FALLBACK_PROGRAM,
+  parseLoyaltyProgram,
+  tierFor,
+  tierStyleKey,
+  type LoyaltyProgram,
+} from "@/features/loyalty/program";
 import { NextLevelCard, type NextLevelSummary } from "./NextLevelCard";
 import { CustomerRhythm } from "./CustomerRhythm";
 import { CustomerProfile } from "./CustomerProfile";
@@ -71,7 +79,7 @@ import { getSessionProfile } from "@/lib/auth/session";
 import { useDemo } from "@/features/demo/context";
 import { useDemoChrome } from "@/features/demo/chrome";
 import { DemoAccountMenu, DemoRoleSelector } from "@/features/demo/DemoAccountMenu";
-import { DEMO_CUSTOMER_ID } from "@/features/demo/model";
+import { DEMO_REWARDS, demoLifetimePoints, DEMO_CUSTOMER_ID } from "@/features/demo/model";
 import {
   filterReservations,
   type ReservationFilter,
@@ -197,6 +205,9 @@ function ArenaApp({
   const [tab, setTab] = useState(initialTab ?? "dashboard");
   const [focusToken] = useState(focusReservationToken);
   const [points, setPoints] = useState(0);
+  const [lifetimePoints, setLifetimePoints] = useState(0);
+  const [loyaltyProgram, setLoyaltyProgram] = useState<LoyaltyProgram>(FALLBACK_PROGRAM);
+  const [pointsVersion, setPointsVersion] = useState(0);
   const { isDark: isDarkMode } = useTheme();
   const [showVipInfo, setShowVipInfo] = useState(false);
   const [serviceIdx, setServiceIdx] = useState(0);
@@ -450,6 +461,7 @@ function ArenaApp({
   useEffect(() => {
     if (demo) {
       setPoints(demo.points);
+      setLifetimePoints(demoLifetimePoints(demo));
       return;
     }
     if (!userId || !shopId) return;
@@ -457,16 +469,41 @@ function ArenaApp({
     void (async () => {
       const { data, error } = await supabase
         .from("loyalty_accounts")
-        .select("points")
+        .select("points, lifetime_points")
         .eq("user_id", userId)
         .eq("barbershop_id", shopId)
         .maybeSingle();
-      if (!cancelled && !error) setPoints(data?.points ?? 0);
+      if (cancelled || error) return;
+      setPoints(data?.points ?? 0);
+      setLifetimePoints(data?.lifetime_points ?? data?.points ?? 0);
     })();
     return () => {
       cancelled = true;
     };
-  }, [demo, userId, shopId, tab, availabilityVersion]);
+  }, [demo, userId, shopId, tab, availabilityVersion, pointsVersion]);
+
+  useEffect(() => {
+    if (demo) {
+      setLoyaltyProgram({
+        ...FALLBACK_PROGRAM,
+        enabled: demo.settings.loyalty_enabled !== false,
+        rewards: DEMO_REWARDS,
+      });
+      return;
+    }
+    if (!shopId) return;
+    let cancelled = false;
+    void (async () => {
+      const { data, error } = await supabase.rpc("get_shop_loyalty_program", {
+        p_shop_id: shopId,
+      });
+      // Sem resposta, mantém a regra padrão visível em vez de esconder os pontos do cliente.
+      if (!cancelled && !error) setLoyaltyProgram(parseLoyaltyProgram(data));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [demo, shopId, tab, pointsVersion]);
 
   useEffect(() => {
     if (demo) {
@@ -703,7 +740,7 @@ function ArenaApp({
               .order("created_at", { ascending: true }),
             supabase
               .from("loyalty_accounts")
-              .select("points")
+              .select("points, lifetime_points")
               .eq("user_id", profile.user.id)
               .eq("barbershop_id", catalogShopId)
               .maybeSingle(),
@@ -779,6 +816,11 @@ function ArenaApp({
           const availableStaff = staffResult.data ?? [];
           setStaff(availableStaff);
           setPoints(loyaltyResult.error ? 0 : (loyaltyResult.data?.points ?? 0));
+          setLifetimePoints(
+            loyaltyResult.error
+              ? 0
+              : (loyaltyResult.data?.lifetime_points ?? loyaltyResult.data?.points ?? 0),
+          );
           if (shopSettingsData) setShopSettings(shopSettingsData);
           const modeRaw = (shopSettingsData as { staff_assignment_mode?: string } | null)
             ?.staff_assignment_mode;
@@ -1298,75 +1340,24 @@ function ArenaApp({
     );
   }, [tab, notifications.length]);
 
-  const getTierData = (pts: number) => {
-    if (pts >= 500)
-      return {
-        key: "exclusive",
-        name: "Exclusive",
-        colorClass: "text-gradient-hologram",
-        iconColorClass: "text-fuchsia-500 dark:text-fuchsia-400",
-        gradientId: "hologram-gradient",
-        bg: "bg-black dark:bg-white/5",
-        border:
-          "border-black/20 dark:border-white/40 shadow-[0_0_15px_rgba(0,0,0,0.1)] dark:shadow-[0_0_15px_rgba(255,255,255,0.1)]",
-        badge: "bg-hologram-metallic text-black font-black",
-        icon: Diamond,
-        greeting: "Bem-vindo ao topo, Membro Exclusive.",
-        minPoints: 500,
-        nextAt: null,
-        benefit: t("tier.exclusive.benefit"),
-      };
-    if (pts >= 300)
-      return {
-        key: "privilege",
-        name: "Privilege",
-        colorClass: "text-gradient-gold",
-        iconColorClass: "text-yellow-600 dark:text-yellow-400",
-        gradientId: "gold-gradient",
-        bg: "bg-gold/10",
-        border: "border-gold/30 shadow-[0_0_10px_rgba(212,175,55,0.1)]",
-        badge: "bg-gold-metallic text-black font-black",
-        icon: Sparkle,
-        greeting: "Bom dia, Membro Privilege.",
-        minPoints: 300,
-        nextAt: 500,
-        benefit: t("tier.privilege.benefit"),
-      };
-    if (pts >= 100)
-      return {
-        key: "select",
-        name: "Select",
-        colorClass: "text-gradient-bronze",
-        iconColorClass: "text-amber-700 dark:text-amber-500",
-        gradientId: "bronze-gradient",
-        bg: "bg-orange-400/5",
-        border: "border-orange-400/20 shadow-[0_0_10px_rgba(205,127,50,0.1)]",
-        badge: "bg-bronze-metallic text-white font-black",
-        icon: BadgeCheck,
-        greeting: "Olá, Membro Select.",
-        minPoints: 100,
-        nextAt: 300,
-        benefit: t("tier.select.benefit"),
-      };
-    return {
-      key: "classic",
-      name: "Classic",
-      colorClass: "text-gradient-silver",
-      iconColorClass: "text-slate-500 dark:text-slate-400",
-      bg: "bg-slate-400/5",
-      border: "border-slate-400/20 shadow-[0_0_10px_rgba(192,192,192,0.1)]",
-      badge: "bg-silver-metallic text-black font-black",
-      icon: Armchair,
-      greeting: "Bem-vindo, Membro Classic.",
-      minPoints: 0,
-      nextAt: 100,
-      benefit: t("tier.classic.benefit"),
-    };
+  const tierPosition = tierFor(lifetimePoints, loyaltyProgram.tiers);
+  const tierBenefit = (index: number) => {
+    const tierRow = loyaltyProgram.tiers[index];
+    if (tierRow?.benefit) return tierRow.benefit;
+    if (loyaltyProgram.mode !== "default") return "";
+    return t(`tier.${tierStyleKey(index, loyaltyProgram.tiers.length)}.benefit` as MessageKey);
   };
+  const tierStyleKeyNow = tierStyleKey(tierPosition.index, loyaltyProgram.tiers.length);
+  const tier = {
+    ...TIER_STYLES[tierStyleKeyNow],
+    key: tierStyleKeyNow,
+    name: tierPosition.tier.name,
+    benefit: tierBenefit(tierPosition.index),
+  };
+  const loyaltyOn = loyaltyProgram.enabled;
 
   const reservationNow = demo?.now.getTime() ?? Date.now();
   const visibleReservations = filterReservations(appointments, reservationFilter, reservationNow);
-  const tier = getTierData(points);
   const nextAppointment = appointments
     .filter(
       (row) =>
@@ -1375,23 +1366,14 @@ function ArenaApp({
     )
     .sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0];
   const appointmentOwnerKey = demo ? `demo:${demo.shop.id}:${DEMO_CUSTOMER_ID}` : userId;
-  const pointsToNextTier = tier.nextAt === null ? 0 : Math.max(0, tier.nextAt - points);
-  const tierProgress =
-    tier.nextAt === null
-      ? 100
-      : Math.max(
-          0,
-          Math.min(100, ((points - tier.minPoints) / (tier.nextAt - tier.minPoints)) * 100),
-        );
-  const nextLevel: NextLevelSummary | null =
-    tier.nextAt === null
-      ? null
-      : {
-          name: getTierData(tier.nextAt).name,
-          pointsRemaining: pointsToNextTier,
-          progress: tierProgress,
-          benefit: getTierData(tier.nextAt).benefit,
-        };
+  const nextLevel: NextLevelSummary | null = tierPosition.next
+    ? {
+        name: tierPosition.next.name,
+        pointsRemaining: tierPosition.pointsToNext,
+        progress: tierPosition.progress,
+        benefit: tierBenefit(tierPosition.index + 1),
+      }
+    : null;
 
   useEffect(() => {
     if (
@@ -1696,94 +1678,116 @@ function ArenaApp({
         <div key={tab} className="mb-panel">
           {tab === "perfil" && <CustomerProfile onSaved={setCustomerName} />}
           {tab === "perfil" && <CustomerRhythm shopId={shopId} />}
-          {tab === "pontos" && (
-            <PointsHistory
-              userId={userId}
-              shopId={shopId}
-              points={points}
-              currentLevel={tier.name}
-              nextLevel={nextLevel}
-            />
-          )}
+          {tab === "pontos" &&
+            (loyaltyOn ? (
+              <PointsHistory
+                userId={userId}
+                shopId={shopId}
+                points={points}
+                currentLevel={tier.name}
+                nextLevel={nextLevel}
+                refreshKey={pointsVersion}
+              >
+                <CustomerRewards
+                  userId={userId}
+                  shopId={shopId}
+                  program={loyaltyProgram}
+                  points={points}
+                  onChanged={() => setPointsVersion((value) => value + 1)}
+                />
+              </PointsHistory>
+            ) : (
+              <EmptyState
+                tone="bell"
+                title={t("rewards.clubOffTitle")}
+                description={t("rewards.clubOffText")}
+              />
+            ))}
           {tab === "dashboard" && (
             <div className="mb-stagger p-4 space-y-4 relative z-10">
               {/* Card 1: Seu Cartão (Loyalty Card) */}
-              <section
-                className="app-action-card mb-loyalty-contrast-card mb-loyalty-member-card relative overflow-hidden flex flex-col gap-5 p-5 cursor-pointer transition-transform hover:scale-[1.01]"
-                onClick={() => setShowVipInfo(true)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    setShowVipInfo(true);
-                  }
-                }}
-              >
-                <div className="mb-loyalty-sheen" aria-hidden />
-                <div className="flex justify-between items-start relative z-10">
-                  <div className="min-w-0 pr-4">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                      {t("home.member")}
-                    </p>
-                    <h2 className="brand-loyalty-name text-2xl sm:text-3xl break-words">
-                      {customerName || t("cust.customerFallback")}
-                    </h2>
-                  </div>
-                  <div className="shrink-0 flex flex-col items-end">
-                    <div
-                      className={`mb-loyalty-tier-mark mb-loyalty-tier-${tier.key} flex size-12 sm:size-14 items-center justify-center rounded-full border shadow-sm`}
-                    >
-                      <tier.icon className="size-6 sm:size-7" />
+              {loyaltyOn && (
+                <section
+                  className="app-action-card mb-loyalty-contrast-card mb-loyalty-member-card relative overflow-hidden flex flex-col gap-5 p-5 cursor-pointer transition-transform hover:scale-[1.01]"
+                  onClick={() => setShowVipInfo(true)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setShowVipInfo(true);
+                    }
+                  }}
+                >
+                  <div className="mb-loyalty-sheen" aria-hidden />
+                  <div className="flex justify-between items-start relative z-10">
+                    <div className="min-w-0 pr-4">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                        {t("home.member")}
+                      </p>
+                      <h2 className="brand-loyalty-name text-2xl sm:text-3xl break-words">
+                        {customerName || t("cust.customerFallback")}
+                      </h2>
+                    </div>
+                    <div className="shrink-0 flex flex-col items-end">
+                      <div
+                        className={`mb-loyalty-tier-mark mb-loyalty-tier-${tier.key} flex size-12 sm:size-14 items-center justify-center rounded-full border shadow-sm`}
+                      >
+                        <tier.icon className="size-6 sm:size-7" />
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex justify-between items-end mt-2 relative z-10">
-                  <div>
-                    <p className="text-sm font-semibold text-muted-foreground mb-1">
-                      {t("home.pointsBalance")}
-                    </p>
-                    <p
-                      className={`text-4xl sm:text-5xl font-black tabular-nums tracking-tight ${tier.colorClass}`}
+                  <div className="flex justify-between items-end mt-2 relative z-10">
+                    <div>
+                      <p className="text-sm font-semibold text-muted-foreground mb-1">
+                        {t("home.pointsBalance")}
+                      </p>
+                      <p
+                        className={`text-4xl sm:text-5xl font-black tabular-nums tracking-tight ${tier.colorClass}`}
+                      >
+                        {points}{" "}
+                        <span className="text-xl font-semibold opacity-70 tracking-normal">
+                          pts
+                        </span>
+                      </p>
+                    </div>
+                    <div
+                      className={`mb-loyalty-tier-mark mb-loyalty-tier-${tier.key} flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm mb-1`}
                     >
-                      {points}{" "}
-                      <span className="text-xl font-semibold opacity-70 tracking-normal">pts</span>
-                    </p>
+                      <tier.icon className="size-4" />
+                      <span className="text-xs font-bold whitespace-nowrap">
+                        {t("tier.level", { name: tier.name })}
+                      </span>
+                    </div>
                   </div>
-                  <div
-                    className={`mb-loyalty-tier-mark mb-loyalty-tier-${tier.key} flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm mb-1`}
-                  >
-                    <tier.icon className="size-4" />
-                    <span className="text-xs font-bold whitespace-nowrap">
-                      {t("tier.level", { name: tier.name })}
-                    </span>
-                  </div>
-                </div>
-              </section>
+                </section>
+              )}
 
               {/* Card 2: Próximo nível — compartilhado com o Extrato. */}
-              <NextLevelCard nextLevel={nextLevel} />
+              {loyaltyOn && <NextLevelCard nextLevel={nextLevel} />}
 
               {/* Extrato: quando o cliente ganhou ou perdeu pontos por nível. */}
-              <button
-                type="button"
-                onClick={() => setTab("pontos")}
-                className="app-action-card flex w-full cursor-pointer items-center justify-between p-4 text-left transition-colors hover:border-gold"
-              >
-                <span className="flex items-center gap-3">
-                  <span className="flex size-9 items-center justify-center rounded-xl bg-muted text-gold">
-                    <Receipt className="size-4" />
-                  </span>
-                  <span>
-                    <span className="block text-sm font-bold">{t("home.pointsStatement")}</span>
-                    <span className="block text-xs text-muted-foreground">
-                      {t("home.pointsStatementHint")}
+              {loyaltyOn && (
+                <button
+                  type="button"
+                  onClick={() => setTab("pontos")}
+                  className="app-action-card flex w-full cursor-pointer items-center justify-between p-4 text-left transition-colors hover:border-gold"
+                >
+                  <span className="flex items-center gap-3">
+                    <span className="flex size-9 items-center justify-center rounded-xl bg-muted text-gold">
+                      <Receipt className="size-4" />
+                    </span>
+                    <span>
+                      <span className="block text-sm font-bold">{t("home.pointsStatement")}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        {t("home.pointsStatementHint")}
+                      </span>
                     </span>
                   </span>
-                </span>
-                <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-              </button>
+                  <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                </button>
+              )}
 
               {/* Card 3: Próximo atendimento */}
               <section
@@ -2851,24 +2855,51 @@ function ArenaApp({
         ))}
       </nav>
       <VipInfoModal
-        isOpen={showVipInfo}
-        isDarkMode={isDarkMode}
+        isOpen={showVipInfo && loyaltyOn}
         sportsEnabled={shopSettings.sports_enabled}
+        program={loyaltyProgram}
         onClose={() => setShowVipInfo(false)}
       />
     </div>
   );
 }
 
+const TIER_STYLES = {
+  classic: {
+    icon: Armchair,
+    colorClass: "text-gradient-silver",
+    badge: "bg-silver-metallic",
+    iconClass: "text-black",
+  },
+  select: {
+    icon: BadgeCheck,
+    colorClass: "text-gradient-bronze",
+    badge: "bg-bronze-metallic",
+    iconClass: "text-white",
+  },
+  privilege: {
+    icon: Sparkle,
+    colorClass: "text-gradient-gold",
+    badge: "bg-gold-metallic",
+    iconClass: "text-black",
+  },
+  exclusive: {
+    icon: Diamond,
+    colorClass: "text-gradient-hologram",
+    badge: "bg-hologram-metallic",
+    iconClass: "text-black",
+  },
+} as const;
+
 const VipInfoModal = ({
   isOpen,
-  isDarkMode,
   sportsEnabled,
+  program,
   onClose,
 }: {
   isOpen: boolean;
-  isDarkMode: boolean;
   sportsEnabled: boolean;
+  program: LoyaltyProgram;
   onClose: () => void;
 }) => {
   const closeButton = useRef<HTMLButtonElement>(null);
@@ -2945,14 +2976,28 @@ const VipInfoModal = ({
             <div className="space-y-3">
               <div className="bg-muted/30 p-3 rounded-2xl border border-border/50">
                 <p className="text-xs font-medium leading-relaxed">
-                  {richText(t("club.earnSpend"), {
-                    amount: (
-                      <span className="font-bold text-foreground">{t("club.amountSpent")}</span>
+                  {richText(t("club.earnVisit"), {
+                    points: (
+                      <span className="font-bold text-primary">
+                        {t("club.pointsN", { n: program.points_per_visit })}
+                      </span>
                     ),
-                    points: <span className="font-bold text-primary">{t("club.onePoint")}</span>,
                   })}
                 </p>
               </div>
+              {program.welcome_bonus > 0 && (
+                <div className="bg-muted/30 p-3 rounded-2xl border border-border/50">
+                  <p className="text-xs font-medium leading-relaxed">
+                    {richText(t("club.earnWelcome"), {
+                      points: (
+                        <span className="font-bold text-primary">
+                          {t("club.pointsN", { n: program.welcome_bonus })}
+                        </span>
+                      ),
+                    })}
+                  </p>
+                </div>
+              )}
               {sportsEnabled && (
                 <div className="flex items-start gap-3 bg-muted/30 p-3 rounded-2xl border border-border/50">
                   <Star size={16} className="text-primary mt-0.5" />
@@ -2964,121 +3009,54 @@ const VipInfoModal = ({
                   </p>
                 </div>
               )}
+              {program.rewards.some((reward) => reward.active) && (
+                <div className="bg-muted/30 p-3 rounded-2xl border border-border/50">
+                  <p className="text-xs font-medium leading-relaxed">{t("club.spendRewards")}</p>
+                </div>
+              )}
             </div>
           </section>
 
           <section>
-            <h4 className="mb-3 text-sm font-semibold text-foreground">{t("club.levels")}</h4>
-            <div className="space-y-4">
-              {/* Classic */}
-              <div className="bg-muted/40 p-4 rounded-2xl border border-border/60 shadow-sm group hover:bg-muted/60 transition-all">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-xs font-semibold flex items-center gap-2">
-                    <div className="p-1.5 bg-silver-metallic rounded-lg border border-white/20">
-                      <Armchair size={14} className="text-black" />
+            <h4 className="mb-1 text-sm font-semibold text-foreground">{t("club.levels")}</h4>
+            <p className="mb-3 text-xs text-muted-foreground">{t("club.levelsHint")}</p>
+            <ol className="space-y-3">
+              {program.tiers.map((tierRow, index) => {
+                const styleKey = tierStyleKey(index, program.tiers.length);
+                const style = TIER_STYLES[styleKey];
+                const Icon = style.icon;
+                const next = program.tiers[index + 1];
+                const benefit =
+                  tierRow.benefit ||
+                  (program.mode === "default" ? t(`tier.${styleKey}.benefit` as MessageKey) : "");
+                return (
+                  <li
+                    key={`${tierRow.name}-${index}`}
+                    className="bg-muted/40 p-4 rounded-2xl border border-border/60 shadow-sm"
+                  >
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="text-xs font-semibold flex items-center gap-2 min-w-0">
+                        <span className={`p-1.5 rounded-lg border border-white/20 ${style.badge}`}>
+                          <Icon size={14} className={style.iconClass} aria-hidden />
+                        </span>
+                        <span className={`truncate ${style.colorClass}`}>{tierRow.name}</span>
+                      </span>
+                      <span className="shrink-0 text-xs font-bold text-muted-foreground bg-muted/30 px-2 py-0.5 rounded-full border border-border/50">
+                        {next
+                          ? t("club.range", { from: tierRow.min_points, to: next.min_points - 1 })
+                          : t("club.rangeTop", { from: tierRow.min_points })}
+                      </span>
                     </div>
-                    <span className="text-gradient-silver">Classic</span>
-                  </span>
-                  <span className="text-xs font-bold text-muted-foreground bg-muted/30 px-2 py-0.5 rounded-full border border-border/50">
-                    0 - 99 pts
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed pl-9">
-                  {t("club.classic")}
-                </p>
-              </div>
-
-              {/* Select */}
-              <div className="bg-muted/40 p-4 rounded-2xl border border-border/60 shadow-sm group hover:bg-muted/60 transition-all">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-xs font-semibold flex items-center gap-2">
-                    <div className="p-1.5 bg-bronze-metallic rounded-lg border border-white/20">
-                      <BadgeCheck size={14} className="text-white" />
-                    </div>
-                    <span className="text-gradient-bronze">Select</span>
-                  </span>
-                  <span className="text-xs font-bold text-muted-foreground bg-muted/30 px-2 py-0.5 rounded-full border border-border/50">
-                    100 - 299 pts
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed pl-9">
-                  {t("club.select")}
-                </p>
-              </div>
-
-              {/* Privilege */}
-              <div className="bg-muted/40 p-4 rounded-2xl border border-border/60 shadow-sm group hover:bg-muted/60 transition-all">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-xs font-semibold flex items-center gap-2">
-                    <div className="p-1.5 bg-gold-metallic rounded-lg border border-white/20">
-                      <Sparkle size={14} className="text-black" />
-                    </div>
-                    <span className="text-gradient-gold">Privilege</span>
-                  </span>
-                  <span className="text-xs font-bold text-muted-foreground bg-muted/30 px-2 py-0.5 rounded-full border border-border/50">
-                    300 - 499 pts
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed pl-9">
-                  {t("club.privilege")}
-                </p>
-              </div>
-
-              {/* Exclusive */}
-              <div className="bg-muted/40 p-4 rounded-2xl border border-border/70 shadow-sm relative overflow-hidden group hover:bg-muted/60 transition-all ring-1 ring-border/50">
-                <div className="absolute -right-2 -top-2 opacity-5 transition-transform group-hover:scale-110">
-                  <Diamond size={64} fill="currentColor" className="text-foreground" />
-                </div>
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-xs font-semibold flex items-center gap-2">
-                    <div
-                      className={`p-1.5 rounded-lg border shadow-inner ${isDarkMode ? "bg-hologram-metallic border-transparent" : "bg-[#050505] border-border/40"}`}
-                    >
-                      <Diamond
-                        size={14}
-                        className={isDarkMode ? "text-[#050505]" : "text-white"}
-                        style={{
-                          fill: isDarkMode ? "#050505" : "url(#hologram-gradient)",
-                          stroke: "none",
-                        }}
-                      />
-                    </div>
-                    <span className="text-gradient-hologram">Exclusive</span>
-                  </span>
-                  <span className="text-xs font-black text-black bg-hologram-metallic px-3 py-0.5 rounded-full shadow-md">
-                    {t("club.exclusiveRange")}
-                  </span>
-                </div>
-                <ul className="space-y-1.5">
-                  <li className="text-xs font-bold flex items-center gap-2">
-                    <CheckCircle size={10} className="text-gradient-hologram" /> {t("club.perk1")}
+                    {benefit && (
+                      <p className="mt-2 text-xs text-muted-foreground leading-relaxed pl-9">
+                        {benefit}
+                      </p>
+                    )}
                   </li>
-                  <li className="text-xs font-bold flex items-center gap-2 text-foreground/80">
-                    <CheckCircle size={10} className="text-gradient-hologram" /> {t("club.perk2")}
-                  </li>
-                  <li className="text-xs font-bold flex items-center gap-2 text-foreground/80">
-                    <CheckCircle size={10} className="text-gradient-hologram" /> {t("club.perk3")}
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </section>
-
-          <div className="rounded-2xl border border-border bg-card p-4 text-center">
-            <p className="text-sm font-semibold tracking-tight text-foreground">
-              {t("club.whyTitle")}
-            </p>
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              {richText(t("club.whyBody"), {
-                immediate: (
-                  <span className="font-semibold text-foreground">{t("club.immediate")}</span>
-                ),
-                unlimited: (
-                  <span className="font-semibold text-foreground">{t("club.unlimited")}</span>
-                ),
+                );
               })}
-            </p>
-          </div>
+            </ol>
+          </section>
         </div>
 
         <div className="space-y-2 border-t border-border bg-muted/20 p-4">

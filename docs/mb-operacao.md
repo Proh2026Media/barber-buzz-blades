@@ -359,7 +359,7 @@ Atualizado em **23/09/2026**.
 - Com domínio próprio **ativo**, ele é o endereço público principal (`shopPublicOrigin`).
 - Sem domínio próprio, usa o automático `https://{slug}.beauty.contheiner.digital/app`.
 - Parceiro copia `…/app?barber={booking_slug}`. Paths legados no host da loja (`/ezequiel`) redirecionam para o mesmo.
-- Em **Equipe**, o slug do profissional é editável. Em **Plataforma → Barbearias**, botão remonta a Externa (Ezequiel + Tiago) via `admin_reset_externa_barbearia`. O site WordPress `externabarbearia.com.br` foi só referência de conteúdo — não entra como domínio do sistema até a loja configurar em Ajustes.
+- Em **Equipe**, o slug do profissional é editável. A Externa foi remontada uma vez (Ezequiel + Tiago) em 02/10/2026; o botão e a função `admin_reset_externa_barbearia` foram removidos. O site WordPress `externabarbearia.com.br` foi só referência de conteúdo — não entra como domínio do sistema até a loja configurar em Ajustes.
 
 ### Caminho A — subdomínio automático
 

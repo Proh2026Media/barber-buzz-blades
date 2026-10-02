@@ -21,6 +21,8 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as BarberSlugRouteImport } from './routes/$barberSlug'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ShopPontosRouteImport } from './routes/shop_.pontos'
+import { Route as BShopSlugRouteImport } from './routes/b.$shopSlug'
 import { Route as AuthGoogleAppsRouteImport } from './routes/auth_.google-apps'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
@@ -87,6 +89,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ShopPontosRoute = ShopPontosRouteImport.update({
+  id: '/shop_/pontos',
+  path: '/shop/pontos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BShopSlugRoute = BShopSlugRouteImport.update({
+  id: '/b/$shopSlug',
+  path: '/b/$shopSlug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthGoogleAppsRoute = AuthGoogleAppsRouteImport.update({
   id: '/auth_/google-apps',
   path: '/auth/google-apps',
@@ -132,6 +144,8 @@ export interface FileRoutesByFullPath {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/auth/google-apps': typeof AuthGoogleAppsRoute
+  '/b/$shopSlug': typeof BShopSlugRoute
+  '/shop/pontos': typeof ShopPontosRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
 }
@@ -151,6 +165,8 @@ export interface FileRoutesByTo {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/auth/google-apps': typeof AuthGoogleAppsRoute
+  '/b/$shopSlug': typeof BShopSlugRoute
+  '/shop/pontos': typeof ShopPontosRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
 }
@@ -171,6 +187,8 @@ export interface FileRoutesById {
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/auth_/google-apps': typeof AuthGoogleAppsRoute
+  '/b/$shopSlug': typeof BShopSlugRoute
+  '/shop_/pontos': typeof ShopPontosRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
 }
@@ -192,6 +210,8 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/auth/google-apps'
+    | '/b/$shopSlug'
+    | '/shop/pontos'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
   fileRoutesByTo: FileRoutesByTo
@@ -211,6 +231,8 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/auth/google-apps'
+    | '/b/$shopSlug'
+    | '/shop/pontos'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
   id:
@@ -230,6 +252,8 @@ export interface FileRouteTypes {
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/auth_/google-apps'
+    | '/b/$shopSlug'
+    | '/shop_/pontos'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
   fileRoutesById: FileRoutesById
@@ -250,6 +274,8 @@ export interface RootRouteChildren {
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   AuthGoogleAppsRoute: typeof AuthGoogleAppsRoute
+  BShopSlugRoute: typeof BShopSlugRoute
+  ShopPontosRoute: typeof ShopPontosRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
 }
@@ -340,6 +366,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/shop_/pontos': {
+      id: '/shop_/pontos'
+      path: '/shop/pontos'
+      fullPath: '/shop/pontos'
+      preLoaderRoute: typeof ShopPontosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/b/$shopSlug': {
+      id: '/b/$shopSlug'
+      path: '/b/$shopSlug'
+      fullPath: '/b/$shopSlug'
+      preLoaderRoute: typeof BShopSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth_/google-apps': {
       id: '/auth_/google-apps'
       path: '/auth/google-apps'
@@ -395,6 +435,8 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   AuthGoogleAppsRoute: AuthGoogleAppsRoute,
+  BShopSlugRoute: BShopSlugRoute,
+  ShopPontosRoute: ShopPontosRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
 }

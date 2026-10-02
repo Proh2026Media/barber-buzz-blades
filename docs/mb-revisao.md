@@ -103,6 +103,14 @@ Conferido pelo código: agenda, serviços, equipe, bloqueios, reservas, início,
 - **Corrigido (estado real):** a lista de clientes mostrava “0” no título quando o carregamento falhava; agora o número só aparece quando a lista carregou.
 - Conferido na demonstração (390×844): lista e perfil de clientes abrem normalmente; início do cliente normal. Os avisos de erro só aparecem com falha real de conexão, então não foram vistos no navegador.
 
+## Clube de pontos e página da barbearia (02/10/2026)
+
+- **Corrigido (estado real):** a janela do clube prometia vantagens que o sistema não tem (R$ 1 = 1 ponto, assinatura, lounge); agora mostra só a regra da loja (pontos por atendimento, bônus, níveis e prêmios).
+- **Consequência no ponto da decisão:** trocar pontos explica a reserva, o prazo de 30 dias e a devolução antes de confirmar; ajuste manual mostra o saldo resultante e não deixa ficar negativo; mudar a regra avisa que vale só daqui para frente.
+- **Uma ação principal:** a página pública tem “Entrar e agendar” no topo e numa barra fixa embaixo; cada horário livre leva ao login já com o profissional escolhido.
+- **Menos confusão nos ajustes:** grupos com subtelas; identidade visual em etapas; editor da página com prévia ao vivo e contadores de caracteres.
+- Conferido no navegador em 390×844 (ver `CONTINUIDADE.md`). Pendente: `/shop/pontos` com login real e aparelho real.
+
 ## Documentação incorporada
 
 - `docs/mb-interface.md` consolidado (26/09/2026).

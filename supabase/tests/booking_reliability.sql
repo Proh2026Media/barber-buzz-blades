@@ -7,7 +7,10 @@ select gen_random_uuid() as shop_id, gen_random_uuid() as other_shop_id,
        gen_random_uuid() as customer_a, gen_random_uuid() as customer_b,
        gen_random_uuid() as shop_admin, gen_random_uuid() as outsider,
        gen_random_uuid() as appointment_id,
-       ((current_date + 2)::timestamp + interval '10 hours') at time zone 'America/Sao_Paulo' as starts_at;
+       (select user_id from public.memberships where role = 'platform_admin' limit 1) as platform_admin_id,
+       -- Sempre numa quarta-feira (dia aberto), pelo menos 2 dias à frente.
+       ((current_date + 2 + ((10 - extract(isodow from current_date + 2)::int) % 7))::timestamp
+         + interval '10 hours') at time zone 'America/Sao_Paulo' as starts_at;
 grant select on booking_test_context to authenticated;
 
 create function pg_temp.check_booking_test(ok boolean, label text)
@@ -128,6 +131,11 @@ select pg_temp.expect_booking_error(
   'update public.appointments set starts_at = now() - interval ''1 hour'', ends_at = now() - interval ''30 minutes''
    where id = (select appointment_id from booking_test_context)',
   '22023', 'Admin cannot reschedule into the past');
+
+-- O clube de pontos é módulo ligado pelo admin da plataforma.
+select set_config('request.jwt.claim.sub', platform_admin_id::text, true) from booking_test_context;
+select public.set_shop_loyalty_module(shop_id, true) from booking_test_context;
+select set_config('request.jwt.claim.sub', shop_admin::text, true) from booking_test_context;
 
 update public.appointments set status = 'confirmed' where id = (select appointment_id from booking_test_context);
 update public.appointments set status = 'completed' where id = (select appointment_id from booking_test_context);

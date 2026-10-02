@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createDemoState, demoReducer } from "./model.ts";
+import { createDemoState, DEMO_REWARDS, demoLifetimePoints, demoReducer } from "./model.ts";
 
 test("demo starts during business hours even when opened late at night", () => {
   const state = createDemoState(new Date(2030, 0, 15, 23, 45));
@@ -289,4 +289,27 @@ test("demo can copy one selected shop while keeping fictional customers and appo
   assert.ok(
     state.appointments.every((appointment) => appointment.barbershop_id === selectedShopId),
   );
+});
+
+test("demo redemption reserves points and cancelling gives them back", () => {
+  const start = createDemoState(new Date("2026-06-03T12:00:00"));
+  const before = start.points;
+  const redeemed = demoReducer(start, { type: "loyalty.redeem", rewardId: DEMO_REWARDS[0].id });
+  assert.equal(redeemed.points, before - DEMO_REWARDS[0].cost_points);
+  assert.equal(demoLifetimePoints(redeemed), before);
+  const cancelled = demoReducer(redeemed, {
+    type: "loyalty.cancel",
+    id: redeemed.redemptions[0].id,
+  });
+  assert.equal(cancelled.points, before);
+  assert.equal(cancelled.redemptions[0].status, "cancelled");
+  const again = demoReducer(cancelled, { type: "loyalty.cancel", id: redeemed.redemptions[0].id });
+  assert.equal(again.points, before);
+});
+
+test("demo redemption refuses rewards the customer cannot afford", () => {
+  const start = { ...createDemoState(new Date("2026-06-03T12:00:00")), points: 10 };
+  const next = demoReducer(start, { type: "loyalty.redeem", rewardId: DEMO_REWARDS[0].id });
+  assert.equal(next.points, 10);
+  assert.equal(next.redemptions.length, 0);
 });

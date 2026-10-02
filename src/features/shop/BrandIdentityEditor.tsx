@@ -4,6 +4,7 @@ import {
   Calendar,
   Camera,
   Check,
+  ChevronRight,
   Eye,
   Home,
   ImagePlus,
@@ -71,6 +72,9 @@ type BrandIdentityEditorProps = {
  * Mantém o próprio rascunho e só o substitui quando os dados salvos mudam,
  * para que recargas do painel (como o relógio da demo) não apaguem a edição.
  */
+const BRAND_STEPS = ["logo", "fonte", "cores", "entrada"] as const;
+type BrandStep = (typeof BRAND_STEPS)[number];
+
 export function BrandIdentityEditor({
   shopName,
   settings,
@@ -97,6 +101,19 @@ export function BrandIdentityEditor({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [loginPreviewOpen, setLoginPreviewOpen] = useState(false);
+  const [step, setStep] = useState<BrandStep>("logo");
+  const bigPreviewRef = useRef<HTMLElement | null>(null);
+  const [bigPreviewVisible, setBigPreviewVisible] = useState(true);
+  useEffect(() => {
+    const node = bigPreviewRef.current;
+    if (!node || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(([entry]) =>
+      setBigPreviewVisible(entry.isIntersecting),
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+  const stepIndex = BRAND_STEPS.indexOf(step);
 
   const savedKey = `${settings.barbershop_id}:${settings.updated_at}`;
   useEffect(() => {
@@ -364,7 +381,7 @@ export function BrandIdentityEditor({
       </div>
 
       {/* Prévia ao vivo */}
-      <section aria-label={t("brand.preview.aria")} className="space-y-2">
+      <section ref={bigPreviewRef} aria-label={t("brand.preview.aria")} className="space-y-2">
         <div
           className={`brand-preview overflow-hidden rounded-3xl border border-border bg-card shadow-md ${brandFontScopeClass(draft.font_scope)} ${brandCornerClass(draft.corner_style)} ${draft.floating_chrome ? "brand-chrome-floating" : ""}`}
           style={previewStyle}
@@ -433,8 +450,69 @@ export function BrandIdentityEditor({
         <p className="text-xs text-muted-foreground">{t("brand.preview.liveHint")}</p>
       </section>
 
+      <div className="sticky top-0 z-10 -mx-1 space-y-2 bg-card/95 px-1 py-2 backdrop-blur">
+        <div
+          aria-hidden="true"
+          hidden={bigPreviewVisible}
+          className={`brand-preview flex items-center gap-3 overflow-hidden rounded-2xl border border-border bg-card px-3 py-2 ${brandFontScopeClass(draft.font_scope)} ${brandCornerClass(draft.corner_style)}`}
+          style={previewStyle}
+        >
+          <span
+            className="brand-preview-logo flex size-9 shrink-0 items-center justify-center overflow-hidden"
+            style={{ backgroundColor: draft.logo_background_color || "#ffffff" }}
+          >
+            {previewLogo ? (
+              <img src={previewLogo} alt="" className="size-full object-contain p-[12.5%]" />
+            ) : (
+              <Scissors className="size-4 text-primary" />
+            )}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="brand-header-title block truncate text-sm font-extrabold leading-tight">
+              {previewName}
+            </span>
+            <span className="block truncate text-[11px] font-medium text-primary">
+              {draft.tagline.trim() || t("brand.preview.taglinePlaceholder")}
+            </span>
+          </span>
+          <span className="flex min-h-8 shrink-0 items-center rounded-lg bg-primary px-3 text-[11px] font-bold text-primary-foreground">
+            {t("brand.preview.book")}
+          </span>
+        </div>
+        <div
+          role="tablist"
+          aria-label={t("brand.step.aria")}
+          className="grid grid-cols-2 gap-1.5 sm:grid-cols-4"
+        >
+          {BRAND_STEPS.map((id, index) => {
+            const selected = step === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                onClick={() => setStep(id)}
+                className={`flex min-h-11 items-center justify-center gap-1.5 rounded-xl border px-2 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  selected
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-background text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <span aria-hidden="true">{index + 1}.</span>
+                {t(`brand.step.${id}` as const)}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Página de acesso */}
-      <section className="space-y-4" aria-labelledby={`${nameId}-login`}>
+      <section
+        className="space-y-4"
+        aria-labelledby={`${nameId}-login`}
+        hidden={step !== "entrada"}
+      >
         <div>
           <h4 id={`${nameId}-login`} className="text-sm font-bold">
             {t("brand.login.title")}
@@ -566,7 +644,7 @@ export function BrandIdentityEditor({
       </section>
 
       {/* Logo e nome */}
-      <section className="space-y-4" aria-labelledby={`${nameId}-section`}>
+      <section className="space-y-4" aria-labelledby={`${nameId}-section`} hidden={step !== "logo"}>
         <h4 id={`${nameId}-section`} className="text-sm font-bold">
           {t("brand.logo.section")}
         </h4>
@@ -679,7 +757,7 @@ export function BrandIdentityEditor({
       </section>
 
       {/* Fonte */}
-      <section className="space-y-4" aria-labelledby={`${nameId}-font`}>
+      <section className="space-y-4" aria-labelledby={`${nameId}-font`} hidden={step !== "fonte"}>
         <div className="flex items-start gap-2">
           <Type className="mt-0.5 size-4 text-primary" aria-hidden="true" />
           <div>
@@ -903,7 +981,11 @@ export function BrandIdentityEditor({
       </section>
 
       {/* Cantos */}
-      <section className="space-y-3" aria-labelledby={`${nameId}-corners`}>
+      <section
+        className="space-y-3"
+        aria-labelledby={`${nameId}-corners`}
+        hidden={step !== "cores"}
+      >
         <div>
           <h4 id={`${nameId}-corners`} className="text-sm font-bold">
             {t("brand.corners.title")}
@@ -955,7 +1037,7 @@ export function BrandIdentityEditor({
       </section>
 
       {/* Estrutura do app */}
-      <section className="space-y-3" aria-labelledby={`${nameId}-chrome`}>
+      <section className="space-y-3" aria-labelledby={`${nameId}-chrome`} hidden={step !== "cores"}>
         <div>
           <h4 id={`${nameId}-chrome`} className="text-sm font-bold">
             {t("brand.chrome.title")}
@@ -978,7 +1060,7 @@ export function BrandIdentityEditor({
       </section>
 
       {/* Cores */}
-      <section className="space-y-3" aria-labelledby={`${nameId}-colors`}>
+      <section className="space-y-3" aria-labelledby={`${nameId}-colors`} hidden={step !== "cores"}>
         <div>
           <h4 id={`${nameId}-colors`} className="text-sm font-bold">
             {t("brand.colors.title")}
@@ -1008,7 +1090,7 @@ export function BrandIdentityEditor({
       </section>
 
       {/* Fundo da logo */}
-      <section className="space-y-3" aria-labelledby={`${nameId}-logo-bg`}>
+      <section className="space-y-3" aria-labelledby={`${nameId}-logo-bg`} hidden={step !== "logo"}>
         <div>
           <h4 id={`${nameId}-logo-bg`} className="text-sm font-bold">
             {t("brand.logoBg.title")}
@@ -1027,6 +1109,17 @@ export function BrandIdentityEditor({
           />
         </div>
       </section>
+
+      {stepIndex < BRAND_STEPS.length - 1 && (
+        <button
+          type="button"
+          onClick={() => setStep(BRAND_STEPS[stepIndex + 1])}
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 text-xs font-bold hover:bg-muted"
+        >
+          {t("brand.step.next", { step: t(`brand.step.${BRAND_STEPS[stepIndex + 1]}` as const) })}
+          <ChevronRight className="size-4" aria-hidden="true" />
+        </button>
+      )}
 
       {/* Ações */}
       <div className="brand-editor-actions sticky bottom-2 z-10 space-y-2 rounded-2xl border border-border bg-card/95 p-3 shadow-lg backdrop-blur">
