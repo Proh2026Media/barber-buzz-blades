@@ -17,6 +17,7 @@ import { useI18n } from "@/lib/i18n";
 import { useDemo } from "../demo/context";
 import { cutoffExample, eventLabel, remaining } from "./model";
 import type { WaitingController } from "./useWaiting";
+import { DEFAULT_SHOP_TIMEZONE, formatShopDate, shopDateKey } from "@/lib/shop/appointments";
 
 const WAITING_CUTOFF_MAX = 1440;
 const PRECISION_HOLD_MS = 3000;
@@ -346,6 +347,7 @@ export function WaitingCards({
   day,
   appointmentId,
   onChanged,
+  timeZone = DEFAULT_SHOP_TIMEZONE,
 }: {
   controller: WaitingController;
   mode: "opportunities" | "mine" | "shop";
@@ -354,12 +356,13 @@ export function WaitingCards({
   day?: string;
   appointmentId?: string;
   onChanged?: () => void;
+  /** Fuso da barbearia: datas e horários seguem a parede da loja, não o aparelho. */
+  timeZone?: string;
 }) {
   const { t, intlLocale } = useI18n();
   const { waits, now, busy, error, act } = controller;
   const rows = waits.filter((w) => {
-    const d = new Date(w.starts_at);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const key = shopDateKey(new Date(w.starts_at), timeZone);
     if (mode === "shop")
       return (!appointmentId || w.appointment_id === appointmentId) && (!day || key === day);
     if (mode === "mine") return w.mine;
@@ -397,11 +400,13 @@ export function WaitingCards({
               </span>
             </div>
             <p className="text-sm">
-              {new Date(w.starts_at).toLocaleDateString(intlLocale)} ·{" "}
-              {new Date(w.starts_at).toLocaleTimeString(intlLocale, {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}{" "}
+              {formatShopDate(w.starts_at, timeZone, { dateStyle: "short" }, intlLocale)} ·{" "}
+              {formatShopDate(
+                w.starts_at,
+                timeZone,
+                { hour: "2-digit", minute: "2-digit" },
+                intlLocale,
+              )}{" "}
               ·{" "}
               {staff.find((s) => s.id === w.staff_id)?.display_name ?? t("wait.card.staffFallback")}
             </p>
@@ -486,7 +491,13 @@ export function WaitingCards({
   );
 }
 
-export function WaitingNotices({ controller }: { controller: WaitingController }) {
+export function WaitingNotices({
+  controller,
+  timeZone = DEFAULT_SHOP_TIMEZONE,
+}: {
+  controller: WaitingController;
+  timeZone?: string;
+}) {
   const { t, intlLocale } = useI18n();
   if (!controller.events.length) return null;
   return (
@@ -504,17 +515,21 @@ export function WaitingNotices({ controller }: { controller: WaitingController }
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             {t("wait.notices.time", {
-              time: new Date(e.starts_at).toLocaleString(intlLocale, {
-                dateStyle: "short",
-                timeStyle: "short",
-              }),
+              time: formatShopDate(
+                e.starts_at,
+                timeZone,
+                { dateStyle: "short", timeStyle: "short" },
+                intlLocale,
+              ),
             })}
             {e.kind === "exclusive" && e.deadline && Date.parse(e.deadline) > +controller.now
               ? ` · ${t("wait.notices.confirmBy", {
-                  time: new Date(e.deadline).toLocaleTimeString(intlLocale, {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  }),
+                  time: formatShopDate(
+                    e.deadline,
+                    timeZone,
+                    { hour: "2-digit", minute: "2-digit" },
+                    intlLocale,
+                  ),
                 })}`
               : ""}
           </p>

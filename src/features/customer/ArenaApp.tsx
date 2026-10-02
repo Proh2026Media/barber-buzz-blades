@@ -92,10 +92,14 @@ import {
   shopDateKey,
   shopDateTime,
   shopDayRange,
+  shopHour,
+  termsFor,
   validTimeZone,
   weekdayForDateKey,
   DEFAULT_SHOP_TIMEZONE,
+  type ServiceTerms,
 } from "@/lib/shop/appointments";
+import { useAvailabilitySignal } from "@/lib/shop/availability-signal";
 
 type CustomerAppointment = Tables<"appointments"> & {
   service: Pick<Tables<"services">, "name" | "duration_minutes" | "icon"> | null;
@@ -282,6 +286,9 @@ function ArenaApp({
   const [userId, setUserId] = useState<string | null>(null);
   const [services, setServices] = useState<Tables<"services">[]>([]);
   const [staff, setStaff] = useState<Tables<"staff">[]>([]);
+  // Quem faz cada serviço, com duração e preço próprios; null = todos fazem tudo (demonstração).
+  const [serviceTerms, setServiceTerms] = useState<ServiceTerms[] | null>(null);
+  const staffPickedByUser = useRef(false);
 
   useEffect(() => {
     if (!shopId) return;
@@ -413,9 +420,25 @@ function ArenaApp({
       cancelled = true;
     };
   }, [demo, shopId, availabilityVersion]);
-  const selectedStaff = anyAvailable ? null : (staff[staffIdx] ?? null);
+  const pickedStaff = anyAvailable ? null : (staff[staffIdx] ?? null);
+  const pickedStaffTerms =
+    pickedStaff && selectedService ? termsFor(serviceTerms, pickedStaff.id, selectedService) : null;
+  const selectedStaff = pickedStaff && (!selectedService || pickedStaffTerms) ? pickedStaff : null;
+  const staffNotForService = Boolean(pickedStaff && selectedService && !pickedStaffTerms);
+  // Serviço com a duração e o preço do profissional escolhido.
+  const bookingService =
+    selectedService && pickedStaffTerms
+      ? { ...selectedService, ...pickedStaffTerms }
+      : selectedService;
+  const serviceLabel = (service: Tables<"services">) => {
+    const shown = (pickedStaff && termsFor(serviceTerms, pickedStaff.id, service)) || service;
+    return `${shown.duration_minutes} min · ${formatMoney(shown.price_cents)}`;
+  };
+  const staffChoices = staff
+    .map((m, i) => ({ m, i }))
+    .filter(({ m }) => !selectedService || termsFor(serviceTerms, m.id, selectedService));
   const selectedServiceId = selectedService?.id;
-  const selectedServiceDuration = selectedService?.duration_minutes;
+  const selectedServiceDuration = bookingService?.duration_minutes;
   const selectedStaffId = anyAvailable ? null : selectedStaff?.id;
   const selectionKey = `${shopId}:${selectedServiceId}:${selectedStaffId ?? "any"}:${selectedDay}:${anyAvailable ? "1" : "0"}`;
   // Chaves de data no fuso da loja: evitam qualquer conversão pelo fuso do aparelho.
@@ -436,12 +459,23 @@ function ArenaApp({
     alignedShop.current = identity;
     setSelectedDay(shopDateKey(demo?.now ?? new Date(), shopTimeZone));
   }, [demo, shopId, shopTimeZone]);
+  useEffect(() => {
+    if (anyAvailable || !selectedService || staffPickedByUser.current) return;
+    const current = staff[staffIdx];
+    if (current && termsFor(serviceTerms, current.id, selectedService)) return;
+    const next = staff.findIndex((m) => termsFor(serviceTerms, m.id, selectedService));
+    if (next >= 0) setStaffIdx(next);
+  }, [anyAvailable, selectedService, staff, staffIdx, serviceTerms]);
   const availableSlots =
     slotsFor === selectionKey
       ? slots.filter((slot) => slot.getTime() > (demo?.now.getTime() ?? Date.now()))
       : [];
   const selectedSlot = availableSlots.find((slot) => slot.toISOString() === selectedSlotAt) ?? null;
 
+  useAvailabilitySignal(demo ? null : shopId, () => {
+    setAvailabilityVersion((v) => v + 1);
+    setAppointmentVersion((v) => v + 1);
+  });
   useEffect(() => {
     const refresh = () => {
       if (document.visibilityState === "visible") {
@@ -574,6 +608,8 @@ function ArenaApp({
       setShopSettings(demo.settings);
       setUserId(DEMO_CUSTOMER_ID);
       setServices(demo.services.filter((row) => row.active));
+      setServiceTerms(null);
+      staffPickedByUser.current = false;
       const demoStaff = demo.staff.filter((row) => row.active);
       setStaff(demoStaff);
       setCatalogLoading(false);
@@ -725,35 +761,42 @@ function ArenaApp({
           }
         }
 
-        const [servicesResult, staffResult, loyaltyResult, settingsResult, shopResult] =
-          await Promise.all([
-            supabase
-              .from("services")
-              .select("*")
-              .eq("barbershop_id", catalogShopId)
-              .eq("active", true)
-              .order("created_at", { ascending: true }),
-            supabase
-              .from("staff")
-              .select("*")
-              .eq("barbershop_id", catalogShopId)
-              .eq("active", true)
-              .order("created_at", { ascending: true }),
-            supabase
-              .from("loyalty_accounts")
-              .select("points, lifetime_points")
-              .eq("user_id", profile.user.id)
-              .eq("barbershop_id", catalogShopId)
-              .maybeSingle(),
-            supabase
-              .from("barbershop_settings")
-              .select(
-                "display_name, logo_url, logo_background_color, font_family, custom_font_url, custom_font_name, custom_font_faces, font_scope, header_font_weight, header_font_style, corner_style, floating_chrome, primary_color, accent_color, tagline, booking_instructions, booking_horizon_days, survey_program_enabled, sports_enabled, staff_assignment_mode",
-              )
-              .eq("barbershop_id", catalogShopId)
-              .single(),
-            supabase.from("barbershops").select("timezone").eq("id", catalogShopId).maybeSingle(),
-          ]);
+        const [
+          servicesResult,
+          staffResult,
+          loyaltyResult,
+          settingsResult,
+          shopResult,
+          termsResult,
+        ] = await Promise.all([
+          supabase
+            .from("services")
+            .select("*")
+            .eq("barbershop_id", catalogShopId)
+            .eq("active", true)
+            .order("created_at", { ascending: true }),
+          supabase
+            .from("staff")
+            .select("*")
+            .eq("barbershop_id", catalogShopId)
+            .eq("active", true)
+            .order("created_at", { ascending: true }),
+          supabase
+            .from("loyalty_accounts")
+            .select("points, lifetime_points")
+            .eq("user_id", profile.user.id)
+            .eq("barbershop_id", catalogShopId)
+            .maybeSingle(),
+          supabase
+            .from("barbershop_settings")
+            .select(
+              "display_name, logo_url, logo_background_color, font_family, custom_font_url, custom_font_name, custom_font_faces, font_scope, header_font_weight, header_font_style, corner_style, floating_chrome, primary_color, accent_color, tagline, booking_instructions, booking_horizon_days, survey_program_enabled, sports_enabled, staff_assignment_mode",
+            )
+            .eq("barbershop_id", catalogShopId)
+            .single(),
+          supabase.from("barbershops").select("timezone").eq("id", catalogShopId).maybeSingle(),
+          supabase.rpc("get_booking_terms", { p_shop_id: catalogShopId }),
+        ]);
         if (servicesResult.error) throw servicesResult.error;
         if (staffResult.error) throw staffResult.error;
         // Pontos são secundários: se a carteira falhar, o catálogo ainda carrega.
@@ -786,6 +829,9 @@ function ArenaApp({
           }
         }
         if (shopResult.error) throw shopResult.error;
+        if (termsResult.error)
+          console.warn("[catalog] get_booking_terms", termsResult.error.message);
+        const terms: ServiceTerms[] | null = termsResult.error ? null : (termsResult.data ?? []);
         let availableServices = servicesResult.data ?? [];
         if (directStaffId) {
           const professionalCatalog = await supabase
@@ -798,15 +844,17 @@ function ArenaApp({
             (professionalCatalog.data ?? []).map((row) => [row.service_id, row]),
           );
           availableServices = availableServices
-            .filter((service) => overrides.has(service.id))
+            .filter((service) =>
+              terms ? termsFor(terms, directStaffId!, service) : overrides.has(service.id),
+            )
             .map((service) => {
-              const own = overrides.get(service.id)!;
+              const own = overrides.get(service.id);
               return {
                 ...service,
-                name: own.display_name || service.name,
-                duration_minutes: own.duration_minutes,
-                price_cents: own.price_cents,
-                icon: own.icon || service.icon,
+                name: own?.display_name || service.name,
+                duration_minutes: own?.duration_minutes ?? service.duration_minutes,
+                price_cents: own?.price_cents ?? service.price_cents,
+                icon: own?.icon || service.icon,
               };
             });
         }
@@ -814,6 +862,8 @@ function ArenaApp({
           setShopId(catalogShopId);
           setUserId(profile.user.id);
           setServices(availableServices);
+          setServiceTerms(terms);
+          staffPickedByUser.current = false;
           const availableStaff = staffResult.data ?? [];
           setStaff(availableStaff);
           setPoints(loyaltyResult.error ? 0 : (loyaltyResult.data?.points ?? 0));
@@ -983,67 +1033,21 @@ function ArenaApp({
           setSlotsFor(selectionKey);
           return;
         }
-        const dayRange = shopDayRange(selectedDay, shopTimeZone);
-        const hoursResult = await supabase
-          .from("business_hours")
-          .select("is_open, opens_at, closes_at")
-          .eq("barbershop_id", shopId!)
-          .eq("weekday", weekdayForDateKey(selectedDay))
-          .maybeSingle();
-        if (hoursResult.error) throw hoursResult.error;
-
-        if (anyAvailable) {
-          const staffIds = staff.map((row) => row.id);
-          const busyLists = await Promise.all(
-            staffIds.map((id) =>
-              supabase.rpc("get_staff_busy_intervals", {
-                p_staff_id: id,
-                p_starts_at: dayRange.start.toISOString(),
-                p_ends_at: dayRange.end.toISOString(),
-              }),
-            ),
-          );
-          const firstError = busyLists.find((row) => row.error)?.error;
-          if (firstError) throw firstError;
-          const union = new Map<string, Date>();
-          for (const busy of busyLists) {
-            for (const slot of buildSlotsForWindow(
-              selectedDay,
-              selectedServiceDuration,
-              busy.data ?? [],
-              hoursResult.data,
-              new Date(),
-              shopTimeZone,
-            )) {
-              union.set(slot.toISOString(), slot);
-            }
-          }
-          if (!cancelled) {
-            setSlots([...union.values()].sort((a, b) => a.getTime() - b.getTime()));
-            setSlotsFor(selectionKey);
-          }
-          return;
-        }
-
-        const [busyResult] = await Promise.all([
-          supabase.rpc("get_staff_busy_intervals", {
-            p_staff_id: selectedStaffId!,
-            p_starts_at: dayRange.start.toISOString(),
-            p_ends_at: dayRange.end.toISOString(),
-          }),
-        ]);
-        if (busyResult.error) throw busyResult.error;
+        // Fonte única: a mesma função do banco que a página pública e a escolha de profissional usam.
+        const { data, error } = await supabase.rpc("get_available_slots", {
+          p_shop_id: shopId!,
+          p_service_id: selectedServiceId,
+          p_date: selectedDay,
+          p_staff_id: anyAvailable ? null : selectedStaffId!,
+        });
+        if (error) throw error;
         if (!cancelled) {
-          setSlots(
-            buildSlotsForWindow(
-              selectedDay,
-              selectedServiceDuration,
-              busyResult.data ?? [],
-              hoursResult.data,
-              new Date(),
-              shopTimeZone,
-            ),
-          );
+          const union = new Map<string, Date>();
+          for (const row of data ?? []) {
+            const slot = new Date(row.starts_at);
+            union.set(slot.toISOString(), slot);
+          }
+          setSlots([...union.values()].sort((a, b) => a.getTime() - b.getTime()));
           setSlotsFor(selectionKey);
         }
       } catch (err) {
@@ -1086,7 +1090,7 @@ function ArenaApp({
   }
 
   const confirmBooking = async () => {
-    if (bookingLock.current || !shopId || !userId || !selectedService || !selectedSlot) return;
+    if (bookingLock.current || !shopId || !userId || !bookingService || !selectedSlot) return;
     if (!anyAvailable && !selectedStaff) return;
     if (selectedSlot.getTime() <= (demo?.now.getTime() ?? Date.now())) {
       setBookingError(t("booking.errorPast"));
@@ -1098,14 +1102,14 @@ function ArenaApp({
     setBookingBusy(true);
     setBookingError(null);
     try {
-      const endsAt = new Date(selectedSlot.getTime() + selectedService.duration_minutes * 60_000);
+      const endsAt = new Date(selectedSlot.getTime() + bookingService.duration_minutes * 60_000);
       let staffId = selectedStaff?.id ?? null;
       let staffName = selectedStaff?.display_name ?? t("booking.staffFallback");
       if (anyAvailable && !demo) {
         const prefer = staffAssignmentMode === "favorite_then_pick" ? favoriteStaffId : null;
         const { data: picked, error: pickError } = await supabase.rpc("pick_available_staff", {
           p_shop_id: shopId,
-          p_service_id: selectedService.id,
+          p_service_id: bookingService.id,
           p_starts_at: selectedSlot.toISOString(),
           p_ends_at: endsAt.toISOString(),
           p_prefer_staff_id: prefer,
@@ -1123,12 +1127,12 @@ function ArenaApp({
       const booking = {
         barbershop_id: shopId,
         customer_id: userId,
-        service_id: selectedService.id,
+        service_id: bookingService.id,
         staff_id: staffId,
         starts_at: selectedSlot.toISOString(),
         ends_at: endsAt.toISOString(),
         status: "confirmed" as const,
-        booked_price_cents: selectedService.price_cents,
+        booked_price_cents: bookingService.price_cents,
       };
       if (demo) {
         if (rescheduleId) {
@@ -1198,7 +1202,7 @@ function ArenaApp({
       const summary = `${rescheduleId ? t("booking.rescheduledPrefix") : ""}${t(
         "booking.describe",
         {
-          service: selectedService.name,
+          service: bookingService.name,
           staff: staffName,
           date: dateLabel,
           time: formatSlotLabel(selectedSlot, shopTimeZone),
@@ -1227,11 +1231,14 @@ function ArenaApp({
     } catch (err) {
       recordUsage("booking_failed");
       const code = err && typeof err === "object" && "code" in err ? err.code : null;
+      const message = err && typeof err === "object" && "message" in err ? String(err.message) : "";
       setBookingError(
         code === "23P01"
           ? t("booking.errorTaken")
           : code === "22023"
-            ? t("booking.errorPast")
+            ? /passou/i.test(message)
+              ? t("booking.errorPast")
+              : t("booking.errorUnavailable")
             : t("booking.errorGeneric"),
       );
       setAvailabilityVersion((v) => v + 1);
@@ -2113,7 +2120,7 @@ function ArenaApp({
                                         : "text-muted-foreground"
                                     }`}
                                   >
-                                    {s.duration_minutes} min · {formatMoney(s.price_cents)}
+                                    {serviceLabel(s)}
                                   </span>
                                 </div>
                               </>
@@ -2147,7 +2154,7 @@ function ArenaApp({
                                       : "text-muted-foreground"
                                   }`}
                                 >
-                                  {s.duration_minutes} min · {formatMoney(s.price_cents)}
+                                  {serviceLabel(s)}
                                 </span>
                               </>
                             )}
@@ -2165,9 +2172,14 @@ function ArenaApp({
                           <CatalogViewToggle viewMode={staffView} onViewMode={changeStaffView} />
                         )}
                       </div>
-                      {!catalogLoading && !catalogError && staff.length === 0 && (
+                      {!catalogLoading && !catalogError && staffChoices.length === 0 && (
                         <p role="status" className="text-sm text-muted-foreground">
                           {t("booking.noStaff")}
+                        </p>
+                      )}
+                      {staffNotForService && pickedStaff && !directBarberSlug && (
+                        <p role="status" className="text-sm text-muted-foreground">
+                          {t("booking.staffNotForService", { name: pickedStaff.display_name })}
                         </p>
                       )}
                       {directBarberSlug && selectedStaff ? (
@@ -2210,10 +2222,11 @@ function ArenaApp({
                                 : ""}
                             </button>
                           )}
-                          {staff.map((m, i) => (
+                          {staffChoices.map(({ m, i }) => (
                             <button
                               key={m.id}
                               onClick={() => {
+                                staffPickedByUser.current = true;
                                 setAnyAvailable(false);
                                 setStaffIdx(i);
                                 setSelectedSlotAt(null);
@@ -2355,7 +2368,9 @@ function ArenaApp({
                             { label: t("booking.evening"), from: 18, to: 24, icon: Moon },
                           ].map(({ label, from, to, icon: Icon }) => {
                             const periodSlots = availableSlots.filter(
-                              (slot) => slot.getHours() >= from && slot.getHours() < to,
+                              (slot) =>
+                                shopHour(slot, shopTimeZone) >= from &&
+                                shopHour(slot, shopTimeZone) < to,
                             );
                             if (!periodSlots.length) return null;
                             return (
@@ -2394,7 +2409,8 @@ function ArenaApp({
                       }}
                       mode="opportunities"
                       staff={staff}
-                      service={selectedService ?? undefined}
+                      service={bookingService ?? undefined}
+                      timeZone={shopTimeZone}
                       day={selectedDay}
                       onChanged={() => setTab("reservas")}
                     />
@@ -2418,7 +2434,7 @@ function ArenaApp({
                               </p>
                             </div>
                             <p className="text-sm font-bold">
-                              {formatMoney(selectedService.price_cents)}
+                              {formatMoney((bookingService ?? selectedService).price_cents)}
                             </p>
                           </div>
                           <p className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -2429,7 +2445,7 @@ function ArenaApp({
                               year: "numeric",
                             })}{" "}
                             · {formatSlotLabel(selectedSlot, shopTimeZone)} ·{" "}
-                            {selectedService.duration_minutes} min
+                            {(bookingService ?? selectedService).duration_minutes} min
                           </p>
                           {!rescheduleId && (
                             <div className="space-y-2 border-t border-border/60 pt-3">
@@ -2546,9 +2562,10 @@ function ArenaApp({
                 controller={waiting}
                 mode="mine"
                 staff={staff}
+                timeZone={shopTimeZone}
                 onChanged={() => setAppointmentVersion((v) => v + 1)}
               />
-              <WaitingNotices controller={waiting} />
+              <WaitingNotices controller={waiting} timeZone={shopTimeZone} />
               <div>
                 <div className="app-section-title">
                   <Clock3 />
@@ -2794,7 +2811,7 @@ function ArenaApp({
 
           {tab === "notifications" && (
             <div className="space-y-6">
-              <WaitingNotices controller={waiting} />
+              <WaitingNotices controller={waiting} timeZone={shopTimeZone} />
               <div className="app-section-title">
                 <Bell />
                 <h2>{t("nav.notices")}</h2>

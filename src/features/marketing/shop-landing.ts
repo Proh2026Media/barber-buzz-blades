@@ -53,6 +53,10 @@ export type LandingStaff = {
   avatar_url: string | null;
   booking_slug: string | null;
   free_today: string[];
+  /** Falso quando o profissional não faz nenhum serviço agendável: sem horários na página. */
+  offers_services: boolean;
+  /** Duração do serviço mais curto dele; os horários livres valem para esse serviço. */
+  min_duration_minutes: number | null;
 };
 
 export type LandingService = {
@@ -163,6 +167,11 @@ export function parseLandingData(raw: Json | null | undefined): LandingData | nu
       free_today: Array.isArray(row.free_today)
         ? row.free_today.filter((item): item is string => typeof item === "string")
         : [],
+      offers_services: row.offers_services !== false,
+      min_duration_minutes:
+        typeof row.min_duration_minutes === "number" && row.min_duration_minutes > 0
+          ? row.min_duration_minutes
+          : null,
     })),
     services: rows(data.services).map((row) => ({
       name: str(row.name),

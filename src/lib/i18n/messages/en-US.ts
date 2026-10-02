@@ -416,6 +416,8 @@ export const enUS: Record<MessageKey, string> = {
   "booking.repeatWeekdayNote": "Repeats: same day of the week.",
   "booking.repeatIntervalNote": "Repeats: every {days} days.",
   "booking.errorPast": "That time has already passed. Choose another time.",
+  "booking.errorUnavailable": "That time is no longer available. Choose another time.",
+  "booking.staffNotForService": "{name} doesn't offer this service. Choose another barber.",
   "booking.errorTaken": "This time was just booked. Choose another time.",
   "booking.errorGeneric": "Couldn't book. Refresh the times and try again.",
   "booking.errorShopUnavailable":
@@ -2462,6 +2464,8 @@ export const enUS: Record<MessageKey, string> = {
     "Tap a professional or one of today's times to sign in and book with them. Times update on their own.",
   "shopLanding.memberNoSlots": "No free times today. Tap to see the next days.",
   "shopLanding.memberClosed": "No appointments today. Tap to see the next days.",
+  "shopLanding.todayFrom": "Free today · services from {n} min",
+  "shopLanding.memberNoServices": "Schedule closed for now. Check back soon!",
   "shopLanding.bookWith": "Book with {name}",
   "shopLanding.servicesTitle": "Services",
   "shopLanding.minutes": "{n} min",

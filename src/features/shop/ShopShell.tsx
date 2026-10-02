@@ -126,6 +126,7 @@ import { PORTRAIT_FOCUS_Y } from "@/lib/shop/service-image-crop";
 import { StaffPhoto } from "@/components/ui/staff-photo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
+import { useAvailabilitySignal } from "@/lib/shop/availability-signal";
 
 type ShopShellProps = {
   profile: SessionProfile;
@@ -558,6 +559,10 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     void loadCatalog();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when shop changes
   }, [shop?.id, demo, agendaDay]);
+
+  useAvailabilitySignal(!demo && !actor && tab === "agenda" ? shop?.id : null, () =>
+    setAgendaRefresh((value) => value + 1),
+  );
 
   useEffect(() => {
     if (demo || actor || !shop?.id || tab !== "agenda" || busy || updatingAppointment) return;
@@ -1748,6 +1753,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 mode="shop"
                 staff={staff}
                 day={agendaDay}
+                timeZone={shopTimeZone}
                 onChanged={() => setAgendaRefresh((v) => v + 1)}
               />
 

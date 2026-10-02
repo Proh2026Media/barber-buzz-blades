@@ -10,6 +10,7 @@ import {
   shopDateKey,
   shopDateTime,
   shopDayRange,
+  termsFor,
 } from "./appointments.ts";
 
 const day = new Date(2030, 0, 15);
@@ -21,7 +22,7 @@ const busy = (startHour: number, startMinute: number, endHour: number, endMinute
 
 test("removes past slots and a slot starting exactly now", () => {
   const slots = buildDaySlots(day, 30, [], at(10));
-  assert.equal(slots[0].getTime(), at(10, 30).getTime());
+  assert.equal(slots[0].getTime(), at(10, 15).getTime());
   assert.ok(slots.every((slot) => slot > at(10)));
 });
 
@@ -46,7 +47,7 @@ test("includes bookings crossing the start of the day", () => {
 
 test("never offers a service that would finish after closing", () => {
   const slots = buildDaySlots(day, 45, [], at(8));
-  assert.equal(slots.at(-1)?.getTime(), at(18).getTime());
+  assert.equal(slots.at(-1)?.getTime(), at(18, 15).getTime());
   assert.ok(slots.every((slot) => slot.getTime() + 45 * 60_000 <= at(19).getTime()));
 });
 
@@ -110,7 +111,7 @@ test("shop and staff blocks remove overlapping slots", () => {
   );
   assert.deepEqual(
     slots.map((slot) => slot.getHours() * 60 + slot.getMinutes()),
-    [600, 630, 720, 750],
+    [600, 615, 630, 720, 735, 750],
   );
 });
 
@@ -143,7 +144,7 @@ test("builds query boundaries and slots from the shop wall clock", () => {
   );
   assert.deepEqual(
     slots.map((slot) => slot.toISOString()),
-    ["2030-01-15T12:00:00.000Z", "2030-01-15T12:30:00.000Z"],
+    ["2030-01-15T12:00:00.000Z", "2030-01-15T12:15:00.000Z", "2030-01-15T12:30:00.000Z"],
   );
 });
 
@@ -161,4 +162,51 @@ test("offered hours follow the shop timezone instead of the device clock", () =>
     saoPaulo[0]!.toISOString(),
     shopDateTime("2030-01-15", "09:00", "America/Sao_Paulo").toISOString(),
   );
+});
+
+test("offers every 15-minute start that fits, instead of hiding free time", () => {
+  // Antes, a grade andava no tamanho do serviço: 45 min depois de 09:00–09:30 só voltava às 09:45.
+  const slots = buildDaySlots(day, 45, [busy(9, 0, 9, 30)], at(8));
+  assert.equal(slots[0].getTime(), at(9, 30).getTime());
+  assert.ok(slots.every((slot) => slot.getMinutes() % 15 === 0));
+});
+
+test("matches the database rule (cenário de supabase/tests/booking_rules_single_source.sql)", () => {
+  // Corte de 30 min, 09:00–19:00, atendimento 13:00–13:30, bloqueio 10:00–11:00 e espera 15:00–15:30.
+  const slots = buildSlotsForWindow(
+    day,
+    30,
+    [busy(13, 0, 13, 30), busy(10, 0, 11, 0), busy(15, 0, 15, 30)],
+    { is_open: true, opens_at: "09:00", closes_at: "19:00" },
+    at(8),
+  );
+  const labels = slots.map(
+    (slot) =>
+      `${String(slot.getHours()).padStart(2, "0")}:${String(slot.getMinutes()).padStart(2, "0")}`,
+  );
+  for (const shown of ["09:00", "09:15", "09:30", "11:00", "12:30", "13:30", "15:30", "18:30"]) {
+    assert.ok(labels.includes(shown), shown);
+  }
+  for (const hidden of [
+    "09:45",
+    "10:00",
+    "10:30",
+    "12:45",
+    "13:00",
+    "13:15",
+    "14:45",
+    "15:00",
+    "18:45",
+  ]) {
+    assert.ok(!labels.includes(hidden), hidden);
+  }
+});
+
+test("staff terms decide duration, price and who does the service", () => {
+  const service = { id: "corte", duration_minutes: 30, price_cents: 5000 };
+  const terms = [{ staff_id: "a", service_id: "corte", duration_minutes: 45, price_cents: 6000 }];
+  assert.deepEqual(termsFor(terms, "a", service), { duration_minutes: 45, price_cents: 6000 });
+  assert.equal(termsFor(terms, "b", service), null);
+  assert.equal(termsFor([], "a", service), null);
+  assert.deepEqual(termsFor(null, "b", service), { duration_minutes: 30, price_cents: 5000 });
 });

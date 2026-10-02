@@ -1,5 +1,6 @@
 -- Página pública da barbearia: só dados da loja, nada de cliente.
--- Rodar depois de 20261002120000_public_shop_landing.sql e 20261002170000_public_shop_landing_team_cards.sql,
+-- Rodar depois de 20261002120000_public_shop_landing.sql, 20261002170000_public_shop_landing_team_cards.sql
+-- e 20261002190000_booking_rules_single_source.sql,
 -- numa transação; sempre ROLLBACK.
 create temporary table land_ctx as
 select gen_random_uuid() shop_id, gen_random_uuid() owner_id, gen_random_uuid() cust_id,
@@ -167,3 +168,27 @@ select pg_temp.check_land(
 select pg_temp.expect_land_error(
   format('update public.barbershop_settings set landing = %L where barbershop_id = %L', '{"about":1}', :'shop_id'),
   'Banco recusa configuração inválida mesmo sem passar pela tela');
+
+-- Mesma regra do app (20261002190000_booking_rules_single_source.sql): grade de 15 min,
+-- serviço inteiro antes do fechamento e profissional sem serviço não mostra horários.
+select set_config('request.jwt.claim.sub', '', true);
+insert into public.staff_services(barbershop_id, staff_id, service_id, duration_minutes, price_cents)
+select shop_id, staff_a, service_id, 30, 5000 from land_ctx;
+set local role anon;
+select pg_temp.check_land(
+  (select s ->> 'offers_services' = 'false' and jsonb_array_length(s -> 'free_today') = 0
+   from jsonb_array_elements(public.get_public_shop_landing(:'slug') -> 'staff') s where s ->> 'name' = 'Barbeiro B'),
+  'Profissional sem serviço não mostra horários quando a loja usa serviços por profissional');
+select pg_temp.check_land(
+  (select s ->> 'offers_services' = 'true' and (s ->> 'min_duration_minutes')::int = 30
+   from jsonb_array_elements(public.get_public_shop_landing(:'slug') -> 'staff') s where s ->> 'name' = 'Barbeiro A'),
+  'Cartão informa a duração do serviço mais curto do profissional');
+select pg_temp.check_land(
+  (public.get_public_shop_landing(:'slug') -> 'today' ->> 'step_minutes')::int = 15,
+  'Horários de 15 em 15 minutos, como no app');
+select pg_temp.check_land(
+  (select bool_and(extract(minute from t.value::time)::int % 15 = 0 and t.value::time <= time '23:29')
+   from jsonb_array_elements(public.get_public_shop_landing(:'slug') -> 'staff') s,
+        jsonb_array_elements_text(s -> 'free_today') t) is not false,
+  'Nenhum horário termina depois do fechamento');
+reset role;

@@ -413,6 +413,8 @@ export const ptBR = {
   "booking.repeatWeekdayNote": "Recorrente: mesmo dia da semana.",
   "booking.repeatIntervalNote": "Recorrente: a cada {days} dias.",
   "booking.errorPast": "O horário selecionado já passou. Escolha outro horário.",
+  "booking.errorUnavailable": "Esse horário não está mais disponível. Escolha outro horário.",
+  "booking.staffNotForService": "{name} não faz este serviço. Escolha outro profissional.",
   "booking.errorTaken": "Este horário acabou de ser reservado. Escolha outro horário.",
   "booking.errorGeneric": "Não foi possível agendar. Atualize os horários e tente novamente.",
   "booking.errorShopUnavailable":
@@ -2478,6 +2480,8 @@ export const ptBR = {
     "Toque no profissional ou em um horário de hoje para entrar e agendar com ele. Os horários se atualizam sozinhos.",
   "shopLanding.memberNoSlots": "Sem horários livres hoje. Toque para ver os próximos dias.",
   "shopLanding.memberClosed": "Sem atendimento hoje. Toque para ver os próximos dias.",
+  "shopLanding.todayFrom": "Livres hoje · serviços a partir de {n} min",
+  "shopLanding.memberNoServices": "Agenda fechada por enquanto. Volte em breve!",
   "shopLanding.bookWith": "Agendar com {name}",
   "shopLanding.servicesTitle": "Serviços",
   "shopLanding.minutes": "{n} min",

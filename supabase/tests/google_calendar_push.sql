@@ -4,7 +4,9 @@ create temporary table gpush_ctx as
 select gen_random_uuid() shop_id, gen_random_uuid() owner_id, gen_random_uuid() associate_id,
   gen_random_uuid() customer_id, gen_random_uuid() owner_staff, gen_random_uuid() associate_staff,
   gen_random_uuid() service_id, gen_random_uuid() appt_id,
-  ((current_date + 2)::timestamp + interval '10 hours') at time zone 'America/Sao_Paulo' as starts_at;
+  -- Sempre numa quarta-feira (dia aberto), pelo menos 2 dias à frente.
+  ((current_date + 2 + ((10 - extract(isodow from current_date + 2)::int) % 7))::timestamp
+    + interval '10 hours') at time zone 'America/Sao_Paulo' as starts_at;
 grant select on gpush_ctx to authenticated, service_role;
 
 create function pg_temp.check_gpush(ok boolean, label text) returns void language plpgsql as $$

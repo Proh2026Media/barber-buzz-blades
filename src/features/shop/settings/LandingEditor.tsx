@@ -109,6 +109,12 @@ export function LandingEditor({
             avatar_url: row.avatar_url ?? null,
             booking_slug: row.booking_slug,
             free_today: ["10:00", "11:30", "15:00"],
+            offers_services: true,
+            min_duration_minutes: demo.services
+              .filter((item) => item.active)
+              .reduce<
+                number | null
+              >((shortest, item) => (shortest === null ? item.duration_minutes : Math.min(shortest, item.duration_minutes)), null),
           })),
         services: demo.services
           .filter((row) => row.active)

@@ -26,6 +26,7 @@ import { brandCornerClass, brandVariables, DEFAULT_LOGIN_IMAGE } from "@/lib/sho
 import { BrandFontFace } from "@/features/shop/BrandFontFace";
 import { ServiceIcon } from "@/components/ui/service-icon";
 import { StaffPhoto } from "@/components/ui/staff-photo";
+import { useAvailabilitySignal } from "@/lib/shop/availability-signal";
 import {
   instagramUrl,
   mapsUrl,
@@ -76,6 +77,9 @@ export function ShopLanding({ shopRef, host }: { shopRef?: string; host?: string
     setData(parsed);
     setState(parsed ? "ready" : "missing");
   }, [shopRef, host]);
+
+  // Atualiza na hora quando a agenda muda; o recarregamento a cada minuto fica como reserva.
+  useAvailabilitySignal(data?.shop.id, () => void load());
 
   useEffect(() => {
     void load();
@@ -298,11 +302,17 @@ export function ShopLandingView({
                     </div>
                   </div>
                   {showToday &&
-                    (member.free_today.length > 0 ? (
+                    (!member.offers_services ? (
+                      <p className="rounded-[var(--control-radius)] bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+                        {t("shopLanding.memberNoServices")}
+                      </p>
+                    ) : member.free_today.length > 0 ? (
                       <div className="space-y-1.5">
                         <p className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
                           <CalendarClock className="size-3.5" aria-hidden />
-                          {t("shopLanding.todayTitle")}
+                          {member.min_duration_minutes
+                            ? t("shopLanding.todayFrom", { n: member.min_duration_minutes })
+                            : t("shopLanding.todayTitle")}
                         </p>
                         <ul
                           className="flex flex-wrap gap-2"

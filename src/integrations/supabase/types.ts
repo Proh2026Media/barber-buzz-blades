@@ -500,6 +500,27 @@ export type Database = {
           },
         ];
       };
+      availability_signals: {
+        Row: {
+          id: number;
+          barbershop_id: string;
+          staff_id: string | null;
+          changed_at: string;
+        };
+        Insert: {
+          id?: never;
+          barbershop_id: string;
+          staff_id?: string | null;
+          changed_at?: string;
+        };
+        Update: {
+          id?: never;
+          barbershop_id?: string;
+          staff_id?: string | null;
+          changed_at?: string;
+        };
+        Relationships: [];
+      };
       business_hours: {
         Row: {
           id: string;
@@ -1052,6 +1073,24 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      get_available_slots: {
+        Args: {
+          p_shop_id: string;
+          p_service_id: string;
+          p_date: string;
+          p_staff_id?: string | null;
+        };
+        Returns: { staff_id: string; starts_at: string; ends_at: string }[];
+      };
+      get_booking_terms: {
+        Args: { p_shop_id: string };
+        Returns: {
+          staff_id: string;
+          service_id: string;
+          duration_minutes: number;
+          price_cents: number;
+        }[];
+      };
       shop_can_manage_whatsapp: { Args: { p_shop_id: string }; Returns: boolean };
       normalize_br_whatsapp: { Args: { p_raw: string }; Returns: string };
       save_my_whatsapp: {

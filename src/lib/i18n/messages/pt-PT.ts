@@ -420,6 +420,8 @@ export const ptPT: Record<MessageKey, string> = {
   "booking.repeatWeekdayNote": "Recorrente: mesmo dia da semana.",
   "booking.repeatIntervalNote": "Recorrente: a cada {days} dias.",
   "booking.errorPast": "O horário selecionado já passou. Escolha outro horário.",
+  "booking.errorUnavailable": "Esse horário já não está disponível. Escolha outro horário.",
+  "booking.staffNotForService": "{name} não faz este serviço. Escolha outro profissional.",
   "booking.errorTaken": "Este horário acabou de ser reservado. Escolha outro horário.",
   "booking.errorGeneric": "Não foi possível marcar. Atualize os horários e tente novamente.",
   "booking.errorShopUnavailable":
@@ -2492,6 +2494,8 @@ export const ptPT: Record<MessageKey, string> = {
     "Toque no profissional ou num horário de hoje para entrar e marcar com ele. Os horários atualizam-se sozinhos.",
   "shopLanding.memberNoSlots": "Sem horários livres hoje. Toque para ver os próximos dias.",
   "shopLanding.memberClosed": "Sem atendimento hoje. Toque para ver os próximos dias.",
+  "shopLanding.todayFrom": "Livres hoje · serviços a partir de {n} min",
+  "shopLanding.memberNoServices": "Agenda fechada por agora. Volte em breve!",
   "shopLanding.bookWith": "Marcar com {name}",
   "shopLanding.servicesTitle": "Serviços",
   "shopLanding.minutes": "{n} min",

@@ -137,6 +137,32 @@ export function formatShopDate(
   }).format(new Date(date));
 }
 
+/** Mesma grade de `available_slots_internal` no banco: candidatos a cada 15 min desde a abertura. */
+export const SLOT_STEP_MINUTES = 15;
+
+export type ServiceTerms = {
+  staff_id: string;
+  service_id: string;
+  duration_minutes: number;
+  price_cents: number;
+};
+
+/**
+ * Duração e preço do profissional no serviço (`get_booking_terms`); `null` quando ele não faz
+ * o serviço. Sem lista (demonstração), todos fazem tudo com os valores do catálogo.
+ */
+export function termsFor(
+  terms: ServiceTerms[] | null,
+  staffId: string,
+  service: Pick<ServiceRow, "id" | "duration_minutes" | "price_cents">,
+) {
+  if (!terms)
+    return { duration_minutes: service.duration_minutes, price_cents: service.price_cents };
+  const row = terms.find((item) => item.staff_id === staffId && item.service_id === service.id);
+  return row ? { duration_minutes: row.duration_minutes, price_cents: row.price_cents } : null;
+}
+
+/** Candidatos de 15 em 15 minutos que cabem o serviço inteiro antes de ocupado ou fechamento. */
 export function buildSlotsForWindow(
   day: Date | string,
   durationMinutes: number,
@@ -165,7 +191,7 @@ export function buildSlotsForWindow(
   for (
     let cursor = new Date(start);
     cursor.getTime() + durationMinutes * 60_000 <= end.getTime();
-    cursor = new Date(cursor.getTime() + durationMinutes * 60_000)
+    cursor = new Date(cursor.getTime() + SLOT_STEP_MINUTES * 60_000)
   ) {
     const slotEnd = new Date(cursor.getTime() + durationMinutes * 60_000);
     const overlaps = busy.some((b) => {
@@ -178,7 +204,7 @@ export function buildSlotsForWindow(
   return slots;
 }
 
-/** Build open slots for a local calendar day, stepping by service duration. */
+/** Build open slots for a local calendar day (09:00–19:00), on the 15-minute grid. */
 export function buildDaySlots(
   day: Date,
   durationMinutes: number,

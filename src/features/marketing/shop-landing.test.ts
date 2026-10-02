@@ -30,6 +30,17 @@ test("landing data needs a shop", () => {
   });
   assert.equal(data?.shop.timezone, "America/Sao_Paulo");
   assert.deepEqual(data?.staff[0].free_today, ["10:00", "10:30"]);
+  assert.equal(data?.staff[0].offers_services, true);
+  assert.equal(data?.staff[0].min_duration_minutes, null);
+  const team = parseLandingData({
+    shop: { id: "s1", name: "Loja", slug: "loja" },
+    staff: [
+      { name: "Ana", free_today: ["18:30"], offers_services: true, min_duration_minutes: 30 },
+      { name: "Bia", free_today: [], offers_services: false, min_duration_minutes: null },
+    ],
+  });
+  assert.equal(team?.staff[0].min_duration_minutes, 30);
+  assert.equal(team?.staff[1].offers_services, false);
   assert.equal(data?.services[0].icon, "Scissors");
   assert.equal(data?.services[1].icon, null);
 });
