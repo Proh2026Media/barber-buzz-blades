@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link2, MessageCircle, QrCode, RefreshCw, Unplug } from "lucide-react";
+import { Link2, MessageCircle, QrCode, RefreshCw, TriangleAlert, Unplug } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -29,6 +29,7 @@ import {
   renderWhatsAppTemplate,
   validateWhatsAppTemplate,
   whatsappCodePointLength,
+  whatsappTemplateWarnings,
   type WhatsAppTemplateKey,
   type WhatsAppTemplateVar,
 } from "@/lib/whatsapp/templates";
@@ -343,6 +344,8 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
   const activeBody = templates[activeTemplate];
   const activeLength = whatsappCodePointLength(activeBody);
   const activeErrors = validateWhatsAppTemplate(activeBody);
+  // Aviso sem bloqueio: o servidor corta o final se a mensagem preenchida passar de 1000.
+  const activeWarnings = activeErrors.length ? [] : whatsappTemplateWarnings(activeBody);
   const previewFilled = renderWhatsAppTemplate(activeBody, SAMPLE_WHATSAPP_VARS);
   const canSave =
     templatesReady &&
@@ -567,6 +570,20 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
               <li key={item}>{item}</li>
             ))}
           </ul>
+        )}
+
+        {activeWarnings.length > 0 && (
+          <div
+            className="flex items-start gap-2 rounded-[var(--control-radius)] border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-300"
+            role="status"
+          >
+            <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <ul className="space-y-1">
+              {activeWarnings.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
         )}
 
         <div className="rounded-xl border border-dashed border-border bg-muted/30 p-3">

@@ -39,6 +39,15 @@ Deno.serve(async (req) => {
     } catch {
       /* ignore if migration not applied yet */
     }
+    // Limpeza dos códigos de verificação antigos: uma vez por hora (o cron roda a
+    // cada minuto). Sem a migration aplicada, o erro é só ignorado.
+    if (new Date().getUTCMinutes() === 17) {
+      try {
+        await admin.rpc("purge_auth_otp_challenges");
+      } catch {
+        /* ignore if migration not applied yet */
+      }
+    }
 
     // Melhor esforço: despacha e-mails no mesmo cron.
     try {

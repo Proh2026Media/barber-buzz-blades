@@ -97,8 +97,6 @@ export const enUS: Record<MessageKey, string> = {
   "auth.info.passwordUpdated": "Password updated. Signing in…",
   "auth.info.createdSaveWhatsapp":
     "Account created. Open My profile and save your WhatsApp to get appointment updates.",
-  "auth.info.createdWithWhatsapp":
-    "Account created. You'll get WhatsApp updates whenever the barbershop sends them.",
   "auth.info.createdNoWhatsapp":
     "Account created. You can add your WhatsApp in My profile to get updates.",
   "auth.info.confirmEmail": "Confirm your email, then sign in.",
@@ -664,6 +662,12 @@ export const enUS: Record<MessageKey, string> = {
   "legal.privacyLink": "Privacy Policy",
   "legal.termsLink": "Terms of Use",
   "legal.dpaLink": "Data Processing Agreement",
+  "legal.privacy.metaDescription":
+    "How Barba & Cabelo handles and protects personal data, including data obtained through Google APIs.",
+  "legal.terms.metaDescription":
+    "Terms of use of the Barba & Cabelo app for barbershops, professionals and clients.",
+  "legal.dpa.metaDescription":
+    "Data processing agreement between barbershops (controllers) and Barba & Cabelo (processor).",
   "legal.home": "Home",
   "legal.terms.s1Title": "1. Acceptance",
   "legal.terms.s1Body":
@@ -2890,8 +2894,6 @@ export const enUS: Record<MessageKey, string> = {
     "Only partners who can apply ownership changes can edit these permissions. You can view them here.",
   "fix.ajustes-marca.waTemplatesLoadError":
     "We couldn't load your saved texts. To avoid replacing them with the defaults, saving is disabled until they load.",
-  "fix.ajustes-marca.waTooLongFilled":
-    "With names and link filled in, the message may reach {length} of 1,000 characters and won't be sent. Please shorten the text.",
   "fix.ajustes-marca.domainTxtMissing":
     "TXT record not found yet. Create it at {host} with the value {value}.",
   "fix.ajustes-marca.domainCnamePending":
@@ -2908,10 +2910,6 @@ export const enUS: Record<MessageKey, string> = {
     "You'll leave this shop and take your client list to {shop}. This can't be undone.",
   "fix.auth-rotas.emailConfirmedSignIn":
     "Email confirmed. Sign in with your email and password to continue.",
-  "fix.fidelidade-insights.policyTiersNotice":
-    "The ranges below follow the default rule. Each barbershop can set its own levels, points and perks; your shop's appear in the app.",
-  "fix.fidelidade-insights.policyPointRate":
-    "Each completed appointment earns points (50 in the default rule; the shop may change it).",
   "fix.fidelidade-insights.policyFooter": "Barba & Cabelo © {year}",
   "fix.fidelidade-insights.fixedInDefault":
     'This value is fixed in the standard rules. Choose "Your barbershop\'s version" to change it.',
@@ -2994,7 +2992,7 @@ export const enUS: Record<MessageKey, string> = {
   "fix3.errors.accountWithoutEmail":
     "This account doesn't have an email yet. Contact the barbershop to complete your sign-up.",
   "fix3.whatsapp.tooLongFilledCut":
-    "With names and link filled in, the message may reach {length} of 1,000 characters and the end will be cut off. Shorten the text so it arrives in full.",
+    "With names and link filled in, the message may reach {length} of 1,000 characters. You can save it, but the end will be cut off with “…”. Shorten the text if you want it to arrive in full.",
   "fix3.terms.googleRevoke":
     "When you disconnect Google Calendar/Contacts in the app, we revoke access with Google and immediately delete the stored tokens and imported events. If the revocation can't be confirmed, or if you prefer, remove Barba & Cabelo's access directly at {link}. Data received from Google APIs is used only for the features described in the {privacy}, never for advertising, and is never sold.",
   "fix3.google.privacyLink": "How we use Google data",
@@ -3055,6 +3053,9 @@ export const enUS: Record<MessageKey, string> = {
   "cad.guia.title": "Get your barbershop ready",
   "cad.guia.subtitle": "A few steps to start taking bookings.",
   "cad.guia.hide": "Hide guide",
+  "cad.guia.showAgain": "Show setup guide",
+  "cad.guia.showAgainHint":
+    "Shows the step-by-step guide to get your barbershop ready on the Schedule again.",
   "cad.guia.progress": "{done} of {total}",
   "cad.guia.statusDone": "done",
   "cad.guia.statusPending": "to do",

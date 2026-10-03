@@ -350,8 +350,24 @@ Deno.serve(async (req) => {
       if (!calendarId) {
         return json({ error: "Escolha qual agenda Google sincronizar antes de continuar." }, 400);
       }
-      const timeMin = body.time_min ?? new Date(Date.now() - 7 * 86400000).toISOString();
-      const timeMax = body.time_max ?? new Date(Date.now() + 60 * 86400000).toISOString();
+      // Janela fixa prometida na Política de Privacidade: 7 dias para trás e 60
+      // para frente. Valores do app só podem estreitá-la (clamp no servidor).
+      const nowMs = Date.now();
+      const windowMin = nowMs - 7 * 86400000;
+      const windowMax = nowMs + 60 * 86400000;
+      const clampMs = (raw: unknown, fallback: number) => {
+        const parsed = typeof raw === "string" ? Date.parse(raw) : NaN;
+        if (!Number.isFinite(parsed)) return fallback;
+        return Math.min(windowMax, Math.max(windowMin, parsed));
+      };
+      let minMs = clampMs(body.time_min, windowMin);
+      let maxMs = clampMs(body.time_max, windowMax);
+      if (minMs >= maxMs) {
+        minMs = windowMin;
+        maxMs = windowMax;
+      }
+      const timeMin = new Date(minMs).toISOString();
+      const timeMax = new Date(maxMs).toISOString();
       const params = new URLSearchParams({
         singleEvents: "true",
         orderBy: "startTime",

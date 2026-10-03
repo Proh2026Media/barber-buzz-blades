@@ -172,15 +172,12 @@ export function validateWhatsAppTemplate(body: string): string[] {
     errors.push(t("integr.tpl.errEmpty"));
   }
 
+  // O banco recusa gravar modelo com mais de 1000 caracteres (check em
+  // whatsapp_message_templates.body): só isso bloqueia o salvamento. O tamanho
+  // depois de preencher as variáveis é aviso (whatsappTemplateWarnings).
   const length = whatsappCodePointLength(normalized);
   if (length > 1000) {
     errors.push(t("integr.tpl.errTooLong", { length }));
-  } else {
-    const filled = whatsappFilledLengthEstimate(normalized);
-    if (filled > 1000) {
-      // O servidor corta o excesso (não descarta): o aviso explica que o fim some.
-      errors.push(t("fix3.whatsapp.tooLongFilledCut", { length: filled }));
-    }
   }
 
   for (const key of findWhatsAppPlaceholders(normalized)) {
@@ -217,6 +214,18 @@ export function validateWhatsAppTemplate(body: string): string[] {
   }
 
   return errors;
+}
+
+/**
+ * Avisos que NÃO impedem salvar. Hoje: a mensagem preenchida pode passar de 1000
+ * caracteres; o servidor corta o final com "…" (migration 20261003170000) em vez
+ * de descartar o aviso, então salvar é permitido.
+ */
+export function whatsappTemplateWarnings(body: string): string[] {
+  const normalized = normalizeWhatsAppTemplate(body);
+  if (whatsappCodePointLength(normalized) > 1000) return [];
+  const filled = whatsappFilledLengthEstimate(normalized);
+  return filled > 1000 ? [t("fix3.whatsapp.tooLongFilledCut", { length: filled })] : [];
 }
 
 export const SAMPLE_WHATSAPP_VARS: Record<WhatsAppTemplateVar, string> = {

@@ -3271,6 +3271,15 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 sections={settingsSections}
                 section={settingsSection}
                 onSectionChange={setSettingsSection}
+                setupGuideShopId={
+                  !demo && (!actor || actor.role === "owner" || actor.role === "partner")
+                    ? shop.id
+                    : undefined
+                }
+                onSetupGuideShown={() => {
+                  setSettingsSection(null);
+                  setTab("agenda");
+                }}
                 renderSection={(section) => {
                   if (section === "aparencia") {
                     return (

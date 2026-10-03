@@ -1,5 +1,21 @@
 -- After booking_reliability.sql, in the same transaction; always ROLLBACK.
 reset role;
+-- export_my_data lê auth.users.phone, coluna criada pelas migrations do GoTrue
+-- (Auth do Supabase). O Postgres local de teste (supabase/postgres sem GoTrue)
+-- tem só o auth.users básico, sem ela: cria a coluna nesta transação (some no
+-- ROLLBACK) para o teste refletir o esquema real. Só altera quando a coluna
+-- falta: ALTER TABLE exige ser dono de auth.users (supabase_auth_admin) mesmo
+-- com IF NOT EXISTS, então em banco com Auth nada é executado. Localmente,
+-- rodar como superusuário (ex.: psql -U supabase_admin).
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'auth' and table_name = 'users' and column_name = 'phone'
+  ) then
+    alter table auth.users add column phone text;
+  end if;
+end $$;
 select set_config('request.jwt.claim.sub', customer_a::text, true) from booking_test_context;
 set local role authenticated;
 select pg_temp.check_booking_test((export_my_data()->'account'->>'id')::uuid = auth.uid(), 'Export identifies only own account');

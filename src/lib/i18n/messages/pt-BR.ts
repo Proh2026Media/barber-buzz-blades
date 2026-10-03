@@ -94,8 +94,6 @@ export const ptBR = {
   "auth.info.passwordUpdated": "Senha atualizada. Entrando…",
   "auth.info.createdSaveWhatsapp":
     "Conta criada. Abra Meu perfil e salve o WhatsApp para receber avisos de horário.",
-  "auth.info.createdWithWhatsapp":
-    "Conta criada. Você receberá avisos no WhatsApp quando a barbearia enviar.",
   "auth.info.createdNoWhatsapp":
     "Conta criada. Em Meu perfil você pode cadastrar o WhatsApp para avisos.",
   "auth.info.confirmEmail": "Confirme seu e-mail e entre na conta.",
@@ -666,6 +664,12 @@ export const ptBR = {
   "legal.privacyLink": "Política de Privacidade",
   "legal.termsLink": "Termos de Uso",
   "legal.dpaLink": "Acordo de Tratamento de Dados",
+  "legal.privacy.metaDescription":
+    "Como o Barba & Cabelo trata e protege dados pessoais, inclusive dados obtidos pelas APIs do Google.",
+  "legal.terms.metaDescription":
+    "Termos de uso do aplicativo Barba & Cabelo para barbearias, profissionais e clientes.",
+  "legal.dpa.metaDescription":
+    "Acordo de tratamento de dados entre as barbearias (controladoras) e o Barba & Cabelo (operador).",
   "legal.home": "Início",
   "legal.terms.s1Title": "1. Aceitação",
   "legal.terms.s1Body":
@@ -2910,8 +2914,6 @@ export const ptBR = {
     "Só quem pode aplicar mudanças da sociedade altera estas permissões. Aqui você pode consultar.",
   "fix.ajustes-marca.waTemplatesLoadError":
     "Não foi possível carregar os textos salvos. Para não trocar seus textos pelos padrões, salvar fica bloqueado até carregar.",
-  "fix.ajustes-marca.waTooLongFilled":
-    "Com nomes e link preenchidos, a mensagem pode chegar a {length} de 1.000 caracteres e não ser enviada. Encurte o texto.",
   "fix.ajustes-marca.domainTxtMissing":
     "Registro TXT ainda não encontrado. Crie em {host} o valor {value}.",
   "fix.ajustes-marca.domainCnamePending":
@@ -2928,10 +2930,6 @@ export const ptBR = {
     "Você vai sair desta loja levando sua carteira de clientes para {shop}. Não dá para desfazer.",
   "fix.auth-rotas.emailConfirmedSignIn":
     "E-mail confirmado. Entre com seu e-mail e senha para continuar.",
-  "fix.fidelidade-insights.policyTiersNotice":
-    "As faixas abaixo são as da regra padrão. Cada barbearia pode definir níveis, pontos e benefícios próprios; os da sua barbearia aparecem no app.",
-  "fix.fidelidade-insights.policyPointRate":
-    "Cada atendimento concluído rende pontos (50 na regra padrão; a barbearia pode mudar).",
   "fix.fidelidade-insights.policyFooter": "Barba & Cabelo © {year}",
   "fix.fidelidade-insights.fixedInDefault":
     'Na regra padrão este valor é fixo. Escolha "Versão da barbearia" para mudar.',
@@ -3015,7 +3013,7 @@ export const ptBR = {
   "fix3.errors.accountWithoutEmail":
     "Esta conta ainda não tem e-mail. Fale com a barbearia para completar o cadastro.",
   "fix3.whatsapp.tooLongFilledCut":
-    "Com nomes e link preenchidos, a mensagem pode chegar a {length} de 1.000 caracteres e o final será cortado. Encurte o texto para ela chegar inteira.",
+    "Com nomes e link preenchidos, a mensagem pode chegar a {length} de 1.000 caracteres. Dá para salvar, mas o final será cortado com “…”. Encurte o texto se quiser que ela chegue inteira.",
   "fix3.terms.googleRevoke":
     "Ao desconectar Google Agenda/Contatos no app, revogamos o acesso junto ao Google e apagamos na hora os tokens e os eventos importados. Se não for possível confirmar a revogação, ou se preferir, remova o acesso do Barba & Cabelo diretamente em {link}. Os dados recebidos das APIs do Google são usados apenas para as funções descritas na {privacy}, nunca para publicidade, e não são vendidos.",
   "fix3.google.privacyLink": "Como usamos os dados do Google",
@@ -3075,6 +3073,9 @@ export const ptBR = {
   "cad.guia.title": "Deixe sua barbearia pronta",
   "cad.guia.subtitle": "Poucos passos para começar a receber reservas.",
   "cad.guia.hide": "Esconder guia",
+  "cad.guia.showAgain": "Mostrar guia de configuração",
+  "cad.guia.showAgainHint":
+    "Volta a exibir na Agenda o passo a passo para deixar a barbearia pronta.",
   "cad.guia.progress": "{done} de {total}",
   "cad.guia.statusDone": "feito",
   "cad.guia.statusPending": "a fazer",

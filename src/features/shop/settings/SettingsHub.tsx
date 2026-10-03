@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   ArrowLeft,
   BellRing,
@@ -7,11 +7,13 @@ import {
   Gift,
   Globe2,
   Languages,
+  ListChecks,
   Palette,
   Users,
   type LucideIcon,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { isShopSetupGuideHidden, showShopSetupGuide } from "../ShopSetupChecklist";
 import type { SettingsSection } from "./section";
 
 const SECTION_ICONS: Record<SettingsSection, LucideIcon> = {
@@ -29,14 +31,36 @@ export function SettingsHub({
   section,
   onSectionChange,
   renderSection,
+  setupGuideShopId,
+  onSetupGuideShown,
 }: {
   sections: SettingsSection[];
   section: SettingsSection | null;
   onSectionChange: (next: SettingsSection | null) => void;
   renderSection: (section: SettingsSection) => ReactNode;
+  /**
+   * Loja do guia "Deixe sua barbearia pronta" (só para dono/sócio). Quando o guia foi
+   * escondido nesta loja, o menu mostra "Mostrar guia de configuração".
+   */
+  setupGuideShopId?: string;
+  /** Chamado depois de reexibir o guia, para levar a pessoa à Agenda. */
+  onSetupGuideShown?: () => void;
 }) {
   const { t } = useI18n();
   const current = section && sections.includes(section) ? section : null;
+  const [guideHidden, setGuideHidden] = useState(false);
+
+  // Lê depois de montar (o estado fica no aparelho) para não divergir do HTML do servidor.
+  useEffect(() => {
+    setGuideHidden(setupGuideShopId ? isShopSetupGuideHidden(setupGuideShopId) : false);
+  }, [setupGuideShopId, current]);
+
+  function showGuide() {
+    if (!setupGuideShopId) return;
+    showShopSetupGuide(setupGuideShopId);
+    setGuideHidden(false);
+    onSetupGuideShown?.();
+  }
 
   if (current) {
     const Icon = SECTION_ICONS[current];
@@ -98,6 +122,24 @@ export function SettingsHub({
           );
         })}
       </ul>
+      {guideHidden && (
+        <button
+          type="button"
+          onClick={showGuide}
+          className="flex min-h-16 w-full items-center gap-3 rounded-2xl border border-dashed border-border bg-card p-4 text-left transition hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+            <ListChecks className="size-5" aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-bold">{t("cad.guia.showAgain")}</span>
+            <span className="block text-xs text-muted-foreground">
+              {t("cad.guia.showAgainHint")}
+            </span>
+          </span>
+          <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+        </button>
+      )}
     </div>
   );
 }

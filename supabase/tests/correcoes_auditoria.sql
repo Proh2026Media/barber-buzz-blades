@@ -99,9 +99,25 @@ select pg_temp.expect_audit_error(
 reset role;
 select set_config('request.jwt.claim.sub', founder_id::text, true) from audit_ctx;
 set local role authenticated;
-select pg_temp.expect_audit_error(
-  $q$select public.save_my_whatsapp('+5511987654321', true)$q$,
-  'WhatsApp de outra conta é recusado');
+-- Antes da 20261003180000 a unicidade valia para qualquer número: a gravação é recusada.
+-- Depois dela (e da 20261003220000), a gravação não revela nada: o número fica salvo
+-- sem confirmação, e a recusa acontece só na confirmação por código.
+do $$
+declare failed boolean := false; verified_col boolean;
+begin
+  select exists (select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'profiles' and column_name = 'whatsapp_verified_at')
+    into verified_col;
+  begin
+    perform public.save_my_whatsapp('+5511987654321', true);
+  exception when others then failed := true;
+  end;
+  if verified_col then
+    perform pg_temp.check_audit(not failed, 'WhatsApp de outra conta gravado sem confirmação, sem revelar nada');
+  else
+    perform pg_temp.check_audit(failed, 'WhatsApp de outra conta é recusado');
+  end if;
+end $$;
 reset role;
 
 -- 1. Cliente não cancela reserva confirmada que já começou; pendente segue cancelável.

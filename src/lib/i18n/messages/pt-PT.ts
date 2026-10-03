@@ -97,8 +97,6 @@ export const ptPT: Record<MessageKey, string> = {
   "auth.info.passwordUpdated": "Palavra-passe atualizada. A entrar…",
   "auth.info.createdSaveWhatsapp":
     "Conta criada. Abra O meu perfil e guarde o WhatsApp para receber avisos de marcação.",
-  "auth.info.createdWithWhatsapp":
-    "Conta criada. Vai receber avisos no WhatsApp quando a barbearia os enviar.",
   "auth.info.createdNoWhatsapp":
     "Conta criada. Em O meu perfil pode registar o WhatsApp para receber avisos.",
   "auth.info.confirmEmail": "Confirme o seu e-mail e entre na conta.",
@@ -675,6 +673,12 @@ export const ptPT: Record<MessageKey, string> = {
   "legal.privacyLink": "Política de Privacidade",
   "legal.termsLink": "Termos de Utilização",
   "legal.dpaLink": "Acordo de Tratamento de Dados",
+  "legal.privacy.metaDescription":
+    "Como o Barba & Cabelo trata e protege dados pessoais, incluindo dados obtidos através das APIs da Google.",
+  "legal.terms.metaDescription":
+    "Termos de utilização da aplicação Barba & Cabelo para barbearias, profissionais e clientes.",
+  "legal.dpa.metaDescription":
+    "Acordo de tratamento de dados entre as barbearias (responsáveis pelo tratamento) e o Barba & Cabelo (subcontratante).",
   "legal.home": "Início",
   "legal.terms.s1Title": "1. Aceitação",
   "legal.terms.s1Body":
@@ -2925,8 +2929,6 @@ export const ptPT: Record<MessageKey, string> = {
     "Só quem pode aplicar alterações da sociedade altera estas permissões. Aqui pode consultá-las.",
   "fix.ajustes-marca.waTemplatesLoadError":
     "Não foi possível carregar os textos guardados. Para não substituir os seus textos pelos predefinidos, guardar fica bloqueado até carregar.",
-  "fix.ajustes-marca.waTooLongFilled":
-    "Com nomes e ligação preenchidos, a mensagem pode chegar a {length} de 1.000 caracteres e não ser enviada. Encurte o texto.",
   "fix.ajustes-marca.domainTxtMissing":
     "Registo TXT ainda não encontrado. Crie em {host} o valor {value}.",
   "fix.ajustes-marca.domainCnamePending":
@@ -2943,10 +2945,6 @@ export const ptPT: Record<MessageKey, string> = {
     "Vai sair desta loja levando a sua carteira de clientes para {shop}. Não é possível desfazer.",
   "fix.auth-rotas.emailConfirmedSignIn":
     "E-mail confirmado. Inicie sessão com o seu e-mail e palavra-passe para continuar.",
-  "fix.fidelidade-insights.policyTiersNotice":
-    "As faixas abaixo são as da regra padrão. Cada barbearia pode definir níveis, pontos e benefícios próprios; os da sua barbearia aparecem na aplicação.",
-  "fix.fidelidade-insights.policyPointRate":
-    "Cada atendimento concluído rende pontos (50 na regra padrão; a barbearia pode alterar).",
   "fix.fidelidade-insights.policyFooter": "Barba & Cabelo © {year}",
   "fix.fidelidade-insights.fixedInDefault":
     'Na regra padrão este valor é fixo. Escolha "Versão da barbearia" para alterar.',
@@ -3034,7 +3032,7 @@ export const ptPT: Record<MessageKey, string> = {
   "fix3.errors.accountWithoutEmail":
     "Esta conta ainda não tem e-mail. Contacte a barbearia para completar o registo.",
   "fix3.whatsapp.tooLongFilledCut":
-    "Com nomes e ligação preenchidos, a mensagem pode chegar a {length} de 1.000 caracteres e o final será cortado. Encurte o texto para ela chegar completa.",
+    "Com nomes e ligação preenchidos, a mensagem pode chegar a {length} de 1.000 caracteres. Pode guardar, mas o final será cortado com “…”. Encurte o texto se quiser que ela chegue completa.",
   "fix3.terms.googleRevoke":
     "Ao desligar o Google Calendar/Contactos na aplicação, revogamos o acesso junto da Google e eliminamos de imediato os tokens e os eventos importados. Se não for possível confirmar a revogação, ou se preferir, remova o acesso do Barba & Cabelo diretamente em {link}. Os dados recebidos das APIs da Google são utilizados apenas para as funcionalidades descritas na {privacy}, nunca para publicidade, e não são vendidos.",
   "fix3.google.privacyLink": "Como utilizamos os dados da Google",
@@ -3096,6 +3094,9 @@ export const ptPT: Record<MessageKey, string> = {
   "cad.guia.title": "Deixe a sua barbearia pronta",
   "cad.guia.subtitle": "Poucos passos para começar a receber marcações.",
   "cad.guia.hide": "Ocultar guia",
+  "cad.guia.showAgain": "Mostrar guia de configuração",
+  "cad.guia.showAgainHint":
+    "Volta a mostrar na Agenda o passo a passo para deixar a barbearia pronta.",
   "cad.guia.progress": "{done} de {total}",
   "cad.guia.statusDone": "feito",
   "cad.guia.statusPending": "por fazer",

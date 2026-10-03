@@ -96,8 +96,6 @@ export const es: Record<MessageKey, string> = {
   "auth.info.passwordUpdated": "Contraseña actualizada. Entrando…",
   "auth.info.createdSaveWhatsapp":
     "Cuenta creada. Abre Mi perfil y guarda tu WhatsApp para recibir avisos de citas.",
-  "auth.info.createdWithWhatsapp":
-    "Cuenta creada. Recibirás avisos por WhatsApp cuando la barbería los envíe.",
   "auth.info.createdNoWhatsapp":
     "Cuenta creada. En Mi perfil puedes añadir tu WhatsApp para recibir avisos.",
   "auth.info.confirmEmail": "Confirma tu correo y entra en la cuenta.",
@@ -673,6 +671,12 @@ export const es: Record<MessageKey, string> = {
   "legal.privacyLink": "Política de Privacidad",
   "legal.termsLink": "Términos de uso",
   "legal.dpaLink": "Acuerdo de Tratamiento de Datos",
+  "legal.privacy.metaDescription":
+    "Cómo Barba & Cabelo trata y protege los datos personales, incluidos los datos obtenidos a través de las API de Google.",
+  "legal.terms.metaDescription":
+    "Términos de uso de la aplicación Barba & Cabelo para barberías, profesionales y clientes.",
+  "legal.dpa.metaDescription":
+    "Acuerdo de tratamiento de datos entre las barberías (responsables) y Barba & Cabelo (encargado).",
   "legal.home": "Inicio",
   "legal.terms.s1Title": "1. Aceptación",
   "legal.terms.s1Body":
@@ -2929,8 +2933,6 @@ export const es: Record<MessageKey, string> = {
     "Solo quien puede aplicar cambios de la sociedad modifica estos permisos. Aquí puedes consultarlos.",
   "fix.ajustes-marca.waTemplatesLoadError":
     "No se pudieron cargar los textos guardados. Para no reemplazarlos por los predeterminados, guardar queda bloqueado hasta que carguen.",
-  "fix.ajustes-marca.waTooLongFilled":
-    "Con los nombres y el enlace completos, el mensaje puede llegar a {length} de 1.000 caracteres y no se enviará. Acorta el texto.",
   "fix.ajustes-marca.domainTxtMissing":
     "Aún no se encontró el registro TXT. Créalo en {host} con el valor {value}.",
   "fix.ajustes-marca.domainCnamePending":
@@ -2947,10 +2949,6 @@ export const es: Record<MessageKey, string> = {
     "Saldrás de esta tienda llevando tu cartera de clientes a {shop}. No se puede deshacer.",
   "fix.auth-rotas.emailConfirmedSignIn":
     "Correo confirmado. Inicia sesión con tu correo y contraseña para continuar.",
-  "fix.fidelidade-insights.policyTiersNotice":
-    "Los rangos de abajo son los de la regla estándar. Cada barbería puede definir sus propios niveles, puntos y beneficios; los de tu barbería aparecen en la app.",
-  "fix.fidelidade-insights.policyPointRate":
-    "Cada atención completada suma puntos (50 en la regla estándar; la barbería puede cambiarlo).",
   "fix.fidelidade-insights.policyFooter": "Barba & Cabelo © {year}",
   "fix.fidelidade-insights.fixedInDefault":
     'En la regla estándar este valor es fijo. Elige "Versión de la barbería" para cambiarlo.',
@@ -3036,7 +3034,7 @@ export const es: Record<MessageKey, string> = {
   "fix3.errors.accountWithoutEmail":
     "Esta cuenta todavía no tiene correo. Habla con la barbería para completar el registro.",
   "fix3.whatsapp.tooLongFilledCut":
-    "Con nombres y enlace completos, el mensaje puede llegar a {length} de 1.000 caracteres y el final se cortará. Acorta el texto para que llegue completo.",
+    "Con nombres y enlace completos, el mensaje puede llegar a {length} de 1.000 caracteres. Puedes guardarlo, pero el final se cortará con “…”. Acorta el texto si quieres que llegue completo.",
   "fix3.terms.googleRevoke":
     "Al desconectar Google Calendar/Contactos en la app, revocamos el acceso ante Google y eliminamos de inmediato los tokens y los eventos importados. Si no se puede confirmar la revocación, o si lo prefieres, quita el acceso de Barba & Cabelo directamente en {link}. Los datos recibidos de las API de Google se usan solo para las funciones descritas en la {privacy}, nunca para publicidad, y no se venden.",
   "fix3.google.privacyLink": "Cómo usamos los datos de Google",
@@ -3101,6 +3099,9 @@ export const es: Record<MessageKey, string> = {
   "cad.guia.title": "Deja tu barbería lista",
   "cad.guia.subtitle": "Pocos pasos para empezar a recibir reservas.",
   "cad.guia.hide": "Ocultar guía",
+  "cad.guia.showAgain": "Mostrar guía de configuración",
+  "cad.guia.showAgainHint":
+    "Vuelve a mostrar en la Agenda el paso a paso para dejar la barbería lista.",
   "cad.guia.progress": "{done} de {total}",
   "cad.guia.statusDone": "hecho",
   "cad.guia.statusPending": "pendiente",

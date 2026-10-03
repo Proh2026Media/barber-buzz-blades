@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { LegalPageShell } from "@/features/legal/LegalPageShell";
+import { legalHead } from "@/features/legal/legal-head";
 import { useLegalI18n } from "@/features/legal/legal-locale";
 import { PLATFORM_OPERATOR } from "@/features/legal/operator";
 import { legalLinkClass, legalRichText } from "@/features/legal/rich-text";
@@ -15,25 +16,14 @@ export const Route = createFileRoute("/acordo-de-dados")({
   // `?lang=en` (ou en-US, en-GB, es, pt-PT, pt-BR) abre o acordo nesse idioma, também no servidor.
   validateSearch: (search: Record<string, unknown>): DpaSearch =>
     typeof search.lang === "string" && search.lang.trim() ? { lang: search.lang.trim() } : {},
-  head: () => ({
-    meta: [
-      { title: "Acordo de Tratamento de Dados — Barba & Cabelo" },
-      {
-        name: "description",
-        content:
-          "Acordo de tratamento de dados entre as barbearias (controladoras) e o Barba & Cabelo (operador) (Data Processing Agreement available in English with ?lang=en).",
-      },
-      { name: "robots", content: "index,follow" },
-    ],
-    links: [
-      { rel: "alternate", hrefLang: "pt-BR", href: PAGE_URL },
-      { rel: "alternate", hrefLang: "pt-PT", href: `${PAGE_URL}?lang=pt-PT` },
-      { rel: "alternate", hrefLang: "en", href: `${PAGE_URL}?lang=en` },
-      { rel: "alternate", hrefLang: "en-GB", href: `${PAGE_URL}?lang=en-GB` },
-      { rel: "alternate", hrefLang: "es", href: `${PAGE_URL}?lang=es` },
-      { rel: "alternate", hrefLang: "x-default", href: PAGE_URL },
-    ],
-  }),
+  // Título e descrição seguem o `?lang=` já no HTML do servidor.
+  head: ({ match }) =>
+    legalHead({
+      lang: match.search.lang,
+      pageUrl: PAGE_URL,
+      titleKey: "legal.dpaLink",
+      descriptionKey: "legal.dpa.metaDescription",
+    }),
   component: AcordoDeDadosPage,
 });
 

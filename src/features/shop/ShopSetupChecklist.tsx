@@ -31,6 +31,26 @@ function writeStored(shopId: string, next: StoredState) {
   }
 }
 
+/** Avisa o guia já montado (se houver) que o estado salvo mudou. */
+const SHOW_EVENT = "shop-setup:show";
+
+/** O dono/sócio escolheu "Esconder guia" para esta loja neste aparelho? */
+export function isShopSetupGuideHidden(shopId: string): boolean {
+  if (typeof window === "undefined") return false;
+  return !!readStored(shopId).hidden;
+}
+
+/**
+ * Desfaz o "Esconder guia" desta loja (usado em Ajustes > "Mostrar guia de configuração").
+ * Mantém os passos já marcados à mão (horários conferidos, link copiado).
+ */
+export function showShopSetupGuide(shopId: string) {
+  if (typeof window === "undefined") return;
+  const { hidden: _hidden, ...rest } = readStored(shopId);
+  writeStored(shopId, rest);
+  window.dispatchEvent(new CustomEvent(SHOW_EVENT, { detail: shopId }));
+}
+
 /**
  * A loja nasce aberta de segunda a sábado, das 9h às 19h. Qualquer diferença disso
  * (ou uma linha alterada depois de criada) indica que o dono já mexeu nos horários.
@@ -90,6 +110,11 @@ export function ShopSetupChecklist({
   useEffect(() => {
     setStored(readStored(shopId));
     setLoaded(true);
+    const onShow = (event: Event) => {
+      if ((event as CustomEvent<string>).detail === shopId) setStored(readStored(shopId));
+    };
+    window.addEventListener(SHOW_EVENT, onShow);
+    return () => window.removeEventListener(SHOW_EVENT, onShow);
   }, [shopId]);
 
   function remember(patch: StoredState) {

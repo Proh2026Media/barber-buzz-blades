@@ -6,6 +6,7 @@ import {
   renderWhatsAppTemplate,
   validateWhatsAppTemplate,
   whatsappCodePointLength,
+  whatsappTemplateWarnings,
   wrapWhatsAppSelection,
 } from "./templates.ts";
 
@@ -30,11 +31,21 @@ test("validation rejects empty, oversized and unknown placeholders", () => {
   assert.match(validateWhatsAppTemplate("Oi {{ }}").join(" "), /incompletas/);
 });
 
-test("filled-length warning says the end is cut, not that the message is dropped", () => {
+test("filled-length overflow is a warning (save allowed), saying the end is cut", () => {
   // 900 caracteres + link (até 120 preenchido) passam de 1000 depois da troca.
-  const issues = validateWhatsAppTemplate(`${"x".repeat(900)} {{link_reserva}}`);
-  assert.equal(issues.length, 1);
-  assert.doesNotMatch(issues[0], /não ser enviada/);
+  const body = `${"x".repeat(900)} {{link_reserva}}`;
+  assert.deepEqual(validateWhatsAppTemplate(body), []);
+  const warnings = whatsappTemplateWarnings(body);
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /cortado/);
+  assert.doesNotMatch(warnings[0], /não ser enviada/);
+});
+
+test("no filled-length warning for short templates or raw text already over the limit", () => {
+  assert.deepEqual(whatsappTemplateWarnings("Oi {{cliente}}, até {{quando}}."), []);
+  // Acima de 1000 sem variáveis o banco recusa: é erro, não aviso duplicado.
+  assert.deepEqual(whatsappTemplateWarnings("x".repeat(1001)), []);
+  assert.equal(validateWhatsAppTemplate("x".repeat(1001)).length, 1);
 });
 
 test("validation flags Markdown that WhatsApp does not render", () => {
