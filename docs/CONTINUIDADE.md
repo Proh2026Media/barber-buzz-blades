@@ -9,6 +9,12 @@ Atualizado em **03/10/2026**. Este documento resume decisões e entregas da conv
 3. Para retomar localmente, usar `npm run dev -- --host 0.0.0.0 --port 8080`. O endereço esperado é `http://localhost:8080`.
 4. Continuar a partir do próximo pedido do usuário.
 
+## Correção — aviso "Essa agenda não está disponível nesta conta Google" (03/10, noite)
+
+Relato do dono: o aviso aparecia e o seletor de agenda não deixava trocar. O mapa de erros (`src/lib/integrations/friendly-error.ts`) traduzia **qualquer** texto com `calendar … not` para "agenda indisponível" — inclusive o erro do Google quando a **Google Calendar API não está ativada no projeto do Google Cloud** ("has not been used in project … or it is disabled"). Nesse caso `list_calendars` falha, a lista fica vazia e o `<select>` fica desativado (o "nada acontece"). Também "Conexão Google expirada"/`invalid_grant` caía em "sessão expirada" (mandava entrar no app de novo, o que não resolve).
+- Agora: mensagens próprias e acionáveis para API desativada (`errors.integration.googleApiDisabled`), permissão da Agenda não marcada no consentimento (`googleScopeMissing`) e token vencido/revogado (`googleReconnect`); "agenda indisponível" só para a resposta real do `set_calendar`. Testes em `src/lib/integrations/friendly-error.test.ts` (4). Só frontend.
+- **Causa no servidor ainda não confirmada** (sem acesso aos logs daqui): ver o texto novo que a tela mostrar, ou `select last_error from google_connections` / `docker logs` do container de funções. Se for API desativada: Google Cloud → APIs e serviços → ativar **Google Calendar API** (e **People API**, usada por Contatos) no **mesmo projeto do client OAuth**.
+
 ## Implantação aplicada em produção — entregas de 03/10/2026 (03/10, 17:44 PT)
 
 Executada pelo agente da VPS (Grok) na stack `z2dbb7…`, com o repositório em `2223949`, seguindo [implantacao-2026-10-03.md](implantacao-2026-10-03.md). Registro feito pelo Claude Code, porque a VPS não tem credencial de push no GitHub (`vez.sh pedir` falhou com `could not read Username for 'https://github.com'`; o fetch público funciona). **Pendência operacional:** dar à VPS um acesso de push (deploy key com escrita ou token) ou registrar sempre por uma máquina com push.

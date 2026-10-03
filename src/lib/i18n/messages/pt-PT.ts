@@ -138,6 +138,12 @@ export const ptPT: Record<MessageKey, string> = {
   "errors.integration.chooseCalendar": "Escolha que agenda usar antes de sincronizar.",
   "errors.integration.calendarUnavailable":
     "Essa agenda não está disponível nesta conta Google. Escolha outra.",
+  "errors.integration.googleApiDisabled":
+    'O Google Calendar não está ativado no projeto Google Cloud desta aplicação. O responsável técnico tem de ativar a "Google Calendar API" na consola do Google Cloud e tentar novamente.',
+  "errors.integration.googleScopeMissing":
+    "A Google não autorizou o acesso ao seu calendário. Toque em Desligar, volte a ligar e, no ecrã da Google, marque a permissão do calendário.",
+  "errors.integration.googleReconnect":
+    "A ligação à Google expirou ou foi removida. Toque em Desligar e volte a ligar.",
   "errors.integration.whatsappDisconnected":
     "A ligação do WhatsApp caiu ou o QR expirou. Toque em Ligar e leia o código novamente.",
   "errors.integration.lastError": "Houve um problema na última ligação. Tente ligar novamente.",

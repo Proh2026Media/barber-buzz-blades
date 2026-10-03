@@ -138,6 +138,12 @@ export const es: Record<MessageKey, string> = {
   "errors.integration.chooseCalendar": "Elige qué calendario usar antes de sincronizar.",
   "errors.integration.calendarUnavailable":
     "Ese calendario no está disponible en esta cuenta de Google. Elige otro.",
+  "errors.integration.googleApiDisabled":
+    'Google Calendar no está activado en el proyecto de Google Cloud de esta app. El responsable técnico debe activar la "Google Calendar API" en la consola de Google Cloud e intentarlo de nuevo.',
+  "errors.integration.googleScopeMissing":
+    "Google no autorizó el acceso a tu calendario. Toca Desconectar, vuelve a conectar y, en la pantalla de Google, marca el permiso de Calendario.",
+  "errors.integration.googleReconnect":
+    "La conexión con Google caducó o se eliminó. Toca Desconectar y vuelve a conectar.",
   "errors.integration.whatsappDisconnected":
     "La conexión de WhatsApp se cayó o el código QR caducó. Toca Conectar y escanéalo de nuevo.",
   "errors.integration.lastError": "Hubo un problema en la última conexión. Intenta reconectar.",

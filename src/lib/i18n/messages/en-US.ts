@@ -137,6 +137,12 @@ export const enUS: Record<MessageKey, string> = {
   "errors.integration.chooseCalendar": "Choose which calendar to use before syncing.",
   "errors.integration.calendarUnavailable":
     "That calendar isn't available in this Google account. Choose another one.",
+  "errors.integration.googleApiDisabled":
+    "Google Calendar isn't enabled in this app's Google Cloud project. The technical admin needs to enable the \"Google Calendar API\" in the Google Cloud console and try again.",
+  "errors.integration.googleScopeMissing":
+    "Google didn't grant access to your calendar. Tap Disconnect, connect again and, on Google's screen, tick the Calendar permission.",
+  "errors.integration.googleReconnect":
+    "The Google connection expired or was removed. Tap Disconnect and connect again.",
   "errors.integration.whatsappDisconnected":
     "The WhatsApp connection dropped or the QR code expired. Tap Connect and scan again.",
   "errors.integration.lastError": "There was a problem with the last connection. Try reconnecting.",

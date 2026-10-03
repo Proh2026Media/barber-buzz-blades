@@ -133,6 +133,12 @@ export const ptBR = {
   "errors.integration.chooseCalendar": "Escolha qual agenda usar antes de sincronizar.",
   "errors.integration.calendarUnavailable":
     "Essa agenda não está disponível nesta conta Google. Escolha outra.",
+  "errors.integration.googleApiDisabled":
+    'A Agenda Google não está ativada no projeto do Google Cloud deste app. O responsável técnico precisa ativar a "Google Calendar API" no console do Google Cloud e tentar de novo.',
+  "errors.integration.googleScopeMissing":
+    "O Google não liberou o acesso à sua Agenda. Toque em Desconectar, conecte de novo e, na tela do Google, marque a permissão da Agenda.",
+  "errors.integration.googleReconnect":
+    "A conexão com o Google expirou ou foi removida. Toque em Desconectar e conecte de novo.",
   "errors.integration.whatsappDisconnected":
     "A conexão do WhatsApp caiu ou o QR expirou. Toque em Conectar e escaneie de novo.",
   "errors.integration.lastError": "Houve um problema na última conexão. Tente reconectar.",

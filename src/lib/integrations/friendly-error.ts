@@ -13,6 +13,11 @@ function rawText(raw: unknown): string {
 }
 
 const PATTERNS: Array<{ test: RegExp; message: MessageKey }> = [
+  // Antes de "sessão": o token do Google venceu ou foi revogado — reconectar o Google, não entrar no app de novo.
+  {
+    test: /invalid_grant|has been expired or revoked|Invalid Credentials|Conexão Google expirada/i,
+    message: "errors.integration.googleReconnect",
+  },
   {
     test: /session|expirad|expired|entre novamente|invalid session|missing authorization/i,
     message: "errors.integration.session",
@@ -29,8 +34,18 @@ const PATTERNS: Array<{ test: RegExp; message: MessageKey }> = [
     test: /Escolha qual agenda|calendar_id|informe a agenda/i,
     message: "errors.integration.chooseCalendar",
   },
+  // Erros do Google em inglês: o que a pessoa (ou o técnico) precisa fazer em cada caso.
+  // Vêm antes de "agenda indisponível", que antes capturava qualquer "calendar … not".
   {
-    test: /não está disponível nesta conta|calendar.*not/i,
+    test: /has not been used in project|accessNotConfigured|SERVICE_DISABLED|API.*is disabled/i,
+    message: "errors.integration.googleApiDisabled",
+  },
+  {
+    test: /insufficient authentication scopes|insufficientPermissions|ACCESS_TOKEN_SCOPE_INSUFFICIENT/i,
+    message: "errors.integration.googleScopeMissing",
+  },
+  {
+    test: /não está disponível nesta conta Google/i,
     message: "errors.integration.calendarUnavailable",
   },
   {
