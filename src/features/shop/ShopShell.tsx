@@ -11,6 +11,7 @@ import { ProfessionalInsights } from "@/features/insights/ProfessionalInsights";
 import { TeamGovernance } from "@/features/shop/settings/TeamGovernance";
 import { PartnerCatalogSuggestions } from "./PartnerCatalogSuggestions";
 import { ShopTeamAccessCard } from "./ShopTeamAccessCard";
+import { ShopSetupChecklist } from "./ShopSetupChecklist";
 import { BrandIdentityEditor } from "@/features/shop/BrandIdentityEditor";
 import { WhatsAppSettingsCard } from "@/features/shop/settings/WhatsAppSettingsCard";
 import { SlugRedirectsCard } from "@/features/shop/settings/SlugRedirectsCard";
@@ -1766,6 +1767,30 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   </button>
                 )}
               </div>
+
+              {!demo &&
+                !loading &&
+                settings &&
+                (!actor || actor.role === "owner" || actor.role === "partner") && (
+                  <ShopSetupChecklist
+                    shopId={shop.id}
+                    publicUrl={shopPublicOrigin({
+                      slug: shop.slug,
+                      customDomain: shop.custom_domain,
+                      customDomainStatus: shop.custom_domain_status,
+                    })}
+                    services={services}
+                    businessHours={businessHours}
+                    settings={settings}
+                    onOpen={(target) => {
+                      if (target === "horarios" || target === "servicos") return setTab(target);
+                      setTab("configuracoes");
+                      setSettingsSection("aparencia");
+                      if (target === "landing") setLandingOpen(true);
+                      else setBrandOpen(true);
+                    }}
+                  />
+                )}
 
               <div className="agenda-toolbar app-action-card p-3 sm:p-4">
                 {actor && capabilities?.viewFullShop && (

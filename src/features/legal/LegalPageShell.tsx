@@ -10,7 +10,7 @@ type LegalPageShellProps = {
   updatedAt: string;
   /** Idioma próprio da página (ex.: detectado do navegador); sem ele, vale o idioma do app. */
   locale?: Locale;
-  /** `?lang=` recebido no endereço; mantido nos links do rodapé entre política e termos. */
+  /** `?lang=` recebido no endereço; mantido nos links do rodapé entre os documentos legais. */
   langParam?: string;
   children: ReactNode;
 };
@@ -112,6 +112,13 @@ export function LegalPageShell({
             className="min-h-11 inline-flex items-center font-semibold text-foreground underline-offset-2 hover:underline"
           >
             {t("legal.termsLink")}
+          </Link>
+          <Link
+            to="/acordo-de-dados"
+            search={legalSearch}
+            className="min-h-11 inline-flex items-center font-semibold text-foreground underline-offset-2 hover:underline"
+          >
+            {t("legal.dpaLink")}
           </Link>
           <Link
             to="/"

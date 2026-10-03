@@ -663,6 +663,7 @@ export const enUS: Record<MessageKey, string> = {
   "legal.navAria": "Legal documents",
   "legal.privacyLink": "Privacy Policy",
   "legal.termsLink": "Terms of Use",
+  "legal.dpaLink": "Data Processing Agreement",
   "legal.home": "Home",
   "legal.terms.s1Title": "1. Acceptance",
   "legal.terms.s1Body":
@@ -679,6 +680,10 @@ export const enUS: Record<MessageKey, string> = {
     "Shop owners and administrators are responsible for the data they register (staff, services, customers and communications) and for complying with the laws that apply to their relationship with their customers.",
   "legal.terms.s3Item3":
     "Information provided must be true and up to date. Abusive use, fraud or attempted unauthorized access may result in suspension or closure of the account.",
+  "legal.terms.s3Item4":
+    "You must be 18 or older to use the app. Customers under 18 may use it only with permission from a parent or guardian. Anyone who registers a barbershop must be 18 or older and able to represent it.",
+  "legal.terms.s3Item5":
+    "When registering a barbershop, the owner also accepts the {dpa}, which sets out how we handle the data of the shop's customers and staff.",
   "legal.terms.s4Title": "4. Google and other third-party services",
   "legal.terms.s4Body":
     "When you use Google sign-in or connect Google Calendar/Contacts, Google's terms and policies also apply. How this information is handled is described in our Privacy Policy.",
@@ -702,16 +707,16 @@ export const enUS: Record<MessageKey, string> = {
   "legal.privacy.s1Dpo":
     "**Data Protection Officer (DPO):** reachable at {email}, which receives requests from data subjects and communications from the Brazilian National Data Protection Authority (ANPD).",
   "legal.privacy.s1Roles":
-    "For your account data and platform data, the company above is the **controller**. For the data each barbershop enters about its own customers and staff, the barbershop is the controller and Barba & Cabelo acts as a **processor**, handling that data only to provide the contracted service.",
+    "For your account data and platform data, the company above is the **controller**. For the data each barbershop enters about its own customers and staff, the barbershop is the controller and Barba & Cabelo acts as a **processor**, handling that data only to provide the contracted service. When registering the barbershop, the owner accepts the {dpa}, which sets out these roles in detail.",
   "legal.privacy.s1Body":
     "This policy explains what data we process, why, how we protect it and how you can exercise your rights, in accordance with Brazil's General Data Protection Law (LGPD, Law 13,709/2018) and the Google API Services User Data Policy.",
   "legal.privacy.s2Title": "2. What data we process",
   "legal.privacy.s2Intro":
     "We process only what is needed for booking and barbershop management to work:",
   "legal.privacy.s2Item1":
-    "**Account:** name, email, profile photo (if you upload one or it comes from Sign in with Google) and password — stored only as a hash, never in readable text;",
+    "**Account:** name (entered at sign-up or provided by Sign in with Google), email, profile photo (if you upload one or it comes from Sign in with Google) and password — stored only as a hash, never in readable text;",
   "legal.privacy.s2Item2":
-    "**WhatsApp number** (when provided), for confirmations, reminders and verification codes. The number you enter at sign-up or in My profile is confirmed with a code sent from the platform's WhatsApp (you can leave this for later, in My profile); only a confirmed number can be used to sign in and reset your password with WhatsApp;",
+    "**WhatsApp number:** required for the owner when registering the barbershop and for customers who create an account with email from a barbershop's link; optional in all other cases. It is used for confirmations, reminders and verification codes. The number is confirmed with a code sent from the platform's WhatsApp (customers can leave this for later, in My profile); only a confirmed number can be used to sign in and reset your password with WhatsApp. Customers choose at sign-up whether to receive WhatsApp notifications, and anyone can turn these notifications off at any time in My profile;",
   "legal.privacy.s2Item3":
     "**Appointments:** service, professional, date, time, status, visit history and the barbershop's loyalty club points;",
   "legal.privacy.s2Item4":
@@ -722,6 +727,8 @@ export const enUS: Record<MessageKey, string> = {
     "**Google data**, only if you use Sign in with Google or connect Google Calendar/Contacts (details in section 4);",
   "legal.privacy.s2Item7":
     "**Technical data:** authentication session and technical logs of requests to the server (such as IP address, date and time), used for security and to fix errors.",
+  "legal.privacy.s2Item8":
+    "**Record of acceptance:** the date and the versions of the Terms of Use and this Policy (and, for owners, the Data Processing Agreement) that you accepted, together with your age declaration, are recorded in your profile as proof of acceptance.",
   "legal.privacy.s2Body":
     "We do not ask for sensitive personal data as defined by the LGPD (such as health, religion, biometrics or racial origin). Even so, we handle passwords, access tokens, verification codes and contact details with the enhanced protections described in section 5.",
   "legal.privacy.s3Title": "3. Why we use it and on what legal basis",
@@ -888,6 +895,82 @@ export const enUS: Record<MessageKey, string> = {
   "legal.privacy.s13Title": "13. Changes to this policy",
   "legal.privacy.s13Body":
     "We may update this policy to reflect changes to the service or to the law. The date at the top of the page indicates the current version. For significant changes, we will seek to inform you through the app's usual channels.",
+  "legal.dpa.intro":
+    "This agreement applies between each barbershop registered on {app} and the company that runs the app. It explains how we handle the data the barbershop keeps about its own customers and staff, and it supplements the {terms} and the {privacy}.",
+  "legal.dpa.s1Title": "1. Who is who",
+  "legal.dpa.s1Body":
+    "The **barbershop**, represented by the owner who registered it, is the **controller** of its customers' and staff's data: it decides why and how that data is used. {name}, CNPJ {cnpj}, which runs Barba & Cabelo, is the **processor**: it handles that data on the barbershop's behalf, only to provide the service.",
+  "legal.dpa.s1Own":
+    "Each person's own account data in the app (sign-in, password and preferences) is covered by the Privacy Policy, under which the operator is the controller.",
+  "legal.dpa.s1Accept":
+    "The owner accepts this agreement when registering the barbershop. It applies while the barbershop uses the app and, after that, until the data is returned or deleted (section 9).",
+  "legal.dpa.s2Title": "2. Subject and purpose",
+  "legal.dpa.s2Intro":
+    "On the barbershop's behalf, the processor handles the data needed for bookings, the loyalty club and running the shop:",
+  "legal.dpa.s2Item1":
+    "**Customers:** name, email, WhatsApp number, appointments, visit history, club points and any other information the barbershop enters in the app;",
+  "legal.dpa.s2Item2":
+    "**Staff:** name, contact details, role, permissions and schedule of the people who work at the barbershop;",
+  "legal.dpa.s2Item3":
+    "**Notifications:** confirmations, reminders and other appointment notices sent to customers via WhatsApp on the barbershop's behalf.",
+  "legal.dpa.s2Body":
+    "The processor does not use this data for its own purposes, does not sell it and does not use it for advertising.",
+  "legal.dpa.s3Title": "3. The barbershop's instructions",
+  "legal.dpa.s3Body":
+    "The processor handles the data only according to the barbershop's instructions. Those instructions are this agreement and the choices the owner and permitted staff make in the app itself, such as services, opening hours, permissions, notifications and connected integrations.",
+  "legal.dpa.s3Unlawful":
+    "If an instruction appears to be unlawful, the processor will tell the barbershop and may decline to follow it.",
+  "legal.dpa.s4Title": "4. Confidentiality",
+  "legal.dpa.s4Body":
+    "People who work for the processor or provide services to it access the data only when needed for the task (for example, support requested by the barbershop, the security of the service or compliance with the law), under a duty of confidentiality.",
+  "legal.dpa.s5Title": "5. Security",
+  "legal.dpa.s5Body":
+    "The processor applies to the barbershop's data the same measures described in {security}, such as encryption in transit, access control by barbershop and by permission, and passwords stored only as a hash. No system is completely immune to failure, so these measures are reviewed continuously.",
+  "legal.dpa.s5Link": "section 5 of the Privacy Policy",
+  "legal.dpa.s6Title": "6. Sub-processors",
+  "legal.dpa.s6Intro":
+    "To run the service, the processor uses the same providers listed in section 6 of the {privacy}:",
+  "legal.dpa.s6Item1":
+    "the virtual private server (VPS) contracted by the operator, which runs the database, authentication and server functions;",
+  "legal.dpa.s6Item2":
+    "Hostinger, which hosts the website and domain and provides the email service for account messages;",
+  "legal.dpa.s6Item3":
+    "WhatsApp (Meta), which delivers the messages sent by our own Evolution API installation, on our own server;",
+  "legal.dpa.s6Item4":
+    "Google, only if the barbershop turns on the Google Calendar/Contacts connection.",
+  "legal.dpa.s6Changes":
+    "These providers receive only what they need for their part of the service. If the list changes, the Privacy Policy and this agreement will be updated.",
+  "legal.dpa.s7Title": "7. Security incidents",
+  "legal.dpa.s7Body":
+    "If a security incident affects the barbershop's data, the processor will notify the barbershop without undue delay, with the information available: what happened, the data involved, the risks and the measures taken. The processor will also help the barbershop notify the authority and the affected customers, where required (art. 48 of the LGPD). To report a suspected incident, write to {email}.",
+  "legal.dpa.s8Title": "8. Rights of customers and staff",
+  "legal.dpa.s8Body":
+    "The barbershop is responsible for answering data subject requests (access, correction, deletion and others) about the barbershop's data. The processor helps where it can and, if it receives such a request, forwards it to the barbershop.",
+  "legal.dpa.s8Self":
+    "In the app itself, each person can already correct their profile, change their preferences and delete their own account, without contacting support.",
+  "legal.dpa.s9Title": "9. End of use and return of data",
+  "legal.dpa.s9Body":
+    "When the barbershop stops using the app, the owner can ask by email at {email} for a copy of the shop's customer and staff data and, afterwards, for that data to be deleted. As the app does not yet offer an automatic export, the copy is prepared by the processor and sent to the owner.",
+  "legal.dpa.s9Retention":
+    "Only data the law requires us to keep (such as access logs for 6 months, required by Brazil's Marco Civil da Internet) and anonymous records, with no link to individuals, may be kept.",
+  "legal.dpa.s10Title": "10. The barbershop's duties",
+  "legal.dpa.s10Intro": "As controller, the barbershop agrees to:",
+  "legal.dpa.s10Item1":
+    "have a legal basis to process the data and to contact customers — for example, to send confirmations and reminders via WhatsApp to people who booked;",
+  "legal.dpa.s10Item2":
+    "inform customers clearly about how their data is used and respect anyone who asks not to receive notifications;",
+  "legal.dpa.s10Item3":
+    "not enter sensitive data (such as health, religion or racial origin) or any other information that is not needed for the service;",
+  "legal.dpa.s10Item4":
+    "give each staff member only the permissions they need and remove access for anyone who leaves;",
+  "legal.dpa.s10Item5": "keep the data accurate and respond to data subject requests.",
+  "legal.dpa.s11Title": "11. Governing law and jurisdiction",
+  "legal.dpa.s11Body":
+    "This agreement follows Brazil's General Data Protection Law (LGPD, Law 13,709/2018). For barbershops in Portugal or another European Union country, the General Data Protection Regulation (GDPR) also applies, in particular Article 28, which governs the relationship between the controller and the processor. The courts of the operator's place of business have jurisdiction, unless a mandatory legal rule provides otherwise.",
+  "legal.dpa.s12Title": "12. Contact and changes",
+  "legal.dpa.s12Body": "Questions about this agreement: {email}.",
+  "legal.dpa.s12Changes":
+    "The date at the top shows the current version. For significant changes, we will notify the owner through the app's usual channels and may ask for a new acceptance.",
   "legal.club.header": "Loyalty club",
   "legal.club.heroTitle": "Loyalty club rules",
   "legal.club.heroBodyShop":
@@ -2915,4 +2998,82 @@ export const enUS: Record<MessageKey, string> = {
   "fix3.terms.googleRevoke":
     "When you disconnect Google Calendar/Contacts in the app, we revoke access with Google and immediately delete the stored tokens and imported events. If the revocation can't be confirmed, or if you prefer, remove Barba & Cabelo's access directly at {link}. Data received from Google APIs is used only for the features described in the {privacy}, never for advertising, and is never sold.",
   "fix3.google.privacyLink": "How we use Google data",
+  "cad.cliente.nameLabel": "What should we call you?",
+  "cad.cliente.namePlaceholder": "E.g. John",
+  "cad.cliente.nameError": "Enter your name (2 to 80 characters).",
+  "cad.cliente.whatsappHint":
+    "We use it to confirm and remind you of your appointments. You can turn it off anytime.",
+  "cad.cliente.optInLabel": "Send me confirmations and reminders on WhatsApp",
+  "cad.cliente.phoneDddError": "Check the area code: it has 2 digits, like 11 or 21.",
+  "cad.cliente.phoneLengthError": "Check the number: area code and number, like (11) 99999-0000.",
+  "cad.cliente.phoneRequired": "Enter your WhatsApp number with area code.",
+  "cad.cliente.confirmEmailWhatsapp":
+    "We sent a link to your email. Open it and sign in, then we'll confirm your WhatsApp with a code.",
+  "cad.cliente.terms.before": "By creating an account, you agree to the",
+  "cad.cliente.terms.age":
+    "and confirm you are 18 or older (or use it with a parent or guardian's permission).",
+  "cad.cliente.newTab": "(opens in a new tab)",
+  "cad.cliente.ownerQuestion": "Own a barbershop?",
+  "cad.cliente.ownerLink": "Sign up your barbershop",
+  "cad.nome.title": "What should we call you?",
+  "cad.nome.text": "This way the barbershop knows who you are in the schedule and reminders.",
+  "cad.nome.label": "Your name",
+  "cad.nome.save": "Save",
+  "cad.nome.later": "Not now",
+  "cad.nome.errorLength": "Enter your name (2 to 80 characters).",
+  "cad.nome.errorSave": "Couldn't save right now. Please try again.",
+  "cad.nome.saved": "Done! We'll call you {name}.",
+  "cad.dono.linkPreview": "Your link: {link}",
+  "cad.dono.linkHint":
+    "The link comes from the name. If it's already taken, a number is added at the end.",
+  "cad.dono.emailCheck": "Double-check: your email is {email}",
+  "cad.dono.otpEmailCheck": "Your account will be created with {email}.",
+  "cad.dono.shopWhatsappQuestion": "Is this WhatsApp also the barbershop's number for customers?",
+  "cad.dono.shopWhatsappYes": "Yes",
+  "cad.dono.shopWhatsappNo": "No",
+  "cad.dono.shopWhatsappYesHint": "It shows on the shop page so customers can message you.",
+  "cad.dono.shopWhatsappNoHint": "You can add the shop's number later in Settings.",
+  "cad.dono.societySummary": "Partnership: I have no partners.",
+  "cad.dono.societyOpen": "I have partners",
+  "cad.dono.societyClose": "I have no partners",
+  "cad.dono.termsText":
+    "I have read and accept the {terms}, the {privacy} and the {dpa} for barbershops. I am 18 or older and authorized to represent this barbershop.",
+  "cad.dono.termsLink": "Terms of Use",
+  "cad.dono.privacyLink": "Privacy Policy",
+  "cad.dono.dpaLink": "Data Processing Agreement",
+  "cad.dono.newTab": "(opens in a new tab)",
+  "cad.dono.termsNeeded": "Check the box above to continue.",
+  "cad.dono.errTerms": "To create the account, check the acceptance box.",
+  "cad.dono.errShopName": "Enter the barbershop name.",
+  "cad.dono.errFullName": "Enter your name (at least 2 letters).",
+  "cad.dono.errEmail": "Check your email. Example: name@gmail.com",
+  "cad.dono.errWhatsappInvalid": "Check the number: area code + number. Example: (11) 99999-0000",
+  "cad.dono.doneTitle": "Barbershop created!",
+  "cad.dono.doneLead": "In your dashboard, a guide shows what's left before you can take bookings.",
+  "cad.dono.yourLink": "Your barbershop link",
+  "cad.dono.openPanel": "Open dashboard",
+  "cad.guia.title": "Get your barbershop ready",
+  "cad.guia.subtitle": "A few steps to start taking bookings.",
+  "cad.guia.hide": "Hide guide",
+  "cad.guia.progress": "{done} of {total}",
+  "cad.guia.statusDone": "done",
+  "cad.guia.statusPending": "to do",
+  "cad.guia.hoursTitle": "Check your opening hours",
+  "cad.guia.hoursHint": "We started you on Monday to Saturday, 9 AM to 7 PM.",
+  "cad.guia.hoursAction": "View hours",
+  "cad.guia.hoursOk": "Looks right",
+  "cad.guia.serviceTitle": "Add your first service",
+  "cad.guia.serviceHint": "E.g. haircut, beard. With price and length.",
+  "cad.guia.serviceAction": "Add service",
+  "cad.guia.contactTitle": "Add your shop's address and WhatsApp",
+  "cad.guia.contactHint": "Shown to customers on your shop page.",
+  "cad.guia.contactAction": "Fill in",
+  "cad.guia.brandTitle": "Choose your logo and colors",
+  "cad.guia.brandHint": "Make the app look like your shop.",
+  "cad.guia.brandAction": "Choose",
+  "cad.guia.linkTitle": "Copy your shop link",
+  "cad.guia.linkHint": "Send it to customers so they can book:",
+  "cad.guia.linkAction": "Copy link",
+  "cad.guia.linkCopied": "Link copied.",
+  "cad.guia.linkCopyError": "Couldn't copy. Press and hold the link to copy it.",
 };

@@ -665,6 +665,7 @@ export const ptBR = {
   "legal.navAria": "Documentos legais",
   "legal.privacyLink": "Política de Privacidade",
   "legal.termsLink": "Termos de Uso",
+  "legal.dpaLink": "Acordo de Tratamento de Dados",
   "legal.home": "Início",
   "legal.terms.s1Title": "1. Aceitação",
   "legal.terms.s1Body":
@@ -681,6 +682,10 @@ export const ptBR = {
     "Donos e administradores da loja são responsáveis pelos dados que cadastram (equipe, serviços, clientes e comunicações) e pelo cumprimento das leis aplicáveis na relação com seus clientes.",
   "legal.terms.s3Item3":
     "Informações fornecidas devem ser verdadeiras e atualizadas. Uso abusivo, fraude ou tentativa de acesso indevido podem resultar em suspensão ou encerramento da conta.",
+  "legal.terms.s3Item4":
+    "É preciso ter 18 anos ou mais para usar o app. Clientes com menos de 18 anos só podem usá-lo com autorização do responsável. Quem cadastra uma barbearia precisa ter 18 anos ou mais e poder representá-la.",
+  "legal.terms.s3Item5":
+    "Ao cadastrar uma barbearia, o dono aceita também o {dpa}, que define como tratamos os dados dos clientes e da equipe da loja.",
   "legal.terms.s4Title": "4. Google e outros serviços de terceiros",
   "legal.terms.s4Body":
     "Quando você usa login Google ou conecta Google Agenda/Contatos, também se aplicam os termos e políticas do Google. O tratamento dessas informações está descrito na nossa Política de Privacidade.",
@@ -704,16 +709,16 @@ export const ptBR = {
   "legal.privacy.s1Dpo":
     "**Encarregado pelo tratamento de dados (DPO):** atendimento pelo e-mail {email}, que recebe os pedidos dos titulares e as comunicações da Autoridade Nacional de Proteção de Dados (ANPD).",
   "legal.privacy.s1Roles":
-    "Para os dados da sua conta e da plataforma, a empresa acima é a **controladora**. Para os dados que cada barbearia cadastra sobre os próprios clientes e a própria equipe, a barbearia é a controladora e o Barba & Cabelo atua como **operador**, tratando esses dados apenas para prestar o serviço contratado.",
+    "Para os dados da sua conta e da plataforma, a empresa acima é a **controladora**. Para os dados que cada barbearia cadastra sobre os próprios clientes e a própria equipe, a barbearia é a controladora e o Barba & Cabelo atua como **operador**, tratando esses dados apenas para prestar o serviço contratado. Ao cadastrar a barbearia, o dono aceita o {dpa}, que detalha esses papéis.",
   "legal.privacy.s1Body":
     "Esta política explica quais dados tratamos, para quê, como os protegemos e como você exerce seus direitos, de acordo com a Lei Geral de Proteção de Dados (LGPD, Lei 13.709/2018) e com a Política de Dados do Usuário dos Serviços de API do Google.",
   "legal.privacy.s2Title": "2. Quais dados tratamos",
   "legal.privacy.s2Intro":
     "Tratamos apenas o necessário para o agendamento e a gestão da barbearia funcionarem:",
   "legal.privacy.s2Item1":
-    "**Conta:** nome, e-mail, foto de perfil (se você enviar uma ou se ela vier do login com Google) e senha — guardada somente como hash, nunca em texto legível;",
+    "**Conta:** nome (informado no cadastro ou vindo do login com Google), e-mail, foto de perfil (se você enviar uma ou se ela vier do login com Google) e senha — guardada somente como hash, nunca em texto legível;",
   "legal.privacy.s2Item2":
-    "**WhatsApp** (quando informado), para confirmações, lembretes e códigos de verificação. O número informado no cadastro ou em Meu perfil é confirmado com um código enviado pelo WhatsApp da plataforma (a confirmação pode ficar para depois, em Meu perfil); só número confirmado serve para entrar e recuperar a senha pelo WhatsApp;",
+    "**WhatsApp:** obrigatório para o dono ao cadastrar a barbearia e para o cliente que cria a conta com e-mail pelo link de uma barbearia; opcional nos demais casos. Serve para confirmações, lembretes e códigos de verificação. O número é confirmado com um código enviado pelo WhatsApp da plataforma (o cliente pode deixar a confirmação para depois, em Meu perfil); só número confirmado serve para entrar e recuperar a senha pelo WhatsApp. Quem cria conta como cliente escolhe no cadastro se quer receber avisos por WhatsApp, e qualquer pessoa pode desligar esses avisos quando quiser em Meu perfil;",
   "legal.privacy.s2Item3":
     "**Agendamentos:** serviço, profissional, data, horário, status, histórico de atendimentos e pontos do clube de fidelidade da barbearia;",
   "legal.privacy.s2Item4":
@@ -724,6 +729,8 @@ export const ptBR = {
     "**Dados do Google**, somente se você usar o login com Google ou conectar Google Agenda/Contatos (detalhes na seção 4);",
   "legal.privacy.s2Item7":
     "**Dados técnicos:** sessão de autenticação e registros técnicos das requisições ao servidor (como endereço IP, data e hora), usados para segurança e para corrigir falhas.",
+  "legal.privacy.s2Item8":
+    "**Registro do aceite:** a data e as versões dos Termos de Uso e desta Política (e, para o dono, do Acordo de Tratamento de Dados) que você aceitou, além da sua declaração de idade, ficam registradas no seu perfil para comprovar o aceite.",
   "legal.privacy.s2Body":
     "Não solicitamos dados pessoais sensíveis no sentido da LGPD (como saúde, religião, biometria ou origem racial). Mesmo assim, tratamos senhas, tokens de acesso, códigos de verificação e contatos com as proteções reforçadas descritas na seção 5.",
   "legal.privacy.s3Title": "3. Para que usamos e com qual base legal",
@@ -891,6 +898,82 @@ export const ptBR = {
   "legal.privacy.s13Title": "13. Alterações desta política",
   "legal.privacy.s13Body":
     "Podemos atualizar esta política para refletir mudanças no serviço ou na legislação. A data no topo da página indica a versão vigente. Em alterações relevantes, buscaremos informar pelos canais habituais do app.",
+  "legal.dpa.intro":
+    "Este acordo vale entre cada barbearia cadastrada no {app} e a empresa que opera o app. Ele explica como tratamos os dados que a barbearia guarda sobre os próprios clientes e a própria equipe, e complementa os {terms} e a {privacy}.",
+  "legal.dpa.s1Title": "1. Quem é quem",
+  "legal.dpa.s1Body":
+    "A **barbearia**, representada pelo dono que a cadastrou, é a **controladora** dos dados dos seus clientes e da sua equipe: é ela que decide por que e como usá-los. A {name}, CNPJ {cnpj}, que opera o Barba & Cabelo, é a **operadora**: trata esses dados em nome da barbearia, apenas para prestar o serviço.",
+  "legal.dpa.s1Own":
+    "Os dados da conta de cada pessoa no app (login, senha e preferências) seguem a Política de Privacidade, na qual a operadora é a controladora.",
+  "legal.dpa.s1Accept":
+    "O dono aceita este acordo ao cadastrar a barbearia. Ele vale enquanto a barbearia usar o app e, depois disso, até a devolução ou a eliminação dos dados (seção 9).",
+  "legal.dpa.s2Title": "2. Objeto e finalidade",
+  "legal.dpa.s2Intro":
+    "A operadora trata, em nome da barbearia, os dados necessários para o agendamento, o clube de fidelidade e a gestão da loja:",
+  "legal.dpa.s2Item1":
+    "**Clientes:** nome, e-mail, WhatsApp, agendamentos, histórico de atendimentos, pontos do clube e demais informações que a barbearia registrar no app;",
+  "legal.dpa.s2Item2":
+    "**Equipe:** nome, contato, papel, permissões e agenda de quem trabalha na barbearia;",
+  "legal.dpa.s2Item3":
+    "**Avisos:** confirmações, lembretes e outros avisos de atendimento enviados aos clientes pelo WhatsApp, em nome da barbearia.",
+  "legal.dpa.s2Body":
+    "A operadora não usa esses dados para fins próprios, não os vende e não os usa para publicidade.",
+  "legal.dpa.s3Title": "3. Instruções da barbearia",
+  "legal.dpa.s3Body":
+    "A operadora só trata os dados conforme as instruções da barbearia. Essas instruções são este acordo e as escolhas que o dono e a equipe autorizada fazem no próprio app, como serviços, horários, permissões, avisos e integrações ligadas.",
+  "legal.dpa.s3Unlawful":
+    "Se uma instrução parecer contrária à lei, a operadora avisará a barbearia e poderá deixar de cumpri-la.",
+  "legal.dpa.s4Title": "4. Confidencialidade",
+  "legal.dpa.s4Body":
+    "Quem trabalha na operadora ou presta serviço a ela só acessa os dados quando é necessário para a tarefa (por exemplo, um suporte pedido pela barbearia, a segurança do serviço ou o cumprimento da lei), sob dever de confidencialidade.",
+  "legal.dpa.s5Title": "5. Segurança",
+  "legal.dpa.s5Body":
+    "A operadora aplica aos dados da barbearia as mesmas medidas descritas na {security}, como criptografia em trânsito, controle de acesso por barbearia e por permissão e senhas guardadas só como hash. Nenhum sistema é totalmente imune a falhas; por isso essas medidas são revisadas continuamente.",
+  "legal.dpa.s5Link": "seção 5 da Política de Privacidade",
+  "legal.dpa.s6Title": "6. Suboperadores",
+  "legal.dpa.s6Intro":
+    "Para o serviço funcionar, a operadora usa os mesmos fornecedores listados na seção 6 da {privacy}:",
+  "legal.dpa.s6Item1":
+    "o servidor virtual privado (VPS) contratado pela operadora, onde ficam o banco de dados, a autenticação e as funções do servidor;",
+  "legal.dpa.s6Item2":
+    "a Hostinger, que hospeda o site e o domínio e presta o serviço de e-mail das mensagens da conta;",
+  "legal.dpa.s6Item3":
+    "o WhatsApp (Meta), que entrega as mensagens enviadas pela nossa instalação do Evolution API, no nosso próprio servidor;",
+  "legal.dpa.s6Item4":
+    "o Google, somente se a barbearia ativar a conexão com Google Agenda/Contatos.",
+  "legal.dpa.s6Changes":
+    "Esses fornecedores recebem só o necessário para a sua parte do serviço. Se a lista mudar, a Política de Privacidade e este acordo serão atualizados.",
+  "legal.dpa.s7Title": "7. Incidentes de segurança",
+  "legal.dpa.s7Body":
+    "Se ocorrer um incidente de segurança com dados da barbearia, a operadora vai comunicá-la sem demora indevida, com as informações disponíveis: o que aconteceu, os dados envolvidos, os riscos e as medidas tomadas. A operadora também ajuda a barbearia a avisar a ANPD e os clientes afetados, quando for o caso (art. 48 da LGPD). Para relatar uma suspeita, escreva para {email}.",
+  "legal.dpa.s8Title": "8. Direitos dos clientes e da equipe",
+  "legal.dpa.s8Body":
+    "Quem responde aos pedidos dos titulares (acesso, correção, exclusão e outros) sobre os dados da barbearia é a barbearia. A operadora ajuda no que for possível e, se receber um pedido desse tipo, encaminha para a barbearia.",
+  "legal.dpa.s8Self":
+    "No próprio app, cada pessoa já pode corrigir o perfil, mudar as preferências e excluir a própria conta, sem depender de suporte.",
+  "legal.dpa.s9Title": "9. Fim do uso e devolução dos dados",
+  "legal.dpa.s9Body":
+    "Quando a barbearia deixar de usar o app, o dono pode pedir pelo e-mail {email} uma cópia dos dados dos clientes e da equipe da loja e, depois, a eliminação desses dados. Como o app ainda não tem exportação automática, a cópia é preparada pela operadora e enviada ao dono.",
+  "legal.dpa.s9Retention":
+    "Podem ser mantidos apenas os dados que a lei obriga a guardar (como os registros de acesso por 6 meses, exigidos pelo Marco Civil da Internet) e registros anônimos, sem vínculo com as pessoas.",
+  "legal.dpa.s10Title": "10. Deveres da barbearia",
+  "legal.dpa.s10Intro": "Como controladora, a barbearia se compromete a:",
+  "legal.dpa.s10Item1":
+    "ter uma base legal para tratar os dados e para contatar os clientes — por exemplo, para enviar confirmações e lembretes pelo WhatsApp a quem agendou;",
+  "legal.dpa.s10Item2":
+    "informar os clientes de forma clara sobre o uso dos dados e respeitar quem pedir para não receber avisos;",
+  "legal.dpa.s10Item3":
+    "não cadastrar dados sensíveis (como saúde, religião ou origem racial) nem outras informações que não sejam necessárias para o atendimento;",
+  "legal.dpa.s10Item4":
+    "dar a cada pessoa da equipe só as permissões necessárias e retirar o acesso de quem sair;",
+  "legal.dpa.s10Item5": "manter os dados corretos e atender os pedidos dos titulares.",
+  "legal.dpa.s11Title": "11. Legislação e foro",
+  "legal.dpa.s11Body":
+    "Este acordo segue a Lei Geral de Proteção de Dados (LGPD, Lei 13.709/2018). Para barbearias em Portugal ou em outro país da União Europeia, aplica-se também o Regulamento Geral sobre a Proteção de Dados (RGPD), em especial o art. 28, que trata da relação entre quem controla os dados e quem os trata em seu nome. Fica eleito o foro do domicílio da operadora, salvo regra legal obrigatória em contrário.",
+  "legal.dpa.s12Title": "12. Contato e alterações",
+  "legal.dpa.s12Body": "Dúvidas sobre este acordo: {email}.",
+  "legal.dpa.s12Changes":
+    "A data no topo indica a versão vigente. Em mudanças relevantes, avisaremos o dono pelos canais habituais do app e poderemos pedir um novo aceite.",
   "legal.club.header": "Clube de fidelidade",
   "legal.club.heroTitle": "Regras do clube de fidelidade",
   "legal.club.heroBodyShop":
@@ -2936,6 +3019,83 @@ export const ptBR = {
   "fix3.terms.googleRevoke":
     "Ao desconectar Google Agenda/Contatos no app, revogamos o acesso junto ao Google e apagamos na hora os tokens e os eventos importados. Se não for possível confirmar a revogação, ou se preferir, remova o acesso do Barba & Cabelo diretamente em {link}. Os dados recebidos das APIs do Google são usados apenas para as funções descritas na {privacy}, nunca para publicidade, e não são vendidos.",
   "fix3.google.privacyLink": "Como usamos os dados do Google",
+  "cad.cliente.nameLabel": "Como você quer ser chamado?",
+  "cad.cliente.namePlaceholder": "Ex.: João",
+  "cad.cliente.nameError": "Escreva seu nome (de 2 a 80 letras).",
+  "cad.cliente.whatsappHint":
+    "Usamos para confirmar e lembrar seus horários. Você pode desligar quando quiser.",
+  "cad.cliente.optInLabel": "Quero receber confirmação e lembretes pelo WhatsApp",
+  "cad.cliente.phoneDddError": "Confira o DDD: são 2 números, como 11 ou 21.",
+  "cad.cliente.phoneLengthError": "Confira o número: DDD e número, como (11) 99999-0000.",
+  "cad.cliente.phoneRequired": "Informe seu WhatsApp com DDD.",
+  "cad.cliente.confirmEmailWhatsapp":
+    "Enviamos um link para o seu e-mail. Abra o link e entre: aí confirmamos o seu WhatsApp com um código.",
+  "cad.cliente.terms.before": "Ao criar a conta, você concorda com os",
+  "cad.cliente.terms.age":
+    "e declara ter 18 anos ou mais (ou usar com autorização do responsável).",
+  "cad.cliente.newTab": "(abre em nova aba)",
+  "cad.cliente.ownerQuestion": "É dono de barbearia?",
+  "cad.cliente.ownerLink": "Cadastre sua barbearia",
+  "cad.nome.title": "Como você quer ser chamado?",
+  "cad.nome.text": "Assim a barbearia sabe quem você é na agenda e nos lembretes.",
+  "cad.nome.label": "Seu nome",
+  "cad.nome.save": "Salvar",
+  "cad.nome.later": "Agora não",
+  "cad.nome.errorLength": "Escreva seu nome (de 2 a 80 letras).",
+  "cad.nome.errorSave": "Não deu para salvar agora. Tente de novo.",
+  "cad.nome.saved": "Pronto! Vamos te chamar de {name}.",
+  "cad.dono.linkPreview": "Seu link: {link}",
+  "cad.dono.linkHint": "O link nasce do nome. Se já existir um igual, ganha um número no fim.",
+  "cad.dono.emailCheck": "Confira: seu e-mail é {email}",
+  "cad.dono.otpEmailCheck": "A conta será criada com o e-mail {email}.",
+  "cad.dono.shopWhatsappQuestion": "Este WhatsApp também é o da barbearia para clientes?",
+  "cad.dono.shopWhatsappYes": "Sim",
+  "cad.dono.shopWhatsappNo": "Não",
+  "cad.dono.shopWhatsappYesHint": "Ele aparece na página da loja para os clientes chamarem.",
+  "cad.dono.shopWhatsappNoHint": "Você informa o da loja depois, em Ajustes.",
+  "cad.dono.societySummary": "Sociedade: não tenho sócios.",
+  "cad.dono.societyOpen": "Tenho sócios",
+  "cad.dono.societyClose": "Não tenho sócios",
+  "cad.dono.termsText":
+    "Li e aceito os {terms}, a {privacy} e o {dpa} para barbearias. Tenho 18 anos ou mais e posso representar esta barbearia.",
+  "cad.dono.termsLink": "Termos de Uso",
+  "cad.dono.privacyLink": "Política de Privacidade",
+  "cad.dono.dpaLink": "Acordo de Tratamento de Dados",
+  "cad.dono.newTab": "(abre em nova aba)",
+  "cad.dono.termsNeeded": "Marque a caixa acima para continuar.",
+  "cad.dono.errTerms": "Para criar a conta, marque a caixa de aceite.",
+  "cad.dono.errShopName": "Informe o nome da barbearia.",
+  "cad.dono.errFullName": "Informe seu nome (pelo menos 2 letras).",
+  "cad.dono.errEmail": "Confira o e-mail. Exemplo: nome@gmail.com",
+  "cad.dono.errWhatsappInvalid": "Confira o número: DDD + número. Exemplo: (11) 99999-0000",
+  "cad.dono.doneTitle": "Barbearia criada!",
+  "cad.dono.doneLead": "No painel, um guia mostra o que falta para começar a receber reservas.",
+  "cad.dono.yourLink": "Link da sua barbearia",
+  "cad.dono.openPanel": "Abrir o painel",
+  "cad.guia.title": "Deixe sua barbearia pronta",
+  "cad.guia.subtitle": "Poucos passos para começar a receber reservas.",
+  "cad.guia.hide": "Esconder guia",
+  "cad.guia.progress": "{done} de {total}",
+  "cad.guia.statusDone": "feito",
+  "cad.guia.statusPending": "a fazer",
+  "cad.guia.hoursTitle": "Conferir horários de funcionamento",
+  "cad.guia.hoursHint": "Começamos com segunda a sábado, das 9h às 19h.",
+  "cad.guia.hoursAction": "Ver horários",
+  "cad.guia.hoursOk": "Está certo",
+  "cad.guia.serviceTitle": "Cadastrar o primeiro serviço",
+  "cad.guia.serviceHint": "Ex.: corte, barba. Com preço e duração.",
+  "cad.guia.serviceAction": "Cadastrar serviço",
+  "cad.guia.contactTitle": "Informar endereço e WhatsApp da loja",
+  "cad.guia.contactHint": "Aparecem na página da barbearia para os clientes.",
+  "cad.guia.contactAction": "Preencher",
+  "cad.guia.brandTitle": "Escolher logo e cores",
+  "cad.guia.brandHint": "Deixe o app com a cara da sua barbearia.",
+  "cad.guia.brandAction": "Escolher",
+  "cad.guia.linkTitle": "Copiar o link da loja",
+  "cad.guia.linkHint": "Envie aos clientes para eles agendarem:",
+  "cad.guia.linkAction": "Copiar link",
+  "cad.guia.linkCopied": "Link copiado.",
+  "cad.guia.linkCopyError": "Não deu para copiar. Toque e segure o link para copiar.",
 } as const;
 
 export type MessageKey = keyof typeof ptBR;

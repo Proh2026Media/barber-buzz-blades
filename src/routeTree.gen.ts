@@ -19,6 +19,7 @@ import { Route as DemoRouteImport } from './routes/demo'
 import { Route as CadastrarRouteImport } from './routes/cadastrar'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
+import { Route as AcordoDeDadosRouteImport } from './routes/acordo-de-dados'
 import { Route as BarberSlugRouteImport } from './routes/$barberSlug'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShopPontosRouteImport } from './routes/shop_.pontos'
@@ -79,6 +80,11 @@ const AppRoute = AppRouteImport.update({
   path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AcordoDeDadosRoute = AcordoDeDadosRouteImport.update({
+  id: '/acordo-de-dados',
+  path: '/acordo-de-dados',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BarberSlugRoute = BarberSlugRouteImport.update({
   id: '/$barberSlug',
   path: '/$barberSlug',
@@ -131,6 +137,7 @@ const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$barberSlug': typeof BarberSlugRoute
+  '/acordo-de-dados': typeof AcordoDeDadosRoute
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
   '/cadastrar': typeof CadastrarRoute
@@ -152,6 +159,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$barberSlug': typeof BarberSlugRoute
+  '/acordo-de-dados': typeof AcordoDeDadosRoute
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
   '/cadastrar': typeof CadastrarRoute
@@ -174,6 +182,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$barberSlug': typeof BarberSlugRoute
+  '/acordo-de-dados': typeof AcordoDeDadosRoute
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
   '/cadastrar': typeof CadastrarRoute
@@ -197,6 +206,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/$barberSlug'
+    | '/acordo-de-dados'
     | '/app'
     | '/auth'
     | '/cadastrar'
@@ -218,6 +228,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/$barberSlug'
+    | '/acordo-de-dados'
     | '/app'
     | '/auth'
     | '/cadastrar'
@@ -239,6 +250,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/$barberSlug'
+    | '/acordo-de-dados'
     | '/app'
     | '/auth'
     | '/cadastrar'
@@ -261,6 +273,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BarberSlugRoute: typeof BarberSlugRoute
+  AcordoDeDadosRoute: typeof AcordoDeDadosRoute
   AppRoute: typeof AppRoute
   AuthRoute: typeof AuthRoute
   CadastrarRoute: typeof CadastrarRoute
@@ -352,6 +365,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/acordo-de-dados': {
+      id: '/acordo-de-dados'
+      path: '/acordo-de-dados'
+      fullPath: '/acordo-de-dados'
+      preLoaderRoute: typeof AcordoDeDadosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/$barberSlug': {
       id: '/$barberSlug'
       path: '/$barberSlug'
@@ -421,6 +441,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BarberSlugRoute: BarberSlugRoute,
+  AcordoDeDadosRoute: AcordoDeDadosRoute,
   AppRoute: AppRoute,
   AuthRoute: AuthRoute,
   CadastrarRoute: CadastrarRoute,

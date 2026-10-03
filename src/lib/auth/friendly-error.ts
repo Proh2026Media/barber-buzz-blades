@@ -32,6 +32,7 @@ const ERROR_CODE_MESSAGES: Record<string, MessageKey | null> = {
   account_not_found: "fix3.errors.accountNotFound",
   account_without_email: "fix3.errors.accountWithoutEmail",
   missing_fields: "register.errorFillAll",
+  terms_required: "cad.dono.errTerms",
   internal_error: null,
   server_misconfigured: null,
   session_failed: null,

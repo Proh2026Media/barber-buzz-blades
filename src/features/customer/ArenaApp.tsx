@@ -26,6 +26,7 @@ import {
 import { NextLevelCard, type NextLevelSummary } from "./NextLevelCard";
 import { CustomerRhythm } from "./CustomerRhythm";
 import { CustomerProfile } from "./CustomerProfile";
+import { NamePrompt } from "./NamePrompt";
 import {
   CatalogViewToggle,
   readCatalogViewPreference,
@@ -1769,6 +1770,7 @@ function ArenaApp({
             ))}
           {tab === "dashboard" && (
             <div className="mb-stagger p-4 space-y-4 relative z-10">
+              <NamePrompt disabled={Boolean(demoShopId)} onSaved={setCustomerName} />
               {/* Card 1: Seu Cartão (Loyalty Card) */}
               {loyaltyOn && (
                 <section

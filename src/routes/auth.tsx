@@ -7,6 +7,7 @@ import {
   MessageCircle,
   Scissors,
   ShieldCheck,
+  UserRound,
 } from "lucide-react";
 import { Link, createFileRoute, useSearch } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
@@ -52,6 +53,10 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { t as tNow, useI18n } from "@/lib/i18n";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { Switch } from "@/components/ui/switch";
+import { PRIVACY_VERSION, TERMS_VERSION } from "@/features/legal/versions";
+import { callOptionalRpc } from "@/lib/auth/optional-rpc";
+import { checkSignupPhone, nextMaskedPhone } from "@/lib/auth/signup-phone";
 
 /** verifyPhone: logo após o cadastro com WhatsApp, confirma o número por código. */
 type AuthMode = "signin" | "signup" | "forgot" | "recovery" | "verifyPhone";
@@ -146,6 +151,18 @@ type VerifyPhonePayload = {
   resend_after_seconds?: number;
   whatsapp_opt_in_at?: string | null;
 };
+
+/** Nome no cadastro: "Como você quer ser chamado?". */
+const NAME_MIN = 2;
+const NAME_MAX = 80;
+
+/** Conta Google criada há pouco (sem aceite registrado) grava o aceite mostrado junto ao botão. */
+const NEW_ACCOUNT_WINDOW_MS = 60 * 60 * 1000;
+
+/** WhatsApp do cadastro que ficou só nos metadados (confirmação do e-mail): vale por 7 dias. */
+const SIGNUP_WHATSAPP_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+type SignupFieldErrors = { name?: string; whatsapp?: string };
 
 /** Espera sugerida antes de reenviar o código, se o servidor não informar. */
 const PHONE_RESEND_SECONDS = 60;
@@ -255,7 +272,7 @@ function AuthPage() {
   } = useSearch({
     from: "/auth",
   });
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [mode, setMode] = useState<AuthMode>(recovery ? "recovery" : "signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -266,6 +283,14 @@ function AuthPage() {
   const [info, setInfo] = useState<string | null>(null);
   const [recoveryChannel, setRecoveryChannel] = useState<RecoveryChannel>("email");
   const [whatsapp, setWhatsapp] = useState("");
+  // Cadastro do cliente: nome, aceite de avisos por WhatsApp e erros ao lado de cada campo.
+  const [fullName, setFullName] = useState("");
+  const [phoneOptIn, setPhoneOptIn] = useState(true);
+  const [fieldErrors, setFieldErrors] = useState<SignupFieldErrors>({});
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const signupPhoneRef = useRef<HTMLInputElement>(null);
+  // Conferências do primeiro acesso (aceite e WhatsApp guardado no cadastro): uma vez por tela.
+  const firstAccessCheckedRef = useRef(false);
   const [otpCode, setOtpCode] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   // Confirmação do WhatsApp logo após o cadastro.
@@ -705,7 +730,93 @@ function AuthPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preferredNext, mode, effectiveShopRef, returnOrigin, oauth, bridgeReady, popup]);
 
+  /**
+   * Primeiro acesso com sessão aberta (e-mail confirmado, Google ou entrar):
+   * 1. grava o aceite dos Termos quando o perfil ainda não tem (metadados do cadastro ou
+   *    conta Google nova que viu o aviso junto ao botão);
+   * 2. WhatsApp informado no cadastro que não chegou ao perfil (o e-mail precisava de
+   *    confirmação): grava e abre a confirmação por código.
+   * Devolve true quando abriu o passo do WhatsApp. Banco antigo (RPC ou coluna ausente)
+   * não atrapalha a entrada.
+   */
+  async function runFirstAccessChecks(): Promise<boolean> {
+    if (firstAccessCheckedRef.current) return false;
+    firstAccessCheckedRef.current = true;
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData.user;
+      if (!user) return false;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (!profile) return false;
+      const row = profile as unknown as Record<string, unknown>;
+      const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+
+      // Banco já com as colunas de aceite (senão a chave nem vem no perfil).
+      if ("terms_accepted_at" in row && !row.terms_accepted_at) {
+        const metaTerms = typeof meta.terms_version === "string" ? meta.terms_version : null;
+        const metaPrivacy = typeof meta.privacy_version === "string" ? meta.privacy_version : null;
+        const provider = (user.app_metadata as { provider?: string } | undefined)?.provider;
+        const createdAt = Date.parse(user.created_at ?? "");
+        const newGoogleAccount =
+          provider === "google" &&
+          Number.isFinite(createdAt) &&
+          Date.now() - createdAt < NEW_ACCOUNT_WINDOW_MS;
+        if (metaTerms || newGoogleAccount) {
+          await callOptionalRpc("record_my_terms_acceptance", {
+            p_terms_version: metaTerms ?? TERMS_VERSION,
+            p_privacy_version: metaPrivacy ?? PRIVACY_VERSION,
+            p_age_confirmed: true,
+          });
+        }
+      }
+
+      // Só cadastro feito por esta tela (metadados novos, com terms_version) e recente:
+      // conta antiga sem número, ou quem apagou o número em Meu perfil, não é incomodada.
+      // Uma tentativa por conta neste aparelho, para nunca virar repetição a cada entrada.
+      const metaWhatsapp = typeof meta.whatsapp === "string" ? meta.whatsapp.trim() : "";
+      if (profile.whatsapp_e164 || !/^\d{10,15}$/.test(metaWhatsapp)) return false;
+      if (typeof meta.terms_version !== "string") return false;
+      const signupAt = Date.parse(user.created_at ?? "");
+      if (!Number.isFinite(signupAt) || Date.now() - signupAt > SIGNUP_WHATSAPP_WINDOW_MS) {
+        return false;
+      }
+      const attemptKey = `mb_signup_whatsapp_synced:${user.id}`;
+      try {
+        if (window.localStorage.getItem(attemptKey)) return false;
+        window.localStorage.setItem(attemptKey, "1");
+      } catch {
+        /* sem armazenamento: segue (o número gravado já impede a repetição) */
+      }
+      const raw = `+${metaWhatsapp}`;
+      const optIn = meta.whatsapp_opt_in !== false;
+      const { error: saveError } = await supabase.rpc("save_my_whatsapp", {
+        p_raw: raw,
+        p_opt_in: optIn,
+      });
+      if (saveError) return false;
+      setPassword("");
+      setPhoneNumber(raw);
+      setPhoneOptIn(optIn);
+      setPhoneCode("");
+      setPhoneUnavailable(false);
+      setMode("verifyPhone");
+      await requestPhoneCode(raw);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async function goAfterAuthLocal() {
+    if (await runFirstAccessChecks()) {
+      sessionApplyingRef.current = false;
+      setBusy(false);
+      return;
+    }
     const path = await resolvePostAuthPath(preferredNext);
     if (effectiveShopRef && (path === "/app" || path.startsWith("/app"))) {
       const url = new URL(path, window.location.origin);
@@ -771,8 +882,9 @@ function AuthPage() {
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const form = e.currentTarget;
     setBusy(true);
     setError(null);
     setInfo(null);
@@ -793,7 +905,7 @@ function AuthPage() {
             action: "verify",
             destination: phoneNumber,
             code: phoneCode,
-            opt_in: true,
+            opt_in: phoneOptIn,
           });
         } catch (err) {
           setError(phoneErrorText(err));
@@ -909,6 +1021,31 @@ function AuthPage() {
         return;
       }
 
+      // Cadastro: confere nome e WhatsApp antes de criar a conta (erro ao lado do campo).
+      const signupName = fullName.trim().replace(/\s+/g, " ");
+      const phoneCheck = checkSignupPhone(whatsapp, locale);
+      const nextErrors: SignupFieldErrors = {};
+      if (signupName.length < NAME_MIN || signupName.length > NAME_MAX) {
+        nextErrors.name = tNow("cad.cliente.nameError");
+      }
+      if (!phoneCheck.ok) {
+        if (phoneCheck.reason === "ddd") nextErrors.whatsapp = tNow("cad.cliente.phoneDddError");
+        else if (phoneCheck.reason === "length")
+          nextErrors.whatsapp = tNow("cad.cliente.phoneLengthError");
+        else if (effectiveShopRef) nextErrors.whatsapp = tNow("cad.cliente.phoneRequired");
+      }
+      setFieldErrors(nextErrors);
+      if (nextErrors.name || nextErrors.whatsapp) {
+        if (nextErrors.name) nameInputRef.current?.focus();
+        else signupPhoneRef.current?.focus();
+        return;
+      }
+      // Nome e WhatsApp primeiro (mensagem traduzida ao lado do campo); depois o navegador
+      // confere e-mail e senha. O formulário de cadastro usa noValidate para esta ordem.
+      if (!form.reportValidity()) return;
+      const signupPhone = phoneCheck.ok ? phoneCheck : null;
+      const signupOptIn = Boolean(signupPhone) && phoneOptIn;
+
       const emailRedirectTo = needsAuthOriginBridge()
         ? buildPlatformAuthUrl({
             shop: effectiveShopRef,
@@ -924,14 +1061,22 @@ function AuthPage() {
               : ""
           }`;
 
-      const signupWhatsapp = whatsapp.trim();
+      // Contrato com handle_new_user: nome, WhatsApp (só dígitos com DDI, ainda não
+      // confirmado), escolha de avisos e o aceite mostrado acima do botão.
+      const signupWhatsapp = signupPhone?.e164 ?? "";
       const { data: signUpData, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
+            full_name: signupName,
             ...(effectiveShopRef ? { shop: effectiveShopRef } : {}),
-            ...(signupWhatsapp ? { whatsapp: signupWhatsapp } : {}),
+            ...(signupPhone ? { whatsapp: signupPhone.digits } : {}),
+            whatsapp_opt_in: signupOptIn,
+            terms_version: TERMS_VERSION,
+            privacy_version: PRIVACY_VERSION,
+            terms_accepted_at: new Date().toISOString(),
+            age_confirmed: true,
           },
           emailRedirectTo,
         },
@@ -947,10 +1092,21 @@ function AuthPage() {
       // Com autoconfirm, a sessão já vem: grava o WhatsApp (ainda não confirmado)
       // e abre o passo de confirmação por código. Sem confirmar, o número não
       // serve para entrar nem recuperar a senha pelo WhatsApp.
+      if (signUpData.session) {
+        // Já entrou: as conferências do primeiro acesso não precisam repetir o WhatsApp.
+        firstAccessCheckedRef.current = true;
+        // Banco antigo ignora os metadados de aceite; com a RPC nova, grava aqui.
+        await callOptionalRpc("record_my_terms_acceptance", {
+          p_terms_version: TERMS_VERSION,
+          p_privacy_version: PRIVACY_VERSION,
+          p_age_confirmed: true,
+        });
+      }
+
       if (signUpData.session && signupWhatsapp) {
         const { error: waError } = await supabase.rpc("save_my_whatsapp", {
           p_raw: signupWhatsapp,
-          p_opt_in: true,
+          p_opt_in: signupOptIn,
         });
         if (waError) {
           setInfo(tNow("auth.info.createdSaveWhatsapp"));
@@ -959,6 +1115,7 @@ function AuthPage() {
         }
         setPassword("");
         setPhoneNumber(signupWhatsapp);
+        setPhoneOptIn(signupOptIn);
         setPhoneCode("");
         setPhoneUnavailable(false);
         setMode("verifyPhone");
@@ -973,7 +1130,7 @@ function AuthPage() {
       }
 
       setInfo(
-        signupWhatsapp ? tNow("fix3.auth.confirmEmailWhatsapp") : tNow("auth.info.confirmEmail"),
+        signupWhatsapp ? tNow("cad.cliente.confirmEmailWhatsapp") : tNow("auth.info.confirmEmail"),
       );
       setMode("signin");
     } catch (err) {
@@ -1082,6 +1239,35 @@ function AuthPage() {
           : mode === "recovery"
             ? t("auth.subtitle.recovery")
             : t("auth.subtitle.signin");
+
+  // Termos e Política abrem em nova aba, no idioma atual (?lang=), sem perder o cadastro.
+  const legalLinkClass =
+    "-my-3 inline-flex min-h-11 items-center font-semibold text-foreground underline underline-offset-2";
+  const legalLinks = (
+    <>
+      <Link
+        to="/termos"
+        search={{ lang: locale }}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={legalLinkClass}
+      >
+        {t("auth.terms.link")}
+        <span className="sr-only"> {t("cad.cliente.newTab")}</span>
+      </Link>{" "}
+      {t("auth.terms.and")}{" "}
+      <Link
+        to="/privacidade"
+        search={{ lang: locale }}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={legalLinkClass}
+      >
+        {t("auth.privacy.link")}
+        <span className="sr-only"> {t("cad.cliente.newTab")}</span>
+      </Link>
+    </>
+  );
 
   const fieldClass =
     "auth-input-wrap auth-brand-control flex min-h-[3.25rem] items-center border border-border/70 transition-[border-color,box-shadow] duration-200 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10";
@@ -1227,6 +1413,7 @@ function AuthPage() {
                     setMode(id);
                     setError(null);
                     setInfo(null);
+                    setFieldErrors({});
                   }}
                   className={`auth-brand-button min-h-11 px-3 py-2.5 text-sm font-semibold transition-[background-color,color,box-shadow] duration-300 ease-out ${
                     mode === id
@@ -1240,7 +1427,11 @@ function AuthPage() {
             </div>
           )}
 
-          <form onSubmit={(e) => void handleSubmit(e)} className="space-y-5">
+          <form
+            onSubmit={(e) => void handleSubmit(e)}
+            noValidate={mode === "signup"}
+            className="space-y-5"
+          >
             {mode === "forgot" && effectiveShopRef && (
               <div
                 className="auth-brand-control grid grid-cols-2 gap-1 bg-muted p-1"
@@ -1279,6 +1470,44 @@ function AuthPage() {
                     {label}
                   </button>
                 ))}
+              </div>
+            )}
+
+            {mode === "signup" && (
+              <div className="space-y-1.5">
+                <label className={labelClass}>
+                  <span>{t("cad.cliente.nameLabel")}</span>
+                  <span className={fieldClass}>
+                    <UserRound
+                      className="ml-4 size-[18px] shrink-0 text-muted-foreground"
+                      aria-hidden="true"
+                    />
+                    <input
+                      ref={nameInputRef}
+                      type="text"
+                      // Sem validação nativa: o erro traduzido aparece ao lado do campo.
+                      aria-required="true"
+                      maxLength={NAME_MAX}
+                      autoComplete="name"
+                      autoCapitalize="words"
+                      placeholder={t("cad.cliente.namePlaceholder")}
+                      value={fullName}
+                      onChange={(e) => {
+                        setFullName(e.target.value);
+                        if (fieldErrors.name)
+                          setFieldErrors((prev) => ({ ...prev, name: undefined }));
+                      }}
+                      aria-invalid={fieldErrors.name ? true : undefined}
+                      aria-describedby={fieldErrors.name ? "signup-name-error" : undefined}
+                      className={inputClass}
+                    />
+                  </span>
+                </label>
+                {fieldErrors.name && (
+                  <p id="signup-name-error" role="alert" className="text-sm text-destructive">
+                    {fieldErrors.name}
+                  </p>
+                )}
               </div>
             )}
 
@@ -1393,36 +1622,63 @@ function AuthPage() {
             )}
 
             {mode === "signup" && (
-              <label className={labelClass}>
-                <span>
-                  {effectiveShopRef
-                    ? t("auth.field.whatsappSignupShop")
-                    : t("auth.field.whatsappSignupOptional")}
-                </span>
-                <span className={fieldClass}>
-                  <MessageCircle
-                    className="ml-4 size-[18px] shrink-0 text-muted-foreground"
-                    aria-hidden="true"
-                  />
-                  <input
-                    type="tel"
-                    required={Boolean(effectiveShopRef)}
-                    inputMode="tel"
-                    autoComplete="tel"
-                    placeholder="(11) 99999-0000"
-                    value={whatsapp}
-                    onChange={(e) => setWhatsapp(e.target.value)}
-                    className={inputClass}
-                  />
-                </span>
-                <span className="block text-xs font-normal text-muted-foreground">
-                  {t("auth.signupHint.before")}{" "}
-                  <Link to="/cadastrar" className="font-semibold underline">
-                    {t("auth.signupHint.link")}
-                  </Link>{" "}
-                  {t("auth.signupHint.after")}
-                </span>
-              </label>
+              <div className="space-y-2">
+                <label className={labelClass}>
+                  <span>
+                    {effectiveShopRef
+                      ? t("auth.field.whatsappSignupShop")
+                      : t("auth.field.whatsappSignupOptional")}
+                  </span>
+                  <span className={fieldClass}>
+                    <MessageCircle
+                      className="ml-4 size-[18px] shrink-0 text-muted-foreground"
+                      aria-hidden="true"
+                    />
+                    <input
+                      ref={signupPhoneRef}
+                      type="tel"
+                      aria-required={effectiveShopRef ? "true" : undefined}
+                      inputMode="tel"
+                      autoComplete="tel"
+                      placeholder={locale === "pt-PT" ? "+351 912 345 678" : "(11) 99999-0000"}
+                      value={whatsapp}
+                      onChange={(e) => {
+                        setWhatsapp(nextMaskedPhone(whatsapp, e.target.value, locale));
+                        if (fieldErrors.whatsapp)
+                          setFieldErrors((prev) => ({ ...prev, whatsapp: undefined }));
+                      }}
+                      aria-invalid={fieldErrors.whatsapp ? true : undefined}
+                      aria-describedby={
+                        fieldErrors.whatsapp
+                          ? "signup-whatsapp-error signup-whatsapp-hint"
+                          : "signup-whatsapp-hint"
+                      }
+                      className={inputClass}
+                    />
+                  </span>
+                </label>
+                {fieldErrors.whatsapp && (
+                  <p id="signup-whatsapp-error" role="alert" className="text-sm text-destructive">
+                    {fieldErrors.whatsapp}
+                  </p>
+                )}
+                <p
+                  id="signup-whatsapp-hint"
+                  className="text-xs font-normal leading-relaxed text-muted-foreground"
+                >
+                  {t("cad.cliente.whatsappHint")}
+                </p>
+                {whatsapp.replace(/\D/g, "").length > 0 && (
+                  <label className="auth-brand-control flex min-h-11 cursor-pointer items-center justify-between gap-3 border border-border/70 px-3.5 py-2.5 text-sm text-foreground">
+                    <span className="min-w-0">{t("cad.cliente.optInLabel")}</span>
+                    <Switch
+                      checked={phoneOptIn}
+                      onCheckedChange={setPhoneOptIn}
+                      aria-label={t("cad.cliente.optInLabel")}
+                    />
+                  </label>
+                )}
+              </div>
             )}
 
             {(mode === "signin" || mode === "signup" || mode === "recovery") && (
@@ -1516,6 +1772,12 @@ function AuthPage() {
                 role="status"
               >
                 {info}
+              </p>
+            )}
+
+            {mode === "signup" && (
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                {t("cad.cliente.terms.before")} {legalLinks} {t("cad.cliente.terms.age")}
               </p>
             )}
 
@@ -1618,7 +1880,22 @@ function AuthPage() {
                 <GoogleMark />
                 {t("auth.google")}
               </button>
+              <p className="-mt-3 text-center text-xs leading-relaxed text-muted-foreground">
+                {t("auth.terms.before")} {legalLinks} {t("cad.cliente.terms.age")}
+              </p>
             </>
+          )}
+
+          {mode === "signup" && (
+            <p className="border-t border-border/70 pt-5 text-center text-sm text-muted-foreground">
+              {t("cad.cliente.ownerQuestion")}{" "}
+              <Link
+                to="/cadastrar"
+                className="-my-3 inline-flex min-h-11 items-center font-semibold text-primary underline-offset-4 hover:underline"
+              >
+                {t("cad.cliente.ownerLink")}
+              </Link>
+            </p>
           )}
 
           <div className="auth-panel-footer space-y-2 text-center text-xs text-muted-foreground">
@@ -1626,23 +1903,11 @@ function AuthPage() {
               <ShieldCheck className="size-3.5 text-gold" aria-hidden="true" />
               {t("auth.protected")}
             </p>
-            <p>
-              {t("auth.terms.before")}{" "}
-              <Link
-                to="/termos"
-                className="-my-3 inline-flex min-h-11 items-center font-semibold text-foreground underline-offset-2 hover:underline"
-              >
-                {t("auth.terms.link")}
-              </Link>{" "}
-              {t("auth.terms.and")}{" "}
-              <Link
-                to="/privacidade"
-                className="-my-3 inline-flex min-h-11 items-center font-semibold text-foreground underline-offset-2 hover:underline"
-              >
-                {t("auth.privacy.link")}
-              </Link>
-              .
-            </p>
+            {mode !== "signin" && mode !== "signup" && (
+              <p>
+                {t("auth.terms.before")} {legalLinks}.
+              </p>
+            )}
           </div>
         </div>
       </div>

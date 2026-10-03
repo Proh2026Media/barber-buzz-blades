@@ -149,4 +149,27 @@ export const enGB: Record<MessageKey, string> = {
     "This account doesn't have an email yet. Contact the barbershop to complete your registration.",
   "legal.privacy.s11Item5":
     "When you **delete your account**, we ask Google to revoke the authorisation (if a connection exists) and delete the connection, the tokens and the imported events. To check, visit {link}. Questions or deletion requests: {email}.",
+  "legal.terms.s3Item4":
+    "You must be 18 or over to use the app. Customers under 18 may use it only with permission from a parent or guardian. Anyone who registers a barbershop must be 18 or over and able to represent it.",
+  "legal.dpa.s6Item4":
+    "Google, only if the barbershop switches on the Google Calendar/Contacts connection.",
+  "cad.cliente.whatsappHint":
+    "We use it to confirm and remind you of your appointments. You can turn it off at any time.",
+  "cad.cliente.phoneDddError": "Check the area code: it has 2 digits, such as 11 or 21.",
+  "cad.cliente.phoneLengthError":
+    "Check the number: area code and number, such as (11) 99999-0000.",
+  "cad.cliente.confirmEmailWhatsapp":
+    "We've sent a link to your email. Open it and sign in, then we'll confirm your WhatsApp with a code.",
+  "cad.cliente.terms.age":
+    "and confirm you are 18 or over (or use it with a parent or guardian's permission).",
+  "cad.cliente.ownerLink": "Register your barbershop",
+  "cad.nome.text": "This way the barbershop knows who you are in the diary and reminders.",
+  "cad.dono.termsText":
+    "I have read and accept the {terms}, the {privacy} and the {dpa} for barbershops. I am 18 or over and authorised to represent this barbershop.",
+  "cad.dono.termsNeeded": "Tick the box above to continue.",
+  "cad.dono.errTerms": "To create the account, tick the acceptance box.",
+  "cad.guia.hoursHint": "We've set Monday to Saturday, 9:00 to 19:00.",
+  "cad.guia.hoursOk": "That's right",
+  "cad.guia.serviceHint": "E.g. haircut, beard. With price and duration.",
+  "cad.guia.brandTitle": "Choose your logo and colours",
 };

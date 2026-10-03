@@ -672,6 +672,7 @@ export const es: Record<MessageKey, string> = {
   "legal.navAria": "Documentos legales",
   "legal.privacyLink": "Política de Privacidad",
   "legal.termsLink": "Términos de uso",
+  "legal.dpaLink": "Acuerdo de Tratamiento de Datos",
   "legal.home": "Inicio",
   "legal.terms.s1Title": "1. Aceptación",
   "legal.terms.s1Body":
@@ -688,6 +689,10 @@ export const es: Record<MessageKey, string> = {
     "Los propietarios y administradores de la tienda son responsables de los datos que registran (equipo, servicios, clientes y comunicaciones) y del cumplimiento de las leyes aplicables en la relación con sus clientes.",
   "legal.terms.s3Item3":
     "La información proporcionada debe ser veraz y estar actualizada. El uso abusivo, el fraude o el intento de acceso indebido pueden dar lugar a la suspensión o al cierre de la cuenta.",
+  "legal.terms.s3Item4":
+    "Para usar la aplicación hay que tener 18 años o más. Los clientes menores de 18 años solo pueden usarla con autorización de su padre, madre o tutor. Quien registra una barbería debe tener 18 años o más y poder representarla.",
+  "legal.terms.s3Item5":
+    "Al registrar una barbería, el propietario acepta también el {dpa}, que define cómo tratamos los datos de los clientes y del equipo de la tienda.",
   "legal.terms.s4Title": "4. Google y otros servicios de terceros",
   "legal.terms.s4Body":
     "Cuando utilizas el inicio de sesión con Google o conectas Google Calendar/Contactos, también se aplican los términos y políticas de Google. El tratamiento de esa información se describe en nuestra Política de Privacidad.",
@@ -711,16 +716,16 @@ export const es: Record<MessageKey, string> = {
   "legal.privacy.s1Dpo":
     "**Delegado de protección de datos (DPO; «encargado» según la LGPD):** atención en el correo {email}, que recibe las solicitudes de los titulares y las comunicaciones de la Autoridad Nacional de Protección de Datos de Brasil (ANPD).",
   "legal.privacy.s1Roles":
-    "Para los datos de tu cuenta y de la plataforma, la empresa indicada arriba es la **responsable del tratamiento**. Para los datos que cada barbería registra sobre sus propios clientes y su equipo, la barbería es la responsable y Barba & Cabelo actúa como **encargado**, tratando esos datos solo para prestar el servicio contratado.",
+    "Para los datos de tu cuenta y de la plataforma, la empresa indicada arriba es la **responsable del tratamiento**. Para los datos que cada barbería registra sobre sus propios clientes y su equipo, la barbería es la responsable y Barba & Cabelo actúa como **encargado**, tratando esos datos solo para prestar el servicio contratado. Al registrar la barbería, el propietario acepta el {dpa}, que detalla estos papeles.",
   "legal.privacy.s1Body":
     "Esta política explica qué datos tratamos, para qué, cómo los protegemos y cómo puedes ejercer tus derechos, de acuerdo con la Ley General de Protección de Datos de Brasil (LGPD, Ley 13.709/2018) y con la Política de Datos de Usuario de los Servicios de API de Google.",
   "legal.privacy.s2Title": "2. Qué datos tratamos",
   "legal.privacy.s2Intro":
     "Tratamos solo lo necesario para que las reservas y la gestión de la barbería funcionen:",
   "legal.privacy.s2Item1":
-    "**Cuenta:** nombre, correo electrónico, foto de perfil (si subes una o si viene del inicio de sesión con Google) y contraseña — guardada solo como hash, nunca en texto legible;",
+    "**Cuenta:** nombre (indicado en el registro o recibido del inicio de sesión con Google), correo electrónico, foto de perfil (si subes una o si viene del inicio de sesión con Google) y contraseña — guardada solo como hash, nunca en texto legible;",
   "legal.privacy.s2Item2":
-    "**WhatsApp** (cuando lo indicas), para confirmaciones, recordatorios y códigos de verificación. El número que indicas en el registro o en Mi perfil se confirma con un código enviado por el WhatsApp de la plataforma (puedes dejar la confirmación para después, en Mi perfil); solo un número confirmado sirve para entrar y recuperar la contraseña por WhatsApp;",
+    "**WhatsApp:** obligatorio para el propietario al registrar la barbería y para el cliente que crea la cuenta con correo desde el enlace de una barbería; opcional en los demás casos. Sirve para confirmaciones, recordatorios y códigos de verificación. El número se confirma con un código enviado por el WhatsApp de la plataforma (el cliente puede dejar la confirmación para después, en Mi perfil); solo un número confirmado sirve para entrar y recuperar la contraseña por WhatsApp. Quien crea una cuenta como cliente elige en el registro si quiere recibir avisos por WhatsApp, y cualquier persona puede desactivar esos avisos cuando quiera en Mi perfil;",
   "legal.privacy.s2Item3":
     "**Reservas:** servicio, profesional, fecha, hora, estado, historial de atenciones y puntos del club de fidelidad de la barbería;",
   "legal.privacy.s2Item4":
@@ -731,6 +736,8 @@ export const es: Record<MessageKey, string> = {
     "**Datos de Google**, solo si usas el inicio de sesión con Google o conectas Google Calendar/Contactos (detalles en la sección 4);",
   "legal.privacy.s2Item7":
     "**Datos técnicos:** sesión de autenticación y registros técnicos de las solicitudes al servidor (como dirección IP, fecha y hora), usados para la seguridad y para corregir fallos.",
+  "legal.privacy.s2Item8":
+    "**Registro de la aceptación:** la fecha y las versiones de los Términos de uso y de esta Política (y, para el propietario, del Acuerdo de Tratamiento de Datos) que aceptaste, junto con tu declaración de edad, quedan registradas en tu perfil para acreditar la aceptación.",
   "legal.privacy.s2Body":
     "No solicitamos datos personales sensibles en el sentido de la LGPD (como salud, religión, biometría u origen racial). Aun así, tratamos contraseñas, tokens de acceso, códigos de verificación y contactos con las protecciones reforzadas descritas en la sección 5.",
   "legal.privacy.s3Title": "3. Para qué los usamos y con qué base legal",
@@ -900,6 +907,82 @@ export const es: Record<MessageKey, string> = {
   "legal.privacy.s13Title": "13. Cambios en esta política",
   "legal.privacy.s13Body":
     "Podemos actualizar esta política para reflejar cambios en el servicio o en la legislación. La fecha de la parte superior de la página indica la versión vigente. Ante cambios relevantes, procuraremos informar por los canales habituales de la aplicación.",
+  "legal.dpa.intro":
+    "Este acuerdo se aplica entre cada barbería registrada en {app} y la empresa que opera la aplicación. Explica cómo tratamos los datos que la barbería guarda sobre sus propios clientes y su equipo, y complementa los {terms} y la {privacy}.",
+  "legal.dpa.s1Title": "1. Quién es quién",
+  "legal.dpa.s1Body":
+    "La **barbería**, representada por el propietario que la registró, es la **responsable del tratamiento** de los datos de sus clientes y de su equipo: es quien decide por qué y cómo usarlos. {name}, CNPJ {cnpj}, que opera Barba & Cabelo, es el **encargado del tratamiento**: trata esos datos en nombre de la barbería, solo para prestar el servicio.",
+  "legal.dpa.s1Own":
+    "Los datos de la cuenta de cada persona en la aplicación (inicio de sesión, contraseña y preferencias) se rigen por la Política de Privacidad, en la que la operadora es la responsable del tratamiento.",
+  "legal.dpa.s1Accept":
+    "El propietario acepta este acuerdo al registrar la barbería. Está vigente mientras la barbería use la aplicación y, después, hasta la devolución o eliminación de los datos (sección 9).",
+  "legal.dpa.s2Title": "2. Objeto y finalidad",
+  "legal.dpa.s2Intro":
+    "El encargado trata, en nombre de la barbería, los datos necesarios para las citas, el club de fidelidad y la gestión de la tienda:",
+  "legal.dpa.s2Item1":
+    "**Clientes:** nombre, correo electrónico, WhatsApp, citas, historial de atenciones, puntos del club y demás información que la barbería registre en la aplicación;",
+  "legal.dpa.s2Item2":
+    "**Equipo:** nombre, contacto, función, permisos y agenda de quienes trabajan en la barbería;",
+  "legal.dpa.s2Item3":
+    "**Avisos:** confirmaciones, recordatorios y otros avisos de atención enviados a los clientes por WhatsApp, en nombre de la barbería.",
+  "legal.dpa.s2Body":
+    "El encargado no usa estos datos para fines propios, no los vende y no los usa para publicidad.",
+  "legal.dpa.s3Title": "3. Instrucciones de la barbería",
+  "legal.dpa.s3Body":
+    "El encargado solo trata los datos según las instrucciones de la barbería. Esas instrucciones son este acuerdo y las elecciones que el propietario y el equipo autorizado hacen en la propia aplicación, como servicios, horarios, permisos, avisos e integraciones activadas.",
+  "legal.dpa.s3Unlawful":
+    "Si una instrucción parece contraria a la ley, el encargado avisará a la barbería y podrá dejar de cumplirla.",
+  "legal.dpa.s4Title": "4. Confidencialidad",
+  "legal.dpa.s4Body":
+    "Quien trabaja para el encargado o le presta servicios solo accede a los datos cuando es necesario para la tarea (por ejemplo, un soporte pedido por la barbería, la seguridad del servicio o el cumplimiento de la ley), bajo deber de confidencialidad.",
+  "legal.dpa.s5Title": "5. Seguridad",
+  "legal.dpa.s5Body":
+    "El encargado aplica a los datos de la barbería las mismas medidas descritas en la {security}, como cifrado en tránsito, control de acceso por barbería y por permiso y contraseñas guardadas solo como hash. Ningún sistema es totalmente inmune a fallos; por eso estas medidas se revisan continuamente.",
+  "legal.dpa.s5Link": "sección 5 de la Política de Privacidad",
+  "legal.dpa.s6Title": "6. Subencargados",
+  "legal.dpa.s6Intro":
+    "Para que el servicio funcione, el encargado usa los mismos proveedores indicados en la sección 6 de la {privacy}:",
+  "legal.dpa.s6Item1":
+    "el servidor privado virtual (VPS) contratado por la operadora, donde están la base de datos, la autenticación y las funciones del servidor;",
+  "legal.dpa.s6Item2":
+    "Hostinger, que aloja el sitio y el dominio y presta el servicio de correo para los mensajes de la cuenta;",
+  "legal.dpa.s6Item3":
+    "WhatsApp (Meta), que entrega los mensajes enviados por nuestra instalación de Evolution API, en nuestro propio servidor;",
+  "legal.dpa.s6Item4":
+    "Google, solo si la barbería activa la conexión con Google Calendar/Contactos.",
+  "legal.dpa.s6Changes":
+    "Estos proveedores reciben solo lo necesario para su parte del servicio. Si la lista cambia, se actualizarán la Política de Privacidad y este acuerdo.",
+  "legal.dpa.s7Title": "7. Incidentes de seguridad",
+  "legal.dpa.s7Body":
+    "Si se produce un incidente de seguridad con datos de la barbería, el encargado se lo comunicará sin dilación indebida, con la información disponible: qué ocurrió, los datos implicados, los riesgos y las medidas adoptadas. El encargado también ayuda a la barbería a avisar a la autoridad y a los clientes afectados, cuando corresponda (art. 48 de la LGPD). Para informar de una sospecha, escribe a {email}.",
+  "legal.dpa.s8Title": "8. Derechos de los clientes y del equipo",
+  "legal.dpa.s8Body":
+    "Quien responde a las solicitudes de los titulares (acceso, rectificación, supresión y otras) sobre los datos de la barbería es la barbería. El encargado ayuda en lo que pueda y, si recibe una solicitud de ese tipo, la envía a la barbería.",
+  "legal.dpa.s8Self":
+    "En la propia aplicación, cada persona ya puede corregir su perfil, cambiar sus preferencias y eliminar su propia cuenta, sin depender del soporte.",
+  "legal.dpa.s9Title": "9. Fin del uso y devolución de los datos",
+  "legal.dpa.s9Body":
+    "Cuando la barbería deje de usar la aplicación, el propietario puede pedir por correo a {email} una copia de los datos de los clientes y del equipo de la tienda y, después, la eliminación de esos datos. Como la aplicación todavía no tiene exportación automática, la copia la prepara el encargado y se envía al propietario.",
+  "legal.dpa.s9Retention":
+    "Solo pueden conservarse los datos que la ley obliga a guardar (como los registros de acceso durante 6 meses, exigidos por el Marco Civil de Internet de Brasil) y registros anónimos, sin vínculo con las personas.",
+  "legal.dpa.s10Title": "10. Obligaciones de la barbería",
+  "legal.dpa.s10Intro": "Como responsable del tratamiento, la barbería se compromete a:",
+  "legal.dpa.s10Item1":
+    "tener una base legal para tratar los datos y contactar a los clientes — por ejemplo, para enviar confirmaciones y recordatorios por WhatsApp a quien reservó;",
+  "legal.dpa.s10Item2":
+    "informar a los clientes con claridad sobre el uso de los datos y respetar a quien pida no recibir avisos;",
+  "legal.dpa.s10Item3":
+    "no registrar datos sensibles (como salud, religión u origen racial) ni otra información que no sea necesaria para la atención;",
+  "legal.dpa.s10Item4":
+    "dar a cada persona del equipo solo los permisos necesarios y retirar el acceso a quien se vaya;",
+  "legal.dpa.s10Item5": "mantener los datos correctos y atender las solicitudes de los titulares.",
+  "legal.dpa.s11Title": "11. Legislación y jurisdicción",
+  "legal.dpa.s11Body":
+    "Este acuerdo sigue la Ley General de Protección de Datos de Brasil (LGPD, Ley 13.709/2018). Para barberías en Portugal u otro país de la Unión Europea, se aplica también el Reglamento General de Protección de Datos (RGPD), en especial el art. 28, que regula la relación entre el responsable y el encargado del tratamiento. Son competentes los tribunales del domicilio de la operadora, salvo norma legal imperativa en contrario.",
+  "legal.dpa.s12Title": "12. Contacto y cambios",
+  "legal.dpa.s12Body": "Dudas sobre este acuerdo: {email}.",
+  "legal.dpa.s12Changes":
+    "La fecha de la parte superior indica la versión vigente. Ante cambios relevantes, avisaremos al propietario por los canales habituales de la aplicación y podremos pedir una nueva aceptación.",
   "legal.club.header": "Club de fidelidad",
   "legal.club.heroTitle": "Reglas del club de fidelidad",
   "legal.club.heroBodyShop":
@@ -2957,4 +3040,86 @@ export const es: Record<MessageKey, string> = {
   "fix3.terms.googleRevoke":
     "Al desconectar Google Calendar/Contactos en la app, revocamos el acceso ante Google y eliminamos de inmediato los tokens y los eventos importados. Si no se puede confirmar la revocación, o si lo prefieres, quita el acceso de Barba & Cabelo directamente en {link}. Los datos recibidos de las API de Google se usan solo para las funciones descritas en la {privacy}, nunca para publicidad, y no se venden.",
   "fix3.google.privacyLink": "Cómo usamos los datos de Google",
+  "cad.cliente.nameLabel": "¿Cómo quieres que te llamemos?",
+  "cad.cliente.namePlaceholder": "Ej.: Juan",
+  "cad.cliente.nameError": "Escribe tu nombre (de 2 a 80 letras).",
+  "cad.cliente.whatsappHint":
+    "Lo usamos para confirmar y recordarte tus citas. Puedes desactivarlo cuando quieras.",
+  "cad.cliente.optInLabel": "Quiero recibir confirmación y recordatorios por WhatsApp",
+  "cad.cliente.phoneDddError": "Revisa el código de área (DDD): son 2 números, como 11 o 21.",
+  "cad.cliente.phoneLengthError":
+    "Revisa el número: código de área y número, como (11) 99999-0000.",
+  "cad.cliente.phoneRequired": "Indica tu WhatsApp con código de área.",
+  "cad.cliente.confirmEmailWhatsapp":
+    "Te enviamos un enlace a tu correo. Ábrelo e inicia sesión: luego confirmamos tu WhatsApp con un código.",
+  "cad.cliente.terms.before": "Al crear la cuenta, aceptas los",
+  "cad.cliente.terms.age":
+    "y declaras tener 18 años o más (o usarla con autorización de tu responsable).",
+  "cad.cliente.newTab": "(se abre en una pestaña nueva)",
+  "cad.cliente.ownerQuestion": "¿Tienes una barbería?",
+  "cad.cliente.ownerLink": "Registra tu barbería",
+  "cad.nome.title": "¿Cómo quieres que te llamemos?",
+  "cad.nome.text": "Así la barbería sabe quién eres en la agenda y en los recordatorios.",
+  "cad.nome.label": "Tu nombre",
+  "cad.nome.save": "Guardar",
+  "cad.nome.later": "Ahora no",
+  "cad.nome.errorLength": "Escribe tu nombre (de 2 a 80 letras).",
+  "cad.nome.errorSave": "No se pudo guardar ahora. Inténtalo de nuevo.",
+  "cad.nome.saved": "¡Listo! Te llamaremos {name}.",
+  "cad.dono.linkPreview": "Tu enlace: {link}",
+  "cad.dono.linkHint":
+    "El enlace se crea a partir del nombre. Si ya existe uno igual, se le añade un número al final.",
+  "cad.dono.emailCheck": "Revisa: tu correo es {email}",
+  "cad.dono.otpEmailCheck": "La cuenta se creará con el correo {email}.",
+  "cad.dono.shopWhatsappQuestion": "¿Este WhatsApp también es el de la barbería para los clientes?",
+  "cad.dono.shopWhatsappYes": "Sí",
+  "cad.dono.shopWhatsappNo": "No",
+  "cad.dono.shopWhatsappYesHint":
+    "Aparece en la página de la tienda para que los clientes te escriban.",
+  "cad.dono.shopWhatsappNoHint": "Puedes indicar el de la tienda después, en Ajustes.",
+  "cad.dono.societySummary": "Sociedad: no tengo socios.",
+  "cad.dono.societyOpen": "Tengo socios",
+  "cad.dono.societyClose": "No tengo socios",
+  "cad.dono.termsText":
+    "He leído y acepto los {terms}, la {privacy} y el {dpa} para barberías. Tengo 18 años o más y puedo representar a esta barbería.",
+  "cad.dono.termsLink": "Términos de Uso",
+  "cad.dono.privacyLink": "Política de Privacidad",
+  "cad.dono.dpaLink": "Acuerdo de Tratamiento de Datos",
+  "cad.dono.newTab": "(se abre en una pestaña nueva)",
+  "cad.dono.termsNeeded": "Marca la casilla de arriba para continuar.",
+  "cad.dono.errTerms": "Para crear la cuenta, marca la casilla de aceptación.",
+  "cad.dono.errShopName": "Indica el nombre de la barbería.",
+  "cad.dono.errFullName": "Indica tu nombre (al menos 2 letras).",
+  "cad.dono.errEmail": "Revisa el correo. Ejemplo: nombre@gmail.com",
+  "cad.dono.errWhatsappInvalid":
+    "Revisa el número: código de área + número. Ejemplo: (11) 99999-0000",
+  "cad.dono.doneTitle": "¡Barbería creada!",
+  "cad.dono.doneLead":
+    "En el panel, una guía te muestra lo que falta para empezar a recibir reservas.",
+  "cad.dono.yourLink": "Enlace de tu barbería",
+  "cad.dono.openPanel": "Abrir el panel",
+  "cad.guia.title": "Deja tu barbería lista",
+  "cad.guia.subtitle": "Pocos pasos para empezar a recibir reservas.",
+  "cad.guia.hide": "Ocultar guía",
+  "cad.guia.progress": "{done} de {total}",
+  "cad.guia.statusDone": "hecho",
+  "cad.guia.statusPending": "pendiente",
+  "cad.guia.hoursTitle": "Revisar el horario de atención",
+  "cad.guia.hoursHint": "Empezamos con lunes a sábado, de 9:00 a 19:00.",
+  "cad.guia.hoursAction": "Ver horario",
+  "cad.guia.hoursOk": "Está bien",
+  "cad.guia.serviceTitle": "Añadir el primer servicio",
+  "cad.guia.serviceHint": "Ej.: corte, barba. Con precio y duración.",
+  "cad.guia.serviceAction": "Añadir servicio",
+  "cad.guia.contactTitle": "Indicar dirección y WhatsApp del local",
+  "cad.guia.contactHint": "Aparecen en la página de la barbería para los clientes.",
+  "cad.guia.contactAction": "Completar",
+  "cad.guia.brandTitle": "Elegir logo y colores",
+  "cad.guia.brandHint": "Dale a la app el estilo de tu barbería.",
+  "cad.guia.brandAction": "Elegir",
+  "cad.guia.linkTitle": "Copiar el enlace del local",
+  "cad.guia.linkHint": "Envíalo a tus clientes para que reserven:",
+  "cad.guia.linkAction": "Copiar enlace",
+  "cad.guia.linkCopied": "Enlace copiado.",
+  "cad.guia.linkCopyError": "No se pudo copiar. Mantén pulsado el enlace para copiarlo.",
 };

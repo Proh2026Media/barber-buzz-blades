@@ -4,10 +4,9 @@ import { LegalPageShell } from "@/features/legal/LegalPageShell";
 import { useLegalI18n } from "@/features/legal/legal-locale";
 import { PLATFORM_OPERATOR } from "@/features/legal/operator";
 import { legalLinkClass, legalRichText } from "@/features/legal/rich-text";
+import { PRIVACY_VERSION } from "@/features/legal/versions";
 import type { MessageKey } from "@/lib/i18n";
 
-/** Versão vigente da política (AAAA-MM-DD). */
-const PRIVACY_UPDATED_AT = "2026-10-03";
 const GOOGLE_USER_DATA_POLICY_URL =
   "https://developers.google.com/terms/api-services-user-data-policy";
 const GOOGLE_PERMISSIONS_URL = "https://myaccount.google.com/permissions";
@@ -82,9 +81,17 @@ function PrivacidadePage() {
       {t("legal.privacy.s4LimitedUseLink")}
     </a>
   );
-  const nodes = { email: emailLink, link: permissionsLink };
+  const dpaLink = (
+    <a
+      href={lang ? `/acordo-de-dados?lang=${encodeURIComponent(lang)}` : "/acordo-de-dados"}
+      className={legalLinkClass}
+    >
+      {t("legal.dpaLink")}
+    </a>
+  );
+  const nodes = { email: emailLink, link: permissionsLink, dpa: dpaLink };
 
-  /** Lista com marcadores; cada item aceita **negrito**, {email} e {link}. */
+  /** Lista com marcadores; cada item aceita **negrito**, {email}, {link} e {dpa}. */
   const list = (keys: MessageKey[]) => (
     <ul className="list-disc space-y-2 pl-5">
       {keys.map((key) => (
@@ -97,7 +104,7 @@ function PrivacidadePage() {
   return (
     <LegalPageShell
       title={t("legal.privacyLink")}
-      updatedAt={PRIVACY_UPDATED_AT}
+      updatedAt={PRIVACY_VERSION}
       locale={locale}
       langParam={lang}
     >
@@ -140,6 +147,7 @@ function PrivacidadePage() {
           "legal.privacy.s2Item5",
           "legal.privacy.s2Item6",
           "legal.privacy.s2Item7",
+          "legal.privacy.s2Item8",
         ])}
         {paragraph("legal.privacy.s2Body")}
       </Section>

@@ -4,9 +4,8 @@ import { LegalPageShell } from "@/features/legal/LegalPageShell";
 import { useLegalI18n } from "@/features/legal/legal-locale";
 import { PLATFORM_OPERATOR } from "@/features/legal/operator";
 import { legalLinkClass, legalRichText } from "@/features/legal/rich-text";
+import { TERMS_VERSION } from "@/features/legal/versions";
 
-/** Versão vigente dos termos (AAAA-MM-DD). */
-const TERMS_UPDATED_AT = "2026-10-03";
 const GOOGLE_PERMISSIONS_URL = "https://myaccount.google.com/permissions";
 const PAGE_URL = `${PLATFORM_OPERATOR.siteUrl}/termos`;
 
@@ -60,6 +59,12 @@ function TermosPage() {
       {t("legal.privacyLink")}
     </a>
   );
+  const dpaHref = lang ? `/acordo-de-dados?lang=${encodeURIComponent(lang)}` : "/acordo-de-dados";
+  const dpaLink = (
+    <a href={dpaHref} className={legalLinkClass}>
+      {t("legal.dpaLink")}
+    </a>
+  );
   const permissionsLink = (
     <a
       href={GOOGLE_PERMISSIONS_URL}
@@ -74,7 +79,7 @@ function TermosPage() {
   return (
     <LegalPageShell
       title={t("legal.termsLink")}
-      updatedAt={TERMS_UPDATED_AT}
+      updatedAt={TERMS_VERSION}
       locale={locale}
       langParam={lang}
     >
@@ -102,6 +107,8 @@ function TermosPage() {
           <li>{t("legal.terms.s3Item1")}</li>
           <li>{t("legal.terms.s3Item2")}</li>
           <li>{t("legal.terms.s3Item3")}</li>
+          <li>{t("legal.terms.s3Item4")}</li>
+          <li>{legalRichText(t("legal.terms.s3Item5"), { dpa: dpaLink })}</li>
         </ul>
       </Section>
 

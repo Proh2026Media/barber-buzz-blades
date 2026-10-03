@@ -14,6 +14,13 @@ type Body = {
   password?: string;
   /** single | majority | equal | minority — intenção de sociedade no cadastro */
   society_intent?: string;
+  /** Aceite dos Termos, Política e Acordo de Dados (passo "register"). */
+  terms_accepted?: boolean;
+  terms_version?: string;
+  privacy_version?: string;
+  dpa_version?: string;
+  /** Usar o WhatsApp confirmado do dono como contato público da barbearia. */
+  shop_whatsapp_same?: boolean;
 };
 
 async function sha256Hex(value: string) {
@@ -56,6 +63,7 @@ type ErrorCode =
   | "email_invalid"
   | "password_too_short"
   | "email_in_use"
+  | "terms_required"
   | "internal_error";
 
 function fail(
@@ -127,6 +135,73 @@ async function saveOwnerWhatsapp(admin: any, userId: string, whatsapp: string) {
     return "failed" as const;
   }
   return "ok" as const;
+}
+
+/** Versão de documento legal: texto curto sem espaço (mesma regra de legal_version_clean). */
+function cleanVersion(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const value = raw.trim();
+  return /^[0-9A-Za-z._-]{1,32}$/.test(value) ? value : null;
+}
+
+/** Erro de coluna/tabela ausente: banco ainda sem a migration correspondente. */
+function isMissingSchema(code: string | undefined) {
+  return code === "42703" || code === "PGRST204" || code === "PGRST202" || code === "42883";
+}
+
+/**
+ * Grava o aceite dos documentos no perfil do dono (colunas de
+ * 20261003200000_cadastro_aceite.sql). Banco antigo sem as colunas: ignora.
+ */
+// deno-lint-ignore no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function saveOwnerAcceptance(admin: any, userId: string, body: Body) {
+  const now = new Date().toISOString();
+  const { error } = await admin
+    .from("profiles")
+    .update({
+      terms_version: cleanVersion(body.terms_version),
+      privacy_version: cleanVersion(body.privacy_version),
+      dpa_version: cleanVersion(body.dpa_version),
+      terms_accepted_at: now,
+      // A caixa do dono inclui "Tenho 18 anos ou mais".
+      age_confirmed_at: now,
+    })
+    .eq("id", userId);
+  if (error && !isMissingSchema(error.code)) {
+    console.error("register-shop: falha ao gravar o aceite", error.message);
+  }
+}
+
+/**
+ * Coloca o WhatsApp do dono como contato público da página da loja
+ * (barbershop_settings.landing.whatsapp), preservando o resto da configuração.
+ */
+// deno-lint-ignore no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function saveShopPublicWhatsapp(admin: any, shopId: string, whatsapp: string) {
+  const { data, error: readError } = await admin
+    .from("barbershop_settings")
+    .select("landing")
+    .eq("barbershop_id", shopId)
+    .maybeSingle();
+  if (readError) {
+    if (!isMissingSchema(readError.code)) {
+      console.error("register-shop: falha ao ler a página da loja", readError.message);
+    }
+    return;
+  }
+  const current =
+    data?.landing && typeof data.landing === "object" && !Array.isArray(data.landing)
+      ? (data.landing as Record<string, unknown>)
+      : {};
+  const { error } = await admin
+    .from("barbershop_settings")
+    .update({ landing: { ...current, whatsapp } })
+    .eq("barbershop_id", shopId);
+  if (error && !isMissingSchema(error.code)) {
+    console.error("register-shop: falha ao gravar o WhatsApp da loja", error.message);
+  }
 }
 
 Deno.serve(async (req) => {
@@ -322,6 +397,24 @@ Deno.serve(async (req) => {
       if (password.length < 6) {
         return fail("password_too_short", "A senha precisa ter pelo menos 6 caracteres.", 400);
       }
+      // O aceite é obrigatório quando o app novo envia o campo. Corpo antigo, sem o
+      // campo, continua aceito enquanto o app publicado ainda não mostra a caixa.
+      // Com o campo, as três versões precisam vir em formato válido: não se grava
+      // aceite sem saber de qual versão dos documentos.
+      const termsInformed = Object.prototype.hasOwnProperty.call(body, "terms_accepted");
+      if (
+        termsInformed &&
+        (body.terms_accepted !== true ||
+          !cleanVersion(body.terms_version) ||
+          !cleanVersion(body.privacy_version) ||
+          !cleanVersion(body.dpa_version))
+      ) {
+        return fail(
+          "terms_required",
+          "Para continuar, aceite os Termos de Uso, a Política de Privacidade e o Acordo de Dados.",
+          400,
+        );
+      }
 
       // Desde a checagem atômica o "verify" já consome o desafio: aqui vale o token
       // e o desafio ainda sem usuário. Não filtra por consumed_at para aceitar
@@ -388,6 +481,8 @@ Deno.serve(async (req) => {
 
       await admin.from("profiles").update({ full_name: fullName }).eq("id", userId);
 
+      if (termsInformed) await saveOwnerAcceptance(admin, userId, body);
+
       // WhatsApp confirmado pelo código: entra como verificado. Se outra conta o
       // confirmou nesse meio-tempo, desfaz a conta nova.
       const savedWhatsapp = await saveOwnerWhatsapp(admin, userId, whatsapp);
@@ -423,6 +518,11 @@ Deno.serve(async (req) => {
         barbershop_id: shopRow.id,
         display_name: shopName,
       });
+
+      // Mesmo WhatsApp para os clientes: o número já foi confirmado por código.
+      if (body.shop_whatsapp_same === true && savedWhatsapp === "ok") {
+        await saveShopPublicWhatsapp(admin, shopRow.id, whatsapp);
+      }
 
       const { data: staffRow, error: staffError } = await admin
         .from("staff")
