@@ -69,6 +69,38 @@ select pg_temp.check_team(
   'Minority partner change waits for approval');
 select pg_temp.check_team(not exists(select 1 from services where name='Blocked minority'),'Minority change is not applied directly');
 
+-- Horário de funcionamento por mudança protegida (payload igual ao da tela: weekday, is_open, opens_at, closes_at).
+select set_config('request.jwt.claim.sub',owner_id::text,true) from team_test_context;
+select pg_temp.check_team(
+  (select request_shop_change(shop_id,'hours.replace',
+    '{"hours":[{"weekday":0,"is_open":false,"opens_at":"09:00","closes_at":"19:00"},
+               {"weekday":1,"is_open":true,"opens_at":"08:30","closes_at":"18:30"},
+               {"weekday":2,"is_open":true,"opens_at":"09:00","closes_at":"19:00"},
+               {"weekday":3,"is_open":true,"opens_at":"09:00","closes_at":"19:00"},
+               {"weekday":4,"is_open":true,"opens_at":"09:00","closes_at":"19:00"},
+               {"weekday":5,"is_open":true,"opens_at":"09:00","closes_at":"19:00"},
+               {"weekday":6,"is_open":true,"opens_at":"09:00","closes_at":"13:00"}]}'::jsonb)->>'status'='applied'
+   from team_test_context),
+  'Majority owner applies business hours directly');
+select pg_temp.check_team(
+  (select count(*)=7 from business_hours where barbershop_id=(select shop_id from team_test_context)),
+  'Business hours saved for the seven weekdays');
+select pg_temp.check_team(
+  exists(select 1 from business_hours where barbershop_id=(select shop_id from team_test_context)
+         and weekday=1 and is_open and opens_at='08:30' and closes_at='18:30'),
+  'Business hours keep opens_at and closes_at from the screen');
+select pg_temp.check_team(
+  exists(select 1 from business_hours where barbershop_id=(select shop_id from team_test_context) and weekday=0 and not is_open),
+  'Closed weekday is saved as closed');
+select request_shop_change(shop_id,'hours.replace',
+  '{"hours":[{"weekday":1,"is_open":true,"opens_at":"10:00","closes_at":"20:00"}]}'::jsonb)
+from team_test_context;
+select pg_temp.check_team(
+  (select count(*)=7 from business_hours where barbershop_id=(select shop_id from team_test_context))
+  and exists(select 1 from business_hours where barbershop_id=(select shop_id from team_test_context)
+             and weekday=1 and opens_at='10:00' and closes_at='20:00'),
+  'Saving hours again updates the weekday without duplicating or dropping the others');
+
 select set_config('request.jwt.claim.sub',employee_id::text,true) from team_test_context;
 select pg_temp.check_team(
   (select get_professional_insights(shop_id,now()-interval '1 day',now()+interval '1 day')->'own'->'quoted_cents'='null'::jsonb from team_test_context),

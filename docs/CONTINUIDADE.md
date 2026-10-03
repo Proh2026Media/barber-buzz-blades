@@ -19,7 +19,7 @@ Migration `20261002210000_slot_offer_mode.sql` (**aplicada**; Arena e Externa fi
 - **Tela:** Ajustes → Agendamento, cartão “Como os horários aparecem” (`src/features/shop/settings/SlotModeSettings.tsx`): três opções de escolha única com exemplo calculado com o expediente e os serviços reais (mais longo e mais curto), seletor de minutos só no Ajustável, prévia (“Se já houver um Corte das 9:00 às 9:30, o Combo aparece a partir das…”), consequência do modo, aviso de bloqueio/almoço e escopo, botão “Salvar forma dos horários” (pedido pendente quando precisa de aprovação). Aviso curto `SlotModeNotice` em **Horários** (abaixo de “Salvar funcionamento”) e em **Serviços** (abaixo dos filtros), com o texto do modo atual e atalho “Mudar a forma dos horários” (só para quem pode mexer em Ajustes). Textos `slots.*` nos dicionários.
 - **Cliente/demonstração:** `buildSlotsForWindow` recebe a regra (`slotRuleFromSettings` + bloqueios) e espelha o banco; `previewSlotMinutes` gera os exemplos. Testes node com o mesmo cenário do SQL.
 - Verificado: tipos, 124 testes, lint, build; SQL em rollback com a migration (cadeia booking 29 → ocorrências → autoconfirmação 57; demais dependentes de booking; independentes; novo 26) — todos passando. Navegador 390×844 na demonstração: aviso em Horários e Serviços, atalho abre Ajustes → Agendamento, trocar para literal mudou o app do cliente (Combo 9:00, 10:00… e Corte de 30 em 30) e para ajustável 20 (9:00, 9:20, 9:40…); voltou para flexível. `/b/arena-barber` carregando normal depois da migration. **Não verificado:** salvar com login real de dono/sócio (pedido de aprovação) e reserva real pelo app.
-- **Achado (já existia, não mexido):** `apply_shop_change('hours.replace')` grava em colunas `open_time`/`close_time` que não existem em `business_hours` (o certo é `opens_at`/`closes_at`); pedido aprovado de horário de funcionamento deve falhar.
+- **Corrigido em 03/10/2026 — horário de funcionamento pelo painel falhava desde 24/09:** o ramo `hours.replace` de `apply_shop_change` gravava em `open_time`/`close_time` (colunas inexistentes em `business_hours`; o certo é `opens_at`/`closes_at`) e descartava `is_open`. Como `request_shop_change` chama essa função tanto para o dono majoritário (aplica na hora) quanto na aprovação pelo sócio, **todo salvamento de horário pelo painel dava erro** `column open_time does not exist`. Migration `20261003130000_fix_hours_replace.sql` (**aplicada**) volta ao upsert por dia com `is_open/opens_at/closes_at`, só nesse ramo; permissões da função mantidas (sem anon/authenticated). Teste novo `hours_replace_change.sql` (12): dono aplica na hora, sócio com partes iguais abre pedido e a aprovação grava, dias fechados respeitados, colaborador comum recusado, fechar antes de abrir recusado. Reproduzido antes da correção (mesmo teste falha com o erro acima). Não havia nenhum pedido `hours.replace` gravado em produção para reparar. Não conferido: salvar pela tela com login real de dono.
 
 ## Entrega — regras de agendamento numa fonte só e atualização instantânea (02/10/2026, noite)
 
@@ -143,13 +143,13 @@ Publicado no commit `c2670d0` (salvo pelo autossave do Cursor). Migration `20261
 Plano: [plano-governanca-sociedade-gerente.md](plano-governanca-sociedade-gerente.md).
 
 **Aplicado no remoto (24/09):**
+
 - Migrations `20260924170000_*` e `20260924180000_*` no Postgres Coolify
 - Edge `google-connect`, `email-dispatch`, `whatsapp-dispatch`, `register-shop`, `invite-shop-admin` no volume Coolify + restart
 
 **Google Agenda/Contatos:** a falha “Falha na integração Google” vinha do `google-connect` ausente no volume (entrypoint). Função publicada; envs `GOOGLE_OAUTH_*` já estavam no container. Não há integração Google Drive neste app — o card é Agenda + Contatos.
 
 **OAuth Agenda — sessão perdida ao voltar (24/09):** o redirect do Google cai no apex `beauty…`, mas o cookie de login fica no host da loja. Correção: `complete` valida só o state HMAC (sem exigir Bearer); state inclui `return_origin`; callback `/auth/google-apps` redireciona de volta à origem da loja. Edge já no Coolify; **frontend Hostinger precisa republish** (`auth.google-apps` + `GoogleIntegrationsCard` com `return_origin`). Aviso “app não verificado”: Test users no OAuth consent (projeto `9697media@gmail.com`) ou Avançado.
-
 
 ## Projeto e ambiente
 
