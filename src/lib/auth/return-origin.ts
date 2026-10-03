@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 const BRIDGE_STORAGE_KEY = "mb_auth_bridge_v1";
 const HANDOFF_STORAGE_KEY = "mb_auth_handoff_v1";
+/** Marca, na própria janela do pop-up, que o Google foi aberto por este fluxo. */
+const POPUP_OAUTH_STARTED_KEY = "mb_auth_popup_oauth_v1";
 
 export const AUTH_POPUP_MESSAGE = "mb-auth-session-v1";
 
@@ -132,8 +134,35 @@ export function clearAuthBridge(): void {
   if (typeof window === "undefined") return;
   try {
     sessionStorage.removeItem(BRIDGE_STORAGE_KEY);
+    sessionStorage.removeItem(POPUP_OAUTH_STARTED_KEY);
   } catch {
     /* ignore */
+  }
+}
+
+/**
+ * Chamada logo antes de abrir o Google no pop-up. Sem essa marca, o pop-up nunca entrega
+ * uma sessão que já existia no apex (abrir o link sozinho não pode vazar a conta).
+ */
+export function markPopupOAuthStarted(): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(POPUP_OAUTH_STARTED_KEY, String(Date.now()));
+  } catch {
+    /* ignore */
+  }
+}
+
+function popupOAuthWasStarted(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const raw = sessionStorage.getItem(POPUP_OAUTH_STARTED_KEY);
+    if (!raw) return false;
+    const startedAt = Number(raw);
+    // O login no Google precisa acontecer em até 15 minutos.
+    return Number.isFinite(startedAt) && Date.now() - startedAt < 15 * 60 * 1000;
+  } catch {
+    return false;
   }
 }
 
@@ -267,6 +296,16 @@ export async function finishPopupOAuthAndNotifyOpener(fromUrl?: {
   if (typeof window === "undefined") return "pending";
 
   const url = new URL(window.location.href);
+  const bridgeFromUrl = resolveAuthBridge(fromUrl);
+  const popupMode = Boolean(
+    fromUrl?.popup || bridgeFromUrl?.popup || url.searchParams.get("popup") === "1",
+  );
+  // Pop-up aberto sem passar pelo Google deste fluxo: não reaproveita sessão existente.
+  if (popupMode && bridgeFromUrl?.returnOrigin && !popupOAuthWasStarted()) {
+    clearAuthBridge();
+    return "error";
+  }
+
   const code = url.searchParams.get("code");
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
@@ -289,6 +328,12 @@ export async function finishPopupOAuthAndNotifyOpener(fromUrl?: {
   const bridge = resolveAuthBridge(fromUrl);
   const isPopup = Boolean(fromUrl?.popup || bridge?.popup || url.searchParams.get("popup") === "1");
   if (isPopup && bridge?.returnOrigin) {
+    // Só a plataforma e domínios de lojas cadastradas recebem a sessão.
+    const allowed = await isAllowedReturnOrigin(bridge.returnOrigin);
+    if (!allowed || !popupOAuthWasStarted()) {
+      clearAuthBridge();
+      return "error";
+    }
     const ok = postSessionToOpener(session, bridge.returnOrigin);
     clearAuthBridge();
     if (ok) {

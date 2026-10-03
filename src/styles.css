@@ -174,13 +174,8 @@
     padding-left: max(1rem, env(safe-area-inset-left));
     padding-right: max(1rem, env(safe-area-inset-right));
   }
-  /* Quando o app roda instalado, alguns WebViews não informam o recuo do topo.
-     O piso abaixo evita que o cabeçalho fique sob a barra de status. */
-  @media (display-mode: standalone) {
-    .arena-workspace > header {
-      padding-top: max(3.25rem, env(safe-area-inset-top));
-    }
-  }
+  /* O piso do recuo superior no app instalado fica fora de camada, depois da
+     regra de 640px (ver "Piso do app instalado"), para vencer `p-4`/`py-4`. */
   h1,
   h2,
   h3,
@@ -672,11 +667,15 @@ body:has(.arena-workspace) input:-webkit-autofill {
   color: #4d514a;
   border-color: #cccfc8;
 }
-.arena-workspace input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]),
+.arena-workspace
+  input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]),
 .arena-workspace select,
 body:has(.arena-workspace)
   :is([role="dialog"], [role="alertdialog"])
-  :is(input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]), select) {
+  :is(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]),
+    select
+  ) {
   min-height: 44px;
 }
 .arena-workspace button:focus-visible {
@@ -1080,15 +1079,18 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
 .arena-workspace .shadow-sm {
   box-shadow: 0 10px 28px color-mix(in oklch, #1c1d19 6%, transparent);
 }
-.dark .arena-workspace .bg-card .status-pending {
+.dark .arena-workspace :is(.bg-card, .app-action-card, .booking-section) .status-pending {
   color: #92400e;
   background: #fef3c7;
 }
-.dark .arena-workspace .bg-card :is(.status-confirmed, .status-completed) {
+.dark
+  .arena-workspace
+  :is(.bg-card, .app-action-card, .booking-section)
+  :is(.status-confirmed, .status-completed) {
   color: #065f46;
   background: #d1fae5;
 }
-.dark .arena-workspace .bg-card .status-cancelled {
+.dark .arena-workspace :is(.bg-card, .app-action-card, .booking-section) .status-cancelled {
   color: #9f1239;
   background: #ffe4e6;
 }
@@ -1962,31 +1964,39 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
 /* Botões que pedem explicitamente um raio maior/menor seguem a linguagem de cantos da loja. */
 :is(.arena-workspace, .brand-preview) button:is(.rounded-2xl, .rounded-3xl),
 body:has(.arena-workspace)
-  [data-radix-popper-content-wrapper]
+  :is([data-radix-popper-content-wrapper], [role="dialog"], [role="alertdialog"])
   button:is(.rounded-2xl, .rounded-3xl) {
   border-radius: var(--panel-radius) !important;
 }
 :is(.arena-workspace, .brand-preview) button:is(.rounded-xl, .rounded-lg),
-body:has(.arena-workspace) [data-radix-popper-content-wrapper] button:is(.rounded-xl, .rounded-lg) {
+body:has(.arena-workspace)
+  :is([data-radix-popper-content-wrapper], [role="dialog"], [role="alertdialog"])
+  button:is(.rounded-xl, .rounded-lg) {
   border-radius: var(--control-radius) !important;
 }
 :is(.arena-workspace, .brand-preview) button.rounded-full,
-body:has(.arena-workspace) [data-radix-popper-content-wrapper] button.rounded-full {
+body:has(.arena-workspace)
+  :is([data-radix-popper-content-wrapper], [role="dialog"], [role="alertdialog"])
+  button.rounded-full {
   border-radius: 9999px !important;
 }
 .arena-workspace :is(.rounded-2xl, .rounded-3xl),
-body:has(.arena-workspace) [data-radix-popper-content-wrapper] :is(.rounded-2xl, .rounded-3xl),
-body:has(.arena-workspace) [role="dialog"] {
+body:has(.arena-workspace)
+  :is([data-radix-popper-content-wrapper], [role="dialog"], [role="alertdialog"])
+  :is(.rounded-2xl, .rounded-3xl),
+body:has(.arena-workspace) :is([role="dialog"], [role="alertdialog"]) {
   border-radius: var(--panel-radius);
 }
 .arena-workspace :is(.rounded-xl, .rounded-lg),
-body:has(.arena-workspace) [data-radix-popper-content-wrapper] :is(.rounded-xl, .rounded-lg) {
+body:has(.arena-workspace)
+  :is([data-radix-popper-content-wrapper], [role="dialog"], [role="alertdialog"])
+  :is(.rounded-xl, .rounded-lg) {
   border-radius: var(--control-radius);
 }
 
 /* Portalled menus and dialogs inherit the active shop's corner language. */
 body:has(.arena-workspace.brand-corners-square)
-  :is([data-radix-popper-content-wrapper], [role="dialog"]),
+  :is([data-radix-popper-content-wrapper], [role="dialog"], [role="alertdialog"]),
 .brand-corners-square {
   --radius: 0rem;
   --control-radius: 0rem;
@@ -1994,7 +2004,7 @@ body:has(.arena-workspace.brand-corners-square)
   --button-radius: 0rem;
 }
 body:has(.arena-workspace.brand-corners-soft)
-  :is([data-radix-popper-content-wrapper], [role="dialog"]),
+  :is([data-radix-popper-content-wrapper], [role="dialog"], [role="alertdialog"]),
 .brand-corners-soft {
   --radius: 0.9rem;
   --control-radius: 0.9rem;
@@ -2002,7 +2012,7 @@ body:has(.arena-workspace.brand-corners-soft)
   --button-radius: 0.9rem;
 }
 body:has(.arena-workspace.brand-corners-round)
-  :is([data-radix-popper-content-wrapper], [role="dialog"]),
+  :is([data-radix-popper-content-wrapper], [role="dialog"], [role="alertdialog"]),
 .brand-corners-round {
   --radius: 1.2rem;
   --control-radius: 1.2rem;
@@ -2010,7 +2020,7 @@ body:has(.arena-workspace.brand-corners-round)
   --button-radius: 999px;
 }
 body:has(.arena-workspace[class*="brand-corners-"])
-  :is([data-radix-popper-content-wrapper], [role="dialog"])
+  :is([data-radix-popper-content-wrapper], [role="dialog"], [role="alertdialog"])
   button {
   border-radius: var(--button-radius) !important;
 }
@@ -2573,6 +2583,43 @@ body:has(.arena-workspace[class*="brand-corners-"])
   .arena-workspace > header .app-demo-switcher {
     height: 44px;
   }
+}
+
+/* Cabeçalho flutuante: a margem já afasta o cartão do recorte do topo, então
+   o preenchimento interno não soma o recorte de novo. */
+.arena-workspace.brand-chrome-floating > header {
+  padding-top: 1rem;
+}
+/* Piso do app instalado: alguns WebViews não informam o recuo do topo. Fica
+   fora de camada e depois da regra de 640px para valer no celular. Só no iOS
+   (`-webkit-touch-callout`), onde a barra de status translúcida fica sobre o
+   conteúdo; no Android instalado a barra não cobre a página e o piso só
+   abriria um vão vazio no topo. No cabeçalho flutuante o piso vai na margem. */
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 640px) and (display-mode: standalone) {
+    .arena-workspace > header {
+      padding-top: max(3.25rem, env(safe-area-inset-top));
+    }
+    .arena-workspace.brand-chrome-floating > header {
+      padding-top: 1rem;
+      margin-top: max(3.25rem, env(safe-area-inset-top));
+    }
+  }
+}
+
+/* Janelas de confirmação no celular: margem lateral e rolagem quando passam da tela. */
+@media (max-width: 640px) {
+  [role="alertdialog"] {
+    width: calc(100vw - 1.5rem);
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+  }
+}
+
+/* O banner de instalação some enquanto houver janela aberta, para não cobrir
+   o formulário nem fechar a janela com um toque fora dela. */
+body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-install-banner {
+  display: none;
 }
 
 /* Editor de identidade visual: a barra de salvar acompanha o fim do diálogo.
@@ -3500,19 +3547,28 @@ body:has(.arena-workspace[class*="brand-corners-"])
   object-fit: cover;
   object-position: center 30%;
   transform: scale(1.02);
-  animation: platform-landing- ken 28s ease-in-out infinite alternate;
+  animation: platform-landing-ken 28s ease-in-out infinite alternate;
 }
 .platform-landing-photo span,
 .platform-register-photo span {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(105deg, rgb(18 16 14 / 0.88) 0%, rgb(18 16 14 / 0.72) 42%, rgb(18 16 14 / 0.45) 100%),
+    linear-gradient(
+      105deg,
+      rgb(18 16 14 / 0.88) 0%,
+      rgb(18 16 14 / 0.72) 42%,
+      rgb(18 16 14 / 0.45) 100%
+    ),
     linear-gradient(to top, rgb(12 11 10 / 0.55), transparent 45%);
 }
 @keyframes platform-landing-ken {
-  from { transform: scale(1.02) translate3d(0, 0, 0); }
-  to { transform: scale(1.08) translate3d(-1.5%, -1%, 0); }
+  from {
+    transform: scale(1.02) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.08) translate3d(-1.5%, -1%, 0);
+  }
 }
 .platform-landing-stage,
 .platform-register-stage {
@@ -3623,7 +3679,10 @@ body:has(.arena-workspace[class*="brand-corners-"])
   font-size: 0.95rem;
   font-weight: 700;
   text-decoration: none;
-  transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease,
+    border-color 0.18s ease;
 }
 .platform-landing-cta-primary,
 .platform-register-submit {
@@ -3684,8 +3743,14 @@ body:has(.arena-workspace[class*="brand-corners-"])
   color: color-mix(in oklch, #f4f1ea 58%, transparent);
 }
 @keyframes platform-landing-rise {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .platform-register-stage {

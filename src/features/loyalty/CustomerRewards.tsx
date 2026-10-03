@@ -173,8 +173,20 @@ export function CustomerRewards({
                   )}
                   <p className="mt-1 text-xs font-semibold text-gold">
                     {missing > 0
-                      ? t("rewards.costMissing", { n: reward.cost_points, missing })
-                      : t("rewards.cost", { n: reward.cost_points })}
+                      ? t("rewards.costMissing", {
+                          cost: t(
+                            reward.cost_points === 1 ? "rewards.costOne" : "rewards.costMany",
+                            {
+                              n: reward.cost_points,
+                            },
+                          ),
+                          missing: t(missing === 1 ? "rewards.missingOne" : "rewards.missingMany", {
+                            n: missing,
+                          }),
+                        })
+                      : t(reward.cost_points === 1 ? "rewards.costOne" : "rewards.costMany", {
+                          n: reward.cost_points,
+                        })}
                   </p>
                 </div>
                 <button

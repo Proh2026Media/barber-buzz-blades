@@ -367,9 +367,11 @@ export function PlatformDashboard({
                 <Tooltip
                   formatter={(value: number, _name, item) => [
                     value,
-                    item?.payload?.fullName
-                      ? t("plat.dash.customersOf", { name: item.payload.fullName })
-                      : t("plat.dash.customers"),
+                    item?.dataKey === "team"
+                      ? t("plat.dash.team")
+                      : item?.payload?.fullName
+                        ? t("plat.dash.customersOf", { name: item.payload.fullName })
+                        : t("plat.dash.customers"),
                   ]}
                   contentStyle={{
                     borderRadius: 12,

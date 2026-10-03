@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Bell, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
@@ -85,6 +86,13 @@ export function ClientNoticeBell({
     void refreshPending();
   }, [open, shopId, customerId]);
 
+  // A confirmação de envio fica visível por alguns segundos depois que o diálogo fecha.
+  useEffect(() => {
+    if (!message) return;
+    const timer = window.setTimeout(() => setMessage(null), 5000);
+    return () => window.clearTimeout(timer);
+  }, [message]);
+
   async function send(preset: NoticePreset) {
     setBusy(true);
     setError(null);
@@ -166,11 +174,19 @@ export function ClientNoticeBell({
         <Bell className="size-4" />
       </button>
 
-      {(message || error) && !open && (
-        <span className="sr-only" role="status">
-          {message ?? error}
-        </span>
-      )}
+      {message &&
+        !open &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            role="status"
+            className="pointer-events-none fixed inset-x-4 bottom-[var(--app-banner-bottom,1.5rem)] z-[110] mx-auto w-auto max-w-sm rounded-2xl border border-border bg-card px-4 py-3 text-center text-sm font-semibold text-card-foreground shadow-lg"
+          >
+            {message}
+          </div>,
+          // Na raiz do painel (sem transform) o aviso segue o modo de canto e o cartão off-white.
+          document.querySelector<HTMLElement>(".arena-workspace") ?? document.body,
+        )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent

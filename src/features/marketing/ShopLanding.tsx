@@ -38,6 +38,24 @@ import {
 
 const REFRESH_MS = 60_000;
 const SLOTS_SHOWN = 6;
+/** `get_public_shop_landing` devolve no máximo 12 horários livres por profissional. */
+const SERVER_SLOTS_LIMIT = 12;
+
+/** Mostra um "HH:MM" da loja no formato de hora do idioma (ex.: 02:30 PM em en-US). */
+function formatClock(value: string | null | undefined, locale: string) {
+  if (!value) return value ?? "";
+  const match = /^(\d{1,2}):(\d{2})/.exec(value);
+  if (!match) return value;
+  try {
+    return new Intl.DateTimeFormat(locale, {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "UTC",
+    }).format(new Date(Date.UTC(2024, 0, 1, Number(match[1]), Number(match[2]))));
+  } catch {
+    return value;
+  }
+}
 
 function appPath(slug: string, barber?: string | null) {
   const params = new URLSearchParams({ shop: slug });
@@ -210,7 +228,9 @@ export function ShopLandingView({
           className="absolute inset-0 -z-10 bg-gradient-to-b from-black/30 via-black/45 to-[#141412]"
           aria-hidden
         />
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 pt-4">
+        <div
+          className={`mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 ${preview ? "pt-4" : "pt-[max(1rem,env(safe-area-inset-top))]"}`}
+        >
           <div className="flex min-w-0 items-center gap-3">
             {shop.logo_url ? (
               <img
@@ -244,9 +264,9 @@ export function ShopLandingView({
               aria-hidden
             />
             {open.kind === "open"
-              ? t("shopLanding.openUntil", { time: open.until })
+              ? t("shopLanding.openUntil", { time: formatClock(open.until, intlLocale) })
               : open.kind === "later"
-                ? t("shopLanding.opensAt", { time: open.opens })
+                ? t("shopLanding.opensAt", { time: formatClock(open.opens, intlLocale) })
                 : t("shopLanding.closedToday")}
           </p>
           <div className="flex flex-col gap-2 pt-2 sm:flex-row">
@@ -263,7 +283,7 @@ export function ShopLandingView({
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl space-y-8 px-4 py-8 pb-28">
+      <main className="mx-auto max-w-3xl space-y-8 px-4 py-8 pb-[calc(7rem+env(safe-area-inset-bottom))]">
         {showStaff && (
           <section aria-labelledby="landing-staff" className="space-y-3">
             <div className="space-y-1">
@@ -326,15 +346,17 @@ export function ShopLandingView({
                                 barber={member.booking_slug}
                                 className="relative z-10 inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--control-radius)] border border-border bg-background px-3 text-sm font-semibold tabular-nums hover:border-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                               >
-                                {time}
+                                {formatClock(time, intlLocale)}
                               </LoginLink>
                             </li>
                           ))}
                           {member.free_today.length > SLOTS_SHOWN && (
                             <li className="inline-flex min-h-11 items-center px-2 text-xs text-muted-foreground">
-                              {t("shopLanding.moreSlots", {
-                                n: member.free_today.length - SLOTS_SHOWN,
-                              })}
+                              {member.free_today.length >= SERVER_SLOTS_LIMIT
+                                ? t("fix.landing-espera-pwa.moreSlotsMany")
+                                : t("shopLanding.moreSlots", {
+                                    n: member.free_today.length - SLOTS_SHOWN,
+                                  })}
                             </li>
                           )}
                         </ul>
@@ -425,7 +447,10 @@ export function ShopLandingView({
                     </span>
                     <span className="tabular-nums text-muted-foreground">
                       {row?.is_open
-                        ? t("shopLanding.hoursRange", { from: row.opens_at, to: row.closes_at })
+                        ? t("shopLanding.hoursRange", {
+                            from: formatClock(row.opens_at, intlLocale),
+                            to: formatClock(row.closes_at, intlLocale),
+                          })
                         : t("shopLanding.closed")}
                     </span>
                   </li>
@@ -477,7 +502,7 @@ export function ShopLandingView({
           <footer className="space-y-2 border-t border-border pt-6 text-center text-xs text-muted-foreground">
             <p>{t("shopLanding.footer")}</p>
             <p className="flex justify-center gap-4">
-              <Link to="/politica" className="underline-offset-4 hover:underline">
+              <Link to="/privacidade" className="underline-offset-4 hover:underline">
                 {t("shopLanding.privacy")}
               </Link>
               <Link to="/termos" className="underline-offset-4 hover:underline">
@@ -489,7 +514,7 @@ export function ShopLandingView({
       </main>
 
       <div
-        className={`${preview ? "sticky" : "fixed"} inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 p-3 backdrop-blur-xl`}
+        className={`${preview ? "sticky" : "fixed"} inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 p-3 backdrop-blur-xl ${preview ? "" : "pb-[max(0.75rem,env(safe-area-inset-bottom))]"}`}
       >
         <div className="mx-auto max-w-3xl">
           <LoginLink

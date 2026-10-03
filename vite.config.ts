@@ -41,51 +41,16 @@ export default defineConfig({
           "icons/icon-512-maskable.png",
           "manifest.webmanifest",
         ],
-        manifest: {
-          name: "Barba & Cabelo",
-          short_name: "Barba&Cabelo",
-          description: "Agendamento, fidelidade e gestão para barbearias.",
-          lang: "pt-BR",
-          dir: "ltr",
-          start_url: "/",
-          scope: "/",
-          display: "standalone",
-          orientation: "portrait-primary",
-          background_color: "#e9e5de",
-          theme_color: "#20211f",
-          categories: ["lifestyle", "business"],
-          icons: [
-            {
-              src: "/icons/icon-192.png",
-              sizes: "192x192",
-              type: "image/png",
-              purpose: "any",
-            },
-            {
-              src: "/icons/icon-512.png",
-              sizes: "512x512",
-              type: "image/png",
-              purpose: "any",
-            },
-            {
-              src: "/icons/icon-192-maskable.png",
-              sizes: "192x192",
-              type: "image/png",
-              purpose: "maskable",
-            },
-            {
-              src: "/icons/icon-512-maskable.png",
-              sizes: "512x512",
-              type: "image/png",
-              purpose: "maskable",
-            },
-          ],
-        },
+        // Fonte única do manifesto: public/manifest.webmanifest (ligado em __root.tsx).
+        // Gerar outro aqui punha "manifest.webmanifest" duas vezes no precache com revisões
+        // diferentes, e o Workbox abortava o service worker (sem cache nem modo offline).
+        manifest: false,
         workbox: {
           // O client bundle do Nitro fica em .output/public; o plugin gera o SW em dist/.
           // Precache mínimo dos estáticos públicos; fontes são empacotadas localmente.
           globPatterns: ["icons/*", "manifest.webmanifest"],
-          additionalManifestEntries: [{ url: "/", revision: `${Date.now()}` }],
+          // "/" fica fora do precache: navegações seguem só a regra NetworkFirst ("pages"),
+          // para não servir HTML de uma versão anterior apontando para bundles que já saíram.
           navigateFallback: null,
           runtimeCaching: [
             {

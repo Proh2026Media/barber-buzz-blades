@@ -61,6 +61,8 @@ export function LandingEditor({
   const saved = useMemo(() => parseLandingConfig(settings.landing), [settings.landing]);
   const [draft, setDraft] = useState<LandingConfig>(saved);
   const [base, setBase] = useState<LandingData | null>(null);
+  const [previewFailed, setPreviewFailed] = useState(false);
+  const [previewAttempt, setPreviewAttempt] = useState(0);
   const [view, setView] = useState<"editar" | "previa">("editar");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -129,15 +131,26 @@ export function LandingEditor({
       return;
     }
     let active = true;
-    void supabase.rpc("get_public_shop_landing", { p_shop_ref: shopId }).then(({ data }) => {
-      if (active) setBase(parseLandingData(data));
-    });
+    setPreviewFailed(false);
+    void supabase.rpc("get_public_shop_landing", { p_shop_ref: shopId }).then(
+      ({ data, error: rpcError }) => {
+        if (!active) return;
+        const parsed = rpcError ? null : parseLandingData(data);
+        setBase(parsed);
+        // Sem dados (rede ou loja suspensa), mostra aviso com "Tentar de novo"
+        // em vez de deixar a prévia carregando para sempre.
+        setPreviewFailed(parsed === null);
+      },
+      () => {
+        if (active) setPreviewFailed(true);
+      },
+    );
     return () => {
       active = false;
     };
-    // A prévia usa a marca salva; só recarrega quando a loja muda.
+    // A prévia usa a marca salva; só recarrega quando a loja muda ou ao tentar de novo.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [demo ? null : shopId]);
+  }, [demo ? null : shopId, previewAttempt]);
 
   const problem = validateLandingConfig(draft);
   const dirty = JSON.stringify(cleanLandingConfig(draft)) !== JSON.stringify(saved);
@@ -428,6 +441,19 @@ export function LandingEditor({
           <div className="relative max-h-[70dvh] overflow-y-auto rounded-2xl border border-border shadow-sm">
             {previewData ? (
               <ShopLandingView data={previewData} preview />
+            ) : previewFailed ? (
+              <div className="space-y-3 p-4" role="alert">
+                <p className="text-sm text-muted-foreground">
+                  {t("fix.ajustes-marca.landingPreviewError")}
+                </p>
+                <button
+                  type="button"
+                  className="action-button"
+                  onClick={() => setPreviewAttempt((current) => current + 1)}
+                >
+                  {t("common.retry")}
+                </button>
+              </div>
             ) : (
               <p
                 className="flex items-center gap-2 p-4 text-sm text-muted-foreground"

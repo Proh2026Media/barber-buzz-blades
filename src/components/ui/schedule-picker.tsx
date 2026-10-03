@@ -38,7 +38,12 @@ export function DatePicker({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button type="button" disabled={disabled} className="schedule-field" aria-label={label}>
+        <button
+          type="button"
+          disabled={disabled}
+          className="schedule-field"
+          aria-label={`${label}: ${displayValue ?? dateFromLocalKey(value).toLocaleDateString(intlLocale)}`}
+        >
           <CalendarDays className="size-5 text-gold" />
           <span className="flex-1 text-left">
             {!compact && <span className="block text-xs text-muted-foreground">{label}</span>}

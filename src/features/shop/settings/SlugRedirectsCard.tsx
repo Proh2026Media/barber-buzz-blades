@@ -50,11 +50,11 @@ export function SlugRedirectsCard({
       supabase.rpc("list_staff_slug_redirects", { p_shop_id: shopId }),
     ]);
     if (shopResult.error) {
-      setError(shopResult.error.message);
+      setError(friendlyAuthError(shopResult.error));
       return;
     }
     if (staffResult.error) {
-      setError(staffResult.error.message);
+      setError(friendlyAuthError(staffResult.error));
       return;
     }
     setShopRedirects((shopResult.data as ShopRedirect[]) ?? []);

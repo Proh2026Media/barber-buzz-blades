@@ -37,7 +37,7 @@ export function LegalPageShell({ title, updatedAt, children }: LegalPageShellPro
   return (
     <div className="min-h-dvh bg-background text-foreground">
       <header className="sticky top-0 z-20 border-b border-border/60 bg-background/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6">
           <Link
             to="/"
             className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--control-radius)] border border-border/60 bg-muted/40 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"

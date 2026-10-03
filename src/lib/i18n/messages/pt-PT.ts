@@ -265,7 +265,8 @@ export const ptPT: Record<MessageKey, string> = {
   "common.loadMore": "Carregar mais",
   "level.region": "Evolução de nível",
   "level.next": "Próximo nível: {name}",
-  "level.remaining": "Faltam {points} pontos",
+  "level.remainingOne": "Falta {points} ponto",
+  "level.remainingMany": "Faltam {points} pontos",
   "level.progress": "Progresso para o nível {name}",
   "level.benefits": "Privilégios do novo nível:",
   "level.maxTitle": "Nível máximo alcançado",
@@ -827,7 +828,8 @@ export const ptPT: Record<MessageKey, string> = {
   "plat.shops.noMatch": "Nenhuma barbearia corresponde aos filtros.",
   "plat.shops.sportsAria": "Módulo Desporto em {name}",
   "plat.shops.sports": "Módulo Desporto",
-  "plat.shops.customers": "{count} clientes",
+  "plat.shops.customerOne": "{count} cliente",
+  "plat.shops.customerMany": "{count} clientes",
   "plat.shops.adminOne": "{count} administrador",
   "plat.shops.adminMany": "{count} administradores",
   "plat.shops.active": "Ativa",
@@ -1182,7 +1184,8 @@ export const ptPT: Record<MessageKey, string> = {
   "shop.agenda.allTeam": "Toda a equipa",
   "shop.agenda.status": "Estado",
   "shop.agenda.allStatuses": "Todos",
-  "shop.agenda.count": "{shown} de {total} atendimentos",
+  "shop.agenda.countOne": "{shown} de {total} atendimento",
+  "shop.agenda.countMany": "{shown} de {total} atendimentos",
   "shop.agenda.clearFilters": "Limpar filtros",
   "shop.agenda.listAria": "Atendimentos do dia",
   "shop.agenda.time": "Horário",
@@ -1208,7 +1211,8 @@ export const ptPT: Record<MessageKey, string> = {
   "shop.money.completed": "Serviços concluídos",
   "shop.money.expected": "Ainda marcado",
   "shop.money.cancellations": "Cancelamentos",
-  "shop.money.cancellationsAria": "Ver {count} cancelamentos do dia",
+  "shop.money.cancellationsAriaOne": "Ver {count} cancelamento do dia",
+  "shop.money.cancellationsAriaMany": "Ver {count} cancelamentos do dia",
   "shop.money.estimate": "Estimativa com os preços atuais.",
   "shop.clients.title": "Clientes da barbearia",
   "shop.add": "Adicionar",
@@ -1728,7 +1732,8 @@ export const ptPT: Record<MessageKey, string> = {
   "integr.google.chooseFirst": "Escolha que calendário Google usar antes de sincronizar.",
   "integr.google.syncedDemo": "Calendário sincronizado (demo).",
   "integr.google.calendarFallback": "Calendário Google",
-  "integr.google.imported": "{count} eventos importados de “{name}”.",
+  "integr.google.importedOne": "{count} evento importado de “{name}”.",
+  "integr.google.importedMany": "{count} eventos importados de “{name}”.",
   "integr.google.errSync": "Falha ao sincronizar o calendário",
   "integr.google.contactSavedDemo": "Contacto guardado nos Contactos Google (demo).",
   "integr.google.contactSaved": "Contacto guardado nos Contactos Google.",
@@ -1768,8 +1773,10 @@ export const ptPT: Record<MessageKey, string> = {
     "Pronto. Os horários futuros começam a aparecer no calendário Google em cerca de 1 minuto.",
   "integr.push.savedOff":
     "Cópia desligada. Os horários futuros copiados serão retirados do calendário Google.",
-  "integr.push.pending": "{count} horários a aguardar cópia.",
-  "integr.push.failed": "Não foi possível copiar {count} horários: {reason}",
+  "integr.push.pendingOne": "{count} horário a aguardar cópia.",
+  "integr.push.pendingMany": "{count} horários a aguardar cópia.",
+  "integr.push.failedOne": "Não foi possível copiar {count} horário: {reason}",
+  "integr.push.failedMany": "Não foi possível copiar {count} horários: {reason}",
   "integr.push.errSave": "Não foi possível alterar a cópia de marcações. Tente novamente.",
   "integr.push.demo": "Na demonstração nada é enviado ao Google.",
   "integr.google.reloadCalendars": "Recarregar calendários",
@@ -2389,7 +2396,8 @@ export const ptPT: Record<MessageKey, string> = {
   "loyalty.admin.rewardsEmpty": "Nenhum prémio registado",
   "loyalty.admin.rewardsEmptyText":
     "Crie o primeiro, por exemplo um corte grátis ou uma hidratação.",
-  "loyalty.admin.rewardCost": "{n} pontos",
+  "loyalty.admin.rewardCostOne": "{n} ponto",
+  "loyalty.admin.rewardCostMany": "{n} pontos",
   "loyalty.admin.rewardPaused": "pausado",
   "loyalty.admin.rewardToggle": "Mostrar {name} aos clientes",
   "loyalty.admin.rewardAdd": "Novo prémio",
@@ -2440,8 +2448,11 @@ export const ptPT: Record<MessageKey, string> = {
   "rewards.pendingLabel": "Prémios a aguardar levantamento",
   "rewards.pendingLine": "A aguardar levantamento · válido até {date}",
   "rewards.cancel": "Desistir",
-  "rewards.cost": "{n} pontos",
-  "rewards.costMissing": "{n} pontos · faltam {missing}",
+  "rewards.costOne": "{n} ponto",
+  "rewards.costMany": "{n} pontos",
+  "rewards.costMissing": "{cost} · {missing}",
+  "rewards.missingOne": "falta {n}",
+  "rewards.missingMany": "faltam {n}",
   "rewards.redeem": "Trocar",
   "rewards.limit":
     "Já tem 3 prémios a aguardar levantamento. Levante ou desista de um para trocar outro.",
@@ -2465,7 +2476,8 @@ export const ptPT: Record<MessageKey, string> = {
     "Esta barbearia não está a usar o clube de pontos de momento. Os pontos que já ganhou continuam guardados.",
   "club.earnVisit": "Cada atendimento concluído vale {points}.",
   "club.earnWelcome": "No seu primeiro atendimento ganha mais {points} de boas-vindas.",
-  "club.pointsN": "{n} pontos",
+  "club.pointsOne": "{n} ponto",
+  "club.pointsMany": "{n} pontos",
   "club.spendRewards": "Troque os seus pontos por prémios em Extrato de pontos.",
   "club.levelsHint": "O nível segue tudo o que já ganhou. Trocar pontos não o faz descer de nível.",
   "club.range": "{from} a {to} pts",
@@ -2616,4 +2628,68 @@ export const ptPT: Record<MessageKey, string> = {
   "slots.notice.custom":
     "A cada {step} minutos: o sistema testa {tested}… e mostra só os horários em que o serviço inteiro cabe antes do próximo compromisso ou do fecho. Ex.: com um {short} das {start} às {end}, um {long} de {minutes} min aparece às {first}. Intervalo menor dá mais opções; maior deixa a agenda mais redonda.",
   "slots.notice.link": "Mudar a forma dos horários",
+  "fix.cliente-app.rescheduleUnavailable":
+    "Não é possível remarcar esta reserva aqui: o serviço ou o profissional já não está disponível. Cancele e faça uma nova reserva, ou contacte a barbearia.",
+  "fix.componentes-loja.wa.wrapPlaceholder": "texto",
+  "fix.componentes-loja.perm.view_agenda_all": "Visão geral da agenda",
+  "fix.componentes-loja.perm.view_agenda_allHint":
+    "Ver a agenda de todos os profissionais da unidade",
+  "fix.componentes-loja.perm.view_money": "Valores do dia e recebimentos próprios",
+  "fix.componentes-loja.perm.view_moneyHint":
+    "Ver o resumo de valores do dia e quanto recebeu pelos próprios atendimentos",
+  "fix.componentes-loja.perm.view_financial_all": "Relatórios financeiros da loja",
+  "fix.componentes-loja.perm.view_financial_allHint":
+    "Aceder à faturação e aos relatórios financeiros completos da unidade",
+  "fix.componentes-loja.perm.view_reports_global": "Relatórios da unidade",
+  "fix.componentes-loja.perm.view_reports_globalHint":
+    "Aceder a métricas completas e identificadas da unidade",
+  "fix.componentes-loja.perm.view_reports_anonymized": "Indicadores gerais anonimizados",
+  "fix.componentes-loja.perm.view_reports_anonymizedHint":
+    "Ver números gerais da loja sem identificar quem é quem",
+  "fix.componentes-loja.perm.view_own_score": "Indicadores próprios",
+  "fix.componentes-loja.perm.view_own_scoreHint": "Acompanhar o próprio movimento e desempenho",
+  "fix.componentes-loja.perm.manage_services": "Gerir catálogo geral",
+  "fix.componentes-loja.perm.manage_servicesHint":
+    "Criar, editar e alterar preços dos serviços da unidade",
+  "fix.componentes-loja.perm.manage_own_services": "Gerir os próprios serviços",
+  "fix.componentes-loja.perm.manage_own_servicesHint":
+    "Editar preço, duração e disponibilidade dos próprios serviços",
+  "fix.componentes-loja.perm.manage_operations": "Gerir funcionamento",
+  "fix.componentes-loja.perm.manage_operationsHint":
+    "Definir horários de funcionamento, bloqueios gerais e ajustes da loja",
+  "fix.componentes-loja.perm.manage_team": "Gerir equipa",
+  "fix.componentes-loja.perm.manage_teamHint": "Convidar profissionais e alterar funções",
+  "fix.componentes-loja.perm.manage_permissions": "Alterar permissões",
+  "fix.componentes-loja.perm.manage_permissionsHint": "Editar esta matriz de acessos",
+  "fix.componentes-loja.perm.readOnlyHint":
+    "Só quem pode aplicar alterações da sociedade altera estas permissões. Aqui pode consultá-las.",
+  "fix.ajustes-marca.waTemplatesLoadError":
+    "Não foi possível carregar os textos guardados. Para não substituir os seus textos pelos predefinidos, guardar fica bloqueado até carregar.",
+  "fix.ajustes-marca.waTooLongFilled":
+    "Com nomes e ligação preenchidos, a mensagem pode chegar a {length} de 1.000 caracteres e não ser enviada. Encurte o texto.",
+  "fix.ajustes-marca.domainTxtMissing":
+    "Registo TXT ainda não encontrado. Crie em {host} o valor {value}.",
+  "fix.ajustes-marca.domainCnamePending":
+    "O apontamento CNAME de {domain} para {target} ainda não propagou.",
+  "fix.ajustes-marca.domainNothingPending": "Nenhum domínio a aguardar verificação.",
+  "fix.ajustes-marca.domainProxyPending":
+    "o servidor ainda está a atualizar o endereço; isto pode demorar alguns minutos.",
+  "fix.ajustes-marca.landingPreviewError":
+    "Não foi possível carregar a pré-visualização agora. Verifique a ligação e tente de novo.",
+  "fix.ajustes-marca.departureConfirmTitle": "Desvincular-se desta barbearia?",
+  "fix.ajustes-marca.departureConfirmForfeit":
+    "Perde o acesso a esta loja de imediato e os seus clientes ficam aqui. Não é possível desfazer.",
+  "fix.ajustes-marca.departureConfirmTake":
+    "Vai sair desta loja levando a sua carteira de clientes para {shop}. Não é possível desfazer.",
+  "fix.auth-rotas.emailConfirmedSignIn":
+    "E-mail confirmado. Inicie sessão com o seu e-mail e palavra-passe para continuar.",
+  "fix.fidelidade-insights.policyTiersNotice":
+    "As faixas abaixo são as da regra padrão. Cada barbearia pode definir níveis, pontos e benefícios próprios; os da sua barbearia aparecem na aplicação.",
+  "fix.fidelidade-insights.policyPointRate":
+    "Cada atendimento concluído rende pontos (50 na regra padrão; a barbearia pode alterar).",
+  "fix.fidelidade-insights.policyFooter": "Barba & Cabelo © {year}",
+  "fix.fidelidade-insights.fixedInDefault":
+    'Na regra padrão este valor é fixo. Escolha "Versão da barbearia" para alterar.',
+  "fix.landing-espera-pwa.moreSlotsMany": "e mais horários",
+  "fix.landing-espera-pwa.waitAlreadyHolder": "Já é o titular desta marcação.",
 };

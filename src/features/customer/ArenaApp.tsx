@@ -41,7 +41,7 @@ import { BrandFontFace } from "@/features/shop/BrandFontFace";
 import { DatePicker } from "@/components/ui/schedule-picker";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Link } from "@tanstack/react-router";
-import { Fragment, useState, useEffect, useRef, type ReactNode } from "react";
+import { Fragment, useState, useEffect, useMemo, useRef, type ReactNode } from "react";
 import {
   Bell,
   Calendar,
@@ -345,6 +345,10 @@ function ArenaApp({
   const [joinShopName, setJoinShopName] = useState("");
   const [joinShopRef, setJoinShopRef] = useState<string | null>(null);
   const [catalogRevision, setCatalogRevision] = useState(0);
+  // Link de profissional que mudou para uma loja em que o cliente ainda não entrou:
+  // o profissional do link não está neste catálogo, então a reserva segue o fluxo normal.
+  const [directLinkBroken, setDirectLinkBroken] = useState(false);
+  const directLinkActive = Boolean(directBarberSlug) && !directLinkBroken;
   // Valor inicial provisório: o efeito abaixo realinha ao fuso da barbearia
   // assim que ela é carregada.
   const [selectedDay, setSelectedDay] = useState(() =>
@@ -359,6 +363,12 @@ function ArenaApp({
     selected?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
   }, [selectedDay]);
   const [appointments, setAppointments] = useState<CustomerAppointment[]>([]);
+  // Cada loja é um ambiente separado: só as reservas da loja aberta aparecem aqui
+  // (fuso, catálogo e remarcação são desta loja).
+  const shopAppointments = useMemo(
+    () => (shopId ? appointments.filter((row) => row.barbershop_id === shopId) : appointments),
+    [appointments, shopId],
+  );
   const [reservationFilter, setReservationFilter] = useState<ReservationFilter>("upcoming");
   const [appointmentsLoading, setAppointmentsLoading] = useState(false);
   const [appointmentsRefreshing, setAppointmentsRefreshing] = useState(false);
@@ -460,11 +470,16 @@ function ArenaApp({
    */
   const alignedShop = useRef<string | null>(null);
   useEffect(() => {
-    const identity = demo ? "demo" : shopId;
+    const identity = demo ? "demo" : shopId ? `${shopId}:${shopTimeZone}` : null;
     if (!identity || alignedShop.current === identity) return;
     alignedShop.current = identity;
     setSelectedDay(shopDateKey(demo?.now ?? new Date(), shopTimeZone));
   }, [demo, shopId, shopTimeZone]);
+  // Virada do dia com o app aberto: o dia escolhido não pode ficar no passado.
+  const firstBookingDay = bookingDayKeys[0];
+  useEffect(() => {
+    if (firstBookingDay && selectedDay < firstBookingDay) setSelectedDay(firstBookingDay);
+  }, [firstBookingDay, selectedDay]);
   useEffect(() => {
     if (anyAvailable || !selectedService || staffPickedByUser.current) return;
     const current = staff[staffIdx];
@@ -637,6 +652,7 @@ function ArenaApp({
     (async () => {
       setCatalogLoading(true);
       setCatalogError(null);
+      setDirectLinkBroken(false);
       try {
         const profile = await getSessionProfile();
         if (!cancelled) {
@@ -743,6 +759,7 @@ function ArenaApp({
             shop_id?: string;
             staff_id?: string;
             shop_name?: string;
+            shop_slug?: string;
             via_redirect?: boolean;
           };
           if (!target.staff_id || !target.shop_id) {
@@ -756,8 +773,15 @@ function ArenaApp({
             directStaffId = target.staff_id;
             if (!cancelled && target.shop_name) setShopName(target.shop_name);
           } else if (target.via_redirect) {
-            // Cliente ainda sem vínculo no destino: o diálogo de join cobre o caso.
+            // Profissional mudou de loja e o cliente ainda não é dessa loja: oferece
+            // entrar na loja de destino; até lá, o link não vale neste catálogo.
             directStaffId = null;
+            if (!cancelled) {
+              setDirectLinkBroken(true);
+              setJoinShopRef(target.shop_slug || target.shop_id);
+              setJoinShopName(target.shop_name || "");
+              setJoinOpen(true);
+            }
           } else {
             // Sem membership: força join no destino do link.
             if (!cancelled) {
@@ -866,6 +890,8 @@ function ArenaApp({
             });
         }
         if (!cancelled) {
+          // Fuso junto com a loja: o alinhamento do dia não pode rodar com o fuso padrão.
+          setShopTimeZone(validTimeZone(shopResult.data?.timezone));
           setShopId(catalogShopId);
           setUserId(profile.user.id);
           setServices(availableServices);
@@ -916,11 +942,12 @@ function ArenaApp({
               .eq("user_id", profile.user.id)
               .eq("barbershop_id", catalogShopId)
               .maybeSingle();
+            // Uma recarga mais nova pode ter começado durante a consulta.
+            if (cancelled) return;
             favoriteId = pref.data?.favorite_staff_id ?? null;
             setFavoriteStaffId(favoriteId);
           }
 
-          setShopTimeZone(validTimeZone(shopResult.data?.timezone));
           setServiceIdx(0);
           if (directStaffId) {
             setAnyAvailable(false);
@@ -1141,6 +1168,7 @@ function ArenaApp({
         status: "confirmed" as const,
         booked_price_cents: bookingService.price_cents,
       };
+      let repeatApplied = false;
       if (demo) {
         if (rescheduleId) {
           demo.dispatch({
@@ -1152,6 +1180,8 @@ function ArenaApp({
             staff_id: booking.staff_id,
           });
         } else {
+          // Demonstração: mantém o aviso de recorrência como antes.
+          repeatApplied = repeatEnabled && !directLinkActive;
           demo.dispatch({
             type: "book",
             appointment: {
@@ -1173,7 +1203,7 @@ function ArenaApp({
           p_ends_at: booking.ends_at,
         });
         if (error) throw error;
-      } else if (directBarberSlug && directShopSlug) {
+      } else if (directLinkActive && directBarberSlug && directShopSlug) {
         const { error } = await supabase.rpc("create_direct_appointment", {
           p_shop_slug: directShopSlug,
           p_staff_slug: directBarberSlug,
@@ -1183,6 +1213,7 @@ function ArenaApp({
         });
         if (error) throw error;
       } else if (repeatEnabled) {
+        repeatApplied = true;
         const { error } = await supabase.rpc("create_booking_series", {
           p_shop_id: shopId,
           p_service_id: booking.service_id,
@@ -1201,7 +1232,8 @@ function ArenaApp({
         day: "2-digit",
         month: "2-digit",
       });
-      const repeatNote = repeatEnabled
+      // Só anuncia a recorrência quando uma série foi de fato criada.
+      const repeatNote = repeatApplied
         ? repeatKind === "weekday"
           ? ` ${t("booking.repeatWeekdayNote")}`
           : ` ${t("booking.repeatIntervalNote", { days: repeatInterval })}`
@@ -1323,19 +1355,30 @@ function ArenaApp({
   };
 
   useEffect(() => {
-    if (!focusToken || appointments.length === 0) return;
-    const match = appointments.find((row) => row.public_token === focusToken);
+    if (!focusToken || shopAppointments.length === 0) return;
+    const match = shopAppointments.find((row) => row.public_token === focusToken);
     if (match) {
       setTab("reservas");
       setReservationFilter("upcoming");
     }
-  }, [focusToken, appointments]);
+  }, [focusToken, shopAppointments]);
 
   const beginReschedule = (row: CustomerAppointment) => {
     const serviceIndex = services.findIndex((item) => item.id === row.service_id);
     const staffIndex = staff.findIndex((item) => item.id === row.staff_id);
-    if (serviceIndex >= 0) setServiceIdx(serviceIndex);
-    if (staffIndex >= 0) setStaffIdx(staffIndex);
+    // Sem o serviço ou o profissional originais no catálogo, remarcar trocaria a
+    // reserva por outra seleção sem aviso: avisa e não entra no modo remarcação.
+    if (serviceIndex < 0 || staffIndex < 0) {
+      // Aviso (não erro): um erro esconderia a lista de reservas.
+      setAppointmentsError(null);
+      setAppointmentsNotice(t("fix.cliente-app.rescheduleUnavailable"));
+      return;
+    }
+    setServiceIdx(serviceIndex);
+    staffPickedByUser.current = true;
+    setAnyAvailable(false);
+    setStaffIdx(staffIndex);
+    setRepeatEnabled(false);
     const originalDay = shopDateKey(new Date(row.starts_at), shopTimeZone);
     setSelectedDay(bookingDayKeys.includes(originalDay) ? originalDay : bookingDayKeys[0]);
     setRescheduleId(row.id);
@@ -1371,9 +1414,15 @@ function ArenaApp({
   };
   const loyaltyOn = loyaltyProgram.enabled;
 
+  // O aviso de remarcação impossível não é uma confirmação: sem o check verde.
+  const rescheduleBlockedNotice = appointmentsNotice === t("fix.cliente-app.rescheduleUnavailable");
   const reservationNow = demo?.now.getTime() ?? Date.now();
-  const visibleReservations = filterReservations(appointments, reservationFilter, reservationNow);
-  const nextAppointment = appointments
+  const visibleReservations = filterReservations(
+    shopAppointments,
+    reservationFilter,
+    reservationNow,
+  );
+  const nextAppointment = shopAppointments
     .filter(
       (row) =>
         (row.status === "pending" || row.status === "confirmed") &&
@@ -2175,7 +2224,7 @@ function ArenaApp({
                         <h3 id="booking-staff" className="booking-heading">
                           {t("booking.staff")}
                         </h3>
-                        {!directBarberSlug && staff.length > 0 && (
+                        {!directLinkActive && staff.length > 0 && (
                           <CatalogViewToggle viewMode={staffView} onViewMode={changeStaffView} />
                         )}
                       </div>
@@ -2184,12 +2233,12 @@ function ArenaApp({
                           {t("booking.noStaff")}
                         </p>
                       )}
-                      {staffNotForService && pickedStaff && !directBarberSlug && (
+                      {staffNotForService && pickedStaff && !directLinkActive && (
                         <p role="status" className="text-sm text-muted-foreground">
                           {t("booking.staffNotForService", { name: pickedStaff.display_name })}
                         </p>
                       )}
-                      {directBarberSlug && selectedStaff ? (
+                      {directLinkActive && selectedStaff ? (
                         <div className="rounded-2xl border border-primary/25 bg-primary/5 p-4">
                           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                             {t("booking.directLink")}
@@ -2272,7 +2321,9 @@ function ArenaApp({
                                 <>
                                   <span
                                     className={`flex w-16 shrink-0 items-center justify-center overflow-hidden ${
-                                      staffIdx === i ? "bg-primary-foreground/10" : "bg-muted/50"
+                                      !anyAvailable && staffIdx === i
+                                        ? "bg-primary-foreground/10"
+                                        : "bg-muted/50"
                                     }`}
                                   >
                                     <StaffPhoto
@@ -2287,7 +2338,7 @@ function ArenaApp({
                                       {m.bio ? (
                                         <span
                                           className={`mt-0.5 line-clamp-1 block text-[11px] font-medium ${
-                                            staffIdx === i
+                                            !anyAvailable && staffIdx === i
                                               ? "text-primary-foreground/75"
                                               : "text-muted-foreground"
                                           }`}
@@ -2296,7 +2347,7 @@ function ArenaApp({
                                         </span>
                                       ) : null}
                                     </span>
-                                    {staffIdx === i && (
+                                    {!anyAvailable && staffIdx === i && (
                                       <CheckCircle className="size-4 shrink-0" aria-hidden="true" />
                                     )}
                                   </span>
@@ -2310,7 +2361,9 @@ function ArenaApp({
                                       fallback={
                                         <span
                                           className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
-                                            staffIdx === i ? "bg-primary-foreground/15" : "bg-muted"
+                                            !anyAvailable && staffIdx === i
+                                              ? "bg-primary-foreground/15"
+                                              : "bg-muted"
                                           }`}
                                         >
                                           <Scissors className="size-4" aria-hidden="true" />
@@ -2320,14 +2373,14 @@ function ArenaApp({
                                     <span className="min-w-0 flex-1 break-words">
                                       {m.display_name}
                                     </span>
-                                    {staffIdx === i && (
+                                    {!anyAvailable && staffIdx === i && (
                                       <CheckCircle className="size-4 shrink-0" aria-hidden="true" />
                                     )}
                                   </span>
                                   {m.bio ? (
                                     <span
                                       className={`mt-2 line-clamp-2 text-[11px] font-medium ${
-                                        staffIdx === i
+                                        !anyAvailable && staffIdx === i
                                           ? "text-primary-foreground/75"
                                           : "text-muted-foreground"
                                       }`}
@@ -2454,7 +2507,7 @@ function ArenaApp({
                             · {formatSlotLabel(selectedSlot, shopTimeZone)} ·{" "}
                             {(bookingService ?? selectedService).duration_minutes} min
                           </p>
-                          {!rescheduleId && (
+                          {!rescheduleId && !directLinkActive && (
                             <div className="space-y-2 border-t border-border/60 pt-3">
                               <label className="flex items-center justify-between gap-3 text-sm font-semibold">
                                 {t("booking.repeat")}
@@ -2606,7 +2659,7 @@ function ArenaApp({
                   >
                     <span>{label}</span>
                     <span className="text-xs">
-                      {filterReservations(appointments, id, reservationNow).length}
+                      {filterReservations(shopAppointments, id, reservationNow).length}
                     </span>
                   </button>
                 ))}
@@ -2619,9 +2672,15 @@ function ArenaApp({
               {appointmentsNotice && !appointmentsError && (
                 <div
                   role="status"
-                  className="flex items-start gap-2 border border-emerald-600/30 bg-card p-3 text-sm rounded-lg"
+                  className={`flex items-start gap-2 border bg-card p-3 text-sm rounded-lg ${
+                    rescheduleBlockedNotice ? "border-primary/30" : "border-emerald-600/30"
+                  }`}
                 >
-                  <CheckCircle className="mt-0.5 size-4 shrink-0 text-emerald-700 dark:text-emerald-300" />
+                  {rescheduleBlockedNotice ? (
+                    <Info className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                  ) : (
+                    <CheckCircle className="mt-0.5 size-4 shrink-0 text-emerald-700 dark:text-emerald-300" />
+                  )}
                   <p className="flex-1 leading-relaxed">{appointmentsNotice}</p>
                   <button
                     type="button"
@@ -2924,13 +2983,17 @@ const VipInfoModal = ({
   const closeButton = useRef<HTMLButtonElement>(null);
   const dialog = useRef<HTMLDivElement>(null);
   const { t } = useI18n();
+  // onClose chega como função nova a cada render do pai; a ref evita rodar o efeito
+  // de novo (e devolver o foco ao botão Fechar) enquanto a janela está aberta.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   useEffect(() => {
     if (!isOpen) return;
     const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     closeButton.current?.focus();
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        onClose();
+        onCloseRef.current();
         return;
       }
       // Mantém o Tab dentro do diálogo: sem isso o foco vaza para o conteúdo
@@ -2955,7 +3018,7 @@ const VipInfoModal = ({
       document.removeEventListener("keydown", onKey);
       previous?.focus();
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
   if (!isOpen) return null;
 
   return (
@@ -2998,7 +3061,9 @@ const VipInfoModal = ({
                   {richText(t("club.earnVisit"), {
                     points: (
                       <span className="font-bold text-primary">
-                        {t("club.pointsN", { n: program.points_per_visit })}
+                        {t(program.points_per_visit === 1 ? "club.pointsOne" : "club.pointsMany", {
+                          n: program.points_per_visit,
+                        })}
                       </span>
                     ),
                   })}
@@ -3010,7 +3075,9 @@ const VipInfoModal = ({
                     {richText(t("club.earnWelcome"), {
                       points: (
                         <span className="font-bold text-primary">
-                          {t("club.pointsN", { n: program.welcome_bonus })}
+                          {t(program.welcome_bonus === 1 ? "club.pointsOne" : "club.pointsMany", {
+                            n: program.welcome_bonus,
+                          })}
                         </span>
                       ),
                     })}

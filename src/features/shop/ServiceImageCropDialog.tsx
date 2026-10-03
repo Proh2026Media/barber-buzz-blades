@@ -10,6 +10,9 @@ type Offset = { x: number; y: number };
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
+/** Acima disso, o PNG gerado pelo Safari é trocado por JPEG (o armazenamento aceita até 2 MB). */
+const CROP_PNG_MAX_BYTES = 1_800_000;
+
 export function ServiceImageCropDialog({
   file,
   onCancel,
@@ -135,14 +138,32 @@ export function ServiceImageCropDialog({
         SERVICE_IMAGE_CROP_SIZE,
         SERVICE_IMAGE_CROP_SIZE,
       );
-      const blob = await new Promise<Blob>((resolve, reject) =>
-        canvas.toBlob(
-          (result) => (result ? resolve(result) : reject(new Error(t("brand.crop.errorFinish")))),
-          "image/webp",
-          0.9,
-        ),
-      );
-      await onConfirm(new File([blob], outputName, { type: blob.type }));
+      const encode = (target: HTMLCanvasElement, type: string, quality: number) =>
+        new Promise<Blob>((resolve, reject) =>
+          target.toBlob(
+            (result) => (result ? resolve(result) : reject(new Error(t("brand.crop.errorFinish")))),
+            type,
+            quality,
+          ),
+        );
+      let blob = await encode(canvas, "image/webp", 0.9);
+      // Safari/iPhone não gera WebP no canvas e devolve PNG sem perda, que pode passar
+      // do limite de 2 MB do armazenamento. Nesse caso, gera JPEG sobre fundo branco.
+      if (blob.type !== "image/webp" && blob.size > CROP_PNG_MAX_BYTES) {
+        const flat = document.createElement("canvas");
+        flat.width = canvas.width;
+        flat.height = canvas.height;
+        const flatContext = flat.getContext("2d");
+        if (!flatContext) throw new Error(t("brand.crop.errorCanvas"));
+        flatContext.fillStyle = "#ffffff";
+        flatContext.fillRect(0, 0, flat.width, flat.height);
+        flatContext.drawImage(canvas, 0, 0);
+        blob = await encode(flat, "image/jpeg", 0.85);
+      }
+      const extension =
+        blob.type === "image/jpeg" ? "jpg" : blob.type === "image/png" ? "png" : "webp";
+      const finalName = outputName.replace(/\.[a-z0-9]+$/i, "") + "." + extension;
+      await onConfirm(new File([blob], finalName, { type: blob.type }));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : t("brand.crop.errorGeneric"));
     } finally {

@@ -87,6 +87,39 @@ export type DemoShopPreset = {
   businessHours: Tables<"business_hours">[];
 };
 
+/**
+ * Fuso do aparelho. A demonstração monta as datas no relógio local; mostrar a agenda
+ * nesse mesmo fuso evita que um visitante fora de Brasília veja tudo deslocado.
+ */
+function deviceTimeZone() {
+  try {
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (zone) {
+      new Intl.DateTimeFormat("en-US", { timeZone: zone });
+      return zone;
+    }
+  } catch {
+    // Fuso desconhecido: mantém o padrão abaixo.
+  }
+  return "America/Sao_Paulo";
+}
+
+/** Horas inteiras de atendimento do dia, conforme o expediente da loja (padrão 9h às 19h). */
+function openHoursFor(rows: Tables<"business_hours">[], weekday: number) {
+  if (!rows.length) return weekday === 0 ? [] : range(9, 19);
+  const row = rows.find((item) => item.weekday === weekday);
+  if (!row || !row.is_open || !row.opens_at || !row.closes_at) return [];
+  const [openH, openM] = row.opens_at.split(":").map(Number);
+  const [closeH, closeM] = row.closes_at.split(":").map(Number);
+  const first = (openH || 0) + ((openM || 0) > 0 ? 1 : 0);
+  const close = (closeH || 0) + (closeM || 0) / 60;
+  return range(first, Math.floor(close));
+}
+
+function range(from: number, to: number) {
+  return Array.from({ length: Math.max(0, to - from) }, (_, index) => from + index);
+}
+
 export function createDemoState(date = new Date(), preset?: DemoShopPreset): DemoState {
   const now = new Date(date);
   now.setHours(9, 0, 0, 0);
@@ -203,7 +236,7 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
       name: "Arena Barber · Demo",
       slug: "arena-demo",
       status: "active",
-      timezone: "America/Sao_Paulo",
+      timezone: deviceTimeZone(),
       custom_domain: null,
       custom_domain_status: "none",
       domain_verify_token: null,
@@ -307,7 +340,13 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
     redemptions: [],
   };
   if (preset) {
-    state.shop = { ...preset.shop, name: `${preset.shop.name} · Demo`, status: "active" };
+    state.shop = {
+      ...preset.shop,
+      name: `${preset.shop.name} · Demo`,
+      status: "active",
+      // As datas da demo são montadas no relógio do aparelho (ver deviceTimeZone).
+      timezone: deviceTimeZone(),
+    };
     state.settings = { ...preset.settings, sports_enabled: true };
     if (preset.services.length) state.services = preset.services.map((row) => ({ ...row }));
     if (preset.staff.length) state.staff = preset.staff.map((row) => ({ ...row }));
@@ -326,19 +365,34 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
   // One-hour slots keep every service inside opening hours and avoid overlaps.
   // A janela de 120 dias para trás garante visitas recorrentes suficientes para
   // o "ritmo" (frequência de retorno) ter dados na demonstração.
+  // Cada horário tem 1 h: só sorteia serviços que cabem nele, para não invadir o seguinte.
+  // Se nenhum serviço cabe em 1 h, usa o mais curto e alarga o horário para caber nele.
+  const fittingServices = state.services.filter((service) => service.duration_minutes <= 60);
+  const slotServices = fittingServices.length
+    ? fittingServices
+    : [
+        state.services.reduce((short, service) =>
+          service.duration_minutes < short.duration_minutes ? service : short,
+        ),
+      ];
+  const slotHours = Math.max(
+    1,
+    ...slotServices.map((service) => Math.ceil(service.duration_minutes / 60)),
+  );
+  const pickService = () => slotServices[Math.floor(Math.random() * slotServices.length)]!;
   const slots: { start: Date; staffId: string }[] = [];
   for (let day = -120; day <= 13; day++) {
     const start = new Date(now);
     start.setDate(start.getDate() + day);
-    if (start.getDay() === 0) continue;
-    for (let hour = 9; hour < 19; hour++) {
-      start.setHours(hour, 0, 0, 0);
+    const hours = openHoursFor(state.businessHours, start.getDay());
+    for (let index = 0; index + slotHours <= hours.length; index += slotHours) {
+      start.setHours(hours[index]!, 0, 0, 0);
       for (const member of state.staff) {
         if (
           state.appointments.some(
             (row) =>
               row.staff_id === member.id &&
-              new Date(row.starts_at).getTime() < start.getTime() + 3600000 &&
+              new Date(row.starts_at).getTime() < start.getTime() + slotHours * 3600000 &&
               new Date(row.ends_at) > start,
           )
         )
@@ -389,7 +443,7 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
       if (date.getDay() === 0) date.setDate(date.getDate() + 1);
       const slot = claimSlotOn(date);
       if (!slot) continue;
-      const service = state.services[Math.floor(Math.random() * state.services.length)];
+      const service = pickService();
       state.appointments.push({
         id: `demo-generated-${index}-${visit}`,
         barbershop_id: state.shop.id,
@@ -406,9 +460,10 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
         updated_at: stamp,
       });
     }
-    const future = futureSlots[futureCursor++ % futureSlots.length];
+    // Sem reaproveitar horário: quando acabam os livres, o cliente fica sem reserva futura.
+    const future = futureCursor < futureSlots.length ? futureSlots[futureCursor++] : undefined;
     if (future) {
-      const service = state.services[Math.floor(Math.random() * state.services.length)];
+      const service = pickService();
       state.appointments.push({
         id: `demo-generated-${index}-upcoming`,
         barbershop_id: state.shop.id,

@@ -86,6 +86,10 @@ function PoliticaSistemas() {
               {t("legal.club.s1Title")}
             </h3>
           </div>
+          {/* As faixas abaixo são as da regra padrão; cada barbearia pode ter níveis próprios. */}
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            {t("fix.fidelidade-insights.policyTiersNotice")}
+          </p>
 
           <div className="grid grid-cols-1 gap-4">
             {/* Classic */}
@@ -281,7 +285,7 @@ function PoliticaSistemas() {
               <p className="text-xs text-muted-foreground leading-relaxed">
                 {t("legal.club.lifetimeBody")}
                 <span className="block mt-2 font-black text-foreground bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20 inline-block">
-                  {t("legal.club.pointRate")}
+                  {t("fix.fidelidade-insights.policyPointRate")}
                 </span>
               </p>
             </div>
@@ -317,7 +321,7 @@ function PoliticaSistemas() {
             Classic · Select · Privilege · Exclusive
           </p>
           <p className="text-[10px] text-muted-foreground/40 mt-3 font-medium">
-            Arena Barber Club & Lounge © 2026
+            {t("fix.fidelidade-insights.policyFooter", { year: new Date().getFullYear() })}
           </p>
         </section>
       </main>

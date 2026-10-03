@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { useI18n } from "@/lib/i18n";
+import { DEFAULT_SHOP_TIMEZONE, formatShopDate, validTimeZone } from "@/lib/shop/appointments";
 
 type Lookup = {
   appointment_id: string;
@@ -12,6 +13,8 @@ type Lookup = {
   shop_name: string | null;
   service_name: string | null;
   staff_name: string | null;
+  /** Fuso da loja, quando a RPC passar a devolvê-lo. */
+  timezone?: string | null;
 };
 
 /**
@@ -29,6 +32,7 @@ export function ReservationAccessGate({
 }) {
   const { t, intlLocale } = useI18n();
   const [lookup, setLookup] = useState<Lookup | null>(null);
+  const [shopTimeZone, setShopTimeZone] = useState(DEFAULT_SHOP_TIMEZONE);
   const [loaded, setLoaded] = useState(false);
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
@@ -43,7 +47,22 @@ export function ReservationAccessGate({
         p_token: token,
       });
       if (cancelled) return;
-      if (!err && data) setLookup(data as Lookup);
+      const found = !err && data ? (data as Lookup) : null;
+      if (found) {
+        // Horário no fuso da loja, igual ao app e às mensagens (não no fuso do aparelho).
+        let timeZone = found.timezone ?? null;
+        if (!timeZone) {
+          const landing = await supabase.rpc("get_public_shop_landing", {
+            p_shop_ref: found.barbershop_id,
+          });
+          if (cancelled) return;
+          timeZone =
+            (landing.data as { shop?: { timezone?: string | null } } | null)?.shop?.timezone ??
+            null;
+        }
+        setShopTimeZone(validTimeZone(timeZone));
+        setLookup(found);
+      }
       setLoaded(true);
     })();
     return () => {
@@ -158,10 +177,12 @@ export function ReservationAccessGate({
           })}
         </p>
         <p className="mt-1 text-sm font-semibold">
-          {new Date(lookup.starts_at).toLocaleString(intlLocale, {
-            dateStyle: "medium",
-            timeStyle: "short",
-          })}
+          {formatShopDate(
+            lookup.starts_at,
+            shopTimeZone,
+            { dateStyle: "medium", timeStyle: "short" },
+            intlLocale,
+          )}
         </p>
       </div>
       <p className="text-sm text-muted-foreground">{t("gate.intro")}</p>

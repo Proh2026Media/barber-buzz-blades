@@ -34,7 +34,9 @@ export function NextLevelCard({
                 {t("level.next", { name: nextLevel.name })}
               </p>
               <p className="mt-1 text-sm font-bold">
-                {t("level.remaining", { points: nextLevel.pointsRemaining })}
+                {t(nextLevel.pointsRemaining === 1 ? "level.remainingOne" : "level.remainingMany", {
+                  points: nextLevel.pointsRemaining,
+                })}
               </p>
             </div>
             <p className="shrink-0 text-sm font-bold tabular-nums">

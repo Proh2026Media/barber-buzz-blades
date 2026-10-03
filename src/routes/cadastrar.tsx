@@ -60,6 +60,9 @@ function CadastrarPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [resendIn, setResendIn] = useState(0);
+  // WhatsApp já confirmado: o token segue válido no servidor até a conta ser criada.
+  const [verificationToken, setVerificationToken] = useState<string | null>(null);
+  const [registerFailed, setRegisterFailed] = useState(false);
 
   useEffect(() => {
     if (resendIn <= 0) return;
@@ -96,6 +99,18 @@ function CadastrarPage() {
 
   async function sendCode(e: React.FormEvent) {
     e.preventDefault();
+    if (verificationToken) {
+      // Dados corrigidos depois de uma falha: reaproveita a confirmação do WhatsApp.
+      if (busy) return;
+      if (!shopName.trim() || !fullName.trim() || !email.trim() || password.length < 6) {
+        setError(t("register.errorFillAll"));
+        return;
+      }
+      setInfo(t("register.confirmedFinishing"));
+      setStep("conta");
+      await finishRegister(verificationToken);
+      return;
+    }
     await requestOtp(false);
   }
 
@@ -112,6 +127,7 @@ function CadastrarPage() {
         code: otpCode.trim(),
       });
       if (!payload.verification_token) throw new Error(t("register.errorIncomplete"));
+      setVerificationToken(payload.verification_token);
       setInfo(t("register.confirmedFinishing"));
       setStep("conta");
       await finishRegister(payload.verification_token);
@@ -124,6 +140,7 @@ function CadastrarPage() {
   async function finishRegister(token: string) {
     setBusy(true);
     setError(null);
+    setRegisterFailed(false);
     try {
       const payload = await callRegisterShop({
         action: "register",
@@ -145,6 +162,8 @@ function CadastrarPage() {
       }
       await navigate({ to: "/shop" });
     } catch (err) {
+      setInfo(null);
+      setRegisterFailed(true);
       setError(friendlyAuthError(err, t("register.errorCreate")));
     } finally {
       setBusy(false);
@@ -315,7 +334,11 @@ function CadastrarPage() {
                   required
                   inputMode="tel"
                   value={whatsapp}
-                  onChange={(e) => setWhatsapp(e.target.value)}
+                  onChange={(e) => {
+                    setWhatsapp(e.target.value);
+                    // Outro número precisa de outro código.
+                    setVerificationToken(null);
+                  }}
                   className="platform-register-input"
                   placeholder="11 99999-9999"
                 />
@@ -325,8 +348,27 @@ function CadastrarPage() {
                 {t("register.whatsappNote")}
               </p>
               <button type="submit" disabled={busy} className="platform-register-submit">
-                {busy ? t("register.sending") : t("register.sendCode")}
+                {verificationToken
+                  ? busy
+                    ? t("register.creating")
+                    : t("register.confirm")
+                  : busy
+                    ? t("register.sending")
+                    : t("register.sendCode")}
               </button>
+              {verificationToken && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  className="platform-register-linkish min-h-11"
+                  onClick={() => {
+                    setVerificationToken(null);
+                    void requestOtp(false);
+                  }}
+                >
+                  {t("register.resend")}
+                </button>
+              )}
             </form>
           )}
 
@@ -385,6 +427,30 @@ function CadastrarPage() {
             <div className="platform-register-finishing" role="status">
               <ShieldCheck className="size-8 text-gold" aria-hidden="true" />
               <p>{busy ? t("register.creating") : info}</p>
+              {!busy && registerFailed && (
+                <div className="mt-2 flex w-full flex-col gap-2">
+                  {verificationToken && (
+                    <button
+                      type="button"
+                      className="platform-register-submit"
+                      onClick={() => void finishRegister(verificationToken)}
+                    >
+                      {t("common.retry")}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="platform-register-linkish min-h-11"
+                    onClick={() => {
+                      setError(null);
+                      setRegisterFailed(false);
+                      setStep("dados");
+                    }}
+                  >
+                    {t("register.backToData")}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 

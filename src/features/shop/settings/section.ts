@@ -40,6 +40,9 @@ export function useSettingsSection(active: boolean) {
 
   useEffect(() => {
     if (!active) {
+      // Ao sair da aba Ajustes, volta ao menu: estado e URL ficam em sincronia
+      // e, ao retornar, o Voltar do celular continua levando à lista de ajustes.
+      setSectionState(null);
       writeSectionToUrl(null, "replace");
       return;
     }

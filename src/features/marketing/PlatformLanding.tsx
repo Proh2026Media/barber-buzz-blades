@@ -16,7 +16,14 @@ export function PlatformLanding() {
         <span />
       </div>
 
-      <div className="platform-landing-stage">
+      {/* No app instalado (iPhone) o topo e a base ficam sob a barra de status e o gesto de início. */}
+      <div
+        className="platform-landing-stage"
+        style={{
+          paddingTop: "max(1.5rem, env(safe-area-inset-top))",
+          paddingBottom: "max(2.5rem, env(safe-area-inset-bottom))",
+        }}
+      >
         <div className="platform-landing-main">
           <header className="platform-landing-top">
             <p className="platform-landing-brand">

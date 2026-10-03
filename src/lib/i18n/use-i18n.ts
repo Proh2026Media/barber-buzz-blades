@@ -11,6 +11,8 @@ import { translate, type MessageKey, type TranslationVars } from "./translate.ts
 
 // Reserva quando o armazenamento do navegador está bloqueado: a escolha vale para esta página.
 let memoryLocale: Locale | null = null;
+// Só usa a reserva quando gravar no armazenamento falhou; senão o salvo (ou a falta dele) manda.
+let storageBlocked = false;
 
 function storage() {
   try {
@@ -23,7 +25,9 @@ function storage() {
 /** Idioma atual fora do React (mensagens de erro, formatação). No servidor, sempre pt-BR. */
 export function getLocale(): Locale {
   if (typeof window === "undefined") return DEFAULT_LOCALE;
-  return readLocale(storage()) ?? memoryLocale ?? DEFAULT_LOCALE;
+  const store = storage();
+  if (store && !storageBlocked) return readLocale(store) ?? DEFAULT_LOCALE;
+  return memoryLocale ?? DEFAULT_LOCALE;
 }
 
 /** Tradução fora do React, com o idioma atual. */
@@ -33,7 +37,8 @@ export function t(key: MessageKey, vars?: TranslationVars): string {
 
 export function setLocale(locale: Locale) {
   memoryLocale = locale;
-  writeLocale(storage(), locale);
+  const store = storage();
+  storageBlocked = !store || !writeLocale(store, locale);
   if (typeof document !== "undefined") document.documentElement.lang = locale;
   window.dispatchEvent(new Event(LOCALE_EVENT));
 }

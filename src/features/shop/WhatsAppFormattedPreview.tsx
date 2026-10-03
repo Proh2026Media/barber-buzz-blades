@@ -99,7 +99,7 @@ function renderTokens(tokens: Token[], keyPrefix: string): ReactNode[] {
           href={token.value}
           target="_blank"
           rel="noreferrer"
-          className="break-all text-sky-700 underline underline-offset-2 dark:text-sky-400"
+          className="break-all text-sky-700 underline underline-offset-2"
         >
           {token.value}
         </a>

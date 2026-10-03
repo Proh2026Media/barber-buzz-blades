@@ -47,7 +47,9 @@ export function BrandColorPicker({
   const ratio = contrastRatio(foreground, validValue);
   const paletteEntry = BRAND_PALETTE.find((entry) => entry.value === validValue);
   const paletteName = paletteEntry ? t(paletteEntry.nameKey) : undefined;
-  const isDefault = isEmpty || validValue === defaultValue.toUpperCase();
+  // Compara o valor bruto: um hex parcial (ex.: "#12") não conta como padrão,
+  // para o botão de voltar ao padrão / "Sem fundo" continuar disponível.
+  const isDefault = isEmpty || value.toUpperCase() === defaultValue.toUpperCase();
 
   return (
     <div className="space-y-2">
@@ -169,6 +171,11 @@ export function BrandColorPicker({
                   aria-describedby={invalid ? `${hexId}-error` : undefined}
                   onChange={(event) => {
                     const next = event.target.value.trim();
+                    // Com fundo opcional, apagar o campo volta ao estado "Sem fundo".
+                    if (allowEmpty && (next === "" || next === "#")) {
+                      onChange("");
+                      return;
+                    }
                     onChange((next.startsWith("#") ? next : `#${next}`).toUpperCase());
                   }}
                   className="min-h-11 w-full rounded-xl border border-border bg-background px-3 font-mono text-sm font-semibold uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"

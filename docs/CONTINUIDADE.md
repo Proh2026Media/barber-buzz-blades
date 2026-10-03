@@ -1,6 +1,6 @@
 # Transição para a próxima IA — Barba & Cabelo
 
-Atualizado em **26/09/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
+Atualizado em **03/10/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
 ## Comece aqui
 
@@ -8,6 +8,18 @@ Atualizado em **26/09/2026**. Este documento resume decisões e entregas da conv
 2. Inspecionar `git status` e os arquivos relevantes ao próximo pedido. O workspace tem muitas alterações e arquivos não rastreados que compõem o aplicativo; **não descartar nem sobrescrever esse trabalho**.
 3. Para retomar localmente, usar `npm run dev -- --host 0.0.0.0 --port 8080`. O endereço esperado é `http://localhost:8080`.
 4. Continuar a partir do próximo pedido do usuário.
+
+## Entrega — auditoria e correção de 115 bugs (03/10/2026, Claude Code)
+
+Auditoria por área (124 achados, 115 confirmados por verificação adversarial) e correção de todos. Frontend publicado; **banco e Edge functions ainda NÃO aplicados** (sem acesso ao Coolify a partir do Claude Code).
+
+- **Pendente de aplicar no Postgres Coolify (nesta ordem, testar antes em begin…rollback):**
+  1. `20261003150000_correcoes_auditoria.sql` (teste `supabase/tests/correcoes_auditoria.sql`, não executado — sem Postgres local; sintaxe validada com pglast). Corrige: cancelar atendimento já iniciado; `create_own_barbershop`; `request_shop_departure`/`complete_shop_departure` para contratado/sócio no modo leave; `delete_my_account` de ex-profissional; `mark_shop_domain_status` sem anon; unicidade e `save_my_whatsapp` (sem UPDATE direto); `stop_booking_series` só do próprio profissional; lembrete por e-mail sem depender de WhatsApp; ritmo do cliente/parceiro no fuso da loja; `get_team_schedule` com clientes que excluíram a conta (+ UPDATE que libera reservas órfãs aguardando remarcação); `handle_new_user` sem vincular todo mundo à Arena; recorrência/remarcação respeitando prazo e grade; `request_shop_change` só aceita `account_manager` de gerente real. Se houver WhatsApp repetido na base, o índice único não é criado (NOTICE) — limpar e reaplicar.
+  2. `20261003160000_otp_tentativas.sql` (RPC `auth_otp_check_code`, limite de 5 erros por desafio). **Aplicar antes** de publicar a Edge `auth-otp`.
+- **Pendente de publicar no volume Coolify (+ restart):** `auth-otp` (recuperação por WhatsApp não aceita mais instância de loja para tomar conta; limite de tentativas; não revela se o número tem conta; exige `PLATFORM_EVOLUTION_INSTANCE`), `invite-shop-admin` (busca de usuário paginada; não renomeia perfil global), `shop-domain` (falha passageira de DNS não desativa domínio ativo). Sem deno local: tipos das funções não conferidos.
+- **Frontend (publicado):** app do cliente (remarcar sem trocar serviço, reservas só da loja aberta, Repetir com link direto, link de profissional que mudou de loja, fuso e virada de dia, foco do modal do Clube), painel (agenda da equipe recarrega e mostra cancelados, Ajustes para parceiro/funcionário, ações que sempre falhavam escondidas, corrida ao trocar de dia), ajustes/marca (arquivos antigos só apagados após gravar, modelos do WhatsApp não sobrescritos, confirmação ao desvincular, domínio/TXT), auth (`return_origin` só para plataforma e domínios cadastrados, loop do gerente de contas, redirecionamento de `/` no cliente e para `shop_members`, cadastro que travava), visual (modo de canto em AlertDialog/Dialog, tema escuro, safe-area, janelas no celular, banner do PWA), service worker (manifest único, `/` fora do precache), i18n (chaves `fix.*` nos 5 idiomas; plurais One/Many).
+- **Ficou de fora (decisão/escopo):** códigos de erro estáveis nas Edge functions (cliente mapeia os textos atuais); força bruta de OTP em `register-shop` e rebaixamento em `domain-verify` (mesmo padrão — `auth_otp_check_code` já serve); limite por IP; truncamento do WhatsApp no servidor (`render_whatsapp_template`); `/politica` ainda genérica (textos `legal.club.*` citam Arena); MCP de exemplo (`list_matches`) — decidir se sai do produto; verificação por código do WhatsApp gravado no perfil.
+- Verificado: tsc, 124 testes, eslint em `src` e nas funções alteradas, build; `sw.js` com manifest uma vez e sem `/` no precache. **Não verificado no navegador nem com login real.**
 
 ## Entrega — forma de oferecer os horários por barbearia (02/10/2026, noite)
 

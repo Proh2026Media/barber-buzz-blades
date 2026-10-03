@@ -31,6 +31,38 @@ const statusKey = {
   error: "integr.domain.status.error",
 } as const satisfies Record<DomainSettings["custom_domain_status"], MessageKey>;
 
+/**
+ * A função shop-domain grava e devolve frases fixas em pt-BR. Reconhece as
+ * conhecidas e traduz pelo dicionário; o resto passa pelo filtro de erros.
+ */
+function translateDomainServerMessage(
+  raw: string,
+  t: ReturnType<typeof useI18n>["t"],
+  fallback?: string,
+): string {
+  const text = raw.trim();
+  const txt =
+    // Hosts têm pontos: o ponto final da frase é o que vem antes de espaço/fim.
+    /^TXT não encontrado em (\S+?)\.\s+Esperado (\S+?)\.(?:\s|$)/i.exec(text) ??
+    /^Registre o TXT em (\S+) = (\S+)/i.exec(text);
+  if (txt) return t("fix.ajustes-marca.domainTxtMissing", { host: txt[1], value: txt[2] });
+  const cname =
+    /^Aponte (\S+) \(CNAME\) para (\S+?)\.(?:\s|$)/i.exec(text) ??
+    /^CNAME (\S+) → (\S+) ainda não propagou/i.exec(text);
+  if (cname) {
+    return t("fix.ajustes-marca.domainCnamePending", { domain: cname[1], target: cname[2] });
+  }
+  if (/nenhum domínio pendente/i.test(text)) return t("fix.ajustes-marca.domainNothingPending");
+  return friendlyAuthError(text, fallback);
+}
+
+/** Erro já traduzido para o usuário: não passa de novo pelo filtro de mensagens. */
+class DomainMessageError extends Error {}
+
+function domainErrorText(err: unknown, fallback: string) {
+  return err instanceof DomainMessageError ? err.message : friendlyAuthError(err, fallback);
+}
+
 type ShopDomainCardProps = {
   shopId: string;
 };
@@ -86,13 +118,27 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
       },
       body: JSON.stringify(body),
     });
-    const payload = (await response.json()) as {
+    // Gateway fora do ar costuma devolver HTML: não deixa o erro de parse
+    // virar "código inválido" no filtro de mensagens.
+    const raw = await response.text();
+    let payload: {
       ok?: boolean;
       error?: string;
       warning?: string | null;
       settings?: DomainSettings;
     };
-    if (!response.ok) throw new Error(payload.error || t("integr.domain.errGeneric"));
+    try {
+      payload = raw ? JSON.parse(raw) : {};
+    } catch {
+      throw new DomainMessageError(`${t("integr.domain.errGeneric")} (${response.status})`);
+    }
+    if (!response.ok) {
+      throw new DomainMessageError(
+        payload.error
+          ? translateDomainServerMessage(payload.error, t, t("integr.domain.errGeneric"))
+          : t("integr.domain.errGeneric"),
+      );
+    }
     return payload;
   }
 
@@ -111,11 +157,13 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
       else await load();
       setMessage(
         payload.warning
-          ? t("integr.domain.savedWarning", { warning: payload.warning })
+          ? t("integr.domain.savedWarning", {
+              warning: t("fix.ajustes-marca.domainProxyPending"),
+            })
           : t("integr.domain.saved"),
       );
     } catch (err) {
-      setError(friendlyAuthError(err, t("integr.domain.errSave")));
+      setError(domainErrorText(err, t("integr.domain.errSave")));
     } finally {
       setBusy(false);
     }
@@ -135,11 +183,13 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
       setDomainInput("");
       setMessage(
         payload.warning
-          ? t("integr.domain.removedWarning", { warning: payload.warning })
+          ? t("integr.domain.removedWarning", {
+              warning: t("fix.ajustes-marca.domainProxyPending"),
+            })
           : t("integr.domain.removed"),
       );
     } catch (err) {
-      setError(friendlyAuthError(err, t("integr.domain.errRemove")));
+      setError(domainErrorText(err, t("integr.domain.errRemove")));
     } finally {
       setBusy(false);
     }
@@ -159,12 +209,16 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
       setMessage(
         payload.ok
           ? payload.warning
-            ? t("integr.domain.verifiedWarning", { warning: payload.warning })
+            ? t("integr.domain.verifiedWarning", {
+                warning: t("fix.ajustes-marca.domainProxyPending"),
+              })
             : t("integr.domain.verifiedActive")
-          : payload.error || t("integr.domain.checkDnsHint"),
+          : payload.error
+            ? translateDomainServerMessage(payload.error, t, t("integr.domain.checkDnsHint"))
+            : t("integr.domain.checkDnsHint"),
       );
     } catch (err) {
-      setError(friendlyAuthError(err, t("integr.domain.errVerify")));
+      setError(domainErrorText(err, t("integr.domain.errVerify")));
       await load();
     } finally {
       setBusy(false);
@@ -255,7 +309,9 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
             <span className="font-semibold text-foreground">
               {t(statusKey[settings.custom_domain_status])}
             </span>
-            {settings.domain_last_error ? ` — ${settings.domain_last_error}` : null}
+            {settings.domain_last_error
+              ? ` — ${translateDomainServerMessage(settings.domain_last_error, t, t("integr.domain.checkDnsHint"))}`
+              : null}
           </p>
         )}
         <div className="flex flex-wrap gap-2">
@@ -290,11 +346,11 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
       {instructions && (
         <div className="space-y-2 rounded-2xl border border-dashed border-border p-3 text-xs">
           <p className="font-semibold">{t("integr.domain.dnsCreate")}</p>
-          <ol className="list-decimal space-y-2 pl-4 text-muted-foreground">
+          <ol className="list-decimal space-y-2 pl-4 text-muted-foreground [overflow-wrap:anywhere]">
             <li>
               <span className="text-foreground">CNAME</span>{" "}
-              <code className="text-foreground">{instructions.cname_host}</code> →{" "}
-              <code className="text-foreground">{instructions.cname_target}</code>
+              <code className="break-all text-foreground">{instructions.cname_host}</code> →{" "}
+              <code className="break-all text-foreground">{instructions.cname_target}</code>
               <button
                 type="button"
                 className="ml-2 underline"
@@ -305,8 +361,8 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
             </li>
             <li>
               <span className="text-foreground">TXT</span>{" "}
-              <code className="text-foreground">{instructions.txt_host}</code> ={" "}
-              <code className="text-foreground">{instructions.txt_value}</code>
+              <code className="break-all text-foreground">{instructions.txt_host}</code> ={" "}
+              <code className="break-all text-foreground">{instructions.txt_value}</code>
               <button
                 type="button"
                 className="ml-2 underline"

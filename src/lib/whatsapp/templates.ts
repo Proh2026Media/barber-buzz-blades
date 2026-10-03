@@ -137,6 +137,31 @@ export function findWhatsAppPlaceholders(body: string): string[] {
   return found;
 }
 
+/**
+ * Tamanho máximo plausível de cada variável já preenchida. O servidor
+ * (render_whatsapp_template) mede o limite de 1000 DEPOIS da substituição e,
+ * se passar, a mensagem não é enviada; por isso o editor reserva essa margem.
+ */
+const WHATSAPP_VAR_MAX_FILLED: Record<WhatsAppTemplateVar, number> = {
+  loja: 60,
+  serviço: 60,
+  profissional: 40,
+  quando: 30,
+  cliente: 60,
+  link_reserva: 120,
+};
+
+/** Estimativa do tamanho da mensagem montada com variáveis no tamanho máximo plausível. */
+export function whatsappFilledLengthEstimate(body: string): number {
+  const normalized = normalizeWhatsAppTemplate(body);
+  let length = whatsappCodePointLength(normalized);
+  for (const key of findWhatsAppPlaceholders(normalized)) {
+    if (!ALLOWED_VAR_SET.has(key)) continue;
+    length += WHATSAPP_VAR_MAX_FILLED[key as WhatsAppTemplateVar] - Array.from(`{{${key}}}`).length;
+  }
+  return length;
+}
+
 export function validateWhatsAppTemplate(body: string): string[] {
   const errors: string[] = [];
   const normalized = normalizeWhatsAppTemplate(body);
@@ -148,6 +173,11 @@ export function validateWhatsAppTemplate(body: string): string[] {
   const length = whatsappCodePointLength(normalized);
   if (length > 1000) {
     errors.push(t("integr.tpl.errTooLong", { length }));
+  } else {
+    const filled = whatsappFilledLengthEstimate(normalized);
+    if (filled > 1000) {
+      errors.push(t("fix.ajustes-marca.waTooLongFilled", { length: filled }));
+    }
   }
 
   for (const key of findWhatsAppPlaceholders(normalized)) {

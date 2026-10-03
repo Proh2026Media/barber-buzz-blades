@@ -22,13 +22,13 @@ Deno.serve(async (req) => {
       .toLowerCase()
       .replace(/\.$/, "");
     const cnameTargets = (
-      Deno.env.get("DOMAIN_CNAME_TARGETS") ??
-      `dominios.${platformHost},${platformHost}`
+      Deno.env.get("DOMAIN_CNAME_TARGETS") ?? `dominios.${platformHost},${platformHost}`
     )
       .split(",")
       .map((v) => v.trim().toLowerCase().replace(/\.$/, ""))
       .filter(Boolean);
-    if (!supabaseUrl || !serviceKey || !anonKey) return json({ error: "Missing Supabase env" }, 500);
+    if (!supabaseUrl || !serviceKey || !anonKey)
+      return json({ error: "Missing Supabase env" }, 500);
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) return json({ error: "Missing authorization" }, 401);
@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
         provision,
         warning: provision.ok
           ? null
-          : provision.error ?? "Domínio salvo, mas o proxy ainda não foi provisionado.",
+          : (provision.error ?? "Domínio salvo, mas o proxy ainda não foi provisionado."),
       });
     }
 
@@ -99,9 +99,10 @@ Deno.serve(async (req) => {
         ok: true,
         settings: data,
         provision,
-        warning: provision.ok || provision.skipped
-          ? null
-          : provision.error ?? "Domínio removido do app, mas o proxy pode ainda ter a rota.",
+        warning:
+          provision.ok || provision.skipped
+            ? null
+            : (provision.error ?? "Domínio removido do app, mas o proxy pode ainda ter a rota."),
       });
     }
 
@@ -115,6 +116,7 @@ Deno.serve(async (req) => {
       shop_slug?: string;
       custom_domain?: string | null;
       domain_verify_token?: string | null;
+      custom_domain_status?: string | null;
     };
     const domain = cfg.custom_domain?.toLowerCase();
     const token = cfg.domain_verify_token;
@@ -143,19 +145,33 @@ Deno.serve(async (req) => {
     if (!cnameOk && as.length > 0) {
       const platformAs = await dnsQuery(platformHost, "A");
       const targetHosts = cnameTargets.length ? cnameTargets : [platformHost];
-      const targetAs = (
-        await Promise.all(targetHosts.map((h) => dnsQuery(h, "A")))
-      ).flat();
+      const targetAs = (await Promise.all(targetHosts.map((h) => dnsQuery(h, "A")))).flat();
       const allowed = new Set([...platformAs, ...targetAs]);
       aOk = as.some((ip) => allowed.has(ip));
     }
 
-    if (!txtOk) {
+    // Domínio já ativo: uma falha na nova verificação (DoH lento, TXT removido
+    // depois da primeira verificação) só registra o erro e mantém o site no ar.
+    const wasActive = cfg.custom_domain_status === "active";
+    const registerFailure = async (message: string) => {
+      if (wasActive) {
+        await admin
+          .from("barbershops")
+          .update({ domain_last_error: message, updated_at: new Date().toISOString() })
+          .eq("id", shopId);
+        return;
+      }
       await admin.rpc("mark_shop_domain_status", {
         p_shop_id: shopId,
         p_status: "error",
-        p_error: `TXT não encontrado em ${txtHost}. Esperado ${expectedTxt}. Visto: ${txts.join(" | ") || "(vazio)"}.`,
+        p_error: message,
       });
+    };
+
+    if (!txtOk) {
+      await registerFailure(
+        `TXT não encontrado em ${txtHost}. Esperado ${expectedTxt}. Visto: ${txts.join(" | ") || "(vazio)"}.`,
+      );
       return json(
         {
           ok: false,
@@ -171,11 +187,9 @@ Deno.serve(async (req) => {
 
     if (!cnameOk && !aOk) {
       const targetHint = cnameTargets[0] ?? platformHost;
-      await admin.rpc("mark_shop_domain_status", {
-        p_shop_id: shopId,
-        p_status: "error",
-        p_error: `Aponte ${domain} (CNAME) para ${targetHint}. Visto: ${cnames.join(", ") || as.join(", ") || "(vazio)"}.`,
-      });
+      await registerFailure(
+        `Aponte ${domain} (CNAME) para ${targetHint}. Visto: ${cnames.join(", ") || as.join(", ") || "(vazio)"}.`,
+      );
       return json(
         {
           ok: false,
@@ -205,7 +219,7 @@ Deno.serve(async (req) => {
       provision,
       warning: provision.ok
         ? null
-        : provision.error ?? "DNS ok, mas o proxy ainda não foi provisionado.",
+        : (provision.error ?? "DNS ok, mas o proxy ainda não foi provisionado."),
     });
   } catch (err) {
     return json({ error: err instanceof Error ? err.message : "shop-domain failed" }, 500);

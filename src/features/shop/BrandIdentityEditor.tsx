@@ -28,6 +28,7 @@ import {
   DEFAULT_ACCENT_COLOR,
   DEFAULT_LOGIN_IMAGE,
   DEFAULT_PRIMARY_COLOR,
+  HEX_COLOR_PATTERN,
   LOGO_ACCEPT,
   brandCornerClass,
   brandDraftFromSettings,
@@ -39,7 +40,7 @@ import {
   validateBrandLogo,
   type BrandDraft,
 } from "@/lib/shop/branding";
-import { useShopFavicon } from "@/lib/shop/favicon";
+import { applyShopFavicon } from "@/lib/shop/favicon";
 import { persistBrandIdentity } from "@/lib/shop/branding-persist";
 import {
   analyzeFontFiles,
@@ -163,7 +164,21 @@ export function BrandIdentityEditor({
     isBrandDraftDirty(draft, settings);
   const validationError = validateBrandDraft(draft);
   const previewLogo = logoPreviewUrl ?? draft.logo_url;
-  useShopFavicon(previewLogo);
+  // Mostra a logo em edição no favicon, mas ao fechar o editor devolve o
+  // favicon salvo da loja (e não o ícone padrão), já que o efeito do painel
+  // não roda de novo quando a logo salva continua a mesma.
+  const savedLogoRef = useRef(settings.logo_url);
+  useEffect(() => {
+    savedLogoRef.current = settings.logo_url;
+  }, [settings.logo_url]);
+  useEffect(() => {
+    applyShopFavicon(previewLogo);
+  }, [previewLogo]);
+  useEffect(
+    () => () => applyShopFavicon(audience === "shop" ? savedLogoRef.current : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- restaura só ao desmontar
+    [],
+  );
   const previewLoginImage = loginImagePreviewUrl ?? draft.login_image_url ?? DEFAULT_LOGIN_IMAGE;
   const previewName = draft.display_name.trim() || shopName;
   const previewFontFaces = pendingFontFaces
@@ -342,6 +357,14 @@ export function BrandIdentityEditor({
     if (busy) return;
     if (validationError) {
       setError(validationError);
+      // Leva à etapa do campo com problema: cores e fundo da logo ficam na
+      // etapa "Cores"; nome e frase de efeito na etapa "Logo".
+      const colorsInvalid =
+        !HEX_COLOR_PATTERN.test(draft.primary_color) ||
+        !HEX_COLOR_PATTERN.test(draft.accent_color) ||
+        (draft.logo_background_color !== null &&
+          !HEX_COLOR_PATTERN.test(draft.logo_background_color));
+      setStep(colorsInvalid ? "cores" : "logo");
       return;
     }
     setBusy(true);
@@ -366,7 +389,7 @@ export function BrandIdentityEditor({
   }
 
   return (
-    <form onSubmit={save} className="brand-editor space-y-6" aria-busy={busy}>
+    <form onSubmit={save} noValidate className="brand-editor space-y-6" aria-busy={busy}>
       <BrandFontFace url={previewFontUrl} faces={previewFontFaces} />
       <div className="app-section-title">
         <Palette />
@@ -383,7 +406,7 @@ export function BrandIdentityEditor({
       {/* Prévia ao vivo */}
       <section ref={bigPreviewRef} aria-label={t("brand.preview.aria")} className="space-y-2">
         <div
-          className={`brand-preview overflow-hidden rounded-3xl border border-border bg-card shadow-md ${brandFontScopeClass(draft.font_scope)} ${brandCornerClass(draft.corner_style)} ${draft.floating_chrome ? "brand-chrome-floating" : ""}`}
+          className={`brand-preview overflow-hidden rounded-[var(--panel-radius)] border border-border bg-card shadow-md ${brandFontScopeClass(draft.font_scope)} ${brandCornerClass(draft.corner_style)} ${draft.floating_chrome ? "brand-chrome-floating" : ""}`}
           style={previewStyle}
         >
           <div className="brand-preview-header flex items-center gap-3 border-b border-border/60 py-3 pr-4">
@@ -412,7 +435,7 @@ export function BrandIdentityEditor({
             </span>
           </div>
           <div className="space-y-3 px-4 py-4">
-            <div className="flex items-center justify-between gap-3 rounded-2xl border border-gold/40 bg-gold/10 px-3 py-2.5">
+            <div className="flex items-center justify-between gap-3 rounded-[var(--panel-radius)] border border-gold/40 bg-gold/10 px-3 py-2.5">
               <span className="flex items-center gap-2 text-xs font-bold text-gold">
                 <Star className="size-4" />
                 {t("brand.preview.vip")}
@@ -426,7 +449,7 @@ export function BrandIdentityEditor({
                 </p>
                 <p className="text-xs text-muted-foreground">{t("brand.preview.nextSlotDetail")}</p>
               </div>
-              <span className="flex min-h-10 shrink-0 items-center rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground">
+              <span className="flex min-h-10 shrink-0 items-center rounded-[var(--control-radius)] bg-primary px-4 text-xs font-bold text-primary-foreground">
                 {t("brand.preview.book")}
               </span>
             </div>
@@ -439,7 +462,7 @@ export function BrandIdentityEditor({
             ].map(({ label, icon: Icon, active }) => (
               <span
                 key={label}
-                className={`flex flex-col items-center gap-0.5 rounded-xl py-1.5 ${active ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+                className={`flex flex-col items-center gap-0.5 rounded-[var(--control-radius)] py-1.5 ${active ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
               >
                 <Icon className="size-4" />
                 {label}
@@ -454,7 +477,7 @@ export function BrandIdentityEditor({
         <div
           aria-hidden="true"
           hidden={bigPreviewVisible}
-          className={`brand-preview flex items-center gap-3 overflow-hidden rounded-2xl border border-border bg-card px-3 py-2 ${brandFontScopeClass(draft.font_scope)} ${brandCornerClass(draft.corner_style)}`}
+          className={`brand-preview flex items-center gap-3 overflow-hidden rounded-[var(--panel-radius)] border border-border bg-card px-3 py-2 ${brandFontScopeClass(draft.font_scope)} ${brandCornerClass(draft.corner_style)}`}
           style={previewStyle}
         >
           <span
@@ -741,7 +764,7 @@ export function BrandIdentityEditor({
               </label>
               <input
                 id={taglineId}
-                required
+                aria-required="true"
                 maxLength={60}
                 value={draft.tagline}
                 onChange={(event) => update({ tagline: event.target.value })}

@@ -43,7 +43,7 @@ export function PwaInstallBanner() {
   if (!visible || !deferred) return null;
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-[var(--app-banner-bottom)] z-[80] flex justify-center p-3">
+    <div className="pwa-install-banner pointer-events-none fixed inset-x-0 bottom-[var(--app-banner-bottom)] z-[80] flex justify-center p-3">
       <div className="pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-2xl border border-border bg-card/95 p-3 shadow-2xl backdrop-blur-xl">
         <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#20211f] text-[#dfbc85]">
           <Download className="size-5" />
@@ -54,7 +54,7 @@ export function PwaInstallBanner() {
         </div>
         <button
           type="button"
-          className="shrink-0 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
+          className="min-h-11 shrink-0 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
           onClick={() => {
             void (async () => {
               await deferred.prompt();

@@ -397,7 +397,7 @@ export function ShopTeamAccessCard({
       </div>
 
       <div className="border-t border-border/50 pt-4">
-        <ShopPermissionsMatrix shopId={shopId} canEdit={canApplyProtected || canEditSociety} />
+        <ShopPermissionsMatrix shopId={shopId} canEdit={canApplyProtected} />
       </div>
 
       {message ? (

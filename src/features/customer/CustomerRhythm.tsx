@@ -36,7 +36,9 @@ export function CustomerRhythm({ shopId }: { shopId: string | null }) {
         const date = new Date(row.starts_at);
         weekdays.set(date.getDay(), (weekdays.get(date.getDay()) ?? 0) + 1);
         hours.set(date.getHours(), (hours.get(date.getHours()) ?? 0) + 1);
-        const name = demo.services.find((s) => s.id === row.service_id)?.name ?? tNow("booking.serviceFallback");
+        const name =
+          demo.services.find((s) => s.id === row.service_id)?.name ??
+          tNow("booking.serviceFallback");
         services.set(name, (services.get(name) ?? 0) + 1);
       }
       const top = (map: Map<number, number>) =>

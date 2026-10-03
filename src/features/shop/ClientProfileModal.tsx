@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { X, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
@@ -69,6 +70,10 @@ export function ClientProfileModal({
   const [error, setError] = useState(false);
   const [retry, setRetry] = useState(0);
   const closeButton = useRef<HTMLButtonElement>(null);
+  // Guarda o onClose mais recente: o chamador recria a função a cada render
+  // (o painel re-renderiza a cada segundo) e isso não pode devolver o foco ao Fechar.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     let cancelled = false;
@@ -160,13 +165,19 @@ export function ClientProfileModal({
   useEffect(() => {
     closeButton.current?.focus();
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") onCloseRef.current();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, []);
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  // Portal na raiz do painel: o painel animado (mb-panel) tem transform e prenderia o
+  // overlay fixed dentro dele, atrás da barra inferior e do cabeçalho. A raiz
+  // (.arena-workspace) não tem transform e mantém modo de canto, marca e cartão off-white.
+  const host = document.querySelector<HTMLElement>(".arena-workspace") ?? document.body;
+  return createPortal(
     <div
       className="fixed inset-0 z-[100] flex items-end justify-center bg-background/70 backdrop-blur-sm sm:items-center sm:p-4"
       onClick={(event) => {
@@ -176,6 +187,8 @@ export function ClientProfileModal({
       <div
         role="dialog"
         aria-modal="true"
+        // Mesmo sinal das janelas Radix: esconde o banner de instalação enquanto aberta.
+        data-state="open"
         aria-label={t("team.profile.aria", {
           name: profile?.customer_name ?? customerName ?? t("team.clients.clientLower"),
         })}
@@ -292,6 +305,7 @@ export function ClientProfileModal({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    host,
   );
 }

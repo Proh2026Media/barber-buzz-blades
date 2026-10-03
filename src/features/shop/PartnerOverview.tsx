@@ -233,23 +233,27 @@ export function PartnerOverview({
           <Wallet className="size-4 text-gold" />
           <span className="flex-1">{t("team.partner.wallet")}</span>
           <span className="text-xs font-semibold text-muted-foreground">
-            {formatBRL(wallet?.total_completed_cents ?? 0, intlLocale)}
+            {error || !wallet ? "—" : formatBRL(wallet.total_completed_cents ?? 0, intlLocale)}
           </span>
           <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
         </summary>
-        <div className="mt-3 grid grid-cols-2 gap-3">
-          <div>
-            <p className="text-xs text-muted-foreground">{t("team.partner.appointments")}</p>
-            <p className="text-2xl font-bold tabular-nums">{wallet?.completed_count ?? 0}</p>
+        {error || !wallet ? (
+          <p className="mt-3 text-sm text-destructive">{t("team.partner.loadError")}</p>
+        ) : (
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-xs text-muted-foreground">{t("team.partner.appointments")}</p>
+              <p className="text-2xl font-bold tabular-nums">{wallet?.completed_count ?? 0}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">{t("team.partner.produced")}</p>
+              <p className="text-2xl font-bold tabular-nums">
+                {formatBRL(wallet?.total_completed_cents ?? 0, intlLocale)}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground">{t("team.partner.produced")}</p>
-            <p className="text-2xl font-bold tabular-nums">
-              {formatBRL(wallet?.total_completed_cents ?? 0, intlLocale)}
-            </p>
-          </div>
-        </div>
-        {wallet && wallet.entries.length > 0 && (
+        )}
+        {!error && wallet && wallet.entries.length > 0 && (
           <div className="mt-3 space-y-2 border-t border-border pt-3">
             {wallet.entries.slice(0, 5).map((entry) => (
               <div

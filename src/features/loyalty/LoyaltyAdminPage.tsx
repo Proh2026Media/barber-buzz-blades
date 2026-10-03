@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type CSSProperties,
+  type FormEvent,
+} from "react";
 import {
   ArrowLeft,
   Gift,
@@ -13,6 +20,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
+import { brandCornerClass, brandFontScopeClass, brandVariables } from "@/lib/shop/branding";
+import { BrandFontFace } from "@/features/shop/BrandFontFace";
 import type { SessionProfile } from "@/lib/auth/session";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { useI18n, type MessageKey } from "@/lib/i18n";
@@ -27,6 +37,7 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   DEFAULT_TIERS,
+  FALLBACK_PROGRAM,
   MAX_TIERS,
   parseLoyaltyProgram,
   validateTiers,
@@ -89,12 +100,34 @@ export function LoyaltyAdminPage({ profile }: { profile: SessionProfile }) {
     profile.memberships.find((m) => m.role === "shop_admin")?.barbershop ??
     profile.memberships.find((m) => m.barbershop)?.barbershop ??
     null;
-  const canManage = !actor || actor.role === "owner" || actor.role === "partner";
+  // Sem vínculo de equipe (shop_admin legado), o servidor só deixa o admin da plataforma gerir:
+  // loyalty_can_manage aceita is_platform_admin() ou shop_member owner/partner.
+  const canManage = actor
+    ? actor.role === "owner" || actor.role === "partner"
+    : profile.memberships.some((m) => m.role === "platform_admin");
 
   const [part, setPart] = useState<Part>(canManage ? "regras" : "resgates");
   const [program, setProgram] = useState<LoyaltyProgram | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // Identidade da loja (modo de canto, cores e fontes), igual à raiz do ShopShell.
+  const [settings, setSettings] = useState<Tables<"barbershop_settings"> | null>(null);
+
+  useEffect(() => {
+    if (!shop?.id) return;
+    let active = true;
+    void supabase
+      .from("barbershop_settings")
+      .select("*")
+      .eq("barbershop_id", shop.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (active) setSettings(data ?? null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [shop?.id]);
 
   const loadProgram = useCallback(async () => {
     if (!shop?.id) return;
@@ -123,11 +156,29 @@ export function LoyaltyAdminPage({ profile }: { profile: SessionProfile }) {
   ];
 
   return (
-    <div className="min-h-dvh bg-background">
+    <div
+      className={`arena-workspace min-h-dvh bg-background text-foreground ${brandFontScopeClass(settings?.font_scope)} ${brandCornerClass(settings?.corner_style)}`}
+      style={
+        settings
+          ? (brandVariables(
+              settings.primary_color,
+              settings.accent_color,
+              settings.font_family,
+              settings.custom_font_url,
+              settings.header_font_weight,
+              settings.header_font_style,
+              settings.corner_style,
+            ) as CSSProperties)
+          : undefined
+      }
+    >
+      {settings && (
+        <BrandFontFace url={settings.custom_font_url} faces={settings.custom_font_faces} />
+      )}
       <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-background/90 px-4 py-4 backdrop-blur-xl">
         <a
           href="/shop?secao=pontos"
-          className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-border bg-card"
+          className="app-icon-button shrink-0"
           aria-label={t("loyalty.admin.back")}
         >
           <ArrowLeft className="size-5" aria-hidden />
@@ -160,11 +211,15 @@ export function LoyaltyAdminPage({ profile }: { profile: SessionProfile }) {
             </button>
           </div>
         ) : program && !program.enabled ? (
-          <EmptyState
-            tone="bell"
-            title={t("loyalty.admin.disabledTitle")}
-            description={t("loyalty.admin.disabledText")}
-          />
+          <>
+            <EmptyState
+              tone="bell"
+              title={t("loyalty.admin.disabledTitle")}
+              description={t("loyalty.admin.disabledText")}
+            />
+            {/* Resgates feitos antes do desligamento continuam podendo ser entregues ou cancelados. */}
+            <RedemptionsPart shopId={shop.id} intlLocale={intlLocale} />
+          </>
         ) : program ? (
           <>
             <p className="text-sm text-muted-foreground">{t("loyalty.admin.intro")}</p>
@@ -244,7 +299,7 @@ function RulesPart({
     if (problem) return;
     setSaving(true);
     setError(null);
-    const { error: rpcError } = await supabase.rpc("save_loyalty_program", {
+    const { data: savedData, error: rpcError } = await supabase.rpc("save_loyalty_program", {
       p_shop_id: shopId,
       p_mode: mode,
       p_points_per_visit: clampInt(perVisit, 1, 1000),
@@ -260,11 +315,28 @@ function RulesPart({
       setSaving(false);
       return;
     }
-    const { data } = await supabase.rpc("get_shop_loyalty_program", { p_shop_id: shopId });
-    const next = parseLoyaltyProgram(data);
-    onSaved(next);
-    setMode(next.mode);
-    setTiers(next.tiers);
+    const { data, error: reloadError } = await supabase.rpc("get_shop_loyalty_program", {
+      p_shop_id: shopId,
+    });
+    let next: LoyaltyProgram | null = null;
+    if (!reloadError && data && typeof data === "object" && !Array.isArray(data)) {
+      next = parseLoyaltyProgram(data);
+    } else if (savedData && typeof savedData === "object" && !Array.isArray(savedData)) {
+      // A releitura falhou: usa a regra efetiva devolvida pelo próprio save e mantém
+      // o estado do clube e os prêmios já carregados.
+      next = {
+        ...parseLoyaltyProgram(savedData),
+        enabled: program.enabled,
+        rewards: program.rewards,
+      };
+    }
+    if (next) {
+      onSaved(next);
+      setMode(next.mode);
+      setTiers(next.tiers);
+      setPerVisit(String(next.points_per_visit));
+      setWelcome(String(next.welcome_bonus));
+    }
     setSaving(false);
     toast.success(t("loyalty.admin.saved"));
   }
@@ -316,12 +388,13 @@ function RulesPart({
             min={1}
             max={1000}
             required
-            value={perVisit}
+            disabled={!custom}
+            value={custom ? perVisit : String(FALLBACK_PROGRAM.points_per_visit)}
             onChange={(e) => setPerVisit(e.target.value)}
-            className={fieldClass}
+            className={`${fieldClass} disabled:opacity-60`}
           />
           <span className="block font-normal text-muted-foreground">
-            {t("loyalty.admin.perVisitHint")}
+            {custom ? t("loyalty.admin.perVisitHint") : t("fix.fidelidade-insights.fixedInDefault")}
           </span>
         </label>
         <label className="block space-y-1 text-xs font-semibold">
@@ -332,12 +405,13 @@ function RulesPart({
             min={0}
             max={1000}
             required
-            value={welcome}
+            disabled={!custom}
+            value={custom ? welcome : String(FALLBACK_PROGRAM.welcome_bonus)}
             onChange={(e) => setWelcome(e.target.value)}
-            className={fieldClass}
+            className={`${fieldClass} disabled:opacity-60`}
           />
           <span className="block font-normal text-muted-foreground">
-            {t("loyalty.admin.welcomeHint")}
+            {custom ? t("loyalty.admin.welcomeHint") : t("fix.fidelidade-insights.fixedInDefault")}
           </span>
         </label>
       </div>
@@ -495,7 +569,12 @@ function RewardsPart({
               >
                 <span className="block truncate text-sm font-bold">{reward.name}</span>
                 <span className="block text-xs text-muted-foreground">
-                  {t("loyalty.admin.rewardCost", { n: reward.cost_points })}
+                  {t(
+                    reward.cost_points === 1
+                      ? "loyalty.admin.rewardCostOne"
+                      : "loyalty.admin.rewardCostMany",
+                    { n: reward.cost_points },
+                  )}
                   {!reward.active && ` · ${t("loyalty.admin.rewardPaused")}`}
                 </span>
               </button>

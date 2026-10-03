@@ -29,7 +29,9 @@ export type SessionProfile = {
 };
 
 export function homeForRole(role: AppRole): "/app" | "/shop" | "/platform" {
-  if (role === "platform_admin" || role === "account_manager") return "/platform";
+  // /platform aceita só platform_admin; mandar o gerente de conta para lá criava um ciclo de
+  // redirecionamento. Sem tela própria ainda, ele entra pela área comum (/app).
+  if (role === "platform_admin") return "/platform";
   if (role === "shop_admin") return "/shop";
   return "/app";
 }

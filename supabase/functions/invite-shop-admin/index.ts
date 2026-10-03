@@ -137,22 +137,31 @@ Deno.serve(async (req) => {
         return json({ error: "Forbidden: only platform_admin assigns account managers" }, 403);
       }
     } else if (!canInviteTeam) {
-      return json({
-        error: "Forbidden: dono/co-dono, gerente da loja ou admin global necessários",
-      }, 403);
+      return json(
+        {
+          error: "Forbidden: dono/co-dono, gerente da loja ou admin global necessários",
+        },
+        403,
+      );
     }
 
     let userId: string | null = null;
     let created = false;
     let tempPassword: string | null = null;
 
-    const { data: listed, error: listError } = await admin.auth.admin.listUsers({
-      page: 1,
-      perPage: 1000,
-    });
-    if (listError) return json({ error: listError.message }, 500);
-
-    const existing = listed.users.find((u) => u.email?.toLowerCase() === email);
+    // Percorre todas as páginas do Auth: acima de 1000 contas o e-mail pode
+    // não estar na primeira página.
+    const perPage = 1000;
+    let existing: { id: string } | undefined;
+    for (let page = 1; page <= 200; page++) {
+      const { data: listed, error: listError } = await admin.auth.admin.listUsers({
+        page,
+        perPage,
+      });
+      if (listError) return json({ error: listError.message }, 500);
+      existing = listed.users.find((u) => u.email?.toLowerCase() === email);
+      if (existing || listed.users.length < perPage) break;
+    }
 
     if (existing) {
       userId = existing.id;
@@ -171,7 +180,9 @@ Deno.serve(async (req) => {
       tempPassword = password;
     }
 
-    if (fullName) {
+    // Só define o nome global do perfil em conta criada agora. Em conta que já
+    // existia, o nome é do próprio usuário; o nome na loja vai em p_display_name.
+    if (fullName && created) {
       await admin.from("profiles").update({ full_name: fullName }).eq("id", userId);
     }
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -39,6 +39,14 @@ export function StaffSurveyDialog({
   const [answer, setAnswer] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // O diálogo fica sempre montado no painel: ao abrir para um novo atendimento,
+  // começa limpo, mesmo que o anterior tenha sido fechado por "Voltar" ou após salvar.
+  useEffect(() => {
+    if (!open) return;
+    setQuestion("satisfaction");
+    setAnswer("");
+    setError("");
+  }, [open, appointment?.id]);
   const options = useMemo(() => questions[question].options as Record<string, string>, [question]);
   async function save() {
     if (!appointment || !answer) {
@@ -145,8 +153,9 @@ export function StaffSurveyDialog({
             {error}
           </p>
         )}
-        <AlertDialogFooter>
+        <AlertDialogFooter className="gap-2">
           <button
+            type="button"
             disabled={busy}
             onClick={onClose}
             className="rounded-xl border border-border px-4 py-2 text-sm font-semibold"
@@ -154,6 +163,7 @@ export function StaffSurveyDialog({
             {t("common.back")}
           </button>
           <button
+            type="button"
             disabled={busy || !answer}
             onClick={() => void save()}
             className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"

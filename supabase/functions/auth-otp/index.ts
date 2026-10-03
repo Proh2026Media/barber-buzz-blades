@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { corsHeaders, json } from "../_shared/evolution.ts";
+import { corsHeaders, digitsOnlyPhone, evolutionFetch, json } from "../_shared/evolution.ts";
 
 type Body = {
   action?: "request" | "verify";
@@ -15,6 +15,18 @@ async function sha256Hex(value: string) {
   const digest = await crypto.subtle.digest("SHA-256", data);
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
+
+/**
+ * Códigos de acesso saem sempre pela instância de WhatsApp da plataforma.
+ * Nunca pela instância da loja nem pela whatsapp_outbox: o lojista leria o código
+ * (outbox visível ao dono e mensagem enviada do aparelho dele) e poderia
+ * tomar a conta de qualquer usuário pelo número de WhatsApp.
+ */
+function platformInstance() {
+  return (Deno.env.get("PLATFORM_EVOLUTION_INSTANCE") ?? "").trim();
+}
+
+const MAX_VERIFY_ATTEMPTS = 5;
 
 function randomOtp() {
   const n = crypto.getRandomValues(new Uint8Array(3));
@@ -49,10 +61,17 @@ Deno.serve(async (req) => {
     const purpose = body.purpose ?? "recovery";
     const destinationRaw = body.destination?.trim() ?? "";
 
+    if (purpose !== "login" && purpose !== "recovery") {
+      return json({ error: "Finalidade inválida" }, 400);
+    }
+
     if (!shopRef) {
-      return json({
-        error: "WhatsApp exige o link da barbearia. Use o e-mail ou abra o login da loja.",
-      }, 400);
+      return json(
+        {
+          error: "WhatsApp exige o link da barbearia. Use o e-mail ou abra o login da loja.",
+        },
+        400,
+      );
     }
 
     const { data: shopBySlug } = await admin
@@ -62,7 +81,11 @@ Deno.serve(async (req) => {
       .maybeSingle();
     const { data: shopById } = shopBySlug
       ? { data: null }
-      : await admin.from("barbershops").select("id, name, slug, status").eq("id", shopRef).maybeSingle();
+      : await admin
+          .from("barbershops")
+          .select("id, name, slug, status")
+          .eq("id", shopRef)
+          .maybeSingle();
     const shop = shopBySlug ?? shopById;
 
     if (!shop || shop.status !== "active") {
@@ -93,17 +116,33 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (!channelRow?.enabled || channelRow.status !== "open") {
-        return json({
-          error: "Esta barbearia ainda não tem WhatsApp conectado. Use o e-mail.",
-        }, 409);
+        return json(
+          {
+            error: "Esta barbearia ainda não tem WhatsApp conectado. Use o e-mail.",
+          },
+          409,
+        );
       }
 
+      const instance = platformInstance();
+      if (!instance) {
+        return json(
+          {
+            error: "O envio de código por WhatsApp está indisponível. Use o e-mail.",
+          },
+          503,
+        );
+      }
+
+      // Limite por destino em todas as lojas: trocar de loja não libera mais códigos
+      // (e, portanto, mais tentativas de verificação).
       const since = new Date(Date.now() - 15 * 60 * 1000).toISOString();
       const { count } = await admin
         .from("auth_otp_challenges")
         .select("id", { count: "exact", head: true })
         .eq("destination", normalized)
-        .eq("barbershop_id", shop.id)
+        .eq("channel", "whatsapp")
+        .not("barbershop_id", "is", null)
         .gte("created_at", since);
 
       if ((count ?? 0) >= 3) {
@@ -118,25 +157,22 @@ Deno.serve(async (req) => {
 
       const userId = profile?.id ?? null;
 
-      if (purpose === "recovery" && !userId) {
-        // Resposta genérica para não enumerar contas.
-        return json({
-          ok: true,
-          channel: "whatsapp",
-          message: "Se houver conta com este WhatsApp, enviamos um código.",
-        });
-      }
-
-      if (purpose === "login" && !userId) {
-        return json({
-          error: "Nenhuma conta com este WhatsApp. Cadastre-se ou use o e-mail.",
-        }, 404);
-      }
+      // Resposta genérica (mesmo status e mesmos campos) para login e recovery:
+      // não revela se o WhatsApp tem conta.
+      const genericOk = {
+        ok: true,
+        channel: "whatsapp",
+        message: "Se houver conta com este WhatsApp, enviamos um código.",
+        expires_in_seconds: 600,
+      };
 
       const code = randomOtp();
       const codeHash = await sha256Hex(`${shop.id}:${normalized}:${code}`);
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
+      // O desafio é gravado mesmo sem conta (user_id nulo, código nunca enviado):
+      // assim o limite de pedidos (429) vale igual para todo número e não vira
+      // um jeito de descobrir quais WhatsApps têm conta.
       const { error: insertError } = await admin.from("auth_otp_challenges").insert({
         user_id: userId,
         barbershop_id: shop.id,
@@ -148,40 +184,32 @@ Deno.serve(async (req) => {
       });
       if (insertError) return json({ error: insertError.message }, 500);
 
+      if (!userId) {
+        return json(genericOk);
+      }
+
       const bodyText =
         purpose === "login"
           ? `${shop.name}\nSeu código de acesso: ${code}\nVálido por 10 minutos.`
           : `${shop.name}\nCódigo para redefinir a senha: ${code}\nVálido por 10 minutos.`;
 
-      await admin.rpc("enqueue_whatsapp_message", {
-        p_shop_id: shop.id,
-        p_to_e164: normalized,
-        p_template_key: "auth.otp",
-        p_body: bodyText,
-        p_dedupe_key: `auth.otp:${shop.id}:${normalized}:${expiresAt}`,
-        p_payload: { purpose },
-        p_scheduled_at: new Date().toISOString(),
-      });
-
-      // Disparo imediato (melhor esforço).
+      // Envio direto pela instância da plataforma (sem passar pela outbox da loja).
       try {
-        await fetch(`${supabaseUrl}/functions/v1/whatsapp-dispatch`, {
+        await evolutionFetch(`/message/sendText/${instance}`, {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${serviceKey}`,
-            apikey: serviceKey,
-          },
+          body: JSON.stringify({
+            number: digitsOnlyPhone(normalized),
+            text: bodyText,
+          }),
         });
       } catch {
-        /* cron cobrirá */
+        return json(
+          { error: "Não foi possível enviar o WhatsApp. Tente de novo ou use o e-mail." },
+          502,
+        );
       }
 
-      return json({
-        ok: true,
-        channel: "whatsapp",
-        message: "Se houver conta com este WhatsApp, enviamos um código.",
-        expires_in_seconds: 600,
-      });
+      return json(genericOk);
     }
 
     // verify
@@ -195,28 +223,27 @@ Deno.serve(async (req) => {
     });
     if (!normalized) return json({ error: "WhatsApp inválido" }, 400);
 
-    const { data: challenges } = await admin
-      .from("auth_otp_challenges")
-      .select("*")
-      .eq("barbershop_id", shop.id)
-      .eq("destination", normalized)
-      .eq("channel", "whatsapp")
-      .eq("purpose", purpose)
-      .is("consumed_at", null)
-      .gt("expires_at", new Date().toISOString())
-      .order("created_at", { ascending: false })
-      .limit(5);
-
+    // Checagem atômica no banco: consome o desafio no acerto; no erro, soma a
+    // tentativa e invalida os desafios abertos após MAX_VERIFY_ATTEMPTS erros.
     const codeHash = await sha256Hex(`${shop.id}:${normalized}:${code}`);
-    const match = (challenges ?? []).find((row) => row.code_hash === codeHash);
-    if (!match) {
+    const { data: checked, error: checkError } = await admin.rpc("auth_otp_check_code", {
+      p_barbershop_id: shop.id,
+      p_destination: normalized,
+      p_channel: "whatsapp",
+      p_purpose: purpose,
+      p_code_hash: codeHash,
+      p_max_attempts: MAX_VERIFY_ATTEMPTS,
+    });
+    if (checkError) {
+      return json({ error: "Não foi possível validar o código. Tente de novo." }, 500);
+    }
+    const match = (Array.isArray(checked) ? checked[0] : checked) as
+      | { challenge_id: string | null; user_id: string | null }
+      | null
+      | undefined;
+    if (!match?.challenge_id) {
       return json({ error: "Código incorreto ou expirado" }, 400);
     }
-
-    await admin
-      .from("auth_otp_challenges")
-      .update({ consumed_at: new Date().toISOString() })
-      .eq("id", match.id);
 
     if (!match.user_id) {
       return json({ error: "Conta não encontrada para este WhatsApp" }, 404);
@@ -229,7 +256,9 @@ Deno.serve(async (req) => {
     });
 
     // generateLink exige email — buscar e-mail do usuário.
-    const { data: userData, error: getUserError } = await admin.auth.admin.getUserById(match.user_id);
+    const { data: userData, error: getUserError } = await admin.auth.admin.getUserById(
+      match.user_id,
+    );
     if (getUserError || !userData.user?.email) {
       // Fallback: sessão via update user + custom — usar magiclink com email.
       return json({ error: "Conta sem e-mail vinculado; complete o cadastro com e-mail." }, 409);

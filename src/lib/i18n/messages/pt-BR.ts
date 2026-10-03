@@ -260,7 +260,8 @@ export const ptBR = {
   "common.loadMore": "Carregar mais",
   "level.region": "Evolução de nível",
   "level.next": "Próximo nível: {name}",
-  "level.remaining": "Faltam {points} pontos",
+  "level.remainingOne": "Falta {points} ponto",
+  "level.remainingMany": "Faltam {points} pontos",
   "level.progress": "Progresso para o nível {name}",
   "level.benefits": "Privilégios do novo nível:",
   "level.maxTitle": "Nível máximo alcançado",
@@ -815,7 +816,8 @@ export const ptBR = {
   "plat.shops.noMatch": "Nenhuma barbearia corresponde aos filtros.",
   "plat.shops.sportsAria": "Módulo Esportes em {name}",
   "plat.shops.sports": "Módulo Esportes",
-  "plat.shops.customers": "{count} clientes",
+  "plat.shops.customerOne": "{count} cliente",
+  "plat.shops.customerMany": "{count} clientes",
   "plat.shops.adminOne": "{count} administrador",
   "plat.shops.adminMany": "{count} administradores",
   "plat.shops.active": "Ativa",
@@ -1170,7 +1172,8 @@ export const ptBR = {
   "shop.agenda.allTeam": "Toda a equipe",
   "shop.agenda.status": "Status",
   "shop.agenda.allStatuses": "Todos",
-  "shop.agenda.count": "{shown} de {total} atendimentos",
+  "shop.agenda.countOne": "{shown} de {total} atendimento",
+  "shop.agenda.countMany": "{shown} de {total} atendimentos",
   "shop.agenda.clearFilters": "Limpar filtros",
   "shop.agenda.listAria": "Atendimentos do dia",
   "shop.agenda.time": "Horário",
@@ -1196,7 +1199,8 @@ export const ptBR = {
   "shop.money.completed": "Serviços concluídos",
   "shop.money.expected": "Ainda agendado",
   "shop.money.cancellations": "Cancelamentos",
-  "shop.money.cancellationsAria": "Ver {count} cancelamentos do dia",
+  "shop.money.cancellationsAriaOne": "Ver {count} cancelamento do dia",
+  "shop.money.cancellationsAriaMany": "Ver {count} cancelamentos do dia",
   "shop.money.estimate": "Estimativa com os preços atuais.",
   "shop.clients.title": "Clientes da barbearia",
   "shop.add": "Adicionar",
@@ -1714,7 +1718,8 @@ export const ptBR = {
   "integr.google.chooseFirst": "Escolha qual agenda Google usar antes de sincronizar.",
   "integr.google.syncedDemo": "Agenda sincronizada (demo).",
   "integr.google.calendarFallback": "Agenda Google",
-  "integr.google.imported": "{count} eventos importados de “{name}”.",
+  "integr.google.importedOne": "{count} evento importado de “{name}”.",
+  "integr.google.importedMany": "{count} eventos importados de “{name}”.",
   "integr.google.errSync": "Falha ao sincronizar agenda",
   "integr.google.contactSavedDemo": "Contato salvo no Google Contatos (demo).",
   "integr.google.contactSaved": "Contato salvo no Google Contatos.",
@@ -1754,8 +1759,10 @@ export const ptBR = {
     "Pronto. Os horários futuros começam a aparecer na agenda Google em cerca de 1 minuto.",
   "integr.push.savedOff":
     "Cópia desligada. Os horários futuros copiados serão retirados da agenda Google.",
-  "integr.push.pending": "{count} horários aguardando cópia.",
-  "integr.push.failed": "Não foi possível copiar {count} horários: {reason}",
+  "integr.push.pendingOne": "{count} horário aguardando cópia.",
+  "integr.push.pendingMany": "{count} horários aguardando cópia.",
+  "integr.push.failedOne": "Não foi possível copiar {count} horário: {reason}",
+  "integr.push.failedMany": "Não foi possível copiar {count} horários: {reason}",
   "integr.push.errSave": "Não foi possível mudar a cópia de agendamentos. Tente novamente.",
   "integr.push.demo": "Na demonstração nada é enviado ao Google.",
   "integr.google.reloadCalendars": "Recarregar agendas",
@@ -2375,7 +2382,8 @@ export const ptBR = {
   "loyalty.admin.rewardsEmpty": "Nenhum prêmio cadastrado",
   "loyalty.admin.rewardsEmptyText":
     "Crie o primeiro, por exemplo um corte grátis ou uma hidratação.",
-  "loyalty.admin.rewardCost": "{n} pontos",
+  "loyalty.admin.rewardCostOne": "{n} ponto",
+  "loyalty.admin.rewardCostMany": "{n} pontos",
   "loyalty.admin.rewardPaused": "pausado",
   "loyalty.admin.rewardToggle": "Mostrar {name} aos clientes",
   "loyalty.admin.rewardAdd": "Novo prêmio",
@@ -2426,8 +2434,11 @@ export const ptBR = {
   "rewards.pendingLabel": "Prêmios aguardando retirada",
   "rewards.pendingLine": "Aguardando retirada · vale até {date}",
   "rewards.cancel": "Desistir",
-  "rewards.cost": "{n} pontos",
-  "rewards.costMissing": "{n} pontos · faltam {missing}",
+  "rewards.costOne": "{n} ponto",
+  "rewards.costMany": "{n} pontos",
+  "rewards.costMissing": "{cost} · {missing}",
+  "rewards.missingOne": "falta {n}",
+  "rewards.missingMany": "faltam {n}",
   "rewards.redeem": "Trocar",
   "rewards.limit":
     "Você já tem 3 prêmios aguardando retirada. Retire ou desista de um para trocar outro.",
@@ -2450,7 +2461,8 @@ export const ptBR = {
     "Esta barbearia não está usando o clube de pontos no momento. Os pontos que você já ganhou continuam guardados.",
   "club.earnVisit": "Cada atendimento concluído vale {points}.",
   "club.earnWelcome": "No seu primeiro atendimento você ganha mais {points} de boas-vindas.",
-  "club.pointsN": "{n} pontos",
+  "club.pointsOne": "{n} ponto",
+  "club.pointsMany": "{n} pontos",
   "club.spendRewards": "Troque seus pontos por prêmios em Extrato de pontos.",
   "club.levelsHint":
     "O nível segue tudo o que você já ganhou. Trocar pontos não faz você cair de nível.",
@@ -2600,6 +2612,70 @@ export const ptBR = {
   "slots.notice.custom":
     "A cada {step} minutos: o sistema testa {tested}… e mostra só os horários em que o serviço inteiro cabe antes do próximo compromisso ou do fechamento. Ex.: com um {short} das {start} às {end}, um {long} de {minutes} min aparece às {first}. Intervalo menor dá mais opções; maior deixa a agenda mais redonda.",
   "slots.notice.link": "Mudar a forma dos horários",
+  "fix.cliente-app.rescheduleUnavailable":
+    "Não dá para remarcar esta reserva por aqui: o serviço ou o profissional dela não está mais disponível. Cancele e faça uma nova reserva, ou fale com a barbearia.",
+  "fix.componentes-loja.wa.wrapPlaceholder": "texto",
+  "fix.componentes-loja.perm.view_agenda_all": "Visão geral da agenda",
+  "fix.componentes-loja.perm.view_agenda_allHint":
+    "Ver a agenda de todos os profissionais da unidade",
+  "fix.componentes-loja.perm.view_money": "Valores do dia e próprios recebimentos",
+  "fix.componentes-loja.perm.view_moneyHint":
+    "Ver o resumo de valores do dia e quanto recebeu pelos próprios atendimentos",
+  "fix.componentes-loja.perm.view_financial_all": "Relatórios financeiros da loja",
+  "fix.componentes-loja.perm.view_financial_allHint":
+    "Acessar faturamento e relatórios financeiros completos da unidade",
+  "fix.componentes-loja.perm.view_reports_global": "Relatórios da unidade",
+  "fix.componentes-loja.perm.view_reports_globalHint":
+    "Acessar métricas completas e identificadas da unidade",
+  "fix.componentes-loja.perm.view_reports_anonymized": "Indicadores gerais anonimizados",
+  "fix.componentes-loja.perm.view_reports_anonymizedHint":
+    "Ver números gerais da loja sem identificar quem é quem",
+  "fix.componentes-loja.perm.view_own_score": "Indicadores próprios",
+  "fix.componentes-loja.perm.view_own_scoreHint": "Acompanhar o próprio movimento e desempenho",
+  "fix.componentes-loja.perm.manage_services": "Gerenciar catálogo geral",
+  "fix.componentes-loja.perm.manage_servicesHint":
+    "Criar, editar e alterar preços dos serviços da unidade",
+  "fix.componentes-loja.perm.manage_own_services": "Gerenciar próprios serviços",
+  "fix.componentes-loja.perm.manage_own_servicesHint":
+    "Editar preço, duração e disponibilidade dos próprios serviços",
+  "fix.componentes-loja.perm.manage_operations": "Gerenciar funcionamento",
+  "fix.componentes-loja.perm.manage_operationsHint":
+    "Definir horários de funcionamento, bloqueios gerais e ajustes da loja",
+  "fix.componentes-loja.perm.manage_team": "Gerenciar equipe",
+  "fix.componentes-loja.perm.manage_teamHint": "Convidar profissionais e alterar funções",
+  "fix.componentes-loja.perm.manage_permissions": "Alterar permissões",
+  "fix.componentes-loja.perm.manage_permissionsHint": "Editar esta matriz de acessos",
+  "fix.componentes-loja.perm.readOnlyHint":
+    "Só quem pode aplicar mudanças da sociedade altera estas permissões. Aqui você pode consultar.",
+  "fix.ajustes-marca.waTemplatesLoadError":
+    "Não foi possível carregar os textos salvos. Para não trocar seus textos pelos padrões, salvar fica bloqueado até carregar.",
+  "fix.ajustes-marca.waTooLongFilled":
+    "Com nomes e link preenchidos, a mensagem pode chegar a {length} de 1.000 caracteres e não ser enviada. Encurte o texto.",
+  "fix.ajustes-marca.domainTxtMissing":
+    "Registro TXT ainda não encontrado. Crie em {host} o valor {value}.",
+  "fix.ajustes-marca.domainCnamePending":
+    "O apontamento CNAME de {domain} para {target} ainda não propagou.",
+  "fix.ajustes-marca.domainNothingPending": "Nenhum domínio aguardando verificação.",
+  "fix.ajustes-marca.domainProxyPending":
+    "o servidor ainda está atualizando o endereço; isso pode levar alguns minutos.",
+  "fix.ajustes-marca.landingPreviewError":
+    "Não foi possível carregar a prévia agora. Verifique a conexão e tente de novo.",
+  "fix.ajustes-marca.departureConfirmTitle": "Desvincular-se desta barbearia?",
+  "fix.ajustes-marca.departureConfirmForfeit":
+    "Você perde o acesso a esta loja na hora e seus clientes ficam aqui. Não dá para desfazer.",
+  "fix.ajustes-marca.departureConfirmTake":
+    "Você vai sair desta loja levando sua carteira de clientes para {shop}. Não dá para desfazer.",
+  "fix.auth-rotas.emailConfirmedSignIn":
+    "E-mail confirmado. Entre com seu e-mail e senha para continuar.",
+  "fix.fidelidade-insights.policyTiersNotice":
+    "As faixas abaixo são as da regra padrão. Cada barbearia pode definir níveis, pontos e benefícios próprios; os da sua barbearia aparecem no app.",
+  "fix.fidelidade-insights.policyPointRate":
+    "Cada atendimento concluído rende pontos (50 na regra padrão; a barbearia pode mudar).",
+  "fix.fidelidade-insights.policyFooter": "Barba & Cabelo © {year}",
+  "fix.fidelidade-insights.fixedInDefault":
+    'Na regra padrão este valor é fixo. Escolha "Versão da barbearia" para mudar.',
+  "fix.landing-espera-pwa.moreSlotsMany": "e mais horários",
+  "fix.landing-espera-pwa.waitAlreadyHolder": "Você já é o titular desta reserva.",
 } as const;
 
 export type MessageKey = keyof typeof ptBR;

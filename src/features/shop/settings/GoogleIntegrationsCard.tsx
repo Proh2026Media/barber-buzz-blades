@@ -277,10 +277,9 @@ export function GoogleIntegrationsCard({
   }
 
   async function chooseCalendar(calendarId: string) {
-    if (!calendarId) {
-      applySelectedCalendar(null, null);
-      return;
-    }
+    // A opção vazia é só o texto de "Selecione…": não existe ação no servidor
+    // para limpar a agenda, então ignorar evita a tela divergir do que está gravado.
+    if (!calendarId) return;
     if (demo) {
       const picked = DEMO_CALENDARS.find((item) => item.id === calendarId);
       applySelectedCalendar(calendarId, picked?.name ?? calendarId);
@@ -328,7 +327,13 @@ export function GoogleIntegrationsCard({
         connection.selected_calendar_name ||
         connection.selected_calendar_id ||
         t("integr.google.calendarFallback");
-      setMessage(t("integr.google.imported", { count: payload.imported ?? 0, name: label }));
+      const imported = payload.imported ?? 0;
+      setMessage(
+        t(imported === 1 ? "integr.google.importedOne" : "integr.google.importedMany", {
+          count: imported,
+          name: label,
+        }),
+      );
       await refresh();
     } catch (err) {
       setError(friendlyIntegrationError(err, t("integr.google.errSync")));
@@ -482,7 +487,7 @@ export function GoogleIntegrationsCard({
             onChange={(event) => void chooseCalendar(event.target.value)}
             aria-label={t("integr.google.selectAria")}
           >
-            <option value="">
+            <option value="" disabled={Boolean(selectedCalendarId)}>
               {loadingCalendars
                 ? t("integr.google.loadingCalendars")
                 : t("integr.google.selectPlaceholder")}
@@ -556,17 +561,25 @@ export function GoogleIntegrationsCard({
           </div>
           {connection.push_pending ? (
             <p role="status" className="text-xs text-muted-foreground">
-              {t("integr.push.pending", { count: connection.push_pending })}
+              {t(
+                connection.push_pending === 1
+                  ? "integr.push.pendingOne"
+                  : "integr.push.pendingMany",
+                { count: connection.push_pending },
+              )}
             </p>
           ) : null}
           {connection.push_failed ? (
             <p role="alert" className="text-xs text-destructive">
-              {t("integr.push.failed", {
-                count: connection.push_failed,
-                reason:
-                  friendlyChannelLastError(connection.push_last_error) ??
-                  t("integr.google.errAction"),
-              })}
+              {t(
+                connection.push_failed === 1 ? "integr.push.failedOne" : "integr.push.failedMany",
+                {
+                  count: connection.push_failed,
+                  reason:
+                    friendlyChannelLastError(connection.push_last_error) ??
+                    t("integr.google.errAction"),
+                },
+              )}
             </p>
           ) : null}
           <p className="text-xs text-muted-foreground">{t("integr.push.note")}</p>

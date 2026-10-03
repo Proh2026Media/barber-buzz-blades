@@ -81,6 +81,7 @@ export function TeamGovernance({
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [messageIsError, setMessageIsError] = useState(false);
   const [popupOpen, setPopupOpen] = useState(false);
   const actor = profile.activeShopActor;
   const canReview = actor?.role === "owner" || actor?.role === "partner";
@@ -100,8 +101,10 @@ export function TeamGovernance({
         .eq("status", "pending")
         .order("created_at", { ascending: false })
         .limit(30);
-      if (fallback.error) setMessage(fallback.error.message);
-      else setRequests((fallback.data as ChangeRequest[]) ?? []);
+      if (fallback.error) {
+        setMessage(friendlyAuthError(fallback.error));
+        setMessageIsError(true);
+      } else setRequests((fallback.data as ChangeRequest[]) ?? []);
     } else {
       setRequests(Array.isArray(data) ? (data as ChangeRequest[]) : []);
     }
@@ -126,13 +129,16 @@ export function TeamGovernance({
   async function decide(request: ChangeRequest, approve: boolean) {
     setBusyId(request.id);
     setMessage(null);
+    setMessageIsError(false);
     const { data, error } = await supabase.rpc("decide_shop_change", {
       p_request_id: request.id,
       p_approve: approve,
       p_note: null,
     });
-    if (error) setMessage(friendlyAuthError(error));
-    else {
+    if (error) {
+      setMessage(friendlyAuthError(error));
+      setMessageIsError(true);
+    } else {
       const result = data as { status?: string; remaining_approvals?: number } | null;
       setMessage(
         result?.status === "expired"
@@ -152,7 +158,8 @@ export function TeamGovernance({
   async function cancel(request: ChangeRequest) {
     setBusyId(request.id);
     const { error } = await supabase.rpc("cancel_shop_change", { p_request_id: request.id });
-    setMessage(error ? error.message : t("team.gov.requestCancelled"));
+    setMessage(error ? friendlyAuthError(error) : t("team.gov.requestCancelled"));
+    setMessageIsError(Boolean(error));
     if (!error) await load();
     setBusyId(null);
   }
@@ -183,7 +190,7 @@ export function TeamGovernance({
           <button
             type="button"
             onClick={() => setPopupOpen(true)}
-            className="ml-auto rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-bold text-amber-700 dark:text-amber-300"
+            className="ml-auto rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-bold text-amber-700"
           >
             {t(pending.length === 1 ? "team.gov.pendingOne" : "team.gov.pendingMany", {
               count: pending.length,
@@ -269,11 +276,16 @@ export function TeamGovernance({
           })}
         </div>
       )}
-      {message && (
-        <p role="status" className="text-xs font-semibold text-primary">
-          {message}
-        </p>
-      )}
+      {message &&
+        (messageIsError ? (
+          <p role="alert" className="text-xs font-semibold text-destructive">
+            {message}
+          </p>
+        ) : (
+          <p role="status" className="text-xs font-semibold text-primary">
+            {message}
+          </p>
+        ))}
 
       <Dialog open={popupOpen && pending.length > 0} onOpenChange={setPopupOpen}>
         <DialogContent className="max-w-md rounded-3xl border-border bg-card p-5">

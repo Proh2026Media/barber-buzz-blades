@@ -39,6 +39,54 @@ const SERVICE_ACCESS = {
   ],
 } as const;
 
+// Textos traduzidos das permissões; o texto do banco (pt-BR) fica como alternativa.
+const PERMISSION_TEXT: Record<string, { label: MessageKey; hint: MessageKey }> = {
+  view_agenda_all: {
+    label: "fix.componentes-loja.perm.view_agenda_all",
+    hint: "fix.componentes-loja.perm.view_agenda_allHint",
+  },
+  view_money: {
+    label: "fix.componentes-loja.perm.view_money",
+    hint: "fix.componentes-loja.perm.view_moneyHint",
+  },
+  view_financial_all: {
+    label: "fix.componentes-loja.perm.view_financial_all",
+    hint: "fix.componentes-loja.perm.view_financial_allHint",
+  },
+  view_reports_global: {
+    label: "fix.componentes-loja.perm.view_reports_global",
+    hint: "fix.componentes-loja.perm.view_reports_globalHint",
+  },
+  view_reports_anonymized: {
+    label: "fix.componentes-loja.perm.view_reports_anonymized",
+    hint: "fix.componentes-loja.perm.view_reports_anonymizedHint",
+  },
+  view_own_score: {
+    label: "fix.componentes-loja.perm.view_own_score",
+    hint: "fix.componentes-loja.perm.view_own_scoreHint",
+  },
+  manage_services: {
+    label: "fix.componentes-loja.perm.manage_services",
+    hint: "fix.componentes-loja.perm.manage_servicesHint",
+  },
+  manage_own_services: {
+    label: "fix.componentes-loja.perm.manage_own_services",
+    hint: "fix.componentes-loja.perm.manage_own_servicesHint",
+  },
+  manage_operations: {
+    label: "fix.componentes-loja.perm.manage_operations",
+    hint: "fix.componentes-loja.perm.manage_operationsHint",
+  },
+  manage_team: {
+    label: "fix.componentes-loja.perm.manage_team",
+    hint: "fix.componentes-loja.perm.manage_teamHint",
+  },
+  manage_permissions: {
+    label: "fix.componentes-loja.perm.manage_permissions",
+    hint: "fix.componentes-loja.perm.manage_permissionsHint",
+  },
+};
+
 type ServiceLevel = (typeof SERVICE_ACCESS.options)[number]["value"];
 
 function serviceLevelFor(matrix: Matrix, role: string): ServiceLevel {
@@ -157,6 +205,11 @@ export function ShopPermissionsMatrix({
       <div>
         <p className="text-sm font-bold">{title}</p>
         <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+        {!canEdit ? (
+          <p className="mt-1 text-xs text-muted-foreground">
+            {t("fix.componentes-loja.perm.readOnlyHint")}
+          </p>
+        ) : null}
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -232,35 +285,41 @@ export function ShopPermissionsMatrix({
                 ))}
               </tr>
 
-              {toggleRows.map((entry) => (
-                <tr key={entry.permission} className="border-b border-border/40">
-                  <td className="p-3">
-                    <p className="font-bold">{entry.label}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{entry.description}</p>
-                  </td>
-                  {ROLE_COLUMNS.map((role) => {
-                    const checked = matrix[role.id]?.[entry.permission] ?? false;
-                    const locked = role.id === "owner" && entry.permission === "manage_permissions";
-                    return (
-                      <td key={role.id} className="p-2 text-center">
-                        <div className="flex justify-center">
-                          <Switch
-                            aria-label={t("team.perm.forRole", {
-                              permission: entry.label,
-                              role: t(role.labelKey),
-                            })}
-                            checked={checked}
-                            disabled={busy || !canEdit || locked}
-                            onCheckedChange={(value) =>
-                              togglePermission(entry.permission, role.id, value)
-                            }
-                          />
-                        </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
+              {toggleRows.map((entry) => {
+                const text = PERMISSION_TEXT[entry.permission];
+                const label = text ? t(text.label) : entry.label;
+                const description = text ? t(text.hint) : entry.description;
+                return (
+                  <tr key={entry.permission} className="border-b border-border/40">
+                    <td className="p-3">
+                      <p className="font-bold">{label}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+                    </td>
+                    {ROLE_COLUMNS.map((role) => {
+                      const checked = matrix[role.id]?.[entry.permission] ?? false;
+                      const locked =
+                        role.id === "owner" && entry.permission === "manage_permissions";
+                      return (
+                        <td key={role.id} className="p-2 text-center">
+                          <div className="flex justify-center">
+                            <Switch
+                              aria-label={t("team.perm.forRole", {
+                                permission: label,
+                                role: t(role.labelKey),
+                              })}
+                              checked={checked}
+                              disabled={busy || !canEdit || locked}
+                              onCheckedChange={(value) =>
+                                togglePermission(entry.permission, role.id, value)
+                              }
+                            />
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

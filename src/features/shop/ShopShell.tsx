@@ -398,9 +398,11 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   const [blockStaffId, setBlockStaffId] = useState("");
   const [blockReason, setBlockReason] = useState("");
   const [blockCustomOpen, setBlockCustomOpen] = useState(false);
+  const catalogRequestRef = useRef(0);
 
   async function loadCatalog() {
     if (demo) {
+      catalogRequestRef.current += 1;
       setServices(demo.services);
       setStaff(demo.staff);
       setBusinessHours(demo.businessHours);
@@ -437,11 +439,11 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       setLoading(false);
       return;
     }
+    // Só a carga mais recente aplica o resultado: em rede lenta, trocar de dia várias vezes
+    // não deixa uma resposta antiga sobrescrever a agenda do dia escolhido.
+    const requestId = ++catalogRequestRef.current;
     setLoading(true);
     setError(null);
-    const agendaRange = shopDayRange(agendaDay, shopTimeZone);
-    const dayStart = agendaRange.start.toISOString();
-    const dayEnd = agendaRange.end.toISOString();
     const [
       servicesResult,
       staffResult,
@@ -460,21 +462,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         .select("*")
         .eq("barbershop_id", shop.id)
         .order("created_at", { ascending: true }),
-      actor
-        ? supabase.rpc("get_team_schedule", {
-            p_shop_id: shop.id,
-            p_from: dayStart,
-            p_to: dayEnd,
-          })
-        : supabase
-            .from("appointments")
-            .select(
-              "*, service:services(name, price_cents), staff:staff(display_name), customer:profiles(full_name)",
-            )
-            .eq("barbershop_id", shop.id)
-            .gte("starts_at", dayStart)
-            .lte("starts_at", dayEnd)
-            .order("starts_at", { ascending: true }),
+      fetchDayAppointments(agendaDay),
       supabase
         .from("business_hours")
         .select("*")
@@ -488,7 +476,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         .order("starts_at", { ascending: true }),
       supabase.from("barbershop_settings").select("*").eq("barbershop_id", shop.id).single(),
     ]);
-    if (servicesResult.error) setError(servicesResult.error.message);
+    if (requestId !== catalogRequestRef.current) return;
+    if (servicesResult.error) setError(friendlyAuthError(servicesResult.error));
     else {
       let visibleServices = servicesResult.data ?? [];
       if (actor?.role === "associate" && actor.staff_id) {
@@ -497,7 +486,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
           .select("*")
           .eq("barbershop_id", shop.id)
           .eq("staff_id", actor.staff_id);
-        if (overrides.error) setError(overrides.error.message);
+        if (requestId !== catalogRequestRef.current) return;
+        if (overrides.error) setError(friendlyAuthError(overrides.error));
         else {
           const byService = new Map((overrides.data ?? []).map((row) => [row.service_id, row]));
           visibleServices = visibleServices.map((service) => {
@@ -516,45 +506,91 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       }
       setServices(visibleServices);
     }
-    if (staffResult.error) setError(staffResult.error.message);
+    if (staffResult.error) setError(friendlyAuthError(staffResult.error));
     else setStaff(staffResult.data ?? []);
-    if (appointmentsResult.error) setError(appointmentsResult.error.message);
-    else if (actor) {
-      const rows = Array.isArray(appointmentsResult.data) ? appointmentsResult.data : [];
-      setAppointments(
-        rows.map((value) => {
-          const row = value as Record<string, unknown>;
-          return {
-            id: String(row.id),
-            barbershop_id: shop.id,
-            customer_id: "",
-            service_id: "",
-            staff_id: String(row.staff_id),
-            starts_at: String(row.starts_at),
-            ends_at: String(row.ends_at),
-            status: row.status as Tables<"appointments">["status"],
-            booked_price_cents: typeof row.price_cents === "number" ? row.price_cents : null,
-            public_token: "",
-            series_id: row.series_id ? String(row.series_id) : null,
-            created_at: String(row.starts_at),
-            updated_at: String(row.starts_at),
-            service: row.service_name
-              ? { name: String(row.service_name), price_cents: Number(row.price_cents ?? 0) }
-              : null,
-            staff: { display_name: String(row.staff_name ?? t("shop.staffFallback")) },
-            customer: row.customer_name ? { full_name: String(row.customer_name) } : null,
-            visibility: row.visibility === "full" ? "full" : "busy",
-          };
-        }),
-      );
-    } else setAppointments((appointmentsResult.data ?? []) as DayAppointment[]);
-    if (hoursResult.error) setError(hoursResult.error.message);
+    if (appointmentsResult.error) {
+      setError(friendlyAuthError(appointmentsResult.error, t("shop.error.refreshAgenda")));
+    } else setAppointments(appointmentsResult.data ?? []);
+    if (hoursResult.error) setError(friendlyAuthError(hoursResult.error));
     else setBusinessHours(hoursResult.data?.length ? hoursResult.data : defaultHours(shop.id));
-    if (blocksResult.error) setError(blocksResult.error.message);
+    if (blocksResult.error) setError(friendlyAuthError(blocksResult.error));
     else setBlocks(blocksResult.data ?? []);
-    if (settingsResult.error) setError(settingsResult.error.message);
+    if (settingsResult.error) setError(friendlyAuthError(settingsResult.error));
     else setSettings(settingsResult.data);
     setLoading(false);
+  }
+
+  /**
+   * Atendimentos de um dia da loja. Quem tem papel na equipe lê pela RPC get_team_schedule
+   * (que esconde os cancelados); os cancelados que o RLS libera para a pessoa vêm de uma
+   * consulta direta, para o contador e o filtro "Cancelado" funcionarem.
+   */
+  async function fetchDayAppointments(
+    day: string,
+  ): Promise<{ data: DayAppointment[]; error: null } | { data: null; error: unknown }> {
+    if (!shop?.id) return { data: [], error: null };
+    const shopId = shop.id;
+    const range = shopDayRange(day, shopTimeZone);
+    const dayStart = range.start.toISOString();
+    const dayEnd = range.end.toISOString();
+    const directQuery = (onlyCancelled: boolean) => {
+      let query = supabase
+        .from("appointments")
+        .select(
+          "*, service:services(name, price_cents), staff:staff(display_name), customer:profiles(full_name)",
+        )
+        .eq("barbershop_id", shopId)
+        .gte("starts_at", dayStart)
+        .lte("starts_at", dayEnd);
+      if (onlyCancelled) query = query.eq("status", "cancelled");
+      return query.order("starts_at", { ascending: true });
+    };
+    if (!actor) {
+      const result = await directQuery(false);
+      if (result.error) return { data: null, error: result.error };
+      return { data: (result.data ?? []) as DayAppointment[], error: null };
+    }
+    const [scheduleResult, cancelledResult] = await Promise.all([
+      supabase.rpc("get_team_schedule", { p_shop_id: shopId, p_from: dayStart, p_to: dayEnd }),
+      directQuery(true),
+    ]);
+    if (scheduleResult.error) return { data: null, error: scheduleResult.error };
+    const rows = Array.isArray(scheduleResult.data) ? scheduleResult.data : [];
+    const scheduled: DayAppointment[] = rows.map((value) => {
+      const row = value as Record<string, unknown>;
+      return {
+        id: String(row.id),
+        barbershop_id: shopId,
+        customer_id: "",
+        service_id: "",
+        staff_id: String(row.staff_id),
+        starts_at: String(row.starts_at),
+        ends_at: String(row.ends_at),
+        status: row.status as Tables<"appointments">["status"],
+        booked_price_cents: typeof row.price_cents === "number" ? row.price_cents : null,
+        public_token: "",
+        series_id: row.series_id ? String(row.series_id) : null,
+        created_at: String(row.starts_at),
+        updated_at: String(row.starts_at),
+        service: row.service_name
+          ? { name: String(row.service_name), price_cents: Number(row.price_cents ?? 0) }
+          : null,
+        staff: { display_name: String(row.staff_name ?? t("shop.staffFallback")) },
+        customer: row.customer_name ? { full_name: String(row.customer_name) } : null,
+        visibility: row.visibility === "full" ? "full" : "busy",
+      };
+    });
+    // Falha ao ler os cancelados não derruba a agenda: só ficam de fora da lista.
+    const known = new Set(scheduled.map((row) => row.id));
+    const cancelled = cancelledResult.error
+      ? []
+      : ((cancelledResult.data ?? []) as DayAppointment[])
+          .filter((row) => !known.has(row.id))
+          .map((row) => ({ ...row, visibility: "full" as const }));
+    return {
+      data: [...scheduled, ...cancelled].sort((a, b) => a.starts_at.localeCompare(b.starts_at)),
+      error: null,
+    };
   }
 
   useEffect(() => {
@@ -562,12 +598,13 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when shop changes
   }, [shop?.id, demo, agendaDay]);
 
-  useAvailabilitySignal(!demo && !actor && tab === "agenda" ? shop?.id : null, () =>
+  // Vale também para quem tem papel na equipe: a lista vem da mesma RPC usada na carga.
+  useAvailabilitySignal(!demo && tab === "agenda" ? shop?.id : null, () =>
     setAgendaRefresh((value) => value + 1),
   );
 
   useEffect(() => {
-    if (demo || actor || !shop?.id || tab !== "agenda" || busy || updatingAppointment) return;
+    if (demo || !shop?.id || tab !== "agenda" || busy || updatingAppointment) return;
     let cancelled = false;
     let running = false;
     const refresh = async () => {
@@ -575,20 +612,15 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       running = true;
       setRefreshingAgenda(true);
       try {
-        const result = await supabase
-          .from("appointments")
-          .select(
-            "*, service:services(name, price_cents), staff:staff(display_name), customer:profiles(full_name)",
-          )
-          .eq("barbershop_id", shop.id)
-          .gte("starts_at", shopDayRange(agendaDay, shopTimeZone).start.toISOString())
-          .lte("starts_at", shopDayRange(agendaDay, shopTimeZone).end.toISOString())
-          .order("starts_at", { ascending: true });
+        const result = await fetchDayAppointments(agendaDay);
         if (cancelled) return;
         if (result.error) setError(tNow("shop.error.refreshAgenda"));
         else {
           setAppointments(result.data ?? []);
-          setError(null);
+          // Só apaga o aviso da própria atualização: o efeito roda de novo quando uma ação
+          // termina (busy/updatingAppointment) e não pode sumir com o erro dessa ação.
+          const refreshError = tNow("shop.error.refreshAgenda");
+          setError((current) => (current === refreshError ? null : current));
         }
       } catch {
         if (!cancelled) setError(tNow("shop.error.refreshAgenda"));
@@ -607,6 +639,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       window.removeEventListener("focus", refresh);
       document.removeEventListener("visibilitychange", refresh);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchDayAppointments lê actor e o fuso da loja
   }, [
     demo,
     actor,
@@ -1127,7 +1160,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         await submitProtectedChange("staff.toggle", { id: row.id, active: !row.active });
         await loadCatalog();
       } catch (changeError) {
-        setError(changeError instanceof Error ? changeError.message : t("shop.error.toggleStaff"));
+        setError(friendlyAuthError(changeError, t("shop.error.toggleStaff")));
       }
       return;
     }
@@ -1151,7 +1184,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     setError(null);
     try {
       for (const row of businessHours) {
-        if (row.is_open && row.closes_at <= row.opens_at) {
+        // O banco devolve "HH:MM:SS" e o seletor grava "HH:MM": compara só horas e minutos.
+        if (row.is_open && row.closes_at.slice(0, 5) <= row.opens_at.slice(0, 5)) {
           throw new Error(t("shop.error.closeAfterOpen", { day: t(weekdays[row.weekday]) }));
         }
       }
@@ -1202,7 +1236,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       if (endsAt <= startsAt) throw new Error(t("shop.error.blockEndAfterStart"));
       const block = {
         barbershop_id: shop.id,
-        staff_id: blockStaffId || null,
+        staff_id: ownBlocksOnly ? (actor?.staff_id ?? null) : blockStaffId || null,
         starts_at: startsAt.toISOString(),
         ends_at: endsAt.toISOString(),
         reason: blockReason.trim() || null,
@@ -1242,7 +1276,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       try {
         await submitProtectedChange("availability.delete", { id });
       } catch (changeError) {
-        setError(changeError instanceof Error ? changeError.message : t("shop.error.deleteBlock"));
+        setError(friendlyAuthError(changeError, t("shop.error.deleteBlock")));
       }
     } else if (actor?.role === "associate") {
       const { error: deleteError } = await supabase
@@ -1382,9 +1416,12 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       normalizeSearch(row.display_name).includes(normalizeSearch(staffQuery)) &&
       (staffStatus === "all" || row.active === (staffStatus === "active")),
   );
-  const filteredAppointments = appointments.filter(
+  // Escopo "Minha agenda" não é filtro: contador e estado vazio comparam com esta lista.
+  const scopedAppointments = appointments.filter(
+    (row) => agendaScope === "team" || !actor?.staff_id || row.staff_id === actor.staff_id,
+  );
+  const filteredAppointments = scopedAppointments.filter(
     (row) =>
-      (agendaScope === "team" || !actor?.staff_id || row.staff_id === actor.staff_id) &&
       (!agendaStaff || row.staff_id === agendaStaff) &&
       (!agendaStatus || row.status === agendaStatus) &&
       normalizeSearch(`${row.customer?.full_name ?? ""} ${row.service?.name ?? ""}`).includes(
@@ -1406,10 +1443,18 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   // ainda não foi carregada), então a interface acompanha o que o banco permite.
   const canEditServices = !actor || !!capabilities?.manageCatalog || !!capabilities?.editOwnCatalog;
   const canChangeGlobalCatalog = !actor || !!capabilities?.manageCatalog;
+  // O parceiro só personaliza serviços existentes; criar novos é de quem gere o catálogo e
+  // pode propor mudanças (mesma regra de createService: funcionário cairia em roleServices).
+  const canCreateServices =
+    !!demo || !actor || (canChangeGlobalCatalog && !!capabilities?.canProposeOperations);
   const canManageTeam = !actor || !!capabilities?.manageTeam;
   // Horários inclui os próprios bloqueios, então o parceiro também entra.
   const canManageOperations =
     !actor || !!capabilities?.manageOperations || !!capabilities?.editOwnCatalog;
+  // Funcionamento semanal: só quem pode propor mudanças na operação (ou o dono sem papel).
+  const canEditBusinessHours = !!demo || !actor || !!capabilities?.canProposeOperations;
+  // Parceiro sem poder de operação cria e remove apenas os próprios bloqueios.
+  const ownBlocksOnly = !demo && actor?.role === "associate" && !capabilities?.canProposeOperations;
   // Ajustes da loja continuam restritos a quem gerencia a operação inteira.
   const canManageShopSettings = !actor || !!capabilities?.manageOperations;
   const canViewMoney = !actor || !!capabilities?.viewMoney;
@@ -1420,17 +1465,23 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     actor.role === "owner" ||
     actor.role === "partner";
   const canManageShopChannels = !actor || actor.role === "owner" || actor.role === "partner";
+  // Seções operacionais (agendamento, pontos, endereços) exigem gerir a operação; avisos do
+  // Google, pedido de saída e idioma ficam abertos ao parceiro e ao funcionário.
   const settingsSections: SettingsSection[] = [
     ...(canManageBranding ? (["aparencia"] as const) : []),
-    "agendamento",
-    ...(!demo ? (["pontos"] as const) : []),
+    ...(canManageShopSettings ? (["agendamento"] as const) : []),
+    ...(!demo && canManageShopSettings ? (["pontos"] as const) : []),
     ...(canManageShopChannels || (!demo && actor?.role === "associate")
       ? (["avisos"] as const)
       : []),
-    ...(!demo ? (["enderecos"] as const) : []),
-    ...(!demo && actor ? (["equipe"] as const) : []),
+    ...(!demo && canManageShopSettings ? (["enderecos"] as const) : []),
+    ...(!demo && actor && (canManageShopSettings || actor.role === "associate")
+      ? (["equipe"] as const)
+      : []),
     "idioma",
   ];
+  // A aba Ajustes aparece sempre que houver alguma seção permitida ao papel (idioma, no mínimo).
+  const canOpenSettings = settingsSections.length > 0;
 
   useEffect(() => {
     // Só redireciona com capacidades já resolvidas — evita bounce enquanto a matriz carrega.
@@ -1438,14 +1489,14 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     if (tab === "servicos" && !canEditServices) setTab("agenda");
     if (tab === "equipe" && !canManageTeam) setTab("agenda");
     if (tab === "horarios" && !canManageOperations) setTab("agenda");
-    if (tab === "configuracoes" && !canManageShopSettings) setTab("agenda");
+    if (tab === "configuracoes" && !canOpenSettings) setTab("agenda");
     if (agendaScope === "team" && actor && !capabilities?.viewFullShop) setAgendaScope("mine");
   }, [
     tab,
     canEditServices,
     canManageTeam,
     canManageOperations,
-    canManageShopSettings,
+    canOpenSettings,
     agendaScope,
     actor,
     capabilities,
@@ -1464,7 +1515,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     if (id === "servicos") return canEditServices;
     if (id === "equipe") return canManageTeam;
     if (id === "horarios") return canManageOperations;
-    if (id === "configuracoes") return canManageShopSettings;
+    if (id === "configuracoes") return canOpenSettings;
     return true;
   });
   const activeNavIndex = shopNavItems.findIndex((item) => item.id === tab);
@@ -1865,10 +1916,15 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span role="status">
-                    {t("shop.agenda.count", {
-                      shown: filteredAppointments.length,
-                      total: appointments.length,
-                    })}
+                    {t(
+                      scopedAppointments.length === 1
+                        ? "shop.agenda.countOne"
+                        : "shop.agenda.countMany",
+                      {
+                        shown: filteredAppointments.length,
+                        total: scopedAppointments.length,
+                      },
+                    )}
                   </span>
                   {(agendaSearch || agendaStaff || agendaStatus) && (
                     <button
@@ -2033,12 +2089,12 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   <EmptyState
                     tone="calendar"
                     title={
-                      appointments.length
+                      scopedAppointments.length
                         ? t("shop.agenda.emptyFilteredTitle")
                         : t("shop.agenda.emptyDayTitle")
                     }
                     description={
-                      appointments.length
+                      scopedAppointments.length
                         ? t("shop.agenda.emptyFilteredHint")
                         : t("shop.agenda.emptyDayHint")
                     }
@@ -2079,7 +2135,12 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         setAgendaStaff("");
                       }}
                       className="action-button action-danger min-w-11 justify-center"
-                      aria-label={t("shop.money.cancellationsAria", { count: cancelledCount })}
+                      aria-label={t(
+                        cancelledCount === 1
+                          ? "shop.money.cancellationsAriaOne"
+                          : "shop.money.cancellationsAriaMany",
+                        { count: cancelledCount },
+                      )}
                     >
                       {cancelledCount}
                     </button>
@@ -2120,25 +2181,27 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
               <div className="app-section-title">
                 <Scissors />
                 <h2>{t("shop.nav.services")}</h2>
-                <button
-                  type="button"
-                  disabled={busy}
-                  className="ml-auto flex min-h-11 items-center gap-2 rounded-xl bg-primary px-3 text-xs font-bold text-primary-foreground"
-                  onClick={() => {
-                    setEditingService(null);
-                    setServiceName("");
-                    setServiceDescription("");
-                    setServiceDuration("30");
-                    setCustomDurationOpen(false);
-                    setServicePrice("45");
-                    setServiceIcon("Scissors");
-                    setError(null);
-                    setServiceFormOpen(true);
-                  }}
-                >
-                  <Plus className="size-4" />
-                  {t("shop.add")}
-                </button>
+                {canCreateServices && (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    className="ml-auto flex min-h-11 items-center gap-2 rounded-xl bg-primary px-3 text-xs font-bold text-primary-foreground"
+                    onClick={() => {
+                      setEditingService(null);
+                      setServiceName("");
+                      setServiceDescription("");
+                      setServiceDuration("30");
+                      setCustomDurationOpen(false);
+                      setServicePrice("45");
+                      setServiceIcon("Scissors");
+                      setError(null);
+                      setServiceFormOpen(true);
+                    }}
+                  >
+                    <Plus className="size-4" />
+                    {t("shop.add")}
+                  </button>
+                )}
               </div>
               <CatalogFilters
                 query={serviceQuery}
@@ -2949,7 +3012,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       <Switch
                         checked={row.is_open}
                         aria-label={t("shop.hours.openAria", { day: t(weekdays[row.weekday]) })}
-                        disabled={busy}
+                        disabled={busy || !canEditBusinessHours}
                         onCheckedChange={(checked) =>
                           updateHours(row.weekday, { is_open: checked })
                         }
@@ -2961,7 +3024,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         <TimePicker
                           label={t("shop.hours.opens")}
                           value={row.opens_at.slice(0, 5)}
-                          disabled={busy}
+                          disabled={busy || !canEditBusinessHours}
                           onChange={(value) => updateHours(row.weekday, { opens_at: value })}
                         />
                         <span className="text-xs text-muted-foreground">
@@ -2970,7 +3033,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         <TimePicker
                           label={t("shop.hours.closes")}
                           value={row.closes_at.slice(0, 5)}
-                          disabled={busy}
+                          disabled={busy || !canEditBusinessHours}
                           onChange={(value) => updateHours(row.weekday, { closes_at: value })}
                         />
                       </div>
@@ -2981,13 +3044,17 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     )}
                   </div>
                 ))}
-                <button
-                  onClick={() => void saveBusinessHours()}
-                  disabled={busy}
-                  className="w-full rounded-xl bg-primary py-3 text-xs font-semibold text-primary-foreground disabled:opacity-60"
-                >
-                  {busy ? t("common.saving") : t("shop.hours.save")}
-                </button>
+                {canEditBusinessHours ? (
+                  <button
+                    onClick={() => void saveBusinessHours()}
+                    disabled={busy}
+                    className="w-full rounded-xl bg-primary py-3 text-xs font-semibold text-primary-foreground disabled:opacity-60"
+                  >
+                    {busy ? t("common.saving") : t("shop.hours.save")}
+                  </button>
+                ) : (
+                  <p className="text-xs text-muted-foreground">{t("shop.error.roleHours")}</p>
+                )}
               </div>
               <SlotModeNotice
                 settings={settings}
@@ -3036,12 +3103,16 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   </label>
                   <select
                     id={blockStaffFieldId}
-                    value={blockStaffId}
+                    value={ownBlocksOnly ? (actor?.staff_id ?? "") : blockStaffId}
                     onChange={(e) => setBlockStaffId(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground"
+                    disabled={ownBlocksOnly}
+                    className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground disabled:opacity-80"
                   >
-                    <option value="">{t("shop.block.wholeShop")}</option>
-                    {staff.map((member) => (
+                    {!ownBlocksOnly && <option value="">{t("shop.block.wholeShop")}</option>}
+                    {(ownBlocksOnly
+                      ? staff.filter((member) => member.id === actor?.staff_id)
+                      : staff
+                    ).map((member) => (
                       <option key={member.id} value={member.id}>
                         {t("shop.block.onlyStaff", { name: member.display_name })}
                       </option>
@@ -3143,14 +3214,17 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         })}
                       </p>
                     </div>
-                    <button
-                      onClick={() => void deleteBlock(block.id)}
-                      disabled={busy}
-                      aria-label={t("shop.block.deleteAria")}
-                      className="action-button action-danger"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    {(!ownBlocksOnly ||
+                      (!!actor?.staff_id && block.staff_id === actor.staff_id)) && (
+                      <button
+                        onClick={() => void deleteBlock(block.id)}
+                        disabled={busy}
+                        aria-label={t("shop.block.deleteAria")}
+                        className="action-button action-danger"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
                   </div>
                 ))}
                 {blocks.length === 0 && (

@@ -117,13 +117,25 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
   });
   const [activeTemplate, setActiveTemplate] = useState<WhatsAppTemplateKey>("booking.confirmed");
   const [templatesDirty, setTemplatesDirty] = useState(false);
+  // Os textos só podem ser salvos depois de lidos do banco: sem isso, o upsert
+  // dos 4 modelos gravaria os padrões por cima dos textos personalizados.
+  const [templatesReady, setTemplatesReady] = useState(false);
+  const [templatesLoadFailed, setTemplatesLoadFailed] = useState(false);
+  const templatesDirtyRef = useRef(false);
+  const templatesReadyRef = useRef(false);
+  templatesDirtyRef.current = templatesDirty;
+  templatesReadyRef.current = templatesReady;
   const [previewMode, setPreviewMode] = useState<"preview" | "source">("preview");
   const [restoreOpen, setRestoreOpen] = useState(false);
 
   const loadTemplates = useCallback(async () => {
+    // Não descarta edições ainda não salvas (ex.: "Atualizar" ou "Já escaneei").
+    if (templatesReadyRef.current && templatesDirtyRef.current) return;
     if (demo) {
       setTemplates({ ...DEFAULT_WHATSAPP_BODIES });
       setTemplatesDirty(false);
+      setTemplatesReady(true);
+      setTemplatesLoadFailed(false);
       return;
     }
     const { data, error: loadError } = await supabase
@@ -131,8 +143,8 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
       .select("template_key, body")
       .eq("barbershop_id", shopId);
     if (loadError) {
-      setTemplates({ ...DEFAULT_WHATSAPP_BODIES });
-      setTemplatesDirty(false);
+      // Mantém o editor bloqueado para salvar em vez de cair nos textos padrão.
+      setTemplatesLoadFailed(true);
       return;
     }
     const next = { ...DEFAULT_WHATSAPP_BODIES };
@@ -143,6 +155,8 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
     }
     setTemplates(next);
     setTemplatesDirty(false);
+    setTemplatesReady(true);
+    setTemplatesLoadFailed(false);
   }, [demo, shopId]);
 
   const refresh = useCallback(async () => {
@@ -165,12 +179,15 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
     }
     setBusy(true);
     setError(null);
+    // Os textos são lidos do banco independentemente do status do canal.
+    const templatesLoad = loadTemplates().catch(() => setTemplatesLoadFailed(true));
     try {
       const payload = await callChannel({ action: "status", barbershop_id: shopId });
       setChannel(payload.channel ?? null);
       setQrcode(payload.qrcode ?? null);
-      await loadTemplates();
+      await templatesLoad;
     } catch (err) {
+      await templatesLoad;
       setError(friendlyIntegrationError(err, tNow("integr.wa.errStatus")));
     } finally {
       setBusy(false);
@@ -328,6 +345,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
   const activeErrors = validateWhatsAppTemplate(activeBody);
   const previewFilled = renderWhatsAppTemplate(activeBody, SAMPLE_WHATSAPP_VARS);
   const canSave =
+    templatesReady &&
     templatesDirty &&
     TEMPLATE_META.every(({ key }) => validateWhatsAppTemplate(templates[key]).length === 0);
 
@@ -461,6 +479,24 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
           ))}
         </div>
         <p className="text-xs text-muted-foreground">{t(activeMeta.hintKey)}</p>
+        {templatesLoadFailed && !templatesReady && (
+          <div
+            role="alert"
+            className="space-y-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3"
+          >
+            <p className="text-sm text-destructive">
+              {t("fix.ajustes-marca.waTemplatesLoadError")}
+            </p>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void loadTemplates().catch(() => setTemplatesLoadFailed(true))}
+              className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold disabled:opacity-50"
+            >
+              {t("integr.refresh")}
+            </button>
+          </div>
+        )}
 
         <div className="space-y-1.5">
           <p className="text-xs font-semibold text-muted-foreground">
@@ -587,7 +623,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
           </button>
           <button
             type="button"
-            disabled={busy}
+            disabled={busy || !templatesReady}
             onClick={() => setRestoreOpen(true)}
             className="min-h-11 rounded-xl border border-border px-3 text-sm font-semibold disabled:opacity-50"
           >

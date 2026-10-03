@@ -263,7 +263,8 @@ export const enUS: Record<MessageKey, string> = {
   "common.loadMore": "Load more",
   "level.region": "Level progress",
   "level.next": "Next level: {name}",
-  "level.remaining": "{points} points to go",
+  "level.remainingOne": "{points} point to go",
+  "level.remainingMany": "{points} points to go",
   "level.progress": "Progress to level {name}",
   "level.benefits": "New level perks:",
   "level.maxTitle": "Top level reached",
@@ -814,7 +815,8 @@ export const enUS: Record<MessageKey, string> = {
   "plat.shops.noMatch": "No barbershops match the filters.",
   "plat.shops.sportsAria": "Sports module at {name}",
   "plat.shops.sports": "Sports module",
-  "plat.shops.customers": "{count} customers",
+  "plat.shops.customerOne": "{count} customer",
+  "plat.shops.customerMany": "{count} customers",
   "plat.shops.adminOne": "{count} admin",
   "plat.shops.adminMany": "{count} admins",
   "plat.shops.active": "Active",
@@ -1164,7 +1166,8 @@ export const enUS: Record<MessageKey, string> = {
   "shop.agenda.allTeam": "Whole team",
   "shop.agenda.status": "Status",
   "shop.agenda.allStatuses": "All",
-  "shop.agenda.count": "{shown} of {total} appointments",
+  "shop.agenda.countOne": "{shown} of {total} appointment",
+  "shop.agenda.countMany": "{shown} of {total} appointments",
   "shop.agenda.clearFilters": "Clear filters",
   "shop.agenda.listAria": "Today's appointments",
   "shop.agenda.time": "Time",
@@ -1189,7 +1192,8 @@ export const enUS: Record<MessageKey, string> = {
   "shop.money.completed": "Completed services",
   "shop.money.expected": "Still booked",
   "shop.money.cancellations": "Cancellations",
-  "shop.money.cancellationsAria": "See {count} cancellations today",
+  "shop.money.cancellationsAriaOne": "See {count} cancellation today",
+  "shop.money.cancellationsAriaMany": "See {count} cancellations today",
   "shop.money.estimate": "Estimate based on current prices.",
   "shop.clients.title": "Barbershop customers",
   "shop.add": "Add",
@@ -1703,7 +1707,8 @@ export const enUS: Record<MessageKey, string> = {
   "integr.google.chooseFirst": "Choose which Google calendar to use before syncing.",
   "integr.google.syncedDemo": "Calendar synced (demo).",
   "integr.google.calendarFallback": "Google Calendar",
-  "integr.google.imported": "{count} events imported from “{name}”.",
+  "integr.google.importedOne": "{count} event imported from “{name}”.",
+  "integr.google.importedMany": "{count} events imported from “{name}”.",
   "integr.google.errSync": "Couldn't sync the calendar",
   "integr.google.contactSavedDemo": "Contact saved to Google Contacts (demo).",
   "integr.google.contactSaved": "Contact saved to Google Contacts.",
@@ -1743,8 +1748,10 @@ export const enUS: Record<MessageKey, string> = {
     "Done. Future times will start showing in Google Calendar in about a minute.",
   "integr.push.savedOff":
     "Copying is off. Future copied times will be removed from Google Calendar.",
-  "integr.push.pending": "{count} times waiting to be copied.",
-  "integr.push.failed": "Couldn't copy {count} times: {reason}",
+  "integr.push.pendingOne": "{count} time waiting to be copied.",
+  "integr.push.pendingMany": "{count} times waiting to be copied.",
+  "integr.push.failedOne": "Couldn't copy {count} time: {reason}",
+  "integr.push.failedMany": "Couldn't copy {count} times: {reason}",
   "integr.push.errSave": "Couldn't change booking copying. Please try again.",
   "integr.push.demo": "Nothing is sent to Google in the demo.",
   "integr.google.reloadCalendars": "Reload calendars",
@@ -2360,7 +2367,8 @@ export const enUS: Record<MessageKey, string> = {
   "loyalty.admin.rewardsEmpty": "No rewards yet",
   "loyalty.admin.rewardsEmptyText":
     "Create the first one, for example a free haircut or a treatment.",
-  "loyalty.admin.rewardCost": "{n} points",
+  "loyalty.admin.rewardCostOne": "{n} point",
+  "loyalty.admin.rewardCostMany": "{n} points",
   "loyalty.admin.rewardPaused": "paused",
   "loyalty.admin.rewardToggle": "Show {name} to customers",
   "loyalty.admin.rewardAdd": "New reward",
@@ -2411,8 +2419,11 @@ export const enUS: Record<MessageKey, string> = {
   "rewards.pendingLabel": "Rewards waiting to be collected",
   "rewards.pendingLine": "Waiting to be collected · valid until {date}",
   "rewards.cancel": "Cancel",
-  "rewards.cost": "{n} points",
-  "rewards.costMissing": "{n} points · {missing} to go",
+  "rewards.costOne": "{n} point",
+  "rewards.costMany": "{n} points",
+  "rewards.costMissing": "{cost} · {missing}",
+  "rewards.missingOne": "{n} to go",
+  "rewards.missingMany": "{n} to go",
   "rewards.redeem": "Redeem",
   "rewards.limit": "You already have 3 rewards waiting. Collect or cancel one to redeem another.",
   "rewards.confirmTitle": "Redeem points for {name}?",
@@ -2434,7 +2445,8 @@ export const enUS: Record<MessageKey, string> = {
     "This barbershop isn't using the points club right now. Points you already earned stay saved.",
   "club.earnVisit": "Each completed appointment is worth {points}.",
   "club.earnWelcome": "On your first appointment you get an extra {points} as a welcome.",
-  "club.pointsN": "{n} points",
+  "club.pointsOne": "{n} point",
+  "club.pointsMany": "{n} points",
   "club.spendRewards": "Redeem your points for rewards in Points history.",
   "club.levelsHint":
     "Your level follows everything you've ever earned. Redeeming points never lowers it.",
@@ -2581,4 +2593,68 @@ export const enUS: Record<MessageKey, string> = {
   "slots.notice.custom":
     "Every {step} minutes: the system tries {tested}… and shows only the times where the whole service fits before the next commitment or closing. E.g. with a {short} from {start} to {end}, a {minutes}-min {long} shows at {first}. A shorter interval gives more options; a longer one keeps the schedule tidier.",
   "slots.notice.link": "Change how times are offered",
+  "fix.cliente-app.rescheduleUnavailable":
+    "This booking can't be rescheduled here: its service or professional is no longer available. Cancel it and make a new booking, or contact the shop.",
+  "fix.componentes-loja.wa.wrapPlaceholder": "text",
+  "fix.componentes-loja.perm.view_agenda_all": "Full schedule overview",
+  "fix.componentes-loja.perm.view_agenda_allHint":
+    "See the schedule of every professional at this location",
+  "fix.componentes-loja.perm.view_money": "Daily totals and own earnings",
+  "fix.componentes-loja.perm.view_moneyHint":
+    "See the day's totals and how much was earned from own appointments",
+  "fix.componentes-loja.perm.view_financial_all": "Shop financial reports",
+  "fix.componentes-loja.perm.view_financial_allHint":
+    "Access revenue and full financial reports for this location",
+  "fix.componentes-loja.perm.view_reports_global": "Location reports",
+  "fix.componentes-loja.perm.view_reports_globalHint":
+    "Access complete, identified metrics for this location",
+  "fix.componentes-loja.perm.view_reports_anonymized": "Anonymized overall metrics",
+  "fix.componentes-loja.perm.view_reports_anonymizedHint":
+    "See overall shop numbers without identifying anyone",
+  "fix.componentes-loja.perm.view_own_score": "Own metrics",
+  "fix.componentes-loja.perm.view_own_scoreHint": "Track own activity and performance",
+  "fix.componentes-loja.perm.manage_services": "Manage full catalog",
+  "fix.componentes-loja.perm.manage_servicesHint":
+    "Create, edit and reprice this location's services",
+  "fix.componentes-loja.perm.manage_own_services": "Manage own services",
+  "fix.componentes-loja.perm.manage_own_servicesHint":
+    "Edit price, duration and availability of own services",
+  "fix.componentes-loja.perm.manage_operations": "Manage operations",
+  "fix.componentes-loja.perm.manage_operationsHint":
+    "Set opening hours, shop-wide blocks and shop settings",
+  "fix.componentes-loja.perm.manage_team": "Manage team",
+  "fix.componentes-loja.perm.manage_teamHint": "Invite professionals and change roles",
+  "fix.componentes-loja.perm.manage_permissions": "Change permissions",
+  "fix.componentes-loja.perm.manage_permissionsHint": "Edit this access matrix",
+  "fix.componentes-loja.perm.readOnlyHint":
+    "Only partners who can apply ownership changes can edit these permissions. You can view them here.",
+  "fix.ajustes-marca.waTemplatesLoadError":
+    "We couldn't load your saved texts. To avoid replacing them with the defaults, saving is disabled until they load.",
+  "fix.ajustes-marca.waTooLongFilled":
+    "With names and link filled in, the message may reach {length} of 1,000 characters and won't be sent. Please shorten the text.",
+  "fix.ajustes-marca.domainTxtMissing":
+    "TXT record not found yet. Create it at {host} with the value {value}.",
+  "fix.ajustes-marca.domainCnamePending":
+    "The CNAME record from {domain} to {target} hasn't propagated yet.",
+  "fix.ajustes-marca.domainNothingPending": "No domain is waiting for verification.",
+  "fix.ajustes-marca.domainProxyPending":
+    "the server is still updating the address; this may take a few minutes.",
+  "fix.ajustes-marca.landingPreviewError":
+    "We couldn't load the preview right now. Check your connection and try again.",
+  "fix.ajustes-marca.departureConfirmTitle": "Leave this barbershop?",
+  "fix.ajustes-marca.departureConfirmForfeit":
+    "You'll lose access to this shop right away and your clients will stay here. This can't be undone.",
+  "fix.ajustes-marca.departureConfirmTake":
+    "You'll leave this shop and take your client list to {shop}. This can't be undone.",
+  "fix.auth-rotas.emailConfirmedSignIn":
+    "Email confirmed. Sign in with your email and password to continue.",
+  "fix.fidelidade-insights.policyTiersNotice":
+    "The ranges below follow the default rule. Each barbershop can set its own levels, points and perks; your shop's appear in the app.",
+  "fix.fidelidade-insights.policyPointRate":
+    "Each completed appointment earns points (50 in the default rule; the shop may change it).",
+  "fix.fidelidade-insights.policyFooter": "Barba & Cabelo © {year}",
+  "fix.fidelidade-insights.fixedInDefault":
+    'This value is fixed in the standard rules. Choose "Your barbershop\'s version" to change it.',
+  "fix.landing-espera-pwa.moreSlotsMany": "and more times",
+  "fix.landing-espera-pwa.waitAlreadyHolder": "You already hold this booking.",
 };

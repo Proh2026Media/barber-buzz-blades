@@ -1,5 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { LogOut, UserMinus } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { t as tNow, useI18n } from "@/lib/i18n";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
@@ -44,6 +54,7 @@ export function ShopDepartureCard({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const load = useCallback(async () => {
     setError(null);
@@ -114,7 +125,18 @@ export function ShopDepartureCard({
     }
   }
 
+  /** Saída é irreversível: confere o destino e pede confirmação antes de enviar. */
+  function askDepartureConfirmation() {
+    setError(null);
+    if (mode === "take" && !destShopId) {
+      setError(t("team.departure.destRequired"));
+      return;
+    }
+    setConfirmOpen(true);
+  }
+
   async function requestDeparture() {
+    setConfirmOpen(false);
     setBusy(true);
     setError(null);
     setMessage("");
@@ -284,13 +306,37 @@ export function ShopDepartureCard({
             type="button"
             disabled={busy}
             className="action-button action-danger w-full justify-center"
-            onClick={() => void requestDeparture()}
+            onClick={askDepartureConfirmation}
           >
             <LogOut size={14} />
             {t("team.departure.confirm")}
           </button>
         </div>
       )}
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent className="rounded-[var(--panel-radius)]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("fix.ajustes-marca.departureConfirmTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {mode === "take"
+                ? t("fix.ajustes-marca.departureConfirmTake", {
+                    shop: destShops.find((shop) => shop.id === destShopId)?.name ?? "",
+                  })
+                : t("fix.ajustes-marca.departureConfirmForfeit")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("integr.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => void requestDeparture()}
+            >
+              {t("team.departure.confirm")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {message && <p className="text-sm text-foreground">{message}</p>}
       {error && (

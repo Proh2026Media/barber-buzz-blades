@@ -28,12 +28,16 @@ export function fileAsDataUrl(file: File) {
   });
 }
 
-/** Envia o logo ao bucket público e devolve a URL com cache-busting. */
+/**
+ * Envia o logo ao bucket público em caminho versionado e devolve a URL.
+ * O caminho novo não sobrescreve o logo publicado: o antigo só é apagado
+ * depois que a identidade for gravada no banco.
+ */
 export async function uploadShopLogo(shopId: string, file: File) {
-  const path = `${shopId}/logo`;
+  const path = `${shopId}/logo-${Date.now()}`;
   const { error } = await supabase.storage.from(LOGO_BUCKET).upload(path, file, {
     contentType: file.type,
-    upsert: true,
+    upsert: false,
     cacheControl: "3600",
   });
   if (error) throw storageError(error, t("brand.upload.labelLogos"));
@@ -41,12 +45,12 @@ export async function uploadShopLogo(shopId: string, file: File) {
   return `${data.publicUrl}?v=${Date.now()}`;
 }
 
-/** Publica a foto de fundo do login no mesmo bucket visual da barbearia. */
+/** Publica a foto de fundo do login, também em caminho versionado. */
 export async function uploadShopLoginImage(shopId: string, file: File) {
-  const path = `${shopId}/login-background.webp`;
+  const path = `${shopId}/login-background-${Date.now()}.webp`;
   const { error } = await supabase.storage.from(LOGO_BUCKET).upload(path, file, {
     contentType: file.type,
-    upsert: true,
+    upsert: false,
     cacheControl: "3600",
   });
   if (error) throw storageError(error, t("brand.upload.labelLoginImages"));
@@ -54,20 +58,24 @@ export async function uploadShopLoginImage(shopId: string, file: File) {
   return `${data.publicUrl}?v=${Date.now()}`;
 }
 
-/** Remove o arquivo do bucket; falhas não impedem salvar a identidade sem logo. */
-export async function removeShopLogo(shopId: string) {
-  try {
-    await supabase.storage.from(LOGO_BUCKET).remove([`${shopId}/logo`]);
-  } catch {
-    // O registro fica sem logo mesmo se a limpeza do arquivo falhar.
-  }
+/** Caminho do arquivo dentro de um bucket público a partir da URL publicada. */
+function bucketPath(bucket: string, url: string | null | undefined) {
+  if (!url) return null;
+  const marker = `/storage/v1/object/public/${bucket}/`;
+  const path = url.split(marker)[1]?.split("?")[0];
+  return path ? decodeURIComponent(path) : null;
 }
 
-export async function removeShopLoginImage(shopId: string) {
+/** Remove arquivos do bucket de logos; falhas de limpeza não desfazem o salvamento. */
+async function removeLogoBucketFiles(urls: Array<string | null | undefined>) {
+  const paths = urls
+    .map((url) => bucketPath(LOGO_BUCKET, url))
+    .filter((path): path is string => Boolean(path));
+  if (!paths.length) return;
   try {
-    await supabase.storage.from(LOGO_BUCKET).remove([`${shopId}/login-background.webp`]);
+    await supabase.storage.from(LOGO_BUCKET).remove([...new Set(paths)]);
   } catch {
-    // A configuração pode voltar à foto padrão mesmo se o arquivo antigo não puder ser removido.
+    // Um arquivo antigo que sobrar no bucket não afeta a identidade gravada.
   }
 }
 
@@ -120,9 +128,7 @@ export async function uploadShopFontFaces(shopId: string, faces: PendingBrandFon
 }
 
 function fontPath(url: string) {
-  const marker = `/storage/v1/object/public/${FONT_BUCKET}/`;
-  const path = url.split(marker)[1]?.split("?")[0];
-  return path ? decodeURIComponent(path) : null;
+  return bucketPath(FONT_BUCKET, url);
 }
 
 export async function removeShopFonts(
@@ -143,6 +149,10 @@ export async function removeShopFonts(
 /**
  * Persiste a identidade visual de uma barbearia.
  * No modo demo o logo vira Data URL e nada toca o Supabase.
+ * Os arquivos novos sobem em caminhos versionados; os antigos só são apagados
+ * depois que o banco aceitar a mudança. Se a gravação falhar (rede, sessão,
+ * aprovação de sócio), os arquivos recém-enviados são removidos e os publicados
+ * continuam intactos.
  */
 export async function persistBrandIdentity(
   settings: Tables<"barbershop_settings">,
@@ -153,56 +163,88 @@ export async function persistBrandIdentity(
   loginImageFile: File | null = null,
 ): Promise<Tables<"barbershop_settings">> {
   const values = brandDraftToSettings(draft);
-  if (logoFile) {
-    values.logo_url =
-      mode === "demo"
-        ? await fileAsDataUrl(logoFile)
-        : await uploadShopLogo(settings.barbershop_id, logoFile);
-  } else if (mode === "supabase" && settings.logo_url && !values.logo_url) {
-    await removeShopLogo(settings.barbershop_id);
+  if (mode === "demo") {
+    if (logoFile) values.logo_url = await fileAsDataUrl(logoFile);
+    if (loginImageFile) values.login_image_url = await fileAsDataUrl(loginImageFile);
+    if (fontFaces?.length) {
+      const records = await Promise.all(
+        fontFaces.map(async (face) => ({
+          url: await fileAsDataUrl(face.file),
+          file_name: face.file_name,
+          weight: face.weight,
+          style: face.style,
+        })),
+      );
+      values.custom_font_faces = records;
+      values.custom_font_url = records.find((face) => face.weight === 400)?.url ?? records[0]!.url;
+      values.custom_font_name = draft.custom_font_name || "Fonte personalizada";
+    } else if (settings.custom_font_url && !values.custom_font_url) {
+      values.custom_font_faces = [];
+    }
+    return { ...settings, ...values, updated_at: new Date().toISOString() };
   }
-  if (loginImageFile) {
-    values.login_image_url =
-      mode === "demo"
-        ? await fileAsDataUrl(loginImageFile)
-        : await uploadShopLoginImage(settings.barbershop_id, loginImageFile);
-  } else if (mode === "supabase" && settings.login_image_url && !values.login_image_url) {
-    await removeShopLoginImage(settings.barbershop_id);
-  }
-  if (fontFaces?.length) {
-    const records =
-      mode === "demo"
-        ? await Promise.all(
-            fontFaces.map(async (face) => ({
-              url: await fileAsDataUrl(face.file),
-              file_name: face.file_name,
-              weight: face.weight,
-              style: face.style,
-            })),
-          )
-        : await uploadShopFontFaces(settings.barbershop_id, fontFaces);
-    values.custom_font_faces = records;
-    values.custom_font_url = records.find((face) => face.weight === 400)?.url ?? records[0]!.url;
-    values.custom_font_name = draft.custom_font_name || "Fonte personalizada";
-    if (mode === "supabase") {
+
+  const shopId = settings.barbershop_id;
+  const newLogoUrls: string[] = [];
+  let newFontRecords: BrandFontFaceRecord[] = [];
+  const oldLogoUrls: Array<string | null | undefined> = [];
+  let removeOldFonts = false;
+
+  try {
+    if (logoFile) {
+      values.logo_url = await uploadShopLogo(shopId, logoFile);
+      newLogoUrls.push(values.logo_url);
+      oldLogoUrls.push(settings.logo_url);
+    } else if (settings.logo_url && !values.logo_url) {
+      oldLogoUrls.push(settings.logo_url);
+    }
+    if (loginImageFile) {
+      values.login_image_url = await uploadShopLoginImage(shopId, loginImageFile);
+      newLogoUrls.push(values.login_image_url);
+      oldLogoUrls.push(settings.login_image_url);
+    } else if (settings.login_image_url && !values.login_image_url) {
+      oldLogoUrls.push(settings.login_image_url);
+    }
+    if (fontFaces?.length) {
+      newFontRecords = await uploadShopFontFaces(shopId, fontFaces);
+      values.custom_font_faces = newFontRecords;
+      values.custom_font_url =
+        newFontRecords.find((face) => face.weight === 400)?.url ?? newFontRecords[0]!.url;
+      values.custom_font_name = draft.custom_font_name || "Fonte personalizada";
+      removeOldFonts = true;
+    } else if (settings.custom_font_url && !values.custom_font_url) {
+      values.custom_font_faces = [];
+      removeOldFonts = true;
+    }
+
+    const { data, error } = await supabase
+      .from("barbershop_settings")
+      .update(values)
+      .eq("barbershop_id", shopId)
+      .select("*")
+      .single();
+    if (error) throw error;
+
+    // Só agora, com o banco apontando para os arquivos novos, limpa os antigos.
+    // O mesmo caminho nunca é apagado se continuar em uso (caso legado).
+    await removeLogoBucketFiles(
+      oldLogoUrls.filter(
+        (url) =>
+          bucketPath(LOGO_BUCKET, url) !== bucketPath(LOGO_BUCKET, data.logo_url) &&
+          bucketPath(LOGO_BUCKET, url) !== bucketPath(LOGO_BUCKET, data.login_image_url),
+      ),
+    );
+    if (removeOldFonts) {
       await removeShopFonts(
         normalizeFontFaces(settings.custom_font_faces),
         settings.custom_font_url,
       );
     }
-  } else if (mode === "supabase" && settings.custom_font_url && !values.custom_font_url) {
-    await removeShopFonts(normalizeFontFaces(settings.custom_font_faces), settings.custom_font_url);
-    values.custom_font_faces = [];
+    return data;
+  } catch (error) {
+    // Desfaz os envios desta tentativa; o que já estava publicado fica como estava.
+    await removeLogoBucketFiles(newLogoUrls);
+    if (newFontRecords.length) await removeShopFonts(newFontRecords);
+    throw error;
   }
-  if (mode === "demo") {
-    return { ...settings, ...values, updated_at: new Date().toISOString() };
-  }
-  const { data, error } = await supabase
-    .from("barbershop_settings")
-    .update(values)
-    .eq("barbershop_id", settings.barbershop_id)
-    .select("*")
-    .single();
-  if (error) throw error;
-  return data;
 }

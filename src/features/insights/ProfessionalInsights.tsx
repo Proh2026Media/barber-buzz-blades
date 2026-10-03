@@ -46,11 +46,16 @@ export function ProfessionalInsights({
     if (demo) {
       // Demonstração: deriva os indicadores do profissional a partir dos
       // atendimentos fictícios, espelhando o escopo de cada papel.
-      const mine = demo.appointments.filter((row) => row.staff_id === staffId);
+      // Mesmo recorte do dia usado no modo real (shopDayRange).
+      const range = shopDayRange(day, DEFAULT_SHOP_TIMEZONE);
+      const dayRows = demo.appointments.filter((row) => {
+        const at = new Date(row.starts_at).getTime();
+        return at >= range.start.getTime() && at <= range.end.getTime();
+      });
+      const mine = dayRows.filter((row) => row.staff_id === staffId);
       const fullAccess = role === "owner" || role === "partner";
       const showMoney = role !== "employee";
       const showAnonymized = role === "associate";
-      const shopCompleted = demo.appointments.filter((row) => row.status === "completed");
       setData({
         scope: fullAccess ? "shop" : showAnonymized ? "own_with_global" : "own_score",
         own: {
@@ -66,10 +71,10 @@ export function ProfessionalInsights({
         },
         global: showAnonymized
           ? {
-              bookings: shopCompleted.length,
-              completed: shopCompleted.filter((row) => row.status === "completed").length,
-              cancelled: shopCompleted.filter((row) => row.status === "cancelled").length,
-              customers: new Set(shopCompleted.map((row) => row.customer_id)).size,
+              bookings: dayRows.length,
+              completed: dayRows.filter((row) => row.status === "completed").length,
+              cancelled: dayRows.filter((row) => row.status === "cancelled").length,
+              customers: new Set(dayRows.map((row) => row.customer_id)).size,
               quoted_cents: null,
             }
           : null,

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { createFileRoute, redirect } from "@tanstack/react-router";
-import { getSessionProfile, homeForRole } from "@/lib/auth/session";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { resolvePostAuthPath } from "@/lib/auth/session";
 import {
   currentHostname,
   isPlatformApexHost,
@@ -10,12 +10,21 @@ import {
 import { PlatformLanding } from "@/features/marketing/PlatformLanding";
 import { ShopLanding } from "@/features/marketing/ShopLanding";
 
+type PanelHome = "/app" | "/shop" | "/platform";
+
 export const Route = createFileRoute("/")({
   // SSR ligado para crawlers (verificação OAuth Google) lerem a landing e os links legais.
   beforeLoad: async () => {
-    const profile = await getSessionProfile();
-    if (profile) {
-      throw redirect({ to: homeForRole(profile.primaryRole) });
+    // A sessão fica no navegador: no servidor nunca há perfil (o IndexPage confere depois).
+    if (typeof window !== "undefined") {
+      // Mesma regra do login: profissional de shop_members vai ao painel da loja.
+      let home = "/auth";
+      try {
+        home = await resolvePostAuthPath();
+      } catch {
+        // Falha ao ler o perfil: mostra a landing em vez de quebrar a página.
+      }
+      if (home !== "/auth") throw redirect({ to: home as PanelHome });
     }
 
     if (typeof window !== "undefined" && !isPlatformApexHost()) {
@@ -30,6 +39,23 @@ export const Route = createFileRoute("/")({
 function IndexPage() {
   const context = Route.useRouteContext() as { shopHost?: string };
   const [shopHost, setShopHost] = useState<string | null>(context.shopHost ?? null);
+  const navigate = useNavigate();
+
+  // Primeira carga vinda do servidor (ex.: app instalado abrindo "/"): o beforeLoad rodou sem
+  // sessão e não roda de novo na hidratação. Quem já entrou segue ao painel do seu papel.
+  useEffect(() => {
+    let active = true;
+    void resolvePostAuthPath()
+      .then((home) => {
+        if (active && home !== "/auth") void navigate({ to: home as PanelHome, replace: true });
+      })
+      .catch(() => {
+        /* sem sessão legível: continua na landing */
+      });
+    return () => {
+      active = false;
+    };
+  }, [navigate]);
 
   // Na primeira carga renderizada no servidor o endereço só é conhecido no navegador.
   useEffect(() => {

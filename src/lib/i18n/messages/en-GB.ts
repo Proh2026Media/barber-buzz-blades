@@ -48,7 +48,8 @@ export const enGB: Record<MessageKey, string> = {
     "The service “{name}” will be removed from the catalogue. This can't be undone.",
   "shop.agenda.insights": "Day's figures",
   "shop.agenda.listAria": "Day's appointments",
-  "shop.money.cancellationsAria": "See {count} cancellations for the day",
+  "shop.money.cancellationsAriaOne": "See {count} cancellation for the day",
+  "shop.money.cancellationsAriaMany": "See {count} cancellations for the day",
   "ins.q.service_interest.coloring": "Hair colouring",
   "brand.icon.barbaEBigode": "Beard and moustache",
   "brand.icon.bigode": "Moustache",
@@ -101,4 +102,14 @@ export const enGB: Record<MessageKey, string> = {
   "landingEditor.description":
     "This is what customers see when they open your barbershop's address. Logo, colours and photo come from your brand identity.",
   "shop.settings.group.aparencia.hint": "Logo, colours, tagline and the barbershop page.",
+  "fix.componentes-loja.perm.view_agenda_all": "Full diary overview",
+  "fix.componentes-loja.perm.view_agenda_allHint":
+    "See the diary of every professional at this location",
+  "fix.componentes-loja.perm.view_financial_allHint":
+    "Access turnover and full financial reports for this location",
+  "fix.componentes-loja.perm.view_reports_anonymized": "Anonymised overall metrics",
+  "fix.componentes-loja.perm.manage_services": "Manage full catalogue",
+  "fix.ajustes-marca.domainNothingPending": "No domain is awaiting verification.",
+  "fix.ajustes-marca.departureConfirmForfeit":
+    "You'll lose access to this shop straight away and your clients will stay here. This can't be undone.",
 };

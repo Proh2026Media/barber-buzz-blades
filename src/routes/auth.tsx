@@ -9,19 +9,22 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { Link, createFileRoute, useSearch } from "@tanstack/react-router";
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { resolvePostAuthPath } from "@/lib/auth/session";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import {
   AUTH_POPUP_MESSAGE,
   buildPlatformAuthUrl,
+  clearAuthBridge,
   consumeBridgedHashTokens,
   currentOrigin,
   finishPopupOAuthAndNotifyOpener,
   handoffSessionSameOrigin,
+  isAllowedReturnOrigin,
   isAuthPopupMessage,
   isSafeReturnOriginShape,
+  markPopupOAuthStarted,
   needsAuthOriginBridge,
   peekAuthBridge,
   platformAuthOrigin,
@@ -106,11 +109,13 @@ export const Route = createFileRoute("/auth")({
     oauth?: "google";
     bridged?: boolean;
     popup?: boolean;
+    from_email?: boolean;
   } => {
     const recovery = s.recovery === "1" || s.recovery === true || s.recovery === "true";
     const demo = s.demo === "1" || s.demo === true || s.demo === "true";
     const bridged = s.bridged === "1" || s.bridged === true || s.bridged === "true";
     const popup = s.popup === "1" || s.popup === true || s.popup === "true";
+    const fromEmail = s.from_email === "1" || s.from_email === true || s.from_email === "true";
     const returnOrigin =
       typeof s.return_origin === "string" && isSafeReturnOriginShape(s.return_origin.trim())
         ? s.return_origin.trim()
@@ -125,6 +130,7 @@ export const Route = createFileRoute("/auth")({
       ...(oauth ? { oauth } : {}),
       ...(bridged ? { bridged: true as const } : {}),
       ...(popup ? { popup: true as const } : {}),
+      ...(fromEmail ? { from_email: true as const } : {}),
     };
   },
   component: AuthPage,
@@ -159,6 +165,7 @@ function AuthPage() {
     oauth,
     bridged,
     popup,
+    from_email: fromEmail,
   } = useSearch({
     from: "/auth",
   });
@@ -185,6 +192,16 @@ function AuthPage() {
     Boolean(shopContext.shopRef) || typeof window !== "undefined",
   );
   const [bridgeReady, setBridgeReady] = useState(!bridged);
+  // Aba da loja aplicando a sessão vinda do pop-up: o vigia do pop-up não deve soltar a tela.
+  const sessionApplyingRef = useRef(false);
+  const popupWatchRef = useRef<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (popupWatchRef.current !== null) window.clearInterval(popupWatchRef.current);
+    },
+    [],
+  );
 
   useShopFavicon(brand.logoUrl);
 
@@ -200,8 +217,64 @@ function AuthPage() {
       next: preferredNext || "/app",
       popup: Boolean(popup),
     });
-    if (bridge) stashAuthBridge({ ...bridge, popup: Boolean(popup) || bridge.popup });
+    if (!bridge) return;
+    let cancelled = false;
+    // Só a plataforma e domínios de lojas cadastradas podem receber a sessão.
+    void isAllowedReturnOrigin(bridge.returnOrigin).then((allowed) => {
+      if (cancelled) return;
+      if (allowed) stashAuthBridge({ ...bridge, popup: Boolean(popup) || bridge.popup });
+      else clearAuthBridge();
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [returnOrigin, shop, effectiveShopRef, preferredNext, bridged, popup]);
+
+  // Apex: link de e-mail (confirmação ou nova senha) pedido no domínio da loja.
+  // O código só pode ser trocado lá (PKCE), então repassa ao domínio de origem.
+  useEffect(() => {
+    if (popup || bridged || !returnOrigin) return;
+    if (needsAuthOriginBridge()) return;
+    const code = new URLSearchParams(window.location.search).get("code");
+    if (!code) return;
+    let cancelled = false;
+    void (async () => {
+      if (!(await isAllowedReturnOrigin(returnOrigin)) || cancelled) return;
+      clearAuthBridge();
+      const target = new URL(`${returnOrigin}/auth`);
+      target.searchParams.set("code", code);
+      target.searchParams.set("from_email", "1");
+      const shopRef = shop || shopContext.shopRef;
+      if (shopRef) target.searchParams.set("shop", shopRef);
+      if (preferredNext) target.searchParams.set("next", preferredNext);
+      if (recovery) target.searchParams.set("recovery", "1");
+      window.location.replace(target.toString());
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Domínio da loja, de volta do link de cadastro: entra direto se a confirmação abriu a sessão.
+  useEffect(() => {
+    if (!fromEmail || recovery || popup) return;
+    if (!needsAuthOriginBridge()) return;
+    let cancelled = false;
+    void (async () => {
+      const { data } = await supabase.auth.getSession();
+      if (cancelled) return;
+      if (data.session) {
+        await goAfterAuthLocal();
+        return;
+      }
+      setInfo(tNow("fix.auth-rotas.emailConfirmedSignIn"));
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fromEmail]);
 
   useEffect(() => {
     let cancelled = false;
@@ -289,6 +362,7 @@ function AuthPage() {
     if (popup || !needsAuthOriginBridge()) return;
 
     async function applySession(data: { access_token: string; refresh_token: string }) {
+      sessionApplyingRef.current = true;
       setBusy(true);
       setInfo(tNow("auth.info.signingIn"));
       const { error: sessionError } = await supabase.auth.setSession({
@@ -296,6 +370,7 @@ function AuthPage() {
         refresh_token: data.refresh_token,
       });
       if (sessionError) {
+        sessionApplyingRef.current = false;
         setError(friendlyAuthError(sessionError, tNow("auth.error.signinFailed")));
         setBusy(false);
         return;
@@ -452,7 +527,20 @@ function AuthPage() {
           next: preferredNext || "/app",
           popup: Boolean(popup),
         });
-        if (bridge) stashAuthBridge({ ...bridge, popup: Boolean(popup) || bridge.popup });
+        if (bridge) {
+          // Domínio fora da plataforma e das lojas cadastradas: não abre o Google.
+          if (!(await isAllowedReturnOrigin(bridge.returnOrigin))) {
+            clearAuthBridge();
+            if (!cancelled) {
+              setError(tNow("auth.error.googlePopup"));
+              setInfo(null);
+              setBusy(false);
+            }
+            return;
+          }
+          stashAuthBridge({ ...bridge, popup: Boolean(popup) || bridge.popup });
+          if (Boolean(popup) || bridge.popup) markPopupOAuthStarted();
+        }
         const { error: oauthError } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: { redirectTo: platformOAuthCallbackUrl(Boolean(popup) || bridge?.popup) },
@@ -505,6 +593,8 @@ function AuthPage() {
       // Apex sem pop-up (uso direto em beauty…): fluxo normal.
       if (needsAuthOriginBridge()) return;
       if (inPopup) return;
+      // Link de e-mail da loja: o código segue para o domínio de origem (efeito acima).
+      if (returnOrigin && hasCode) return;
 
       const { data } = await supabase.auth.getSession();
       if (!data.session || cancelled) return;
@@ -734,13 +824,19 @@ function AuthPage() {
           return;
         }
         setInfo(tNow("auth.info.finishGooglePopup"));
+        sessionApplyingRef.current = false;
+        if (popupWatchRef.current !== null) window.clearInterval(popupWatchRef.current);
         const timer = window.setInterval(() => {
           if (popupWin.closed) {
             window.clearInterval(timer);
+            if (popupWatchRef.current === timer) popupWatchRef.current = null;
+            // A sessão chegou e está sendo aplicada: mantém "Entrando…" até sair da tela.
+            if (sessionApplyingRef.current) return;
             setBusy(false);
             setInfo(null);
           }
         }, 600);
+        popupWatchRef.current = timer;
         return;
       }
       // Apex beauty…: OAuth na mesma aba.
@@ -946,7 +1042,7 @@ function AuthPage() {
           <form onSubmit={(e) => void handleSubmit(e)} className="space-y-5">
             {mode === "forgot" && effectiveShopRef && (
               <div
-                className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1"
+                className="auth-brand-control grid grid-cols-2 gap-1 bg-muted p-1"
                 role="tablist"
                 aria-label={t("auth.recoveryChannel")}
               >

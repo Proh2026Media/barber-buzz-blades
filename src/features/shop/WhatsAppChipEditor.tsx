@@ -225,10 +225,20 @@ export const WhatsAppChipEditor = forwardRef<WhatsAppChipEditorHandle, WhatsAppC
         const range = selection.getRangeAt(0);
         if (!root.contains(range.commonAncestorContainer)) return;
         const selected = range.toString();
-        const text = document.createTextNode(`${wrapper}${selected || "texto"}${wrapper}`);
+        const placeholder = t("fix.componentes-loja.wa.wrapPlaceholder");
+        const text = document.createTextNode(`${wrapper}${selected || placeholder}${wrapper}`);
         range.deleteContents();
         range.insertNode(text);
-        placeCaretAfter(text);
+        if (selected) {
+          placeCaretAfter(text);
+        } else {
+          // Sem seleção: deixa o texto de exemplo selecionado para a pessoa digitar por cima.
+          const pick = document.createRange();
+          pick.setStart(text, wrapper.length);
+          pick.setEnd(text, wrapper.length + placeholder.length);
+          selection.removeAllRanges();
+          selection.addRange(pick);
+        }
         emitChange();
       },
       focus() {

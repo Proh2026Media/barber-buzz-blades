@@ -687,7 +687,14 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                             </p>
                             <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
                               <span className="rounded-full bg-muted px-2 py-1">
-                                {t("plat.shops.customers", { count: customers })}
+                                {t(
+                                  customers === 1
+                                    ? "plat.shops.customerOne"
+                                    : "plat.shops.customerMany",
+                                  {
+                                    count: customers,
+                                  },
+                                )}
                               </span>
                               <span className="rounded-full bg-muted px-2 py-1">
                                 {t(admins === 1 ? "plat.shops.adminOne" : "plat.shops.adminMany", {
