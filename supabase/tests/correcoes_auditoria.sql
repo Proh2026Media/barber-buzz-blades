@@ -113,11 +113,11 @@ select x.service_id, c.shop_id, 'Corte Auditoria', 30, 5000 from audit_appts x c
 set local session_replication_role = replica;
 insert into public.appointments(id, barbershop_id, customer_id, service_id, staff_id, starts_at, ends_at, status)
 select x.past_confirmed, c.shop_id, c.loose_id, x.service_id, c.owner_staff,
-  now() - interval '1 hour', now() - interval '30 minutes', 'confirmed'
+  now() - interval '1 hour', now() - interval '30 minutes', 'confirmed'::public.appointment_status
 from audit_appts x cross join audit_ctx c
 union all
 select x.past_pending, c.shop_id, c.loose_id, x.service_id, c.owner_staff,
-  now() - interval '2 hours', now() - interval '90 minutes', 'pending'
+  now() - interval '2 hours', now() - interval '90 minutes', 'pending'::public.appointment_status
 from audit_appts x cross join audit_ctx c;
 set local session_replication_role = origin;
 select set_config('request.jwt.claim.sub', loose_id::text, true) from audit_ctx;

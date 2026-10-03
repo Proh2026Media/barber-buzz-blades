@@ -7,6 +7,8 @@ Instruções para o agente que tem acesso ao servidor (VPS `187.127.60.78`, Cool
 
 Comunicação, relatórios e commits em **português do Brasil**.
 
+> **Revisão de 03/10 (noite):** o primeiro ensaio no servidor parou em `column reference "status" is ambiguous` (`request_shop_departure`). Corrigido no repositório: a `20261003150000` agora também recria `request_shop_departure` (o erro existia em produção e impedia qualquer saída de barbearia) e o teste `correcoes_auditoria.sql` teve dois literais tipados. **Usar o código a partir do commit desta revisão** (passo 0) — os arquivos antigos falham. O ensaio completo deste guia foi reproduzido num Postgres local do Supabase (`supabase/postgres:15.8.1.085`) com as 75 migrations já aplicadas em produção: 10 `PASS`, sem `ERROR`; aplicação real das 5 migrations OK; reaplicação OK; passo 6 com todos os valores esperados; testes antigos com o mesmo resultado de antes.
+
 ## Regras de segurança (obrigatórias)
 
 1. **Backup antes de tudo** (passo 2). Sem backup confirmado, não seguir.
@@ -103,7 +105,7 @@ grep -c 'PASS:' /root/ensaio-$STAMP.log
 
 Critério para seguir: nenhuma linha `ERROR` nem `FAIL:`, e a última instrução é `ROLLBACK`. Se o teste falhar por depender de dados que não existem neste banco (ex.: loja de demonstração), relatar a mensagem exata e **não** aplicar.
 
-Opcional (recomendado): rodar também, no mesmo esquema `BEGIN … ROLLBACK` depois das 5 migrations, os testes que já existiam e tocam as mesmas funções: `booking_rules_single_source.sql`, `slot_offer_mode.sql`, `slug_redirects_departure.sql`, `loyalty_program_module.sql`, `google_calendar_push.sql`, `shop_team_governance.sql`. Falha em algum deles → parar e relatar.
+Opcional (recomendado): rodar também, no mesmo esquema `BEGIN … ROLLBACK` e depois das 5 migrations dentro da mesma transação, os testes que já existiam e tocam as mesmas funções: `booking_rules_single_source.sql`, `slot_offer_mode.sql`, `slug_redirects_departure.sql`, `loyalty_program_module.sql`, `google_calendar_push.sql`, `shop_team_governance.sql`. Os testes da cadeia de reservas (`customer_insights`, `slot_waiting`, `optional_occurrences` etc.) precisam de `booking_reliability.sql` antes, na mesma transação, e `auto_confirmation_modules.sql` precisa também de `optional_occurrences.sql`. Falha → parar e relatar. Exceção conhecida: `privacy_requests.sql` já falha antes desta entrega (`column "phone" does not exist`, teste desatualizado) — só relatar.
 
 ## Passo 5 — Aplicar as migrations (uma por vez, cada uma em transação)
 

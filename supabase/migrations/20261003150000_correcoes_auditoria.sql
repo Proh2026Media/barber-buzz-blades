@@ -5,6 +5,7 @@
 --  1. cancel_appointment / RLS: cliente não cancela reserva confirmada que já começou.
 --  2. create_own_barbershop: liga a mudança aprovada antes de semear horários e equipe.
 --  3. complete_shop_departure: liga a mudança aprovada (saída de contratado/sócio) e confere quem chama.
+--     request_shop_departure: fim do "status is ambiguous" (variável com nome de coluna).
 --  4. delete_my_account: liga a mudança aprovada antes de desvincular staff; cancela também
 --     'reschedule_requested' futuros (achado 11).
 --  5. mark_shop_domain_status / list_active_custom_domains: só service role (e admin da plataforma).
@@ -309,6 +310,103 @@ $function$;
 
 revoke all on function public.complete_shop_departure(uuid) from public, anon;
 grant execute on function public.complete_shop_departure(uuid) to authenticated;
+
+-- request_shop_departure (versão de 20260922140000): a variável local "status" tinha o
+-- mesmo nome da coluna, e o WHERE do UPDATE dava "column reference status is ambiguous"
+-- em qualquer modo. Variável renomeada e colunas qualificadas; regra inalterada.
+create or replace function public.request_shop_departure(
+  p_shop_id uuid,
+  p_mode public.shop_departure_mode,
+  p_dest_shop_id uuid default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  member public.shop_members;
+  staff_row public.staff;
+  other_socios int;
+  request_id uuid;
+  v_status public.shop_departure_status;
+begin
+  if auth.uid() is null then raise exception 'Not allowed' using errcode = '42501'; end if;
+
+  select * into member
+  from public.shop_members sm
+  where sm.barbershop_id = p_shop_id and sm.user_id = auth.uid() and sm.active
+  limit 1;
+  if member.id is null or member.staff_id is null then
+    raise exception 'Você não está vinculado a esta barbearia' using errcode = '42501';
+  end if;
+
+  select * into staff_row from public.staff s where s.id = member.staff_id;
+  if staff_row.id is null then raise exception 'Profissional não encontrado' using errcode = 'P0002'; end if;
+
+  if p_mode = 'take' then
+    if p_dest_shop_id is null then
+      raise exception 'Informe a barbearia de destino para levar a carteira' using errcode = '22023';
+    end if;
+    if p_dest_shop_id = p_shop_id then
+      raise exception 'Destino deve ser outra barbearia' using errcode = '22023';
+    end if;
+    if not exists (
+      select 1 from public.barbershops b where b.id = p_dest_shop_id and b.status = 'active'
+    ) then
+      raise exception 'Barbearia de destino indisponível' using errcode = 'P0002';
+    end if;
+    -- destino: já é membro ativo OU será dono (criou loja) — exige vínculo prévio
+    if not exists (
+      select 1 from public.shop_members sm
+      where sm.barbershop_id = p_dest_shop_id and sm.user_id = auth.uid() and sm.active
+    ) and not public.is_platform_admin() then
+      raise exception 'Aceite o convite ou crie a nova barbearia antes de levar a carteira' using errcode = '42501';
+    end if;
+  end if;
+
+  -- cancela pedidos pendentes anteriores do mesmo usuário/loja
+  update public.shop_departure_requests r
+  set status = 'cancelled', decided_at = now()
+  where r.barbershop_id = p_shop_id
+    and r.user_id = auth.uid()
+    and r.status in ('pending_release', 'approved');
+
+  select count(*) into other_socios
+  from public.shop_members sm
+  where sm.barbershop_id = p_shop_id
+    and sm.active
+    and sm.role in ('owner', 'partner')
+    and sm.user_id <> auth.uid();
+
+  if p_mode = 'take' and member.role in ('owner', 'partner') then
+    if other_socios = 0 then
+      raise exception 'Sócio único: transfira a propriedade ou abra mão da carteira' using errcode = '42501';
+    end if;
+    v_status := 'pending_release';
+  else
+    v_status := 'approved';
+  end if;
+
+  insert into public.shop_departure_requests (
+    barbershop_id, user_id, staff_id, mode, dest_shop_id, status
+  )
+  values (
+    p_shop_id, auth.uid(), member.staff_id, p_mode, p_dest_shop_id, v_status
+  )
+  returning id into request_id;
+
+  if v_status = 'approved' then
+    perform public.complete_shop_departure(request_id);
+    return jsonb_build_object('status', 'completed', 'request_id', request_id);
+  end if;
+
+  return jsonb_build_object('status', 'pending_release', 'request_id', request_id);
+end;
+$$;
+
+revoke all on function public.request_shop_departure(uuid, public.shop_departure_mode, uuid) from public, anon;
+grant execute on function public.request_shop_departure(uuid, public.shop_departure_mode, uuid) to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- 4 e 11. Exclusão da própria conta

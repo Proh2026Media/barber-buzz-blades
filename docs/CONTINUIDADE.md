@@ -9,6 +9,12 @@ Atualizado em **03/10/2026**. Este documento resume decisões e entregas da conv
 3. Para retomar localmente, usar `npm run dev -- --host 0.0.0.0 --port 8080`. O endereço esperado é `http://localhost:8080`.
 4. Continuar a partir do próximo pedido do usuário.
 
+## Correção — ensaio da implantação de 03/10 (noite, Claude Code)
+
+O ensaio no servidor (backup `/root/backup-barba-cabelo-20261003-1943.dump`, nada aplicado) parou em `column reference "status" is ambiguous` dentro de `request_shop_departure`: a variável local `status` tinha o nome da coluna, e o `WHERE` do `UPDATE` falhava **em qualquer modo — em produção, ninguém consegue sair de uma barbearia** desde 22/09. A `20261003150000` (ainda não aplicada) agora recria a função com `v_status` e colunas qualificadas, mesmas regras e permissões. O teste `correcoes_auditoria.sql` tinha `'confirmed'`/`'pending'` sem tipo num `UNION ALL` (texto × `appointment_status`); tipados.
+- Verificado num Postgres local `supabase/postgres:15.8.1.085` com as 75 migrations de produção + admin de plataforma de teste: ensaio do guia com 10 PASS e ROLLBACK; aplicação real das 5 migrations uma a uma; reaplicação sem erro; privilégios do passo 6 (`google_connections` sem SELECT para anon/authenticated; funções novas sem EXECUTE para anon); 27 testes SQL antigos (com as cadeias de reservas) **idênticos antes e depois** — 26 passam, `privacy_requests.sql` já falhava antes (`column "phone"`, teste desatualizado).
+- Limitação do ambiente local: `storage` da imagem é mais simples que o do servidor (colunas completadas à mão só no local); auth.users mínimo.
+
 ## Entrega — política de privacidade para o Google e pendências da auditoria (03/10/2026, Claude Code)
 
 Motivo: verificação OAuth do Google reprovada em "Requisitos da política de privacidade" ("não especifica mecanismos de proteção de dados sensíveis") e "Funcionalidade do app" (sem detalhe). Guia completo para reenviar, com roteiro do vídeo e textos em inglês: [google-verificacao.md](google-verificacao.md).
