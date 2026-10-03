@@ -5,7 +5,6 @@
 //     error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
-import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/tanstack/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
@@ -15,21 +14,16 @@ export default defineConfig({
     server: { entry: "server" },
   },
   // Hostinger monta como servidor Node (preset node-server), não Cloudflare.
-  // O @lovable.dev/mcp-js importa "cloudflare:workers" de forma OPCIONAL
-  // (import dinâmico dentro de try/catch, com process.env como reserva), mas o
-  // Rollup tenta resolver o módulo na montagem e falha. Declarar como externo
-  // mantém o import dinâmico: na Cloudflare funciona, no Node cai no catch.
   // preset fixo em node-server: sem isto o padrão do Lovable é cloudflare-module,
   // que gera um worker (wrangler.json) que o Node da Hostinger não roda (503).
   // Dentro do Lovable nada muda — lá o preset é forçado para Cloudflare.
+  // (O antigo external de "cloudflare:workers" existia só por causa do
+  // @lovable.dev/mcp-js; saiu junto com o MCP de exemplo em 03/10/2026.)
   nitro: {
     preset: "node-server",
-    // @ts-expect-error o tipo do Lovable omite rollupConfig, mas o Nitro o repassa ao Rollup.
-    rollupConfig: { external: ["cloudflare:workers"] },
   },
   vite: {
     plugins: [
-      mcpPlugin(),
       VitePWA({
         registerType: "autoUpdate",
         injectRegister: false,

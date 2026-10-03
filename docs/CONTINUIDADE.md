@@ -9,6 +9,17 @@ Atualizado em **03/10/2026**. Este documento resume decisões e entregas da conv
 3. Para retomar localmente, usar `npm run dev -- --host 0.0.0.0 --port 8080`. O endereço esperado é `http://localhost:8080`.
 4. Continuar a partir do próximo pedido do usuário.
 
+## Entrega — decisões do dono aplicadas (03/10, noite, Claude Code)
+
+Dono decidiu aplicar as quatro recomendações. **Frontend publicado; banco e `register-shop` pendentes** — guia: [implantacao-decisoes-2026-10-03.md](implantacao-decisoes-2026-10-03.md) (vem depois do guia dos ajustes finais).
+- **Avisos por WhatsApp só para número confirmado** (`20261003230000`): `enqueue_whatsapp_message` só enfileira aviso a cliente (destinatário por `customer_id`/`appointment_id`) se o número for o dele **e** estiver confirmado; avisos de equipe/dono inalterados; pendentes na fila para não confirmados viram `failed`. App do cliente: cartão "Confirme seu WhatsApp para receber lembretes" (`WhatsappConfirmBanner`) que abre o fluxo existente; aviso equivalente para dono/sócio em Ajustes.
+- **Aceite para contas antigas:** `TermsUpdateGate` mostra uma vez, após o login, "Atualizamos os Termos e a Política" (com Acordo de Dados para dono/sócio) quando falta aceite ou a versão mudou; "Agora não" adia para a próxima sessão; fora da demo, das páginas legais e de quem não está logado; com banco antigo não aparece.
+- **MCP de exemplo removido:** ferramenta fictícia `list_matches`, rotas `/.mcp/*`, `/.well-known/oauth-protected-resource`, `/.lovable/oauth/consent` e `mcpPlugin` do `vite.config.ts`; chaves `app.consent.*` removidas. Nada do produto dependia. `/mcp` cai na rota de barbearia (loja inexistente). O pacote `@lovable.dev/mcp-js` ficou no `package.json` (sem uso; remover com `npm uninstall @lovable.dev/mcp-js` e tirar de `bunfig.toml` quando for conveniente — não feito para não mexer em lockfile sem build no Hostinger).
+- **Fuso da loja:** cadastro do dono detecta o fuso do aparelho ("Horário da barbearia: … (alterar)", Brasil e Portugal) e envia ao `register-shop`; Ajustes ganha seletor (`ShopTimezoneCard`) que usa `set_shop_timezone` (governança: dono único/majoritário aplica; sociedade igualitária vira pedido, mostrado como pendente; rótulo `team.gov.kind.shopTimezone`). Sem a RPC, o cartão fica em leitura ("disponível em breve"). Painel só usa o fuso novo após recarregar.
+- **Tema escuro do `/cadastrar`:** etapas, ícone e caixa de aceite ilegíveis no escuro (painel é sempre claro, mas usava tokens do tema) — cores fixas e `color-scheme: light` no `.platform-register-panel`.
+- Validado em cópia local no estado da produção, **com e sem a 220000**: ensaio 43 PASS; 230000 aplicada duas vezes; suítes antigas idênticas antes/depois; `ajustes_finais.sql` atualizado (25 PASS antes e depois); privilégios `f|t|2`. tsc, 148 testes, eslint, build; `/cadastrar` a 390px claro e escuro com fuso detectado (São Paulo e Manaus). **Não verificado com login real:** janela de aceite, cartão de WhatsApp, troca de fuso em Ajustes.
+- Restam com o dono: revisão do Acordo de Dados por advogado.
+
 ## Entrega — ajustes finais de 03/10 (noite, Claude Code)
 
 Pendências que não dependiam do agente da VPS, mais correções de banco/servidor preparadas e testadas. **Frontend publicado; banco e funções pendentes** — guia: [implantacao-ajustes-finais-2026-10-03.md](implantacao-ajustes-finais-2026-10-03.md).
@@ -16,7 +27,7 @@ Pendências que não dependiam do agente da VPS, mais correções de banco/servi
 - **Banco (`20261003220000_ajustes_finais.sql`, não aplicada):** `validate_shop_ownership` permite apagar a loja inteira (SECURITY DEFINER; regra mantida para lojas existentes, inclusive dono saindo sob RLS); `save_my_whatsapp` sem revelar número confirmado em outra conta (grava sem confirmação); `enqueue_whatsapp_message` não envia a número confirmado em outra conta (destinatário pelo `customer_id`/`appointment_id` do pacote); `purge_auth_otp_challenges()` (7 dias, só service_role) chamada pela `whatsapp-dispatch` uma vez por hora. **Funções:** `google-connect` (janela da Agenda presa a −7/+60 dias), `whatsapp-dispatch` (limpeza; ignora se a função não existir).
 - **Testes:** novo `ajustes_finais.sql` (25 PASS); `correcoes_auditoria.sql` agora vale antes e depois da 180000 (10 PASS no estado atual); `privacy_requests.sql` cria a coluna `auth.users.phone` só se faltar (em produção existe; na cópia local sem GoTrue precisa rodar como `supabase_admin`: 43 PASS).
 - **Validado em cópia local** no estado atual da produção (82 migrations): ensaio 25 PASS como `postgres` e `supabase_admin`; aplicação e reaplicação ok; 29 suítes idênticas antes/depois da migration (todas passam; `privacy_requests` só como `supabase_admin`, ver acima); tsc, 143 testes, eslint, build; títulos legais por idioma conferidos no HTML.
-- **Decisões que ficaram com o dono:** avisos de WhatsApp para números não confirmados (hoje saem se houver aceite, exceto o caso acima); MCP de exemplo `list_matches`; contas Google antigas sem aceite registrado; fuso horário fixo em São Paulo.
+- **Decisões que ficaram com o dono:** resolvidas na entrega seguinte ("decisões do dono aplicadas").
 
 ## Entrega — cadastro de cliente e dono: aceite, nome, WhatsApp, guia da loja (03/10/2026, noite, Claude Code)
 

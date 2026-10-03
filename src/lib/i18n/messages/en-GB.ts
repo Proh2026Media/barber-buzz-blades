@@ -91,8 +91,6 @@ export const enGB: Record<MessageKey, string> = {
   "brand.layout.cardHint": "Highlights the form in a centred card over the image.",
   "app.google.denied":
     "Connection cancelled on Google. If you saw “app not verified”, use Advanced → continue.",
-  "app.consent.loadError": "Couldn't load this authorisation: {detail}",
-  "app.consent.noRedirect": "The authorisation server didn't return a redirect.",
   "team.partner.rhythmTitle": "Your clients' rhythm",
   "team.suggest.hint":
     "Accept to copy the price/duration into your catalogue, or keep your own settings.",
@@ -172,4 +170,13 @@ export const enGB: Record<MessageKey, string> = {
   "cad.guia.hoursOk": "That's right",
   "cad.guia.serviceHint": "E.g. haircut, beard. With price and duration.",
   "cad.guia.brandTitle": "Choose your logo and colours",
+  "dec.termos.text":
+    "It only takes a minute: review the documents and tap I agree to carry on using the app as usual.",
+  "dec.termos.error": "We couldn't save that just now. Please try again.",
+  "dec.whats.title": "Confirm your WhatsApp to receive reminders",
+  "dec.whats.titleOwner": "Your WhatsApp hasn't been confirmed yet",
+  "dec.tz.settings.intro":
+    "Booking times, the diary and notifications follow this time zone. Choose the one where the barbershop is, even if you open the app from somewhere else.",
+  "dec.tz.settings.effect":
+    "Once saved, booking times will follow {zone}. Opening hours keep the same numbers (e.g. 9:00 to 19:00), now in this time zone. Existing appointments keep the same moment and may show at a different hour.",
 };

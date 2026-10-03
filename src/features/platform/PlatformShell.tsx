@@ -77,6 +77,7 @@ import {
   normalizeHeaderFontWeight,
   normalizeLoginLayout,
 } from "@/lib/shop/branding";
+import { TermsUpdateGate } from "@/features/legal/TermsUpdateGate";
 
 type PlatformShellProps = {
   profile: SessionProfile;
@@ -450,6 +451,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
           : undefined
       }
     >
+      <TermsUpdateGate disabled={demoMode} />
       {demoBrandSettings && (
         <BrandFontFace
           url={demoBrandSettings.custom_font_url}

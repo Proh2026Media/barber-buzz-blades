@@ -193,8 +193,10 @@ select pg_temp.check_fin(
   'Aviso do próprio dono do número continua saindo');
 select pg_temp.check_fin(
   (select public.enqueue_whatsapp_message(c.keep_shop_id, c.phone_free, 'customer.notice', 'Teste',
-     'teste-fin-livre:' || c.prober_id, jsonb_build_object('customer_id', c.prober_id)) from fin_ctx c) is not null,
-  'Número sem dono confirmado continua recebendo como antes');
+     'teste-fin-livre:' || c.prober_id, '{}'::jsonb) from fin_ctx c) is not null,
+  'Número sem dono confirmado, sem destinatário conhecido, continua recebendo');
+-- (Depois da 20261003230000, aviso a cliente só sai para o número que ELE confirmou:
+--  ver supabase/tests/decisoes_whatsapp_fuso.sql.)
 select pg_temp.check_fin(
   not has_function_privilege('authenticated',
     'public.enqueue_whatsapp_message(uuid, text, text, text, text, jsonb, timestamptz)', 'execute'),

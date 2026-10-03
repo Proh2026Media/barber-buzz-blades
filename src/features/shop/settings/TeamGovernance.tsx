@@ -22,6 +22,7 @@ const kindKeys: Record<string, MessageKey> = {
   "staff.update": "team.gov.kind.staffUpdate",
   "staff.toggle": "team.gov.kind.staffToggle",
   "staff.delete": "team.gov.kind.staffDelete",
+  "shop.timezone": "team.gov.kind.shopTimezone",
   "hours.replace": "team.gov.kind.hoursReplace",
   "availability.create": "team.gov.kind.availabilityCreate",
   "availability.delete": "team.gov.kind.availabilityDelete",

@@ -3,6 +3,7 @@ import { Fragment, useEffect, useState, type ReactNode } from "react";
 import {
   ArrowLeft,
   Check,
+  Clock,
   Copy,
   Eye,
   EyeOff,
@@ -25,6 +26,8 @@ import {
   maskBrPhone,
   slugifyShopName,
 } from "@/features/register-owner/owner-signup";
+import { clockInTimeZone, detectDeviceTimeZone } from "@/features/register-owner/timezones";
+import { TimeZoneSelect, useTimeZoneName } from "@/features/register-owner/TimeZonePicker";
 
 type Step = "dados" | "otp" | "conta";
 type Field = "shopName" | "fullName" | "email" | "password" | "whatsapp" | "terms";
@@ -114,6 +117,11 @@ function CadastrarPage() {
   const [hasSociety, setHasSociety] = useState(false);
   const [societyType, setSocietyType] = useState<"majority" | "equal" | "minority">("majority");
   const [termsAccepted, setTermsAccepted] = useState(false);
+  // Fuso da loja: começa pelo do aparelho (a página não roda no servidor: ssr false).
+  const [detectedTimeZone] = useState(() => detectDeviceTimeZone());
+  const [timeZone, setTimeZone] = useState(detectedTimeZone);
+  const [timeZoneOpen, setTimeZoneOpen] = useState(false);
+  const timeZoneName = useTimeZoneName();
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [otpCode, setOtpCode] = useState("");
   const [destination, setDestination] = useState("");
@@ -272,6 +280,7 @@ function CadastrarPage() {
         privacy_version: PRIVACY_VERSION,
         dpa_version: DPA_VERSION,
         shop_whatsapp_same: shopWhatsappSame,
+        timezone: timeZone,
       });
       const slug = payload.shop_slug || previewSlug;
       const { error: signError } = await supabase.auth.signInWithPassword({
@@ -601,6 +610,56 @@ function CadastrarPage() {
                     : t("cad.dono.shopWhatsappNoHint")}
                 </p>
               </fieldset>
+
+              <div className="grid gap-1.5">
+                <p
+                  id="cad-timezone-summary"
+                  className="m-0 flex flex-wrap items-center gap-x-1.5 text-[0.85rem] text-[#3f3b35]"
+                  aria-live="polite"
+                >
+                  <Clock className="size-3.5 shrink-0" aria-hidden="true" />
+                  <span>
+                    {withSlots(t("dec.tz.signupLine"), {
+                      zone: <strong>{timeZoneName(timeZone)}</strong>,
+                    })}
+                  </span>
+                  {!timeZoneOpen && (
+                    <button
+                      type="button"
+                      aria-expanded={false}
+                      aria-controls="cad-timezone"
+                      onClick={() => {
+                        setTimeZoneOpen(true);
+                        // O botão some ao abrir: leva o foco para o seletor, sem perdê-lo.
+                        window.requestAnimationFrame(() =>
+                          document.getElementById("cad-timezone")?.focus(),
+                        );
+                      }}
+                      className="platform-register-linkish px-1"
+                    >
+                      {t("dec.tz.change")}
+                    </button>
+                  )}
+                </p>
+                {timeZoneOpen && (
+                  <div className="grid gap-1.5">
+                    <label className="platform-register-label" htmlFor="cad-timezone">
+                      {t("dec.tz.label")}
+                    </label>
+                    <TimeZoneSelect
+                      id="cad-timezone"
+                      value={timeZone}
+                      onChange={setTimeZone}
+                      keep={[detectedTimeZone]}
+                      describedBy="cad-timezone-hint"
+                      className="platform-register-input"
+                    />
+                    <p id="cad-timezone-hint" className="m-0 text-xs text-[#6b675f]">
+                      {t("dec.tz.signupHint", { time: clockInTimeZone(timeZone) })}
+                    </p>
+                  </div>
+                )}
+              </div>
 
               <fieldset className="grid gap-2">
                 <legend className="platform-register-label mb-1.5">{t("register.society")}</legend>

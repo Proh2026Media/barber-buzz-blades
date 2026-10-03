@@ -3776,6 +3776,8 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   border: 1px solid color-mix(in oklch, #f4f1ea 14%, transparent);
   background: color-mix(in oklch, #f7f4ee 94%, white);
   color: #1c1b18;
+  /* O painel é sempre claro: controles nativos (caixa, seletor) também, mesmo no tema escuro. */
+  color-scheme: light;
   padding: 1.35rem 1.25rem 1.5rem;
   box-shadow: 0 24px 60px rgb(0 0 0 / 0.28);
 }
@@ -3783,7 +3785,7 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   margin-bottom: 1.25rem;
 }
 .platform-register-brand .platform-landing-mark {
-  background: color-mix(in oklch, var(--primary, #292925) 92%, black);
+  background: #1c1b18;
   border-color: transparent;
   color: #f4f1ea;
 }
@@ -3806,7 +3808,7 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   justify-content: center;
   gap: 0.35rem;
   border-radius: var(--control-radius, 0.75rem);
-  background: color-mix(in oklch, var(--muted, #eceae4) 80%, white);
+  background: #ece8df;
   font-size: 0.72rem;
   font-weight: 700;
   color: #6b675f;

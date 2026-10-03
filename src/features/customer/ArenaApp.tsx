@@ -27,6 +27,8 @@ import { NextLevelCard, type NextLevelSummary } from "./NextLevelCard";
 import { CustomerRhythm } from "./CustomerRhythm";
 import { CustomerProfile } from "./CustomerProfile";
 import { NamePrompt } from "./NamePrompt";
+import { WhatsappConfirmBanner } from "./WhatsappConfirmBanner";
+import { TermsUpdateGate } from "@/features/legal/TermsUpdateGate";
 import {
   CatalogViewToggle,
   readCatalogViewPreference,
@@ -1529,6 +1531,7 @@ function ArenaApp({
       }
     >
       <BrandFontFace url={shopSettings.custom_font_url} faces={shopSettings.custom_font_faces} />
+      <TermsUpdateGate disabled={Boolean(demoShopId)} />
       <CancellationDialog
         open={!!cancelTarget}
         busy={appointmentBusy !== null}
@@ -1771,6 +1774,7 @@ function ArenaApp({
           {tab === "dashboard" && (
             <div className="mb-stagger p-4 space-y-4 relative z-10">
               <NamePrompt disabled={Boolean(demoShopId)} onSaved={setCustomerName} />
+              <WhatsappConfirmBanner disabled={Boolean(demoShopId)} />
               {/* Card 1: Seu Cartão (Loyalty Card) */}
               {loyaltyOn && (
                 <section

@@ -21,6 +21,8 @@ type Body = {
   dpa_version?: string;
   /** Usar o WhatsApp confirmado do dono como contato público da barbearia. */
   shop_whatsapp_same?: boolean;
+  /** Fuso horário IANA da barbearia (opcional; inválido é ignorado e fica o padrão). */
+  timezone?: string;
 };
 
 async function sha256Hex(value: string) {
@@ -170,6 +172,42 @@ async function saveOwnerAcceptance(admin: any, userId: string, body: Body) {
     .eq("id", userId);
   if (error && !isMissingSchema(error.code)) {
     console.error("register-shop: falha ao gravar o aceite", error.message);
+  }
+}
+
+/** Fuso padrão de barbershops.timezone. */
+const DEFAULT_SHOP_TIMEZONE = "America/Sao_Paulo";
+
+/**
+ * Fuso horário informado no cadastro: nome IANA "Região/Cidade" (ou "UTC") que o runtime
+ * reconhece, com a mesma forma aceita por is_valid_shop_timezone (migration
+ * 20261003230000). Fora disso devolve null e a loja fica no padrão.
+ */
+function cleanTimeZone(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const value = raw.trim();
+  if (value.length < 3 || value.length > 64) return null;
+  if (value !== "UTC" && !/^[A-Za-z]+(\/[A-Za-z0-9_+-]+)+$/.test(value)) return null;
+  if (/^(posix|right|Etc|SystemV)\//.test(value)) return null;
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: value }).format(0);
+  } catch {
+    return null;
+  }
+  return value;
+}
+
+/**
+ * Grava o fuso escolhido na loja recém-criada. Separado do INSERT para que um fuso que o
+ * banco não reconheça (gatilho barbershops_timezone_guard, 22023) não impeça o cadastro:
+ * a loja fica no padrão e o dono ajusta depois em Ajustes.
+ */
+// deno-lint-ignore no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function saveShopTimezone(admin: any, shopId: string, timezone: string) {
+  const { error } = await admin.from("barbershops").update({ timezone }).eq("id", shopId);
+  if (error) {
+    console.error("register-shop: fuso não gravado, loja no padrão", error.message);
   }
 }
 
@@ -518,6 +556,11 @@ Deno.serve(async (req) => {
         barbershop_id: shopRow.id,
         display_name: shopName,
       });
+
+      const timezone = cleanTimeZone(body.timezone);
+      if (timezone && timezone !== DEFAULT_SHOP_TIMEZONE) {
+        await saveShopTimezone(admin, shopRow.id, timezone);
+      }
 
       // Mesmo WhatsApp para os clientes: o número já foi confirmado por código.
       if (body.shop_whatsapp_same === true && savedWhatsapp === "ok") {

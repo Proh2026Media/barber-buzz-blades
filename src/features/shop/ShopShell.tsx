@@ -21,6 +21,7 @@ import { GoogleIntegrationsCard } from "@/features/shop/settings/GoogleIntegrati
 import { SettingsHub } from "@/features/shop/settings/SettingsHub";
 import { LandingEditor } from "@/features/shop/settings/LandingEditor";
 import { SlotModeNotice, SlotModeSettings } from "@/features/shop/settings/SlotModeSettings";
+import { ShopTimezoneCard } from "@/features/shop/settings/ShopTimezoneCard";
 import { shopPublicOrigin } from "@/lib/shop/host";
 import {
   readSectionFromUrl,
@@ -130,6 +131,8 @@ import { StaffPhoto } from "@/components/ui/staff-photo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { useAvailabilitySignal } from "@/lib/shop/availability-signal";
+import { TermsUpdateGate } from "@/features/legal/TermsUpdateGate";
+import { WhatsappConfirmBanner } from "@/features/customer/WhatsappConfirmBanner";
 
 type ShopShellProps = {
   profile: SessionProfile;
@@ -1541,6 +1544,10 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       {settings && (
         <BrandFontFace url={settings.custom_font_url} faces={settings.custom_font_faces} />
       )}
+      <TermsUpdateGate
+        disabled={Boolean(demo)}
+        withDpa={!actor || actor.role === "owner" || actor.role === "partner"}
+      />
       <AlertDialog
         open={!!withdrawTarget}
         onOpenChange={(open) => {
@@ -3267,6 +3274,9 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   <h2>{t("shop.nav.settings")}</h2>
                 </div>
               </div>
+              {(!actor || actor.role === "owner" || actor.role === "partner") && (
+                <WhatsappConfirmBanner disabled={Boolean(demo)} variant="owner" />
+              )}
               <SettingsHub
                 sections={settingsSections}
                 section={settingsSection}
@@ -3322,6 +3332,11 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   if (section === "agendamento") {
                     return (
                       <>
+                        <ShopTimezoneCard
+                          shopId={shop?.id}
+                          timeZone={shop?.timezone}
+                          canEdit={!demo && canManageShopChannels}
+                        />
                         <SlotModeSettings
                           settings={settings}
                           services={services}
