@@ -9,6 +9,10 @@ Atualizado em **03/10/2026**. Este documento resume decisões e entregas da conv
 3. Para retomar localmente, usar `npm run dev -- --host 0.0.0.0 --port 8080`. O endereço esperado é `http://localhost:8080`.
 4. Continuar a partir do próximo pedido do usuário.
 
+## Incidente — teste rodado fora de transação no banco de produção (03/10, 17:19 PT)
+
+No ensaio opcional, `loyalty_program_module.sql` foi rodado em autocommit: parou em `Not allowed` (o usuário simulado por `set_config(..., true)` só vale dentro da transação) e deixou a loja `Loyalty test` (`loy-0006dc22-…`), 5 usuários `@example.invalid` e dependentes. A tentativa de limpeza esbarrou em `validate_shop_ownership` (gatilho DEFERRED que **não prevê a exclusão da loja inteira** — pendência: hoje é impossível apagar uma loja com dono sem desligá-lo). Script testado: `supabase/manutencao/2026-10-03_limpeza_fixture_loyalty.sql` (passo 3b do guia de implantação), validado em cópia local reproduzindo o incidente: banco volta idêntico. Guia agora traz o comando exato dos testes opcionais, sempre em `BEGIN … ROLLBACK`.
+
 ## Correção — ensaio da implantação de 03/10 (noite, Claude Code)
 
 O ensaio no servidor (backup `/root/backup-barba-cabelo-20261003-1943.dump`, nada aplicado) parou em `column reference "status" is ambiguous` dentro de `request_shop_departure`: a variável local `status` tinha o nome da coluna, e o `WHERE` do `UPDATE` falhava **em qualquer modo — em produção, ninguém consegue sair de uma barbearia** desde 22/09. A `20261003150000` (ainda não aplicada) agora recria a função com `v_status` e colunas qualificadas, mesmas regras e permissões. O teste `correcoes_auditoria.sql` tinha `'confirmed'`/`'pending'` sem tipo num `UNION ALL` (texto × `appointment_status`); tipados.

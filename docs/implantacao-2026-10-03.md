@@ -83,6 +83,27 @@ Esperado: tudo `f` (nada aplicado ainda). Se algum item já for `t`, relatar ant
 
 Se houver WhatsApp repetido, **anotar no relatório** (não apagar nada): a 150000 apenas avisa (`NOTICE`) e segue; a 180000 marca esses números como não confirmados até o dono confirmar.
 
+## Passo 3b — Limpeza do teste rodado fora de transação (incidente de 03/10, 17:19 PT)
+
+Só se ainda existir a loja `Loyalty test` (slug `loy-0006dc22-e66c-486d-84cb-727916a85df5`). Script: `supabase/manutencao/2026-10-03_limpeza_fixture_loyalty.sql`. Ele:
+
+- confere antes de apagar: exatamente 1 loja de teste, exatamente 5 usuários `<id>@example.invalid` sem `created_at`, 4 deles ligados à loja de teste e nenhum com reserva, equipe ou staff em loja real — senão **aborta sem apagar nada**;
+- apaga o e-mail pendente, a reserva de teste, a loja (equipe, serviço, horários, ajustes vão junto), os 5 usuários (perfis, vínculos na loja demo e contas de pontos vão junto) e os sinais de agenda da loja de teste;
+- desliga a trava "loja precisa de ao menos um dono ativo" **só dentro da transação** e só para apagar a loja inteira (a trava não prevê esse caso e é conferida no `COMMIT`), religando antes do fim;
+- confere que não sobrou nada antes do `COMMIT`.
+
+Conferido em cópia local do banco: reproduzido o incidente (mesmo erro e mesmas contagens do relato), limpeza com `COMMIT` → todas as tabelas de `public`, `auth` e `storage` com as mesmas contagens de antes do incidente; trava religada; rodar de novo aborta sem apagar nada.
+
+```bash
+docker exec -i "$DB" psql -U postgres -d postgres -X < supabase/manutencao/2026-10-03_limpeza_fixture_loyalty.sql
+```
+
+Esperado: `NOTICE: loja=1 usuarios=5 ligados_a_loja=4 vinculos_em_loja_real=0`, `NOTICE: LIMPEZA OK`, `COMMIT`. Qualquer `ABORTADO`/`ERROR` → nada foi apagado; relatar a linha `NOTICE` de contagem. Depois, conferir que a trava está ligada:
+
+```bash
+docker exec -i "$DB" psql -U postgres -d postgres -X -Atc "select tgenabled from pg_trigger where tgname='shop_ownership_total'"   # O
+```
+
 ## Passo 4 — Ensaio em transação (ROLLBACK)
 
 O teste `correcoes_auditoria.sql` precisa rodar **logo depois da 150000 e antes da 180000** (uma asserção dele deixa de valer depois da 180000).
@@ -105,7 +126,31 @@ grep -c 'PASS:' /root/ensaio-$STAMP.log
 
 Critério para seguir: nenhuma linha `ERROR` nem `FAIL:`, e a última instrução é `ROLLBACK`. Se o teste falhar por depender de dados que não existem neste banco (ex.: loja de demonstração), relatar a mensagem exata e **não** aplicar.
 
-Opcional (recomendado): rodar também, no mesmo esquema `BEGIN … ROLLBACK` e depois das 5 migrations dentro da mesma transação, os testes que já existiam e tocam as mesmas funções: `booking_rules_single_source.sql`, `slot_offer_mode.sql`, `slug_redirects_departure.sql`, `loyalty_program_module.sql`, `google_calendar_push.sql`, `shop_team_governance.sql`. Os testes da cadeia de reservas (`customer_insights`, `slot_waiting`, `optional_occurrences` etc.) precisam de `booking_reliability.sql` antes, na mesma transação, e `auto_confirmation_modules.sql` precisa também de `optional_occurrences.sql`. Falha → parar e relatar. Exceção conhecida: `privacy_requests.sql` já falha antes desta entrega (`column "phone" does not exist`, teste desatualizado) — só relatar.
+Opcional (recomendado), **sempre dentro de `BEGIN … ROLLBACK` — nunca rodar um arquivo de `supabase/tests/` sozinho**: os testes gravam lojas e usuários de teste e só se desfazem pelo `ROLLBACK`. Fora de transação, além de deixar lixo, eles falham com `Not allowed`, porque o usuário simulado (`set_config(..., true)`) só vale dentro da transação. Use exatamente este formato, com as 5 migrations antes do teste:
+
+```bash
+M=supabase/migrations; T=supabase/tests
+teste() {
+  { echo 'BEGIN;'
+    cat $M/20261003150000_correcoes_auditoria.sql $M/20261003160000_otp_tentativas.sql \
+        $M/20261003170000_pendencias_edge_whatsapp.sql $M/20261003180000_verificar_whatsapp_perfil.sql \
+        $M/20261003190000_google_tokens_e_eventos.sql
+    for f in "$@"; do cat "$T/$f"; done
+    echo 'ROLLBACK;'
+  } | docker exec -i "$DB" psql -U postgres -d postgres -X -v ON_ERROR_STOP=1 2>&1 | grep -E 'PASS|FAIL|ERROR|ROLLBACK' | tail -3
+}
+teste booking_rules_single_source.sql
+teste slot_offer_mode.sql
+teste slug_redirects_departure.sql
+teste loyalty_program_module.sql
+teste google_calendar_push.sql
+teste shop_team_governance.sql
+teste booking_reliability.sql customer_insights.sql
+teste booking_reliability.sql slot_waiting.sql
+teste booking_reliability.sql optional_occurrences.sql auto_confirmation_modules.sql
+```
+
+Cada linha tem de terminar em `ROLLBACK` sem `ERROR`/`FAIL`. Falha → parar e relatar. Exceção conhecida: `privacy_requests.sql` já falha antes desta entrega (`column "phone" does not exist`, teste desatualizado) — só relatar. Resultado esperado (conferido em cópia local): `loyalty_program_module` 46 PASS, `booking_rules_single_source` 33, `slot_offer_mode` 26, `slug_redirects_departure` 5, `google_calendar_push` 11, `shop_team_governance` 14, cadeias 52/53/57.
 
 ## Passo 5 — Aplicar as migrations (uma por vez, cada uma em transação)
 
