@@ -21,15 +21,16 @@ export const GOOGLE_SCOPES = [
 ] as const;
 
 export function googleOAuthConfig() {
-  const clientId = Deno.env.get("GOOGLE_OAUTH_CLIENT_ID") ?? Deno.env.get("GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID");
+  const clientId =
+    Deno.env.get("GOOGLE_OAUTH_CLIENT_ID") ?? Deno.env.get("GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID");
   const clientSecret =
     Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET") ?? Deno.env.get("GOTRUE_EXTERNAL_GOOGLE_SECRET");
-  const appUrl = (Deno.env.get("APP_URL") ?? Deno.env.get("SITE_URL") ?? "https://beauty.contheiner.digital").replace(
-    /\/$/,
-    "",
-  );
-  const redirectUri =
-    Deno.env.get("GOOGLE_OAUTH_REDIRECT_URI") ?? `${appUrl}/auth/google-apps`;
+  const appUrl = (
+    Deno.env.get("APP_URL") ??
+    Deno.env.get("SITE_URL") ??
+    "https://beauty.contheiner.digital"
+  ).replace(/\/$/, "");
+  const redirectUri = Deno.env.get("GOOGLE_OAUTH_REDIRECT_URI") ?? `${appUrl}/auth/google-apps`;
   const stateSecret =
     Deno.env.get("GOOGLE_OAUTH_STATE_SECRET") ??
     clientSecret ??
@@ -182,7 +183,10 @@ export async function exchangeCode(
       grant_type: "authorization_code",
     }),
   });
-  const data = (await response.json()) as GoogleTokenResponse & { error?: string; error_description?: string };
+  const data = (await response.json()) as GoogleTokenResponse & {
+    error?: string;
+    error_description?: string;
+  };
   if (!response.ok || !data.access_token) {
     throw new Error(data.error_description || data.error || "Falha ao trocar código Google");
   }
@@ -204,7 +208,10 @@ export async function refreshAccessToken(
       grant_type: "refresh_token",
     }),
   });
-  const data = (await response.json()) as GoogleTokenResponse & { error?: string; error_description?: string };
+  const data = (await response.json()) as GoogleTokenResponse & {
+    error?: string;
+    error_description?: string;
+  };
   if (!response.ok || !data.access_token) {
     throw new Error(data.error_description || data.error || "Falha ao renovar token Google");
   }
@@ -233,8 +240,14 @@ type ConnectionRow = {
 type AdminClient = {
   from: (table: string) => {
     select: (cols: string) => {
-      eq: (col: string, val: string) => {
-        maybeSingle: () => Promise<{ data: ConnectionRow | null; error: { message: string } | null }>;
+      eq: (
+        col: string,
+        val: string,
+      ) => {
+        maybeSingle: () => Promise<{
+          data: ConnectionRow | null;
+          error: { message: string } | null;
+        }>;
       };
     };
     update: (values: Record<string, unknown>) => {
@@ -249,7 +262,9 @@ export async function ensureFreshAccessToken(
   clientId: string,
   clientSecret: string,
 ): Promise<string> {
-  const expiresAt = connection.token_expires_at ? new Date(connection.token_expires_at).getTime() : 0;
+  const expiresAt = connection.token_expires_at
+    ? new Date(connection.token_expires_at).getTime()
+    : 0;
   if (expiresAt > Date.now() + 60_000) {
     return connection.access_token;
   }
@@ -271,4 +286,67 @@ export async function ensureFreshAccessToken(
     .eq("id", connection.id);
   if (error) throw new Error(error.message);
   return refreshed.access_token;
+}
+
+export type GoogleRevokeResult = {
+  ok: boolean;
+  /** Qual token foi revogado com sucesso (o de renovação revoga a autorização inteira). */
+  revoked: "refresh_token" | "access_token" | null;
+  error: string | null;
+};
+
+async function postRevoke(token: string): Promise<{ ok: boolean; error: string | null }> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  try {
+    const response = await fetch("https://oauth2.googleapis.com/revoke", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ token }),
+      signal: controller.signal,
+    });
+    if (response.ok) return { ok: true, error: null };
+    const data = (await response.json().catch(() => ({}))) as {
+      error?: string;
+      error_description?: string;
+    };
+    return {
+      ok: false,
+      error: `HTTP ${response.status}: ${data.error_description || data.error || "revoke failed"}`,
+    };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * Revoga no Google a autorização dada ao app (POST https://oauth2.googleapis.com/revoke).
+ * Tenta o token de renovação primeiro; se faltar ou falhar, tenta o de acesso
+ * (o Google também revoga o de renovação ligado a ele). Nunca lança erro:
+ * quem chama decide seguir com a desconexão local mesmo se falhar.
+ */
+export async function revokeGoogleToken(tokens: {
+  refresh_token?: string | null;
+  access_token?: string | null;
+}): Promise<GoogleRevokeResult> {
+  const errors: string[] = [];
+  const refresh = tokens.refresh_token?.trim();
+  if (refresh) {
+    const result = await postRevoke(refresh);
+    if (result.ok) return { ok: true, revoked: "refresh_token", error: null };
+    errors.push(`refresh_token: ${result.error}`);
+  }
+  const access = tokens.access_token?.trim();
+  if (access) {
+    const result = await postRevoke(access);
+    if (result.ok) return { ok: true, revoked: "access_token", error: null };
+    errors.push(`access_token: ${result.error}`);
+  }
+  return {
+    ok: false,
+    revoked: null,
+    error: errors.length ? errors.join("; ") : "Nenhum token Google para revogar.",
+  };
 }

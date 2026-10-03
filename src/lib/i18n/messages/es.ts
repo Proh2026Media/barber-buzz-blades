@@ -684,7 +684,7 @@ export const es: Record<MessageKey, string> = {
     "La información proporcionada debe ser veraz y estar actualizada. El uso abusivo, el fraude o el intento de acceso indebido pueden dar lugar a la suspensión o al cierre de la cuenta.",
   "legal.terms.s4Title": "4. Google y otros servicios de terceros",
   "legal.terms.s4Body":
-    "Cuando utilizas el inicio de sesión con Google o conectas Google Calendar/Contactos, también se aplican los términos y políticas de Google. El tratamiento de esa información se describe en nuestra Política de Privacidad. Puedes desconectar la integración en cualquier momento en los ajustes de la aplicación o en los permisos de tu cuenta de Google.",
+    "Cuando utilizas el inicio de sesión con Google o conectas Google Calendar/Contactos, también se aplican los términos y políticas de Google. El tratamiento de esa información se describe en nuestra Política de Privacidad.",
   "legal.terms.s5Title": "5. Disponibilidad",
   "legal.terms.s5Body":
     "Procuramos mantener el servicio disponible y seguro, pero no garantizamos un funcionamiento ininterrumpido. El mantenimiento, los fallos de red o de proveedores externos pueden afectar temporalmente al acceso.",
@@ -700,82 +700,255 @@ export const es: Record<MessageKey, string> = {
   "legal.privacy.s1Title": "1. Quién es el responsable",
   "legal.privacy.s1Intro": "La aplicación {app} (disponible en {site}) está operada por:",
   "legal.privacy.legalName": "Razón social: {value}",
-  "legal.privacy.cnpj": "CNPJ: {value}",
-  "legal.privacy.contactEmail": "Correo electrónico de contacto sobre privacidad: {email}",
+  "legal.privacy.cnpj": "CNPJ (registro mercantil brasileño): {value}",
+  "legal.privacy.contactEmail": "Correo de contacto sobre privacidad: {email}",
+  "legal.privacy.s1Dpo":
+    "**Delegado de protección de datos (DPO; «encargado» según la LGPD):** atención en el correo {email}, que recibe las solicitudes de los titulares y las comunicaciones de la Autoridad Nacional de Protección de Datos de Brasil (ANPD).",
+  "legal.privacy.s1Roles":
+    "Para los datos de tu cuenta y de la plataforma, la empresa indicada arriba es la **responsable del tratamiento**. Para los datos que cada barbería registra sobre sus propios clientes y su equipo, la barbería es la responsable y Barba & Cabelo actúa como **encargado**, tratando esos datos solo para prestar el servicio contratado.",
   "legal.privacy.s1Body":
-    "Utiliza el correo electrónico anterior para dudas o solicitudes de acceso o rectificación de datos. El propio usuario puede eliminar su cuenta de forma permanente en la aplicación (Mi perfil), sin abrir una solicitud de soporte.",
-  "legal.privacy.s2Title": "2. Qué datos recopilamos",
-  "legal.privacy.s2Intro": "En el registro y en el uso del servicio, podemos tratar:",
-  "legal.privacy.s2Item1": "**Nombre** y datos de perfil de la cuenta;",
-  "legal.privacy.s2Item2": "**Correo electrónico** (identificación y comunicación de la cuenta);",
+    "Esta política explica qué datos tratamos, para qué, cómo los protegemos y cómo puedes ejercer tus derechos, de acuerdo con la Ley General de Protección de Datos de Brasil (LGPD, Ley 13.709/2018) y con la Política de Datos de Usuario de los Servicios de API de Google.",
+  "legal.privacy.s2Title": "2. Qué datos tratamos",
+  "legal.privacy.s2Intro":
+    "Tratamos solo lo necesario para que las reservas y la gestión de la barbería funcionen:",
+  "legal.privacy.s2Item1":
+    "**Cuenta:** nombre, correo electrónico, foto de perfil (si subes una o si viene del inicio de sesión con Google) y contraseña — guardada solo como hash, nunca en texto legible;",
+  "legal.privacy.s2Item2":
+    "**WhatsApp** (cuando lo indicas), para confirmaciones, recordatorios y códigos de verificación. El número que indicas en el registro o en Mi perfil se confirma con un código enviado por el WhatsApp de la plataforma (puedes dejar la confirmación para después, en Mi perfil); solo un número confirmado sirve para entrar y recuperar la contraseña por WhatsApp;",
   "legal.privacy.s2Item3":
-    "**WhatsApp** (cuando se indica), para confirmaciones, recordatorios y códigos de verificación enviados por la barbería o por la plataforma;",
+    "**Reservas:** servicio, profesional, fecha, hora, estado, historial de atenciones y puntos del club de fidelidad de la barbería;",
   "legal.privacy.s2Item4":
-    "**Reservas** e información relacionada (servicio, profesional, fecha, hora, estado e historial necesarios para el funcionamiento de la tienda);",
+    "**Datos de la barbería:** nombre, dirección, horarios, servicios, precios, equipo y ajustes registrados por los responsables de la tienda;",
   "legal.privacy.s2Item5":
-    "Datos técnicos mínimos de uso (por ejemplo, la sesión de autenticación) para mantener el servicio seguro y en funcionamiento.",
-  "legal.privacy.s3Title": "3. Datos obtenidos de Google",
-  "legal.privacy.s3Intro": "Barba & Cabelo puede integrarse con Google de dos formas distintas:",
+    "**Preferencias opcionales:** permiso para análisis de uso, encuestas y ofertas — todas desactivadas por defecto y modificables en Mi perfil → Mis datos y privacidad;",
+  "legal.privacy.s2Item6":
+    "**Datos de Google**, solo si usas el inicio de sesión con Google o conectas Google Calendar/Contactos (detalles en la sección 4);",
+  "legal.privacy.s2Item7":
+    "**Datos técnicos:** sesión de autenticación y registros técnicos de las solicitudes al servidor (como dirección IP, fecha y hora), usados para la seguridad y para corregir fallos.",
+  "legal.privacy.s2Body":
+    "No solicitamos datos personales sensibles en el sentido de la LGPD (como salud, religión, biometría u origen racial). Aun así, tratamos contraseñas, tokens de acceso, códigos de verificación y contactos con las protecciones reforzadas descritas en la sección 5.",
+  "legal.privacy.s3Title": "3. Para qué los usamos y con qué base legal",
+  "legal.privacy.s3Intro": "Cada uso tiene una base legal prevista en el art. 7 de la LGPD:",
   "legal.privacy.s3Item1":
-    "**Inicio de sesión con Google:** accedemos al perfil básico necesario para autenticar la cuenta (identidad y correo electrónico asociados al inicio de sesión).",
+    "**Ejecución del contrato y del servicio** (art. 7, V): crear y mantener la cuenta, reservar y gestionar horarios, enviar confirmaciones y recordatorios y operar el club de fidelidad;",
   "legal.privacy.s3Item2":
-    "**Google Calendar y Google Contactos:** solo cuando una barbería (o un miembro autorizado) conecta su propia cuenta de Google en el panel. En ese caso, usamos Calendar para importar y crear eventos relacionados con el negocio, y Contactos para guardar datos de clientes cuando la tienda lo solicita. Esta conexión es opcional e independiente del correo electrónico de inicio de sesión en la aplicación.",
-  "legal.privacy.s4Title": "4. Cómo los usamos (y qué no hacemos)",
-  "legal.privacy.s4Body1":
-    "Los datos de Google se usan únicamente para prestar el servicio solicitado por la barbería (autenticación, sincronización de la agenda y guardado de contactos). **Los datos de Google no se venden, no se usan para publicidad y no se ceden a terceros**, salvo lo estrictamente necesario para que el servicio funcione (por ejemplo, infraestructura de alojamiento y autenticación).",
-  "legal.privacy.s4Body2":
-    "El uso y la transferencia a cualquier otra aplicación de la información recibida de las API de Google se ajustarán a la Política de Datos de Usuario de los Servicios de API de Google, incluidos los requisitos de Uso Limitado.",
-  "legal.privacy.s5Title": "5. Dónde se guardan y durante cuánto tiempo",
-  "legal.privacy.s5Body1":
-    "Los datos de la aplicación se almacenan en servidores utilizados por la plataforma (base de datos y autenticación del proyecto), con acceso restringido por los controles de seguridad del servicio. Conservamos la información mientras la cuenta o la barbería estén activas y mientras sea necesaria para cumplir obligaciones legales o gestionar las reservas.",
-  "legal.privacy.s5Body2":
-    "Los tokens de conexión con Google Calendar/Contactos se mantienen mientras la integración esté activa; al desconectarla, dejamos de usar esa autorización.",
-  "legal.privacy.s6Title": "6. Eliminación de la cuenta y desconexión de Google",
+    "**Consentimiento** (art. 7, I): inicio de sesión con Google, conexión con Google Calendar/Contactos, análisis de uso, encuestas y ofertas. Puedes retirar el consentimiento en cualquier momento, sin perder el resto del servicio;",
+  "legal.privacy.s3Item3":
+    "**Interés legítimo** (art. 7, IX): seguridad de la cuenta, prevención de fraudes y abusos y mejora técnica del servicio, siempre respetando tus derechos y expectativas;",
+  "legal.privacy.s3Item4":
+    "**Obligación legal o regulatoria** (art. 7, II) y **ejercicio regular de derechos** (art. 7, VI): conservación de registros exigidos por ley y defensa en procesos.",
+  "legal.privacy.s3Body":
+    "No vendemos datos personales, no los usamos para publicidad de terceros y no tomamos decisiones automatizadas que produzcan efectos jurídicos sobre ti.",
+  "legal.privacy.s4Title": "4. Datos de Google",
+  "legal.privacy.s4Intro":
+    "Barba & Cabelo se integra con Google de dos formas independientes. Cada una solo se activa por una acción tuya, en la pantalla de autorización de Google, y accede únicamente a lo que se describe a continuación.",
+  "legal.privacy.s4LoginTitle": "Inicio de sesión con Google (ámbitos openid, email y profile)",
+  "legal.privacy.s4LoginBody":
+    "Recibimos tu nombre, correo electrónico, foto de perfil y el identificador de la cuenta de Google, solo para crear la cuenta y autenticar el acceso. Estos datos permanecen en el registro mientras exista la cuenta. Nunca recibimos tu contraseña de Google.",
+  "legal.privacy.s4CalendarTitle":
+    "Google Calendar (ámbito https://www.googleapis.com/auth/calendar)",
+  "legal.privacy.s4CalendarItem1":
+    "**Lista de calendarios:** leemos la lista de calendarios de la cuenta conectada (nombre, identificador y nivel de permiso de cada uno) solo para mostrártela y que elijas cuál sincronizar; esa lista no se guarda. Guardamos solo el identificador y el nombre del calendario elegido.",
+  "legal.privacy.s4CalendarItem2":
+    "**Eventos del calendario elegido:** cuando tocas Sincronizar calendario, leemos los eventos desde 7 días antes hasta 60 días después de la fecha actual y guardamos de cada uno solo el título, el inicio, el fin, si es de día completo, el calendario de origen y el enlace del evento. No guardamos la descripción, los participantes, el organizador, la ubicación ni el evento completo. Estos eventos solo los ves tú, en Ajustes → Avisos e integraciones → Google Calendar y Contactos, en la lista “Próximos eventos de Google Calendar”, para que veas los horarios ocupados al organizar las citas; ningún otro miembro de la barbería ni el público tiene acceso a ellos. La copia se actualiza en cada sincronización y se borra cuando desconectas o eliminas la cuenta.",
+  "legal.privacy.s4CalendarItem3":
+    "**Copia de las reservas (opcional, desactivada por defecto):** si la activas, creamos, actualizamos y eliminamos en el calendario elegido eventos con el servicio, el nombre del cliente, el profesional, la barbería y el horario de las atenciones.",
+  "legal.privacy.s4ContactsTitle":
+    "Google Contactos (ámbito https://www.googleapis.com/auth/contacts)",
+  "legal.privacy.s4ContactsBody":
+    "Se usa solo para **crear** un contacto en tu cuenta de Google cuando pides guardar un cliente (nombre, correo, teléfono y nota que indiques). No leemos, no copiamos y no guardamos tu lista de contactos.",
+  "legal.privacy.s4TokensBody":
+    "Para la conexión con Calendar y Contactos guardamos también el correo de la cuenta de Google conectada, los ámbitos concedidos y los tokens de acceso y de actualización emitidos por Google, protegidos como se describe en la sección 5. Los tokens se quedan solo en el servidor y existen únicamente mientras la conexión esté activa.",
+  "legal.privacy.s4ProtectTitle": "Cómo protegemos los datos de Google",
+  "legal.privacy.s4Protect1":
+    "**Cifrado en tránsito:** toda la comunicación con las API de Google y entre la aplicación y nuestros servidores usa HTTPS/TLS.",
+  "legal.privacy.s4Protect2":
+    "**Tokens solo en el servidor:** los tokens de acceso y de actualización se guardan en una tabla de la base de datos que el navegador y la API pública de la aplicación no pueden leer. Solo las funciones del servidor los usan, y solo para llamar a las API de Google en nombre de quien hizo la conexión; nunca se envían a tu dispositivo.",
+  "legal.privacy.s4Protect3":
+    "**Acceso solo tuyo:** reglas de seguridad por fila (Row Level Security) y una función del servidor que comprueba tu sesión garantizan que solo la persona que conectó la cuenta de Google ve los eventos importados — ni el equipo de la barbería, ni los clientes, ni el público.",
+  "legal.privacy.s4Protect4":
+    "**Solo lo necesario:** guardamos solo el título, los horarios y el enlace de cada evento, el calendario elegido y el correo de la cuenta conectada. La descripción, los participantes, la ubicación y tu lista de contactos no se guardan.",
+  "legal.privacy.s4Protect5":
+    "**Secretos y administración protegidos:** la clave secreta del cliente OAuth de Google está solo en variables protegidas del servidor, y el panel de administración de los servidores está en una red privada (VPN).",
+  "legal.privacy.s4Protect6":
+    "**Revocación y eliminación:** al desconectar, revocamos el acceso ante Google y borramos de inmediato los tokens y los eventos importados; los eventos fuera de la ventana de sincronización se eliminan automáticamente (sección 8). Los demás mecanismos de seguridad están en la sección 5.",
+  "legal.privacy.s4CommitTitle": "Nuestros compromisos con los datos de Google",
+  "legal.privacy.s4Commit1":
+    "Usamos los datos de Google **solo para ofrecer las funciones visibles para el usuario** descritas arriba: iniciar sesión, sincronizar el calendario, mostrarte los próximos eventos importados y guardar contactos.",
+  "legal.privacy.s4Commit2":
+    "**No vendemos** datos de Google y **no los usamos para publicidad**, incluidos anuncios personalizados, de retargeting o basados en intereses.",
+  "legal.privacy.s4Commit3":
+    "**No usamos datos de Google para desarrollar, mejorar o entrenar modelos generalizados de inteligencia artificial o de aprendizaje automático.**",
+  "legal.privacy.s4Commit4":
+    "**No transferimos** datos de Google a terceros, salvo a los encargados de infraestructura necesarios para que el servicio funcione (sección 6) o cuando la ley lo exija.",
+  "legal.privacy.s4Commit5":
+    "**Nadie de nuestro equipo lee tus datos de Google**, salvo con tu consentimiento expreso para un caso concreto (por ejemplo, una solicitud de soporte que hagas), cuando sea necesario por seguridad (investigar abusos o incidentes), para cumplir la ley, o de forma agregada y anonimizada para la operación interna.",
+  "legal.privacy.s4LimitedUse":
+    "El uso y la transferencia a cualquier otra aplicación, por parte de Barba & Cabelo, de la información recibida de las API de Google se ajustarán a la {link}, incluidos los requisitos de Uso Limitado.",
+  "legal.privacy.s4LimitedUseLink":
+    "Política de Datos de Usuario de los Servicios de API de Google",
+  "legal.privacy.s4Revoke":
+    "Puedes desconectar la integración en cualquier momento (sección 11): al desconectar, revocamos el acceso ante Google y borramos los tokens y los eventos importados. También puedes revocar el acceso directamente en Google, en {link}. Para pedir la eliminación de cualquier dato de Google que aún tengamos, escribe a {email}.",
+  "legal.privacy.s5Title": "5. Seguridad y protección de datos sensibles",
+  "legal.privacy.s5Intro":
+    "Damos protección reforzada a contraseñas, tokens de Google, códigos de verificación y datos de contacto de los clientes. Los mecanismos en uso hoy son:",
+  "legal.privacy.s5Item1":
+    "**Cifrado en tránsito:** el tráfico entre la aplicación, nuestros servidores, las API de Google, el servicio de WhatsApp y el envío de correos usa HTTPS/TLS.",
+  "legal.privacy.s5Item2":
+    "**Control de acceso en la base de datos:** las tablas tienen reglas de seguridad por fila (Row Level Security). Cada persona solo accede a sus propios datos y a los de la barbería en la que tiene un rol, según los permisos definidos por el dueño; las acciones sensibles pasan por funciones del servidor que verifican el permiso antes de ejecutarse.",
+  "legal.privacy.s5Item3":
+    "**Aislamiento de los tokens de Google:** se quedan solo en el servidor, en una tabla separada que no puede leerse desde el navegador ni a través de la API pública de la aplicación. Solo las funciones del servidor los leen, escriben, modifican o borran, y solo para llamar a las API de Google; ningún usuario (ni tú mismo), barbería o administrador de la aplicación puede verlos desde la aplicación.",
+  "legal.privacy.s5Item4":
+    "**Secretos fuera del código:** las credenciales de Google y las claves de servicio de la base de datos solo están en variables protegidas del servidor, nunca en la aplicación de tu dispositivo ni en el código fuente.",
+  "legal.privacy.s5Item5":
+    "**Contraseñas con hash:** el servicio de autenticación guarda las contraseñas solo como hash criptográfico (bcrypt); nadie, ni siquiera nuestro equipo, puede verlas.",
+  "legal.privacy.s5Item6":
+    "**Códigos de verificación protegidos:** los códigos enviados por WhatsApp se guardan solo como hash (SHA-256), valen 10 minutos, sirven una sola vez y tienen límite de envíos; 5 intentos fallidos invalidan el código.",
+  "legal.privacy.s5Item7":
+    "**Conexión con Google protegida:** la solicitud de autorización va firmada (HMAC), queda vinculada a tu cuenta y caduca en 10 minutos. Google solo devuelve la autorización a la dirección de retorno registrada en nuestro proyecto, y el intercambio por los tokens se hace en el servidor, con la clave secreta de la aplicación — los tokens nunca pasan por el navegador. Así, otra persona no puede vincular su cuenta de Google a tu cuenta en la aplicación ni aprovechar una autorización interceptada.",
+  "legal.privacy.s5Item8":
+    "**Minimización:** pedimos solo datos ligados a las funciones que usas; los datos opcionales permanecen desactivados hasta que los autorices y, al retirar la autorización, los registros de uso opcionales se borran.",
+  "legal.privacy.s5Item9":
+    "**Acceso administrativo restringido:** solo la operadora administra la infraestructura; el panel de administración de los servidores está en una red privada (VPN), fuera de internet pública, y el acceso directo a la base de datos está reservado a las funciones del servidor y a la administración técnica.",
+  "legal.privacy.s5Item10":
+    "**Registros técnicos:** el servidor registra las solicitudes recibidas (como fecha, hora, origen y resultado), lo que permite investigar accesos indebidos y fallos.",
+  "legal.privacy.s5Staff":
+    "**Equipo y encargados:** quien trabaja con nosotros o presta servicios de infraestructura solo accede a datos personales cuando es necesario para la tarea, bajo deber de confidencialidad, y responde por el uso indebido. Los encargados tratan los datos solo según nuestras instrucciones y esta política.",
+  "legal.privacy.s5Incident":
+    "**Respuesta a incidentes:** si se produce un incidente de seguridad que pueda causar un riesgo o daño relevante, lo contendremos, investigaremos la causa y lo comunicaremos a la ANPD y a las personas afectadas, como exige el art. 48 de la LGPD, en el plazo de la normativa de la ANPD (hoy, 3 días hábiles), indicando los datos implicados, los riesgos, las medidas adoptadas y lo que puedes hacer. Para informar de una sospecha, escribe a {email}.",
+  "legal.privacy.s5Limit":
+    "Ningún sistema es totalmente inmune a fallos; por eso revisamos estas protecciones de forma continua. Tú también ayudas: no compartas tu contraseña ni los códigos que recibas.",
+  "legal.privacy.s6Title": "6. Con quién compartimos",
+  "legal.privacy.s6Intro":
+    "No vendemos ni alquilamos datos personales. Solo se comparten en estos casos:",
   "legal.privacy.s6Item1":
-    "**Eliminar la cuenta de forma permanente:** en Mi perfil → Mis datos y privacidad, el titular puede borrar su propia cuenta sin contactar con soporte. Se eliminan el nombre, el correo electrónico, el WhatsApp y los demás datos personales. Los registros de agenda y de asistencia/actividad de la barbería pueden permanecer solo de forma anónima (sin vínculo con la persona), para estadísticas operativas hasta la fecha de la eliminación.",
+    "**La barbería en la que reservas:** el dueño, los socios y el equipo autorizado ven los datos necesarios para atenderte (nombre, contacto y reservas), según los permisos de la tienda;",
   "legal.privacy.s6Item2":
-    "Si eres **propietario o socio** de una tienda, transfiere la participación o deja ese rol antes de eliminar la cuenta.",
+    "**Alojamiento e infraestructura:** el servidor privado virtual (VPS) contratado por la operadora, donde están la base de datos, la autenticación y las funciones del servidor, y Hostinger, que aloja el sitio y el dominio;",
   "legal.privacy.s6Item3":
-    "**Desconectar Calendar/Contactos:** en el panel de la tienda, en Ajustes → Google Calendar y Contactos, usa la opción de desconectar. Esto revoca el uso de esa autorización en la aplicación.",
-  "legal.privacy.s6Item4": "**Revocar en Google:** también es posible retirar el acceso en {link}.",
-  "legal.privacy.s6Item5": "Dudas: {email}.",
-  "legal.privacy.s7Title": "7. Cambios",
+    "**Correo electrónico:** el servicio de correo de Hostinger, usado para mensajes de la cuenta (como confirmación y recuperación de acceso);",
+  "legal.privacy.s6Item4":
+    "**WhatsApp:** los mensajes pasan por nuestra instalación de Evolution API, en nuestro propio servidor, y se entregan a través de la red de WhatsApp (Meta) al número indicado;",
+  "legal.privacy.s6Item5":
+    "**Google:** solo si activas el inicio de sesión con Google o la conexión con Calendar/Contactos, según la sección 4;",
+  "legal.privacy.s6Item6":
+    "**Autoridades:** cuando exista una obligación legal, una orden judicial o un requerimiento de una autoridad competente.",
+  "legal.privacy.s6Body":
+    "Estos encargados reciben solo lo necesario para realizar su parte del servicio.",
+  "legal.privacy.s7Title": "7. Transferencia internacional",
   "legal.privacy.s7Body":
+    "Algunos servicios que usamos pueden tratar datos fuera de Brasil, como Google (cuando activas la integración) y WhatsApp. Estas transferencias solo se producen en los supuestos del art. 33 de la LGPD — por ejemplo, cuando son necesarias para prestar el servicio que pediste o con tu consentimiento.",
+  "legal.privacy.s8Title": "8. Cuánto tiempo los conservamos",
+  "legal.privacy.s8Item1":
+    "**Cuenta y perfil:** mientras exista la cuenta; al eliminarla, los datos personales se borran (sección 11);",
+  "legal.privacy.s8Item2":
+    "**Reservas e historial:** mientras la cuenta y la barbería estén activas; tras eliminar la cuenta, solo quedan registros anónimos, sin vínculo con la persona;",
+  "legal.privacy.s8Item3":
+    "**Tokens y eventos de Google:** hasta que desconectes la integración o elimines la cuenta, cuando se borran de inmediato. De los eventos, guardamos solo los de la ventana de 7 días atrás a 60 días adelante: en la siguiente sincronización, quitamos los que terminaron hace más de 7 días, los que se borraron en Google y los de un calendario que dejó de ser el elegido;",
+  "legal.privacy.s8Item4":
+    "**Códigos de verificación:** cada envío registra la solicitud (número, cuenta, hora y el hash del código), que se usa para comprobar el código y limitar los envíos; el código vale 10 minutos y queda inutilizado tras su uso o tras 5 intentos fallidos;",
+  "legal.privacy.s8Item5":
+    "**Registros de uso opcionales:** hasta que retires la autorización, cuando se borran;",
+  "legal.privacy.s8Item6":
+    "**Registros exigidos por ley:** durante el plazo legal, como los registros de acceso a aplicaciones durante 6 meses (Marco Civil de Internet de Brasil, art. 15).",
+  "legal.privacy.s9Title": "9. Almacenamiento en el navegador y cookies",
+  "legal.privacy.s9Intro":
+    "La aplicación guarda en tu dispositivo solo lo necesario para funcionar:",
+  "legal.privacy.s9Item1": "**Sesión iniciada**, para que sigas conectado de forma segura;",
+  "legal.privacy.s9Item2":
+    "**Preferencias:** idioma, tema claro u oscuro y otras opciones de visualización;",
+  "legal.privacy.s9Item3":
+    "**Archivos de la aplicación instalada (PWA)**, que hacen que las pantallas se abran más rápido.",
+  "legal.privacy.s9Body":
+    "No usamos cookies publicitarias ni herramientas de seguimiento de terceros. Puedes borrar estos datos en la configuración del navegador; al hacerlo se cierra la sesión y las preferencias vuelven a los valores por defecto.",
+  "legal.privacy.s10Title": "10. Tus derechos",
+  "legal.privacy.s10Intro": "Según la LGPD (art. 18), puedes solicitar en cualquier momento:",
+  "legal.privacy.s10Item1": "confirmación de que tratamos tus datos y acceso a ellos;",
+  "legal.privacy.s10Item2": "corrección de datos incompletos, inexactos o desactualizados;",
+  "legal.privacy.s10Item3":
+    "anonimización, bloqueo o eliminación de datos innecesarios, excesivos o tratados de forma contraria a la ley;",
+  "legal.privacy.s10Item4": "portabilidad de los datos a otro proveedor;",
+  "legal.privacy.s10Item5": "eliminación de los datos tratados con base en tu consentimiento;",
+  "legal.privacy.s10Item6":
+    "información sobre con quién compartimos tus datos y sobre la posibilidad de no consentir y sus consecuencias;",
+  "legal.privacy.s10Item7":
+    "revocación del consentimiento y oposición a tratamientos que incumplan la ley.",
+  "legal.privacy.s10How":
+    "Muchas acciones puedes hacerlas tú mismo en la aplicación: editar el perfil, cambiar preferencias, eliminar la cuenta y desconectar Google. Para las demás, escribe a {email}. Podemos pedirte una confirmación de identidad para proteger tus datos, y respondemos en un plazo de 15 días.",
+  "legal.privacy.s10Anpd":
+    "Si no quedas satisfecho con la respuesta, también puedes presentar una reclamación ante la Autoridad Nacional de Protección de Datos de Brasil (ANPD) o ante la autoridad de protección de datos de tu país.",
+  "legal.privacy.s11Title": "11. Eliminación de la cuenta y desconexión de Google",
+  "legal.privacy.s11Item1":
+    "**Eliminar la cuenta de forma permanente:** en Mi perfil → Mis datos y privacidad, el titular puede borrar su propia cuenta sin contactar con soporte. Se eliminan el nombre, el correo electrónico, el WhatsApp y los demás datos personales. Los registros de agenda y de asistencia de la barbería pueden permanecer solo de forma anónima (sin vínculo con la persona), para estadísticas operativas hasta la fecha de la eliminación.",
+  "legal.privacy.s11Item2":
+    "Si eres **dueño o socio** de una tienda, transfiere la sociedad o deja ese rol antes de eliminar la cuenta.",
+  "legal.privacy.s11Item3":
+    "**Desconectar Calendar/Contactos:** en el panel de la tienda, en Ajustes → Avisos e integraciones → Google Calendar y Contactos, usa la opción de desconectar. En ese momento revocamos la autorización ante Google y borramos de nuestra base de datos los tokens, el correo de la cuenta de Google conectada y los eventos importados. Si la revocación en Google falla (por ejemplo, por un error de red o un token ya caducado), la desconexión en la aplicación se hace igualmente y te avisamos para que quites el acceso en myaccount.google.com/permissions. Los eventos ya copiados a tu Google Calendar siguen allí y puedes borrarlos tú.",
+  "legal.privacy.s11Item4":
+    "**Revocar en Google:** también puedes quitar el acceso de Barba & Cabelo directamente en Google, en cualquier momento, en {link}.",
+  "legal.privacy.s11Item5":
+    "Al **eliminar la cuenta**, pedimos a Google que revoque la autorización (si existe la conexión) y borramos la conexión, los tokens y los eventos importados. Para comprobarlo, consulta {link}. Dudas o solicitudes de eliminación: {email}.",
+  "legal.privacy.s12Title": "12. Niños y adolescentes",
+  "legal.privacy.s12Body":
+    "La aplicación no está dirigida a menores de 18 años. Los adolescentes solo deben usarla con autorización y supervisión de sus padres o tutores, y no creamos cuentas de niños de forma intencionada. Si sabes de datos de un niño registrados sin el consentimiento de un responsable, avísanos en {email} para eliminarlos.",
+  "legal.privacy.s13Title": "13. Cambios en esta política",
+  "legal.privacy.s13Body":
     "Podemos actualizar esta política para reflejar cambios en el servicio o en la legislación. La fecha de la parte superior de la página indica la versión vigente. Ante cambios relevantes, procuraremos informar por los canales habituales de la aplicación.",
-  "legal.club.header": "La escala del club",
-  "legal.club.heroTitle": "El estándar de excelencia",
-  "legal.club.heroBody":
-    "Conoce los niveles de exclusividad y cómo se recompensa tu fidelidad en cada paso.",
-  "legal.club.s1Title": "1. Niveles de estatus",
-  "legal.club.level": "Nivel {name}",
-  "legal.club.pointsRange": "{min} - {max} puntos",
-  "legal.club.exclusiveRange": "500+ puntos o suscripción",
-  "legal.club.classicBody":
-    "La base de la Arena: tradición y un mantenimiento impecable de tu estilo (Plata Metálica).",
-  "legal.club.classicPerk1": "Mantenimiento del look con excelencia",
-  "legal.club.classicPerk2": "Reserva sencilla desde la app",
-  "legal.club.selectBody":
-    "Comodidad y agilidad: prioridad en la agenda y un sitio fijo en la Arena (Bronce Metálico).",
-  "legal.club.selectPerk1": "Flexibilidad extra de horarios",
-  "legal.club.selectPerk2": "Atención prioritaria en el Lounge",
-  "legal.club.privilegeBody":
-    "Un nuevo nivel de ventajas: descuentos en productos premium y atención de élite (Oro Metálico).",
-  "legal.club.privilegePerk1": "10% de descuento en productos de cuidado personal",
-  "legal.club.privilegePerk2": "Bebida de cortesía en cada visita",
-  "legal.club.exclusiveBody":
-    "Lo más alto de la experiencia Arena Barber Club: acceso total y beneficios sin restricciones (Holograma).",
-  "legal.club.exclusivePerk1": "Cortes ilimitados mensuales (Plan Exclusivo)",
-  "legal.club.exclusivePerk2": "Acceso sin restricciones al Lounge VIP Exclusive",
-  "legal.club.exclusivePerk3": "Máxima prioridad en todos los horarios",
-  "legal.club.s2Title": "2. Puntos vs suscripción",
-  "legal.club.lifetimeTitle": "Acumulación de por vida",
-  "legal.club.lifetimeBody":
-    "Reconocimiento por tu presencia continua. Los puntos son de por vida y te hacen subir de nivel de forma natural.",
-  "legal.club.pointRate": "1,00 R$ = 1 punto",
-  "legal.club.subscriptionTitle": "Suscripción Exclusive",
-  "legal.club.subscriptionBody":
-    "Lo más alto de la jerarquía al instante. Desbloquea el {plan} y el acceso total al Lounge VIP. Ideal para quien quiere lo mejor sin esperar.",
-  "legal.club.planName": "Plan de Cortes Ilimitados",
+  "legal.club.header": "Club de fidelidad",
+  "legal.club.heroTitle": "Reglas del club de fidelidad",
+  "legal.club.heroBodyShop":
+    "Estas son las reglas vigentes hoy en {shop}. Si la barbería cambia alguna regla, esta página muestra la versión actualizada.",
+  "legal.club.heroBodyGeneric":
+    "El club de fidelidad es un programa opcional de cada barbería que usa Barba & Cabelo. Las reglas exactas — puntos, niveles, beneficios y premios — dependen de cada barbería.",
+  "legal.club.loading": "Cargando las reglas de la barbería…",
+  "legal.club.shopNotFound":
+    "No encontramos esta barbería o no está activa. Abajo puedes ver cómo funciona el club en general.",
+  "legal.club.signInHint":
+    "Inicia sesión en tu cuenta de cliente de {shop} para ver las reglas exactas del club de esa barbería.",
+  "legal.club.signIn": "Iniciar sesión para ver las reglas",
+  "legal.club.noAccess":
+    "Las reglas exactas de {shop} se muestran a los clientes de esa barbería. Abajo puedes ver cómo funciona el club en general.",
+  "legal.club.loadError":
+    "No se pudieron cargar las reglas de la barbería. Revisa tu conexión e inténtalo de nuevo.",
+  "legal.club.retry": "Intentar de nuevo",
+  "legal.club.disabled":
+    "El club de fidelidad de {shop} no está activo en este momento. Mientras esté desactivado, las citas no suman puntos.",
+  "legal.club.modeDefault": "Regla estándar de Barba & Cabelo",
+  "legal.club.modeCustom": "Regla propia de la barbería",
+  "legal.club.earnTitle": "1. Cómo ganar puntos",
+  "legal.club.perVisit": "Cada cita completada vale {points}.",
+  "legal.club.welcome": "En tu primera cita completada recibes {points} extra de bienvenida.",
+  "legal.club.pointsOne": "{n} punto",
+  "legal.club.pointsMany": "{n} puntos",
+  "legal.club.earnNote":
+    "Los puntos se suman cuando la barbería marca la cita como completada. Las citas canceladas o no realizadas no suman puntos.",
+  "legal.club.tiersTitle": "2. Niveles",
+  "legal.club.tiersBody":
+    "Tu nivel depende del total de puntos ganados con el tiempo en esta barbería. Canjear puntos por premios no te hace perder el nivel.",
+  "legal.club.range": "{from} a {to} puntos",
+  "legal.club.rangeTop": "Desde {from} puntos",
+  "legal.club.rewardsTitle": "3. Premios",
+  "legal.club.rewardsBody":
+    "Canjea puntos por los premios de abajo en la app. La solicitud de canje queda reservada hasta que la barbería la confirme; si vence sin confirmación, los puntos vuelven a tu saldo.",
+  "legal.club.rewardsEmpty": "Esta barbería todavía no ha registrado premios para canjear puntos.",
+  "legal.club.generalTitle": "Cómo funciona el club",
+  "legal.club.generalEarn":
+    "Cuando la barbería activa el club, cada cita completada suma puntos al cliente.",
+  "legal.club.generalTiers":
+    "Los puntos acumulados con el tiempo definen tu nivel. Canjear puntos por premios no reduce el nivel.",
+  "legal.club.generalRewards":
+    "La barbería puede ofrecer premios para canjear puntos, con su confirmación en el momento del canje.",
+  "legal.club.generalVaries":
+    "La cantidad de puntos, los niveles, los beneficios y los premios varían de una barbería a otra y pueden cambiar. Valen las reglas que la app muestra para tu barbería.",
+  "legal.club.termsTitle": "Condiciones generales",
+  "legal.club.terms1":
+    "Los puntos solo valen en la barbería donde se ganaron y no se pueden cambiar por dinero.",
+  "legal.club.terms2":
+    "La barbería puede cambiar las reglas del club. Los cambios valen desde ese momento y no borran los puntos ya ganados.",
+  "legal.club.terms3":
+    "La barbería puede corregir el saldo en caso de error, y el ajuste queda registrado en tu historial de puntos.",
+  "legal.club.terms4":
+    "Las dudas sobre puntos, niveles y premios deben tratarse directamente con la barbería.",
   "plat.shell.loadError": "No se pudieron cargar las barberías. Inténtalo de nuevo.",
   "plat.shell.brandOpenError": "No se pudo abrir la personalización. Inténtalo de nuevo.",
   "plat.shell.loginPreviewError":
@@ -2694,4 +2867,88 @@ export const es: Record<MessageKey, string> = {
     'En la regla estándar este valor es fijo. Elige "Versión de la barbería" para cambiarlo.',
   "fix.landing-espera-pwa.moreSlotsMany": "y más horarios",
   "fix.landing-espera-pwa.waitAlreadyHolder": "Ya eres el titular de esta reserva.",
+  "fix2.edge.otpExpired": "Este código ha caducado. Pide un código nuevo e inténtalo de nuevo.",
+  "fix2.edge.otpTooManyAttempts":
+    "Has fallado el código demasiadas veces. Pide un código nuevo para continuar.",
+  "fix2.edge.whatsappUnavailable":
+    "No pudimos enviar el WhatsApp ahora. Inténtalo de nuevo en unos minutos.",
+  "fix2.edge.phoneInUse": "Este WhatsApp ya está en una cuenta. Inicia sesión o usa otro número.",
+  "fix2.edge.verificationExpired":
+    "La confirmación del WhatsApp ha caducado. Pide un código nuevo.",
+  "fix2.edge.emailInvalid": "Introduce un correo electrónico válido.",
+  "fix2.edge.domainDnsPending":
+    "El DNS del dominio aún no está listo. Revisa los registros e inténtalo de nuevo en unos minutos.",
+  "fix2.edge.domainKeptActive": "Tu dominio sigue activo mientras tanto.",
+  "fix2.whats.badgeVerified": "Confirmado",
+  "fix2.whats.badgeUnverified": "Sin confirmar",
+  "fix2.whats.needsCodeHint":
+    "Para guardar este número, te enviaremos un código de 6 dígitos por WhatsApp.",
+  "fix2.whats.sendCode": "Enviar código",
+  "fix2.whats.sending": "Enviando código…",
+  "fix2.whats.codeSent": "Código enviado a {number}.",
+  "fix2.whats.codeIntro": "Escribe el código de 6 dígitos que enviamos por WhatsApp a {number}.",
+  "fix2.whats.codeLabel": "Código de confirmación",
+  "fix2.whats.codeHint": "El código es válido durante 10 minutos.",
+  "fix2.whats.confirm": "Confirmar código",
+  "fix2.whats.verifying": "Confirmando…",
+  "fix2.whats.resend": "Reenviar código",
+  "fix2.whats.resendIn": "Reenviar en {seconds}s",
+  "fix2.whats.changeNumber": "Cambiar número",
+  "fix2.whats.verified": "WhatsApp confirmado y guardado.",
+  "fix2.whats.verifiedOptIn": "WhatsApp confirmado. Recibirás avisos de tus citas en este número.",
+  "fix2.whats.errInvalid": "Código incorrecto. Revísalo e inténtalo de nuevo.",
+  "fix2.whats.errInvalidLeft": "Código incorrecto. Intentos restantes: {count}.",
+  "fix2.whats.errExpired": "Este código ha caducado. Toca Reenviar código.",
+  "fix2.whats.errTooManyAttempts": "Demasiados intentos fallidos. Pide un código nuevo.",
+  "fix2.whats.errRateLimited":
+    "Has pedido demasiados códigos. Espera unos minutos e inténtalo de nuevo.",
+  "fix2.whats.errUnavailable":
+    "No pudimos enviar el WhatsApp ahora. Revisa el número o inténtalo más tarde.",
+  "fix2.whats.errPhoneInUse": "Este WhatsApp ya está confirmado en otra cuenta. Usa otro número.",
+  "fix2.whats.errInvalidNumber": "Introduce un WhatsApp válido con código de área.",
+  "fix3.google.eventsTitle": "Próximos eventos de Google Calendar",
+  "fix3.google.eventsIntro":
+    "Eventos importados del calendario elegido, para que veas los horarios ocupados al organizar las citas. Solo lectura: para cambiarlos, usa Google Calendar.",
+  "fix3.google.eventsLoading": "Cargando eventos…",
+  "fix3.google.eventsEmpty":
+    "No hay eventos futuros importados. Toca “Sincronizar calendario” para buscarlos.",
+  "fix3.google.eventsError": "No se pudieron cargar los eventos importados.",
+  "fix3.google.eventsRetry": "Intentar de nuevo",
+  "fix3.google.eventUntitled": "(Sin título)",
+  "fix3.google.eventAllDay": "Todo el día",
+  "fix3.google.eventFrom": "Calendario: {name}",
+  "fix3.google.eventsTimezone": "Horarios en la zona horaria de la barbería ({tz}).",
+  "fix3.google.disconnectedRevoked":
+    "Google desconectado. Se revocó el acceso de la app a tu cuenta de Google y se borraron los datos importados.",
+  "fix3.google.disconnectedNoRevoke":
+    "Google desconectado y datos importados borrados. No pudimos confirmar la revocación en Google; si quieres, quita el acceso en myaccount.google.com/permissions.",
+  "fix3.auth.phoneEyebrow": "Confirmar WhatsApp",
+  "fix3.auth.phoneTitle": "Confirma tu WhatsApp",
+  "fix3.auth.phoneSubtitle":
+    "Cuenta creada. Falta confirmar el número {number} con el código que enviamos por WhatsApp.",
+  "fix3.auth.phoneLaterHint":
+    "Si prefieres, confírmalo después en Mi perfil. Hasta confirmarlo, no podrás entrar ni recuperar la contraseña por WhatsApp.",
+  "fix3.auth.phoneSkip": "Confirmar después",
+  "fix3.auth.phoneSkipped": "Listo. Confirma el WhatsApp después en Mi perfil.",
+  "fix3.auth.phoneContinue": "Continuar",
+  "fix3.auth.phoneUnavailable":
+    "Ahora no podemos enviar el código por WhatsApp. Tu cuenta ya está lista: toca Continuar y confirma el número después en Mi perfil.",
+  "fix3.auth.phoneCodeIncomplete": "Escribe los 6 números del código.",
+  "fix3.auth.phoneError":
+    "No pudimos confirmar el WhatsApp ahora. Inténtalo de nuevo o confírmalo después en Mi perfil.",
+  "fix3.auth.confirmEmailWhatsapp":
+    "Confirma tu correo y entra en la cuenta. Después, confirma el WhatsApp en Mi perfil.",
+  "fix3.errors.shopRequired":
+    "Para usar WhatsApp, abre el acceso desde el enlace de la barbería o usa el correo.",
+  "fix3.errors.shopWhatsappUnavailable":
+    "Esta barbería todavía no tiene WhatsApp conectado. Usa el correo.",
+  "fix3.errors.accountNotFound":
+    "Ninguna cuenta tiene este WhatsApp confirmado. Entra con el correo y confirma el número en Mi perfil.",
+  "fix3.errors.accountWithoutEmail":
+    "Esta cuenta todavía no tiene correo. Habla con la barbería para completar el registro.",
+  "fix3.whatsapp.tooLongFilledCut":
+    "Con nombres y enlace completos, el mensaje puede llegar a {length} de 1.000 caracteres y el final se cortará. Acorta el texto para que llegue completo.",
+  "fix3.terms.googleRevoke":
+    "Al desconectar Google Calendar/Contactos en la app, revocamos el acceso ante Google y eliminamos de inmediato los tokens y los eventos importados. Si no se puede confirmar la revocación, o si lo prefieres, quita el acceso de Barba & Cabelo directamente en {link}. Los datos recibidos de las API de Google se usan solo para las funciones descritas en la {privacy}, nunca para publicidad, y no se venden.",
+  "fix3.google.privacyLink": "Cómo usamos los datos de Google",
 };

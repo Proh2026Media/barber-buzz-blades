@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { friendlyAuthError } from "./friendly-error.ts";
+import { readFileSync } from "node:fs";
+import { friendlyAuthError, isKnownErrorCode, ServerError, serverError } from "./friendly-error.ts";
 import { LOCALE_STORAGE_KEY } from "../i18n/locale.ts";
 import {
   friendlyChannelLastError,
@@ -98,5 +99,86 @@ test("unrecognized English errors fall back instead of showing foreign text", ()
   assert.equal(
     friendlyAuthError("Barbearia sem horário disponível"),
     "Barbearia sem horário disponível",
+  );
+});
+
+/** Lê os códigos do tipo `ErrorCode` declarado numa função do servidor. */
+function serverErrorCodes(path: string): string[] {
+  const source = readFileSync(new URL(path, import.meta.url), "utf8");
+  const union = /type ErrorCode =([\s\S]*?);/.exec(source)?.[1] ?? "";
+  return [...union.matchAll(/"([a-z_]+)"/g)].map((match) => match[1]);
+}
+
+test("every error_code returned by auth-otp and register-shop is known to the app", () => {
+  for (const path of [
+    "../../../supabase/functions/auth-otp/index.ts",
+    "../../../supabase/functions/register-shop/index.ts",
+  ]) {
+    const codes = serverErrorCodes(path);
+    assert.ok(codes.length > 10, `nenhum ErrorCode lido em ${path}`);
+    for (const code of codes) {
+      assert.ok(isKnownErrorCode(code), `${code} (${path}) sem tradução em friendly-error.ts`);
+    }
+  }
+});
+
+test("serverError keeps error_code and payload so the code wins over the text", () => {
+  const err = serverError(
+    { error: "Código incorreto ou expirado", error_code: "otp_invalid", attempts_left: 2 },
+    "Falhou.",
+  );
+  assert.ok(err instanceof ServerError);
+  assert.equal(err.errorCode, "otp_invalid");
+  assert.equal(err.payload.attempts_left, 2);
+  assert.equal(err.message, "Código incorreto ou expirado");
+  assert.match(friendlyAuthError(err), /Código inválido/);
+
+  const empty = serverError(null, "Falhou.");
+  assert.equal(empty.message, "Falhou.");
+  assert.equal(empty.errorCode, null);
+});
+
+test("edge error codes map to everyday messages instead of the raw server text", () => {
+  const cases: Array<[string, RegExp]> = [
+    ["otp_expired", /venceu/],
+    ["otp_too_many_attempts", /muitas vezes/],
+    ["rate_limited", /Muitas tentativas/],
+    ["phone_in_use", /já está em uma conta/],
+    ["invalid_whatsapp", /WhatsApp/],
+    ["shop_not_found", /Barbearia não encontrada/],
+    ["missing_fields", /Preencha/],
+  ];
+  for (const [code, expected] of cases) {
+    assert.match(
+      friendlyAuthError(serverError({ error: "texto cru", error_code: code }, "x")),
+      expected,
+    );
+  }
+  for (const code of [
+    "shop_required",
+    "shop_whatsapp_unavailable",
+    "account_not_found",
+    "account_without_email",
+    "whatsapp_unavailable",
+  ]) {
+    assert.notEqual(
+      friendlyAuthError(serverError({ error: "texto cru", error_code: code }, "x")),
+      "texto cru",
+    );
+  }
+  // Código conhecido sem frase própria: usa o fallback de quem chamou.
+  assert.equal(
+    friendlyAuthError(
+      serverError({ error: "boom", error_code: "internal_error" }, "x"),
+      "Tente de novo.",
+    ),
+    "Tente de novo.",
+  );
+  // Código desconhecido: cai na leitura do texto.
+  assert.equal(
+    friendlyAuthError(
+      serverError({ error: "Barbearia fechada hoje", error_code: "novo_codigo" }, "x"),
+    ),
+    "Barbearia fechada hoje",
   );
 });

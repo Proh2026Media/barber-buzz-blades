@@ -3,7 +3,7 @@ import { CheckCircle2, Copy, Globe2, RefreshCw, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { PLATFORM_BASE_HOST, shopPublicOrigin } from "@/lib/shop/host";
-import { friendlyAuthError } from "@/lib/auth/friendly-error";
+import { friendlyAuthError, readErrorCode } from "@/lib/auth/friendly-error";
 
 type DomainSettings = {
   shop_id: string;
@@ -31,15 +31,33 @@ const statusKey = {
   error: "integr.domain.status.error",
 } as const satisfies Record<DomainSettings["custom_domain_status"], MessageKey>;
 
+/** Resposta de erro da função shop-domain (campos usados na tradução). */
+type DomainErrorPayload = {
+  error?: string;
+  error_code?: string;
+  txt_host?: string;
+  expected_txt?: string;
+  domain?: string;
+  cname_target?: string;
+  kept_active?: boolean;
+};
+
 /**
- * A função shop-domain grava e devolve frases fixas em pt-BR. Reconhece as
+ * A função shop-domain devolve `error_code` estável (preferido) e frases fixas
+ * em pt-BR. Pelo código, traduz com os dados do DNS que vêm na resposta; sem
+ * código (ou erro gravado em `domain_last_error`), reconhece as frases
  * conhecidas e traduz pelo dicionário; o resto passa pelo filtro de erros.
  */
 function translateDomainServerMessage(
   raw: string,
   t: ReturnType<typeof useI18n>["t"],
   fallback?: string,
+  payload?: DomainErrorPayload,
 ): string {
+  const translated = translateDomainByCode(payload, t, fallback);
+  if (translated) {
+    return payload?.kept_active ? `${translated} ${t("fix2.edge.domainKeptActive")}` : translated;
+  }
   const text = raw.trim();
   const txt =
     // Hosts têm pontos: o ponto final da frase é o que vem antes de espaço/fim.
@@ -54,6 +72,34 @@ function translateDomainServerMessage(
   }
   if (/nenhum domínio pendente/i.test(text)) return t("fix.ajustes-marca.domainNothingPending");
   return friendlyAuthError(text, fallback);
+}
+
+function translateDomainByCode(
+  payload: DomainErrorPayload | undefined,
+  t: ReturnType<typeof useI18n>["t"],
+  fallback?: string,
+): string | null {
+  const code = readErrorCode(payload);
+  if (!payload || !code) return null;
+  if (code === "domain_txt_missing" && payload.txt_host && payload.expected_txt) {
+    return t("fix.ajustes-marca.domainTxtMissing", {
+      host: payload.txt_host,
+      value: payload.expected_txt,
+    });
+  }
+  if (code === "domain_dns_pending" && payload.domain && payload.cname_target) {
+    return t("fix.ajustes-marca.domainCnamePending", {
+      domain: payload.domain,
+      target: payload.cname_target,
+    });
+  }
+  if (code === "domain_nothing_pending") return t("fix.ajustes-marca.domainNothingPending");
+  // Recusa do banco ao salvar (domínio inválido, já em uso…): o texto é o que explica.
+  if (code === "domain_rejected") return null;
+  if (code === "domain_txt_missing" || code === "domain_dns_pending") {
+    return t("fix2.edge.domainDnsPending");
+  }
+  return friendlyAuthError({ error_code: code, message: payload.error ?? "" }, fallback);
 }
 
 /** Erro já traduzido para o usuário: não passa de novo pelo filtro de mensagens. */
@@ -121,9 +167,8 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
     // Gateway fora do ar costuma devolver HTML: não deixa o erro de parse
     // virar "código inválido" no filtro de mensagens.
     const raw = await response.text();
-    let payload: {
+    let payload: DomainErrorPayload & {
       ok?: boolean;
-      error?: string;
       warning?: string | null;
       settings?: DomainSettings;
     };
@@ -134,8 +179,13 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
     }
     if (!response.ok) {
       throw new DomainMessageError(
-        payload.error
-          ? translateDomainServerMessage(payload.error, t, t("integr.domain.errGeneric"))
+        payload.error || payload.error_code
+          ? translateDomainServerMessage(
+              payload.error ?? "",
+              t,
+              t("integr.domain.errGeneric"),
+              payload,
+            )
           : t("integr.domain.errGeneric"),
       );
     }
@@ -213,8 +263,13 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
                 warning: t("fix.ajustes-marca.domainProxyPending"),
               })
             : t("integr.domain.verifiedActive")
-          : payload.error
-            ? translateDomainServerMessage(payload.error, t, t("integr.domain.checkDnsHint"))
+          : payload.error || payload.error_code
+            ? translateDomainServerMessage(
+                payload.error ?? "",
+                t,
+                t("integr.domain.checkDnsHint"),
+                payload,
+              )
             : t("integr.domain.checkDnsHint"),
       );
     } catch (err) {

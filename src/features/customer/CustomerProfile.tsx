@@ -2,8 +2,8 @@ import { PrivacyCenter } from "@/features/insights/PrivacyCenter";
 import { ChangePasswordCard } from "@/features/auth/ChangePasswordCard";
 import { LanguageSettingsCard } from "@/components/LanguageSettingsCard";
 import { useEffect, useState } from "react";
-import { LogOut, MessageCircle, User } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
+import { LogOut, User } from "lucide-react";
+import { WhatsappProfileCard } from "@/features/customer/WhatsappProfileCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
@@ -16,6 +16,7 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
   const [email, setEmail] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [whatsappOptIn, setWhatsappOptIn] = useState(false);
+  const [whatsappVerified, setWhatsappVerified] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -31,15 +32,12 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
           setEmail("cliente@demo.example");
           setWhatsapp("(11) 99999-0000");
           setWhatsappOptIn(true);
+          setWhatsappVerified(true);
           return;
         }
         const { data, error: authError } = await supabase.auth.getUser();
         if (authError || !data.user) throw new Error(tNow("profile.errorLoadAccount"));
-        const result = await supabase
-          .from("profiles")
-          .select("full_name, whatsapp_e164, whatsapp_opt_in_at")
-          .eq("id", data.user.id)
-          .single();
+        const result = await supabase.from("profiles").select("*").eq("id", data.user.id).single();
         if (result.error) throw new Error(tNow("profile.errorLoad"));
         if (!cancelled) {
           setUserId(data.user.id);
@@ -47,6 +45,14 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
           setEmail(data.user.email ?? "");
           setWhatsapp(result.data.whatsapp_e164 ?? "");
           setWhatsappOptIn(Boolean(result.data.whatsapp_opt_in_at));
+          // whatsapp_verified_at (migration 20261003180000) ainda fora dos tipos gerados;
+          // sem a coluna, o número gravado vale como antes.
+          const row = result.data as Record<string, unknown>;
+          setWhatsappVerified(
+            "whatsapp_verified_at" in row
+              ? Boolean(row.whatsapp_verified_at)
+              : Boolean(result.data.whatsapp_e164),
+          );
         }
       } catch (err) {
         if (!cancelled) setError(friendlyAuthError(err, tNow("profile.errorLoad")));
@@ -87,31 +93,6 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
       setMessage(t("profile.saved"));
     } catch (err) {
       setError(friendlyAuthError(err, t("profile.errorSave")));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function saveWhatsApp(event: React.FormEvent) {
-    event.preventDefault();
-    if (demo) {
-      setMessage(t("profile.whatsappDemo"));
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    setMessage("");
-    try {
-      const { data, error: rpcError } = await supabase.rpc("save_my_whatsapp", {
-        p_raw: whatsapp,
-        p_opt_in: whatsappOptIn,
-      });
-      if (rpcError) throw rpcError;
-      setWhatsapp(data?.whatsapp_e164 ?? whatsapp);
-      setWhatsappOptIn(Boolean(data?.whatsapp_opt_in_at));
-      setMessage(whatsappOptIn ? t("profile.whatsappSavedOptIn") : t("profile.whatsappSaved"));
-    } catch (err) {
-      setError(friendlyAuthError(err, t("profile.errorWhatsapp")));
     } finally {
       setBusy(false);
     }
@@ -171,54 +152,13 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
             </button>
           </form>
 
-          <form
-            onSubmit={(event) => void saveWhatsApp(event)}
-            className="space-y-4 rounded-2xl border border-border bg-card p-4"
-            aria-label="WhatsApp"
-          >
-            <div className="flex items-center gap-2">
-              <MessageCircle className="size-4 text-gold" aria-hidden="true" />
-              <h3 className="text-sm font-semibold">WhatsApp</h3>
-            </div>
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              {t("profile.whatsappHint")}
-            </p>
-            <label className="block space-y-2 text-sm font-semibold">
-              <span>{t("profile.whatsappNumber")}</span>
-              <input
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel"
-                placeholder="(11) 99999-0000"
-                value={whatsapp}
-                disabled={busy || (!demo && !userId)}
-                onChange={(event) => {
-                  setWhatsapp(event.target.value);
-                  setMessage("");
-                }}
-                className="w-full rounded-xl border border-border bg-background px-3 py-2"
-              />
-            </label>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold">{t("profile.whatsappOptIn")}</p>
-                <p className="text-xs text-muted-foreground">{t("profile.whatsappOptInHint")}</p>
-              </div>
-              <Switch
-                checked={whatsappOptIn}
-                disabled={busy || (!demo && !userId)}
-                onCheckedChange={setWhatsappOptIn}
-                aria-label={t("profile.whatsappOptIn")}
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={busy || (!demo && !userId)}
-              className="w-full rounded-xl bg-primary p-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
-            >
-              {busy ? t("common.saving") : t("profile.saveWhatsapp")}
-            </button>
-          </form>
+          <WhatsappProfileCard
+            demo={Boolean(demo)}
+            disabled={busy || (!demo && !userId)}
+            initialNumber={whatsapp}
+            initialOptIn={whatsappOptIn}
+            initialVerified={whatsappVerified}
+          />
 
           <LanguageSettingsCard />
 

@@ -2936,6 +2936,7 @@ function ArenaApp({
         isOpen={showVipInfo && loyaltyOn}
         sportsEnabled={shopSettings.sports_enabled}
         program={loyaltyProgram}
+        shopId={demo ? null : shopId}
         onClose={() => setShowVipInfo(false)}
       />
     </div>
@@ -2973,11 +2974,13 @@ const VipInfoModal = ({
   isOpen,
   sportsEnabled,
   program,
+  shopId,
   onClose,
 }: {
   isOpen: boolean;
   sportsEnabled: boolean;
   program: LoyaltyProgram;
+  shopId: string | null;
   onClose: () => void;
 }) => {
   const closeButton = useRef<HTMLButtonElement>(null);
@@ -3148,6 +3151,7 @@ const VipInfoModal = ({
         <div className="space-y-2 border-t border-border bg-muted/20 p-4">
           <Link
             to="/politica"
+            search={shopId ? { shop: shopId } : {}}
             onClick={onClose}
             className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-border bg-background py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
           >

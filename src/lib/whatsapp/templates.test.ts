@@ -30,6 +30,13 @@ test("validation rejects empty, oversized and unknown placeholders", () => {
   assert.match(validateWhatsAppTemplate("Oi {{ }}").join(" "), /incompletas/);
 });
 
+test("filled-length warning says the end is cut, not that the message is dropped", () => {
+  // 900 caracteres + link (até 120 preenchido) passam de 1000 depois da troca.
+  const issues = validateWhatsAppTemplate(`${"x".repeat(900)} {{link_reserva}}`);
+  assert.equal(issues.length, 1);
+  assert.doesNotMatch(issues[0], /não ser enviada/);
+});
+
 test("validation flags Markdown that WhatsApp does not render", () => {
   assert.match(validateWhatsAppTemplate("**forte**").join(" "), /negrito/);
   assert.match(validateWhatsAppTemplate("~~risco~~").join(" "), /tachado/);

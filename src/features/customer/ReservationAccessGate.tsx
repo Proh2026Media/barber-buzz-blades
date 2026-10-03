@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { friendlyAuthError } from "@/lib/auth/friendly-error";
+import { friendlyAuthError, serverError } from "@/lib/auth/friendly-error";
 import { useI18n } from "@/lib/i18n";
 import { DEFAULT_SHOP_TIMEZONE, formatShopDate, validTimeZone } from "@/lib/shop/appointments";
 
@@ -89,8 +89,11 @@ export function ReservationAccessGate({
           destination: phone,
         }),
       });
-      const payload = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(payload.error || t("gate.sendFailed"));
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        error_code?: string;
+      };
+      if (!response.ok) throw serverError(payload, t("gate.sendFailed"));
       setStep("code");
     } catch (err) {
       setError(friendlyAuthError(err, t("gate.sendError")));
@@ -119,12 +122,13 @@ export function ReservationAccessGate({
           code,
         }),
       });
-      const payload = (await response.json()) as {
+      const payload = (await response.json().catch(() => ({}))) as {
         error?: string;
+        error_code?: string;
         hashed_token?: string;
         verification_type?: string;
       };
-      if (!response.ok) throw new Error(payload.error || t("gate.invalidCode"));
+      if (!response.ok) throw serverError(payload, t("gate.invalidCode"));
 
       if (!payload.hashed_token) throw new Error(t("gate.sessionUnavailable"));
 

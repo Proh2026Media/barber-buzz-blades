@@ -4,7 +4,7 @@ import { ArrowLeft, MessageCircle, Scissors, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { DEFAULT_LOGIN_IMAGE } from "@/lib/shop/branding";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { friendlyAuthError } from "@/lib/auth/friendly-error";
+import { friendlyAuthError, serverError } from "@/lib/auth/friendly-error";
 import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
 
 type Step = "dados" | "otp" | "conta";
@@ -24,16 +24,17 @@ async function callRegisterShop(body: Record<string, unknown>) {
     },
     body: JSON.stringify(body),
   });
-  const payload = (await response.json()) as {
+  const payload = (await response.json().catch(() => ({}))) as {
     ok?: boolean;
     error?: string;
+    error_code?: string;
     message?: string;
     destination?: string;
     verification_token?: string;
     email?: string;
     shop_slug?: string;
   };
-  if (!response.ok) throw new Error(payload.error || tNow("register.failed"));
+  if (!response.ok) throw serverError(payload, tNow("register.failed"));
   return payload;
 }
 

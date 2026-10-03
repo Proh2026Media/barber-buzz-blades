@@ -11,6 +11,7 @@ import {
   GOOGLE_SCOPES,
   isSafeAppsReturnOrigin,
   corsHeaders,
+  revokeGoogleToken,
 } from "../_shared/google.ts";
 
 type Body = {
@@ -187,10 +188,50 @@ Deno.serve(async (req) => {
     }
 
     if (action === "disconnect") {
+      // 1) Revoga a autorização no Google antes de apagar os tokens. Falha aqui
+      //    (rede, token já revogado/expirado) não impede a desconexão local.
+      const { data: current, error: readError } = await admin
+        .from("google_connections")
+        .select("id, access_token, refresh_token")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (readError) return json({ error: readError.message }, 500);
+
+      let revoked = false;
+      let revokeError: string | null = null;
+      if (current) {
+        const result = await revokeGoogleToken({
+          refresh_token: current.refresh_token,
+          access_token: current.access_token,
+        });
+        revoked = result.ok;
+        revokeError = result.error;
+        if (!result.ok) {
+          console.warn(
+            `[google-connect] revogação no Google falhou para ${user.id}: ${result.error}`,
+          );
+        }
+      }
+
+      // 2) Apaga os dados do Google guardados no app.
       const { error } = await admin.from("google_connections").delete().eq("user_id", user.id);
       if (error) return json({ error: error.message }, 500);
-      await admin.from("google_calendar_events").delete().eq("user_id", user.id);
-      return json({ ok: true, connected: false });
+      const { error: eventsError } = await admin
+        .from("google_calendar_events")
+        .delete()
+        .eq("user_id", user.id);
+      if (eventsError) {
+        console.warn(
+          `[google-connect] falha ao apagar eventos importados de ${user.id}: ${eventsError.message}`,
+        );
+      }
+      return json({
+        ok: true,
+        connected: false,
+        had_connection: Boolean(current),
+        revoked,
+        revoke_error: revoked ? null : revokeError,
+      });
     }
 
     const { data: connection, error: connError } = await admin
@@ -316,10 +357,10 @@ Deno.serve(async (req) => {
       );
       const calData = (await calRes.json()) as {
         error?: { message?: string };
+        nextPageToken?: string;
         items?: Array<{
           id?: string;
           summary?: string;
-          description?: string;
           htmlLink?: string;
           start?: { dateTime?: string; date?: string };
           end?: { dateTime?: string; date?: string };
@@ -336,6 +377,7 @@ Deno.serve(async (req) => {
       }
 
       const items = calData.items ?? [];
+      const syncedAt = new Date().toISOString();
       let upserted = 0;
       for (const item of items) {
         if (!item.id) continue;
@@ -346,24 +388,50 @@ Deno.serve(async (req) => {
         const endsAt = item.end?.dateTime ?? (item.end?.date ? `${item.end.date}T00:00:00Z` : null);
         if (!startsAt || !endsAt) continue;
         const allDay = Boolean(item.start?.date && !item.start?.dateTime);
+        // Minimização: só o que a tela mostra (título, horário, agenda de origem).
+        // Descrição, participantes, local e o evento completo (raw) não são guardados.
         const { error } = await admin.from("google_calendar_events").upsert(
           {
             user_id: user.id,
             google_event_id: item.id,
             calendar_id: calendarId,
             title: item.summary ?? null,
-            description: item.description ?? null,
+            description: null,
             starts_at: startsAt,
             ends_at: endsAt,
             all_day: allDay,
             html_link: item.htmlLink ?? null,
-            raw: item,
-            synced_at: new Date().toISOString(),
+            raw: {},
+            synced_at: syncedAt,
           },
           { onConflict: "user_id,google_event_id" },
         );
         if (!error) upserted += 1;
       }
+
+      // Limpeza: eventos de outra agenda (troca de agenda) e, quando a leitura veio
+      // completa (sem próxima página), os que sumiram da Agenda Google na janela lida.
+      await admin
+        .from("google_calendar_events")
+        .delete()
+        .eq("user_id", user.id)
+        .neq("calendar_id", calendarId);
+      if (!calData.nextPageToken) {
+        await admin
+          .from("google_calendar_events")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("calendar_id", calendarId)
+          .gte("starts_at", timeMin)
+          .lt("starts_at", timeMax)
+          .lt("synced_at", syncedAt);
+      }
+      // Eventos que já terminaram há mais de 7 dias não têm mais uso na tela.
+      await admin
+        .from("google_calendar_events")
+        .delete()
+        .eq("user_id", user.id)
+        .lt("ends_at", new Date(Date.now() - 7 * 86400000).toISOString());
 
       await admin
         .from("google_connections")

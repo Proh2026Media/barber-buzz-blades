@@ -9,9 +9,35 @@ type Body = {
   domain?: string;
 };
 
+/**
+ * Códigos de erro estáveis devolvidos em `error_code` junto da mensagem em pt-BR.
+ * O app traduz pelo código; a mensagem fica como reserva para clientes antigos.
+ */
+type ErrorCode =
+  | "method_not_allowed"
+  | "server_misconfigured"
+  | "unauthorized"
+  | "missing_shop"
+  | "invalid_action"
+  | "permission_denied"
+  | "domain_rejected"
+  | "domain_nothing_pending"
+  | "domain_txt_missing"
+  | "domain_dns_pending"
+  | "internal_error";
+
+function fail(
+  errorCode: ErrorCode,
+  message: string,
+  status: number,
+  extra: Record<string, unknown> = {},
+) {
+  return json({ ...extra, ok: false, error: message, error_code: errorCode }, status);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST") return fail("method_not_allowed", "Method not allowed", 405);
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -28,10 +54,12 @@ Deno.serve(async (req) => {
       .map((v) => v.trim().toLowerCase().replace(/\.$/, ""))
       .filter(Boolean);
     if (!supabaseUrl || !serviceKey || !anonKey)
-      return json({ error: "Missing Supabase env" }, 500);
+      return fail("server_misconfigured", "Missing Supabase env", 500);
 
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) return json({ error: "Missing authorization" }, 401);
+    if (!authHeader?.startsWith("Bearer ")) {
+      return fail("unauthorized", "Missing authorization", 401);
+    }
 
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
@@ -41,7 +69,7 @@ Deno.serve(async (req) => {
       data: { user },
       error: userError,
     } = await userClient.auth.getUser();
-    if (userError || !user) return json({ error: "Invalid session" }, 401);
+    if (userError || !user) return fail("unauthorized", "Invalid session", 401);
 
     const admin = createClient(supabaseUrl, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
@@ -50,7 +78,7 @@ Deno.serve(async (req) => {
     const body = (await req.json()) as Body;
     const action = body.action ?? "verify";
     const shopId = body.barbershop_id?.trim();
-    if (!shopId) return json({ error: "barbershop_id required" }, 400);
+    if (!shopId) return fail("missing_shop", "barbershop_id required", 400);
 
     if (action === "set") {
       const domain = body.domain?.trim() ?? "";
@@ -58,7 +86,7 @@ Deno.serve(async (req) => {
         p_shop_id: shopId,
         p_domain: domain,
       });
-      if (error) return json({ error: error.message }, 400);
+      if (error) return fail("domain_rejected", error.message, 400);
       const settings = data as {
         shop_slug?: string;
         custom_domain?: string | null;
@@ -74,19 +102,20 @@ Deno.serve(async (req) => {
         warning: provision.ok
           ? null
           : (provision.error ?? "Domínio salvo, mas o proxy ainda não foi provisionado."),
+        warning_code: provision.ok ? null : "domain_proxy_pending",
       });
     }
 
     if (action === "clear") {
       const before = await userClient.rpc("get_shop_domain_settings", { p_shop_id: shopId });
-      if (before.error) return json({ error: before.error.message }, 403);
+      if (before.error) return fail("permission_denied", before.error.message, 403);
       const prev = before.data as { custom_domain?: string | null };
       const domainToRemove = prev.custom_domain?.toLowerCase() ?? null;
 
       const { data, error } = await userClient.rpc("clear_shop_custom_domain", {
         p_shop_id: shopId,
       });
-      if (error) return json({ error: error.message }, 400);
+      if (error) return fail("domain_rejected", error.message, 400);
 
       let provision: Awaited<ReturnType<typeof domainManagerRemove>> = {
         ok: true,
@@ -103,14 +132,15 @@ Deno.serve(async (req) => {
           provision.ok || provision.skipped
             ? null
             : (provision.error ?? "Domínio removido do app, mas o proxy pode ainda ter a rota."),
+        warning_code: provision.ok || provision.skipped ? null : "domain_proxy_cleanup_pending",
       });
     }
 
-    if (action !== "verify") return json({ error: "Unknown action" }, 400);
+    if (action !== "verify") return fail("invalid_action", "Unknown action", 400);
 
     // --- verify (DNS + mark active + ensure /add) ---
     const settingsRes = await userClient.rpc("get_shop_domain_settings", { p_shop_id: shopId });
-    if (settingsRes.error) return json({ error: settingsRes.error.message }, 403);
+    if (settingsRes.error) return fail("permission_denied", settingsRes.error.message, 403);
 
     const cfg = settingsRes.data as {
       shop_slug?: string;
@@ -121,7 +151,7 @@ Deno.serve(async (req) => {
     const domain = cfg.custom_domain?.toLowerCase();
     const token = cfg.domain_verify_token;
     if (!domain || !token) {
-      return json({ error: "Nenhum domínio pendente de verificação." }, 400);
+      return fail("domain_nothing_pending", "Nenhum domínio pendente de verificação.", 400);
     }
 
     const txtHost = `_barba-verify.${domain}`;
@@ -172,17 +202,14 @@ Deno.serve(async (req) => {
       await registerFailure(
         `TXT não encontrado em ${txtHost}. Esperado ${expectedTxt}. Visto: ${txts.join(" | ") || "(vazio)"}.`,
       );
-      return json(
-        {
-          ok: false,
-          txt_ok: false,
-          cname_ok: cnameOk || aOk,
-          expected_txt: expectedTxt,
-          found_txt: txts,
-          error: `Registre o TXT em ${txtHost} = ${expectedTxt}`,
-        },
-        422,
-      );
+      return fail("domain_txt_missing", `Registre o TXT em ${txtHost} = ${expectedTxt}`, 422, {
+        txt_ok: false,
+        cname_ok: cnameOk || aOk,
+        txt_host: txtHost,
+        expected_txt: expectedTxt,
+        found_txt: txts,
+        kept_active: wasActive,
+      });
     }
 
     if (!cnameOk && !aOk) {
@@ -190,16 +217,19 @@ Deno.serve(async (req) => {
       await registerFailure(
         `Aponte ${domain} (CNAME) para ${targetHint}. Visto: ${cnames.join(", ") || as.join(", ") || "(vazio)"}.`,
       );
-      return json(
+      return fail(
+        "domain_dns_pending",
+        `CNAME ${domain} → ${targetHint} ainda não propagou.`,
+        422,
         {
-          ok: false,
           txt_ok: true,
           cname_ok: false,
+          domain,
+          cname_target: targetHint,
           found_cname: cnames,
           found_a: as,
-          error: `CNAME ${domain} → ${targetHint} ainda não propagou.`,
+          kept_active: wasActive,
         },
-        422,
       );
     }
 
@@ -208,7 +238,7 @@ Deno.serve(async (req) => {
       p_status: "active",
       p_error: null,
     });
-    if (marked.error) return json({ error: marked.error.message }, 500);
+    if (marked.error) return fail("internal_error", marked.error.message, 500);
 
     const provision = await domainManagerAdd(domain, cfg.shop_slug ?? "");
     return json({
@@ -220,8 +250,9 @@ Deno.serve(async (req) => {
       warning: provision.ok
         ? null
         : (provision.error ?? "DNS ok, mas o proxy ainda não foi provisionado."),
+      warning_code: provision.ok ? null : "domain_proxy_pending",
     });
   } catch (err) {
-    return json({ error: err instanceof Error ? err.message : "shop-domain failed" }, 500);
+    return fail("internal_error", err instanceof Error ? err.message : "shop-domain failed", 500);
   }
 });

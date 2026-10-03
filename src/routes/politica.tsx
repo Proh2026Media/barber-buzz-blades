@@ -1,332 +1,528 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState, type ReactNode } from "react";
 import {
-  ChevronLeft,
-  Trophy,
-  Star,
-  Zap,
-  MessageSquare,
-  CheckCircle,
-  Crown,
-  Shield,
-  CreditCard,
-  Scissors,
+  AlertCircle,
   Armchair,
   BadgeCheck,
-  Sparkle,
+  CheckCircle,
+  ChevronLeft,
+  Crown,
   Diamond,
+  Gift,
+  Info,
+  Loader2,
+  LogIn,
+  RefreshCw,
+  Sparkle,
+  Store,
+  Trophy,
 } from "lucide-react";
-import { useTheme } from "@/lib/use-theme";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LegalCourtesyNotice } from "@/features/legal/LegalPageShell";
+import { useLegalI18n } from "@/features/legal/legal-locale";
 import { legalRichText } from "@/features/legal/rich-text";
-import { useI18n } from "@/lib/i18n";
+import {
+  parseLoyaltyProgram,
+  tierStyleKey,
+  type LoyaltyProgram,
+  type LoyaltyTier,
+} from "@/features/loyalty/program";
+import { supabase } from "@/integrations/supabase/client";
+
+type PoliticaSearch = { shop?: string; lang?: string };
+
+function cleanParam(value: unknown, max: number) {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed && trimmed.length <= max ? trimmed : undefined;
+}
 
 export const Route = createFileRoute("/politica")({
-  component: PoliticaSistemas,
+  // `?shop=<slug ou id>` mostra a regra real daquela barbearia; `?lang=` escolhe o idioma.
+  validateSearch: (search: Record<string, unknown>): PoliticaSearch => {
+    const shop = cleanParam(search.shop, 120);
+    const lang = cleanParam(search.lang, 12);
+    return { ...(shop ? { shop } : {}), ...(lang ? { lang } : {}) };
+  },
+  head: () => ({
+    meta: [
+      { title: "Clube de fidelidade — Barba & Cabelo" },
+      {
+        name: "description",
+        content:
+          "Como funciona o clube de fidelidade das barbearias no Barba & Cabelo: pontos, níveis e prêmios definidos por cada barbearia.",
+      },
+    ],
+  }),
+  component: PoliticaClube,
 });
 
-function PoliticaSistemas() {
-  const { isDark: isDarkMode } = useTheme();
-  const { t } = useI18n();
+type Corner = "square" | "soft" | "round";
+
+type Access = "ok" | "signedOut" | "noAccess" | "programError";
+
+type LoadState =
+  | { status: "none" }
+  | { status: "loading" }
+  | { status: "notFound" }
+  | { status: "error" }
+  | {
+      status: "ready";
+      shopName: string;
+      corner: Corner;
+      access: Access;
+      program: LoyaltyProgram | null;
+    };
+
+function parseCorner(value: string | null | undefined): Corner {
+  return value === "square" || value === "round" ? value : "soft";
+}
+
+/** Carrega o nome da loja (público) e, para quem tem acesso, a regra de fidelidade em vigor. */
+function useShopProgram(shopRef: string | undefined, attempt: number): LoadState {
+  const [state, setState] = useState<LoadState>(
+    shopRef ? { status: "loading" } : { status: "none" },
+  );
+
+  useEffect(() => {
+    if (!shopRef) {
+      setState({ status: "none" });
+      return;
+    }
+    let cancelled = false;
+    setState({ status: "loading" });
+    void (async () => {
+      try {
+        const branding = await supabase.rpc("get_public_shop_branding", { p_shop_ref: shopRef });
+        if (cancelled) return;
+        if (branding.error) {
+          setState({ status: "error" });
+          return;
+        }
+        const row = branding.data?.[0];
+        if (!row) {
+          setState({ status: "notFound" });
+          return;
+        }
+        const shopName = row.display_name?.trim() || row.shop_name;
+        const corner = parseCorner(row.corner_style);
+
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (cancelled) return;
+        if (!sessionData.session) {
+          setState({ status: "ready", shopName, corner, access: "signedOut", program: null });
+          return;
+        }
+
+        const programResult = await supabase.rpc("get_shop_loyalty_program", {
+          p_shop_id: row.shop_id,
+        });
+        if (cancelled) return;
+        if (programResult.error) {
+          // 42501 = sem vínculo com a loja; qualquer outro erro é falha de carregamento.
+          const access: Access = programResult.error.code === "42501" ? "noAccess" : "programError";
+          setState({ status: "ready", shopName, corner, access, program: null });
+          return;
+        }
+        setState({
+          status: "ready",
+          shopName,
+          corner,
+          access: "ok",
+          program: parseLoyaltyProgram(programResult.data),
+        });
+      } catch {
+        if (!cancelled) setState({ status: "error" });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [shopRef, attempt]);
+
+  return state;
+}
+
+const TIER_STYLES = {
+  classic: { icon: Armchair, text: "text-gradient-silver", badge: "bg-silver-metallic text-black" },
+  select: {
+    icon: BadgeCheck,
+    text: "text-gradient-bronze",
+    badge: "bg-bronze-metallic text-white",
+  },
+  privilege: { icon: Sparkle, text: "text-gradient-gold", badge: "bg-gold-metallic text-black" },
+  exclusive: {
+    icon: Diamond,
+    text: "text-gradient-hologram",
+    badge: "bg-hologram-metallic text-black",
+  },
+} as const;
+
+const cardClass =
+  "rounded-[var(--panel-radius)] border border-border/70 bg-card p-5 text-card-foreground shadow-sm";
+const iconButtonClass =
+  "inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--control-radius)] border border-border/60 bg-muted/40 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground";
+const actionButtonClass =
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--button-radius)] px-4 text-sm font-semibold transition-colors";
+
+type T = ReturnType<typeof useLegalI18n>["t"];
+
+function SectionTitle({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans pb-10">
-      <svg width="0" height="0" className="absolute pointer-events-none">
-        <defs>
-          <linearGradient id="hologram-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#050505" className="dark:stop-[#F0F9FF]" />
-            <stop offset="10%" stopColor="#0d0d0d" className="dark:stop-[#7DD3FC]" />
-            <stop offset="30%" stopColor="#B3E5FC" className="dark:stop-[#FFFFFF]" />
-            <stop offset="45%" stopColor="#4FC3F7" className="dark:stop-[#F9A8D4]" />
-            <stop offset="60%" stopColor="#F8BBD0" className="dark:stop-[#FEF08A]" />
-            <stop offset="75%" stopColor="#FFF9C4" className="dark:stop-[#7DD3FC]" />
-            <stop offset="90%" stopColor="#4FC3F7" className="dark:stop-[#F0F9FF]" />
-            <stop offset="100%" stopColor="#050505" className="dark:stop-[#F0F9FF]" />
-          </linearGradient>
-        </defs>
-      </svg>
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-background/90 backdrop-blur-xl border-b border-border/50 p-4 flex items-center justify-between">
-        <Link
-          to="/"
-          className="p-2.5 rounded-2xl bg-muted/30 text-muted-foreground hover:text-foreground transition-all border border-border/50"
-          aria-label={t("legal.back")}
-        >
-          <ChevronLeft size={20} />
-        </Link>
-        <h1 className="text-sm font-black uppercase tracking-widest text-foreground">
-          {t("legal.club.header")}
-        </h1>
-        <div className="flex items-center gap-2">
-          <LanguageSwitcher />
-          <ThemeToggle />
+    <div className="flex items-center gap-2">
+      <span className="h-1 w-8 rounded-full bg-primary" aria-hidden="true" />
+      <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-primary">{children}</h2>
+    </div>
+  );
+}
+
+function PoliticaClube() {
+  const { shop, lang } = Route.useSearch();
+  const { t, locale } = useLegalI18n(lang);
+  const [attempt, setAttempt] = useState(0);
+  const state = useShopProgram(shop, attempt);
+  const corner = state.status === "ready" ? state.corner : "soft";
+  const program = state.status === "ready" && state.access === "ok" ? state.program : null;
+  const shopName = state.status === "ready" ? state.shopName : null;
+  const retry = () => setAttempt((n) => n + 1);
+
+  return (
+    <div
+      className={`brand-corners-${corner} min-h-dvh bg-background pb-10 font-sans text-foreground`}
+    >
+      <header className="sticky top-0 z-30 border-b border-border/60 bg-background/95 backdrop-blur-md">
+        <div className="mx-auto flex max-w-xl items-center justify-between gap-3 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+          <Link
+            to={program ? "/app" : "/"}
+            className={iconButtonClass}
+            aria-label={t("legal.back")}
+          >
+            <ChevronLeft className="size-5" aria-hidden="true" />
+          </Link>
+          <p className="min-w-0 truncate text-sm font-bold">{t("legal.club.header")}</p>
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher buttonClassName={iconButtonClass} />
+            <ThemeToggle buttonClassName={iconButtonClass} />
+          </div>
         </div>
       </header>
 
-      <main className="p-6 max-w-xl mx-auto space-y-10">
-        <LegalCourtesyNotice />
-        {/* Intro */}
-        <section className="text-center space-y-2">
-          <div className="h-16 w-16 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto text-primary border border-primary/20 mb-4 shadow-xl">
-            <Crown size={32} />
+      <main className="mx-auto max-w-xl space-y-8 px-4 py-6">
+        <LegalCourtesyNotice locale={locale} />
+
+        <section className="space-y-3 text-center">
+          <div className="mx-auto flex size-16 items-center justify-center rounded-[var(--panel-radius)] border border-primary/20 bg-primary/10 text-primary">
+            <Crown className="size-8" aria-hidden="true" />
           </div>
-          <h2 className="text-2xl font-black uppercase tracking-tighter">
-            {t("legal.club.heroTitle")}
-          </h2>
-          <p className="text-muted-foreground text-sm font-medium leading-relaxed italic">
-            {t("legal.club.heroBody")}
+          {shopName && (
+            <p className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-border/70 bg-card px-3 py-1 text-xs font-semibold text-muted-foreground">
+              <Store className="size-3.5 shrink-0" aria-hidden="true" />
+              <span className="truncate">{shopName}</span>
+            </p>
+          )}
+          <h1 className="text-2xl font-bold tracking-tight">{t("legal.club.heroTitle")}</h1>
+          <p className="text-[15px] leading-relaxed text-muted-foreground">
+            {program
+              ? t("legal.club.heroBodyShop", { shop: shopName ?? "" })
+              : t("legal.club.heroBodyGeneric")}
           </p>
         </section>
 
-        {/* Hierarquia de Status */}
-        <section className="space-y-6">
-          <div className="flex items-center gap-2">
-            <div className="h-1 w-8 bg-primary rounded-full"></div>
-            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary">
-              {t("legal.club.s1Title")}
-            </h3>
-          </div>
-          {/* As faixas abaixo são as da regra padrão; cada barbearia pode ter níveis próprios. */}
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            {t("fix.fidelidade-insights.policyTiersNotice")}
-          </p>
+        <StatusNotice state={state} shopRef={shop} t={t} onRetry={retry} />
 
-          <div className="grid grid-cols-1 gap-4">
-            {/* Classic */}
-            <div className="bg-card/50 p-5 rounded-[32px] border border-border/60 shadow-sm backdrop-blur-md relative overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-br from-foreground/5 to-transparent pointer-events-none" />
-              <div className="flex items-center gap-4 mb-4">
-                <div className="p-2.5 bg-silver-metallic rounded-2xl text-black border border-white/20 shadow-inner group-hover:scale-110 transition-transform">
-                  <Armchair size={20} />
-                </div>
-                <div>
-                  <h3 className="font-black uppercase tracking-widest text-sm text-gradient-silver">
-                    {t("legal.club.level", { name: "Classic" })}
-                  </h3>
-                  <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
-                    {t("legal.club.pointsRange", { min: 0, max: 99 })}
-                  </p>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed mb-4">
-                {t("legal.club.classicBody")}
-              </p>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-[10px] font-black text-foreground/80">
-                  <CheckCircle size={10} className="text-gradient-silver" />{" "}
-                  {t("legal.club.classicPerk1")}
-                </div>
-                <div className="flex items-center gap-2 text-[10px] font-black text-foreground/80">
-                  <CheckCircle size={10} className="text-gradient-silver" />{" "}
-                  {t("legal.club.classicPerk2")}
-                </div>
-              </div>
-            </div>
+        {program ? (
+          program.enabled ? (
+            <ShopProgram program={program} t={t} />
+          ) : (
+            <p role="status" className={`${cardClass} flex gap-3 text-sm leading-relaxed`}>
+              <Info className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+              <span>{t("legal.club.disabled", { shop: shopName ?? "" })}</span>
+            </p>
+          )
+        ) : state.status === "loading" ? null : (
+          <GenericProgram t={t} />
+        )}
 
-            {/* Select */}
-            <div className="bg-card/50 p-5 rounded-[32px] border border-border/60 shadow-sm backdrop-blur-md relative overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-br from-foreground/5 to-transparent pointer-events-none" />
-              <div className="flex items-center gap-4 mb-4">
-                <div className="p-2.5 bg-bronze-metallic rounded-2xl text-white border border-white/20 shadow-inner group-hover:scale-110 transition-transform">
-                  <BadgeCheck size={20} />
-                </div>
-                <div>
-                  <h3 className="font-black uppercase tracking-widest text-sm text-gradient-bronze">
-                    {t("legal.club.level", { name: "Select" })}
-                  </h3>
-                  <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
-                    {t("legal.club.pointsRange", { min: 100, max: 299 })}
-                  </p>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed mb-4">
-                {t("legal.club.selectBody")}
-              </p>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-[10px] font-black text-foreground/80">
-                  <CheckCircle size={10} className="text-gradient-bronze" />{" "}
-                  {t("legal.club.selectPerk1")}
-                </div>
-                <div className="flex items-center gap-2 text-[10px] font-black text-foreground/80">
-                  <CheckCircle size={10} className="text-gradient-bronze" />{" "}
-                  {t("legal.club.selectPerk2")}
-                </div>
-              </div>
-            </div>
-
-            {/* Privilege */}
-            <div className="bg-card/50 p-5 rounded-[32px] border border-border/60 shadow-sm backdrop-blur-md relative overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-br from-foreground/5 to-transparent pointer-events-none" />
-              <div className="flex items-center gap-4 mb-4">
-                <div className="p-2.5 bg-gold-metallic rounded-2xl text-black border border-white/20 shadow-inner group-hover:scale-110 transition-transform">
-                  <Sparkle size={20} />
-                </div>
-                <div>
-                  <h3 className="font-black uppercase tracking-widest text-sm text-gradient-gold">
-                    {t("legal.club.level", { name: "Privilege" })}
-                  </h3>
-                  <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
-                    {t("legal.club.pointsRange", { min: 300, max: 499 })}
-                  </p>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed mb-4">
-                {t("legal.club.privilegeBody")}
-              </p>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-[10px] font-black text-foreground/80">
-                  <CheckCircle size={10} className="text-gradient-gold" />{" "}
-                  {t("legal.club.privilegePerk1")}
-                </div>
-                <div className="flex items-center gap-2 text-[10px] font-black text-foreground/80">
-                  <CheckCircle size={10} className="text-gradient-gold" />{" "}
-                  {t("legal.club.privilegePerk2")}
-                </div>
-              </div>
-            </div>
-
-            {/* Exclusive */}
-            <div className="bg-muted/40 p-6 rounded-[32px] border border-border/70 shadow-sm backdrop-blur-lg relative overflow-hidden ring-1 ring-border/50 group">
-              <div className="absolute -right-4 -top-4 opacity-10 transition-transform group-hover:scale-110">
-                <Diamond size={80} fill="currentColor" className="text-foreground" />
-              </div>
-              <div className="flex items-center gap-4 mb-4">
-                <div
-                  className={`p-2.5 rounded-2xl border transition-transform group-hover:scale-110 shadow-inner ${isDarkMode ? "bg-hologram-metallic border-transparent" : "bg-[#050505] border-border/40"}`}
-                >
-                  <Diamond
-                    size={20}
-                    className={`${isDarkMode ? "text-[#050505]" : "text-white"}`}
-                    style={{
-                      fill: isDarkMode ? "#050505" : "url(#hologram-gradient)",
-                      stroke: "none",
-                    }}
-                  />
-                </div>
-                <div>
-                  <h3 className="font-black uppercase tracking-widest text-sm text-gradient-hologram">
-                    {t("legal.club.level", { name: "Exclusive" })}
-                  </h3>
-                  <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">
-                    {t("legal.club.exclusiveRange")}
-                  </p>
-                </div>
-              </div>
-              <p className="text-xs text-foreground/90 font-medium leading-relaxed mb-5">
-                {t("legal.club.exclusiveBody")}
-              </p>
-              <ul className="space-y-3">
-                <li className="text-[10px] font-black flex items-center gap-3">
-                  <div
-                    className={`p-1 rounded-lg shadow-sm border ${isDarkMode ? "bg-hologram-metallic border-transparent" : "bg-[#050505] border-border/30"}`}
-                  >
-                    <CheckCircle
-                      size={12}
-                      className={`${isDarkMode ? "text-[#050505]" : "text-white"}`}
-                      style={{
-                        fill: isDarkMode ? "#050505" : "url(#hologram-gradient)",
-                        stroke: "none",
-                      }}
-                    />
-                  </div>
-                  <span className="text-gradient-hologram">{t("legal.club.exclusivePerk1")}</span>
-                </li>
-                <li className="text-[10px] font-black flex items-center gap-3">
-                  <div
-                    className={`p-1 rounded-lg shadow-sm border ${isDarkMode ? "bg-hologram-metallic border-transparent" : "bg-[#050505] border-border/30"}`}
-                  >
-                    <CheckCircle
-                      size={12}
-                      className={`${isDarkMode ? "text-[#050505]" : "text-white"}`}
-                      style={{
-                        fill: isDarkMode ? "#050505" : "url(#hologram-gradient)",
-                        stroke: "none",
-                      }}
-                    />
-                  </div>
-                  <span className="text-gradient-hologram">{t("legal.club.exclusivePerk2")}</span>
-                </li>
-                <li className="text-[10px] font-black flex items-center gap-3">
-                  <div
-                    className={`p-1 rounded-lg shadow-sm border ${isDarkMode ? "bg-hologram-metallic border-transparent" : "bg-[#050505] border-border/30"}`}
-                  >
-                    <CheckCircle
-                      size={12}
-                      className={`${isDarkMode ? "text-[#050505]" : "text-white"}`}
-                      style={{
-                        fill: isDarkMode ? "#050505" : "url(#hologram-gradient)",
-                        stroke: "none",
-                      }}
-                    />
-                  </div>
-                  <span className="text-gradient-hologram">{t("legal.club.exclusivePerk3")}</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </section>
-
-        {/* Diferença Assinatura vs Pontos */}
         <section className="space-y-4">
-          <div className="flex items-center gap-2">
-            <div className="h-1 w-8 bg-primary rounded-full"></div>
-            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary">
-              {t("legal.club.s2Title")}
-            </h3>
-          </div>
-          <div className="grid grid-cols-1 gap-4">
-            <div className="bg-card/30 border border-border/50 p-6 rounded-[24px] backdrop-blur-sm">
-              <div className="flex items-center gap-2 mb-3">
-                <Trophy size={16} className="text-primary" />
-                <h5 className="text-[10px] font-black uppercase tracking-widest">
-                  {t("legal.club.lifetimeTitle")}
-                </h5>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                {t("legal.club.lifetimeBody")}
-                <span className="block mt-2 font-black text-foreground bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20 inline-block">
-                  {t("fix.fidelidade-insights.policyPointRate")}
-                </span>
-              </p>
-            </div>
-            <div className="bg-gradient-to-br from-[#D4AF37]/10 to-transparent border border-[#D4AF37]/30 p-6 rounded-[24px] backdrop-blur-md relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
-                <Crown size={32} fill="currentColor" className="text-[#D4AF37]" />
-              </div>
-              <div className="flex items-center gap-2 mb-3">
-                <Star size={16} fill="currentColor" className="text-[#D4AF37]" />
-                <h5 className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">
-                  {t("legal.club.subscriptionTitle")}
-                </h5>
-              </div>
-              <p className="text-xs text-foreground/80 leading-relaxed">
-                {legalRichText(t("legal.club.subscriptionBody"), {
-                  plan: (
-                    <span className="font-black text-[#D4AF37]">{t("legal.club.planName")}</span>
-                  ),
-                })}
-              </p>
-            </div>
-          </div>
+          <SectionTitle>{t("legal.club.termsTitle")}</SectionTitle>
+          <ul className={`${cardClass} space-y-3 text-sm leading-relaxed`}>
+            {(
+              [
+                "legal.club.terms1",
+                "legal.club.terms2",
+                "legal.club.terms3",
+                "legal.club.terms4",
+              ] as const
+            ).map((key) => (
+              <li key={key} className="flex gap-3">
+                <CheckCircle className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                <span>{t(key)}</span>
+              </li>
+            ))}
+          </ul>
         </section>
 
-        <section className="pt-10 border-t border-border/50 text-center">
-          <div className="flex justify-center gap-4 mb-4 grayscale opacity-30">
-            <Armchair size={16} />
-            <BadgeCheck size={16} />
-            <Sparkle size={16} />
-            <Diamond size={16} />
-          </div>
-          <p className="text-[9px] text-muted-foreground uppercase font-black tracking-[0.4em]">
-            Classic · Select · Privilege · Exclusive
-          </p>
-          <p className="text-[10px] text-muted-foreground/40 mt-3 font-medium">
-            {t("fix.fidelidade-insights.policyFooter", { year: new Date().getFullYear() })}
-          </p>
-        </section>
+        <footer className="space-y-3 border-t border-border/60 pt-6 text-center text-xs text-muted-foreground">
+          <nav
+            className="flex flex-wrap items-center justify-center gap-x-4"
+            aria-label={t("legal.navAria")}
+          >
+            <Link
+              to="/termos"
+              className="inline-flex min-h-11 items-center font-semibold text-foreground underline-offset-2 hover:underline"
+            >
+              {t("legal.termsLink")}
+            </Link>
+            <Link
+              to="/privacidade"
+              className="inline-flex min-h-11 items-center font-semibold text-foreground underline-offset-2 hover:underline"
+            >
+              {t("legal.privacyLink")}
+            </Link>
+          </nav>
+          <p>{t("fix.fidelidade-insights.policyFooter", { year: new Date().getFullYear() })}</p>
+        </footer>
       </main>
     </div>
   );
 }
 
-export default PoliticaSistemas;
+function StatusNotice({
+  state,
+  shopRef,
+  t,
+  onRetry,
+}: {
+  state: LoadState;
+  shopRef: string | undefined;
+  t: T;
+  onRetry: () => void;
+}) {
+  if (state.status === "none") return null;
+  if (state.status === "loading") {
+    return (
+      <p
+        role="status"
+        className={`${cardClass} flex items-center gap-3 text-sm text-muted-foreground`}
+      >
+        <Loader2 className="size-5 shrink-0 animate-spin" aria-hidden="true" />
+        {t("legal.club.loading")}
+      </p>
+    );
+  }
+  if (state.status === "notFound") {
+    return <Notice icon={Info} text={t("legal.club.shopNotFound")} />;
+  }
+  if (state.status === "error" || (state.status === "ready" && state.access === "programError")) {
+    return (
+      <div role="alert" className={`${cardClass} space-y-3`}>
+        <p className="flex gap-3 text-sm leading-relaxed">
+          <AlertCircle className="mt-0.5 size-5 shrink-0 text-destructive" aria-hidden="true" />
+          <span>{t("legal.club.loadError")}</span>
+        </p>
+        <button
+          type="button"
+          onClick={onRetry}
+          className={`${actionButtonClass} w-full bg-foreground text-background hover:opacity-90`}
+        >
+          <RefreshCw className="size-4" aria-hidden="true" />
+          {t("legal.club.retry")}
+        </button>
+      </div>
+    );
+  }
+  if (state.access === "signedOut") {
+    return (
+      <div className={`${cardClass} space-y-3`}>
+        <p className="flex gap-3 text-sm leading-relaxed">
+          <Info className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <span>{t("legal.club.signInHint", { shop: state.shopName })}</span>
+        </p>
+        <Link
+          to="/auth"
+          search={{
+            next: `/politica?shop=${encodeURIComponent(shopRef ?? "")}`,
+            ...(shopRef ? { shop: shopRef } : {}),
+          }}
+          className={`${actionButtonClass} w-full bg-foreground text-background hover:opacity-90`}
+        >
+          <LogIn className="size-4" aria-hidden="true" />
+          {t("legal.club.signIn")}
+        </Link>
+      </div>
+    );
+  }
+  if (state.access === "noAccess") {
+    return <Notice icon={Info} text={t("legal.club.noAccess", { shop: state.shopName })} />;
+  }
+  return null;
+}
+
+function Notice({ icon: Icon, text }: { icon: typeof Info; text: string }) {
+  return (
+    <p role="status" className={`${cardClass} flex gap-3 text-sm leading-relaxed`}>
+      <Icon className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+      <span>{text}</span>
+    </p>
+  );
+}
+
+function pointsLabel(t: T, n: number) {
+  return t(n === 1 ? "legal.club.pointsOne" : "legal.club.pointsMany", { n });
+}
+
+function ShopProgram({ program, t }: { program: LoyaltyProgram; t: T }) {
+  const rewards = program.rewards
+    .filter((reward) => reward.active)
+    .sort((a, b) => a.sort_order - b.sort_order || a.cost_points - b.cost_points);
+  return (
+    <>
+      <section className="space-y-4">
+        <SectionTitle>{t("legal.club.earnTitle")}</SectionTitle>
+        <div className={`${cardClass} space-y-3 text-sm leading-relaxed`}>
+          <p className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-muted/40 px-3 py-1 text-xs font-semibold text-muted-foreground">
+            {program.mode === "custom" ? t("legal.club.modeCustom") : t("legal.club.modeDefault")}
+          </p>
+          <p className="flex gap-3">
+            <Trophy className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+            <span>
+              {legalRichText(t("legal.club.perVisit"), {
+                points: <strong>{pointsLabel(t, program.points_per_visit)}</strong>,
+              })}
+            </span>
+          </p>
+          {program.welcome_bonus > 0 && (
+            <p className="flex gap-3">
+              <Gift className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+              <span>
+                {legalRichText(t("legal.club.welcome"), {
+                  points: <strong>{pointsLabel(t, program.welcome_bonus)}</strong>,
+                })}
+              </span>
+            </p>
+          )}
+          <p className="text-muted-foreground">{t("legal.club.earnNote")}</p>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <SectionTitle>{t("legal.club.tiersTitle")}</SectionTitle>
+        <p className="text-sm leading-relaxed text-muted-foreground">{t("legal.club.tiersBody")}</p>
+        <ol className="space-y-3">
+          {program.tiers.map((tier, index) => (
+            <TierCard
+              key={`${tier.name}-${tier.min_points}`}
+              tier={tier}
+              next={program.tiers[index + 1] ?? null}
+              styleKey={tierStyleKey(index, program.tiers.length)}
+              t={t}
+            />
+          ))}
+        </ol>
+      </section>
+
+      <section className="space-y-4">
+        <SectionTitle>{t("legal.club.rewardsTitle")}</SectionTitle>
+        {rewards.length === 0 ? (
+          <p className={`${cardClass} text-sm leading-relaxed text-muted-foreground`}>
+            {t("legal.club.rewardsEmpty")}
+          </p>
+        ) : (
+          <>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {t("legal.club.rewardsBody")}
+            </p>
+            <ul className="space-y-3">
+              {rewards.map((reward) => (
+                <li key={reward.id} className={`${cardClass} flex items-start gap-3`}>
+                  <Gift className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
+                  <div className="min-w-0 flex-1">
+                    <p className="break-words font-semibold">{reward.name}</p>
+                    {reward.description && (
+                      <p className="mt-1 break-words text-sm leading-relaxed text-muted-foreground">
+                        {reward.description}
+                      </p>
+                    )}
+                  </div>
+                  <span className="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
+                    {pointsLabel(t, reward.cost_points)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </section>
+    </>
+  );
+}
+
+function TierCard({
+  tier,
+  next,
+  styleKey,
+  t,
+}: {
+  tier: LoyaltyTier;
+  next: LoyaltyTier | null;
+  styleKey: keyof typeof TIER_STYLES;
+  t: T;
+}) {
+  const style = TIER_STYLES[styleKey];
+  const Icon = style.icon;
+  return (
+    <li className={cardClass}>
+      <div className="flex items-center gap-3">
+        <span
+          className={`flex size-10 shrink-0 items-center justify-center rounded-[var(--control-radius)] border border-white/20 shadow-inner ${style.badge}`}
+        >
+          <Icon className="size-5" aria-hidden="true" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3 className={`break-words text-base font-bold ${style.text}`}>{tier.name}</h3>
+          <p className="text-xs font-semibold text-muted-foreground">
+            {next
+              ? t("legal.club.range", { from: tier.min_points, to: next.min_points - 1 })
+              : t("legal.club.rangeTop", { from: tier.min_points })}
+          </p>
+        </div>
+      </div>
+      {tier.benefit.trim() && (
+        <p className="mt-3 break-words text-sm leading-relaxed text-muted-foreground">
+          {tier.benefit}
+        </p>
+      )}
+    </li>
+  );
+}
+
+function GenericProgram({ t }: { t: T }) {
+  const items = [
+    { icon: Trophy, key: "legal.club.generalEarn" },
+    { icon: Crown, key: "legal.club.generalTiers" },
+    { icon: Gift, key: "legal.club.generalRewards" },
+  ] as const;
+  return (
+    <section className="space-y-4">
+      <SectionTitle>{t("legal.club.generalTitle")}</SectionTitle>
+      <ul className="space-y-3">
+        {items.map(({ icon: Icon, key }) => (
+          <li key={key} className={`${cardClass} flex gap-3 text-sm leading-relaxed`}>
+            <Icon className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
+            <span>{t(key)}</span>
+          </li>
+        ))}
+      </ul>
+      <p
+        role="note"
+        className="flex gap-3 rounded-[var(--control-radius)] border border-border/60 bg-muted/40 px-4 py-3 text-sm leading-relaxed text-muted-foreground"
+      >
+        <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        <span>{t("legal.club.generalVaries")}</span>
+      </p>
+    </section>
+  );
+}
+
+export default PoliticaClube;

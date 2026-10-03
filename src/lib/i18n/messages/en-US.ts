@@ -675,7 +675,7 @@ export const enUS: Record<MessageKey, string> = {
     "Information provided must be true and up to date. Abusive use, fraud or attempted unauthorized access may result in suspension or closure of the account.",
   "legal.terms.s4Title": "4. Google and other third-party services",
   "legal.terms.s4Body":
-    "When you use Google sign-in or connect Google Calendar/Contacts, Google's terms and policies also apply. How this information is handled is described in our Privacy Policy. You can disconnect the integration at any time in the app settings or in your Google account permissions.",
+    "When you use Google sign-in or connect Google Calendar/Contacts, Google's terms and policies also apply. How this information is handled is described in our Privacy Policy.",
   "legal.terms.s5Title": "5. Availability",
   "legal.terms.s5Body":
     "We strive to keep the service available and secure, but we do not guarantee uninterrupted operation. Maintenance, network failures or failures of external providers may temporarily affect access.",
@@ -691,82 +691,253 @@ export const enUS: Record<MessageKey, string> = {
   "legal.privacy.s1Title": "1. Who is responsible",
   "legal.privacy.s1Intro": "The {app} app (available at {site}) is operated by:",
   "legal.privacy.legalName": "Legal name: {value}",
-  "legal.privacy.cnpj": "CNPJ: {value}",
+  "legal.privacy.cnpj": "CNPJ (Brazilian company registration): {value}",
   "legal.privacy.contactEmail": "Privacy contact email: {email}",
+  "legal.privacy.s1Dpo":
+    "**Data Protection Officer (DPO):** reachable at {email}, which receives requests from data subjects and communications from the Brazilian National Data Protection Authority (ANPD).",
+  "legal.privacy.s1Roles":
+    "For your account data and platform data, the company above is the **controller**. For the data each barbershop enters about its own customers and staff, the barbershop is the controller and Barba & Cabelo acts as a **processor**, handling that data only to provide the contracted service.",
   "legal.privacy.s1Body":
-    "Use the email above for questions, or requests to access or correct data. Users can permanently delete their account themselves in the app (My profile), without opening a support ticket.",
-  "legal.privacy.s2Title": "2. What data we collect",
-  "legal.privacy.s2Intro": "When you sign up and use the service, we may process:",
-  "legal.privacy.s2Item1": "**Name** and account profile data;",
-  "legal.privacy.s2Item2": "**Email** (account identification and communication);",
+    "This policy explains what data we process, why, how we protect it and how you can exercise your rights, in accordance with Brazil's General Data Protection Law (LGPD, Law 13,709/2018) and the Google API Services User Data Policy.",
+  "legal.privacy.s2Title": "2. What data we process",
+  "legal.privacy.s2Intro":
+    "We process only what is needed for booking and barbershop management to work:",
+  "legal.privacy.s2Item1":
+    "**Account:** name, email, profile photo (if you upload one or it comes from Sign in with Google) and password — stored only as a hash, never in readable text;",
+  "legal.privacy.s2Item2":
+    "**WhatsApp number** (when provided), for confirmations, reminders and verification codes. The number you enter at sign-up or in My profile is confirmed with a code sent from the platform's WhatsApp (you can leave this for later, in My profile); only a confirmed number can be used to sign in and reset your password with WhatsApp;",
   "legal.privacy.s2Item3":
-    "**WhatsApp** (when provided), for confirmations, reminders and verification codes sent by the barbershop or the platform;",
+    "**Appointments:** service, professional, date, time, status, visit history and the barbershop's loyalty club points;",
   "legal.privacy.s2Item4":
-    "**Bookings** and related information (service, professional, date, time, status and history needed to run the shop);",
+    "**Barbershop data:** name, address, opening hours, services, prices, staff and settings entered by the shop's managers;",
   "legal.privacy.s2Item5":
-    "Minimal technical usage data (for example, the authentication session) to keep the service secure and working.",
-  "legal.privacy.s3Title": "3. Data obtained from Google",
-  "legal.privacy.s3Intro": "Barba & Cabelo can integrate with Google in two distinct ways:",
+    "**Optional preferences:** permission for usage analytics, surveys and offers — all off by default and changeable in My profile → My data and privacy;",
+  "legal.privacy.s2Item6":
+    "**Google data**, only if you use Sign in with Google or connect Google Calendar/Contacts (details in section 4);",
+  "legal.privacy.s2Item7":
+    "**Technical data:** authentication session and technical logs of requests to the server (such as IP address, date and time), used for security and to fix errors.",
+  "legal.privacy.s2Body":
+    "We do not ask for sensitive personal data as defined by the LGPD (such as health, religion, biometrics or racial origin). Even so, we handle passwords, access tokens, verification codes and contact details with the enhanced protections described in section 5.",
+  "legal.privacy.s3Title": "3. Why we use it and on what legal basis",
+  "legal.privacy.s3Intro": "Each use has a legal basis under article 7 of the LGPD:",
   "legal.privacy.s3Item1":
-    "**Sign in with Google:** we access the basic profile needed to authenticate the account (identity and email associated with the sign-in).",
+    "**Performance of the contract and the service** (art. 7, V): creating and maintaining the account, booking and managing appointments, sending confirmations and reminders and running the loyalty club;",
   "legal.privacy.s3Item2":
-    "**Google Calendar and Google Contacts:** only when a barbershop (or an authorized member) connects its own Google account in the dashboard. In that case, we use Calendar to import and create events related to the business, and Contacts to save customer data when the shop requests it. This connection is optional and independent of the email used to sign in to the app.",
-  "legal.privacy.s4Title": "4. How we use it (and what we don't do)",
-  "legal.privacy.s4Body1":
-    "Google data is used only to provide the service requested by the barbershop (authentication, calendar sync and saving contacts). **Google data is not sold, not used for advertising and not shared with third parties**, except as strictly necessary for the service to work (for example, hosting and authentication infrastructure).",
-  "legal.privacy.s4Body2":
-    "Use and transfer to any other app of information received from Google APIs will adhere to the Google API Services User Data Policy, including the Limited Use requirements.",
-  "legal.privacy.s5Title": "5. Where it is stored and for how long",
-  "legal.privacy.s5Body1":
-    "Application data is stored on servers used by the platform (the project's database and authentication), with access restricted by the service's security controls. We keep the information while the account or the barbershop is active and for as long as it is needed to meet legal obligations or run bookings.",
-  "legal.privacy.s5Body2":
-    "Connection tokens for Google Calendar/Contacts remain while the integration is active; when you disconnect, we stop using that authorization.",
-  "legal.privacy.s6Title": "6. Account deletion and disconnecting Google",
+    "**Consent** (art. 7, I): Sign in with Google, the Google Calendar/Contacts connection, usage analytics, surveys and offers. You can withdraw consent at any time without losing the rest of the service;",
+  "legal.privacy.s3Item3":
+    "**Legitimate interest** (art. 7, IX): account security, fraud and abuse prevention and technical improvement of the service, always respecting your rights and expectations;",
+  "legal.privacy.s3Item4":
+    "**Legal or regulatory obligation** (art. 7, II) and **regular exercise of rights** (art. 7, VI): keeping records required by law and defense in legal proceedings.",
+  "legal.privacy.s3Body":
+    "We do not sell personal data, we do not use it for third-party advertising and we do not make automated decisions that produce legal effects on you.",
+  "legal.privacy.s4Title": "4. Google user data",
+  "legal.privacy.s4Intro":
+    "Barba & Cabelo integrates with Google in two independent ways. Each one is enabled only by your own action, on Google's own consent screen, and accesses only what is described below.",
+  "legal.privacy.s4LoginTitle": "Sign in with Google (openid, email and profile scopes)",
+  "legal.privacy.s4LoginBody":
+    "We receive your name, email address, profile photo and Google account identifier, only to create your account and authenticate access. This data stays in your account record for as long as the account exists. We never receive your Google password.",
+  "legal.privacy.s4CalendarTitle":
+    "Google Calendar (scope https://www.googleapis.com/auth/calendar)",
+  "legal.privacy.s4CalendarItem1":
+    "**Calendar list:** we read the list of calendars in the connected account (each calendar's name, ID and access level) only to show it to you so you can choose which one to sync; this list is not stored. We store only the ID and name of the calendar you choose.",
+  "legal.privacy.s4CalendarItem2":
+    "**Events from the chosen calendar:** when you tap Sync calendar, we read events from 7 days before to 60 days after the current date and store only each event's title, start, end, whether it is all-day, the source calendar and the event link. We do not store the description, attendees, organizer, location or the full event. These events are shown only to you, under Settings → Notifications and integrations → Google Calendar and Contacts, in the “Upcoming Google Calendar events” list, so you can see busy times while managing bookings; no other barbershop member and no one in the public has access to them. The copy is refreshed on each sync and deleted when you disconnect or delete your account.",
+  "legal.privacy.s4CalendarItem3":
+    "**Copy of appointments (optional, off by default):** if you turn it on, we create, update and remove events in the chosen calendar with the service, customer name, professional, barbershop and time of each appointment.",
+  "legal.privacy.s4ContactsTitle":
+    "Google Contacts (scope https://www.googleapis.com/auth/contacts)",
+  "legal.privacy.s4ContactsBody":
+    "Used only to **create** a contact in your Google account when you ask to save a customer (the name, email, phone and note you provide). We do not read, copy or store your contact list.",
+  "legal.privacy.s4TokensBody":
+    "For the Calendar and Contacts connection we also store the email of the connected Google account, the granted scopes and the access and refresh tokens issued by Google, protected as described in section 5. The tokens are kept on the server only and exist only while the connection is active.",
+  "legal.privacy.s4ProtectTitle": "How we protect Google user data",
+  "legal.privacy.s4Protect1":
+    "**Encryption in transit:** all communication with Google APIs and between the app and our servers uses HTTPS/TLS.",
+  "legal.privacy.s4Protect2":
+    "**Tokens kept on the server only:** access and refresh tokens are stored in a database table that cannot be read by the browser or through the app's public API. Only server functions use them, and only to call Google APIs on behalf of the person who connected the account; they are never sent to your device.",
+  "legal.privacy.s4Protect3":
+    "**Only you can see your events:** row-level security rules (Row Level Security) and a server function that checks your session ensure that only the person who connected the Google account can see the imported events — not the barbershop's staff, not customers and not the public.",
+  "legal.privacy.s4Protect4":
+    "**Only what is needed:** we store only each event's title, times and link, the chosen calendar and the connected account's email. Descriptions, attendees, locations and your contact list are not stored.",
+  "legal.privacy.s4Protect5":
+    "**Protected secrets and administration:** the Google OAuth client secret exists only in protected server variables, and the server administration panel sits on a private network (VPN).",
+  "legal.privacy.s4Protect6":
+    "**Revocation and deletion:** when you disconnect, we revoke access with Google and immediately delete the tokens and imported events; events outside the sync window are removed automatically (section 8). The other security mechanisms are listed in section 5.",
+  "legal.privacy.s4CommitTitle": "Our commitments regarding Google user data",
+  "legal.privacy.s4Commit1":
+    "We use Google user data **only to provide the user-facing features** described above: signing in, syncing the calendar, showing you your upcoming imported events and saving contacts.",
+  "legal.privacy.s4Commit2":
+    "**We do not sell** Google user data and **we do not use it for advertising**, including personalized, retargeted or interest-based ads.",
+  "legal.privacy.s4Commit3":
+    "**We do not use Google user data to develop, improve or train generalized artificial intelligence or machine learning models.**",
+  "legal.privacy.s4Commit4":
+    "**We do not transfer** Google user data to third parties, except to the infrastructure processors needed to run the service (section 6) or when required by law.",
+  "legal.privacy.s4Commit5":
+    "**No one on our team reads your Google user data**, unless you give express consent for a specific case (for example, a support request you make), when necessary for security purposes (investigating abuse or an incident), to comply with the law, or in aggregated and anonymized form for internal operations.",
+  "legal.privacy.s4LimitedUse":
+    "Barba & Cabelo's use and transfer to any other app of information received from Google APIs will adhere to the {link}, including the Limited Use requirements.",
+  "legal.privacy.s4LimitedUseLink": "Google API Services User Data Policy",
+  "legal.privacy.s4Revoke":
+    "You can disconnect the integration at any time (section 11): when you disconnect, we revoke access with Google and delete the tokens and imported events. You can also revoke access directly at Google, at {link}. To request deletion of any Google data we still hold, write to {email}.",
+  "legal.privacy.s5Title": "5. Security and protection of sensitive data",
+  "legal.privacy.s5Intro":
+    "We give enhanced protection to passwords, Google tokens, verification codes and customers' contact details. The mechanisms in place today are:",
+  "legal.privacy.s5Item1":
+    "**Encryption in transit:** traffic between the app, our servers, Google APIs, the WhatsApp service and outgoing email uses HTTPS/TLS.",
+  "legal.privacy.s5Item2":
+    "**Database access control:** tables have row-level security rules (Row Level Security). Each person can access only their own data and that of the barbershop where they have a role, according to the permissions set by the owner; sensitive actions go through server functions that check permission before running.",
+  "legal.privacy.s5Item3":
+    "**Isolation of Google tokens:** they are kept on the server only, in a separate table that cannot be read by the browser or through the app's public API. Only server functions read, write, change or delete them, and only to call Google APIs; no user (not even you), barbershop or app administrator can see them through the app.",
+  "legal.privacy.s5Item4":
+    "**Secrets kept out of the code:** Google credentials and database service keys exist only in protected server variables, never in the app on your device or in the source code.",
+  "legal.privacy.s5Item5":
+    "**Hashed passwords:** the authentication service stores passwords only as a cryptographic hash (bcrypt); no one, not even our team, can see them.",
+  "legal.privacy.s5Item6":
+    "**Protected verification codes:** codes sent by WhatsApp are stored only as a hash (SHA-256), are valid for 10 minutes, work only once and have a sending limit; 5 wrong attempts invalidate the code.",
+  "legal.privacy.s5Item7":
+    "**Protected Google connection:** the authorization request is signed (HMAC), tied to your account and expires in 10 minutes. Google returns the authorization only to the redirect address registered in our project, and the code is exchanged for tokens on the server, using the app's secret key — tokens never pass through the browser. This way, someone else cannot link their Google account to your account in the app or reuse an intercepted authorization.",
+  "legal.privacy.s5Item8":
+    "**Data minimization:** we ask only for data tied to the features you use; optional data stays off until you allow it, and when you withdraw permission the optional usage records are deleted.",
+  "legal.privacy.s5Item9":
+    "**Restricted administrative access:** only the operator manages the infrastructure; the server administration panel sits on a private network (VPN), off the public internet, and direct database access is reserved for server functions and technical administration.",
+  "legal.privacy.s5Item10":
+    "**Technical logs:** the server logs incoming requests (such as date, time, origin and result), which allows us to investigate unauthorized access and errors.",
+  "legal.privacy.s5Staff":
+    "**Staff and processors:** anyone who works with us or provides infrastructure services accesses personal data only when needed for the task, under a duty of confidentiality, and is accountable for misuse. Processors handle data only according to our instructions and this policy.",
+  "legal.privacy.s5Incident":
+    "**Incident response:** if a security incident occurs that may cause significant risk or harm, we will contain it, investigate the cause and notify the ANPD and the affected people, as required by article 48 of the LGPD, within the deadline set by ANPD regulations (currently 3 business days), describing the data involved, the risks, the measures taken and what you can do. To report a suspected incident, write to {email}.",
+  "legal.privacy.s5Limit":
+    "No system is completely immune to failures, so we review these protections continuously. You can help too: do not share your password or the codes you receive.",
+  "legal.privacy.s6Title": "6. Who we share data with",
+  "legal.privacy.s6Intro":
+    "We do not sell or rent personal data. It is shared only in these cases:",
   "legal.privacy.s6Item1":
-    "**Permanently delete the account:** in My profile → My data and privacy, the account holder can delete their own account without contacting support. Name, email, WhatsApp and other personal data are removed. The barbershop's schedule and attendance/activity records may remain only in anonymous form (not linked to the person), for operational statistics up to the date of deletion.",
+    "**The barbershop where you book:** the owner, partners and authorized staff see the data needed to serve you (name, contact details and appointments), according to the shop's permissions;",
   "legal.privacy.s6Item2":
-    "If you are an **owner or partner** of a shop, transfer the partnership or leave that role before deleting the account.",
+    "**Hosting and infrastructure:** the virtual private server (VPS) contracted by the operator, which runs the database, authentication and server functions, and Hostinger, which hosts the website and domain;",
   "legal.privacy.s6Item3":
-    "**Disconnect Calendar/Contacts:** in the shop dashboard, under Settings → Google Calendar and Contacts, use the disconnect option. This revokes the use of that authorization in the app.",
-  "legal.privacy.s6Item4": "**Revoke in Google:** you can also remove access at {link}.",
-  "legal.privacy.s6Item5": "Questions: {email}.",
-  "legal.privacy.s7Title": "7. Changes",
+    "**Email:** Hostinger's email service, used for account messages (such as confirmation and access recovery);",
+  "legal.privacy.s6Item4":
+    "**WhatsApp:** messages go through our own Evolution API installation, on our own server, and are delivered by the WhatsApp (Meta) network to the number provided;",
+  "legal.privacy.s6Item5":
+    "**Google:** only if you turn on Sign in with Google or the Calendar/Contacts connection, as described in section 4;",
+  "legal.privacy.s6Item6":
+    "**Authorities:** when there is a legal obligation, a court order or a request from a competent authority.",
+  "legal.privacy.s6Body":
+    "These processors receive only what they need to perform their part of the service.",
+  "legal.privacy.s7Title": "7. International transfers",
   "legal.privacy.s7Body":
+    "Some services we use may process data outside Brazil, such as Google (when you enable the integration) and WhatsApp. These transfers happen only in the cases allowed by article 33 of the LGPD — for example, when necessary to perform the service you requested or with your consent.",
+  "legal.privacy.s8Title": "8. How long we keep data",
+  "legal.privacy.s8Item1":
+    "**Account and profile:** while the account exists; when you delete it, personal data is erased (section 11);",
+  "legal.privacy.s8Item2":
+    "**Appointments and history:** while the account and the barbershop are active; after the account is deleted, only anonymous records remain, with no link to the person;",
+  "legal.privacy.s8Item3":
+    "**Google tokens and events:** until you disconnect the integration or delete the account, when they are deleted immediately. We keep only events in the window from 7 days ago to 60 days ahead: on the next sync, we remove events that ended more than 7 days ago, events deleted in Google and events from a calendar that is no longer the chosen one;",
+  "legal.privacy.s8Item4":
+    "**Verification codes:** each send records the request (number, account, time and the code's hash), used to check the code and limit sends; the code is valid for 10 minutes and unusable after use or after 5 wrong attempts;",
+  "legal.privacy.s8Item5":
+    "**Optional usage records:** until you withdraw permission, when they are deleted;",
+  "legal.privacy.s8Item6":
+    "**Records required by law:** for the legal period, such as application access logs for 6 months (Brazilian Internet Civil Framework, art. 15).",
+  "legal.privacy.s9Title": "9. Browser storage and cookies",
+  "legal.privacy.s9Intro": "The app stores on your device only what it needs to work:",
+  "legal.privacy.s9Item1": "**Sign-in session**, so you stay signed in securely;",
+  "legal.privacy.s9Item2":
+    "**Preferences:** language, light or dark theme and other display choices;",
+  "legal.privacy.s9Item3": "**Installed app files (PWA)**, which make screens open faster.",
+  "legal.privacy.s9Body":
+    "We do not use advertising cookies or third-party tracking tools. You can clear this data in your browser settings; doing so ends the session and resets preferences to default.",
+  "legal.privacy.s10Title": "10. Your rights",
+  "legal.privacy.s10Intro": "Under the LGPD (art. 18), you may request at any time:",
+  "legal.privacy.s10Item1": "confirmation that we process your data and access to it;",
+  "legal.privacy.s10Item2": "correction of incomplete, inaccurate or outdated data;",
+  "legal.privacy.s10Item3":
+    "anonymization, blocking or deletion of unnecessary or excessive data, or data processed in breach of the law;",
+  "legal.privacy.s10Item4": "portability of your data to another provider;",
+  "legal.privacy.s10Item5": "deletion of data processed on the basis of your consent;",
+  "legal.privacy.s10Item6":
+    "information about who we share your data with and about the option of not consenting and its consequences;",
+  "legal.privacy.s10Item7":
+    "withdrawal of consent and objection to processing that breaches the law.",
+  "legal.privacy.s10How":
+    "Many actions you can take yourself in the app: edit your profile, change preferences, delete your account and disconnect Google. For anything else, write to {email}. We may ask you to confirm your identity to protect your data, and we reply within 15 days.",
+  "legal.privacy.s10Anpd":
+    "If you are not satisfied with our answer, you can also file a complaint with the Brazilian National Data Protection Authority (ANPD) or the data protection authority in your country.",
+  "legal.privacy.s11Title": "11. Deleting your account and disconnecting Google",
+  "legal.privacy.s11Item1":
+    "**Permanently delete the account:** in My profile → My data and privacy, the account holder can delete their own account without contacting support. Name, email, WhatsApp number and other personal data are removed. The barbershop's schedule and attendance records may remain only in anonymous form (not linked to the person), for operational statistics up to the date of deletion.",
+  "legal.privacy.s11Item2":
+    "If you are an **owner or partner** of a shop, transfer the partnership or leave that role before deleting the account.",
+  "legal.privacy.s11Item3":
+    "**Disconnect Calendar/Contacts:** in the shop dashboard, under Settings → Notifications and integrations → Google Calendar and Contacts, use the disconnect option. We immediately revoke the authorization with Google and delete the tokens, the connected Google account's email and the imported events from our database. If the revocation with Google fails (for example, because of a network error or an already expired token), the app still disconnects and we tell you to remove access at myaccount.google.com/permissions. Events already copied to your Google Calendar stay there and you can delete them.",
+  "legal.privacy.s11Item4":
+    "**Revoke at Google:** you can also remove Barba & Cabelo's access directly at Google, at any time, at {link}.",
+  "legal.privacy.s11Item5":
+    "When you **delete your account**, we ask Google to revoke the authorization (if a connection exists) and delete the connection, the tokens and the imported events. To check, visit {link}. Questions or deletion requests: {email}.",
+  "legal.privacy.s12Title": "12. Children and teenagers",
+  "legal.privacy.s12Body":
+    "The app is not directed at people under 18. Teenagers should use it only with the permission and supervision of their parents or guardians, and we do not knowingly create accounts for children. If you become aware of a child's data entered without a guardian's consent, let us know at {email} so it can be removed.",
+  "legal.privacy.s13Title": "13. Changes to this policy",
+  "legal.privacy.s13Body":
     "We may update this policy to reflect changes to the service or to the law. The date at the top of the page indicates the current version. For significant changes, we will seek to inform you through the app's usual channels.",
-  "legal.club.header": "The Club Ladder",
-  "legal.club.heroTitle": "The Standard of Excellence",
-  "legal.club.heroBody":
-    "Discover the levels of exclusivity and how your loyalty is rewarded at every step.",
-  "legal.club.s1Title": "1. Status Levels",
-  "legal.club.level": "{name} Level",
-  "legal.club.pointsRange": "{min} - {max} Points",
-  "legal.club.exclusiveRange": "500+ Points or Subscription",
-  "legal.club.classicBody":
-    "The foundation of the Arena: tradition and flawless upkeep of your style (Metallic Silver).",
-  "legal.club.classicPerk1": "Excellent upkeep of your look",
-  "legal.club.classicPerk2": "Easy booking through the app",
-  "legal.club.selectBody":
-    "Convenience and speed: priority in the schedule and a reserved seat at the Arena (Metallic Bronze).",
-  "legal.club.selectPerk1": "Extra flexibility with times",
-  "legal.club.selectPerk2": "Priority service in the Lounge",
-  "legal.club.privilegeBody":
-    "A new tier of perks: discounts on premium products and elite service (Metallic Gold).",
-  "legal.club.privilegePerk1": "10% OFF personal care products",
-  "legal.club.privilegePerk2": "Complimentary drink on every visit",
-  "legal.club.exclusiveBody":
-    "The top of the Arena Barber Club experience: full access and unrestricted benefits (Hologram).",
-  "legal.club.exclusivePerk1": "Unlimited Monthly Cuts (Exclusive Plan)",
-  "legal.club.exclusivePerk2": "Unrestricted Access to the Exclusive VIP Lounge",
-  "legal.club.exclusivePerk3": "Top Priority at all times",
-  "legal.club.s2Title": "2. Points vs Subscription",
-  "legal.club.lifetimeTitle": "Lifetime Earning",
-  "legal.club.lifetimeBody":
-    "Recognition for your ongoing visits. Points never expire and move you up levels naturally.",
-  "legal.club.pointRate": "R$1.00 = 1 Point",
-  "legal.club.subscriptionTitle": "Exclusive Subscription",
-  "legal.club.subscriptionBody":
-    "The top of the ladder, instantly. Unlocks the {plan} and full access to the VIP Lounge. Ideal for those who want the best without waiting.",
-  "legal.club.planName": "Unlimited Cuts Plan",
+  "legal.club.header": "Loyalty club",
+  "legal.club.heroTitle": "Loyalty club rules",
+  "legal.club.heroBodyShop":
+    "These are the rules currently in effect at {shop}. If the barbershop changes a rule, this page shows the updated version.",
+  "legal.club.heroBodyGeneric":
+    "The loyalty club is an optional program run by each barbershop that uses Barba & Cabelo. The exact rules — points, levels, perks and rewards — depend on each barbershop.",
+  "legal.club.loading": "Loading the barbershop's rules…",
+  "legal.club.shopNotFound":
+    "We couldn't find this barbershop, or it isn't active. See below how the club works in general.",
+  "legal.club.signInHint":
+    "Sign in to your customer account at {shop} to see the exact club rules for that barbershop.",
+  "legal.club.signIn": "Sign in to see the rules",
+  "legal.club.noAccess":
+    "The exact rules at {shop} are shown to that barbershop's customers. See below how the club works in general.",
+  "legal.club.loadError":
+    "We couldn't load the barbershop's rules. Check your connection and try again.",
+  "legal.club.retry": "Try again",
+  "legal.club.disabled":
+    "The loyalty club at {shop} isn't active right now. While it's off, appointments don't earn points.",
+  "legal.club.modeDefault": "Barba & Cabelo standard rule",
+  "legal.club.modeCustom": "The barbershop's own rule",
+  "legal.club.earnTitle": "1. How to earn points",
+  "legal.club.perVisit": "Each completed appointment is worth {points}.",
+  "legal.club.welcome":
+    "On your first completed appointment you get an extra {points} as a welcome bonus.",
+  "legal.club.pointsOne": "{n} point",
+  "legal.club.pointsMany": "{n} points",
+  "legal.club.earnNote":
+    "Points are added when the barbershop marks the appointment as completed. Canceled or missed appointments don't earn points.",
+  "legal.club.tiersTitle": "2. Levels",
+  "legal.club.tiersBody":
+    "Your level depends on the total points you've earned over time at this barbershop. Redeeming points for rewards doesn't lower your level.",
+  "legal.club.range": "{from} to {to} points",
+  "legal.club.rangeTop": "{from} points and up",
+  "legal.club.rewardsTitle": "3. Rewards",
+  "legal.club.rewardsBody":
+    "Redeem points for the rewards below in the app. Your redemption request is held until the barbershop confirms it; if it expires without confirmation, the points go back to your balance.",
+  "legal.club.rewardsEmpty": "This barbershop hasn't added any rewards to redeem points for yet.",
+  "legal.club.generalTitle": "How the club works",
+  "legal.club.generalEarn":
+    "When the barbershop turns on the club, every completed appointment earns the customer points.",
+  "legal.club.generalTiers":
+    "The points you add up over time set your level. Redeeming points for rewards doesn't lower your level.",
+  "legal.club.generalRewards":
+    "The barbershop may offer rewards you can redeem points for, confirmed by the barbershop at redemption.",
+  "legal.club.generalVaries":
+    "Point amounts, levels, perks and rewards vary from one barbershop to another and may change. The rules shown for your barbershop in the app are the ones that apply.",
+  "legal.club.termsTitle": "General terms",
+  "legal.club.terms1":
+    "Points are valid only at the barbershop where they were earned and can't be exchanged for cash.",
+  "legal.club.terms2":
+    "The barbershop may change the club rules. Changes apply from then on and don't erase points already earned.",
+  "legal.club.terms3":
+    "The barbershop may correct your balance in case of an error, and the adjustment is recorded in your points history.",
+  "legal.club.terms4":
+    "Questions about points, levels and rewards should be taken up directly with the barbershop.",
   "plat.shell.loadError": "Couldn't load the barbershops. Please try again.",
   "plat.shell.brandOpenError": "Couldn't open the customization. Please try again.",
   "plat.shell.loginPreviewError": "Couldn't open the sign-in preview. Please try again.",
@@ -2657,4 +2828,85 @@ export const enUS: Record<MessageKey, string> = {
     'This value is fixed in the standard rules. Choose "Your barbershop\'s version" to change it.',
   "fix.landing-espera-pwa.moreSlotsMany": "and more times",
   "fix.landing-espera-pwa.waitAlreadyHolder": "You already hold this booking.",
+  "fix2.edge.otpExpired": "This code has expired. Request a new code and try again.",
+  "fix2.edge.otpTooManyAttempts": "Too many wrong codes. Request a new code to continue.",
+  "fix2.edge.whatsappUnavailable":
+    "We couldn't send the WhatsApp message right now. Try again in a few minutes.",
+  "fix2.edge.phoneInUse":
+    "This WhatsApp number is already linked to an account. Sign in or use another number.",
+  "fix2.edge.verificationExpired": "Your WhatsApp confirmation has expired. Request a new code.",
+  "fix2.edge.emailInvalid": "Enter a valid email address.",
+  "fix2.edge.domainDnsPending":
+    "The domain's DNS isn't ready yet. Check the records and try again in a few minutes.",
+  "fix2.edge.domainKeptActive": "Your domain stays live in the meantime.",
+  "fix2.whats.badgeVerified": "Verified",
+  "fix2.whats.badgeUnverified": "Not verified",
+  "fix2.whats.needsCodeHint": "To save this number, we'll send a 6-digit code to it on WhatsApp.",
+  "fix2.whats.sendCode": "Send code",
+  "fix2.whats.sending": "Sending code…",
+  "fix2.whats.codeSent": "Code sent to {number}.",
+  "fix2.whats.codeIntro": "Enter the 6-digit code we sent on WhatsApp to {number}.",
+  "fix2.whats.codeLabel": "Verification code",
+  "fix2.whats.codeHint": "The code is valid for 10 minutes.",
+  "fix2.whats.confirm": "Confirm code",
+  "fix2.whats.verifying": "Verifying…",
+  "fix2.whats.resend": "Resend code",
+  "fix2.whats.resendIn": "Resend in {seconds}s",
+  "fix2.whats.changeNumber": "Change number",
+  "fix2.whats.verified": "WhatsApp verified and saved.",
+  "fix2.whats.verifiedOptIn": "WhatsApp verified. You'll get appointment updates on this number.",
+  "fix2.whats.errInvalid": "Incorrect code. Check it and try again.",
+  "fix2.whats.errInvalidLeft": "Incorrect code. Attempts left: {count}.",
+  "fix2.whats.errExpired": "This code has expired. Tap Resend code.",
+  "fix2.whats.errTooManyAttempts": "Too many wrong attempts. Request a new code.",
+  "fix2.whats.errRateLimited": "Too many codes requested. Wait a few minutes and try again.",
+  "fix2.whats.errUnavailable":
+    "We couldn't send the WhatsApp message right now. Check the number or try again later.",
+  "fix2.whats.errPhoneInUse":
+    "This WhatsApp number is already verified on another account. Use a different number.",
+  "fix2.whats.errInvalidNumber": "Enter a valid WhatsApp number with area code.",
+  "fix3.google.eventsTitle": "Upcoming Google Calendar events",
+  "fix3.google.eventsIntro":
+    "Events imported from the chosen calendar, so you can see busy times while managing bookings. Read-only: make changes in Google Calendar.",
+  "fix3.google.eventsLoading": "Loading events…",
+  "fix3.google.eventsEmpty": "No upcoming events imported yet. Tap “Sync calendar” to fetch them.",
+  "fix3.google.eventsError": "Couldn't load the imported events.",
+  "fix3.google.eventsRetry": "Try again",
+  "fix3.google.eventUntitled": "(No title)",
+  "fix3.google.eventAllDay": "All day",
+  "fix3.google.eventFrom": "Calendar: {name}",
+  "fix3.google.eventsTimezone": "Times shown in the shop's time zone ({tz}).",
+  "fix3.google.disconnectedRevoked":
+    "Google disconnected. The app's access to your Google Account was revoked and imported data was deleted.",
+  "fix3.google.disconnectedNoRevoke":
+    "Google disconnected and imported data deleted. We couldn't confirm the revocation with Google; you can also remove access at myaccount.google.com/permissions.",
+  "fix3.auth.phoneEyebrow": "Confirm WhatsApp",
+  "fix3.auth.phoneTitle": "Confirm your WhatsApp",
+  "fix3.auth.phoneSubtitle":
+    "Account created. Now confirm {number} with the code we sent on WhatsApp.",
+  "fix3.auth.phoneLaterHint":
+    "You can also confirm it later in My profile. Until then, you can't sign in or reset your password with WhatsApp.",
+  "fix3.auth.phoneSkip": "Confirm later",
+  "fix3.auth.phoneSkipped": "All set. Confirm your WhatsApp later in My profile.",
+  "fix3.auth.phoneContinue": "Continue",
+  "fix3.auth.phoneUnavailable":
+    "We can't send the WhatsApp code right now. Your account is ready: tap Continue and confirm your number later in My profile.",
+  "fix3.auth.phoneCodeIncomplete": "Enter all 6 digits of the code.",
+  "fix3.auth.phoneError":
+    "We couldn't confirm your WhatsApp right now. Try again or confirm it later in My profile.",
+  "fix3.auth.confirmEmailWhatsapp":
+    "Confirm your email and sign in. Then confirm your WhatsApp in My profile.",
+  "fix3.errors.shopRequired":
+    "To use WhatsApp, open the sign-in from the barbershop's link or use your email.",
+  "fix3.errors.shopWhatsappUnavailable":
+    "This barbershop hasn't connected WhatsApp yet. Please use your email.",
+  "fix3.errors.accountNotFound":
+    "No account has this WhatsApp confirmed. Sign in with your email and confirm the number in My profile.",
+  "fix3.errors.accountWithoutEmail":
+    "This account doesn't have an email yet. Contact the barbershop to complete your sign-up.",
+  "fix3.whatsapp.tooLongFilledCut":
+    "With names and link filled in, the message may reach {length} of 1,000 characters and the end will be cut off. Shorten the text so it arrives in full.",
+  "fix3.terms.googleRevoke":
+    "When you disconnect Google Calendar/Contacts in the app, we revoke access with Google and immediately delete the stored tokens and imported events. If the revocation can't be confirmed, or if you prefer, remove Barba & Cabelo's access directly at {link}. Data received from Google APIs is used only for the features described in the {privacy}, never for advertising, and is never sold.",
+  "fix3.google.privacyLink": "How we use Google data",
 };

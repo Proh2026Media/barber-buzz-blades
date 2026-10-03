@@ -12,7 +12,7 @@ import { Link, createFileRoute, useSearch } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { resolvePostAuthPath } from "@/lib/auth/session";
-import { friendlyAuthError } from "@/lib/auth/friendly-error";
+import { friendlyAuthError, ServerError, serverError } from "@/lib/auth/friendly-error";
 import {
   AUTH_POPUP_MESSAGE,
   buildPlatformAuthUrl,
@@ -53,7 +53,8 @@ import { t as tNow, useI18n } from "@/lib/i18n";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
-type AuthMode = "signin" | "signup" | "forgot" | "recovery";
+/** verifyPhone: logo após o cadastro com WhatsApp, confirma o número por código. */
+type AuthMode = "signin" | "signup" | "forgot" | "recovery" | "verifyPhone";
 type RecoveryChannel = "email" | "whatsapp";
 
 type AuthBrand = {
@@ -136,6 +137,91 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+type VerifyPhonePayload = {
+  ok?: boolean;
+  error?: string;
+  error_code?: string;
+  attempts_left?: number;
+  already_verified?: boolean;
+  resend_after_seconds?: number;
+  whatsapp_opt_in_at?: string | null;
+};
+
+/** Espera sugerida antes de reenviar o código, se o servidor não informar. */
+const PHONE_RESEND_SECONDS = 60;
+
+/** +5511999990000 ou 11999990000 → (11) 99999-0000 para leitura no celular. */
+function formatBrPhone(value: string) {
+  const digits = value.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "");
+  if (digits.length === 11)
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  if (digits.length === 10)
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return value;
+}
+
+/**
+ * auth-otp com purpose 'verify_phone', usando a sessão aberta pelo cadastro.
+ * Resposta de erro vira ServerError (guarda error_code e attempts_left).
+ */
+async function callVerifyPhone(body: Record<string, unknown>): Promise<VerifyPhonePayload> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) {
+    throw new ServerError(tNow("errors.sessionExpired"), "unauthorized");
+  }
+  const base = import.meta.env.VITE_SUPABASE_URL || "";
+  const response = await fetch(`${base}/functions/v1/auth-otp`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ purpose: "verify_phone", channel: "whatsapp", ...body }),
+  });
+  let payload: VerifyPhonePayload = {};
+  try {
+    payload = (await response.json()) as VerifyPhonePayload;
+  } catch {
+    payload = {};
+  }
+  if (!response.ok) {
+    if (!payload.error_code) {
+      payload.error_code = response.status === 429 ? "rate_limited" : "internal_error";
+    }
+    throw serverError(payload, tNow("fix3.auth.phoneError"));
+  }
+  return payload;
+}
+
+/** Frase do erro da confirmação do WhatsApp, pelo error_code. */
+function phoneErrorText(err: unknown) {
+  if (err instanceof ServerError) {
+    switch (err.errorCode) {
+      case "otp_invalid": {
+        const left = err.payload.attempts_left;
+        return typeof left === "number" && left > 0
+          ? tNow("fix2.whats.errInvalidLeft", { count: left })
+          : tNow("fix2.whats.errInvalid");
+      }
+      case "otp_expired":
+        return tNow("fix2.whats.errExpired");
+      case "otp_too_many_attempts":
+        return tNow("fix2.whats.errTooManyAttempts");
+      case "rate_limited":
+        return tNow("fix2.whats.errRateLimited");
+      case "whatsapp_unavailable":
+        return tNow("fix2.whats.errUnavailable");
+      case "phone_in_use":
+        return tNow("fix2.whats.errPhoneInUse");
+      case "invalid_whatsapp":
+        return tNow("fix2.whats.errInvalidNumber");
+    }
+  }
+  return friendlyAuthError(err, tNow("fix3.auth.phoneError"));
+}
+
 function isSafeNext(value: string): value is string {
   return value.startsWith("/") && !value.startsWith("//");
 }
@@ -182,6 +268,11 @@ function AuthPage() {
   const [whatsapp, setWhatsapp] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [otpSent, setOtpSent] = useState(false);
+  // Confirmação do WhatsApp logo após o cadastro.
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [phoneCode, setPhoneCode] = useState("");
+  const [phoneUnavailable, setPhoneUnavailable] = useState(false);
+  const [phoneResendIn, setPhoneResendIn] = useState(0);
   const shopContext = resolveShopContext(next, shop, demo);
   const [hostShopSlug, setHostShopSlug] = useState<string | null>(null);
   const effectiveShopRef = shopContext.shopRef || hostShopSlug;
@@ -204,6 +295,12 @@ function AuthPage() {
   );
 
   useShopFavicon(brand.logoUrl);
+
+  useEffect(() => {
+    if (phoneResendIn <= 0) return;
+    const timer = window.setTimeout(() => setPhoneResendIn((value) => value - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [phoneResendIn]);
 
   const preferredNext = isSafeNext(next) ? next : "";
 
@@ -564,6 +661,8 @@ function AuthPage() {
     void (async () => {
       if (!bridgeReady) return;
       if (mode === "recovery" || mode === "forgot") return;
+      // Conta recém-criada confirmando o WhatsApp: só sai pelo botão do passo.
+      if (mode === "verifyPhone") return;
       if (oauth === "google") return;
 
       const hasCode =
@@ -622,12 +721,94 @@ function AuthPage() {
     await goAfterAuthLocal();
   }
 
+  /**
+   * Pede o código de confirmação do WhatsApp (auth-otp, verify_phone). WhatsApp
+   * da plataforma indisponível não trava o cadastro: o passo mostra o aviso e
+   * deixa seguir, com a confirmação para depois em Meu perfil.
+   */
+  async function requestPhoneCode(number: string) {
+    setError(null);
+    setInfo(null);
+    try {
+      const payload = await callVerifyPhone({ action: "request", destination: number });
+      if (payload.already_verified) {
+        setInfo(tNow("fix2.whats.verified"));
+        await goAfterAuth();
+        return;
+      }
+      setPhoneUnavailable(false);
+      setPhoneResendIn(payload.resend_after_seconds ?? PHONE_RESEND_SECONDS);
+      setInfo(tNow("fix2.whats.codeSent", { number: formatBrPhone(number) }));
+    } catch (err) {
+      if (err instanceof ServerError && err.errorCode === "whatsapp_unavailable") {
+        setPhoneUnavailable(true);
+        setInfo(tNow("fix3.auth.phoneUnavailable"));
+        return;
+      }
+      setError(phoneErrorText(err));
+    }
+  }
+
+  async function resendPhoneCode() {
+    if (busy || phoneResendIn > 0) return;
+    setBusy(true);
+    setPhoneCode("");
+    try {
+      await requestPhoneCode(phoneNumber);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function skipPhoneVerification() {
+    setBusy(true);
+    setError(null);
+    setInfo(tNow("fix3.auth.phoneSkipped"));
+    try {
+      await goAfterAuth();
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
     setInfo(null);
     try {
+      if (mode === "verifyPhone") {
+        if (phoneUnavailable) {
+          setInfo(tNow("fix3.auth.phoneSkipped"));
+          await goAfterAuth();
+          return;
+        }
+        if (!/^\d{6}$/.test(phoneCode)) {
+          setError(tNow("fix3.auth.phoneCodeIncomplete"));
+          return;
+        }
+        let verified: VerifyPhonePayload;
+        try {
+          verified = await callVerifyPhone({
+            action: "verify",
+            destination: phoneNumber,
+            code: phoneCode,
+            opt_in: true,
+          });
+        } catch (err) {
+          setError(phoneErrorText(err));
+          if (err instanceof ServerError && err.errorCode === "otp_invalid") setPhoneCode("");
+          return;
+        }
+        setInfo(
+          verified.whatsapp_opt_in_at
+            ? tNow("fix2.whats.verifiedOptIn")
+            : tNow("fix2.whats.verified"),
+        );
+        await goAfterAuth();
+        return;
+      }
+
       if (mode === "forgot") {
         if (recoveryChannel === "whatsapp" && effectiveShopRef) {
           const base = import.meta.env.VITE_SUPABASE_URL || "";
@@ -646,8 +827,12 @@ function AuthPage() {
                 destination: whatsapp,
               }),
             });
-            const payload = (await response.json()) as { error?: string; message?: string };
-            if (!response.ok) throw new Error(payload.error || tNow("auth.error.sendCode"));
+            const payload = (await response.json().catch(() => ({}))) as {
+              error?: string;
+              error_code?: string;
+              message?: string;
+            };
+            if (!response.ok) throw serverError(payload, tNow("auth.error.sendCode"));
             setOtpSent(true);
             setInfo(tNow("auth.info.codeSentIfAccount"));
             return;
@@ -668,13 +853,14 @@ function AuthPage() {
               code: otpCode,
             }),
           });
-          const payload = (await response.json()) as {
+          const payload = (await response.json().catch(() => ({}))) as {
             error?: string;
+            error_code?: string;
             email?: string;
             hashed_token?: string | null;
             verification_type?: string;
           };
-          if (!response.ok) throw new Error(payload.error || tNow("auth.error.invalidCode"));
+          if (!response.ok) throw serverError(payload, tNow("auth.error.invalidCode"));
           if (!payload.hashed_token) throw new Error(tNow("auth.error.validateCode"));
           const { error: verifyError } = await supabase.auth.verifyOtp({
             token_hash: payload.hashed_token,
@@ -758,7 +944,9 @@ function AuthPage() {
         throw error;
       }
 
-      // Com autoconfirm, a sessão já vem; grava WhatsApp para avisos da barbearia.
+      // Com autoconfirm, a sessão já vem: grava o WhatsApp (ainda não confirmado)
+      // e abre o passo de confirmação por código. Sem confirmar, o número não
+      // serve para entrar nem recuperar a senha pelo WhatsApp.
       if (signUpData.session && signupWhatsapp) {
         const { error: waError } = await supabase.rpc("save_my_whatsapp", {
           p_raw: signupWhatsapp,
@@ -766,20 +954,27 @@ function AuthPage() {
         });
         if (waError) {
           setInfo(tNow("auth.info.createdSaveWhatsapp"));
+          await goAfterAuth();
+          return;
         }
+        setPassword("");
+        setPhoneNumber(signupWhatsapp);
+        setPhoneCode("");
+        setPhoneUnavailable(false);
+        setMode("verifyPhone");
+        await requestPhoneCode(signupWhatsapp);
+        return;
       }
 
       if (signUpData.session) {
-        setInfo(
-          signupWhatsapp
-            ? tNow("auth.info.createdWithWhatsapp")
-            : tNow("auth.info.createdNoWhatsapp"),
-        );
+        setInfo(tNow("auth.info.createdNoWhatsapp"));
         await goAfterAuth();
         return;
       }
 
-      setInfo(tNow("auth.info.confirmEmail"));
+      setInfo(
+        signupWhatsapp ? tNow("fix3.auth.confirmEmailWhatsapp") : tNow("auth.info.confirmEmail"),
+      );
       setMode("signin");
     } catch (err) {
       setError(friendlyAuthError(err, tNow("auth.error.signinFailed")));
@@ -852,35 +1047,41 @@ function AuthPage() {
   }
 
   const eyebrow =
-    mode === "signup"
-      ? t("auth.eyebrow.signup")
-      : mode === "forgot"
-        ? t("auth.eyebrow.forgot")
-        : mode === "recovery"
-          ? t("auth.eyebrow.recovery")
-          : t("auth.eyebrow.signin");
+    mode === "verifyPhone"
+      ? t("fix3.auth.phoneEyebrow")
+      : mode === "signup"
+        ? t("auth.eyebrow.signup")
+        : mode === "forgot"
+          ? t("auth.eyebrow.forgot")
+          : mode === "recovery"
+            ? t("auth.eyebrow.recovery")
+            : t("auth.eyebrow.signin");
 
   const title =
-    mode === "signup"
-      ? t("auth.title.signup")
-      : mode === "forgot"
-        ? t("auth.title.forgot")
-        : mode === "recovery"
-          ? t("auth.title.recovery")
-          : t("auth.title.signin");
+    mode === "verifyPhone"
+      ? t("fix3.auth.phoneTitle")
+      : mode === "signup"
+        ? t("auth.title.signup")
+        : mode === "forgot"
+          ? t("auth.title.forgot")
+          : mode === "recovery"
+            ? t("auth.title.recovery")
+            : t("auth.title.signin");
 
   const subtitle =
-    mode === "signup"
-      ? effectiveShopRef
-        ? t("auth.subtitle.signupShop")
-        : t("auth.subtitle.signup")
-      : mode === "forgot"
-        ? recoveryChannel === "whatsapp"
-          ? t("auth.subtitle.forgotWhatsapp")
-          : t("auth.subtitle.forgotEmail")
-        : mode === "recovery"
-          ? t("auth.subtitle.recovery")
-          : t("auth.subtitle.signin");
+    mode === "verifyPhone"
+      ? t("fix3.auth.phoneSubtitle", { number: formatBrPhone(phoneNumber) })
+      : mode === "signup"
+        ? effectiveShopRef
+          ? t("auth.subtitle.signupShop")
+          : t("auth.subtitle.signup")
+        : mode === "forgot"
+          ? recoveryChannel === "whatsapp"
+            ? t("auth.subtitle.forgotWhatsapp")
+            : t("auth.subtitle.forgotEmail")
+          : mode === "recovery"
+            ? t("auth.subtitle.recovery")
+            : t("auth.subtitle.signin");
 
   const fieldClass =
     "auth-input-wrap auth-brand-control flex min-h-[3.25rem] items-center border border-border/70 transition-[border-color,box-shadow] duration-200 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10";
@@ -1082,6 +1283,7 @@ function AuthPage() {
             )}
 
             {mode !== "recovery" &&
+              mode !== "verifyPhone" &&
               !(mode === "forgot" && recoveryChannel === "whatsapp" && effectiveShopRef) && (
                 <label className={labelClass}>
                   <span>{t("auth.field.email")}</span>
@@ -1146,6 +1348,48 @@ function AuthPage() {
                   </label>
                 )}
               </>
+            )}
+
+            {mode === "verifyPhone" && !phoneUnavailable && (
+              <label className={labelClass}>
+                <span>{t("fix2.whats.codeLabel")}</span>
+                <InputOTP
+                  maxLength={6}
+                  value={phoneCode}
+                  onChange={(value) => {
+                    setPhoneCode(value);
+                    setError(null);
+                  }}
+                  autoFocus
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  aria-describedby="phone-code-hint"
+                  containerClassName="justify-between"
+                >
+                  <InputOTPGroup className="gap-2">
+                    {Array.from({ length: 6 }).map((_, index) => (
+                      <InputOTPSlot
+                        key={index}
+                        index={index}
+                        className="auth-brand-control size-11 border border-border/70 text-base"
+                      />
+                    ))}
+                  </InputOTPGroup>
+                </InputOTP>
+                <span
+                  id="phone-code-hint"
+                  className="block text-xs font-normal text-muted-foreground"
+                >
+                  {t("fix2.whats.codeHint")}
+                </span>
+              </label>
+            )}
+
+            {mode === "verifyPhone" && (
+              <p className="auth-brand-control flex gap-2.5 border border-amber-500/30 bg-amber-500/10 px-3.5 py-2.5 text-sm leading-relaxed text-foreground">
+                <MessageCircle className="mt-0.5 size-4 shrink-0 text-gold" aria-hidden="true" />
+                <span>{t("fix3.auth.phoneLaterHint")}</span>
+              </p>
             )}
 
             {mode === "signup" && (
@@ -1283,20 +1527,46 @@ function AuthPage() {
               <span>
                 {busy
                   ? t("common.wait")
-                  : mode === "forgot"
-                    ? recoveryChannel === "whatsapp" && effectiveShopRef
-                      ? otpSent
-                        ? t("auth.submit.confirmCode")
-                        : t("auth.submit.sendCode")
-                      : t("auth.submit.sendLink")
-                    : mode === "recovery"
-                      ? t("auth.submit.saveNewPassword")
-                      : mode === "signup"
-                        ? t("auth.submit.signup")
-                        : t("auth.submit.signin")}
+                  : mode === "verifyPhone"
+                    ? phoneUnavailable
+                      ? t("fix3.auth.phoneContinue")
+                      : t("fix2.whats.confirm")
+                    : mode === "forgot"
+                      ? recoveryChannel === "whatsapp" && effectiveShopRef
+                        ? otpSent
+                          ? t("auth.submit.confirmCode")
+                          : t("auth.submit.sendCode")
+                        : t("auth.submit.sendLink")
+                      : mode === "recovery"
+                        ? t("auth.submit.saveNewPassword")
+                        : mode === "signup"
+                          ? t("auth.submit.signup")
+                          : t("auth.submit.signin")}
               </span>
               {!busy && <ArrowRight className="size-4" aria-hidden="true" />}
             </button>
+            {mode === "verifyPhone" && !phoneUnavailable && (
+              <div className="grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  disabled={busy || phoneResendIn > 0}
+                  onClick={() => void resendPhoneCode()}
+                  className="auth-brand-button flex min-h-11 w-full items-center justify-center border border-border px-4 text-sm font-semibold disabled:opacity-50"
+                >
+                  {phoneResendIn > 0
+                    ? t("fix2.whats.resendIn", { seconds: phoneResendIn })
+                    : t("fix2.whats.resend")}
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void skipPhoneVerification()}
+                  className="auth-brand-button flex min-h-11 w-full items-center justify-center border border-border px-4 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+                >
+                  {t("fix3.auth.phoneSkip")}
+                </button>
+              </div>
+            )}
             {mode === "forgot" && recoveryChannel === "whatsapp" && effectiveShopRef && otpSent && (
               <button
                 type="button"

@@ -3458,6 +3458,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         {canManageShopChannels && <WhatsAppSettingsCard shopId={shop.id} />}
                         {!demo && (canManageShopChannels || actor?.role === "associate") && (
                           <GoogleIntegrationsCard
+                            shopId={shop.id}
                             returnPath="/shop?secao=avisos"
                             canCopyWholeShop={canManageShopChannels}
                           />

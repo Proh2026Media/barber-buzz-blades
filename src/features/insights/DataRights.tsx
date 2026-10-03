@@ -13,6 +13,35 @@ export type PrivacyRequest = {
   updated_at: string;
 };
 
+/**
+ * Antes de excluir a conta, pede ao Google a revogação do acesso dado ao app
+ * (Agenda/Contatos). Melhor esforço: qualquer falha ou demora segue para a exclusão,
+ * que apaga tokens e eventos do banco de qualquer forma.
+ */
+async function revokeGoogleBeforeDelete() {
+  try {
+    const { data } = await supabase.rpc("get_my_google_connection");
+    if (!(data as { connected?: boolean } | null)?.connected) return;
+    // Dono/sócio ativo não consegue excluir a conta (o banco recusa): não desconectar à toa.
+    const { data: sessionData } = await supabase.auth.getSession();
+    const uid = sessionData.session?.user.id;
+    if (!uid) return;
+    const owners = await supabase
+      .from("shop_members")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", uid)
+      .eq("active", true)
+      .in("role", ["owner", "partner"]);
+    if (owners.error || (owners.count ?? 0) > 0) return;
+    await Promise.race([
+      supabase.functions.invoke("google-connect", { body: { action: "disconnect" } }),
+      new Promise((resolve) => setTimeout(resolve, 10_000)),
+    ]);
+  } catch {
+    /* segue com a exclusão */
+  }
+}
+
 export function DataRights({ admin = false }: { admin?: boolean }) {
   const demo = useDemo();
   const { t, intlLocale } = useI18n();
@@ -121,6 +150,7 @@ export function DataRights({ admin = false }: { admin?: boolean }) {
         setMessage(t("dataRights.deleteDemo"));
         return;
       }
+      await revokeGoogleBeforeDelete();
       const result = await supabase.rpc("delete_my_account");
       if (result.error) throw result.error;
       await supabase.auth.signOut();

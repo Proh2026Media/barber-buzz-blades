@@ -2,18 +2,39 @@ import { Link } from "@tanstack/react-router";
 import { ChevronLeft, Scissors } from "lucide-react";
 import type { ReactNode } from "react";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { useI18n } from "@/lib/i18n";
+import { INTL_LOCALE, translate, useI18n, type Locale, type MessageKey } from "@/lib/i18n";
 
 type LegalPageShellProps = {
   title: string;
   /** Data da versão vigente no formato AAAA-MM-DD. */
   updatedAt: string;
+  /** Idioma próprio da página (ex.: detectado do navegador); sem ele, vale o idioma do app. */
+  locale?: Locale;
+  /** `?lang=` recebido no endereço; mantido nos links do rodapé entre política e termos. */
+  langParam?: string;
   children: ReactNode;
 };
 
+/** Idioma e tradução da página legal: o informado pela página ou o idioma do app. */
+function useShellI18n(override?: Locale) {
+  const app = useI18n();
+  const locale = override ?? app.locale;
+  return {
+    locale,
+    intlLocale: INTL_LOCALE[locale],
+    t: (key: MessageKey, vars?: Record<string, string | number>) => translate(locale, key, vars),
+  };
+}
+
 /** Aviso de tradução de cortesia; só aparece fora do pt-BR, que é o texto oficial. */
-export function LegalCourtesyNotice({ className = "" }: { className?: string }) {
-  const { t, locale } = useI18n();
+export function LegalCourtesyNotice({
+  className = "",
+  locale: localeOverride,
+}: {
+  className?: string;
+  locale?: Locale;
+}) {
+  const { t, locale } = useShellI18n(localeOverride);
   if (locale === "pt-BR") return null;
   return (
     <p
@@ -26,8 +47,15 @@ export function LegalCourtesyNotice({ className = "" }: { className?: string }) 
 }
 
 /** Layout compartilhado das páginas públicas legais (SSR). */
-export function LegalPageShell({ title, updatedAt, children }: LegalPageShellProps) {
-  const { t, intlLocale } = useI18n();
+export function LegalPageShell({
+  title,
+  updatedAt,
+  locale,
+  langParam,
+  children,
+}: LegalPageShellProps) {
+  const { t, intlLocale } = useShellI18n(locale);
+  const legalSearch = langParam ? { lang: langParam } : {};
   const updatedLabel = new Date(`${updatedAt}T12:00:00Z`).toLocaleDateString(intlLocale, {
     day: "numeric",
     month: "long",
@@ -56,7 +84,7 @@ export function LegalPageShell({ title, updatedAt, children }: LegalPageShellPro
       </header>
 
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
-        <LegalCourtesyNotice className="mb-6" />
+        <LegalCourtesyNotice className="mb-6" locale={locale} />
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {t("legal.updatedAt", { date: updatedLabel })}
@@ -73,12 +101,14 @@ export function LegalPageShell({ title, updatedAt, children }: LegalPageShellPro
         >
           <Link
             to="/privacidade"
+            search={legalSearch}
             className="min-h-11 inline-flex items-center font-semibold text-foreground underline-offset-2 hover:underline"
           >
             {t("legal.privacyLink")}
           </Link>
           <Link
             to="/termos"
+            search={legalSearch}
             className="min-h-11 inline-flex items-center font-semibold text-foreground underline-offset-2 hover:underline"
           >
             {t("legal.termsLink")}

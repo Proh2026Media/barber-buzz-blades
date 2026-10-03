@@ -1,79 +1,129 @@
 import { createFileRoute } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 import { LegalPageShell } from "@/features/legal/LegalPageShell";
+import { useLegalI18n } from "@/features/legal/legal-locale";
 import { PLATFORM_OPERATOR } from "@/features/legal/operator";
 import { legalLinkClass, legalRichText } from "@/features/legal/rich-text";
-import { useI18n } from "@/lib/i18n";
+
+/** Versão vigente dos termos (AAAA-MM-DD). */
+const TERMS_UPDATED_AT = "2026-10-03";
+const GOOGLE_PERMISSIONS_URL = "https://myaccount.google.com/permissions";
+const PAGE_URL = `${PLATFORM_OPERATOR.siteUrl}/termos`;
+
+type TermsSearch = { lang?: string };
 
 export const Route = createFileRoute("/termos")({
+  // `?lang=en` (ou en-US, en-GB, es, pt-PT, pt-BR) abre os termos nesse idioma, também no servidor.
+  validateSearch: (search: Record<string, unknown>): TermsSearch =>
+    typeof search.lang === "string" && search.lang.trim() ? { lang: search.lang.trim() } : {},
   head: () => ({
     meta: [
       { title: "Termos de Uso — Barba & Cabelo" },
       {
         name: "description",
         content:
-          "Termos de uso do aplicativo Barba & Cabelo para barbearias, profissionais e clientes.",
+          "Termos de uso do aplicativo Barba & Cabelo para barbearias, profissionais e clientes (Terms of Use available in English with ?lang=en).",
       },
       { name: "robots", content: "index,follow" },
+    ],
+    links: [
+      { rel: "alternate", hrefLang: "pt-BR", href: PAGE_URL },
+      { rel: "alternate", hrefLang: "pt-PT", href: `${PAGE_URL}?lang=pt-PT` },
+      { rel: "alternate", hrefLang: "en", href: `${PAGE_URL}?lang=en` },
+      { rel: "alternate", hrefLang: "en-GB", href: `${PAGE_URL}?lang=en-GB` },
+      { rel: "alternate", hrefLang: "es", href: `${PAGE_URL}?lang=es` },
+      { rel: "alternate", hrefLang: "x-default", href: PAGE_URL },
     ],
   }),
   component: TermosPage,
 });
 
-function TermosPage() {
-  const { t } = useI18n();
+const headingClass = "text-lg font-bold text-foreground";
+
+function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <LegalPageShell title={t("legal.termsLink")} updatedAt="2026-09-24">
-      <section className="space-y-3">
-        <h2 className="text-lg font-bold text-foreground">{t("legal.terms.s1Title")}</h2>
+    <section className="space-y-3">
+      <h2 className={headingClass}>{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+function TermosPage() {
+  const { lang } = Route.useSearch();
+  const { t, locale } = useLegalI18n(lang);
+
+  // Mantém o idioma pedido no endereço ao abrir a política a partir dos termos.
+  const privacyHref = lang ? `/privacidade?lang=${encodeURIComponent(lang)}` : "/privacidade";
+  const privacyLink = (
+    <a href={privacyHref} className={legalLinkClass}>
+      {t("legal.privacyLink")}
+    </a>
+  );
+  const permissionsLink = (
+    <a
+      href={GOOGLE_PERMISSIONS_URL}
+      className={`${legalLinkClass} [overflow-wrap:anywhere]`}
+      rel="noopener noreferrer"
+      target="_blank"
+    >
+      myaccount.google.com/permissions
+    </a>
+  );
+
+  return (
+    <LegalPageShell
+      title={t("legal.termsLink")}
+      updatedAt={TERMS_UPDATED_AT}
+      locale={locale}
+      langParam={lang}
+    >
+      <Section title={t("legal.terms.s1Title")}>
         <p>
           {legalRichText(t("legal.terms.s1Body"), {
             app: <strong>Barba &amp; Cabelo</strong>,
             site: (
-              <a href="https://beauty.contheiner.digital" className={legalLinkClass}>
+              <a href={PLATFORM_OPERATOR.siteUrl} className={legalLinkClass}>
                 beauty.contheiner.digital
               </a>
             ),
-            privacy: (
-              <a href="/privacidade" className={legalLinkClass}>
-                {t("legal.privacyLink")}
-              </a>
-            ),
+            privacy: privacyLink,
           })}
         </p>
-      </section>
+      </Section>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-bold text-foreground">{t("legal.terms.s2Title")}</h2>
+      <Section title={t("legal.terms.s2Title")}>
         <p>{t("legal.terms.s2Body1")}</p>
         <p>{t("legal.terms.s2Body2")}</p>
-      </section>
+      </Section>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-bold text-foreground">{t("legal.terms.s3Title")}</h2>
+      <Section title={t("legal.terms.s3Title")}>
         <ul className="list-disc space-y-2 pl-5">
           <li>{t("legal.terms.s3Item1")}</li>
           <li>{t("legal.terms.s3Item2")}</li>
           <li>{t("legal.terms.s3Item3")}</li>
         </ul>
-      </section>
+      </Section>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-bold text-foreground">{t("legal.terms.s4Title")}</h2>
+      <Section title={t("legal.terms.s4Title")}>
         <p>{t("legal.terms.s4Body")}</p>
-      </section>
+        <p>
+          {legalRichText(t("fix3.terms.googleRevoke"), {
+            link: permissionsLink,
+            privacy: privacyLink,
+          })}
+        </p>
+      </Section>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-bold text-foreground">{t("legal.terms.s5Title")}</h2>
+      <Section title={t("legal.terms.s5Title")}>
         <p>{t("legal.terms.s5Body")}</p>
-      </section>
+      </Section>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-bold text-foreground">{t("legal.terms.s6Title")}</h2>
+      <Section title={t("legal.terms.s6Title")}>
         <p>{t("legal.terms.s6Body")}</p>
-      </section>
+      </Section>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-bold text-foreground">{t("legal.terms.s7Title")}</h2>
+      <Section title={t("legal.terms.s7Title")}>
         <p>
           {legalRichText(t("legal.terms.s7Contact"), {
             email: (
@@ -87,7 +137,7 @@ function TermosPage() {
         </p>
         <p>{t("legal.terms.s7Delete")}</p>
         <p>{t("legal.terms.s7Changes")}</p>
-      </section>
+      </Section>
     </LegalPageShell>
   );
 }

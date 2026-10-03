@@ -140,7 +140,9 @@ export function findWhatsAppPlaceholders(body: string): string[] {
 /**
  * Tamanho máximo plausível de cada variável já preenchida. O servidor
  * (render_whatsapp_template) mede o limite de 1000 DEPOIS da substituição e,
- * se passar, a mensagem não é enviada; por isso o editor reserva essa margem.
+ * se passar, CORTA o texto em 1000 caracteres com "…" no fim (migration
+ * 20261003170000): o aviso sai, mas incompleto. Por isso o editor reserva essa
+ * margem, para a mensagem chegar inteira.
  */
 const WHATSAPP_VAR_MAX_FILLED: Record<WhatsAppTemplateVar, number> = {
   loja: 60,
@@ -176,7 +178,8 @@ export function validateWhatsAppTemplate(body: string): string[] {
   } else {
     const filled = whatsappFilledLengthEstimate(normalized);
     if (filled > 1000) {
-      errors.push(t("fix.ajustes-marca.waTooLongFilled", { length: filled }));
+      // O servidor corta o excesso (não descarta): o aviso explica que o fim some.
+      errors.push(t("fix3.whatsapp.tooLongFilledCut", { length: filled }));
     }
   }
 

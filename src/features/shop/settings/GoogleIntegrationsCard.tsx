@@ -1,5 +1,13 @@
 import { Fragment, useCallback, useEffect, useState, type ReactNode } from "react";
-import { CalendarDays, Link2, RefreshCw, ShieldCheck, Unplug, UserPlus } from "lucide-react";
+import {
+  CalendarClock,
+  CalendarDays,
+  Link2,
+  RefreshCw,
+  ShieldCheck,
+  Unplug,
+  UserPlus,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
 import { t as tNow, useI18n } from "@/lib/i18n";
@@ -39,7 +47,28 @@ type GoogleCalendarOption = {
   access_role?: string | null;
 };
 
+type ImportedGoogleEvent = {
+  id: string;
+  title: string | null;
+  starts_at: string;
+  ends_at: string;
+  all_day: boolean;
+  calendar_id: string;
+  calendar_name: string | null;
+};
+
+type ImportedEventsState = {
+  status: "idle" | "loading" | "ready" | "error";
+  events: ImportedGoogleEvent[];
+  timezone: string;
+};
+
+const DEFAULT_SHOP_TIMEZONE = "America/Sao_Paulo";
+const IMPORTED_EVENTS_LIMIT = 8;
+
 type GoogleIntegrationsCardProps = {
+  /** Barbearia aberta no painel: define o fuso usado nos horários dos eventos importados. */
+  shopId?: string;
   returnPath?: string;
   /** Dono/sócio podem copiar todos os atendimentos da barbearia. */
   canCopyWholeShop?: boolean;
@@ -73,6 +102,8 @@ async function callGoogle(body: Record<string, unknown>) {
     selected_calendar_name?: string | null;
     calendar_id?: string | null;
     calendar_name?: string | null;
+    revoked?: boolean;
+    had_connection?: boolean;
   } = {};
   try {
     payload = raw ? (JSON.parse(raw) as typeof payload) : {};
@@ -104,6 +135,95 @@ function formatWhen(value: string | null | undefined, intlLocale: string, notYet
   }
 }
 
+/** RPC nova ainda fora de `types.ts` gerado. */
+async function listImportedEvents(shopId: string | undefined, limit: number) {
+  const client = supabase as unknown as {
+    rpc: (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ data: unknown; error: { message: string } | null }>;
+  };
+  const { data, error } = await client.rpc("list_my_google_calendar_events", {
+    p_shop_id: shopId ?? null,
+    p_limit: limit,
+  });
+  if (error) throw new Error(error.message);
+  const payload = (data ?? {}) as { timezone?: string; events?: ImportedGoogleEvent[] };
+  return {
+    timezone: payload.timezone || DEFAULT_SHOP_TIMEZONE,
+    events: Array.isArray(payload.events) ? payload.events : [],
+  };
+}
+
+function safeFormat(
+  value: string,
+  intlLocale: string,
+  options: Intl.DateTimeFormatOptions,
+  timeZone: string,
+) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  try {
+    return new Intl.DateTimeFormat(intlLocale, { ...options, timeZone }).format(date);
+  } catch {
+    return new Intl.DateTimeFormat(intlLocale, options).format(date);
+  }
+}
+
+/** Dia e hora no fuso da loja. Dia inteiro chega como meia-noite UTC: formatar em UTC. */
+function formatImportedEvent(
+  event: ImportedGoogleEvent,
+  intlLocale: string,
+  timeZone: string,
+  allDayLabel: string,
+) {
+  const dayOptions: Intl.DateTimeFormatOptions = {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  };
+  if (event.all_day) {
+    return `${safeFormat(event.starts_at, intlLocale, dayOptions, "UTC")} · ${allDayLabel}`;
+  }
+  const timeOptions: Intl.DateTimeFormatOptions = { hour: "2-digit", minute: "2-digit" };
+  const day = safeFormat(event.starts_at, intlLocale, dayOptions, timeZone);
+  const start = safeFormat(event.starts_at, intlLocale, timeOptions, timeZone);
+  const end = safeFormat(event.ends_at, intlLocale, timeOptions, timeZone);
+  return `${day} · ${start}–${end}`;
+}
+
+function demoImportedEvents(calendarId: string, calendarName: string): ImportedGoogleEvent[] {
+  const base = new Date();
+  base.setMinutes(0, 0, 0);
+  const at = (days: number, hour: number, durationMin: number) => {
+    const start = new Date(base);
+    start.setDate(start.getDate() + days);
+    start.setHours(hour);
+    return {
+      starts_at: start.toISOString(),
+      ends_at: new Date(start.getTime() + durationMin * 60000).toISOString(),
+    };
+  };
+  return [
+    {
+      id: "demo-1",
+      title: "Reunião com fornecedor",
+      all_day: false,
+      calendar_id: calendarId,
+      calendar_name: calendarName,
+      ...at(1, 10, 60),
+    },
+    {
+      id: "demo-2",
+      title: "Consulta médica",
+      all_day: false,
+      calendar_id: calendarId,
+      calendar_name: calendarName,
+      ...at(2, 15, 45),
+    },
+  ];
+}
+
 function richText(template: string, nodes: Record<string, ReactNode>) {
   return template
     .split(/\{(\w+)\}/g)
@@ -117,6 +237,7 @@ const DEMO_CALENDARS: GoogleCalendarOption[] = [
 ];
 
 export function GoogleIntegrationsCard({
+  shopId,
   returnPath = "/shop",
   canCopyWholeShop = false,
 }: GoogleIntegrationsCardProps) {
@@ -133,6 +254,30 @@ export function GoogleIntegrationsCard({
   const [contactPhone, setContactPhone] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [consentOpen, setConsentOpen] = useState(false);
+  const [importedEvents, setImportedEvents] = useState<ImportedEventsState>({
+    status: "idle",
+    events: [],
+    timezone: DEFAULT_SHOP_TIMEZONE,
+  });
+
+  const loadImportedEvents = useCallback(async () => {
+    if (isDemo) {
+      const picked = DEMO_CALENDARS.find((item) => item.id === connection.selected_calendar_id);
+      setImportedEvents({
+        status: "ready",
+        events: demoImportedEvents(picked?.id ?? "primary", picked?.name ?? "Agenda principal"),
+        timezone: DEFAULT_SHOP_TIMEZONE,
+      });
+      return;
+    }
+    setImportedEvents((current) => ({ ...current, status: "loading" }));
+    try {
+      const result = await listImportedEvents(shopId, IMPORTED_EVENTS_LIMIT);
+      setImportedEvents({ status: "ready", events: result.events, timezone: result.timezone });
+    } catch {
+      setImportedEvents((current) => ({ ...current, status: "error" }));
+    }
+  }, [connection.selected_calendar_id, isDemo, shopId]);
 
   const applySelectedCalendar = useCallback(
     (calendarId?: string | null, calendarName?: string | null) => {
@@ -259,16 +404,24 @@ export function GoogleIntegrationsCard({
     if (demo) {
       setConnection({ connected: false });
       setCalendars([]);
+      setImportedEvents({ status: "idle", events: [], timezone: DEFAULT_SHOP_TIMEZONE });
       setMessage(t("integr.google.disconnectedDemo"));
       return;
     }
     setBusy(true);
     setError(null);
     try {
-      await callGoogle({ action: "disconnect" });
+      const payload = await callGoogle({ action: "disconnect" });
       setConnection({ connected: false });
       setCalendars([]);
-      setMessage(t("integr.google.disconnected"));
+      setImportedEvents({ status: "idle", events: [], timezone: DEFAULT_SHOP_TIMEZONE });
+      if (payload.revoked) {
+        setMessage(t("fix3.google.disconnectedRevoked"));
+      } else if (payload.had_connection) {
+        setMessage(t("fix3.google.disconnectedNoRevoke"));
+      } else {
+        setMessage(t("integr.google.disconnected"));
+      }
     } catch (err) {
       setError(friendlyIntegrationError(err, t("integr.google.errDisconnect")));
     } finally {
@@ -283,6 +436,7 @@ export function GoogleIntegrationsCard({
     if (demo) {
       const picked = DEMO_CALENDARS.find((item) => item.id === calendarId);
       applySelectedCalendar(calendarId, picked?.name ?? calendarId);
+      setImportedEvents((current) => ({ ...current, status: "idle", events: [] }));
       setMessage(t("integr.google.calendarSelected", { name: picked?.name ?? calendarId }));
       return;
     }
@@ -292,6 +446,8 @@ export function GoogleIntegrationsCard({
     try {
       const payload = await callGoogle({ action: "set_calendar", calendar_id: calendarId });
       applySelectedCalendar(payload.selected_calendar_id, payload.selected_calendar_name);
+      // Recarrega a lista: até a próxima sincronização, só aparecem eventos da agenda escolhida.
+      setImportedEvents((current) => ({ ...current, status: "idle", events: [] }));
       setMessage(
         t("integr.google.calendarSelected", {
           name: payload.selected_calendar_name || payload.selected_calendar_id || calendarId,
@@ -311,6 +467,7 @@ export function GoogleIntegrationsCard({
         return;
       }
       setMessage(t("integr.google.syncedDemo"));
+      void loadImportedEvents();
       return;
     }
     if (!connection.selected_calendar_id) {
@@ -335,6 +492,7 @@ export function GoogleIntegrationsCard({
         }),
       );
       await refresh();
+      await loadImportedEvents();
     } catch (err) {
       setError(friendlyIntegrationError(err, t("integr.google.errSync")));
     } finally {
@@ -401,6 +559,22 @@ export function GoogleIntegrationsCard({
     calendars.find((item) => item.id === selectedCalendarId)?.name ||
     null;
   const hasChosenCalendar = Boolean(selectedCalendarId);
+  // Eventos de uma agenda anterior saem do banco na próxima sincronização; até lá, não aparecem.
+  const visibleEvents = importedEvents.events.filter(
+    (event) => event.calendar_id === selectedCalendarId,
+  );
+
+  // Mostra os eventos importados sempre que há conexão e agenda escolhida.
+  useEffect(() => {
+    if (!connection.connected || !connection.selected_calendar_id) return;
+    if (importedEvents.status !== "idle") return;
+    void loadImportedEvents();
+  }, [
+    connection.connected,
+    connection.selected_calendar_id,
+    importedEvents.status,
+    loadImportedEvents,
+  ]);
 
   return (
     <section className="app-action-card space-y-4 p-5" aria-label={t("integr.google.title")}>
@@ -411,6 +585,15 @@ export function GoogleIntegrationsCard({
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold">{t("integr.google.title")}</p>
           <p className="text-xs text-muted-foreground">{t("integr.google.intro")}</p>
+          <a
+            href="/privacidade#dados-google"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="-my-1 inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold text-foreground underline-offset-2 hover:underline"
+          >
+            <ShieldCheck className="size-3.5 shrink-0" aria-hidden />
+            {t("fix3.google.privacyLink")}
+          </a>
         </div>
       </div>
 
@@ -621,6 +804,87 @@ export function GoogleIntegrationsCard({
         )}
       </div>
 
+      {connection.connected && hasChosenCalendar ? (
+        <section
+          className="space-y-3 border-t border-border/50 pt-4"
+          aria-labelledby="google-imported-events-title"
+          aria-busy={importedEvents.status === "loading"}
+        >
+          <div className="flex items-start gap-2">
+            <CalendarClock className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+            <div className="min-w-0">
+              <p
+                id="google-imported-events-title"
+                className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+              >
+                {t("fix3.google.eventsTitle")}
+              </p>
+              <p className="text-xs text-muted-foreground">{t("fix3.google.eventsIntro")}</p>
+            </div>
+          </div>
+
+          {importedEvents.status === "loading" || importedEvents.status === "idle" ? (
+            <p role="status" className="text-sm text-muted-foreground">
+              {t("fix3.google.eventsLoading")}
+            </p>
+          ) : null}
+
+          {importedEvents.status === "error" ? (
+            <div role="alert" className="space-y-2">
+              <p className="text-sm text-destructive">{t("fix3.google.eventsError")}</p>
+              <button
+                type="button"
+                className="inline-flex min-h-11 items-center gap-2 rounded-[var(--button-radius)] border border-border/70 bg-background px-4 text-sm font-semibold text-foreground disabled:opacity-50"
+                disabled={busy}
+                onClick={() => void loadImportedEvents()}
+              >
+                <RefreshCw className="size-4" aria-hidden />
+                {t("fix3.google.eventsRetry")}
+              </button>
+            </div>
+          ) : null}
+
+          {importedEvents.status === "ready" && visibleEvents.length === 0 ? (
+            <p className="rounded-[var(--control-radius)] border border-dashed border-border/70 bg-background/60 px-3 py-3 text-sm text-muted-foreground">
+              {t("fix3.google.eventsEmpty")}
+            </p>
+          ) : null}
+
+          {importedEvents.status === "ready" && visibleEvents.length > 0 ? (
+            <>
+              <ul className="space-y-2">
+                {visibleEvents.map((event) => (
+                  <li
+                    key={event.id}
+                    className="rounded-[var(--control-radius)] border border-border/60 bg-background/80 px-3 py-2.5"
+                  >
+                    <p className="break-words text-sm font-semibold">
+                      {event.title?.trim() || t("fix3.google.eventUntitled")}
+                    </p>
+                    <p className="text-xs text-foreground">
+                      {formatImportedEvent(
+                        event,
+                        intlLocale,
+                        importedEvents.timezone,
+                        t("fix3.google.eventAllDay"),
+                      )}
+                    </p>
+                    <p className="break-words text-xs text-muted-foreground">
+                      {t("fix3.google.eventFrom", {
+                        name: event.calendar_name || event.calendar_id,
+                      })}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-muted-foreground">
+                {t("fix3.google.eventsTimezone", { tz: importedEvents.timezone })}
+              </p>
+            </>
+          ) : null}
+        </section>
+      ) : null}
+
       {connection.connected ? (
         <div className="space-y-3 border-t border-border/50 pt-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -670,8 +934,16 @@ export function GoogleIntegrationsCard({
         </div>
       ) : null}
 
-      {message ? <p className="text-xs text-emerald-700 dark:text-emerald-400">{message}</p> : null}
-      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      {message ? (
+        <p role="status" className="text-xs text-emerald-700 dark:text-emerald-400">
+          {message}
+        </p>
+      ) : null}
+      {error ? (
+        <p role="alert" className="text-xs text-destructive">
+          {error}
+        </p>
+      ) : null}
 
       <Dialog open={consentOpen} onOpenChange={setConsentOpen}>
         <DialogContent className="max-w-lg rounded-[var(--control-radius)] border-border bg-card p-5 sm:p-6">

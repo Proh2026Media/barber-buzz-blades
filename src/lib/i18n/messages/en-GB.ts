@@ -4,6 +4,10 @@ import { enUS } from "./en-US.ts";
 /** Inglês britânico: parte do inglês americano e sobrescreve só o que muda. */
 export const enGB: Record<MessageKey, string> = {
   ...enUS,
+  "legal.club.heroBodyGeneric":
+    "The loyalty club is an optional programme run by each barbershop that uses Barba & Cabelo. The exact rules — points, levels, perks and rewards — depend on each barbershop.",
+  "legal.club.earnNote":
+    "Points are added when the barbershop marks the appointment as completed. Cancelled or missed appointments don't earn points.",
   "auth.field.whatsapp": "WhatsApp number with area code",
   "auth.field.whatsappSignupShop": "WhatsApp number with area code (for appointment updates)",
   "auth.field.whatsappSignupOptional": "WhatsApp number with area code (optional)",
@@ -34,12 +38,28 @@ export const enGB: Record<MessageKey, string> = {
     "Optional integrations (for example, the shop's WhatsApp or Google Calendar/Contacts) depend on a connection and authorisation made by the person in charge of the barbershop.",
   "legal.terms.s3Item3":
     "Information provided must be true and up to date. Abusive use, fraud or attempted unauthorised access may result in suspension or closure of the account.",
-  "legal.privacy.s3Item2":
-    "**Google Calendar and Google Contacts:** only when a barbershop (or an authorised member) connects its own Google account in the dashboard. In that case, we use Calendar to import and create events related to the business, and Contacts to save customer data when the shop requests it. This connection is optional and independent of the email used to sign in to the app.",
-  "legal.privacy.s5Body2":
-    "Connection tokens for Google Calendar/Contacts remain while the integration is active; when you disconnect, we stop using that authorisation.",
-  "legal.privacy.s6Item3":
-    "**Disconnect Calendar/Contacts:** in the shop dashboard, under Settings → Google Calendar and Contacts, use the disconnect option. This revokes the use of that authorisation in the app.",
+  "legal.privacy.s3Item4":
+    "**Legal or regulatory obligation** (art. 7, II) and **regular exercise of rights** (art. 7, VI): keeping records required by law and defence in legal proceedings.",
+  "legal.privacy.s4CalendarItem2":
+    "**Events from the chosen calendar:** when you tap Sync calendar, we read events from 7 days before to 60 days after the current date and store only each event's title, start, end, whether it is all-day, the source calendar and the event link. We do not store the description, attendees, organiser, location or the full event. These events are shown only to you, under Settings → Notifications and integrations → Google Calendar and Contacts, in the “Upcoming Google Calendar events” list, so you can see busy times whilst managing bookings; no other barbershop member and no member of the public has access to them. The copy is refreshed on each sync and deleted when you disconnect or delete your account.",
+  "legal.privacy.s4Commit2":
+    "**We do not sell** Google user data and **we do not use it for advertising**, including personalised, retargeted or interest-based ads.",
+  "legal.privacy.s4Commit3":
+    "**We do not use Google user data to develop, improve or train generalised artificial intelligence or machine learning models.**",
+  "legal.privacy.s4Commit5":
+    "**No one on our team reads your Google user data**, unless you give express consent for a specific case (for example, a support request you make), when necessary for security purposes (investigating abuse or an incident), to comply with the law, or in aggregated and anonymised form for internal operations.",
+  "legal.privacy.s5Item7":
+    "**Protected Google connection:** the authorisation request is signed (HMAC), tied to your account and expires in 10 minutes. Google returns the authorisation only to the redirect address registered in our project, and the code is exchanged for tokens on the server, using the app's secret key — tokens never pass through the browser. This way, someone else cannot link their Google account to your account in the app or reuse an intercepted authorisation.",
+  "legal.privacy.s5Item8":
+    "**Data minimisation:** we ask only for data tied to the features you use; optional data stays off until you allow it, and when you withdraw permission the optional usage records are deleted.",
+  "legal.privacy.s5Item10":
+    "**Technical logs:** the server logs incoming requests (such as date, time, origin and result), which allows us to investigate unauthorised access and errors.",
+  "legal.privacy.s6Item1":
+    "**The barbershop where you book:** the owner, partners and authorised staff see the data needed to serve you (name, contact details and appointments), according to the shop's permissions;",
+  "legal.privacy.s10Item3":
+    "anonymisation, blocking or deletion of unnecessary or excessive data, or data processed in breach of the law;",
+  "legal.privacy.s11Item4":
+    "**Revoke at Google:** you can also remove Barba & Cabelo's access directly at Google, at any time, at {link}.",
   "plat.shell.brandOpenError": "Couldn't open the customisation. Please try again.",
   "plat.shops.customize": "Customise",
   "plat.brand.title": "Customise {name}",
@@ -112,4 +132,21 @@ export const enGB: Record<MessageKey, string> = {
   "fix.ajustes-marca.domainNothingPending": "No domain is awaiting verification.",
   "fix.ajustes-marca.departureConfirmForfeit":
     "You'll lose access to this shop straight away and your clients will stay here. This can't be undone.",
+  "fix2.edge.otpTooManyAttempts": "Too many incorrect codes. Request a new code to continue.",
+  "fix2.edge.whatsappUnavailable":
+    "We couldn't send the WhatsApp message just now. Please try again in a few minutes.",
+  "legal.privacy.s11Item3":
+    "**Disconnect Calendar/Contacts:** in the shop dashboard, under Settings → Notifications and integrations → Google Calendar and Contacts, use the disconnect option. We immediately revoke the authorisation with Google and delete the tokens, the connected Google account's email and the imported events from our database. If the revocation with Google fails (for example, because of a network error or an already expired token), the app still disconnects and we tell you to remove access at myaccount.google.com/permissions. Events already copied to your Google Calendar stay there and you can delete them.",
+  "fix3.google.eventsIntro":
+    "Events imported from the chosen calendar, so you can see busy times whilst managing bookings. Read-only: make changes in Google Calendar.",
+  "fix3.google.disconnectedRevoked":
+    "Google disconnected. The app's access to your Google Account has been revoked and imported data has been deleted.",
+  "fix3.auth.phoneUnavailable":
+    "We can't send the WhatsApp code at the moment. Your account is ready: tap Continue and confirm your number later in My profile.",
+  "fix3.auth.phoneError":
+    "We couldn't confirm your WhatsApp at the moment. Try again or confirm it later in My profile.",
+  "fix3.errors.accountWithoutEmail":
+    "This account doesn't have an email yet. Contact the barbershop to complete your registration.",
+  "legal.privacy.s11Item5":
+    "When you **delete your account**, we ask Google to revoke the authorisation (if a connection exists) and delete the connection, the tokens and the imported events. To check, visit {link}. Questions or deletion requests: {email}.",
 };
