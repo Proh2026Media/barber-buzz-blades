@@ -9,6 +9,12 @@ Atualizado em **03/10/2026**. Este documento resume decisões e entregas da conv
 3. Para retomar localmente, usar `npm run dev -- --host 0.0.0.0 --port 8080`. O endereço esperado é `http://localhost:8080`.
 4. Continuar a partir do próximo pedido do usuário.
 
+## Google — projeto real do app e aviso antigo na tela (03/10, noite)
+
+- **Projeto do Google Cloud em uso:** o cliente OAuth do servidor (`GOOGLE_OAUTH_CLIENT_ID` = `GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID`, login e Agenda) é do projeto **`proh-media-drive` (nº `1072350331037`)**, não do `barba-e-cabelo` (`712948893200`). A **verificação OAuth vale para `proh-media-drive`** — é lá que a tela de permissão, a marca, os links de política/termos e o reenvio precisam estar. O `barba-e-cabelo` não é usado pelo app.
+- A Agenda não listava porque a Calendar API estava desativada em `proh-media-drive` (`last_error` 18:18 PT). Calendar API e People API ativadas lá pelo dono; lista voltou. Cliente do servidor não foi trocado.
+- O aviso "A Agenda Google não está ativada…" continuava na tela porque vinha do `google_connections.last_error` gravado, que só era apagado ao escolher agenda/sincronizar. Agora a listagem bem-sucedida apaga o aviso na tela (`GoogleIntegrationsCard`, publicado) e no banco (`google-connect` → `list_calendars`; **precisa publicar a função** para valer no banco — até lá o aviso pisca ao abrir e some quando a lista carrega, e some de vez ao escolher a agenda).
+
 ## Correção — aviso "Essa agenda não está disponível nesta conta Google" (03/10, noite)
 
 Relato do dono: o aviso aparecia e o seletor de agenda não deixava trocar. O mapa de erros (`src/lib/integrations/friendly-error.ts`) traduzia **qualquer** texto com `calendar … not` para "agenda indisponível" — inclusive o erro do Google quando a **Google Calendar API não está ativada no projeto do Google Cloud** ("has not been used in project … or it is disabled"). Nesse caso `list_calendars` falha, a lista fica vazia e o `<select>` fica desativado (o "nada acontece"). Também "Conexão Google expirada"/`invalid_grant` caía em "sessão expirada" (mandava entrar no app de novo, o que não resolve).

@@ -300,6 +300,9 @@ export function GoogleIntegrationsCard({
     try {
       const payload = await callGoogle({ action: "list_calendars" });
       setCalendars(payload.calendars ?? []);
+      // A lista veio do Google: o erro gravado antes (ex.: API desativada) já não vale.
+      setConnection((current) => ({ ...current, last_error: null }));
+      setError(null);
       applySelectedCalendar(
         payload.selected_calendar_id ?? null,
         payload.selected_calendar_name ?? null,

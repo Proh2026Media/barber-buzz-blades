@@ -279,6 +279,14 @@ Deno.serve(async (req) => {
           return a.name.localeCompare(b.name, "pt-BR");
         });
 
+      // A listagem funcionou: apaga o erro gravado antes (ex.: API desativada no projeto).
+      if (connection.last_error) {
+        await admin
+          .from("google_connections")
+          .update({ last_error: null, updated_at: new Date().toISOString() })
+          .eq("id", connection.id);
+      }
+
       const selectedId =
         typeof connection.selected_calendar_id === "string"
           ? connection.selected_calendar_id.trim()
