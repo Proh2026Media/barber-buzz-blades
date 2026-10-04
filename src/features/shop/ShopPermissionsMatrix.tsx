@@ -87,6 +87,32 @@ const PERMISSION_TEXT: Record<string, { label: MessageKey; hint: MessageKey }> =
   },
 };
 
+/**
+ * Permissões fictícias da demonstração (sem servidor): catálogo a partir dos textos
+ * traduzidos e uma matriz padrão coerente com a hierarquia.
+ */
+function demoPermissions(): PermissionsPayload {
+  const keys = Object.keys(PERMISSION_TEXT);
+  const catalog = keys.map((permission, index) => ({
+    permission,
+    label: tNow(PERMISSION_TEXT[permission]!.label),
+    description: tNow(PERMISSION_TEXT[permission]!.hint),
+    sort_order: index,
+  }));
+  const only = (allowed: string[]) =>
+    Object.fromEntries(keys.map((key) => [key, allowed.includes(key)]));
+  return {
+    catalog,
+    roles: ROLE_COLUMNS.map((role) => role.id),
+    matrix: {
+      owner: only(keys),
+      partner: only(keys.filter((key) => key !== "manage_permissions")),
+      associate: only(["view_own_score", "manage_own_services"]),
+      employee: only(["view_own_score"]),
+    },
+  };
+}
+
 type ServiceLevel = (typeof SERVICE_ACCESS.options)[number]["value"];
 
 function serviceLevelFor(matrix: Matrix, role: string): ServiceLevel {
@@ -102,6 +128,8 @@ type ShopPermissionsMatrixProps = {
   canEdit?: boolean;
   title?: string;
   description?: string;
+  /** Demonstração: usa permissões fictícias e não chama o servidor. */
+  demo?: boolean;
 };
 
 export function ShopPermissionsMatrix({
@@ -109,6 +137,7 @@ export function ShopPermissionsMatrix({
   canEdit = true,
   title: titleProp,
   description: descriptionProp,
+  demo = false,
 }: ShopPermissionsMatrixProps) {
   const { t } = useI18n();
   const title = titleProp ?? t("team.perm.title");
@@ -120,29 +149,39 @@ export function ShopPermissionsMatrix({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async (target: string) => {
-    if (!target) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const { data, error: failure } = await supabase.rpc("get_shop_permissions", {
-        p_shop_id: target,
-      });
-      if (failure) throw failure;
-      const payload = data as unknown as PermissionsPayload | null;
-      if (!payload || typeof payload !== "object" || !payload.matrix) {
-        throw new Error("Resposta inválida");
+  const load = useCallback(
+    async (target: string) => {
+      if (!target) return;
+      if (demo) {
+        const payload = demoPermissions();
+        setError(null);
+        setCatalog(payload.catalog);
+        setMatrix(payload.matrix);
+        return;
       }
-      setCatalog(Array.isArray(payload.catalog) ? payload.catalog : []);
-      setMatrix(payload.matrix);
-    } catch {
-      setCatalog([]);
-      setMatrix({});
-      setError(tNow("team.perm.loadError"));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      setLoading(true);
+      setError(null);
+      try {
+        const { data, error: failure } = await supabase.rpc("get_shop_permissions", {
+          p_shop_id: target,
+        });
+        if (failure) throw failure;
+        const payload = data as unknown as PermissionsPayload | null;
+        if (!payload || typeof payload !== "object" || !payload.matrix) {
+          throw new Error("Resposta inválida");
+        }
+        setCatalog(Array.isArray(payload.catalog) ? payload.catalog : []);
+        setMatrix(payload.matrix);
+      } catch {
+        setCatalog([]);
+        setMatrix({});
+        setError(tNow("team.perm.loadError"));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [demo],
+  );
 
   useEffect(() => {
     void load(shopId);
@@ -172,6 +211,11 @@ export function ShopPermissionsMatrix({
 
   async function handleSave() {
     if (!shopId || busy || !canEdit) return;
+    if (demo) {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -234,98 +278,113 @@ export function ShopPermissionsMatrix({
         <p role="status" className="text-sm text-muted-foreground">
           {t("team.perm.loading")}
         </p>
-      ) : catalog.length === 0 ? (
+      ) : !error && catalog.length === 0 ? (
         <p role="status" className="text-sm text-muted-foreground">
           {t("team.perm.empty")}
         </p>
-      ) : (
-        <div className="overflow-x-auto rounded-[var(--control-radius)] border border-border/60 bg-background/80">
-          <table className="w-full min-w-[560px] table-fixed text-left text-sm">
-            <thead>
-              <tr className="border-b border-border/60 bg-muted/30">
-                <th scope="col" className="w-[32%] p-3 font-semibold">
-                  {t("team.perm.permission")}
-                </th>
-                {ROLE_COLUMNS.map((role) => (
-                  <th key={role.id} scope="col" className="p-2 text-center font-semibold">
-                    {t(role.labelKey)}
+      ) : catalog.length === 0 ? null : (
+        <>
+          <p className="text-xs text-muted-foreground sm:hidden">{t("team.perm.scrollHint")}</p>
+          <div
+            role="region"
+            aria-label={title}
+            tabIndex={0}
+            className="overflow-x-auto rounded-[var(--control-radius)] border border-border/60 bg-background/80"
+          >
+            <table className="w-full min-w-[560px] table-fixed text-left text-sm">
+              <thead>
+                <tr className="border-b border-border/60 bg-muted/30">
+                  <th
+                    scope="col"
+                    className="sticky left-0 z-10 w-36 border-r border-border/40 bg-card p-3 font-semibold sm:w-[32%]"
+                  >
+                    {t("team.perm.permission")}
                   </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-b border-border/40">
-                <td className="p-3">
-                  <p className="font-bold">{t(SERVICE_ACCESS.labelKey)}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {t(SERVICE_ACCESS.descriptionKey)}
-                  </p>
-                </td>
-                {ROLE_COLUMNS.map((role) => (
-                  <td key={role.id} className="p-2 text-center">
-                    <select
-                      aria-label={t("team.perm.forRole", {
-                        permission: t(SERVICE_ACCESS.labelKey),
-                        role: t(role.labelKey),
-                      })}
-                      value={serviceLevelFor(matrix, role.id)}
-                      disabled={busy || !canEdit}
-                      onChange={(event) =>
-                        setServiceLevel(role.id, event.target.value as ServiceLevel)
-                      }
-                      className="w-full rounded-[var(--control-radius)] border border-border/70 bg-background px-1.5 py-1.5 text-xs font-semibold"
-                    >
-                      {SERVICE_ACCESS.options.map((option) => (
-                        <option key={option.value} value={option.value} title={t(option.titleKey)}>
-                          {t(option.labelKey)}
-                        </option>
-                      ))}
-                    </select>
+                  {ROLE_COLUMNS.map((role) => (
+                    <th key={role.id} scope="col" className="p-2 text-center font-semibold">
+                      {t(role.labelKey)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-border/40">
+                  <td className="sticky left-0 z-10 border-r border-border/40 bg-card p-3">
+                    <p className="font-bold">{t(SERVICE_ACCESS.labelKey)}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {t(SERVICE_ACCESS.descriptionKey)}
+                    </p>
                   </td>
-                ))}
-              </tr>
-
-              {toggleRows.map((entry) => {
-                const text = PERMISSION_TEXT[entry.permission];
-                const label = text ? t(text.label) : entry.label;
-                const description = text ? t(text.hint) : entry.description;
-                return (
-                  <tr key={entry.permission} className="border-b border-border/40">
-                    <td className="p-3">
-                      <p className="font-bold">{label}</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+                  {ROLE_COLUMNS.map((role) => (
+                    <td key={role.id} className="p-2 text-center">
+                      <select
+                        aria-label={t("team.perm.forRole", {
+                          permission: t(SERVICE_ACCESS.labelKey),
+                          role: t(role.labelKey),
+                        })}
+                        value={serviceLevelFor(matrix, role.id)}
+                        disabled={busy || !canEdit}
+                        onChange={(event) =>
+                          setServiceLevel(role.id, event.target.value as ServiceLevel)
+                        }
+                        className="w-full rounded-[var(--control-radius)] border border-border/70 bg-background px-1.5 py-1.5 text-xs font-semibold"
+                      >
+                        {SERVICE_ACCESS.options.map((option) => (
+                          <option
+                            key={option.value}
+                            value={option.value}
+                            title={t(option.titleKey)}
+                          >
+                            {t(option.labelKey)}
+                          </option>
+                        ))}
+                      </select>
                     </td>
-                    {ROLE_COLUMNS.map((role) => {
-                      const checked = matrix[role.id]?.[entry.permission] ?? false;
-                      const locked =
-                        role.id === "owner" && entry.permission === "manage_permissions";
-                      return (
-                        <td key={role.id} className="p-2 text-center">
-                          <div className="flex justify-center">
-                            <Switch
-                              aria-label={t("team.perm.forRole", {
-                                permission: label,
-                                role: t(role.labelKey),
-                              })}
-                              checked={checked}
-                              disabled={busy || !canEdit || locked}
-                              onCheckedChange={(value) =>
-                                togglePermission(entry.permission, role.id, value)
-                              }
-                            />
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                  ))}
+                </tr>
+
+                {toggleRows.map((entry) => {
+                  const text = PERMISSION_TEXT[entry.permission];
+                  const label = text ? t(text.label) : entry.label;
+                  const description = text ? t(text.hint) : entry.description;
+                  return (
+                    <tr key={entry.permission} className="border-b border-border/40">
+                      <td className="sticky left-0 z-10 border-r border-border/40 bg-card p-3">
+                        <p className="font-bold">{label}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+                      </td>
+                      {ROLE_COLUMNS.map((role) => {
+                        const checked = matrix[role.id]?.[entry.permission] ?? false;
+                        const locked =
+                          role.id === "owner" && entry.permission === "manage_permissions";
+                        return (
+                          <td key={role.id} className="p-2 text-center">
+                            <div className="flex justify-center">
+                              <Switch
+                                aria-label={t("team.perm.forRole", {
+                                  permission: label,
+                                  role: t(role.labelKey),
+                                })}
+                                checked={checked}
+                                disabled={busy || !canEdit || locked}
+                                onCheckedChange={(value) =>
+                                  togglePermission(entry.permission, role.id, value)
+                                }
+                              />
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
-      {canEdit ? (
+      {canEdit && catalog.length > 0 ? (
         <div className="flex flex-col items-stretch gap-2 sm:items-end">
           <button
             type="button"

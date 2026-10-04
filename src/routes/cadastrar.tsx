@@ -374,19 +374,19 @@ function CadastrarPage() {
 
   return (
     <main className="platform-register mb-page min-h-dvh text-foreground">
-      <div className="auth-theme-toggle">
-        <LanguageSwitcher />
-      </div>
       <div className="platform-register-photo" aria-hidden="true">
         <img src={DEFAULT_LOGIN_IMAGE} alt="" />
         <span />
       </div>
 
       <div className="platform-register-stage">
-        <Link to="/" className="platform-register-back">
-          <ArrowLeft className="size-4" aria-hidden="true" />
-          {t("common.back")}
-        </Link>
+        <div className="platform-register-top">
+          <Link to="/" className="platform-register-back">
+            <ArrowLeft className="size-4" aria-hidden="true" />
+            {t("common.back")}
+          </Link>
+          <LanguageSwitcher buttonClassName="app-icon-button hero-icon-button" />
+        </div>
 
         <div className="platform-register-panel">
           <div className="platform-register-brand">
@@ -614,32 +614,33 @@ function CadastrarPage() {
               <div className="grid gap-1.5">
                 <p
                   id="cad-timezone-summary"
-                  className="m-0 flex flex-wrap items-center gap-x-1.5 text-[0.85rem] text-[#3f3b35]"
+                  className="m-0 flex items-start gap-x-1.5 text-[0.85rem] text-[#3f3b35]"
                   aria-live="polite"
                 >
-                  <Clock className="size-3.5 shrink-0" aria-hidden="true" />
+                  <Clock className="mt-[0.2rem] size-3.5 shrink-0" aria-hidden="true" />
                   <span>
                     {withSlots(t("dec.tz.signupLine"), {
                       zone: <strong>{timeZoneName(timeZone)}</strong>,
                     })}
+                    {!timeZoneOpen && " "}
+                    {!timeZoneOpen && (
+                      <button
+                        type="button"
+                        aria-expanded={false}
+                        aria-controls="cad-timezone"
+                        onClick={() => {
+                          setTimeZoneOpen(true);
+                          // O botão some ao abrir: leva o foco para o seletor, sem perdê-lo.
+                          window.requestAnimationFrame(() =>
+                            document.getElementById("cad-timezone")?.focus(),
+                          );
+                        }}
+                        className="platform-register-linkish -my-3 inline-flex items-center align-baseline"
+                      >
+                        {t("dec.tz.change")}
+                      </button>
+                    )}
                   </span>
-                  {!timeZoneOpen && (
-                    <button
-                      type="button"
-                      aria-expanded={false}
-                      aria-controls="cad-timezone"
-                      onClick={() => {
-                        setTimeZoneOpen(true);
-                        // O botão some ao abrir: leva o foco para o seletor, sem perdê-lo.
-                        window.requestAnimationFrame(() =>
-                          document.getElementById("cad-timezone")?.focus(),
-                        );
-                      }}
-                      className="platform-register-linkish px-1"
-                    >
-                      {t("dec.tz.change")}
-                    </button>
-                  )}
                 </p>
                 {timeZoneOpen && (
                   <div className="grid gap-1.5">

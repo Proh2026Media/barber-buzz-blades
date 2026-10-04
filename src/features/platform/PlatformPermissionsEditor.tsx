@@ -10,7 +10,14 @@ function richText(template: string, nodes: Record<string, ReactNode>) {
     .map((part, i) => (i % 2 === 1 ? <Fragment key={i}>{nodes[part] ?? part}</Fragment> : part));
 }
 
-export function PlatformPermissionsEditor({ shops }: { shops: Tables<"barbershops">[] }) {
+export function PlatformPermissionsEditor({
+  shops,
+  demoMode = false,
+}: {
+  shops: Tables<"barbershops">[];
+  /** Na demonstração não há servidor: a matriz usa permissões fictícias e não salva. */
+  demoMode?: boolean;
+}) {
   const { t } = useI18n();
   const [shopId, setShopId] = useState("");
   const shopFieldId = useId();
@@ -22,10 +29,10 @@ export function PlatformPermissionsEditor({ shops }: { shops: Tables<"barbershop
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
-        <h2 className="flex items-center gap-2 text-xl font-bold">
-          <Shield className="size-5 text-primary" />
-          {t("plat.perm.title")}
-        </h2>
+        <div className="app-section-title">
+          <Shield aria-hidden="true" />
+          <h2>{t("plat.perm.title")}</h2>
+        </div>
         <p className="text-sm text-muted-foreground">
           {richText(t("plat.perm.intro"), {
             admin: <strong>{t("plat.perm.admin")}</strong>,
@@ -56,7 +63,11 @@ export function PlatformPermissionsEditor({ shops }: { shops: Tables<"barbershop
         </select>
       </div>
 
-      {shopId ? <ShopPermissionsMatrix shopId={shopId} canEdit /> : null}
+      {shopId ? (
+        <section className="rounded-2xl border border-border bg-card p-4">
+          <ShopPermissionsMatrix shopId={shopId} canEdit demo={demoMode} />
+        </section>
+      ) : null}
     </div>
   );
 }

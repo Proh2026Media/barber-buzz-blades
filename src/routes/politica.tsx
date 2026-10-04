@@ -21,7 +21,7 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LegalCourtesyNotice } from "@/features/legal/LegalPageShell";
 import { useLegalI18n } from "@/features/legal/legal-locale";
-import { legalRichText } from "@/features/legal/rich-text";
+import { legalLinkClass, legalRichText } from "@/features/legal/rich-text";
 import {
   parseLoyaltyProgram,
   tierStyleKey,
@@ -189,7 +189,7 @@ function PoliticaClube() {
 
   return (
     <div
-      className={`brand-corners-${corner} min-h-dvh bg-background pb-10 font-sans text-foreground`}
+      className={`brand-page brand-corners-${corner} min-h-dvh bg-background pb-10 font-sans text-foreground`}
     >
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-xl items-center justify-between gap-3 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
@@ -268,15 +268,12 @@ function PoliticaClube() {
             className="flex flex-wrap items-center justify-center gap-x-4"
             aria-label={t("legal.navAria")}
           >
-            <Link
-              to="/termos"
-              className="inline-flex min-h-11 items-center font-semibold text-foreground underline-offset-2 hover:underline"
-            >
+            <Link to="/termos" className={`inline-flex min-h-11 items-center ${legalLinkClass}`}>
               {t("legal.termsLink")}
             </Link>
             <Link
               to="/privacidade"
-              className="inline-flex min-h-11 items-center font-semibold text-foreground underline-offset-2 hover:underline"
+              className={`inline-flex min-h-11 items-center ${legalLinkClass}`}
             >
               {t("legal.privacyLink")}
             </Link>

@@ -47,6 +47,7 @@ import {
 } from "@/components/ui/dialog";
 import { BrandIdentityEditor } from "@/features/shop/BrandIdentityEditor";
 import { BrandFontFace } from "@/features/shop/BrandFontFace";
+import { BrandRootVariables } from "@/features/shop/BrandRootVariables";
 import { ChangePasswordCard } from "@/features/auth/ChangePasswordCard";
 import { LanguageSettingsCard } from "@/components/LanguageSettingsCard";
 import { PlatformWhatsAppCard } from "./PlatformWhatsAppCard";
@@ -139,6 +140,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
   const inviteEmailFieldId = useId();
   const inviteNameFieldId = useId();
   const inviteShopFieldId = useId();
+  const inviteRoleFieldId = useId();
   const [inviteMessage, setInviteMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -433,24 +435,24 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
   // ser conferida nos três shells sem aplicar a marca de uma loja ao admin
   // global real, que gerencia várias unidades ao mesmo tempo.
   const demoBrandSettings = demoState?.settings ?? null;
+  const brandStyle = demoBrandSettings
+    ? brandVariables(
+        demoBrandSettings.primary_color,
+        demoBrandSettings.accent_color,
+        demoBrandSettings.font_family,
+        demoBrandSettings.custom_font_url,
+        demoBrandSettings.header_font_weight,
+        demoBrandSettings.header_font_style,
+        demoBrandSettings.corner_style,
+      )
+    : null;
 
   return (
     <div
-      className={`arena-workspace min-h-screen bg-background text-foreground ${brandFontScopeClass(demoBrandSettings?.font_scope)} ${brandCornerClass(demoBrandSettings?.corner_style)} ${demoBrandSettings?.floating_chrome ? "brand-chrome-floating" : ""}`}
-      style={
-        demoBrandSettings
-          ? (brandVariables(
-              demoBrandSettings.primary_color,
-              demoBrandSettings.accent_color,
-              demoBrandSettings.font_family,
-              demoBrandSettings.custom_font_url,
-              demoBrandSettings.header_font_weight,
-              demoBrandSettings.header_font_style,
-              demoBrandSettings.corner_style,
-            ) as CSSProperties)
-          : undefined
-      }
+      className={`arena-workspace platform-workspace min-h-screen bg-background text-foreground ${brandFontScopeClass(demoBrandSettings?.font_scope)} ${brandCornerClass(demoBrandSettings?.corner_style)} ${demoBrandSettings?.floating_chrome ? "brand-chrome-floating" : ""}`}
+      style={brandStyle ? (brandStyle as CSSProperties) : undefined}
     >
+      <BrandRootVariables vars={brandStyle} />
       <TermsUpdateGate disabled={demoMode} />
       {demoBrandSettings && (
         <BrandFontFace
@@ -461,7 +463,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur-xl px-4 py-4 flex items-center justify-between">
         <div className="min-w-0">
           <p className="text-xs font-bold text-gold">{t("plat.header.eyebrow")}</p>
-          <h1 className="truncate text-lg font-extrabold tracking-tight">
+          <h1 className="break-words text-lg font-extrabold leading-tight tracking-tight max-[379px]:text-base">
             {t("plat.header.title")}
           </h1>
         </div>
@@ -481,14 +483,14 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
               <Link
                 to="/shop"
                 aria-label={t("plat.header.openShop")}
-                className="app-icon-button sm:hidden"
+                className="app-icon-button sm:hidden!"
               >
                 <Building2 size={20} />
               </Link>
               <Link
                 to="/shop"
                 aria-label={t("plat.header.openShop")}
-                className="hidden text-xs font-semibold text-muted-foreground hover:text-foreground sm:inline"
+                className="hidden min-h-11 items-center px-2 text-xs font-semibold text-muted-foreground hover:text-foreground sm:inline-flex"
               >
                 {t("plat.header.shop")}
               </Link>
@@ -521,10 +523,10 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                 type="button"
                 aria-pressed={platformTab === id}
                 onClick={() => setPlatformTab(id)}
-                className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-2 text-xs font-bold text-muted-foreground transition-all aria-pressed:bg-primary aria-pressed:text-primary-foreground"
+                className="flex min-h-14 flex-col items-center justify-start gap-1 rounded-xl px-1 pt-2.5 pb-2 text-xs font-bold max-[379px]:text-[0.6875rem] text-muted-foreground transition-all aria-pressed:bg-primary aria-pressed:text-primary-foreground"
               >
-                <Icon className="size-4" />
-                <span>{label}</span>
+                <Icon className="size-4 shrink-0" />
+                <span className="text-center leading-tight">{label}</span>
               </button>
             ))}
           </nav>
@@ -549,7 +551,12 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                   </p>
                 </section>
               ) : (
-                <>
+                <DemoTourHub
+                  shopId={demoShopId}
+                  shopName={shops.find((shop) => shop.id === demoShopId)?.name}
+                  disabled={!demoShopId}
+                  onPreviewLogin={() => void openLoginTour()}
+                >
                   <label className="block space-y-1.5 text-xs font-semibold text-muted-foreground">
                     {t("plat.tour.shopLabel")}
                     <select
@@ -565,24 +572,16 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                       ))}
                     </select>
                   </label>
-                  <DemoTourHub
-                    shopId={demoShopId}
-                    shopName={shops.find((shop) => shop.id === demoShopId)?.name}
-                    disabled={!demoShopId}
-                    onPreviewLogin={() => void openLoginTour()}
-                  />
-                </>
+                </DemoTourHub>
               )}
             </>
           )}
 
           {platformTab === "insights" && (
             <div className="space-y-6">
-              <div className="rounded-lg border border-border bg-card p-4">
-                <div className="app-section-title">
-                  <MessageSquareText />
-                  <h2>{t("plat.insights.title")}</h2>
-                </div>
+              <div className="app-section-title">
+                <MessageSquareText aria-hidden="true" />
+                <h2>{t("plat.insights.title")}</h2>
               </div>
               <BusinessInsights />
               <SurveyCatalog />
@@ -592,7 +591,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
 
           {platformTab === "permissions" && (
             <div className="mb-panel">
-              <PlatformPermissionsEditor shops={shops} />
+              <PlatformPermissionsEditor shops={shops} demoMode={demoMode} />
             </div>
           )}
 
@@ -600,11 +599,9 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
             <div className="space-y-6">
               <section className="space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <Building2 size={18} className="text-primary" />
-                    <h2 className="text-xl font-extrabold tracking-tight">
-                      {t("plat.shops.title")}
-                    </h2>
+                  <div className="app-section-title">
+                    <Building2 aria-hidden="true" />
+                    <h2>{t("plat.shops.title")}</h2>
                   </div>
                   <span className="text-xs text-muted-foreground">
                     {t("plat.shops.count", { shown: filteredShops.length, total: shops.length })}
@@ -654,13 +651,27 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                       const admins = shopMemberships.filter(
                         (membership) => membership.role === "shop_admin",
                       ).length;
+                      const statusPill = (
+                        <span
+                          className={`status-pill ${
+                            shop.status === "active" ? "status-confirmed" : "status-cancelled"
+                          }`}
+                        >
+                          {shop.status === "active"
+                            ? t("plat.shops.active")
+                            : t("plat.shops.suspended")}
+                        </span>
+                      );
                       return (
                         <div
                           key={shop.id}
                           className="grid gap-3 rounded-2xl border border-border bg-card px-4 py-4 sm:grid-cols-[1fr_auto] sm:items-center"
                         >
                           <div>
-                            <p className="text-sm font-bold">{shop.name}</p>
+                            <div className="flex items-start justify-between gap-2 sm:block">
+                              <p className="min-w-0 text-sm font-bold">{shop.name}</p>
+                              <span className="shrink-0 sm:hidden">{statusPill}</span>
+                            </div>
                             <label className="my-3 flex items-center gap-3 text-sm">
                               <Switch
                                 checked={sportsModules[shop.id] ?? false}
@@ -684,9 +695,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                                 </span>
                               </span>
                             </label>
-                            <p className="text-xs uppercase tracking-widest text-muted-foreground">
-                              /{shop.slug}
-                            </p>
+                            <p className="text-xs text-muted-foreground">/{shop.slug}</p>
                             <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
                               <span className="rounded-full bg-muted px-2 py-1">
                                 {t(
@@ -708,18 +717,8 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                               </span>
                             </div>
                           </div>
-                          <div className="flex flex-wrap items-center gap-2 sm:flex-col sm:items-end">
-                            <span
-                              className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                                shop.status === "active"
-                                  ? "bg-primary/10 text-primary"
-                                  : "bg-muted text-muted-foreground"
-                              }`}
-                            >
-                              {shop.status === "active"
-                                ? t("plat.shops.active")
-                                : t("plat.shops.suspended")}
-                            </span>
+                          <div className="flex flex-wrap items-center gap-2 sm:flex-col sm:items-stretch">
+                            <span className="hidden sm:flex sm:justify-end">{statusPill}</span>
                             <button
                               type="button"
                               onClick={(event) => {
@@ -731,7 +730,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                                   ? t("plat.status.suspendAria", { name: shop.name })
                                   : t("plat.status.reactivateAria", { name: shop.name })
                               }
-                              className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-3 text-xs font-bold hover:bg-muted"
+                              className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-background px-3 text-xs font-bold hover:bg-muted"
                             >
                               {shop.status === "active" ? (
                                 <PauseCircle
@@ -748,7 +747,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                             <button
                               type="button"
                               onClick={() => void openBranding(shop)}
-                              className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-3 text-xs font-bold hover:bg-muted"
+                              className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-background px-3 text-xs font-bold hover:bg-muted"
                             >
                               <Palette className="size-4 text-primary" aria-hidden="true" />
                               {t("plat.shops.customize")}
@@ -811,7 +810,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                   <button
                     type="submit"
                     disabled={busy}
-                    className="w-full rounded-xl bg-primary py-3 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+                    className="min-h-11 w-full rounded-xl bg-primary py-3 text-xs font-semibold text-primary-foreground disabled:opacity-50"
                   >
                     {busy ? t("plat.newShop.busy") : t("plat.newShop.submit")}
                   </button>
@@ -880,18 +879,26 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                         ))}
                     </select>
                   </div>
-                  <select
-                    value={inviteRole}
-                    onChange={(event) => setInviteRole(event.target.value as typeof inviteRole)}
-                    className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
-                    aria-label={t("plat.invite.roleAria")}
-                  >
-                    <option value="employee">{t("plat.invite.optEmployee")}</option>
-                    <option value="associate">{t("plat.invite.optAssociate")}</option>
-                    <option value="owner">{t("plat.invite.optOwner")}</option>
-                  </select>
+                  <div>
+                    <label
+                      htmlFor={inviteRoleFieldId}
+                      className="block text-xs font-semibold text-muted-foreground"
+                    >
+                      {t("plat.invite.roleAria")}
+                    </label>
+                    <select
+                      id={inviteRoleFieldId}
+                      value={inviteRole}
+                      onChange={(event) => setInviteRole(event.target.value as typeof inviteRole)}
+                      className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground"
+                    >
+                      <option value="employee">{t("plat.invite.optEmployee")}</option>
+                      <option value="associate">{t("plat.invite.optAssociate")}</option>
+                      <option value="owner">{t("plat.invite.optOwner")}</option>
+                    </select>
+                  </div>
                   {inviteRole === "owner" && (
-                    <label className="block text-xs font-semibold">
+                    <label className="block text-xs font-semibold text-muted-foreground">
                       {t("plat.invite.ownership")}
                       <input
                         required
@@ -901,9 +908,9 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                         step={0.01}
                         value={inviteOwnership}
                         onChange={(event) => setInviteOwnership(event.target.value)}
-                        className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
+                        className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground"
                       />
-                      <span className="mt-1 block font-normal text-muted-foreground">
+                      <span className="mt-1 block text-[11px] font-normal text-muted-foreground">
                         {t("plat.invite.ownershipHint")}
                       </span>
                     </label>
@@ -916,7 +923,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                   <button
                     type="submit"
                     disabled={inviteBusy || shops.length === 0}
-                    className="w-full rounded-xl bg-primary py-3 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+                    className="min-h-11 w-full rounded-xl bg-primary py-3 text-xs font-semibold text-primary-foreground disabled:opacity-50"
                   >
                     {inviteBusy ? t("plat.invite.busy") : t("plat.invite.submit")}
                   </button>

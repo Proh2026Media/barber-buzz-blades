@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ClipboardPen, Save, X } from "lucide-react";
+import { ChevronDown, ClipboardPen, Save, X } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useDemo } from "@/features/demo/context";
 import { supabase } from "@/integrations/supabase/client";
@@ -104,13 +104,17 @@ export function AttendanceControls({
   }
   if (!editable && !facts.no_show_at) return null;
   return (
-    <details className="border-t border-border pt-2 text-xs">
-      <summary className="flex min-h-11 cursor-pointer items-center py-2 font-semibold">
-        {facts.no_show_at ||
-        facts.customer_delay_minutes != null ||
-        facts.shop_delay_minutes != null
-          ? t("ins.att.recorded")
-          : t("ins.att.optional")}
+    <details className="group text-xs">
+      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 py-2 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+        <ClipboardPen className="size-4 shrink-0 text-gold" />
+        <span className="min-w-0 flex-1">
+          {facts.no_show_at ||
+          facts.customer_delay_minutes != null ||
+          facts.shop_delay_minutes != null
+            ? t("ins.att.recorded")
+            : t("ins.att.optional")}
+        </span>
+        <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
       </summary>
       {facts.no_show_at ? (
         <p className="py-2 text-destructive">{t("ins.att.noShow")}</p>

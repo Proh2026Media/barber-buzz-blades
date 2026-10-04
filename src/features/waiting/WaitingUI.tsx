@@ -300,7 +300,7 @@ export function WaitingSettings({
       <button
         type="button"
         disabled={busy || !valid}
-        className="action-button action-confirm"
+        className="action-button action-confirm w-full"
         onClick={() => (settings.waiting_enabled && !enabled ? setConfirm(true) : void save())}
       >
         <Save className="size-4" />

@@ -1,7 +1,7 @@
 import { PrivacyCenter } from "@/features/insights/PrivacyCenter";
 import { ChangePasswordCard } from "@/features/auth/ChangePasswordCard";
 import { LanguageSettingsCard } from "@/components/LanguageSettingsCard";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { LogOut, User } from "lucide-react";
 import { WhatsappProfileCard } from "@/features/customer/WhatsappProfileCard";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +9,14 @@ import { useDemo } from "@/features/demo/context";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { t as tNow, useI18n } from "@/lib/i18n";
 
-export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void }) {
+export function CustomerProfile({
+  onSaved,
+  children,
+}: {
+  onSaved?: (name: string) => void;
+  /** Conteúdo extra da conta (ex.: "Seu ritmo"), exibido antes da privacidade e da saída. */
+  children?: ReactNode;
+}) {
   const demo = useDemo();
   const { t } = useI18n();
   const [name, setName] = useState("");
@@ -116,7 +123,10 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
 
   return (
     <section className="space-y-5">
-      <h2 className="text-xl font-bold">{t("profile.title")}</h2>
+      <div className="app-section-title">
+        <User aria-hidden="true" />
+        <h2>{t("profile.title")}</h2>
+      </div>
       {loading ? (
         <p role="status">{t("profile.loading")}</p>
       ) : (
@@ -163,6 +173,8 @@ export function CustomerProfile({ onSaved }: { onSaved?: (name: string) => void 
           <LanguageSettingsCard />
 
           {!demo && <ChangePasswordCard />}
+
+          {children}
 
           <PrivacyCenter />
           <button

@@ -65,7 +65,8 @@
   --muted-foreground: #66635c;
   --accent: #e4e0d8;
   --accent-foreground: oklch(0.2 0.02 240);
-  --destructive: oklch(0.6 0.22 25);
+  /* Vermelho mais fechado: texto pequeno de erro/Sair passa de 4,5:1 sobre off-white e fundo. */
+  --destructive: #b42318;
   --destructive-foreground: oklch(0.98 0 0);
   --border: #d3cec3;
   --input: #d3cec3;
@@ -99,17 +100,23 @@
 
 .dark {
   --background: #171816;
-  --foreground: oklch(0.95 0.01 240);
+  /* Off-white quente da identidade (o mesmo do título do cabeçalho), sem matiz azul. */
+  --foreground: #f1ede6;
   --card: #222320;
-  --card-foreground: oklch(0.95 0.01 240);
+  --card-foreground: #f1ede6;
   --popover: #222320;
-  --popover-foreground: oklch(0.95 0.01 240);
-  --primary: oklch(0.95 0.01 240);
-  --primary-foreground: oklch(0.12 0.01 240);
+  --popover-foreground: #f1ede6;
+  /* Tom único de "principal/selecionado" no escuro (barra, abas, chips, popovers, login). */
+  --primary-on-dark: #f1ede6;
+  --primary: var(--primary-on-dark);
+  --primary-foreground: #171816;
   --secondary: #2c2d29;
-  --secondary-foreground: oklch(0.95 0.01 240);
+  --secondary-foreground: #f1ede6;
   --muted: #2c2d29;
   --muted-foreground: #aaa79e;
+  /* Vermelho claro no carvão (≥ 4,9:1); o botão sólido usa texto escuro sobre ele. */
+  --destructive: #f97066;
+  --destructive-foreground: #1f0d0b;
   --accent: #3b3c35;
   --accent-foreground: #f7f5f0;
   --border: #3b3c35;
@@ -579,6 +586,14 @@
   outline: 2px solid var(--gold);
   outline-offset: 3px;
 }
+/* Abertura/Fechamento lado a lado no celular: um pouco menos de folga interna para
+   o rótulo "Fechamento" caber inteiro sem esmagar a seta. */
+@media (max-width: 420px) {
+  .hours-range .schedule-field {
+    gap: 0.45rem;
+    padding-inline: 0.65rem;
+  }
+}
 .schedule-field:disabled {
   opacity: 0.5;
 }
@@ -623,13 +638,19 @@
 }
 .action-button:hover {
   background: #383932;
-  box-shadow: 0 8px 20px color-mix(in oklch, #292925 22%, transparent);
+  box-shadow: 0 8px 20px color-mix(in oklab, #292925 22%, transparent);
 }
 .action-button:active {
   transform: scale(0.97);
 }
+/* Desativado opaco e neutro: mantém o texto legível (cerca de 4,1:1) em todas as variantes. */
 .action-button:disabled {
-  opacity: 0.5;
+  opacity: 1;
+  background: #74786f;
+  border-color: #74786f;
+  color: #f7f5f0;
+  box-shadow: none;
+  transform: none;
 }
 
 /* Shared action dimensions across screens and portalled forms. */
@@ -649,7 +670,7 @@ body:has(.arena-workspace)
     textarea,
     select
   ) {
-  background: #fafaf8 !important;
+  background-color: #fafaf8 !important;
   color: #292925;
   border-color: #cccfc8;
   color-scheme: light;
@@ -667,6 +688,39 @@ body:has(.arena-workspace) input:-webkit-autofill {
   color: #4d514a;
   border-color: #cccfc8;
 }
+/* No escuro, item selecionado dos filtros (chips de status e grade/lista): cor da marca com
+   contorno dourado, contrastando com os chips claros não selecionados. Um só estilo de seleção. */
+.dark .catalog-filters button[aria-pressed="true"] {
+  background-color: var(--brand-primary, #292925);
+  color: var(--brand-primary-foreground, #fafafa);
+  border-color: var(--gold);
+  box-shadow: inset 0 0 0 1px var(--gold);
+}
+/* Seletores de data/hora e selects nativos com a mesma superfície neutra dos campos
+   (evita bege ao lado de branco no mesmo formulário). Vem antes de
+   .agenda-date-current .schedule-field, que segue transparente. */
+.arena-workspace .schedule-field,
+body:has(.arena-workspace) :is([role="dialog"], [role="alertdialog"]) .schedule-field {
+  --foreground: #292925;
+  --muted-foreground: #66635c;
+  background: #fafaf8;
+  border-color: #cccfc8;
+  color: #292925;
+}
+.arena-workspace .schedule-field:hover,
+body:has(.arena-workspace) :is([role="dialog"], [role="alertdialog"]) .schedule-field:hover {
+  border-color: var(--gold);
+}
+/* Seta dos selects igual à ChevronDown (lucide) dos seletores ao lado. */
+body:has(.arena-workspace) select:not([multiple]):not([size]) {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2.25rem !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23292925' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.75rem center !important;
+  background-size: 1rem !important;
+}
 .arena-workspace
   input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]),
 .arena-workspace select,
@@ -677,6 +731,25 @@ body:has(.arena-workspace)
     select
   ) {
   min-height: 44px;
+}
+/* No celular, campos com menos de 16px fazem o Safari do iPhone ampliar a página ao tocar.
+   Mesmo ponto de quebra do componente Input (text-base … md:text-sm). */
+@media (max-width: 767px) {
+  .arena-workspace
+    :is(
+      input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]),
+      select,
+      textarea
+    ),
+  body:has(.arena-workspace)
+    :is([role="dialog"], [role="alertdialog"])
+    :is(
+      input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]),
+      select,
+      textarea
+    ) {
+    font-size: 16px;
+  }
 }
 .arena-workspace button:focus-visible {
   outline: 2px solid var(--gold);
@@ -761,11 +834,11 @@ body:has(.arena-workspace) {
   margin-top: max(var(--app-chrome-inset), env(safe-area-inset-top));
   margin-right: max(var(--app-chrome-inset), env(safe-area-inset-right));
   margin-left: max(var(--app-chrome-inset), env(safe-area-inset-left));
-  border: 1px solid color-mix(in oklch, var(--border) 65%, transparent);
+  border: 1px solid color-mix(in oklab, var(--border) 65%, transparent);
   border-radius: var(--panel-radius);
   box-shadow:
-    0 14px 32px color-mix(in oklch, #1c1d19 13%, transparent),
-    inset 0 1px 0 color-mix(in oklch, #fff 45%, transparent);
+    0 14px 32px color-mix(in oklab, #1c1d19 13%, transparent),
+    inset 0 1px 0 color-mix(in oklab, #fff 45%, transparent);
 }
 .arena-workspace.brand-chrome-floating > .app-mobile-nav {
   right: max(var(--app-chrome-inset), env(safe-area-inset-right));
@@ -892,7 +965,7 @@ body:has(.arena-workspace) {
 [data-radix-popper-content-wrapper] [data-scrolling="true"]::-webkit-scrollbar-thumb:hover,
 [role="dialog"][data-scrolling="true"]::-webkit-scrollbar-thumb:hover,
 [role="dialog"] [data-scrolling="true"]::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in oklch, var(--gold) 82%, #292925);
+  background: color-mix(in oklab, var(--gold) 82%, #292925);
   background-clip: padding-box;
 }
 
@@ -901,23 +974,23 @@ body:has(.arena-workspace) {
   background:
     radial-gradient(
       ellipse 70% 45% at 12% -8%,
-      color-mix(in oklch, var(--gold) 18%, transparent),
+      color-mix(in oklab, var(--gold) 18%, transparent),
       transparent 58%
     ),
     radial-gradient(
       ellipse 55% 40% at 92% 8%,
-      color-mix(in oklch, #3d4638 16%, transparent),
+      color-mix(in oklab, #3d4638 16%, transparent),
       transparent 55%
     ),
     radial-gradient(
       ellipse 60% 50% at 50% 110%,
-      color-mix(in oklch, var(--gold) 10%, transparent),
+      color-mix(in oklab, var(--gold) 10%, transparent),
       transparent 60%
     ),
     var(--background);
 }
 .arena-workspace {
-  --app-surface: color-mix(in oklch, var(--card) 94%, var(--gold) 6%);
+  --app-surface: color-mix(in oklab, var(--card) 94%, var(--gold) 6%);
   --app-elevated: var(--card);
   background: transparent;
   isolation: isolate;
@@ -931,21 +1004,21 @@ body:has(.arena-workspace) {
   background:
     radial-gradient(
       circle at 18% 12%,
-      color-mix(in oklch, var(--gold) 12%, transparent),
+      color-mix(in oklab, var(--gold) 12%, transparent),
       transparent 42%
     ),
     radial-gradient(
       circle at 88% 0%,
-      color-mix(in oklch, #2f342c 14%, transparent),
+      color-mix(in oklab, #2f342c 14%, transparent),
       transparent 38%
     );
   animation: mb-atmosphere 18s var(--ease-soft) infinite alternate;
 }
 .arena-workspace > header {
   min-height: 68px;
-  border-bottom-color: color-mix(in oklch, var(--border) 72%, transparent);
-  background: color-mix(in oklch, #20211f 92%, transparent);
-  box-shadow: 0 10px 30px color-mix(in oklch, #000 18%, transparent);
+  border-bottom-color: color-mix(in oklab, var(--border) 72%, transparent);
+  background: color-mix(in oklab, #20211f 92%, transparent);
+  box-shadow: 0 10px 30px color-mix(in oklab, #000 18%, transparent);
   backdrop-filter: blur(18px);
 }
 .arena-workspace > main {
@@ -958,8 +1031,14 @@ body:has(.arena-workspace) {
 .arena-workspace .bg-card {
   background-color: var(--app-elevated);
 }
-/* Reading surfaces remain off-white, including on the charcoal theme. */
-.arena-workspace :is(.bg-card, .app-action-card, .booking-section) {
+/* Reading surfaces remain off-white, including on the charcoal theme.
+   Janelas portadas (Dialog/AlertDialog) usam a mesma superfície dos cartões;
+   popovers (data/hora, menu de conta) e janelas de página inteira ficam de fora. */
+.arena-workspace :is(.bg-card, .app-action-card, .booking-section, .platform-metric-board),
+body:has(.arena-workspace)
+  :is([role="dialog"], [role="alertdialog"]):not([data-radix-popper-content-wrapper] *):not(
+    .dialog-surface-page
+  ) {
   --card: #f7f5f0;
   --app-elevated: #f7f5f0;
   --card-foreground: #242421;
@@ -976,8 +1055,50 @@ body:has(.arena-workspace) {
   --accent: #e4e0d8;
   --accent-foreground: #242421;
   --ring: #706b60;
+  --destructive: #b42318;
+  --destructive-foreground: oklch(0.98 0 0);
   color: var(--card-foreground);
   background-color: var(--card);
+}
+body:has(.arena-workspace)
+  :is([role="dialog"], [role="alertdialog"]):not([data-radix-popper-content-wrapper] *):not(
+    .dialog-surface-page
+  ) {
+  color-scheme: light;
+}
+/* Avisos rápidos (sonner) no app: mesma superfície off-white das janelas, nos dois temas.
+   Só tokens; o fundo, a borda e o texto vêm das variáveis ligadas em ui/sonner.tsx. */
+body:has(.arena-workspace) [data-sonner-toaster] {
+  --card: #f7f5f0;
+  --card-foreground: #242421;
+  --foreground: #242421;
+  --primary: var(--brand-primary, #292925);
+  --primary-foreground: var(--brand-primary-foreground, #fafafa);
+  --muted: #e4e0d8;
+  --muted-foreground: #66635c;
+  --border: #d3cec3;
+  --destructive: #b42318;
+  color-scheme: light;
+}
+/* Menus e popovers (data/hora, conta, modo demonstração) seguem a marca no tema claro;
+   no escuro mantêm o primário do tema, como o conteúdo fora dos cartões. */
+html:not(.dark) body:has(.arena-workspace) [data-radix-popper-content-wrapper] {
+  --primary: var(--brand-primary, #292925);
+  --primary-foreground: var(--brand-primary-foreground, #fafafa);
+}
+/* Nos portais off-white, a tinta de texto da marca usa a versão legível (como nos cartões). */
+body:has(.arena-workspace)
+  :is([role="dialog"], [role="alertdialog"]):not([data-radix-popper-content-wrapper] *):not(
+    .dialog-surface-page
+  )
+  .text-primary,
+body:has(.arena-workspace) [data-sonner-toaster] .text-primary,
+html:not(.dark) body:has(.arena-workspace) [data-radix-popper-content-wrapper] .text-primary {
+  color: var(--brand-primary-readable, var(--primary));
+}
+/* O sonner pinta a descrição com cores próprias por tema (clara no escuro); usa o token. */
+body [data-sonner-toaster] [data-sonner-toast] [data-description] {
+  color: var(--muted-foreground);
 }
 
 /* Brand colors keep their exact background while text and icons receive a WCAG-safe ink. */
@@ -997,6 +1118,28 @@ body:has(.arena-workspace) {
 .brand-preview .bg-gold {
   color: var(--brand-accent-foreground, var(--gold-foreground));
 }
+/* Tema escuro de todos os shells (cliente, barbearia, plataforma): fora dos cartões off-white,
+   a marca (padrão #292925) sumia no fundo carvão. A ação principal e os estados selecionados
+   usam o off-white da identidade com texto escuro (o primário do tema escuro), sem misturar a
+   marca: um cinza intermediário parecia desabilitado e marcas coloridas geravam tons rosados.
+   Dentro dos cartões off-white a marca volta pelo bloco das superfícies de leitura. */
+.dark .arena-workspace > :is(main, .app-mobile-nav) {
+  --primary: var(--primary-on-dark);
+  --primary-foreground: #171816;
+}
+.dark .arena-workspace > :is(main, .app-mobile-nav) .text-primary {
+  color: var(--primary);
+}
+.dark .arena-workspace > :is(main, .app-mobile-nav) .bg-primary {
+  color: var(--primary-foreground);
+}
+/* Dentro dos cartões off-white, a tinta volta a ser a da marca, legível no off-white. */
+.dark .arena-workspace :is(.bg-card, .app-action-card, .booking-section) .text-primary {
+  color: var(--brand-primary-readable, var(--primary));
+}
+.dark .arena-workspace :is(.bg-card, .app-action-card, .booking-section) .bg-primary {
+  color: var(--brand-primary-foreground, var(--primary-foreground));
+}
 .brand-preview .brand-preview-logo {
   border-radius: 0 var(--control-radius) var(--control-radius) 0;
 }
@@ -1011,10 +1154,10 @@ body:has(.arena-workspace) {
   margin-right: var(--app-chrome-inset);
   margin-left: var(--app-chrome-inset);
   overflow: hidden;
-  border: 1px solid color-mix(in oklch, var(--border) 65%, transparent);
+  border: 1px solid color-mix(in oklab, var(--border) 65%, transparent);
   border-radius: var(--panel-radius);
-  background: color-mix(in oklch, var(--card) 88%, transparent);
-  box-shadow: 0 8px 20px color-mix(in oklch, #1c1d19 10%, transparent);
+  background: color-mix(in oklab, var(--card) 88%, transparent);
+  box-shadow: 0 8px 20px color-mix(in oklab, #1c1d19 10%, transparent);
 }
 .brand-preview.brand-chrome-floating .brand-preview-header {
   margin-top: var(--app-chrome-inset);
@@ -1073,32 +1216,57 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
 }
 .dark .arena-workspace :is(.bg-card, .app-action-card, .booking-section) .text-emerald-300,
 .dark .arena-workspace :is(.bg-card, .app-action-card, .booking-section) .dark\:text-emerald-300,
-.dark .arena-workspace :is(.bg-card, .app-action-card, .booking-section) .dark\:text-emerald-400 {
+.dark .arena-workspace :is(.bg-card, .app-action-card, .booking-section) .dark\:text-emerald-400,
+.dark
+  body:has(.arena-workspace)
+  :is([role="dialog"], [role="alertdialog"]):not(.dialog-surface-page)
+  :is(.text-emerald-300, .dark\:text-emerald-300, .dark\:text-emerald-400) {
   color: #065f46;
 }
-.arena-workspace .shadow-sm {
-  box-shadow: 0 10px 28px color-mix(in oklch, #1c1d19 6%, transparent);
+/* Âmbar claro some no off-white: mesmo tom de .status-pending (≈6,8:1 sobre #f7f5f0). */
+.dark .arena-workspace :is(.bg-card, .app-action-card, .booking-section) .dark\:text-amber-300,
+.dark .arena-workspace :is(.bg-card, .app-action-card, .booking-section) .dark\:text-amber-400,
+.dark
+  body:has(.arena-workspace)
+  :is([role="dialog"], [role="alertdialog"]):not(.dialog-surface-page)
+  :is(.dark\:text-amber-300, .dark\:text-amber-400) {
+  color: #92400e;
 }
-.dark .arena-workspace :is(.bg-card, .app-action-card, .booking-section) .status-pending {
+.arena-workspace .shadow-sm {
+  box-shadow: 0 10px 28px color-mix(in oklab, #1c1d19 6%, transparent);
+}
+.dark .arena-workspace :is(.bg-card, .app-action-card, .booking-section) .status-pending,
+.dark
+  body:has(.arena-workspace)
+  :is([role="dialog"], [role="alertdialog"]):not(.dialog-surface-page)
+  .status-pending {
   color: #92400e;
   background: #fef3c7;
 }
 .dark
   .arena-workspace
   :is(.bg-card, .app-action-card, .booking-section)
+  :is(.status-confirmed, .status-completed),
+.dark
+  body:has(.arena-workspace)
+  :is([role="dialog"], [role="alertdialog"]):not(.dialog-surface-page)
   :is(.status-confirmed, .status-completed) {
   color: #065f46;
   background: #d1fae5;
 }
-.dark .arena-workspace :is(.bg-card, .app-action-card, .booking-section) .status-cancelled {
+.dark .arena-workspace :is(.bg-card, .app-action-card, .booking-section) .status-cancelled,
+.dark
+  body:has(.arena-workspace)
+  :is([role="dialog"], [role="alertdialog"]):not(.dialog-surface-page)
+  .status-cancelled {
   color: #9f1239;
   background: #ffe4e6;
 }
 .arena-workspace input:not([type="checkbox"]),
 .arena-workspace select,
 .arena-workspace textarea {
-  border-color: color-mix(in oklch, var(--border) 78%, transparent);
-  background-color: color-mix(in oklch, var(--background) 82%, var(--card) 18%);
+  border-color: color-mix(in oklab, var(--border) 78%, transparent);
+  background-color: color-mix(in oklab, var(--background) 82%, var(--card) 18%);
   transition:
     border-color var(--duration-fast) var(--ease-soft),
     box-shadow var(--duration-fast) var(--ease-soft),
@@ -1108,7 +1276,7 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
 .arena-workspace select:focus,
 .arena-workspace textarea:focus {
   border-color: var(--ring);
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 16%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 16%, transparent);
   outline: none;
 }
 .app-icon-button {
@@ -1118,9 +1286,9 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   flex: 0 0 44px;
   align-items: center;
   justify-content: center;
-  border: 1px solid color-mix(in oklch, var(--border) 78%, transparent);
+  border: 1px solid color-mix(in oklab, var(--border) 78%, transparent);
   border-radius: var(--button-radius);
-  background: color-mix(in oklch, var(--card) 78%, transparent);
+  background: color-mix(in oklab, var(--card) 78%, transparent);
   color: var(--muted-foreground);
   transition:
     transform var(--duration-fast) var(--ease-out),
@@ -1131,18 +1299,18 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
 }
 .app-icon-button:hover {
   color: var(--foreground);
-  box-shadow: 0 8px 18px color-mix(in oklch, #000 12%, transparent);
+  box-shadow: 0 8px 18px color-mix(in oklab, #000 12%, transparent);
 }
 .app-icon-button:active {
   transform: scale(0.94);
 }
 /* Posição do seletor de demo dentro do grupo de ícones do cabeçalho.
-   Celular: primeiro da esquerda para a direita. PC/tablet: primeiro da direita
+   Celular e tablet: primeiro da esquerda para a direita. PC: primeiro da direita
    para a esquerda, ou seja, o último do grupo. */
 .app-demo-slot-mobile {
   order: -1;
 }
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
   .app-demo-slot-desktop {
     order: 99;
   }
@@ -1153,9 +1321,9 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   gap: 0.15rem;
   height: 44px;
   padding: 0.25rem;
-  border: 1px solid color-mix(in oklch, var(--border) 78%, transparent);
+  border: 1px solid color-mix(in oklab, var(--border) 78%, transparent);
   border-radius: var(--button-radius);
-  background: color-mix(in oklch, var(--card) 78%, transparent);
+  background: color-mix(in oklab, var(--card) 78%, transparent);
   color: var(--muted-foreground);
   backdrop-filter: blur(22px);
 }
@@ -1174,12 +1342,12 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
     color var(--duration-fast) var(--ease-soft);
 }
 .app-demo-switcher-option:hover {
-  background: color-mix(in oklch, currentColor 14%, transparent);
+  background: color-mix(in oklab, currentColor 14%, transparent);
 }
 .app-demo-switcher-option[aria-pressed="true"] {
   background: var(--primary);
   color: var(--primary-foreground);
-  box-shadow: 0 4px 12px color-mix(in oklch, #000 20%, transparent);
+  box-shadow: 0 4px 12px color-mix(in oklab, #000 20%, transparent);
 }
 /* Cabeçalho do workspace é escuro em qualquer tema: o seletor acompanha. */
 .arena-workspace > header .app-demo-switcher {
@@ -1197,14 +1365,6 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
 .arena-workspace > header .app-demo-trigger[data-active="true"] {
   color: #f1ede6;
   box-shadow: inset 0 0 0 1px #6f7064;
-}
-@media (max-width: 1023px) {
-  .app-demo-switcher-option {
-    padding: 0 0.5rem;
-  }
-  .app-demo-switcher-label {
-    display: none;
-  }
 }
 .app-section-title {
   display: flex;
@@ -1260,13 +1420,22 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   bottom: max(1rem, env(safe-area-inset-bottom)) !important;
   gap: 0.3rem;
   padding: 0.45rem !important;
-  border: 1px solid color-mix(in oklch, var(--border) 55%, transparent) !important;
+  border: 1px solid color-mix(in oklab, var(--border) 55%, transparent) !important;
   border-radius: var(--panel-radius) !important;
-  background: color-mix(in oklch, var(--card) 82%, transparent) !important;
+  background: color-mix(in oklab, var(--card) 82%, transparent) !important;
   box-shadow:
-    0 18px 40px color-mix(in oklch, #1c1d19 16%, transparent),
-    inset 0 1px 0 color-mix(in oklch, #fff 55%, transparent) !important;
+    0 18px 40px color-mix(in oklab, #1c1d19 16%, transparent),
+    inset 0 1px 0 color-mix(in oklab, #fff 55%, transparent) !important;
   backdrop-filter: blur(22px);
+}
+/* Tema escuro: com cartões off-white passando por trás, a barra translúcida
+   clareava até rgb(72,73,69) e os rótulos inativos (#aaa79e) caíam para ~3,8:1.
+   Quase opaca, ela mantém o tom carvão estável e os rótulos acima de 4,5:1. */
+.dark .app-mobile-nav {
+  background: color-mix(in oklab, var(--card) 96%, transparent) !important;
+  box-shadow:
+    0 18px 40px color-mix(in oklab, #000 35%, transparent),
+    inset 0 1px 0 color-mix(in oklab, #fff 8%, transparent) !important;
 }
 .app-mobile-nav button {
   min-height: 52px;
@@ -1313,8 +1482,8 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   /* O anel de contraste mantém a pílula visível mesmo quando a cor principal
      se aproxima do fundo do rodapé. */
   box-shadow:
-    inset 0 0 0 1px color-mix(in oklch, var(--primary-foreground) 26%, transparent),
-    0 4px 12px color-mix(in oklch, var(--primary) 24%, transparent);
+    inset 0 0 0 1px color-mix(in oklab, var(--primary-foreground) 26%, transparent),
+    0 4px 12px color-mix(in oklab, var(--primary) 24%, transparent);
   transition:
     transform 460ms var(--ease-out),
     width var(--duration-med) var(--ease-out),
@@ -1422,15 +1591,15 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
 }
 .loyalty-benefits {
   padding: 1.25rem;
-  border: 1px solid color-mix(in oklch, var(--tier-color) 32%, var(--border));
+  border: 1px solid color-mix(in oklab, var(--tier-color) 32%, var(--border));
   border-radius: var(--panel-radius);
   background: linear-gradient(
     145deg,
-    color-mix(in oklch, var(--tier-color) 9%, var(--card)),
+    color-mix(in oklab, var(--tier-color) 9%, var(--card)),
     var(--card) 58%
   );
   color: var(--card-foreground);
-  box-shadow: 0 12px 30px color-mix(in oklch, var(--tier-color) 10%, transparent);
+  box-shadow: 0 12px 30px color-mix(in oklab, var(--tier-color) 10%, transparent);
 }
 .loyalty-benefits-classic {
   --tier-color: #7d8581;
@@ -1452,16 +1621,16 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   align-items: center;
   justify-content: center;
   border-radius: var(--control-radius);
-  background: color-mix(in oklch, var(--tier-color) 18%, white);
-  color: color-mix(in oklch, var(--tier-color) 82%, #242421);
+  background: color-mix(in oklab, var(--tier-color) 18%, white);
+  color: color-mix(in oklab, var(--tier-color) 82%, #242421);
 }
 .loyalty-progress-fill {
   background: linear-gradient(
     90deg,
-    color-mix(in oklch, var(--tier-color) 76%, #242421),
+    color-mix(in oklab, var(--tier-color) 76%, #242421),
     var(--tier-color)
   );
-  box-shadow: 0 0 14px color-mix(in oklch, var(--tier-color) 38%, transparent);
+  box-shadow: 0 0 14px color-mix(in oklab, var(--tier-color) 38%, transparent);
 }
 .loyalty-benefits-link {
   display: flex;
@@ -1471,8 +1640,8 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   align-items: center;
   justify-content: space-between;
   padding: 0.65rem 0.85rem;
-  border: 1px solid color-mix(in oklch, var(--tier-color) 30%, var(--border));
-  background: color-mix(in oklch, var(--tier-color) 7%, var(--background));
+  border: 1px solid color-mix(in oklab, var(--tier-color) 30%, var(--border));
+  background: color-mix(in oklab, var(--tier-color) 7%, var(--background));
   color: var(--foreground);
   font-size: 0.875rem;
   font-weight: 650;
@@ -1481,7 +1650,7 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
     transform var(--duration-fast) var(--ease-out);
 }
 .loyalty-benefits-link:hover {
-  background: color-mix(in oklch, var(--tier-color) 13%, var(--background));
+  background: color-mix(in oklab, var(--tier-color) 13%, var(--background));
 }
 
 @keyframes loyalty-light {
@@ -1497,17 +1666,17 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   }
 }
 .app-action-card {
-  border: 1px solid color-mix(in oklch, var(--border) 75%, transparent);
+  border: 1px solid color-mix(in oklab, var(--border) 75%, transparent);
   border-radius: var(--panel-radius);
   background: var(--app-elevated);
-  box-shadow: 0 12px 30px color-mix(in oklch, #1c1d19 5%, transparent);
+  box-shadow: 0 12px 30px color-mix(in oklab, #1c1d19 5%, transparent);
   transition:
     transform var(--duration-med) var(--ease-out),
     box-shadow var(--duration-med) var(--ease-out),
     border-color var(--duration-fast) var(--ease-soft);
 }
 .app-action-card:hover {
-  box-shadow: 0 18px 36px color-mix(in oklch, #1c1d19 9%, transparent);
+  box-shadow: 0 18px 36px color-mix(in oklab, #1c1d19 9%, transparent);
 }
 
 /* Agenda: controles e linhas seguem a mesma grade para leitura rápida. */
@@ -1520,7 +1689,7 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.25rem;
   padding: 0.25rem;
-  border-radius: 1rem;
+  border-radius: calc(var(--button-radius) + min(var(--button-radius), 0.25rem));
   background: var(--muted);
 }
 .agenda-scope button {
@@ -1541,7 +1710,7 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
 .agenda-scope button[aria-pressed="true"] {
   color: var(--foreground);
   background: var(--app-elevated);
-  box-shadow: 0 2px 10px color-mix(in oklch, #1c1d19 8%, transparent);
+  box-shadow: 0 2px 10px color-mix(in oklab, #1c1d19 8%, transparent);
 }
 .agenda-scope button[aria-pressed="true"] svg {
   color: var(--gold);
@@ -1564,7 +1733,7 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
 }
 .agenda-date-caption {
   display: block;
-  margin: 0 0.75rem -0.05rem;
+  margin: 0 0.5rem -0.05rem;
   color: var(--gold);
   font-size: 0.65rem;
   line-height: 1;
@@ -1575,7 +1744,7 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
 .agenda-date-current .schedule-field {
   min-height: 44px;
   width: 100%;
-  padding: 0.2rem 0.75rem;
+  padding: 0.2rem 0.5rem;
   border: 0;
   background: transparent;
   box-shadow: none;
@@ -1590,13 +1759,28 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
 .agenda-date-current .schedule-field span span::first-letter {
   text-transform: uppercase;
 }
+@media (max-width: 420px) {
+  .agenda-date-current .schedule-field > svg:last-child {
+    display: none;
+  }
+}
+/* Em telas bem estreitas o dia da semana longo quebra em até duas linhas em vez de ganhar reticências. */
+@media (max-width: 380px) {
+  .agenda-date-current .schedule-field span span {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    white-space: normal;
+    line-height: 1.2;
+  }
+}
 .agenda-today-button {
   min-height: 44px;
   padding: 0 0.9rem;
-  border: 1px solid color-mix(in oklch, var(--gold) 35%, var(--border));
+  border: 1px solid color-mix(in oklab, var(--gold) 35%, var(--border));
   border-radius: 999px;
   color: var(--gold);
-  background: color-mix(in oklch, var(--gold) 9%, var(--app-elevated));
+  background: color-mix(in oklab, var(--gold) 9%, var(--app-elevated));
   font-size: 0.75rem;
   font-weight: 800;
 }
@@ -1615,7 +1799,7 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
 .agenda-list-heading,
 .agenda-appointment-summary {
   display: grid;
-  grid-template-columns: 78px minmax(110px, 1.15fr) minmax(100px, 1fr) minmax(100px, 1fr) auto;
+  grid-template-columns: 78px minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1fr) 10.5rem;
   align-items: center;
   gap: 0.75rem;
 }
@@ -1626,6 +1810,9 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   font-weight: 750;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+.agenda-list-heading > span:last-child {
+  justify-self: end;
 }
 .agenda-appointment {
   overflow: hidden;
@@ -1640,7 +1827,7 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   align-items: center;
   gap: 0.4rem;
   padding-right: 0.75rem;
-  border-right: 1px solid color-mix(in oklch, var(--gold) 28%, var(--border));
+  border-right: 1px solid color-mix(in oklab, var(--gold) 28%, var(--border));
   color: var(--gold);
 }
 .agenda-time span {
@@ -1684,8 +1871,8 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   display: grid;
   gap: 0.75rem;
   padding: 0.75rem 1rem 1rem;
-  border-top: 1px solid color-mix(in oklch, var(--border) 72%, transparent);
-  background: color-mix(in oklch, var(--muted) 30%, transparent);
+  border-top: 1px solid color-mix(in oklab, var(--border) 72%, transparent);
+  background: color-mix(in oklab, var(--muted) 30%, transparent);
 }
 
 @media (max-width: 639px) {
@@ -1731,13 +1918,19 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   }
 }
 
-@media (max-width: 380px) {
+/* Até 440 px o botão "Hoje" desce para a própria linha, para a data caber inteira entre as setas. */
+@media (max-width: 440px) {
   .agenda-date-navigation {
     grid-template-columns: 44px minmax(0, 1fr) 44px;
   }
   .agenda-today-button {
     grid-column: 1 / -1;
     border-radius: 0.75rem;
+  }
+  /* No próprio dia o botão fica desativado: some no celular, e o rótulo "Hoje" acima da data já
+     informa o estado. No computador continua na 4ª coluna para a data não pular de largura. */
+  .agenda-today-button:disabled {
+    display: none;
   }
 }
 
@@ -1748,7 +1941,7 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
  * BACKUP — superfície anterior, mantida para uma possível reversão:
  * os cartões de membro e próximo nível usavam somente `app-action-card`, portanto
  * herdavam `background: var(--app-elevated)`, `color: var(--card-foreground)` e
- * `border-color: color-mix(in oklch, var(--border) 75%, transparent)`.
+ * `border-color: color-mix(in oklab, var(--border) 75%, transparent)`.
  * Para restaurar, basta remover `mb-loyalty-contrast-card` desses dois cartões.
  */
 .arena-workspace .mb-loyalty-contrast-card {
@@ -1765,13 +1958,13 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   background: var(--loyalty-contrast-surface);
   border-color: var(--loyalty-contrast-border);
   box-shadow:
-    0 16px 34px color-mix(in oklch, #000 18%, transparent),
-    inset 0 1px 0 color-mix(in oklch, var(--loyalty-contrast-foreground) 12%, transparent);
+    0 16px 34px color-mix(in oklab, #000 18%, transparent),
+    inset 0 1px 0 color-mix(in oklab, var(--loyalty-contrast-foreground) 12%, transparent);
 }
 .arena-workspace .mb-loyalty-contrast-card:hover {
   box-shadow:
-    0 20px 42px color-mix(in oklch, #000 22%, transparent),
-    inset 0 1px 0 color-mix(in oklch, var(--loyalty-contrast-foreground) 16%, transparent);
+    0 20px 42px color-mix(in oklab, #000 22%, transparent),
+    inset 0 1px 0 color-mix(in oklab, var(--loyalty-contrast-foreground) 16%, transparent);
 }
 .arena-workspace .mb-loyalty-contrast-card:focus-visible {
   outline: 3px solid var(--loyalty-contrast-accent);
@@ -1822,6 +2015,26 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
     var(--loyalty-hologram-4)
   );
 }
+/* Tema escuro: o cartão de membro fica off-white, então o saldo usa a paleta escura
+   (BACKUP em .dark) só no texto; os selos mantêm o gradiente claro. */
+.dark
+  .arena-workspace
+  .mb-loyalty-member-card
+  :is(.text-gradient-silver, .text-gradient-bronze, .text-gradient-gold, .text-gradient-hologram) {
+  --loyalty-silver-1: #11120f;
+  --loyalty-silver-2: #3f413c;
+  --loyalty-silver-3: #62645d;
+  --loyalty-bronze-1: #4b260d;
+  --loyalty-bronze-2: #76411e;
+  --loyalty-bronze-3: #925329;
+  --loyalty-gold-1: #463403;
+  --loyalty-gold-2: #705510;
+  --loyalty-gold-3: #86631f;
+  --loyalty-hologram-1: #143247;
+  --loyalty-hologram-2: #22566a;
+  --loyalty-hologram-3: #70405c;
+  --loyalty-hologram-4: #665b16;
+}
 .arena-workspace .mb-loyalty-member-card .mb-loyalty-sheen {
   top: -20%;
   right: -27rem;
@@ -1832,7 +2045,7 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   animation: mb-loyalty-sheen-float-right 8s var(--ease-soft) infinite;
   background: radial-gradient(
     circle,
-    color-mix(in oklch, var(--loyalty-sheen-color) 32%, transparent),
+    color-mix(in oklab, var(--loyalty-sheen-color) 32%, transparent),
     transparent 70%
   );
 }
@@ -1845,18 +2058,15 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
  */
 .arena-workspace .mb-loyalty-tier-mark {
   color: #11110f;
-  border-color: color-mix(in oklch, #11110f 22%, transparent);
+  border-color: color-mix(in oklab, #11110f 22%, transparent);
   background-size: 400% 400%;
   animation: gooey-flow 34s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   box-shadow:
-    inset 0 1px 1px color-mix(in oklch, #fff 45%, transparent),
-    0 5px 14px color-mix(in oklch, #000 16%, transparent);
+    inset 0 1px 1px color-mix(in oklab, #fff 45%, transparent),
+    0 5px 14px color-mix(in oklab, #000 16%, transparent);
 }
-.dark .arena-workspace .mb-loyalty-tier-mark {
-  color: #fff;
-  border-color: color-mix(in oklch, #fff 38%, transparent);
-  text-shadow: 0 1px 3px color-mix(in oklch, #000 58%, transparent);
-}
+/* O fundo do selo é o mesmo gradiente claro nos dois temas, então a tinta escura base
+   vale também no tema escuro (o branco anterior ficava em ~1,5:1). */
 .arena-workspace .mb-loyalty-tier-classic {
   background-image: radial-gradient(
     circle at center,
@@ -1900,7 +2110,7 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   border-radius: var(--panel-radius);
   background: var(--card);
   color: var(--card-foreground);
-  box-shadow: 0 10px 26px color-mix(in oklch, #1c1d19 4%, transparent);
+  box-shadow: 0 10px 26px color-mix(in oklab, #1c1d19 4%, transparent);
   transition:
     box-shadow var(--duration-med) var(--ease-out),
     border-color var(--duration-fast) var(--ease-soft),
@@ -1935,7 +2145,7 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   padding: 0.6rem 0.5rem;
   border: 1px solid var(--border);
   border-radius: var(--control-radius);
-  background: color-mix(in oklch, var(--muted) 20%, transparent);
+  background: color-mix(in oklab, var(--muted) 20%, transparent);
   color: var(--foreground);
   text-align: center;
   transition:
@@ -1945,7 +2155,7 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
     transform var(--duration-fast) var(--ease-out);
 }
 .app-day-chip:hover {
-  border-color: color-mix(in oklch, var(--primary) 50%, var(--border));
+  border-color: color-mix(in oklab, var(--primary) 50%, var(--border));
 }
 .app-day-chip:active {
   transform: scale(0.97);
@@ -1954,7 +2164,7 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   border-color: var(--primary);
   background: var(--primary);
   color: var(--primary-foreground);
-  box-shadow: 0 6px 16px color-mix(in oklch, var(--primary) 26%, transparent);
+  box-shadow: 0 6px 16px color-mix(in oklab, var(--primary) 26%, transparent);
 }
 
 /* Rounded hardware + soft motion; membership metal gradients stay untouched. */
@@ -1994,32 +2204,47 @@ body:has(.arena-workspace)
   border-radius: var(--control-radius);
 }
 
-/* Portalled menus and dialogs inherit the active shop's corner language. */
-body:has(.arena-workspace.brand-corners-square)
-  :is([data-radix-popper-content-wrapper], [role="dialog"], [role="alertdialog"]),
+/* Portalled menus, dialogs and toasts inherit the active shop's corner language. */
+body:has(:is(.arena-workspace, .brand-page).brand-corners-square)
+  :is(
+    [data-radix-popper-content-wrapper],
+    [role="dialog"],
+    [role="alertdialog"],
+    [data-sonner-toaster]
+  ),
 .brand-corners-square {
   --radius: 0rem;
   --control-radius: 0rem;
   --panel-radius: 0rem;
   --button-radius: 0rem;
 }
-body:has(.arena-workspace.brand-corners-soft)
-  :is([data-radix-popper-content-wrapper], [role="dialog"], [role="alertdialog"]),
+body:has(:is(.arena-workspace, .brand-page).brand-corners-soft)
+  :is(
+    [data-radix-popper-content-wrapper],
+    [role="dialog"],
+    [role="alertdialog"],
+    [data-sonner-toaster]
+  ),
 .brand-corners-soft {
   --radius: 0.9rem;
   --control-radius: 0.9rem;
   --panel-radius: 1.35rem;
   --button-radius: 0.9rem;
 }
-body:has(.arena-workspace.brand-corners-round)
-  :is([data-radix-popper-content-wrapper], [role="dialog"], [role="alertdialog"]),
+body:has(:is(.arena-workspace, .brand-page).brand-corners-round)
+  :is(
+    [data-radix-popper-content-wrapper],
+    [role="dialog"],
+    [role="alertdialog"],
+    [data-sonner-toaster]
+  ),
 .brand-corners-round {
   --radius: 1.2rem;
   --control-radius: 1.2rem;
   --panel-radius: 2rem;
   --button-radius: 999px;
 }
-body:has(.arena-workspace[class*="brand-corners-"])
+body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
   :is([data-radix-popper-content-wrapper], [role="dialog"], [role="alertdialog"])
   button {
   border-radius: var(--button-radius) !important;
@@ -2032,7 +2257,7 @@ body:has(.arena-workspace[class*="brand-corners-"])
   text-transform: none;
 }
 .arena-workspace > header {
-  background: color-mix(in oklch, #20211f 94%, transparent);
+  background: color-mix(in oklab, #20211f 94%, transparent);
   color: #f1ede6;
   border-bottom: 1px solid #44443b;
 }
@@ -2046,6 +2271,18 @@ body:has(.arena-workspace[class*="brand-corners-"])
 .arena-workspace > header .text-gold,
 .arena-workspace > header .text-primary {
   color: #c6a16a;
+}
+/* O cabeçalho é sempre escuro: o cinza de apoio do tema claro (#66635c) sumia nele. */
+.arena-workspace > header .text-muted-foreground {
+  color: #b9b3a8;
+}
+/* O cabeçalho é sempre carvão: o selo de avisos usa o vermelho do tema escuro nos dois temas. */
+.arena-workspace > header {
+  --destructive: #f97066;
+  --destructive-foreground: #1f0d0b;
+}
+.arena-workspace > header a.text-muted-foreground:hover {
+  color: #f1ede6;
 }
 .arena-workspace > header .app-icon-button {
   background: #2c2d29;
@@ -2169,7 +2406,7 @@ body:has(.arena-workspace[class*="brand-corners-"])
   animation-delay: 230ms;
 }
 .mb-empty {
-  box-shadow: 0 14px 32px color-mix(in oklch, #1c1d19 5%, transparent);
+  box-shadow: 0 14px 32px color-mix(in oklab, #1c1d19 5%, transparent);
 }
 .mb-empty-art {
   animation: mb-float 4.8s var(--ease-soft) infinite;
@@ -2191,7 +2428,7 @@ body:has(.arena-workspace[class*="brand-corners-"])
   border-radius: 999px;
   background: radial-gradient(
     circle,
-    color-mix(in oklch, var(--gold) 28%, transparent),
+    color-mix(in oklab, var(--gold) 28%, transparent),
     transparent 68%
   );
   pointer-events: none;
@@ -2209,7 +2446,7 @@ body:has(.arena-workspace[class*="brand-corners-"])
   border-radius: 999px;
   background: radial-gradient(
     circle,
-    color-mix(in oklch, var(--gold) 25%, transparent),
+    color-mix(in oklab, var(--gold) 25%, transparent),
     transparent 70%
   );
   filter: blur(24px);
@@ -2229,7 +2466,7 @@ body:has(.arena-workspace[class*="brand-corners-"])
   border-radius: 999px;
   background: radial-gradient(
     circle,
-    color-mix(in oklch, var(--gold) 25%, transparent),
+    color-mix(in oklab, var(--gold) 25%, transparent),
     transparent 70%
   );
   filter: blur(36px);
@@ -2249,7 +2486,7 @@ body:has(.arena-workspace[class*="brand-corners-"])
   justify-content: center;
   gap: 0.4rem;
   border-radius: 999px;
-  border: 1px solid color-mix(in oklch, var(--primary) 78%, var(--border));
+  border: 1px solid color-mix(in oklab, var(--primary) 78%, var(--border));
   background: var(--primary);
   padding: 0.55rem 0.85rem;
   color: var(--primary-foreground);
@@ -2261,7 +2498,7 @@ body:has(.arena-workspace[class*="brand-corners-"])
     box-shadow var(--duration-fast) var(--ease-soft);
 }
 .waiting-cutoff-pill:hover {
-  box-shadow: 0 8px 18px color-mix(in oklch, var(--primary) 18%, transparent);
+  box-shadow: 0 8px 18px color-mix(in oklab, var(--primary) 18%, transparent);
 }
 .waiting-cutoff-pill:active {
   transform: scale(0.98);
@@ -2289,7 +2526,7 @@ body:has(.arena-workspace[class*="brand-corners-"])
   height: 8px;
   overflow: hidden;
   border-radius: 999px;
-  background: color-mix(in oklch, var(--primary) 15%, transparent);
+  background: color-mix(in oklab, var(--primary) 15%, transparent);
   transition:
     height var(--duration-fast) var(--ease-soft),
     background-color var(--duration-fast) var(--ease-soft),
@@ -2312,7 +2549,7 @@ body:has(.arena-workspace[class*="brand-corners-"])
   border: 2px solid var(--primary);
   border-radius: 999px;
   background: var(--background);
-  box-shadow: 0 3px 9px color-mix(in oklch, var(--foreground) 18%, transparent);
+  box-shadow: 0 3px 9px color-mix(in oklab, var(--foreground) 18%, transparent);
   transition:
     width var(--duration-fast) var(--ease-out),
     height var(--duration-fast) var(--ease-out),
@@ -2333,8 +2570,8 @@ body:has(.arena-workspace[class*="brand-corners-"])
 }
 .waiting-cutoff-slider.is-precise .waiting-cutoff-track {
   height: 12px;
-  background: color-mix(in oklch, var(--gold) 19%, transparent);
-  box-shadow: 0 0 0 4px color-mix(in oklch, var(--gold) 9%, transparent);
+  background: color-mix(in oklab, var(--gold) 19%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--gold) 9%, transparent);
 }
 .waiting-cutoff-slider.is-precise .waiting-cutoff-range {
   background: var(--gold);
@@ -2345,17 +2582,17 @@ body:has(.arena-workspace[class*="brand-corners-"])
   height: 28px;
   border-width: 4px;
   border-color: var(--gold);
-  background: color-mix(in oklch, var(--gold) 12%, var(--background));
+  background: color-mix(in oklab, var(--gold) 12%, var(--background));
   box-shadow:
-    0 0 0 5px color-mix(in oklch, var(--gold) 13%, transparent),
-    0 4px 12px color-mix(in oklch, var(--gold) 28%, transparent);
+    0 0 0 5px color-mix(in oklab, var(--gold) 13%, transparent),
+    0 4px 12px color-mix(in oklab, var(--gold) 28%, transparent);
 }
 .duration-wheel-shell {
   position: relative;
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--control-radius);
-  background: color-mix(in oklch, var(--muted) 55%, var(--background));
+  background: color-mix(in oklab, var(--muted) 55%, var(--background));
 }
 .duration-wheel-shell::before,
 .duration-wheel-shell::after {
@@ -2382,9 +2619,9 @@ body:has(.arena-workspace[class*="brand-corners-"])
   right: 0.3rem;
   left: 0.3rem;
   height: 2.75rem;
-  border-block: 1px solid color-mix(in oklch, var(--gold) 42%, var(--border));
+  border-block: 1px solid color-mix(in oklab, var(--gold) 42%, var(--border));
   border-radius: 0.65rem;
-  background: color-mix(in oklch, var(--gold) 8%, transparent);
+  background: color-mix(in oklab, var(--gold) 8%, transparent);
   pointer-events: none;
 }
 .duration-wheel {
@@ -2428,10 +2665,10 @@ body:has(.arena-workspace[class*="brand-corners-"])
   aspect-ratio: 1;
   margin-inline: auto;
   overflow: hidden;
-  border: 1px solid color-mix(in oklch, var(--gold) 56%, var(--border));
+  border: 1px solid color-mix(in oklab, var(--gold) 56%, var(--border));
   border-radius: 1.25rem;
   background: #171813;
-  box-shadow: 0 12px 28px color-mix(in oklch, #111 18%, transparent);
+  box-shadow: 0 12px 28px color-mix(in oklab, #111 18%, transparent);
   cursor: grab;
   touch-action: none;
   user-select: none;
@@ -2455,7 +2692,7 @@ body:has(.arena-workspace[class*="brand-corners-"])
 .service-crop-grid {
   position: absolute;
   inset: 0;
-  border: 1px solid color-mix(in oklch, white 72%, transparent);
+  border: 1px solid color-mix(in oklab, white 72%, transparent);
   background-image:
     linear-gradient(
       to right,
@@ -2665,7 +2902,7 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   min-width: 0;
 }
 .auth-brand-logo {
-  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--foreground) 8%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--foreground) 8%, transparent);
 }
 .auth-input-wrap,
 .auth-google-action {
@@ -2675,20 +2912,13 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
 }
 .dark .auth-input-wrap,
 .dark .auth-google-action {
-  background: color-mix(in oklch, var(--muted) 70%, var(--card));
+  background: color-mix(in oklab, var(--muted) 70%, var(--card));
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
 }
 .auth-mode-tabs button[aria-selected="true"] {
   box-shadow:
     0 1px 2px rgb(28 29 25 / 0.08),
-    0 6px 16px color-mix(in oklch, var(--brand-primary) 10%, transparent);
-}
-.auth-divider-label {
-  background: var(--card);
-}
-.auth-layout-cover .auth-divider-label,
-.auth-layout-card .auth-divider-label {
-  background: var(--card);
+    0 6px 16px color-mix(in oklab, var(--brand-primary) 10%, transparent);
 }
 .auth-panel-footer {
   padding-top: 0.25rem;
@@ -2803,14 +3033,14 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   z-index: 5;
 }
 .auth-theme-toggle .app-icon-button {
-  border: 1px solid color-mix(in oklch, white 28%, transparent);
-  background: color-mix(in oklch, var(--card) 82%, transparent);
+  border: 1px solid color-mix(in oklab, white 28%, transparent);
+  background: color-mix(in oklab, var(--card) 82%, transparent);
   color: var(--foreground);
   backdrop-filter: blur(10px);
   box-shadow: 0 8px 24px rgb(0 0 0 / 0.22);
 }
 .auth-layout-split .auth-theme-toggle .app-icon-button {
-  border-color: color-mix(in oklch, var(--border) 80%, transparent);
+  border-color: color-mix(in oklab, var(--border) 80%, transparent);
   background: var(--card);
   box-shadow: 0 4px 14px rgb(0 0 0 / 0.08);
 }
@@ -2832,7 +3062,7 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
 .auth-layout-cover .auth-brand-panel {
   grid-column: 2;
   width: min(27.5rem, calc(100vw - 3rem));
-  border-color: color-mix(in oklch, var(--border) 80%, white);
+  border-color: color-mix(in oklab, var(--border) 80%, white);
   background: var(--card);
   box-shadow:
     0 28px 72px rgb(12 12 10 / 0.34),
@@ -2862,16 +3092,16 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   background:
     radial-gradient(
       70% 45% at 85% 0%,
-      color-mix(in oklch, var(--brand-primary) 9%, transparent),
+      color-mix(in oklab, var(--brand-primary) 9%, transparent),
       transparent 70%
     ),
     radial-gradient(
       60% 40% at 10% 100%,
-      color-mix(in oklch, var(--gold) 10%, transparent),
+      color-mix(in oklab, var(--gold) 10%, transparent),
       transparent 70%
     ),
-    linear-gradient(180deg, color-mix(in oklch, var(--card) 88%, white), var(--card));
-  box-shadow: inset 1px 0 0 color-mix(in oklch, var(--border) 70%, transparent);
+    linear-gradient(180deg, color-mix(in oklab, var(--card) 88%, white), var(--card));
+  box-shadow: inset 1px 0 0 color-mix(in oklab, var(--border) 70%, transparent);
 }
 .auth-layout-split .auth-photo-layer {
   position: relative;
@@ -2909,9 +3139,6 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   background: transparent;
   box-shadow: none;
 }
-.auth-layout-split .auth-divider-label {
-  background: var(--card);
-}
 .auth-layout-split .auth-brand-header {
   border-bottom: 0;
 }
@@ -2943,7 +3170,7 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
 .auth-layout-card .auth-brand-panel {
   width: min(30rem, calc(100vw - 2rem));
   max-width: 30rem;
-  border-color: color-mix(in oklch, var(--border) 80%, white);
+  border-color: color-mix(in oklab, var(--border) 80%, white);
   background: var(--card);
   box-shadow:
     0 34px 90px rgb(0 0 0 / 0.42),
@@ -2955,7 +3182,7 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
 }
 .auth-layout-card .auth-brand-identity {
   padding-bottom: 1.25rem;
-  border-bottom: 1px solid color-mix(in oklch, var(--border) 72%, transparent);
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 72%, transparent);
 }
 .auth-layout-card .auth-eyebrow {
   margin-top: 1.75rem;
@@ -3018,10 +3245,10 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
 }
 /* Tema escuro: a cor da marca costuma ser escura (padrão #292925) e sumia no painel escuro.
    Dentro do painel, a ação principal segue a convenção do tema escuro do app (tom claro com
-   texto escuro), puxando o matiz da marca; rótulos, links, foco e interruptor ficam legíveis. */
+   texto escuro: o off-white da identidade, sem misturar a marca); rótulos, links, foco e
+   interruptor ficam legíveis. */
 .dark .auth-page .auth-brand-panel {
-  /* oklab (e não oklch) e off-white quente: a mistura não puxa o matiz para rosa. */
-  --primary: color-mix(in oklab, var(--brand-primary) 28%, #f7f5f0);
+  --primary: var(--primary-on-dark);
   --primary-foreground: #171816;
 }
 .auth-page .auth-whatsapp-group {
@@ -3166,7 +3393,7 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   aspect-ratio: 16 / 9;
   min-height: 13rem;
   overflow: hidden;
-  border: 1px solid color-mix(in oklch, var(--border) 72%, transparent);
+  border: 1px solid color-mix(in oklab, var(--border) 72%, transparent);
   border-radius: var(--panel-radius);
   background: var(--card);
   color: #25251f;
@@ -3435,9 +3662,6 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
     background: var(--card);
     box-shadow: 0 18px 45px rgb(25 24 20 / 0.18);
   }
-  .auth-layout-split .auth-divider-label {
-    background: var(--card);
-  }
   .auth-layout-split .auth-form-body {
     padding-top: 1.5rem;
   }
@@ -3532,7 +3756,7 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0;
   overflow: hidden;
-  border: 1px solid color-mix(in oklch, var(--border) 85%, transparent);
+  border: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
   border-radius: var(--panel-radius);
   background: var(--card);
 }
@@ -3545,11 +3769,11 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   display: flex;
   min-height: 8.5rem;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 0.65rem;
   padding: 1.15rem 1.2rem 1.2rem;
-  border-right: 1px solid color-mix(in oklch, var(--border) 80%, transparent);
-  border-bottom: 1px solid color-mix(in oklch, var(--border) 80%, transparent);
+  border-right: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
 }
 @media (min-width: 900px) {
   .platform-metric:nth-child(4n) {
@@ -3573,7 +3797,12 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.08em;
+  line-height: 1.35;
   text-transform: uppercase;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+  /* Reserva duas linhas para os valores ficarem na mesma altura em qualquer idioma. */
+  min-height: calc(2 * 1.35em);
 }
 .platform-metric-value {
   margin: 0;
@@ -3588,29 +3817,27 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   height: 3px;
   overflow: hidden;
   border-radius: 999px;
-  background: color-mix(in oklch, var(--muted) 70%, transparent);
+  background: color-mix(in oklab, var(--muted) 70%, transparent);
 }
 .platform-metric-meter > span {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: color-mix(in oklch, var(--foreground) 55%, var(--muted));
+  background: color-mix(in oklab, var(--foreground) 55%, var(--muted));
   transition: width 700ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .platform-metric-ok .platform-metric-meter > span {
-  background: var(--brand-primary);
+  background: var(--brand-primary, var(--primary));
 }
 .platform-metric-warn .platform-metric-meter > span {
-  background: color-mix(in oklch, #b45309 75%, var(--foreground));
+  background: color-mix(in oklab, #b45309 75%, var(--foreground));
 }
 .platform-metric-detail {
   margin: 0;
+  margin-top: auto;
   color: var(--muted-foreground);
   font-size: 0.75rem;
   line-height: 1.35;
-}
-.dark .platform-metric-board {
-  background: color-mix(in oklch, var(--card) 96%, black);
 }
 
 .platform-dash-kpi {
@@ -3637,7 +3864,7 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   position: relative;
   width: 100%;
   overflow: hidden;
-  border: 1px solid color-mix(in oklch, var(--border) 75%, transparent);
+  border: 1px solid color-mix(in oklab, var(--border) 75%, transparent);
   border-radius: var(--panel-radius);
   background: #141412;
   box-shadow: 0 16px 40px rgb(20 20 18 / 0.18);
@@ -3834,9 +4061,20 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   align-items: center;
   justify-content: center;
   border-radius: var(--control-radius, 0.75rem);
-  background: color-mix(in oklch, #f4f1ea 12%, transparent);
-  border: 1px solid color-mix(in oklch, #f4f1ea 22%, transparent);
+  background: color-mix(in oklab, #f4f1ea 12%, transparent);
+  border: 1px solid color-mix(in oklab, #f4f1ea 22%, transparent);
   color: #f4f1ea;
+}
+/* Botão de ícone sobre capa fotográfica (sempre escura): não muda com o tema.
+   Mantém 44px e o raio do modo de canto herdados de .app-icon-button. */
+.hero-icon-button {
+  background: color-mix(in oklab, #f4f1ea 12%, transparent);
+  border-color: color-mix(in oklab, #f4f1ea 22%, transparent);
+  color: #f4f1ea;
+}
+.hero-icon-button:hover {
+  background: color-mix(in oklab, #f4f1ea 20%, transparent);
+  color: #fff;
 }
 .platform-landing-brand-name,
 .platform-register-brand-name {
@@ -3852,7 +4090,7 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: color-mix(in oklch, var(--gold, #c4a574) 90%, white);
+  color: color-mix(in oklab, var(--gold, #c4a574) 90%, white);
 }
 .platform-landing-title {
   margin: 0;
@@ -3869,7 +4107,7 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   font-size: clamp(1.15rem, 2.6vw, 1.4rem);
   line-height: 1.35;
   font-weight: 600;
-  color: color-mix(in oklch, #f4f1ea 92%, transparent);
+  color: color-mix(in oklab, #f4f1ea 92%, transparent);
   animation: platform-landing-rise 0.7s ease-out 0.08s both;
 }
 .platform-landing-support {
@@ -3877,7 +4115,7 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   max-width: 28rem;
   font-size: 1rem;
   line-height: 1.55;
-  color: color-mix(in oklch, #f4f1ea 72%, transparent);
+  color: color-mix(in oklab, #f4f1ea 72%, transparent);
   animation: platform-landing-rise 0.7s ease-out 0.14s both;
 }
 .platform-landing-actions {
@@ -3917,12 +4155,12 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   background: #fff;
 }
 .platform-landing-cta-secondary {
-  background: color-mix(in oklch, #f4f1ea 8%, transparent);
+  background: color-mix(in oklab, #f4f1ea 8%, transparent);
   color: #f4f1ea;
-  border: 1px solid color-mix(in oklch, #f4f1ea 28%, transparent);
+  border: 1px solid color-mix(in oklab, #f4f1ea 28%, transparent);
 }
 .platform-landing-cta-secondary:hover {
-  background: color-mix(in oklch, #f4f1ea 14%, transparent);
+  background: color-mix(in oklab, #f4f1ea 14%, transparent);
 }
 .platform-landing-footer {
   flex-shrink: 0;
@@ -3936,7 +4174,7 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   margin: 0 0 0.75rem;
   font-size: 0.8125rem;
   line-height: 1.45;
-  color: color-mix(in oklch, white 72%, transparent);
+  color: color-mix(in oklab, white 72%, transparent);
 }
 .platform-landing-footer-nav {
   display: flex;
@@ -3949,7 +4187,7 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   align-items: center;
   font-size: 0.8125rem;
   font-weight: 700;
-  color: color-mix(in oklch, white 88%, transparent);
+  color: color-mix(in oklab, white 88%, transparent);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -3961,7 +4199,7 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   max-width: 28rem;
   font-size: 0.8rem;
   line-height: 1.45;
-  color: color-mix(in oklch, #f4f1ea 58%, transparent);
+  color: color-mix(in oklab, #f4f1ea 58%, transparent);
 }
 @keyframes platform-landing-rise {
   from {
@@ -3987,15 +4225,26 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   align-items: center;
   gap: 0.4rem;
   margin-bottom: 1rem;
-  color: color-mix(in oklch, #f4f1ea 78%, transparent);
+  color: color-mix(in oklab, #f4f1ea 78%, transparent);
   font-size: 0.875rem;
   font-weight: 600;
   text-decoration: none;
 }
+/* Linha do topo do cadastro: "Voltar" à esquerda e idioma à direita, na coluna central. */
+.platform-register-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.platform-register-top .platform-register-back {
+  margin-bottom: 0;
+}
 .platform-register-panel {
   border-radius: var(--panel-radius, 1.25rem);
-  border: 1px solid color-mix(in oklch, #f4f1ea 14%, transparent);
-  background: color-mix(in oklch, #f7f4ee 94%, white);
+  border: 1px solid color-mix(in oklab, #f4f1ea 14%, transparent);
+  background: color-mix(in oklab, #f7f4ee 94%, white);
   color: #1c1b18;
   /* O painel é sempre claro: controles nativos (caixa, seletor) também, mesmo no tema escuro. */
   color-scheme: light;
@@ -4041,7 +4290,7 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: color-mix(in oklch, #1c1b18 10%, transparent);
+  background: color-mix(in oklab, #1c1b18 10%, transparent);
   font-size: 0.65rem;
 }
 .platform-register-steps li[data-state="current"] {
@@ -4049,10 +4298,10 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   color: #f4f1ea;
 }
 .platform-register-steps li[data-state="current"] span {
-  background: color-mix(in oklch, #f4f1ea 18%, transparent);
+  background: color-mix(in oklab, #f4f1ea 18%, transparent);
 }
 .platform-register-steps li[data-state="done"] {
-  background: color-mix(in oklch, var(--gold, #8a602f) 18%, white);
+  background: color-mix(in oklab, var(--gold, #8a602f) 18%, white);
   color: #5c4020;
 }
 .platform-register-title {
@@ -4100,7 +4349,7 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   width: 100%;
   min-height: 3.15rem;
   border-radius: var(--control-radius, 0.75rem);
-  border: 1px solid color-mix(in oklch, #1c1b18 14%, transparent);
+  border: 1px solid color-mix(in oklab, #1c1b18 14%, transparent);
   background: #fff;
   padding: 0 0.9rem;
   font-size: 0.95rem;
@@ -4109,7 +4358,7 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
 }
 .platform-register-input:focus {
   border-color: #1c1b18;
-  box-shadow: 0 0 0 4px color-mix(in oklch, #1c1b18 10%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in oklab, #1c1b18 10%, transparent);
 }
 .platform-register-otp {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -4179,8 +4428,15 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   color: #6b675f;
 }
 .platform-register-footer a {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  margin-block: -0.75rem;
+  padding-inline: 0.25rem;
   font-weight: 700;
   color: #171512;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 @media (prefers-reduced-motion: reduce) {
   .platform-landing-photo img,

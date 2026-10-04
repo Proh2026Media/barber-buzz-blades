@@ -38,11 +38,14 @@ export function BusinessInsights({
   day,
   revision = 0,
   timeZone = DEFAULT_SHOP_TIMEZONE,
+  embedded = false,
 }: {
   shopId?: string | null;
   day?: string;
   revision?: number;
   timeZone?: string;
+  /** Dentro de outro cartão (ex.: "Indicadores do dia"): sem borda própria nem ícone repetido. */
+  embedded?: boolean;
 }) {
   const demo = useDemo();
   const { t, intlLocale } = useI18n();
@@ -192,12 +195,14 @@ export function BusinessInsights({
   }, [demo, shopId, day, revision, version, timeZone]);
   return (
     <section
-      className="space-y-3 rounded-2xl border border-primary/20 bg-card p-4"
+      className={
+        embedded ? "space-y-3" : "space-y-3 rounded-2xl border border-primary/20 bg-card p-4"
+      }
       aria-label={t("ins.biz.aria")}
     >
       <div className="flex items-center justify-between gap-3">
         <h3 className="flex items-center gap-2 text-sm font-bold">
-          <BarChart3 className="size-5 text-primary" />
+          {!embedded && <BarChart3 className="size-5 text-primary" />}
           {day ? t("ins.biz.titleDay") : t("ins.biz.title30")}
         </h3>
         <button

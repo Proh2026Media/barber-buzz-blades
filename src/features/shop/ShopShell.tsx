@@ -38,6 +38,7 @@ import {
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import { useScrollIndicators } from "@/lib/use-scroll-indicators";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { isValidBookingSlug, slugifyPt } from "@/lib/shop/slugify";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -78,11 +79,13 @@ import {
   Palette,
   Pencil,
   RefreshCw,
+  Save,
   Scissors,
   Search,
   ShieldCheck,
   Upload,
   Settings2,
+  SlidersHorizontal,
   Trash2,
   Users,
   X,
@@ -95,6 +98,7 @@ import { capabilitiesFor, type SessionProfile } from "@/lib/auth/session";
 import { brandCornerClass, brandFontScopeClass, brandVariables } from "@/lib/shop/branding";
 import { useShopFavicon } from "@/lib/shop/favicon";
 import { BrandFontFace } from "@/features/shop/BrandFontFace";
+import { BrandRootVariables } from "@/features/shop/BrandRootVariables";
 import { ChangePasswordCard } from "@/features/auth/ChangePasswordCard";
 import { LanguageSettingsCard } from "@/components/LanguageSettingsCard";
 import { useDemo } from "@/features/demo/context";
@@ -199,6 +203,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   const formatSlotLabel = (date: Date, timeZone?: string) =>
     formatSlotLabelIn(date, timeZone, intlLocale);
   const demo = useDemo();
+  // No celular o mês abreviado cabe ao lado das setas da agenda; no computador volta por extenso.
+  const agendaNarrow = useIsMobile();
   const [selectedActorId, setSelectedActorId] = useState(() => {
     const saved =
       typeof window === "undefined" ? null : window.localStorage.getItem("arena:active-shop-actor");
@@ -383,6 +389,17 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   const [editingService, setEditingService] = useState<Tables<"services"> | null>(null);
   const [editingStaff, setEditingStaff] = useState<Tables<"staff"> | null>(null);
   const [serviceFormOpen, setServiceFormOpen] = useState(false);
+  // No celular a grade de ícones não rola por dentro da janela: começa só com o
+  // primeiro grupo (e o do ícone escolhido) e se expande sob demanda.
+  const [showAllServiceIcons, setShowAllServiceIcons] = useState(false);
+  useEffect(() => {
+    if (!serviceFormOpen) setShowAllServiceIcons(false);
+  }, [serviceFormOpen]);
+  const iconGroupsCollapsed = !showAllServiceIcons && !serviceIconQuery.trim();
+  // Primeiro grupo que contém o ícone escolhido (o mesmo ícone pode estar em mais de um).
+  const selectedIconGroupId = SERVICE_ICON_GROUPS.find((group) =>
+    group.icons.some((preset) => preset.id === serviceIcon),
+  )?.id;
   const [staffFormOpen, setStaffFormOpen] = useState(false);
   const [withdrawTarget, setWithdrawTarget] = useState<DayAppointment | null>(null);
   const [serviceQuery, setServiceQuery] = useState("");
@@ -1424,9 +1441,12 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   const scopedAppointments = appointments.filter(
     (row) => agendaScope === "team" || !actor?.staff_id || row.staff_id === actor.staff_id,
   );
+  // Em "Minha agenda" a lista já é só do profissional: o filtro por equipe some e deixa de valer.
+  const showAgendaStaffFilter = agendaScope === "team" || !actor?.staff_id;
+  const effectiveAgendaStaff = showAgendaStaffFilter ? agendaStaff : "";
   const filteredAppointments = scopedAppointments.filter(
     (row) =>
-      (!agendaStaff || row.staff_id === agendaStaff) &&
+      (!effectiveAgendaStaff || row.staff_id === effectiveAgendaStaff) &&
       (!agendaStatus || row.status === agendaStatus) &&
       normalizeSearch(`${row.customer?.full_name ?? ""} ${row.service?.name ?? ""}`).includes(
         normalizeSearch(agendaSearch.trim()),
@@ -1439,7 +1459,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     return new Intl.DateTimeFormat(intlLocale, {
       weekday: "long",
       day: "2-digit",
-      month: "long",
+      month: agendaNarrow ? "short" : "long",
       timeZone: "UTC",
     }).format(new Date(Date.UTC(year, month - 1, day)));
   })();
@@ -1524,23 +1544,24 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   });
   const activeNavIndex = shopNavItems.findIndex((item) => item.id === tab);
 
+  const brandStyle = settings
+    ? brandVariables(
+        settings.primary_color,
+        settings.accent_color,
+        settings.font_family,
+        settings.custom_font_url,
+        settings.header_font_weight,
+        settings.header_font_style,
+        settings.corner_style,
+      )
+    : null;
+
   return (
     <div
       className={`arena-workspace min-h-screen bg-background text-foreground ${brandFontScopeClass(settings?.font_scope)} ${brandCornerClass(settings?.corner_style)} ${settings?.floating_chrome ? "brand-chrome-floating" : ""}`}
-      style={
-        settings
-          ? (brandVariables(
-              settings.primary_color,
-              settings.accent_color,
-              settings.font_family,
-              settings.custom_font_url,
-              settings.header_font_weight,
-              settings.header_font_style,
-              settings.corner_style,
-            ) as CSSProperties)
-          : undefined
-      }
+      style={brandStyle ? (brandStyle as CSSProperties) : undefined}
     >
+      <BrandRootVariables vars={brandStyle} />
       {settings && (
         <BrandFontFace url={settings.custom_font_url} faces={settings.custom_font_faces} />
       )}
@@ -1678,9 +1699,9 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         </AlertDialogContent>
       </AlertDialog>
       <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur-xl px-4 py-4 flex items-center justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-xs font-bold text-gold">{t("shop.header.kicker")}</p>
-          <h1 className="truncate text-lg font-extrabold tracking-tight">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs font-bold text-gold">{t("shop.header.kicker")}</p>
+          <h1 className="line-clamp-2 break-words text-lg leading-tight font-extrabold tracking-tight max-[379px]:text-base">
             {shop?.name ?? t("shop.header.shopFallback")}
           </h1>
           {!demo && profile.shopActors.length > 1 && (
@@ -1707,33 +1728,36 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
             </label>
           )}
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <ThemeToggle />
           {headerActions}
-          {profile.primaryRole === "platform_admin" && (
+          {/* Na demonstração a visão Plataforma e a saída ficam no frasco e no menu da conta. */}
+          {profile.primaryRole === "platform_admin" && !demo && (
             <>
               <Link
                 to="/platform"
                 aria-label={t("shop.header.platformAria")}
-                className="app-icon-button sm:hidden"
+                className="app-icon-button sm:hidden!"
               >
                 <ShieldCheck size={20} />
               </Link>
               <Link
                 to="/platform"
-                className="hidden text-xs font-semibold text-muted-foreground hover:text-foreground sm:inline"
+                className="hidden min-h-11 items-center px-2 text-xs font-semibold text-muted-foreground hover:text-foreground sm:inline-flex"
               >
                 {t("shop.header.platform")}
               </Link>
             </>
           )}
-          <button
-            onClick={signOut}
-            aria-label={t("shop.header.signOut")}
-            className="app-icon-button"
-          >
-            <LogOut size={18} />
-          </button>
+          {!demo && (
+            <button
+              onClick={signOut}
+              aria-label={t("shop.header.signOut")}
+              className="app-icon-button"
+            >
+              <LogOut size={18} />
+            </button>
+          )}
         </div>
       </header>
 
@@ -1891,7 +1915,12 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       role={actor.role}
                     />
                   ) : (
-                    <BusinessInsights shopId={shop?.id} day={agendaDay} revision={agendaRefresh} />
+                    <BusinessInsights
+                      shopId={shop?.id}
+                      day={agendaDay}
+                      revision={agendaRefresh}
+                      embedded
+                    />
                   )}
                 </div>
               </details>
@@ -1910,23 +1939,27 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     />
                   </span>
                 </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <label className="min-w-0 space-y-1 text-xs font-semibold">
-                    <span>{t("shop.staffFallback")}</span>
-                    <select
-                      aria-label={t("shop.staffFallback")}
-                      value={agendaStaff}
-                      onChange={(event) => setAgendaStaff(event.target.value)}
-                      className="w-full rounded-xl border border-border bg-background px-2 py-2 text-sm"
-                    >
-                      <option value="">{t("shop.agenda.allTeam")}</option>
-                      {staff.map((member) => (
-                        <option key={member.id} value={member.id}>
-                          {member.display_name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                <div
+                  className={`grid gap-2 ${showAgendaStaffFilter ? "grid-cols-2" : "grid-cols-1"}`}
+                >
+                  {showAgendaStaffFilter && (
+                    <label className="min-w-0 space-y-1 text-xs font-semibold">
+                      <span>{t("shop.staffFallback")}</span>
+                      <select
+                        aria-label={t("shop.staffFallback")}
+                        value={agendaStaff}
+                        onChange={(event) => setAgendaStaff(event.target.value)}
+                        className="w-full rounded-xl border border-border bg-background px-2 py-2 text-sm"
+                      >
+                        <option value="">{t("shop.agenda.allTeam")}</option>
+                        {staff.map((member) => (
+                          <option key={member.id} value={member.id}>
+                            {member.display_name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
                   <label className="min-w-0 space-y-1 text-xs font-semibold">
                     <span>{t("shop.agenda.status")}</span>
                     <select
@@ -1958,7 +1991,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       },
                     )}
                   </span>
-                  {(agendaSearch || agendaStaff || agendaStatus) && (
+                  {(agendaSearch || effectiveAgendaStaff || agendaStatus) && (
                     <button
                       onClick={() => {
                         setAgendaSearch("");
@@ -2101,7 +2134,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                             settings?.survey_program_enabled !== false && (
                               <button
                                 onClick={() => setSurveyTarget(row)}
-                                className="flex min-h-9 items-center gap-1.5 rounded-xl border border-primary/30 px-3 text-xs font-bold text-primary"
+                                className="action-button action-edit"
                               >
                                 <MessageSquarePlus className="size-3.5" />
                                 {t("shop.agenda.feedback")}
@@ -2111,7 +2144,12 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       )}
                       {(row.status === "pending" || row.status === "confirmed") && (
                         <p className="text-xs text-muted-foreground">
-                          {t("shop.agenda.completeHint")}
+                          {t(
+                            row.visibility !== "busy" &&
+                              (demo?.now ?? new Date()) >= new Date(row.starts_at)
+                              ? "shop.agenda.completeHint"
+                              : "shop.agenda.completeHintBefore",
+                          )}
                         </p>
                       )}
                     </div>
@@ -2299,7 +2337,11 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                             : "min-w-0"
                         }
                       >
-                        <p className="text-sm font-bold">{s.name}</p>
+                        <p
+                          className={`text-sm font-bold ${serviceView === "list" ? "line-clamp-2 break-words" : ""}`}
+                        >
+                          {s.name}
+                        </p>
                         {s.description ? (
                           <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
                             {s.description}
@@ -2319,15 +2361,17 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     <div
                       className={
                         serviceView === "list"
-                          ? "flex shrink-0 items-center px-3 py-3 text-right"
+                          ? "flex shrink-0 items-center px-2 py-3 text-right sm:px-3"
                           : undefined
                       }
                     >
-                      <p className="text-xs uppercase tracking-widest text-muted-foreground">
-                        <span className="block text-lg font-bold tracking-normal text-foreground">
+                      <p className="text-xs text-muted-foreground">
+                        <span className="block text-lg font-bold text-foreground">
                           {formatPrice(s.price_cents, intlLocale)}
                         </span>
-                        <span className="mt-1 flex items-center gap-1 sm:justify-end">
+                        <span
+                          className={`mt-1 flex items-center gap-1 ${serviceView === "list" ? "justify-end" : ""}`}
+                        >
                           <Clock3 size={12} />
                           {s.duration_minutes} min
                         </span>
@@ -2347,38 +2391,50 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         aria-label={t("shop.activateAria", { name: s.name })}
                       />
                     </div>
-                    {canEditServices && (
-                      <button
-                        disabled={busy}
-                        className={`action-button action-edit ${serviceView === "list" ? "my-3 mr-1" : ""}`}
-                        aria-label={t("shop.editAria", { name: s.name })}
-                        onClick={() => {
-                          setEditingService(s);
-                          setServiceName(s.name);
-                          setServiceDescription(s.description ?? "");
-                          setServiceDuration(String(s.duration_minutes));
-                          setServicePrice(String(s.price_cents / 100));
-                          setServiceIcon(s.icon || "Scissors");
-                          setError(null);
-                          setServiceFormOpen(true);
-                        }}
+                    {(canEditServices || canChangeGlobalCatalog) && (
+                      <div
+                        className={
+                          serviceView === "list"
+                            ? "grid basis-full grid-cols-2 gap-2 px-3 pb-3 sm:flex sm:basis-auto sm:shrink-0 sm:items-center sm:py-3 sm:pl-0 sm:pr-3"
+                            : "contents"
+                        }
                       >
-                        <Pencil className="size-4" /> {t("shop.edit")}
-                      </button>
-                    )}
-                    {canChangeGlobalCatalog && (
-                      <button
-                        disabled={busy}
-                        aria-label={t("shop.deleteAria", { name: s.name })}
-                        onClick={() => {
-                          setDeleteService(s);
-                          setDeleteError(null);
-                        }}
-                        className={`action-button action-danger ${serviceView === "list" ? "my-3 mr-3" : ""}`}
-                      >
-                        <Trash2 size={14} />
-                        {t("shop.delete")}
-                      </button>
+                        {canEditServices && (
+                          <button
+                            disabled={busy}
+                            className={`action-button action-edit ${
+                              canChangeGlobalCatalog ? "" : "col-span-2"
+                            }`}
+                            aria-label={t("shop.editAria", { name: s.name })}
+                            onClick={() => {
+                              setEditingService(s);
+                              setServiceName(s.name);
+                              setServiceDescription(s.description ?? "");
+                              setServiceDuration(String(s.duration_minutes));
+                              setServicePrice(String(s.price_cents / 100));
+                              setServiceIcon(s.icon || "Scissors");
+                              setError(null);
+                              setServiceFormOpen(true);
+                            }}
+                          >
+                            <Pencil className="size-4" /> {t("shop.edit")}
+                          </button>
+                        )}
+                        {canChangeGlobalCatalog && (
+                          <button
+                            disabled={busy}
+                            aria-label={t("shop.deleteAria", { name: s.name })}
+                            onClick={() => {
+                              setDeleteService(s);
+                              setDeleteError(null);
+                            }}
+                            className={`action-button action-danger ${canEditServices ? "" : "col-span-2"}`}
+                          >
+                            <Trash2 size={14} />
+                            {t("shop.delete")}
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 ))}
@@ -2455,24 +2511,27 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                           {t("shop.serviceForm.duration")}
                         </span>
                         <div className="flex flex-wrap gap-1.5">
-                          {["15", "20", "30", "45", "60", "90", "120"].map((minutes) => (
-                            <button
-                              key={minutes}
-                              type="button"
-                              onClick={() => {
-                                setServiceDuration(minutes);
-                                setCustomDurationOpen(false);
-                              }}
-                              aria-pressed={serviceDuration === minutes}
-                              className={`min-h-11 rounded-xl border px-3 text-xs font-bold transition-colors ${
-                                serviceDuration === minutes
-                                  ? "border-primary bg-primary text-primary-foreground"
-                                  : "border-border bg-background text-muted-foreground hover:border-primary/50"
-                              }`}
-                            >
-                              {minutes} min
-                            </button>
-                          ))}
+                          {["15", "20", "30", "45", "60", "90", "120"].map((minutes) => {
+                            const selected = !customDurationOpen && serviceDuration === minutes;
+                            return (
+                              <button
+                                key={minutes}
+                                type="button"
+                                onClick={() => {
+                                  setServiceDuration(minutes);
+                                  setCustomDurationOpen(false);
+                                }}
+                                aria-pressed={selected}
+                                className={`min-h-11 rounded-xl border px-3 text-xs font-bold transition-colors ${
+                                  selected
+                                    ? "border-primary bg-primary text-primary-foreground"
+                                    : "border-border bg-background text-muted-foreground hover:border-primary/50"
+                                }`}
+                              >
+                                {minutes} min
+                              </button>
+                            );
+                          })}
                           <button
                             type="button"
                             onClick={() => setCustomDurationOpen((value) => !value)}
@@ -2570,14 +2629,23 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                               : t("shop.serviceForm.imageHint")}
                           </span>
                         </div>
-                        <div className="app-service-icon-picker max-h-64 space-y-3 overflow-y-auto rounded-xl border border-border bg-muted/30 p-3">
+                        <div className="app-service-icon-picker space-y-3 rounded-xl border border-border bg-muted/30 p-3 sm:max-h-64 sm:overflow-y-auto sm:overscroll-contain">
                           {filteredIconGroups.length === 0 && (
                             <p className="py-4 text-center text-xs text-muted-foreground">
                               {t("shop.serviceForm.noIcons")}
                             </p>
                           )}
-                          {filteredIconGroups.map((group) => (
-                            <div key={group.id} className="space-y-2">
+                          {filteredIconGroups.map((group, groupIndex) => (
+                            <div
+                              key={group.id}
+                              className={`space-y-2 ${
+                                iconGroupsCollapsed &&
+                                groupIndex > 0 &&
+                                group.id !== selectedIconGroupId
+                                  ? "hidden sm:block"
+                                  : ""
+                              }`}
+                            >
                               <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                                 {serviceIconGroupLabel(group.id)}
                               </p>
@@ -2609,6 +2677,15 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                               </div>
                             </div>
                           ))}
+                          {iconGroupsCollapsed && filteredIconGroups.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => setShowAllServiceIcons(true)}
+                              className="flex min-h-11 w-full items-center justify-center rounded-xl border border-border bg-background px-3 text-xs font-semibold text-foreground transition-colors hover:bg-muted sm:hidden"
+                            >
+                              {t("shop.serviceForm.showAllIcons")}
+                            </button>
+                          )}
                         </div>
                         {isServiceImageSource(serviceIcon) && (
                           <div className="mt-2 flex items-center gap-2 rounded-xl border border-border p-2">
@@ -2738,7 +2815,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       className={
                         staffView === "grid"
                           ? "col-span-2 flex items-center gap-3"
-                          : "flex min-w-0 flex-1 items-stretch"
+                          : "flex min-w-0 flex-1 basis-full items-stretch sm:basis-0"
                       }
                     >
                       {staffView === "list" ? (
@@ -2776,40 +2853,17 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                             {member.bio}
                           </p>
                         ) : null}
-                        <p className="text-xs uppercase tracking-widest text-muted-foreground">
-                          {member.active ? t("shop.services.available") : t("shop.staff.disabled")}
-                        </p>
+                        <span
+                          className={
+                            member.active
+                              ? "text-xs text-emerald-700 dark:text-emerald-300"
+                              : "text-xs text-muted-foreground"
+                          }
+                        >
+                          {member.active ? t("shop.services.available") : t("shop.services.paused")}
+                        </span>
                       </div>
                     </div>
-                    <button
-                      disabled={busy}
-                      className={`action-button action-edit ${staffView === "list" ? "my-3" : ""}`}
-                      aria-label={t("shop.editAria", { name: member.display_name })}
-                      onClick={() => {
-                        setEditingStaff(member);
-                        setStaffName(member.display_name);
-                        setStaffSlug(member.booking_slug ?? slugifyPt(member.display_name));
-                        setStaffSlugTouched(true);
-                        setStaffBio(member.bio ?? "");
-                        setStaffAvatar(member.avatar_url ?? null);
-                        setError(null);
-                        setStaffFormOpen(true);
-                      }}
-                    >
-                      <Pencil className="size-4" /> {t("shop.edit")}
-                    </button>
-                    <button
-                      disabled={busy}
-                      aria-label={t("shop.deleteAria", { name: member.display_name })}
-                      onClick={() => {
-                        setDeleteStaff(member);
-                        setDeleteError(null);
-                      }}
-                      className={`action-button action-danger ${staffView === "list" ? "my-3 mr-2" : ""}`}
-                    >
-                      <Trash2 size={14} />
-                      {t("shop.delete")}
-                    </button>
                     <label
                       className={
                         staffView === "grid"
@@ -2825,6 +2879,43 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         aria-label={t("shop.activateAria", { name: member.display_name })}
                       />
                     </label>
+                    <div
+                      className={
+                        staffView === "list"
+                          ? "flex basis-full items-center gap-2 px-3 pb-3 sm:basis-auto sm:self-center sm:py-3 sm:pl-0"
+                          : "contents"
+                      }
+                    >
+                      <button
+                        disabled={busy}
+                        className={`action-button action-edit ${staffView === "list" ? "flex-1 sm:flex-none" : ""}`}
+                        aria-label={t("shop.editAria", { name: member.display_name })}
+                        onClick={() => {
+                          setEditingStaff(member);
+                          setStaffName(member.display_name);
+                          setStaffSlug(member.booking_slug ?? slugifyPt(member.display_name));
+                          setStaffSlugTouched(true);
+                          setStaffBio(member.bio ?? "");
+                          setStaffAvatar(member.avatar_url ?? null);
+                          setError(null);
+                          setStaffFormOpen(true);
+                        }}
+                      >
+                        <Pencil className="size-4" /> {t("shop.edit")}
+                      </button>
+                      <button
+                        disabled={busy}
+                        aria-label={t("shop.deleteAria", { name: member.display_name })}
+                        onClick={() => {
+                          setDeleteStaff(member);
+                          setDeleteError(null);
+                        }}
+                        className={`action-button action-danger ${staffView === "list" ? "flex-1 sm:flex-none" : ""}`}
+                      >
+                        <Trash2 size={14} />
+                        {t("shop.delete")}
+                      </button>
+                    </div>
                   </div>
                 ))}
                 {visibleStaff.length === 0 && !loading && (
@@ -3052,7 +3143,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       {t(weekdays[row.weekday])}
                     </label>
                     {row.is_open ? (
-                      <div className="col-span-2 flex items-center gap-2 sm:col-span-1">
+                      <div className="hours-range col-span-2 flex items-center gap-2 sm:col-span-1">
                         <TimePicker
                           label={t("shop.hours.opens")}
                           value={row.opens_at.slice(0, 5)}
@@ -3235,14 +3326,14 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       <p className="text-sm font-bold">
                         {block.reason ?? t("shop.block.defaultReason")}
                       </p>
-                      <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         {t("shop.block.range", {
                           start: formatShopDate(block.starts_at, shopTimeZone, {
                             dateStyle: "short",
                             timeStyle: "short",
                           }),
                           end: formatSlotLabel(new Date(block.ends_at), shopTimeZone),
-                          who: block.staff?.display_name ?? t("shop.agenda.allTeam"),
+                          who: block.staff?.display_name ?? t("shop.block.wholeShop"),
                         })}
                       </p>
                     </div>
@@ -3293,13 +3384,15 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 renderSection={(section) => {
                   if (section === "aparencia") {
                     return (
-                      <>
+                      <div className="grid gap-3">
                         <button
                           type="button"
                           onClick={() => setBrandOpen(true)}
-                          className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left transition hover:border-primary/40"
+                          className="flex min-h-16 w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left transition hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
-                          <Palette className="size-5 text-gold" />
+                          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                            <Palette className="size-5" aria-hidden />
+                          </span>
                           <span className="min-w-0 flex-1">
                             <span className="block text-sm font-bold">
                               {t("shop.settings.brand")}
@@ -3308,14 +3401,19 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                               {t("shop.settings.brandHint")}
                             </span>
                           </span>
-                          <ChevronRight className="size-4 text-muted-foreground" />
+                          <ChevronRight
+                            className="size-4 shrink-0 text-muted-foreground"
+                            aria-hidden
+                          />
                         </button>
                         <button
                           type="button"
                           onClick={() => setLandingOpen(true)}
-                          className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left transition hover:border-primary/40"
+                          className="flex min-h-16 w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left transition hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
-                          <Globe2 className="size-5 text-gold" />
+                          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                            <Globe2 className="size-5" aria-hidden />
+                          </span>
                           <span className="min-w-0 flex-1">
                             <span className="block text-sm font-bold">
                               {t("landingEditor.title")}
@@ -3324,9 +3422,12 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                               {t("landingEditor.cardHint")}
                             </span>
                           </span>
-                          <ChevronRight className="size-4 text-muted-foreground" />
+                          <ChevronRight
+                            className="size-4 shrink-0 text-muted-foreground"
+                            aria-hidden
+                          />
                         </button>
-                      </>
+                      </div>
                     );
                   }
                   if (section === "agendamento") {
@@ -3364,8 +3465,24 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         />
                         <form
                           onSubmit={saveSettings}
-                          className="space-y-5 rounded-2xl border border-border bg-card p-5"
+                          aria-labelledby="booking-rules-title"
+                          className="app-action-card space-y-5 p-5"
                         >
+                          <div>
+                            <p className="text-xs text-muted-foreground">
+                              {t("shop.settings.rulesSection")}
+                            </p>
+                            <h3
+                              id="booking-rules-title"
+                              className="flex items-center gap-2 font-bold"
+                            >
+                              <SlidersHorizontal className="size-4" aria-hidden />
+                              {t("shop.settings.rulesTitle")}
+                            </h3>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              {t("shop.settings.rulesIntro")}
+                            </p>
+                          </div>
                           <div className="space-y-2">
                             <label
                               htmlFor="booking-instructions"
@@ -3472,8 +3589,9 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                           <button
                             type="submit"
                             disabled={busy}
-                            className="w-full rounded-xl bg-primary py-3 text-xs font-semibold text-primary-foreground disabled:opacity-60"
+                            className="action-button action-confirm w-full"
                           >
+                            <Save className="size-4" aria-hidden />
                             {busy ? t("common.saving") : t("shop.settings.save")}
                           </button>
                           {settingsSaved && (
@@ -3551,7 +3669,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       </>
                     );
                   }
-                  if (section === "idioma") return <LanguageSettingsCard />;
+                  if (section === "idioma") return <LanguageSettingsCard hideHeading />;
                   return null;
                 }}
               />

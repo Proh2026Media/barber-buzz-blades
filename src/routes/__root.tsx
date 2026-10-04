@@ -16,6 +16,7 @@ import { localeBootstrapScript } from "../lib/i18n/locale";
 import { useI18n } from "../lib/i18n";
 import { PwaRegister } from "../lib/pwa";
 import { PwaInstallBanner } from "../components/pwa-install-banner";
+import { Toaster } from "../components/ui/sonner";
 
 const APP_NAME = "Barba & Cabelo";
 const APP_DESCRIPTION =
@@ -139,6 +140,7 @@ function RootComponent() {
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
       <PwaInstallBanner />
+      <Toaster />
     </QueryClientProvider>
   );
 }

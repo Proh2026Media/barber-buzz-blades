@@ -64,9 +64,9 @@ export function DemoRoleSelector() {
 
   return (
     <>
-      {/* PC/Tablet: mesma família visual dos ícones do cabeçalho, em linha. */}
+      {/* PC: mesma família visual dos ícones do cabeçalho, em linha, com rótulos. */}
       <div
-        className="app-demo-slot-desktop app-demo-switcher hidden md:flex"
+        className="app-demo-slot-desktop app-demo-switcher hidden lg:flex"
         role="group"
         aria-label={t("demo.switcher.aria")}
       >
@@ -89,8 +89,8 @@ export function DemoRoleSelector() {
         })}
       </div>
 
-      {/* Celular: um ícone igual aos do cabeçalho que abre a lista de perfis. */}
-      <div className="app-demo-slot-mobile md:hidden">
+      {/* Celular e tablet: um ícone igual aos do cabeçalho que abre a lista de perfis (alvos de 44px). */}
+      <div className="app-demo-slot-mobile lg:hidden">
         <Popover>
           <PopoverTrigger asChild>
             <button
@@ -119,7 +119,7 @@ export function DemoRoleSelector() {
                     key={r.id}
                     onClick={() => setRole(r.id)}
                     aria-pressed={active}
-                    className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-semibold transition-colors ${
+                    className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-semibold transition-colors ${
                       active ? "bg-primary text-primary-foreground" : "hover:bg-muted"
                     }`}
                   >

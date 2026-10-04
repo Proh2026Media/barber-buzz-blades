@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Check, Clock3, ShieldCheck, X } from "lucide-react";
+import { SettingsCardHeader } from "@/features/shop/settings/SettingsCardHeader";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json, Tables } from "@/integrations/supabase/types";
 import type { SessionProfile } from "@/lib/auth/session";
@@ -170,22 +171,21 @@ export function TeamGovernance({
   return (
     <section className="app-action-card space-y-4 p-4" aria-labelledby="governance-title">
       <div className="flex items-start gap-3">
-        <span className="rounded-xl bg-primary/10 p-2 text-primary">
-          <ShieldCheck className="size-5" />
-        </span>
-        <div>
-          <h3 id="governance-title" className="font-bold">
-            {t("team.gov.title")}
-          </h3>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {profile.governanceMode === "equal"
-              ? t("team.gov.modeEqual")
-              : profile.governanceMode === "majority"
-                ? profile.capabilities?.canApplyOperations
-                  ? t("team.gov.modeMajorityOwner")
-                  : t("team.gov.modeMajorityMinor")
-                : t("team.gov.modeDirect")}
-          </p>
+        <div className="min-w-0 flex-1">
+          <SettingsCardHeader
+            icon={ShieldCheck}
+            id="governance-title"
+            title={t("team.gov.title")}
+            intro={
+              profile.governanceMode === "equal"
+                ? t("team.gov.modeEqual")
+                : profile.governanceMode === "majority"
+                  ? profile.capabilities?.canApplyOperations
+                    ? t("team.gov.modeMajorityOwner")
+                    : t("team.gov.modeMajorityMinor")
+                  : t("team.gov.modeDirect")
+            }
+          />
         </div>
         {pending.length > 0 && (
           <button
@@ -227,10 +227,10 @@ export function TeamGovernance({
                         ? ` · ${t("team.gov.accountManager")}`
                         : ""}
                     </p>
-                    <ul className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                    <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-muted-foreground">
                       {items.map((item, index) => (
                         <li key={`${request.id}-${index}`}>
-                          ☐ {kindLabel(item.kind) ?? item.kind}: {item.summary}
+                          {kindLabel(item.kind) ?? item.kind}: {item.summary}
                         </li>
                       ))}
                     </ul>
@@ -305,9 +305,9 @@ export function TeamGovernance({
                     ? ` · ${remainingLabel(request.expires_at)}`
                     : ""}
                 </p>
-                <ul className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-muted-foreground">
                   {checklistItems(request).map((item, index) => (
-                    <li key={`popup-item-${request.id}-${index}`}>☐ {item.summary}</li>
+                    <li key={`popup-item-${request.id}-${index}`}>{item.summary}</li>
                   ))}
                 </ul>
               </div>

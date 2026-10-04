@@ -18,7 +18,7 @@ export function LoginPreviewDialog({ open, onOpenChange, preview }: LoginPreview
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="flex h-[100dvh] max-h-[100dvh] w-screen max-w-none translate-x-[-50%] translate-y-[-50%] flex-col gap-0 overflow-hidden !rounded-none border-0 bg-background p-0 [&>button]:hidden"
+        className="dialog-surface-page flex h-[100dvh] max-h-[100dvh] w-screen max-w-none translate-x-[-50%] translate-y-[-50%] flex-col gap-0 overflow-hidden !rounded-none border-0 bg-background p-0 [&>button]:hidden"
         aria-describedby={undefined}
       >
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-4 py-3">

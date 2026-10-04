@@ -34,7 +34,7 @@ export function ShopJoinDialog({
         if (!next && !busy) onDismiss();
       }}
     >
-      <AlertDialogContent className="max-w-md rounded-[var(--panel-radius)]">
+      <AlertDialogContent className="max-w-md rounded-[var(--panel-radius)] border-border bg-card">
         <AlertDialogHeader>
           <AlertDialogTitle>{t("join.title")}</AlertDialogTitle>
           <AlertDialogDescription className="text-left text-sm leading-relaxed">

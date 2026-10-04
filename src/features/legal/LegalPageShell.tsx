@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ChevronLeft, Scissors } from "lucide-react";
 import type { ReactNode } from "react";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { legalLinkClass } from "@/features/legal/rich-text";
 import { INTL_LOCALE, translate, useI18n, type Locale, type MessageKey } from "@/lib/i18n";
 
 type LegalPageShellProps = {
@@ -102,28 +103,25 @@ export function LegalPageShell({
           <Link
             to="/privacidade"
             search={legalSearch}
-            className="min-h-11 inline-flex items-center font-semibold text-foreground underline-offset-2 hover:underline"
+            className={`inline-flex min-h-11 items-center ${legalLinkClass}`}
           >
             {t("legal.privacyLink")}
           </Link>
           <Link
             to="/termos"
             search={legalSearch}
-            className="min-h-11 inline-flex items-center font-semibold text-foreground underline-offset-2 hover:underline"
+            className={`inline-flex min-h-11 items-center ${legalLinkClass}`}
           >
             {t("legal.termsLink")}
           </Link>
           <Link
             to="/acordo-de-dados"
             search={legalSearch}
-            className="min-h-11 inline-flex items-center font-semibold text-foreground underline-offset-2 hover:underline"
+            className={`inline-flex min-h-11 items-center ${legalLinkClass}`}
           >
             {t("legal.dpaLink")}
           </Link>
-          <Link
-            to="/"
-            className="min-h-11 inline-flex items-center font-semibold text-foreground underline-offset-2 hover:underline"
-          >
+          <Link to="/" className={`inline-flex min-h-11 items-center ${legalLinkClass}`}>
             {t("legal.home")}
           </Link>
         </nav>

@@ -100,7 +100,7 @@ export function LoginScreenPreview({
                   className="auth-brand-logo flex size-11 shrink-0 items-center justify-center overflow-hidden"
                   style={{
                     backgroundColor:
-                      logoBackgroundColor ?? "color-mix(in oklch, var(--brand-primary) 8%, white)",
+                      logoBackgroundColor ?? "color-mix(in oklab, var(--brand-primary) 8%, white)",
                   }}
                 >
                   {logoUrl ? (

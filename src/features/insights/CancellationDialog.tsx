@@ -40,7 +40,7 @@ export function CancellationDialog({
         if (!value && !busy) onCancel();
       }}
     >
-      <AlertDialogContent className="rounded-3xl">
+      <AlertDialogContent className="rounded-3xl border-border bg-card">
         <AlertDialogHeader>
           <AlertDialogTitle>{t("cancel.title")}</AlertDialogTitle>
           <AlertDialogDescription asChild>
@@ -54,8 +54,8 @@ export function CancellationDialog({
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <label className="space-y-2 text-sm font-semibold">
-          <span>{t("cancel.reasonLabel")}</span>
+        <label className="block space-y-2 text-sm font-semibold">
+          <span className="block">{t("cancel.reasonLabel")}</span>
           <select
             aria-label={t("cancel.reasonLabel")}
             value={reason}

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, Copy, Globe2, RefreshCw, Trash2 } from "lucide-react";
+import { SettingsCardHeader } from "@/features/shop/settings/SettingsCardHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { PLATFORM_BASE_HOST, shopPublicOrigin } from "@/lib/shop/host";
@@ -295,15 +296,11 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
 
   return (
     <section className="space-y-3 rounded-3xl border border-border bg-card p-4">
-      <div className="flex items-start gap-3">
-        <span className="rounded-2xl bg-primary/10 p-2 text-primary">
-          <Globe2 size={18} />
-        </span>
-        <div>
-          <h3 className="text-sm font-bold">{t("integr.domain.title")}</h3>
-          <p className="text-xs text-muted-foreground">{t("integr.domain.intro")}</p>
-        </div>
-      </div>
+      <SettingsCardHeader
+        icon={Globe2}
+        title={t("integr.domain.title")}
+        intro={t("integr.domain.intro")}
+      />
 
       {publicUrl && (
         <div className="space-y-2 rounded-2xl border border-primary/25 bg-primary/5 p-3">
@@ -370,7 +367,7 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
           </p>
         )}
         <div className="flex flex-wrap gap-2">
-          <button type="submit" disabled={busy} className="action-button">
+          <button type="submit" disabled={busy} className="action-button action-confirm">
             {t("integr.domain.save")}
           </button>
           {settings?.custom_domain && (
@@ -408,7 +405,7 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
               <code className="break-all text-foreground">{instructions.cname_target}</code>
               <button
                 type="button"
-                className="ml-2 underline"
+                className="mt-1 flex min-h-11 items-center gap-1.5 text-xs font-semibold text-foreground underline underline-offset-2"
                 onClick={() => void copyText("cname", instructions.cname_target)}
               >
                 {t("integr.domain.copyTarget")}
@@ -420,7 +417,7 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
               <code className="break-all text-foreground">{instructions.txt_value}</code>
               <button
                 type="button"
-                className="ml-2 underline"
+                className="mt-1 flex min-h-11 items-center gap-1.5 text-xs font-semibold text-foreground underline underline-offset-2"
                 onClick={() => void copyText("txt", instructions.txt_value)}
               >
                 {t("integr.domain.copyValue")}

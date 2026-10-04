@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -18,6 +18,46 @@ import type { Tables } from "@/integrations/supabase/types";
 import { useI18n } from "@/lib/i18n";
 
 type MembershipRow = Pick<Tables<"memberships">, "barbershop_id" | "role" | "user_id">;
+
+/** Cor da série principal: marca na demonstração, grafite do tema no painel real. */
+const PRIMARY_SERIES = "var(--brand-primary, var(--primary))";
+const GOLD_SERIES = "var(--gold)";
+
+/** Tooltip dos gráficos acompanha o modo de canto (é HTML, aceita variável CSS). */
+const chartTooltipStyle = {
+  borderRadius: "var(--control-radius)",
+  border: "1px solid var(--border)",
+  background: "var(--card)",
+};
+
+/** Lê o --control-radius (rem ou px) do elemento para os cantos das barras em SVG. */
+function readBarRadius(element: HTMLElement | null) {
+  if (!element) return 6;
+  const raw = getComputedStyle(element).getPropertyValue("--control-radius").trim();
+  const value = Number.parseFloat(raw);
+  if (!Number.isFinite(value)) return 6;
+  const px = raw.endsWith("px") ? value : value * 16;
+  return Math.min(8, Math.round(px * 0.45));
+}
+
+type ShopTickProps = {
+  x?: number;
+  y?: number;
+  width?: number;
+  visibleTicksCount?: number;
+  payload?: { value?: string };
+};
+
+/** Rótulo do eixo cortado pela largura disponível por barra, não por um limite fixo. */
+function ShopNameTick({ x = 0, y = 0, width = 0, visibleTicksCount = 1, payload }: ShopTickProps) {
+  const text = String(payload?.value ?? "");
+  const max = Math.max(4, Math.floor(width / Math.max(visibleTicksCount, 1) / 6.5));
+  return (
+    <text x={x} y={y + 12} textAnchor="middle" fontSize={11} fill="currentColor">
+      {text.length > max ? `${text.slice(0, max - 1)}…` : text}
+    </text>
+  );
+}
 
 type PlatformDashboardProps = {
   shops: Tables<"barbershops">[];
@@ -89,7 +129,10 @@ export function PlatformDashboard({
 }: PlatformDashboardProps) {
   const { t, intlLocale } = useI18n();
   const [mounted, setMounted] = useState(false);
+  const [barRadius, setBarRadius] = useState(6);
+  const barCardRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
+    setBarRadius(readBarRadius(barCardRef.current));
     setMounted(true);
   }, []);
 
@@ -103,7 +146,7 @@ export function PlatformDashboard({
       const rows = memberships.filter((row) => row.barbershop_id === shop.id);
       return {
         id: shop.id,
-        name: shop.name.length > 14 ? `${shop.name.slice(0, 12)}…` : shop.name,
+        name: shop.name,
         fullName: shop.name,
         customers: rows.filter((row) => row.role === "customer").length,
         team: rows.filter((row) => row.role !== "customer").length,
@@ -112,7 +155,7 @@ export function PlatformDashboard({
     });
     const topShops = [...byShop].sort((a, b) => b.customers - a.customers).slice(0, 6);
     const statusPie = [
-      { name: t("plat.dash.active"), value: active, color: "var(--brand-primary, #1f6feb)" },
+      { name: t("plat.dash.active"), value: active, color: PRIMARY_SERIES },
       { name: t("plat.dash.suspended"), value: Math.max(suspended, 0), color: "#a8a29e" },
     ].filter((row) => row.value > 0);
     const baseline = Math.max(customers, 8);
@@ -146,7 +189,7 @@ export function PlatformDashboard({
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
             {t("plat.dash.eyebrow")}
           </p>
-          <h2 className="mt-1 text-xl font-extrabold tracking-tight sm:text-2xl">
+          <h2 className="mt-1 text-[1.35rem] font-[650] tracking-[-0.02em]">
             {t("plat.dash.title")}
           </h2>
           <p className="mt-1 max-w-xl text-sm text-muted-foreground">{t("plat.dash.subtitle")}</p>
@@ -157,7 +200,11 @@ export function PlatformDashboard({
         </span>
       </div>
 
-      <div className="platform-metric-board" role="group" aria-label={t("plat.dash.metricsAria")}>
+      <div
+        className="platform-metric-board bg-card"
+        role="group"
+        aria-label={t("plat.dash.metricsAria")}
+      >
         <MetricCell
           label={t("plat.dash.activeShops")}
           value={stats.active}
@@ -208,13 +255,7 @@ export function PlatformDashboard({
         <MetricCell
           label={t("plat.dash.shopAdmins")}
           value={stats.admins}
-          detail={
-            loading
-              ? t("plat.dash.loading")
-              : stats.sportsOn > 0
-                ? t("plat.dash.sportsOn", { count: stats.sportsOn })
-                : t("plat.dash.managementAccounts")
-          }
+          detail={loading ? t("plat.dash.loading") : t("plat.dash.managementAccounts")}
           loading={loading}
         />
       </div>
@@ -233,20 +274,12 @@ export function PlatformDashboard({
                 <AreaChart data={stats.trend} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
                   <defs>
                     <linearGradient id="platformClients" x1="0" y1="0" x2="0" y2="1">
-                      <stop
-                        offset="0%"
-                        stopColor="var(--brand-primary, #1f6feb)"
-                        stopOpacity={0.35}
-                      />
-                      <stop
-                        offset="100%"
-                        stopColor="var(--brand-primary, #1f6feb)"
-                        stopOpacity={0}
-                      />
+                      <stop offset="0%" stopColor={PRIMARY_SERIES} stopOpacity={0.35} />
+                      <stop offset="100%" stopColor={PRIMARY_SERIES} stopOpacity={0} />
                     </linearGradient>
                     <linearGradient id="platformBookings" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--gold, #c9a227)" stopOpacity={0.35} />
-                      <stop offset="100%" stopColor="var(--gold, #c9a227)" stopOpacity={0} />
+                      <stop offset="0%" stopColor={GOLD_SERIES} stopOpacity={0.35} />
+                      <stop offset="100%" stopColor={GOLD_SERIES} stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border/60" />
@@ -261,18 +294,12 @@ export function PlatformDashboard({
                     stroke="currentColor"
                     className="text-muted-foreground"
                   />
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: 12,
-                      border: "1px solid var(--border)",
-                      background: "var(--card)",
-                    }}
-                  />
+                  <Tooltip contentStyle={chartTooltipStyle} separator=": " />
                   <Area
                     type="monotone"
                     dataKey="clientes"
                     name={t("plat.dash.customers")}
-                    stroke="var(--brand-primary, #1f6feb)"
+                    stroke={PRIMARY_SERIES}
                     fill="url(#platformClients)"
                     strokeWidth={2.5}
                     animationDuration={1100}
@@ -281,7 +308,7 @@ export function PlatformDashboard({
                     type="monotone"
                     dataKey="reservas"
                     name={t("plat.dash.bookings")}
-                    stroke="var(--gold, #c9a227)"
+                    stroke={GOLD_SERIES}
                     fill="url(#platformBookings)"
                     strokeWidth={2.5}
                     animationDuration={1300}
@@ -290,6 +317,16 @@ export function PlatformDashboard({
               </ResponsiveContainer>
             )}
           </div>
+          <ul className="mt-1 flex flex-wrap gap-3 text-xs font-semibold">
+            <li className="inline-flex items-center gap-2">
+              <span className="size-2.5 rounded-full" style={{ background: PRIMARY_SERIES }} />
+              {t("plat.dash.customers")}
+            </li>
+            <li className="inline-flex items-center gap-2">
+              <span className="size-2.5 rounded-full" style={{ background: GOLD_SERIES }} />
+              {t("plat.dash.bookings")}
+            </li>
+          </ul>
         </article>
 
         <article className="rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-5">
@@ -305,20 +342,15 @@ export function PlatformDashboard({
                     nameKey="name"
                     innerRadius={48}
                     outerRadius={72}
-                    paddingAngle={3}
+                    paddingAngle={stats.statusPie.length > 1 ? 3 : 0}
+                    stroke={stats.statusPie.length > 1 ? "var(--card)" : "none"}
                     animationDuration={1000}
                   >
                     {stats.statusPie.map((row) => (
                       <Cell key={row.name} fill={row.color} />
                     ))}
                   </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: 12,
-                      border: "1px solid var(--border)",
-                      background: "var(--card)",
-                    }}
-                  />
+                  <Tooltip contentStyle={chartTooltipStyle} separator=": " />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
@@ -338,7 +370,10 @@ export function PlatformDashboard({
         </article>
       </div>
 
-      <article className="rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-5">
+      <article
+        ref={barCardRef}
+        className="rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-5"
+      >
         <div className="mb-4">
           <h3 className="text-sm font-bold">{t("plat.dash.topTitle")}</h3>
           <p className="text-xs text-muted-foreground">{t("plat.dash.topHint")}</p>
@@ -354,7 +389,8 @@ export function PlatformDashboard({
                 />
                 <XAxis
                   dataKey="name"
-                  tick={{ fontSize: 11 }}
+                  interval={0}
+                  tick={<ShopNameTick />}
                   stroke="currentColor"
                   className="text-muted-foreground"
                 />
@@ -373,24 +409,23 @@ export function PlatformDashboard({
                         ? t("plat.dash.customersOf", { name: item.payload.fullName })
                         : t("plat.dash.customers"),
                   ]}
-                  contentStyle={{
-                    borderRadius: 12,
-                    border: "1px solid var(--border)",
-                    background: "var(--card)",
-                  }}
+                  contentStyle={chartTooltipStyle}
+                  separator=": "
                 />
                 <Bar
                   dataKey="customers"
                   name={t("plat.dash.customers")}
-                  radius={[10, 10, 4, 4]}
-                  fill="var(--brand-primary, #1f6feb)"
+                  radius={[barRadius, barRadius, 0, 0]}
+                  maxBarSize={48}
+                  fill={PRIMARY_SERIES}
                   animationDuration={1200}
                 />
                 <Bar
                   dataKey="team"
                   name={t("plat.dash.team")}
-                  radius={[10, 10, 4, 4]}
-                  fill="var(--gold, #c9a227)"
+                  radius={[barRadius, barRadius, 0, 0]}
+                  maxBarSize={48}
+                  fill={GOLD_SERIES}
                   animationDuration={1400}
                 />
               </BarChart>
@@ -401,6 +436,18 @@ export function PlatformDashboard({
             </p>
           )}
         </div>
+        {stats.topShops.length > 0 && (
+          <ul className="mt-1 flex flex-wrap gap-3 text-xs font-semibold">
+            <li className="inline-flex items-center gap-2">
+              <span className="size-2.5 rounded-full" style={{ background: PRIMARY_SERIES }} />
+              {t("plat.dash.customers")}
+            </li>
+            <li className="inline-flex items-center gap-2">
+              <span className="size-2.5 rounded-full" style={{ background: GOLD_SERIES }} />
+              {t("plat.dash.team")}
+            </li>
+          </ul>
+        )}
       </article>
     </section>
   );

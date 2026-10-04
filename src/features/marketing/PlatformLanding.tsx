@@ -32,7 +32,7 @@ export function PlatformLanding() {
               </span>
               <span className="platform-landing-brand-name">Barba &amp; Cabelo</span>
             </p>
-            <LanguageSwitcher />
+            <LanguageSwitcher buttonClassName="app-icon-button hero-icon-button" />
           </header>
 
           <section className="platform-landing-hero" aria-labelledby="platform-landing-title">

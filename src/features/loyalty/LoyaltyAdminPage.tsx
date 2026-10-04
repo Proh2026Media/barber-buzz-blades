@@ -23,6 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { brandCornerClass, brandFontScopeClass, brandVariables } from "@/lib/shop/branding";
 import { BrandFontFace } from "@/features/shop/BrandFontFace";
+import { BrandRootVariables } from "@/features/shop/BrandRootVariables";
 import type { SessionProfile } from "@/lib/auth/session";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { useI18n, type MessageKey } from "@/lib/i18n";
@@ -155,23 +156,24 @@ export function LoyaltyAdminPage({ profile }: { profile: SessionProfile }) {
     { id: "clientes", label: t("loyalty.admin.part.customers"), icon: Users },
   ];
 
+  const brandStyle = settings
+    ? brandVariables(
+        settings.primary_color,
+        settings.accent_color,
+        settings.font_family,
+        settings.custom_font_url,
+        settings.header_font_weight,
+        settings.header_font_style,
+        settings.corner_style,
+      )
+    : null;
+
   return (
     <div
       className={`arena-workspace min-h-dvh bg-background text-foreground ${brandFontScopeClass(settings?.font_scope)} ${brandCornerClass(settings?.corner_style)}`}
-      style={
-        settings
-          ? (brandVariables(
-              settings.primary_color,
-              settings.accent_color,
-              settings.font_family,
-              settings.custom_font_url,
-              settings.header_font_weight,
-              settings.header_font_style,
-              settings.corner_style,
-            ) as CSSProperties)
-          : undefined
-      }
+      style={brandStyle ? (brandStyle as CSSProperties) : undefined}
     >
+      <BrandRootVariables vars={brandStyle} />
       {settings && (
         <BrandFontFace url={settings.custom_font_url} faces={settings.custom_font_faces} />
       )}

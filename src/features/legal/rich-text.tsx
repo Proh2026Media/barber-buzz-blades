@@ -12,4 +12,4 @@ export function legalRichText(template: string, nodes: Record<string, ReactNode>
   });
 }
 
-export const legalLinkClass = "font-semibold text-foreground underline-offset-2 hover:underline";
+export const legalLinkClass = "font-semibold text-foreground underline underline-offset-2";

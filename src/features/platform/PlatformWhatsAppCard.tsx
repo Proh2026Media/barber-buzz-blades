@@ -146,7 +146,7 @@ export function PlatformWhatsAppCard() {
   return (
     <section className="space-y-4 rounded-3xl border border-border bg-card p-4">
       <div className="flex items-start gap-3">
-        <span className="rounded-2xl bg-primary/10 p-2 text-primary">
+        <span className="rounded-xl bg-primary/10 p-2 text-primary">
           <MessageCircle size={18} />
         </span>
         <div className="min-w-0 flex-1">

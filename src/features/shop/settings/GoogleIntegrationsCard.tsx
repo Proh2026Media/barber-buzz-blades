@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
+import { SettingsCardHeader } from "@/features/shop/settings/SettingsCardHeader";
 import { t as tNow, useI18n } from "@/lib/i18n";
 import {
   Dialog,
@@ -580,24 +581,23 @@ export function GoogleIntegrationsCard({
   ]);
 
   return (
-    <section className="app-action-card space-y-4 p-5" aria-label={t("integr.google.title")}>
-      <div className="flex items-start gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--control-radius)] bg-muted text-foreground">
-          <CalendarDays className="size-5" aria-hidden />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold">{t("integr.google.title")}</p>
-          <p className="text-xs text-muted-foreground">{t("integr.google.intro")}</p>
-          <a
-            href="/privacidade#dados-google"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="-my-1 inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold text-foreground underline-offset-2 hover:underline"
-          >
-            <ShieldCheck className="size-3.5 shrink-0" aria-hidden />
-            {t("fix3.google.privacyLink")}
-          </a>
-        </div>
+    <section className="app-action-card space-y-4 p-5" aria-labelledby="google-integrations-title">
+      <div>
+        <SettingsCardHeader
+          id="google-integrations-title"
+          icon={CalendarDays}
+          title={t("integr.google.title")}
+          intro={t("integr.google.intro")}
+        />
+        <a
+          href="/privacidade#dados-google"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold text-foreground underline-offset-2 hover:underline"
+        >
+          <ShieldCheck className="size-3.5 shrink-0" aria-hidden />
+          {t("fix3.google.privacyLink")}
+        </a>
       </div>
 
       <div className="rounded-[var(--control-radius)] border border-border/60 bg-background/80 px-3 py-3 text-sm">

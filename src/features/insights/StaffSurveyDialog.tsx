@@ -111,8 +111,8 @@ export function StaffSurveyDialog({
           <AlertDialogTitle>{t("ins.staff.title")}</AlertDialogTitle>
           <AlertDialogDescription>{t("ins.staff.body")}</AlertDialogDescription>
         </AlertDialogHeader>
-        <label className="space-y-2 text-sm font-semibold">
-          <span>{t("ins.staff.question")}</span>
+        <label className="block space-y-2 text-sm font-semibold">
+          <span className="block">{t("ins.staff.question")}</span>
           <select
             aria-label={t("ins.staff.question")}
             value={question}
@@ -131,8 +131,8 @@ export function StaffSurveyDialog({
             ))}
           </select>
         </label>
-        <label className="space-y-2 text-sm font-semibold">
-          <span>{t("ins.staff.answer")}</span>
+        <label className="block space-y-2 text-sm font-semibold">
+          <span className="block">{t("ins.staff.answer")}</span>
           <select
             aria-label={t("ins.staff.answer")}
             value={answer}

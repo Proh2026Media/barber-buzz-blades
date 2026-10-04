@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from "react";
-import { CalendarClock, Check, Info, Settings2 } from "lucide-react";
+import { CalendarClock, Check, Info, Save, Settings2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { useI18n } from "@/lib/i18n";
 import {
@@ -259,8 +259,9 @@ export function SlotModeSettings({
         type="button"
         onClick={() => void save()}
         disabled={busy || !changed}
-        className="min-h-11 w-full rounded-xl bg-primary py-3 text-xs font-semibold text-primary-foreground disabled:opacity-60"
+        className="action-button action-confirm w-full"
       >
+        <Save className="size-4" aria-hidden />
         {busy ? t("common.saving") : t("slots.save")}
       </button>
       {status && (

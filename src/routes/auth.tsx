@@ -1302,7 +1302,7 @@ function AuthPage() {
 
   return (
     <main
-      className={`auth-workspace auth-page auth-layout-${brand.loginLayout} mb-page min-h-dvh text-foreground ${brandCornerClass(brand.cornerStyle)}`}
+      className={`auth-workspace auth-page brand-page auth-layout-${brand.loginLayout} mb-page min-h-dvh text-foreground ${brandCornerClass(brand.cornerStyle)}`}
       style={
         brandVariables(
           brand.primaryColor,
@@ -1353,7 +1353,7 @@ function AuthPage() {
               style={{
                 backgroundColor:
                   brand.logoBackgroundColor ??
-                  "color-mix(in oklch, var(--brand-primary) 8%, white)",
+                  "color-mix(in oklab, var(--brand-primary) 8%, white)",
               }}
             >
               {brand.logoUrl ? (
@@ -1862,11 +1862,10 @@ function AuthPage() {
 
           {(mode === "signin" || mode === "signup") && (
             <>
-              <div className="relative text-center text-xs font-medium text-muted-foreground">
-                <span className="auth-divider-label relative z-10 px-3">
-                  {t("auth.orContinue")}
-                </span>
-                <span className="absolute inset-x-0 top-1/2 h-px bg-border" aria-hidden />
+              <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground">
+                <span className="h-px flex-1 bg-border" aria-hidden />
+                <span>{t("auth.orContinue")}</span>
+                <span className="h-px flex-1 bg-border" aria-hidden />
               </div>
 
               <button
@@ -1878,9 +1877,11 @@ function AuthPage() {
                 <GoogleMark />
                 {t("auth.google")}
               </button>
-              <p className="-mt-3 text-center text-xs leading-relaxed text-muted-foreground">
-                {t("auth.terms.before")} {legalLinks} {t("cad.cliente.terms.age")}
-              </p>
+              {mode === "signin" && (
+                <p className="-mt-3 text-center text-xs leading-relaxed text-muted-foreground">
+                  {t("auth.terms.before")} {legalLinks} {t("cad.cliente.terms.age")}
+                </p>
+              )}
             </>
           )}
 

@@ -229,7 +229,7 @@ export function AccountManagersPanel({ shops }: { shops: Tables<"barbershops">[]
         <button
           type="submit"
           disabled={busy}
-          className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground disabled:opacity-50"
         >
           <Link2 className="size-4" />
           {busy ? t("plat.mgr.linking") : t("plat.mgr.link")}

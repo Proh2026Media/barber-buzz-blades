@@ -228,8 +228,8 @@ export function PartnerOverview({
       )}
 
       {/* Carteira (expansível, fechada por padrão) */}
-      <details className="group rounded-2xl border border-border bg-card p-4">
-        <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-bold [&::-webkit-details-marker]:hidden">
+      <details className="group overflow-hidden rounded-2xl border border-border bg-card">
+        <summary className="flex min-h-14 cursor-pointer list-none items-center gap-2 px-4 text-sm font-bold [&::-webkit-details-marker]:hidden">
           <Wallet className="size-4 text-gold" />
           <span className="flex-1">{t("team.partner.wallet")}</span>
           <span className="text-xs font-semibold text-muted-foreground">
@@ -237,48 +237,52 @@ export function PartnerOverview({
           </span>
           <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
         </summary>
-        {error || !wallet ? (
-          <p className="mt-3 text-sm text-destructive">{t("team.partner.loadError")}</p>
-        ) : (
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <div>
-              <p className="text-xs text-muted-foreground">{t("team.partner.appointments")}</p>
-              <p className="text-2xl font-bold tabular-nums">{wallet?.completed_count ?? 0}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">{t("team.partner.produced")}</p>
-              <p className="text-2xl font-bold tabular-nums">
-                {formatBRL(wallet?.total_completed_cents ?? 0, intlLocale)}
-              </p>
-            </div>
-          </div>
-        )}
-        {!error && wallet && wallet.entries.length > 0 && (
-          <div className="mt-3 space-y-2 border-t border-border pt-3">
-            {wallet.entries.slice(0, 5).map((entry) => (
-              <div
-                key={entry.appointment_id}
-                className="flex items-center justify-between gap-3 text-sm"
-              >
-                <div className="min-w-0">
-                  <p className="truncate font-semibold">
-                    {entry.customer_name ?? t("team.partner.clientFallback")}
-                  </p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {entry.service_name} ·{" "}
-                    {new Date(entry.starts_at).toLocaleString(intlLocale, {
-                      dateStyle: "short",
-                      timeStyle: "short",
-                    })}
-                  </p>
-                </div>
-                <span className="shrink-0 font-bold tabular-nums">
-                  {formatBRL(entry.amount_cents, intlLocale)}
-                </span>
+        <div className="px-4 pb-4">
+          {error || !wallet ? (
+            <p className="text-sm text-destructive">{t("team.partner.loadError")}</p>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 [&>*]:min-w-0">
+              <div>
+                <p className="text-xs text-muted-foreground">{t("team.partner.appointments")}</p>
+                <p className="text-xl font-bold tabular-nums break-words sm:text-2xl">
+                  {wallet?.completed_count ?? 0}
+                </p>
               </div>
-            ))}
-          </div>
-        )}
+              <div>
+                <p className="text-xs text-muted-foreground">{t("team.partner.produced")}</p>
+                <p className="text-xl font-bold tabular-nums break-words sm:text-2xl">
+                  {formatBRL(wallet?.total_completed_cents ?? 0, intlLocale)}
+                </p>
+              </div>
+            </div>
+          )}
+          {!error && wallet && wallet.entries.length > 0 && (
+            <div className="mt-3 space-y-2 border-t border-border pt-3">
+              {wallet.entries.slice(0, 5).map((entry) => (
+                <div
+                  key={entry.appointment_id}
+                  className="flex items-center justify-between gap-3 text-sm"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold">
+                      {entry.customer_name ?? t("team.partner.clientFallback")}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {entry.service_name} ·{" "}
+                      {new Date(entry.starts_at).toLocaleString(intlLocale, {
+                        dateStyle: "short",
+                        timeStyle: "short",
+                      })}
+                    </p>
+                  </div>
+                  <span className="shrink-0 font-bold tabular-nums">
+                    {formatBRL(entry.amount_cents, intlLocale)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </details>
 
       {/* Clientes (expansível) */}

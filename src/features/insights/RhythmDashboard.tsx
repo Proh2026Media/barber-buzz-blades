@@ -42,9 +42,11 @@ function Stat({
   hint?: string;
 }) {
   return (
-    <div className="app-action-card p-4">
+    <div className="app-action-card min-w-0 p-4">
       <div className="mb-2 flex items-center gap-2 text-gold">{icon}</div>
-      <p className="text-2xl font-bold tabular-nums tracking-tight">{value}</p>
+      <p className="text-xl font-bold tabular-nums tracking-tight break-words hyphens-auto sm:text-2xl">
+        {value}
+      </p>
       <p className="text-xs font-semibold text-muted-foreground">{label}</p>
       {hint && <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p>}
     </div>

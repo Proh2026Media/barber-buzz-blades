@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { BarChart3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { DEFAULT_SHOP_TIMEZONE, shopDayRange } from "@/lib/shop/appointments";
 import { useDemo } from "@/features/demo/context";
@@ -104,14 +103,8 @@ export function ProfessionalInsights({
     };
   }, [demo, day, revision, retry, shopId, staffId, role]);
   return (
-    <section
-      className="space-y-3 rounded-2xl border border-primary/20 bg-card p-4"
-      aria-label={t("ins.pro.title")}
-    >
-      <h3 className="flex items-center gap-2 text-sm font-bold">
-        <BarChart3 className="size-5 text-primary" />
-        {t("ins.pro.title")}
-      </h3>
+    <section className="space-y-3" aria-label={t("ins.pro.title")}>
+      <h3 className="text-sm font-bold">{t("ins.pro.title")}</h3>
       {error ? (
         <div role="alert" className="space-y-2 text-xs text-destructive">
           <p>{t("ins.biz.loadError")}</p>

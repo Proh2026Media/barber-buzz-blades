@@ -55,7 +55,7 @@ export function PointsHistory({
     setLoading(true);
     setError(false);
     if (demo) {
-      setRows([
+      const demoRows = [
         ...demo.awarded
           .filter((id) =>
             demo.appointments.some((row) => row.id === id && row.customer_id === DEMO_CUSTOMER_ID),
@@ -87,7 +87,13 @@ export function PointsHistory({
           redemption_id: null,
           created_at: demo.now.toISOString(),
         },
-      ]);
+      ];
+      // Mesma ordem da consulta real: mais recentes primeiro (created_at desc, id desc).
+      setRows(
+        demoRows.sort(
+          (a, b) => b.created_at.localeCompare(a.created_at) || b.id.localeCompare(a.id),
+        ),
+      );
       setLoading(false);
     } else if (userId && shopId) {
       void supabase
@@ -117,17 +123,11 @@ export function PointsHistory({
   return (
     <section className="mb-stagger space-y-5" aria-labelledby="points-history-title">
       <header className="space-y-1">
-        <div className="flex items-center gap-2">
-          <span className="flex size-10 items-center justify-center rounded-2xl bg-gold/10 text-gold">
-            <ReceiptText className="size-5" aria-hidden="true" />
-          </span>
-          <div>
-            <h2 id="points-history-title" className="text-2xl font-extrabold tracking-tight">
-              {t("points.title")}
-            </h2>
-            <p className="text-xs text-muted-foreground">{t("points.subtitle")}</p>
-          </div>
+        <div className="app-section-title">
+          <ReceiptText aria-hidden="true" />
+          <h2 id="points-history-title">{t("points.title")}</h2>
         </div>
+        <p className="text-sm text-muted-foreground">{t("points.subtitle")}</p>
       </header>
 
       <div className="app-action-card mb-loyalty-contrast-card relative overflow-hidden p-5 sm:p-6">

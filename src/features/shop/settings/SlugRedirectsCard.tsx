@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useEffect, useState, type ReactNode } from "react";
 import { Link2, Lock, Trash2 } from "lucide-react";
+import { SettingsCardHeader } from "@/features/shop/settings/SettingsCardHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
@@ -101,21 +102,17 @@ export function SlugRedirectsCard({
 
   return (
     <section className="space-y-3 rounded-3xl border border-border bg-card p-4">
-      <div className="flex items-start gap-3">
-        <span className="rounded-2xl bg-primary/10 p-2 text-primary">
-          <Link2 size={18} />
-        </span>
-        <div>
-          <h3 className="text-sm font-bold">{t("integr.redirects.title")}</h3>
-          <p className="text-xs text-muted-foreground">
-            {currentShopSlug
-              ? richText(t("integr.redirects.introSlug"), {
-                  slug: <span className="font-semibold text-foreground">/{currentShopSlug}</span>,
-                })
-              : t("integr.redirects.intro")}
-          </p>
-        </div>
-      </div>
+      <SettingsCardHeader
+        icon={Link2}
+        title={t("integr.redirects.title")}
+        intro={
+          currentShopSlug
+            ? richText(t("integr.redirects.introSlug"), {
+                slug: <span className="font-semibold text-foreground">/{currentShopSlug}</span>,
+              })
+            : t("integr.redirects.intro")
+        }
+      />
 
       {error && (
         <p role="alert" className="text-sm text-destructive">

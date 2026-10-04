@@ -75,7 +75,7 @@ export function SettingsHub({
           {t("shop.settings.back")}
         </button>
         <div className="flex items-start gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-border bg-card text-primary">
             <Icon className="size-5" aria-hidden />
           </span>
           <div className="min-w-0">

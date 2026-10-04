@@ -9,6 +9,19 @@ Atualizado em **03/10/2026**. Este documento resume decisões e entregas da conv
 3. Para retomar localmente, usar `npm run dev -- --host 0.0.0.0 --port 8080`. O endereço esperado é `http://localhost:8080`.
 4. Continuar a partir do próximo pedido do usuário.
 
+## Entrega — correção de anomalias visuais em todo o sistema (04/10, madrugada, Claude Code)
+
+Varredura por capturas de tela (celular claro, celular escuro e computador) de todas as telas do modo demonstração (cliente, dono, sócio, parceiro, contratado, plataforma) e das páginas públicas, seguida de duas rodadas de agentes (encontrar → verificar com cético → corrigir; depois comparar antes/depois para achar regressões). Corrigidos 88 + 33 itens. Principais:
+
+- **Tema escuro:** `--primary` claro (#f1ede6) fora dos cartões off-white no app do cliente, no painel e no login (antes a cor da marca, quase preta, sumia sobre o fundo escuro); dentro dos cartões volta a tinta da marca. Selos de nível e saldo de pontos legíveis; âmbar/destrutivo com contraste AA; `color-mix(in oklch, …, transparent)` trocado para não gerar tons rosados.
+- **Avisos rápidos (toasts):** `<Toaster />` montado em `__root.tsx` (antes nenhum aviso aparecia).
+- **Cabeçalhos:** nome da loja em até 2 linhas (cliente e painel); no painel, atalho da plataforma e "Sair" fora do modo demonstração não se repetem.
+- **Modos de canto:** filtros, chips, seletores, selos e menus passam a seguir Retos/Semi/Arredondados.
+- **Toque e leitura:** alvos ≥ 44px (repetição, rádios, rodapés legais, seletor da demo), campos de Ajustes com 16px (sem zoom no iPhone), interruptor desligado visível, textos de 9–11px em informação de leitura aumentados.
+- **Layout:** lista de serviços sem sobreposição no celular, Editar/Excluir da equipe, data da agenda sem invadir a seta, barra inferior alinhada à coluna no computador, matriz de permissões com rolagem própria, gráficos da plataforma na paleta do tema, títulos de seção padronizados, títulos repetidos removidos.
+
+Ferramenta de captura (fora do repositório): login de admin simulado no Playwright + `/demo?view=…`. Só frontend; nenhuma mudança de banco.
+
 ## Ajuste — CEP com preenchimento automático do endereço da barbearia (03/10, noite)
 
 Em Ajustes → Página pública (`LandingEditor`), bloco "Preencher pelo CEP" (`CepAddressHelper.tsx`, lógica pura em `src/lib/address/postal-code.ts` com testes): máscara 00000-000, busca automática no ViaCEP ao completar 8 dígitos (e botão Buscar), timeout de 6 s, mensagens de não encontrado/sem conexão; preenche rua, bairro, cidade e UF (editáveis), foco em Número, complemento opcional; monta o texto em `landing.address` (≤160, sem chave nova no banco). Endereço já salvo só é trocado em "Usar este endereço"; CEP presente no texto salvo é pré-preenchido. A requisição não envia cookies nem referrer. **Portugal fora**: GeoAPI.pt sem chave aceita só 5 consultas/dia por IP; o bloco some em lojas com fuso de Portugal. Política de Privacidade (5 idiomas, seção de compartilhamento) explica a consulta ao ViaCEP (só o CEP; o serviço vê o IP). `PRIVACY_VERSION` não alterada (acréscimo informativo, sem nova coleta — não pede novo aceite). Só frontend.

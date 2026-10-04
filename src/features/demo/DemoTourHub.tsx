@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   Building2,
@@ -71,13 +72,21 @@ type DemoTourHubProps = {
   shopName?: string;
   disabled?: boolean;
   onPreviewLogin?: () => void;
+  /** Controles extras do cartão (ex.: seletor da barbearia), entre o cabeçalho e as cenas. */
+  children?: ReactNode;
 };
 
 /**
  * Hub do admin: transforma qualquer ambiente (cliente, loja, papéis, login, plataforma)
  * num tour visual isolado, sem alterar a operação real.
  */
-export function DemoTourHub({ shopId, shopName, disabled, onPreviewLogin }: DemoTourHubProps) {
+export function DemoTourHub({
+  shopId,
+  shopName,
+  disabled,
+  onPreviewLogin,
+  children,
+}: DemoTourHubProps) {
   const { t } = useI18n();
   return (
     <section className="space-y-4 rounded-3xl border border-primary/25 bg-card p-5 shadow-sm">
@@ -92,6 +101,8 @@ export function DemoTourHub({ shopId, shopName, disabled, onPreviewLogin }: Demo
           </p>
         </div>
       </div>
+
+      {children}
 
       <div className="grid gap-2 sm:grid-cols-2">
         {scenes.map((scene) => {

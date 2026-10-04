@@ -44,14 +44,14 @@ export function DatePicker({
           className="schedule-field"
           aria-label={`${label}: ${displayValue ?? dateFromLocalKey(value).toLocaleDateString(intlLocale)}`}
         >
-          <CalendarDays className="size-5 text-gold" />
-          <span className="flex-1 text-left">
+          <CalendarDays className="size-5 shrink-0 text-gold" />
+          <span className="min-w-0 flex-1 overflow-hidden text-left">
             {!compact && <span className="block text-xs text-muted-foreground">{label}</span>}
             <span className="font-semibold">
               {displayValue ?? dateFromLocalKey(value).toLocaleDateString(intlLocale)}
             </span>
           </span>
-          <ChevronDown className="size-4" />
+          <ChevronDown className="size-4 shrink-0" />
         </button>
       </PopoverTrigger>
       <PopoverContent
@@ -81,6 +81,19 @@ export function TimePicker({ value, onChange, label, disabled }: Props) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(value.slice(0, 5));
   const [hour, minute] = draft.split(":");
+  const contentRef = useRef<HTMLDivElement>(null);
+  // Ao abrir, centraliza a hora e o minuto escolhidos em cada coluna. Ajusta só a
+  // rolagem da coluna (não usa scrollIntoView) para a página não se mexer por baixo.
+  useEffect(() => {
+    if (!open) return;
+    const id = requestAnimationFrame(() => {
+      contentRef.current?.querySelectorAll<HTMLElement>('[role="group"]').forEach((col) => {
+        const sel = col.querySelector<HTMLElement>('[aria-pressed="true"]');
+        if (sel) col.scrollTop = sel.offsetTop - (col.clientHeight - sel.offsetHeight) / 2;
+      });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [open]);
   return (
     <Popover
       open={open}
@@ -97,14 +110,18 @@ export function TimePicker({ value, onChange, label, disabled }: Props) {
           aria-label={`${label}: ${value.slice(0, 5)}`}
         >
           <Clock3 className="size-5 shrink-0 text-gold" />
-          <span className="flex-1 text-left">
-            <span className="block text-xs text-muted-foreground">{label}</span>
+          <span className="min-w-0 flex-1 overflow-hidden text-left">
+            <span className="block truncate text-xs text-muted-foreground">{label}</span>
             <span className="font-semibold tabular-nums">{value.slice(0, 5)}</span>
           </span>
-          <ChevronDown className="size-4" />
+          <ChevronDown className="size-4 shrink-0" />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="schedule-popover w-64 rounded-lg border-border" align="start">
+      <PopoverContent
+        ref={contentRef}
+        className="schedule-popover w-64 rounded-lg border-border"
+        align="start"
+      >
         <p className="mb-3 flex items-center gap-2 font-semibold">
           <Clock3 className="size-4 text-gold" />
           {label}
@@ -117,7 +134,7 @@ export function TimePicker({ value, onChange, label, disabled }: Props) {
             <div key={column.title}>
               <p className="mb-2 text-xs text-muted-foreground">{column.title}</p>
               <div
-                className="grid max-h-48 grid-cols-2 gap-1 overflow-y-auto rounded-xl bg-muted/50 p-1"
+                className="relative grid max-h-48 grid-cols-2 gap-1 overflow-y-auto rounded-xl bg-muted/50 p-1"
                 role="group"
                 aria-label={column.title}
               >

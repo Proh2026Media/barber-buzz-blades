@@ -41,8 +41,10 @@ import { useTheme } from "@/lib/use-theme";
 import { brandCornerClass, brandFontScopeClass, brandVariables } from "@/lib/shop/branding";
 import { useShopFavicon } from "@/lib/shop/favicon";
 import { BrandFontFace } from "@/features/shop/BrandFontFace";
+import { BrandRootVariables } from "@/features/shop/BrandRootVariables";
 import { DatePicker } from "@/components/ui/schedule-picker";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Switch } from "@/components/ui/switch";
 import { Link } from "@tanstack/react-router";
 import { Fragment, useState, useEffect, useMemo, useRef, type ReactNode } from "react";
 import {
@@ -1514,22 +1516,22 @@ function ArenaApp({
         : tab === "notifications"
           ? t("nav.notices")
           : null;
+  const brandStyle = brandVariables(
+    shopSettings.primary_color,
+    shopSettings.accent_color,
+    shopSettings.font_family,
+    shopSettings.custom_font_url,
+    shopSettings.header_font_weight,
+    shopSettings.header_font_style,
+    shopSettings.corner_style,
+  );
 
   return (
     <div
-      className={`arena-workspace bg-background text-foreground font-sans selection:bg-primary/20 transition-colors duration-300 ${brandFontScopeClass(shopSettings.font_scope)} ${brandCornerClass(shopSettings.corner_style)} ${shopSettings.floating_chrome ? "brand-chrome-floating" : ""}`}
-      style={
-        brandVariables(
-          shopSettings.primary_color,
-          shopSettings.accent_color,
-          shopSettings.font_family,
-          shopSettings.custom_font_url,
-          shopSettings.header_font_weight,
-          shopSettings.header_font_style,
-          shopSettings.corner_style,
-        ) as React.CSSProperties
-      }
+      className={`arena-workspace customer-workspace bg-background text-foreground font-sans selection:bg-primary/20 transition-colors duration-300 ${brandFontScopeClass(shopSettings.font_scope)} ${brandCornerClass(shopSettings.corner_style)} ${shopSettings.floating_chrome ? "brand-chrome-floating" : ""}`}
+      style={brandStyle as React.CSSProperties}
     >
+      <BrandRootVariables vars={brandStyle} />
       <BrandFontFace url={shopSettings.custom_font_url} faces={shopSettings.custom_font_faces} />
       <TermsUpdateGate disabled={Boolean(demoShopId)} />
       <CancellationDialog
@@ -1550,7 +1552,7 @@ function ArenaApp({
           if (!open && appointmentBusy === null) setStopSeriesTarget(null);
         }}
       >
-        <AlertDialogContent className="rounded-3xl">
+        <AlertDialogContent className="rounded-3xl border-border bg-card">
           <AlertDialogHeader>
             <AlertDialogTitle>{t("bookings.stopRepeatTitle")}</AlertDialogTitle>
             <AlertDialogDescription>{t("bookings.stopRepeatBody")}</AlertDialogDescription>
@@ -1643,7 +1645,7 @@ function ArenaApp({
         </defs>
       </svg>
       {/* Header */}
-      <header className="brand-header sticky top-0 z-30 bg-background/90 backdrop-blur-xl border-b border-border/50 p-4 flex items-center justify-between gap-2">
+      <header className="brand-header sticky top-0 z-30 bg-background/90 backdrop-blur-xl border-b border-border/50 p-4 flex items-center justify-between gap-2 max-[359px]:gap-1 max-[359px]:px-3">
         <div className="flex min-w-0 flex-1 items-center pl-[4.5rem]">
           {shopSettings.logo_url ? (
             <span
@@ -1674,16 +1676,23 @@ function ArenaApp({
               <Scissors className="size-6" />
             </span>
           )}
-          <div className="flex min-w-0 flex-col justify-center">
-            <h1 className="brand-header-title truncate text-sm font-bold tracking-tight text-foreground leading-tight">
+          {/* Container: as linhas do nome e o slogan dependem do espaço que sobra ao lado dos
+              botões, não da largura da tela. Sem espaço para uma palavra, o nome fica numa
+              linha com reticências em vez de ser partido. */}
+          <div className="@container flex min-w-0 flex-1 flex-col justify-center">
+            <h1
+              className={`brand-header-title break-normal hyphens-auto text-sm font-bold tracking-tight text-foreground leading-tight @max-[3.5rem]:block @max-[3.5rem]:text-ellipsis @max-[3.5rem]:whitespace-nowrap ${
+                shopSettings.tagline ? "line-clamp-2 @min-[5.5rem]:line-clamp-1" : "line-clamp-2"
+              }`}
+            >
               {shopSettings.display_name?.trim() || shopName || t("cust.shopFallback")}
             </h1>
-            <p className="mt-1 truncate text-[11px] font-medium text-primary">
+            <p className="mt-1 hidden truncate text-[11px] font-medium text-primary @min-[5.5rem]:block">
               {shopSettings.tagline}
             </p>
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+        <div className="flex shrink-0 items-center gap-1 max-[359px]:gap-0.5 sm:gap-2">
           <ThemeToggle />
           <button
             type="button"
@@ -1702,7 +1711,7 @@ function ArenaApp({
             {unreadNotifications > 0 && (
               <span
                 aria-hidden
-                className="absolute top-1.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-background bg-primary px-1 text-[9px] font-black leading-none text-primary-foreground"
+                className="absolute top-1 right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-[#20211f] bg-destructive px-1 text-[10px] font-bold leading-none text-destructive-foreground"
               >
                 {unreadNotifications > 9 ? "9+" : unreadNotifications}
               </span>
@@ -1744,8 +1753,11 @@ function ArenaApp({
           </p>
         ) : null}
         <div key={tab} className="mb-panel">
-          {tab === "perfil" && <CustomerProfile onSaved={setCustomerName} />}
-          {tab === "perfil" && <CustomerRhythm shopId={shopId} />}
+          {tab === "perfil" && (
+            <CustomerProfile onSaved={setCustomerName}>
+              <CustomerRhythm shopId={shopId} />
+            </CustomerProfile>
+          )}
           {tab === "pontos" &&
             (loyaltyOn ? (
               <PointsHistory
@@ -1772,7 +1784,7 @@ function ArenaApp({
               />
             ))}
           {tab === "dashboard" && (
-            <div className="mb-stagger p-4 space-y-4 relative z-10">
+            <div className="mb-stagger space-y-4 relative z-10">
               <NamePrompt disabled={Boolean(demoShopId)} onSaved={setCustomerName} />
               <WhatsappConfirmBanner disabled={Boolean(demoShopId)} />
               {/* Card 1: Seu Cartão (Loyalty Card) */}
@@ -1817,7 +1829,7 @@ function ArenaApp({
                         className={`text-4xl sm:text-5xl font-black tabular-nums tracking-tight ${tier.colorClass}`}
                       >
                         {points}{" "}
-                        <span className="text-xl font-semibold opacity-70 tracking-normal">
+                        <span className="text-xl font-semibold opacity-80 tracking-normal">
                           pts
                         </span>
                       </p>
@@ -1957,7 +1969,7 @@ function ArenaApp({
               {bookingSummary && (
                 <section
                   role="status"
-                  className="space-y-4 border border-emerald-600/30 bg-card p-5 rounded-lg"
+                  className="space-y-4 border border-emerald-600/30 bg-card p-5 rounded-2xl"
                 >
                   <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
                     <CheckCircle className="size-5" />
@@ -2165,7 +2177,7 @@ function ArenaApp({
                                     </span>
                                     {s.description ? (
                                       <span
-                                        className={`mt-0.5 line-clamp-1 block text-[11px] font-medium ${
+                                        className={`mt-0.5 line-clamp-1 block text-xs font-medium ${
                                           serviceIdx === i
                                             ? "text-primary-foreground/75"
                                             : "text-muted-foreground"
@@ -2199,7 +2211,7 @@ function ArenaApp({
                                   </span>
                                   {s.description ? (
                                     <span
-                                      className={`line-clamp-2 text-[11px] font-medium ${
+                                      className={`line-clamp-2 text-xs font-medium ${
                                         serviceIdx === i
                                           ? "text-primary-foreground/75"
                                           : "text-muted-foreground"
@@ -2343,7 +2355,7 @@ function ArenaApp({
                                       {m.display_name}
                                       {m.bio ? (
                                         <span
-                                          className={`mt-0.5 line-clamp-1 block text-[11px] font-medium ${
+                                          className={`mt-0.5 line-clamp-1 block text-xs font-medium ${
                                             !anyAvailable && staffIdx === i
                                               ? "text-primary-foreground/75"
                                               : "text-muted-foreground"
@@ -2385,7 +2397,7 @@ function ArenaApp({
                                   </span>
                                   {m.bio ? (
                                     <span
-                                      className={`mt-2 line-clamp-2 text-[11px] font-medium ${
+                                      className={`mt-2 line-clamp-2 text-xs font-medium ${
                                         !anyAvailable && staffIdx === i
                                           ? "text-primary-foreground/75"
                                           : "text-muted-foreground"
@@ -2427,7 +2439,7 @@ function ArenaApp({
                       ) : availableSlots.length === 0 ? (
                         <p className="text-xs text-muted-foreground">{t("booking.noTimes")}</p>
                       ) : (
-                        <div className="space-y-4 p-1">
+                        <div className="space-y-4">
                           {[
                             { label: t("booking.morning"), from: 0, to: 12, icon: Sun },
                             { label: t("booking.afternoon"), from: 12, to: 18, icon: Sun },
@@ -2515,23 +2527,22 @@ function ArenaApp({
                           </p>
                           {!rescheduleId && !directLinkActive && (
                             <div className="space-y-2 border-t border-border/60 pt-3">
-                              <label className="flex items-center justify-between gap-3 text-sm font-semibold">
-                                {t("booking.repeat")}
-                                <input
-                                  type="checkbox"
+                              <div className="flex min-h-11 items-center justify-between gap-3 text-sm font-semibold">
+                                <span id="booking-repeat-label">{t("booking.repeat")}</span>
+                                <Switch
                                   checked={repeatEnabled}
-                                  onChange={(e) => setRepeatEnabled(e.target.checked)}
-                                  className="size-5 accent-primary"
+                                  onCheckedChange={setRepeatEnabled}
+                                  aria-labelledby="booking-repeat-label"
                                 />
-                              </label>
+                              </div>
                               {repeatEnabled && (
                                 <div className="space-y-2">
-                                  <div className="flex flex-wrap gap-1.5">
+                                  <div className="flex flex-wrap gap-2">
                                     <button
                                       type="button"
                                       aria-pressed={repeatKind === "weekday"}
                                       onClick={() => setRepeatKind("weekday")}
-                                      className={`min-h-9 rounded-xl border px-3 text-xs font-bold ${
+                                      className={`min-h-11 rounded-xl border px-3 text-xs font-bold ${
                                         repeatKind === "weekday"
                                           ? "border-primary bg-primary text-primary-foreground"
                                           : "border-border text-muted-foreground"
@@ -2550,7 +2561,7 @@ function ArenaApp({
                                           setRepeatKind("interval_days");
                                           setRepeatInterval(days);
                                         }}
-                                        className={`min-h-9 rounded-xl border px-3 text-xs font-bold ${
+                                        className={`min-h-11 rounded-xl border px-3 text-xs font-bold ${
                                           repeatKind === "interval_days" && repeatInterval === days
                                             ? "border-primary bg-primary text-primary-foreground"
                                             : "border-border text-muted-foreground"
@@ -2560,7 +2571,7 @@ function ArenaApp({
                                       </button>
                                     ))}
                                   </div>
-                                  <p className="text-[11px] leading-relaxed text-muted-foreground">
+                                  <p className="text-xs leading-relaxed text-muted-foreground">
                                     {t("booking.repeatHint", {
                                       days: shopSettings.booking_horizon_days,
                                       time: formatSlotLabel(selectedSlot, shopTimeZone),
@@ -2595,7 +2606,9 @@ function ArenaApp({
                     {!selectedSlot &&
                       !bookingBusy &&
                       selectedService &&
-                      (selectedStaff || anyAvailable) && (
+                      (selectedStaff || anyAvailable) &&
+                      availableSlots.length > 0 &&
+                      !slotsError && (
                         <p className="text-center text-xs text-muted-foreground">
                           {t("booking.chooseTime")}
                         </p>
@@ -2678,7 +2691,7 @@ function ArenaApp({
               {appointmentsNotice && !appointmentsError && (
                 <div
                   role="status"
-                  className={`flex items-start gap-2 border bg-card p-3 text-sm rounded-lg ${
+                  className={`flex items-start gap-2 border bg-card p-3 text-sm rounded-2xl ${
                     rescheduleBlockedNotice ? "border-primary/30" : "border-emerald-600/30"
                   }`}
                 >
@@ -2790,7 +2803,7 @@ function ArenaApp({
                               <button
                                 disabled={appointmentBusy !== null}
                                 onClick={() => beginReschedule(row)}
-                                className="flex-1 rounded-xl border border-border px-3 py-2 text-xs font-bold disabled:opacity-50"
+                                className="flex-1 border border-border px-3 py-2 text-[0.8125rem] font-semibold disabled:opacity-50"
                               >
                                 {t("bookings.reschedule")}
                               </button>
@@ -2809,7 +2822,7 @@ function ArenaApp({
                                   type="button"
                                   disabled={appointmentBusy !== null}
                                   onClick={() => setStopSeriesTarget(row.series_id!)}
-                                  className="w-full rounded-xl border border-border px-3 py-2 text-xs font-bold disabled:opacity-50"
+                                  className="w-full border border-border px-3 py-2 text-[0.8125rem] font-semibold disabled:opacity-50"
                                 >
                                   {t("bookings.stopRepeat")}
                                 </button>
@@ -2827,16 +2840,16 @@ function ArenaApp({
 
           {tab === "esportes" && shopSettings.sports_enabled && (
             <div className="space-y-6">
-              {!demo && (
-                <p className="rounded-lg border border-border bg-card p-4 text-sm">
-                  {t("sports.notConfigured")}
-                </p>
-              )}
-              {demo && <p className="text-xs text-muted-foreground">{t("sports.demoNote")}</p>}
               <div className="app-section-title">
                 <Feather />
                 <h2>{t("sports.title")}</h2>
               </div>
+              {!demo && (
+                <p className="rounded-2xl border border-border bg-card p-4 text-sm">
+                  {t("sports.notConfigured")}
+                </p>
+              )}
+              {demo && <p className="text-xs text-muted-foreground">{t("sports.demoNote")}</p>}
               <div className="flex space-x-2 overflow-x-auto pb-2 border-b border-border">
                 {(
                   [
@@ -2850,33 +2863,50 @@ function ArenaApp({
                     onClick={() => setSportFilter(f)}
                     aria-pressed={sportFilter === f}
                     type="button"
-                    className={`min-h-11 text-xs uppercase font-bold px-4 py-2 rounded-xl border transition-all whitespace-nowrap ${sportFilter === f ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-foreground hover:border-primary/50"}`}
+                    className={`min-h-11 text-xs uppercase font-bold px-4 py-2 rounded-xl border transition-all whitespace-nowrap ${sportFilter === f ? "bg-primary text-primary-foreground border-primary" : "border-border text-foreground hover:border-primary/50"}`}
                   >
                     {label}
                   </button>
                 ))}
               </div>
               <div className="grid grid-cols-1 gap-4">
-                {filteredMatches.map((m) => (
-                  <div
-                    key={m.id}
-                    className="bg-card p-5 rounded-2xl border border-border shadow-sm"
-                  >
-                    <div className="flex justify-between items-center mb-4">
-                      <span className="text-xs text-muted-foreground font-bold uppercase">
-                        {m.league} · {t(matchStatusKey[m.status])}
-                      </span>
+                {filteredMatches.map((m) => {
+                  // Empate: os dois lados ficam em destaque.
+                  const homeLead = m.scoreH >= m.scoreA;
+                  const awayLead = m.scoreA >= m.scoreH;
+                  return (
+                    <div
+                      key={m.id}
+                      className="bg-card p-5 rounded-2xl border border-border shadow-sm"
+                    >
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="text-xs text-muted-foreground font-bold uppercase">
+                          {m.league} · {t(matchStatusKey[m.status])}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between font-bold text-sm">
+                        <span className={homeLead ? "text-foreground" : "text-muted-foreground"}>
+                          {m.home}
+                        </span>
+                        <span
+                          className={`tabular-nums ${homeLead ? "text-foreground" : "text-muted-foreground"}`}
+                        >
+                          {m.scoreH}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between font-bold text-sm mt-2">
+                        <span className={awayLead ? "text-foreground" : "text-muted-foreground"}>
+                          {m.away}
+                        </span>
+                        <span
+                          className={`tabular-nums ${awayLead ? "text-foreground" : "text-muted-foreground"}`}
+                        >
+                          {m.scoreA}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between font-bold text-sm">
-                      <span className="text-foreground">{m.home}</span>
-                      <span className="text-primary font-mono">{m.scoreH}</span>
-                    </div>
-                    <div className="flex items-center justify-between font-bold text-sm mt-2">
-                      <span className="text-muted-foreground">{m.away}</span>
-                      <span className="text-muted-foreground/50 font-mono">{m.scoreA}</span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -2907,7 +2937,7 @@ function ArenaApp({
                         </h4>
                         <span className="text-xs font-bold text-muted-foreground">{n.time}</span>
                       </div>
-                      <p className="text-[11px] font-medium leading-relaxed text-muted-foreground">
+                      <p className="text-sm font-medium leading-relaxed text-muted-foreground">
                         {n.text}
                       </p>
                     </div>
@@ -2921,7 +2951,7 @@ function ArenaApp({
 
       {/* Bottom Navigation */}
       <nav
-        className="app-mobile-nav app-mobile-nav-floating fixed left-4 right-4 z-40 mx-auto grid max-w-3xl overflow-hidden"
+        className="app-mobile-nav app-mobile-nav-floating fixed left-4 right-4 z-40 mx-auto grid max-w-[34rem] overflow-hidden"
         style={{ gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))` }}
         aria-label={t("nav.main")}
       >
@@ -3131,10 +3161,12 @@ const VipInfoModal = ({
                   >
                     <div className="flex justify-between items-center gap-2">
                       <span className="text-xs font-semibold flex items-center gap-2 min-w-0">
-                        <span className={`p-1.5 rounded-lg border border-white/20 ${style.badge}`}>
-                          <Icon size={14} className={style.iconClass} aria-hidden />
+                        <span
+                          className={`mb-loyalty-tier-mark mb-loyalty-tier-${styleKey} p-1.5 rounded-lg border`}
+                        >
+                          <Icon size={14} aria-hidden />
                         </span>
-                        <span className={`truncate ${style.colorClass}`}>{tierRow.name}</span>
+                        <span className="truncate text-foreground">{tierRow.name}</span>
                       </span>
                       <span className="shrink-0 text-xs font-bold text-muted-foreground bg-muted/30 px-2 py-0.5 rounded-full border border-border/50">
                         {next

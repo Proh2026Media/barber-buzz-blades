@@ -40,6 +40,9 @@ const REFRESH_MS = 60_000;
 const SLOTS_SHOWN = 6;
 /** `get_public_shop_landing` devolve no máximo 12 horários livres por profissional. */
 const SERVER_SLOTS_LIMIT = 12;
+/** Cor de destaque ajustada para leitura nos dois temas (ícones de seção). */
+const accentIconClass =
+  "text-[var(--brand-accent-readable)] dark:text-[var(--brand-accent-readable-dark,var(--brand-accent-readable))]";
 
 /** Mostra um "HH:MM" da loja no formato de hora do idioma (ex.: 02:30 PM em en-US). */
 function formatClock(value: string | null | undefined, locale: string) {
@@ -214,7 +217,7 @@ export function ShopLandingView({
 
   return (
     <div
-      className={`shop-landing ${preview ? "" : "min-h-dvh"} bg-background text-foreground ${brandCornerClass(shop.corner_style)}`}
+      className={`shop-landing ${preview ? "" : "brand-page min-h-dvh"} bg-background text-foreground ${brandCornerClass(shop.corner_style)}`}
       style={style}
     >
       <BrandFontFace url={shop.custom_font_url} />
@@ -245,7 +248,7 @@ export function ShopLandingView({
               </span>
             )}
           </div>
-          {!preview && <LanguageSwitcher />}
+          {!preview && <LanguageSwitcher buttonClassName="app-icon-button hero-icon-button" />}
         </div>
         <div className="mx-auto max-w-3xl space-y-4 px-4 pb-8 pt-10">
           <h1 className="text-4xl leading-tight sm:text-5xl" style={brandFont}>
@@ -253,7 +256,7 @@ export function ShopLandingView({
           </h1>
           <p className="max-w-xl text-base text-[#f7f5f0]/85">{headline}</p>
           <p
-            className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold ${
+            className={`inline-flex items-center gap-2 rounded-[var(--button-radius)] px-3 py-1.5 text-xs font-bold ${
               open.kind === "open"
                 ? "bg-emerald-500/20 text-emerald-200"
                 : "bg-white/10 text-[#f7f5f0]/85"
@@ -288,7 +291,7 @@ export function ShopLandingView({
           <section aria-labelledby="landing-staff" className="space-y-3">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <UserRound className="size-5 text-gold" aria-hidden />
+                <UserRound className={`size-5 ${accentIconClass}`} aria-hidden />
                 <h2 id="landing-staff" className="text-lg font-extrabold tracking-tight">
                   {t("shopLanding.staffTitle")}
                 </h2>
@@ -372,7 +375,7 @@ export function ShopLandingView({
                     slug={shop.slug}
                     preview={preview}
                     barber={member.booking_slug}
-                    className="mt-auto inline-flex min-h-11 items-center gap-1 self-start text-sm font-bold text-[var(--brand-accent-readable)] after:absolute after:inset-0 after:rounded-[var(--panel-radius)] after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
+                    className="mt-auto inline-flex min-h-11 items-center gap-1 self-start text-sm font-bold text-[var(--brand-accent-readable)] dark:text-[var(--brand-accent-readable-dark,var(--brand-accent-readable))] after:absolute after:inset-0 after:rounded-[var(--panel-radius)] after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
                   >
                     {t("shopLanding.bookWith", { name: member.name.split(" ")[0] })}
                     <ChevronRight className="size-4" aria-hidden />
@@ -386,7 +389,7 @@ export function ShopLandingView({
         {showServices && (
           <section aria-labelledby="landing-services" className="space-y-3">
             <div className="flex items-center gap-2">
-              <Scissors className="size-5 text-gold" aria-hidden />
+              <Scissors className={`size-5 ${accentIconClass}`} aria-hidden />
               <h2 id="landing-services" className="text-lg font-extrabold tracking-tight">
                 {t("shopLanding.servicesTitle")}
               </h2>
@@ -420,7 +423,7 @@ export function ShopLandingView({
         {showHours && (
           <section aria-labelledby="landing-hours" className="space-y-3">
             <div className="flex items-center gap-2">
-              <Clock3 className="size-5 text-gold" aria-hidden />
+              <Clock3 className={`size-5 ${accentIconClass}`} aria-hidden />
               <h2 id="landing-hours" className="text-lg font-extrabold tracking-tight">
                 {t("shopLanding.hoursTitle")}
               </h2>
@@ -440,7 +443,7 @@ export function ShopLandingView({
                     <span>
                       {weekdayName(weekday)}
                       {isToday && (
-                        <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-[11px]">
+                        <span className="ml-2 rounded-[var(--button-radius)] bg-muted px-2 py-0.5 text-[11px]">
                           {t("shopLanding.today")}
                         </span>
                       )}
@@ -501,11 +504,17 @@ export function ShopLandingView({
         {!preview && (
           <footer className="space-y-2 border-t border-border pt-6 text-center text-xs text-muted-foreground">
             <p>{t("shopLanding.footer")}</p>
-            <p className="flex justify-center gap-4">
-              <Link to="/privacidade" className="underline-offset-4 hover:underline">
+            <p className="flex justify-center gap-2">
+              <Link
+                to="/privacidade"
+                className="inline-flex min-h-11 items-center px-2 font-semibold text-foreground underline underline-offset-4"
+              >
                 {t("shopLanding.privacy")}
               </Link>
-              <Link to="/termos" className="underline-offset-4 hover:underline">
+              <Link
+                to="/termos"
+                className="inline-flex min-h-11 items-center px-2 font-semibold text-foreground underline underline-offset-4"
+              >
                 {t("shopLanding.terms")}
               </Link>
             </p>
@@ -569,18 +578,18 @@ function ContactLink({
   children: ReactNode;
 }) {
   const className =
-    "flex min-h-11 items-center gap-3 rounded-[var(--control-radius)] border border-border bg-card px-3 text-sm font-semibold [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-gold";
+    "flex min-h-11 items-center gap-3 rounded-[var(--control-radius)] border border-border bg-card px-3 text-sm font-semibold [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-[var(--brand-accent-readable)] dark:[&>svg]:text-[var(--brand-accent-readable-dark,var(--brand-accent-readable))]";
   if (preview)
     return (
       <span className={className}>
         {icon}
-        <span className="min-w-0 truncate">{children}</span>
+        <span className="min-w-0 py-2.5 leading-snug [overflow-wrap:anywhere]">{children}</span>
       </span>
     );
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
       {icon}
-      <span className="min-w-0 truncate">{children}</span>
+      <span className="min-w-0 py-2.5 leading-snug [overflow-wrap:anywhere]">{children}</span>
     </a>
   );
 }

@@ -392,8 +392,8 @@ export function LandingEditor({
               return (
                 <label
                   key={toggle.key}
-                  className={`flex items-start justify-between gap-3 rounded-xl p-2 ${
-                    nested ? "ml-4 border-l-2 border-border pl-3" : ""
+                  className={`flex items-start justify-between gap-3 p-2 ${
+                    nested ? "ml-4 border-l-2 border-border pl-3" : "rounded-xl"
                   } ${disabled ? "opacity-60" : ""}`}
                 >
                   <span>
@@ -450,7 +450,7 @@ export function LandingEditor({
 
         <section
           aria-label={t("landingEditor.previewLabel")}
-          className={view === "previa" ? "" : "hidden lg:block"}
+          className={`${view === "previa" ? "" : "hidden lg:block"} lg:sticky lg:top-0 lg:self-start`}
         >
           <p className="mb-2 text-xs font-semibold text-muted-foreground">
             {t(demo ? "landingEditor.previewHintDemo" : "landingEditor.previewHint")}

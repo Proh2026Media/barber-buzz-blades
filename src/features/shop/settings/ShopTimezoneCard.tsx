@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from "react";
-import { Clock, Info, RefreshCw } from "lucide-react";
+import { Clock, Info, RefreshCw, Save } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { callOptionalRpc, isMissingRpcError } from "@/lib/auth/optional-rpc";
@@ -192,8 +192,9 @@ export function ShopTimezoneCard({
           type="button"
           onClick={() => void save()}
           disabled={busy || !changed}
-          className="min-h-11 w-full rounded-xl bg-primary py-3 text-xs font-semibold text-primary-foreground disabled:opacity-60"
+          className="action-button action-confirm w-full"
         >
+          <Save className="size-4" aria-hidden />
           {busy ? t("common.saving") : t("dec.tz.settings.save")}
         </button>
       )}

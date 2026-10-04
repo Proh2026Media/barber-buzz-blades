@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link2, MessageCircle, QrCode, RefreshCw, TriangleAlert, Unplug } from "lucide-react";
+import { Link2, MessageCircle, QrCode, RefreshCw, Save, TriangleAlert, Unplug } from "lucide-react";
+import { SettingsCardHeader } from "@/features/shop/settings/SettingsCardHeader";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -354,15 +355,11 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
 
   return (
     <section className="space-y-4 rounded-2xl border border-border bg-card p-4">
-      <div className="flex items-start gap-3">
-        <MessageCircle className="mt-0.5 size-5 text-gold" />
-        <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-semibold">{t("integr.wa.title")}</h3>
-          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-            {t("integr.wa.intro")}
-          </p>
-        </div>
-      </div>
+      <SettingsCardHeader
+        icon={MessageCircle}
+        title={t("integr.wa.title")}
+        intro={t("integr.wa.intro")}
+      />
 
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <span className="rounded-full border border-border px-2.5 py-1 font-semibold">
@@ -378,7 +375,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
           type="button"
           disabled={busy}
           onClick={() => void connect()}
-          className="flex min-h-11 items-center gap-2 rounded-xl bg-primary px-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+          className="flex min-h-11 items-center gap-2 bg-primary px-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
         >
           <QrCode className="size-4" />
           {channel?.status === "open" ? t("integr.wa.reconnect") : t("integr.wa.connect")}
@@ -387,7 +384,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
           type="button"
           disabled={busy}
           onClick={() => void refresh()}
-          className="flex min-h-11 items-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold disabled:opacity-50"
+          className="flex min-h-11 items-center gap-2 border border-border px-3 text-sm font-semibold disabled:opacity-50"
         >
           <RefreshCw className={`size-4 ${busy ? "animate-spin" : ""}`} />
           {t("integr.refresh")}
@@ -397,7 +394,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
             type="button"
             disabled={busy}
             onClick={() => void disconnect()}
-            className="flex min-h-11 items-center gap-2 rounded-xl border border-destructive/40 px-3 text-sm font-semibold text-destructive disabled:opacity-50"
+            className="action-button action-danger"
           >
             <Unplug className="size-4" />
             {t("integr.disconnect")}
@@ -407,7 +404,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
           <button
             type="button"
             onClick={() => setQrOpen(true)}
-            className="flex min-h-11 items-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold"
+            className="flex min-h-11 items-center gap-2 border border-border px-3 text-sm font-semibold"
           >
             <Link2 className="size-4" />
             {t("integr.wa.showQr")}
@@ -471,7 +468,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
               role="tab"
               aria-selected={activeTemplate === item.key}
               onClick={() => setActiveTemplate(item.key)}
-              className={`min-h-9 rounded-full border px-3.5 text-xs font-bold transition-colors ${
+              className={`min-h-11 rounded-xl border px-3.5 text-xs font-bold transition-colors ${
                 activeTemplate === item.key
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-border bg-background text-muted-foreground hover:border-primary/50"
@@ -494,7 +491,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
               type="button"
               disabled={busy}
               onClick={() => void loadTemplates().catch(() => setTemplatesLoadFailed(true))}
-              className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold disabled:opacity-50"
+              className="min-h-11 w-full border border-border bg-background px-3 text-sm font-semibold disabled:opacity-50"
             >
               {t("integr.refresh")}
             </button>
@@ -634,15 +631,16 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
             type="button"
             disabled={busy || !canSave}
             onClick={() => void saveTemplates()}
-            className="min-h-11 rounded-xl bg-primary px-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+            className="action-button action-confirm"
           >
+            <Save className="size-4" aria-hidden />
             {t("integr.wa.saveTexts")}
           </button>
           <button
             type="button"
             disabled={busy || !templatesReady}
             onClick={() => setRestoreOpen(true)}
-            className="min-h-11 rounded-xl border border-border px-3 text-sm font-semibold disabled:opacity-50"
+            className="min-h-11 border border-border px-3 text-sm font-semibold disabled:opacity-50"
           >
             {t("integr.wa.restoreDefault")}
           </button>
@@ -668,7 +666,7 @@ export function WhatsAppSettingsCard({ shopId }: WhatsAppSettingsCardProps) {
             type="button"
             disabled={busy}
             onClick={() => void connect()}
-            className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold disabled:opacity-50"
+            className="min-h-11 w-full border border-border bg-background px-3 text-sm font-semibold disabled:opacity-50"
           >
             {t("integr.wa.reconnectWa")}
           </button>

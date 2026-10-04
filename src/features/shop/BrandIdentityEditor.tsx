@@ -8,7 +8,6 @@ import {
   Eye,
   Home,
   ImagePlus,
-  Palette,
   Scissors,
   Sparkles,
   Star,
@@ -391,18 +390,6 @@ export function BrandIdentityEditor({
   return (
     <form onSubmit={save} noValidate className="brand-editor space-y-6" aria-busy={busy}>
       <BrandFontFace url={previewFontUrl} faces={previewFontFaces} />
-      <div className="app-section-title">
-        <Palette />
-        <div>
-          <h3>{t("brand.editor.title")}</h3>
-          <p className="mt-1 text-xs font-normal text-muted-foreground">
-            {audience === "platform"
-              ? t("brand.editor.subtitlePlatform")
-              : t("brand.editor.subtitleShop")}
-          </p>
-        </div>
-      </div>
-
       {/* Prévia ao vivo */}
       <section ref={bigPreviewRef} aria-label={t("brand.preview.aria")} className="space-y-2">
         <div
@@ -473,7 +460,7 @@ export function BrandIdentityEditor({
         <p className="text-xs text-muted-foreground">{t("brand.preview.liveHint")}</p>
       </section>
 
-      <div className="sticky top-0 z-10 -mx-1 space-y-2 bg-card/95 px-1 py-2 backdrop-blur">
+      <div className="sticky -top-5 z-10 -mx-1 space-y-2 bg-card/95 px-1 pb-2 pt-3 backdrop-blur sm:-top-6">
         <div
           aria-hidden="true"
           hidden={bigPreviewVisible}

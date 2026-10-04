@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { LogOut, UserMinus } from "lucide-react";
+import { SettingsCardHeader } from "@/features/shop/settings/SettingsCardHeader";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -186,15 +187,11 @@ export function ShopDepartureCard({
 
   return (
     <section className="space-y-3 rounded-3xl border border-border bg-card p-4">
-      <div className="flex items-start gap-3">
-        <span className="rounded-2xl bg-primary/10 p-2 text-primary">
-          <UserMinus size={18} />
-        </span>
-        <div>
-          <h3 className="text-sm font-bold">{t("team.departure.title")}</h3>
-          <p className="text-xs text-muted-foreground">{t("team.departure.hint")}</p>
-        </div>
-      </div>
+      <SettingsCardHeader
+        icon={UserMinus}
+        title={t("team.departure.title")}
+        intro={t("team.departure.hint")}
+      />
 
       {canApproveRelease && pending.length > 0 && (
         <div className="space-y-2">
@@ -220,7 +217,7 @@ export function ShopDepartureCard({
                   <button
                     type="button"
                     disabled={busy}
-                    className="action-button"
+                    className="action-button action-confirm"
                     onClick={() => void decide(row.id, true)}
                   >
                     {t("team.departure.release")}
@@ -243,19 +240,21 @@ export function ShopDepartureCard({
         <div className="space-y-3 rounded-2xl border border-border bg-background p-3">
           <fieldset className="space-y-2">
             <legend className="text-xs font-semibold">{t("team.departure.question")}</legend>
-            <label className="flex items-center gap-2 text-sm">
+            <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-[var(--control-radius)] border border-border/70 bg-card px-3 py-2 text-sm has-[:checked]:border-foreground has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60">
               <input
                 type="radio"
                 name="departure-mode"
+                className="size-4 shrink-0 accent-foreground"
                 checked={mode === "forfeit"}
                 onChange={() => setMode("forfeit")}
               />
               {t("team.departure.forfeit")}
             </label>
-            <label className="flex items-center gap-2 text-sm">
+            <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-[var(--control-radius)] border border-border/70 bg-card px-3 py-2 text-sm has-[:checked]:border-foreground has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60">
               <input
                 type="radio"
                 name="departure-mode"
+                className="size-4 shrink-0 accent-foreground"
                 checked={mode === "take"}
                 onChange={() => setMode("take")}
               />
@@ -329,7 +328,7 @@ export function ShopDepartureCard({
           <AlertDialogFooter>
             <AlertDialogCancel>{t("integr.cancel")}</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="action-button action-danger"
               onClick={() => void requestDeparture()}
             >
               {t("team.departure.confirm")}

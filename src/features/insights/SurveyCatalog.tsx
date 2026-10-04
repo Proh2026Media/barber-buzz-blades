@@ -86,7 +86,7 @@ export function SurveyCatalog({ compact = false }: { compact?: boolean }) {
             </button>
           ))}
         </div>
-        <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 to-background p-4">
+        <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 to-background p-4 md:self-start">
           <p className="text-xs font-bold uppercase tracking-wider text-primary">
             {t("ins.catalog.preview")}
           </p>

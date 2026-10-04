@@ -40,7 +40,7 @@ export function CatalogFilters({
             value={query}
             onChange={(event) => onQuery(event.target.value)}
             placeholder={label}
-            className="min-h-11 w-full rounded-xl border border-border bg-card py-3 pl-10 pr-12 text-sm"
+            className="min-h-11 w-full rounded-xl border border-border bg-card py-3 pl-10 pr-3 text-ellipsis text-sm"
           />
         </label>
         {onViewMode && <CatalogViewToggle viewMode={viewMode} onViewMode={onViewMode} />}
@@ -58,10 +58,12 @@ export function CatalogFilters({
             type="button"
             aria-pressed={status === id}
             onClick={() => onStatus(id)}
-            className="flex min-h-11 items-center gap-2 rounded-full border border-border px-3 text-xs font-semibold text-muted-foreground aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground"
+            className="group flex min-h-11 items-center gap-2 rounded-[var(--button-radius)] border border-border px-3 text-xs font-semibold text-muted-foreground aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground"
           >
             {name}
-            <span className="rounded-full bg-muted/60 px-1.5 py-0.5 text-xs">{count}</span>
+            <span className="rounded-[var(--control-radius)] bg-[#e4e0d8] px-1.5 py-0.5 text-xs text-[#3f423c] group-aria-pressed:bg-white/20 group-aria-pressed:text-current">
+              {count}
+            </span>
           </button>
         ))}
         {(query || status !== "all") && (
