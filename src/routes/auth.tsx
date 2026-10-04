@@ -1302,7 +1302,7 @@ function AuthPage() {
 
   return (
     <main
-      className={`auth-workspace auth-layout-${brand.loginLayout} mb-page min-h-dvh text-foreground ${brandCornerClass(brand.cornerStyle)}`}
+      className={`auth-workspace auth-page auth-layout-${brand.loginLayout} mb-page min-h-dvh text-foreground ${brandCornerClass(brand.cornerStyle)}`}
       style={
         brandVariables(
           brand.primaryColor,
@@ -1391,7 +1391,7 @@ function AuthPage() {
           </p>
         </div>
 
-        <div className="auth-form-body space-y-7 px-6 pb-8 pt-8 sm:px-10 sm:pb-10">
+        <div className="auth-form-body auth-form-stack px-6 pb-8 pt-8 sm:px-10 sm:pb-10">
           {(mode === "signin" || mode === "signup") && (
             <div
               className="auth-mode-tabs auth-brand-control grid grid-cols-2 gap-1 bg-muted/70 p-1"
@@ -1430,7 +1430,7 @@ function AuthPage() {
           <form
             onSubmit={(e) => void handleSubmit(e)}
             noValidate={mode === "signup"}
-            className="space-y-5"
+            className={`auth-form-fields${mode === "signup" ? " is-signup" : ""}`}
           >
             {mode === "forgot" && effectiveShopRef && (
               <div
@@ -1474,7 +1474,7 @@ function AuthPage() {
             )}
 
             {mode === "signup" && (
-              <div className="space-y-1.5">
+              <div className="auth-field-name space-y-1.5">
                 <label className={labelClass}>
                   <span>{t("cad.cliente.nameLabel")}</span>
                   <span className={fieldClass}>
@@ -1514,7 +1514,7 @@ function AuthPage() {
             {mode !== "recovery" &&
               mode !== "verifyPhone" &&
               !(mode === "forgot" && recoveryChannel === "whatsapp" && effectiveShopRef) && (
-                <label className={labelClass}>
+                <label className={`${labelClass} auth-field-email`}>
                   <span>{t("auth.field.email")}</span>
                   <span className={fieldClass}>
                     <Mail
@@ -1622,7 +1622,7 @@ function AuthPage() {
             )}
 
             {mode === "signup" && (
-              <div className="space-y-2">
+              <div className="auth-whatsapp-group">
                 <label className={labelClass}>
                   <span>{t("auth.field.whatsappSignupShop")}</span>
                   <span className={fieldClass}>
@@ -1654,17 +1654,21 @@ function AuthPage() {
                   </span>
                 </label>
                 {fieldErrors.whatsapp && (
-                  <p id="signup-whatsapp-error" role="alert" className="text-sm text-destructive">
+                  <p
+                    id="signup-whatsapp-error"
+                    role="alert"
+                    className="auth-whatsapp-error text-sm text-destructive"
+                  >
                     {fieldErrors.whatsapp}
                   </p>
                 )}
                 <p
                   id="signup-whatsapp-hint"
-                  className="text-xs font-normal leading-relaxed text-muted-foreground"
+                  className="auth-whatsapp-hint text-xs font-normal leading-relaxed text-muted-foreground"
                 >
                   {t("cad.cliente.whatsappHint")}
                 </p>
-                <label className="auth-brand-control flex min-h-11 cursor-pointer items-center justify-between gap-3 border border-border/70 px-3.5 py-2.5 text-sm text-foreground">
+                <label className="auth-whatsapp-optin auth-brand-control flex min-h-11 cursor-pointer items-center justify-between gap-3 border border-border/70 px-3.5 py-2.5 text-sm text-foreground">
                   <span className="min-w-0">{t("cad.cliente.optInLabel")}</span>
                   <Switch
                     checked={phoneOptIn}
@@ -1676,7 +1680,7 @@ function AuthPage() {
             )}
 
             {(mode === "signin" || mode === "signup" || mode === "recovery") && (
-              <div className="space-y-1">
+              <div className="auth-field-password">
                 <label className={labelClass}>
                   <span>
                     {mode === "recovery" ? t("auth.field.newPassword") : t("auth.field.password")}

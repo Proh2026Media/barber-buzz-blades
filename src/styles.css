@@ -2706,7 +2706,9 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   isolation: isolate;
   display: grid;
   min-height: 100dvh;
+  /* clip (e não hidden): não cria área de rolagem, então a foto fixa (sticky) funciona. */
   overflow: hidden;
+  overflow: clip;
   background: #171714;
 }
 .auth-photo-layer {
@@ -2772,7 +2774,8 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   margin-top: 0.45rem;
   color: #fff;
   font-family: var(--brand-font);
-  font-size: clamp(2.5rem, 5vw, 4.75rem);
+  /* Cresce com a largura e com a altura da tela: nunca passa da área da foto. */
+  font-size: clamp(2.25rem, min(5vw, 8.5dvh), 4.75rem);
   font-style: var(--brand-header-font-style);
   font-weight: var(--brand-header-font-weight);
   line-height: 0.98;
@@ -2960,6 +2963,195 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
 .auth-layout-card .auth-form-body {
   padding-top: 1.75rem;
   padding-bottom: 2rem;
+}
+
+/* Página /auth. A prévia em Ajustes reaproveita as classes acima, mas não leva .auth-page.
+   A página cresce com o conteúdo e rola no documento: sem rolagem interna e sem cortes. */
+.auth-page {
+  --auth-pad-x: 2.25rem;
+  --auth-head-top: 2.25rem;
+  --auth-body-top: 1.75rem;
+  --auth-body-bottom: 2rem;
+  --auth-stack-gap: 1.5rem;
+  --auth-field-gap: 1.125rem;
+}
+.auth-page .auth-brand-panel > .auth-brand-header {
+  padding: var(--auth-head-top) var(--auth-pad-x) 0;
+}
+.auth-page .auth-brand-panel > .auth-form-body {
+  padding: var(--auth-body-top) var(--auth-pad-x) var(--auth-body-bottom);
+}
+.auth-page .auth-form-stack {
+  container: auth-form / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--auth-stack-gap);
+}
+.auth-page .auth-form-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--auth-field-gap);
+}
+.auth-page :is(input, [role="switch"]) {
+  /* Com o teclado aberto, o campo focado fica com folga acima e abaixo. */
+  scroll-margin-block: 5rem 7rem;
+}
+/* "Esqueci a senha" na linha do rótulo: mesma área de toque, sem ocupar uma linha. */
+.auth-page .auth-field-password {
+  position: relative;
+}
+/* A área de toque (44px) termina onde o campo começa: não cobre a senha, o botão de mostrar
+   nem o e-mail acima. Ancorada pela base do campo (3.25rem + borda); a margem completa o
+   espaço que falta acima do rótulo para caber os 44px. */
+.auth-page .auth-field-password:has(.auth-forgot-password) {
+  margin-top: max(0px, calc(1.5rem - var(--auth-field-gap)));
+}
+.auth-page .auth-field-password .auth-forgot-password {
+  position: absolute;
+  bottom: 3.375rem;
+  right: -0.25rem;
+  margin: 0;
+}
+.auth-page .auth-field-password .auth-forgot-password > button {
+  align-items: flex-end;
+  padding-bottom: 0.1875rem;
+}
+/* Tema escuro: a cor da marca costuma ser escura (padrão #292925) e sumia no painel escuro.
+   Dentro do painel, a ação principal segue a convenção do tema escuro do app (tom claro com
+   texto escuro), puxando o matiz da marca; rótulos, links, foco e interruptor ficam legíveis. */
+.dark .auth-page .auth-brand-panel {
+  /* oklab (e não oklch) e off-white quente: a mistura não puxa o matiz para rosa. */
+  --primary: color-mix(in oklab, var(--brand-primary) 28%, #f7f5f0);
+  --primary-foreground: #171816;
+}
+.auth-page .auth-whatsapp-group {
+  display: grid;
+  gap: 0.5rem;
+}
+/* Cadastro em duas colunas quando o formulário tem largura: nome | e-mail,
+   WhatsApp | explicação, lembretes e senha em linha inteira. A ordem de leitura e de
+   teclado continua a mesma do celular. */
+@container auth-form (min-width: 27.5rem) {
+  .auth-form-fields.is-signup {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 1rem;
+  }
+  .auth-form-fields.is-signup > * {
+    grid-column: 1 / -1;
+  }
+  .auth-form-fields.is-signup > .auth-field-name {
+    grid-column: 1;
+  }
+  .auth-form-fields.is-signup > .auth-field-email {
+    grid-column: 2;
+  }
+  .auth-form-fields.is-signup .auth-whatsapp-group {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 1rem;
+  }
+  .auth-whatsapp-group > * {
+    grid-column: 1 / -1;
+  }
+  .auth-whatsapp-group > label:first-child {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .auth-whatsapp-group > .auth-whatsapp-hint {
+    display: flex;
+    grid-column: 2;
+    grid-row: 1;
+    align-self: end;
+    align-items: center;
+    min-height: 3.25rem;
+    line-height: 1.45;
+  }
+  .auth-whatsapp-group > .auth-whatsapp-error {
+    grid-row: 2;
+  }
+  .auth-whatsapp-group > .auth-whatsapp-optin {
+    grid-row: 3;
+  }
+}
+/* Capa e cartão: a foto fica parada atrás enquanto o formulário rola. */
+.auth-page:is(.auth-layout-cover, .auth-layout-card) .auth-photo-layer {
+  position: fixed;
+}
+@media (min-width: 761px) {
+  /* Dividido: a foto ocupa a altura da tela e acompanha a rolagem; o texto fica sempre dentro dela. */
+  .auth-page.auth-layout-split .auth-photo-layer {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+  }
+  .auth-page.auth-layout-split .auth-photo-copy {
+    position: sticky;
+    bottom: 0;
+    max-width: 42rem;
+    padding: 1.5rem clamp(1.5rem, 5vw, 5rem) clamp(1.75rem, 7dvh, 5rem);
+  }
+  .auth-page.auth-layout-split .auth-brand-panel {
+    --auth-pad-x: 0rem;
+    --auth-head-top: 0rem;
+    --auth-body-bottom: 0rem;
+    max-width: 33rem;
+    padding: clamp(1.5rem, 5dvh, 3.5rem) 1.5rem;
+  }
+  .auth-page.auth-layout-cover {
+    grid-template-columns: minmax(0, 1fr) minmax(22rem, 32rem);
+    /* O painel encosta à direita: o topo fica livre para idioma e tema. */
+    padding-block: 4.25rem clamp(1rem, 4dvh, 4.5rem);
+  }
+  .auth-page.auth-layout-cover .auth-photo-copy {
+    position: sticky;
+    bottom: clamp(1rem, 4dvh, 4.5rem);
+  }
+  .auth-page:is(.auth-layout-cover, .auth-layout-card) .auth-brand-panel {
+    --auth-pad-x: 2rem;
+    width: min(32rem, 100%);
+    max-width: 32rem;
+  }
+  .auth-page.auth-layout-card {
+    padding-block: clamp(1rem, 3dvh, 3rem);
+  }
+}
+/* Até 1180px de largura, o painel do modelo dividido reserva o topo para idioma e tema. */
+@media (min-width: 761px) and (max-width: 1180px) {
+  .auth-page.auth-layout-split .auth-brand-panel {
+    padding-top: 4.5rem;
+  }
+}
+/* Telas baixas: o ritmo vertical encolhe antes de a página precisar rolar. */
+@media (max-height: 860px) {
+  .auth-page {
+    --auth-head-top: 1.75rem;
+    --auth-body-top: 1.25rem;
+    --auth-body-bottom: 1.5rem;
+    --auth-stack-gap: 1.125rem;
+    --auth-field-gap: 0.875rem;
+  }
+  .auth-page.auth-layout-card .auth-brand-identity {
+    padding-bottom: 1rem;
+  }
+  .auth-page.auth-layout-card .auth-eyebrow {
+    margin-top: 1.25rem;
+  }
+}
+@media (min-width: 761px) and (max-height: 760px) {
+  .auth-page.auth-layout-cover {
+    padding-bottom: 0.75rem;
+  }
+  .auth-page.auth-layout-card {
+    padding-block: 0.75rem;
+  }
+}
+@media (min-width: 761px) and (max-height: 640px) {
+  .auth-page .auth-photo-copy-logo,
+  .auth-page .auth-photo-copy > p:last-child {
+    display: none;
+  }
 }
 
 /* Miniaturas e prévia ao vivo do editor de identidade. */
@@ -3178,8 +3370,6 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
 @media (max-width: 760px) {
   .auth-workspace {
     min-height: 100dvh;
-    overflow-x: hidden;
-    overflow-y: auto;
   }
   .auth-layout-cover,
   .auth-layout-card {
@@ -3199,7 +3389,7 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
     display: none;
   }
   .auth-layout-cover .auth-photo-copy h2 {
-    font-size: 2rem;
+    font-size: 1.75rem;
   }
   .auth-layout-cover .auth-brand-panel,
   .auth-layout-card .auth-brand-panel {
@@ -3212,17 +3402,19 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
     flex-direction: column;
     background: var(--card);
   }
+  /* Faixa de foto baixa: mantém a identidade e deixa o formulário caber na tela. */
   .auth-layout-split .auth-photo-layer {
     width: 100%;
-    min-height: 14rem;
-    flex: 0 0 14rem;
+    height: calc(9rem + env(safe-area-inset-top));
+    min-height: 0;
+    flex: 0 0 auto;
   }
   .auth-layout-split .auth-photo-copy {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
-    padding: max(1.25rem, env(safe-area-inset-top)) 7.25rem 3rem 1.25rem;
+    padding: max(1rem, env(safe-area-inset-top)) 7.25rem 2.5rem 1.25rem;
   }
   .auth-layout-split .auth-photo-copy-logo,
   .auth-layout-split .auth-photo-copy > p:last-child {
@@ -3230,14 +3422,14 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   }
   .auth-layout-split .auth-photo-copy h2 {
     margin-top: 0.25rem;
-    font-size: 2rem;
+    font-size: 1.75rem;
   }
   .auth-layout-split::after {
     display: none;
   }
   .auth-layout-split .auth-brand-panel {
     width: calc(100% - 2rem);
-    margin: -2.5rem 1rem 1rem;
+    margin: -2rem 1rem max(1rem, env(safe-area-inset-bottom));
     align-self: center;
     border: 1px solid var(--border);
     background: var(--card);
@@ -3253,9 +3445,38 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
     min-height: 16rem;
     aspect-ratio: 4 / 3;
   }
+  .auth-page {
+    --auth-pad-x: 1.5rem;
+    --auth-head-top: 1.5rem;
+    --auth-body-top: 1rem;
+    --auth-body-bottom: 1.5rem;
+    --auth-stack-gap: 1.125rem;
+    --auth-field-gap: 0.875rem;
+  }
+  /* Idioma e tema ficam no topo direito: o texto da capa e o cartão não passam por baixo. */
+  .auth-page.auth-layout-cover .auth-photo-copy {
+    padding: 0 6.5rem 0.5rem 0;
+  }
+  .auth-page:is(.auth-layout-cover, .auth-layout-card) {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+  .auth-page.auth-layout-card {
+    padding-top: calc(max(0.85rem, env(safe-area-inset-top)) + 3.25rem);
+  }
+  .auth-page:is(.auth-layout-cover, .auth-layout-card) .auth-brand-panel {
+    --auth-head-top: 1rem;
+    --auth-body-top: 1rem;
+    --auth-body-bottom: 1rem;
+    --auth-stack-gap: 1rem;
+  }
 }
 
 @media (max-width: 430px) {
+  .auth-page {
+    --auth-pad-x: 1.25rem;
+    --auth-head-top: 1.25rem;
+    --auth-body-bottom: 1.25rem;
+  }
   .auth-brand-header {
     padding: 1.25rem;
   }

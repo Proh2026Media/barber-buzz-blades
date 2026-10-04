@@ -9,6 +9,14 @@ Atualizado em **03/10/2026**. Este documento resume decisões e entregas da conv
 3. Para retomar localmente, usar `npm run dev -- --host 0.0.0.0 --port 8080`. O endereço esperado é `http://localhost:8080`.
 4. Continuar a partir do próximo pedido do usuário.
 
+## Ajuste — layout da página Entrar/Cadastrar (03/10, noite)
+
+Relato do dono: a página quebrava o formulário ou rolava à toa. Medido antes: no computador (modelo dividido) o título da foto cortava no rodapé e o "Criar conta" ficava abaixo da dobra (documento 1265px em 1440×900); no celular a foto do topo (14rem) fazia até o "Entrar" rolar.
+- Regras novas em `.auth-page` (só a página real; a prévia em Ajustes mantém as antigas): foto fixa na altura da tela com título fluido; coluna do formulário até 33rem, centralizada; **cadastro em 2 colunas** quando cabe (nome | e-mail, WhatsApp | ajuda; interruptor e senha em linha inteira; mesma ordem de teclado); "Esqueci a senha" na linha do rótulo "Senha"; espaçamentos encolhem em telas baixas; faixa da foto no celular 9rem; botões de idioma/tema sem sobrepor; `overflow: clip` no contêiner.
+- **Tema escuro:** a cor de marca escura sumia no painel escuro (botão principal, "BEM-VINDO DE VOLTA", "Esqueci a senha", foco, interruptor) — em `.dark .auth-page .auth-brand-panel` o `--primary` vira um tom claro da marca com texto escuro. Decisão visual: marcas de cor viva aparecem clareadas no escuro, não na cor literal.
+- Depois (dividido): Entrar sem rolagem em 390×844, 1024×768, 1280×720, 1440×900, 1920×1080; Cadastrar com "Criar conta" visível em 1280×720 (684px), 1440×900 (723px) e sem rolagem em 1920×1080. Capa e cartão: Entrar ainda rola 25–78px em 1024×768 e 1280×720 (pela página, sem cortes). Nenhuma rolagem interna, corte ou rolagem horizontal nas combinações medidas.
+- Não verificado: aparelho real com teclado aberto e safe-area do iOS. No celular de 360px o texto de exemplo "Mínimo 6 caracteres" corta (já existia).
+
 ## Ajuste — WhatsApp obrigatório no cadastro do cliente (03/10, noite)
 
 Pedido do dono: o WhatsApp deixa de ser opcional no cadastro do cliente por e-mail (com ou sem link da loja) e os avisos vêm **ligados por padrão** — o interruptor "Quero receber confirmação e lembretes pelo WhatsApp" aparece sempre, ligado, e a pessoa decide se mantém (também em Meu perfil). Quem entra pelo Google informa depois (cartão de confirmação no app). Política de Privacidade (`legal.privacy.s2Item2`, 5 idiomas) atualizada: obrigatório no cadastro por e-mail, avisos ligados por padrão e só para número confirmado. Chave `auth.field.whatsappSignupOptional` removida. Só frontend.
