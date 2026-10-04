@@ -52,7 +52,7 @@ export const es: Record<MessageKey, string> = {
   "auth.field.email": "Correo electrónico",
   "auth.field.emailPlaceholder": "tu@correo.com",
   "auth.field.whatsapp": "WhatsApp con prefijo",
-  "auth.field.whatsappSignupShop": "WhatsApp con prefijo (para avisos de citas)",
+  "auth.field.whatsappSignupShop": "WhatsApp con prefijo",
   "auth.field.otp": "Código de 6 dígitos",
   "auth.signupHint.before":
     "La barbería envía confirmaciones y recordatorios a este número (después de conectar su WhatsApp en Ajustes). El registro para",

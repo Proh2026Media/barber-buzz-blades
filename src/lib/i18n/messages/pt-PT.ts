@@ -53,7 +53,7 @@ export const ptPT: Record<MessageKey, string> = {
   "auth.field.email": "E-mail",
   "auth.field.emailPlaceholder": "voce@email.com",
   "auth.field.whatsapp": "WhatsApp com indicativo",
-  "auth.field.whatsappSignupShop": "WhatsApp com indicativo (para avisos de marcação)",
+  "auth.field.whatsappSignupShop": "WhatsApp com indicativo",
   "auth.field.otp": "Código de 6 dígitos",
   "auth.signupHint.before":
     "A barbearia envia confirmações e lembretes para este número (depois de ligar o WhatsApp dela nas Definições). O registo para",

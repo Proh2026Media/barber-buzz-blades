@@ -52,7 +52,7 @@ export const enUS: Record<MessageKey, string> = {
   "auth.field.email": "Email",
   "auth.field.emailPlaceholder": "you@email.com",
   "auth.field.whatsapp": "WhatsApp with area code",
-  "auth.field.whatsappSignupShop": "WhatsApp with area code (for appointment updates)",
+  "auth.field.whatsappSignupShop": "WhatsApp with area code",
   "auth.field.otp": "6-digit code",
   "auth.signupHint.before":
     "The barbershop sends confirmations and reminders to this number (once it connects its WhatsApp in Settings). Signing up to",

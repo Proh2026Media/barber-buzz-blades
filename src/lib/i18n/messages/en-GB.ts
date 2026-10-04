@@ -9,7 +9,7 @@ export const enGB: Record<MessageKey, string> = {
   "legal.club.earnNote":
     "Points are added when the barbershop marks the appointment as completed. Cancelled or missed appointments don't earn points.",
   "auth.field.whatsapp": "WhatsApp number with area code",
-  "auth.field.whatsappSignupShop": "WhatsApp number with area code (for appointment updates)",
+  "auth.field.whatsappSignupShop": "WhatsApp number with area code",
   "auth.info.codeSentIfAccount":
     "If there's an account with this WhatsApp number, we have sent a code.",
   "auth.info.resetLinkSent":

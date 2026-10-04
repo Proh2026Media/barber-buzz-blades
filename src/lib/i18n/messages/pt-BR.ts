@@ -50,7 +50,7 @@ export const ptBR = {
   "auth.field.email": "E-mail",
   "auth.field.emailPlaceholder": "voce@email.com",
   "auth.field.whatsapp": "WhatsApp com DDD",
-  "auth.field.whatsappSignupShop": "WhatsApp com DDD (para avisos de horário)",
+  "auth.field.whatsappSignupShop": "WhatsApp com DDD",
   "auth.field.otp": "Código de 6 dígitos",
   "auth.signupHint.before":
     "A barbearia envia confirmação e lembretes por este número (depois de conectar o WhatsApp dela em Ajustes). Cadastro para",
