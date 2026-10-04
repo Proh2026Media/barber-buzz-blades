@@ -1032,7 +1032,7 @@ function AuthPage() {
         if (phoneCheck.reason === "ddd") nextErrors.whatsapp = tNow("cad.cliente.phoneDddError");
         else if (phoneCheck.reason === "length")
           nextErrors.whatsapp = tNow("cad.cliente.phoneLengthError");
-        else if (effectiveShopRef) nextErrors.whatsapp = tNow("cad.cliente.phoneRequired");
+        else nextErrors.whatsapp = tNow("cad.cliente.phoneRequired");
       }
       setFieldErrors(nextErrors);
       if (nextErrors.name || nextErrors.whatsapp) {
@@ -1624,11 +1624,7 @@ function AuthPage() {
             {mode === "signup" && (
               <div className="space-y-2">
                 <label className={labelClass}>
-                  <span>
-                    {effectiveShopRef
-                      ? t("auth.field.whatsappSignupShop")
-                      : t("auth.field.whatsappSignupOptional")}
-                  </span>
+                  <span>{t("auth.field.whatsappSignupShop")}</span>
                   <span className={fieldClass}>
                     <MessageCircle
                       className="ml-4 size-[18px] shrink-0 text-muted-foreground"
@@ -1637,7 +1633,7 @@ function AuthPage() {
                     <input
                       ref={signupPhoneRef}
                       type="tel"
-                      aria-required={effectiveShopRef ? "true" : undefined}
+                      aria-required="true"
                       inputMode="tel"
                       autoComplete="tel"
                       placeholder={locale === "pt-PT" ? "+351 912 345 678" : "(11) 99999-0000"}
@@ -1668,16 +1664,14 @@ function AuthPage() {
                 >
                   {t("cad.cliente.whatsappHint")}
                 </p>
-                {whatsapp.replace(/\D/g, "").length > 0 && (
-                  <label className="auth-brand-control flex min-h-11 cursor-pointer items-center justify-between gap-3 border border-border/70 px-3.5 py-2.5 text-sm text-foreground">
-                    <span className="min-w-0">{t("cad.cliente.optInLabel")}</span>
-                    <Switch
-                      checked={phoneOptIn}
-                      onCheckedChange={setPhoneOptIn}
-                      aria-label={t("cad.cliente.optInLabel")}
-                    />
-                  </label>
-                )}
+                <label className="auth-brand-control flex min-h-11 cursor-pointer items-center justify-between gap-3 border border-border/70 px-3.5 py-2.5 text-sm text-foreground">
+                  <span className="min-w-0">{t("cad.cliente.optInLabel")}</span>
+                  <Switch
+                    checked={phoneOptIn}
+                    onCheckedChange={setPhoneOptIn}
+                    aria-label={t("cad.cliente.optInLabel")}
+                  />
+                </label>
               </div>
             )}
 

@@ -51,7 +51,6 @@ export const ptBR = {
   "auth.field.emailPlaceholder": "voce@email.com",
   "auth.field.whatsapp": "WhatsApp com DDD",
   "auth.field.whatsappSignupShop": "WhatsApp com DDD (para avisos de horário)",
-  "auth.field.whatsappSignupOptional": "WhatsApp com DDD (opcional)",
   "auth.field.otp": "Código de 6 dígitos",
   "auth.signupHint.before":
     "A barbearia envia confirmação e lembretes por este número (depois de conectar o WhatsApp dela em Ajustes). Cadastro para",
@@ -723,7 +722,7 @@ export const ptBR = {
   "legal.privacy.s2Item1":
     "**Conta:** nome (informado no cadastro ou vindo do login com Google), e-mail, foto de perfil (se você enviar uma ou se ela vier do login com Google) e senha — guardada somente como hash, nunca em texto legível;",
   "legal.privacy.s2Item2":
-    "**WhatsApp:** obrigatório para o dono ao cadastrar a barbearia e para o cliente que cria a conta com e-mail pelo link de uma barbearia; opcional nos demais casos. Serve para confirmações, lembretes e códigos de verificação. O número é confirmado com um código enviado pelo WhatsApp da plataforma (o cliente pode deixar a confirmação para depois, em Meu perfil); só número confirmado serve para entrar e recuperar a senha pelo WhatsApp. Quem cria conta como cliente escolhe no cadastro se quer receber avisos por WhatsApp, e qualquer pessoa pode desligar esses avisos quando quiser em Meu perfil;",
+    "**WhatsApp:** obrigatório no cadastro por e-mail, para o dono da barbearia e para o cliente (quem entra com o Google informa depois, em Meu perfil). Serve para confirmações, lembretes e códigos de verificação. O número é confirmado com um código enviado pelo WhatsApp da plataforma (o cliente pode deixar a confirmação para depois, em Meu perfil); só número confirmado recebe avisos de agendamento e serve para entrar e recuperar a senha pelo WhatsApp. Os avisos por WhatsApp vêm ligados no cadastro, e cada pessoa decide se mantém: dá para desligar no próprio cadastro ou quando quiser em Meu perfil;",
   "legal.privacy.s2Item3":
     "**Agendamentos:** serviço, profissional, data, horário, status, histórico de atendimentos e pontos do clube de fidelidade da barbearia;",
   "legal.privacy.s2Item4":

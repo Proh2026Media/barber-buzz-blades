@@ -54,7 +54,6 @@ export const ptPT: Record<MessageKey, string> = {
   "auth.field.emailPlaceholder": "voce@email.com",
   "auth.field.whatsapp": "WhatsApp com indicativo",
   "auth.field.whatsappSignupShop": "WhatsApp com indicativo (para avisos de marcação)",
-  "auth.field.whatsappSignupOptional": "WhatsApp com indicativo (opcional)",
   "auth.field.otp": "Código de 6 dígitos",
   "auth.signupHint.before":
     "A barbearia envia confirmações e lembretes para este número (depois de ligar o WhatsApp dela nas Definições). O registo para",
@@ -732,7 +731,7 @@ export const ptPT: Record<MessageKey, string> = {
   "legal.privacy.s2Item1":
     "**Conta:** nome (indicado no registo ou vindo do início de sessão com Google), e-mail, fotografia de perfil (se enviar uma ou se vier do início de sessão com Google) e palavra-passe — guardada apenas como hash, nunca em texto legível;",
   "legal.privacy.s2Item2":
-    "**WhatsApp:** obrigatório para o dono ao registar a barbearia e para o cliente que cria a conta com e-mail através da ligação de uma barbearia; opcional nos restantes casos. Serve para confirmações, lembretes e códigos de verificação. O número é confirmado com um código enviado pelo WhatsApp da plataforma (o cliente pode deixar a confirmação para mais tarde, em O meu perfil); só um número confirmado serve para iniciar sessão e recuperar a palavra-passe pelo WhatsApp. Quem cria conta como cliente escolhe no registo se quer receber avisos por WhatsApp, e qualquer pessoa pode desligar esses avisos quando quiser em O meu perfil;",
+    "**WhatsApp:** obrigatório no registo por e-mail, para o dono da barbearia e para o cliente (quem entra com a Google indica-o depois, em O meu perfil). Serve para confirmações, lembretes e códigos de verificação. O número é confirmado com um código enviado pelo WhatsApp da plataforma (o cliente pode deixar a confirmação para mais tarde, em O meu perfil); só um número confirmado recebe avisos de marcação e serve para iniciar sessão e recuperar a palavra-passe pelo WhatsApp. Os avisos por WhatsApp vêm ligados no registo, e cada pessoa decide se os mantém: pode desligá-los no próprio registo ou quando quiser em O meu perfil;",
   "legal.privacy.s2Item3":
     "**Marcações:** serviço, profissional, data, horário, estado, histórico de atendimentos e pontos do clube de fidelização da barbearia;",
   "legal.privacy.s2Item4":

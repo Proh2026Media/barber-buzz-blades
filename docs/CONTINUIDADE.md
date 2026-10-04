@@ -9,6 +9,10 @@ Atualizado em **03/10/2026**. Este documento resume decisões e entregas da conv
 3. Para retomar localmente, usar `npm run dev -- --host 0.0.0.0 --port 8080`. O endereço esperado é `http://localhost:8080`.
 4. Continuar a partir do próximo pedido do usuário.
 
+## Ajuste — WhatsApp obrigatório no cadastro do cliente (03/10, noite)
+
+Pedido do dono: o WhatsApp deixa de ser opcional no cadastro do cliente por e-mail (com ou sem link da loja) e os avisos vêm **ligados por padrão** — o interruptor "Quero receber confirmação e lembretes pelo WhatsApp" aparece sempre, ligado, e a pessoa decide se mantém (também em Meu perfil). Quem entra pelo Google informa depois (cartão de confirmação no app). Política de Privacidade (`legal.privacy.s2Item2`, 5 idiomas) atualizada: obrigatório no cadastro por e-mail, avisos ligados por padrão e só para número confirmado. Chave `auth.field.whatsappSignupOptional` removida. Só frontend.
+
 ## Entrega — decisões do dono aplicadas (03/10, noite, Claude Code)
 
 Dono decidiu aplicar as quatro recomendações. **Frontend publicado; banco e `register-shop` pendentes** — guia: [implantacao-decisoes-2026-10-03.md](implantacao-decisoes-2026-10-03.md) (vem depois do guia dos ajustes finais).

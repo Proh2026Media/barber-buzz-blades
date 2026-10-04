@@ -53,7 +53,6 @@ export const enUS: Record<MessageKey, string> = {
   "auth.field.emailPlaceholder": "you@email.com",
   "auth.field.whatsapp": "WhatsApp with area code",
   "auth.field.whatsappSignupShop": "WhatsApp with area code (for appointment updates)",
-  "auth.field.whatsappSignupOptional": "WhatsApp with area code (optional)",
   "auth.field.otp": "6-digit code",
   "auth.signupHint.before":
     "The barbershop sends confirmations and reminders to this number (once it connects its WhatsApp in Settings). Signing up to",
@@ -721,7 +720,7 @@ export const enUS: Record<MessageKey, string> = {
   "legal.privacy.s2Item1":
     "**Account:** name (entered at sign-up or provided by Sign in with Google), email, profile photo (if you upload one or it comes from Sign in with Google) and password — stored only as a hash, never in readable text;",
   "legal.privacy.s2Item2":
-    "**WhatsApp number:** required for the owner when registering the barbershop and for customers who create an account with email from a barbershop's link; optional in all other cases. It is used for confirmations, reminders and verification codes. The number is confirmed with a code sent from the platform's WhatsApp (customers can leave this for later, in My profile); only a confirmed number can be used to sign in and reset your password with WhatsApp. Customers choose at sign-up whether to receive WhatsApp notifications, and anyone can turn these notifications off at any time in My profile;",
+    "**WhatsApp number:** required when signing up with email, for barbershop owners and for customers (people who sign in with Google add it later, in My profile). It is used for confirmations, reminders and verification codes. The number is confirmed with a code sent from the platform's WhatsApp (customers can leave this for later, in My profile); only a confirmed number receives booking notifications and can be used to sign in and reset your password with WhatsApp. WhatsApp notifications are on by default at sign-up, and each person decides whether to keep them: they can be turned off during sign-up or at any time in My profile;",
   "legal.privacy.s2Item3":
     "**Appointments:** service, professional, date, time, status, visit history and the barbershop's loyalty club points;",
   "legal.privacy.s2Item4":

@@ -53,7 +53,6 @@ export const es: Record<MessageKey, string> = {
   "auth.field.emailPlaceholder": "tu@correo.com",
   "auth.field.whatsapp": "WhatsApp con prefijo",
   "auth.field.whatsappSignupShop": "WhatsApp con prefijo (para avisos de citas)",
-  "auth.field.whatsappSignupOptional": "WhatsApp con prefijo (opcional)",
   "auth.field.otp": "Código de 6 dígitos",
   "auth.signupHint.before":
     "La barbería envía confirmaciones y recordatorios a este número (después de conectar su WhatsApp en Ajustes). El registro para",
@@ -730,7 +729,7 @@ export const es: Record<MessageKey, string> = {
   "legal.privacy.s2Item1":
     "**Cuenta:** nombre (indicado en el registro o recibido del inicio de sesión con Google), correo electrónico, foto de perfil (si subes una o si viene del inicio de sesión con Google) y contraseña — guardada solo como hash, nunca en texto legible;",
   "legal.privacy.s2Item2":
-    "**WhatsApp:** obligatorio para el propietario al registrar la barbería y para el cliente que crea la cuenta con correo desde el enlace de una barbería; opcional en los demás casos. Sirve para confirmaciones, recordatorios y códigos de verificación. El número se confirma con un código enviado por el WhatsApp de la plataforma (el cliente puede dejar la confirmación para después, en Mi perfil); solo un número confirmado sirve para entrar y recuperar la contraseña por WhatsApp. Quien crea una cuenta como cliente elige en el registro si quiere recibir avisos por WhatsApp, y cualquier persona puede desactivar esos avisos cuando quiera en Mi perfil;",
+    "**WhatsApp:** obligatorio en el registro con correo, para el propietario de la barbería y para el cliente (quien entra con Google lo indica después, en Mi perfil). Sirve para confirmaciones, recordatorios y códigos de verificación. El número se confirma con un código enviado por el WhatsApp de la plataforma (el cliente puede dejar la confirmación para después, en Mi perfil); solo un número confirmado recibe avisos de citas y sirve para entrar y recuperar la contraseña por WhatsApp. Los avisos por WhatsApp vienen activados en el registro y cada persona decide si los mantiene: puede desactivarlos en el propio registro o cuando quiera en Mi perfil;",
   "legal.privacy.s2Item3":
     "**Reservas:** servicio, profesional, fecha, hora, estado, historial de atenciones y puntos del club de fidelidad de la barbería;",
   "legal.privacy.s2Item4":
