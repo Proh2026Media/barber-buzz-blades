@@ -849,6 +849,8 @@ export const ptPT: Record<MessageKey, string> = {
     "**WhatsApp:** as mensagens passam pela nossa instalação do Evolution API, no nosso próprio servidor, e são entregues pela rede do WhatsApp (Meta) ao número indicado;",
   "legal.privacy.s6Item5":
     "**Google:** apenas se ativar o início de sessão com Google ou a ligação ao Calendar/Contactos, nos termos da secção 4;",
+  "legal.privacy.s6ItemPostalCode":
+    "**Pesquisa por CEP:** ao preencher a morada da barbearia pelo CEP (código postal brasileiro), o seu navegador envia só o CEP escrito ao ViaCEP, serviço gratuito de consulta de moradas. Não enviamos nome, e-mail, telefone nem outros dados da conta; como em qualquer acesso à internet, o serviço recebe o endereço IP do dispositivo;",
   "legal.privacy.s6Item6":
     "**Autoridades:** quando houver obrigação legal, ordem judicial ou pedido de autoridade competente.",
   "legal.privacy.s6Body":
@@ -2799,6 +2801,26 @@ export const ptPT: Record<MessageKey, string> = {
     "Conte a sua história, o estilo da casa, se tem estacionamento…",
   "landingEditor.address": "Morada (opcional)",
   "landingEditor.addressPlaceholder": "Rua, número, localidade",
+  "landingEditor.cep.title": "Preencher pelo CEP (Brasil)",
+  "landingEditor.cep.hint":
+    "Escreva o CEP (código postal brasileiro) e completamos rua, bairro e cidade. Se preferir, escreva a morada diretamente no campo abaixo.",
+  "landingEditor.cep.label": "CEP",
+  "landingEditor.cep.search": "Procurar",
+  "landingEditor.cep.loading": "A procurar a morada…",
+  "landingEditor.cep.found": "Morada encontrada. Confirme e indique o número.",
+  "landingEditor.cep.notFound": "CEP não encontrado. Confirme os números ou preencha à mão.",
+  "landingEditor.cep.offline": "Sem ligação. Preencha a morada à mão.",
+  "landingEditor.cep.invalid": "Escreva os 8 números do CEP.",
+  "landingEditor.cep.street": "Rua ou avenida",
+  "landingEditor.cep.number": "Número",
+  "landingEditor.cep.complement": "Complemento (opcional)",
+  "landingEditor.cep.complementPlaceholder": "Sala 2, traseiras",
+  "landingEditor.cep.district": "Bairro",
+  "landingEditor.cep.city": "Cidade",
+  "landingEditor.cep.state": "Estado (UF)",
+  "landingEditor.cep.preview": "Com o CEP, a morada fica assim:",
+  "landingEditor.cep.keepHint": "A morada atual só muda se tocar no botão.",
+  "landingEditor.cep.apply": "Usar esta morada",
   "landingEditor.whatsapp": "WhatsApp da loja (opcional)",
   "landingEditor.instagram": "Instagram (opcional)",
   "landingEditor.photoHint":

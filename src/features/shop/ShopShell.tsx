@@ -3624,6 +3624,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   customDomainStatus: shop.custom_domain_status,
                 })}
                 settings={settings}
+                timeZone={shop.timezone}
                 onSaved={setSettings}
               />
             )}

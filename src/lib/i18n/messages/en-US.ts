@@ -838,6 +838,8 @@ export const enUS: Record<MessageKey, string> = {
     "**WhatsApp:** messages go through our own Evolution API installation, on our own server, and are delivered by the WhatsApp (Meta) network to the number provided;",
   "legal.privacy.s6Item5":
     "**Google:** only if you turn on Sign in with Google or the Calendar/Contacts connection, as described in section 4;",
+  "legal.privacy.s6ItemPostalCode":
+    "**CEP lookup:** when you fill in the barbershop address by CEP (Brazilian ZIP code), your browser sends only the CEP you type to ViaCEP, a free address lookup service. We don't send your name, email, phone or any other account data; as with any internet request, the service sees your device's IP address;",
   "legal.privacy.s6Item6":
     "**Authorities:** when there is a legal obligation, a court order or a request from a competent authority.",
   "legal.privacy.s6Body":
@@ -2768,6 +2770,26 @@ export const enUS: Record<MessageKey, string> = {
   "landingEditor.aboutPlaceholder": "Tell your story, your style, whether there's parking…",
   "landingEditor.address": "Address (optional)",
   "landingEditor.addressPlaceholder": "Street, number, city",
+  "landingEditor.cep.title": "Fill in with the CEP (Brazil)",
+  "landingEditor.cep.hint":
+    "Type the CEP (Brazilian ZIP code) and we'll fill in the street, neighborhood and city. Or type the address straight into the field below.",
+  "landingEditor.cep.label": "CEP (ZIP code)",
+  "landingEditor.cep.search": "Search",
+  "landingEditor.cep.loading": "Looking up the address…",
+  "landingEditor.cep.found": "Address found. Check it and add the number.",
+  "landingEditor.cep.notFound": "CEP not found. Check the numbers or fill it in by hand.",
+  "landingEditor.cep.offline": "No connection. Fill in the address by hand.",
+  "landingEditor.cep.invalid": "Type the 8 digits of the CEP.",
+  "landingEditor.cep.street": "Street",
+  "landingEditor.cep.number": "Number",
+  "landingEditor.cep.complement": "Suite, unit (optional)",
+  "landingEditor.cep.complementPlaceholder": "Suite 2, back",
+  "landingEditor.cep.district": "Neighborhood",
+  "landingEditor.cep.city": "City",
+  "landingEditor.cep.state": "State",
+  "landingEditor.cep.preview": "With the CEP, the address will read:",
+  "landingEditor.cep.keepHint": "Your current address only changes if you tap the button.",
+  "landingEditor.cep.apply": "Use this address",
   "landingEditor.whatsapp": "Shop WhatsApp (optional)",
   "landingEditor.instagram": "Instagram (optional)",
   "landingEditor.photoHint":

@@ -216,6 +216,7 @@ function PrivacidadePage() {
           "legal.privacy.s6Item3",
           "legal.privacy.s6Item4",
           "legal.privacy.s6Item5",
+          "legal.privacy.s6ItemPostalCode",
           "legal.privacy.s6Item6",
         ])}
         {paragraph("legal.privacy.s6Body")}

@@ -9,6 +9,10 @@ Atualizado em **03/10/2026**. Este documento resume decisões e entregas da conv
 3. Para retomar localmente, usar `npm run dev -- --host 0.0.0.0 --port 8080`. O endereço esperado é `http://localhost:8080`.
 4. Continuar a partir do próximo pedido do usuário.
 
+## Ajuste — CEP com preenchimento automático do endereço da barbearia (03/10, noite)
+
+Em Ajustes → Página pública (`LandingEditor`), bloco "Preencher pelo CEP" (`CepAddressHelper.tsx`, lógica pura em `src/lib/address/postal-code.ts` com testes): máscara 00000-000, busca automática no ViaCEP ao completar 8 dígitos (e botão Buscar), timeout de 6 s, mensagens de não encontrado/sem conexão; preenche rua, bairro, cidade e UF (editáveis), foco em Número, complemento opcional; monta o texto em `landing.address` (≤160, sem chave nova no banco). Endereço já salvo só é trocado em "Usar este endereço"; CEP presente no texto salvo é pré-preenchido. A requisição não envia cookies nem referrer. **Portugal fora**: GeoAPI.pt sem chave aceita só 5 consultas/dia por IP; o bloco some em lojas com fuso de Portugal. Política de Privacidade (5 idiomas, seção de compartilhamento) explica a consulta ao ViaCEP (só o CEP; o serviço vê o IP). `PRIVACY_VERSION` não alterada (acréscimo informativo, sem nova coleta — não pede novo aceite). Só frontend.
+
 ## Ajuste — layout da página Entrar/Cadastrar (03/10, noite)
 
 Relato do dono: a página quebrava o formulário ou rolava à toa. Medido antes: no computador (modelo dividido) o título da foto cortava no rodapé e o "Criar conta" ficava abaixo da dobra (documento 1265px em 1440×900); no celular a foto do topo (14rem) fazia até o "Entrar" rolar.

@@ -178,4 +178,12 @@ export const enGB: Record<MessageKey, string> = {
     "Booking times, the diary and notifications follow this time zone. Choose the one where the barbershop is, even if you open the app from somewhere else.",
   "dec.tz.settings.effect":
     "Once saved, booking times will follow {zone}. Opening hours keep the same numbers (e.g. 9:00 to 19:00), now in this time zone. Existing appointments keep the same moment and may show at a different hour.",
+  "landingEditor.cep.hint":
+    "Type the CEP (Brazilian postcode) and we'll fill in the street, neighbourhood and city. Or type the address straight into the field below.",
+  "landingEditor.cep.label": "CEP (postcode)",
+  "landingEditor.cep.district": "Neighbourhood",
+  "landingEditor.cep.complement": "Flat, unit (optional)",
+  "landingEditor.cep.complementPlaceholder": "Unit 2, rear",
+  "legal.privacy.s6ItemPostalCode":
+    "**CEP lookup:** when you fill in the barbershop address by CEP (Brazilian postcode), your browser sends only the CEP you type to ViaCEP, a free address lookup service. We don't send your name, email, phone or any other account data; as with any internet request, the service sees your device's IP address;",
 };

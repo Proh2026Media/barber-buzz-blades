@@ -840,6 +840,8 @@ export const ptBR = {
     "**WhatsApp:** as mensagens passam pela nossa instalação do Evolution API, no nosso próprio servidor, e são entregues pela rede do WhatsApp (Meta) ao número informado;",
   "legal.privacy.s6Item5":
     "**Google:** somente se você ativar o login com Google ou a conexão com Agenda/Contatos, nos termos da seção 4;",
+  "legal.privacy.s6ItemPostalCode":
+    "**Busca por CEP:** ao preencher o endereço da barbearia pelo CEP, o seu navegador envia só o CEP digitado ao ViaCEP, serviço gratuito de consulta de endereços. Não enviamos nome, e-mail, telefone nem outros dados da conta; como em qualquer acesso à internet, o serviço recebe o endereço IP do aparelho;",
   "legal.privacy.s6Item6":
     "**Autoridades:** quando houver obrigação legal, ordem judicial ou requisição de autoridade competente.",
   "legal.privacy.s6Body":
@@ -2786,6 +2788,26 @@ export const ptBR = {
   "landingEditor.aboutPlaceholder": "Conte sua história, o estilo da casa, se tem estacionamento…",
   "landingEditor.address": "Endereço (opcional)",
   "landingEditor.addressPlaceholder": "Rua, número, bairro, cidade",
+  "landingEditor.cep.title": "Preencher pelo CEP",
+  "landingEditor.cep.hint":
+    "Digite o CEP e completamos rua, bairro e cidade. Se preferir, escreva o endereço direto no campo abaixo.",
+  "landingEditor.cep.label": "CEP",
+  "landingEditor.cep.search": "Buscar",
+  "landingEditor.cep.loading": "Buscando o endereço…",
+  "landingEditor.cep.found": "Endereço encontrado. Confira e informe o número.",
+  "landingEditor.cep.notFound": "CEP não encontrado. Confira os números ou preencha à mão.",
+  "landingEditor.cep.offline": "Sem conexão. Preencha o endereço à mão.",
+  "landingEditor.cep.invalid": "Digite os 8 números do CEP.",
+  "landingEditor.cep.street": "Rua ou avenida",
+  "landingEditor.cep.number": "Número",
+  "landingEditor.cep.complement": "Complemento (opcional)",
+  "landingEditor.cep.complementPlaceholder": "Sala 2, fundos",
+  "landingEditor.cep.district": "Bairro",
+  "landingEditor.cep.city": "Cidade",
+  "landingEditor.cep.state": "UF",
+  "landingEditor.cep.preview": "Com o CEP, o endereço fica assim:",
+  "landingEditor.cep.keepHint": "O endereço atual só muda se você tocar no botão.",
+  "landingEditor.cep.apply": "Usar este endereço",
   "landingEditor.whatsapp": "WhatsApp da loja (opcional)",
   "landingEditor.instagram": "Instagram (opcional)",
   "landingEditor.photoHint":

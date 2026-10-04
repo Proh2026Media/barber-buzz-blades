@@ -8,6 +8,8 @@ import { useI18n, type MessageKey } from "@/lib/i18n";
 import { Switch } from "@/components/ui/switch";
 import { useDemo } from "@/features/demo/context";
 import { ShopLandingView } from "@/features/marketing/ShopLanding";
+import { findShopTimeZone } from "@/features/register-owner/timezones";
+import { CepAddressHelper } from "./CepAddressHelper";
 import {
   LANDING_LIMITS,
   cleanLandingConfig,
@@ -48,12 +50,15 @@ export function LandingEditor({
   shopSlug,
   publicUrl,
   settings,
+  timeZone,
   onSaved,
 }: {
   shopId: string;
   shopSlug: string;
   publicUrl: string;
   settings: Tables<"barbershop_settings">;
+  /** Fuso da loja: decide se o "Preencher pelo CEP" aparece (só fora de Portugal). */
+  timeZone?: string | null;
   onSaved: (settings: Tables<"barbershop_settings">) => void;
 }) {
   const { t } = useI18n();
@@ -67,6 +72,9 @@ export function LandingEditor({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  // A busca por CEP usa o ViaCEP (Brasil); lojas com fuso de Portugal não veem o bloco.
+  const timeZoneCountry = findShopTimeZone(timeZone ?? demo?.shop.timezone)?.country;
+  const showCepHelper = timeZoneCountry !== "pt";
 
   useEffect(() => {
     if (demo) {
@@ -325,15 +333,24 @@ export function LandingEditor({
               />
               {counter(draft.about, LANDING_LIMITS.about)}
             </label>
+            {showCepHelper && (
+              <CepAddressHelper
+                address={draft.address}
+                maxLength={LANDING_LIMITS.address}
+                onAddressChange={(value) => update("address", value)}
+              />
+            )}
             <label className="block space-y-1 text-xs font-semibold">
               {t("landingEditor.address")}
               <input
                 value={draft.address}
                 maxLength={LANDING_LIMITS.address}
                 placeholder={t("landingEditor.addressPlaceholder")}
+                autoComplete="street-address"
                 onChange={(e) => update("address", e.target.value)}
                 className={fieldClass}
               />
+              {counter(draft.address, LANDING_LIMITS.address)}
             </label>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="block space-y-1 text-xs font-semibold">
