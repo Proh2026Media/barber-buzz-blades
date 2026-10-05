@@ -2870,7 +2870,7 @@ export const ptPT: Record<MessageKey, string> = {
   "slots.mode.literal.title": "No tamanho do serviço",
   "slots.mode.literal.text":
     "Horários seguidos, do tamanho de cada serviço, contados a partir da abertura.",
-  "slots.mode.interval.title": "A cada {step} minutos",
+  "slots.mode.interval.title": "Ajustável",
   "slots.mode.interval.text":
     "Testa um horário a cada {step} minutos e mostra só os que cabem o serviço inteiro. Escolhe o intervalo logo abaixo.",
   "slots.cardExample": "Ex.: {service} ({minutes} min): {list}…",

@@ -17,11 +17,11 @@ type HoursLike = Pick<Tables<"business_hours">, "weekday" | "is_open" | "opens_a
 const EXAMPLE_COUNT = 4;
 
 /**
- * Opções mostradas ao dono. "De X em X minutos" cobre os modos `flexible` (15 min, o padrão)
+ * Opções mostradas ao dono. "Ajustável" cobre os modos `flexible` (15 min, o padrão)
  * e `custom` (outro intervalo) do banco, que davam o mesmo resultado com 15 minutos.
  */
 type SlotChoice = "interval" | "literal";
-const SLOT_CHOICES: readonly SlotChoice[] = ["interval", "literal"];
+const SLOT_CHOICES: readonly SlotChoice[] = ["literal", "interval"];
 
 function choiceFromRule(rule: { mode: SlotMode; stepMinutes: number }) {
   return {

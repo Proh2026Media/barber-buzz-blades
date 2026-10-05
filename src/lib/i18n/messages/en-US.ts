@@ -2836,7 +2836,7 @@ export const enUS: Record<MessageKey, string> = {
   "slots.selected": "Selected",
   "slots.mode.literal.title": "Service length",
   "slots.mode.literal.text": "Back-to-back times the length of each service, counted from opening.",
-  "slots.mode.interval.title": "Every {step} minutes",
+  "slots.mode.interval.title": "Adjustable",
   "slots.mode.interval.text":
     "Tries a start every {step} minutes and shows only those where the whole service fits. Pick the interval just below.",
   "slots.cardExample": "E.g. {service} ({minutes} min): {list}…",

@@ -2872,7 +2872,7 @@ export const es: Record<MessageKey, string> = {
   "slots.mode.literal.title": "Según la duración del servicio",
   "slots.mode.literal.text":
     "Horarios seguidos, del tamaño de cada servicio, contados desde la apertura.",
-  "slots.mode.interval.title": "Cada {step} minutos",
+  "slots.mode.interval.title": "Ajustable",
   "slots.mode.interval.text":
     "Prueba un horario cada {step} minutos y muestra solo los que caben el servicio completo. Elige el intervalo justo abajo.",
   "slots.cardExample": "Ej.: {service} ({minutes} min): {list}…",
