@@ -264,15 +264,21 @@ function describeModes() {
   });
 
   test("settings fall back to the flexible mode and allowed steps", () => {
-    assert.deepEqual(slotRuleFromSettings(null), { mode: "flexible", stepMinutes: 15 });
+    assert.deepEqual(slotRuleFromSettings(null), {
+      mode: "flexible",
+      stepMinutes: 15,
+      prepMinutes: 0,
+    });
     assert.deepEqual(slotRuleFromSettings({ slot_mode: "custom", slot_step_minutes: 25 }), {
       mode: "custom",
       stepMinutes: 15,
+      prepMinutes: 0,
     });
-    assert.deepEqual(slotRuleFromSettings({ slot_mode: "literal", slot_step_minutes: 30 }), {
-      mode: "literal",
-      stepMinutes: 30,
-    });
+    assert.deepEqual(
+      slotRuleFromSettings({ slot_mode: "literal", slot_step_minutes: 30, prep_minutes: 7 }),
+      { mode: "literal", stepMinutes: 30, prepMinutes: 0 },
+    );
+    assert.equal(slotRuleFromSettings({ prep_minutes: 10 }).prepMinutes, 10);
   });
 
   test("settings preview matches the explanation example", () => {
@@ -299,6 +305,67 @@ function describeModes() {
       ),
       ["9:00", "10:00", "11:00"],
     );
+  });
+
+  // Mesmo cenário de supabase/tests/tempo_preparo.sql: Cortes 9:00–9:30 e 11:00–11:30,
+  // almoço 12:30–13:15 e preparo de 10 min.
+  const withPrep = (duration: number, rule: SlotRule, prep = 10) =>
+    label(
+      buildSlotsForWindow(
+        day,
+        duration,
+        [
+          { ...busy(9, 0, 9, 30), prep_minutes: prep },
+          { ...busy(11, 0, 11, 30), prep_minutes: prep },
+        ],
+        hours,
+        at(8),
+        undefined,
+        { ...rule, blocks: lunch },
+      ),
+    );
+
+  test("prep time: the chair is free only after the previous prep, and the new one fits its own", () => {
+    const combo = withPrep(60, { mode: "flexible", stepMinutes: 15, prepMinutes: 10 });
+    assert.equal(combo[0], "09:45");
+    for (const hidden of ["09:30", "10:00", "11:30", "11:45"]) assert.ok(!combo.includes(hidden));
+    for (const shown of ["13:15", "18:00"]) assert.ok(combo.includes(shown), shown);
+    const corte = withPrep(30, { mode: "flexible", stepMinutes: 15, prepMinutes: 10 });
+    for (const shown of ["09:45", "10:15", "11:45", "12:00"]) assert.ok(corte.includes(shown));
+    for (const hidden of ["09:30", "10:30", "11:30"]) assert.ok(!corte.includes(hidden));
+  });
+
+  test("prep time: a service without prep next to appointments with prep", () => {
+    const combo = withPrep(60, { mode: "flexible", stepMinutes: 15, prepMinutes: 10 }, 0);
+    assert.equal(combo[0], "09:30");
+    assert.ok(!combo.includes("10:00"));
+  });
+
+  test("prep time: literal mode steps by duration plus prep", () => {
+    assert.deepEqual(withPrep(30, { mode: "literal", stepMinutes: 15, prepMinutes: 10 }), [
+      "09:40",
+      "10:20",
+      "11:40",
+      "13:15",
+      "13:55",
+      "14:35",
+      "15:15",
+      "15:55",
+      "16:35",
+      "17:15",
+      "17:55",
+    ]);
+  });
+
+  test("prep time: the settings preview leaves the prep free", () => {
+    const flexible = previewSlotMinutes(
+      "09:00",
+      "19:00",
+      60,
+      { mode: "flexible", stepMinutes: 15, prepMinutes: 10 },
+      [[540, 570]],
+    );
+    assert.equal(minutesLabel(flexible[0]), "9:45");
   });
 }
 

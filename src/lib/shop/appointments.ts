@@ -145,16 +145,27 @@ export type SlotMode = "flexible" | "literal" | "custom";
 export const SLOT_MODES: readonly SlotMode[] = ["flexible", "literal", "custom"];
 /** Intervalos aceitos no modo ajustável (`slot_step_minutes`). */
 export const SLOT_STEP_OPTIONS = [10, 15, 20, 30, 45, 60] as const;
+/** Tempo de preparo depois de cada atendimento (`prep_minutes` da loja e do serviço). */
+export const PREP_OPTIONS = [0, 5, 10, 15, 20, 30] as const;
+
+export function validPrepMinutes(value: number | null | undefined) {
+  return (PREP_OPTIONS as readonly number[]).includes(value ?? -1) ? value! : 0;
+}
 
 export type SlotRule = {
   mode: SlotMode;
   stepMinutes: number;
+  /** Preparo depois do atendimento que está sendo marcado (o do serviço, senão o da loja). */
+  prepMinutes?: number;
   /** Bloqueios (almoço, folga): a contagem recomeça no fim de cada um. */
   blocks?: Array<{ starts_at: string; ends_at: string }>;
 };
 
 export function slotRuleFromSettings(
-  settings: { slot_mode?: string | null; slot_step_minutes?: number | null } | null | undefined,
+  settings:
+    | { slot_mode?: string | null; slot_step_minutes?: number | null; prep_minutes?: number | null }
+    | null
+    | undefined,
 ): SlotRule {
   const mode = SLOT_MODES.includes(settings?.slot_mode as SlotMode)
     ? (settings!.slot_mode as SlotMode)
@@ -162,15 +173,18 @@ export function slotRuleFromSettings(
   const step = (SLOT_STEP_OPTIONS as readonly number[]).includes(settings?.slot_step_minutes ?? 0)
     ? settings!.slot_step_minutes!
     : SLOT_STEP_MINUTES;
-  return { mode, stepMinutes: step };
+  return { mode, stepMinutes: step, prepMinutes: validPrepMinutes(settings?.prep_minutes) };
 }
 
-/** Passo da grade para um serviço: 15 (flexível), a duração (literal) ou o escolhido (ajustável). */
+/**
+ * Passo da grade para um serviço: 15 (flexível), a duração mais o preparo (literal) ou o
+ * escolhido (ajustável).
+ */
 export function slotStepFor(
-  rule: Pick<SlotRule, "mode" | "stepMinutes"> | undefined,
+  rule: Pick<SlotRule, "mode" | "stepMinutes" | "prepMinutes"> | undefined,
   duration: number,
 ) {
-  if (rule?.mode === "literal") return Math.max(1, duration);
+  if (rule?.mode === "literal") return Math.max(1, duration + (rule.prepMinutes ?? 0));
   if (rule?.mode === "custom") return rule.stepMinutes;
   return SLOT_STEP_MINUTES;
 }
@@ -201,11 +215,13 @@ export function termsFor(
  * Mesma regra de `slot_candidate_starts` + `available_slots_internal` no banco: a grade da loja
  * (15 em 15, tamanho do serviço ou intervalo escolhido) contada a partir da abertura e de novo no
  * fim de cada bloqueio; só os inícios em que o serviço inteiro cabe antes de ocupado ou fechamento.
+ * Atendimento em `busy` com `prep_minutes` ocupa também o preparo dele, e o novo precisa deixar o
+ * próprio preparo (`rule.prepMinutes`) livre antes dele. Bloqueios e esperas não pedem preparo.
  */
 export function buildSlotsForWindow(
   day: Date | string,
   durationMinutes: number,
-  busy: Array<{ starts_at: string; ends_at: string }>,
+  busy: Array<{ starts_at: string; ends_at: string; prep_minutes?: number }>,
   window: BusinessWindow | null,
   now = new Date(),
   timeZone?: string,
@@ -241,13 +257,27 @@ export function buildSlotsForWindow(
   }
   if (cursor < end.getTime()) windows.push([cursor, end.getTime()]);
 
-  const taken = [...busy, ...(rule?.blocks ?? [])].map(
-    (b) => [new Date(b.starts_at).getTime(), new Date(b.ends_at).getTime()] as const,
-  );
+  const prepMs = (rule?.prepMinutes ?? 0) * 60_000;
+  const taken = [
+    ...busy.map((b) => {
+      const isAppointment = b.prep_minutes !== undefined;
+      return [
+        new Date(b.starts_at).getTime(),
+        new Date(b.ends_at).getTime() + (b.prep_minutes ?? 0) * 60_000,
+        isAppointment,
+      ] as const;
+    }),
+    ...(rule?.blocks ?? []).map(
+      (b) => [new Date(b.starts_at).getTime(), new Date(b.ends_at).getTime(), false] as const,
+    ),
+  ];
   const slots: Date[] = [];
   for (const [from, to] of windows) {
     for (let at = from; at + durationMs <= to; at += stepMs) {
-      const overlaps = taken.some(([bStart, bEnd]) => at < bEnd && at + durationMs > bStart);
+      const overlaps = taken.some(
+        ([bStart, bEnd, isAppointment]) =>
+          at < bEnd && at + durationMs + (isAppointment ? prepMs : 0) > bStart,
+      );
       if (!overlaps && at > now.getTime()) slots.push(new Date(at));
     }
   }
@@ -256,13 +286,14 @@ export function buildSlotsForWindow(
 
 /**
  * Exemplo para a tela de Ajustes, em minutos do dia: inícios de um serviço numa janela
- * (ex.: 9:00–19:00) com atendimentos opcionais, sem relógio nem fuso.
+ * (ex.: 9:00–19:00) com atendimentos opcionais, sem relógio nem fuso. Os atendimentos e o
+ * novo usam o mesmo preparo (`rule.prepMinutes`).
  */
 export function previewSlotMinutes(
   opensAt: string,
   closesAt: string,
   durationMinutes: number,
-  rule: Pick<SlotRule, "mode" | "stepMinutes">,
+  rule: Pick<SlotRule, "mode" | "stepMinutes" | "prepMinutes">,
   busy: Array<[number, number]> = [],
 ): number[] {
   const opening = timeParts(opensAt);
@@ -271,9 +302,11 @@ export function previewSlotMinutes(
   const from = opening.hour * 60 + opening.minute;
   const to = closing.hour * 60 + closing.minute;
   const step = slotStepFor(rule, durationMinutes);
+  const prep = rule.prepMinutes ?? 0;
   const result: number[] = [];
   for (let at = from; at + durationMinutes <= to; at += step) {
-    if (!busy.some(([bStart, bEnd]) => at < bEnd && at + durationMinutes > bStart)) result.push(at);
+    if (!busy.some(([bStart, bEnd]) => at < bEnd + prep && at + durationMinutes + prep > bStart))
+      result.push(at);
   }
   return result;
 }

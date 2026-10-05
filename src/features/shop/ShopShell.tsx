@@ -110,6 +110,8 @@ import {
   shopDayRange,
   shiftDateKey,
   validTimeZone,
+  PREP_OPTIONS,
+  validPrepMinutes,
   type SlotMode,
 } from "@/lib/shop/appointments";
 
@@ -358,6 +360,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   const [serviceDescription, setServiceDescription] = useState("");
   const [serviceDuration, setServiceDuration] = useState("30");
   const [customDurationOpen, setCustomDurationOpen] = useState(false);
+  /** Preparo próprio do serviço; vazio = usar o da barbearia. */
+  const [servicePrep, setServicePrep] = useState("");
   const [servicePrice, setServicePrice] = useState("45");
   const [serviceIcon, setServiceIcon] = useState<string>("Scissors");
   const [serviceIconQuery, setServiceIconQuery] = useState("");
@@ -809,12 +813,14 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         price_cents: Math.round(priceReais * 100),
         active: editingService?.active ?? true,
         icon: serviceIcon,
+        ...(prepSupported ? { prep_minutes: servicePrep === "" ? null : Number(servicePrep) } : {}),
       };
       if (demo) {
         demo.dispatch({
           type: editingService ? "service.edit" : "service.add",
           service: {
             ...service,
+            prep_minutes: service.prep_minutes ?? null,
             id: editingService?.id ?? crypto.randomUUID(),
             created_at: editingService?.created_at ?? demo.now.toISOString(),
             updated_at: demo.now.toISOString(),
@@ -879,6 +885,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       setServiceDescription("");
       setServiceDuration("30");
       setCustomDurationOpen(false);
+      setServicePrep("");
       setServicePrice("45");
       setServiceIcon("Scissors");
       setServiceFormOpen(false);
@@ -998,6 +1005,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         setServiceName("");
         setServiceDuration("30");
         setCustomDurationOpen(false);
+        setServicePrep("");
         setServicePrice("45");
       }
       setDeleteService(null);
@@ -1376,9 +1384,17 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     }
   }
 
-  async function saveSlotMode(mode: SlotMode, stepMinutes: number): Promise<"applied" | "pending"> {
+  async function saveSlotMode(
+    mode: SlotMode,
+    stepMinutes: number,
+    prepMinutes: number,
+  ): Promise<"applied" | "pending"> {
     if (!settings) throw new Error(t("shop.error.saveSettings"));
-    const change = { slot_mode: mode, slot_step_minutes: stepMinutes };
+    const change = {
+      slot_mode: mode,
+      slot_step_minutes: stepMinutes,
+      ...(prepSupported ? { prep_minutes: prepMinutes } : {}),
+    };
     if (demo) {
       const next = { ...settings, ...change };
       demo.dispatch({ type: "settings.save", settings: next });
@@ -1467,6 +1483,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   // ainda não foi carregada), então a interface acompanha o que o banco permite.
   const canEditServices = !actor || !!capabilities?.manageCatalog || !!capabilities?.editOwnCatalog;
   const canChangeGlobalCatalog = !actor || !!capabilities?.manageCatalog;
+  // Tempo de preparo só depois da migration 20261005120000 (antes a coluna não vem do banco).
+  const prepSupported = !!settings && "prep_minutes" in settings;
   // O parceiro só personaliza serviços existentes; criar novos é de quem gere o catálogo e
   // pode propor mudanças (mesma regra de createService: funcionário cairia em roleServices).
   const canCreateServices =
@@ -2262,6 +2280,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       setServiceDescription("");
                       setServiceDuration("30");
                       setCustomDurationOpen(false);
+                      setServicePrep("");
                       setServicePrice("45");
                       setServiceIcon("Scissors");
                       setError(null);
@@ -2411,6 +2430,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                               setServiceName(s.name);
                               setServiceDescription(s.description ?? "");
                               setServiceDuration(String(s.duration_minutes));
+                              setServicePrep(s.prep_minutes == null ? "" : String(s.prep_minutes));
                               setServicePrice(String(s.price_cents / 100));
                               setServiceIcon(s.icon || "Scissors");
                               setError(null);
@@ -2565,6 +2585,32 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                           </label>
                         )}
                       </div>
+                      {canChangeGlobalCatalog && prepSupported && (
+                        <label className="block space-y-2 text-xs font-semibold">
+                          {t("shop.serviceForm.prep")}
+                          <select
+                            value={servicePrep}
+                            onChange={(e) => setServicePrep(e.target.value)}
+                            className="min-h-11 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm font-normal"
+                          >
+                            <option value="">
+                              {t("shop.serviceForm.prepShop", {
+                                minutes: validPrepMinutes(settings?.prep_minutes),
+                              })}
+                            </option>
+                            {PREP_OPTIONS.map((minutes) => (
+                              <option key={minutes} value={String(minutes)}>
+                                {minutes === 0
+                                  ? t("slots.prep.none")
+                                  : t("slots.prep.option", { minutes })}
+                              </option>
+                            ))}
+                          </select>
+                          <span className="block text-[11px] font-normal text-muted-foreground">
+                            {t("shop.serviceForm.prepHint")}
+                          </span>
+                        </label>
+                      )}
                       <label className="space-y-2 text-xs font-semibold">
                         {t("shop.serviceForm.price")}
                         <input
@@ -2727,6 +2773,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                             setServiceDescription("");
                             setServiceDuration("30");
                             setCustomDurationOpen(false);
+                            setServicePrep("");
                             setServicePrice("45");
                             setServiceFormOpen(false);
                           }}

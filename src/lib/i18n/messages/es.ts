@@ -1506,6 +1506,9 @@ export const es: Record<MessageKey, string> = {
   "shop.custom": "Personalizado",
   "shop.serviceForm.customDuration": "Duración personalizada",
   "shop.serviceForm.price": "Precio (R$)",
+  "shop.serviceForm.prep": "Tiempo de preparación después de este servicio",
+  "shop.serviceForm.prepShop": "Usar el de la barbería ({minutes} min)",
+  "shop.serviceForm.prepHint": "Margen para limpiar y ordenar la silla. El cliente no lo ve.",
   "shop.serviceForm.image": "Imagen o icono del servicio",
   "shop.serviceForm.iconSearch": "Buscar icono",
   "shop.serviceForm.uploadAria": "Subir foto o imagen del servicio",
@@ -2881,6 +2884,12 @@ export const es: Record<MessageKey, string> = {
   "slots.step.label": "Probar un horario cada",
   "slots.step.option": "{minutes} minutos",
   "slots.step.optionDefault": "{minutes} minutos (predeterminado)",
+  "slots.prep.label": "Tiempo de preparación después de cada cita",
+  "slots.prep.hint":
+    "Margen para limpiar y ordenar la silla. El cliente solo ve la duración del servicio y este tiempo no aparece como horario libre. Cada servicio puede tener el suyo en Servicios.",
+  "slots.prep.none": "Sin preparación",
+  "slots.prep.option": "{minutes} minutos",
+  "slots.preview.prep": "Con {prep} min de preparación, la silla queda libre a las {free}.",
   "slots.preview.title": "Ejemplo con tu agenda",
   "slots.preview.opening":
     "Apertura a las {time} · primeros horarios de {service} ({minutes} min):",

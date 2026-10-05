@@ -3,11 +3,13 @@ import { CalendarClock, Check, Info, Save, Settings2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { useI18n } from "@/lib/i18n";
 import {
+  PREP_OPTIONS,
   SLOT_STEP_MINUTES,
   SLOT_STEP_OPTIONS,
   minutesLabel,
   previewSlotMinutes,
   slotRuleFromSettings,
+  validPrepMinutes,
   type SlotMode,
 } from "@/lib/shop/appointments";
 
@@ -62,8 +64,9 @@ function exampleFor(
   example: ReturnType<typeof useSlotExample>,
   mode: SlotMode,
   stepMinutes: number,
+  prepMinutes = 0,
 ) {
-  const rule = { mode, stepMinutes };
+  const rule = { mode, stepMinutes, prepMinutes };
   const { short, long, opensAt, closesAt, open } = example;
   const longStarts = previewSlotMinutes(opensAt, closesAt, long.minutes, rule);
   const afterShort = previewSlotMinutes(opensAt, closesAt, long.minutes, rule, [
@@ -73,11 +76,18 @@ function exampleFor(
     list: longStarts.slice(0, EXAMPLE_COUNT).map(minutesLabel),
     tested: Array.from({ length: 3 }, (_, index) =>
       minutesLabel(
-        open + index * (mode === "literal" ? long.minutes : mode === "custom" ? stepMinutes : 15),
+        open +
+          index *
+            (mode === "literal"
+              ? long.minutes + prepMinutes
+              : mode === "custom"
+                ? stepMinutes
+                : 15),
       ),
     ),
     start: minutesLabel(open),
     shortEnd: minutesLabel(open + short.minutes),
+    free: minutesLabel(open + short.minutes + prepMinutes),
     first: afterShort[0] === undefined ? null : minutesLabel(afterShort[0]),
   };
 }
@@ -91,36 +101,48 @@ export function SlotModeSettings({
   settings: Tables<"barbershop_settings">;
   services: ServiceLike[];
   hours: HoursLike[];
-  onSave: (mode: SlotMode, stepMinutes: number) => Promise<"applied" | "pending">;
+  onSave: (
+    mode: SlotMode,
+    stepMinutes: number,
+    prepMinutes: number,
+  ) => Promise<"applied" | "pending">;
 }) {
   const { t } = useI18n();
   const saved = slotRuleFromSettings(settings);
   const savedChoice = choiceFromRule(saved);
   const [choice, setChoice] = useState<SlotChoice>(savedChoice.choice);
   const [step, setStep] = useState(savedChoice.step);
+  // Antes da migration 20261005120000 a coluna não vem do banco: o campo fica escondido.
+  const prepSupported = "prep_minutes" in settings;
+  const savedPrep = validPrepMinutes(settings.prep_minutes);
+  const [prep, setPrep] = useState(savedPrep);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<"applied" | "pending" | "error" | null>(null);
   const example = useSlotExample(services, hours);
   const groupName = useId();
   const stepId = useId();
+  const prepId = useId();
 
   useEffect(() => {
     const next = choiceFromRule(slotRuleFromSettings(settings));
     setChoice(next.choice);
     setStep(next.step);
+    setPrep(validPrepMinutes(settings.prep_minutes));
   }, [settings]);
 
   const mode = modeFor(choice, step);
   const changed =
-    choice !== savedChoice.choice || (choice === "interval" && step !== savedChoice.step);
-  const current = exampleFor(example, mode, step);
+    choice !== savedChoice.choice ||
+    (choice === "interval" && step !== savedChoice.step) ||
+    prep !== savedPrep;
+  const current = exampleFor(example, mode, step, prep);
 
   async function save() {
     if (busy) return;
     setBusy(true);
     setStatus(null);
     try {
-      setStatus(await onSave(mode, choice === "interval" ? step : saved.stepMinutes));
+      setStatus(await onSave(mode, choice === "interval" ? step : saved.stepMinutes, prep));
     } catch {
       setStatus("error");
     } finally {
@@ -146,7 +168,7 @@ export function SlotModeSettings({
       <fieldset className="space-y-2">
         <legend className="sr-only">{t("slots.title")}</legend>
         {SLOT_CHOICES.map((option) => {
-          const optionExample = exampleFor(example, modeFor(option, step), step);
+          const optionExample = exampleFor(example, modeFor(option, step), step, prep);
           const selected = choice === option;
           return (
             <label
@@ -234,6 +256,31 @@ export function SlotModeSettings({
         </div>
       )}
 
+      {prepSupported && (
+        <div className="space-y-2">
+          <label htmlFor={prepId} className="text-xs font-semibold text-muted-foreground">
+            {t("slots.prep.label")}
+          </label>
+          <select
+            id={prepId}
+            value={prep}
+            disabled={busy}
+            onChange={(event) => {
+              setPrep(Number(event.target.value));
+              setStatus(null);
+            }}
+            className="min-h-11 w-full rounded-xl border border-border bg-background px-3 py-3 text-sm"
+          >
+            {PREP_OPTIONS.map((minutes) => (
+              <option key={minutes} value={minutes}>
+                {minutes === 0 ? t("slots.prep.none") : t("slots.prep.option", { minutes })}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-muted-foreground">{t("slots.prep.hint")}</p>
+        </div>
+      )}
+
       <div
         className="space-y-3 rounded-2xl border border-border bg-background/60 p-4"
         aria-live="polite"
@@ -272,6 +319,9 @@ export function SlotModeSettings({
                 long: example.long.name,
               })}
         </p>
+        {prep > 0 && (
+          <p className="text-sm">{t("slots.preview.prep", { prep, free: current.free })}</p>
+        )}
         <p className="text-xs text-muted-foreground">{t(`slots.consequence.${choice}`)}</p>
       </div>
 
@@ -309,7 +359,10 @@ export function SlotModeNotice({
   context,
   onOpenSettings,
 }: {
-  settings: Pick<Tables<"barbershop_settings">, "slot_mode" | "slot_step_minutes"> | null;
+  settings: Pick<
+    Tables<"barbershop_settings">,
+    "slot_mode" | "slot_step_minutes" | "prep_minutes"
+  > | null;
   services: ServiceLike[];
   hours: HoursLike[];
   context: "hours" | "services";
@@ -318,8 +371,8 @@ export function SlotModeNotice({
   const { t } = useI18n();
   const rule = slotRuleFromSettings(settings);
   const example = useSlotExample(services, hours);
-  const current = exampleFor(example, rule.mode, rule.stepMinutes);
-  const literal = exampleFor(example, "literal", rule.stepMinutes);
+  const current = exampleFor(example, rule.mode, rule.stepMinutes, rule.prepMinutes);
+  const literal = exampleFor(example, "literal", rule.stepMinutes, rule.prepMinutes);
   return (
     <aside
       className="flex gap-3 rounded-2xl border border-border bg-card p-4"

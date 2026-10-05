@@ -90,6 +90,7 @@ import {
   type ReservationFilter,
   buildSlotsForWindow,
   slotRuleFromSettings,
+  validPrepMinutes,
   buildBookingDateKeys,
   dateFromLocalKey,
   formatShopDate as formatShopDateIn,
@@ -1053,12 +1054,18 @@ function ArenaApp({
           // O dia da semana vem da data escolhida, não do fuso do aparelho.
           const weekday = weekdayForDateKey(selectedDay);
           const hours = demo.businessHours.find((row) => row.weekday === weekday) ?? null;
+          // Preparo depois de cada serviço: o do serviço, senão o da barbearia.
+          const prepFor = (serviceId: string | null) =>
+            validPrepMinutes(
+              demo.services.find((row) => row.id === serviceId)?.prep_minutes ??
+                demo.settings.prep_minutes,
+            );
           setSlots(
             buildSlotsForWindow(
               selectedDay,
               selectedServiceDuration,
               [
-                ...occupied,
+                ...occupied.map((row) => ({ ...row, prep_minutes: prepFor(row.service_id) })),
                 ...demo.waits.filter(
                   (w) => blocksSlot(w, demo.now) && w.staff_id === selectedStaffId,
                 ),
@@ -1066,7 +1073,11 @@ function ArenaApp({
               hours,
               demo.now,
               shopTimeZone,
-              { ...slotRuleFromSettings(demo.settings), blocks },
+              {
+                ...slotRuleFromSettings(demo.settings),
+                prepMinutes: prepFor(selectedServiceId),
+                blocks,
+              },
             ),
           );
           setSlotsFor(selectionKey);

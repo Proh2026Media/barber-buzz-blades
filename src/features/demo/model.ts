@@ -218,6 +218,7 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
       staff_assignment_mode: "client_pick",
       slot_mode: "flexible",
       slot_step_minutes: 15,
+      prep_minutes: 0,
       created_at: stamp,
       updated_at: stamp,
     },
@@ -252,6 +253,7 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
         name: "Corte Tradicional",
         duration_minutes: 30,
         price_cents: 4500,
+        prep_minutes: null,
         icon: "Scissors",
       },
       {
@@ -260,6 +262,7 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
         name: "Barboterapia",
         duration_minutes: 45,
         price_cents: 6000,
+        prep_minutes: null,
         icon: "Droplet",
       },
       {
@@ -268,6 +271,7 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
         name: "Combo Premium",
         duration_minutes: 60,
         price_cents: 9000,
+        prep_minutes: null,
         icon: "Crown",
       },
     ],

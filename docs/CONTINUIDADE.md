@@ -9,6 +9,16 @@ Atualizado em **03/10/2026**. Este documento resume decisões e entregas da conv
 3. Para retomar localmente, usar `npm run dev -- --host 0.0.0.0 --port 8080`. O endereço esperado é `http://localhost:8080`.
 4. Continuar a partir do próximo pedido do usuário.
 
+## Entrega — tempo de preparo entre atendimentos (05/10, Claude Code) — **migration pendente na VPS**
+
+Folga depois de cada atendimento para limpar e arrumar a cadeira. O cliente continua vendo só a duração do serviço; a folga não aparece como horário livre.
+
+- **Onde:** Ajustes → Agendamento → "Como os horários aparecem" → "Tempo de preparo depois de cada atendimento" (0, 5, 10, 15, 20 ou 30 min; padrão 0). Em Serviços → Editar, "Tempo de preparo depois deste serviço": "Usar o da barbearia" (nulo) ou um valor próprio. Sócio parceiro (associate) não vê o campo do serviço.
+- **Regra:** o atendimento novo precisa deixar o próprio preparo livre antes do próximo; cada atendimento existente ocupa até o fim + o preparo do serviço dele. Bloqueios, esperas e o fechamento não exigem preparo. No modo "no tamanho do serviço" o passo vira duração + preparo. O painel continua livre para encaixar; a reserva do cliente que invade o preparo é recusada com `23P01` ("horário ocupado").
+- **Banco:** `supabase/migrations/20261005120000_tempo_preparo.sql` (colunas `barbershop_settings.prep_minutes` e `services.prep_minutes`, `service_prep_minutes`, `staff_busy_prep_internal`, `slot_candidate_starts` com 4 argumentos, e novas versões de `available_slots_internal`, `appointments_enforce_service_terms` e `apply_shop_change`). Teste: `supabase/tests/tempo_preparo.sql` (17 PASS na cópia local). Guia do agente: [implantacao-preparo-2026-10-05.md](implantacao-preparo-2026-10-05.md). Depende da 220000 e da 230000.
+- **Antes da migration:** os campos ficam escondidos (a tela só os mostra quando a coluna `prep_minutes` vem do banco), então salvar a forma dos horários ou um serviço continua funcionando.
+- **Frontend:** `src/lib/shop/appointments.ts` (`PREP_OPTIONS`, `validPrepMinutes`, `prepMinutes` na regra, preparo em `buildSlotsForWindow`/`previewSlotMinutes`, com testes), `SlotModeSettings.tsx`, formulário de serviço em `ShopShell.tsx`, demonstração em `ArenaApp.tsx` e `demo/model.ts`, tipos em `integrations/supabase/types.ts`, textos nos 5 idiomas.
+
 ## Ajuste — forma dos horários com duas opções (05/10, Claude Code)
 
 Em Ajustes → Agendamento → "Como os horários aparecem", as opções "Flexível · de 15 em 15 min" e "Ajustável" viraram uma só: **"Ajustável"** (seletor 10/15/20/30/45/60, padrão 15), mostrada por último, depois de **"No tamanho do serviço"**. Motivo: Ajustável com 15 min dava exatamente o mesmo resultado do Flexível. Sem mudança no banco: a tela grava 15 min como `slot_mode = 'flexible'` e os outros intervalos como `'custom'` (`SlotModeSettings.tsx`, `modeFor`). Lojas que já usavam qualquer um dos dois continuam iguais. Chaves i18n `slots.mode.flexible.*`/`custom.*` e `slots.consequence.flexible/custom` trocadas por `slots.mode.interval.*`, `slots.consequence.interval` e `slots.step.optionDefault`.

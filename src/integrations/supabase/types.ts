@@ -90,6 +90,7 @@ export type Database = {
           staff_assignment_mode?: string;
           slot_mode: string;
           slot_step_minutes: number;
+          prep_minutes: number;
           created_at: string;
           updated_at: string;
         };
@@ -123,6 +124,7 @@ export type Database = {
           staff_assignment_mode?: string;
           slot_mode?: string;
           slot_step_minutes?: number;
+          prep_minutes?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -156,6 +158,7 @@ export type Database = {
           staff_assignment_mode?: string;
           slot_mode?: string;
           slot_step_minutes?: number;
+          prep_minutes?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -344,6 +347,7 @@ export type Database = {
           price_cents: number;
           active: boolean;
           icon: string | null;
+          prep_minutes: number | null;
           description: string | null;
           created_at: string;
           updated_at: string;
@@ -356,6 +360,7 @@ export type Database = {
           price_cents?: number;
           active?: boolean;
           icon?: string | null;
+          prep_minutes?: number | null;
           description?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -368,6 +373,7 @@ export type Database = {
           price_cents?: number;
           active?: boolean;
           icon?: string | null;
+          prep_minutes?: number | null;
           description?: string | null;
           created_at?: string;
           updated_at?: string;
