@@ -2869,20 +2869,18 @@ export const es: Record<MessageKey, string> = {
     "Elige cómo la app arma la lista de horarios a partir del horario de atención y la duración de cada servicio.",
   "slots.default": "Predeterminado",
   "slots.selected": "Elegido",
-  "slots.mode.flexible.title": "Flexible · cada 15 min",
-  "slots.mode.flexible.text":
-    "Prueba un horario cada 15 minutos y muestra solo los que caben el servicio completo.",
   "slots.mode.literal.title": "Según la duración del servicio",
   "slots.mode.literal.text":
     "Horarios seguidos, del tamaño de cada servicio, contados desde la apertura.",
-  "slots.mode.custom.title": "Ajustable · tú eliges el intervalo",
-  "slots.mode.custom.text":
-    "Prueba un horario cada {step} minutos y muestra solo los que caben el servicio completo.",
+  "slots.mode.interval.title": "Cada {step} minutos",
+  "slots.mode.interval.text":
+    "Prueba un horario cada {step} minutos y muestra solo los que caben el servicio completo. Elige el intervalo justo abajo.",
   "slots.cardExample": "Ej.: {service} ({minutes} min): {list}…",
   "slots.example.short": "Corte",
   "slots.example.long": "Combo",
   "slots.step.label": "Probar un horario cada",
   "slots.step.option": "{minutes} minutos",
+  "slots.step.optionDefault": "{minutes} minutos (predeterminado)",
   "slots.preview.title": "Ejemplo con tu agenda",
   "slots.preview.opening":
     "Apertura a las {time} · primeros horarios de {service} ({minutes} min):",
@@ -2891,11 +2889,9 @@ export const es: Record<MessageKey, string> = {
     "Si ya hay un {short} de {start} a {end}, el {long} aparece desde las {first}.",
   "slots.preview.afterNone":
     "Si ya hay un {short} de {start} a {end}, el {long} ya no cabe ese día.",
-  "slots.consequence.flexible":
-    "Más opciones y menos tiempo vacío. La lista es más larga y puede quedar un hueco corto entre citas.",
   "slots.consequence.literal":
     "Agenda más ordenada, al ritmo de los servicios. Menos opciones: después de un servicio más corto puede quedar tiempo vacío hasta el siguiente horario.",
-  "slots.consequence.custom":
+  "slots.consequence.interval":
     "Tú eliges el equilibrio: un intervalo menor da más opciones; uno mayor deja la agenda más ordenada. Puede quedar un hueco corto.",
   "slots.breaks":
     "Después de un bloqueo (como el almuerzo), la cuenta vuelve a empezar cuando termina.",

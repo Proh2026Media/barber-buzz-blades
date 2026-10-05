@@ -2834,19 +2834,17 @@ export const enUS: Record<MessageKey, string> = {
     "Choose how the app builds the list of times from your opening hours and each service's length.",
   "slots.default": "Default",
   "slots.selected": "Selected",
-  "slots.mode.flexible.title": "Flexible · every 15 min",
-  "slots.mode.flexible.text":
-    "Tries a start every 15 minutes and shows only those where the whole service fits.",
   "slots.mode.literal.title": "Service length",
   "slots.mode.literal.text": "Back-to-back times the length of each service, counted from opening.",
-  "slots.mode.custom.title": "Custom · you pick the interval",
-  "slots.mode.custom.text":
-    "Tries a start every {step} minutes and shows only those where the whole service fits.",
+  "slots.mode.interval.title": "Every {step} minutes",
+  "slots.mode.interval.text":
+    "Tries a start every {step} minutes and shows only those where the whole service fits. Pick the interval just below.",
   "slots.cardExample": "E.g. {service} ({minutes} min): {list}…",
   "slots.example.short": "Haircut",
   "slots.example.long": "Combo",
   "slots.step.label": "Try a start every",
   "slots.step.option": "{minutes} minutes",
+  "slots.step.optionDefault": "{minutes} minutes (default)",
   "slots.preview.title": "Example with your schedule",
   "slots.preview.opening": "Opening at {time} · first times for {service} ({minutes} min):",
   "slots.preview.listAria": "First times offered",
@@ -2854,11 +2852,9 @@ export const enUS: Record<MessageKey, string> = {
     "If there is already a {short} from {start} to {end}, the {long} shows from {first}.",
   "slots.preview.afterNone":
     "If there is already a {short} from {start} to {end}, the {long} no longer fits that day.",
-  "slots.consequence.flexible":
-    "More options and less idle time. The list gets longer and a short gap may remain between appointments.",
   "slots.consequence.literal":
     "A tidier schedule, at the pace of the services. Fewer options: after a shorter service there may be idle time until the next slot.",
-  "slots.consequence.custom":
+  "slots.consequence.interval":
     "You choose the balance: a shorter interval gives more options; a longer one keeps the schedule tidier. A short gap may remain.",
   "slots.breaks": "After a block (such as lunch), counting starts again when it ends.",
   "slots.scope":

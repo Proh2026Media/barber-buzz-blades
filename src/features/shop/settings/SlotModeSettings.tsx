@@ -3,7 +3,7 @@ import { CalendarClock, Check, Info, Save, Settings2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { useI18n } from "@/lib/i18n";
 import {
-  SLOT_MODES,
+  SLOT_STEP_MINUTES,
   SLOT_STEP_OPTIONS,
   minutesLabel,
   previewSlotMinutes,
@@ -15,6 +15,26 @@ type ServiceLike = Pick<Tables<"services">, "name" | "duration_minutes" | "activ
 type HoursLike = Pick<Tables<"business_hours">, "weekday" | "is_open" | "opens_at" | "closes_at">;
 
 const EXAMPLE_COUNT = 4;
+
+/**
+ * Opções mostradas ao dono. "De X em X minutos" cobre os modos `flexible` (15 min, o padrão)
+ * e `custom` (outro intervalo) do banco, que davam o mesmo resultado com 15 minutos.
+ */
+type SlotChoice = "interval" | "literal";
+const SLOT_CHOICES: readonly SlotChoice[] = ["interval", "literal"];
+
+function choiceFromRule(rule: { mode: SlotMode; stepMinutes: number }) {
+  return {
+    choice: (rule.mode === "literal" ? "literal" : "interval") as SlotChoice,
+    step: rule.mode === "custom" ? rule.stepMinutes : SLOT_STEP_MINUTES,
+  };
+}
+
+/** Grava 15 minutos como `flexible` e os demais intervalos como `custom`. */
+function modeFor(choice: SlotChoice, step: number): SlotMode {
+  if (choice === "literal") return "literal";
+  return step === SLOT_STEP_MINUTES ? "flexible" : "custom";
+}
 
 /** Dados do exemplo: expediente de um dia aberto e os serviços mais curto e mais longo da loja. */
 function useSlotExample(services: ServiceLike[], hours: HoursLike[]) {
@@ -75,8 +95,9 @@ export function SlotModeSettings({
 }) {
   const { t } = useI18n();
   const saved = slotRuleFromSettings(settings);
-  const [mode, setMode] = useState<SlotMode>(saved.mode);
-  const [step, setStep] = useState(saved.mode === "custom" ? saved.stepMinutes : 30);
+  const savedChoice = choiceFromRule(saved);
+  const [choice, setChoice] = useState<SlotChoice>(savedChoice.choice);
+  const [step, setStep] = useState(savedChoice.step);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<"applied" | "pending" | "error" | null>(null);
   const example = useSlotExample(services, hours);
@@ -84,12 +105,14 @@ export function SlotModeSettings({
   const stepId = useId();
 
   useEffect(() => {
-    const next = slotRuleFromSettings(settings);
-    setMode(next.mode);
-    if (next.mode === "custom") setStep(next.stepMinutes);
+    const next = choiceFromRule(slotRuleFromSettings(settings));
+    setChoice(next.choice);
+    setStep(next.step);
   }, [settings]);
 
-  const changed = mode !== saved.mode || (mode === "custom" && step !== saved.stepMinutes);
+  const mode = modeFor(choice, step);
+  const changed =
+    choice !== savedChoice.choice || (choice === "interval" && step !== savedChoice.step);
   const current = exampleFor(example, mode, step);
 
   async function save() {
@@ -97,7 +120,7 @@ export function SlotModeSettings({
     setBusy(true);
     setStatus(null);
     try {
-      setStatus(await onSave(mode, mode === "custom" ? step : saved.stepMinutes));
+      setStatus(await onSave(mode, choice === "interval" ? step : saved.stepMinutes));
     } catch {
       setStatus("error");
     } finally {
@@ -122,9 +145,9 @@ export function SlotModeSettings({
 
       <fieldset className="space-y-2">
         <legend className="sr-only">{t("slots.title")}</legend>
-        {SLOT_MODES.map((option) => {
-          const optionExample = exampleFor(example, option, option === "custom" ? step : 15);
-          const selected = mode === option;
+        {SLOT_CHOICES.map((option) => {
+          const optionExample = exampleFor(example, modeFor(option, step), step);
+          const selected = choice === option;
           return (
             <label
               key={option}
@@ -141,7 +164,7 @@ export function SlotModeSettings({
                 checked={selected}
                 disabled={busy}
                 onChange={() => {
-                  setMode(option);
+                  setChoice(option);
                   setStatus(null);
                 }}
                 className="peer sr-only"
@@ -156,8 +179,8 @@ export function SlotModeSettings({
               </span>
               <span className="min-w-0 flex-1">
                 <span className="flex flex-wrap items-center gap-2 text-sm font-bold">
-                  {t(`slots.mode.${option}.title`)}
-                  {option === "flexible" && (
+                  {t(`slots.mode.${option}.title`, { step })}
+                  {option === "interval" && step === SLOT_STEP_MINUTES && (
                     <span className="rounded-md bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
                       {t("slots.default")}
                     </span>
@@ -185,7 +208,7 @@ export function SlotModeSettings({
         })}
       </fieldset>
 
-      {mode === "custom" && (
+      {choice === "interval" && (
         <div className="space-y-2">
           <label htmlFor={stepId} className="text-xs font-semibold text-muted-foreground">
             {t("slots.step.label")}
@@ -202,7 +225,9 @@ export function SlotModeSettings({
           >
             {SLOT_STEP_OPTIONS.map((minutes) => (
               <option key={minutes} value={minutes}>
-                {t("slots.step.option", { minutes })}
+                {minutes === SLOT_STEP_MINUTES
+                  ? t("slots.step.optionDefault", { minutes })
+                  : t("slots.step.option", { minutes })}
               </option>
             ))}
           </select>
@@ -247,7 +272,7 @@ export function SlotModeSettings({
                 long: example.long.name,
               })}
         </p>
-        <p className="text-xs text-muted-foreground">{t(`slots.consequence.${mode}`)}</p>
+        <p className="text-xs text-muted-foreground">{t(`slots.consequence.${choice}`)}</p>
       </div>
 
       <ul className="space-y-1 text-xs text-muted-foreground">

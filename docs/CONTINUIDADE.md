@@ -9,6 +9,10 @@ Atualizado em **03/10/2026**. Este documento resume decisões e entregas da conv
 3. Para retomar localmente, usar `npm run dev -- --host 0.0.0.0 --port 8080`. O endereço esperado é `http://localhost:8080`.
 4. Continuar a partir do próximo pedido do usuário.
 
+## Ajuste — forma dos horários com duas opções (05/10, Claude Code)
+
+Em Ajustes → Agendamento → "Como os horários aparecem", as opções "Flexível · de 15 em 15 min" e "Ajustável" viraram uma só: **"A cada X minutos"** (seletor 10/15/20/30/45/60, padrão 15), ao lado de **"No tamanho do serviço"**. Motivo: Ajustável com 15 min dava exatamente o mesmo resultado do Flexível. Sem mudança no banco: a tela grava 15 min como `slot_mode = 'flexible'` e os outros intervalos como `'custom'` (`SlotModeSettings.tsx`, `modeFor`). Lojas que já usavam qualquer um dos dois continuam iguais. Chaves i18n `slots.mode.flexible.*`/`custom.*` e `slots.consequence.flexible/custom` trocadas por `slots.mode.interval.*`, `slots.consequence.interval` e `slots.step.optionDefault`.
+
 ## Entrega — correção de anomalias visuais em todo o sistema (04/10, madrugada, Claude Code)
 
 Varredura por capturas de tela (celular claro, celular escuro e computador) de todas as telas do modo demonstração (cliente, dono, sócio, parceiro, contratado, plataforma) e das páginas públicas, seguida de duas rodadas de agentes (encontrar → verificar com cético → corrigir; depois comparar antes/depois para achar regressões). Corrigidos 88 + 33 itens. Principais:
