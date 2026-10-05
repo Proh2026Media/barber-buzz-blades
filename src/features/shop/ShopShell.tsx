@@ -2308,7 +2308,6 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 settings={settings}
                 services={services}
                 hours={businessHours}
-                context="services"
                 onOpenSettings={canManageShopSettings ? openSlotModeSettings : undefined}
               />
               <div
@@ -3230,7 +3229,6 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 settings={settings}
                 services={services}
                 hours={businessHours}
-                context="hours"
                 onOpenSettings={canManageShopSettings ? openSlotModeSettings : undefined}
               />
 

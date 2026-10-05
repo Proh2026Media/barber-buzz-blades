@@ -1506,9 +1506,9 @@ export const ptPT: Record<MessageKey, string> = {
   "shop.custom": "Personalizado",
   "shop.serviceForm.customDuration": "Duração personalizada",
   "shop.serviceForm.price": "Preço (R$)",
-  "shop.serviceForm.prep": "Tempo de preparação depois deste serviço",
-  "shop.serviceForm.prepShop": "Usar o da barbearia ({minutes} min)",
-  "shop.serviceForm.prepHint": "Folga para limpar e arrumar a cadeira. Não aparece ao cliente.",
+  "shop.serviceForm.prep": "Folga depois deste serviço",
+  "shop.serviceForm.prepShop": "Igual à da barbearia ({minutes} min)",
+  "shop.serviceForm.prepHint": "Para limpar e arrumar a cadeira. O cliente não vê este tempo.",
   "shop.serviceForm.image": "Imagem ou ícone do serviço",
   "shop.serviceForm.iconSearch": "Pesquisar ícone",
   "shop.serviceForm.uploadAria": "Enviar fotografia ou imagem do serviço",
@@ -2864,60 +2864,38 @@ export const ptPT: Record<MessageKey, string> = {
   "landingEditor.previewHintDemo":
     "Na demonstração os horários livres são de exemplo. Os botões ficam inativos aqui.",
 
-  "slots.section": "Agenda do cliente",
   "slots.title": "Como os horários aparecem",
-  "slots.intro":
-    "Escolha como a app monta a lista de horários a partir do horário de funcionamento e da duração de cada serviço.",
+  "slots.notice.badge.prep": "+{minutes} min de folga",
+  "slots.notice.badge.interval": "A cada {step} min",
+  "slots.timeline.none": "{service} já não cabe neste dia",
+  "slots.timeline.first": "{service} pode começar",
+  "slots.timeline.prep": "Folga de {minutes} min",
+  "slots.timeline.booked": "{service} já marcado",
+  "slots.chip.minutes": "{minutes} min",
+  "slots.intro": "Escolha como o cliente vê a lista de horários.",
   "slots.default": "Predefinido",
-  "slots.selected": "Escolhido",
   "slots.mode.literal.title": "No tamanho do serviço",
-  "slots.mode.literal.text":
-    "Horários seguidos, do tamanho de cada serviço, contados a partir da abertura.",
+  "slots.mode.literal.text": "Uma marcação atrás da outra, sem buracos na agenda.",
   "slots.mode.interval.title": "Ajustável",
-  "slots.mode.interval.text":
-    "Testa um horário a cada {step} minutos e mostra só os que cabem o serviço inteiro. Escolhe o intervalo logo abaixo.",
-  "slots.cardExample": "Ex.: {service} ({minutes} min): {list}…",
+  "slots.mode.interval.text": "Mais opções de horário para o cliente escolher.",
   "slots.example.short": "Corte",
   "slots.example.long": "Combo",
-  "slots.step.label": "Testar um horário a cada",
-  "slots.step.option": "{minutes} minutos",
-  "slots.step.optionDefault": "{minutes} minutos (predefinido)",
-  "slots.prep.label": "Tempo de preparação depois de cada marcação",
-  "slots.prep.hint":
-    "Folga para limpar e arrumar a cadeira. O cliente vê só a duração do serviço e este tempo não aparece como horário livre. Cada serviço pode ter o seu em Serviços.",
-  "slots.prep.none": "Sem preparação",
+  "slots.step.label": "De quanto em quanto tempo",
+  "slots.prep.label": "Folga depois de cada marcação",
+  "slots.prep.hint": "Para limpar e arrumar a cadeira. O cliente não vê este tempo.",
+  "slots.prep.none": "Nenhuma",
   "slots.prep.option": "{minutes} minutos",
-  "slots.preview.prep": "Com {prep} min de preparação, a cadeira fica livre às {free}.",
-  "slots.preview.title": "Exemplo com a sua agenda",
-  "slots.preview.opening": "Abertura às {time} · primeiros horários de {service} ({minutes} min):",
+  "slots.preview.title": "Como fica na prática",
   "slots.preview.listAria": "Primeiros horários oferecidos",
-  "slots.preview.after":
-    "Se já houver um {short} das {start} às {end}, o {long} aparece a partir das {first}.",
-  "slots.preview.afterNone":
-    "Se já houver um {short} das {start} às {end}, o {long} já não cabe neste dia.",
-  "slots.consequence.literal":
-    "Agenda mais redonda, ao ritmo dos serviços. Menos opções: depois de um serviço mais curto pode sobrar tempo vazio até ao próximo horário.",
-  "slots.consequence.interval":
-    "Escolhe o equilíbrio: intervalo menor dá mais opções; maior deixa a agenda mais redonda. Pode sobrar um intervalo curto.",
-  "slots.breaks": "Depois de um bloqueio (como o almoço), a contagem recomeça quando ele termina.",
+  "slots.breaks": "Depois do almoço ou de um bloqueio, os horários recomeçam.",
   "slots.scope":
-    "Vale para a app, a ligação de cada profissional, “Qualquer profissional” e a página da barbearia. As marcações já feitas não mudam.",
-  "slots.save": "Guardar forma dos horários",
+    "Vale para a app, as ligações e a página da barbearia. O que já foi marcado não muda.",
+  "slots.save": "Guardar alterações",
   "slots.status.applied": "Pronto. Os clientes já veem os horários desta forma.",
   "slots.status.pending": "Pedido enviado. A alteração vale quando for aprovada.",
   "slots.status.error": "Não foi possível guardar. Verifique a ligação e tente de novo.",
-  "slots.notice.title": "Como isto se torna horário para o cliente",
-  "slots.notice.hours":
-    "O horário de funcionamento marca onde a contagem dos horários começa e termina.",
-  "slots.notice.services":
-    "A duração de cada serviço define quanto tempo livre ele precisa na agenda.",
-  "slots.notice.flexible":
-    "De 15 em 15 minutos: o sistema testa {tested}… e mostra só os horários em que o serviço inteiro cabe antes do próximo compromisso ou do fecho. Ex.: com um {short} das {start} às {end}, um {long} de {minutes} min aparece às {first} (no tamanho do serviço, só às {literalFirst}). Mais opções e menos tempo vazio; a lista fica maior e pode sobrar um intervalo curto.",
-  "slots.notice.literal":
-    "No tamanho do serviço: contando da abertura, um {long} de {minutes} min aparece em {list}… Ex.: com um {short} das {start} às {end}, o {long} só aparece às {first}. Agenda mais redonda; pode sobrar tempo vazio depois de um serviço mais curto. Depois de um bloqueio, a contagem recomeça.",
-  "slots.notice.custom":
-    "A cada {step} minutos: o sistema testa {tested}… e mostra só os horários em que o serviço inteiro cabe antes do próximo compromisso ou do fecho. Ex.: com um {short} das {start} às {end}, um {long} de {minutes} min aparece às {first}. Intervalo menor dá mais opções; maior deixa a agenda mais redonda.",
-  "slots.notice.link": "Mudar a forma dos horários",
+  "slots.notice.title": "Assim os seus clientes veem os horários",
+  "slots.notice.link": "Mudar",
   "fix.cliente-app.rescheduleUnavailable":
     "Não é possível remarcar esta reserva aqui: o serviço ou o profissional já não está disponível. Cancele e faça uma nova reserva, ou contacte a barbearia.",
   "fix.componentes-loja.wa.wrapPlaceholder": "texto",

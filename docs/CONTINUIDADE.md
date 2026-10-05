@@ -9,6 +9,10 @@ Atualizado em **03/10/2026**. Este documento resume decisões e entregas da conv
 3. Para retomar localmente, usar `npm run dev -- --host 0.0.0.0 --port 8080`. O endereço esperado é `http://localhost:8080`.
 4. Continuar a partir do próximo pedido do usuário.
 
+## Diretriz — interface visual e autoexplicativa (05/10, dono) — onda 1 feita
+
+O dono pediu que o sistema fique muito mais visual, intuitivo e com menos texto técnico (registrado em `docs/mb-interface.md`, seção 4, "Mostrar em vez de explicar", e em `AGENTS.md`). **Onda 1 (feita):** "Como os horários aparecem" redesenhado — cartões de modo com pílulas de horário de exemplo, intervalo e folga como botões em vez de listas, mini agenda ilustrada ("já marcado", "folga", "pode começar"), dicas com ícones, resultado do salvamento com ícone e cor; o parágrafo técnico "Como isso vira horário para o cliente" em Serviços e Horários virou o resumo visual "Assim seus clientes veem os horários" (selos + pílulas + botão Mudar). Textos encurtados nos 5 idiomas; chaves antigas removidas. **Próximas ondas (a combinar com o dono):** demais telas do painel, app do cliente e plataforma.
+
 ## Entrega — tempo de preparo entre atendimentos (05/10, Claude Code) — **migration pendente na VPS**
 
 Folga depois de cada atendimento para limpar e arrumar a cadeira. O cliente continua vendo só a duração do serviço; a folga não aparece como horário livre.

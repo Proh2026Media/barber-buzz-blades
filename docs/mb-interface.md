@@ -310,6 +310,22 @@ Não usar emojis como único identificador de ação, ilustrações que sugiram 
 
 ## 4. Linguagem, orientação e acessibilidade
 
+### Mostrar em vez de explicar (diretriz do dono, 05/10/2026)
+
+O sistema deve ser visual, intuitivo e autoexplicativo. Mesmo no primeiro acesso, uma pessoa sem conhecimento técnico precisa entender onde está, o que está acontecendo, o que fazer e qual é o próximo passo. Princípio: **se for preciso explicar demais como usar uma funcionalidade, a experiência ainda precisa melhorar.**
+
+- **Visual primeiro:** quando um ícone, cartão, indicador, cor, gráfico, selo de status ou exemplo ilustrado comunica mais rápido que uma frase, usar o elemento visual. Parágrafo explicativo é último recurso.
+- **Hierarquia clara:** o mais importante, o que exige atenção e a próxima ação aparecem primeiro e com mais peso visual.
+- **Informações relacionadas juntas:** dados do mesmo contexto ficam próximos ou ligados visualmente; evitar que a pessoa navegue por várias telas para entender uma situação.
+- **Linguagem simples:** sem termos técnicos na jornada comum; detalhe técnico só quando indispensável.
+- **Ações evidentes:** o rótulo do botão diz o que vai acontecer.
+- **Feedback visual:** sucesso, erro, alerta, pendência, processamento e conclusão têm ícone e cor próprios, não só texto.
+- **Escolhas à vista:** poucas opções (até ~6) aparecem como botões/pílulas selecionáveis, não escondidas em lista suspensa; cada opção mostra o efeito com um exemplo (ex.: os horários que o cliente verá).
+- **Exemplos no lugar de regras:** em vez de descrever a regra ("testa um horário a cada 15 minutos…"), mostrar o resultado (pílulas 9:00 · 9:15 · 9:30, mini agenda com "já marcado", "folga" e "pode começar").
+
+Referência implementada: Ajustes → Agendamento → "Como os horários aparecem" (`SlotModeSettings.tsx`) e o resumo "Assim seus clientes veem os horários" em Serviços e Horários.
+
+
 ### Escrita para usuários finais
 
 Escrever em português brasileiro, salvo outro idioma definido no produto. Usar palavras familiares, frases curtas, voz ativa e uma ideia principal por mensagem. Manter tratamento respeitoso, sem infantilizar, repreender ou pressupor conhecimento de tecnologia.
