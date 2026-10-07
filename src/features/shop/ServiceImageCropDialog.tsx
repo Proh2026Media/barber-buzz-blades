@@ -22,6 +22,7 @@ export function ServiceImageCropDialog({
   imageAlt,
   outputName = "servico-1x1.webp",
   focusY = 0.5,
+  preview,
 }: {
   file: File | null;
   onCancel: () => void;
@@ -32,6 +33,11 @@ export function ServiceImageCropDialog({
   outputName?: string;
   /** Altura (0 = topo, 0,5 = meio) que o corte automático deixa no centro do quadro. */
   focusY?: number;
+  /**
+   * Miniatura "Assim fica" ao lado do zoom: quadrado do serviço ou foto redonda do profissional.
+   * Com ela, a frase de apoio da janela fica só para leitor de tela (a imagem já explica).
+   */
+  preview?: "square" | "round";
 }) {
   const { t } = useI18n();
   const imageUrl = useMemo(() => (file ? URL.createObjectURL(file) : ""), [file]);
@@ -179,7 +185,7 @@ export function ServiceImageCropDialog({
             <DialogTitle className="flex items-center gap-2">
               <Crop className="size-5 text-gold" /> {title ?? t("brand.crop.title")}
             </DialogTitle>
-            <DialogDescription className="mt-1">
+            <DialogDescription className={preview ? "sr-only" : "mt-1"}>
               {description ?? t("brand.crop.description")}
             </DialogDescription>
           </div>
@@ -255,46 +261,70 @@ export function ServiceImageCropDialog({
             </span>
           </div>
 
-          <div className="rounded-2xl border border-border bg-card p-3">
-            <div className="flex items-center justify-between gap-3">
-              <label id={zoomLabelId} className="flex items-center gap-2 text-sm font-semibold">
-                <ZoomIn className="size-4 text-gold" /> {t("brand.crop.zoom")}
-              </label>
-              <output className="text-xs font-bold tabular-nums text-muted-foreground">
-                {Math.round(zoom * 100)}%
-              </output>
+          <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3">
+            {preview && imageUrl && (
+              <figure className="flex shrink-0 flex-col items-center gap-1">
+                <span
+                  className={`relative block size-14 overflow-hidden bg-muted ${preview === "round" ? "rounded-full" : "rounded-xl"}`}
+                >
+                  <img
+                    src={imageUrl}
+                    alt=""
+                    draggable={false}
+                    className="pointer-events-none absolute left-1/2 top-1/2 max-w-none"
+                    style={{
+                      width: (geometry.width * 56) / viewportSize,
+                      height: (geometry.height * 56) / viewportSize,
+                      transform: `translate(-50%, -50%) translate(${(offset.x * 56) / viewportSize}px, ${(offset.y * 56) / viewportSize}px)`,
+                    }}
+                  />
+                </span>
+                <figcaption className="text-[11px] font-semibold text-muted-foreground">
+                  {t("catalog.crop.preview")}
+                </figcaption>
+              </figure>
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-3">
+                <label id={zoomLabelId} className="flex items-center gap-2 text-sm font-semibold">
+                  <ZoomIn className="size-4 text-gold" /> {t("brand.crop.zoom")}
+                </label>
+                <output className="text-xs font-bold tabular-nums text-muted-foreground">
+                  {Math.round(zoom * 100)}%
+                </output>
+              </div>
+              <Slider
+                className="mt-1"
+                min={1}
+                max={3}
+                step={0.01}
+                value={[zoom]}
+                aria-labelledby={zoomLabelId}
+                aria-valuetext={t("brand.crop.zoomValue", { value: Math.round(zoom * 100) })}
+                onValueChange={([value]) => {
+                  autoFrameRef.current = false;
+                  setZoom(value ?? 1);
+                }}
+              />
+              <button
+                type="button"
+                className="mt-1 flex min-h-11 items-center gap-2 text-xs font-semibold text-muted-foreground"
+                onClick={() => {
+                  setZoom(1);
+                  autoFrameRef.current = true;
+                  setOffset(
+                    initialCropOffset({
+                      naturalWidth: naturalSize.width,
+                      naturalHeight: naturalSize.height,
+                      viewportSize,
+                      focusY,
+                    }),
+                  );
+                }}
+              >
+                <RotateCcw className="size-4" /> {t("brand.crop.recenter")}
+              </button>
             </div>
-            <Slider
-              className="mt-1"
-              min={1}
-              max={3}
-              step={0.01}
-              value={[zoom]}
-              aria-labelledby={zoomLabelId}
-              aria-valuetext={t("brand.crop.zoomValue", { value: Math.round(zoom * 100) })}
-              onValueChange={([value]) => {
-                autoFrameRef.current = false;
-                setZoom(value ?? 1);
-              }}
-            />
-            <button
-              type="button"
-              className="mt-1 flex min-h-11 items-center gap-2 text-xs font-semibold text-muted-foreground"
-              onClick={() => {
-                setZoom(1);
-                autoFrameRef.current = true;
-                setOffset(
-                  initialCropOffset({
-                    naturalWidth: naturalSize.width,
-                    naturalHeight: naturalSize.height,
-                    viewportSize,
-                    focusY,
-                  }),
-                );
-              }}
-            >
-              <RotateCcw className="size-4" /> {t("brand.crop.recenter")}
-            </button>
           </div>
 
           {error && (

@@ -43,6 +43,8 @@ export function useWaiting(shopId: string | null | undefined, admin = false) {
   const demo = useDemo();
   const [snapshot, setSnapshot] = useState<WaitingSnapshot>(EMPTY_SNAPSHOT);
   const [error, setError] = useState<string | null>(null);
+  /** Erro da última ação (entrar, confirmar, desistir): fica à vista mesmo se a vaga sumir. */
+  const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState(new Date());
   const offset = useRef(0);
@@ -93,6 +95,7 @@ export function useWaiting(shopId: string | null | undefined, admin = false) {
     if (busy) return false;
     setBusy(true);
     setError(null);
+    setActionError(null);
     try {
       if (demo) {
         waitingDemoAction(demo, id, action, serviceId);
@@ -110,11 +113,12 @@ export function useWaiting(shopId: string | null | undefined, admin = false) {
       return true;
     } catch (error) {
       // Na demonstração os erros já saem traduzidos do modelo local.
-      setError(
+      const message =
         demo && error instanceof Error && error.message
           ? error.message
-          : waitingErrorMessage(error),
-      );
+          : waitingErrorMessage(error);
+      setError(message);
+      setActionError(message);
       return false;
     } finally {
       setBusy(false);
@@ -138,6 +142,6 @@ export function useWaiting(shopId: string | null | undefined, admin = false) {
         .slice()
         .reverse()
     : snapshot.events;
-  return { waits, events, now: currentTime, error, busy, act, refresh };
+  return { waits, events, now: currentTime, error, actionError, busy, act, refresh };
 }
 export type WaitingController = ReturnType<typeof useWaiting>;

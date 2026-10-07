@@ -1,6 +1,20 @@
-import { useEffect, useRef, useState } from "react";
-import { BadgeCheck, CircleAlert, Loader2, MessageCircle } from "lucide-react";
+import { useEffect, useId, useState } from "react";
+import { Bell, KeyRound, Loader2, MessageCircle, Pencil, Send, Trash2, X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import {
+  ActionResult,
+  FieldMessage,
+  IconList,
+  IconTile,
+  Notice,
+  SectionHeader,
+  SettingRow,
+  STATE,
+  StatusBadge,
+  Steps,
+  type ActionState,
+} from "@/components/visual";
+import { CodeInput, ResendButton } from "@/features/auth/entry";
 import { supabase } from "@/integrations/supabase/client";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { useI18n } from "@/lib/i18n";
@@ -14,12 +28,18 @@ import { useI18n } from "@/lib/i18n";
  * continua pela RPC save_my_whatsapp (sem código).
  */
 
+export type WhatsappStatus = { number: string; verified: boolean; optIn: boolean };
+
 type Props = {
   demo: boolean;
   disabled: boolean;
   initialNumber: string;
   initialOptIn: boolean;
   initialVerified: boolean;
+  /** Avisa a tela de fora (resumo da Conta) quando número, confirmação ou lembretes mudam. */
+  onStatusChange?: (status: WhatsappStatus) => void;
+  /** id do cartão, para os atalhos do resumo da Conta. */
+  id?: string;
 };
 
 type OtpPayload = {
@@ -85,20 +105,33 @@ export function WhatsappProfileCard({
   initialNumber,
   initialOptIn,
   initialVerified,
+  onStatusChange,
+  id,
 }: Props) {
   const { t } = useI18n();
+  const uid = useId();
+  const titleId = `${uid}-title`;
+  const numberId = `${uid}-number`;
+  const optInId = `${uid}-optin`;
+  const codeId = `${uid}-code`;
+  const codeMsgId = `${uid}-code-msg`;
   const [whatsapp, setWhatsapp] = useState(initialNumber ? formatBr(initialNumber) : "");
   const [savedNumber, setSavedNumber] = useState(initialNumber);
   const [verified, setVerified] = useState(initialVerified);
   const [optIn, setOptIn] = useState(initialOptIn);
   const [step, setStep] = useState<"edit" | "code">("edit");
+  // Com número gravado, o cartão mostra o resumo; "Trocar número" abre o campo.
+  const [editing, setEditing] = useState(false);
   const [pendingNumber, setPendingNumber] = useState("");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState<"save" | "send" | "verify" | null>(null);
   const [cooldown, setCooldown] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState("");
-  const codeRef = useRef<HTMLInputElement>(null);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [attemptsLeft, setAttemptsLeft] = useState<number | null>(null);
+  const [result, setResult] = useState<{ state: ActionState; text: string } | null>(null);
+  const [retry, setRetry] = useState<(() => void) | null>(null);
+  const [toggleState, setToggleState] = useState<ActionState | null>(null);
+  const [toggleText, setToggleText] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -107,8 +140,13 @@ export function WhatsappProfileCard({
   }, [cooldown]);
 
   useEffect(() => {
-    if (step === "code") codeRef.current?.focus();
-  }, [step]);
+    onStatusChange?.({ number: savedNumber, verified, optIn });
+  }, [onStatusChange, savedNumber, verified, optIn]);
+
+  function showResult(state: ActionState, text: string, again?: () => void) {
+    setResult({ state, text });
+    setRetry(() => again ?? null);
+  }
 
   function errorText(payload: OtpPayload | null, err?: unknown) {
     switch (payload?.error_code) {
@@ -136,10 +174,10 @@ export function WhatsappProfileCard({
   }
 
   /** Liga/desliga avisos ou apaga o número (sem código). */
-  async function saveWithoutCode(raw: string) {
+  async function saveWithoutCode(raw: string, nextOptIn: boolean) {
     const { data, error: rpcError } = await supabase.rpc("save_my_whatsapp", {
       p_raw: raw,
-      p_opt_in: optIn,
+      p_opt_in: nextOptIn,
     });
     if (rpcError) {
       if (rpcError.code === "23505") throw { error_code: "phone_in_use" } as OtpPayload;
@@ -150,35 +188,38 @@ export function WhatsappProfileCard({
     setWhatsapp(number ? formatBr(number) : "");
     setOptIn(Boolean(data?.whatsapp_opt_in_at));
     if (!number) setVerified(false);
-    setMessage(
-      data?.whatsapp_opt_in_at ? t("profile.whatsappSavedOptIn") : t("profile.whatsappSaved"),
-    );
+    return data;
   }
 
   async function sendCode(number: string) {
     setBusy("send");
-    setError(null);
-    setMessage("");
+    setCodeError(null);
+    setResult(null);
     try {
       const payload = await callVerifyPhone({ action: "request", destination: number });
       if (!payload.ok) {
-        setError(errorText(payload));
+        showResult("error", errorText(payload), () => void sendCode(number));
         return;
       }
       if (payload.already_verified) {
         // Mesmo número já confirmado: só grava a preferência de avisos.
-        await saveWithoutCode(number);
+        const data = await saveWithoutCode(number, optIn);
         setVerified(true);
         setStep("edit");
+        setEditing(false);
+        showResult(
+          "saved",
+          data?.whatsapp_opt_in_at ? t("profile.whatsappSavedOptIn") : t("profile.whatsappSaved"),
+        );
         return;
       }
       setPendingNumber(number);
       setCode("");
+      setAttemptsLeft(null);
       setStep("code");
       setCooldown(payload.resend_after_seconds ?? RESEND_SECONDS);
-      setMessage(t("fix2.whats.codeSent", { number: formatBr(number) }));
     } catch (err) {
-      setError(errorText(err as OtpPayload, err));
+      showResult("error", errorText(err as OtpPayload, err), () => void sendCode(number));
     } finally {
       setBusy(null);
     }
@@ -187,40 +228,70 @@ export function WhatsappProfileCard({
   async function submitNumber(event: React.FormEvent) {
     event.preventDefault();
     if (demo) {
-      setMessage(t("profile.whatsappDemo"));
+      showResult("saved", t("profile.whatsappDemo"));
       return;
     }
     const raw = whatsapp.trim();
-    const sameAsSaved = Boolean(savedNumber) && brDigits(raw) === brDigits(savedNumber);
-
-    // Sem código: apagar o número, ajustar avisos de um número já confirmado
-    // ou desligar avisos de um número ainda não confirmado.
-    if (!raw || (sameAsSaved && (verified || !optIn))) {
+    // Campo vazio com número gravado: apaga o número (sem código).
+    if (!raw) {
       setBusy("save");
-      setError(null);
-      setMessage("");
+      setResult(null);
       try {
-        await saveWithoutCode(raw);
+        const data = await saveWithoutCode("", optIn);
+        setEditing(false);
+        showResult(
+          "saved",
+          data?.whatsapp_opt_in_at ? t("profile.whatsappSavedOptIn") : t("profile.whatsappSaved"),
+        );
       } catch (err) {
-        setError(errorText(err as OtpPayload, err));
+        showResult("error", errorText(err as OtpPayload, err));
       } finally {
         setBusy(null);
       }
       return;
     }
-
     if (brDigits(raw).length < 12) {
-      setError(t("fix2.whats.errInvalidNumber"));
+      showResult("error", t("fix2.whats.errInvalidNumber"));
       return;
     }
     await sendCode(raw);
   }
 
+  /** Interruptor dos lembretes no resumo: grava na hora quando não precisa de código. */
+  async function changeOptIn(next: boolean) {
+    setToggleState(null);
+    setToggleText(undefined);
+    if (demo || !savedNumber || editing || (next && !verified)) {
+      // Sem número, editando, ou ligando num número sem confirmar: nada é gravado agora; o
+      // pedido vai junto com o código. A linha mostra "pendente" (optInPending), não "salvo".
+      setOptIn(next);
+      return;
+    }
+    const before = optIn;
+    setOptIn(next);
+    setToggleState("saving");
+    setToggleText(undefined);
+    setBusy("save");
+    try {
+      const data = await saveWithoutCode(savedNumber, next);
+      setToggleState("saved");
+      setToggleText(
+        data?.whatsapp_opt_in_at ? t("conta.whats.remindersOn") : t("conta.whats.remindersOff"),
+      );
+    } catch (err) {
+      setOptIn(before);
+      setToggleState("error");
+      setToggleText(errorText(err as OtpPayload, err));
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function verifyCode(value: string) {
     if (!/^\d{6}$/.test(value) || busy) return;
     setBusy("verify");
-    setError(null);
-    setMessage("");
+    setCodeError(null);
+    setResult(null);
     try {
       const payload = await callVerifyPhone({
         action: "verify",
@@ -229,7 +300,8 @@ export function WhatsappProfileCard({
         opt_in: optIn,
       });
       if (!payload.ok) {
-        setError(errorText(payload));
+        setCodeError(errorText(payload));
+        if (typeof payload.attempts_left === "number") setAttemptsLeft(payload.attempts_left);
         if (payload.error_code === "otp_invalid") setCode("");
         return;
       }
@@ -239,13 +311,16 @@ export function WhatsappProfileCard({
       setVerified(true);
       setOptIn(Boolean(payload.whatsapp_opt_in_at));
       setStep("edit");
+      setEditing(false);
       setCode("");
       setPendingNumber("");
-      setMessage(
+      setAttemptsLeft(null);
+      showResult(
+        "saved",
         payload.whatsapp_opt_in_at ? t("fix2.whats.verifiedOptIn") : t("fix2.whats.verified"),
       );
     } catch (err) {
-      setError(errorText(null, err));
+      setCodeError(errorText(null, err));
     } finally {
       setBusy(null);
     }
@@ -253,44 +328,192 @@ export function WhatsappProfileCard({
 
   const locked = disabled || busy !== null;
   const changed = brDigits(whatsapp) !== brDigits(savedNumber);
-  const needsCode = Boolean(whatsapp.trim()) && (changed || (!verified && optIn));
+  const showSummary = Boolean(savedNumber) && !editing && step === "edit";
+  const removing = Boolean(savedNumber) && !whatsapp.trim();
+  const canSubmit = demo ? changed : removing || (Boolean(whatsapp.trim()) && changed);
+  const badge = !savedNumber
+    ? { ...STATE.paused, label: t("conta.whats.none") }
+    : verified
+      ? { ...STATE.active, label: t("fix2.whats.badgeVerified") }
+      : { ...STATE.attention, label: t("fix2.whats.badgeUnverified") };
+  // Avisos ligados num número sem confirmar só passam a valer com o código: mostra pendente.
+  const optInPending = optIn && !demo && (!savedNumber || !verified);
+
+  const optInRow = (
+    <SettingRow
+      icon={Bell}
+      title={t("profile.whatsappOptIn")}
+      description={t("profile.whatsappOptInHint")}
+      controlId={optInId}
+      control={
+        <Switch
+          id={optInId}
+          checked={optIn}
+          disabled={locked}
+          onCheckedChange={(next) => void changeOptIn(next)}
+        />
+      }
+      status={toggleState ?? (optInPending ? "pending" : null)}
+      statusText={toggleState ? toggleText : t("conta.whats.optInPending")}
+      onRetry={() => void changeOptIn(!optIn)}
+      className="rounded-2xl border border-border bg-background/60 px-3"
+    />
+  );
 
   return (
     <section
-      className="space-y-4 rounded-2xl border border-border bg-card p-4"
-      aria-labelledby="whatsapp-card-title"
+      id={id}
+      className="app-action-card scroll-mt-24 space-y-4 p-4 sm:p-5"
+      aria-labelledby={titleId}
     >
-      <div className="flex flex-wrap items-center gap-2">
-        <MessageCircle className="size-4 text-gold" aria-hidden="true" />
-        <h3 id="whatsapp-card-title" className="text-sm font-semibold">
-          WhatsApp
-        </h3>
-        {!demo && savedNumber && !changed && step === "edit" && (
-          <span
-            className={
-              verified
-                ? "ml-auto inline-flex items-center gap-1 rounded-full bg-emerald-600/10 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300"
-                : "ml-auto inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:text-amber-400"
-            }
-          >
-            {verified ? (
-              <BadgeCheck className="size-3.5" aria-hidden="true" />
-            ) : (
-              <CircleAlert className="size-3.5" aria-hidden="true" />
-            )}
-            {verified ? t("fix2.whats.badgeVerified") : t("fix2.whats.badgeUnverified")}
-          </span>
-        )}
-      </div>
+      <SectionHeader
+        icon={MessageCircle}
+        id={titleId}
+        title="WhatsApp"
+        aside={step === "edit" ? <StatusBadge {...badge} size="sm" /> : null}
+      />
 
-      {step === "edit" ? (
-        <form onSubmit={(event) => void submitNumber(event)} className="space-y-4">
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            {t("profile.whatsappHint")}
+      {step === "edit" && (
+        // Para que serve o número, em duas dicas com ícone (no lugar do parágrafo).
+        <IconList
+          size="sm"
+          label={t("conta.whats.usesLabel")}
+          className="flex flex-wrap gap-x-4 gap-y-1 space-y-0"
+          items={[
+            { icon: Bell, text: t("conta.whats.useReminders"), key: "reminders" },
+            { icon: KeyRound, text: t("conta.whats.useCodes"), key: "codes" },
+          ]}
+        />
+      )}
+
+      {step === "code" ? (
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            void verifyCode(code);
+          }}
+          className="space-y-4"
+        >
+          <Steps
+            label={t("conta.whats.stepsLabel")}
+            steps={[
+              { label: t("conta.whats.stepNumber"), status: "done" },
+              { label: t("conta.whats.stepCode"), status: codeError ? "error" : "current" },
+              { label: t("conta.whats.stepDone"), status: "upcoming" },
+            ]}
+          />
+          <p className="text-sm">
+            {t("conta.whats.sentTo")}{" "}
+            <strong className="whitespace-nowrap tabular-nums">{formatBr(pendingNumber)}</strong>
           </p>
-          <label className="block space-y-2 text-sm font-semibold">
-            <span>{t("profile.whatsappNumber")}</span>
+          <div className="space-y-2">
+            <label htmlFor={codeId} className="block text-sm font-semibold">
+              {t("fix2.whats.codeLabel")}
+            </label>
+            <CodeInput
+              id={codeId}
+              value={code}
+              autoFocus
+              disabled={locked}
+              invalid={Boolean(codeError)}
+              describedBy={codeMsgId}
+              onChange={(next) => {
+                setCode(next);
+                setCodeError(null);
+              }}
+              onComplete={(next) => void verifyCode(next)}
+            />
+            <FieldMessage id={codeMsgId} tone={codeError ? "error" : "hint"}>
+              {codeError ?? t("fix2.whats.codeHint")}
+            </FieldMessage>
+            {codeError && attemptsLeft !== null && attemptsLeft > 0 && (
+              <span className="flex items-center gap-1.5" aria-hidden>
+                {Array.from({ length: Math.min(attemptsLeft, 5) }, (_, index) => (
+                  <span key={index} className="size-2.5 rounded-full bg-gold" />
+                ))}
+              </span>
+            )}
+          </div>
+          <button
+            type="submit"
+            disabled={locked || code.length !== 6}
+            aria-busy={busy === "verify" || undefined}
+            className="action-button action-confirm w-full"
+          >
+            {busy === "verify" && <Loader2 className="motion-safe:animate-spin" aria-hidden />}
+            {busy === "verify" ? t("fix2.whats.verifying") : t("fix2.whats.confirm")}
+          </button>
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+            <ResendButton
+              secondsLeft={cooldown}
+              totalSeconds={RESEND_SECONDS}
+              busy={busy === "send"}
+              onClick={() => void sendCode(pendingNumber)}
+              label={t("fix2.whats.resend")}
+              waitLabel={t("fix2.whats.resendIn", { seconds: cooldown })}
+              busyLabel={t("fix2.whats.sending")}
+            />
+            <button
+              type="button"
+              disabled={busy !== null}
+              onClick={() => {
+                setStep("edit");
+                setEditing(true);
+                setCode("");
+                setCodeError(null);
+                setResult(null);
+              }}
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl px-2 text-sm font-semibold text-muted-foreground transition hover:text-foreground disabled:opacity-50"
+            >
+              <Pencil className="size-4" aria-hidden />
+              {t("fix2.whats.changeNumber")}
+            </button>
+          </div>
+        </form>
+      ) : showSummary ? (
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-background/60 p-3">
+            <IconTile icon={MessageCircle} tone={verified ? "success" : "warning"} size="sm" />
+            <p className="flex-1 whitespace-nowrap text-base font-bold tabular-nums">
+              {formatBr(savedNumber)}
+            </p>
+            <button
+              type="button"
+              disabled={locked}
+              onClick={() => {
+                setEditing(true);
+                setWhatsapp(formatBr(savedNumber));
+                setResult(null);
+                setToggleState(null);
+              }}
+              className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-border px-3 text-sm font-semibold transition hover:border-primary/40 disabled:opacity-50"
+            >
+              <Pencil className="size-4" aria-hidden />
+              {t("fix2.whats.changeNumber")}
+            </button>
+          </div>
+          {!verified && !demo && (
+            <Notice
+              tone="warning"
+              role="none"
+              title={t("conta.whats.consequence")}
+              action={{
+                label: t("conta.whats.confirmMine"),
+                icon: Send,
+                onClick: () => void sendCode(savedNumber),
+              }}
+            />
+          )}
+          {optInRow}
+        </div>
+      ) : (
+        <form onSubmit={(event) => void submitNumber(event)} className="space-y-3">
+          <div className="space-y-2">
+            <label htmlFor={numberId} className="block text-sm font-semibold">
+              {t("profile.whatsappNumber")}
+            </label>
             <input
+              id={numberId}
               type="tel"
               inputMode="tel"
               autoComplete="tel"
@@ -299,130 +522,65 @@ export function WhatsappProfileCard({
               disabled={locked}
               onChange={(event) => {
                 setWhatsapp(event.target.value);
-                setMessage("");
-                setError(null);
+                setResult(null);
               }}
               className="min-h-11 w-full rounded-xl border border-border bg-background px-3 py-2"
             />
-          </label>
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold">{t("profile.whatsappOptIn")}</p>
-              <p className="text-xs text-muted-foreground">{t("profile.whatsappOptInHint")}</p>
-            </div>
-            <Switch
-              checked={optIn}
-              disabled={locked}
-              onCheckedChange={setOptIn}
-              aria-label={t("profile.whatsappOptIn")}
-            />
           </div>
-          {!demo && needsCode && (
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              {t("fix2.whats.needsCodeHint")}
-            </p>
+          {!savedNumber && optInRow}
+          {!demo && !removing && changed && whatsapp.trim() && (
+            <IconList size="sm" items={[{ icon: KeyRound, text: t("conta.whats.codeNext") }]} />
           )}
-          <button
-            type="submit"
-            disabled={locked}
-            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary p-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
-          >
-            {busy && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-            {busy === "send"
-              ? t("fix2.whats.sending")
-              : busy
-                ? t("common.saving")
-                : !demo && needsCode
-                  ? t("fix2.whats.sendCode")
-                  : t("profile.saveWhatsapp")}
-          </button>
-        </form>
-      ) : (
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            void verifyCode(code);
-          }}
-          className="space-y-4"
-        >
-          <p className="text-sm leading-relaxed">
-            {t("fix2.whats.codeIntro", { number: formatBr(pendingNumber) })}
-          </p>
-          <label className="block space-y-2 text-sm font-semibold">
-            <span>{t("fix2.whats.codeLabel")}</span>
-            <input
-              ref={codeRef}
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              pattern="\d{6}"
-              maxLength={6}
-              placeholder="000000"
-              value={code}
-              disabled={locked}
-              aria-describedby="whatsapp-code-hint"
-              onChange={(event) => {
-                const next = event.target.value.replace(/\D/g, "").slice(0, 6);
-                setCode(next);
-                setError(null);
-                if (next.length === 6) void verifyCode(next);
-              }}
-              className="min-h-12 w-full rounded-xl border border-border bg-background px-3 py-2 text-center font-mono text-2xl tracking-[0.5em]"
-            />
-            <span
-              id="whatsapp-code-hint"
-              className="block text-xs font-normal text-muted-foreground"
-            >
-              {t("fix2.whats.codeHint")}
-            </span>
-          </label>
-          <button
-            type="submit"
-            disabled={locked || code.length !== 6}
-            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary p-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
-          >
-            {busy === "verify" && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-            {busy === "verify" ? t("fix2.whats.verifying") : t("fix2.whats.confirm")}
-          </button>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="flex flex-wrap gap-2">
             <button
-              type="button"
-              disabled={locked || cooldown > 0}
-              onClick={() => void sendCode(pendingNumber)}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border p-3 text-sm font-semibold disabled:opacity-50"
+              type="submit"
+              disabled={locked || !canSubmit}
+              aria-busy={busy === "send" || busy === "save" || undefined}
+              className={`action-button flex-1 basis-48 ${removing ? "action-danger" : "action-confirm"}`}
             >
-              {busy === "send" && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-              {cooldown > 0
-                ? t("fix2.whats.resendIn", { seconds: cooldown })
-                : t("fix2.whats.resend")}
+              {busy ? (
+                <Loader2 className="motion-safe:animate-spin" aria-hidden />
+              ) : removing ? (
+                <Trash2 aria-hidden />
+              ) : (
+                <Send aria-hidden />
+              )}
+              {busy === "send"
+                ? t("fix2.whats.sending")
+                : busy
+                  ? t("common.saving")
+                  : removing
+                    ? t("conta.whats.remove")
+                    : demo
+                      ? t("profile.saveWhatsapp")
+                      : t("fix2.whats.sendCode")}
             </button>
-            <button
-              type="button"
-              disabled={busy !== null}
-              onClick={() => {
-                setStep("edit");
-                setCode("");
-                setError(null);
-                setMessage("");
-              }}
-              className="min-h-11 rounded-xl border border-border p-3 text-sm font-semibold disabled:opacity-50"
-            >
-              {t("fix2.whats.changeNumber")}
-            </button>
+            {editing && (
+              <button
+                type="button"
+                disabled={busy !== null}
+                onClick={() => {
+                  setEditing(false);
+                  setWhatsapp(formatBr(savedNumber));
+                  setResult(null);
+                }}
+                className="inline-flex min-h-11 flex-1 basis-32 items-center justify-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold transition hover:border-primary/40 disabled:opacity-50"
+              >
+                <X className="size-4" aria-hidden />
+                {t("conta.whats.keepNumber")}
+              </button>
+            )}
           </div>
         </form>
       )}
 
-      {error && (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
-      {message && (
-        <p role="status" aria-live="polite" className="text-sm">
-          {message}
-        </p>
-      )}
+      <ActionResult
+        state={result?.state}
+        text={result?.text}
+        onRetry={retry ?? undefined}
+        onDismiss={() => setResult(null)}
+        autoHideMs={6000}
+      />
     </section>
   );
 }

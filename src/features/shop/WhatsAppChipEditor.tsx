@@ -1,4 +1,5 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,8 +51,8 @@ function createChip(key: WhatsAppTemplateVar): HTMLSpanElement {
   chip.className = cn(
     "whatsapp-var-chip",
     "mx-0.5 inline-flex max-w-[9.5rem] select-none items-center truncate align-baseline",
-    "rounded-full border border-primary/30 bg-primary/15 px-1.5 py-0",
-    "text-[10px] font-semibold leading-4 text-foreground",
+    "min-h-7 rounded-lg border border-primary/30 bg-primary/15 px-2 py-0.5",
+    "text-xs font-semibold leading-5 text-foreground",
     "cursor-grab active:cursor-grabbing",
   );
   chip.textContent = tNow(WHATSAPP_TEMPLATE_VAR_HELP[key].chipKey);
@@ -271,6 +272,38 @@ export const WhatsAppChipEditor = forwardRef<WhatsAppChipEditorHandle, WhatsAppC
       emitChange();
     }
 
+    /** Move a pílula uma palavra para a esquerda ou para a direita (alternativa ao arrastar). */
+    function moveChip(direction: "left" | "right") {
+      const root = editorRef.current;
+      const chip = menuChip;
+      if (!root || !chip || !chip.isConnected) return;
+      const sibling = direction === "left" ? chip.previousSibling : chip.nextSibling;
+      if (!sibling) return;
+      if (sibling.nodeType === Node.TEXT_NODE && (sibling.textContent ?? "").length > 0) {
+        const text = sibling as Text;
+        const value = text.data;
+        if (direction === "left") {
+          const trimmed = value.replace(/\s+$/, "");
+          const cut = trimmed.lastIndexOf(" ") + 1;
+          if (cut <= 0) text.before(chip);
+          else text.splitText(cut).before(chip);
+        } else {
+          const lead = value.length - value.replace(/^\s+/, "").length;
+          const space = value.indexOf(" ", lead);
+          if (space < 0) text.after(chip);
+          else text.splitText(space).before(chip);
+        }
+      } else if (direction === "left") {
+        sibling.before(chip);
+      } else {
+        sibling.after(chip);
+      }
+      root.normalize();
+      setMenuOpen(false);
+      placeCaretAfter(chip);
+      emitChange();
+    }
+
     function removeChip() {
       const root = editorRef.current;
       if (!menuChip || !menuChip.isConnected || !root) return;
@@ -300,6 +333,17 @@ export const WhatsAppChipEditor = forwardRef<WhatsAppChipEditorHandle, WhatsAppC
           )}
           onInput={() => emitChange()}
           onKeyDown={(event) => {
+            // Teclado: Enter ou Espaço numa pílula abre o menu (trocar, mover, remover).
+            const target = event.target;
+            if (
+              (event.key === "Enter" || event.key === " ") &&
+              target instanceof HTMLSpanElement &&
+              target.hasAttribute(CHIP_ATTR)
+            ) {
+              event.preventDefault();
+              openChipMenu(target);
+              return;
+            }
             if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return;
             // Mantém quebra simples (como WhatsApp), sem criar <div>.
             event.preventDefault();
@@ -416,9 +460,25 @@ export const WhatsAppChipEditor = forwardRef<WhatsAppChipEditorHandle, WhatsAppC
             ))}
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              className="min-h-11 rounded-lg text-sm text-destructive focus:text-destructive"
+              className="min-h-11 gap-2 rounded-lg text-sm"
+              onSelect={() => moveChip("left")}
+            >
+              <ArrowLeft className="size-4" aria-hidden />
+              {t("integr.chip.moveLeft")}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="min-h-11 gap-2 rounded-lg text-sm"
+              onSelect={() => moveChip("right")}
+            >
+              <ArrowRight className="size-4" aria-hidden />
+              {t("integr.chip.moveRight")}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="min-h-11 gap-2 rounded-lg text-sm text-destructive focus:text-destructive"
               onSelect={removeChip}
             >
+              <Trash2 className="size-4" aria-hidden />
               {t("integr.chip.remove")}
             </DropdownMenuItem>
           </DropdownMenuContent>

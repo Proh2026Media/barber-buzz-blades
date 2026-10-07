@@ -223,6 +223,113 @@ export function openStateAt(today: LandingData["today"], nowHHMM: string): OpenS
   return { kind: "closed" };
 }
 
+export type NextOpening = { inDays: number; weekday: number; opens: string };
+
+/**
+ * Próxima abertura depois de hoje (amanhã = `inDays: 1`), pela tabela da semana. Serve para o
+ * selo "Fechado agora · abre amanhã às 09:00". Sem nenhum dia aberto, devolve `null`.
+ */
+export function nextOpeningAfterToday(
+  hours: LandingHours[],
+  todayWeekday: number,
+): NextOpening | null {
+  for (let inDays = 1; inDays <= 7; inDays += 1) {
+    const weekday = (todayWeekday + inDays) % 7;
+    const row = hours.find((item) => item.weekday === weekday);
+    if (row?.is_open && row.opens_at && row.closes_at) {
+      return { inDays, weekday, opens: row.opens_at };
+    }
+  }
+  return null;
+}
+
+/** O expediente de hoje já terminou (houve atendimento, mas acabou). */
+export function endedToday(today: LandingData["today"], nowHHMM: string) {
+  return !!(today.is_open && today.closes_at && nowHHMM >= today.closes_at);
+}
+
+export type HoursGroup = {
+  /** Dias seguidos (ordem seg → dom) com o mesmo horário. */
+  days: number[];
+  is_open: boolean;
+  opens_at: string;
+  closes_at: string;
+};
+
+/** Semana começando na segunda, como a pessoa lê. */
+export const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0] as const;
+
+/**
+ * Junta dias seguidos com o mesmo horário: "Seg a Sex 09:00–19:00 · Sáb 08:00–14:00 · Dom
+ * Fechado" em 3 linhas em vez de 7. Dia sem linha na tabela conta como fechado.
+ */
+export function groupHours(hours: LandingHours[]): HoursGroup[] {
+  const groups: HoursGroup[] = [];
+  for (const weekday of WEEK_ORDER) {
+    const row = hours.find((item) => item.weekday === weekday);
+    const is_open = !!row?.is_open;
+    const opens_at = is_open ? (row?.opens_at ?? "") : "";
+    const closes_at = is_open ? (row?.closes_at ?? "") : "";
+    const last = groups[groups.length - 1];
+    if (
+      last &&
+      last.is_open === is_open &&
+      last.opens_at === opens_at &&
+      last.closes_at === closes_at
+    ) {
+      last.days.push(weekday);
+    } else {
+      groups.push({ days: [weekday], is_open, opens_at, closes_at });
+    }
+  }
+  return groups;
+}
+
+/**
+ * Hoje fechado por exceção num dia de expediente: tira hoje do grupo ("Seg a Sex") e o mostra
+ * numa linha própria fechada, para a semana não contradizer o selo "Fechado agora". Os dias
+ * antes e depois de hoje continuam juntos, cada lado no seu grupo.
+ */
+export function splitClosedToday(
+  groups: HoursGroup[],
+  todayWeekday: number,
+  todayOpen: boolean,
+): HoursGroup[] {
+  if (todayOpen) return groups;
+  return groups.flatMap((group) => {
+    const index = group.days.indexOf(todayWeekday);
+    if (index < 0 || !group.is_open) return [group];
+    const before = group.days.slice(0, index);
+    const after = group.days.slice(index + 1);
+    return [
+      ...(before.length ? [{ ...group, days: before }] : []),
+      { days: [todayWeekday], is_open: false, opens_at: "", closes_at: "" },
+      ...(after.length ? [{ ...group, days: after }] : []),
+    ];
+  });
+}
+
+/**
+ * Ordem dos cartões da equipe: quem tem horário hoje primeiro (pelo mais cedo), depois quem
+ * está sem vaga e, por último, quem não tem agenda online. Mantém a ordem da loja no empate.
+ */
+export function sortStaffByAvailability(staff: LandingStaff[]): LandingStaff[] {
+  const rank = (member: LandingStaff) =>
+    !member.offers_services ? 2 : member.free_today.length > 0 ? 0 : 1;
+  return staff
+    .map((member, index) => ({ member, index }))
+    .sort((a, b) => {
+      const byRank = rank(a.member) - rank(b.member);
+      if (byRank) return byRank;
+      if (rank(a.member) === 0) {
+        const byTime = (a.member.free_today[0] ?? "").localeCompare(b.member.free_today[0] ?? "");
+        if (byTime) return byTime;
+      }
+      return a.index - b.index;
+    })
+    .map(({ member }) => member);
+}
+
 export function instagramUrl(handle: string) {
   const clean = handle.trim().replace(/^@/, "");
   return clean ? `https://instagram.com/${encodeURIComponent(clean)}` : null;
@@ -240,4 +347,20 @@ export function mapsUrl(address: string) {
   return clean
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(clean)}`
     : null;
+}
+
+/** Mostra um "HH:MM" da loja no formato de hora do idioma (ex.: 02:30 PM em en-US). */
+export function formatClock(value: string | null | undefined, locale: string) {
+  if (!value) return value ?? "";
+  const match = /^(\d{1,2}):(\d{2})/.exec(value);
+  if (!match) return value;
+  try {
+    return new Intl.DateTimeFormat(locale, {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "UTC",
+    }).format(new Date(Date.UTC(2024, 0, 1, Number(match[1]), Number(match[2]))));
+  } catch {
+    return value;
+  }
 }

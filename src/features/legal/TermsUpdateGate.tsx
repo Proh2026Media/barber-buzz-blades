@@ -1,5 +1,7 @@
-import { Fragment, useEffect, useState, type ReactNode } from "react";
-import { FileCheck2, Loader2 } from "lucide-react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
+import { CalendarDays, Check, FileCheck2, Loader2 } from "lucide-react";
+import { Notice, Tag } from "@/components/visual";
+import { LegalDocLinks } from "@/features/auth/entry";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -57,7 +59,9 @@ type Props = {
 };
 
 export function TermsUpdateGate({ disabled = false, withDpa = false }: Props) {
-  const { t, locale } = useI18n();
+  const { t, intlLocale } = useI18n();
+  const laterRef = useRef<HTMLButtonElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -126,33 +130,33 @@ export function TermsUpdateGate({ disabled = false, withDpa = false }: Props) {
 
   if (disabled || !open) return null;
 
-  const lang = encodeURIComponent(locale);
-  const linkClass =
-    "-my-3 inline-flex min-h-11 items-center font-semibold text-foreground underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
-  const legalLink = (href: string, label: string) => (
-    <a
-      href={`${href}?lang=${lang}`}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={linkClass}
-    >
-      {label}
-      <span className="sr-only"> {t("cad.cliente.newTab")}</span>
-    </a>
-  );
-
+  // A frase jurídica fica igual; os nomes ficam em texto e os links, nas linhas acima.
+  const name = (label: string) => <strong className="font-semibold">{label}</strong>;
   const declaration = withDpa ? (
     withSlots(t("cad.dono.termsText"), {
-      terms: legalLink("/termos", t("cad.dono.termsLink")),
-      privacy: legalLink("/privacidade", t("cad.dono.privacyLink")),
-      dpa: legalLink("/acordo-de-dados", t("cad.dono.dpaLink")),
+      terms: name(t("cad.dono.termsLink")),
+      privacy: name(t("cad.dono.privacyLink")),
+      dpa: name(t("cad.dono.dpaLink")),
     })
   ) : (
     <>
-      {t("auth.terms.before")} {legalLink("/termos", t("auth.terms.link"))} {t("auth.terms.and")}{" "}
-      {legalLink("/privacidade", t("auth.privacy.link"))} {t("cad.cliente.terms.age")}
+      {t("auth.terms.before")} {name(t("auth.terms.link"))} {t("auth.terms.and")}{" "}
+      {name(t("auth.privacy.link"))} {t("cad.cliente.terms.age")}
     </>
   );
+
+  // Data da versão vigente (versions.ts), no formato do idioma da tela.
+  let versionDate = TERMS_VERSION;
+  try {
+    versionDate = new Intl.DateTimeFormat(intlLocale, {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      timeZone: "UTC",
+    }).format(new Date(`${TERMS_VERSION}T00:00:00Z`));
+  } catch {
+    // Data fora do formato: mostra a versão como está.
+  }
 
   return (
     <AlertDialog
@@ -166,47 +170,66 @@ export function TermsUpdateGate({ disabled = false, withDpa = false }: Props) {
         onEscapeKeyDown={(event) => {
           if (busy) event.preventDefault();
         }}
+        // Foco inicial no título (diz o que é a janela), nunca num link: o anel não cobre o texto.
+        // O próximo Tab leva aos documentos e depois a "Agora não" e "Concordo".
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          (titleRef.current ?? laterRef.current)?.focus();
+        }}
       >
         <div className="flex items-start gap-3">
           <span className="flex size-11 shrink-0 items-center justify-center rounded-[var(--control-radius)] bg-primary/10 text-primary">
             <FileCheck2 className="size-5" aria-hidden="true" />
           </span>
-          <div className="min-w-0 space-y-1">
-            <AlertDialogTitle className="text-base font-semibold leading-snug text-foreground">
-              {t("dec.termos.title")}
+          <div className="min-w-0 space-y-1.5">
+            <AlertDialogTitle
+              ref={titleRef}
+              tabIndex={-1}
+              className="text-lg font-bold leading-snug text-foreground outline-none"
+            >
+              {t("entry.terms.title")}
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-sm leading-relaxed text-muted-foreground">
-              {withDpa ? t("dec.termos.textOwner") : t("dec.termos.text")}
-            </AlertDialogDescription>
+            <Tag icon={CalendarDays}>{t("entry.terms.version", { date: versionDate })}</Tag>
           </div>
         </div>
 
-        <p className="rounded-[var(--control-radius)] border border-border/70 bg-card p-3 text-sm leading-relaxed text-foreground/85">
-          {declaration}
-        </p>
+        <AlertDialogDescription className="text-sm leading-relaxed text-muted-foreground">
+          {t("entry.terms.lead")}
+        </AlertDialogDescription>
 
-        {error && (
-          <p role="alert" className="text-sm text-destructive">
-            {error}
-          </p>
-        )}
+        <LegalDocLinks withDpa={withDpa} variant="rows" />
 
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            disabled={busy}
-            onClick={later}
-            className="flex min-h-11 items-center justify-center rounded-[var(--button-radius)] border border-border px-3 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
-          >
-            {t("dec.termos.later")}
-          </button>
+        <p className="text-xs leading-relaxed text-muted-foreground">{declaration}</p>
+
+        {error && <Notice tone="danger" title={error} />}
+
+        <div className="grid gap-2 sm:grid-cols-2 sm:items-start">
+          <div className="grid gap-1">
+            <button
+              ref={laterRef}
+              type="button"
+              disabled={busy}
+              onClick={later}
+              aria-describedby="terms-later-note"
+              className="flex min-h-11 items-center justify-center rounded-[var(--button-radius)] border border-border px-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:opacity-50"
+            >
+              {t("dec.termos.later")}
+            </button>
+            <p id="terms-later-note" className="text-center text-xs text-muted-foreground">
+              {t("entry.terms.laterNote")}
+            </p>
+          </div>
           <button
             type="button"
             disabled={busy}
             onClick={() => void agree()}
-            className="flex min-h-11 items-center justify-center gap-2 rounded-[var(--button-radius)] bg-primary px-3 text-sm font-semibold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
+            className="action-button action-confirm min-h-11 w-full text-sm"
           >
-            {busy && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
+            {busy ? (
+              <Loader2 className="motion-safe:animate-spin" aria-hidden="true" />
+            ) : (
+              <Check aria-hidden="true" />
+            )}
             {t("dec.termos.agree")}
           </button>
         </div>

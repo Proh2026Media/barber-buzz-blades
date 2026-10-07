@@ -1,6 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
-import type { ReactNode } from "react";
-import { LegalPageShell } from "@/features/legal/LegalPageShell";
+import {
+  Cpu,
+  Database,
+  Info,
+  KeyRound,
+  Scale,
+  Target,
+  UserCheck,
+  UserX,
+  type LucideIcon,
+} from "lucide-react";
+import { IconTile } from "@/components/visual";
+import { LegalPageShell, LegalSection as Section } from "@/features/legal/LegalPageShell";
+import { LegalRolesDiagram } from "@/features/legal/LegalVisuals";
 import { legalHead } from "@/features/legal/legal-head";
 import { useLegalI18n } from "@/features/legal/legal-locale";
 import { PLATFORM_OPERATOR } from "@/features/legal/operator";
@@ -30,24 +42,49 @@ export const Route = createFileRoute("/privacidade")({
   component: PrivacidadePage,
 });
 
-const headingClass = "text-lg font-bold text-foreground";
-const subheadingClass = "pt-1 text-base font-semibold text-foreground [overflow-wrap:anywhere]";
+const subheadingClass = "pt-1 text-base font-semibold text-foreground";
 
-function Section({ id, title, children }: { id?: string; title: string; children: ReactNode }) {
+/**
+ * Subtítulo da parte do Google: o nome do serviço em destaque e o escopo técnico entre
+ * parênteses em letra monoespaçada menor, para o leigo ver que pode pular (texto igual).
+ */
+function TechTitle({ text }: { text: string }) {
+  const match = /^(.*?)\s*(\(.*\))$/.exec(text);
   return (
-    <section id={id} className="scroll-mt-24 space-y-3">
-      <h2 className={headingClass}>{title}</h2>
-      {children}
-    </section>
+    <h3 className={subheadingClass}>
+      {match ? (
+        <>
+          {match[1]}{" "}
+          <span className="block break-all font-mono text-xs font-normal text-muted-foreground">
+            {match[2]}
+          </span>
+        </>
+      ) : (
+        text
+      )}
+    </h3>
   );
 }
+
+/** "Em resumo": atalhos com ícone para as partes que mais importam; o texto completo vale. */
+const SUMMARY: { icon: LucideIcon; key: MessageKey; target: string; part: number }[] = [
+  { icon: UserCheck, key: "legal.summary.who", target: "parte-1", part: 1 },
+  { icon: Database, key: "legal.summary.what", target: "parte-2", part: 2 },
+  { icon: Target, key: "legal.summary.why", target: "parte-3", part: 3 },
+  { icon: KeyRound, key: "legal.summary.google", target: "dados-google", part: 4 },
+  { icon: Scale, key: "legal.summary.rights", target: "parte-10", part: 10 },
+  { icon: UserX, key: "legal.summary.delete", target: "parte-11", part: 11 },
+];
 
 function PrivacidadePage() {
   const { lang } = Route.useSearch();
   const { t, locale } = useLegalI18n(lang);
 
   const emailLink = (
-    <a href={`mailto:${PLATFORM_OPERATOR.privacyEmail}`} className={legalLinkClass}>
+    <a
+      href={`mailto:${PLATFORM_OPERATOR.privacyEmail}`}
+      className={`${legalLinkClass} whitespace-nowrap`}
+    >
       {PLATFORM_OPERATOR.privacyEmail}
     </a>
   );
@@ -91,14 +128,47 @@ function PrivacidadePage() {
   );
   const paragraph = (key: MessageKey) => <p>{legalRichText(t(key), nodes)}</p>;
 
+  const summary = (
+    <section aria-labelledby="privacy-summary" className="space-y-3">
+      <h2 id="privacy-summary" className="text-lg font-bold">
+        {t("legal.summaryTitle")}
+      </h2>
+      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {SUMMARY.map(({ icon, key, target, part }) => (
+          <li key={key}>
+            <a
+              href={`#${target}`}
+              className="public-card flex h-full min-h-16 items-center gap-3 rounded-xl border border-border p-3 transition-colors hover:border-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <IconTile icon={icon} size="sm" tone="muted" />
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold leading-snug">{t(key)}</span>
+                <span className="block text-xs text-muted-foreground">
+                  {t("legal.summaryPart", { n: part })}
+                </span>
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+      <p className="flex items-center gap-2 text-xs text-muted-foreground">
+        <Info className="size-4 shrink-0" aria-hidden="true" />
+        {t("legal.summaryNote")}
+      </p>
+    </section>
+  );
+
   return (
     <LegalPageShell
+      doc="privacy"
       title={t("legal.privacyLink")}
       updatedAt={PRIVACY_VERSION}
       locale={locale}
       langParam={lang}
+      summary={summary}
     >
       <Section title={t("legal.privacy.s1Title")}>
+        <LegalRolesDiagram t={t} withAccount />
         <p>
           {legalRichText(t("legal.privacy.s1Intro"), {
             app: <strong>Barba &amp; Cabelo</strong>,
@@ -117,7 +187,7 @@ function PrivacidadePage() {
           </li>
           <li>
             {legalRichText(t("legal.privacy.cnpj"), {
-              value: <strong>{PLATFORM_OPERATOR.cnpj}</strong>,
+              value: <strong className="whitespace-nowrap">{PLATFORM_OPERATOR.cnpj}</strong>,
             })}
           </li>
           <li>{legalRichText(t("legal.privacy.contactEmail"), { email: emailLink })}</li>
@@ -155,37 +225,43 @@ function PrivacidadePage() {
 
       <Section id="dados-google" title={t("legal.privacy.s4Title")}>
         <p>{t("legal.privacy.s4Intro")}</p>
-        <h3 className={subheadingClass}>{t("legal.privacy.s4LoginTitle")}</h3>
-        {paragraph("legal.privacy.s4LoginBody")}
-        <h3 className={subheadingClass}>{t("legal.privacy.s4CalendarTitle")}</h3>
-        {list([
-          "legal.privacy.s4CalendarItem1",
-          "legal.privacy.s4CalendarItem2",
-          "legal.privacy.s4CalendarItem3",
-        ])}
-        <h3 className={subheadingClass}>{t("legal.privacy.s4ContactsTitle")}</h3>
-        {paragraph("legal.privacy.s4ContactsBody")}
-        {paragraph("legal.privacy.s4TokensBody")}
-        <h3 className={subheadingClass}>{t("legal.privacy.s4ProtectTitle")}</h3>
-        {list([
-          "legal.privacy.s4Protect1",
-          "legal.privacy.s4Protect2",
-          "legal.privacy.s4Protect3",
-          "legal.privacy.s4Protect4",
-          "legal.privacy.s4Protect5",
-          "legal.privacy.s4Protect6",
-        ])}
-        <h3 className={subheadingClass}>{t("legal.privacy.s4CommitTitle")}</h3>
-        {list([
-          "legal.privacy.s4Commit1",
-          "legal.privacy.s4Commit2",
-          "legal.privacy.s4Commit3",
-          "legal.privacy.s4Commit4",
-          "legal.privacy.s4Commit5",
-        ])}
-        <p className="rounded-[var(--control-radius)] border border-border/60 bg-card px-4 py-3">
-          {legalRichText(t("legal.privacy.s4LimitedUse"), { link: userDataPolicyLink })}
-        </p>
+        <div className="public-card space-y-3 rounded-2xl border border-border p-4">
+          <p className="flex items-center gap-3 font-bold">
+            <IconTile icon={Cpu} size="sm" tone="muted" />
+            {t("legal.techDetails")}
+          </p>
+          <TechTitle text={t("legal.privacy.s4LoginTitle")} />
+          {paragraph("legal.privacy.s4LoginBody")}
+          <TechTitle text={t("legal.privacy.s4CalendarTitle")} />
+          {list([
+            "legal.privacy.s4CalendarItem1",
+            "legal.privacy.s4CalendarItem2",
+            "legal.privacy.s4CalendarItem3",
+          ])}
+          <TechTitle text={t("legal.privacy.s4ContactsTitle")} />
+          {paragraph("legal.privacy.s4ContactsBody")}
+          {paragraph("legal.privacy.s4TokensBody")}
+          <h3 className={subheadingClass}>{t("legal.privacy.s4ProtectTitle")}</h3>
+          {list([
+            "legal.privacy.s4Protect1",
+            "legal.privacy.s4Protect2",
+            "legal.privacy.s4Protect3",
+            "legal.privacy.s4Protect4",
+            "legal.privacy.s4Protect5",
+            "legal.privacy.s4Protect6",
+          ])}
+          <h3 className={subheadingClass}>{t("legal.privacy.s4CommitTitle")}</h3>
+          {list([
+            "legal.privacy.s4Commit1",
+            "legal.privacy.s4Commit2",
+            "legal.privacy.s4Commit3",
+            "legal.privacy.s4Commit4",
+            "legal.privacy.s4Commit5",
+          ])}
+          <p className="rounded-xl border border-border bg-muted px-4 py-3">
+            {legalRichText(t("legal.privacy.s4LimitedUse"), { link: userDataPolicyLink })}
+          </p>
+        </div>
         {paragraph("legal.privacy.s4Revoke")}
       </Section>
 

@@ -1,33 +1,77 @@
 import { SurveyCard } from "@/features/insights/SurveyCard";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
-import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
+import { t as tNow, useI18n } from "@/lib/i18n";
 import { useWaiting } from "@/features/waiting/useWaiting";
-import { WaitingCards, WaitingNotices } from "@/features/waiting/WaitingUI";
+import { WaitingCards } from "@/features/waiting/WaitingUI";
 import { blocksSlot } from "@/features/waiting/model";
 import { CancellationDialog } from "@/features/insights/CancellationDialog";
 import { cancellationReasonLabel, type CancellationReason } from "@/features/insights/cancellation";
+// Agendar e Reservas: passos, ticket da reserva, filtros e janelas.
 import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { PointsHistory } from "./PointsHistory";
+  BookingDone,
+  BookingSummaryBar,
+  ChangeButton,
+  DayStrip,
+  RepeatPicker,
+  RescheduleFromTo,
+  ServiceChoices,
+  ServiceSummary,
+  StaffChoices,
+  StaffSummary,
+  StepCard,
+  TimeGrid,
+  type RepeatChoice,
+  type StepState,
+  type SummaryPill,
+} from "./booking/BookingParts";
+import { AppointmentTicket, ReservationStatusBadge, type TicketData } from "./booking/ticket";
+import { useGroupReservations, useShortSlot } from "./booking/format";
+import { ReservationFilters, StopRepeatDialog } from "./booking/ReservationsParts";
+import { useClosedWeekdays } from "./booking/useClosedWeekdays";
+import {
+  LoadingState as BookingLoading,
+  PersonAvatar as BookingAvatar,
+  StatusBadge as BookingBadge,
+} from "@/components/visual";
+import {
+  BellRing,
+  CalendarCheck as CalendarCheckIcon,
+  CalendarDays as CalendarDaysIcon,
+  RefreshCw,
+  Repeat2,
+  RotateCcw,
+  Star as StarIcon,
+  Store as StoreIcon,
+} from "lucide-react";
+import { PointsHistory, type AppointmentContext } from "./PointsHistory";
 import { CustomerRewards } from "@/features/loyalty/CustomerRewards";
 import {
   FALLBACK_PROGRAM,
   parseLoyaltyProgram,
-  tierFor,
-  tierStyleKey,
   type LoyaltyProgram,
 } from "@/features/loyalty/program";
-import { NextLevelCard, type NextLevelSummary } from "./NextLevelCard";
+import { usePendingRedemptions } from "@/features/loyalty/usePendingRedemptions";
 import { CustomerRhythm } from "./CustomerRhythm";
-import { CustomerProfile } from "./CustomerProfile";
-import { NamePrompt } from "./NamePrompt";
-import { WhatsappConfirmBanner } from "./WhatsappConfirmBanner";
+import { CustomerProfile, type CustomerShop } from "./CustomerProfile";
+import { SportsBoard } from "./SportsBoard";
+import { ProfileSetup } from "./ProfileSetup";
+import { MemberCard } from "./MemberCard";
+import { NextVisitCard } from "./NextVisitCard";
+import { ClubInfoDialog } from "./ClubInfoDialog";
+import { CustomerNotices, type SessionNotice } from "./CustomerNotices";
+import { offersFor } from "./offers";
+import { CustomerPageHeader } from "./CustomerPageHeader";
+import { shortWhen } from "./when";
+import {
+  AttentionList,
+  Countdown,
+  CountBadge,
+  Notice,
+  type AttentionItem,
+} from "@/components/visual";
+import { readSeenCancellations, writeSeenCancellations } from "./seenCancellations";
+import { SpinningLoader } from "./SpinningLoader";
+import { toast } from "sonner";
 import { TermsUpdateGate } from "@/features/legal/TermsUpdateGate";
 import {
   CatalogViewToggle,
@@ -44,31 +88,25 @@ import { BrandFontFace } from "@/features/shop/BrandFontFace";
 import { BrandRootVariables } from "@/features/shop/BrandRootVariables";
 import { DatePicker } from "@/components/ui/schedule-picker";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Switch } from "@/components/ui/switch";
-import { Link } from "@tanstack/react-router";
-import { Fragment, useState, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { useState, useEffect, useMemo, useRef, type ReactNode } from "react";
 import {
   Bell,
   Calendar,
+  CalendarClock,
+  CalendarPlus,
+  Check,
   Compass,
-  Feather,
-  User,
+  LogIn,
   Trophy,
-  CheckCircle,
-  Moon,
-  Sun,
-  Info,
+  User,
+  Timer,
   X,
+  XCircle,
   Zap,
-  Star,
-  Diamond,
-  Armchair,
+  ReceiptText,
   Scissors,
-  BadgeCheck,
-  Sparkle,
   ChevronRight,
   Clock3,
-  Receipt,
   SprayCan,
   Crown,
   Gem,
@@ -99,7 +137,6 @@ import {
   shopDateKey,
   shopDateTime,
   shopDayRange,
-  shopHour,
   termsFor,
   validTimeZone,
   weekdayForDateKey,
@@ -114,72 +151,7 @@ type CustomerAppointment = Tables<"appointments"> & {
   barbershop: Pick<Tables<"barbershops">, "name"> | null;
 };
 
-const statusKey = {
-  pending: "status.pending",
-  reschedule_requested: "status.reschedule_requested",
-  confirmed: "status.confirmed",
-  cancelled: "status.cancelled",
-  completed: "status.completed",
-} as const satisfies Record<Tables<"appointments">["status"], MessageKey>;
-
-const matchStatusKey: Record<string, MessageKey> = {
-  "AO VIVO": "sports.live",
-  PRORROGAÇÃO: "sports.extraTime",
-  ENC: "sports.final",
-};
-
-/** Troca `{nome}` do texto traduzido por elementos (ex.: trechos em negrito). */
-function richText(template: string, nodes: Record<string, ReactNode>) {
-  return template
-    .split(/\{(\w+)\}/g)
-    .map((part, i) => (i % 2 === 1 ? <Fragment key={i}>{nodes[part] ?? part}</Fragment> : part));
-}
-
-const matches = [
-  {
-    id: 1,
-    league: "Brasileirão",
-    home: "Flamengo",
-    away: "Palmeiras",
-    scoreH: 2,
-    scoreA: 1,
-    status: "AO VIVO",
-    min: "82'",
-  },
-  {
-    id: 2,
-    league: "Champions League",
-    home: "Real Madrid",
-    away: "Man City",
-    scoreH: 3,
-    scoreA: 3,
-    status: "PRORROGAÇÃO",
-    min: "ET",
-  },
-  {
-    id: 3,
-    league: "Brasileirão",
-    home: "Galo",
-    away: "Cruzeiro",
-    scoreH: 1,
-    scoreA: 0,
-    status: "ENC",
-    min: "FT",
-  },
-  {
-    id: 4,
-    league: "NBA",
-    home: "Lakers",
-    away: "Celtics",
-    scoreH: 102,
-    scoreA: 108,
-    status: "ENC",
-    min: "FT",
-  },
-];
 import { ShopJoinDialog } from "./ShopJoinDialog";
-import { ServiceIcon } from "@/components/ui/service-icon";
-import { StaffPhoto } from "@/components/ui/staff-photo";
 
 function ArenaApp({
   headerActions,
@@ -240,11 +212,29 @@ function ArenaApp({
   const [repeatKind, setRepeatKind] = useState<"weekday" | "interval_days">("weekday");
   const [repeatInterval, setRepeatInterval] = useState<7 | 15 | 21>(7);
   const [selectedSlotAt, setSelectedSlotAt] = useState<string | null>(null);
-  const [bookingSummary, setBookingSummary] = useState<string | null>(null);
   const [bookingBusy, setBookingBusy] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
+  // Passos do Agendar: a escolha que já vem pronta aparece como "Sugerido" até a pessoa tocar;
+  // o passo escolhido recolhe numa linha-resumo com "Trocar".
+  const [serviceChosen, setServiceChosen] = useState(false);
+  const [staffChosen, setStaffChosen] = useState(false);
+  const [serviceOpen, setServiceOpen] = useState(true);
+  const [staffOpen, setStaffOpen] = useState(true);
+  /** "Agendar de novo": serviço/profissional do atendimento antigo que saiu do catálogo. */
+  const [againMissing, setAgainMissing] = useState<{
+    service?: string | null;
+    staff?: string | null;
+  } | null>(null);
+  const [favoriteSaved, setFavoriteSaved] = useState<string | null>(null);
+  const [bookingDone, setBookingDone] = useState<{
+    ticket: TicketData;
+    rescheduled: boolean;
+    previous: string | null;
+    repeatLabel: string | null;
+  } | null>(null);
+  // Falha sem resposta clara: a reserva pode ter sido gravada (confira antes de repetir).
+  const [bookingUncertain, setBookingUncertain] = useState(false);
   const bookingLock = useRef(false);
-  const [sportFilter, setSportFilter] = useState<"all" | "football" | "nba">("all");
   const [shopId, setShopId] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState("");
   const [shopName, setShopName] = useState("");
@@ -350,6 +340,12 @@ function ArenaApp({
   const [joinBusy, setJoinBusy] = useState(false);
   const [joinShopName, setJoinShopName] = useState("");
   const [joinShopRef, setJoinShopRef] = useState<string | null>(null);
+  // Falha ao entrar na barbearia do link: aparece dentro da janela, com "Tentar de novo".
+  const [joinError, setJoinError] = useState<string | null>(null);
+  // "Agora não" sem outra barbearia: Agendar mostra como entrar (em vez de "sem serviços").
+  const [joinDeclined, setJoinDeclined] = useState<{ ref: string; name: string } | null>(null);
+  // Barbearias em que o cliente entrou (Conta → Minhas barbearias).
+  const [myShops, setMyShops] = useState<CustomerShop[]>([]);
   const [catalogRevision, setCatalogRevision] = useState(0);
   // Link de profissional que mudou para uma loja em que o cliente ainda não entrou:
   // o profissional do link não está neste catálogo, então a reserva segue o fluxo normal.
@@ -360,14 +356,6 @@ function ArenaApp({
   const [selectedDay, setSelectedDay] = useState(() =>
     shopDateKey(demo?.now ?? new Date(), DEFAULT_SHOP_TIMEZONE),
   );
-  // Carrossel de datas: mantém o dia selecionado visível ao navegar pelas setas.
-  const dayCarouselRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const carousel = dayCarouselRef.current;
-    if (!carousel) return;
-    const selected = carousel.querySelector<HTMLElement>('button[aria-pressed="true"]');
-    selected?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-  }, [selectedDay]);
   const [appointments, setAppointments] = useState<CustomerAppointment[]>([]);
   // Cada loja é um ambiente separado: só as reservas da loja aberta aparecem aqui
   // (fuso, catálogo e remarcação são desta loja).
@@ -392,6 +380,16 @@ function ArenaApp({
   const [cancellationDetails, setCancellationDetails] = useState<
     Record<string, { reason: CancellationReason | null; source: "customer" | "shop" }>
   >({});
+  // Reservas: reserva aberta pelo link do aviso (destaque) e data em foco em cada repetição.
+  const [focusedReservation, setFocusedReservation] = useState<string | null>(null);
+  // De onde veio o destaque: link de um aviso ou "Ver detalhes" do Início (muda o selo).
+  const [focusedFrom, setFocusedFrom] = useState<"notice" | "home">("notice");
+  const [focusMissing, setFocusMissing] = useState(false);
+  const [seriesFocus, setSeriesFocus] = useState<Record<string, string>>({});
+  // Pontos ganhos em cada atendimento concluído (pílula "+50 pts" no ticket de Anteriores).
+  const [earnedByAppointment, setEarnedByAppointment] = useState<Record<string, number>>({});
+  const [appointmentsUpdatedAt, setAppointmentsUpdatedAt] = useState<number | null>(null);
+  const [noticeShowsCancelled, setNoticeShowsCancelled] = useState(false);
 
   useEffect(() => {
     if (demo) {
@@ -417,10 +415,6 @@ function ArenaApp({
       cancelled = true;
     };
   }, [demo, userId, appointmentVersion]);
-
-  const filteredMatches = (demo ? matches : []).filter((m) =>
-    sportFilter === "all" ? true : sportFilter === "nba" ? m.league === "NBA" : m.league !== "NBA",
-  );
 
   const selectedService = services[serviceIdx] ?? null;
   useEffect(() => {
@@ -452,10 +446,6 @@ function ArenaApp({
     selectedService && pickedStaffTerms
       ? { ...selectedService, ...pickedStaffTerms }
       : selectedService;
-  const serviceLabel = (service: Tables<"services">) => {
-    const shown = (pickedStaff && termsFor(serviceTerms, pickedStaff.id, service)) || service;
-    return `${shown.duration_minutes} min · ${formatMoney(shown.price_cents)}`;
-  };
   const staffChoices = staff
     .map((m, i) => ({ m, i }))
     .filter(({ m }) => !selectedService || termsFor(serviceTerms, m.id, selectedService));
@@ -611,6 +601,7 @@ function ArenaApp({
         else {
           setAppointments(data ?? []);
           loadedAppointmentsUser.current = userId;
+          setAppointmentsUpdatedAt(Date.now());
         }
       } catch {
         if (!cancelled) setAppointmentsError(tNow("cust.appointmentsRefreshError"));
@@ -676,6 +667,15 @@ function ArenaApp({
         const customerMemberships = profile.memberships.filter(
           (m) => m.role === "customer" && m.barbershop_id,
         );
+        if (!cancelled) {
+          setMyShops(
+            customerMemberships.flatMap((m) =>
+              m.barbershop
+                ? [{ id: m.barbershop.id, name: m.barbershop.name, slug: m.barbershop.slug }]
+                : [],
+            ),
+          );
+        }
         let catalogShopId: string | null = null;
         let directStaffId: string | null = null;
         let pendingJoinRef: string | null = null;
@@ -991,6 +991,7 @@ function ArenaApp({
   async function confirmShopJoin() {
     if (!joinShopRef) return;
     setJoinBusy(true);
+    setJoinError(null);
     try {
       const { error } = await supabase.rpc("join_shop_as_customer", {
         p_shop_ref: joinShopRef,
@@ -998,6 +999,8 @@ function ArenaApp({
       if (error) throw error;
       setJoinOpen(false);
       setJoinShopRef(null);
+      setJoinDeclined(null);
+      toast.success(t("conta.join.done", { shop: joinShopName || t("cust.thisShop") }));
       // Limpa ?join= da URL sem perder shop/barber.
       try {
         const url = new URL(window.location.href);
@@ -1011,8 +1014,8 @@ function ArenaApp({
       }
       setCatalogRevision((v) => v + 1);
     } catch (err) {
-      setCatalogError(friendlyAuthError(err, t("cust.joinError")));
-      setJoinOpen(false);
+      // A janela continua aberta, com o motivo e "Tentar de novo".
+      setJoinError(friendlyAuthError(err, t("cust.joinError")));
     } finally {
       setJoinBusy(false);
     }
@@ -1020,6 +1023,8 @@ function ArenaApp({
 
   function dismissShopJoin() {
     setJoinOpen(false);
+    setJoinError(null);
+    if (joinShopRef) setJoinDeclined({ ref: joinShopRef, name: joinShopName });
     setJoinShopRef(null);
     try {
       const url = new URL(window.location.href);
@@ -1151,10 +1156,79 @@ function ArenaApp({
     bookingLock.current = true;
     setBookingBusy(true);
     setBookingError(null);
+    setBookingUncertain(false);
+    const endsAt = new Date(selectedSlot.getTime() + bookingService.duration_minutes * 60_000);
+    let staffId = selectedStaff?.id ?? null;
+    let staffName = selectedStaff?.display_name ?? t("booking.staffFallback");
+    const previousRow = rescheduleId
+      ? (shopAppointments.find((row) => row.id === rescheduleId) ?? null)
+      : null;
+    /** Mostra o ticket do sucesso e registra o aviso da sessão (a reserva já está gravada). */
+    const finishBooking = (repeatApplied: boolean) => {
+      const dateLabel = formatShopDate(selectedSlot, shopTimeZone, {
+        day: "2-digit",
+        month: "2-digit",
+      });
+      // Só anuncia a repetição quando uma série foi de fato criada.
+      const repeatNote = repeatApplied
+        ? repeatKind === "weekday"
+          ? ` ${t("booking.repeatWeekdayNote")}`
+          : ` ${t("booking.repeatIntervalNote", { days: repeatInterval })}`
+        : "";
+      const summary = `${rescheduleId ? t("booking.rescheduledPrefix") : ""}${t(
+        "booking.describe",
+        {
+          service: bookingService.name,
+          staff: staffName,
+          date: dateLabel,
+          time: formatSlotLabel(selectedSlot, shopTimeZone),
+        },
+      )}.${repeatNote}`;
+      const previous = previousRow ? shortSlot(previousRow.starts_at, shopTimeZone) : null;
+      setBookingDone({
+        ticket: {
+          startsAt: selectedSlot.toISOString(),
+          endsAt: endsAt.toISOString(),
+          serviceName: bookingService.name,
+          serviceIcon: bookingService.icon,
+          staffName,
+          staffId,
+          staffPhoto: staff.find((row) => row.id === staffId)?.avatar_url,
+          // Remarcação com o mesmo serviço e profissional mantém o preço já reservado.
+          priceCents:
+            previousRow &&
+            previousRow.service_id === bookingService.id &&
+            previousRow.staff_id === staffId &&
+            typeof previousRow.booked_price_cents === "number"
+              ? previousRow.booked_price_cents
+              : bookingService.price_cents,
+        },
+        rescheduled: Boolean(rescheduleId),
+        previous: previous ? `${previous.day} · ${previous.time}` : null,
+        repeatLabel: repeatApplied
+          ? repeatKind === "weekday"
+            ? t("booking.repeatCreatedWeekly")
+            : t("booking.repeatCreatedDays", { days: repeatInterval })
+          : null,
+      });
+      setRepeatEnabled(false);
+      setRescheduleId(null);
+      setSlotsFor("");
+      setSelectedSlotAt(null);
+      setAvailabilityVersion((v) => v + 1);
+      setAppointmentVersion((v) => v + 1);
+      setNotifications((n) => [
+        {
+          id: Date.now(),
+          title: rescheduleId ? t("booking.rescheduled") : t("booking.reserved"),
+          text: summary,
+          at: (demo?.now ?? new Date()).getTime(),
+          read: false,
+        },
+        ...n,
+      ]);
+    };
     try {
-      const endsAt = new Date(selectedSlot.getTime() + bookingService.duration_minutes * 60_000);
-      let staffId = selectedStaff?.id ?? null;
-      let staffName = selectedStaff?.display_name ?? t("booking.staffFallback");
       if (anyAvailable && !demo) {
         const prefer = staffAssignmentMode === "favorite_then_pick" ? favoriteStaffId : null;
         const { data: picked, error: pickError } = await supabase.rpc("pick_available_staff", {
@@ -1244,58 +1318,43 @@ function ArenaApp({
         if (error) throw error;
       }
       recordUsage("booking_succeeded");
-      const dateLabel = formatShopDate(selectedSlot, shopTimeZone, {
-        day: "2-digit",
-        month: "2-digit",
-      });
-      // Só anuncia a recorrência quando uma série foi de fato criada.
-      const repeatNote = repeatApplied
-        ? repeatKind === "weekday"
-          ? ` ${t("booking.repeatWeekdayNote")}`
-          : ` ${t("booking.repeatIntervalNote", { days: repeatInterval })}`
-        : "";
-      const summary = `${rescheduleId ? t("booking.rescheduledPrefix") : ""}${t(
-        "booking.describe",
-        {
-          service: bookingService.name,
-          staff: staffName,
-          date: dateLabel,
-          time: formatSlotLabel(selectedSlot, shopTimeZone),
-        },
-      )}.${repeatNote}`;
-      setBookingSummary(summary);
-      setRepeatEnabled(false);
-      setRescheduleId(null);
-      setSlotsFor("");
-      setSelectedSlotAt(null);
-      setAvailabilityVersion((v) => v + 1);
-      setAppointmentVersion((v) => v + 1);
-      setNotifications((n) => [
-        {
-          id: Date.now(),
-          title: rescheduleId ? t("booking.rescheduled") : t("booking.reserved"),
-          text: summary,
-          time: (demo?.now ?? new Date()).toLocaleTimeString(intlLocale, {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          read: false,
-        },
-        ...n,
-      ]);
+      finishBooking(repeatApplied);
     } catch (err) {
       recordUsage("booking_failed");
       const code = err && typeof err === "object" && "code" in err ? err.code : null;
       const message = err && typeof err === "object" && "message" in err ? String(err.message) : "";
-      setBookingError(
-        code === "23P01"
-          ? t("booking.errorTaken")
-          : code === "22023"
-            ? /passou/i.test(message)
-              ? t("booking.errorPast")
-              : t("booking.errorUnavailable")
-            : t("booking.errorGeneric"),
-      );
+      // Erro da própria tela (sem profissional livre etc.): a frase já diz o que fazer.
+      if (err instanceof Error && !code) {
+        setBookingError(err.message || t("booking.errorGeneric"));
+        setAvailabilityVersion((v) => v + 1);
+        return;
+      }
+      // Resultado incerto (conexão caiu, ou o horário "acabou de ser reservado" por nós mesmos
+      // numa segunda tentativa): confere se a reserva já existe antes de dizer que falhou.
+      if (!demo && code !== "22023" && staffId) {
+        try {
+          const { data: own } = await supabase
+            .from("appointments")
+            .select("id")
+            .eq("customer_id", userId)
+            .eq("staff_id", staffId)
+            .eq("starts_at", selectedSlot.toISOString())
+            .in("status", ["pending", "confirmed"])
+            .limit(1);
+          if (own?.length) {
+            finishBooking(false);
+            return;
+          }
+        } catch {
+          /* Sem resposta: segue para o aviso de resultado incerto. */
+        }
+      }
+      if (code === "23P01") setBookingError(t("booking.errorTaken"));
+      else if (code === "22023")
+        setBookingError(
+          /passou/i.test(message) ? t("booking.errorPast") : t("booking.errorUnavailable"),
+        );
+      else setBookingUncertain(true);
       setAvailabilityVersion((v) => v + 1);
     } finally {
       bookingLock.current = false;
@@ -1340,7 +1399,15 @@ function ArenaApp({
       setAvailabilityVersion((v) => v + 1);
       setCancelTarget(null);
       setCancelReason("");
-      setAppointmentsNotice(t("bookings.cancelledNotice", { summary: describeAppointment(row) }));
+      const when = shortSlot(row.starts_at, shopTimeZone);
+      const cancelledText = t("bookings.cancelledNotice", {
+        summary: `${when.day} · ${when.time}`,
+      });
+      setAppointmentsNotice(cancelledText);
+      setNoticeShowsCancelled(true);
+      // Fora de Reservas (ex.: item de atenção do Início) o aviso da lista não aparece:
+      // confirma com o aviso rápido, com ícone e cor de sucesso.
+      if (tab !== "reservas") toast.success(cancelledText);
     } catch {
       setAppointmentsError(t("bookings.cancelError"));
     } finally {
@@ -1348,36 +1415,73 @@ function ArenaApp({
     }
   };
 
+  /** Para a repetição. Lança erro para a janela mostrar a falha dentro dela. */
   const stopSeries = async (seriesId: string) => {
     setAppointmentBusy(seriesId);
     setAppointmentsError(null);
     setAppointmentsNotice(null);
+    setNoticeShowsCancelled(false);
     try {
-      if (demo) {
-        setAppointmentsError(t("bookings.repeatDemo"));
-        return;
-      }
+      // Na demonstração não há repetição gravada: a janela mostra o aviso.
+      if (demo) throw new Error(t("bookings.repeatDemo"));
       const { error } = await supabase.rpc("stop_booking_series", { p_series_id: seriesId });
       if (error) throw error;
       setAppointmentVersion((v) => v + 1);
       setAvailabilityVersion((v) => v + 1);
       setStopSeriesTarget(null);
       setAppointmentsNotice(t("bookings.repeatStopped"));
-    } catch {
-      setAppointmentsError(t("bookings.repeatStopError"));
     } finally {
       setAppointmentBusy(null);
     }
   };
 
-  useEffect(() => {
-    if (!focusToken || shopAppointments.length === 0) return;
-    const match = shopAppointments.find((row) => row.public_token === focusToken);
-    if (match) {
-      setTab("reservas");
-      setReservationFilter("upcoming");
+  /** Abre Reservas no filtro certo, rola até a reserva e a destaca por alguns segundos. */
+  const revealReservation = (match: CustomerAppointment, from: "notice" | "home" = "notice") => {
+    setTab("reservas");
+    setFocusedFrom(from);
+    const upcoming =
+      filterReservations([match], "upcoming", demo?.now.getTime() ?? Date.now()).length > 0;
+    setReservationFilter(upcoming ? "upcoming" : "history");
+    if (match.series_id) {
+      const seriesId = match.series_id;
+      setSeriesFocus((current) => ({ ...current, [seriesId]: match.id }));
     }
-  }, [focusToken, shopAppointments]);
+    setFocusedReservation(match.id);
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.setTimeout(() => {
+      const card = document.getElementById(`reserva-${match.id}`);
+      card?.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
+      card?.focus({ preventScroll: true });
+    }, 300);
+    window.setTimeout(
+      () => setFocusedReservation((current) => (current === match.id ? null : current)),
+      8000,
+    );
+  };
+
+  // Link de um aviso (?reserva=): abre a reserva no filtro certo, rola até ela e a destaca.
+  const focusHandled = useRef(false);
+  useEffect(() => {
+    if (!focusToken || focusHandled.current) return;
+    if (!appointmentsLoadedFor || appointmentsLoading) return;
+    focusHandled.current = true;
+    setTab("reservas");
+    const match = shopAppointments.find((row) => row.public_token === focusToken);
+    if (!match) {
+      // Reserva de outra loja: só não destaca. Sumiu de vez: avisa.
+      if (!appointments.some((row) => row.public_token === focusToken)) setFocusMissing(true);
+      return;
+    }
+    revealReservation(match);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- revealReservation só usa setters e a demo.
+  }, [
+    focusToken,
+    shopAppointments,
+    appointments,
+    appointmentsLoadedFor,
+    appointmentsLoading,
+    demo,
+  ]);
 
   const beginReschedule = (row: CustomerAppointment) => {
     const serviceIndex = services.findIndex((item) => item.id === row.service_id);
@@ -1387,6 +1491,7 @@ function ArenaApp({
     if (serviceIndex < 0 || staffIndex < 0) {
       // Aviso (não erro): um erro esconderia a lista de reservas.
       setAppointmentsError(null);
+      setNoticeShowsCancelled(false);
       setAppointmentsNotice(t("fix.cliente-app.rescheduleUnavailable"));
       return;
     }
@@ -1399,14 +1504,457 @@ function ArenaApp({
     setSelectedDay(bookingDayKeys.includes(originalDay) ? originalDay : bookingDayKeys[0]);
     setRescheduleId(row.id);
     setBookingError(null);
-    setBookingSummary(null);
+    setBookingUncertain(false);
+    setBookingDone(null);
     setSelectedSlotAt(null);
+    // Remarcar mantém serviço e profissional: os dois passos já vêm feitos (com "Trocar").
+    setAgainMissing(null);
+    setServiceChosen(true);
+    setStaffChosen(true);
+    setServiceOpen(false);
+    setStaffOpen(false);
     setTab("agenda");
   };
-  const [notifications, setNotifications] = useState<
-    { id: number; title: string; text: string; time: string; read: boolean }[]
-  >([]);
-  const unreadNotifications = notifications.filter((n) => !n.read).length;
+
+  /* ---------------------------------------------------------------------------------------- */
+  /* Agendar e Reservas: dados derivados para os passos, o resumo e os tickets.                */
+  /* ---------------------------------------------------------------------------------------- */
+  const bookingNow = demo?.now ?? new Date();
+  const shortSlot = useShortSlot();
+  const groupReservations = useGroupReservations();
+  const closedWeekdays = useClosedWeekdays(shopId, demo ? demo.businessHours : null);
+  // O sucesso não fica preso na aba: ao sair de Agendar, volta o formulário.
+  useEffect(() => {
+    if (tab === "agenda") return;
+    setBookingDone(null);
+    setBookingUncertain(false);
+  }, [tab]);
+  useEffect(() => {
+    if (!favoriteSaved) return;
+    const id = window.setTimeout(() => setFavoriteSaved(null), 4000);
+    return () => window.clearTimeout(id);
+  }, [favoriteSaved]);
+  const staffPhotoOf = (id: string | null | undefined) =>
+    staff.find((member) => member.id === id)?.avatar_url ?? null;
+  const ticketFor = (row: CustomerAppointment): TicketData => ({
+    startsAt: row.starts_at,
+    endsAt: row.ends_at,
+    serviceName: row.service?.name ?? t("booking.serviceFallback"),
+    serviceIcon: row.service?.icon,
+    staffName: row.staff?.display_name ?? t("bookings.staffFallback"),
+    staffId: row.staff_id,
+    staffPhoto: staffPhotoOf(row.staff_id),
+    priceCents: row.booked_price_cents,
+  });
+  const rescheduleRow = rescheduleId
+    ? (shopAppointments.find((row) => row.id === rescheduleId) ?? null)
+    : null;
+  // Preço mostrado em Conferir e no resumo: na remarcação com o mesmo serviço e o mesmo
+  // profissional, o servidor mantém o preço já reservado.
+  const reviewPriceCents =
+    rescheduleRow &&
+    bookingService &&
+    !anyAvailable &&
+    rescheduleRow.service_id === bookingService.id &&
+    rescheduleRow.staff_id === selectedStaff?.id &&
+    typeof rescheduleRow.booked_price_cents === "number"
+      ? rescheduleRow.booked_price_cents
+      : bookingService?.price_cents;
+  const scrollToStep = (id: string) => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.setTimeout(() => {
+      const target = document.getElementById(id);
+      target?.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
+      // O foco do teclado acompanha a rolagem: título do passo ou o próprio cartão (tabIndex -1).
+      (document.getElementById(`${id}-title`) ?? target)?.focus({ preventScroll: true });
+    }, 50);
+  };
+  const pickService = (index: number) => {
+    setServiceIdx(index);
+    setServiceChosen(true);
+    setServiceOpen(false);
+    setAgainMissing((prev) => (prev?.staff !== undefined ? { staff: prev.staff } : null));
+    // O horário fica se continuar livre; senão a grade avisa (ver slotGone).
+    setBookingError(null);
+    setBookingUncertain(false);
+    if (!staffChosen && !directLinkActive) setStaffOpen(true);
+  };
+  const pickStaff = (index: number) => {
+    const member = staff[index];
+    staffPickedByUser.current = true;
+    setAnyAvailable(false);
+    setStaffIdx(index);
+    setStaffChosen(true);
+    setStaffOpen(false);
+    setAgainMissing((prev) => (prev?.service !== undefined ? { service: prev.service } : null));
+    setBookingError(null);
+    setBookingUncertain(false);
+    if (member && !demo && shopId && userId && staffAssignmentMode === "favorite_then_pick") {
+      void supabase.rpc("set_favorite_staff", { p_shop_id: shopId, p_staff_id: member.id });
+      setFavoriteStaffId(member.id);
+      setFavoriteSaved(member.display_name);
+    }
+  };
+  const pickAnyStaff = () => {
+    setAnyAvailable(true);
+    setStaffChosen(true);
+    setStaffOpen(false);
+    setAgainMissing((prev) => (prev?.service !== undefined ? { service: prev.service } : null));
+    setBookingError(null);
+    setBookingUncertain(false);
+  };
+  const pickDay = (key: string) => {
+    setSelectedDay(key);
+    setSelectedSlotAt(null);
+    setBookingError(null);
+    setBookingUncertain(false);
+  };
+  const refreshTimes = () => {
+    setBookingError(null);
+    setSlotsFor("");
+    setSelectedSlotAt(null);
+    setAvailabilityVersion((v) => v + 1);
+  };
+  const slotLabel = (date: Date | string) => shortSlot(date, shopTimeZone);
+  const selectedEnd =
+    selectedSlot && bookingService
+      ? new Date(selectedSlot.getTime() + bookingService.duration_minutes * 60_000)
+      : null;
+  // O horário escolhido deixou de estar livre com a nova combinação (serviço/profissional).
+  const slotGone =
+    Boolean(selectedSlotAt) &&
+    !selectedSlot &&
+    slotsFor === selectionKey &&
+    !slotsLoading &&
+    !bookingBusy;
+  const gridState: "needChoice" | "loading" | "error" | "empty" | "ready" =
+    !selectedService || (!selectedStaff && !anyAvailable)
+      ? "needChoice"
+      : slotsError
+        ? "error"
+        : slotsFor !== selectionKey
+          ? "loading"
+          : availableSlots.length === 0
+            ? "empty"
+            : "ready";
+  // Vagas da lista de espera que podem abrir neste dia (aparecem na grade como "pode vagar").
+  const mayOpenWaits = waiting.waits.filter(
+    (w) =>
+      !w.has_interest &&
+      w.staff_id === selectedStaffId &&
+      bookingService &&
+      bookingService.duration_minutes * 60000 <= Date.parse(w.ends_at) - Date.parse(w.starts_at) &&
+      shopDateKey(new Date(w.starts_at), shopTimeZone) === selectedDay &&
+      Date.parse(w.hold_until) > +waiting.now,
+  );
+  const selectedDayIndex = bookingDayKeys.indexOf(selectedDay);
+  const nextOpenDay = bookingDayKeys
+    .slice(selectedDayIndex + 1)
+    .find((key) => !closedWeekdays?.has(weekdayForDateKey(key)));
+  // "amanhã" ou "qua 07" (botão "Ver …" do dia sem horários).
+  const dayChipLabel = (key: string) => {
+    if (key === bookingDayKeys[1]) return t("booking.tomorrow").toLocaleLowerCase(intlLocale);
+    const noon = shopDateTime(key, "12:00:00", shopTimeZone);
+    const weekday = formatShopDate(noon, shopTimeZone, { weekday: "short" }).replace(".", "");
+    return `${weekday} ${formatShopDate(noon, shopTimeZone, { day: "2-digit" })}`;
+  };
+  // Um passo está feito quando tem valor e foi escolhido ou recolhido (o sugerido recolhe ao
+  // tocar num horário). O primeiro que falta é o único "agora"; os seguintes ficam "a fazer".
+  const staffHasValue = Boolean(selectedStaff) || anyAvailable;
+  const stepsDone = [
+    Boolean(selectedService) && (serviceChosen || !serviceOpen),
+    staffHasValue && (staffChosen || !staffOpen || directLinkActive),
+    Boolean(selectedSlot),
+    false,
+  ];
+  const firstOpenStep = stepsDone.indexOf(false);
+  const stepStateAt = (index: number): StepState =>
+    stepsDone[index] ? "done" : index === firstOpenStep ? "current" : "upcoming";
+  const serviceStep = stepStateAt(0);
+  const staffStep = stepStateAt(1);
+  const whenStep = stepStateAt(2);
+  const reviewStep = stepStateAt(3);
+  const repeatChoice: RepeatChoice = !repeatEnabled
+    ? "once"
+    : repeatKind === "weekday" || repeatInterval === 7
+      ? "weekday"
+      : (String(repeatInterval) as RepeatChoice);
+  const canRepeat = !rescheduleId && !directLinkActive;
+  const chosenSlot = selectedSlot ? slotLabel(selectedSlot) : null;
+  const bookingButton = !selectedSlot
+    ? { label: t("booking.chooseTime"), icon: Clock3 }
+    : bookingBusy
+      ? { label: t("booking.booking"), icon: CalendarCheckIcon }
+      : rescheduleId
+        ? {
+            label: t("booking.moveTo", { day: chosenSlot!.day, time: chosenSlot!.time }),
+            icon: CalendarClock,
+          }
+        : repeatEnabled && canRepeat
+          ? {
+              label: t("booking.confirmRepeat", { day: chosenSlot!.day, time: chosenSlot!.time }),
+              icon: Repeat2,
+            }
+          : {
+              label: t("booking.confirmAt", { day: chosenSlot!.day, time: chosenSlot!.time }),
+              icon: CalendarCheckIcon,
+            };
+  const summaryPills: SummaryPill[] = [
+    {
+      key: "service",
+      icon: Scissors,
+      label: selectedService?.name ?? t("booking.service"),
+      pending: !selectedService,
+      onClick: () => {
+        setServiceOpen(true);
+        scrollToStep("booking-step-service");
+      },
+    },
+    {
+      key: "staff",
+      icon: User,
+      label: anyAvailable
+        ? t("booking.anyStaff")
+        : (selectedStaff?.display_name ?? t("booking.staff")),
+      pending: !staffHasValue,
+      media:
+        selectedStaff && !anyAvailable ? (
+          <BookingAvatar
+            name={selectedStaff.display_name}
+            src={selectedStaff.avatar_url}
+            seed={selectedStaff.id}
+            size="xs"
+          />
+        ) : undefined,
+      onClick: directLinkActive
+        ? undefined
+        : () => {
+            setStaffOpen(true);
+            scrollToStep("booking-step-staff");
+          },
+    },
+    {
+      // Dia e horário são a mesma decisão ("quando"): uma pílula só.
+      key: "when",
+      lead: true,
+      icon: selectedSlot ? CalendarDaysIcon : Clock3,
+      label: `${slotLabel(shopDateTime(selectedDay, "12:00:00", shopTimeZone)).day} · ${
+        selectedSlot && selectedEnd
+          ? `${chosenSlot!.time}–${slotLabel(selectedEnd).time}`
+          : t("booking.pendingTime")
+      }`,
+      pending: !selectedSlot,
+      onClick: () => scrollToStep("booking-step-when"),
+    },
+  ];
+  const reservationCounts = {
+    upcoming: filterReservations(shopAppointments, "upcoming", reservationNowMs()).length,
+    history: filterReservations(shopAppointments, "history", reservationNowMs()).length,
+    completed: filterReservations(shopAppointments, "completed", reservationNowMs()).length,
+    cancelled: filterReservations(shopAppointments, "cancelled", reservationNowMs()).length,
+  };
+  function reservationNowMs() {
+    return demo?.now.getTime() ?? Date.now();
+  }
+  const seriesUpcoming = (seriesId: string) =>
+    shopAppointments
+      .filter(
+        (row) =>
+          row.series_id === seriesId &&
+          filterReservations([row], "upcoming", reservationNowMs()).length > 0,
+      )
+      .sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+  /**
+   * Etiqueta da repetição com a frequência ("Repete toda semana", "Repete a cada 15 dias"). A regra
+   * da série não vem para o cliente: usa o menor intervalo entre as datas já carregadas (um dia
+   * ocupado pulado não engana). Com uma data só, fica o "Repete" genérico.
+   */
+  const seriesLabel = (seriesId: string) => {
+    const keys = [
+      ...new Set(
+        shopAppointments
+          .filter((row) => row.series_id === seriesId)
+          .map((row) => shopDateKey(new Date(row.starts_at), shopTimeZone)),
+      ),
+    ].sort();
+    let step = 0;
+    for (let i = 1; i < keys.length; i += 1) {
+      const diff = Math.round((Date.parse(keys[i]) - Date.parse(keys[i - 1])) / 86_400_000);
+      if (diff > 0 && (step === 0 || diff < step)) step = diff;
+    }
+    if (step === 7) return t("booking.repeatCreatedWeekly");
+    if (step > 0) return t("booking.repeatCreatedDays", { days: step });
+    return t("bookings.recurring");
+  };
+  const stopSeriesDates = stopSeriesTarget
+    ? seriesUpcoming(stopSeriesTarget).map((row) => row.starts_at)
+    : [];
+  /** Em Próximos, cada repetição vira um só ticket (a data em foco) com as outras em pílulas. */
+  const displayedReservations = (rows: CustomerAppointment[]) =>
+    reservationFilter !== "upcoming"
+      ? rows
+      : rows.filter((row) => {
+          if (!row.series_id) return true;
+          const dates = seriesUpcoming(row.series_id);
+          const shown = dates.find((item) => item.id === seriesFocus[row.series_id!]) ?? dates[0];
+          return !shown || shown.id === row.id;
+        });
+  const renderReservation = (row: CustomerAppointment) => {
+    const upcomingView = reservationFilter === "upcoming";
+    const canManage =
+      row.status === "reschedule_requested" ||
+      row.status === "pending" ||
+      (row.status === "confirmed" && new Date(row.starts_at).getTime() > reservationNowMs());
+    const series = upcomingView && row.series_id ? seriesUpcoming(row.series_id) : [];
+    const cancelled = row.status === "cancelled" ? cancellationDetails[row.id] : undefined;
+    const seriesId = row.series_id;
+    return (
+      <AppointmentTicket
+        key={row.id}
+        id={`reserva-${row.id}`}
+        data={ticketFor(row)}
+        now={bookingNow}
+        timeZone={shopTimeZone}
+        status={
+          <ReservationStatusBadge
+            status={row.status}
+            startsAt={row.starts_at}
+            now={bookingNow}
+            size="sm"
+            actionable={canManage}
+          />
+        }
+        struck={row.status === "cancelled"}
+        showUntil={upcomingView}
+        repeatLabel={seriesId ? seriesLabel(seriesId) : undefined}
+        className={
+          row.status === "reschedule_requested"
+            ? "tone-warning border-l-4 border-l-[color:var(--tone-line)]"
+            : undefined
+        }
+        highlight={
+          focusedReservation === row.id ? (
+            <span className="absolute -top-3 left-4 z-10">
+              <BookingBadge
+                tone="highlight"
+                icon={focusedFrom === "home" ? CalendarClock : BellRing}
+                label={focusedFrom === "home" ? t("home.nextTitle") : t("bookings.fromNotice")}
+                size="sm"
+              />
+            </span>
+          ) : undefined
+        }
+        extra={
+          <>
+            {row.status === "completed" && showEarned && earnedByAppointment[row.id] ? (
+              <p className="flex">
+                <BookingBadge
+                  tone="success"
+                  icon={Gem}
+                  size="sm"
+                  label={`+${earnedByAppointment[row.id]} ${t("points.short")}`}
+                />
+              </p>
+            ) : null}
+            {row.status === "reschedule_requested" && (
+              <Notice
+                tone="warning"
+                icon={CalendarClock}
+                role="none"
+                title={t("home.attention.rescheduleTitle")}
+              >
+                {t("bookings.shopRemovedConfirmation")}
+              </Notice>
+            )}
+            {cancelled && (
+              <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                <XCircle className="size-3.5 shrink-0" aria-hidden />
+                {cancelled.source === "customer"
+                  ? t("bookings.cancelledByCustomer")
+                  : t("bookings.cancelledByShop")}
+                {` · ${cancellationReasonLabel(cancelled.reason)}`}
+              </p>
+            )}
+            {seriesId && series.length > 1 && (
+              <div className="space-y-1.5">
+                <p className="text-xs font-semibold text-muted-foreground">
+                  {t("bookings.seriesDates")}
+                </p>
+                <ul className="flex flex-wrap gap-1.5">
+                  {series.map((item) => {
+                    const active = item.id === row.id;
+                    return (
+                      <li key={item.id}>
+                        <button
+                          type="button"
+                          aria-pressed={active}
+                          onClick={() =>
+                            setSeriesFocus((current) => ({ ...current, [seriesId]: item.id }))
+                          }
+                          className={`min-h-11 rounded-xl border px-3 text-xs font-semibold tabular-nums ${
+                            active
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-border bg-background"
+                          }`}
+                        >
+                          {slotLabel(item.starts_at).day}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+          </>
+        }
+        actions={
+          canManage ? (
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                disabled={appointmentBusy !== null}
+                onClick={() => beginReschedule(row)}
+                className="action-button action-edit min-h-11 w-full"
+              >
+                <CalendarClock aria-hidden />
+                {t("bookings.reschedule")}
+              </button>
+              <button
+                type="button"
+                disabled={appointmentBusy !== null}
+                onClick={() => setCancelTarget(row)}
+                className="action-button action-danger min-h-11 w-full"
+              >
+                <X aria-hidden />
+                {appointmentBusy === row.id ? t("bookings.cancelling") : t("bookings.cancel")}
+              </button>
+              {seriesId ? (
+                <button
+                  type="button"
+                  disabled={appointmentBusy !== null}
+                  onClick={() => setStopSeriesTarget(seriesId)}
+                  className="col-span-2 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold disabled:opacity-50"
+                >
+                  <Repeat2 className="size-4 text-gold" aria-hidden />
+                  {t("bookings.stopRepeat")}
+                </button>
+              ) : null}
+            </div>
+          ) : row.status === "completed" && row.service && row.staff ? (
+            <button
+              type="button"
+              onClick={() => bookAgain(row)}
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold transition hover:border-primary/40"
+            >
+              <RotateCcw className="size-4 text-gold" aria-hidden />
+              {t("bookings.bookAgain")}
+            </button>
+          ) : null
+        }
+      />
+    );
+  };
+  const [notifications, setNotifications] = useState<SessionNotice[]>([]);
   useEffect(() => {
     if (tab !== "notifications") return;
     setNotifications((current) =>
@@ -1414,21 +1962,47 @@ function ArenaApp({
     );
   }, [tab, notifications.length]);
 
-  const tierPosition = tierFor(lifetimePoints, loyaltyProgram.tiers);
-  const tierBenefit = (index: number) => {
-    const tierRow = loyaltyProgram.tiers[index];
-    if (tierRow?.benefit) return tierRow.benefit;
-    if (loyaltyProgram.mode !== "default") return "";
-    return t(`tier.${tierStyleKey(index, loyaltyProgram.tiers.length)}.benefit` as MessageKey);
-  };
-  const tierStyleKeyNow = tierStyleKey(tierPosition.index, loyaltyProgram.tiers.length);
-  const tier = {
-    ...TIER_STYLES[tierStyleKeyNow],
-    key: tierStyleKeyNow,
-    name: tierPosition.tier.name,
-    benefit: tierBenefit(tierPosition.index),
-  };
   const loyaltyOn = loyaltyProgram.enabled;
+  const pendingRedemptions = usePendingRedemptions(
+    demo ? DEMO_CUSTOMER_ID : userId,
+    shopId,
+    pointsVersion,
+  );
+  // Só lê o extrato (a mesma tabela de "Meus pontos") quando a pessoa olha os Anteriores.
+  const showEarned = loyaltyOn && tab === "reservas" && reservationFilter !== "upcoming";
+  // A demonstração ganha objeto novo a cada tique: a lista de premiados vira uma chave estável.
+  const demoAwardedKey = demo ? demo.awarded.join("|") : null;
+  useEffect(() => {
+    if (!showEarned) return;
+    if (demoAwardedKey !== null) {
+      // Mesmo valor que o extrato da demonstração mostra por atendimento concluído.
+      const ids = demoAwardedKey ? demoAwardedKey.split("|") : [];
+      setEarnedByAppointment(Object.fromEntries(ids.map((id) => [id, 50])));
+      return;
+    }
+    if (!userId || !shopId) return;
+    let cancelled = false;
+    void supabase
+      .from("loyalty_ledger")
+      .select("appointment_id, delta")
+      .eq("user_id", userId)
+      .eq("barbershop_id", shopId)
+      .not("appointment_id", "is", null)
+      .gt("delta", 0)
+      .limit(500)
+      .then(({ data, error }) => {
+        if (cancelled || error || !data) return;
+        const earned: Record<string, number> = {};
+        for (const row of data) {
+          if (row.appointment_id)
+            earned[row.appointment_id] = (earned[row.appointment_id] ?? 0) + row.delta;
+        }
+        setEarnedByAppointment(earned);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [showEarned, demoAwardedKey, userId, shopId, pointsVersion, appointmentVersion]);
 
   // O aviso de remarcação impossível não é uma confirmação: sem o check verde.
   const rescheduleBlockedNotice = appointmentsNotice === t("fix.cliente-app.rescheduleUnavailable");
@@ -1438,22 +2012,210 @@ function ArenaApp({
     reservationFilter,
     reservationNow,
   );
-  const nextAppointment = shopAppointments
+  const upcomingAppointments = shopAppointments
     .filter(
       (row) =>
         (row.status === "pending" || row.status === "confirmed") &&
         new Date(row.starts_at).getTime() > (demo?.now.getTime() ?? Date.now()),
     )
-    .sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0];
+    .sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+  const nextAppointment = upcomingAppointments[0];
   const appointmentOwnerKey = demo ? `demo:${demo.shop.id}:${DEMO_CUSTOMER_ID}` : userId;
-  const nextLevel: NextLevelSummary | null = tierPosition.next
-    ? {
-        name: tierPosition.next.name,
-        pointsRemaining: tierPosition.pointsToNext,
-        progress: tierPosition.progress,
-        benefit: tierBenefit(tierPosition.index + 1),
-      }
-    : null;
+
+  // Início: o que pede ação do cliente (mudança pedida pela barbearia e vaga liberada na espera).
+  const homeNow = demo?.now ?? new Date();
+  const rescheduleRequests = shopAppointments
+    .filter(
+      (row) =>
+        row.status === "reschedule_requested" && new Date(row.starts_at).getTime() > +homeNow,
+    )
+    .sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+  const waitOffers = offersFor(waiting);
+  const staffNameById = (id: string) =>
+    staff.find((member) => member.id === id)?.display_name ?? t("wait.card.staffFallback");
+  // Cancelamentos feitos pela barbearia em horários que ainda não passaram.
+  const shopCancelled = shopAppointments.filter(
+    (row) =>
+      row.status === "cancelled" &&
+      cancellationDetails[row.id]?.source === "shop" &&
+      new Date(row.starts_at).getTime() > +homeNow,
+  );
+  // Cancelamento da barbearia ainda não visto: acende o sininho e aparece no Início.
+  const [seenCancelled, setSeenCancelled] = useState<string[]>(() =>
+    readSeenCancellations(appointmentOwnerKey),
+  );
+  useEffect(() => {
+    setSeenCancelled(readSeenCancellations(appointmentOwnerKey));
+  }, [appointmentOwnerKey]);
+  const unseenCancelled = shopCancelled
+    .filter((row) => !seenCancelled.includes(row.id))
+    .sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+  const markCancelledSeen = () => {
+    if (!unseenCancelled.length) return;
+    const next = [...seenCancelled, ...unseenCancelled.map((row) => row.id)];
+    setSeenCancelled(next);
+    writeSeenCancellations(appointmentOwnerKey, next);
+  };
+  useEffect(() => {
+    if (tab === "notifications") markCancelledSeen();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- marca ao abrir Avisos ou ao chegar outro.
+  }, [tab, unseenCancelled.length]);
+  // Cancelamento da barbearia mais próximo: explica o "sem horário" do cartão.
+  const nearestShopCancelled = [...shopCancelled].sort((a, b) =>
+    a.starts_at.localeCompare(b.starts_at),
+  )[0];
+  const unreadNotifications =
+    notifications.filter((n) => !n.read).length +
+    rescheduleRequests.length +
+    waitOffers.length +
+    unseenCancelled.length;
+  const lastCompleted = shopAppointments
+    .filter((row) => row.status === "completed")
+    .sort((a, b) => b.starts_at.localeCompare(a.starts_at))[0];
+  const openBookings = () => {
+    setReservationFilter("upcoming");
+    setTab("reservas");
+  };
+  const openRewards = () => {
+    setShowVipInfo(false);
+    setTab("pontos");
+    // Leva direto à lista de prêmios, abaixo do resumo.
+    window.setTimeout(
+      () => document.getElementById("rewards-title")?.scrollIntoView({ block: "start" }),
+      120,
+    );
+  };
+  /** "Repetir o último": abre Agendar com o serviço e o profissional do último atendimento. */
+  const bookAgain = (row: CustomerAppointment) => {
+    const serviceIndex = services.findIndex((item) => item.id === row.service_id);
+    const staffIndex = staff.findIndex((item) => item.id === row.staff_id);
+    // Só vem marcado (✓ e recolhido) o que ainda existe; o que saiu abre o passo com aviso.
+    if (serviceIndex >= 0) setServiceIdx(serviceIndex);
+    setServiceChosen(serviceIndex >= 0);
+    setServiceOpen(serviceIndex < 0);
+    if (staffIndex >= 0) {
+      staffPickedByUser.current = true;
+      setAnyAvailable(false);
+      setStaffIdx(staffIndex);
+    }
+    if (!directLinkActive) {
+      setStaffChosen(staffIndex >= 0);
+      setStaffOpen(staffIndex < 0);
+    }
+    setAgainMissing(
+      serviceIndex < 0 || (staffIndex < 0 && !directLinkActive)
+        ? {
+            service: serviceIndex < 0 ? (row.service?.name ?? null) : undefined,
+            staff:
+              staffIndex < 0 && !directLinkActive ? (row.staff?.display_name ?? null) : undefined,
+          }
+        : null,
+    );
+    setRescheduleId(null);
+    setBookingError(null);
+    setBookingDone(null);
+    setSelectedSlotAt(null);
+    setTab("agenda");
+  };
+  const appointmentContext: AppointmentContext = Object.fromEntries(
+    shopAppointments.map((row) => [
+      row.id,
+      {
+        service: row.service?.name ?? t("booking.serviceFallback"),
+        staff: row.staff?.display_name ?? t("bookings.staffFallback"),
+      },
+    ]),
+  );
+  const attentionItems: AttentionItem[] = [
+    ...waitOffers.map((wait) => ({
+      id: `offer-${wait.id}`,
+      tone: "warning" as const,
+      icon: Timer,
+      title: t("home.attention.offerTitle"),
+      description: `${shortWhen(wait.starts_at, homeNow, shopTimeZone, intlLocale)} · ${staffNameById(wait.staff_id)}`,
+      // O Countdown usa o relógio do aparelho; a vaga segue o da loja (ou da demonstração).
+      aside: (
+        <Countdown
+          endsAt={Date.parse(wait.claim_until) + (Date.now() - +waiting.now)}
+          label={t("home.attention.offerLeft")}
+        />
+      ),
+      action: {
+        label: waiting.busy ? t("home.attention.offerBusy") : t("home.attention.offerAction"),
+        icon: waiting.busy ? SpinningLoader : Check,
+        onClick: () =>
+          void waiting.act(wait.id, "claim").then((ok) => {
+            if (!ok) return;
+            setAppointmentVersion((v) => v + 1);
+            toast.success(t("home.attention.offerDone"));
+          }),
+      },
+    })),
+    ...rescheduleRequests.map((row) => ({
+      id: `reschedule-${row.id}`,
+      tone: "warning" as const,
+      icon: CalendarClock,
+      title: t("home.attention.rescheduleTitle"),
+      description: (
+        <>
+          <span className="line-through decoration-muted-foreground/60">
+            {shortWhen(row.starts_at, homeNow, shopTimeZone, intlLocale)}
+          </span>
+          {` · ${row.service?.name ?? t("booking.serviceFallback")} · ${
+            row.staff?.display_name ?? t("bookings.staffFallback")
+          }`}
+        </>
+      ),
+      aside: (
+        <button
+          type="button"
+          disabled={appointmentBusy !== null}
+          onClick={() => setCancelTarget(row)}
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-2 text-sm font-semibold text-muted-foreground hover:text-foreground disabled:opacity-50"
+        >
+          <XCircle className="size-4" aria-hidden />
+          {t("home.attention.cancelAction")}
+        </button>
+      ),
+      action: {
+        label: t("home.attention.rescheduleAction"),
+        icon: CalendarClock,
+        onClick: () => beginReschedule(row),
+      },
+    })),
+    ...unseenCancelled.map((row) => ({
+      id: `cancelled-${row.id}`,
+      tone: "danger" as const,
+      icon: XCircle,
+      title: t("notices.shopCancelled"),
+      description: (
+        <>
+          <span className="line-through decoration-muted-foreground/60">
+            {shortWhen(row.starts_at, homeNow, shopTimeZone, intlLocale)}
+          </span>
+          {` · ${row.service?.name ?? t("booking.serviceFallback")} · ${
+            row.staff?.display_name ?? t("bookings.staffFallback")
+          }`}
+        </>
+      ),
+      // Abre Agendar com o mesmo serviço e profissional do horário cancelado.
+      action: {
+        label: t("notices.bookAnother"),
+        icon: CalendarPlus,
+        onClick: () => {
+          markCancelledSeen();
+          bookAgain(row);
+        },
+      },
+    })),
+  ];
+  // Sem horário marcado, o item de atenção já conta a história (mudança pedida ou cancelamento
+  // não visto): o cartão vazio com "Agendar horário" contradiria e convidaria a marcar em dobro.
+  const attentionCoversVisit =
+    !nextAppointment &&
+    !appointmentsLoading &&
+    !appointmentsError &&
+    (rescheduleRequests.length > 0 || unseenCancelled.length > 0);
 
   useEffect(() => {
     if (
@@ -1466,13 +2228,32 @@ function ArenaApp({
       return;
 
     handledInitialSchedule.current = appointmentOwnerKey;
-    if (!nextAppointment && tab === "dashboard") setTab("agenda");
+    // Primeiro contato (sem nenhum horário nesta barbearia e sem pontos, logo sem prêmio para
+    // trocar ou retirar e sem "Repetir"): o app abre direto em Agendar. Quem já tem histórico
+    // fica no Início, que mostra pontos, prêmios e o convite para agendar ou repetir.
+    if (
+      !shopAppointments.length &&
+      points <= 0 &&
+      lifetimePoints <= 0 &&
+      !nextAppointment &&
+      !rescheduleRequests.length &&
+      !waitOffers.length &&
+      !unseenCancelled.length &&
+      tab === "dashboard"
+    )
+      setTab("agenda");
   }, [
     appointmentOwnerKey,
     appointmentsError,
     appointmentsLoadedFor,
     appointmentsLoading,
+    shopAppointments.length,
+    points,
+    lifetimePoints,
     nextAppointment,
+    rescheduleRequests.length,
+    waitOffers.length,
+    unseenCancelled.length,
     tab,
   ]);
 
@@ -1482,10 +2263,11 @@ function ArenaApp({
     label: string;
   };
 
+  // Meus pontos é uma tela filha do Início (o caminho para ela sai do cartão de membro).
+  // Avisos não pertence a nenhum item da barra: o destaque fica no sininho do cabeçalho.
+  const navTabFor = (current: string) => (current === "pontos" ? "dashboard" : current);
   const NavItem = ({ id, icon: Icon, label }: NavItemProps) => {
-    const accountTabs =
-      id === "perfil" && (tab === "perfil" || tab === "pontos" || tab === "notifications");
-    const pressed = tab === id || accountTabs;
+    const pressed = navTabFor(tab) === id;
     return (
       <button
         type="button"
@@ -1509,24 +2291,11 @@ function ArenaApp({
     { id: "agenda", icon: Calendar, label: t("nav.book") },
     { id: "reservas", icon: Clock3, label: t("nav.bookings") },
     ...(shopSettings.sports_enabled
-      ? [{ id: "esportes" as const, icon: Feather, label: t("nav.sports") }]
+      ? [{ id: "esportes" as const, icon: Trophy, label: t("nav.sports") }]
       : []),
     { id: "perfil", icon: User, label: t("nav.account") },
   ];
-  const activeNavIndex = navItems.findIndex((item) => {
-    if (item.id === "perfil") {
-      return tab === "perfil" || tab === "pontos" || tab === "notifications";
-    }
-    return item.id === tab;
-  });
-  const accountWhere =
-    tab === "perfil"
-      ? t("nav.profile")
-      : tab === "pontos"
-        ? t("nav.points")
-        : tab === "notifications"
-          ? t("nav.notices")
-          : null;
+  const activeNavIndex = navItems.findIndex((item) => item.id === navTabFor(tab));
   const brandStyle = brandVariables(
     shopSettings.primary_color,
     shopSettings.accent_color,
@@ -1550,50 +2319,38 @@ function ArenaApp({
         busy={appointmentBusy !== null}
         reason={cancelReason}
         summary={cancelTarget ? describeAppointment(cancelTarget) : null}
+        details={
+          cancelTarget ? (
+            <AppointmentTicket
+              variant="mini"
+              data={ticketFor(cancelTarget)}
+              now={bookingNow}
+              timeZone={shopTimeZone}
+            />
+          ) : null
+        }
+        error={cancelTarget ? appointmentsError : null}
         onReason={setCancelReason}
         onCancel={() => {
           setCancelTarget(null);
           setCancelReason("");
+          setAppointmentsError(null);
         }}
         onConfirm={() => void cancelAppointment()}
       />
-      <AlertDialog
+      <StopRepeatDialog
         open={!!stopSeriesTarget}
-        onOpenChange={(open) => {
-          if (!open && appointmentBusy === null) setStopSeriesTarget(null);
-        }}
-      >
-        <AlertDialogContent className="rounded-3xl border-border bg-card">
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("bookings.stopRepeatTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>{t("bookings.stopRepeatBody")}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2">
-            <button
-              type="button"
-              disabled={appointmentBusy !== null}
-              className="min-h-11 rounded-xl border border-border px-4 text-sm font-semibold"
-              onClick={() => setStopSeriesTarget(null)}
-            >
-              {t("bookings.keepRepeat")}
-            </button>
-            <button
-              type="button"
-              disabled={appointmentBusy !== null || !stopSeriesTarget}
-              className="action-button action-danger min-h-11"
-              onClick={() => {
-                if (stopSeriesTarget) void stopSeries(stopSeriesTarget);
-              }}
-            >
-              {appointmentBusy ? t("bookings.cancelling") : t("bookings.stopRepeatConfirm")}
-            </button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        dates={stopSeriesDates}
+        timeZone={shopTimeZone}
+        errorText={demo ? t("bookings.repeatDemo") : t("bookings.repeatStopError")}
+        onKeep={() => setStopSeriesTarget(null)}
+        onConfirm={() => (stopSeriesTarget ? stopSeries(stopSeriesTarget) : undefined)}
+      />
       <ShopJoinDialog
         open={joinOpen}
         shopName={joinShopName || t("cust.thisShop")}
         busy={joinBusy}
+        error={joinError}
         onConfirm={() => void confirmShopJoin()}
         onDismiss={dismissShopJoin}
       />
@@ -1688,11 +2445,12 @@ function ArenaApp({
             </span>
           )}
           {/* Container: as linhas do nome e o slogan dependem do espaço que sobra ao lado dos
-              botões, não da largura da tela. Sem espaço para uma palavra, o nome fica numa
-              linha com reticências em vez de ser partido. */}
+              botões, não da largura da tela. Com pouco espaço (celular de 320 px), o nome
+              diminui e usa duas linhas, para continuar legível ("onde estou"); só num espaço
+              mínimo vira uma linha com reticências. */}
           <div className="@container flex min-w-0 flex-1 flex-col justify-center">
             <h1
-              className={`brand-header-title break-normal hyphens-auto text-sm font-bold tracking-tight text-foreground leading-tight @max-[3.5rem]:block @max-[3.5rem]:text-ellipsis @max-[3.5rem]:whitespace-nowrap ${
+              className={`brand-header-title break-normal hyphens-auto text-sm font-bold tracking-tight text-foreground leading-tight @max-[3.5rem]:text-xs @max-[3.5rem]:break-words @max-[2.25rem]:block @max-[2.25rem]:text-ellipsis @max-[2.25rem]:whitespace-nowrap ${
                 shopSettings.tagline ? "line-clamp-2 @min-[5.5rem]:line-clamp-1" : "line-clamp-2"
               }`}
             >
@@ -1719,14 +2477,14 @@ function ArenaApp({
             className={`app-icon-button relative ${tab === "notifications" ? "app-nav-current" : ""}`}
           >
             <Bell size={20} />
-            {unreadNotifications > 0 && (
-              <span
-                aria-hidden
-                className="absolute top-1 right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-[#20211f] bg-destructive px-1 text-[10px] font-bold leading-none text-destructive-foreground"
-              >
-                {unreadNotifications > 9 ? "9+" : unreadNotifications}
-              </span>
-            )}
+            <span aria-hidden className="absolute -right-1 -top-1">
+              <CountBadge
+                count={unreadNotifications}
+                tone="danger"
+                max={9}
+                className="ring-2 ring-[color:var(--app-header-surface)]"
+              />
+            </span>
           </button>
           {headerActions}
           {demoChrome ? (
@@ -1738,9 +2496,9 @@ function ArenaApp({
             <button
               type="button"
               aria-label={t("nav.myAccount")}
-              aria-current={tab === "perfil" || tab === "pontos" ? "page" : undefined}
+              aria-current={tab === "perfil" ? "page" : undefined}
               onClick={() => setTab("perfil")}
-              className={`app-icon-button ${tab === "perfil" || tab === "pontos" ? "app-nav-current" : ""}`}
+              className={`app-icon-button ${tab === "perfil" ? "app-nav-current" : ""}`}
             >
               <User size={20} />
             </button>
@@ -1749,24 +2507,27 @@ function ArenaApp({
       </header>
 
       {/* Main Viewport */}
-      <main className="p-4 max-w-xl mx-auto">
-        {accountWhere ? (
-          <p className="mb-3 text-xs font-semibold text-muted-foreground" role="status">
-            {t("nav.youAreIn")} <span className="text-foreground">{accountWhere}</span>
-            {" · "}
-            <button
-              type="button"
-              className="-my-3 inline-flex min-h-11 items-center font-semibold text-primary underline-offset-2 hover:underline"
-              onClick={() => setTab("dashboard")}
-            >
-              {t("nav.backHome")}
-            </button>
-          </p>
-        ) : null}
+      <main
+        className={`p-4 max-w-xl mx-auto ${tab === "dashboard" || tab === "agenda" || tab === "perfil" || tab === "esportes" ? "customer-main-wide" : ""}`}
+      >
         <div key={tab} className="mb-panel">
           {tab === "perfil" && (
-            <CustomerProfile onSaved={setCustomerName}>
-              <CustomerRhythm shopId={shopId} />
+            <CustomerProfile onSaved={setCustomerName} shops={myShops} currentShopId={shopId}>
+              <CustomerRhythm
+                shopId={shopId}
+                visits={shopAppointments
+                  .filter((row) => row.status === "completed")
+                  .map((row) => row.starts_at)}
+                upcoming={nextAppointment?.starts_at ?? null}
+                timeZone={shopTimeZone}
+                now={homeNow}
+                onOpenBookings={openBookings}
+                onBook={(dayKey) => {
+                  if (dayKey && bookingDayKeys.includes(dayKey)) setSelectedDay(dayKey);
+                  if (lastCompleted) bookAgain(lastCompleted);
+                  else setTab("agenda");
+                }}
+              />
             </CustomerProfile>
           )}
           {tab === "pontos" &&
@@ -1774,880 +2535,637 @@ function ArenaApp({
               <PointsHistory
                 userId={userId}
                 shopId={shopId}
-                points={points}
-                currentLevel={tier.name}
-                nextLevel={nextLevel}
                 refreshKey={pointsVersion}
+                appointments={appointmentContext}
+                now={homeNow}
+                timeZone={shopTimeZone}
+                onBack={() => setTab("dashboard")}
+                summary={
+                  <MemberCard
+                    variant="summary"
+                    name={customerName || t("cust.customerFallback")}
+                    program={loyaltyProgram}
+                    points={points}
+                    lifetimePoints={lifetimePoints}
+                    onOpenClub={() => setShowVipInfo(true)}
+                  />
+                }
               >
                 <CustomerRewards
-                  userId={userId}
-                  shopId={shopId}
                   program={loyaltyProgram}
                   points={points}
+                  pending={pendingRedemptions}
+                  now={homeNow}
                   onChanged={() => setPointsVersion((value) => value + 1)}
                 />
               </PointsHistory>
             ) : (
-              <EmptyState
-                tone="bell"
-                title={t("rewards.clubOffTitle")}
-                description={t("rewards.clubOffText")}
-              />
+              <div className="space-y-5">
+                <CustomerPageHeader
+                  icon={ReceiptText}
+                  title={t("points.title")}
+                  onBack={() => setTab("dashboard")}
+                />
+                <EmptyState
+                  tone="gift"
+                  title={t("rewards.clubOffTitle")}
+                  description={t("rewards.clubOffText")}
+                />
+              </div>
             ))}
           {tab === "dashboard" && (
-            <div className="mb-stagger space-y-4 relative z-10">
-              <NamePrompt disabled={Boolean(demoShopId)} onSaved={setCustomerName} />
-              <WhatsappConfirmBanner disabled={Boolean(demoShopId)} />
-              {/* Card 1: Seu Cartão (Loyalty Card) */}
-              {loyaltyOn && (
-                <section
-                  className="app-action-card mb-loyalty-contrast-card mb-loyalty-member-card relative overflow-hidden flex flex-col gap-5 p-5 cursor-pointer transition-transform hover:scale-[1.01]"
-                  onClick={() => setShowVipInfo(true)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      setShowVipInfo(true);
+            // Início em faixas: (1) o que pede ação, (2) o próximo horário, (3) o cartão de
+            // membro. No computador, duas colunas: o que acontece à esquerda, pontos à direita.
+            <div className="customer-home relative z-10 grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:gap-6">
+              <div className="mb-stagger min-w-0 space-y-4">
+                <ProfileSetup disabled={Boolean(demoShopId)} onNameSaved={setCustomerName} />
+                <AttentionList
+                  title={t("home.attention.title")}
+                  items={attentionItems}
+                  headingLevel="h2"
+                />
+                {waiting.error && waitOffers.length > 0 && (
+                  <Notice tone="danger" title={waiting.error} />
+                )}
+                {!attentionCoversVisit && (
+                  <NextVisitCard
+                    cancelledAt={!nextAppointment ? nearestShopCancelled?.starts_at : undefined}
+                    loading={appointmentsLoading}
+                    error={appointmentsError}
+                    onRetry={() => setAppointmentVersion((version) => version + 1)}
+                    now={homeNow}
+                    timeZone={shopTimeZone}
+                    visit={
+                      nextAppointment
+                        ? {
+                            startsAt: nextAppointment.starts_at,
+                            status: nextAppointment.status,
+                            serviceName:
+                              nextAppointment.service?.name ?? t("booking.serviceFallback"),
+                            serviceIcon: nextAppointment.service?.icon,
+                            staffName:
+                              nextAppointment.staff?.display_name ?? t("bookings.staffFallback"),
+                            staffId: nextAppointment.staff_id,
+                            staffPhoto: staff.find(
+                              (member) => member.id === nextAppointment.staff_id,
+                            )?.avatar_url,
+                          }
+                        : null
                     }
-                  }}
-                >
-                  <div className="mb-loyalty-sheen" aria-hidden />
-                  <div className="flex justify-between items-start relative z-10">
-                    <div className="min-w-0 pr-4">
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                        {t("home.member")}
-                      </p>
-                      <h2 className="brand-loyalty-name text-2xl sm:text-3xl break-words">
-                        {customerName || t("cust.customerFallback")}
-                      </h2>
-                    </div>
-                    <div className="shrink-0 flex flex-col items-end">
-                      <div
-                        className={`mb-loyalty-tier-mark mb-loyalty-tier-${tier.key} flex size-12 sm:size-14 items-center justify-center rounded-full border shadow-sm`}
-                      >
-                        <tier.icon className="size-6 sm:size-7" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-end mt-2 relative z-10">
-                    <div>
-                      <p className="text-sm font-semibold text-muted-foreground mb-1">
-                        {t("home.pointsBalance")}
-                      </p>
-                      <p
-                        className={`text-4xl sm:text-5xl font-black tabular-nums tracking-tight ${tier.colorClass}`}
-                      >
-                        {points}{" "}
-                        <span className="text-xl font-semibold opacity-80 tracking-normal">
-                          pts
-                        </span>
-                      </p>
-                    </div>
-                    <div
-                      className={`mb-loyalty-tier-mark mb-loyalty-tier-${tier.key} flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm mb-1`}
-                    >
-                      <tier.icon className="size-4" />
-                      <span className="text-xs font-bold whitespace-nowrap">
-                        {t("tier.level", { name: tier.name })}
-                      </span>
-                    </div>
-                  </div>
-                </section>
-              )}
-
-              {/* Card 2: Próximo nível — compartilhado com o Extrato. */}
-              {loyaltyOn && <NextLevelCard nextLevel={nextLevel} />}
-
-              {/* Extrato: quando o cliente ganhou ou perdeu pontos por nível. */}
+                    moreCount={Math.max(0, upcomingAppointments.length - 1)}
+                    onDetails={
+                      nextAppointment
+                        ? () => revealReservation(nextAppointment, "home")
+                        : openBookings
+                    }
+                    onMore={openBookings}
+                    onReschedule={
+                      nextAppointment ? () => beginReschedule(nextAppointment) : undefined
+                    }
+                    onBook={() => setTab("agenda")}
+                    repeat={
+                      lastCompleted && lastCompleted.service && lastCompleted.staff
+                        ? {
+                            service: lastCompleted.service.name,
+                            staff: lastCompleted.staff.display_name,
+                            onClick: () => bookAgain(lastCompleted),
+                          }
+                        : null
+                    }
+                  />
+                )}
+                <SurveyCard
+                  enabled={shopSettings.survey_program_enabled}
+                  appointments={appointmentContext}
+                  timeZone={shopTimeZone}
+                />
+              </div>
               {loyaltyOn && (
-                <button
-                  type="button"
-                  onClick={() => setTab("pontos")}
-                  className="app-action-card flex w-full cursor-pointer items-center justify-between p-4 text-left transition-colors hover:border-gold"
-                >
-                  <span className="flex items-center gap-3">
-                    <span className="flex size-9 items-center justify-center rounded-xl bg-muted text-gold">
-                      <Receipt className="size-4" />
-                    </span>
-                    <span>
-                      <span className="block text-sm font-bold">{t("home.pointsStatement")}</span>
-                      <span className="block text-xs text-muted-foreground">
-                        {t("home.pointsStatementHint")}
-                      </span>
-                    </span>
-                  </span>
-                  <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-                </button>
+                <MemberCard
+                  className="lg:sticky lg:top-4"
+                  name={customerName || t("cust.customerFallback")}
+                  program={loyaltyProgram}
+                  points={points}
+                  lifetimePoints={lifetimePoints}
+                  pending={pendingRedemptions}
+                  onOpenRewards={openRewards}
+                  onOpenHistory={() => setTab("pontos")}
+                  onOpenClub={() => setShowVipInfo(true)}
+                />
               )}
-
-              {/* Card 3: Próximo atendimento */}
-              <section
-                className="app-action-card cursor-pointer hover:border-gold transition-colors"
-                aria-label={t("home.next")}
-                onClick={() => {
-                  setReservationFilter("upcoming");
-                  setTab("reservas");
-                }}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    setReservationFilter("upcoming");
-                    setTab("reservas");
-                  }
-                }}
-              >
-                <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
-                  <h3 className="flex items-center gap-2 text-sm font-bold">
-                    <Calendar className="size-4" />
-                    {t("home.next")}
-                  </h3>
-                </div>
-                <div className="p-5">
-                  {appointmentsLoading ? (
-                    <p role="status" className="text-sm text-muted-foreground">
-                      {t("home.loadingSchedule")}
-                    </p>
-                  ) : appointmentsError ? (
-                    <div role="alert" className="space-y-3 text-sm text-destructive">
-                      <p>{appointmentsError}</p>
-                      <button
-                        type="button"
-                        onClick={() => setAppointmentVersion((version) => version + 1)}
-                        className="action-button"
-                      >
-                        {t("common.retry")}
-                      </button>
-                    </div>
-                  ) : nextAppointment ? (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-4">
-                        <div className="shrink-0 rounded-2xl border border-border bg-background px-4 py-3 text-center shadow-sm">
-                          <span className="block text-4xl font-semibold tabular-nums leading-none tracking-tight">
-                            {formatShopDate(nextAppointment.starts_at, shopTimeZone, {
-                              day: "2-digit",
-                            })}
-                          </span>
-                          <span className="mt-1 block text-xs uppercase tracking-wide text-muted-foreground">
-                            {formatShopDate(nextAppointment.starts_at, shopTimeZone, {
-                              month: "short",
-                            })}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="text-lg font-semibold tabular-nums">
-                            {formatSlotLabel(new Date(nextAppointment.starts_at), shopTimeZone)}
-                          </p>
-                          <p className="text-sm font-bold mt-0.5">
-                            {nextAppointment.service?.name ?? t("booking.serviceFallback")}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {t("home.withStaff", {
-                              name:
-                                nextAppointment.staff?.display_name ?? t("bookings.staffFallback"),
-                            })}
-                          </p>
-                        </div>
-                      </div>
-                      <span className={`status-pill status-${nextAppointment.status}`}>
-                        {t(statusKey[nextAppointment.status])}
-                      </span>
-                    </div>
-                  ) : (
-                    <EmptyState
-                      tone="calendar"
-                      title={t("home.emptyTitle")}
-                      description={t("home.emptyHint")}
-                      className="border-0 bg-transparent px-0 py-2 shadow-none"
-                    />
-                  )}
-                </div>
-              </section>
-
-              <SurveyCard enabled={shopSettings.survey_program_enabled} />
             </div>
           )}
 
           {tab === "agenda" && (
-            <div className="space-y-6">
+            // Agendar em passos numa página só: 1 Serviço → 2 Profissional → 3 Dia e horário →
+            // 4 Conferir. O resumo com o botão fica sempre à vista (fixo no celular, coluna da
+            // direita no computador).
+            <div className="space-y-5">
               <div className="app-section-title">
-                <Calendar />
+                {rescheduleId ? <CalendarClock /> : <Calendar />}
                 <h2>{rescheduleId ? t("booking.titleReschedule") : t("booking.title")}</h2>
               </div>
-              {bookingSummary && (
-                <section
-                  role="status"
-                  className="space-y-4 border border-emerald-600/30 bg-card p-5 rounded-2xl"
-                >
-                  <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-                    <CheckCircle className="size-5" />
-                    {t("booking.reserved")}
-                  </div>
-                  <p className="text-sm leading-relaxed">{bookingSummary}</p>
-                  <p className="text-xs leading-relaxed text-muted-foreground">
-                    {t("booking.doneHint")}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
+              {bookingDone ? (
+                <div className="mx-auto max-w-xl">
+                  <BookingDone
+                    title={
+                      bookingDone.rescheduled ? t("booking.rescheduled") : t("booking.reserved")
+                    }
+                    data={bookingDone.ticket}
+                    previous={bookingDone.previous}
+                    repeatLabel={bookingDone.repeatLabel}
+                    now={bookingNow}
+                    timeZone={shopTimeZone}
+                    onSeeBookings={() => {
                       setReservationFilter("upcoming");
                       setTab("reservas");
                     }}
-                    className="min-h-11 w-full rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground"
-                  >
-                    {t("booking.track")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setBookingSummary(null);
+                    onAnother={() => {
+                      setBookingDone(null);
                       setBookingError(null);
+                      setAgainMissing(null);
+                      setServiceOpen(true);
+                      setStaffOpen(!directLinkActive);
+                      scrollToStep("booking-step-service");
                     }}
-                    className="min-h-11 w-full text-sm font-semibold"
-                  >
-                    {t("booking.another")}
-                  </button>
-                </section>
-              )}
-              {!bookingSummary && (
-                <>
-                  {shopSettings.booking_instructions && (
-                    <div className="flex gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm">
-                      <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                      <p>{shopSettings.booking_instructions}</p>
-                    </div>
-                  )}
-                  <div className="space-y-4">
-                    {catalogLoading && (
-                      <p className="text-xs text-muted-foreground">{t("booking.loadingCatalog")}</p>
-                    )}
-                    {catalogError && <p className="text-xs text-destructive">{catalogError}</p>}
-
-                    {rescheduleId && (
-                      <div className="flex flex-col gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
-                        <span className="font-semibold">{t("booking.pickNewTime")}</span>
-                        <button
-                          type="button"
-                          disabled={bookingBusy}
-                          onClick={() => setRescheduleId(null)}
-                          className="min-h-11 rounded-xl border border-border bg-background px-4 text-sm font-semibold text-foreground"
-                        >
-                          {t("booking.keepTime")}
-                        </button>
-                      </div>
-                    )}
-
-                    <section className="booking-section" aria-labelledby="booking-date">
-                      <h3 id="booking-date" className="booking-heading">
-                        {t("booking.date")}
-                      </h3>
-                      <DatePicker
-                        compact
+                  />
+                </div>
+              ) : (
+                <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-6">
+                  <div className="min-w-0 space-y-4">
+                    {rescheduleRow && (
+                      <RescheduleFromTo
+                        original={ticketFor(rescheduleRow)}
+                        next={chosenSlot}
+                        now={bookingNow}
+                        timeZone={shopTimeZone}
                         disabled={bookingBusy}
-                        label={t("booking.pickCalendar")}
-                        value={selectedDay}
-                        onChange={(value) => {
-                          setSelectedDay(value);
+                        onBack={() => {
+                          setRescheduleId(null);
                           setSelectedSlotAt(null);
-                          setBookingSummary(null);
                           setBookingError(null);
+                          setBookingUncertain(false);
                         }}
-                        min={dateFromLocalKey(bookingDayKeys[0])}
-                        max={dateFromLocalKey(bookingDayKeys[bookingDayKeys.length - 1])}
                       />
-                      <div
-                        ref={dayCarouselRef}
-                        className="app-day-carousel flex min-w-0 flex-1 gap-1.5 overflow-x-auto pb-1 no-scrollbar"
-                      >
-                        {bookingDayKeys.map((key, index) => {
-                          // Meio-dia no fuso da loja evita virada de dia na formatação.
-                          const dayAtNoon = shopDateTime(key, "12:00:00", shopTimeZone);
-                          const selected = selectedDay === key;
-                          const weekday = formatShopDate(dayAtNoon, shopTimeZone, {
-                            weekday: "short",
-                          })
-                            .replace(".", "")
-                            .toUpperCase();
-                          const dayNumber = formatShopDate(dayAtNoon, shopTimeZone, {
-                            day: "2-digit",
-                          });
-                          const month = formatShopDate(dayAtNoon, shopTimeZone, {
-                            month: "short",
-                          })
-                            .replace(".", "")
-                            .toUpperCase();
-                          return (
-                            <button
-                              key={key}
-                              disabled={bookingBusy}
-                              onClick={() => {
-                                setSelectedDay(key);
-                                setSelectedSlotAt(null);
-                                setBookingSummary(null);
-                                setBookingError(null);
-                              }}
-                              aria-pressed={selected}
-                              aria-label={t("booking.dayAria", { weekday, day: dayNumber, month })}
-                              className={`app-day-chip ${selected ? "app-day-chip-selected" : ""}`}
-                            >
-                              <span className="block text-[10px] font-bold uppercase tracking-wide opacity-80">
-                                {index === 0 ? t("booking.today") : weekday}
-                              </span>
-                              <span className="mt-0.5 block text-xl font-black leading-none tabular-nums">
-                                {dayNumber}
-                              </span>
-                              <span className="mt-0.5 block text-[10px] font-semibold uppercase opacity-80">
-                                {month}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <p className="text-center text-xs font-semibold text-muted-foreground">
-                        {formatShopDate(
-                          shopDateTime(selectedDay, "12:00:00", shopTimeZone),
-                          shopTimeZone,
-                          { weekday: "long", day: "2-digit", month: "long" },
-                        )}
-                      </p>
-                    </section>
+                    )}
+                    {catalogLoading && (
+                      <BookingLoading
+                        variant="cards"
+                        count={2}
+                        label={t("booking.loadingCatalog")}
+                      />
+                    )}
+                    {catalogError && (
+                      <Notice
+                        tone="danger"
+                        title={catalogError}
+                        action={{
+                          label: t("visual.retry"),
+                          icon: RotateCcw,
+                          onClick: () => setCatalogRevision((v) => v + 1),
+                        }}
+                      />
+                    )}
 
-                    <section className="booking-section" aria-labelledby="booking-service">
-                      <div className="flex items-center justify-between gap-2">
-                        <h3 id="booking-service" className="booking-heading">
-                          {t("booking.service")}
-                        </h3>
-                        {services.length > 0 && (
+                    <StepCard
+                      id="booking-step-service"
+                      index={1}
+                      title={t("booking.service")}
+                      state={serviceStep}
+                      aside={
+                        !serviceOpen && selectedService ? (
+                          <ChangeButton
+                            label={`${t("booking.change")} · ${t("booking.service")}`}
+                            disabled={bookingBusy}
+                            onClick={() => setServiceOpen(true)}
+                          />
+                        ) : services.length > 1 ? (
                           <CatalogViewToggle
                             viewMode={serviceView}
                             onViewMode={changeServiceView}
+                            className="booking-view-toggle"
                           />
-                        )}
-                      </div>
-                      {!catalogLoading && !catalogError && services.length === 0 && (
-                        <p role="status" className="text-sm text-muted-foreground">
-                          {t("booking.noServices")}
-                        </p>
-                      )}
-                      <div
-                        className={
-                          serviceView === "list"
-                            ? "flex flex-col gap-2"
-                            : "grid grid-cols-2 gap-2 sm:grid-cols-3"
-                        }
-                      >
-                        {services.map((s, i) => (
-                          <button
-                            key={s.id}
-                            onClick={() => {
-                              setServiceIdx(i);
-                              setSelectedSlotAt(null);
-                              setBookingSummary(null);
-                              setBookingError(null);
-                            }}
-                            disabled={bookingBusy}
-                            aria-pressed={serviceIdx === i}
-                            className={
-                              serviceView === "list"
-                                ? `flex min-h-14 w-full items-stretch overflow-hidden rounded-xl border p-0 text-left text-xs font-bold transition-all ${
-                                    serviceIdx === i
-                                      ? "border-primary bg-primary text-primary-foreground"
-                                      : "border-border bg-muted/20 text-foreground hover:border-primary/50"
-                                  }`
-                                : `min-w-0 flex flex-col gap-2 rounded-xl border p-3 text-left text-xs font-bold transition-all sm:p-4 ${
-                                    serviceIdx === i
-                                      ? "border-primary bg-primary text-primary-foreground"
-                                      : "border-border bg-muted/20 text-foreground hover:border-primary/50"
-                                  }`
+                        ) : null
+                      }
+                    >
+                      {!catalogLoading &&
+                        !catalogError &&
+                        services.length === 0 &&
+                        (joinDeclined && !shopId ? (
+                          // Recusou entrar na barbearia do link e não tem outra: mostra como entrar.
+                          <EmptyState
+                            variant="plain"
+                            tone="store"
+                            title={t("conta.join.notYet", {
+                              shop: joinDeclined.name || t("cust.thisShop"),
+                            })}
+                            action={
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setJoinShopRef(joinDeclined.ref);
+                                  setJoinShopName(joinDeclined.name);
+                                  setJoinError(null);
+                                  setJoinOpen(true);
+                                }}
+                                className="action-button action-confirm"
+                              >
+                                <LogIn aria-hidden />
+                                {t("conta.join.enter")}
+                              </button>
                             }
-                          >
-                            {serviceView === "list" ? (
-                              <>
-                                <span
-                                  className={`flex w-16 shrink-0 items-center justify-center overflow-hidden ${
-                                    serviceIdx === i ? "bg-primary-foreground/10" : "bg-muted/50"
-                                  }`}
-                                >
-                                  <ServiceIcon
-                                    icon={s.icon}
-                                    className={`size-5 ${
-                                      serviceIdx === i
-                                        ? "text-primary-foreground"
-                                        : "text-muted-foreground"
-                                    }`}
-                                    imageClassName="size-full min-h-14 w-16 object-cover !rounded-none !p-0"
-                                  />
-                                </span>
-                                <div className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5">
-                                  <div className="min-w-0 flex-1">
-                                    <span className="brand-content-title block break-words">
-                                      {s.name}
-                                    </span>
-                                    {s.description ? (
-                                      <span
-                                        className={`mt-0.5 line-clamp-1 block text-xs font-medium ${
-                                          serviceIdx === i
-                                            ? "text-primary-foreground/75"
-                                            : "text-muted-foreground"
-                                        }`}
-                                      >
-                                        {s.description}
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                  <span
-                                    className={`shrink-0 text-xs font-medium ${
-                                      serviceIdx === i
-                                        ? "text-primary-foreground/80"
-                                        : "text-muted-foreground"
-                                    }`}
-                                  >
-                                    {serviceLabel(s)}
-                                  </span>
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                <div className="flex flex-col gap-1.5">
-                                  <ServiceIcon
-                                    icon={s.icon}
-                                    className="mb-1 size-5"
-                                    imageClassName="mb-1 size-10 rounded-xl"
-                                  />
-                                  <span className="brand-content-title block break-words">
-                                    {s.name}
-                                  </span>
-                                  {s.description ? (
-                                    <span
-                                      className={`line-clamp-2 text-xs font-medium ${
-                                        serviceIdx === i
-                                          ? "text-primary-foreground/75"
-                                          : "text-muted-foreground"
-                                      }`}
-                                    >
-                                      {s.description}
-                                    </span>
-                                  ) : null}
-                                </div>
-                                <span
-                                  className={`mt-auto block text-xs font-medium ${
-                                    serviceIdx === i
-                                      ? "text-primary-foreground/80"
-                                      : "text-muted-foreground"
-                                  }`}
-                                >
-                                  {serviceLabel(s)}
-                                </span>
-                              </>
-                            )}
-                          </button>
+                          />
+                        ) : (
+                          <EmptyState
+                            variant="plain"
+                            tone="scissors"
+                            title={t("booking.noServices")}
+                          />
                         ))}
-                      </div>
-                    </section>
+                      {againMissing?.service !== undefined && (
+                        <Notice
+                          tone="warning"
+                          role="none"
+                          title={
+                            againMissing.service
+                              ? t("booking.againServiceGone", { name: againMissing.service })
+                              : t("booking.againServiceGoneAny")
+                          }
+                        />
+                      )}
+                      {!serviceOpen && selectedService && bookingService ? (
+                        <ServiceSummary
+                          service={selectedService}
+                          terms={bookingService}
+                          formatMoney={formatMoney}
+                          suggested={!serviceChosen}
+                        />
+                      ) : (
+                        <ServiceChoices
+                          services={services}
+                          selectedIndex={serviceIdx}
+                          view={serviceView}
+                          termsFor={(service) =>
+                            (pickedStaff && termsFor(serviceTerms, pickedStaff.id, service)) ||
+                            service
+                          }
+                          formatMoney={formatMoney}
+                          suggested={!serviceChosen}
+                          disabled={bookingBusy}
+                          onPick={pickService}
+                        />
+                      )}
+                    </StepCard>
 
-                    <section className="booking-section" aria-labelledby="booking-staff">
-                      <div className="flex items-center justify-between gap-2">
-                        <h3 id="booking-staff" className="booking-heading">
-                          {t("booking.staff")}
-                        </h3>
-                        {!directLinkActive && staff.length > 0 && (
-                          <CatalogViewToggle viewMode={staffView} onViewMode={changeStaffView} />
-                        )}
-                      </div>
+                    <StepCard
+                      id="booking-step-staff"
+                      index={2}
+                      title={t("booking.staff")}
+                      state={staffStep}
+                      aside={
+                        directLinkActive ? null : !staffOpen && staffHasValue ? (
+                          <ChangeButton
+                            label={t("booking.changeStaff")}
+                            disabled={bookingBusy}
+                            onClick={() => setStaffOpen(true)}
+                          />
+                        ) : staffChoices.length > 1 ? (
+                          <CatalogViewToggle
+                            viewMode={staffView}
+                            onViewMode={changeStaffView}
+                            className="booking-view-toggle"
+                          />
+                        ) : null
+                      }
+                    >
                       {!catalogLoading && !catalogError && staffChoices.length === 0 && (
-                        <p role="status" className="text-sm text-muted-foreground">
-                          {t("booking.noStaff")}
-                        </p>
+                        <EmptyState variant="plain" tone="people" title={t("booking.noStaff")} />
                       )}
                       {staffNotForService && pickedStaff && !directLinkActive && (
-                        <p role="status" className="text-sm text-muted-foreground">
-                          {t("booking.staffNotForService", { name: pickedStaff.display_name })}
-                        </p>
+                        <Notice
+                          tone="warning"
+                          role="none"
+                          title={t("booking.staffNotForService", {
+                            name: pickedStaff.display_name,
+                          })}
+                        />
+                      )}
+                      {againMissing?.staff !== undefined && (
+                        <Notice
+                          tone="warning"
+                          role="none"
+                          title={
+                            againMissing.staff
+                              ? t("booking.againStaffGone", { name: againMissing.staff })
+                              : t("booking.againStaffGoneAny")
+                          }
+                        />
+                      )}
+                      {favoriteSaved && (
+                        <Notice
+                          tone="success"
+                          icon={StarIcon}
+                          title={t("booking.favoriteSaved", { name: favoriteSaved })}
+                        />
                       )}
                       {directLinkActive && selectedStaff ? (
-                        <div className="rounded-2xl border border-primary/25 bg-primary/5 p-4">
-                          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                            {t("booking.directLink")}
-                          </p>
-                          <p className="mt-1 font-bold">{selectedStaff.display_name}</p>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {t("booking.directLinkHint")}
-                          </p>
-                        </div>
+                        <StaffSummary member={selectedStaff} locked />
+                      ) : !staffOpen && staffHasValue ? (
+                        <StaffSummary
+                          member={anyAvailable ? null : selectedStaff}
+                          any={anyAvailable}
+                          favorite={Boolean(selectedStaff && selectedStaff.id === favoriteStaffId)}
+                          suggested={!staffChosen}
+                        />
                       ) : (
-                        <div
-                          className={
-                            staffView === "list" ? "flex flex-col gap-2" : "grid grid-cols-2 gap-2"
+                        <StaffChoices
+                          choices={staffChoices.map(({ m, i }) => ({ member: m, index: i }))}
+                          selectedIndex={anyAvailable ? null : staffIdx}
+                          anyOption={
+                            staffAssignmentMode === "random_available" ||
+                            staffAssignmentMode === "favorite_then_pick"
                           }
-                        >
-                          {(staffAssignmentMode === "random_available" ||
-                            staffAssignmentMode === "favorite_then_pick") && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setAnyAvailable(true);
-                                setSelectedSlotAt(null);
-                                setBookingSummary(null);
-                                setBookingError(null);
-                              }}
-                              disabled={bookingBusy}
-                              aria-pressed={anyAvailable}
-                              className={`rounded-xl border p-4 text-left text-xs font-bold transition-all ${
-                                anyAvailable
-                                  ? "border-primary bg-primary text-primary-foreground"
-                                  : "border-border bg-muted/20 text-foreground hover:border-primary/50"
-                              } ${staffView === "list" ? "col-span-full" : "col-span-2"}`}
-                            >
-                              {t("booking.anyStaff")}
-                              {staffAssignmentMode === "favorite_then_pick" && favoriteStaffId
-                                ? ` ${t("booking.preferFavorite")}`
-                                : ""}
-                            </button>
-                          )}
-                          {staffChoices.map(({ m, i }) => (
-                            <button
-                              key={m.id}
-                              onClick={() => {
-                                staffPickedByUser.current = true;
-                                setAnyAvailable(false);
-                                setStaffIdx(i);
-                                setSelectedSlotAt(null);
-                                setBookingSummary(null);
-                                setBookingError(null);
-                                if (
-                                  !demo &&
-                                  shopId &&
-                                  userId &&
-                                  staffAssignmentMode === "favorite_then_pick"
-                                ) {
-                                  void supabase.rpc("set_favorite_staff", {
-                                    p_shop_id: shopId,
-                                    p_staff_id: m.id,
-                                  });
-                                  setFavoriteStaffId(m.id);
-                                }
-                              }}
-                              disabled={bookingBusy}
-                              aria-pressed={!anyAvailable && staffIdx === i}
-                              className={
-                                staffView === "list"
-                                  ? `flex min-h-14 w-full items-stretch overflow-hidden rounded-xl border p-0 text-left text-xs font-bold transition-all ${
-                                      !anyAvailable && staffIdx === i
-                                        ? "border-primary bg-primary text-primary-foreground"
-                                        : "border-border bg-muted/20 text-foreground hover:border-primary/50"
-                                    }`
-                                  : `rounded-xl border p-4 text-left text-xs font-bold transition-all ${
-                                      !anyAvailable && staffIdx === i
-                                        ? "border-primary bg-primary text-primary-foreground"
-                                        : "border-border bg-muted/20 text-foreground hover:border-primary/50"
-                                    }`
+                          anyActive={anyAvailable}
+                          favoriteId={favoriteStaffId}
+                          favoriteName={
+                            staffAssignmentMode === "favorite_then_pick"
+                              ? staff.find((member) => member.id === favoriteStaffId)?.display_name
+                              : null
+                          }
+                          view={staffView}
+                          suggested={!staffChosen}
+                          disabled={bookingBusy}
+                          onPick={pickStaff}
+                          onAny={pickAnyStaff}
+                        />
+                      )}
+                    </StepCard>
+
+                    <StepCard
+                      id="booking-step-when"
+                      index={3}
+                      title={t("booking.step.when")}
+                      state={whenStep}
+                    >
+                      <DayStrip
+                        keys={bookingDayKeys}
+                        selected={selectedDay}
+                        timeZone={shopTimeZone}
+                        closedWeekdays={closedWeekdays}
+                        disabled={bookingBusy}
+                        onSelect={pickDay}
+                        calendar={
+                          <DatePicker
+                            compact
+                            disabled={bookingBusy}
+                            label={t("booking.pickCalendar")}
+                            displayValue={t("booking.moreDates")}
+                            value={selectedDay}
+                            onChange={pickDay}
+                            min={dateFromLocalKey(bookingDayKeys[0])}
+                            max={dateFromLocalKey(bookingDayKeys[bookingDayKeys.length - 1])}
+                          />
+                        }
+                      />
+                      <TimeGrid
+                        state={gridState}
+                        error={slotsError}
+                        onRetry={() => setAvailabilityVersion((v) => v + 1)}
+                        slots={availableSlots}
+                        selectedIso={selectedSlot ? selectedSlotAt : null}
+                        onSelect={(iso) => {
+                          setSelectedSlotAt(iso);
+                          setBookingError(null);
+                          setBookingUncertain(false);
+                          // Escolher o horário aceita o serviço e o profissional sugeridos: os
+                          // dois passos recolhem com ✓ (o resumo mantém o selo "Sugerido").
+                          if (selectedService) setServiceOpen(false);
+                          if (staffHasValue) setStaffOpen(false);
+                        }}
+                        timeZone={shopTimeZone}
+                        currentIso={
+                          rescheduleRow &&
+                          shopDateKey(new Date(rescheduleRow.starts_at), shopTimeZone) ===
+                            selectedDay
+                            ? new Date(rescheduleRow.starts_at).toISOString()
+                            : null
+                        }
+                        mayOpen={mayOpenWaits.map((wait) => ({
+                          iso: new Date(wait.starts_at).toISOString(),
+                          onClick: () => scrollToStep(`wait-${wait.id}`),
+                        }))}
+                        disabled={bookingBusy}
+                        empty={{
+                          closed: closedWeekdays?.has(weekdayForDateKey(selectedDay)) ?? false,
+                          nextDay: nextOpenDay
+                            ? {
+                                label: dayChipLabel(nextOpenDay),
+                                onClick: () => pickDay(nextOpenDay),
                               }
-                            >
-                              {staffView === "list" ? (
-                                <>
-                                  <span
-                                    className={`flex w-16 shrink-0 items-center justify-center overflow-hidden ${
-                                      !anyAvailable && staffIdx === i
-                                        ? "bg-primary-foreground/10"
-                                        : "bg-muted/50"
-                                    }`}
-                                  >
-                                    <StaffPhoto
-                                      src={m.avatar_url}
-                                      className="size-full min-h-14 w-16"
-                                      fallback={<Scissors className="size-4" aria-hidden="true" />}
-                                    />
-                                  </span>
-                                  <span className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2.5">
-                                    <span className="min-w-0 flex-1 break-words">
-                                      {m.display_name}
-                                      {m.bio ? (
-                                        <span
-                                          className={`mt-0.5 line-clamp-1 block text-xs font-medium ${
-                                            !anyAvailable && staffIdx === i
-                                              ? "text-primary-foreground/75"
-                                              : "text-muted-foreground"
-                                          }`}
-                                        >
-                                          {m.bio}
-                                        </span>
-                                      ) : null}
-                                    </span>
-                                    {!anyAvailable && staffIdx === i && (
-                                      <CheckCircle className="size-4 shrink-0" aria-hidden="true" />
-                                    )}
-                                  </span>
-                                </>
-                              ) : (
-                                <>
-                                  <span className="flex items-center gap-2">
-                                    <StaffPhoto
-                                      src={m.avatar_url}
-                                      className="size-9 rounded-xl"
-                                      fallback={
-                                        <span
-                                          className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
-                                            !anyAvailable && staffIdx === i
-                                              ? "bg-primary-foreground/15"
-                                              : "bg-muted"
-                                          }`}
-                                        >
-                                          <Scissors className="size-4" aria-hidden="true" />
-                                        </span>
-                                      }
-                                    />
-                                    <span className="min-w-0 flex-1 break-words">
-                                      {m.display_name}
-                                    </span>
-                                    {!anyAvailable && staffIdx === i && (
-                                      <CheckCircle className="size-4 shrink-0" aria-hidden="true" />
-                                    )}
-                                  </span>
-                                  {m.bio ? (
-                                    <span
-                                      className={`mt-2 line-clamp-2 text-xs font-medium ${
-                                        !anyAvailable && staffIdx === i
-                                          ? "text-primary-foreground/75"
-                                          : "text-muted-foreground"
-                                      }`}
-                                    >
-                                      {m.bio}
-                                    </span>
-                                  ) : null}
-                                </>
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </section>
+                            : null,
+                          onChangeStaff:
+                            !anyAvailable && !directLinkActive && staffChoices.length > 1
+                              ? () => {
+                                  setStaffOpen(true);
+                                  scrollToStep("booking-step-staff");
+                                }
+                              : null,
+                        }}
+                        notice={
+                          slotGone && selectedSlotAt ? (
+                            <Notice
+                              tone="warning"
+                              title={
+                                selectedStaff && !anyAvailable
+                                  ? t("booking.slotGone", {
+                                      time: slotLabel(selectedSlotAt).time,
+                                      name: selectedStaff.display_name,
+                                    })
+                                  : t("booking.slotGoneAny", {
+                                      time: slotLabel(selectedSlotAt).time,
+                                    })
+                              }
+                            />
+                          ) : null
+                        }
+                      />
+                      <WaitingCards
+                        controller={{
+                          ...waiting,
+                          waits: waiting.waits.filter((w) => w.staff_id === selectedStaffId),
+                        }}
+                        mode="opportunities"
+                        staff={staff}
+                        service={bookingService ?? undefined}
+                        timeZone={shopTimeZone}
+                        day={selectedDay}
+                        onChanged={() => setTab("reservas")}
+                      />
+                    </StepCard>
 
-                    <section className="booking-section" aria-labelledby="booking-time">
-                      <h3 id="booking-time" className="booking-heading">
-                        {t("booking.time")}
-                      </h3>
-                      {!selectedService || (!selectedStaff && !anyAvailable) ? (
-                        <p className="text-sm text-muted-foreground">
-                          {t("booking.timesNeedChoice")}
-                        </p>
-                      ) : slotsLoading && slotsFor !== selectionKey ? (
-                        <p className="text-xs text-muted-foreground">{t("booking.loadingTimes")}</p>
-                      ) : slotsError ? (
-                        <div className="space-y-2">
-                          <p className="text-xs text-destructive" role="alert">
-                            {slotsError}
+                    <StepCard
+                      id="booking-step-review"
+                      index={4}
+                      title={
+                        rescheduleId ? t("booking.step.reviewReschedule") : t("booking.step.review")
+                      }
+                      state={reviewStep}
+                    >
+                      {selectedSlot && bookingService ? (
+                        <div className="space-y-2 rounded-2xl border border-border bg-background/60 p-3">
+                          <AppointmentTicket
+                            variant="mini"
+                            data={{
+                              startsAt: selectedSlot.toISOString(),
+                              endsAt: selectedEnd?.toISOString(),
+                              serviceName: bookingService.name,
+                              serviceIcon: bookingService.icon,
+                              staffName: anyAvailable
+                                ? t("booking.anyStaff")
+                                : (selectedStaff?.display_name ?? t("booking.staff")),
+                              staffId: selectedStaff?.id,
+                              staffPhoto: anyAvailable ? null : selectedStaff?.avatar_url,
+                              anyStaff: anyAvailable,
+                            }}
+                            now={bookingNow}
+                            timeZone={shopTimeZone}
+                          />
+                          <p className="flex items-center justify-between border-t border-border pt-2 text-sm">
+                            <span className="text-muted-foreground">{t("booking.total")}</span>
+                            <span className="font-bold tabular-nums">
+                              {formatMoney(reviewPriceCents ?? bookingService.price_cents)}
+                            </span>
                           </p>
-                          <button
-                            className="text-xs underline"
-                            onClick={() => setAvailabilityVersion((v) => v + 1)}
-                          >
-                            {t("common.retry")}
-                          </button>
                         </div>
-                      ) : availableSlots.length === 0 ? (
-                        <p className="text-xs text-muted-foreground">{t("booking.noTimes")}</p>
                       ) : (
-                        <div className="space-y-4">
-                          {[
-                            { label: t("booking.morning"), from: 0, to: 12, icon: Sun },
-                            { label: t("booking.afternoon"), from: 12, to: 18, icon: Sun },
-                            { label: t("booking.evening"), from: 18, to: 24, icon: Moon },
-                          ].map(({ label, from, to, icon: Icon }) => {
-                            const periodSlots = availableSlots.filter(
-                              (slot) =>
-                                shopHour(slot, shopTimeZone) >= from &&
-                                shopHour(slot, shopTimeZone) < to,
-                            );
-                            if (!periodSlots.length) return null;
-                            return (
-                              <section key={label} aria-label={label} className="space-y-2">
-                                <p className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-                                  <Icon className="size-4 text-gold" />
-                                  {label}
-                                </p>
-                                <div className="grid grid-cols-3 gap-2">
-                                  {periodSlots.map((slot) => (
-                                    <button
-                                      key={slot.toISOString()}
-                                      onClick={() => {
-                                        setSelectedSlotAt(slot.toISOString());
-                                        setBookingSummary(null);
-                                      }}
-                                      disabled={bookingBusy}
-                                      aria-pressed={selectedSlotAt === slot.toISOString()}
-                                      className={`min-h-11 rounded-xl border px-2 py-3 text-sm font-semibold tabular-nums transition-all ${selectedSlotAt === slot.toISOString() ? "bg-primary text-primary-foreground border-primary" : "bg-muted/20 border-border text-foreground hover:border-gold"}`}
-                                    >
-                                      {formatSlotLabel(slot, shopTimeZone)}
-                                    </button>
-                                  ))}
-                                </div>
-                              </section>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </section>
-
-                    <WaitingCards
-                      controller={{
-                        ...waiting,
-                        waits: waiting.waits.filter((w) => w.staff_id === selectedStaffId),
-                      }}
-                      mode="opportunities"
-                      staff={staff}
-                      service={bookingService ?? undefined}
-                      timeZone={shopTimeZone}
-                      day={selectedDay}
-                      onChanged={() => setTab("reservas")}
-                    />
-                    {selectedSlot &&
-                      selectedService &&
-                      (selectedStaff || anyAvailable) &&
-                      !bookingSummary && (
-                        <section
-                          aria-label={t("booking.summaryAria")}
-                          className="rounded-2xl border border-gold/30 bg-card p-4 space-y-3"
-                        >
-                          <p className="flex items-center gap-2 text-sm font-bold">
-                            <Calendar className="size-4 text-gold" />
-                            {t("booking.yourBooking")}
-                          </p>
-                          <div className="flex justify-between gap-3">
-                            <div>
-                              <p className="text-sm font-semibold">{selectedService.name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {anyAvailable ? t("booking.anyStaff") : selectedStaff?.display_name}
-                              </p>
-                            </div>
-                            <p className="text-sm font-bold">
-                              {formatMoney((bookingService ?? selectedService).price_cents)}
-                            </p>
-                          </div>
-                          <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Clock3 className="size-4" />
-                            {formatShopDate(selectedSlot, shopTimeZone, {
-                              day: "2-digit",
-                              month: "2-digit",
-                              year: "numeric",
-                            })}{" "}
-                            · {formatSlotLabel(selectedSlot, shopTimeZone)} ·{" "}
-                            {(bookingService ?? selectedService).duration_minutes} min
-                          </p>
-                          {!rescheduleId && !directLinkActive && (
-                            <div className="space-y-2 border-t border-border/60 pt-3">
-                              <div className="flex min-h-11 items-center justify-between gap-3 text-sm font-semibold">
-                                <span id="booking-repeat-label">{t("booking.repeat")}</span>
-                                <Switch
-                                  checked={repeatEnabled}
-                                  onCheckedChange={setRepeatEnabled}
-                                  aria-labelledby="booking-repeat-label"
-                                />
-                              </div>
-                              {repeatEnabled && (
-                                <div className="space-y-2">
-                                  <div className="flex flex-wrap gap-2">
-                                    <button
-                                      type="button"
-                                      aria-pressed={repeatKind === "weekday"}
-                                      onClick={() => setRepeatKind("weekday")}
-                                      className={`min-h-11 rounded-xl border px-3 text-xs font-bold ${
-                                        repeatKind === "weekday"
-                                          ? "border-primary bg-primary text-primary-foreground"
-                                          : "border-border text-muted-foreground"
-                                      }`}
-                                    >
-                                      {t("booking.everyWeek")}
-                                    </button>
-                                    {([7, 15, 21] as const).map((days) => (
-                                      <button
-                                        key={days}
-                                        type="button"
-                                        aria-pressed={
-                                          repeatKind === "interval_days" && repeatInterval === days
-                                        }
-                                        onClick={() => {
-                                          setRepeatKind("interval_days");
-                                          setRepeatInterval(days);
-                                        }}
-                                        className={`min-h-11 rounded-xl border px-3 text-xs font-bold ${
-                                          repeatKind === "interval_days" && repeatInterval === days
-                                            ? "border-primary bg-primary text-primary-foreground"
-                                            : "border-border text-muted-foreground"
-                                        }`}
-                                      >
-                                        {t("booking.everyDays", { days })}
-                                      </button>
-                                    ))}
-                                  </div>
-                                  <p className="text-xs leading-relaxed text-muted-foreground">
-                                    {t("booking.repeatHint", {
-                                      days: shopSettings.booking_horizon_days,
-                                      time: formatSlotLabel(selectedSlot, shopTimeZone),
-                                    })}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </section>
-                      )}
-                    {bookingError && (
-                      <div
-                        role="alert"
-                        className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
-                      >
-                        <p>{bookingError}</p>
-                        <button
-                          type="button"
-                          className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground"
-                          onClick={() => {
-                            setBookingError(null);
-                            setSlotsFor("");
-                            setSelectedSlotAt(null);
-                            setAvailabilityVersion((v) => v + 1);
-                          }}
-                        >
-                          {t("booking.refreshTimes")}
-                        </button>
-                      </div>
-                    )}
-                    {!selectedSlot &&
-                      !bookingBusy &&
-                      selectedService &&
-                      (selectedStaff || anyAvailable) &&
-                      availableSlots.length > 0 &&
-                      !slotsError && (
-                        <p className="text-center text-xs text-muted-foreground">
+                        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Clock3 className="size-4 shrink-0" aria-hidden />
                           {t("booking.chooseTime")}
                         </p>
                       )}
-                    <button
-                      onClick={() => void confirmBooking()}
-                      disabled={
-                        !selectedService ||
-                        (!selectedStaff && !anyAvailable) ||
-                        !selectedSlot ||
-                        bookingBusy
-                      }
-                      className="min-h-12 w-full rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
-                    >
-                      {bookingBusy
-                        ? t("booking.booking")
-                        : rescheduleId
-                          ? t("booking.confirmReschedule")
-                          : t("booking.confirm")}
-                    </button>
+                      {selectedSlot && canRepeat && chosenSlot && (
+                        <RepeatPicker
+                          value={repeatChoice}
+                          onChange={(value) => {
+                            if (value === "once") {
+                              setRepeatEnabled(false);
+                              return;
+                            }
+                            setRepeatEnabled(true);
+                            if (value === "weekday") setRepeatKind("weekday");
+                            else {
+                              setRepeatKind("interval_days");
+                              setRepeatInterval(value === "15" ? 15 : 21);
+                            }
+                          }}
+                          startKey={selectedDay}
+                          horizonDays={shopSettings.booking_horizon_days}
+                          timeLabel={chosenSlot.time}
+                          timeZone={shopTimeZone}
+                          disabled={bookingBusy}
+                        />
+                      )}
+                      {shopSettings.booking_instructions && (
+                        <p className="flex items-start gap-2 rounded-xl border border-border bg-background/60 p-3 text-sm">
+                          <StoreIcon className="mt-0.5 size-4 shrink-0 text-gold" aria-hidden />
+                          <span className="min-w-0">
+                            <span className="sr-only">{t("booking.shopNoteAria")}: </span>
+                            {shopSettings.booking_instructions}
+                          </span>
+                        </p>
+                      )}
+                    </StepCard>
                   </div>
-                </>
+                  <BookingSummaryBar
+                    pills={summaryPills}
+                    buttonLabel={bookingButton.label}
+                    buttonIcon={bookingButton.icon}
+                    ready={Boolean(selectedSlot && selectedService && staffHasValue)}
+                    busy={bookingBusy}
+                    price={
+                      bookingService
+                        ? formatMoney(reviewPriceCents ?? bookingService.price_cents)
+                        : null
+                    }
+                    onConfirm={() => void confirmBooking()}
+                  >
+                    {bookingError && (
+                      <Notice
+                        tone="danger"
+                        title={bookingError}
+                        action={{
+                          label: t("booking.refreshTimes"),
+                          icon: RefreshCw,
+                          onClick: refreshTimes,
+                        }}
+                      />
+                    )}
+                    {bookingUncertain && (
+                      <Notice
+                        tone="pending"
+                        title={t("booking.uncertainTitle")}
+                        action={{
+                          label: t("booking.track"),
+                          icon: CalendarCheckIcon,
+                          onClick: () => {
+                            setReservationFilter("upcoming");
+                            setTab("reservas");
+                          },
+                        }}
+                      >
+                        {t("booking.uncertainHint")}
+                      </Notice>
+                    )}
+                  </BookingSummaryBar>
+                </div>
               )}
             </div>
           )}
 
           {tab === "reservas" && (
-            <div className="space-y-6">
+            // Reservas: título → o que pede ação (Precisa de você, lista de espera) → filtros →
+            // tickets agrupados por quando acontecem.
+            <div className="space-y-5">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <div className="app-section-title min-w-0 flex-1">
+                  <Clock3 />
+                  <h2>{t("bookings.title")}</h2>
+                </div>
+                {!demo && (
+                  <div className="flex items-center gap-2">
+                    {appointmentsUpdatedAt && (
+                      <span className="text-xs text-muted-foreground" aria-live="polite">
+                        {appointmentsRefreshing
+                          ? t("bookings.checking")
+                          : t("bookings.updatedAt", {
+                              time: new Date(appointmentsUpdatedAt).toLocaleTimeString(intlLocale, {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              }),
+                            })}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      aria-label={t("bookings.refresh")}
+                      title={t("bookings.refresh")}
+                      disabled={appointmentsRefreshing || !!appointmentBusy}
+                      onClick={() => setAppointmentVersion((version) => version + 1)}
+                      className="grid size-11 place-items-center rounded-xl border border-border bg-card text-foreground transition hover:border-primary/40 disabled:opacity-60"
+                    >
+                      <RefreshCw
+                        className={`size-5 ${appointmentsRefreshing ? "motion-safe:animate-spin" : ""}`}
+                        aria-hidden
+                      />
+                    </button>
+                  </div>
+                )}
+              </div>
+              <AttentionList
+                title={t("home.attention.title")}
+                items={attentionItems.filter((item) => !item.id.startsWith("offer-"))}
+                headingLevel="h3"
+              />
               <WaitingCards
                 controller={waiting}
                 mode="mine"
@@ -2655,78 +3173,55 @@ function ArenaApp({
                 timeZone={shopTimeZone}
                 onChanged={() => setAppointmentVersion((v) => v + 1)}
               />
-              <WaitingNotices controller={waiting} timeZone={shopTimeZone} />
-              <div>
-                <div className="app-section-title">
-                  <Clock3 />
-                  <h2>{t("bookings.title")}</h2>
-                </div>
-                {!demo && (
-                  <button
-                    type="button"
-                    disabled={appointmentsRefreshing || !!appointmentBusy}
-                    onClick={() => setAppointmentVersion((version) => version + 1)}
-                    className="mt-3 rounded-xl border border-border px-4 py-2 text-xs font-semibold disabled:opacity-50"
-                  >
-                    {appointmentsRefreshing ? t("bookings.checking") : t("bookings.checkNow")}
-                  </button>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-2" aria-label={t("bookings.filterAria")}>
-                {(
-                  [
-                    { id: "upcoming", label: t("bookings.upcoming") },
-                    { id: "history", label: t("bookings.history") },
-                    { id: "completed", label: t("bookings.completed") },
-                    { id: "cancelled", label: t("bookings.cancelled") },
-                  ] as const
-                ).map(({ id, label }) => (
-                  <button
-                    key={id}
-                    onClick={() => setReservationFilter(id)}
-                    aria-pressed={reservationFilter === id}
-                    className="flex items-center justify-between gap-2 rounded-xl border border-border px-3 py-3 text-sm font-semibold aria-pressed:bg-primary aria-pressed:text-primary-foreground"
-                  >
-                    <span>{label}</span>
-                    <span className="text-xs">
-                      {filterReservations(shopAppointments, id, reservationNow).length}
-                    </span>
-                  </button>
-                ))}
-              </div>
-              {appointmentsError && (
-                <p className="text-xs text-destructive" role="alert">
-                  {appointmentsError}
-                </p>
+              <ReservationFilters
+                value={reservationFilter}
+                counts={reservationCounts}
+                onChange={setReservationFilter}
+              />
+              {appointmentsError && !cancelTarget && (
+                <Notice
+                  tone="danger"
+                  title={appointmentsError}
+                  action={{
+                    label: t("visual.retry"),
+                    icon: RotateCcw,
+                    onClick: () => setAppointmentVersion((version) => version + 1),
+                  }}
+                />
               )}
               {appointmentsNotice && !appointmentsError && (
-                <div
-                  role="status"
-                  className={`flex items-start gap-2 border bg-card p-3 text-sm rounded-2xl ${
-                    rescheduleBlockedNotice ? "border-primary/30" : "border-emerald-600/30"
-                  }`}
-                >
-                  {rescheduleBlockedNotice ? (
-                    <Info className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-                  ) : (
-                    <CheckCircle className="mt-0.5 size-4 shrink-0 text-emerald-700 dark:text-emerald-300" />
-                  )}
-                  <p className="flex-1 leading-relaxed">{appointmentsNotice}</p>
-                  <button
-                    type="button"
-                    onClick={() => setAppointmentsNotice(null)}
-                    className="-m-2 inline-flex min-h-11 min-w-11 items-center justify-center text-xs font-semibold text-muted-foreground"
-                  >
-                    {t("cust.ok")}
-                  </button>
-                </div>
+                <Notice
+                  tone={rescheduleBlockedNotice ? "info" : "success"}
+                  title={appointmentsNotice}
+                  onDismiss={() => {
+                    setAppointmentsNotice(null);
+                    setNoticeShowsCancelled(false);
+                  }}
+                  action={
+                    noticeShowsCancelled && reservationFilter !== "cancelled"
+                      ? {
+                          label: t("bookings.seeCancelled"),
+                          icon: XCircle,
+                          onClick: () => setReservationFilter("cancelled"),
+                        }
+                      : undefined
+                  }
+                />
+              )}
+              {focusMissing && (
+                <Notice
+                  tone="neutral"
+                  icon={BellRing}
+                  title={t("bookings.noticeMissing")}
+                  onDismiss={() => setFocusMissing(false)}
+                />
               )}
               {appointmentsLoading ? (
-                <p className="text-xs text-muted-foreground">{t("bookings.loading")}</p>
+                <BookingLoading variant="cards" count={2} label={t("bookings.loading")} />
               ) : visibleReservations.length === 0 &&
                 appointmentsError ? null : visibleReservations.length === 0 ? (
                 <EmptyState
-                  tone="calendar"
+                  tone={reservationFilter === "upcoming" ? "calendar" : "search"}
                   title={
                     reservationFilter === "upcoming"
                       ? t("bookings.emptyUpcoming")
@@ -2738,223 +3233,106 @@ function ArenaApp({
                       : t("bookings.emptyFilterHint")
                   }
                   action={
-                    <button
-                      onClick={() => setTab("agenda")}
-                      className="flex min-h-11 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
-                    >
-                      {t("bookings.bookNow")}
-                    </button>
+                    reservationFilter === "upcoming" || reservationFilter === "history" ? (
+                      <button
+                        type="button"
+                        onClick={() => setTab("agenda")}
+                        className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+                      >
+                        <CalendarPlus className="size-4" aria-hidden />
+                        {t("bookings.bookNow")}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setReservationFilter("history")}
+                        className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border px-4 text-sm font-semibold"
+                      >
+                        {t("bookings.seeAll")}
+                      </button>
+                    )
                   }
                 />
               ) : (
-                <div className="space-y-3">
-                  {visibleReservations.map((row) => {
-                    const startsAt = new Date(row.starts_at);
-                    const canManage =
-                      row.status === "reschedule_requested" ||
-                      row.status === "pending" ||
-                      (row.status === "confirmed" &&
-                        startsAt.getTime() > (demo?.now.getTime() ?? Date.now()));
-                    return (
-                      <article
-                        key={row.id}
-                        className="rounded-2xl border border-border bg-card p-5 shadow-sm"
+                <div className="space-y-5">
+                  {groupReservations(
+                    displayedReservations(visibleReservations),
+                    reservationFilter === "upcoming",
+                    bookingNow,
+                    shopTimeZone,
+                  ).map((group) => (
+                    <section
+                      key={group.key}
+                      aria-labelledby={`reservas-${group.key}`}
+                      className="space-y-3"
+                    >
+                      <h3
+                        id={`reservas-${group.key}`}
+                        className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-muted-foreground"
                       >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <ServiceIcon
-                                icon={row.service?.icon}
-                                className="size-4 text-gold"
-                                imageClassName="size-8 rounded-lg"
-                              />
-                              <p className="text-sm font-black">
-                                {row.service?.name ?? t("booking.serviceFallback")}
-                              </p>
-                            </div>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              {row.barbershop?.name ?? t("bookings.shopFallback")} ·{" "}
-                              {row.staff?.display_name ?? t("bookings.staffFallback")}
-                            </p>
-                          </div>
-                          <span className={`status-pill status-${row.status}`}>
-                            {t(statusKey[row.status])}
-                          </span>
-                        </div>
-                        {row.series_id ? (
-                          <p className="mt-2 inline-flex rounded-full border border-gold/40 bg-gold/10 px-2 py-0.5 text-[11px] font-semibold text-gold">
-                            {t("bookings.recurring")}
-                          </p>
-                        ) : null}
-                        <p className="mt-4 text-sm font-bold">
-                          {formatShopDate(startsAt, shopTimeZone, {
-                            weekday: "long",
-                            day: "2-digit",
-                            month: "long",
-                            year: "numeric",
-                          })}{" "}
-                          {t("booking.atTime", { time: formatSlotLabel(startsAt, shopTimeZone) })}
-                        </p>
-                        {row.status === "cancelled" && cancellationDetails[row.id] && (
-                          <p className="mt-2 text-xs text-muted-foreground">
-                            {cancellationDetails[row.id].source === "customer"
-                              ? t("bookings.cancelledByCustomer")
-                              : t("bookings.cancelledByShop")}
-                            {` · ${cancellationReasonLabel(cancellationDetails[row.id].reason)}`}
-                          </p>
-                        )}
-                        {canManage && (
-                          <>
-                            {row.status === "reschedule_requested" && (
-                              <p className="mt-3 text-sm text-muted-foreground">
-                                {t("bookings.shopRemovedConfirmation")}
-                              </p>
-                            )}
-                            <div className="mt-4 flex flex-wrap gap-2">
-                              <button
-                                disabled={appointmentBusy !== null}
-                                onClick={() => beginReschedule(row)}
-                                className="flex-1 border border-border px-3 py-2 text-[0.8125rem] font-semibold disabled:opacity-50"
-                              >
-                                {t("bookings.reschedule")}
-                              </button>
-                              <button
-                                disabled={appointmentBusy !== null}
-                                onClick={() => setCancelTarget(row)}
-                                className="action-button action-danger"
-                              >
-                                <X className="size-4" />
-                                {appointmentBusy === row.id
-                                  ? t("bookings.cancelling")
-                                  : t("bookings.cancel")}
-                              </button>
-                              {row.series_id ? (
-                                <button
-                                  type="button"
-                                  disabled={appointmentBusy !== null}
-                                  onClick={() => setStopSeriesTarget(row.series_id!)}
-                                  className="w-full border border-border px-3 py-2 text-[0.8125rem] font-semibold disabled:opacity-50"
-                                >
-                                  {t("bookings.stopRepeat")}
-                                </button>
-                              ) : null}
-                            </div>
-                          </>
-                        )}
-                      </article>
-                    );
-                  })}
+                        {group.label}
+                        <span className="grid h-5 min-w-5 place-items-center rounded-full bg-muted px-1.5 text-[11px] tabular-nums text-foreground">
+                          <span className="sr-only">: </span>
+                          {group.rows.length}
+                        </span>
+                      </h3>
+                      {group.rows.map((row) => renderReservation(row))}
+                    </section>
+                  ))}
                 </div>
               )}
             </div>
           )}
 
           {tab === "esportes" && shopSettings.sports_enabled && (
-            <div className="space-y-6">
-              <div className="app-section-title">
-                <Feather />
-                <h2>{t("sports.title")}</h2>
-              </div>
-              {!demo && (
-                <p className="rounded-2xl border border-border bg-card p-4 text-sm">
-                  {t("sports.notConfigured")}
-                </p>
-              )}
-              {demo && <p className="text-xs text-muted-foreground">{t("sports.demoNote")}</p>}
-              <div className="flex space-x-2 overflow-x-auto pb-2 border-b border-border">
-                {(
-                  [
-                    { id: "all", label: t("sports.all") },
-                    { id: "football", label: t("sports.football") },
-                    { id: "nba", label: "NBA" },
-                  ] as const
-                ).map(({ id: f, label }) => (
-                  <button
-                    key={f}
-                    onClick={() => setSportFilter(f)}
-                    aria-pressed={sportFilter === f}
-                    type="button"
-                    className={`min-h-11 text-xs uppercase font-bold px-4 py-2 rounded-xl border transition-all whitespace-nowrap ${sportFilter === f ? "bg-primary text-primary-foreground border-primary" : "border-border text-foreground hover:border-primary/50"}`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <div className="grid grid-cols-1 gap-4">
-                {filteredMatches.map((m) => {
-                  // Empate: os dois lados ficam em destaque.
-                  const homeLead = m.scoreH >= m.scoreA;
-                  const awayLead = m.scoreA >= m.scoreH;
-                  return (
-                    <div
-                      key={m.id}
-                      className="bg-card p-5 rounded-2xl border border-border shadow-sm"
-                    >
-                      <div className="flex justify-between items-center mb-4">
-                        <span className="text-xs text-muted-foreground font-bold uppercase">
-                          {m.league} · {t(matchStatusKey[m.status])}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between font-bold text-sm">
-                        <span className={homeLead ? "text-foreground" : "text-muted-foreground"}>
-                          {m.home}
-                        </span>
-                        <span
-                          className={`tabular-nums ${homeLead ? "text-foreground" : "text-muted-foreground"}`}
-                        >
-                          {m.scoreH}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between font-bold text-sm mt-2">
-                        <span className={awayLead ? "text-foreground" : "text-muted-foreground"}>
-                          {m.away}
-                        </span>
-                        <span
-                          className={`tabular-nums ${awayLead ? "text-foreground" : "text-muted-foreground"}`}
-                        >
-                          {m.scoreA}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            <SportsBoard demo={Boolean(demo)} onBack={() => setTab("dashboard")} />
           )}
 
           {tab === "notifications" && (
-            <div className="space-y-6">
-              <WaitingNotices controller={waiting} timeZone={shopTimeZone} />
-              <div className="app-section-title">
-                <Bell />
-                <h2>{t("nav.notices")}</h2>
-              </div>
-              <div className="space-y-3">
-                {notifications.length === 0 ? (
-                  <EmptyState
-                    tone="bell"
-                    title={t("notices.emptyTitle")}
-                    description={t("notices.emptyHint")}
-                  />
-                ) : (
-                  notifications.map((n) => (
-                    <div
-                      key={n.id}
-                      className="rounded-2xl border border-border bg-card p-5 shadow-sm transition-transform duration-300 ease-out hover:-translate-y-0.5"
-                    >
-                      <div className="mb-1 flex items-start justify-between">
-                        <h4 className="text-sm font-semibold tracking-tight text-foreground">
-                          {n.title}
-                        </h4>
-                        <span className="text-xs font-bold text-muted-foreground">{n.time}</span>
-                      </div>
-                      <p className="text-sm font-medium leading-relaxed text-muted-foreground">
-                        {n.text}
-                      </p>
-                    </div>
-                  ))
-                )}
-              </div>
+            <div className="space-y-5">
+              <CustomerPageHeader
+                icon={Bell}
+                title={t("nav.notices")}
+                onBack={() => setTab("dashboard")}
+              />
+              <CustomerNotices
+                session={notifications}
+                waiting={waiting}
+                staffName={staffNameById}
+                reschedules={rescheduleRequests.map((row) => ({
+                  id: row.id,
+                  startsAt: row.starts_at,
+                  updatedAt: row.updated_at,
+                  serviceName: row.service?.name ?? t("booking.serviceFallback"),
+                  staffName: row.staff?.display_name ?? t("bookings.staffFallback"),
+                }))}
+                shopCancelled={shopCancelled.map((row) => ({
+                  id: row.id,
+                  startsAt: row.starts_at,
+                  updatedAt: row.updated_at,
+                  serviceName: row.service?.name ?? t("booking.serviceFallback"),
+                  staffName: row.staff?.display_name ?? t("bookings.staffFallback"),
+                }))}
+                pending={loyaltyOn ? pendingRedemptions : []}
+                now={homeNow}
+                timeZone={shopTimeZone}
+                onOpenBookings={openBookings}
+                onReschedule={(id) => {
+                  const row = rescheduleRequests.find((item) => item.id === id);
+                  if (row) beginReschedule(row);
+                }}
+                onBookAgain={(id) => {
+                  const row = shopCancelled.find((item) => item.id === id);
+                  markCancelledSeen();
+                  if (row) bookAgain(row);
+                  else setTab("agenda");
+                }}
+                onOpenRewards={openRewards}
+                onClaimed={() => {
+                  setAppointmentVersion((v) => v + 1);
+                  toast.success(t("home.attention.offerDone"));
+                }}
+              />
             </div>
           )}
         </div>
@@ -2979,243 +3357,16 @@ function ArenaApp({
           <NavItem key={item.id} {...item} />
         ))}
       </nav>
-      <VipInfoModal
+      <ClubInfoDialog
         isOpen={showVipInfo && loyaltyOn}
-        sportsEnabled={shopSettings.sports_enabled}
         program={loyaltyProgram}
+        lifetimePoints={lifetimePoints}
         shopId={demo ? null : shopId}
         onClose={() => setShowVipInfo(false)}
+        onOpenRewards={openRewards}
       />
     </div>
   );
 }
-
-const TIER_STYLES = {
-  classic: {
-    icon: Armchair,
-    colorClass: "text-gradient-silver",
-    badge: "bg-silver-metallic",
-    iconClass: "text-black",
-  },
-  select: {
-    icon: BadgeCheck,
-    colorClass: "text-gradient-bronze",
-    badge: "bg-bronze-metallic",
-    iconClass: "text-white",
-  },
-  privilege: {
-    icon: Sparkle,
-    colorClass: "text-gradient-gold",
-    badge: "bg-gold-metallic",
-    iconClass: "text-black",
-  },
-  exclusive: {
-    icon: Diamond,
-    colorClass: "text-gradient-hologram",
-    badge: "bg-hologram-metallic",
-    iconClass: "text-black",
-  },
-} as const;
-
-const VipInfoModal = ({
-  isOpen,
-  sportsEnabled,
-  program,
-  shopId,
-  onClose,
-}: {
-  isOpen: boolean;
-  sportsEnabled: boolean;
-  program: LoyaltyProgram;
-  shopId: string | null;
-  onClose: () => void;
-}) => {
-  const closeButton = useRef<HTMLButtonElement>(null);
-  const dialog = useRef<HTMLDivElement>(null);
-  const { t } = useI18n();
-  // onClose chega como função nova a cada render do pai; a ref evita rodar o efeito
-  // de novo (e devolver o foco ao botão Fechar) enquanto a janela está aberta.
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
-  useEffect(() => {
-    if (!isOpen) return;
-    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    closeButton.current?.focus();
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onCloseRef.current();
-        return;
-      }
-      // Mantém o Tab dentro do diálogo: sem isso o foco vaza para o conteúdo
-      // que está atrás do overlay.
-      if (event.key !== "Tab") return;
-      const focusable = dialog.current?.querySelectorAll<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-      );
-      if (!focusable || focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      previous?.focus();
-    };
-  }, [isOpen]);
-  if (!isOpen) return null;
-
-  return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <div
-        ref={dialog}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="vip-benefits-title"
-        className="flex max-h-[90vh] w-full max-w-sm flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-2xl animate-in slide-in-from-bottom-4 duration-300"
-      >
-        <div className="flex items-center justify-between border-b border-border p-4 bg-muted/30">
-          <div className="flex items-center gap-2">
-            <Trophy className="text-primary size-5" />
-            <h3 id="vip-benefits-title" className="font-bold text-foreground">
-              {t("club.title")}
-            </h3>
-          </div>
-          <button
-            ref={closeButton}
-            onClick={onClose}
-            aria-label={t("club.close")}
-            className="flex size-11 items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="dialog-scroll-area flex-1 space-y-6 overflow-y-auto p-5">
-          <section>
-            <h4 className="mb-3 text-sm font-semibold text-foreground">{t("club.howToEarn")}</h4>
-            <div className="space-y-3">
-              <div className="bg-muted/30 p-3 rounded-2xl border border-border/50">
-                <p className="text-xs font-medium leading-relaxed">
-                  {richText(t("club.earnVisit"), {
-                    points: (
-                      <span className="font-bold text-primary">
-                        {t(program.points_per_visit === 1 ? "club.pointsOne" : "club.pointsMany", {
-                          n: program.points_per_visit,
-                        })}
-                      </span>
-                    ),
-                  })}
-                </p>
-              </div>
-              {program.welcome_bonus > 0 && (
-                <div className="bg-muted/30 p-3 rounded-2xl border border-border/50">
-                  <p className="text-xs font-medium leading-relaxed">
-                    {richText(t("club.earnWelcome"), {
-                      points: (
-                        <span className="font-bold text-primary">
-                          {t(program.welcome_bonus === 1 ? "club.pointsOne" : "club.pointsMany", {
-                            n: program.welcome_bonus,
-                          })}
-                        </span>
-                      ),
-                    })}
-                  </p>
-                </div>
-              )}
-              {sportsEnabled && (
-                <div className="flex items-start gap-3 bg-muted/30 p-3 rounded-2xl border border-border/50">
-                  <Star size={16} className="text-primary mt-0.5" />
-                  <p className="text-xs font-medium leading-relaxed">
-                    {richText(t("club.earnCheckin"), {
-                      days: <span className="font-bold text-foreground">{t("club.gameDays")}</span>,
-                      points: <span className="font-bold text-primary">{t("club.tenPoints")}</span>,
-                    })}
-                  </p>
-                </div>
-              )}
-              {program.rewards.some((reward) => reward.active) && (
-                <div className="bg-muted/30 p-3 rounded-2xl border border-border/50">
-                  <p className="text-xs font-medium leading-relaxed">{t("club.spendRewards")}</p>
-                </div>
-              )}
-            </div>
-          </section>
-
-          <section>
-            <h4 className="mb-1 text-sm font-semibold text-foreground">{t("club.levels")}</h4>
-            <p className="mb-3 text-xs text-muted-foreground">{t("club.levelsHint")}</p>
-            <ol className="space-y-3">
-              {program.tiers.map((tierRow, index) => {
-                const styleKey = tierStyleKey(index, program.tiers.length);
-                const style = TIER_STYLES[styleKey];
-                const Icon = style.icon;
-                const next = program.tiers[index + 1];
-                const benefit =
-                  tierRow.benefit ||
-                  (program.mode === "default" ? t(`tier.${styleKey}.benefit` as MessageKey) : "");
-                return (
-                  <li
-                    key={`${tierRow.name}-${index}`}
-                    className="bg-muted/40 p-4 rounded-2xl border border-border/60 shadow-sm"
-                  >
-                    <div className="flex justify-between items-center gap-2">
-                      <span className="text-xs font-semibold flex items-center gap-2 min-w-0">
-                        <span
-                          className={`mb-loyalty-tier-mark mb-loyalty-tier-${styleKey} p-1.5 rounded-lg border`}
-                        >
-                          <Icon size={14} aria-hidden />
-                        </span>
-                        <span className="truncate text-foreground">{tierRow.name}</span>
-                      </span>
-                      <span className="shrink-0 text-xs font-bold text-muted-foreground bg-muted/30 px-2 py-0.5 rounded-full border border-border/50">
-                        {next
-                          ? t("club.range", { from: tierRow.min_points, to: next.min_points - 1 })
-                          : t("club.rangeTop", { from: tierRow.min_points })}
-                      </span>
-                    </div>
-                    {benefit && (
-                      <p className="mt-2 text-xs text-muted-foreground leading-relaxed pl-9">
-                        {benefit}
-                      </p>
-                    )}
-                  </li>
-                );
-              })}
-            </ol>
-          </section>
-        </div>
-
-        <div className="space-y-2 border-t border-border bg-muted/20 p-4">
-          <Link
-            to="/politica"
-            search={shopId ? { shop: shopId } : {}}
-            onClick={onClose}
-            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-border bg-background py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
-          >
-            {t("club.fullPolicy")} <ChevronRight size={14} />
-          </Link>
-          <button
-            onClick={onClose}
-            className="flex min-h-12 w-full items-center justify-center rounded-xl bg-foreground py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90"
-          >
-            {t("club.gotIt")}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 export { ArenaApp };

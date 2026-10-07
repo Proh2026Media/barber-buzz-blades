@@ -1,6 +1,34 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Check, Copy, ExternalLink, Eye, Loader2, PencilLine } from "lucide-react";
-import { toast } from "sonner";
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
+import {
+  CalendarClock,
+  Clock3,
+  Eye,
+  EyeOff,
+  Globe2,
+  ImagePlus,
+  Info,
+  LayoutTemplate,
+  PencilLine,
+  Phone,
+  RefreshCw,
+  Scissors,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
+import {
+  CopyField,
+  EmptyState,
+  Field,
+  Hint,
+  LoadingState,
+  MoreDetails,
+  Notice,
+  SectionHeader,
+  TimeChips,
+  UnsavedBar,
+  focusFirstInvalid,
+  type ActionState,
+} from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
@@ -9,7 +37,11 @@ import { Switch } from "@/components/ui/switch";
 import { useDemo } from "@/features/demo/context";
 import { ShopLandingView } from "@/features/marketing/ShopLanding";
 import { findShopTimeZone } from "@/features/register-owner/timezones";
+import { DEFAULT_LOGIN_IMAGE } from "@/lib/shop/branding";
 import { CepAddressHelper } from "./CepAddressHelper";
+import { CompactChoiceTiles } from "./CompactChoiceTiles";
+import type { EditorGuard } from "./GuardedEditorDialog";
+import { PageSketch } from "./brand-bits";
 import {
   LANDING_LIMITS,
   cleanLandingConfig,
@@ -30,20 +62,38 @@ const PROBLEM_KEY: Record<LandingProblem, MessageKey> = {
   whatsapp: "landingEditor.problem.whatsapp",
 };
 
+/** Blocos da página na ordem real; "horários de hoje" fica dentro do bloco da equipe. */
 const TOGGLES = [
-  { key: "show_staff", label: "landingEditor.showStaff", hint: "landingEditor.showStaffHint" },
-  { key: "show_today", label: "landingEditor.showToday", hint: "landingEditor.showTodayHint" },
+  { key: "show_staff", icon: Users, label: "landingEditor.showStaff", hint: "landingBlocks.staff" },
+  {
+    key: "show_today",
+    icon: CalendarClock,
+    label: "landingEditor.showToday",
+    hint: "landingBlocks.today",
+  },
   {
     key: "show_services",
+    icon: Scissors,
     label: "landingEditor.showServices",
-    hint: "landingEditor.showServicesHint",
+    hint: "landingBlocks.services",
   },
-  { key: "show_hours", label: "landingEditor.showHours", hint: "landingEditor.showHoursHint" },
+  {
+    key: "show_hours",
+    icon: Clock3,
+    label: "landingEditor.showHours",
+    hint: "landingBlocks.hours",
+  },
 ] as const satisfies ReadonlyArray<{
   key: keyof LandingConfig;
+  icon: LucideIcon;
   label: MessageKey;
   hint: MessageKey;
 }>;
+
+/** Contador de letras só perto do limite (a partir de 80%). */
+function nearLimit(value: string, max: number) {
+  return value.length >= Math.floor(max * 0.8);
+}
 
 export function LandingEditor({
   shopId,
@@ -52,6 +102,9 @@ export function LandingEditor({
   settings,
   timeZone,
   onSaved,
+  guard,
+  onChangePhoto,
+  onOpenDomain,
 }: {
   shopId: string;
   shopSlug: string;
@@ -60,9 +113,16 @@ export function LandingEditor({
   /** Fuso da loja: decide se o "Preencher pelo CEP" aparece (só fora de Portugal). */
   timeZone?: string | null;
   onSaved: (settings: Tables<"barbershop_settings">) => void;
+  /** Proteção da janela contra fechar com mudanças não salvas. */
+  guard?: EditorGuard;
+  /** Abre a identidade visual na etapa "Tela de entrada" (a foto da capa vem de lá). */
+  onChangePhoto?: () => void;
+  /** Leva à seção do domínio próprio. */
+  onOpenDomain?: () => void;
 }) {
   const { t } = useI18n();
   const demo = useDemo();
+  const formRef = useRef<HTMLFormElement>(null);
   const saved = useMemo(() => parseLandingConfig(settings.landing), [settings.landing]);
   const [draft, setDraft] = useState<LandingConfig>(saved);
   const [base, setBase] = useState<LandingData | null>(null);
@@ -71,7 +131,13 @@ export function LandingEditor({
   const [view, setView] = useState<"editar" | "previa">("editar");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [result, setResult] = useState<ActionState | null>(null);
+  const tabsId = useId();
+  // Último texto que o "Preencher pelo CEP" escreveu no endereço.
+  const [cepAddress, setCepAddress] = useState<string | null>(null);
+  // Depois que a pessoa abre e mexe no texto, o campo fica onde está (sem trocar de lugar e
+  // perder o foco a cada letra).
+  const [addressTouched, setAddressTouched] = useState(false);
   // A busca por CEP usa o ViaCEP (Brasil); lojas com fuso de Portugal não veem o bloco.
   const timeZoneCountry = findShopTimeZone(timeZone ?? demo?.shop.timezone)?.country;
   const showCepHelper = timeZoneCountry !== "pt";
@@ -178,13 +244,20 @@ export function LandingEditor({
   function update<K extends keyof LandingConfig>(key: K, value: LandingConfig[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
     setError(null);
+    setResult(null);
   }
 
-  async function save(event: FormEvent) {
-    event.preventDefault();
-    if (problem || busy) return;
+  /** Grava a página; devolve `true` quando salvou (usado também por "Salvar e sair"). */
+  async function persist(): Promise<boolean> {
+    if (busy) return false;
+    if (problem) {
+      // Leva ao campo com problema; a frase de como corrigir já está logo abaixo dele.
+      window.requestAnimationFrame(() => focusFirstInvalid(formRef.current));
+      return false;
+    }
     setBusy(true);
     setError(null);
+    setResult(null);
     const landing = cleanLandingConfig(draft);
     if (demo) {
       const next = { ...settings, landing, updated_at: new Date().toISOString() };
@@ -199,80 +272,134 @@ export function LandingEditor({
         .single();
       if (updateError || !data) {
         setError(friendlyAuthError(updateError, t("landingEditor.saveError")));
+        setResult("error");
         setBusy(false);
-        return;
+        return false;
       }
       onSaved(data);
     }
     setDraft(landing);
     setBusy(false);
-    toast.success(t("landingEditor.saved"));
+    setResult("saved");
+    return true;
   }
 
-  async function copyLink() {
-    try {
-      await navigator.clipboard.writeText(publicUrl);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast.error(t("landingEditor.copyError"));
-    }
+  async function save(event?: FormEvent) {
+    event?.preventDefault();
+    await persist();
   }
 
-  const counter = (value: string, max: number) => (
-    <span className="block text-right text-[11px] font-normal text-muted-foreground">
-      {value.length}/{max}
-    </span>
+  const persistRef = useRef(persist);
+  persistRef.current = persist;
+  useEffect(() => {
+    guard?.setDirty(dirty);
+  }, [guard, dirty]);
+  useEffect(() => {
+    if (!guard) return;
+    guard.registerSave(() => persistRef.current());
+    return () => guard.registerSave(null);
+  }, [guard]);
+
+  const counter = (value: string, max: number) =>
+    nearLimit(value, max) ? `${value.length}/${max}` : undefined;
+  const whatsappPlaceholder = t(
+    timeZoneCountry === "pt"
+      ? "landingEditor.whatsappPlaceholderPt"
+      : "landingEditor.whatsappPlaceholderBr",
   );
+  const photo = settings.login_image_url || DEFAULT_LOGIN_IMAGE;
+  const blocks = {
+    staff: draft.show_staff,
+    today: draft.show_staff && draft.show_today,
+    services: draft.show_services,
+    hours: draft.show_hours,
+  };
+
+  // Na página só com a marca, blocos, textos e contato ficam recolhidos (só valem na completa);
+  // com um campo a corrigir, continuam à vista para a pessoa achar o erro.
+  const showFullOnly = draft.enabled || problem !== null;
+  // Endereço montado pelo CEP e não mexido: o cartão verde já mostra; o texto fica recolhido.
+  const addressFromCep =
+    cepAddress !== null && (draft.address === cepAddress || addressTouched) && problem !== "length";
+
+  const addressField = (
+    <Field
+      label={t("landingEditor.streetAddress")}
+      hint={counter(draft.address, LANDING_LIMITS.address)}
+      error={problem === "length" ? t(PROBLEM_KEY.length) : undefined}
+    >
+      {(props) => (
+        <input
+          {...props}
+          value={draft.address}
+          maxLength={LANDING_LIMITS.address}
+          placeholder={t("landingEditor.addressPlaceholder")}
+          autoComplete="street-address"
+          onFocus={() => setAddressTouched(true)}
+          onChange={(e) => update("address", e.target.value)}
+          className={fieldClass}
+        />
+      )}
+    </Field>
+  );
+
+  /** Link da página, compacto: copiar, abrir e o atalho para o domínio próprio. */
+  const linkStrip = (className: string) =>
+    demo ? (
+      <p className={`text-sm text-muted-foreground ${className}`}>{t("landingEditor.demoOpen")}</p>
+    ) : (
+      <div className={`space-y-2 ${className}`}>
+        <CopyField
+          label={t("shopLink.forSharing")}
+          value={publicUrl}
+          href={`/b/${shopSlug}`}
+          shareTitle={t("shopLink.title")}
+        />
+        {onOpenDomain && (
+          <button
+            type="button"
+            onClick={onOpenDomain}
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl px-2 text-sm font-semibold text-muted-foreground transition hover:text-foreground"
+          >
+            <Globe2 className="size-4 shrink-0" aria-hidden />
+            {t("shopLink.ownDomain")}
+          </button>
+        )}
+      </div>
+    );
+
+  const views = ["editar", "previa"] as const;
 
   return (
     <div className="space-y-4">
-      {demo ? (
-        <p className="rounded-2xl border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
-          {t("landingEditor.demoOpen")}
-        </p>
-      ) : (
-        <div className="space-y-2 rounded-2xl border border-border bg-muted/40 p-3">
-          <p className="text-xs text-muted-foreground">{t("landingEditor.linkHint")}</p>
-          <p className="break-all text-sm font-semibold">{publicUrl}</p>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => void copyLink()}
-              className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-card text-xs font-bold"
-            >
-              {copied ? (
-                <Check className="size-4" aria-hidden />
-              ) : (
-                <Copy className="size-4" aria-hidden />
-              )}
-              {t(copied ? "landingEditor.copied" : "landingEditor.copy")}
-            </button>
-            <a
-              href={`/b/${shopSlug}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-card text-xs font-bold"
-            >
-              <ExternalLink className="size-4" aria-hidden />
-              {t("landingEditor.open")}
-            </a>
-          </div>
-        </div>
-      )}
-
       <div
         className="grid grid-cols-2 gap-2 lg:hidden"
         role="tablist"
         aria-label={t("landingEditor.viewLabel")}
       >
-        {(["editar", "previa"] as const).map((option) => (
+        {views.map((option) => (
           <button
             key={option}
+            id={`${tabsId}-tab-${option}`}
             type="button"
             role="tab"
             aria-selected={view === option}
+            aria-controls={`${tabsId}-panel-${option}`}
+            tabIndex={view === option ? 0 : -1}
             onClick={() => setView(option)}
+            onKeyDown={(event) => {
+              // Duas abas: setas, Home e End alternam; Tab sai da faixa.
+              if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+              event.preventDefault();
+              const next =
+                event.key === "Home"
+                  ? views[0]
+                  : event.key === "End"
+                    ? views[1]
+                    : views[(views.indexOf(option) + 1) % views.length]!;
+              setView(next);
+              document.getElementById(`${tabsId}-tab-${next}`)?.focus();
+            }}
             className={`flex min-h-11 items-center justify-center gap-2 rounded-xl border text-sm font-bold ${
               view === option
                 ? "border-foreground bg-foreground text-background"
@@ -290,195 +417,331 @@ export function LandingEditor({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <form onSubmit={save} className={`space-y-4 ${view === "editar" ? "" : "hidden lg:block"}`}>
-          <label className="flex items-start justify-between gap-3 rounded-2xl border border-border bg-card p-4">
-            <span>
-              <span className="block text-sm font-bold">{t("landingEditor.enabled")}</span>
-              <span className="block text-xs text-muted-foreground">
-                {t("landingEditor.enabledHint")}
-              </span>
-            </span>
-            <Switch
-              checked={draft.enabled}
-              onCheckedChange={(value) => update("enabled", value)}
-              aria-label={t("landingEditor.enabled")}
+        <form
+          ref={formRef}
+          id={`${tabsId}-panel-editar`}
+          role="tabpanel"
+          aria-labelledby={`${tabsId}-tab-editar`}
+          onSubmit={save}
+          noValidate
+          className={`min-w-0 space-y-4 ${view === "editar" ? "" : "hidden lg:block"}`}
+        >
+          {/* Como a página aparece: escolha com o desenho do resultado. */}
+          <section className="space-y-3 rounded-2xl border border-border bg-card p-4">
+            <SectionHeader icon={LayoutTemplate} title={t("landingEditor.modeTitle")} />
+            <CompactChoiceTiles
+              legend={t("landingEditor.modeTitle")}
+              columns={2}
+              value={draft.enabled ? "full" : "brand"}
+              onChange={(value) => update("enabled", value === "full")}
+              options={[
+                {
+                  value: "full",
+                  label: t("landingEditor.modeFull"),
+                  description: t("landingEditor.enabledHint"),
+                  media: (
+                    <PageSketch
+                      full
+                      blocks={blocks}
+                      photo={photo}
+                      logoUrl={settings.logo_url}
+                      logoBackground={settings.logo_background_color}
+                    />
+                  ),
+                },
+                {
+                  value: "brand",
+                  label: t("landingEditor.modeBrand"),
+                  media: (
+                    <PageSketch
+                      full={false}
+                      photo={photo}
+                      logoUrl={settings.logo_url}
+                      logoBackground={settings.logo_background_color}
+                      primary={settings.primary_color ?? undefined}
+                    />
+                  ),
+                },
+              ]}
             />
-          </label>
+            {/* Foto da capa: vale nos dois modos; mostra a atual e leva até a tela de entrada. */}
+            <div className="flex items-center gap-3 rounded-2xl border border-border bg-background/60 p-2">
+              <img
+                src={photo}
+                alt=""
+                className="h-14 w-20 shrink-0 rounded-xl object-cover"
+                loading="lazy"
+              />
+              <span className="min-w-0 flex-1 text-sm font-semibold">
+                {t("landingEditor.coverPhoto")}
+              </span>
+              {onChangePhoto && (
+                <button
+                  type="button"
+                  onClick={onChangePhoto}
+                  className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-border bg-card px-3 text-sm font-semibold transition hover:border-primary/40"
+                >
+                  <ImagePlus className="size-4" aria-hidden />
+                  {t("brand.login.changePhoto")}
+                </button>
+              )}
+            </div>
+          </section>
 
+          {/* Só a marca: blocos, textos e contato recolhidos numa linha com o caminho de volta. */}
+          {!showFullOnly && (
+            <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-dashed border-border bg-background/60 p-3">
+              <span
+                aria-hidden
+                className="grid size-9 shrink-0 place-items-center rounded-xl bg-muted text-muted-foreground"
+              >
+                <EyeOff className="size-4" />
+              </span>
+              <p className="min-w-0 flex-1 basis-40 text-sm font-semibold">
+                {t("landingEditor.brandOnly.hidden")}
+              </p>
+              <button
+                type="button"
+                onClick={() => update("enabled", true)}
+                className="action-button action-edit w-full sm:w-auto"
+              >
+                <LayoutTemplate aria-hidden />
+                {t("landingEditor.brandOnly.useFull")}
+              </button>
+            </div>
+          )}
+
+          {/* O que aparece: mapa dos blocos na ordem real da página. */}
           <fieldset
             disabled={!draft.enabled}
-            className="space-y-3 rounded-2xl border border-border bg-card p-4 disabled:opacity-60"
+            hidden={!showFullOnly}
+            className="min-w-0 space-y-1 rounded-2xl border border-border bg-card p-4"
           >
-            <legend className="px-1 text-sm font-bold">{t("landingEditor.textsTitle")}</legend>
-            <label className="block space-y-1 text-xs font-semibold">
-              {t("landingEditor.headline")}
-              <input
-                value={draft.headline}
-                maxLength={LANDING_LIMITS.headline}
-                placeholder={settings.tagline || t("shopLanding.defaultHeadline")}
-                onChange={(e) => update("headline", e.target.value)}
-                className={fieldClass}
-              />
-              {counter(draft.headline, LANDING_LIMITS.headline)}
-            </label>
-            <label className="block space-y-1 text-xs font-semibold">
-              {t("landingEditor.about")}
-              <textarea
-                value={draft.about}
-                maxLength={LANDING_LIMITS.about}
-                rows={4}
-                placeholder={t("landingEditor.aboutPlaceholder")}
-                onChange={(e) => update("about", e.target.value)}
-                className={`${fieldClass} resize-y`}
-              />
-              {counter(draft.about, LANDING_LIMITS.about)}
-            </label>
+            <legend className="sr-only">{t("landingEditor.blocksTitle")}</legend>
+            <SectionHeader
+              as="p"
+              icon={Eye}
+              title={t("landingEditor.blocksTitle")}
+              className="pb-2"
+            />
+            {!draft.enabled && <Hint icon={Info}>{t("landingEditor.onlyFull")}</Hint>}
+            {TOGGLES.map((toggle) => {
+              // Os horários de hoje aparecem dentro do cartão de cada profissional.
+              const nested = toggle.key === "show_today";
+              const disabled = !draft.enabled || (nested && !draft.show_staff);
+              const on = draft[toggle.key] && !(nested && !draft.show_staff);
+              const Icon = toggle.icon;
+              const switchId = `landing-${toggle.key}`;
+              return (
+                <div
+                  key={toggle.key}
+                  className={`flex items-start gap-3 py-2 ${
+                    nested ? "ms-5 border-s-2 border-border ps-3" : ""
+                  } ${disabled || !on ? "opacity-70" : ""}`}
+                >
+                  <span
+                    aria-hidden
+                    className={`grid size-9 shrink-0 place-items-center rounded-xl ${
+                      on && draft.enabled
+                        ? "bg-primary/10 text-primary"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    <Icon className="size-4" />
+                  </span>
+                  <label htmlFor={switchId} className="min-w-0 flex-1 cursor-pointer">
+                    <span className="block text-sm font-semibold">{t(toggle.label)}</span>
+                    {/* Nos horários de hoje, o exemplo em pílulas substitui a explicação. */}
+                    {!(nested && on && draft.enabled) && (
+                      <span className="block text-sm text-muted-foreground">
+                        {nested && !draft.show_staff
+                          ? t("landingEditor.showTodayNeedsStaff")
+                          : t(toggle.hint)}
+                      </span>
+                    )}
+                    {nested && on && draft.enabled && (
+                      <TimeChips
+                        times={["10:00", "11:30", "15:00"]}
+                        label={t("landingBlocks.todayExample")}
+                        className="mt-1.5"
+                      />
+                    )}
+                  </label>
+                  <Switch
+                    id={switchId}
+                    checked={on}
+                    disabled={disabled}
+                    onCheckedChange={(value) => update(toggle.key, value)}
+                  />
+                </div>
+              );
+            })}
+          </fieldset>
+
+          <fieldset
+            hidden={!showFullOnly}
+            className="min-w-0 space-y-4 rounded-2xl border border-border bg-card p-4"
+          >
+            <legend className="sr-only">{t("landingEditor.textsOnly")}</legend>
+            <SectionHeader as="p" icon={PencilLine} title={t("landingEditor.textsOnly")} />
+            <Field
+              label={t("landingEditor.headline")}
+              optional
+              hint={counter(draft.headline, LANDING_LIMITS.headline)}
+            >
+              {(props) => (
+                <input
+                  {...props}
+                  value={draft.headline}
+                  maxLength={LANDING_LIMITS.headline}
+                  placeholder={settings.tagline || t("shopLanding.defaultHeadline")}
+                  onChange={(e) => update("headline", e.target.value)}
+                  className={fieldClass}
+                />
+              )}
+            </Field>
+            <Field
+              label={t("landingEditor.aboutLabel")}
+              optional
+              hint={counter(draft.about, LANDING_LIMITS.about)}
+            >
+              {(props) => (
+                <textarea
+                  {...props}
+                  value={draft.about}
+                  maxLength={LANDING_LIMITS.about}
+                  rows={4}
+                  placeholder={t("landingEditor.aboutPlaceholder")}
+                  onChange={(e) => update("about", e.target.value)}
+                  className={`${fieldClass} resize-y`}
+                />
+              )}
+            </Field>
+          </fieldset>
+
+          <fieldset
+            hidden={!showFullOnly}
+            className="min-w-0 space-y-4 rounded-2xl border border-border bg-card p-4"
+          >
+            <legend className="sr-only">{t("landingEditor.contactTitle")}</legend>
+            <SectionHeader as="p" icon={Phone} title={t("landingEditor.contactTitle")} />
             {showCepHelper && (
               <CepAddressHelper
                 address={draft.address}
                 maxLength={LANDING_LIMITS.address}
                 onAddressChange={(value) => update("address", value)}
+                onWritten={(text) => {
+                  setCepAddress(text);
+                  setAddressTouched(false);
+                }}
               />
             )}
-            <label className="block space-y-1 text-xs font-semibold">
-              {t("landingEditor.address")}
-              <input
-                value={draft.address}
-                maxLength={LANDING_LIMITS.address}
-                placeholder={t("landingEditor.addressPlaceholder")}
-                autoComplete="street-address"
-                onChange={(e) => update("address", e.target.value)}
-                className={fieldClass}
-              />
-              {counter(draft.address, LANDING_LIMITS.address)}
-            </label>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="block space-y-1 text-xs font-semibold">
-                {t("landingEditor.whatsapp")}
-                <input
-                  type="tel"
-                  inputMode="tel"
-                  value={draft.whatsapp}
-                  maxLength={20}
-                  placeholder="(11) 99999-0000"
-                  onChange={(e) => update("whatsapp", e.target.value)}
-                  className={fieldClass}
-                />
-              </label>
-              <label className="block space-y-1 text-xs font-semibold">
-                {t("landingEditor.instagram")}
-                <input
-                  value={draft.instagram}
-                  maxLength={31}
-                  placeholder="@suabarbearia"
-                  autoCapitalize="none"
-                  onChange={(e) => update("instagram", e.target.value)}
-                  className={fieldClass}
-                />
-              </label>
-            </div>
-            <p className="text-[11px] text-muted-foreground">{t("landingEditor.photoHint")}</p>
-          </fieldset>
-
-          <fieldset
-            disabled={!draft.enabled}
-            className="space-y-2 rounded-2xl border border-border bg-card p-4 disabled:opacity-60"
-          >
-            <legend className="px-1 text-sm font-bold">{t("landingEditor.blocksTitle")}</legend>
-            {TOGGLES.map((toggle) => {
-              // Os horários de hoje aparecem dentro do cartão de cada profissional.
-              const nested = toggle.key === "show_today";
-              const disabled = !draft.enabled || (nested && !draft.show_staff);
-              return (
-                <label
-                  key={toggle.key}
-                  className={`flex items-start justify-between gap-3 p-2 ${
-                    nested ? "ml-4 border-l-2 border-border pl-3" : "rounded-xl"
-                  } ${disabled ? "opacity-60" : ""}`}
-                >
-                  <span>
-                    <span className="block text-sm font-semibold">{t(toggle.label)}</span>
-                    <span className="block text-xs text-muted-foreground">
-                      {nested && !draft.show_staff
-                        ? t("landingEditor.showTodayNeedsStaff")
-                        : t(toggle.hint)}
-                    </span>
-                  </span>
-                  <Switch
-                    checked={draft[toggle.key] && !(nested && !draft.show_staff)}
-                    disabled={disabled}
-                    onCheckedChange={(value) => update(toggle.key, value)}
-                    aria-label={t(toggle.label)}
+            {addressFromCep ? (
+              <MoreDetails summary={t("landingEditor.address.editText")} icon={PencilLine}>
+                {addressField}
+              </MoreDetails>
+            ) : (
+              addressField
+            )}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field
+                label={t("landingEditor.whatsappLabel")}
+                error={problem === "whatsapp" ? t(PROBLEM_KEY.whatsapp) : undefined}
+              >
+                {(props) => (
+                  <input
+                    {...props}
+                    type="tel"
+                    inputMode="tel"
+                    value={draft.whatsapp}
+                    maxLength={20}
+                    placeholder={whatsappPlaceholder}
+                    onChange={(e) => update("whatsapp", e.target.value)}
+                    className={fieldClass}
                   />
-                </label>
-              );
-            })}
+                )}
+              </Field>
+              <Field
+                label={t("landingEditor.instagramLabel")}
+                error={problem === "instagram" ? t(PROBLEM_KEY.instagram) : undefined}
+              >
+                {(props) => (
+                  <input
+                    {...props}
+                    value={draft.instagram}
+                    maxLength={31}
+                    placeholder={t("landingEditor.instagramPlaceholder")}
+                    autoCapitalize="none"
+                    onChange={(e) => update("instagram", e.target.value)}
+                    className={fieldClass}
+                  />
+                )}
+              </Field>
+            </div>
           </fieldset>
 
-          {problem && (
-            <p className="text-sm font-semibold text-destructive" role="alert">
-              {t(PROBLEM_KEY[problem])}
-            </p>
-          )}
-          {error && (
-            <p className="text-sm font-semibold text-destructive" role="alert">
-              {error}
-            </p>
-          )}
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              disabled={!dirty || busy}
-              onClick={() => {
-                setDraft(saved);
-                setError(null);
-              }}
-              className="min-h-11 rounded-xl border border-border px-4 text-sm font-bold disabled:opacity-50"
-            >
-              {t("landingEditor.discard")}
-            </button>
-            <button
-              type="submit"
-              disabled={!dirty || busy || Boolean(problem)}
-              className="action-button action-confirm"
-            >
-              {busy && <Loader2 className="size-4 animate-spin" aria-hidden />}
-              {t("landingEditor.save")}
-            </button>
-          </div>
+          {/* O link fica sobre a prévia; no celular, também no fim da aba Editar. */}
+          {linkStrip("rounded-2xl border border-border bg-card p-4 lg:hidden")}
+
+          {/* Com mudanças pendentes, o erro aparece só na barra de salvar (com "Tentar de novo"). */}
+          {error && !dirty && <Notice tone="danger" title={error} />}
+          <UnsavedBar
+            dirty={dirty}
+            saving={busy}
+            state={result}
+            stateText={
+              result === "saved"
+                ? t("landingEditor.savedLive")
+                : result === "error"
+                  ? (error ?? undefined)
+                  : undefined
+            }
+            onSave={() => void persist()}
+            onDiscard={() => {
+              setDraft(saved);
+              setError(null);
+              setResult(null);
+            }}
+            saveLabel={problem ? t("landingEditor.fixToSave") : t("landingEditor.save")}
+          />
         </form>
 
         <section
-          aria-label={t("landingEditor.previewLabel")}
-          className={`${view === "previa" ? "" : "hidden lg:block"} lg:sticky lg:top-0 lg:self-start`}
+          id={`${tabsId}-panel-previa`}
+          role="tabpanel"
+          aria-labelledby={`${tabsId}-tab-previa`}
+          className={`${view === "previa" ? "" : "hidden lg:block"} space-y-3 lg:sticky lg:top-0 lg:self-start`}
         >
-          <p className="mb-2 text-xs font-semibold text-muted-foreground">
+          {linkStrip("")}
+          <p className="text-xs font-semibold text-muted-foreground">
             {t(demo ? "landingEditor.previewHintDemo" : "landingEditor.previewHint")}
           </p>
           <div className="relative max-h-[70dvh] overflow-y-auto rounded-2xl border border-border shadow-sm">
             {previewData ? (
               <ShopLandingView data={previewData} preview />
             ) : previewFailed ? (
-              <div className="space-y-3 p-4" role="alert">
-                <p className="text-sm text-muted-foreground">
-                  {t("fix.ajustes-marca.landingPreviewError")}
-                </p>
-                <button
-                  type="button"
-                  className="action-button"
-                  onClick={() => setPreviewAttempt((current) => current + 1)}
-                >
-                  {t("common.retry")}
-                </button>
-              </div>
+              <EmptyState
+                variant="plain"
+                status="danger"
+                title={t("fix.ajustes-marca.landingPreviewError")}
+                action={
+                  <button
+                    type="button"
+                    className="action-button"
+                    onClick={() => setPreviewAttempt((current) => current + 1)}
+                  >
+                    <RefreshCw aria-hidden />
+                    {t("visual.retry")}
+                  </button>
+                }
+              />
             ) : (
-              <p
-                className="flex items-center gap-2 p-4 text-sm text-muted-foreground"
-                role="status"
-              >
-                <Loader2 className="size-4 animate-spin" aria-hidden />
-                {t("landingEditor.previewLoading")}
-              </p>
+              <LoadingState
+                variant="cards"
+                count={2}
+                label={t("landingEditor.previewLoading")}
+                className="p-4"
+              />
             )}
           </div>
         </section>

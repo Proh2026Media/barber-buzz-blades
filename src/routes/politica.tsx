@@ -1,33 +1,32 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import {
-  AlertCircle,
-  Armchair,
-  BadgeCheck,
   CheckCircle,
-  ChevronLeft,
   Crown,
-  Diamond,
   Gift,
   Info,
-  Loader2,
+  ListChecks,
   LogIn,
   RefreshCw,
-  Sparkle,
+  Scissors,
   Store,
   Trophy,
+  type LucideIcon,
 } from "lucide-react";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { LegalCourtesyNotice } from "@/features/legal/LegalPageShell";
-import { useLegalI18n } from "@/features/legal/legal-locale";
-import { legalLinkClass, legalRichText } from "@/features/legal/rich-text";
+import { IconTile, LoadingState, MoreDetails, Notice, StatTile } from "@/components/visual";
 import {
-  parseLoyaltyProgram,
-  tierStyleKey,
-  type LoyaltyProgram,
-  type LoyaltyTier,
-} from "@/features/loyalty/program";
+  LegalBackButton,
+  LegalCourtesyNotice,
+  LegalOtherDocs,
+  legalHeaderButton,
+} from "@/features/legal/LegalPageShell";
+import { useLegalI18n } from "@/features/legal/legal-locale";
+import { HowSteps } from "@/features/marketing/HowSteps";
+import { legalRichText } from "@/features/legal/rich-text";
+import { TierBadge } from "@/features/loyalty/TierBadge";
+import { parseLoyaltyProgram, tierStyleKey, type LoyaltyProgram } from "@/features/loyalty/program";
 import { supabase } from "@/integrations/supabase/client";
 
 type PoliticaSearch = { shop?: string; lang?: string };
@@ -70,6 +69,8 @@ type LoadState =
   | {
       status: "ready";
       shopName: string;
+      logoUrl: string | null;
+      logoBackground: string | null;
       corner: Corner;
       access: Access;
       program: LoyaltyProgram | null;
@@ -107,11 +108,22 @@ function useShopProgram(shopRef: string | undefined, attempt: number): LoadState
         }
         const shopName = row.display_name?.trim() || row.shop_name;
         const corner = parseCorner(row.corner_style);
+        const logo = {
+          logoUrl: row.logo_url ?? null,
+          logoBackground: row.logo_background_color ?? null,
+        };
 
         const { data: sessionData } = await supabase.auth.getSession();
         if (cancelled) return;
         if (!sessionData.session) {
-          setState({ status: "ready", shopName, corner, access: "signedOut", program: null });
+          setState({
+            status: "ready",
+            shopName,
+            ...logo,
+            corner,
+            access: "signedOut",
+            program: null,
+          });
           return;
         }
 
@@ -122,12 +134,13 @@ function useShopProgram(shopRef: string | undefined, attempt: number): LoadState
         if (programResult.error) {
           // 42501 = sem vínculo com a loja; qualquer outro erro é falha de carregamento.
           const access: Access = programResult.error.code === "42501" ? "noAccess" : "programError";
-          setState({ status: "ready", shopName, corner, access, program: null });
+          setState({ status: "ready", shopName, ...logo, corner, access, program: null });
           return;
         }
         setState({
           status: "ready",
           shopName,
+          ...logo,
           corner,
           access: "ok",
           program: parseLoyaltyProgram(programResult.data),
@@ -144,83 +157,75 @@ function useShopProgram(shopRef: string | undefined, attempt: number): LoadState
   return state;
 }
 
-const TIER_STYLES = {
-  classic: { icon: Armchair, text: "text-gradient-silver", badge: "bg-silver-metallic text-black" },
-  select: {
-    icon: BadgeCheck,
-    text: "text-gradient-bronze",
-    badge: "bg-bronze-metallic text-white",
-  },
-  privilege: { icon: Sparkle, text: "text-gradient-gold", badge: "bg-gold-metallic text-black" },
-  exclusive: {
-    icon: Diamond,
-    text: "text-gradient-hologram",
-    badge: "bg-hologram-metallic text-black",
-  },
-} as const;
-
-const cardClass =
-  "rounded-[var(--panel-radius)] border border-border/70 bg-card p-5 text-card-foreground shadow-sm";
-const iconButtonClass =
-  "inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--control-radius)] border border-border/60 bg-muted/40 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground";
-const actionButtonClass =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--button-radius)] px-4 text-sm font-semibold transition-colors";
+const cardClass = "public-card rounded-2xl border border-border p-5 shadow-sm";
 
 type T = ReturnType<typeof useLegalI18n>["t"];
 
-function SectionTitle({ children }: { children: ReactNode }) {
+/** Título de seção com ícone, no mesmo desenho dos documentos legais. */
+function SectionTitle({ icon, children }: { icon: LucideIcon; children: ReactNode }) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="h-1 w-8 rounded-full bg-primary" aria-hidden="true" />
-      <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-primary">{children}</h2>
-    </div>
+    <h2 className="flex items-center gap-3 text-lg font-bold leading-snug">
+      <IconTile icon={icon} size="sm" tone="muted" />
+      {children}
+    </h2>
   );
 }
 
 function PoliticaClube() {
   const { shop, lang } = Route.useSearch();
-  const { t, locale } = useLegalI18n(lang);
+  const { t, locale, intlLocale } = useLegalI18n(lang);
   const [attempt, setAttempt] = useState(0);
   const state = useShopProgram(shop, attempt);
   const corner = state.status === "ready" ? state.corner : "soft";
   const program = state.status === "ready" && state.access === "ok" ? state.program : null;
   const shopName = state.status === "ready" ? state.shopName : null;
+  const logoUrl = state.status === "ready" ? state.logoUrl : null;
+  const logoBackground = state.status === "ready" ? state.logoBackground : null;
   const retry = () => setAttempt((n) => n + 1);
+  const originalHref = `?lang=pt-BR${shop ? `&shop=${encodeURIComponent(shop)}` : ""}`;
 
   return (
     <div
-      className={`brand-page brand-corners-${corner} min-h-dvh bg-background pb-10 font-sans text-foreground`}
+      className={`public-page brand-page brand-corners-${corner} min-h-dvh bg-background pb-10 font-sans text-foreground`}
     >
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-xl items-center justify-between gap-3 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
-          <Link
+        <div className="mx-auto flex max-w-xl items-center gap-2 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+          {/* Com as regras abertas, volta ao app já na barbearia certa. */}
+          <LegalBackButton
+            label={t("legal.backShort")}
             to={program ? "/app" : "/"}
-            className={iconButtonClass}
-            aria-label={t("legal.back")}
-          >
-            <ChevronLeft className="size-5" aria-hidden="true" />
-          </Link>
-          <p className="min-w-0 truncate text-sm font-bold">{t("legal.club.header")}</p>
-          <div className="flex items-center gap-2">
-            <LanguageSwitcher buttonClassName={iconButtonClass} />
-            <ThemeToggle buttonClassName={iconButtonClass} />
-          </div>
+            search={program && shop ? { shop } : undefined}
+          />
+          <p className="flex min-w-0 flex-1 items-center gap-2 text-sm font-bold">
+            <Crown className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <span className="line-clamp-2 leading-tight">{t("legal.club.header")}</span>
+          </p>
+          <LanguageSwitcher locale={locale} showCode buttonClassName={legalHeaderButton} />
+          <ThemeToggle buttonClassName={legalHeaderButton} />
         </div>
       </header>
 
       <main className="mx-auto max-w-xl space-y-8 px-4 py-6">
-        <LegalCourtesyNotice locale={locale} />
+        <LegalCourtesyNotice locale={locale} originalHref={originalHref} />
 
         <section className="space-y-3 text-center">
-          <div className="mx-auto flex size-16 items-center justify-center rounded-[var(--panel-radius)] border border-primary/20 bg-primary/10 text-primary">
-            <Crown className="size-8" aria-hidden="true" />
-          </div>
-          {shopName && (
-            <p className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-border/70 bg-card px-3 py-1 text-xs font-semibold text-muted-foreground">
-              <Store className="size-3.5 shrink-0" aria-hidden="true" />
-              <span className="truncate">{shopName}</span>
-            </p>
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt=""
+              className="mx-auto size-16 rounded-2xl border border-border object-contain p-1.5"
+              style={{ background: logoBackground || "#f7f5f0" }}
+            />
+          ) : (
+            <div className="mx-auto flex size-16 items-center justify-center rounded-2xl border border-border bg-muted text-foreground">
+              {shopName ? (
+                <Store className="size-8" aria-hidden="true" />
+              ) : (
+                <Crown className="size-8" aria-hidden="true" />
+              )}
+            </div>
           )}
+          {shopName && <p className="text-base font-bold">{shopName}</p>}
           <h1 className="text-2xl font-bold tracking-tight">{t("legal.club.heroTitle")}</h1>
           <p className="text-[15px] leading-relaxed text-muted-foreground">
             {program
@@ -233,19 +238,21 @@ function PoliticaClube() {
 
         {program ? (
           program.enabled ? (
-            <ShopProgram program={program} t={t} />
+            <ShopProgram program={program} t={t} intlLocale={intlLocale} />
           ) : (
-            <p role="status" className={`${cardClass} flex gap-3 text-sm leading-relaxed`}>
-              <Info className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
-              <span>{t("legal.club.disabled", { shop: shopName ?? "" })}</span>
-            </p>
+            <Notice
+              tone="neutral"
+              icon={Info}
+              role="status"
+              title={t("legal.club.disabled", { shop: shopName ?? "" })}
+            />
           )
         ) : state.status === "loading" ? null : (
           <GenericProgram t={t} />
         )}
 
         <section className="space-y-4">
-          <SectionTitle>{t("legal.club.termsTitle")}</SectionTitle>
+          <SectionTitle icon={ListChecks}>{t("legal.club.termsTitle")}</SectionTitle>
           <ul className={`${cardClass} space-y-3 text-sm leading-relaxed`}>
             {(
               [
@@ -256,29 +263,21 @@ function PoliticaClube() {
               ] as const
             ).map((key) => (
               <li key={key} className="flex gap-3">
-                <CheckCircle className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                <CheckCircle
+                  className="tone-success mt-0.5 size-4 shrink-0 text-[color:var(--tone-ink)]"
+                  aria-hidden="true"
+                />
                 <span>{t(key)}</span>
               </li>
             ))}
           </ul>
         </section>
 
-        <footer className="space-y-3 border-t border-border/60 pt-6 text-center text-xs text-muted-foreground">
-          <nav
-            className="flex flex-wrap items-center justify-center gap-x-4"
-            aria-label={t("legal.navAria")}
-          >
-            <Link to="/termos" className={`inline-flex min-h-11 items-center ${legalLinkClass}`}>
-              {t("legal.termsLink")}
-            </Link>
-            <Link
-              to="/privacidade"
-              className={`inline-flex min-h-11 items-center ${legalLinkClass}`}
-            >
-              {t("legal.privacyLink")}
-            </Link>
-          </nav>
-          <p>{t("fix.fidelidade-insights.policyFooter", { year: new Date().getFullYear() })}</p>
+        <footer className="space-y-4 border-t border-border/60 pt-6">
+          <LegalOtherDocs current="club" locale={locale} langParam={lang} />
+          <p className="text-center text-xs text-muted-foreground">
+            {t("fix.fidelidade-insights.policyFooter", { year: new Date().getFullYear() })}
+          </p>
         </footer>
       </main>
     </div>
@@ -299,41 +298,26 @@ function StatusNotice({
   if (state.status === "none") return null;
   if (state.status === "loading") {
     return (
-      <p
-        role="status"
-        className={`${cardClass} flex items-center gap-3 text-sm text-muted-foreground`}
-      >
-        <Loader2 className="size-5 shrink-0 animate-spin" aria-hidden="true" />
-        {t("legal.club.loading")}
-      </p>
+      <LoadingState label={t("legal.club.loading")} variant="cards" count={2} onRetry={onRetry} />
     );
   }
   if (state.status === "notFound") {
-    return <Notice icon={Info} text={t("legal.club.shopNotFound")} />;
+    return <Notice tone="neutral" icon={Store} title={t("legal.club.shopNotFound")} />;
   }
   if (state.status === "error" || (state.status === "ready" && state.access === "programError")) {
     return (
-      <div role="alert" className={`${cardClass} space-y-3`}>
-        <p className="flex gap-3 text-sm leading-relaxed">
-          <AlertCircle className="mt-0.5 size-5 shrink-0 text-destructive" aria-hidden="true" />
-          <span>{t("legal.club.loadError")}</span>
-        </p>
-        <button
-          type="button"
-          onClick={onRetry}
-          className={`${actionButtonClass} w-full bg-foreground text-background hover:opacity-90`}
-        >
-          <RefreshCw className="size-4" aria-hidden="true" />
-          {t("legal.club.retry")}
-        </button>
-      </div>
+      <Notice
+        tone="danger"
+        title={t("legal.club.loadError")}
+        action={{ label: t("legal.club.retry"), onClick: onRetry, icon: RefreshCw }}
+      />
     );
   }
   if (state.access === "signedOut") {
     return (
       <div className={`${cardClass} space-y-3`}>
         <p className="flex gap-3 text-sm leading-relaxed">
-          <Info className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <LogIn className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
           <span>{t("legal.club.signInHint", { shop: state.shopName })}</span>
         </p>
         <Link
@@ -342,85 +326,140 @@ function StatusNotice({
             next: `/politica?shop=${encodeURIComponent(shopRef ?? "")}`,
             ...(shopRef ? { shop: shopRef } : {}),
           }}
-          className={`${actionButtonClass} w-full bg-foreground text-background hover:opacity-90`}
+          className="action-button action-confirm min-h-12 w-full"
         >
-          <LogIn className="size-4" aria-hidden="true" />
+          <LogIn aria-hidden="true" />
           {t("legal.club.signIn")}
         </Link>
       </div>
     );
   }
   if (state.access === "noAccess") {
-    return <Notice icon={Info} text={t("legal.club.noAccess", { shop: state.shopName })} />;
+    return (
+      <Notice
+        tone="neutral"
+        icon={Info}
+        title={t("legal.club.noAccess", { shop: state.shopName })}
+      />
+    );
   }
   return null;
 }
 
-function Notice({ icon: Icon, text }: { icon: typeof Info; text: string }) {
-  return (
-    <p role="status" className={`${cardClass} flex gap-3 text-sm leading-relaxed`}>
-      <Icon className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
-      <span>{text}</span>
-    </p>
-  );
+/** Números no formato do idioma da página (1.500 / 1,500), e não no do navegador. */
+type Fmt = (n: number) => string;
+
+function pointsLabel(t: T, fmt: Fmt, n: number) {
+  return t(n === 1 ? "legal.club.pointsOne" : "legal.club.pointsMany", { n: fmt(n) });
 }
 
-function pointsLabel(t: T, n: number) {
-  return t(n === 1 ? "legal.club.pointsOne" : "legal.club.pointsMany", { n });
-}
-
-function ShopProgram({ program, t }: { program: LoyaltyProgram; t: T }) {
+function ShopProgram({
+  program,
+  t,
+  intlLocale,
+}: {
+  program: LoyaltyProgram;
+  t: T;
+  intlLocale: string;
+}) {
+  const fmt: Fmt = (n) => n.toLocaleString(intlLocale);
   const rewards = program.rewards
     .filter((reward) => reward.active)
     .sort((a, b) => a.sort_order - b.sort_order || a.cost_points - b.cost_points);
+  const tiers = program.tiers;
   return (
     <>
       <section className="space-y-4">
-        <SectionTitle>{t("legal.club.earnTitle")}</SectionTitle>
-        <div className={`${cardClass} space-y-3 text-sm leading-relaxed`}>
-          <p className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-muted/40 px-3 py-1 text-xs font-semibold text-muted-foreground">
+        <SectionTitle icon={Trophy}>{t("legal.club.earnTitle")}</SectionTitle>
+        <div className="grid grid-cols-2 gap-3">
+          <StatTile
+            className="public-card"
+            icon={Trophy}
+            value={t("legal.club.plusPoints", { n: fmt(program.points_per_visit) })}
+            label={t("legal.club.perVisitStat")}
+          />
+          {program.welcome_bonus > 0 && (
+            <StatTile
+              className="public-card"
+              icon={Gift}
+              value={t("legal.club.plusPoints", { n: fmt(program.welcome_bonus) })}
+              label={t("legal.club.welcomeStat")}
+            />
+          )}
+        </div>
+        {/* À vista: os números e a nota; a frase completa fica recolhida em "Como funciona". */}
+        <div className="space-y-2 text-sm leading-relaxed text-muted-foreground">
+          <p className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1 text-xs font-semibold text-foreground">
             {program.mode === "custom" ? t("legal.club.modeCustom") : t("legal.club.modeDefault")}
           </p>
-          <p className="flex gap-3">
-            <Trophy className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-            <span>
-              {legalRichText(t("legal.club.perVisit"), {
-                points: <strong>{pointsLabel(t, program.points_per_visit)}</strong>,
-              })}
-            </span>
+          <p className="flex gap-2">
+            <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+            <span>{t("legal.club.earnNote")}</span>
           </p>
-          {program.welcome_bonus > 0 && (
-            <p className="flex gap-3">
-              <Gift className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-              <span>
-                {legalRichText(t("legal.club.welcome"), {
-                  points: <strong>{pointsLabel(t, program.welcome_bonus)}</strong>,
-                })}
-              </span>
+          <MoreDetails>
+            <p>
+              {legalRichText(t("legal.club.perVisit"), {
+                points: <strong>{pointsLabel(t, fmt, program.points_per_visit)}</strong>,
+              })}
+              {program.welcome_bonus > 0 && (
+                <>
+                  {" "}
+                  {legalRichText(t("legal.club.welcome"), {
+                    points: <strong>{pointsLabel(t, fmt, program.welcome_bonus)}</strong>,
+                  })}
+                </>
+              )}
             </p>
-          )}
-          <p className="text-muted-foreground">{t("legal.club.earnNote")}</p>
+          </MoreDetails>
         </div>
       </section>
 
       <section className="space-y-4">
-        <SectionTitle>{t("legal.club.tiersTitle")}</SectionTitle>
+        <SectionTitle icon={Crown}>{t("legal.club.tiersTitle")}</SectionTitle>
         <p className="text-sm leading-relaxed text-muted-foreground">{t("legal.club.tiersBody")}</p>
-        <ol className="space-y-3">
-          {program.tiers.map((tier, index) => (
-            <TierCard
-              key={`${tier.name}-${tier.min_points}`}
-              tier={tier}
-              next={program.tiers[index + 1] ?? null}
-              styleKey={tierStyleKey(index, program.tiers.length)}
-              t={t}
-            />
-          ))}
+        {tiers.length > 1 && (
+          // Escada de níveis: uma faixa por nível no gradiente aprovado, com o marco de pontos.
+          <div aria-hidden="true" className="flex gap-1">
+            {tiers.map((tier, index) => (
+              <div key={`${tier.name}-${tier.min_points}`} className="min-w-0 flex-1 space-y-1">
+                <div
+                  className={`mb-loyalty-tier-mark mb-loyalty-tier-${tierStyleKey(index, tiers.length)} h-3 rounded-full border`}
+                />
+                <p className="truncate text-[11px] font-bold tabular-nums text-muted-foreground">
+                  {fmt(tier.min_points)}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+        <ol className="space-y-2">
+          {tiers.map((tier, index) => {
+            const next = tiers[index + 1] ?? null;
+            return (
+              <li
+                key={`${tier.name}-${tier.min_points}`}
+                className="public-card flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-border p-4"
+              >
+                <TierBadge tier={tierStyleKey(index, tiers.length)} name={tier.name} size="lg" />
+                <span className="text-xs font-semibold text-muted-foreground">
+                  {next
+                    ? t("legal.club.range", {
+                        from: fmt(tier.min_points),
+                        to: fmt(next.min_points - 1),
+                      })
+                    : t("legal.club.rangeTop", { from: fmt(tier.min_points) })}
+                </span>
+                {tier.benefit.trim() && (
+                  <p className="w-full break-words text-sm leading-relaxed">{tier.benefit}</p>
+                )}
+              </li>
+            );
+          })}
         </ol>
       </section>
 
       <section className="space-y-4">
-        <SectionTitle>{t("legal.club.rewardsTitle")}</SectionTitle>
+        <SectionTitle icon={Gift}>{t("legal.club.rewardsTitle")}</SectionTitle>
         {rewards.length === 0 ? (
           <p className={`${cardClass} text-sm leading-relaxed text-muted-foreground`}>
             {t("legal.club.rewardsEmpty")}
@@ -430,10 +469,10 @@ function ShopProgram({ program, t }: { program: LoyaltyProgram; t: T }) {
             <p className="text-sm leading-relaxed text-muted-foreground">
               {t("legal.club.rewardsBody")}
             </p>
-            <ul className="space-y-3">
+            <ul className="space-y-2">
               {rewards.map((reward) => (
-                <li key={reward.id} className={`${cardClass} flex items-start gap-3`}>
-                  <Gift className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
+                <li key={reward.id} className={`${cardClass} flex items-start gap-3 p-4`}>
+                  <IconTile icon={Gift} size="sm" tone="muted" />
                   <div className="min-w-0 flex-1">
                     <p className="break-words font-semibold">{reward.name}</p>
                     {reward.description && (
@@ -442,8 +481,8 @@ function ShopProgram({ program, t }: { program: LoyaltyProgram; t: T }) {
                       </p>
                     )}
                   </div>
-                  <span className="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
-                    {pointsLabel(t, reward.cost_points)}
+                  <span className="shrink-0 rounded-full bg-primary px-2.5 py-1 text-xs font-bold tabular-nums text-primary-foreground">
+                    {pointsLabel(t, fmt, reward.cost_points)}
                   </span>
                 </li>
               ))}
@@ -455,66 +494,36 @@ function ShopProgram({ program, t }: { program: LoyaltyProgram; t: T }) {
   );
 }
 
-function TierCard({
-  tier,
-  next,
-  styleKey,
-  t,
-}: {
-  tier: LoyaltyTier;
-  next: LoyaltyTier | null;
-  styleKey: keyof typeof TIER_STYLES;
-  t: T;
-}) {
-  const style = TIER_STYLES[styleKey];
-  const Icon = style.icon;
-  return (
-    <li className={cardClass}>
-      <div className="flex items-center gap-3">
-        <span
-          className={`flex size-10 shrink-0 items-center justify-center rounded-[var(--control-radius)] border border-white/20 shadow-inner ${style.badge}`}
-        >
-          <Icon className="size-5" aria-hidden="true" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <h3 className={`break-words text-base font-bold ${style.text}`}>{tier.name}</h3>
-          <p className="text-xs font-semibold text-muted-foreground">
-            {next
-              ? t("legal.club.range", { from: tier.min_points, to: next.min_points - 1 })
-              : t("legal.club.rangeTop", { from: tier.min_points })}
-          </p>
-        </div>
-      </div>
-      {tier.benefit.trim() && (
-        <p className="mt-3 break-words text-sm leading-relaxed text-muted-foreground">
-          {tier.benefit}
-        </p>
-      )}
-    </li>
-  );
-}
-
+/** Sem barbearia: a ideia do clube em 4 passos (atendimento → pontos → nível → prêmio). */
 function GenericProgram({ t }: { t: T }) {
-  const items = [
-    { icon: Trophy, key: "legal.club.generalEarn" },
-    { icon: Crown, key: "legal.club.generalTiers" },
-    { icon: Gift, key: "legal.club.generalRewards" },
-  ] as const;
   return (
     <section className="space-y-4">
-      <SectionTitle>{t("legal.club.generalTitle")}</SectionTitle>
-      <ul className="space-y-3">
-        {items.map(({ icon: Icon, key }) => (
-          <li key={key} className={`${cardClass} flex gap-3 text-sm leading-relaxed`}>
-            <Icon className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
-            <span>{t(key)}</span>
-          </li>
-        ))}
-      </ul>
-      <p
-        role="note"
-        className="flex gap-3 rounded-[var(--control-radius)] border border-border/60 bg-muted/40 px-4 py-3 text-sm leading-relaxed text-muted-foreground"
-      >
+      <SectionTitle icon={Trophy}>{t("legal.club.generalTitle")}</SectionTitle>
+      <div className={cardClass}>
+        <HowSteps
+          orientation="vertical"
+          label={t("legal.club.generalTitle")}
+          steps={[
+            { label: t("legal.club.flow1"), icon: Scissors },
+            {
+              label: t("legal.club.flow2"),
+              icon: Trophy,
+              description: t("legal.club.generalEarn"),
+            },
+            {
+              label: t("legal.club.flow3"),
+              icon: Crown,
+              description: t("legal.club.generalTiers"),
+            },
+            {
+              label: t("legal.club.flow4"),
+              icon: Gift,
+              description: t("legal.club.generalRewards"),
+            },
+          ]}
+        />
+      </div>
+      <p className="flex gap-2 text-sm leading-relaxed text-muted-foreground">
         <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
         <span>{t("legal.club.generalVaries")}</span>
       </p>

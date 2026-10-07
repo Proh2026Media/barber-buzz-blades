@@ -5,55 +5,52 @@ import { useScrollIndicators } from "@/lib/use-scroll-indicators";
 import {
   useCallback,
   useEffect,
-  useId,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
   type ReactNode,
 } from "react";
-import { Link } from "@tanstack/react-router";
+import { toast } from "sonner";
 import {
-  Building2,
-  FlaskConical,
+  BarChart3,
   KeyRound,
   LayoutDashboard,
-  LogOut,
-  MessageSquareText,
-  Palette,
-  PauseCircle,
-  PlayCircle,
-  Plus,
-  Search,
-  ShieldAlert,
+  MessageCircleOff,
+  QrCode,
+  RefreshCw,
+  Store,
   UserPlus,
-  X,
+  UserX,
 } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Switch } from "@/components/ui/switch";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Dialog, DialogContent, DialogScrollArea, DialogTitle } from "@/components/ui/dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogScrollArea,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  AttentionList,
+  CountBadge,
+  LoadingState,
+  Notice,
+  PersonAvatar,
+  type AttentionItem,
+} from "@/components/visual";
 import { BrandIdentityEditor } from "@/features/shop/BrandIdentityEditor";
 import { BrandFontFace } from "@/features/shop/BrandFontFace";
 import { BrandRootVariables } from "@/features/shop/BrandRootVariables";
-import { ChangePasswordCard } from "@/features/auth/ChangePasswordCard";
-import { LanguageSettingsCard } from "@/components/LanguageSettingsCard";
-import { PlatformWhatsAppCard } from "./PlatformWhatsAppCard";
+import {
+  PlatformWhatsAppCard,
+  type PlatformWaReport,
+  type PlatformWhatsAppHandle,
+} from "./PlatformWhatsAppCard";
 import { PlatformPermissionsEditor } from "./PlatformPermissionsEditor";
 import { AccountManagersPanel } from "./AccountManagersPanel";
 import { PlatformDashboard } from "./PlatformDashboard";
+import { PlatformAccountMenu } from "./PlatformAccountMenu";
+import { ShopsPanel } from "./ShopsPanel";
+import { NewShopDialog } from "./NewShopDialog";
+import { InviteMemberDialog } from "./InviteMemberDialog";
+import type { ShopModule } from "./ShopDetail";
+import { activeShopsWithoutAdmin, countByShop, type MembershipRow } from "./shopStats";
+import { platformTabFromSlug, platformTabSlug, type PlatformTab, type ShopFilter } from "./tabs";
 import { DemoAccountMenu, DemoRoleSelector } from "@/features/demo/DemoAccountMenu";
 import { DemoTourHub } from "@/features/demo/DemoTourHub";
 import { useDemoChrome } from "@/features/demo/chrome";
@@ -71,7 +68,6 @@ import {
   DEFAULT_CORNER_STYLE,
   DEFAULT_FONT_FAMILY,
   DEFAULT_HEADER_FONT_STYLE,
-  DEFAULT_HEADER_FONT_WEIGHT,
   DEFAULT_PRIMARY_COLOR,
   normalizeCornerStyle,
   normalizeHeaderFontStyle,
@@ -86,72 +82,54 @@ type PlatformShellProps = {
   demoMode?: boolean;
 };
 
-type InviteResult = {
-  ok?: boolean;
-  email?: string;
-  created?: boolean;
-  temporary_password?: string | null;
-  error?: string;
-  status?: string;
-  barbershop?: { name: string; slug: string };
-  role?: "owner" | "partner" | "associate" | "employee";
-  ownership_percent?: number | null;
-};
+/** Aba guardada no endereço (`?aba=barbearias`), para recarregar e voltar ao mesmo lugar. */
+function readTabFromUrl(): PlatformTab {
+  if (typeof window === "undefined") return "overview";
+  return platformTabFromSlug(new URLSearchParams(window.location.search).get("aba")) ?? "overview";
+}
 
-/** "America/Sao_Paulo" → "Horário de Brasília"; mantém o código se o navegador não souber o nome. */
-function friendlyTimeZone(timeZone: string, locale: string) {
-  try {
-    const part = new Intl.DateTimeFormat(locale, { timeZone, timeZoneName: "longGeneric" })
-      .formatToParts(new Date())
-      .find((item) => item.type === "timeZoneName");
-    return part?.value ?? timeZone;
-  } catch {
-    return timeZone;
+function writeTabToUrl(tab: PlatformTab) {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  if (tab === "overview") url.searchParams.delete("aba");
+  else url.searchParams.set("aba", platformTabSlug(tab));
+  if (url.href !== window.location.href) {
+    window.history.replaceState(window.history.state, "", url);
   }
 }
 
 export function PlatformShell({ profile, headerActions, demoMode = false }: PlatformShellProps) {
   useScrollIndicators();
-  const { t, intlLocale } = useI18n();
+  const { t } = useI18n();
   const demoChrome = useDemoChrome();
+  const mainRef = useRef<HTMLElement>(null);
+  const tourRef = useRef<HTMLDivElement>(null);
+  const waRef = useRef<PlatformWhatsAppHandle>(null);
   const [shops, setShops] = useState<Tables<"barbershops">[]>([]);
-  const [memberships, setMemberships] = useState<
-    Pick<Tables<"memberships">, "barbershop_id" | "role" | "user_id">[]
-  >([]);
-  const [shopSearch, setShopSearch] = useState("");
-  const [shopStatus, setShopStatus] = useState<"all" | "active" | "suspended">("all");
-  const [statusTarget, setStatusTarget] = useState<Tables<"barbershops"> | null>(null);
-  const [statusBusy, setStatusBusy] = useState(false);
-  const statusTriggerRef = useRef<HTMLButtonElement | null>(null);
-  const [platformTab, setPlatformTab] = useState<"overview" | "shops" | "insights" | "permissions">(
-    "overview",
-  );
-  const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteShopId, setInviteShopId] = useState("");
-  const [inviteName, setInviteName] = useState("");
-  const [inviteRole, setInviteRole] = useState<"owner" | "associate" | "employee">("employee");
-  const [inviteOwnership, setInviteOwnership] = useState("50");
-  const [inviteBusy, setInviteBusy] = useState(false);
-  // Identificadores estáveis para associar rótulos visíveis aos campos dos formulários.
-  const shopNameFieldId = useId();
-  const shopSlugFieldId = useId();
-  const inviteEmailFieldId = useId();
-  const inviteNameFieldId = useId();
-  const inviteShopFieldId = useId();
-  const inviteRoleFieldId = useId();
-  const [inviteMessage, setInviteMessage] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [memberships, setMemberships] = useState<MembershipRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
+  const [platformTab, setPlatformTabState] = useState<PlatformTab>(() =>
+    demoMode ? "overview" : readTabFromUrl(),
+  );
+  const [shopFilter, setShopFilter] = useState<ShopFilter>("all");
+  const [selectedShopId, setSelectedShopId] = useState<string | null>(null);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+  const [permShopId, setPermShopId] = useState("");
   const [sportsModules, setSportsModules] = useState<Record<string, boolean>>({});
   const [loyaltyModules, setLoyaltyModules] = useState<Record<string, boolean>>({});
-  const [moduleBusy, setModuleBusy] = useState<string | null>(null);
   const [brandShop, setBrandShop] = useState<Tables<"barbershops"> | null>(null);
   const [brandSettings, setBrandSettings] = useState<Tables<"barbershop_settings"> | null>(null);
   const [brandLoading, setBrandLoading] = useState(false);
+  const [brandError, setBrandError] = useState<string | null>(null);
+  const [newShopOpen, setNewShopOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteShopId, setInviteShopId] = useState<string | null>(null);
   const [demoShopId, setDemoShopId] = useState("");
+  const [waStatus, setWaStatus] = useState<PlatformWaReport | null>(null);
+  const [scrollToTour, setScrollToTour] = useState(false);
   const [loginTourOpen, setLoginTourOpen] = useState(false);
   const [loginTourSettings, setLoginTourSettings] = useState<Tables<"barbershop_settings"> | null>(
     null,
@@ -159,56 +137,73 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
   const demoState = demoChrome?.state ?? null;
   const demoDispatch = demoChrome?.dispatch ?? null;
 
-  const loadShops = useCallback(async () => {
-    if (demoState) {
-      setShops([demoState.shop]);
-      setMemberships([
-        ...demoState.customers.map((customer) => ({
-          barbershop_id: demoState.shop.id,
-          role: "customer" as const,
-          user_id: customer.id,
-        })),
-        { barbershop_id: demoState.shop.id, role: "shop_admin" as const, user_id: "demo-admin" },
+  const setPlatformTab = useCallback(
+    (tab: PlatformTab) => {
+      setPlatformTabState(tab);
+      if (!demoMode) writeTabToUrl(tab);
+      mainRef.current?.scrollTo({ top: 0 });
+    },
+    [demoMode],
+  );
+
+  const loadShops = useCallback(
+    async (mode: "initial" | "refresh" = "initial") => {
+      if (demoState) {
+        setShops([demoState.shop]);
+        setMemberships([
+          ...demoState.customers.map((customer) => ({
+            barbershop_id: demoState.shop.id,
+            role: "customer" as const,
+            user_id: customer.id,
+          })),
+          { barbershop_id: demoState.shop.id, role: "shop_admin" as const, user_id: "demo-admin" },
+        ]);
+        setSportsModules({ [demoState.shop.id]: demoState.settings.sports_enabled });
+        setLoyaltyModules({ [demoState.shop.id]: demoState.settings.loyalty_enabled });
+        setUpdatedAt(new Date());
+        setLoading(false);
+        return [demoState.shop];
+      }
+      if (mode === "refresh") setRefreshing(true);
+      else setLoading(true);
+      const [shopsResult, membershipsResult, modulesResult] = await Promise.all([
+        supabase.from("barbershops").select("*").order("created_at", { ascending: true }),
+        supabase.from("memberships").select("barbershop_id, role, user_id"),
+        supabase
+          .from("barbershop_settings")
+          .select("barbershop_id, sports_enabled, loyalty_enabled"),
       ]);
-      setSportsModules({ [demoState.shop.id]: demoState.settings.sports_enabled });
-      setLoyaltyModules({ [demoState.shop.id]: demoState.settings.loyalty_enabled });
-      setInviteShopId(demoState.shop.id);
+      const failure = shopsResult.error || membershipsResult.error || modulesResult.error;
+      let list: Tables<"barbershops">[] = [];
+      if (failure) {
+        setLoadError(friendlyAuthError(failure, tNow("plat.shell.loadError")));
+      } else {
+        list = shopsResult.data ?? [];
+        setLoadError(null);
+        setShops(list);
+        setMemberships(membershipsResult.data ?? []);
+        setSportsModules(
+          Object.fromEntries(
+            (modulesResult.data ?? []).map((row) => [row.barbershop_id, row.sports_enabled]),
+          ),
+        );
+        setLoyaltyModules(
+          Object.fromEntries(
+            (modulesResult.data ?? []).map((row) => [row.barbershop_id, row.loyalty_enabled]),
+          ),
+        );
+        setDemoShopId(
+          (current) =>
+            current || list.find((shop) => shop.status === "active")?.id || list[0]?.id || "",
+        );
+        setUpdatedAt(new Date());
+      }
       setLoading(false);
-      return;
-    }
-    setLoading(true);
-    const [shopsResult, membershipsResult, modulesResult] = await Promise.all([
-      supabase.from("barbershops").select("*").order("created_at", { ascending: true }),
-      supabase.from("memberships").select("barbershop_id, role, user_id"),
-      supabase.from("barbershop_settings").select("barbershop_id, sports_enabled, loyalty_enabled"),
-    ]);
-    const loadError = shopsResult.error || membershipsResult.error || modulesResult.error;
-    if (loadError) {
-      setError(friendlyAuthError(loadError, tNow("plat.shell.loadError")));
-    } else {
-      setShops(shopsResult.data ?? []);
-      setMemberships(membershipsResult.data ?? []);
-      setSportsModules(
-        Object.fromEntries(
-          (modulesResult.data ?? []).map((row) => [row.barbershop_id, row.sports_enabled]),
-        ),
-      );
-      setLoyaltyModules(
-        Object.fromEntries(
-          (modulesResult.data ?? []).map((row) => [row.barbershop_id, row.loyalty_enabled]),
-        ),
-      );
-      setInviteShopId((current) => current || shopsResult.data?.[0]?.id || "");
-      setDemoShopId(
-        (current) =>
-          current ||
-          shopsResult.data?.find((shop) => shop.status === "active")?.id ||
-          shopsResult.data?.[0]?.id ||
-          "",
-      );
-    }
-    setLoading(false);
-  }, [demoState]);
+      setRefreshing(false);
+      return list;
+    },
+    [demoState],
+  );
 
   useEffect(() => {
     void loadShops();
@@ -218,8 +213,19 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
     if (brandShop && demoState) setBrandSettings(demoState.settings);
   }, [brandShop, demoState]);
 
+  // "Testar como…" vindo da ficha: depois de trocar de aba, desce até o cartão do teste.
+  useEffect(() => {
+    if (!scrollToTour || platformTab !== "overview") return;
+    const id = window.setTimeout(() => {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      tourRef.current?.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
+      setScrollToTour(false);
+    }, 80);
+    return () => window.clearTimeout(id);
+  }, [scrollToTour, platformTab]);
+
   async function openBranding(shop: Tables<"barbershops">) {
-    setError(null);
+    setBrandError(null);
     setBrandShop(shop);
     if (demoState) {
       setBrandSettings(demoState.settings);
@@ -233,8 +239,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       .eq("barbershop_id", shop.id)
       .single();
     if (settingsError) {
-      setError(friendlyAuthError(settingsError, t("plat.shell.brandOpenError")));
-      setBrandShop(null);
+      setBrandError(t("plat.shell.brandOpenError"));
     } else {
       setBrandSettings(data);
     }
@@ -242,7 +247,6 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
   }
 
   async function openLoginTour() {
-    setError(null);
     if (demoState) {
       setLoginTourSettings(demoState.settings);
       setLoginTourOpen(true);
@@ -255,7 +259,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       .eq("barbershop_id", demoShopId)
       .single();
     if (settingsError) {
-      setError(friendlyAuthError(settingsError, t("plat.shell.loginPreviewError")));
+      toast.error(friendlyAuthError(settingsError, t("plat.shell.loginPreviewError")));
       return;
     }
     setLoginTourSettings(data);
@@ -267,168 +271,149 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
     window.location.href = "/auth";
   }
 
-  async function createShop(e: React.FormEvent) {
-    e.preventDefault();
-    // Duplo clique ou dois Enter no mesmo tick inseririam duas barbearias.
-    if (busy) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const { error: insertError } = await supabase.from("barbershops").insert({
-        name: name.trim(),
-        status: "active",
-      });
-      if (insertError) throw insertError;
-      setName("");
-      setSlug("");
-      await loadShops();
-    } catch (err) {
-      setError(friendlyAuthError(err, t("plat.shell.createError")));
-    } finally {
-      setBusy(false);
-    }
+  /** Cria a barbearia e devolve a linha nova (para realçar e personalizar em seguida). */
+  async function createShop(shopName: string) {
+    // A demonstração nunca grava (a janela já simula o resultado); defesa extra.
+    if (demoMode) return null;
+    const { error: insertError } = await supabase.from("barbershops").insert({
+      name: shopName,
+      status: "active",
+    });
+    if (insertError) throw new Error(friendlyAuthError(insertError, t("plat.shell.createError")));
+    const list = await loadShops("refresh");
+    return [...list].reverse().find((shop) => shop.name === shopName) ?? null;
   }
 
   async function toggleStatus(shop: Tables<"barbershops">) {
     const next = shop.status === "active" ? "suspended" : "active";
     if (demoDispatch) {
       demoDispatch({ type: "shop.update", shop: { status: next } });
-      setStatusTarget(null);
-      return;
+    } else {
+      const { error: updateError } = await supabase
+        .from("barbershops")
+        .update({ status: next })
+        .eq("id", shop.id);
+      // A janela de decisão mostra o erro e deixa tentar de novo.
+      if (updateError) throw updateError;
+      await loadShops("refresh");
     }
-    setStatusBusy(true);
-    setError(null);
-    const { error: updateError } = await supabase
-      .from("barbershops")
-      .update({ status: next })
-      .eq("id", shop.id);
-    setStatusBusy(false);
-    setStatusTarget(null);
-    if (updateError) {
-      setError(
-        friendlyAuthError(
-          updateError,
-          next === "suspended" ? t("plat.status.suspendError") : t("plat.status.reactivateError"),
-        ),
-      );
-    } else await loadShops();
+    toast.success(
+      next === "suspended"
+        ? t("plat.status.doneSuspended", { name: shop.name })
+        : t("plat.status.doneReactivated", { name: shop.name }),
+    );
   }
 
-  async function toggleSports(shopId: string, enabled: boolean) {
+  async function setModule(shopId: string, module: ShopModule, enabled: boolean) {
+    const key = module === "sports" ? "sports_enabled" : "loyalty_enabled";
     if (demoDispatch && demoState) {
-      demoDispatch({
-        type: "settings.save",
-        settings: { ...demoState.settings, sports_enabled: enabled },
-      });
+      demoDispatch({ type: "settings.save", settings: { ...demoState.settings, [key]: enabled } });
       return;
     }
-    setModuleBusy(shopId);
-    setError(null);
-    try {
-      const result = await supabase.rpc("set_shop_sports_module", {
-        p_shop_id: shopId,
-        p_enabled: enabled,
-      });
-      if (result.error) throw result.error;
-      setSportsModules((current) => ({ ...current, [shopId]: enabled }));
-    } catch {
-      setError(t("plat.shops.sportsError"));
-    } finally {
-      setModuleBusy(null);
-    }
+    const result =
+      module === "sports"
+        ? await supabase.rpc("set_shop_sports_module", { p_shop_id: shopId, p_enabled: enabled })
+        : await supabase.rpc("set_shop_loyalty_module", { p_shop_id: shopId, p_enabled: enabled });
+    if (result.error) throw result.error;
+    (module === "sports" ? setSportsModules : setLoyaltyModules)((current) => ({
+      ...current,
+      [shopId]: enabled,
+    }));
   }
 
-  async function toggleLoyalty(shopId: string, enabled: boolean) {
-    if (demoDispatch && demoState) {
-      demoDispatch({
-        type: "settings.save",
-        settings: { ...demoState.settings, loyalty_enabled: enabled },
-      });
-      return;
-    }
-    setModuleBusy(shopId);
-    setError(null);
-    try {
-      const result = await supabase.rpc("set_shop_loyalty_module", {
-        p_shop_id: shopId,
-        p_enabled: enabled,
-      });
-      if (result.error) throw result.error;
-      setLoyaltyModules((current) => ({ ...current, [shopId]: enabled }));
-    } catch {
-      setError(t("plat.shops.loyaltyError"));
-    } finally {
-      setModuleBusy(null);
-    }
+  function openShops(filter: ShopFilter) {
+    setShopFilter(filter);
+    setSelectedShopId(null);
+    setPlatformTab("shops");
   }
 
-  async function inviteShopAdmin(e: React.FormEvent) {
-    e.preventDefault();
-    // Duplo envio criaria dois convites para o mesmo e-mail.
-    if (inviteBusy) return;
-    setInviteBusy(true);
-    setInviteMessage(null);
-    setError(null);
-    try {
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) throw sessionError;
-      const token = sessionData.session?.access_token;
-      if (!token) throw new Error(t("plat.invite.invalidSession"));
+  function openShop(shopId: string) {
+    setShopFilter("all");
+    setSelectedShopId(shopId);
+    setPlatformTab("shops");
+  }
 
-      const { data, error: fnError } = await supabase.functions.invoke<InviteResult>(
-        "invite-shop-admin",
-        {
-          body: {
-            email: inviteEmail.trim(),
-            barbershop_id: inviteShopId,
-            full_name: inviteName.trim() || undefined,
-            role: inviteRole,
-            ownership_percent: inviteRole === "owner" ? Number(inviteOwnership) : undefined,
-          },
+  function openInvite(shopId?: string | null) {
+    setInviteShopId(shopId ?? null);
+    setInviteOpen(true);
+  }
+
+  function openNewShop() {
+    setNewShopOpen(true);
+  }
+
+  function showNewShop(shop: Tables<"barbershops"> | null) {
+    setNewShopOpen(false);
+    setShopFilter("all");
+    setPlatformTab("shops");
+    if (!shop) return;
+    setSelectedShopId(shop.id);
+    setHighlightId(shop.id);
+    window.setTimeout(() => setHighlightId(null), 2500);
+  }
+
+  const counts = useMemo(() => countByShop(memberships), [memberships]);
+
+  const attention: AttentionItem[] = useMemo(() => {
+    if (loading) return [];
+    const items: AttentionItem[] = [];
+    if (!demoMode && waStatus === "error") {
+      items.push({
+        id: "wa",
+        tone: "danger",
+        icon: MessageCircleOff,
+        title: t("plat.att.waError"),
+        description: t("plat.att.waErrorHint"),
+        action: {
+          label: t("visual.retry"),
+          onClick: () => waRef.current?.recheck(),
+          icon: RefreshCw,
         },
-      );
-
-      if (fnError) throw fnError;
-      if (data?.error) throw new Error(data.error);
-
-      const shopLabel = data?.barbershop?.name ?? t("plat.invite.shopFallback");
-      if (data?.created && data.temporary_password) {
-        setInviteMessage(
-          t("plat.invite.created", {
-            email: data.email ?? inviteEmail,
-            shop: shopLabel,
-            password: data.temporary_password,
-          }),
-        );
-      } else {
-        setInviteMessage(
-          t(data?.status === "pending" ? "plat.invite.linkedPending" : "plat.invite.linked", {
-            email: data?.email ?? inviteEmail,
-            shop: shopLabel,
-            role:
-              inviteRole === "owner"
-                ? t("plat.invite.roleOwner")
-                : inviteRole === "associate"
-                  ? t("plat.invite.roleAssociate")
-                  : t("plat.invite.roleEmployee"),
-          }),
-        );
-      }
-      setInviteEmail("");
-      setInviteName("");
-    } catch (err) {
-      setError(friendlyAuthError(err, t("plat.invite.error")));
-    } finally {
-      setInviteBusy(false);
+      });
     }
-  }
+    // "Conectando" também é pendência: é o estado enquanto ninguém leu o código, e pode durar.
+    if (
+      !demoMode &&
+      (waStatus === "disconnected" || waStatus === "qr" || waStatus === "connecting")
+    ) {
+      const waiting = waStatus !== "disconnected";
+      items.push({
+        id: "wa",
+        tone: waiting ? "pending" : "danger",
+        icon: waiting ? QrCode : MessageCircleOff,
+        title:
+          waStatus === "qr"
+            ? t("plat.att.waQr")
+            : waStatus === "connecting"
+              ? t("plat.att.waConnecting")
+              : t("plat.att.waOff"),
+        description: t("plat.wa.consequence"),
+        action: {
+          label: waiting ? t("plat.wa.showCode") : t("plat.att.waConnect"),
+          onClick: () => waRef.current?.connect(),
+          icon: QrCode,
+        },
+      });
+    }
+    for (const shop of activeShopsWithoutAdmin(shops, counts)) {
+      items.push({
+        id: `admin-${shop.id}`,
+        tone: "warning",
+        icon: UserX,
+        title: t("plat.att.noAdmin", { name: shop.name }),
+        description: t("plat.att.noAdminHint"),
+        action: {
+          label: t("plat.shop.addPerson"),
+          onClick: () => openInvite(shop.id),
+          icon: UserPlus,
+        },
+      });
+    }
+    // Barbearia suspensa não entra: é decisão do administrador, não pendência. Ela aparece
+    // no cartão "Suspensas" (que abre a lista filtrada) e no selo cinza de pausa.
+    return items;
+  }, [loading, demoMode, waStatus, shops, counts, t]);
 
-  const normalizedSearch = shopSearch.trim().toLocaleLowerCase("pt-BR");
-  const filteredShops = shops.filter(
-    (shop) =>
-      (shopStatus === "all" || shop.status === shopStatus) &&
-      `${shop.name} ${shop.slug}`.toLocaleLowerCase("pt-BR").includes(normalizedSearch),
-  );
   const demoShop = shops.find((shop) => shop.id === demoShopId) ?? null;
   // Na demonstração, a visão Plataforma representa a mesma barbearia fictícia
   // das visões Cliente e Barbearia. Assim, a opção visual salva no editor pode
@@ -447,6 +432,15 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       )
     : null;
 
+  const navItems = [
+    { id: "overview" as const, label: t("plat.tabs.home"), icon: LayoutDashboard },
+    { id: "shops" as const, label: t("plat.tabs.shops"), icon: Store },
+    { id: "permissions" as const, label: t("plat.tabs.permissions"), icon: KeyRound },
+    { id: "insights" as const, label: t("plat.tabs.insights"), icon: BarChart3 },
+  ];
+  const activeNavIndex = navItems.findIndex((item) => item.id === platformTab);
+  const accountName = profile.profile?.full_name || profile.user.email || t("plat.account.role");
+
   return (
     <div
       className={`arena-workspace platform-workspace min-h-screen bg-background text-foreground ${brandFontScopeClass(demoBrandSettings?.font_scope)} ${brandCornerClass(demoBrandSettings?.corner_style)} ${demoBrandSettings?.floating_chrome ? "brand-chrome-floating" : ""}`}
@@ -460,7 +454,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
           faces={demoBrandSettings.custom_font_faces}
         />
       )}
-      <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur-xl px-4 py-4 flex items-center justify-between">
+      <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur-xl px-4 py-3 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-bold text-gold">{t("plat.header.eyebrow")}</p>
           <h1 className="break-words text-lg font-extrabold leading-tight tracking-tight max-[379px]:text-base">
@@ -476,111 +470,66 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
               <DemoRoleSelector />
             </>
           ) : (
-            <>
-              <span className="hidden text-xs text-muted-foreground sm:inline">
-                {profile.profile?.full_name ?? profile.user.email}
-              </span>
-              <Link
-                to="/shop"
-                aria-label={t("plat.header.openShop")}
-                className="app-icon-button sm:hidden!"
-              >
-                <Building2 size={20} />
-              </Link>
-              <Link
-                to="/shop"
-                aria-label={t("plat.header.openShop")}
-                className="hidden min-h-11 items-center px-2 text-xs font-semibold text-muted-foreground hover:text-foreground sm:inline-flex"
-              >
-                {t("plat.header.shop")}
-              </Link>
-              <button
-                onClick={signOut}
-                aria-label={t("plat.header.signOut")}
-                className="app-icon-button"
-              >
-                <LogOut size={18} />
-              </button>
-            </>
+            <PlatformAccountMenu
+              name={accountName}
+              email={profile.user.email}
+              onSignOut={() => void signOut()}
+            />
           )}
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl space-y-6 p-4 pb-24">
-        <div key={platformTab} className="mb-panel space-y-6">
-          <nav
-            aria-label={t("plat.tabs.aria")}
-            className="grid grid-cols-4 gap-1 rounded-2xl border border-border/70 bg-card/80 p-1.5 shadow-sm"
-          >
-            {[
-              { id: "overview" as const, label: t("plat.tabs.overview"), icon: LayoutDashboard },
-              { id: "shops" as const, label: t("plat.tabs.shops"), icon: Building2 },
-              { id: "permissions" as const, label: t("plat.tabs.permissions"), icon: ShieldAlert },
-              { id: "insights" as const, label: t("plat.tabs.insights"), icon: MessageSquareText },
-            ].map(({ id, label, icon: Icon }) => (
-              <button
-                key={id}
-                type="button"
-                aria-pressed={platformTab === id}
-                onClick={() => setPlatformTab(id)}
-                className="flex min-h-14 flex-col items-center justify-start gap-1 rounded-xl px-1 pt-2.5 pb-2 text-xs font-bold max-[379px]:text-[0.6875rem] text-muted-foreground transition-all aria-pressed:bg-primary aria-pressed:text-primary-foreground"
-              >
-                <Icon className="size-4 shrink-0" />
-                <span className="text-center leading-tight">{label}</span>
-              </button>
-            ))}
-          </nav>
+      <main ref={mainRef} className="mx-auto w-full max-w-5xl space-y-6 p-4">
+        {/* Sem nenhuma barbearia carregada, o erro aparece no lugar do conteúdo (Início e
+            Barbearias), nunca como "Nenhuma barbearia ainda". Aqui só nas outras abas ou
+            quando os números na tela ficaram desatualizados. */}
+        {loadError && (shops.length > 0 || !["overview", "shops"].includes(platformTab)) && (
+          <Notice
+            tone="danger"
+            title={loadError}
+            action={{
+              label: t("visual.retry"),
+              onClick: () => void loadShops(shops.length ? "refresh" : "initial"),
+              icon: RefreshCw,
+            }}
+          />
+        )}
 
+        <div key={platformTab} className="mb-panel space-y-6">
           {platformTab === "overview" && (
             <>
+              <div className="app-section-title">
+                <LayoutDashboard aria-hidden />
+                <h2>{t("plat.tabs.overview")}</h2>
+              </div>
+              {/* "Tudo em ordem" só com os dados carregados e o WhatsApp conectado (fora da demo). */}
+              <AttentionList
+                items={attention}
+                allClear={
+                  !loading && !loadError && shops.length > 0 && (demoMode || waStatus === "open")
+                }
+                max={3}
+              />
               <PlatformDashboard
                 shops={shops}
                 memberships={memberships}
-                sportsModules={sportsModules}
                 loading={loading}
+                loadError={loadError}
+                onRetry={() => void loadShops()}
+                updatedAt={updatedAt}
+                refreshing={refreshing}
+                onRefresh={() => void loadShops("refresh")}
+                onOpenShops={openShops}
+                onOpenShop={openShop}
+                onCreateShop={openNewShop}
               />
-              {!demoMode && <PlatformWhatsAppCard />}
-              {demoMode ? (
-                <section className="space-y-3 rounded-3xl border border-primary/20 bg-card p-5">
-                  <div className="flex items-center gap-2">
-                    <FlaskConical size={18} className="text-primary" />
-                    <h2 className="text-sm font-semibold">{t("plat.demo.title")}</h2>
-                  </div>
-                  <p className="text-sm leading-relaxed text-muted-foreground">
-                    {t("plat.demo.body")}
-                  </p>
-                </section>
-              ) : (
-                <DemoTourHub
-                  shopId={demoShopId}
-                  shopName={shops.find((shop) => shop.id === demoShopId)?.name}
-                  disabled={!demoShopId}
-                  onPreviewLogin={() => void openLoginTour()}
-                >
-                  <label className="block space-y-1.5 text-xs font-semibold text-muted-foreground">
-                    {t("plat.tour.shopLabel")}
-                    <select
-                      value={demoShopId}
-                      onChange={(event) => setDemoShopId(event.target.value)}
-                      className="min-h-12 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      {shops.map((shop) => (
-                        <option key={shop.id} value={shop.id}>
-                          {shop.name}
-                          {shop.status === "suspended" ? t("plat.shops.suspendedSuffix") : ""}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </DemoTourHub>
-              )}
             </>
           )}
 
           {platformTab === "insights" && (
             <div className="space-y-6">
               <div className="app-section-title">
-                <MessageSquareText aria-hidden="true" />
+                <BarChart3 aria-hidden />
                 <h2>{t("plat.insights.title")}</h2>
               </div>
               <BusinessInsights />
@@ -590,430 +539,183 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
           )}
 
           {platformTab === "permissions" && (
-            <div className="mb-panel">
-              <PlatformPermissionsEditor shops={shops} demoMode={demoMode} />
+            <div className="app-section-title">
+              <KeyRound aria-hidden />
+              <h2>{t("plat.tabs.permissions")}</h2>
             </div>
+          )}
+          {platformTab === "permissions" && (
+            <PlatformPermissionsEditor
+              shops={shops}
+              demoMode={demoMode}
+              shopId={permShopId}
+              onShopChange={setPermShopId}
+            />
+          )}
+          {/* Todos os gerentes de conta juntos: quem cuida de quais barbearias, num lugar só. */}
+          {platformTab === "permissions" && !demoMode && shops.length > 0 && (
+            <section className="rounded-3xl border border-border bg-card p-4 sm:p-5">
+              <AccountManagersPanel shops={shops} headingAs="h2" />
+            </section>
           )}
 
           {platformTab === "shops" && (
-            <div className="space-y-6">
-              <section className="space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="app-section-title">
-                    <Building2 aria-hidden="true" />
-                    <h2>{t("plat.shops.title")}</h2>
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {t("plat.shops.count", { shown: filteredShops.length, total: shops.length })}
-                  </span>
-                </div>
-                <div className="grid gap-2 sm:grid-cols-[1fr_180px]">
-                  <label className="relative">
-                    <span className="sr-only">{t("plat.shops.search")}</span>
-                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <input
-                      type="search"
-                      value={shopSearch}
-                      onChange={(event) => setShopSearch(event.target.value)}
-                      placeholder={t("plat.shops.searchPlaceholder")}
-                      className="w-full rounded-xl border border-input bg-background py-3 pl-10 pr-3 text-sm"
-                    />
-                  </label>
-                  <select
-                    aria-label={t("plat.shops.filterAria")}
-                    value={shopStatus}
-                    onChange={(event) => setShopStatus(event.target.value as typeof shopStatus)}
-                    className="rounded-xl border border-input bg-background px-3 py-3 text-sm"
-                  >
-                    <option value="all">{t("plat.shops.filterAll")}</option>
-                    <option value="active">{t("plat.shops.filterActive")}</option>
-                    <option value="suspended">{t("plat.shops.filterSuspended")}</option>
-                  </select>
-                </div>
-
-                {loading ? (
-                  <p className="text-sm text-muted-foreground">{t("plat.common.loading")}</p>
-                ) : shops.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">{t("plat.shops.empty")}</p>
-                ) : filteredShops.length === 0 ? (
-                  <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-                    {t("plat.shops.noMatch")}
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {filteredShops.map((shop) => {
-                      const shopMemberships = memberships.filter(
-                        (membership) => membership.barbershop_id === shop.id,
-                      );
-                      const customers = shopMemberships.filter(
-                        (membership) => membership.role === "customer",
-                      ).length;
-                      const admins = shopMemberships.filter(
-                        (membership) => membership.role === "shop_admin",
-                      ).length;
-                      const statusPill = (
-                        <span
-                          className={`status-pill ${
-                            shop.status === "active" ? "status-confirmed" : "status-cancelled"
-                          }`}
-                        >
-                          {shop.status === "active"
-                            ? t("plat.shops.active")
-                            : t("plat.shops.suspended")}
-                        </span>
-                      );
-                      return (
-                        <div
-                          key={shop.id}
-                          className="grid gap-3 rounded-2xl border border-border bg-card px-4 py-4 sm:grid-cols-[1fr_auto] sm:items-center"
-                        >
-                          <div>
-                            <div className="flex items-start justify-between gap-2 sm:block">
-                              <p className="min-w-0 text-sm font-bold">{shop.name}</p>
-                              <span className="shrink-0 sm:hidden">{statusPill}</span>
-                            </div>
-                            <label className="my-3 flex items-center gap-3 text-sm">
-                              <Switch
-                                checked={sportsModules[shop.id] ?? false}
-                                disabled={moduleBusy !== null}
-                                onCheckedChange={(enabled) => void toggleSports(shop.id, enabled)}
-                                aria-label={t("plat.shops.sportsAria", { name: shop.name })}
-                              />
-                              {t("plat.shops.sports")}
-                            </label>
-                            <label className="mb-3 flex items-center gap-3 text-sm">
-                              <Switch
-                                checked={loyaltyModules[shop.id] ?? false}
-                                disabled={moduleBusy !== null}
-                                onCheckedChange={(enabled) => void toggleLoyalty(shop.id, enabled)}
-                                aria-label={t("plat.shops.loyaltyAria", { name: shop.name })}
-                              />
-                              <span>
-                                {t("plat.shops.loyalty")}
-                                <span className="block text-xs text-muted-foreground">
-                                  {t("plat.shops.loyaltyHint")}
-                                </span>
-                              </span>
-                            </label>
-                            <p className="text-xs text-muted-foreground">/{shop.slug}</p>
-                            <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                              <span className="rounded-full bg-muted px-2 py-1">
-                                {t(
-                                  customers === 1
-                                    ? "plat.shops.customerOne"
-                                    : "plat.shops.customerMany",
-                                  {
-                                    count: customers,
-                                  },
-                                )}
-                              </span>
-                              <span className="rounded-full bg-muted px-2 py-1">
-                                {t(admins === 1 ? "plat.shops.adminOne" : "plat.shops.adminMany", {
-                                  count: admins,
-                                })}
-                              </span>
-                              <span className="rounded-full bg-muted px-2 py-1">
-                                {friendlyTimeZone(shop.timezone, intlLocale)}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2 sm:flex-col sm:items-stretch">
-                            <span className="hidden sm:flex sm:justify-end">{statusPill}</span>
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                statusTriggerRef.current = event.currentTarget;
-                                setStatusTarget(shop);
-                              }}
-                              aria-label={
-                                shop.status === "active"
-                                  ? t("plat.status.suspendAria", { name: shop.name })
-                                  : t("plat.status.reactivateAria", { name: shop.name })
-                              }
-                              className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-background px-3 text-xs font-bold hover:bg-muted"
-                            >
-                              {shop.status === "active" ? (
-                                <PauseCircle
-                                  className="size-4 text-destructive"
-                                  aria-hidden="true"
-                                />
-                              ) : (
-                                <PlayCircle className="size-4 text-primary" aria-hidden="true" />
-                              )}
-                              {shop.status === "active"
-                                ? t("plat.status.suspend")
-                                : t("plat.status.reactivate")}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void openBranding(shop)}
-                              className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-background px-3 text-xs font-bold hover:bg-muted"
-                            >
-                              <Palette className="size-4 text-primary" aria-hidden="true" />
-                              {t("plat.shops.customize")}
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </section>
-
-              <section className="space-y-4 rounded-3xl border border-border bg-card p-5">
-                <div className="flex items-center gap-2">
-                  <Plus size={16} className="text-primary" />
-                  <h3 className="text-sm font-semibold">{t("plat.newShop.title")}</h3>
-                </div>
-                <form onSubmit={createShop} className="space-y-3">
-                  <div>
-                    <label
-                      htmlFor={shopNameFieldId}
-                      className="block text-xs font-semibold text-muted-foreground"
-                    >
-                      {t("plat.newShop.name")}
-                    </label>
-                    <input
-                      id={shopNameFieldId}
-                      required
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder={t("plat.newShop.namePlaceholder")}
-                      className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor={shopSlugFieldId}
-                      className="block text-xs font-semibold text-muted-foreground"
-                    >
-                      {t("plat.newShop.slug")}
-                    </label>
-                    <input
-                      id={shopSlugFieldId}
-                      readOnly
-                      value={
-                        name
-                          .trim()
-                          .toLowerCase()
-                          .normalize("NFD")
-                          .replace(/[\u0300-\u036f]/g, "")
-                          .replace(/[^a-z0-9]+/g, "-")
-                          .replace(/^-+|-+$/g, "") || "…"
-                      }
-                      className="mt-1 w-full rounded-xl border border-input bg-muted/40 px-3 py-2 text-sm text-muted-foreground"
-                    />
-                    <p className="mt-1 text-[11px] text-muted-foreground">
-                      {t("plat.newShop.slugHint")}
-                    </p>
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={busy}
-                    className="min-h-11 w-full rounded-xl bg-primary py-3 text-xs font-semibold text-primary-foreground disabled:opacity-50"
-                  >
-                    {busy ? t("plat.newShop.busy") : t("plat.newShop.submit")}
-                  </button>
-                </form>
-              </section>
-
-              <section className="space-y-4 rounded-3xl border border-border bg-card p-5">
-                <div className="flex items-center gap-2">
-                  <UserPlus size={16} className="text-primary" />
-                  <h3 className="text-sm font-semibold">{t("plat.invite.title")}</h3>
-                </div>
-                <form onSubmit={inviteShopAdmin} className="space-y-3">
-                  <div>
-                    <label
-                      htmlFor={inviteEmailFieldId}
-                      className="block text-xs font-semibold text-muted-foreground"
-                    >
-                      {t("plat.invite.email")}
-                    </label>
-                    <input
-                      id={inviteEmailFieldId}
-                      required
-                      type="email"
-                      value={inviteEmail}
-                      onChange={(e) => setInviteEmail(e.target.value)}
-                      placeholder={t("plat.invite.emailPlaceholder")}
-                      className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor={inviteNameFieldId}
-                      className="block text-xs font-semibold text-muted-foreground"
-                    >
-                      {t("plat.invite.name")}
-                    </label>
-                    <input
-                      id={inviteNameFieldId}
-                      value={inviteName}
-                      onChange={(e) => setInviteName(e.target.value)}
-                      placeholder={t("plat.invite.optional")}
-                      className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor={inviteShopFieldId}
-                      className="block text-xs font-semibold text-muted-foreground"
-                    >
-                      {t("plat.common.shop")}
-                    </label>
-                    <select
-                      id={inviteShopFieldId}
-                      required
-                      value={inviteShopId}
-                      onChange={(e) => setInviteShopId(e.target.value)}
-                      className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground"
-                    >
-                      <option value="">{t("plat.invite.selectShop")}</option>
-                      {shops
-                        .filter((s) => s.status === "active")
-                        .map((shop) => (
-                          <option key={shop.id} value={shop.id}>
-                            {shop.name}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label
-                      htmlFor={inviteRoleFieldId}
-                      className="block text-xs font-semibold text-muted-foreground"
-                    >
-                      {t("plat.invite.roleAria")}
-                    </label>
-                    <select
-                      id={inviteRoleFieldId}
-                      value={inviteRole}
-                      onChange={(event) => setInviteRole(event.target.value as typeof inviteRole)}
-                      className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground"
-                    >
-                      <option value="employee">{t("plat.invite.optEmployee")}</option>
-                      <option value="associate">{t("plat.invite.optAssociate")}</option>
-                      <option value="owner">{t("plat.invite.optOwner")}</option>
-                    </select>
-                  </div>
-                  {inviteRole === "owner" && (
-                    <label className="block text-xs font-semibold text-muted-foreground">
-                      {t("plat.invite.ownership")}
-                      <input
-                        required
-                        type="number"
-                        min={0.01}
-                        max={99.99}
-                        step={0.01}
-                        value={inviteOwnership}
-                        onChange={(event) => setInviteOwnership(event.target.value)}
-                        className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground"
-                      />
-                      <span className="mt-1 block text-[11px] font-normal text-muted-foreground">
-                        {t("plat.invite.ownershipHint")}
-                      </span>
-                    </label>
-                  )}
-                  {inviteMessage && (
-                    <p className="text-sm text-primary" role="status">
-                      {inviteMessage}
-                    </p>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={inviteBusy || shops.length === 0}
-                    className="min-h-11 w-full rounded-xl bg-primary py-3 text-xs font-semibold text-primary-foreground disabled:opacity-50"
-                  >
-                    {inviteBusy ? t("plat.invite.busy") : t("plat.invite.submit")}
-                  </button>
-                </form>
-              </section>
-
-              {!demoMode && <AccountManagersPanel shops={shops} />}
-            </div>
-          )}
-
-          {error && (
-            <p className="text-sm text-destructive" role="alert">
-              {error}
-            </p>
+            <ShopsPanel
+              shops={shops}
+              memberships={memberships}
+              loading={loading}
+              loadError={loadError}
+              onRetry={() => void loadShops()}
+              sportsModules={sportsModules}
+              loyaltyModules={loyaltyModules}
+              demoMode={demoMode}
+              filter={shopFilter}
+              onFilterChange={setShopFilter}
+              selectedId={selectedShopId}
+              onSelect={setSelectedShopId}
+              highlightId={highlightId}
+              onNewShop={openNewShop}
+              onSetModule={setModule}
+              onCustomize={(shop) => void openBranding(shop)}
+              onToggleStatus={toggleStatus}
+              onAddPerson={(shopId) => openInvite(shopId)}
+              onPermissions={(shopId) => {
+                setPermShopId(shopId);
+                setSelectedShopId(null);
+                setPlatformTab("permissions");
+              }}
+              onTestAs={(shopId) => {
+                if (!demoMode) setDemoShopId(shopId);
+                setSelectedShopId(null);
+                setPlatformTab("overview");
+                setScrollToTour(true);
+              }}
+            />
           )}
         </div>
 
-        {!demoMode && !demoChrome && (
-          <section className="space-y-3">
-            <div className="flex items-center gap-2">
-              <KeyRound className="size-4 text-gold" />
-              <h2 className="text-sm font-semibold">{t("plat.account.title")}</h2>
-            </div>
-            <p className="text-xs text-muted-foreground">{t("plat.account.hint")}</p>
-            <ChangePasswordCard />
-            <LanguageSettingsCard />
-          </section>
+        {/* Fica montado nas outras abas (escondido) para a lista de atenção e o contador
+            da barra saberem o estado do WhatsApp em qualquer aba. */}
+        {!demoMode && (
+          <PlatformWhatsAppCard
+            ref={waRef}
+            onStatusChange={setWaStatus}
+            className={platformTab === "overview" ? undefined : "hidden"}
+          />
+        )}
+        {/* Sem barbearias por falha de carga, o "Testar como…" não tem com o que testar. */}
+        {platformTab === "overview" && !(loadError && shops.length === 0) && (
+          <div ref={tourRef} className="scroll-mt-4">
+            {demoMode ? (
+              <DemoTourHub
+                shopId={demoState?.shop.id ?? ""}
+                onSelectRole={demoChrome?.setRole}
+                activeRole={demoChrome?.role}
+                onPreviewLogin={() => void openLoginTour()}
+              />
+            ) : (
+              <DemoTourHub
+                shopId={demoShopId}
+                disabled={!demoShopId}
+                onPreviewLogin={() => void openLoginTour()}
+              >
+                {shops.length > 0 && (
+                  <label className="flex min-h-12 items-center gap-2 rounded-2xl border border-border bg-background ps-3">
+                    <PersonAvatar
+                      name={demoShop?.name ?? "?"}
+                      size="xs"
+                      seed={demoShopId || undefined}
+                    />
+                    <span className="sr-only">{t("demo.hub.shopLabel")}</span>
+                    <select
+                      value={demoShopId}
+                      onChange={(event) => setDemoShopId(event.target.value)}
+                      className="min-h-11 min-w-0 flex-1 rounded-2xl bg-transparent! pe-3 text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      {shops.map((shop) => (
+                        <option key={shop.id} value={shop.id}>
+                          {shop.name}
+                          {shop.status === "suspended" ? t("plat.shops.suspendedSuffix") : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+              </DemoTourHub>
+            )}
+          </div>
         )}
       </main>
 
-      <AlertDialog
-        open={statusTarget !== null}
-        onOpenChange={(open) => {
-          if (!open && !statusBusy) setStatusTarget(null);
-        }}
+      <nav
+        className="app-mobile-nav app-mobile-nav-floating fixed left-4 right-4 z-40 mx-auto grid max-w-3xl overflow-hidden"
+        style={{ gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))` }}
+        aria-label={t("plat.tabs.aria")}
       >
-        <AlertDialogContent
-          className="max-w-md rounded-[var(--panel-radius)]"
-          onCloseAutoFocus={(event) => {
-            event.preventDefault();
-            statusTriggerRef.current?.focus();
+        <span
+          aria-hidden
+          className="app-mobile-nav-indicator"
+          style={{
+            width: `calc((100% - 0.9rem - ${(navItems.length - 1) * 0.3}rem) / ${navItems.length})`,
+            transform: `translateX(calc(${Math.max(0, activeNavIndex)} * (100% + 0.3rem)))`,
+            opacity: activeNavIndex >= 0 ? 1 : 0,
           }}
-        >
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {statusTarget?.status === "active"
-                ? t("plat.status.suspendTitle", {
-                    name: statusTarget?.name ?? t("plat.status.theShop"),
-                  })
-                : t("plat.status.reactivateTitle", {
-                    name: statusTarget?.name ?? t("plat.status.theShop"),
+        />
+        {navItems.map(({ id, icon: Icon, label }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setPlatformTab(id)}
+            aria-pressed={platformTab === id}
+            aria-current={platformTab === id ? "page" : undefined}
+            className={`relative z-10 flex min-w-0 flex-col items-center justify-center px-0.5 py-2.5 ${
+              platformTab === id ? "app-nav-current" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <span className="relative mb-1.5">
+              <Icon
+                className={`h-5 w-5 transition-transform duration-300 ease-out ${platformTab === id ? "scale-110" : ""}`}
+                aria-hidden
+              />
+              {id === "overview" && platformTab !== "overview" && (
+                <CountBadge
+                  count={attention.length}
+                  label={t(attention.length === 1 ? "plat.att.countOne" : "plat.att.countMany", {
+                    count: attention.length,
                   })}
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-left text-sm leading-relaxed">
-              {statusTarget?.status === "active"
-                ? t("plat.status.suspendBody")
-                : t("plat.status.reactivateBody")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2">
-            <button
-              type="button"
-              disabled={statusBusy}
-              onClick={() => setStatusTarget(null)}
-              className="min-h-11 rounded-xl border border-border px-4 text-sm font-semibold disabled:opacity-50"
-            >
-              {t("plat.common.back")}
-            </button>
-            <button
-              type="button"
-              disabled={statusBusy}
-              onClick={() => statusTarget && void toggleStatus(statusTarget)}
-              className={`action-button min-h-11 disabled:opacity-50 ${
-                statusTarget?.status === "active" ? "action-danger" : "action-confirm"
-              }`}
-            >
-              {statusTarget?.status === "active" ? (
-                <PauseCircle className="size-4" aria-hidden="true" />
-              ) : (
-                <PlayCircle className="size-4" aria-hidden="true" />
+                  className="absolute -right-3 -top-2"
+                />
               )}
-              {statusBusy
-                ? t("plat.common.saving")
-                : statusTarget?.status === "active"
-                  ? t("plat.status.suspendConfirm")
-                  : t("plat.status.reactivateConfirm")}
-            </button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </span>
+            <span className="max-w-full truncate text-xs font-semibold max-[379px]:text-[0.6875rem] max-[379px]:tracking-tight">
+              {label}
+            </span>
+          </button>
+        ))}
+      </nav>
+
+      <NewShopDialog
+        open={newShopOpen}
+        onOpenChange={setNewShopOpen}
+        onCreate={createShop}
+        onCustomize={(shop) => {
+          showNewShop(shop);
+          void openBranding(shop);
+        }}
+        onShow={showNewShop}
+        demoMode={demoMode}
+      />
+
+      <InviteMemberDialog
+        open={inviteOpen}
+        onOpenChange={(open) => {
+          setInviteOpen(open);
+          if (!open) void loadShops("refresh");
+        }}
+        shops={shops}
+        initialShopId={inviteShopId}
+        demoMode={demoMode}
+      />
 
       <Dialog
         open={!!brandShop}
@@ -1021,19 +723,33 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
           if (!open) {
             setBrandShop(null);
             setBrandSettings(null);
+            setBrandError(null);
           }
         }}
       >
-        <DialogContent className="max-h-[92dvh] w-[calc(100vw-1.5rem)] max-w-2xl overflow-hidden rounded-3xl border-border bg-card p-0">
-          <DialogScrollArea className="grid max-h-[calc(92dvh-2px)] gap-4 overflow-y-auto p-5 sm:p-6">
-            <DialogTitle className="text-lg font-extrabold tracking-tight">
+        <DialogContent
+          aria-describedby={undefined}
+          className="flex max-h-[92dvh] w-[calc(100vw-1.5rem)] max-w-2xl flex-col gap-0 overflow-hidden rounded-3xl border-border bg-card p-0"
+        >
+          {/* Cabeçalho fixo fora da rolagem: o X não cobre a prévia, que gruda logo abaixo. */}
+          <div className="flex min-h-14 shrink-0 items-center border-b border-border px-5 pr-14 sm:px-6">
+            <DialogTitle className="text-lg font-extrabold leading-tight tracking-tight">
               {t("plat.brand.title", { name: brandShop?.name ?? t("plat.brand.shopFallback") })}
             </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              {t("plat.brand.hint")}
-            </DialogDescription>
-            {brandLoading || !brandShop || !brandSettings ? (
-              <p className="text-sm text-muted-foreground">{t("plat.brand.loading")}</p>
+          </div>
+          <DialogScrollArea className="grid min-h-0 flex-1 gap-4 overflow-y-auto p-5 sm:p-6">
+            {brandError ? (
+              <Notice
+                tone="danger"
+                title={brandError}
+                action={{
+                  label: t("visual.retry"),
+                  onClick: () => brandShop && void openBranding(brandShop),
+                  icon: RefreshCw,
+                }}
+              />
+            ) : brandLoading || !brandShop || !brandSettings ? (
+              <LoadingState variant="cards" count={2} label={t("plat.brand.loading")} />
             ) : (
               <BrandIdentityEditor
                 key={brandShop.id}

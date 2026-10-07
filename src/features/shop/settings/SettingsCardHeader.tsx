@@ -1,8 +1,10 @@
-import type { ComponentType, ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
+import { SectionHeader } from "@/components/visual";
 
 type SettingsCardHeaderProps = {
-  /** Ícone do lucide-react, desenhado em 16px ao lado do título. */
-  icon: ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  /** Ícone do lucide-react, mostrado no quadrado de 40 px ao lado do título. */
+  icon: LucideIcon;
   title: ReactNode;
   /** id do h3, para aria-labelledby do cartão. */
   id?: string;
@@ -11,33 +13,35 @@ type SettingsCardHeaderProps = {
   intro?: ReactNode;
   /** id do parágrafo de apoio, para aria-describedby. */
   introId?: string;
+  /** Selo de estado ou ação curta à direita do título. */
+  aside?: ReactNode;
 };
 
 /**
- * Cabeçalho único dos cartões de Ajustes: chamada opcional em text-xs,
- * título em negrito de 16px com ícone e texto de apoio. Mantém a mesma
- * hierarquia de Fuso horário, Forma dos horários e Espera.
+ * Cabeçalho dos cartões de Ajustes no padrão único do sistema (`SectionHeader`): ícone em
+ * quadrado de 40 px, título, uma linha de apoio e espaço à direita para um selo. Mantido para
+ * os cartões que ainda o importam; cartões novos podem usar `SectionHeader` direto.
  */
 export function SettingsCardHeader({
-  icon: Icon,
+  icon,
   title,
   id,
   eyebrow,
   intro,
   introId,
+  aside,
 }: SettingsCardHeaderProps) {
   return (
-    <div>
-      {eyebrow && <p className="text-xs text-muted-foreground">{eyebrow}</p>}
-      <h3 id={id} className="flex items-center gap-2 font-bold">
-        <Icon className="size-4 shrink-0" aria-hidden />
-        {title}
-      </h3>
-      {intro && (
-        <p id={introId} className="mt-1 text-sm text-muted-foreground">
-          {intro}
-        </p>
-      )}
+    <div className="space-y-1">
+      {eyebrow && <p className="text-xs font-semibold text-muted-foreground">{eyebrow}</p>}
+      <SectionHeader
+        icon={icon}
+        title={title}
+        id={id}
+        description={intro}
+        descriptionId={introId}
+        aside={aside}
+      />
     </div>
   );
 }

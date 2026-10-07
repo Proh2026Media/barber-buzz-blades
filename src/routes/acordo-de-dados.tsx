@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import type { ReactNode } from "react";
-import { LegalPageShell } from "@/features/legal/LegalPageShell";
+import { LegalPageShell, LegalSection as Section } from "@/features/legal/LegalPageShell";
+import { LegalRolesDiagram } from "@/features/legal/LegalVisuals";
 import { legalHead } from "@/features/legal/legal-head";
 import { useLegalI18n } from "@/features/legal/legal-locale";
 import { PLATFORM_OPERATOR } from "@/features/legal/operator";
@@ -27,17 +27,6 @@ export const Route = createFileRoute("/acordo-de-dados")({
   component: AcordoDeDadosPage,
 });
 
-const headingClass = "text-lg font-bold text-foreground";
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="space-y-3">
-      <h2 className={headingClass}>{title}</h2>
-      {children}
-    </section>
-  );
-}
-
 function AcordoDeDadosPage() {
   const { lang } = Route.useSearch();
   const { t, locale } = useLegalI18n(lang);
@@ -45,7 +34,10 @@ function AcordoDeDadosPage() {
   // Mantém o idioma pedido no endereço ao abrir os outros documentos.
   const withLang = (path: string) => (lang ? `${path}?lang=${encodeURIComponent(lang)}` : path);
   const emailLink = (
-    <a href={`mailto:${PLATFORM_OPERATOR.privacyEmail}`} className={legalLinkClass}>
+    <a
+      href={`mailto:${PLATFORM_OPERATOR.privacyEmail}`}
+      className={`${legalLinkClass} whitespace-nowrap`}
+    >
       {PLATFORM_OPERATOR.privacyEmail}
     </a>
   );
@@ -69,7 +61,7 @@ function AcordoDeDadosPage() {
       </a>
     ),
     name: <strong>{PLATFORM_OPERATOR.legalName}</strong>,
-    cnpj: <strong>{PLATFORM_OPERATOR.cnpj}</strong>,
+    cnpj: <strong className="whitespace-nowrap">{PLATFORM_OPERATOR.cnpj}</strong>,
   };
 
   const paragraph = (key: MessageKey) => <p>{legalRichText(t(key), nodes)}</p>;
@@ -83,6 +75,7 @@ function AcordoDeDadosPage() {
 
   return (
     <LegalPageShell
+      doc="dpa"
       title={t("legal.dpaLink")}
       updatedAt={DPA_VERSION}
       locale={locale}
@@ -91,6 +84,7 @@ function AcordoDeDadosPage() {
       {paragraph("legal.dpa.intro")}
 
       <Section title={t("legal.dpa.s1Title")}>
+        <LegalRolesDiagram t={t} showTitle={false} />
         {paragraph("legal.dpa.s1Body")}
         {paragraph("legal.dpa.s1Own")}
         {paragraph("legal.dpa.s1Accept")}

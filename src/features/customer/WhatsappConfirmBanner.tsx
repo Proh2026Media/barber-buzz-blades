@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
-import { MessageCircle } from "lucide-react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { MessageCircle, ShieldCheck } from "lucide-react";
+import { IconTile } from "@/components/visual";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
@@ -42,15 +43,33 @@ function displayNumber(value: string) {
   return br ? `(${br[1]}) ${br[2]}-${br[3]}` : value;
 }
 
+/** Faixa lateral na cor do tom (estilo em linha: `.app-action-card` manda na borda). */
+const ACCENT_EDGE = {
+  borderInlineStartWidth: 4,
+  borderInlineStartColor: "var(--tone-line)",
+} as const;
+
 type Pending = { userId: string; number: string; optIn: boolean };
 
 type Props = {
   /** Demonstração: o aviso nunca aparece. */
   disabled?: boolean;
   variant?: "customer" | "owner";
+  /** Esconde o cartão sem perder o estado (ex.: enquanto outra etapa do cadastro está aberta). */
+  hidden?: boolean;
+  /** Avisa se há confirmação pendente (para o contador de etapas do cadastro). */
+  onVisibleChange?: (visible: boolean) => void;
+  /** Indicador de etapas, acima do título. */
+  header?: ReactNode;
 };
 
-export function WhatsappConfirmBanner({ disabled = false, variant = "customer" }: Props) {
+export function WhatsappConfirmBanner({
+  disabled = false,
+  variant = "customer",
+  hidden = false,
+  onVisibleChange,
+  header,
+}: Props) {
   const { t } = useI18n();
   const [pending, setPending] = useState<Pending | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -89,6 +108,11 @@ export function WhatsappConfirmBanner({ disabled = false, variant = "customer" }
     };
   }, [disabled, check]);
 
+  const visible = !disabled && Boolean(pending);
+  useEffect(() => {
+    onVisibleChange?.(visible);
+  }, [onVisibleChange, visible]);
+
   function later() {
     if (pending) dismiss(pending.userId);
     setPending(null);
@@ -100,7 +124,7 @@ export function WhatsappConfirmBanner({ disabled = false, variant = "customer" }
     if (!next) void check().then(setPending);
   }
 
-  if (disabled || !pending) return null;
+  if (disabled || !pending || hidden) return null;
 
   const owner = variant === "owner";
 
@@ -108,12 +132,12 @@ export function WhatsappConfirmBanner({ disabled = false, variant = "customer" }
     <>
       <section
         aria-labelledby="whatsapp-confirm-title"
-        className="app-action-card space-y-3 border border-amber-500/35 bg-card p-4"
+        className="app-action-card tone-warning space-y-3 p-4"
+        style={ACCENT_EDGE}
       >
+        {header}
         <div className="flex items-start gap-3">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-[var(--control-radius)] bg-amber-500/15 text-amber-700 dark:text-amber-400">
-            <MessageCircle className="size-5" aria-hidden="true" />
-          </span>
+          <IconTile icon={MessageCircle} tone="warning" />
           <div className="min-w-0">
             <h2
               id="whatsapp-confirm-title"
@@ -140,8 +164,9 @@ export function WhatsappConfirmBanner({ disabled = false, variant = "customer" }
             type="button"
             onClick={() => setDialogOpen(true)}
             aria-haspopup="dialog"
-            className="flex min-h-11 items-center justify-center rounded-[var(--button-radius)] bg-primary px-3 text-sm font-semibold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="flex min-h-11 items-center justify-center gap-1.5 rounded-[var(--button-radius)] bg-primary px-3 text-sm font-semibold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
+            <ShieldCheck className="size-4 shrink-0" aria-hidden />
             {t("dec.whats.confirm")}
           </button>
         </div>
@@ -150,21 +175,28 @@ export function WhatsappConfirmBanner({ disabled = false, variant = "customer" }
       <Dialog open={dialogOpen} onOpenChange={onDialogChange}>
         <DialogContent
           aria-describedby={undefined}
-          className="max-h-[calc(100dvh-2rem)] w-[calc(100vw-1.5rem)] max-w-md gap-3 overflow-y-auto rounded-[var(--panel-radius)] p-4 pt-12 sm:p-6 sm:pt-12"
+          className="max-h-[calc(100dvh-2rem)] w-[calc(100vw-1.5rem)] max-w-md gap-3 overflow-y-auto rounded-[var(--panel-radius)] p-4 sm:p-6"
         >
-          <DialogTitle className="sr-only">{t("dec.whats.dialogTitle")}</DialogTitle>
+          <DialogTitle className="flex items-center gap-3 pe-10 text-lg font-bold leading-snug">
+            <IconTile icon={MessageCircle} tone="warning" />
+            {t("dec.whats.dialogTitle")}
+          </DialogTitle>
           {!pending.optIn && (
             <p className="text-sm leading-relaxed text-muted-foreground">
               {t("dec.whats.optInNote")}
             </p>
           )}
-          <WhatsappProfileCard
-            demo={false}
-            disabled={false}
-            initialNumber={pending.number}
-            initialOptIn={pending.optIn}
-            initialVerified={false}
-          />
+          {/* O cartão de Meu perfil entra sem a moldura e sem o cabeçalho próprios ("WhatsApp ·
+              Não confirmado"): a janela já é o cartão e o título dela já diz isso. */}
+          <div className="[&>section]:border-0 [&>section]:bg-transparent [&>section]:p-0 [&>section]:shadow-none [&>section>div:first-child]:hidden">
+            <WhatsappProfileCard
+              demo={false}
+              disabled={false}
+              initialNumber={pending.number}
+              initialOptIn={pending.optIn}
+              initialVerified={false}
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </>

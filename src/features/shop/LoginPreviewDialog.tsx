@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { Monitor, Smartphone, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Eye, Monitor, Smartphone, X } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { StatusBadge } from "@/components/visual";
 import { useI18n } from "@/lib/i18n";
 import { LoginScreenPreview, type LoginScreenPreviewProps } from "./LoginScreenPreview";
 
@@ -13,28 +14,46 @@ type LoginPreviewDialogProps = {
 /** Prévia em tela cheia: desktop ou celular, como o cliente verá no /auth. */
 export function LoginPreviewDialog({ open, onOpenChange, preview }: LoginPreviewDialogProps) {
   const { t } = useI18n();
+  // A tela de entrada muda com a largura real do aparelho: no celular só a versão de
+  // celular é fiel, então a prévia começa (e fica) em "Celular" em telas pequenas.
+  const [wide, setWide] = useState(true);
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
+  useEffect(() => {
+    if (!open) return;
+    const media = window.matchMedia("(min-width: 768px)");
+    const sync = () => {
+      setWide(media.matches);
+      if (!media.matches) setDevice("mobile");
+    };
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="dialog-surface-page flex h-[100dvh] max-h-[100dvh] w-screen max-w-none translate-x-[-50%] translate-y-[-50%] flex-col gap-0 overflow-hidden !rounded-none border-0 bg-background p-0 [&>button]:hidden"
-        aria-describedby={undefined}
-      >
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-4 py-3">
-          <div className="min-w-0">
-            <DialogTitle className="truncate text-sm font-bold">
-              {t("brand.loginPreview.title")}
+      <DialogContent className="dialog-surface-page flex h-[100dvh] max-h-[100dvh] w-screen max-w-none translate-x-[-50%] translate-y-[-50%] flex-col gap-0 overflow-hidden !rounded-none border-0 bg-background p-0 [&>button]:hidden">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border bg-card px-4 py-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <DialogTitle className="truncate text-base font-bold">
+              {t("brand.loginPreview.titleEntry")}
             </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              {t("brand.loginPreview.description")}
+            <DialogDescription asChild>
+              <span>
+                <StatusBadge
+                  tone="neutral"
+                  icon={Eye}
+                  size="sm"
+                  label={t("brand.loginPreview.viewOnly")}
+                />
+              </span>
             </DialogDescription>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <div
               role="group"
               aria-label={t("brand.loginPreview.sizeAria")}
-              className="flex rounded-xl border border-border bg-muted/60 p-1"
+              className={wide ? "flex rounded-xl border border-border bg-muted/60 p-1" : "hidden"}
             >
               <button
                 type="button"
@@ -47,7 +66,7 @@ export function LoginPreviewDialog({ open, onOpenChange, preview }: LoginPreview
                 }`}
               >
                 <Monitor className="size-4" aria-hidden="true" />
-                {t("brand.loginPreview.desktop")}
+                {t("brand.loginPreview.computer")}
               </button>
               <button
                 type="button"

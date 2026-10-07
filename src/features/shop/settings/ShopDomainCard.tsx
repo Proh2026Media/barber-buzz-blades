@@ -1,10 +1,37 @@
-import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, Copy, Globe2, RefreshCw, Trash2 } from "lucide-react";
-import { SettingsCardHeader } from "@/features/shop/settings/SettingsCardHeader";
+import { useCallback, useEffect, useId, useState } from "react";
+import {
+  CheckCircle2,
+  Globe2,
+  Hourglass,
+  Loader2,
+  RefreshCw,
+  Save,
+  SearchCheck,
+  Trash2,
+  XCircle,
+} from "lucide-react";
+import {
+  ActionResult,
+  ConfirmDialog,
+  CopyField,
+  Field,
+  Hint,
+  LoadingState,
+  MoreDetails,
+  Notice,
+  STATE,
+  SectionHeader,
+  StatusBadge,
+  Steps,
+  Tag,
+  readableLink,
+  type ActionState,
+  type StepItem,
+} from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
-import { useI18n, type MessageKey } from "@/lib/i18n";
-import { PLATFORM_BASE_HOST, shopPublicOrigin } from "@/lib/shop/host";
+import { useI18n } from "@/lib/i18n";
 import { friendlyAuthError, readErrorCode } from "@/lib/auth/friendly-error";
+import { DOMAIN_BADGE } from "./domain-status";
 
 type DomainSettings = {
   shop_id: string;
@@ -24,13 +51,6 @@ type DomainSettings = {
     txt_value: string;
   } | null;
 };
-
-const statusKey = {
-  none: "integr.domain.status.none",
-  pending_dns: "integr.domain.status.pending_dns",
-  active: "integr.domain.status.active",
-  error: "integr.domain.status.error",
-} as const satisfies Record<DomainSettings["custom_domain_status"], MessageKey>;
 
 /** Resposta de erro da função shop-domain (campos usados na tradução). */
 type DomainErrorPayload = {
@@ -103,8 +123,29 @@ function translateDomainByCode(
   return friendlyAuthError({ error_code: code, message: payload.error ?? "" }, fallback);
 }
 
+/**
+ * O que a última conferência gravada (`domain_last_error`) diz dos registros. A função confere
+ * o TXT antes do CNAME: "TXT não encontrado" = registro 2 faltando (o 1 ainda não foi visto);
+ * "Aponte … (CNAME)" = TXT certo e registro 1 faltando. Outras frases ficam `null`.
+ */
+function lastCheckRecords(raw: string | null | undefined): RecordCheck | null {
+  const text = raw?.trim();
+  if (!text) return null;
+  if (/^TXT não encontrado em |^Registre o TXT em /i.test(text)) return { txt: false };
+  if (/^Aponte \S+ \(CNAME\)|^CNAME \S+ → \S+ ainda não propagou/i.test(text)) {
+    return { txt: true, cname: false };
+  }
+  return null;
+}
+
 /** Erro já traduzido para o usuário: não passa de novo pelo filtro de mensagens. */
-class DomainMessageError extends Error {}
+class DomainMessageError extends Error {
+  payload?: DomainErrorPayload & { txt_ok?: boolean; cname_ok?: boolean };
+  constructor(message: string, payload?: DomainMessageError["payload"]) {
+    super(message);
+    this.payload = payload;
+  }
+}
 
 function domainErrorText(err: unknown, fallback: string) {
   return err instanceof DomainMessageError ? err.message : friendlyAuthError(err, fallback);
@@ -114,42 +155,46 @@ type ShopDomainCardProps = {
   shopId: string;
 };
 
+type Result = { state: ActionState; text: string };
+/** `missing`: registro ainda não encontrado — usa a mesma cor e ícone do selo do cabeçalho. */
+type VerifyResult = { tone: "success" | "pending" | "danger"; text: string; missing?: boolean };
+type RecordCheck = { cname?: boolean; txt?: boolean };
+
 export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
   const { t } = useI18n();
+  const inputId = useId();
   const [settings, setSettings] = useState<DomainSettings | null>(null);
+  const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
   const [domainInput, setDomainInput] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState("");
-  const [copied, setCopied] = useState("");
+  const [action, setAction] = useState<"save" | "verify" | "clear" | null>(null);
+  const busy = action !== null;
+  const [saveResult, setSaveResult] = useState<Result | null>(null);
+  // Resultado da última conferência: fica na tela mesmo depois de recarregar os dados.
+  const [verifyResult, setVerifyResult] = useState<VerifyResult | null>(null);
+  const [checks, setChecks] = useState<RecordCheck>({});
+  const [removeOpen, setRemoveOpen] = useState(false);
 
-  const load = useCallback(async () => {
-    setError(null);
-    const { data, error: rpcError } = await supabase.rpc("get_shop_domain_settings", {
-      p_shop_id: shopId,
-    });
-    if (rpcError) {
-      setError(friendlyAuthError(rpcError));
-      return;
-    }
-    const row = data as DomainSettings;
-    setSettings(row);
-    setDomainInput(row.custom_domain ?? "");
-  }, [shopId]);
+  const load = useCallback(
+    async (quiet = false) => {
+      if (!quiet) setLoadState("loading");
+      const { data, error: rpcError } = await supabase.rpc("get_shop_domain_settings", {
+        p_shop_id: shopId,
+      });
+      if (rpcError || !data) {
+        if (!quiet) setLoadState("error");
+        return;
+      }
+      const row = data as DomainSettings;
+      setSettings(row);
+      setDomainInput(row.custom_domain ?? "");
+      setLoadState("ready");
+    },
+    [shopId],
+  );
 
   useEffect(() => {
     void load();
   }, [load]);
-
-  async function copyText(label: string, value: string) {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(label);
-      window.setTimeout(() => setCopied(""), 1500);
-    } catch {
-      setError(t("integr.domain.errCopy"));
-    }
-  }
 
   async function callShopDomain(body: Record<string, string>) {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -188,6 +233,7 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
               payload,
             )
           : t("integr.domain.errGeneric"),
+        payload,
       );
     }
     return payload;
@@ -195,9 +241,11 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
 
   async function saveDomain(event: React.FormEvent) {
     event.preventDefault();
-    setBusy(true);
-    setError(null);
-    setMessage("");
+    if (busy) return;
+    setAction("save");
+    setSaveResult(null);
+    setVerifyResult(null);
+    setChecks({});
     try {
       const payload = await callShopDomain({
         action: "set",
@@ -205,240 +253,376 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
         domain: domainInput.trim(),
       });
       if (payload.settings) setSettings(payload.settings);
-      else await load();
-      setMessage(
-        payload.warning
+      else await load(true);
+      setSaveResult({
+        state: payload.warning ? "pending" : "saved",
+        text: payload.warning
           ? t("integr.domain.savedWarning", {
               warning: t("fix.ajustes-marca.domainProxyPending"),
             })
-          : t("integr.domain.saved"),
-      );
+          : t("domainCard.saved"),
+      });
     } catch (err) {
-      setError(domainErrorText(err, t("integr.domain.errSave")));
+      setSaveResult({ state: "error", text: domainErrorText(err, t("integr.domain.errSave")) });
     } finally {
-      setBusy(false);
+      setAction(null);
     }
   }
 
+  /** Remove o domínio próprio; erro sobe para a janela de confirmação mostrar. */
   async function clearDomain() {
-    setBusy(true);
-    setError(null);
-    setMessage("");
+    setAction("clear");
     try {
       const payload = await callShopDomain({
         action: "clear",
         barbershop_id: shopId,
       });
       if (payload.settings) setSettings(payload.settings);
-      else await load();
+      else await load(true);
       setDomainInput("");
-      setMessage(
-        payload.warning
+      setVerifyResult(null);
+      setChecks({});
+      setSaveResult({
+        state: payload.warning ? "pending" : "saved",
+        text: payload.warning
           ? t("integr.domain.removedWarning", {
               warning: t("fix.ajustes-marca.domainProxyPending"),
             })
           : t("integr.domain.removed"),
-      );
-    } catch (err) {
-      setError(domainErrorText(err, t("integr.domain.errRemove")));
+      });
     } finally {
-      setBusy(false);
+      setAction(null);
     }
   }
 
   async function verifyDomain() {
-    setBusy(true);
-    setError(null);
-    setMessage("");
+    if (busy) return;
+    setAction("verify");
+    setVerifyResult(null);
     try {
       const payload = await callShopDomain({
         action: "verify",
         barbershop_id: shopId,
       });
       if (payload.settings) setSettings(payload.settings);
-      else await load();
-      setMessage(
+      else await load(true);
+      setChecks({ cname: true, txt: true });
+      setVerifyResult(
         payload.ok
-          ? payload.warning
-            ? t("integr.domain.verifiedWarning", {
-                warning: t("fix.ajustes-marca.domainProxyPending"),
-              })
-            : t("integr.domain.verifiedActive")
-          : payload.error || payload.error_code
-            ? translateDomainServerMessage(
-                payload.error ?? "",
-                t,
-                t("integr.domain.checkDnsHint"),
-                payload,
-              )
-            : t("integr.domain.checkDnsHint"),
+          ? {
+              tone: payload.warning ? "pending" : "success",
+              text: payload.warning
+                ? t("integr.domain.verifiedWarning", {
+                    warning: t("fix.ajustes-marca.domainProxyPending"),
+                  })
+                : t("domainCard.verify.ok"),
+            }
+          : {
+              tone: "pending",
+              text: payload.error
+                ? translateDomainServerMessage(payload.error, t, t("domainCard.verify.wait"))
+                : t("domainCard.verify.wait"),
+            },
       );
     } catch (err) {
-      setError(domainErrorText(err, t("integr.domain.errVerify")));
-      await load();
+      const payload = err instanceof DomainMessageError ? err.payload : undefined;
+      const code = readErrorCode(payload);
+      const dnsPending = code === "domain_txt_missing" || code === "domain_dns_pending";
+      if (dnsPending) {
+        const next = { cname: payload?.cname_ok, txt: payload?.txt_ok };
+        setChecks(next);
+        const missing = [next.cname === false ? 1 : null, next.txt === false ? 2 : null].filter(
+          (value): value is number => value !== null,
+        );
+        setVerifyResult({
+          tone: "pending",
+          missing: true,
+          text:
+            missing.length === 1
+              ? t("domainCard.verify.missingOne", { n: missing[0] })
+              : t("domainCard.verify.missingBoth"),
+        });
+      } else {
+        setVerifyResult({
+          tone: "danger",
+          text: domainErrorText(err, t("integr.domain.errVerify")),
+        });
+      }
+      // Recarrega o estado sem apagar o resultado da conferência.
+      await load(true);
     } finally {
-      setBusy(false);
+      setAction(null);
     }
   }
 
-  const platformUrl = settings?.platform_url ?? `https://….${PLATFORM_BASE_HOST}`;
-  const publicOrigin = settings
-    ? shopPublicOrigin({
-        slug: settings.shop_slug,
-        customDomain: settings.custom_domain,
-        customDomainStatus: settings.custom_domain_status,
-      })
-    : null;
-  const publicUrl = publicOrigin ? `${publicOrigin}/app` : null;
-  const customActive =
-    settings?.custom_domain_status === "active" && Boolean(settings.custom_domain);
-  const instructions = settings?.dns_instructions;
+  const status = settings?.custom_domain ? settings.custom_domain_status : "none";
+  const badge = DOMAIN_BADGE[status];
+  const instructions = settings?.custom_domain ? settings.dns_instructions : null;
+  const active = status === "active";
+  // Sem conferência nesta visita, a última gravada marca o cartão do registro que faltou.
+  const storedChecks = verifyResult ? null : lastCheckRecords(settings?.domain_last_error);
+  const knownChecks: RecordCheck =
+    storedChecks && checks.cname === undefined && checks.txt === undefined ? storedChecks : checks;
+  const storedMissing = storedChecks ? (storedChecks.txt === false ? 2 : 1) : null;
+  const recordOk = (key: keyof RecordCheck) => (active ? true : knownChecks[key]);
+  const autoLink = settings ? readableLink(settings.platform_url) : "";
+  // Só erro desconhecido mostra o texto da função, e recolhido em "Última conferência".
+  const lastError =
+    !verifyResult && !storedChecks && settings?.domain_last_error
+      ? translateDomainServerMessage(settings.domain_last_error, t, t("domainCard.verify.wait"))
+      : null;
+
+  const recordsDone = active || (knownChecks.cname === true && knownChecks.txt === true);
+  const steps: StepItem[] = [
+    { key: "domain", label: t("domainCard.step.domain"), status: "done" },
+    {
+      key: "records",
+      label: t("domainCard.step.records"),
+      status: recordsDone ? "done" : status === "error" ? "error" : "current",
+    },
+    {
+      key: "check",
+      label: t("domainCard.step.check"),
+      status: active ? "done" : recordsDone ? "current" : "upcoming",
+    },
+    { key: "live", label: t("domainCard.step.live"), status: active ? "done" : "upcoming" },
+  ];
+
+  function renderRecord(index: number, type: string, host: string, value: string, ok?: boolean) {
+    return (
+      <div
+        key={type}
+        className="min-w-0 space-y-2 rounded-2xl border border-border bg-background/60 p-3"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="flex items-center gap-2 text-sm font-bold">
+            {t("domainCard.record", { n: index })}
+            <Tag>{type}</Tag>
+          </p>
+          {ok === true && (
+            <StatusBadge {...STATE.active} size="sm" label={t("domainCard.record.found")} />
+          )}
+          {/* Ainda não visto: espera (âmbar), como o selo do domínio; vermelho só no erro. */}
+          {ok === false &&
+            (status === "error" ? (
+              <StatusBadge {...STATE.failed} size="sm" label={t("domainCard.record.missing")} />
+            ) : (
+              <StatusBadge
+                tone="pending"
+                icon={Hourglass}
+                size="sm"
+                label={t("domainCard.record.notYet")}
+              />
+            ))}
+        </div>
+        <CopyField label={t("domainCard.record.name")} value={host} mono />
+        <CopyField label={t("domainCard.record.value")} value={value} mono />
+      </div>
+    );
+  }
+
+  if (loadState !== "ready" || !settings) {
+    return (
+      <section className="app-action-card space-y-4 p-4 sm:p-5">
+        <SectionHeader icon={Globe2} title={t("domainCard.title")} />
+        {loadState === "error" ? (
+          <Notice
+            tone="danger"
+            title={t("domainCard.loadError")}
+            action={{ label: t("visual.retry"), icon: RefreshCw, onClick: () => void load() }}
+          />
+        ) : (
+          <LoadingState variant="lines" count={3} label={t("domainCard.loading")} />
+        )}
+      </section>
+    );
+  }
 
   return (
-    <section className="space-y-3 rounded-3xl border border-border bg-card p-4">
-      <SettingsCardHeader
+    <section className="app-action-card space-y-4 p-4 sm:p-5">
+      <SectionHeader
         icon={Globe2}
-        title={t("integr.domain.title")}
-        intro={t("integr.domain.intro")}
+        title={t("domainCard.title")}
+        description={settings.custom_domain ?? t("domainCard.intro")}
+        aside={<StatusBadge tone={badge.tone} icon={badge.icon} label={t(badge.label)} />}
       />
 
-      {publicUrl && (
-        <div className="space-y-2 rounded-2xl border border-primary/25 bg-primary/5 p-3">
-          <p className="text-xs font-semibold">
-            {customActive ? t("integr.domain.publicCustom") : t("integr.domain.publicAuto")}
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <code className="min-w-0 flex-1 truncate rounded-xl bg-muted/50 px-3 py-2 text-xs">
-              {publicUrl}
-            </code>
-            <button
-              type="button"
-              className="action-button"
-              onClick={() => void copyText("public", publicUrl)}
-            >
-              <Copy size={14} />
-              {copied === "public" ? t("integr.domain.copied") : t("integr.domain.copy")}
-            </button>
-          </div>
-        </div>
-      )}
+      {settings.custom_domain && <Steps steps={steps} label={t("domainCard.stepsLabel")} />}
 
-      <div className="space-y-2 rounded-2xl border border-border bg-background p-3">
-        <p className="text-xs font-semibold">{t("integr.domain.autoAddress")}</p>
-        <div className="flex flex-wrap items-center gap-2">
-          <code className="min-w-0 flex-1 truncate rounded-xl bg-muted/50 px-3 py-2 text-xs">
-            {platformUrl}
-          </code>
-          <button
-            type="button"
-            className="action-button"
-            onClick={() => void copyText("platform", platformUrl)}
-          >
-            <Copy size={14} />
-            {copied === "platform" ? t("integr.domain.copied") : t("integr.domain.copy")}
-          </button>
-        </div>
-      </div>
-
-      <form
-        onSubmit={saveDomain}
-        className="space-y-3 rounded-2xl border border-border bg-background p-3"
-      >
-        <p className="text-xs font-semibold">{t("integr.domain.custom")}</p>
-        <label htmlFor="custom-domain" className="block text-xs text-muted-foreground">
-          {t("integr.domain.example")}
-        </label>
-        <input
-          id="custom-domain"
-          value={domainInput}
-          onChange={(e) => setDomainInput(e.target.value)}
-          placeholder={t("integr.domain.placeholder")}
-          className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm"
-        />
-        {settings && settings.custom_domain_status !== "none" && (
-          <p className="text-xs text-muted-foreground">
-            {t("integr.domain.statusLabel")}{" "}
-            <span className="font-semibold text-foreground">
-              {t(statusKey[settings.custom_domain_status])}
-            </span>
-            {settings.domain_last_error
-              ? ` — ${translateDomainServerMessage(settings.domain_last_error, t, t("integr.domain.checkDnsHint"))}`
-              : null}
-          </p>
-        )}
-        <div className="flex flex-wrap gap-2">
-          <button type="submit" disabled={busy} className="action-button action-confirm">
-            {t("integr.domain.save")}
-          </button>
-          {settings?.custom_domain && (
-            <>
+      {/* 1 · Seu domínio */}
+      <form onSubmit={saveDomain} className="space-y-2">
+        <Field
+          id={inputId}
+          label={
+            settings.custom_domain
+              ? `1 · ${t("domainCard.step.domain")}`
+              : t("domainCard.field.label")
+          }
+          hint={t("integr.domain.example")}
+        >
+          {(props) => (
+            <div className="flex flex-wrap gap-2">
+              <input
+                {...props}
+                value={domainInput}
+                inputMode="url"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                onChange={(e) => setDomainInput(e.target.value)}
+                placeholder={t("integr.domain.placeholder")}
+                className="min-h-11 min-w-0 flex-1 basis-48 rounded-xl border border-border bg-background px-3 text-sm"
+              />
               <button
-                type="button"
-                disabled={busy}
-                className="action-button"
-                onClick={() => void verifyDomain()}
+                type="submit"
+                disabled={busy || !domainInput.trim()}
+                aria-busy={action === "save" || undefined}
+                className="action-button action-confirm flex-1 sm:flex-none"
               >
-                <RefreshCw size={14} />
-                {t("integr.domain.verify")}
+                {action === "save" ? (
+                  <Loader2 className="motion-safe:animate-spin" aria-hidden />
+                ) : (
+                  <Save aria-hidden />
+                )}
+                {action === "save" ? t("visual.result.saving") : t("integr.domain.save")}
               </button>
-              <button
-                type="button"
-                disabled={busy}
-                className="action-button action-danger"
-                onClick={() => void clearDomain()}
-              >
-                <Trash2 size={14} />
-                {t("integr.domain.remove")}
-              </button>
-            </>
+            </div>
           )}
-        </div>
+        </Field>
+        <ActionResult
+          state={saveResult?.state ?? null}
+          text={saveResult?.text}
+          onDismiss={() => setSaveResult(null)}
+        />
       </form>
 
-      {instructions && (
-        <div className="space-y-2 rounded-2xl border border-dashed border-border p-3 text-xs">
-          <p className="font-semibold">{t("integr.domain.dnsCreate")}</p>
-          <ol className="list-decimal space-y-2 pl-4 text-muted-foreground [overflow-wrap:anywhere]">
-            <li>
-              <span className="text-foreground">CNAME</span>{" "}
-              <code className="break-all text-foreground">{instructions.cname_host}</code> →{" "}
-              <code className="break-all text-foreground">{instructions.cname_target}</code>
-              <button
-                type="button"
-                className="mt-1 flex min-h-11 items-center gap-1.5 text-xs font-semibold text-foreground underline underline-offset-2"
-                onClick={() => void copyText("cname", instructions.cname_target)}
+      {instructions && !active && (
+        <>
+          {/* 2 · Os dois registros, um cartão para cada, com Copiar em cada linha. */}
+          <div className="space-y-2">
+            <p className="text-sm font-semibold">2 · {t("domainCard.records.title")}</p>
+            <Hint>{t("domainCard.records.hint")}</Hint>
+            <div className="grid gap-2 lg:grid-cols-2">
+              {renderRecord(
+                1,
+                "CNAME",
+                instructions.cname_host,
+                instructions.cname_target,
+                recordOk("cname"),
+              )}
+              {renderRecord(
+                2,
+                "TXT",
+                instructions.txt_host,
+                instructions.txt_value,
+                recordOk("txt"),
+              )}
+            </div>
+          </div>
+
+          {/* 3 · Conferir */}
+          <div className="space-y-2">
+            <p className="text-sm font-semibold">3 · {t("domainCard.step.check")}</p>
+            <button
+              type="button"
+              disabled={busy}
+              aria-busy={action === "verify" || undefined}
+              onClick={() => void verifyDomain()}
+              className="action-button action-confirm w-full sm:w-auto"
+            >
+              {action === "verify" ? (
+                <Loader2 className="motion-safe:animate-spin" aria-hidden />
+              ) : (
+                <SearchCheck aria-hidden />
+              )}
+              {action === "verify" ? t("domainCard.verifying") : t("domainCard.verify")}
+            </button>
+            {verifyResult && (
+              <Notice
+                tone={verifyResult.missing ? badge.tone : verifyResult.tone}
+                icon={
+                  verifyResult.missing
+                    ? badge.icon
+                    : verifyResult.tone === "pending"
+                      ? Hourglass
+                      : undefined
+                }
+                title={verifyResult.text}
+                role={verifyResult.tone === "danger" ? "alert" : "status"}
               >
-                {t("integr.domain.copyTarget")}
-              </button>
-            </li>
-            <li>
-              <span className="text-foreground">TXT</span>{" "}
-              <code className="break-all text-foreground">{instructions.txt_host}</code> ={" "}
-              <code className="break-all text-foreground">{instructions.txt_value}</code>
-              <button
-                type="button"
-                className="mt-1 flex min-h-11 items-center gap-1.5 text-xs font-semibold text-foreground underline underline-offset-2"
-                onClick={() => void copyText("txt", instructions.txt_value)}
+                {verifyResult.tone === "pending" ? t("domainCard.verify.wait") : undefined}
+              </Notice>
+            )}
+            {/* Registro que faltou na última conferência: uma linha, na cor do selo acima. */}
+            {storedMissing !== null && (
+              <Notice
+                tone={badge.tone}
+                icon={badge.icon}
+                title={t("domainCard.verify.missingOne", { n: storedMissing })}
+                role="none"
               >
-                {t("integr.domain.copyValue")}
-              </button>
-            </li>
-          </ol>
-          <p className="text-muted-foreground">{t("integr.domain.propagation")}</p>
-          {settings?.custom_domain_status === "active" && (
-            <p className="flex items-center gap-1 font-semibold text-foreground">
-              <CheckCircle2 size={14} /> {t("integr.domain.verified")}
-            </p>
-          )}
+                {t("domainCard.verify.wait")}
+              </Notice>
+            )}
+            {lastError && (
+              <MoreDetails summary={t("domainCard.lastCheck")}>
+                <p className="text-sm text-muted-foreground">{lastError}</p>
+              </MoreDetails>
+            )}
+          </div>
+        </>
+      )}
+
+      {active && settings.custom_domain && (
+        <Notice tone="success" title={t("domainCard.live", { domain: settings.custom_domain })}>
+          {t("domainCard.liveAuto", { link: autoLink })}
+        </Notice>
+      )}
+      {active && verifyResult && verifyResult.tone !== "success" && (
+        <Notice tone={verifyResult.tone} title={verifyResult.text} />
+      )}
+
+      {settings.custom_domain && (
+        <MoreDetails>
+          <p className="text-sm text-muted-foreground">{t("integr.domain.propagation")}</p>
+        </MoreDetails>
+      )}
+
+      {/* Ação destrutiva separada, no rodapé, com confirmação. */}
+      {settings.custom_domain && (
+        <div className="flex justify-end border-t border-border/60 pt-3">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => setRemoveOpen(true)}
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-destructive transition hover:bg-destructive/10 disabled:opacity-60"
+          >
+            <Trash2 className="size-4" aria-hidden />
+            {t("domainCard.remove")}
+          </button>
         </div>
       )}
 
-      {message && <p className="text-sm text-foreground">{message}</p>}
-      {error && (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
+      <ConfirmDialog
+        open={removeOpen}
+        onOpenChange={setRemoveOpen}
+        tone="danger"
+        icon={Trash2}
+        title={t("domainCard.removeConfirm.title", { domain: settings.custom_domain ?? "" })}
+        consequences={[
+          { icon: XCircle, tone: "danger", text: t("domainCard.removeConfirm.stops") },
+          {
+            icon: CheckCircle2,
+            tone: "success",
+            text: t("domainCard.removeConfirm.keeps", { link: autoLink }),
+          },
+        ]}
+        confirmLabel={t("domainCard.remove")}
+        confirmIcon={Trash2}
+        cancelLabel={t("domainCard.removeConfirm.keep")}
+        onConfirm={clearDomain}
+        errorText={t("integr.domain.errRemove")}
+      />
     </section>
   );
 }

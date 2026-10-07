@@ -8,6 +8,7 @@ export const SETTINGS_SECTIONS = [
   "enderecos",
   "equipe",
   "idioma",
+  "conta",
 ] as const;
 
 export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];

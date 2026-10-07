@@ -1,41 +1,71 @@
-import { Fragment, useEffect, useState, type ReactNode } from "react";
-import { createPortal } from "react-dom";
-import { Bell, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  CalendarCheck,
+  CalendarClock,
+  Hourglass,
+  Loader2,
+  Megaphone,
+  MessageSquareText,
+  RefreshCw,
+  Send,
+  Sparkles,
+  type LucideIcon,
+} from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
+import {
+  ActionResult,
+  ChoiceCards,
+  Hint,
+  Notice,
+  PreviewPanel,
+  StatusBadge,
+  STATE,
+  type ActionState,
+} from "@/components/visual";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
 
 const PRESETS = [
   {
     id: "reminder_next" as const,
+    icon: CalendarClock,
     titleKey: "team.notice.reminderNext",
     hintKey: "team.notice.reminderNextHint",
+    sampleKey: "team.notice.sample.reminderNext",
   },
   {
     id: "confirm_today" as const,
+    icon: CalendarCheck,
     titleKey: "team.notice.confirmToday",
     hintKey: "team.notice.confirmTodayHint",
+    sampleKey: "team.notice.sample.confirmToday",
   },
   {
     id: "slot_open" as const,
+    icon: Sparkles,
     titleKey: "team.notice.slotOpen",
     hintKey: "team.notice.slotOpenHint",
+    sampleKey: "team.notice.sample.slotOpen",
   },
   {
     id: "shop_hello" as const,
+    icon: Megaphone,
     titleKey: "team.notice.shopHello",
     hintKey: "team.notice.shopHelloHint",
+    sampleKey: "team.notice.sample.shopHello",
   },
-] as const satisfies readonly { id: string; titleKey: MessageKey; hintKey: MessageKey }[];
+] as const satisfies readonly {
+  id: string;
+  icon: LucideIcon;
+  titleKey: MessageKey;
+  hintKey: MessageKey;
+  sampleKey: MessageKey;
+}[];
 
 type NoticePreset = (typeof PRESETS)[number]["id"];
-
-function richText(template: string, nodes: Record<string, ReactNode>) {
-  return template
-    .split(/\{(\w+)\}/g)
-    .map((part, i) => (i % 2 === 1 ? <Fragment key={i}>{nodes[part] ?? part}</Fragment> : part));
-}
 
 function formatWait(seconds: number) {
   const m = Math.max(1, Math.ceil(seconds / 60));
@@ -48,6 +78,10 @@ function channelLabel(channel: string) {
   return channel;
 }
 
+/**
+ * "Avisar" o cliente em dois passos: escolher a mensagem (com o exemplo do que ele recebe) e
+ * tocar em "Enviar aviso". O resultado aparece com ícone e cor: enviado ✓, agendado ⏳, erro ✕.
+ */
 export function ClientNoticeBell({
   shopId,
   customerId,
@@ -60,11 +94,13 @@ export function ClientNoticeBell({
   const { t } = useI18n();
   const demo = useDemo();
   const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [choice, setChoice] = useState<NoticePreset | null>(null);
+  const [state, setState] = useState<ActionState | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
   const [pendingPreset, setPendingPreset] = useState<string | null>(null);
   const [waitSeconds, setWaitSeconds] = useState(0);
+  const name = customerName ?? t("team.notice.theClient");
+  const firstName = (customerName ?? "").trim().split(/\s+/)[0] || t("team.notice.theClient");
 
   async function refreshPending() {
     if (demo) return;
@@ -83,34 +119,29 @@ export function ClientNoticeBell({
 
   useEffect(() => {
     if (!open) return;
+    setChoice(null);
+    setState(null);
+    setError(null);
     void refreshPending();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- recarrega só ao abrir
   }, [open, shopId, customerId]);
 
-  // A confirmação de envio fica visível por alguns segundos depois que o diálogo fecha.
-  useEffect(() => {
-    if (!message) return;
-    const timer = window.setTimeout(() => setMessage(null), 5000);
-    return () => window.clearTimeout(timer);
-  }, [message]);
-
-  async function send(preset: NoticePreset) {
-    setBusy(true);
+  async function send() {
+    if (!choice || state === "saving") return;
+    setState("saving");
     setError(null);
-    setMessage(null);
     try {
       if (demo) {
-        setMessage(t("team.notice.demo"));
         setOpen(false);
+        toast.info(t("team.notice.demo"), { description: name });
         return;
       }
       const { data, error: rpcError } = await supabase.rpc("send_client_notice", {
         p_shop_id: shopId,
         p_customer_id: customerId,
-        p_preset: preset,
+        p_preset: choice,
       });
-      if (rpcError) {
-        throw new Error(rpcError.message || t("team.notice.sendError"));
-      }
+      if (rpcError) throw rpcError;
       const result = data as {
         channels?: string[];
         status?: string;
@@ -119,38 +150,38 @@ export function ClientNoticeBell({
       } | null;
       if (result?.status === "queued") {
         const wait = Number(result.wait_seconds) || 0;
-        setPendingPreset(result.preset ?? preset);
+        setPendingPreset(result.preset ?? choice);
         setWaitSeconds(wait);
-        setMessage(t("team.notice.queued", { wait: formatWait(wait) }));
         setOpen(false);
+        toast(t("team.notice.queuedTitle"), {
+          description: t("team.notice.queuedShort", { wait: formatWait(wait) }),
+          icon: <Hourglass aria-hidden />,
+        });
         return;
       }
       const channels = result?.channels ?? [];
       setPendingPreset(null);
       setWaitSeconds(0);
-      setMessage(
+      setOpen(false);
+      toast.success(
         channels.length
           ? t("team.notice.sentBy", {
               channels: channels.map(channelLabel).join(t("team.notice.and")),
             })
           : t("team.notice.recorded"),
+        { description: name },
       );
-      setOpen(false);
-    } catch (err) {
-      const detail =
-        err instanceof Error
-          ? err.message
-          : err && typeof err === "object" && "message" in err
-            ? String((err as { message: unknown }).message)
-            : null;
-      setError(detail || t("team.notice.sendError"));
+    } catch (cause) {
+      // Nunca a frase crua do banco: sempre a versão amigável, com o que fazer.
+      setError(friendlyAuthError(cause, t("team.notice.sendError")));
+      setState("error");
     } finally {
-      setBusy(false);
+      setState((current) => (current === "saving" ? null : current));
     }
   }
 
-  const pendingKey = PRESETS.find((row) => row.id === pendingPreset)?.titleKey;
-  const pendingLabel = pendingKey ? t(pendingKey) : undefined;
+  const pending = PRESETS.find((row) => row.id === pendingPreset);
+  const chosen = PRESETS.find((row) => row.id === choice);
 
   return (
     <>
@@ -159,76 +190,124 @@ export function ClientNoticeBell({
         onClick={(event) => {
           event.stopPropagation();
           setOpen(true);
-          setError(null);
         }}
         aria-label={t("team.notice.sendTo", {
           name: customerName ?? t("team.clients.clientLower"),
         })}
-        title={pendingPreset ? t("team.notice.scheduledTitle") : t("team.notice.send")}
-        className={`flex size-10 shrink-0 items-center justify-center rounded-xl border ${
+        className={`inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition ${
           pendingPreset
-            ? "border-gold text-gold"
-            : "border-border text-muted-foreground hover:border-gold hover:text-gold"
+            ? "tone-pending border-[color:var(--tone-border)] bg-[color:var(--tone-soft)] text-[color:var(--tone-ink)]"
+            : "border-border bg-background hover:border-primary/40"
         }`}
       >
-        <Bell className="size-4" />
+        {pendingPreset ? (
+          <Hourglass className="size-4" aria-hidden />
+        ) : (
+          <MessageSquareText className="size-4 text-gold" aria-hidden />
+        )}
+        <span className="max-[359px]:sr-only">
+          {pendingPreset ? t("team.notice.scheduledShort") : t("team.notice.notify")}
+        </span>
       </button>
 
-      {message &&
-        !open &&
-        typeof document !== "undefined" &&
-        createPortal(
-          <div
-            role="status"
-            className="pointer-events-none fixed inset-x-4 bottom-[var(--app-banner-bottom,1.5rem)] z-[110] mx-auto w-auto max-w-sm rounded-2xl border border-border bg-card px-4 py-3 text-center text-sm font-semibold text-card-foreground shadow-lg"
-          >
-            {message}
-          </div>,
-          // Na raiz do painel (sem transform) o aviso segue o modo de canto e o cartão off-white.
-          document.querySelector<HTMLElement>(".arena-workspace") ?? document.body,
-        )}
-
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(next) => state !== "saving" && setOpen(next)}>
         <DialogContent
-          className="max-w-sm rounded-3xl border-border bg-card p-5"
+          className="max-h-[88dvh] max-w-md overflow-y-auto rounded-3xl border-border bg-card p-5"
           onClick={(event) => event.stopPropagation()}
         >
-          <DialogTitle className="text-base font-extrabold">{t("team.notice.send")}</DialogTitle>
-          <DialogDescription className="text-xs text-muted-foreground">
-            {t("team.notice.description", { name: customerName ?? t("team.notice.theClient") })}
-          </DialogDescription>
-          {pendingPreset && (
-            <p className="mt-2 rounded-xl border border-gold/40 bg-gold/10 px-3 py-2 text-xs text-foreground">
-              {richText(t("team.notice.scheduled"), {
-                name: <strong>{pendingLabel ?? pendingPreset}</strong>,
-              })}
-              {waitSeconds > 0 ? t("team.notice.sendsIn", { wait: formatWait(waitSeconds) }) : "."}
-            </p>
-          )}
-          <div className="mt-3 space-y-2">
-            {PRESETS.map((preset) => (
-              <button
-                key={preset.id}
-                type="button"
-                disabled={busy}
-                onClick={() => void send(preset.id)}
-                className="flex w-full flex-col gap-0.5 rounded-xl border border-border px-3 py-3 text-left hover:border-primary disabled:opacity-50"
-              >
-                <span className="text-sm font-semibold">{t(preset.titleKey)}</span>
-                <span className="text-xs text-muted-foreground">{t(preset.hintKey)}</span>
-              </button>
-            ))}
+          <div className="space-y-1 pr-10">
+            <DialogTitle className="text-base font-extrabold">
+              {t("team.notice.titleFor", { name: firstName })}
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              {t("team.notice.pick")}
+            </DialogDescription>
           </div>
-          {busy && (
-            <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="size-3.5 animate-spin" /> {t("team.notice.sending")}
-            </p>
+
+          {pending && (
+            <Notice
+              tone="pending"
+              icon={Hourglass}
+              role="none"
+              title={t("team.notice.alreadyQueued", { name: t(pending.titleKey) })}
+            >
+              <div className="flex flex-col items-start gap-1.5">
+                {waitSeconds > 0 ? (
+                  <StatusBadge
+                    {...STATE.waiting}
+                    size="sm"
+                    label={t("team.notice.sendsInShort", { wait: formatWait(waitSeconds) })}
+                  />
+                ) : null}
+                <Hint icon={RefreshCw} tone="pending" className="text-inherit">
+                  {t("team.notice.replaces")}
+                </Hint>
+              </div>
+            </Notice>
           )}
-          {error && (
-            <p role="alert" className="mt-3 text-sm text-destructive">
-              {error}
-            </p>
+
+          <ChoiceCards
+            legend={t("team.notice.pick")}
+            columns={1}
+            value={choice}
+            onChange={(value) => {
+              setChoice(value);
+              setState(null);
+              setError(null);
+            }}
+            disabled={state === "saving"}
+            options={PRESETS.map((preset) => ({
+              value: preset.id,
+              title: t(preset.titleKey),
+              description: t(preset.hintKey),
+              icon: preset.icon,
+            }))}
+          />
+
+          {chosen && (
+            <PreviewPanel
+              title={t("team.notice.previewTitle")}
+              icon={MessageSquareText}
+              badge={t("catalog.preview.badge")}
+              live
+            >
+              <div className="max-w-[85%] rounded-2xl rounded-bl-md border border-border bg-card px-3 py-2 text-sm shadow-sm">
+                {t(chosen.sampleKey, { name: firstName })}
+              </div>
+              <Hint>{t("team.notice.channels")}</Hint>
+            </PreviewPanel>
           )}
+
+          <ActionResult
+            state={state === "error" ? "error" : null}
+            text={error ?? t("team.notice.sendError")}
+            onRetry={() => void send()}
+            reveal={false}
+          />
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={state === "saving"}
+              onClick={() => setOpen(false)}
+              className="min-h-11 rounded-xl border border-border bg-background px-4 text-sm font-semibold"
+            >
+              {t("common.back")}
+            </button>
+            <button
+              type="button"
+              disabled={!choice || state === "saving"}
+              onClick={() => void send()}
+              className="action-button action-confirm flex-1"
+            >
+              {state === "saving" ? (
+                <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />
+              ) : (
+                <Send className="size-4" aria-hidden />
+              )}
+              {state === "saving" ? t("team.notice.sending") : t("team.notice.sendButton")}
+            </button>
+          </div>
         </DialogContent>
       </Dialog>
     </>

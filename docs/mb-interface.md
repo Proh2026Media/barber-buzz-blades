@@ -77,16 +77,16 @@ Aplicar as diretrizes gerais a outros sistemas quando solicitado, preservando a 
 
 Registrar, de forma proporcional à tarefa:
 
-| Item | Definição necessária |
-| --- | --- |
-| Objetivo | Resultado concreto que a pessoa quer alcançar. |
-| Entrada | Como chega ao fluxo e o que já se sabe com autorização. |
-| Dados e decisões | O que é indispensável e em qual etapa. |
-| Dependências | O que muda quando uma escolha anterior é alterada. |
-| Caminho principal | Menor sequência clara que respeita as regras reais. |
-| Retorno | Como voltar, corrigir e retomar sem perder trabalho. |
-| Estados | Carregando, vazio, indisponível, editando, enviando, confirmado, falha e resultado incerto, quando aplicáveis. |
-| Conclusão | Evidência de sucesso e próxima ação útil. |
+| Item              | Definição necessária                                                                                           |
+| ----------------- | -------------------------------------------------------------------------------------------------------------- |
+| Objetivo          | Resultado concreto que a pessoa quer alcançar.                                                                 |
+| Entrada           | Como chega ao fluxo e o que já se sabe com autorização.                                                        |
+| Dados e decisões  | O que é indispensável e em qual etapa.                                                                         |
+| Dependências      | O que muda quando uma escolha anterior é alterada.                                                             |
+| Caminho principal | Menor sequência clara que respeita as regras reais.                                                            |
+| Retorno           | Como voltar, corrigir e retomar sem perder trabalho.                                                           |
+| Estados           | Carregando, vazio, indisponível, editando, enviando, confirmado, falha e resultado incerto, quando aplicáveis. |
+| Conclusão         | Evidência de sucesso e próxima ação útil.                                                                      |
 
 Não impor quantidade fixa de etapas ou cliques. Escolher uma tela quando a tarefa couber com clareza; dividir em etapas quando houver decisões dependentes ou volume que prejudique a compreensão.
 
@@ -150,19 +150,19 @@ Mapear a sequência real do negócio. Um agendamento pode depender de serviço, 
 
 Definir estados antes de construir a tela. Não combinar condições diferentes sob o mesmo “erro” ou “vazio”.
 
-| Situação | Mostrar | Permitir |
-| --- | --- | --- |
-| Carregamento inicial | O que está sendo buscado, com espaço estável para o conteúdo. | Sair ou voltar quando seguro. |
-| Atualização de dados | Conteúdo anterior identificado como em atualização, se ainda puder ser exibido. | Manter contexto; revalidar ações que dependem de dados atuais. |
-| Primeiro uso | Explicação curta do que aparecerá ali. | Iniciar a primeira tarefa. |
-| Busca sem resultados | Termos ou filtros que produziram o resultado. | Limpar ou ajustar filtros. |
-| Indisponibilidade | Motivo compreensível e, se existente, alternativa. | Escolher outro horário, data, item ou responsável. |
-| Edição não salva | Indicação de mudanças pendentes quando necessário. | Salvar ou descartar conscientemente. |
-| Envio em andamento | Ação específica em andamento. | Impedir repetição da mesma operação; manter saídas seguras. |
-| Sucesso confirmado | Resultado, dados principais e próximo passo útil. | Consultar, alterar, compartilhar ou encerrar, conforme suporte real. |
-| Falha confirmada | O que não foi concluído e como corrigir. | Tentar novamente com proteção contra duplicações. |
-| Resultado incerto | Informação de que a confirmação ainda está sendo verificada. | Consultar estado antes de iniciar nova operação equivalente. |
-| Falta de acesso | Explicação apropriada sem revelar dados protegidos. | Usar um caminho de acesso permitido que exista. |
+| Situação             | Mostrar                                                                         | Permitir                                                             |
+| -------------------- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Carregamento inicial | O que está sendo buscado, com espaço estável para o conteúdo.                   | Sair ou voltar quando seguro.                                        |
+| Atualização de dados | Conteúdo anterior identificado como em atualização, se ainda puder ser exibido. | Manter contexto; revalidar ações que dependem de dados atuais.       |
+| Primeiro uso         | Explicação curta do que aparecerá ali.                                          | Iniciar a primeira tarefa.                                           |
+| Busca sem resultados | Termos ou filtros que produziram o resultado.                                   | Limpar ou ajustar filtros.                                           |
+| Indisponibilidade    | Motivo compreensível e, se existente, alternativa.                              | Escolher outro horário, data, item ou responsável.                   |
+| Edição não salva     | Indicação de mudanças pendentes quando necessário.                              | Salvar ou descartar conscientemente.                                 |
+| Envio em andamento   | Ação específica em andamento.                                                   | Impedir repetição da mesma operação; manter saídas seguras.          |
+| Sucesso confirmado   | Resultado, dados principais e próximo passo útil.                               | Consultar, alterar, compartilhar ou encerrar, conforme suporte real. |
+| Falha confirmada     | O que não foi concluído e como corrigir.                                        | Tentar novamente com proteção contra duplicações.                    |
+| Resultado incerto    | Informação de que a confirmação ainda está sendo verificada.                    | Consultar estado antes de iniciar nova operação equivalente.         |
+| Falta de acesso      | Explicação apropriada sem revelar dados protegidos.                             | Usar um caminho de acesso permitido que exista.                      |
 
 Não mostrar “Agendamento confirmado” ao apenas enviar uma solicitação. Não mostrar “Pago” porque o usuário abriu uma página de pagamento. Se depender de aprovação, usar “Solicitação enviada” e explicar o próximo passo e o prazo somente quando conhecidos.
 
@@ -222,21 +222,21 @@ Antes de alterar uma regra de negócio que gere confusão, registrar a regra atu
 
 ### Critérios de escolha dos controles
 
-| Necessidade | Controle preferencial | Condições de uso |
-| --- | --- | --- |
-| Executar uma ação | Botão com verbo e objeto. | Informar efeito: “Confirmar agendamento”, “Salvar alterações”. |
-| Abrir outra página ou detalhe | Link ou elemento de navegação com semântica correta. | Manter diferença entre navegar e enviar dados. |
-| Ativar ou desativar uma preferência de efeito imediato | Interruptor liga/desliga. | Rótulo afirmativo e estado perceptível; mostrar falha e restaurar estado anterior se necessário. |
-| Escolher uma opção entre poucas | Opções de escolha única ou cartões selecionáveis. | Mostrar todas quando couberem; o cartão precisa se comportar como opção acessível. |
-| Escolher várias opções independentes | Caixas de seleção. | Mostrar selecionadas e esclarecer limites. |
-| Confirmar uma opção dentro de formulário salvo ao final | Caixa ou grupo de opções com botão “Salvar”. | Não simular aplicação imediata. |
-| Encontrar um item em lista extensa | Busca com lista ou seletor pesquisável. | Oferecer resultados legíveis, estado vazio e operação por teclado. |
-| Alternar poucas visões equivalentes | Controle segmentado ou abas. | Rótulos curtos e estado ativo claro; não confundir com etapas. |
-| Informar uma quantidade inteira curta | Botões de menos/mais com valor. | Respeitar limites, permitir entrada direta quando útil. |
-| Ajustar aproximadamente uma intensidade | Controle deslizante com valor visível. | Oferecer alternativa precisa; não usar para informação que exige exatidão sem entrada alternativa. |
-| Escolher dia ou horário | Calendário acessível, lista de horários ou controle nativo apropriado. | Dar contexto de disponibilidade e alternativa quando necessário. |
-| Reordenar itens | Arrastar com comandos de mover. | Oferecer alternativa por toque e teclado; informar a nova posição. |
-| Enviar imagem ou documento | Botão “Escolher foto” ou “Selecionar arquivo”. | Arrastar como facilidade adicional, nunca único caminho. |
+| Necessidade                                             | Controle preferencial                                                  | Condições de uso                                                                                   |
+| ------------------------------------------------------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Executar uma ação                                       | Botão com verbo e objeto.                                              | Informar efeito: “Confirmar agendamento”, “Salvar alterações”.                                     |
+| Abrir outra página ou detalhe                           | Link ou elemento de navegação com semântica correta.                   | Manter diferença entre navegar e enviar dados.                                                     |
+| Ativar ou desativar uma preferência de efeito imediato  | Interruptor liga/desliga.                                              | Rótulo afirmativo e estado perceptível; mostrar falha e restaurar estado anterior se necessário.   |
+| Escolher uma opção entre poucas                         | Opções de escolha única ou cartões selecionáveis.                      | Mostrar todas quando couberem; o cartão precisa se comportar como opção acessível.                 |
+| Escolher várias opções independentes                    | Caixas de seleção.                                                     | Mostrar selecionadas e esclarecer limites.                                                         |
+| Confirmar uma opção dentro de formulário salvo ao final | Caixa ou grupo de opções com botão “Salvar”.                           | Não simular aplicação imediata.                                                                    |
+| Encontrar um item em lista extensa                      | Busca com lista ou seletor pesquisável.                                | Oferecer resultados legíveis, estado vazio e operação por teclado.                                 |
+| Alternar poucas visões equivalentes                     | Controle segmentado ou abas.                                           | Rótulos curtos e estado ativo claro; não confundir com etapas.                                     |
+| Informar uma quantidade inteira curta                   | Botões de menos/mais com valor.                                        | Respeitar limites, permitir entrada direta quando útil.                                            |
+| Ajustar aproximadamente uma intensidade                 | Controle deslizante com valor visível.                                 | Oferecer alternativa precisa; não usar para informação que exige exatidão sem entrada alternativa. |
+| Escolher dia ou horário                                 | Calendário acessível, lista de horários ou controle nativo apropriado. | Dar contexto de disponibilidade e alternativa quando necessário.                                   |
+| Reordenar itens                                         | Arrastar com comandos de mover.                                        | Oferecer alternativa por toque e teclado; informar a nova posição.                                 |
+| Enviar imagem ou documento                              | Botão “Escolher foto” ou “Selecionar arquivo”.                         | Arrastar como facilidade adicional, nunca único caminho.                                           |
 
 Não substituir controles nativos acessíveis por componentes personalizados apenas pela aparência. Avaliar custo de compreensão, comportamento no celular e consistência com o produto.
 
@@ -273,15 +273,15 @@ Para datas e horários:
 
 Usar recursos visuais com uma função explícita:
 
-| Recurso | Função útil | Cuidado |
-| --- | --- | --- |
-| Ícone com texto | Ajudar a reconhecer uma ação. | Manter desenho e significado consistentes. |
-| Foto ou miniatura | Identificar profissional, serviço, documento ou item. | Não depender da imagem para a única informação essencial. |
-| Exemplo preenchido | Mostrar um formato ou resultado esperado. | Diferenciar exemplo de dado real. |
-| Prévia | Antecipar efeito de uma configuração visual ou publicação. | Não prometer fidelidade que a prévia não oferece. |
-| Resumo visual | Ajudar a conferir dados antes de confirmar. | Conservar todas as condições relevantes em texto. |
-| Ilustração de estado vazio | Explicar o que existe naquela área. | Manter título, orientação e ação; evitar decoração dominante. |
-| Indicador de etapas | Mostrar posição em uma sequência real. | Garantir leitura e estado atual para tecnologia assistiva. |
+| Recurso                    | Função útil                                                | Cuidado                                                       |
+| -------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------- |
+| Ícone com texto            | Ajudar a reconhecer uma ação.                              | Manter desenho e significado consistentes.                    |
+| Foto ou miniatura          | Identificar profissional, serviço, documento ou item.      | Não depender da imagem para a única informação essencial.     |
+| Exemplo preenchido         | Mostrar um formato ou resultado esperado.                  | Diferenciar exemplo de dado real.                             |
+| Prévia                     | Antecipar efeito de uma configuração visual ou publicação. | Não prometer fidelidade que a prévia não oferece.             |
+| Resumo visual              | Ajudar a conferir dados antes de confirmar.                | Conservar todas as condições relevantes em texto.             |
+| Ilustração de estado vazio | Explicar o que existe naquela área.                        | Manter título, orientação e ação; evitar decoração dominante. |
+| Indicador de etapas        | Mostrar posição em uma sequência real.                     | Garantir leitura e estado atual para tecnologia assistiva.    |
 
 Não usar emojis como único identificador de ação, ilustrações que sugiram opções inexistentes ou animações que disputem atenção com a tarefa.
 
@@ -323,8 +323,80 @@ O sistema deve ser visual, intuitivo e autoexplicativo. Mesmo no primeiro acesso
 - **Escolhas à vista:** poucas opções (até ~6) aparecem como botões/pílulas selecionáveis, não escondidas em lista suspensa; cada opção mostra o efeito com um exemplo (ex.: os horários que o cliente verá).
 - **Exemplos no lugar de regras:** em vez de descrever a regra ("testa um horário a cada 15 minutos…"), mostrar o resultado (pílulas 9:00 · 9:15 · 9:30, mini agenda com "já marcado", "folga" e "pode começar").
 
-Referência implementada: Ajustes → Agendamento → "Como os horários aparecem" (`SlotModeSettings.tsx`) e o resumo "Assim seus clientes veem os horários" em Serviços e Horários.
+Referência implementada: Ajustes → Agendamento → "Como os horários aparecem" (`SlotModeSettings.tsx`) e o resumo "Assim seus clientes veem os horários" em Serviços e Horários. Os dois já são montados só com os componentes comuns abaixo: use-os como modelo.
 
+### Componentes visuais comuns
+
+Um só jeito de mostrar estado, resultado, escolha, número, etapa e vazio em todo o sistema (pregnância: o mesmo significado tem sempre a mesma forma, cor e ícone). Tudo sai de um lugar:
+
+```tsx
+import { StatusBadge, Notice, ActionResult, ChoiceChips /* … */ } from "@/components/visual";
+```
+
+Regras de uso:
+
+- **Não recriar localmente** selo, aviso, resultado de salvamento, escolha em pílulas, cartão de número, etapas, vazio ou carregando. Se faltar uma variação, ampliar o componente comum e conferir os usos.
+- **Textos**: os componentes recebem os textos prontos (`t("…")`); os textos próprios deles (Tentar de novo, Copiado, Não salvo…) vivem nas chaves `visual.*` dos dicionários.
+- **Cores**: nunca escrever cor de estado à mão (`bg-emerald-50`, `text-amber-900`…). Os tons vêm das variáveis `--tone-*` de `src/styles.css` (bloco "Tons de estado"), que já resolvem tema claro, escuro e cartão off-white com contraste AA.
+- **Cantos**: os componentes usam `rounded-xl`/`rounded-2xl` e `var(--button-radius)`, então seguem Retos, Semi e Arredondados sozinhos. Círculos ficam só onde são forma funcional (avatar, marcador de etapa, bolha de contagem, anel de prazo).
+- **Toque e teclado**: tudo que é clicável tem 44 px ou mais; escolhas usam papéis de rádio/caixa (setas trocam a opção); foco visível em dourado.
+- Componentes de domínio (selo de nível do clube, selo de papel, faixa de dias, ticket da reserva, campo de código, barra do dia) ficam na área dona, montados sobre estes. Exemplo: um `RoleBadge` é um `StatusBadge` com o ícone e o rótulo do papel.
+
+**Tons de estado** (`Tone`): mesmo significado = mesma cor e mesmo ícone.
+
+| Tom         | Significa                             | Ícone                  | Exemplos                                  |
+| ----------- | ------------------------------------- | ---------------------- | ----------------------------------------- |
+| `success`   | Deu certo, concluído, livre, ligado   | ✓ CheckCircle2         | Concluído, Salvo, Conectado, Aberta agora |
+| `info`      | Confirmado, agendado, informação      | ⓘ Info / CalendarCheck | Confirmado, Aviso agendado                |
+| `warning`   | Precisa de uma ação da pessoa         | ⚠ AlertTriangle        | Remarcação pedida, Sem desfecho           |
+| `pending`   | Aguardando alguém                     | ⏳ Hourglass           | A confirmar, Aguardando aprovação         |
+| `danger`    | Erro, cancelado, recusado, bloqueado  | ✕ XCircle              | Cancelado, Não salvou, Bloqueado          |
+| `neutral`   | Desligado, pausado, fechado, sem dado | ⊖ CircleMinus          | Pausado, Fechado, Vencido                 |
+| `progress`  | Em andamento                          | ◌ Loader2 (gira)       | Salvando…, Conectando…                    |
+| `highlight` | Destaque da marca                     | ✦ Sparkles             | Padrão, Fundador, Repete                  |
+
+Estados prontos: `APPOINTMENT_STATUS` (situação do atendimento: a confirmar ⏳, confirmado azul, concluído verde, remarcação pedida laranja, cancelado vermelho), `APPOINTMENT_DERIVED` (não veio, em espera, sem desfecho) e `STATE` (ativo, pausado, fechado, vencido, aguardando, atenção, agendado, em andamento, bloqueado, falhou, destaque) — use `<StatusBadge {...STATE.paused} label={t("…")} />`.
+
+**Estado e retorno**
+
+- `StatusBadge` — selo com ícone, cor e texto curto (variantes `pill`, `dot` para legendas e listas densas, `icon` para linha do tempo; tamanhos `sm`/`md`/`lg`; `count`; `live`). Ex.: `<StatusBadge tone="pending" label="A confirmar" />`. `AppointmentStatusBadge status={row.status}` já traz o rótulo do dicionário.
+- `Tag` — pílula de dado, não de estado (duração, preço, folga). Ex.: `<Tag icon={Clock3}>30 min</Tag>`.
+- `CountBadge` — bolha de pendências em abas, menus e cartões; some no zero. Ex.: `<CountBadge count={2} label="2 resgates esperando" />`.
+- `Notice` — aviso curto com ícone e cor junto do que o gerou (campo, linha, cartão), com uma ação opcional. Nunca no topo da página. Ex.: `<Notice tone="warning" title="2 horários sem desfecho" action={{ label: "Resolver", onClick }} />`.
+- `ActionResult` — resultado de quem grava algo, logo abaixo do botão: `saving` (gira), `saved` (verde), `pending` (aguardando aprovação), `error` (vermelho, com "Tentar de novo"). Anuncia ao leitor de tela e rola até ele se estiver fora da vista. Ex.: `<ActionResult state={status} onRetry={salvar} autoHideMs={4000} />`.
+- `InlineStatus` — o mesmo, em linha, para quem grava na hora (interruptor): "Salvando…" → "✓ Salvo" → "Não salvou · Tentar de novo".
+- Avisos rápidos (`toast.success/error/warning/info` do sonner) já saem com ícone e faixa na cor do tipo; use-os só quando o botão saiu da tela ou a pessoa mudou de página.
+- `AttentionList` — "Precisa da sua atenção": itens ordenados por urgência, uma frase e **um** botão com verbo cada; some quando não há nada (ou mostra "Tudo em ordem" com `allClear`).
+- `Countdown` — prazo correndo ("Restam 9 min", pílula ou anel), âmbar e vermelho no fim; nunca só "mm:ss".
+
+**Estrutura e números**
+
+- `SectionHeader` — cabeçalho de cartão/seção: ícone em quadrado + título + uma linha, com selo ou ação à direita. `IconTile` é o quadrado sozinho. Ex.: `<SectionHeader icon={CalendarClock} title={t("…")} description={t("…")} aside={<StatusBadge …/>} />`.
+- `StatTile` — cartão de número: ícone, valor grande, rótulo, dica, tom e variação; sem dado mostra "—" com o motivo (nunca 0 inventado); `loading` mostra esqueleto; com `onClick`/`pressed` vira filtro.
+- `SegmentBar` — barra dividida nas cores dos estados com legenda em selos e frase equivalente ("3 de 10 concluídos"); serve também para "3 de 5" e comparação (duas barras com o mesmo `total`).
+- `DetailList` — resumo "rótulo → valor" (item numa janela, conferência), com antes riscado → agora e a diferença em pílula.
+- `SettingRow` — linha de ajuste ou atalho: ícone, título, resumo e, à direita, interruptor/selo ou seta; a linha inteira é tocável.
+- `PersonAvatar` — foto ou iniciais numa cor fixa por pessoa (`personColor` serve também para a faixa lateral de cartões).
+
+**Escolhas, etapas e exemplos**
+
+- `ChoiceChips` — até ~6 opções à vista em pílulas de 44 px (escolha única = rádio; `multiple` = caixas), com nota ("Padrão"), ícone, foto, contagem, `scroll` para muitas opções e `other` ("Outro…" abre um campo numérico). Ex.: `<ChoiceChips icon={Clock3} label="De quanto em quanto tempo" options={…} value={step} onChange={setStep} />`.
+- `ChoiceCards` — cartões de escolha única com ícone, efeito em uma linha, exemplo dentro e ✓ à direita; `value={null}` para não pré-marcar escolha destrutiva.
+- `Steps` — etapas ligadas por linha (feita ✓, atual, a fazer, com problema), horizontal ou vertical; também para "como funciona" com ícones. `compact` mostra "Etapa 2 de 4 · Nome".
+- `Timeline` — mini agenda ilustrada (já marcado, folga, livre, não cabe, bloqueado, fechado, aguardando), com altura pela duração. Mesmo código visual em Ajustes, Horários e Agenda.
+- `PreviewPanel` + `TimeChips` — moldura "Como fica na prática"/"Assim o cliente vê" (com etiqueta "Exemplo" ou "Prévia") e horários em pílulas.
+- `IconList` / `Hint` — frases curtas com ícone no lugar de parágrafos: dicas (ícone dourado) e consequências (✓ verde, ✕ vermelho, ⚠ laranja).
+- `MoreDetails` — "Como funciona" recolhido, aberto por toque ou teclado, para a regra ou o detalhe técnico.
+
+**Ações, campos, vazio e carregando**
+
+- `ConfirmDialog` — decisão com o item afetado (`summary`), as consequências com ícone e dois botões com verbo + objeto ("Manter horário" / "Cancelar horário"); gira enquanto confirma e mostra o erro dentro da janela. Substitui `window.confirm`.
+- `MoreActions` — botão "⋯" com as ações secundárias: folha inferior no celular, menu no computador; destrutivas no fim, separadas.
+- `UnsavedBar` — barra fixa no pé do cartão quando há mudança não salva ("● 2 mudanças não salvas · Descartar · Salvar mudanças"), com o resultado embutido.
+- `Field` + `FieldMessage` — rótulo visível, dica e erro junto do campo (borda vermelha pelo `aria-invalid`); `focusFirstInvalid(form)` leva ao primeiro erro ao enviar.
+- `CopyField` — link, senha temporária ou código: valor legível (sem "https://"), "Copiar" vira "✓ Copiado", "Enviar" abre o compartilhamento do celular.
+- `EmptyState` — vazio sempre com título curto, uma linha e a próxima ação; ilustrações `calendar`, `scissors`, `bell`, `waiting`, `people`, `search`, `store`, `chart`, `connection`, `gift`; `status` troca a ilustração pelo ícone do estado ("Tudo em dia", "Não deu para carregar"); `variant="plain"` dentro de cartão.
+- `LoadingState` — esqueleto no formato do conteúdo (`cards`, `list`, `stats`, `lines`) com o verbo visível ("Buscando horários…"); se demorar, avisa e oferece "Tentar de novo". Substitui frases soltas "Carregando…".
 
 ### Escrita para usuários finais
 
@@ -347,20 +419,20 @@ As regras técnicas deste documento orientam quem desenvolve. Traduzir seus efei
 
 Adaptar os textos à ação e ao estado reais; não copiar uma mensagem que prometa capacidade inexistente.
 
-| Evitar | Preferir | Condição |
-| --- | --- | --- |
-| “Submit” | “Confirmar agendamento” | A ação realmente confirma, sem aprovação pendente. |
-| “Confirmado!” após enviar pedido | “Solicitação enviada. Aguarde a confirmação da barbearia.” | O fluxo depende de aprovação. |
-| “Campo inválido” | “Informe seu celular com DDD.” | O problema é o formato do telefone. |
-| “Erro 500” | “Não foi possível carregar os horários. Tente novamente.” | Falha de consulta, sem operação com resultado incerto. |
-| “Sem dados” | “Você ainda não tem agendamentos.” + “Escolher um horário” | Histórico realmente vazio. |
-| “Nenhum registro” após filtro | “Nenhum agendamento encontrado com esses filtros.” + “Limpar filtros” | Há uma busca ou filtragem ativa. |
-| “Sessão expirada” | “Entre novamente para continuar.” | O acesso precisa ser renovado. |
-| “Sincronização concluída” | “Suas alterações foram salvas.” | A persistência foi confirmada. |
-| “Deseja prosseguir?” | “Cancelar este agendamento?” | Mostrar serviço, data, horário e consequência real. |
-| “Sim” / “Não” | “Cancelar agendamento” / “Manter agendamento” | Decisão sobre uma reserva existente. |
-| “Falha, tente novamente” após demora no envio | “Ainda não conseguimos confirmar o resultado. Vamos verificar seu agendamento.” | O sistema efetivamente consultará o resultado. |
-| “Acesso negado” | “Você não tem acesso a esta área.” | Não revelar dados da área restrita. |
+| Evitar                                        | Preferir                                                                        | Condição                                               |
+| --------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| “Submit”                                      | “Confirmar agendamento”                                                         | A ação realmente confirma, sem aprovação pendente.     |
+| “Confirmado!” após enviar pedido              | “Solicitação enviada. Aguarde a confirmação da barbearia.”                      | O fluxo depende de aprovação.                          |
+| “Campo inválido”                              | “Informe seu celular com DDD.”                                                  | O problema é o formato do telefone.                    |
+| “Erro 500”                                    | “Não foi possível carregar os horários. Tente novamente.”                       | Falha de consulta, sem operação com resultado incerto. |
+| “Sem dados”                                   | “Você ainda não tem agendamentos.” + “Escolher um horário”                      | Histórico realmente vazio.                             |
+| “Nenhum registro” após filtro                 | “Nenhum agendamento encontrado com esses filtros.” + “Limpar filtros”           | Há uma busca ou filtragem ativa.                       |
+| “Sessão expirada”                             | “Entre novamente para continuar.”                                               | O acesso precisa ser renovado.                         |
+| “Sincronização concluída”                     | “Suas alterações foram salvas.”                                                 | A persistência foi confirmada.                         |
+| “Deseja prosseguir?”                          | “Cancelar este agendamento?”                                                    | Mostrar serviço, data, horário e consequência real.    |
+| “Sim” / “Não”                                 | “Cancelar agendamento” / “Manter agendamento”                                   | Decisão sobre uma reserva existente.                   |
+| “Falha, tente novamente” após demora no envio | “Ainda não conseguimos confirmar o resultado. Vamos verificar seu agendamento.” | O sistema efetivamente consultará o resultado.         |
+| “Acesso negado”                               | “Você não tem acesso a esta área.”                                              | Não revelar dados da área restrita.                    |
 
 Para erros, informar **o que aconteceu + o que foi preservado, se comprovado + como continuar**. Para sucesso, informar **resultado + resumo necessário + próxima ação útil**. Evitar repetir a mesma mensagem em vários lugares.
 
@@ -396,17 +468,17 @@ Para erros, informar **o que aconteceu + o que foi preservado, se comprovado + c
 
 Adotar WCAG 2.2 nível AA como referência de verificação para os critérios aplicáveis. As medidas abaixo são um recorte, não uma auditoria completa nem declaração de conformidade.
 
-| Aspecto | Diretriz | Natureza |
-| --- | --- | --- |
-| Área acionável no celular | Adotar 44 × 44 pixels CSS ou mais como meta de produto; preferir 48 × 48 quando houver espaço. Garantir separação entre ações e avaliar a área efetivamente clicável. | Meta de conforto desta skill, não o mínimo AA. |
-| Alvo mínimo WCAG 2.2 | Verificar 24 × 24 pixels CSS ou as exceções de espaçamento, equivalência, texto em linha, controle do navegador e essencialidade previstas no critério 2.5.8. | Critério AA, com exceções específicas. [1] |
-| Texto comum | Contraste de pelo menos 4,5:1. | Critério 1.4.3; considerar suas exceções. [2] |
-| Texto grande | Contraste de pelo menos 3:1; grande significa pelo menos 18 pt regular ou 14 pt em negrito, aproximadamente 24 e 18,67 pixels CSS. | Critério 1.4.3. [2] |
-| Elementos visuais de controles e gráficos | Verificar contraste de pelo menos 3:1 com cores adjacentes nas partes necessárias para identificar e compreender o componente ou informação. | Critério 1.4.11; não significa que toda borda decorativa precise do mesmo contraste. [3] |
-| Texto de leitura e campos | Partir de 16 pixels CSS ou equivalente escalável e entrelinha confortável; usar texto auxiliar menor apenas se continuar legível. | Referência de projeto, não requisito numérico universal da WCAG. |
-| Ampliação | Verificar ampliação de texto a 200% sem perda de informação ou função, conforme o critério aplicável. | Critério 1.4.4. [4] |
-| Reorganização de conteúdo | Em conteúdo de rolagem vertical, verificar largura equivalente a 320 pixels CSS sem perda de informação ou função e sem rolagem em duas dimensões, ressalvadas exceções essenciais. | Critério 1.4.10; tabelas e outros conteúdos podem exigir avaliação específica. [5] |
-| Autenticação | Permitir mecanismos que reduzam esforço de memória/transcrição, como gerenciadores de senha, preenchimento automático e colagem. | Critério 3.3.8, conforme condições e exceções. [6] |
+| Aspecto                                   | Diretriz                                                                                                                                                                            | Natureza                                                                                 |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Área acionável no celular                 | Adotar 44 × 44 pixels CSS ou mais como meta de produto; preferir 48 × 48 quando houver espaço. Garantir separação entre ações e avaliar a área efetivamente clicável.               | Meta de conforto desta skill, não o mínimo AA.                                           |
+| Alvo mínimo WCAG 2.2                      | Verificar 24 × 24 pixels CSS ou as exceções de espaçamento, equivalência, texto em linha, controle do navegador e essencialidade previstas no critério 2.5.8.                       | Critério AA, com exceções específicas. [1]                                               |
+| Texto comum                               | Contraste de pelo menos 4,5:1.                                                                                                                                                      | Critério 1.4.3; considerar suas exceções. [2]                                            |
+| Texto grande                              | Contraste de pelo menos 3:1; grande significa pelo menos 18 pt regular ou 14 pt em negrito, aproximadamente 24 e 18,67 pixels CSS.                                                  | Critério 1.4.3. [2]                                                                      |
+| Elementos visuais de controles e gráficos | Verificar contraste de pelo menos 3:1 com cores adjacentes nas partes necessárias para identificar e compreender o componente ou informação.                                        | Critério 1.4.11; não significa que toda borda decorativa precise do mesmo contraste. [3] |
+| Texto de leitura e campos                 | Partir de 16 pixels CSS ou equivalente escalável e entrelinha confortável; usar texto auxiliar menor apenas se continuar legível.                                                   | Referência de projeto, não requisito numérico universal da WCAG.                         |
+| Ampliação                                 | Verificar ampliação de texto a 200% sem perda de informação ou função, conforme o critério aplicável.                                                                               | Critério 1.4.4. [4]                                                                      |
+| Reorganização de conteúdo                 | Em conteúdo de rolagem vertical, verificar largura equivalente a 320 pixels CSS sem perda de informação ou função e sem rolagem em duas dimensões, ressalvadas exceções essenciais. | Critério 1.4.10; tabelas e outros conteúdos podem exigir avaliação específica. [5]       |
+| Autenticação                              | Permitir mecanismos que reduzam esforço de memória/transcrição, como gerenciadores de senha, preenchimento automático e colagem.                                                    | Critério 3.3.8, conforme condições e exceções. [6]                                       |
 
 Medir contraste nos estados reais, inclusive conteúdo sobre gradientes; não inferir acessibilidade apenas pelo nome da cor. O teste automatizado ajuda a localizar problemas, mas não substitui inspeção de teclado, foco, leitura e compreensão.
 
@@ -434,11 +506,11 @@ Aplicar este perfil às telas do Barba & Cabelo. Preservar as decisões dos anex
 
 ### Modos de canto
 
-| Opção visível | Comportamento |
-| --- | --- |
-| Retos | Aplicar a família de raios do modo reto. |
+| Opção visível     | Comportamento                                                                                |
+| ----------------- | -------------------------------------------------------------------------------------------- |
+| Retos             | Aplicar a família de raios do modo reto.                                                     |
 | Semi arredondados | Aplicar a família de raios suaves; usar como padrão efetivo quando ainda não houver escolha. |
-| Arredondados | Aplicar a família de raios arredondados. |
+| Arredondados      | Aplicar a família de raios arredondados.                                                     |
 
 - Tratar `soft`/semi arredondado como valor efetivo quando a preferência estiver ausente; evitar uma primeira renderização em outro modo seguida de troca perceptível.
 - Persistir a escolha explícita no mecanismo e no escopo previstos no projeto. Não tratar uma preferência não salva como concluída.
@@ -526,16 +598,16 @@ Marcar como verificado apenas o que foi efetivamente examinado. Uma análise de 
 
 Usar amostragem proporcional ao risco. As larguras são referências de verificação, não pontos de quebra obrigatórios.
 
-| Situação | Conferir |
-| --- | --- |
-| Largura equivalente a 320 pixels CSS | Reorganização do conteúdo, leitura e ação principal; exceções justificadas. |
-| Celular de 360–390 pixels CSS | Tarefa completa por toque, campos longos e teclado aberto. |
-| Tablet ou largura intermediária | Transição de colunas, painéis e orientação. |
-| Computador, por exemplo 1280 pixels CSS | Hierarquia, comprimento de linhas e navegação por teclado. |
-| Texto ampliado a 200% | Informação e função preservadas, inclusive em controles e janelas. |
-| Conexão lenta ou falha simulada | Retorno imediato, contexto preservado e recuperação sem duplicação. |
-| Conteúdo realista | Nomes longos, listas grandes, poucos resultados, ausência de imagem e valores variados. |
-| Temas e preferências existentes | Contraste e persistência; no Barba & Cabelo, os três modos de canto. |
+| Situação                                | Conferir                                                                                |
+| --------------------------------------- | --------------------------------------------------------------------------------------- |
+| Largura equivalente a 320 pixels CSS    | Reorganização do conteúdo, leitura e ação principal; exceções justificadas.             |
+| Celular de 360–390 pixels CSS           | Tarefa completa por toque, campos longos e teclado aberto.                              |
+| Tablet ou largura intermediária         | Transição de colunas, painéis e orientação.                                             |
+| Computador, por exemplo 1280 pixels CSS | Hierarquia, comprimento de linhas e navegação por teclado.                              |
+| Texto ampliado a 200%                   | Informação e função preservadas, inclusive em controles e janelas.                      |
+| Conexão lenta ou falha simulada         | Retorno imediato, contexto preservado e recuperação sem duplicação.                     |
+| Conteúdo realista                       | Nomes longos, listas grandes, poucos resultados, ausência de imagem e valores variados. |
+| Temas e preferências existentes         | Contraste e persistência; no Barba & Cabelo, os três modos de canto.                    |
 
 Quando disponíveis, conferir navegadores e dispositivos relevantes ao público; emulação não substitui todos os comportamentos de teclado, rolagem e tecnologias assistivas de aparelhos reais. Declarar a limitação sem afirmar validação universal.
 
@@ -595,11 +667,11 @@ Examinar desvios:
 
 Quando o pedido abranger o produto inteiro, inventariar as jornadas existentes antes de aplicar alterações. Incluir acesso e recuperação, início, navegação, busca, cadastros, tarefa principal, histórico, detalhes, edição, cancelamento, configurações, ajuda e estados vazios — apenas os módulos reais.
 
-| Prioridade | Critério | Tratamento |
-| --- | --- | --- |
-| Bloqueio ou integridade | Pessoa não conclui tarefa, perde dados, duplica operação ou acessa o que não deveria. | Corrigir primeiro. |
-| Dificuldade frequente | Ambiguidade, excesso de digitação, erro recorrente ou barreira de celular/acessibilidade. | Corrigir na sequência, priorizando componentes compartilhados. |
-| Melhoria secundária | Alinhamento, refinamento visual ou conforto que não impede a tarefa. | Aplicar depois dos problemas de uso. |
+| Prioridade              | Critério                                                                                  | Tratamento                                                     |
+| ----------------------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Bloqueio ou integridade | Pessoa não conclui tarefa, perde dados, duplica operação ou acessa o que não deveria.     | Corrigir primeiro.                                             |
+| Dificuldade frequente   | Ambiguidade, excesso de digitação, erro recorrente ou barreira de celular/acessibilidade. | Corrigir na sequência, priorizando componentes compartilhados. |
+| Melhoria secundária     | Alinhamento, refinamento visual ou conforto que não impede a tarefa.                      | Aplicar depois dos problemas de uso.                           |
 
 Registrar **local, evidência, impacto, correção e verificação**. Diferenciar o que foi observado do que é hipótese. Não dar uma nota geral de usabilidade sem método definido.
 

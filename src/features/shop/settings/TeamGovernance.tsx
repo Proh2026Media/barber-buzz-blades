@@ -1,320 +1,651 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Check, Clock3, ShieldCheck, X } from "lucide-react";
-import { SettingsCardHeader } from "@/features/shop/settings/SettingsCardHeader";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Check,
+  CheckCircle2,
+  Hourglass,
+  Info,
+  Loader2,
+  RefreshCw,
+  Scale,
+  TimerOff,
+  X,
+  XCircle,
+} from "lucide-react";
+import {
+  ActionResult,
+  Countdown,
+  DetailList,
+  EmptyState,
+  Hint,
+  IconList,
+  IconTile,
+  LoadingState,
+  MoreDetails,
+  PersonAvatar,
+  SectionHeader,
+  StatusBadge,
+  Steps,
+  TONE_CLASS,
+  type Tone,
+} from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
-import type { Json, Tables } from "@/integrations/supabase/types";
+import type { Tables } from "@/integrations/supabase/types";
 import type { SessionProfile } from "@/lib/auth/session";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
+import { cn } from "@/lib/utils";
+import { MANAGER_META } from "../roles";
+import {
+  GovernanceModeBadge,
+  OwnershipBar,
+  activeOwners,
+  firstName,
+  loadTeamMembers,
+  type TeamMember,
+} from "../team";
+import {
+  describeChange,
+  type ChangeView,
+  type DiffContext,
+  type WeekDiffDay,
+} from "./governance-diff";
+import { awaitingMe, fetchDecisionQueue, type ChangeRequest } from "./decision-queue";
 
-type ChangeRequest = Tables<"shop_change_requests"> & {
-  expires_at?: string | null;
-  source?: string | null;
-  checklist?: Json;
-};
+type Settled = { request: ChangeRequest; tone: Tone; text: string };
 
-const kindKeys: Record<string, MessageKey> = {
-  "service.create": "team.gov.kind.serviceCreate",
-  "service.update": "team.gov.kind.serviceUpdate",
-  "service.toggle": "team.gov.kind.serviceToggle",
-  "service.delete": "team.gov.kind.serviceDelete",
-  "staff.create": "team.gov.kind.staffCreate",
-  "staff.update": "team.gov.kind.staffUpdate",
-  "staff.toggle": "team.gov.kind.staffToggle",
-  "staff.delete": "team.gov.kind.staffDelete",
-  "shop.timezone": "team.gov.kind.shopTimezone",
-  "hours.replace": "team.gov.kind.hoursReplace",
-  "availability.create": "team.gov.kind.availabilityCreate",
-  "availability.delete": "team.gov.kind.availabilityDelete",
-  "settings.operational": "team.gov.kind.settingsOperational",
-  "member.add": "team.gov.kind.memberAdd",
-  "member.update": "team.gov.kind.memberUpdate",
-};
+/** Quanto tempo o resultado de uma decisão fica no lugar do pedido antes de sair da lista. */
+const SETTLE_MS = 5000;
 
-function kindLabel(kind: string): string | undefined {
-  const key = kindKeys[kind];
-  return key ? tNow(key) : undefined;
+function relativeTime(iso: string, locale: string, now: number) {
+  const diff = (new Date(iso).getTime() - now) / 1000;
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+  const abs = Math.abs(diff);
+  if (abs < 60) return rtf.format(Math.round(diff), "second");
+  if (abs < 3600) return rtf.format(Math.round(diff / 60), "minute");
+  if (abs < 86400) return rtf.format(Math.round(diff / 3600), "hour");
+  return rtf.format(Math.round(diff / 86400), "day");
 }
 
-function payloadSummary(payload: Json) {
-  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return "";
-  const values = payload as Record<string, Json | undefined>;
-  const name = values.name ?? values.display_name;
-  return typeof name === "string" && name.trim() ? name : tNow("team.gov.reviewDetails");
+/** Faixa da semana: os 7 dias em pílulas, destacando os que mudam, e a lista antes → depois. */
+function WeekDiff({ week }: { week: WeekDiffDay[] }) {
+  const { t, intlLocale } = useI18n();
+  const dayName = (weekday: number, style: "short" | "long") =>
+    new Intl.DateTimeFormat(intlLocale, { weekday: style, timeZone: "UTC" }).format(
+      new Date(Date.UTC(2023, 0, 1 + weekday)),
+    );
+  const closed = t("eq.diff.closed");
+  const changed = week.filter((day) => day.changed);
+  const rows = (changed.length ? changed : week).map((day) => ({
+    key: String(day.weekday),
+    label: dayName(day.weekday, "long"),
+    value: day.after || closed,
+    previous: day.changed ? day.before || closed : undefined,
+  }));
+  return (
+    <div className="space-y-2">
+      <ol className="grid grid-cols-7 gap-1" aria-hidden>
+        {week.map((day) => (
+          <li
+            key={day.weekday}
+            className={cn(
+              "flex min-h-11 flex-col items-center justify-center rounded-xl border text-[11px] font-bold leading-tight",
+              day.changed
+                ? "tone-pending border-[color:var(--tone-line)] bg-[color:var(--tone-bg)] text-[color:var(--tone-ink)]"
+                : day.after
+                  ? "border-border bg-background"
+                  : "border-dashed border-border text-muted-foreground",
+            )}
+          >
+            <span className="capitalize">{dayName(day.weekday, "short").replace(".", "")}</span>
+            {day.changed && <span className="mt-0.5 size-1.5 rounded-full bg-current" />}
+          </li>
+        ))}
+      </ol>
+      <DetailList items={rows} />
+    </div>
+  );
 }
 
-function checklistItems(request: ChangeRequest): { kind: string; summary: string }[] {
-  const raw = request.checklist;
-  if (Array.isArray(raw) && raw.length > 0) {
-    return raw
-      .map((item) => {
-        if (!item || typeof item !== "object" || Array.isArray(item)) return null;
-        const row = item as Record<string, unknown>;
-        return {
-          kind: String(row.kind ?? request.kind),
-          summary: String(row.summary ?? payloadSummary(request.payload)),
-        };
-      })
-      .filter((row): row is { kind: string; summary: string } => !!row);
-  }
-  return [{ kind: request.kind, summary: payloadSummary(request.payload) }];
-}
-
-function remainingLabel(expiresAt: string | null | undefined) {
-  if (!expiresAt) return null;
-  const ms = new Date(expiresAt).getTime() - Date.now();
-  if (ms <= 0) return tNow("team.gov.expired");
-  const mins = Math.ceil(ms / 60000);
-  return tNow("team.gov.closesIn", { mins: Math.max(1, mins) });
+/** "O que muda": ícone do tipo, item afetado e as linhas antes → depois. */
+function ChangeSummary({ view }: { view: ChangeView }) {
+  const { t } = useI18n();
+  const empty = !view.rows.length && !view.week && !view.note;
+  return (
+    <div className="space-y-2">
+      <div className="flex items-start gap-3">
+        <IconTile icon={view.icon} size="sm" tone={view.destructive ? "danger" : "primary"} />
+        <div className="min-w-0 flex-1">
+          <p className={cn("text-sm font-bold", view.destructive && "text-destructive")}>
+            {view.title}
+          </p>
+          {view.subject && <p className="text-sm font-semibold break-words">{view.subject}</p>}
+        </div>
+      </div>
+      {view.rows.length > 0 && (
+        <DetailList items={view.rows} className="rounded-xl bg-background/70 px-3 py-2" />
+      )}
+      {view.week && (
+        <div className="rounded-xl bg-background/70 px-3 py-2">
+          <WeekDiff week={view.week} />
+        </div>
+      )}
+      {view.note && <Hint icon={Info}>{view.note}</Hint>}
+      {/* Sem linhas "antes → depois": diz que o resto não dá para mostrar (exclusão já se explica). */}
+      {empty && !view.destructive && (
+        <Hint icon={Info} tone="muted">
+          {view.subject ? t("eq.gov.otherDetails") : t("eq.gov.noDetails")}
+        </Hint>
+      )}
+      {empty && view.destructive && !view.subject && (
+        <Hint icon={Info} tone="muted">
+          {t("eq.gov.noDetails")}
+        </Hint>
+      )}
+    </div>
+  );
 }
 
 export function TeamGovernance({
   shopId,
   profile,
   onChanged,
+  services,
+  staff,
+  businessHours,
+  blocks,
+  settings,
+  timeZone,
+  revision = 0,
 }: {
   shopId: string;
   profile: SessionProfile;
   onChanged?: () => void;
+  /** Dados que o painel já tem, para mostrar o "antes" de cada pedido. */
+  services?: Tables<"services">[];
+  staff?: Tables<"staff">[];
+  businessHours?: Tables<"business_hours">[];
+  blocks?: DiffContext["blocks"];
+  settings?: Tables<"barbershop_settings"> | null;
+  timeZone?: string;
+  /** Muda quando algo foi pedido em outra tela: recarrega sem apagar a lista. */
+  revision?: number;
 }) {
   const { t, intlLocale } = useI18n();
   const [requests, setRequests] = useState<ChangeRequest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [busyId, setBusyId] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-  const [messageIsError, setMessageIsError] = useState(false);
-  const [popupOpen, setPopupOpen] = useState(false);
+  const [approvals, setApprovals] = useState<Map<string, Set<string>>>(() => new Map());
+  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [busy, setBusy] = useState<{ id: string; action: "approve" | "decline" | "cancel" } | null>(
+    null,
+  );
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [settled, setSettled] = useState<Record<string, Settled>>({});
+  const [now, setNow] = useState(() => Date.now());
+  const timers = useRef<number[]>([]);
   const actor = profile.activeShopActor;
   const canReview = actor?.role === "owner" || actor?.role === "partner";
+  const me = profile.user.id;
 
   const load = useCallback(async () => {
     if (!canReview) return;
-    setLoading(true);
-    const { data, error } = await supabase.rpc("list_pending_shop_changes", {
-      p_shop_id: shopId,
-    });
-    if (error) {
-      // Fallback se a RPC ainda não existir.
-      const fallback = await supabase
-        .from("shop_change_requests")
-        .select("*")
-        .eq("barbershop_id", shopId)
-        .eq("status", "pending")
-        .order("created_at", { ascending: false })
-        .limit(30);
-      if (fallback.error) {
-        setMessage(friendlyAuthError(fallback.error));
-        setMessageIsError(true);
-      } else setRequests((fallback.data as ChangeRequest[]) ?? []);
-    } else {
-      setRequests(Array.isArray(data) ? (data as ChangeRequest[]) : []);
+    setLoadError(null);
+    const [queue, team] = await Promise.all([
+      fetchDecisionQueue(shopId, me),
+      loadTeamMembers(shopId).catch(() => null),
+    ]);
+    if (team) setMembers(team);
+    if ("error" in queue) setLoadError(friendlyAuthError(queue.error));
+    else {
+      setRequests(queue.requests);
+      setApprovals(queue.approvals);
     }
-    setLoading(false);
-  }, [canReview, shopId]);
+    setNow(Date.now());
+    setLoaded(true);
+  }, [canReview, shopId, me]);
 
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, revision]);
+
+  useEffect(() => {
+    const list = timers.current;
+    // "há 2 h" acompanha o relógio sem recarregar.
+    const tick = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => {
+      window.clearInterval(tick);
+      list.forEach((id) => window.clearTimeout(id));
+    };
+  }, []);
+
+  const memberByUser = useMemo(() => new Map(members.map((m) => [m.user_id, m])), [members]);
+  const memberNames = useMemo(
+    () =>
+      new Map(
+        members.map((m) => [
+          m.id,
+          { name: m.display_name, role: m.role, percent: m.ownership_percent, active: m.active },
+        ]),
+      ),
+    [members],
+  );
+  const owners = useMemo(() => activeOwners(members), [members]);
+  const mode = profile.governanceMode ?? (owners.length > 1 ? "equal" : "single");
+  const leader = owners[0] ?? null;
+  const canApply = !!profile.capabilities?.canApplyOperations;
+  // Quem decide os pedidos de quem está vendo: a maior parte (maioria) ou os outros donos.
+  const deciders =
+    mode === "majority"
+      ? owners.filter((o) => o.user_id !== me).slice(0, 1)
+      : owners.filter((o) => o.user_id !== me);
+  const decidersText = deciders.length
+    ? deciders.map((o) => firstName(o.display_name)).join(", ")
+    : t("eq.gov.otherOwners");
 
   const pending = useMemo(
     () => requests.filter((request) => request.status === "pending"),
     [requests],
   );
+  // Resultado de uma decisão fica no lugar do pedido por alguns segundos.
+  const visible = useMemo(() => {
+    const ids = new Set(pending.map((r) => r.id));
+    const extra = Object.values(settled)
+      .filter((row) => !ids.has(row.request.id))
+      .map((row) => row.request);
+    return [...pending, ...extra].sort((a, b) => {
+      const am =
+        (a.source === "account_manager" ? 0 : 1) - (b.source === "account_manager" ? 0 : 1);
+      return am || new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+  }, [pending, settled]);
+  const approvedByMe = (request: ChangeRequest) =>
+    !settled[request.id] && !!approvals.get(request.id)?.has(me);
+  const toDecide = visible.filter((r) => r.requested_by !== me && !approvedByMe(r));
+  const alreadyApproved = visible.filter((r) => r.requested_by !== me && approvedByMe(r));
+  const mine = visible.filter((r) => r.requested_by === me);
+  const waitingCount = awaitingMe(
+    pending,
+    me,
+    new Set(pending.filter((r) => approvals.get(r.id)?.has(me)).map((r) => r.id)),
+  ).length;
+  /** Donos que ainda faltam aprovar um pedido (decisão em conjunto). */
+  const missingNames = (request: ChangeRequest) => {
+    const ok = approvals.get(request.id);
+    const names = owners
+      .filter((o) => o.user_id !== request.requested_by && !ok?.has(o.user_id))
+      .map((o) => firstName(o.display_name));
+    return names.length ? names.join(", ") : t("eq.gov.otherOwners");
+  };
 
-  useEffect(() => {
-    if (pending.some((row) => row.source === "account_manager" || row.source === "majority_log")) {
-      setPopupOpen(true);
-    }
-  }, [pending]);
+  function settle(request: ChangeRequest, tone: Tone, text: string) {
+    setSettled((current) => ({ ...current, [request.id]: { request, tone, text } }));
+    const id = window.setTimeout(() => {
+      setSettled((current) => {
+        const next = { ...current };
+        delete next[request.id];
+        return next;
+      });
+    }, SETTLE_MS);
+    timers.current.push(id);
+  }
 
   async function decide(request: ChangeRequest, approve: boolean) {
-    setBusyId(request.id);
-    setMessage(null);
-    setMessageIsError(false);
+    setBusy({ id: request.id, action: approve ? "approve" : "decline" });
+    setErrors(({ [request.id]: _drop, ...rest }) => rest);
     const { data, error } = await supabase.rpc("decide_shop_change", {
       p_request_id: request.id,
       p_approve: approve,
       p_note: null,
     });
+    setBusy(null);
     if (error) {
-      setMessage(friendlyAuthError(error));
-      setMessageIsError(true);
-    } else {
-      const result = data as { status?: string; remaining_approvals?: number } | null;
-      setMessage(
-        result?.status === "expired"
-          ? t("team.gov.windowClosed")
-          : result?.status === "pending"
-            ? t("team.gov.approvalRecorded", { count: result.remaining_approvals ?? 1 })
-            : approve
-              ? t("team.gov.approved")
-              : t("team.gov.rejected"),
-      );
-      await load();
-      onChanged?.();
+      setErrors((current) => ({ ...current, [request.id]: friendlyAuthError(error) }));
+      return;
     }
-    setBusyId(null);
+    const result = data as { status?: string; remaining_approvals?: number } | null;
+    if (result?.status === "expired") settle(request, "neutral", t("eq.gov.result.expired"));
+    else if (result?.status === "pending") {
+      const left = result.remaining_approvals ?? 1;
+      settle(
+        request,
+        "pending",
+        left === 1 ? t("eq.gov.result.okOne") : t("eq.gov.result.okMany", { count: left }),
+      );
+    } else if (approve) settle(request, "success", t("eq.gov.result.approved"));
+    else settle(request, "danger", t("eq.gov.result.declined"));
+    await load();
+    onChanged?.();
   }
 
   async function cancel(request: ChangeRequest) {
-    setBusyId(request.id);
+    setBusy({ id: request.id, action: "cancel" });
+    setErrors(({ [request.id]: _drop, ...rest }) => rest);
     const { error } = await supabase.rpc("cancel_shop_change", { p_request_id: request.id });
-    setMessage(error ? friendlyAuthError(error) : t("team.gov.requestCancelled"));
-    setMessageIsError(Boolean(error));
-    if (!error) await load();
-    setBusyId(null);
+    setBusy(null);
+    if (error) {
+      setErrors((current) => ({ ...current, [request.id]: friendlyAuthError(error) }));
+      return;
+    }
+    settle(request, "neutral", t("eq.gov.result.cancelled"));
+    await load();
   }
 
   if (!canReview) return null;
 
-  return (
-    <section className="app-action-card space-y-4 p-4" aria-labelledby="governance-title">
-      <div className="flex items-start gap-3">
-        <div className="min-w-0 flex-1">
-          <SettingsCardHeader
-            icon={ShieldCheck}
-            id="governance-title"
-            title={t("team.gov.title")}
-            intro={
-              profile.governanceMode === "equal"
-                ? t("team.gov.modeEqual")
-                : profile.governanceMode === "majority"
-                  ? profile.capabilities?.canApplyOperations
-                    ? t("team.gov.modeMajorityOwner")
-                    : t("team.gov.modeMajorityMinor")
-                  : t("team.gov.modeDirect")
+  const renderRequest = (request: ChangeRequest) => {
+    const own = request.requested_by === me;
+    const manager = request.source === "account_manager";
+    const done = settled[request.id];
+    const view = describeChange(request.kind, request.payload, {
+      t,
+      locale: intlLocale,
+      timeZone,
+      services,
+      staff,
+      businessHours,
+      blocks,
+      settings,
+      memberNames,
+    });
+    const requester = memberByUser.get(request.requested_by);
+    const busyHere = busy?.id === request.id;
+    // Já aprovado por quem vê: espera os outros donos, sem botões de decisão.
+    const approvedMine = !own && approvedByMe(request);
+    const tone: Tone = own || approvedMine ? "neutral" : "pending";
+    const when = new Date(request.created_at);
+    const waitingNames = mode === "equal" ? missingNames(request) : decidersText;
+
+    if (done) {
+      const Icon =
+        done.tone === "success"
+          ? CheckCircle2
+          : done.tone === "danger"
+            ? XCircle
+            : done.tone === "pending"
+              ? Hourglass
+              : TimerOff;
+      return (
+        <li
+          key={request.id}
+          className={cn(
+            TONE_CLASS[done.tone],
+            "flex items-center gap-3 rounded-2xl border-2 border-[color:var(--tone-line)] bg-[color:var(--tone-bg)] p-3 text-[color:var(--tone-ink)]",
+          )}
+        >
+          <Icon className="size-6 shrink-0" aria-hidden />
+          <div className="min-w-0">
+            <p role="status" className="text-sm font-bold">
+              {done.text}
+            </p>
+            <p className="text-xs opacity-90">
+              {view.title}
+              {view.subject ? ` · ${view.subject}` : ""}
+            </p>
+          </div>
+        </li>
+      );
+    }
+
+    return (
+      <li
+        key={request.id}
+        className={cn(
+          TONE_CLASS[tone],
+          "space-y-3 rounded-2xl border border-border border-l-4 border-l-[color:var(--tone-line)] bg-card p-3 sm:p-4",
+        )}
+      >
+        {/* Quem pediu, quando e em que pé está. */}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+          {manager ? (
+            <StatusBadge
+              tone={MANAGER_META.tone}
+              icon={MANAGER_META.icon}
+              size="sm"
+              label={t("eq.role.manager")}
+            />
+          ) : (
+            <span className="inline-flex min-w-0 items-center gap-1.5 text-xs font-semibold">
+              <PersonAvatar
+                name={requester?.display_name ?? "?"}
+                seed={requester?.user_id}
+                size="xs"
+              />
+              {own
+                ? t("eq.gov.byYou")
+                : t("eq.gov.byName", {
+                    name: requester ? firstName(requester.display_name) : t("eq.gov.someone"),
+                  })}
+            </span>
+          )}
+          <time
+            dateTime={request.created_at}
+            title={when.toLocaleString(intlLocale, { dateStyle: "short", timeStyle: "short" })}
+            className="text-xs text-muted-foreground"
+          >
+            · {relativeTime(request.created_at, intlLocale, now)}
+          </time>
+          <StatusBadge
+            tone="pending"
+            icon={Hourglass}
+            size="sm"
+            className="ms-auto"
+            label={
+              own
+                ? t("eq.gov.waitingFor", { names: waitingNames })
+                : approvedMine
+                  ? t("eq.gov.youApproved", { names: waitingNames })
+                  : t("eq.gov.waitingYou")
             }
           />
         </div>
-        {pending.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setPopupOpen(true)}
-            className="ml-auto rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-bold text-amber-700"
-          >
-            {t(pending.length === 1 ? "team.gov.pendingOne" : "team.gov.pendingMany", {
-              count: pending.length,
-            })}
-          </button>
+
+        {request.expires_at && (
+          <div className="flex flex-wrap items-center gap-2">
+            <Countdown
+              endsAt={request.expires_at}
+              criticalBelow={300}
+              label={t("eq.gov.toDecide")}
+              onExpire={() => void load()}
+            />
+            <span className="text-xs text-muted-foreground">{t("eq.gov.expiresEffect")}</span>
+          </div>
+        )}
+
+        <ChangeSummary view={view} />
+
+        <Steps
+          label={t("eq.gov.stepsLabel")}
+          steps={[
+            { key: "asked", label: t("eq.gov.step.asked"), status: "done" },
+            ...(approvedMine
+              ? [
+                  { key: "mine", label: t("eq.gov.step.yourDecision"), status: "done" as const },
+                  {
+                    key: "others",
+                    label: t("eq.gov.step.decisionOf", { names: waitingNames }),
+                    status: "current" as const,
+                  },
+                ]
+              : [
+                  {
+                    key: "decision",
+                    label: own
+                      ? t("eq.gov.step.decisionOf", { names: waitingNames })
+                      : t("eq.gov.step.yourDecision"),
+                    status: "current" as const,
+                  },
+                ]),
+            { key: "applied", label: t("eq.gov.step.applied"), status: "upcoming" },
+          ]}
+        />
+
+        {errors[request.id] && (
+          <ActionResult
+            state="error"
+            text={errors[request.id]}
+            reveal={false}
+            onDismiss={() => setErrors(({ [request.id]: _drop, ...rest }) => rest)}
+          />
+        )}
+
+        <div className="flex flex-wrap justify-end gap-2 empty:hidden">
+          {own ? (
+            <button
+              type="button"
+              disabled={busyHere}
+              onClick={() => void cancel(request)}
+              className="action-button action-danger min-h-11"
+            >
+              {busyHere ? (
+                <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />
+              ) : (
+                <X className="size-4" aria-hidden />
+              )}
+              {busyHere ? t("eq.gov.cancelling") : t("eq.gov.cancelRequest")}
+            </button>
+          ) : approvedMine ? null : (
+            <>
+              <button
+                type="button"
+                disabled={busyHere}
+                onClick={() => void decide(request, false)}
+                className="action-button action-danger min-h-11 flex-1 justify-center sm:flex-none"
+              >
+                {busyHere && busy?.action === "decline" ? (
+                  <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />
+                ) : (
+                  <X className="size-4" aria-hidden />
+                )}
+                {busyHere && busy?.action === "decline"
+                  ? t("eq.gov.declining")
+                  : t("eq.gov.decline")}
+              </button>
+              <button
+                type="button"
+                disabled={busyHere}
+                onClick={() => void decide(request, true)}
+                className="action-button action-confirm min-h-11 flex-1 justify-center sm:flex-none"
+              >
+                {busyHere && busy?.action === "approve" ? (
+                  <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />
+                ) : (
+                  <Check className="size-4" aria-hidden />
+                )}
+                {busyHere && busy?.action === "approve"
+                  ? t("eq.gov.approving")
+                  : t("eq.gov.approve")}
+              </button>
+            </>
+          )}
+        </div>
+      </li>
+    );
+  };
+
+  const group = (id: string, title: string, rows: ChangeRequest[], hint?: string) =>
+    rows.length > 0 && (
+      <section aria-labelledby={`gov-${id}`} className="space-y-2">
+        <h4 id={`gov-${id}`} className="flex items-center gap-2 text-sm font-extrabold">
+          {title}
+          <span className="inline-grid min-w-6 place-items-center rounded-full bg-muted px-1.5 text-xs font-bold tabular-nums">
+            {rows.length}
+          </span>
+        </h4>
+        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+        <ul className="space-y-3">{rows.map(renderRequest)}</ul>
+      </section>
+    );
+
+  const shares = owners.map((owner) => ({
+    key: owner.user_id,
+    name: owner.display_name,
+    percent: Number(owner.ownership_percent ?? 0),
+  }));
+
+  return (
+    <section
+      id="team-decisions"
+      className="app-action-card scroll-mt-28 space-y-4 p-4"
+      aria-labelledby="governance-title"
+    >
+      <SectionHeader
+        icon={Scale}
+        id="governance-title"
+        title={t("eq.gov.title")}
+        aside={
+          waitingCount > 0 ? (
+            <StatusBadge
+              tone="pending"
+              icon={Hourglass}
+              label={
+                waitingCount === 1
+                  ? t("eq.gov.waitingOne")
+                  : t("eq.gov.waitingMany", { count: waitingCount })
+              }
+            />
+          ) : undefined
+        }
+      />
+
+      {/* Como as decisões funcionam aqui: quem tem quanto e o efeito para quem está vendo. */}
+      <div className="space-y-3 rounded-2xl bg-background/70 p-3">
+        <GovernanceModeBadge
+          mode={mode}
+          leader={leader}
+          youDecideAlone={mode === "single" && (!leader || leader.user_id === me)}
+        />
+        {shares.length > 1 && <OwnershipBar owners={shares} />}
+        <IconList
+          size="md"
+          items={[
+            canApply
+              ? { icon: CheckCircle2, tone: "success", text: t("eq.gov.effectNow") }
+              : {
+                  icon: Hourglass,
+                  tone: "pending",
+                  text: t("eq.gov.effectWait", { names: decidersText }),
+                },
+          ]}
+        />
+        {mode !== "single" && (
+          <MoreDetails>
+            <IconList
+              items={[
+                { icon: Check, text: t("eq.gov.rule.approve") },
+                { icon: X, tone: "muted", text: t("eq.gov.rule.decline") },
+                { icon: TimerOff, tone: "muted", text: t("eq.gov.rule.manager") },
+              ]}
+            />
+          </MoreDetails>
         )}
       </div>
-      {loading ? (
-        <p role="status" className="text-xs text-muted-foreground">
-          {t("team.gov.loading")}
-        </p>
-      ) : pending.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border p-3 text-xs text-muted-foreground">
-          {t("team.gov.empty")}
-        </p>
+
+      {!loaded && !loadError ? (
+        <LoadingState variant="list" count={2} label={t("eq.gov.loading")} />
+      ) : loadError ? (
+        <EmptyState
+          variant="plain"
+          status="danger"
+          title={t("eq.common.loadFailed")}
+          description={loadError}
+          action={
+            <button type="button" onClick={() => void load()} className="action-button min-h-11">
+              <RefreshCw className="size-4" aria-hidden />
+              {t("eq.common.retry")}
+            </button>
+          }
+        />
+      ) : visible.length === 0 ? (
+        <Hint icon={CheckCircle2} tone="success" className="text-sm font-semibold text-foreground">
+          {t("eq.gov.allClear")}
+        </Hint>
       ) : (
-        <div className="space-y-2">
-          {pending.map((request) => {
-            const own = request.requested_by === profile.user.id;
-            const timer = remainingLabel(request.expires_at);
-            const items = checklistItems(request);
-            return (
-              <article
-                key={request.id}
-                className="rounded-2xl border border-border bg-background/60 p-3"
-              >
-                <div className="flex items-start gap-3">
-                  <Clock3 className="mt-0.5 size-4 shrink-0 text-amber-600" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold">
-                      {kindLabel(request.kind) ?? t("team.gov.kind.fallback")}
-                      {request.source === "account_manager"
-                        ? ` · ${t("team.gov.accountManager")}`
-                        : ""}
-                    </p>
-                    <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-muted-foreground">
-                      {items.map((item, index) => (
-                        <li key={`${request.id}-${index}`}>
-                          {kindLabel(item.kind) ?? item.kind}: {item.summary}
-                        </li>
-                      ))}
-                    </ul>
-                    <p className="mt-1 text-[11px] text-muted-foreground">
-                      {own ? t("team.gov.requestedByYou") : t("team.gov.requestedByOther")} ·{" "}
-                      {new Date(request.created_at).toLocaleString(intlLocale)}
-                      {timer ? ` · ${timer}` : ""}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-3 flex flex-wrap justify-end gap-2">
-                  {own ? (
-                    <button
-                      type="button"
-                      disabled={busyId === request.id}
-                      onClick={() => void cancel(request)}
-                      className="action-button action-danger"
-                    >
-                      <X className="size-4" /> {t("team.gov.cancelRequest")}
-                    </button>
-                  ) : (
-                    <>
-                      <button
-                        type="button"
-                        disabled={busyId === request.id}
-                        onClick={() => void decide(request, false)}
-                        className="action-button action-danger"
-                      >
-                        <X className="size-4" /> {t("team.gov.decline")}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={busyId === request.id}
-                        onClick={() => void decide(request, true)}
-                        className="action-button action-confirm"
-                      >
-                        <Check className="size-4" /> {t("team.gov.approve")}
-                      </button>
-                    </>
-                  )}
-                </div>
-              </article>
-            );
-          })}
+        <div className="space-y-5">
+          {group("decide", t("eq.gov.groupDecide"), toDecide)}
+          {group("approved", t("eq.gov.groupApproved"), alreadyApproved)}
+          {group("mine", t("eq.gov.groupMine"), mine)}
         </div>
       )}
-      {message &&
-        (messageIsError ? (
-          <p role="alert" className="text-xs font-semibold text-destructive">
-            {message}
-          </p>
-        ) : (
-          <p role="status" className="text-xs font-semibold text-primary">
-            {message}
-          </p>
-        ))}
-
-      <Dialog open={popupOpen && pending.length > 0} onOpenChange={setPopupOpen}>
-        <DialogContent className="max-w-md rounded-3xl border-border bg-card p-5">
-          <DialogTitle className="text-base font-extrabold">
-            {t("team.gov.checklistTitle")}
-          </DialogTitle>
-          <DialogDescription className="text-xs text-muted-foreground">
-            {t("team.gov.checklistHint")}
-          </DialogDescription>
-          <div className="mt-3 max-h-72 space-y-2 overflow-y-auto">
-            {pending.map((request) => (
-              <div key={`popup-${request.id}`} className="rounded-xl border border-border p-3">
-                <p className="text-sm font-semibold">
-                  {kindLabel(request.kind) ?? request.kind}
-                  {remainingLabel(request.expires_at)
-                    ? ` · ${remainingLabel(request.expires_at)}`
-                    : ""}
-                </p>
-                <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-muted-foreground">
-                  {checklistItems(request).map((item, index) => (
-                    <li key={`popup-item-${request.id}-${index}`}>{item.summary}</li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
     </section>
   );
 }

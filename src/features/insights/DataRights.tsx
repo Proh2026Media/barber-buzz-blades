@@ -1,5 +1,28 @@
-import { useEffect, useState } from "react";
-import { Download, ShieldCheck } from "lucide-react";
+import { useEffect, useId, useState } from "react";
+import {
+  CalendarDays,
+  CheckCircle2,
+  Download,
+  FolderLock,
+  Loader2,
+  RefreshCw,
+  Search,
+  ShieldCheck,
+  Star,
+  Trash2,
+  UserRound,
+} from "lucide-react";
+import {
+  ActionResult,
+  ConfirmDialog,
+  IconList,
+  IconTile,
+  LoadingState,
+  Notice,
+  SectionHeader,
+  Tag,
+  type ActionState,
+} from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
@@ -42,7 +65,14 @@ async function revokeGoogleBeforeDelete() {
   }
 }
 
-export function DataRights({ admin = false }: { admin?: boolean }) {
+export function DataRights({
+  admin = false,
+  id,
+}: {
+  admin?: boolean;
+  /** id da seção (Conta do cliente), para os atalhos do resumo. */
+  id?: string;
+}) {
   const demo = useDemo();
   const { t, intlLocale } = useI18n();
   const confirmWord = t("dataRights.confirmWord");
@@ -54,6 +84,10 @@ export function DataRights({ admin = false }: { admin?: boolean }) {
   const [confirm, setConfirm] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [version, setVersion] = useState(0);
+  const [downloadState, setDownloadState] = useState<ActionState | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [demoDeleted, setDemoDeleted] = useState(false);
+  const confirmInputId = useId();
 
   useEffect(() => {
     let cancelled = false;
@@ -96,8 +130,7 @@ export function DataRights({ admin = false }: { admin?: boolean }) {
   async function downloadData() {
     if (busy) return;
     setBusy(true);
-    setError("");
-    setMessage("");
+    setDownloadState("saving");
     try {
       let data: unknown;
       if (demo) {
@@ -129,36 +162,33 @@ export function DataRights({ admin = false }: { admin?: boolean }) {
       anchor.click();
       anchor.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      setMessage(t("dataRights.downloaded"));
+      setDownloadState("saved");
     } catch {
-      setError(t("dataRights.errorGeneric"));
+      setDownloadState("error");
     } finally {
       setBusy(false);
     }
   }
 
+  /** Exclui a conta. Em falha, rejeita: a janela de confirmação mostra o erro e fica aberta. */
   async function deleteAccountForever() {
-    if (busy || confirmText.trim().toUpperCase() !== confirmWord) return;
-    setBusy(true);
-    setError("");
-    setMessage("");
+    if (confirmText.trim().toUpperCase() !== confirmWord) return;
+    if (demo) {
+      demo.dispatch({ type: "privacy.erase" });
+      setConfirmText("");
+      setDemoDeleted(true);
+      return;
+    }
+    setDeleteError(null);
     try {
-      if (demo) {
-        demo.dispatch({ type: "privacy.erase" });
-        setConfirm(false);
-        setConfirmText("");
-        setMessage(t("dataRights.deleteDemo"));
-        return;
-      }
       await revokeGoogleBeforeDelete();
       const result = await supabase.rpc("delete_my_account");
       if (result.error) throw result.error;
       await supabase.auth.signOut();
       window.location.assign("/");
     } catch (err) {
-      setError(friendlyAuthError(err, t("dataRights.deleteError")));
-    } finally {
-      setBusy(false);
+      setDeleteError(friendlyAuthError(err, t("dataRights.deleteError")));
+      throw err;
     }
   }
 
@@ -186,95 +216,186 @@ export function DataRights({ admin = false }: { admin?: boolean }) {
     }
   }
 
+  if (!admin) {
+    const titleId = `${confirmInputId}-title`;
+    return (
+      <section
+        id={id}
+        aria-labelledby={titleId}
+        className="app-action-card scroll-mt-24 space-y-4 p-4 sm:p-5"
+      >
+        <SectionHeader icon={FolderLock} id={titleId} title={t("conta.data.title")} />
+        <div className="grid gap-3 sm:grid-cols-2">
+          {/* Baixar uma cópia: o que vem no arquivo, em pílulas. */}
+          <div className="flex flex-col gap-3 rounded-2xl border border-border bg-background/60 p-4">
+            <div className="flex items-center gap-3">
+              <IconTile icon={Download} size="sm" />
+              <p className="min-w-0 text-sm font-bold">{t("conta.data.copyTitle")}</p>
+            </div>
+            <ul aria-label={t("conta.data.includes")} className="flex flex-wrap gap-1.5">
+              <li>
+                <Tag icon={UserRound}>{t("conta.data.incAccount")}</Tag>
+              </li>
+              <li>
+                <Tag icon={CalendarDays}>{t("conta.data.incBookings")}</Tag>
+              </li>
+              <li>
+                <Tag icon={Star}>{t("conta.data.incPoints")}</Tag>
+              </li>
+              <li>
+                <Tag icon={ShieldCheck}>{t("conta.data.incChoices")}</Tag>
+              </li>
+            </ul>
+            <button
+              type="button"
+              disabled={busy}
+              aria-busy={downloadState === "saving" || undefined}
+              onClick={() => void downloadData()}
+              className="action-button action-confirm mt-auto w-full"
+            >
+              {downloadState === "saving" ? (
+                <Loader2 className="motion-safe:animate-spin" aria-hidden />
+              ) : (
+                <Download aria-hidden />
+              )}
+              {t("dataRights.download")}
+            </button>
+            <ActionResult
+              state={downloadState === "saving" ? null : downloadState}
+              text={
+                downloadState === "error"
+                  ? t("dataRights.errorGeneric")
+                  : t("conta.data.downloaded")
+              }
+              onRetry={() => void downloadData()}
+              onDismiss={() => setDownloadState(null)}
+              autoHideMs={8000}
+            />
+          </div>
+
+          {/* Excluir conta: na cor de alerta e sempre por uma janela de confirmação. */}
+          <div className="flex flex-col gap-3 rounded-2xl border border-border bg-background/60 p-4">
+            <div className="flex items-center gap-3">
+              <IconTile icon={Trash2} tone="danger" size="sm" />
+              <p className="min-w-0">
+                <span className="block text-sm font-bold">{t("conta.data.deleteTitle")}</span>
+                <span className="block text-xs text-muted-foreground">
+                  {t("conta.data.deleteShort")}
+                </span>
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                setConfirmText("");
+                setDeleteError(null);
+                setConfirm(true);
+              }}
+              className="action-button action-danger mt-auto w-full"
+            >
+              <Trash2 aria-hidden />
+              {t("conta.data.deleteOpen")}
+            </button>
+            <ActionResult
+              state={demoDeleted ? "saved" : null}
+              text={t("dataRights.deleteDemo")}
+              onDismiss={() => setDemoDeleted(false)}
+            />
+          </div>
+        </div>
+
+        <ConfirmDialog
+          open={confirm}
+          onOpenChange={(next) => {
+            setConfirm(next);
+            if (!next) setConfirmText("");
+          }}
+          tone="danger"
+          icon={Trash2}
+          title={t("conta.data.deleteQuestion")}
+          consequences={[
+            {
+              tone: "danger",
+              text: t("conta.data.willDelete"),
+              detail: t("conta.data.willDeleteWhat"),
+              key: "delete",
+            },
+            {
+              tone: "success",
+              text: t("conta.data.mayKeep"),
+              detail: t("conta.data.mayKeepWhat"),
+              key: "keep",
+            },
+            { tone: "warning", text: t("conta.data.noUndo"), key: "undo" },
+          ]}
+          confirmLabel={t("conta.data.deleteConfirm")}
+          confirmIcon={Trash2}
+          cancelLabel={t("conta.data.deleteCancel")}
+          confirmDisabled={confirmText.trim().toUpperCase() !== confirmWord}
+          // A janela guarda o texto do erro no clique (antes de deleteError existir): ela diz o
+          // resultado ("nada foi apagado") e o motivo do servidor aparece logo acima, por children.
+          errorText={t("conta.data.notDeleted")}
+          onConfirm={deleteAccountForever}
+        >
+          <Notice tone="warning" role="none" title={t("conta.data.ownerWarning")} />
+          <div className="space-y-2">
+            <label htmlFor={confirmInputId} className="block text-sm font-semibold">
+              {t("conta.data.typeWord", { word: confirmWord })}
+            </label>
+            <input
+              id={confirmInputId}
+              value={confirmText}
+              onChange={(event) => setConfirmText(event.target.value)}
+              autoComplete="off"
+              autoCapitalize="characters"
+              spellCheck={false}
+              className="flex min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold tracking-wide"
+            />
+          </div>
+          {/* Motivo do servidor, logo acima do resultado "nada foi apagado" da janela. */}
+          {deleteError && <Notice tone="danger" title={deleteError} />}
+        </ConfirmDialog>
+      </section>
+    );
+  }
+
   return (
     <section
-      aria-label={admin ? t("ins.rights.title") : t("dataRights.region")}
+      aria-label={t("ins.rights.title")}
       className="space-y-4 rounded-2xl border border-border bg-card p-4"
     >
-      <h3 className="flex items-center gap-2 text-sm font-bold">
-        <ShieldCheck className="size-5 text-primary" aria-hidden="true" />
-        {admin ? t("ins.rights.title") : t("dataRights.title")}
-      </h3>
-
-      {!admin && (
-        <>
-          <p className="text-xs text-muted-foreground">{t("dataRights.downloadHint")}</p>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void downloadData()}
-            className="flex min-h-11 items-center gap-2 rounded-xl border border-primary/30 px-4 py-3 text-sm font-semibold text-primary disabled:opacity-50"
-          >
-            <Download size={16} aria-hidden="true" />
-            {t("dataRights.download")}
-          </button>
-
-          <div className="space-y-2 border-t border-border/60 pt-4">
-            <p className="text-xs text-muted-foreground">{t("dataRights.deleteHint")}</p>
-            {!confirm ? (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => setConfirm(true)}
-                className="min-h-11 text-xs font-semibold text-destructive underline"
-              >
-                {t("dataRights.deleteStart")}
-              </button>
-            ) : (
-              <div className="space-y-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-xs">
-                <p>
-                  {t("dataRights.confirmBefore")} <span className="font-bold">{confirmWord}</span>{" "}
-                  {t("dataRights.confirmAfter")}
-                </p>
-                <label className="block space-y-1">
-                  <span className="font-semibold text-foreground">
-                    {t("dataRights.confirmLabel")}
-                  </span>
-                  <input
-                    value={confirmText}
-                    onChange={(event) => setConfirmText(event.target.value)}
-                    autoComplete="off"
-                    placeholder={confirmWord}
-                    className="flex min-h-11 w-full rounded-[var(--control-radius)] border border-border bg-background px-3 text-sm"
-                  />
-                </label>
-                <div className="flex flex-wrap gap-4">
-                  <button
-                    type="button"
-                    disabled={busy || confirmText.trim().toUpperCase() !== confirmWord}
-                    onClick={() => void deleteAccountForever()}
-                    className="min-h-11 font-bold text-destructive disabled:opacity-40"
-                  >
-                    {t("dataRights.deleteNow")}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => {
-                      setConfirm(false);
-                      setConfirmText("");
-                    }}
-                    className="min-h-11"
-                  >
-                    {t("common.back")}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </>
-      )}
+      <SectionHeader
+        as="h3"
+        icon={ShieldCheck}
+        title={t("ins.rights.title")}
+        aside={
+          admin ? (
+            <button
+              type="button"
+              disabled={busy || loading}
+              onClick={() => setVersion((v) => v + 1)}
+              className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-3 text-sm font-semibold disabled:opacity-60"
+            >
+              <RefreshCw
+                className={`size-4 ${loading ? "motion-safe:animate-spin" : ""}`}
+                aria-hidden
+              />
+              {t("ins.rights.refresh")}
+            </button>
+          ) : null
+        }
+      />
 
       {admin &&
         (loading ? (
-          <p role="status" className="text-xs">
-            {t("ins.rights.loading")}
-          </p>
+          <LoadingState variant="list" count={1} label={t("ins.rights.loading")} />
         ) : (
           <>
             {rows.map((row) => (
               <div key={row.id} className="space-y-2 rounded-xl border border-border p-3 text-xs">
-                <p className="font-semibold">
+                <p className="flex items-center gap-2 text-sm font-semibold">
+                  <Trash2 className="size-4 shrink-0 text-gold" aria-hidden />
                   {t("ins.rights.deletion", {
                     status:
                       row.status === "reviewing"
@@ -294,37 +415,31 @@ export function DataRights({ admin = false }: { admin?: boolean }) {
                     type="button"
                     disabled={busy}
                     onClick={() => void adminUpdate("reviewing", row.id)}
-                    className="font-semibold underline"
+                    className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-3 text-sm font-semibold disabled:opacity-60"
                   >
+                    <Search className="size-4" aria-hidden />
                     {t("ins.rights.startReview")}
                   </button>
                 )}
               </div>
             ))}
             {rows.length === 0 && !error && (
-              <p className="text-xs text-muted-foreground">{t("ins.rights.empty")}</p>
+              <IconList
+                items={[
+                  {
+                    key: "empty",
+                    icon: CheckCircle2,
+                    tone: "success",
+                    text: t("ins.rights.empty"),
+                  },
+                ]}
+              />
             )}
-            <button
-              type="button"
-              disabled={busy || loading}
-              onClick={() => setVersion((v) => v + 1)}
-              className="text-xs text-muted-foreground underline"
-            >
-              {t("ins.rights.refresh")}
-            </button>
           </>
         ))}
 
-      {error && (
-        <p role="alert" className="text-xs text-destructive">
-          {error}
-        </p>
-      )}
-      {message && (
-        <p role="status" className="text-xs">
-          {message}
-        </p>
-      )}
+      {error && <Notice tone="danger" title={error} />}
+      {message && <ActionResult state="saved" text={message} reveal={false} />}
     </section>
   );
 }

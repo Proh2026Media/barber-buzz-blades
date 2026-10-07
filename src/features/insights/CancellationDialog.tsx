@@ -1,4 +1,6 @@
-import { X } from "lucide-react";
+import type { ReactNode } from "react";
+import { CalendarX2, Loader2, MessageSquareText, X, XCircle } from "lucide-react";
+import { ChoiceChips, IconList, IconTile, Notice } from "@/components/visual";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -22,6 +24,11 @@ export function CancellationDialog({
   onCancel,
   onConfirm,
   summary,
+  details,
+  error,
+  title,
+  keepLabel,
+  confirmLabel,
 }: {
   open: boolean;
   busy: boolean;
@@ -31,8 +38,23 @@ export function CancellationDialog({
   onConfirm: () => void;
   /** Serviço, data e horário da reserva que será cancelada. */
   summary?: string | null;
+  /** Resumo visual (ex.: `<DetailList>`); tem prioridade sobre `summary`. */
+  details?: ReactNode;
+  /** Erro da tentativa, mostrado dentro da janela. */
+  error?: string | null;
+  /** Textos próprios de quem chama (a Agenda fala em "horário"); sem eles, os padrões. */
+  title?: string;
+  keepLabel?: string;
+  confirmLabel?: string;
 }) {
   const { t } = useI18n();
+  const reasonOptions = [
+    { value: "" as const, label: t("cancel.reasonNone") },
+    ...(Object.keys(cancellationReasons) as CancellationReason[]).map((value) => ({
+      value,
+      label: cancellationReasonText(value),
+    })),
+  ];
   return (
     <AlertDialog
       open={open}
@@ -40,54 +62,61 @@ export function CancellationDialog({
         if (!value && !busy) onCancel();
       }}
     >
-      <AlertDialogContent className="rounded-3xl border-border bg-card">
-        <AlertDialogHeader>
-          <AlertDialogTitle>{t("cancel.title")}</AlertDialogTitle>
-          <AlertDialogDescription asChild>
-            <div className="space-y-2 text-sm text-muted-foreground">
-              {summary ? (
-                <p className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-foreground">
-                  {summary}
-                </p>
-              ) : null}
-              <p>{t("cancel.body")}</p>
+      <AlertDialogContent className="max-h-[90dvh] gap-4 overflow-y-auto rounded-3xl border-border bg-card">
+        <AlertDialogHeader className="text-left sm:text-left">
+          <div className="flex items-start gap-3">
+            <IconTile icon={XCircle} tone="danger" />
+            <div className="min-w-0 flex-1 space-y-1">
+              <AlertDialogTitle className="text-lg font-bold leading-snug">
+                {title ?? t("cancel.title")}
+              </AlertDialogTitle>
+              <AlertDialogDescription className="sr-only">
+                {t("cancel.body")}
+              </AlertDialogDescription>
             </div>
-          </AlertDialogDescription>
+          </div>
         </AlertDialogHeader>
-        <label className="block space-y-2 text-sm font-semibold">
-          <span className="block">{t("cancel.reasonLabel")}</span>
-          <select
-            aria-label={t("cancel.reasonLabel")}
-            value={reason}
-            disabled={busy}
-            onChange={(event) => onReason(event.target.value as CancellationReason | "")}
-            className="min-h-11 w-full rounded-xl border border-border bg-background px-3 py-3"
-          >
-            <option value="">{t("cancel.reasonNone")}</option>
-            {(Object.keys(cancellationReasons) as CancellationReason[]).map((value) => (
-              <option key={value} value={value}>
-                {cancellationReasonText(value)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <AlertDialogFooter className="gap-2">
+        {details || summary ? (
+          <div className="rounded-2xl border border-border bg-background/60 p-3 text-sm text-foreground">
+            {details ?? summary}
+          </div>
+        ) : null}
+        <IconList
+          size="md"
+          items={[{ key: "free", tone: "danger", icon: CalendarX2, text: t("cancel.freed") }]}
+        />
+        <ChoiceChips
+          label={t("cancel.reasonLabel")}
+          icon={MessageSquareText}
+          hint={t("cancel.reasonHint")}
+          value={reason}
+          onChange={onReason}
+          disabled={busy}
+          options={reasonOptions}
+        />
+        {error && <Notice tone="danger" title={error} />}
+        <AlertDialogFooter className="grid gap-2 sm:grid-cols-2 sm:space-x-0">
           <button
             type="button"
             disabled={busy}
             onClick={onCancel}
-            className="min-h-11 rounded-xl border border-border px-4 text-sm font-semibold disabled:opacity-50"
+            className="min-h-11 w-full rounded-xl border border-border bg-card px-4 text-sm font-semibold disabled:opacity-50"
           >
-            {t("cancel.keep")}
+            {keepLabel ?? t("cancel.keep")}
           </button>
           <button
             type="button"
             disabled={busy}
+            aria-busy={busy || undefined}
             onClick={onConfirm}
-            className="action-button action-danger min-h-11 disabled:opacity-50"
+            className="action-button action-danger min-h-11 w-full disabled:opacity-50"
           >
-            <X className="size-4" />
-            {busy ? t("bookings.cancelling") : t("cancel.confirm")}
+            {busy ? (
+              <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />
+            ) : (
+              <X className="size-4" aria-hidden />
+            )}
+            {busy ? t("bookings.cancelling") : (confirmLabel ?? t("cancel.confirm"))}
           </button>
         </AlertDialogFooter>
       </AlertDialogContent>

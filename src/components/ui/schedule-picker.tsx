@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CalendarDays, Clock3, ChevronDown } from "lucide-react";
 import { enGB, enUS, es, pt, ptBR } from "date-fns/locale";
+import { labelDayButton } from "react-day-picker";
 import { Calendar } from "./calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 import { dateFromLocalKey, localDateKey } from "@/lib/shop/appointments";
@@ -32,7 +33,22 @@ export function DatePicker({
   max,
   compact = false,
   displayValue,
-}: Props & { min?: Date; max?: Date }) {
+  dayMarks,
+}: Props & {
+  min?: Date;
+  max?: Date;
+  /**
+   * Marcas nos dias: `muted` = traço tracejado embaixo do número (ex.: loja fechada; o dia
+   * continua tocável e legível) e `dotted` = pontinho vermelho no canto (ex.: já tem bloqueio).
+   * Com `mutedLabel`/`dottedLabel`, o nome do dia ganha o estado e aparece uma legenda.
+   */
+  dayMarks?: {
+    muted?: (date: Date) => boolean;
+    dotted?: (date: Date) => boolean;
+    mutedLabel?: string;
+    dottedLabel?: string;
+  };
+}) {
   const [open, setOpen] = useState(false);
   const { locale, intlLocale } = useI18n();
   return (
@@ -55,8 +71,10 @@ export function DatePicker({
         </button>
       </PopoverTrigger>
       <PopoverContent
-        className="schedule-popover w-auto max-w-[calc(100vw-24px)] rounded-lg border-border p-1"
+        className="schedule-popover w-auto max-w-[calc(100vw-32px)] rounded-lg border-border p-1"
         align="start"
+        // Mantém o calendário dentro da margem de 16 px do celular (antes encostava na borda).
+        collisionPadding={16}
       >
         <Calendar
           locale={CALENDAR_LOCALE[locale]}
@@ -64,6 +82,26 @@ export function DatePicker({
           mode="single"
           selected={dateFromLocalKey(value)}
           defaultMonth={dateFromLocalKey(value)}
+          modifiers={{
+            ...(dayMarks?.muted ? { muted: dayMarks.muted } : {}),
+            ...(dayMarks?.dotted ? { dotted: dayMarks.dotted } : {}),
+          }}
+          modifiersClassNames={{
+            muted:
+              "relative before:pointer-events-none before:absolute before:bottom-0.5 before:left-1/2 before:w-3.5 before:-translate-x-1/2 before:border-t-2 before:border-dashed before:border-[color:var(--tone-neutral-line)]",
+            dotted:
+              "relative after:pointer-events-none after:absolute after:right-0.5 after:top-0.5 after:size-1.5 after:rounded-full after:bg-[color:var(--tone-danger-line)]",
+          }}
+          labels={{
+            labelDayButton: (date, modifiers, options, dateLib) =>
+              [
+                labelDayButton(date, modifiers, options, dateLib),
+                modifiers.muted ? dayMarks?.mutedLabel : null,
+                modifiers.dotted ? dayMarks?.dottedLabel : null,
+              ]
+                .filter(Boolean)
+                .join(", "),
+          }}
           onSelect={(date) => {
             if (date) {
               onChange(localDateKey(date));
@@ -71,104 +109,106 @@ export function DatePicker({
             }
           }}
         />
+        {(dayMarks?.mutedLabel || dayMarks?.dottedLabel) && (
+          <p
+            className="flex flex-wrap gap-x-3 gap-y-1 px-3 pb-2 text-xs text-muted-foreground"
+            aria-hidden
+          >
+            {dayMarks.mutedLabel && (
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-3.5 border-t-2 border-dashed border-[color:var(--tone-neutral-line)]" />
+                {dayMarks.mutedLabel}
+              </span>
+            )}
+            {dayMarks.dottedLabel && (
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-1.5 rounded-full bg-[color:var(--tone-danger-line)]" />
+                {dayMarks.dottedLabel}
+              </span>
+            )}
+          </p>
+        )}
       </PopoverContent>
     </Popover>
   );
 }
 
-export function TimePicker({ value, onChange, label, disabled }: Props) {
+const QUICK_MINUTES = ["00", "15", "30", "45"];
+const FIVE_MINUTES = Array.from({ length: 12 }, (_, n) => String(n * 5).padStart(2, "0"));
+
+/**
+ * Escolha de hora sem rolagem interna: as 24 horas à vista (6 por linha) e os minutos mais
+ * usados em botões grandes (00 · 15 · 30 · 45). "Outro minuto" abre a grade de 5 em 5; um minuto
+ * fora dela que já estava gravado continua aparecendo e escolhido. (Não confundir com o TimeGrid
+ * da reserva do cliente, que mostra os horários livres.)
+ */
+export function HourMinuteGrid({
+  value,
+  onChange,
+  label,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  /** Nome do grupo para leitor de tela ("Segunda, abertura"). */
+  label: string;
+}) {
   const { t } = useI18n();
-  const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState(value.slice(0, 5));
-  const [hour, minute] = draft.split(":");
-  const contentRef = useRef<HTMLDivElement>(null);
-  // Ao abrir, centraliza a hora e o minuto escolhidos em cada coluna. Ajusta só a
-  // rolagem da coluna (não usa scrollIntoView) para a página não se mexer por baixo.
-  useEffect(() => {
-    if (!open) return;
-    const id = requestAnimationFrame(() => {
-      contentRef.current?.querySelectorAll<HTMLElement>('[role="group"]').forEach((col) => {
-        const sel = col.querySelector<HTMLElement>('[aria-pressed="true"]');
-        if (sel) col.scrollTop = sel.offsetTop - (col.clientHeight - sel.offsetHeight) / 2;
-      });
-    });
-    return () => cancelAnimationFrame(id);
-  }, [open]);
+  const [hour = "09", minute = "00"] = value.slice(0, 5).split(":");
+  const [otherOpen, setOtherOpen] = useState(!QUICK_MINUTES.includes(minute));
+  const minutes = otherOpen
+    ? FIVE_MINUTES.includes(minute)
+      ? FIVE_MINUTES
+      : [...FIVE_MINUTES, minute].sort()
+    : QUICK_MINUTES;
+  const cell =
+    "min-h-11 rounded-xl text-sm font-semibold tabular-nums transition-colors hover:bg-accent/30 aria-pressed:bg-primary aria-pressed:text-primary-foreground";
   return (
-    <Popover
-      open={open}
-      onOpenChange={(next) => {
-        if (next) setDraft(value.slice(0, 5));
-        setOpen(next);
-      }}
-    >
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          disabled={disabled}
-          className="schedule-field"
-          aria-label={`${label}: ${value.slice(0, 5)}`}
-        >
-          <Clock3 className="size-5 shrink-0 text-gold" />
-          <span className="min-w-0 flex-1 overflow-hidden text-left">
-            <span className="block truncate text-xs text-muted-foreground">{label}</span>
-            <span className="font-semibold tabular-nums">{value.slice(0, 5)}</span>
-          </span>
-          <ChevronDown className="size-4 shrink-0" />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent
-        ref={contentRef}
-        className="schedule-popover w-64 rounded-lg border-border"
-        align="start"
-      >
-        <p className="mb-3 flex items-center gap-2 font-semibold">
-          <Clock3 className="size-4 text-gold" />
-          {label}
-        </p>
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { title: t("ui.time.hour"), count: 24, selected: hour },
-            { title: t("ui.time.minute"), count: 60, selected: minute },
-          ].map((column, index) => (
-            <div key={column.title}>
-              <p className="mb-2 text-xs text-muted-foreground">{column.title}</p>
-              <div
-                className="relative grid max-h-48 grid-cols-2 gap-1 overflow-y-auto rounded-xl bg-muted/50 p-1"
-                role="group"
-                aria-label={column.title}
-              >
-                {Array.from({ length: column.count }, (_, n) => String(n).padStart(2, "0")).map(
-                  (part) => (
-                    <button
-                      key={part}
-                      type="button"
-                      aria-pressed={column.selected === part}
-                      className="min-h-11 rounded-lg py-2 text-sm tabular-nums hover:bg-accent/30 aria-pressed:bg-primary aria-pressed:text-primary-foreground"
-                      onClick={() =>
-                        setDraft(index === 0 ? `${part}:${minute}` : `${hour}:${part}`)
-                      }
-                    >
-                      {part}
-                    </button>
-                  ),
-                )}
-              </div>
-            </div>
+    <div className="space-y-3">
+      <div role="group" aria-label={`${label} · ${t("ui.time.hour")}`}>
+        <p className="mb-1.5 text-xs font-semibold text-muted-foreground">{t("ui.time.hour")}</p>
+        <div className="grid grid-cols-6 gap-1 rounded-xl bg-muted/50 p-1">
+          {Array.from({ length: 24 }, (_, n) => String(n).padStart(2, "0")).map((part) => (
+            <button
+              key={part}
+              type="button"
+              aria-pressed={hour === part}
+              className={cell}
+              onClick={() => onChange(`${part}:${minute}`)}
+            >
+              {part}
+            </button>
           ))}
         </div>
-        <button
-          type="button"
-          className="mt-4 min-h-11 w-full rounded-xl bg-primary py-2 text-sm font-semibold text-primary-foreground"
-          onClick={() => {
-            onChange(draft);
-            setOpen(false);
-          }}
+      </div>
+      <div role="group" aria-label={`${label} · ${t("ui.time.minute")}`}>
+        <p className="mb-1.5 text-xs font-semibold text-muted-foreground">{t("ui.time.minute")}</p>
+        <div
+          className={`grid gap-1 rounded-xl bg-muted/50 p-1 ${otherOpen ? "grid-cols-6" : "grid-cols-5"}`}
         >
-          {t("ui.time.confirm")}
-        </button>
-      </PopoverContent>
-    </Popover>
+          {minutes.map((part) => (
+            <button
+              key={part}
+              type="button"
+              aria-pressed={minute === part}
+              className={cell}
+              onClick={() => onChange(`${hour}:${part}`)}
+            >
+              :{part}
+            </button>
+          ))}
+          {!otherOpen && (
+            <button
+              type="button"
+              className={`${cell} px-1 text-xs`}
+              aria-expanded={false}
+              onClick={() => setOtherOpen(true)}
+            >
+              {t("ui.time.otherMinute")}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 

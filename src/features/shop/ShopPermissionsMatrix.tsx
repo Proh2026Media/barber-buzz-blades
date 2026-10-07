@@ -1,8 +1,40 @@
-import { useCallback, useEffect, useState } from "react";
-import { Check, Save, RefreshCw } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  BarChart3,
+  CalendarDays,
+  Check,
+  Clock3,
+  EyeOff,
+  KeyRound,
+  Landmark,
+  Lock,
+  Minus,
+  RefreshCw,
+  Scissors,
+  Settings2,
+  ShieldCheck,
+  SlidersHorizontal,
+  TrendingUp,
+  Users,
+  Wallet,
+  type LucideIcon,
+} from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import {
+  ChoiceChips,
+  EmptyState,
+  Hint,
+  LoadingState,
+  MoreDetails,
+  SectionHeader,
+  StatusBadge,
+  UnsavedBar,
+  type ActionState,
+} from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
 import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
+import { ROLE_META } from "./roles";
 
 type PermissionMeta = {
   permission: string;
@@ -19,91 +51,114 @@ type PermissionsPayload = {
   matrix: Matrix;
 };
 
-const ROLE_COLUMNS: { id: string; labelKey: MessageKey }[] = [
-  { id: "owner", labelKey: "team.perm.role.owner" },
-  { id: "partner", labelKey: "team.perm.role.partner" },
-  { id: "associate", labelKey: "team.perm.role.associate" },
-  { id: "employee", labelKey: "team.perm.role.employee" },
+type RoleId = "owner" | "partner" | "associate" | "employee";
+
+// Ícones do mapa único de papéis (ROLE_META): o mesmo do selo do cabeçalho e da equipe.
+const ROLES: { id: RoleId; label: MessageKey; icon: LucideIcon }[] = [
+  { id: "associate", label: "eq.role.associate", icon: ROLE_META.associate.icon },
+  { id: "employee", label: "eq.role.employee", icon: ROLE_META.employee.icon },
+  { id: "owner", label: "eq.role.owner", icon: ROLE_META.owner.icon },
+  { id: "partner", label: "eq.perm.legacyOwner", icon: ROLE_META.partner.icon },
 ];
 
-const SERVICE_ACCESS = {
-  permission: "services",
-  labelKey: "team.perm.services",
-  descriptionKey: "team.perm.servicesHint",
-  manageAll: "manage_services",
-  manageOwn: "manage_own_services",
-  options: [
-    { value: "view", labelKey: "team.perm.level.view", titleKey: "team.perm.level.viewTitle" },
-    { value: "own", labelKey: "team.perm.level.own", titleKey: "team.perm.level.ownTitle" },
-    { value: "all", labelKey: "team.perm.level.all", titleKey: "team.perm.level.allTitle" },
-  ],
-} as const;
+const SERVICES = { manageAll: "manage_services", manageOwn: "manage_own_services" } as const;
+type ServiceLevel = "view" | "own" | "all";
 
-// Textos traduzidos das permissões; o texto do banco (pt-BR) fica como alternativa.
-const PERMISSION_TEXT: Record<string, { label: MessageKey; hint: MessageKey }> = {
+/** Texto curto e ícone de cada permissão; o texto do banco fica como alternativa. */
+const PERMISSION: Record<string, { label: MessageKey; hint: MessageKey; icon: LucideIcon }> = {
   view_agenda_all: {
-    label: "fix.componentes-loja.perm.view_agenda_all",
-    hint: "fix.componentes-loja.perm.view_agenda_allHint",
+    label: "eq.perm.view_agenda_all",
+    hint: "eq.perm.view_agenda_allHint",
+    icon: CalendarDays,
   },
-  view_money: {
-    label: "fix.componentes-loja.perm.view_money",
-    hint: "fix.componentes-loja.perm.view_moneyHint",
-  },
+  view_money: { label: "eq.perm.view_money", hint: "eq.perm.view_moneyHint", icon: Wallet },
   view_financial_all: {
-    label: "fix.componentes-loja.perm.view_financial_all",
-    hint: "fix.componentes-loja.perm.view_financial_allHint",
+    label: "eq.perm.view_financial_all",
+    hint: "eq.perm.view_financial_allHint",
+    icon: Landmark,
   },
   view_reports_global: {
-    label: "fix.componentes-loja.perm.view_reports_global",
-    hint: "fix.componentes-loja.perm.view_reports_globalHint",
+    label: "eq.perm.view_reports_global",
+    hint: "eq.perm.view_reports_globalHint",
+    icon: BarChart3,
   },
   view_reports_anonymized: {
-    label: "fix.componentes-loja.perm.view_reports_anonymized",
-    hint: "fix.componentes-loja.perm.view_reports_anonymizedHint",
+    label: "eq.perm.view_reports_anonymized",
+    hint: "eq.perm.view_reports_anonymizedHint",
+    icon: EyeOff,
   },
   view_own_score: {
-    label: "fix.componentes-loja.perm.view_own_score",
-    hint: "fix.componentes-loja.perm.view_own_scoreHint",
+    label: "eq.perm.view_own_score",
+    hint: "eq.perm.view_own_scoreHint",
+    icon: TrendingUp,
   },
   manage_services: {
-    label: "fix.componentes-loja.perm.manage_services",
-    hint: "fix.componentes-loja.perm.manage_servicesHint",
+    label: "eq.perm.services",
+    hint: "eq.perm.servicesHint",
+    icon: Scissors,
   },
   manage_own_services: {
-    label: "fix.componentes-loja.perm.manage_own_services",
-    hint: "fix.componentes-loja.perm.manage_own_servicesHint",
+    label: "eq.perm.services",
+    hint: "eq.perm.servicesHint",
+    icon: Scissors,
   },
   manage_operations: {
-    label: "fix.componentes-loja.perm.manage_operations",
-    hint: "fix.componentes-loja.perm.manage_operationsHint",
+    label: "eq.perm.manage_operations",
+    hint: "eq.perm.manage_operationsHint",
+    icon: Clock3,
   },
-  manage_team: {
-    label: "fix.componentes-loja.perm.manage_team",
-    hint: "fix.componentes-loja.perm.manage_teamHint",
-  },
+  manage_team: { label: "eq.perm.manage_team", hint: "eq.perm.manage_teamHint", icon: Users },
   manage_permissions: {
-    label: "fix.componentes-loja.perm.manage_permissions",
-    hint: "fix.componentes-loja.perm.manage_permissionsHint",
+    label: "eq.perm.manage_permissions",
+    hint: "eq.perm.manage_permissionsHint",
+    icon: KeyRound,
   },
 };
+
+/** Grupos: agenda, dinheiro e relatórios, gestão. "services" é a linha de 3 níveis. */
+const GROUPS: { id: string; title: MessageKey; icon: LucideIcon; rows: string[] }[] = [
+  { id: "agenda", title: "eq.perm.group.agenda", icon: CalendarDays, rows: ["view_agenda_all"] },
+  {
+    id: "money",
+    title: "eq.perm.group.money",
+    icon: Wallet,
+    rows: [
+      "view_money",
+      "view_financial_all",
+      "view_reports_global",
+      "view_reports_anonymized",
+      "view_own_score",
+    ],
+  },
+  {
+    id: "manage",
+    title: "eq.perm.group.manage",
+    icon: Settings2,
+    rows: ["services", "manage_operations", "manage_team", "manage_permissions"],
+  },
+];
+
+/** O dono sempre pode mudar as permissões (senão ninguém mais poderia). */
+const isLocked = (role: string, permission: string) =>
+  role === "owner" && permission === "manage_permissions";
 
 /**
  * Permissões fictícias da demonstração (sem servidor): catálogo a partir dos textos
  * traduzidos e uma matriz padrão coerente com a hierarquia.
  */
 function demoPermissions(): PermissionsPayload {
-  const keys = Object.keys(PERMISSION_TEXT);
+  const keys = Object.keys(PERMISSION);
   const catalog = keys.map((permission, index) => ({
     permission,
-    label: tNow(PERMISSION_TEXT[permission]!.label),
-    description: tNow(PERMISSION_TEXT[permission]!.hint),
+    label: tNow(PERMISSION[permission]!.label),
+    description: tNow(PERMISSION[permission]!.hint),
     sort_order: index,
   }));
   const only = (allowed: string[]) =>
     Object.fromEntries(keys.map((key) => [key, allowed.includes(key)]));
   return {
     catalog,
-    roles: ROLE_COLUMNS.map((role) => role.id),
+    roles: ROLES.map((role) => role.id),
     matrix: {
       owner: only(keys),
       partner: only(keys.filter((key) => key !== "manage_permissions")),
@@ -113,13 +168,28 @@ function demoPermissions(): PermissionsPayload {
   };
 }
 
-type ServiceLevel = (typeof SERVICE_ACCESS.options)[number]["value"];
-
 function serviceLevelFor(matrix: Matrix, role: string): ServiceLevel {
   const row = matrix[role] ?? {};
-  if (row[SERVICE_ACCESS.manageAll]) return "all";
-  if (row[SERVICE_ACCESS.manageOwn]) return "own";
+  if (row[SERVICES.manageAll]) return "all";
+  if (row[SERVICES.manageOwn]) return "own";
   return "view";
+}
+
+/**
+ * Quantas escolhas mudaram entre o salvo e o rascunho (para "2 mudanças não salvas"). As duas
+ * chaves de serviços são um único controle (Só ver / Os seus / Todos): contam como uma mudança.
+ */
+function countChanges(saved: Matrix, draft: Matrix) {
+  let count = 0;
+  const serviceKeys = new Set<string>([SERVICES.manageAll, SERVICES.manageOwn]);
+  for (const role of Object.keys(draft)) {
+    for (const key of Object.keys(draft[role] ?? {})) {
+      if (serviceKeys.has(key)) continue;
+      if ((saved[role]?.[key] ?? false) !== (draft[role]?.[key] ?? false)) count += 1;
+    }
+    if (serviceLevelFor(saved, role) !== serviceLevelFor(draft, role)) count += 1;
+  }
+  return count;
 }
 
 type ShopPermissionsMatrixProps = {
@@ -130,6 +200,8 @@ type ShopPermissionsMatrixProps = {
   description?: string;
   /** Demonstração: usa permissões fictícias e não chama o servidor. */
   demo?: boolean;
+  /** Mostra o papel antigo de dono ("partner") quando alguém ainda o tem. */
+  showLegacy?: boolean;
 };
 
 export function ShopPermissionsMatrix({
@@ -138,16 +210,19 @@ export function ShopPermissionsMatrix({
   title: titleProp,
   description: descriptionProp,
   demo = false,
+  showLegacy = false,
 }: ShopPermissionsMatrixProps) {
   const { t } = useI18n();
-  const title = titleProp ?? t("team.perm.title");
-  const description = descriptionProp ?? t("team.perm.description");
+  const title = titleProp ?? t("eq.perm.title");
+  const description =
+    descriptionProp ?? (canEdit ? t("eq.perm.description") : t("eq.perm.descriptionReadOnly"));
   const [catalog, setCatalog] = useState<PermissionMeta[]>([]);
+  const [saved, setSaved] = useState<Matrix>({});
   const [matrix, setMatrix] = useState<Matrix>({});
-  const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [state, setState] = useState<ActionState | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [role, setRole] = useState<RoleId>("associate");
 
   const load = useCallback(
     async (target: string) => {
@@ -157,6 +232,7 @@ export function ShopPermissionsMatrix({
         setError(null);
         setCatalog(payload.catalog);
         setMatrix(payload.matrix);
+        setSaved(payload.matrix);
         return;
       }
       setLoading(true);
@@ -168,13 +244,15 @@ export function ShopPermissionsMatrix({
         if (failure) throw failure;
         const payload = data as unknown as PermissionsPayload | null;
         if (!payload || typeof payload !== "object" || !payload.matrix) {
-          throw new Error("Resposta inválida");
+          throw new Error("invalid");
         }
         setCatalog(Array.isArray(payload.catalog) ? payload.catalog : []);
         setMatrix(payload.matrix);
+        setSaved(payload.matrix);
       } catch {
         setCatalog([]);
         setMatrix({});
+        setSaved({});
         setError(tNow("team.perm.loadError"));
       } finally {
         setLoading(false);
@@ -187,37 +265,48 @@ export function ShopPermissionsMatrix({
     void load(shopId);
   }, [load, shopId]);
 
-  const togglePermission = (permission: string, role: string, value: boolean) => {
+  const known = useMemo(() => new Set(catalog.map((entry) => entry.permission)), [catalog]);
+  const hasServices = known.has(SERVICES.manageAll) || known.has(SERVICES.manageOwn);
+  // Permissões novas do banco, ainda sem grupo: entram em "Outras" com o texto do banco.
+  const extras = catalog.filter(
+    (entry) =>
+      !GROUPS.some((group) => group.rows.includes(entry.permission)) &&
+      entry.permission !== SERVICES.manageAll &&
+      entry.permission !== SERVICES.manageOwn,
+  );
+  const roles = ROLES.filter((item) => item.id !== "partner" || showLegacy);
+  const changes = countChanges(saved, matrix);
+
+  const togglePermission = (permission: string, value: boolean) => {
     if (!canEdit) return;
     setMatrix((current) => ({
       ...current,
       [role]: { ...(current[role] ?? {}), [permission]: value },
     }));
-    setSaved(false);
+    setState(null);
   };
 
-  const setServiceLevel = (role: string, level: ServiceLevel) => {
+  const setServiceLevel = (level: ServiceLevel) => {
     if (!canEdit) return;
     setMatrix((current) => ({
       ...current,
       [role]: {
         ...(current[role] ?? {}),
-        [SERVICE_ACCESS.manageAll]: level === "all",
-        [SERVICE_ACCESS.manageOwn]: level === "own" || level === "all",
+        [SERVICES.manageAll]: level === "all",
+        [SERVICES.manageOwn]: level === "own" || level === "all",
       },
     }));
-    setSaved(false);
+    setState(null);
   };
 
   async function handleSave() {
-    if (!shopId || busy || !canEdit) return;
+    if (!shopId || state === "saving" || !canEdit) return;
     if (demo) {
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      setSaved(matrix);
+      setState("saved");
       return;
     }
-    setBusy(true);
-    setError(null);
+    setState("saving");
     try {
       const { data, error: failure } = await supabase.rpc("save_shop_permissions", {
         p_shop_id: shopId,
@@ -228,150 +317,239 @@ export function ShopPermissionsMatrix({
       if (payload?.matrix) {
         setCatalog(Array.isArray(payload.catalog) ? payload.catalog : []);
         setMatrix(payload.matrix);
-      }
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+        setSaved(payload.matrix);
+      } else setSaved(matrix);
+      setState("saved");
     } catch {
-      setError(t("team.perm.saveError"));
-    } finally {
-      setBusy(false);
+      setState("error");
     }
   }
 
-  const toggleRows = catalog.filter(
-    (entry) =>
-      entry.permission !== SERVICE_ACCESS.manageAll &&
-      entry.permission !== SERVICE_ACCESS.manageOwn,
-  );
+  const roleLabel = (id: string) =>
+    t(ROLES.find((item) => item.id === id)?.label ?? "eq.role.employee");
+  const textOf = (permission: string) => {
+    const meta = PERMISSION[permission];
+    const entry = catalog.find((row) => row.permission === permission);
+    return {
+      label: meta ? t(meta.label) : (entry?.label ?? permission),
+      hint: meta ? t(meta.hint) : (entry?.description ?? ""),
+      icon: meta?.icon ?? SlidersHorizontal,
+    };
+  };
+
+  const YesNo = ({ on, label }: { on: boolean; label: string }) =>
+    on ? (
+      <StatusBadge tone="success" icon={Check} variant="icon" label={label} />
+    ) : (
+      <StatusBadge tone="neutral" icon={Minus} variant="icon" label={label} />
+    );
+
+  const levelLabel = (level: ServiceLevel) => t(`eq.perm.level.${level}` as MessageKey);
+
+  const renderRow = (permission: string) => {
+    if (permission === "services") {
+      if (!hasServices) return null;
+      const level = serviceLevelFor(matrix, role);
+      const text = textOf(SERVICES.manageAll);
+      return (
+        <li key="services" className="space-y-2 py-3">
+          <div className="flex items-start gap-3">
+            <text.icon className="mt-0.5 size-5 shrink-0 text-gold" aria-hidden />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold">{text.label}</p>
+              <p className="text-xs text-muted-foreground">{text.hint}</p>
+            </div>
+            {!canEdit && (
+              <StatusBadge
+                tone={level === "view" ? "neutral" : "success"}
+                icon={level === "view" ? Minus : Check}
+                size="sm"
+                label={levelLabel(level)}
+              />
+            )}
+          </div>
+          {canEdit && (
+            <ChoiceChips
+              label={t("eq.perm.servicesFor", { role: roleLabel(role) })}
+              hideLabel
+              value={level}
+              onChange={setServiceLevel}
+              disabled={state === "saving"}
+              options={(["view", "own", "all"] as const).map((value) => ({
+                value,
+                label: levelLabel(value),
+              }))}
+              className="ps-8"
+            />
+          )}
+        </li>
+      );
+    }
+    if (!known.has(permission)) return null;
+    const text = textOf(permission);
+    const on = matrix[role]?.[permission] ?? false;
+    const locked = isLocked(role, permission);
+    const id = `perm-${role}-${permission}`;
+    return (
+      <li key={permission} className="flex items-center gap-3 py-3">
+        <text.icon className="size-5 shrink-0 self-start text-gold" aria-hidden />
+        <label htmlFor={canEdit && !locked ? id : undefined} className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold">{text.label}</span>
+          {text.hint && <span className="block text-xs text-muted-foreground">{text.hint}</span>}
+          {locked && (
+            <span className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground">
+              <Lock className="size-3.5" aria-hidden />
+              {t("eq.perm.alwaysOwner")}
+            </span>
+          )}
+        </label>
+        {canEdit && !locked ? (
+          <Switch
+            id={id}
+            checked={on}
+            disabled={state === "saving"}
+            onCheckedChange={(value) => togglePermission(permission, value)}
+          />
+        ) : (
+          <YesNo
+            on={on}
+            label={t(on ? "eq.perm.can" : "eq.perm.cannot", { permission: text.label })}
+          />
+        )}
+      </li>
+    );
+  };
+
+  const compareRows = [
+    ...(hasServices ? ["services"] : []),
+    ...GROUPS.flatMap((group) => group.rows).filter((row) => row !== "services" && known.has(row)),
+    ...extras.map((entry) => entry.permission),
+  ];
 
   return (
     <div className="space-y-4">
-      <div>
-        <p className="text-sm font-bold">{title}</p>
-        <p className="mt-1 text-xs text-muted-foreground">{description}</p>
-        {!canEdit ? (
-          <p className="mt-1 text-xs text-muted-foreground">
-            {t("fix.componentes-loja.perm.readOnlyHint")}
-          </p>
-        ) : null}
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => void load(shopId)}
-          disabled={!shopId || loading}
-          className="inline-flex min-h-11 items-center gap-2 rounded-[var(--button-radius)] border border-border/70 bg-background px-3 text-xs font-semibold disabled:opacity-50"
-        >
-          <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
-          {t("team.perm.reload")}
-        </button>
-      </div>
-
-      {error ? (
-        <p role="alert" className="text-xs text-destructive">
-          {error}
-        </p>
-      ) : null}
+      <SectionHeader as="h3" icon={ShieldCheck} title={title} description={description} />
+      {!canEdit && (
+        <Hint icon={Lock} tone="muted">
+          {t("eq.perm.readOnly")}
+        </Hint>
+      )}
 
       {loading ? (
-        <p role="status" className="text-sm text-muted-foreground">
-          {t("team.perm.loading")}
-        </p>
-      ) : !error && catalog.length === 0 ? (
-        <p role="status" className="text-sm text-muted-foreground">
-          {t("team.perm.empty")}
-        </p>
-      ) : catalog.length === 0 ? null : (
+        <LoadingState variant="lines" count={4} label={t("eq.perm.loading")} />
+      ) : error ? (
+        <EmptyState
+          variant="plain"
+          status="danger"
+          title={t("eq.common.loadFailed")}
+          description={error}
+          action={
+            <button
+              type="button"
+              onClick={() => void load(shopId)}
+              className="action-button min-h-11"
+            >
+              <RefreshCw className="size-4" aria-hidden />
+              {t("eq.common.retry")}
+            </button>
+          }
+        />
+      ) : catalog.length === 0 ? (
+        <EmptyState variant="plain" tone="people" title={t("team.perm.empty")} />
+      ) : (
         <>
-          <p className="text-xs text-muted-foreground sm:hidden">{t("team.perm.scrollHint")}</p>
-          <div
-            role="region"
-            aria-label={title}
-            tabIndex={0}
-            className="overflow-x-auto rounded-[var(--control-radius)] border border-border/60 bg-background/80"
-          >
-            <table className="w-full min-w-[560px] table-fixed text-left text-sm">
-              <thead>
-                <tr className="border-b border-border/60 bg-muted/30">
-                  <th
-                    scope="col"
-                    className="sticky left-0 z-10 w-36 border-r border-border/40 bg-card p-3 font-semibold sm:w-[32%]"
+          <ChoiceChips
+            label={t("eq.perm.chooseRole")}
+            options={roles.map((item) => ({
+              value: item.id,
+              label: t(item.label),
+              icon: item.icon,
+            }))}
+            value={role}
+            onChange={setRole}
+          />
+
+          <div className="space-y-4">
+            {GROUPS.map((group) => {
+              const rows = group.rows.map(renderRow).filter(Boolean);
+              if (!rows.length) return null;
+              return (
+                <section
+                  key={group.id}
+                  aria-labelledby={`perm-group-${group.id}`}
+                  className="rounded-2xl border border-border bg-background/70 px-3"
+                >
+                  <h4
+                    id={`perm-group-${group.id}`}
+                    className="flex items-center gap-2 border-b border-border/60 py-2.5 text-xs font-bold uppercase tracking-wide text-muted-foreground"
                   >
-                    {t("team.perm.permission")}
+                    <group.icon className="size-4" aria-hidden />
+                    {t(group.title)}
+                  </h4>
+                  <ul className="divide-y divide-border/60">{rows}</ul>
+                </section>
+              );
+            })}
+            {extras.length > 0 && (
+              <section className="rounded-2xl border border-border bg-background/70 px-3">
+                <h4 className="flex items-center gap-2 border-b border-border/60 py-2.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  <SlidersHorizontal className="size-4" aria-hidden />
+                  {t("eq.perm.group.other")}
+                </h4>
+                <ul className="divide-y divide-border/60">
+                  {extras.map((entry) => renderRow(entry.permission))}
+                </ul>
+              </section>
+            )}
+          </div>
+
+          {/* Comparar papéis lado a lado (✓ / —), sem rolagem lateral. */}
+          <MoreDetails summary={t("eq.perm.compare")}>
+            <table className="w-full table-fixed text-left text-xs">
+              <thead>
+                <tr className="border-b border-border/60">
+                  <th scope="col" className="py-2 pe-2 font-semibold">
+                    <span className="sr-only">{t("team.perm.permission")}</span>
                   </th>
-                  {ROLE_COLUMNS.map((role) => (
-                    <th key={role.id} scope="col" className="p-2 text-center font-semibold">
-                      {t(role.labelKey)}
+                  {roles.map((item) => (
+                    <th key={item.id} scope="col" className="w-12 py-2 text-center sm:w-24">
+                      <item.icon className="mx-auto size-4 text-gold" aria-hidden />
+                      <span className="mt-0.5 block truncate text-[10px] font-bold sm:text-xs">
+                        {t(item.label)}
+                      </span>
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b border-border/40">
-                  <td className="sticky left-0 z-10 border-r border-border/40 bg-card p-3">
-                    <p className="font-bold">{t(SERVICE_ACCESS.labelKey)}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {t(SERVICE_ACCESS.descriptionKey)}
-                    </p>
-                  </td>
-                  {ROLE_COLUMNS.map((role) => (
-                    <td key={role.id} className="p-2 text-center">
-                      <select
-                        aria-label={t("team.perm.forRole", {
-                          permission: t(SERVICE_ACCESS.labelKey),
-                          role: t(role.labelKey),
-                        })}
-                        value={serviceLevelFor(matrix, role.id)}
-                        disabled={busy || !canEdit}
-                        onChange={(event) =>
-                          setServiceLevel(role.id, event.target.value as ServiceLevel)
-                        }
-                        className="w-full rounded-[var(--control-radius)] border border-border/70 bg-background px-1.5 py-1.5 text-xs font-semibold"
-                      >
-                        {SERVICE_ACCESS.options.map((option) => (
-                          <option
-                            key={option.value}
-                            value={option.value}
-                            title={t(option.titleKey)}
-                          >
-                            {t(option.labelKey)}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                  ))}
-                </tr>
-
-                {toggleRows.map((entry) => {
-                  const text = PERMISSION_TEXT[entry.permission];
-                  const label = text ? t(text.label) : entry.label;
-                  const description = text ? t(text.hint) : entry.description;
+                {compareRows.map((permission) => {
+                  const text =
+                    permission === "services" ? textOf(SERVICES.manageAll) : textOf(permission);
                   return (
-                    <tr key={entry.permission} className="border-b border-border/40">
-                      <td className="sticky left-0 z-10 border-r border-border/40 bg-card p-3">
-                        <p className="font-bold">{label}</p>
-                        <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
-                      </td>
-                      {ROLE_COLUMNS.map((role) => {
-                        const checked = matrix[role.id]?.[entry.permission] ?? false;
-                        const locked =
-                          role.id === "owner" && entry.permission === "manage_permissions";
+                    <tr key={permission} className="border-b border-border/40 last:border-0">
+                      <th scope="row" className="py-2 pe-2 font-semibold">
+                        {text.label}
+                      </th>
+                      {roles.map((item) => {
+                        if (permission === "services") {
+                          const level = serviceLevelFor(matrix, item.id);
+                          return (
+                            <td key={item.id} className="py-2 text-center text-[11px] font-bold">
+                              {levelLabel(level)}
+                            </td>
+                          );
+                        }
+                        const on = matrix[item.id]?.[permission] ?? false;
                         return (
-                          <td key={role.id} className="p-2 text-center">
-                            <div className="flex justify-center">
-                              <Switch
-                                aria-label={t("team.perm.forRole", {
-                                  permission: label,
-                                  role: t(role.labelKey),
+                          <td key={item.id} className="py-2 text-center">
+                            <span className="inline-flex justify-center">
+                              <YesNo
+                                on={on}
+                                label={t(on ? "eq.perm.canRole" : "eq.perm.cannotRole", {
+                                  role: t(item.label),
                                 })}
-                                checked={checked}
-                                disabled={busy || !canEdit || locked}
-                                onCheckedChange={(value) =>
-                                  togglePermission(entry.permission, role.id, value)
-                                }
                               />
-                            </div>
+                            </span>
                           </td>
                         );
                       })}
@@ -380,23 +558,34 @@ export function ShopPermissionsMatrix({
                 })}
               </tbody>
             </table>
-          </div>
+          </MoreDetails>
+
+          {canEdit && (
+            <UnsavedBar
+              dirty={changes > 0}
+              count={changes}
+              saving={state === "saving"}
+              state={state}
+              stateText={
+                state === "error"
+                  ? t("team.perm.saveError")
+                  : state === "saved"
+                    ? t("team.perm.saved")
+                    : undefined
+              }
+              onSave={() => void handleSave()}
+              onDiscard={() => {
+                setMatrix(saved);
+                setState(null);
+              }}
+              saveLabel={t("eq.perm.save")}
+            />
+          )}
         </>
       )}
-
-      {canEdit && catalog.length > 0 ? (
-        <div className="flex flex-col items-stretch gap-2 sm:items-end">
-          <button
-            type="button"
-            onClick={() => void handleSave()}
-            disabled={!shopId || busy || loading || catalog.length === 0}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--button-radius)] bg-foreground px-4 text-sm font-semibold text-background disabled:opacity-50"
-          >
-            {saved ? <Check className="size-4" /> : <Save className="size-4" />}
-            {busy ? t("team.perm.saving") : saved ? t("team.perm.saved") : t("team.perm.save")}
-          </button>
-        </div>
-      ) : null}
+      <p className={cn("sr-only")} aria-live="polite">
+        {t("eq.perm.showing", { role: roleLabel(role) })}
+      </p>
     </div>
   );
 }

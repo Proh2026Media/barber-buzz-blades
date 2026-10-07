@@ -1,10 +1,16 @@
 import { Search, X } from "lucide-react";
+import { ChoiceChips } from "@/components/visual";
 import { useI18n } from "@/lib/i18n";
 import { CatalogViewToggle, type CatalogViewMode } from "./CatalogViewToggle";
 
 export type CatalogStatus = "all" | "active" | "paused";
 export type { CatalogViewMode };
 
+/**
+ * Busca + filtro por estado (com contagem) + grade/lista. A contagem de resultados só aparece
+ * quando há busca ou filtro com algum resultado, junto do "Limpar" — sem filtro, as pílulas já
+ * dizem os números; sem resultado, quem limpa é o estado vazio da lista.
+ */
 export function CatalogFilters({
   query,
   onQuery,
@@ -14,6 +20,8 @@ export function CatalogFilters({
   active,
   visible,
   label,
+  activeLabel,
+  pausedLabel,
   viewMode = "grid",
   onViewMode,
 }: {
@@ -25,16 +33,24 @@ export function CatalogFilters({
   active: number;
   visible: number;
   label: string;
+  /** Nome do estado ligado na lista ("Visíveis", "Recebem agendamentos"). */
+  activeLabel?: string;
+  /** Nome do estado desligado ("Pausados"). */
+  pausedLabel?: string;
   viewMode?: CatalogViewMode;
   onViewMode?: (value: CatalogViewMode) => void;
 }) {
   const { t } = useI18n();
+  const filtering = Boolean(query.trim()) || status !== "all";
   return (
     <div className="catalog-filters space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <label className="relative min-w-[12rem] flex-1">
+        <label className="relative min-w-[10rem] flex-1">
           <span className="sr-only">{label}</span>
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
           <input
             type="search"
             value={query}
@@ -45,43 +61,39 @@ export function CatalogFilters({
         </label>
         {onViewMode && <CatalogViewToggle viewMode={viewMode} onViewMode={onViewMode} />}
       </div>
-      <div className="flex flex-wrap items-center gap-2" aria-label={t("brand.catalog.filterAria")}>
-        {(
-          [
-            { id: "all", name: t("brand.catalog.all"), count: total },
-            { id: "active", name: t("brand.catalog.active"), count: active },
-            { id: "paused", name: t("brand.catalog.paused"), count: total - active },
-          ] as const
-        ).map(({ id, name, count }) => (
-          <button
-            key={id}
-            type="button"
-            aria-pressed={status === id}
-            onClick={() => onStatus(id)}
-            className="group flex min-h-11 items-center gap-2 rounded-[var(--button-radius)] border border-border px-3 text-xs font-semibold text-muted-foreground aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground"
-          >
-            {name}
-            <span className="rounded-[var(--control-radius)] bg-[#e4e0d8] px-1.5 py-0.5 text-xs text-[#3f423c] group-aria-pressed:bg-white/20 group-aria-pressed:text-current">
-              {count}
-            </span>
-          </button>
-        ))}
-        {(query || status !== "all") && (
+      {total > 0 && (
+        <ChoiceChips
+          label={t("brand.catalog.filterAria")}
+          hideLabel
+          value={status}
+          onChange={onStatus}
+          options={[
+            { value: "all", label: t("brand.catalog.all"), count: total },
+            { value: "active", label: activeLabel ?? t("brand.catalog.active"), count: active },
+            {
+              value: "paused",
+              label: pausedLabel ?? t("brand.catalog.paused"),
+              count: total - active,
+            },
+          ]}
+        />
+      )}
+      {/* Sem resultado, o estado vazio logo abaixo já oferece "Limpar busca" (um botão só). */}
+      {filtering && visible > 0 && (
+        <p role="status" className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+          <span>{t("brand.catalog.results", { visible, total })}</span>
           <button
             type="button"
             onClick={() => {
               onQuery("");
               onStatus("all");
             }}
-            className="flex min-h-11 items-center gap-1 px-2 text-xs font-semibold text-muted-foreground"
+            className="inline-flex min-h-11 items-center gap-1 rounded-xl px-2 text-sm font-semibold text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
           >
-            <X className="size-3.5" /> {t("brand.catalog.clear")}
+            <X className="size-4" aria-hidden /> {t("brand.catalog.clear")}
           </button>
-        )}
-      </div>
-      <p role="status" className="text-xs text-muted-foreground">
-        {t("brand.catalog.results", { visible, total })}
-      </p>
+        </p>
+      )}
     </div>
   );
 }

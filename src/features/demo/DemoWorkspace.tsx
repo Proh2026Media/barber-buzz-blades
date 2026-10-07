@@ -147,7 +147,13 @@ function ConfiguredDemoWorkspace({
 
   let content: ReactNode;
   if (role === "platform") {
-    content = <PlatformShell profile={profile} demoMode />;
+    // Com o mesmo contexto da Loja e do Cliente, Relatórios e pedidos de privacidade leem os
+    // dados fictícios da demonstração em vez de consultar o servidor de verdade.
+    content = (
+      <DemoContext.Provider value={{ ...state, dispatch, exit }}>
+        <PlatformShell profile={profile} demoMode />
+      </DemoContext.Provider>
+    );
   } else if (role !== "customer") {
     // Create a mock activeShopActor for the demo
     const mockActor = {
@@ -212,7 +218,7 @@ function ConfiguredDemoWorkspace({
           da superfície do app (parecia cortada embaixo). */}
       <div className="demo-layout bg-background text-foreground">
         <div className="border-b border-primary/20 bg-primary/10 px-4 py-2 text-center text-xs font-semibold text-foreground">
-          {t("demo.ws.banner")}{" "}
+          {t("demo.ws.bannerShort")}{" "}
           <button
             type="button"
             onClick={exit}

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { friendlyIntegrationError } from "./friendly-error.ts";
+import { friendlyIntegrationError, integrationErrorKind } from "./friendly-error.ts";
 
 const FALLBACK = "fallback";
 
@@ -38,4 +38,12 @@ test("só a resposta do servidor para agenda fora da conta vira 'agenda indispon
     friendlyIntegrationError("Calendar not found for this request", FALLBACK),
     /Escolha outra/,
   );
+});
+
+test("mensagem do Google já traduzida não vira a mensagem do WhatsApp", () => {
+  const once = friendlyIntegrationError("Token has been expired or revoked.", FALLBACK);
+  const twice = friendlyIntegrationError(new Error(once), FALLBACK);
+  assert.equal(twice, once);
+  assert.doesNotMatch(twice, /WhatsApp/);
+  assert.equal(integrationErrorKind(new Error(once)), "errors.integration.googleReconnect");
 });

@@ -1,93 +1,80 @@
-import { AttendanceControls } from "@/features/insights/AttendanceControls";
 import { useWaiting } from "@/features/waiting/useWaiting";
-import { WaitingCards, WaitingSettings } from "@/features/waiting/WaitingUI";
-import { canHold } from "@/features/waiting/model";
-import { CatalogFilters, type CatalogStatus, type CatalogViewMode } from "./CatalogFilters";
-import { StaffSurveyDialog } from "@/features/insights/StaffSurveyDialog";
-import { CancellationDialog } from "@/features/insights/CancellationDialog";
-import { cancellationReasonLabel, type CancellationReason } from "@/features/insights/cancellation";
-import { BusinessInsights } from "@/features/insights/BusinessInsights";
-import { ProfessionalInsights } from "@/features/insights/ProfessionalInsights";
+import { WaitingSettings } from "@/features/waiting/WaitingSettings";
+import {
+  BookingOverview,
+  BookingRulesSettings,
+  type BookingRulesDraft,
+} from "@/features/shop/settings/BookingRulesSettings";
+import { BOOKING_CARD_IDS } from "@/features/shop/settings/booking-cards";
+import { LoyaltySettingsSummary } from "@/features/loyalty/LoyaltySettingsSummary";
+import { ServicesTab } from "./catalog/ServicesTab";
+import { TeamTab } from "./catalog/TeamTab";
+import { useCatalogExtras } from "./catalog/useCatalogExtras";
+import {
+  HasBookingsError,
+  type SaveOutcome,
+  type ServiceDraft,
+  type ServiceSaveResult,
+  type StaffDraft,
+} from "./catalog/types";
+import type { CancellationReason } from "@/features/insights/cancellation";
+import { AgendaTab } from "./agenda/AgendaTab";
 import { TeamGovernance } from "@/features/shop/settings/TeamGovernance";
+import { countDecisionsForMe } from "@/features/shop/settings/decision-queue";
 import { PartnerCatalogSuggestions } from "./PartnerCatalogSuggestions";
 import { ShopTeamAccessCard } from "./ShopTeamAccessCard";
 import { ShopSetupChecklist } from "./ShopSetupChecklist";
 import { BrandIdentityEditor } from "@/features/shop/BrandIdentityEditor";
-import { WhatsAppSettingsCard } from "@/features/shop/settings/WhatsAppSettingsCard";
+import { WhatsAppChannelCard } from "@/features/shop/settings/WhatsAppChannelCard";
 import { SlugRedirectsCard } from "@/features/shop/settings/SlugRedirectsCard";
 import { ShopDepartureCard } from "@/features/shop/settings/ShopDepartureCard";
 import { ShopDomainCard } from "@/features/shop/settings/ShopDomainCard";
-import { GoogleIntegrationsCard } from "@/features/shop/settings/GoogleIntegrationsCard";
+import { GoogleConnectionCard } from "@/features/shop/settings/GoogleConnectionCard";
 import { SettingsHub } from "@/features/shop/settings/SettingsHub";
 import { LandingEditor } from "@/features/shop/settings/LandingEditor";
+import { AppearanceOverview, BrandSummaryCard } from "@/features/shop/settings/AppearanceOverview";
+import { GuardedEditorDialog } from "@/features/shop/settings/GuardedEditorDialog";
+import { ShopLinkCard } from "@/features/shop/settings/ShopLinkCard";
+import { ThemeSettingsCard } from "@/features/shop/settings/ThemeSettingsCard";
+import type { BrandStep } from "@/features/shop/BrandIdentityEditor";
+import { parseLandingConfig } from "@/features/marketing/shop-landing";
+import { CountBadge, LoadingState, Notice } from "@/components/visual";
 import { SlotModeNotice, SlotModeSettings } from "@/features/shop/settings/SlotModeSettings";
 import { ShopTimezoneCard } from "@/features/shop/settings/ShopTimezoneCard";
+import { useSettingsSignals } from "@/features/shop/settings/useSettingsSignals";
 import { shopPublicOrigin } from "@/lib/shop/host";
 import {
   readSectionFromUrl,
   useSettingsSection,
   type SettingsSection,
 } from "@/features/shop/settings/section";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-} from "@/components/ui/alert-dialog";
 import { useScrollIndicators } from "@/lib/use-scroll-indicators";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { isValidBookingSlug, slugifyPt } from "@/lib/shop/slugify";
-import { Switch } from "@/components/ui/switch";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogScrollArea,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { DatePicker, TimePicker } from "@/components/ui/schedule-picker";
+import { HoursTab, type HoursAppointment } from "./hours/HoursTab";
+import type { BlockDraft } from "./hours/BlockDialog";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { ShopAccountMenu, ShopSwitcher } from "./ShopAccountMenu";
+import { RoleBadge } from "./roles";
+import { MyAccessCard } from "./settings/MyAccessCard";
 import {
-  Fragment,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-  type ReactNode,
-} from "react";
-import { Link } from "@tanstack/react-router";
-import {
-  BarChart3,
   Calendar,
   Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  CircleCheck,
   Clock3,
-  Gift,
   Globe2,
   KeyRound,
-  LogOut,
-  MessageSquarePlus,
-  Plus,
+  Hourglass,
+  Lightbulb,
   Palette,
-  Pencil,
   RefreshCw,
   Save,
   Scissors,
-  Search,
-  ShieldCheck,
-  Upload,
   Settings2,
-  SlidersHorizontal,
-  Trash2,
   Users,
+  Wallet,
   X,
 } from "lucide-react";
 import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
@@ -103,27 +90,16 @@ import { ChangePasswordCard } from "@/features/auth/ChangePasswordCard";
 import { LanguageSettingsCard } from "@/components/LanguageSettingsCard";
 import { useDemo } from "@/features/demo/context";
 import {
-  formatShopDate as formatShopDateIn,
-  formatSlotLabel as formatSlotLabelIn,
   shopDateKey,
   shopDateTime,
   shopDayRange,
   shiftDateKey,
   validTimeZone,
-  PREP_OPTIONS,
   validPrepMinutes,
   type SlotMode,
 } from "@/lib/shop/appointments";
 
 import {
-  ServiceIcon,
-  SERVICE_ICON_GROUPS,
-  searchServiceIcons,
-  serviceIconGroupLabel,
-} from "@/components/ui/service-icon";
-import {
-  isServiceImageSource,
-  SERVICE_IMAGE_ACCEPT,
   serviceImageToDataUrl,
   uploadServiceImage,
   uploadStaffAvatar,
@@ -131,9 +107,6 @@ import {
 } from "@/lib/shop/service-image";
 import { PartnerOverview } from "./PartnerOverview";
 import { ClientDirectory } from "./ClientDirectory";
-import { ServiceImageCropDialog } from "./ServiceImageCropDialog";
-import { PORTRAIT_FOCUS_Y } from "@/lib/shop/service-image-crop";
-import { StaffPhoto } from "@/components/ui/staff-photo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { useAvailabilitySignal } from "@/lib/shop/availability-signal";
@@ -180,33 +153,10 @@ function defaultHours(shopId: string): Tables<"business_hours">[] {
   }));
 }
 
-function richText(template: string, nodes: Record<string, ReactNode>) {
-  return template
-    .split(/\{(\w+)\}/g)
-    .map((part, i) => (i % 2 === 1 ? <Fragment key={i}>{nodes[part] ?? part}</Fragment> : part));
-}
-
-function formatPrice(cents: number, locale: string) {
-  return (cents / 100).toLocaleString(locale, {
-    style: "currency",
-    currency: "BRL",
-    currencyDisplay: "narrowSymbol",
-  });
-}
-
 export function ShopShell({ profile, headerActions }: ShopShellProps) {
   useScrollIndicators();
-  const { t, intlLocale } = useI18n();
-  const formatShopDate = (
-    date: Date | string,
-    timeZone: string,
-    options: Intl.DateTimeFormatOptions,
-  ) => formatShopDateIn(date, timeZone, options, intlLocale);
-  const formatSlotLabel = (date: Date, timeZone?: string) =>
-    formatSlotLabelIn(date, timeZone, intlLocale);
+  const { t } = useI18n();
   const demo = useDemo();
-  // No celular o mês abreviado cabe ao lado das setas da agenda; no computador volta por extenso.
-  const agendaNarrow = useIsMobile();
   const [selectedActorId, setSelectedActorId] = useState(() => {
     const saved =
       typeof window === "undefined" ? null : window.localStorage.getItem("arena:active-shop-actor");
@@ -299,10 +249,6 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   );
   const [agendaRefresh, setAgendaRefresh] = useState(0);
   const [refreshingAgenda, setRefreshingAgenda] = useState(false);
-  const [agendaSearch, setAgendaSearch] = useState("");
-  const [agendaScope, setAgendaScope] = useState<"mine" | "team">("mine");
-  const [agendaStaff, setAgendaStaff] = useState("");
-  const [agendaStatus, setAgendaStatus] = useState("");
   const [agendaDay, setAgendaDay] = useState(() =>
     shopDateKey(demo?.now ?? new Date(), validTimeZone(shop?.timezone)),
   );
@@ -313,19 +259,43 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   const [blocks, setBlocks] = useState<AvailabilityBlock[]>([]);
   const [settings, setSettings] = useState<Tables<"barbershop_settings"> | null>(null);
   useShopFavicon(settings?.logo_url);
-  const [settingsSaved, setSettingsSaved] = useState(false);
   const [settingsSection, setSettingsSection] = useSettingsSection(tab === "configuracoes");
   const [brandOpen, setBrandOpen] = useState(false);
   const [landingOpen, setLandingOpen] = useState(false);
+  const [brandStep, setBrandStep] = useState<BrandStep>("logo");
   const [governanceRevision, setGovernanceRevision] = useState(0);
   const [governanceMessage, setGovernanceMessage] = useState<string | null>(null);
+  // Mudanças esperando a decisão de quem está vendo: viram bolha em Ajustes, aviso no topo da
+  // Agenda e contador no menu de Ajustes. Conta como o painel de decisões (sem os próprios
+  // pedidos nem os que a pessoa já aprovou), para o mesmo dado ter um número só.
+  const [pendingDecisions, setPendingDecisions] = useState(0);
+  const reviewsDecisions = !demo && (actor?.role === "owner" || actor?.role === "partner");
+  const viewerId = profile.user.id;
+  useEffect(() => {
+    if (!reviewsDecisions || !actor) {
+      setPendingDecisions(0);
+      return;
+    }
+    let alive = true;
+    void countDecisionsForMe(actor.barbershop_id, viewerId).then((count) => {
+      if (alive && count != null) setPendingDecisions(count);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [reviewsDecisions, actor, viewerId, governanceRevision]);
+  // Barbearias de quem está logado, com o papel em cada uma (troca pelo nome no cabeçalho).
+  const shopChoices = demo
+    ? []
+    : profile.shopActors.map((candidate) => ({
+        id: candidate.id,
+        name: candidate.barbershop?.name ?? t("shop.header.shopName"),
+        role: candidate.role,
+      }));
   const waiting = useWaiting(shop?.id, true);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [updatingAppointment, setUpdatingAppointment] = useState<string | null>(null);
-  const [cancelTarget, setCancelTarget] = useState<DayAppointment | null>(null);
-  const [cancelReason, setCancelReason] = useState<CancellationReason | "">("");
-  const [surveyTarget, setSurveyTarget] = useState<DayAppointment | null>(null);
   const [cancellationDetails, setCancellationDetails] = useState<
     Record<string, { reason: CancellationReason | null; source: "customer" | "shop" }>
   >({});
@@ -355,74 +325,24 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     };
   }, [demo, shop?.id, agendaRefresh, actor, capabilities?.viewFullShop]);
   const [error, setError] = useState<string | null>(null);
+  // Falha ao carregar serviços/equipe: fica até uma carga dar certo (não some ao trocar de aba),
+  // para Serviços/Equipe não confundirem "não carregou" com "catálogo vazio".
+  const [catalogLoadError, setCatalogLoadError] = useState<string | null>(null);
+  // Falha ao carregar o funcionamento ou os bloqueios: só ela aparece na aba Horários.
+  const [hoursLoadError, setHoursLoadError] = useState<string | null>(null);
 
-  const [serviceName, setServiceName] = useState("");
-  const [serviceDescription, setServiceDescription] = useState("");
-  const [serviceDuration, setServiceDuration] = useState("30");
-  const [customDurationOpen, setCustomDurationOpen] = useState(false);
-  /** Preparo próprio do serviço; vazio = usar o da barbearia. */
-  const [servicePrep, setServicePrep] = useState("");
-  const [servicePrice, setServicePrice] = useState("45");
-  const [serviceIcon, setServiceIcon] = useState<string>("Scissors");
-  const [serviceIconQuery, setServiceIconQuery] = useState("");
-  const [uploadingIcon, setUploadingIcon] = useState(false);
-  const [serviceImageToCrop, setServiceImageToCrop] = useState<File | null>(null);
-  // O input de arquivo fica fora da tela; o botão visível dispara o seletor,
-  // o que mantém o envio acessível por teclado.
-  const iconInputRef = useRef<HTMLInputElement>(null);
-  const [staffAvatar, setStaffAvatar] = useState<string | null>(null);
-  const [staffBio, setStaffBio] = useState("");
-  const [uploadingStaffAvatar, setUploadingStaffAvatar] = useState(false);
-  const [staffImageToCrop, setStaffImageToCrop] = useState<File | null>(null);
-  const staffAvatarInputRef = useRef<HTMLInputElement>(null);
-  // Identificadores estáveis para os rótulos do formulário de bloqueio.
-  const blockStaffFieldId = useId();
-  const blockReasonFieldId = useId();
-
-  /** Agrupa o catálogo já filtrado pela busca, mantendo as categorias visíveis. */
-  const filteredIconGroups = useMemo(() => {
-    const allowed = new Set(searchServiceIcons(serviceIconQuery).map((entry) => entry.id));
-    return SERVICE_ICON_GROUPS.map((group) => ({
-      ...group,
-      icons: group.icons.filter((entry) => allowed.has(entry.id)),
-    })).filter((group) => group.icons.length > 0);
-  }, [serviceIconQuery]);
-  const [deleteStaff, setDeleteStaff] = useState<Tables<"staff"> | null>(null);
-  const [deleteService, setDeleteService] = useState<Tables<"services"> | null>(null);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [editingService, setEditingService] = useState<Tables<"services"> | null>(null);
-  const [editingStaff, setEditingStaff] = useState<Tables<"staff"> | null>(null);
-  const [serviceFormOpen, setServiceFormOpen] = useState(false);
-  // No celular a grade de ícones não rola por dentro da janela: começa só com o
-  // primeiro grupo (e o do ícone escolhido) e se expande sob demanda.
-  const [showAllServiceIcons, setShowAllServiceIcons] = useState(false);
-  useEffect(() => {
-    if (!serviceFormOpen) setShowAllServiceIcons(false);
-  }, [serviceFormOpen]);
-  const iconGroupsCollapsed = !showAllServiceIcons && !serviceIconQuery.trim();
-  // Primeiro grupo que contém o ícone escolhido (o mesmo ícone pode estar em mais de um).
-  const selectedIconGroupId = SERVICE_ICON_GROUPS.find((group) =>
-    group.icons.some((preset) => preset.id === serviceIcon),
-  )?.id;
-  const [staffFormOpen, setStaffFormOpen] = useState(false);
-  const [withdrawTarget, setWithdrawTarget] = useState<DayAppointment | null>(null);
-  const [serviceQuery, setServiceQuery] = useState("");
-  const [staffQuery, setStaffQuery] = useState("");
-  const [serviceStatus, setServiceStatus] = useState<CatalogStatus>("all");
-  const [staffStatus, setStaffStatus] = useState<CatalogStatus>("all");
-  const [serviceView, setServiceView] = useState<CatalogViewMode>("grid");
-  const [staffView, setStaffView] = useState<CatalogViewMode>("grid");
-  const [staffName, setStaffName] = useState("");
-  const [staffSlug, setStaffSlug] = useState("");
-  const [staffSlugTouched, setStaffSlugTouched] = useState(false);
-  const [blockDate, setBlockDate] = useState(() =>
-    shopDateKey(new Date(), validTimeZone(shop?.timezone)),
+  // Preço/duração da loja por serviço (o parceiro vê o próprio catálogo e compara com este).
+  const [shopServiceTerms, setShopServiceTerms] = useState<
+    Record<string, { price_cents: number; duration_minutes: number }>
+  >({});
+  // "Ver agenda dele" (Equipe) abre a Agenda já filtrada pelo profissional.
+  const [agendaFocusStaff, setAgendaFocusStaff] = useState<string | null>(null);
+  // Sugestões de preço esperando o parceiro decidir (0 esconde o atalho; null = não carregou).
+  const [suggestionCount, setSuggestionCount] = useState<number | null>(0);
+  // Equipe → "Bloquear horário": a aba Horários abre a janela de bloqueio com o profissional.
+  const [hoursBlockRequest, setHoursBlockRequest] = useState<{ staffId: string | null } | null>(
+    null,
   );
-  const [blockStart, setBlockStart] = useState("12:00");
-  const [blockEnd, setBlockEnd] = useState("13:00");
-  const [blockStaffId, setBlockStaffId] = useState("");
-  const [blockReason, setBlockReason] = useState("");
-  const [blockCustomOpen, setBlockCustomOpen] = useState(false);
   const catalogRequestRef = useRef(0);
 
   async function loadCatalog() {
@@ -440,6 +360,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
           .sort((a, b) => a.starts_at.localeCompare(b.starts_at)),
       );
       setSettings(demo.settings);
+      setCatalogLoadError(null);
       setAppointments(
         demo.appointments
           .filter((row) => shopDateKey(new Date(row.starts_at), shopTimeZone) === agendaDay)
@@ -502,8 +423,11 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       supabase.from("barbershop_settings").select("*").eq("barbershop_id", shop.id).single(),
     ]);
     if (requestId !== catalogRequestRef.current) return;
-    if (servicesResult.error) setError(friendlyAuthError(servicesResult.error));
-    else {
+    let catalogFailure: string | null = null;
+    if (servicesResult.error) {
+      catalogFailure = friendlyAuthError(servicesResult.error);
+      setError(catalogFailure);
+    } else {
       let visibleServices = servicesResult.data ?? [];
       if (actor?.role === "associate" && actor.staff_id) {
         const overrides = await supabase
@@ -512,9 +436,19 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
           .eq("barbershop_id", shop.id)
           .eq("staff_id", actor.staff_id);
         if (requestId !== catalogRequestRef.current) return;
-        if (overrides.error) setError(friendlyAuthError(overrides.error));
-        else {
+        if (overrides.error) {
+          catalogFailure = friendlyAuthError(overrides.error);
+          setError(catalogFailure);
+        } else {
           const byService = new Map((overrides.data ?? []).map((row) => [row.service_id, row]));
+          setShopServiceTerms(
+            Object.fromEntries(
+              visibleServices.map((service) => [
+                service.id,
+                { price_cents: service.price_cents, duration_minutes: service.duration_minutes },
+              ]),
+            ),
+          );
           visibleServices = visibleServices.map((service) => {
             const own = byService.get(service.id);
             return own
@@ -531,8 +465,11 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       }
       setServices(visibleServices);
     }
-    if (staffResult.error) setError(friendlyAuthError(staffResult.error));
-    else setStaff(staffResult.data ?? []);
+    if (staffResult.error) {
+      catalogFailure = friendlyAuthError(staffResult.error);
+      setError(catalogFailure);
+    } else setStaff(staffResult.data ?? []);
+    setCatalogLoadError(catalogFailure);
     if (appointmentsResult.error) {
       setError(friendlyAuthError(appointmentsResult.error, t("shop.error.refreshAgenda")));
     } else setAppointments(appointmentsResult.data ?? []);
@@ -540,6 +477,13 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     else setBusinessHours(hoursResult.data?.length ? hoursResult.data : defaultHours(shop.id));
     if (blocksResult.error) setError(friendlyAuthError(blocksResult.error));
     else setBlocks(blocksResult.data ?? []);
+    setHoursLoadError(
+      hoursResult.error
+        ? friendlyAuthError(hoursResult.error)
+        : blocksResult.error
+          ? friendlyAuthError(blocksResult.error)
+          : null,
+    );
     if (settingsResult.error) setError(friendlyAuthError(settingsResult.error));
     else setSettings(settingsResult.data);
     setLoading(false);
@@ -677,10 +621,6 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     shopTimeZone,
   ]);
 
-  function moveAgendaDay(offset: number) {
-    setAgendaDay((current) => shiftDateKey(current, offset));
-  }
-
   async function signOut() {
     if (demo) {
       demo.exit();
@@ -701,7 +641,6 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     const result = data as { status?: "applied" | "pending" } | null;
     if (result?.status === "pending") {
       setError(null);
-      setSettingsSaved(false);
       setGovernanceMessage(t("shop.governance.pending"));
       setGovernanceRevision((value) => value + 1);
       return false;
@@ -718,8 +657,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       demo.dispatch({ type: "status", id: row.id, status });
       return;
     }
+    // A Agenda mostra o resultado no próprio cartão: aqui só grava e, se falhar, avisa quem chamou.
     setUpdatingAppointment(row.id);
-    setError(null);
     try {
       const { error: updateError } =
         status === "reschedule_requested"
@@ -734,87 +673,71 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       if (updateError) throw updateError;
       await loadCatalog();
       await waiting.refresh();
-    } catch {
-      setError(t("shop.error.changeAppointment"));
     } finally {
       setUpdatingAppointment(null);
     }
   }
 
-  async function cancelSelectedAppointment() {
-    const row = cancelTarget;
-    if (!row) return;
+  async function cancelAgendaAppointment(row: DayAppointment, reason: CancellationReason | null) {
     setUpdatingAppointment(row.id);
-    setError(null);
     try {
-      if (demo)
-        demo.dispatch({ type: "cancel", id: row.id, reason: cancelReason || null, source: "shop" });
+      if (demo) demo.dispatch({ type: "cancel", id: row.id, reason, source: "shop" });
       else {
-        const result = await supabase.rpc("cancel_appointment", {
-          p_id: row.id,
-          p_reason: cancelReason || null,
-        });
+        const result = await supabase.rpc("cancel_appointment", { p_id: row.id, p_reason: reason });
         if (result.error) throw result.error;
         await loadCatalog();
       }
-      setCancelTarget(null);
-      setCancelReason("");
       setAgendaRefresh((value) => value + 1);
-    } catch {
-      setError(t("shop.error.cancelAppointment"));
     } finally {
       setUpdatingAppointment(null);
     }
   }
 
   async function stopSeriesFromShop(seriesId: string) {
-    if (!window.confirm(t("shop.confirm.stopSeries"))) {
-      return;
-    }
+    // Na demonstração a janela já avisa que não há repetição de verdade (botão desativado).
+    if (demo) return;
     setUpdatingAppointment(seriesId);
-    setError(null);
     try {
-      if (demo) {
-        setError(t("shop.error.seriesDemo"));
-        return;
-      }
       const result = await supabase.rpc("stop_booking_series", { p_series_id: seriesId });
       if (result.error) throw result.error;
       await loadCatalog();
       setAgendaRefresh((value) => value + 1);
-    } catch {
-      setError(t("shop.error.stopSeries"));
     } finally {
       setUpdatingAppointment(null);
     }
   }
 
-  async function createService(e: React.FormEvent) {
-    e.preventDefault();
-    if (!shop?.id) return;
+  /**
+   * Pedido aos sócios para serviço/profissional: as abas mostram o próprio resultado (aviso com
+   * ícone e selo no cartão), então a faixa geral do painel não repete a mensagem.
+   */
+  async function submitCatalogChange(kind: string, payload: Json): Promise<SaveOutcome> {
+    const applied = await submitProtectedChange(kind, payload);
+    setGovernanceMessage(null);
+    return applied ? "applied" : "pending";
+  }
+
+  /** Grava o serviço do formulário. Erros sobem com frase amigável para a janela mostrar. */
+  async function saveService(
+    draft: ServiceDraft,
+    editingService: Tables<"services"> | null,
+  ): Promise<ServiceSaveResult> {
+    if (!shop?.id) throw new Error(t("shop.error.shopNotFound"));
     // Duplo envio criaria dois serviços iguais no catálogo.
-    if (busy) return;
+    if (busy) throw new Error(t("catalog.service.saveError"));
     setBusy(true);
-    setError(null);
     try {
-      const duration = Number(serviceDuration);
-      const priceReais = Number(servicePrice.replace(",", "."));
-      if (!Number.isInteger(duration) || duration <= 0)
-        throw new Error(t("shop.error.invalidDuration"));
-      if (!Number.isFinite(priceReais) || priceReais < 0)
-        throw new Error(t("shop.error.invalidPrice"));
-      if (!serviceName.trim()) throw new Error(t("shop.error.serviceNameRequired"));
-      if (!servicePrice.trim()) throw new Error(t("shop.error.priceRequired"));
       const service = {
         barbershop_id: shop.id,
-        name: serviceName.trim(),
-        description: serviceDescription.trim() || null,
-        duration_minutes: duration,
-        price_cents: Math.round(priceReais * 100),
+        name: draft.name,
+        description: draft.description,
+        duration_minutes: draft.duration_minutes,
+        price_cents: draft.price_cents,
         active: editingService?.active ?? true,
-        icon: serviceIcon,
-        ...(prepSupported ? { prep_minutes: servicePrep === "" ? null : Number(servicePrep) } : {}),
+        icon: draft.icon,
+        ...(prepSupported ? { prep_minutes: draft.prep_minutes } : {}),
       };
+      let suggestion: ServiceSaveResult["suggestion"];
       if (demo) {
         demo.dispatch({
           type: editingService ? "service.edit" : "service.add",
@@ -844,28 +767,26 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
           { onConflict: "staff_id,service_id" },
         );
         if (ownCatalogError) throw ownCatalogError;
-        const suggest = window.confirm(t("shop.confirm.suggestCatalog"));
-        if (suggest && actor.staff_id) {
-          await supabase.rpc("suggest_partner_catalog", {
+        // A sugestão aos outros parceiros vem marcada no próprio formulário.
+        if (draft.suggestToPartners) {
+          const { error: suggestError } = await supabase.rpc("suggest_partner_catalog", {
             p_shop_id: shop.id,
             p_service_id: editingService.id,
             p_price_cents: service.price_cents,
             p_duration_minutes: service.duration_minutes,
             p_display_name: service.name,
           });
+          suggestion = suggestError ? "failed" : "sent";
         }
       } else if (actor && capabilities?.canProposeOperations) {
-        const applied = await submitProtectedChange(
+        const outcome = await submitCatalogChange(
           editingService ? "service.update" : "service.create",
           {
             ...service,
             id: editingService?.id,
           },
         );
-        if (!applied) {
-          setServiceFormOpen(false);
-          return;
-        }
+        if (outcome === "pending") return { outcome };
       } else if (actor) {
         throw new Error(t("shop.error.roleServices"));
       } else {
@@ -880,109 +801,45 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
           : await supabase.from("services").insert(service);
         if (insertError) throw insertError;
       }
-      setEditingService(null);
-      setServiceName("");
-      setServiceDescription("");
-      setServiceDuration("30");
-      setCustomDurationOpen(false);
-      setServicePrep("");
-      setServicePrice("45");
-      setServiceIcon("Scissors");
-      setServiceFormOpen(false);
-      await loadCatalog();
+      if (!demo) await loadCatalog();
+      return { outcome: "applied", suggestion };
     } catch (err) {
-      setError(friendlyAuthError(err, t("shop.error.createService")));
+      throw new Error(friendlyAuthError(err, t("catalog.service.saveError")));
     } finally {
       setBusy(false);
     }
   }
 
-  function handleIconUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || !shop?.id) return;
-    const validationError = validateServiceImage(file);
-    if (validationError) {
-      setError(validationError);
-      e.target.value = "";
-      return;
-    }
-    setError(null);
-    setServiceImageToCrop(file);
-    e.target.value = "";
-  }
-
-  async function saveCroppedServiceImage(file: File) {
-    if (!shop?.id) return;
+  /** Foto recortada do serviço ou do profissional → endereço da imagem gravada. */
+  async function uploadCatalogPicture(file: File, kind: "service" | "staff") {
+    if (!shop?.id) throw new Error(t("shop.error.shopNotFound"));
     const validationError = validateServiceImage(file);
     if (validationError) throw new Error(validationError);
-    setUploadingIcon(true);
-    setError(null);
     try {
-      const image = demo
-        ? await serviceImageToDataUrl(file)
-        : await uploadServiceImage(shop.id, file);
-      setServiceIcon(image);
-      setServiceIconQuery("");
-      setServiceImageToCrop(null);
-    } catch (cause) {
-      throw new Error(
-        cause instanceof Error && cause.message ? cause.message : t("shop.error.uploadImage"),
-      );
-    } finally {
-      setUploadingIcon(false);
-    }
-  }
-
-  function handleStaffAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || !shop?.id) return;
-    const validationError = validateServiceImage(file);
-    if (validationError) {
-      setError(validationError);
-      e.target.value = "";
-      return;
-    }
-    setError(null);
-    setStaffImageToCrop(file);
-    e.target.value = "";
-  }
-
-  async function saveCroppedStaffAvatar(file: File) {
-    if (!shop?.id) return;
-    const validationError = validateServiceImage(file);
-    if (validationError) throw new Error(validationError);
-    setUploadingStaffAvatar(true);
-    setError(null);
-    try {
-      const image = demo
-        ? await serviceImageToDataUrl(file)
+      if (demo) return await serviceImageToDataUrl(file);
+      return kind === "service"
+        ? await uploadServiceImage(shop.id, file)
         : await uploadStaffAvatar(shop.id, file);
-      setStaffAvatar(image);
-      setStaffImageToCrop(null);
     } catch (cause) {
       throw new Error(
-        cause instanceof Error && cause.message ? cause.message : t("shop.error.uploadStaffPhoto"),
+        cause instanceof Error && cause.message
+          ? cause.message
+          : t(kind === "service" ? "shop.error.uploadImage" : "shop.error.uploadStaffPhoto"),
       );
-    } finally {
-      setUploadingStaffAvatar(false);
     }
   }
 
-  async function confirmDeleteService() {
-    if (!deleteService || !shop) return;
+  async function removeService(deleteService: Tables<"services">): Promise<SaveOutcome> {
+    if (!shop) throw new Error(t("shop.error.shopNotFound"));
     setBusy(true);
-    setDeleteError(null);
     try {
       if (demo) {
         if (demo.appointments.some((row) => row.service_id === deleteService.id))
-          throw new Error(t("shop.error.serviceHasBookings"));
+          throw new HasBookingsError(t("shop.error.serviceHasBookings"));
         demo.dispatch({ type: "service.delete", id: deleteService.id });
       } else if (actor && capabilities?.canProposeOperations) {
-        const applied = await submitProtectedChange("service.delete", { id: deleteService.id });
-        if (!applied) {
-          setDeleteService(null);
-          return;
-        }
+        const outcome = await submitCatalogChange("service.delete", { id: deleteService.id });
+        if (outcome === "pending") return outcome;
       } else if (actor) {
         throw new Error(t("shop.error.roleDeleteServices"));
       } else {
@@ -993,45 +850,33 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
           .eq("barbershop_id", shop.id)
           .select("id")
           .single();
-        if (result.error)
-          throw new Error(
-            result.error.code === "23503"
-              ? t("shop.error.serviceHasBookings")
-              : t("shop.error.deleteService"),
-          );
+        if (result.error) {
+          if (result.error.code === "23503")
+            throw new HasBookingsError(t("shop.error.serviceHasBookings"));
+          throw new Error(t("shop.error.deleteService"));
+        }
       }
-      if (editingService?.id === deleteService.id) {
-        setEditingService(null);
-        setServiceName("");
-        setServiceDuration("30");
-        setCustomDurationOpen(false);
-        setServicePrep("");
-        setServicePrice("45");
-      }
-      setDeleteService(null);
       if (!demo) await loadCatalog();
+      return "applied";
     } catch (err) {
-      setDeleteError(friendlyAuthError(err, t("shop.error.deleteFailed")));
+      if (err instanceof HasBookingsError) throw err;
+      throw new Error(friendlyAuthError(err, t("shop.error.deleteFailed")));
     } finally {
       setBusy(false);
     }
   }
 
-  async function confirmDeleteStaff() {
-    if (!deleteStaff || !shop) return;
+  async function removeStaff(deleteStaff: Tables<"staff">): Promise<SaveOutcome> {
+    if (!shop) throw new Error(t("shop.error.shopNotFound"));
     setBusy(true);
-    setDeleteError(null);
     try {
       if (demo) {
         if (demo.appointments.some((row) => row.staff_id === deleteStaff.id))
-          throw new Error(t("shop.error.staffHasBookings"));
+          throw new HasBookingsError(t("shop.error.staffHasBookings"));
         demo.dispatch({ type: "staff.delete", id: deleteStaff.id });
       } else if (actor && capabilities?.canProposeOperations) {
-        const applied = await submitProtectedChange("staff.delete", { id: deleteStaff.id });
-        if (!applied) {
-          setDeleteStaff(null);
-          return;
-        }
+        const outcome = await submitCatalogChange("staff.delete", { id: deleteStaff.id });
+        if (outcome === "pending") return outcome;
       } else if (actor) {
         throw new Error(t("shop.error.roleDeleteStaff"));
       } else {
@@ -1042,32 +887,27 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
           .eq("barbershop_id", shop.id)
           .select("id")
           .single();
-        if (result.error)
-          throw new Error(
-            result.error.code === "23503"
-              ? t("shop.error.staffHasBookings")
-              : t("shop.error.deleteStaff"),
-          );
+        if (result.error) {
+          if (result.error.code === "23503")
+            throw new HasBookingsError(t("shop.error.staffHasBookings"));
+          throw new Error(t("shop.error.deleteStaff"));
+        }
       }
-      if (editingStaff?.id === deleteStaff.id) {
-        setEditingStaff(null);
-        setStaffName("");
-        setStaffSlug("");
-        setStaffSlugTouched(false);
-      }
-      setDeleteStaff(null);
       if (!demo) await loadCatalog();
+      return "applied";
     } catch (err) {
-      setDeleteError(friendlyAuthError(err, t("shop.error.deleteFailed")));
+      if (err instanceof HasBookingsError) throw err;
+      throw new Error(friendlyAuthError(err, t("shop.error.deleteFailed")));
     } finally {
       setBusy(false);
     }
   }
 
-  async function toggleService(row: Tables<"services">) {
+  /** Liga/desliga "aparece para clientes". Erro sobe com frase amigável (nunca a do banco). */
+  async function toggleService(row: Tables<"services">): Promise<SaveOutcome> {
     if (demo) {
       demo.dispatch({ type: "service.toggle", id: row.id });
-      return;
+      return "applied";
     }
     if (actor?.role === "associate" && actor.staff_id) {
       const { error: ownCatalogError } = await supabase.from("staff_services").upsert(
@@ -1082,49 +922,49 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         },
         { onConflict: "staff_id,service_id" },
       );
-      if (ownCatalogError) setError(friendlyAuthError(ownCatalogError));
-      else await loadCatalog();
-      return;
+      if (ownCatalogError)
+        throw new Error(friendlyAuthError(ownCatalogError, t("shop.error.toggleService")));
+      await loadCatalog();
+      return "applied";
     }
     if (actor && capabilities?.canProposeOperations) {
       try {
-        await submitProtectedChange("service.toggle", { id: row.id, active: !row.active });
+        const outcome = await submitCatalogChange("service.toggle", {
+          id: row.id,
+          active: !row.active,
+        });
         await loadCatalog();
+        return outcome;
       } catch (changeError) {
-        setError(
-          changeError instanceof Error ? changeError.message : t("shop.error.toggleService"),
-        );
+        throw new Error(friendlyAuthError(changeError, t("shop.error.toggleService")));
       }
-      return;
     }
     const { error: updateError } = await supabase
       .from("services")
       .update({ active: !row.active })
       .eq("id", row.id);
-    if (updateError) setError(friendlyAuthError(updateError));
-    else await loadCatalog();
+    if (updateError) throw new Error(friendlyAuthError(updateError, t("shop.error.toggleService")));
+    await loadCatalog();
+    return "applied";
   }
 
-  async function createStaff(e: React.FormEvent) {
-    e.preventDefault();
-    if (!shop?.id) return;
+  async function saveStaff(
+    draft: StaffDraft,
+    editingStaff: Tables<"staff"> | null,
+  ): Promise<SaveOutcome> {
+    if (!shop?.id) throw new Error(t("shop.error.shopNotFound"));
     // Duplo envio criaria dois profissionais iguais.
-    if (busy) return;
+    if (busy) throw new Error(t("catalog.staff.saveError"));
     setBusy(true);
-    setError(null);
     try {
-      if (!staffName.trim()) throw new Error(t("shop.error.staffNameRequired"));
-      const desiredSlug = slugifyPt(staffSlug || staffName);
-      if (!desiredSlug || !isValidBookingSlug(desiredSlug)) {
-        throw new Error(t("shop.error.invalidSlug"));
-      }
+      const desiredSlug = draft.booking_slug;
       const staff = {
         barbershop_id: shop.id,
-        display_name: staffName.trim(),
+        display_name: draft.display_name,
         booking_slug: desiredSlug,
         active: editingStaff?.active ?? true,
-        bio: staffBio.trim() || null,
-        avatar_url: staffAvatar,
+        bio: draft.bio,
+        avatar_url: draft.avatar_url,
       };
       if (demo) {
         demo.dispatch({
@@ -1139,17 +979,11 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
           },
         });
       } else if (actor && capabilities?.canProposeOperations) {
-        const applied = await submitProtectedChange(
-          editingStaff ? "staff.update" : "staff.create",
-          {
-            ...staff,
-            id: editingStaff?.id,
-          },
-        );
-        if (!applied) {
-          setStaffFormOpen(false);
-          return;
-        }
+        const outcome = await submitCatalogChange(editingStaff ? "staff.update" : "staff.create", {
+          ...staff,
+          id: editingStaff?.id,
+        });
+        if (outcome === "pending") return outcome;
       } else if (actor) {
         throw new Error(t("shop.error.roleTeam"));
       } else {
@@ -1164,76 +998,110 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
           : await supabase.from("staff").insert(staff);
         if (insertError) throw insertError;
       }
-      setEditingStaff(null);
-      setStaffName("");
-      setStaffSlug("");
-      setStaffSlugTouched(false);
-      setStaffBio("");
-      setStaffAvatar(null);
-      setStaffFormOpen(false);
-      await loadCatalog();
+      if (!demo) await loadCatalog();
+      return "applied";
     } catch (err) {
-      setError(friendlyAuthError(err, t("shop.error.createStaff")));
+      throw new Error(friendlyAuthError(err, t("catalog.staff.saveError")));
     } finally {
       setBusy(false);
     }
   }
 
-  async function toggleStaff(row: Tables<"staff">) {
+  async function toggleStaff(row: Tables<"staff">): Promise<SaveOutcome> {
     if (demo) {
       demo.dispatch({ type: "staff.toggle", id: row.id });
-      return;
+      return "applied";
     }
     if (actor && capabilities?.canProposeOperations) {
       try {
-        await submitProtectedChange("staff.toggle", { id: row.id, active: !row.active });
+        const outcome = await submitCatalogChange("staff.toggle", {
+          id: row.id,
+          active: !row.active,
+        });
         await loadCatalog();
+        return outcome;
       } catch (changeError) {
-        setError(friendlyAuthError(changeError, t("shop.error.toggleStaff")));
+        throw new Error(friendlyAuthError(changeError, t("shop.error.toggleStaff")));
       }
-      return;
     }
     const { error: updateError } = await supabase
       .from("staff")
       .update({ active: !row.active })
       .eq("id", row.id);
-    if (updateError) setError(friendlyAuthError(updateError));
-    else await loadCatalog();
+    if (updateError) throw new Error(friendlyAuthError(updateError, t("shop.error.toggleStaff")));
+    await loadCatalog();
+    return "applied";
   }
 
-  function updateHours(weekday: number, change: Partial<Tables<"business_hours">>) {
-    setBusinessHours((rows) =>
-      rows.map((row) => (row.weekday === weekday ? { ...row, ...change } : row)),
-    );
+  /**
+   * Só a lista de bloqueios (mesma consulta da carga): não regrava o funcionamento, para não
+   * apagar o que está sendo editado na semana. Na demonstração, a carga já roda após cada ação.
+   */
+  async function loadBlocks() {
+    if (demo || !shop?.id) return;
+    const { data, error: blocksError } = await supabase
+      .from("availability_blocks")
+      .select("*, staff:staff(display_name)")
+      .eq("barbershop_id", shop.id)
+      .gte("ends_at", new Date().toISOString())
+      .order("starts_at", { ascending: true });
+    if (!blocksError) setBlocks(data ?? []);
   }
 
-  async function saveBusinessHours() {
-    if (!shop?.id) return;
-    setBusy(true);
-    setError(null);
+  /** Atendimentos de um dia, para o bloqueio avisar quem já está marcado no horário. */
+  async function loadHoursDay(day: string): Promise<HoursAppointment[]> {
+    if (demo) {
+      return demo.appointments
+        .filter((row) => shopDateKey(new Date(row.starts_at), shopTimeZone) === day)
+        .map((row) => ({
+          ...row,
+          staff: demo.staff.find((member) => member.id === row.staff_id) ?? null,
+          customer: {
+            full_name:
+              row.customer_id === demo.customerId
+                ? demo.customerName
+                : (demo.customers.find((customer) => customer.id === row.customer_id)?.name ??
+                  null),
+          },
+        }));
+    }
+    const result = await fetchDayAppointments(day);
+    if (result.error) throw result.error;
+    return result.data ?? [];
+  }
+
+  /**
+   * Grava o funcionamento da semana (o rascunho fica na aba). Devolve "pending" quando vira pedido
+   * aos sócios; erros sobem com a frase pronta para aparecer junto do botão.
+   */
+  async function saveBusinessHours(rows: Tables<"business_hours">[]): Promise<SaveOutcome> {
+    if (!shop?.id) throw new Error(t("shop.error.shopNotFound"));
     try {
-      for (const row of businessHours) {
+      for (const row of rows) {
         // O banco devolve "HH:MM:SS" e o seletor grava "HH:MM": compara só horas e minutos.
         if (row.is_open && row.closes_at.slice(0, 5) <= row.opens_at.slice(0, 5)) {
           throw new Error(t("shop.error.closeAfterOpen", { day: t(weekdays[row.weekday]) }));
         }
       }
       if (demo) {
-        demo.dispatch({ type: "hours.save", hours: businessHours });
+        demo.dispatch({ type: "hours.save", hours: rows });
+        return "applied";
       } else if (actor && capabilities?.canProposeOperations) {
         const applied = await submitProtectedChange("hours.replace", {
-          hours: businessHours.map(({ weekday, is_open, opens_at, closes_at }) => ({
+          hours: rows.map(({ weekday, is_open, opens_at, closes_at }) => ({
             weekday,
             is_open,
             opens_at,
             closes_at,
           })),
         });
-        if (!applied) return;
+        // O resultado aparece junto do botão Salvar, não no topo da página.
+        setGovernanceMessage(null);
+        if (!applied) return "pending";
       } else if (actor) {
         throw new Error(t("shop.error.roleHours"));
       } else {
-        const payload = businessHours.map(({ weekday, is_open, opens_at, closes_at }) => ({
+        const payload = rows.map(({ weekday, is_open, opens_at, closes_at }) => ({
           barbershop_id: shop.id,
           weekday,
           is_open,
@@ -1245,39 +1113,38 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
           .upsert(payload, { onConflict: "barbershop_id,weekday" });
         if (saveError) throw saveError;
       }
-      await loadCatalog();
+      // Gravou: o salvo passa a ser o rascunho (sem recarregar a aba inteira).
+      setBusinessHours(rows);
+      return "applied";
     } catch (err) {
-      setError(friendlyAuthError(err, t("shop.error.saveHours")));
-    } finally {
-      setBusy(false);
+      throw new Error(friendlyAuthError(err, t("shop.error.saveHours")));
     }
   }
 
-  async function createBlock(e: React.FormEvent) {
-    e.preventDefault();
-    if (!shop?.id) return;
-    setBusy(true);
-    setError(null);
+  async function createBlock(draft: BlockDraft): Promise<SaveOutcome> {
+    if (!shop?.id) throw new Error(t("shop.error.shopNotFound"));
     try {
-      // O horário digitado é a hora da parede da loja; converte para o instante correto.
-      const startsAt = shopDateTime(blockDate, `${blockStart}:00`, shopTimeZone);
-      const endsAt = shopDateTime(blockDate, `${blockEnd}:00`, shopTimeZone);
+      // O horário escolhido é a hora da parede da loja; converte para o instante correto.
+      const startsAt = shopDateTime(draft.date, `${draft.start}:00`, shopTimeZone);
+      const endsAt = shopDateTime(draft.date, `${draft.end}:00`, shopTimeZone);
       if (endsAt <= startsAt) throw new Error(t("shop.error.blockEndAfterStart"));
       const block = {
         barbershop_id: shop.id,
-        staff_id: ownBlocksOnly ? (actor?.staff_id ?? null) : blockStaffId || null,
+        staff_id: ownBlocksOnly ? (actor?.staff_id ?? null) : draft.staffId,
         starts_at: startsAt.toISOString(),
         ends_at: endsAt.toISOString(),
-        reason: blockReason.trim() || null,
+        reason: draft.reason?.trim() || null,
       };
       if (demo) {
         demo.dispatch({
           type: "block.add",
           block: { ...block, id: crypto.randomUUID(), created_at: demo.now.toISOString() },
         });
+        return "applied";
       } else if (actor && capabilities?.canProposeOperations) {
         const applied = await submitProtectedChange("availability.create", block);
-        if (!applied) return;
+        setGovernanceMessage(null);
+        if (!applied) return "pending";
       } else if (actor?.role === "associate" && block.staff_id === actor.staff_id) {
         const { error: insertError } = await supabase.from("availability_blocks").insert(block);
         if (insertError) throw insertError;
@@ -1287,101 +1154,84 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         const { error: insertError } = await supabase.from("availability_blocks").insert(block);
         if (insertError) throw insertError;
       }
-      setBlockReason("");
-      setBlockCustomOpen(false);
-      await loadCatalog();
+      await loadBlocks();
+      return "applied";
     } catch (err) {
-      setError(friendlyAuthError(err, t("shop.error.createBlock")));
-    } finally {
-      setBusy(false);
+      throw new Error(friendlyAuthError(err, t("shop.error.createBlock")));
     }
   }
 
-  async function deleteBlock(id: string) {
-    setBusy(true);
-    setError(null);
-    if (demo) demo.dispatch({ type: "block.delete", id });
-    else if (actor && capabilities?.canProposeOperations) {
-      try {
-        await submitProtectedChange("availability.delete", { id });
-      } catch (changeError) {
-        setError(friendlyAuthError(changeError, t("shop.error.deleteBlock")));
-      }
-    } else if (actor?.role === "associate") {
-      const { error: deleteError } = await supabase
-        .from("availability_blocks")
-        .delete()
-        .eq("id", id)
-        .eq("staff_id", actor.staff_id);
-      if (deleteError) setError(friendlyAuthError(deleteError));
-    } else if (actor) {
-      setError(t("shop.error.roleDeleteBlock"));
-    } else {
-      const { error: deleteError } = await supabase
-        .from("availability_blocks")
-        .delete()
-        .eq("id", id);
-      if (deleteError) setError(friendlyAuthError(deleteError));
-    }
-    await loadCatalog();
-    setBusy(false);
-  }
-
-  async function saveSettings(event: React.FormEvent) {
-    event.preventDefault();
-    if (!settings) return;
-    setBusy(true);
-    setError(null);
-    setSettingsSaved(false);
+  async function deleteBlock(id: string): Promise<SaveOutcome> {
     try {
-      const next = {
-        ...settings,
-        booking_instructions: settings.booking_instructions.trim(),
-        updated_at: new Date().toISOString(),
-      };
-      const assignmentMode =
-        (next as { staff_assignment_mode?: string }).staff_assignment_mode ?? "client_pick";
       if (demo) {
-        demo.dispatch({ type: "settings.save", settings: next });
-        setSettings(next);
-        setSettingsSaved(true);
+        demo.dispatch({ type: "block.delete", id });
+        return "applied";
       } else if (actor && capabilities?.canProposeOperations) {
-        const applied = await submitProtectedChange("settings.operational", {
-          booking_instructions: next.booking_instructions,
-          booking_horizon_days: next.booking_horizon_days,
-          survey_program_enabled: next.survey_program_enabled,
-          waiting_enabled: next.waiting_enabled,
-          waiting_cutoff_minutes: next.waiting_cutoff_minutes,
-          staff_assignment_mode: assignmentMode,
-        });
-        setSettingsSaved(applied);
+        const applied = await submitProtectedChange("availability.delete", { id });
+        setGovernanceMessage(null);
+        if (!applied) return "pending";
+      } else if (actor?.role === "associate") {
+        const { error: deleteError } = await supabase
+          .from("availability_blocks")
+          .delete()
+          .eq("id", id)
+          .eq("staff_id", actor.staff_id);
+        if (deleteError) throw deleteError;
       } else if (actor) {
-        throw new Error(t("shop.error.roleSettings"));
+        throw new Error(t("shop.error.roleDeleteBlock"));
       } else {
-        const { data, error: updateError } = await supabase
-          .from("barbershop_settings")
-          .update({
-            booking_instructions: next.booking_instructions,
-            booking_horizon_days: next.booking_horizon_days,
-            survey_program_enabled: next.survey_program_enabled,
-            staff_assignment_mode: assignmentMode,
-          })
-          .eq("barbershop_id", settings.barbershop_id)
-          .select("*")
-          .single();
-        if (updateError) setError(friendlyAuthError(updateError));
-        else {
-          setSettings(data);
-          setSettingsSaved(true);
-        }
+        const { error: deleteError } = await supabase
+          .from("availability_blocks")
+          .delete()
+          .eq("id", id);
+        if (deleteError) throw deleteError;
       }
-    } catch (settingsError) {
-      setError(
-        settingsError instanceof Error ? settingsError.message : t("shop.error.saveSettings"),
-      );
-    } finally {
-      setBusy(false);
+      await loadBlocks();
+      return "applied";
+    } catch (err) {
+      throw new Error(friendlyAuthError(err, t("shop.error.deleteBlock")));
     }
+  }
+
+  /**
+   * Regras do agendamento (prazo, profissional, orientação e pesquisas). O rascunho fica no
+   * cartão; aqui só grava e junta ao `settings` os campos salvos, sem apagar rascunhos de outros
+   * cartões. Erros sobem para o cartão mostrar junto do botão.
+   */
+  async function saveBookingRules(draft: BookingRulesDraft): Promise<"applied" | "pending"> {
+    if (!settings) throw new Error(t("shop.error.saveSettings"));
+    const merge = (patch: Partial<Tables<"barbershop_settings">>) =>
+      setSettings((current) => (current ? ({ ...current, ...patch } as typeof current) : current));
+    if (demo) {
+      const next = { ...settings, ...draft, updated_at: new Date().toISOString() };
+      demo.dispatch({ type: "settings.save", settings: next });
+      merge(draft);
+      return "applied";
+    }
+    if (actor && capabilities?.canProposeOperations) {
+      const applied = await submitProtectedChange("settings.operational", {
+        booking_instructions: draft.booking_instructions,
+        booking_horizon_days: draft.booking_horizon_days,
+        survey_program_enabled: draft.survey_program_enabled,
+        waiting_enabled: settings.waiting_enabled,
+        waiting_cutoff_minutes: settings.waiting_cutoff_minutes,
+        staff_assignment_mode: draft.staff_assignment_mode,
+      });
+      if (applied) merge(draft);
+      return applied ? "applied" : "pending";
+    }
+    if (actor) throw new Error(t("shop.error.roleSettings"));
+    const { data, error: updateError } = await supabase
+      .from("barbershop_settings")
+      .update(draft)
+      .eq("barbershop_id", settings.barbershop_id)
+      .select(
+        "booking_instructions, booking_horizon_days, survey_program_enabled, staff_assignment_mode",
+      )
+      .single();
+    if (updateError) throw updateError;
+    merge(data as Partial<Tables<"barbershop_settings">>);
+    return "applied";
   }
 
   async function saveSlotMode(
@@ -1423,62 +1273,57 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     setSettingsSection("agendamento");
   }
 
-  const completedValue = appointments.reduce(
-    (total, row) => total + (row.status === "completed" ? (row.service?.price_cents ?? 0) : 0),
-    0,
-  );
-  const expectedValue = appointments.reduce(
-    (total, row) =>
-      total +
-      (row.status === "pending" || row.status === "confirmed"
-        ? (row.service?.price_cents ?? 0)
-        : 0),
-    0,
-  );
-  const cancelledCount = appointments.filter((row) => row.status === "cancelled").length;
-
-  const normalizeSearch = (value: string) =>
-    value
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLocaleLowerCase("pt-BR")
-      .trim();
-  const visibleServices = services.filter(
-    (row) =>
-      normalizeSearch(row.name).includes(normalizeSearch(serviceQuery)) &&
-      (serviceStatus === "all" || row.active === (serviceStatus === "active")),
-  );
-  const visibleStaff = staff.filter(
-    (row) =>
-      normalizeSearch(row.display_name).includes(normalizeSearch(staffQuery)) &&
-      (staffStatus === "all" || row.active === (staffStatus === "active")),
-  );
-  // Escopo "Minha agenda" não é filtro: contador e estado vazio comparam com esta lista.
-  const scopedAppointments = appointments.filter(
-    (row) => agendaScope === "team" || !actor?.staff_id || row.staff_id === actor.staff_id,
-  );
-  // Em "Minha agenda" a lista já é só do profissional: o filtro por equipe some e deixa de valer.
-  const showAgendaStaffFilter = agendaScope === "team" || !actor?.staff_id;
-  const effectiveAgendaStaff = showAgendaStaffFilter ? agendaStaff : "";
-  const filteredAppointments = scopedAppointments.filter(
-    (row) =>
-      (!effectiveAgendaStaff || row.staff_id === effectiveAgendaStaff) &&
-      (!agendaStatus || row.status === agendaStatus) &&
-      normalizeSearch(`${row.customer?.full_name ?? ""} ${row.service?.name ?? ""}`).includes(
-        normalizeSearch(agendaSearch.trim()),
-      ),
-  );
+  // Quem faz cada serviço, quem entra no painel e o que espera os sócios (Serviços/Equipe).
+  const catalogExtras = useCatalogExtras({
+    shopId: shop?.id,
+    demo: Boolean(demo),
+    active: tab === "servicos" || tab === "equipe",
+    withAccess: !!actor && (actor.role === "owner" || actor.role === "partner"),
+    withApprovals: !!actor && !!capabilities?.canProposeOperations,
+    revision: governanceRevision + services.length * 1000 + staff.length,
+  });
+  const catalogLinkOrigin = shop?.slug
+    ? shopPublicOrigin({
+        slug: shop.slug,
+        customDomain: shop.custom_domain,
+        customDomainStatus: shop.custom_domain_status,
+      })
+    : null;
+  // Escopo, filtros, números do dia e linha do tempo da Agenda ficam em AgendaTab.
   const agendaToday = shopDateKey(demo?.now ?? new Date(), shopTimeZone);
-  const isAgendaToday = agendaDay === agendaToday;
-  const agendaDayLabel = (() => {
-    const [year, month, day] = agendaDay.split("-").map(Number);
-    return new Intl.DateTimeFormat(intlLocale, {
-      weekday: "long",
-      day: "2-digit",
-      month: agendaNarrow ? "short" : "long",
-      timeZone: "UTC",
-    }).format(new Date(Date.UTC(year, month - 1, day)));
-  })();
+  // Equipe sempre mostra o dia de HOJE de cada profissional. Quando a Agenda está aberta em
+  // outro dia, os atendimentos de hoje são buscados à parte (só leitura, mesma consulta da Agenda).
+  const [teamTodayAppointments, setTeamTodayAppointments] = useState<Array<{
+    starts_at: string;
+    ends_at: string;
+    staff_id: string;
+    status: string;
+  }> | null>(null);
+  useEffect(() => {
+    if (tab !== "equipe" || agendaDay === agendaToday) return;
+    if (demo) {
+      setTeamTodayAppointments(
+        demo.appointments.filter(
+          (row) => shopDateKey(new Date(row.starts_at), shopTimeZone) === agendaToday,
+        ),
+      );
+      return;
+    }
+    let cancelled = false;
+    setTeamTodayAppointments(null);
+    void fetchDayAppointments(agendaToday)
+      .then((result) => {
+        if (!cancelled) setTeamTodayAppointments(result.error ? null : result.data);
+      })
+      .catch(() => {
+        if (!cancelled) setTeamTodayAppointments(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchDayAppointments usa shop/actor atuais
+  }, [tab, agendaDay, agendaToday, demo, shopTimeZone, shop?.id, agendaRefresh]);
+  const teamToday = agendaDay === agendaToday ? appointments : (teamTodayAppointments ?? null);
   // As capacidades vêm da matriz de permissões (com padrões por papel quando ela
   // ainda não foi carregada), então a interface acompanha o que o banco permite.
   const canEditServices = !actor || !!capabilities?.manageCatalog || !!capabilities?.editOwnCatalog;
@@ -1517,13 +1362,50 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       ? (["avisos"] as const)
       : []),
     ...(!demo && canManageShopSettings ? (["enderecos"] as const) : []),
-    ...(!demo && actor && (canManageShopSettings || actor.role === "associate")
-      ? (["equipe"] as const)
-      : []),
+    // Equipe e sociedade: todo papel vê "Seu acesso nesta barbearia" (e, quando pode, a saída).
+    ...(!demo && actor ? (["equipe"] as const) : []),
     "idioma",
+    // Troca de senha: fica em Ajustes, no grupo "Sua conta" (fora da demonstração).
+    ...(!demo ? (["conta"] as const) : []),
   ];
   // A aba Ajustes aparece sempre que houver alguma seção permitida ao papel (idioma, no mínimo).
   const canOpenSettings = settingsSections.length > 0;
+  // Estado do WhatsApp e prêmios esperando entrega, para o menu de Ajustes mostrar sem abrir.
+  const settingsSignals = useSettingsSignals({
+    shopId: shop?.id,
+    active: tab === "configuracoes" && settingsSection === null,
+    demo: Boolean(demo),
+    channels: canManageShopChannels,
+    loyalty: canManageShopSettings && settings?.loyalty_enabled === true,
+  });
+  // "Ver pedido" (Serviços/Equipe): os pedidos aos sócios ficam em Ajustes → Equipe.
+  const openApprovals = settingsSections.includes("equipe")
+    ? () => {
+        setTab("configuracoes");
+        setSettingsSection("equipe");
+        // Leva direto às decisões entre donos (topo da seção).
+        window.setTimeout(
+          () =>
+            document
+              .getElementById("team-decisions")
+              ?.scrollIntoView({ block: "start", behavior: "smooth" }),
+          120,
+        );
+      }
+    : undefined;
+  // "Abrir Pessoas e papéis" (saída da barbearia): fica na aba Equipe, logo após a lista.
+  const openPeople = canManageTeam
+    ? () => {
+        setTab("equipe");
+        window.setTimeout(
+          () =>
+            document
+              .getElementById("team-access")
+              ?.scrollIntoView({ block: "start", behavior: "smooth" }),
+          160,
+        );
+      }
+    : undefined;
 
   useEffect(() => {
     // Só redireciona com capacidades já resolvidas — evita bounce enquanto a matriz carrega.
@@ -1532,18 +1414,32 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     if (tab === "equipe" && !canManageTeam) setTab("agenda");
     if (tab === "horarios" && !canManageOperations) setTab("agenda");
     if (tab === "configuracoes" && !canOpenSettings) setTab("agenda");
-    if (agendaScope === "team" && actor && !capabilities?.viewFullShop) setAgendaScope("mine");
+    // "Equipe" na Agenda some sozinho para quem não vê a loja toda (ver AgendaTab).
   }, [
     tab,
     canEditServices,
     canManageTeam,
     canManageOperations,
     canOpenSettings,
-    agendaScope,
     actor,
     capabilities,
-    capabilities?.viewFullShop,
   ]);
+
+  // Erro de uma aba não fica à mostra na outra.
+  useEffect(() => {
+    setError(null);
+    // O filtro "agenda dele" (vindo de Equipe) vale só para aquela visita à Agenda.
+    if (tab !== "agenda") setAgendaFocusStaff(null);
+    // O aviso de mudança protegida é da tela que salvou: não acompanha a troca de aba.
+    setGovernanceMessage(null);
+  }, [tab]);
+
+  // "Mudança aplicada" é confirmação, não pendência: some em 4 s (a pendência fica até fechar).
+  useEffect(() => {
+    if (!governanceMessage || governanceMessage !== tNow("shop.governance.applied")) return;
+    const timer = window.setTimeout(() => setGovernanceMessage(null), 4000);
+    return () => window.clearTimeout(timer);
+  }, [governanceMessage]);
 
   const shopNavItems = (
     [
@@ -1587,199 +1483,49 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         disabled={Boolean(demo)}
         withDpa={!actor || actor.role === "owner" || actor.role === "partner"}
       />
-      <AlertDialog
-        open={!!withdrawTarget}
-        onOpenChange={(open) => {
-          if (!open && !updatingAppointment) setWithdrawTarget(null);
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("shop.withdraw.title")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {withdrawTarget &&
-              settings &&
-              canHold(
-                withdrawTarget.starts_at,
-                waiting.now,
-                settings.waiting_enabled,
-                settings.waiting_cutoff_minutes,
-              )
-                ? t("shop.withdraw.bodyHold")
-                : t("shop.withdraw.bodyRelease")}{" "}
-              {t("shop.withdraw.bodyTail")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={!!updatingAppointment}>
-              {t("common.back")}
-            </AlertDialogCancel>
-            <button
-              disabled={!!updatingAppointment}
-              className="action-button action-danger"
-              onClick={async () => {
-                if (withdrawTarget) {
-                  await setAppointmentStatus(withdrawTarget, "reschedule_requested");
-                  setWithdrawTarget(null);
-                }
-              }}
-            >
-              <X className="size-4" />
-              {t("shop.withdraw.confirm")}
-            </button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      <CancellationDialog
-        open={!!cancelTarget}
-        busy={updatingAppointment !== null}
-        reason={cancelReason}
-        summary={
-          cancelTarget
-            ? `${cancelTarget.service?.name ?? t("shop.serviceFallback")} · ${
-                cancelTarget.customer?.full_name ?? t("shop.customerFallback")
-              } · ${formatSlotLabel(new Date(cancelTarget.starts_at), shopTimeZone)}`
-            : null
-        }
-        onReason={setCancelReason}
-        onCancel={() => {
-          setCancelTarget(null);
-          setCancelReason("");
-        }}
-        onConfirm={() => void cancelSelectedAppointment()}
-      />
-      <StaffSurveyDialog
-        appointment={surveyTarget}
-        open={!!surveyTarget}
-        onClose={() => setSurveyTarget(null)}
-        onSaved={() => setAgendaRefresh((value) => value + 1)}
-      />
-      <AlertDialog
-        open={!!deleteService}
-        onOpenChange={(open) => {
-          if (!open && !busy) setDeleteService(null);
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("shop.deleteService.title")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("shop.deleteService.body", { name: deleteService?.name ?? "" })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          {deleteError && (
-            <p role="alert" className="text-sm text-destructive">
-              {deleteError}
-            </p>
-          )}
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={busy}>{t("shop.cancel")}</AlertDialogCancel>
-            <button
-              disabled={busy}
-              onClick={() => void confirmDeleteService()}
-              className="action-button action-danger"
-            >
-              <Trash2 className="size-4" />
-              {busy ? t("shop.deleting") : t("shop.deleteService.confirm")}
-            </button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      <AlertDialog
-        open={!!deleteStaff}
-        onOpenChange={(open) => {
-          if (!open && !busy) setDeleteStaff(null);
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("shop.deleteStaff.title")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("shop.deleteStaff.body", { name: deleteStaff?.display_name ?? "" })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          {deleteError && (
-            <p role="alert" className="text-sm text-destructive">
-              {deleteError}
-            </p>
-          )}
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={busy}>{t("shop.cancel")}</AlertDialogCancel>
-            <button
-              disabled={busy}
-              onClick={() => void confirmDeleteStaff()}
-              className="action-button action-danger"
-            >
-              <Trash2 className="size-4" />
-              {busy ? t("shop.deleting") : t("shop.deleteStaff.confirm")}
-            </button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur-xl px-4 py-4 flex items-center justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-xs font-bold text-gold">{t("shop.header.kicker")}</p>
-          <h1 className="line-clamp-2 break-words text-lg leading-tight font-extrabold tracking-tight max-[379px]:text-base">
-            {shop?.name ?? t("shop.header.shopFallback")}
-          </h1>
-          {!demo && profile.shopActors.length > 1 && (
-            <label className="mt-1 block text-[11px] text-muted-foreground">
-              <span className="sr-only">{t("shop.header.activeShop")}</span>
-              <select
-                value={actor?.id ?? ""}
-                onChange={(event) => setSelectedActorId(event.target.value)}
-                className="max-w-48 rounded-lg border border-border bg-background px-2 py-1 font-semibold text-foreground"
-              >
-                {profile.shopActors.map((candidate) => (
-                  <option key={candidate.id} value={candidate.id}>
-                    {candidate.barbershop?.name ?? t("shop.header.shopName")} ·{" "}
-                    {candidate.role === "owner"
-                      ? t("shop.role.owner")
-                      : candidate.role === "partner"
-                        ? t("shop.role.partner")
-                        : candidate.role === "associate"
-                          ? t("shop.role.associate")
-                          : t("shop.role.employee")}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-        </div>
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <ThemeToggle />
-          {headerActions}
-          {/* Na demonstração a visão Plataforma e a saída ficam no frasco e no menu da conta. */}
-          {profile.primaryRole === "platform_admin" && !demo && (
-            <>
-              <Link
-                to="/platform"
-                aria-label={t("shop.header.platformAria")}
-                className="app-icon-button sm:hidden!"
-              >
-                <ShieldCheck size={20} />
-              </Link>
-              <Link
-                to="/platform"
-                className="hidden min-h-11 items-center px-2 text-xs font-semibold text-muted-foreground hover:text-foreground sm:inline-flex"
-              >
-                {t("shop.header.platform")}
-              </Link>
-            </>
-          )}
-          {!demo && (
-            <button
-              onClick={signOut}
-              aria-label={t("shop.header.signOut")}
-              className="app-icon-button"
-            >
-              <LogOut size={18} />
-            </button>
-          )}
+      <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur-xl px-4 py-3">
+        {/* Cabeçalho com largura fixa no computador: não muda de posição ao trocar de aba
+            e não aperta o nome da loja nem o selo do papel nas abas estreitas. */}
+        <div className="mx-auto flex w-full max-w-[70rem] items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            {/* Onde estou e com que papel: nome da loja (troca de loja) + selo do papel. */}
+            <ShopSwitcher
+              name={shop?.name ?? t("shop.header.shopFallback")}
+              shops={shopChoices}
+              currentId={actor?.id ?? ""}
+              onSwitch={setSelectedActorId}
+            />
+            {actor ? (
+              <RoleBadge role={actor.role} className="mt-0.5 max-w-full" />
+            ) : (
+              <p className="truncate text-xs font-bold text-gold">{t("shop.header.kicker")}</p>
+            )}
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+            <ThemeToggle />
+            {headerActions}
+            {/* Na demonstração a visão Plataforma e a saída ficam no frasco e no menu da conta. */}
+            {!demo && (
+              <ShopAccountMenu
+                name={profile.profile?.full_name || profile.user.email || t("eq.account.open")}
+                email={profile.user.email}
+                role={actor?.role}
+                shopName={shop?.name}
+                shops={shopChoices}
+                currentShopId={actor?.id ?? ""}
+                onSwitchShop={setSelectedActorId}
+                showPlatform={profile.primaryRole === "platform_admin"}
+                onSignOut={() => void signOut()}
+              />
+            )}
+          </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl space-y-6 p-4 pb-8">
+      {/* A Agenda usa a largura do computador em duas colunas; as outras abas seguem estreitas. */}
+      <main
+        className={`mx-auto max-w-3xl space-y-6 p-4 pb-8 ${tab === "agenda" || tab === "horarios" ? "shop-agenda-wide" : ""}`}
+      >
         <div key={tab} className="mb-panel space-y-6">
           {!shop && (
             <EmptyState
@@ -1788,1618 +1534,302 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
               description={t("shop.noShop.description")}
             />
           )}
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {/* Na Agenda o erro aparece junto da lista, com "Tentar de novo". */}
+          {/* Serviços e Equipe mostram o erro de carga dentro da aba, com "Tentar de novo". */}
+          {/* Horários também: o erro de carga fica dentro de "Sua semana". */}
+          {error &&
+            tab !== "agenda" &&
+            tab !== "servicos" &&
+            tab !== "equipe" &&
+            tab !== "horarios" && <p className="text-sm text-destructive">{error}</p>}
+          {/* Mudança aplicada: verde, some sozinha. Aguardando sócios: âmbar, até fechar. */}
           {governanceMessage && (
-            <p
-              role="status"
-              className="rounded-2xl border border-amber-500/25 bg-amber-500/10 p-3 text-sm font-semibold text-amber-800 dark:text-amber-200"
-            >
-              {governanceMessage}
-            </p>
+            <Notice
+              tone={governanceMessage === t("shop.governance.applied") ? "success" : "pending"}
+              title={governanceMessage}
+              action={
+                governanceMessage !== t("shop.governance.applied") && openApprovals
+                  ? { label: t("eq.common.seeRequest"), icon: Hourglass, onClick: openApprovals }
+                  : undefined
+              }
+              onDismiss={() => setGovernanceMessage(null)}
+            />
           )}
-          {loading && <p className="text-sm text-muted-foreground">{t("shop.loading")}</p>}
+          {loading &&
+            tab !== "agenda" &&
+            tab !== "servicos" &&
+            tab !== "equipe" &&
+            tab !== "horarios" && (
+              <p className="text-sm text-muted-foreground">{t("shop.loading")}</p>
+            )}
 
           {tab === "agenda" && shop && (
-            <section className="mb-stagger space-y-4">
-              <div className="app-section-title">
-                <Calendar />
-                <h2>{t("shop.nav.agenda")}</h2>
-                {!demo && (
-                  <button
-                    type="button"
-                    disabled={refreshingAgenda || busy || !!updatingAppointment}
-                    onClick={() => setAgendaRefresh((v) => v + 1)}
-                    className="ml-auto flex items-center gap-2 text-xs font-semibold text-muted-foreground disabled:opacity-50"
-                  >
-                    <RefreshCw className={`size-3.5 ${refreshingAgenda ? "animate-spin" : ""}`} />
-                    {refreshingAgenda ? t("shop.agenda.refreshing") : t("shop.agenda.refresh")}
-                  </button>
-                )}
-              </div>
-
-              {!demo &&
+            <AgendaTab
+              shopId={shop.id}
+              timeZone={shopTimeZone}
+              actor={actor ? { role: actor.role, staff_id: actor.staff_id } : null}
+              canSeeTeam={!!actor && !!capabilities?.viewFullShop}
+              canViewMoney={canViewMoney}
+              canManageOperations={canManageOperations}
+              onOpenHours={() => setTab("horarios")}
+              day={agendaDay}
+              today={agendaToday}
+              onDayChange={setAgendaDay}
+              focusStaffId={agendaFocusStaff}
+              loading={loading}
+              error={error}
+              refreshing={refreshingAgenda}
+              onRefresh={demo ? null : () => setAgendaRefresh((value) => value + 1)}
+              revision={agendaRefresh}
+              appointments={appointments}
+              staff={staff}
+              services={services}
+              businessHours={businessHours}
+              blocks={blocks}
+              settings={settings}
+              cancellationDetails={cancellationDetails}
+              waiting={waiting}
+              updating={busy || !!updatingAppointment}
+              actions={{
+                setStatus: setAppointmentStatus,
+                cancel: cancelAgendaAppointment,
+                stopSeries: stopSeriesFromShop,
+              }}
+              setup={
+                !demo &&
                 !loading &&
                 settings &&
                 (!actor || actor.role === "owner" || actor.role === "partner") && (
-                  <ShopSetupChecklist
-                    shopId={shop.id}
-                    publicUrl={shopPublicOrigin({
-                      slug: shop.slug,
-                      customDomain: shop.custom_domain,
-                      customDomainStatus: shop.custom_domain_status,
-                    })}
-                    services={services}
-                    businessHours={businessHours}
-                    settings={settings}
-                    onOpen={(target) => {
-                      if (target === "horarios" || target === "servicos") return setTab(target);
-                      setTab("configuracoes");
-                      setSettingsSection("aparencia");
-                      if (target === "landing") setLandingOpen(true);
-                      else setBrandOpen(true);
-                    }}
-                  />
-                )}
-
-              <div className="agenda-toolbar app-action-card p-3 sm:p-4">
-                {actor && capabilities?.viewFullShop && (
-                  <div className="agenda-scope" aria-label={t("shop.agenda.scopeAria")}>
-                    <button
-                      type="button"
-                      aria-pressed={agendaScope === "mine"}
-                      onClick={() => setAgendaScope("mine")}
-                    >
-                      <Calendar className="size-4" />
-                      {t("shop.agenda.mine")}
-                    </button>
-                    <button
-                      type="button"
-                      aria-pressed={agendaScope === "team"}
-                      onClick={() => setAgendaScope("team")}
-                    >
-                      <Users className="size-4" />
-                      {t("shop.nav.team")}
-                    </button>
-                  </div>
-                )}
-
-                <div className="agenda-date-navigation">
-                  <button
-                    type="button"
-                    aria-label={t("shop.agenda.prevDayAria")}
-                    title={t("shop.agenda.prevDay")}
-                    onClick={() => moveAgendaDay(-1)}
-                    className="app-icon-button agenda-date-arrow"
-                  >
-                    <ChevronLeft className="size-5" />
-                  </button>
-                  <div className="agenda-date-current">
-                    <span className="agenda-date-caption">
-                      {isAgendaToday ? t("shop.agenda.today") : t("shop.agenda.selectedDate")}
-                    </span>
-                    <DatePicker
-                      compact
-                      label={t("shop.agenda.pickDate")}
-                      value={agendaDay}
-                      onChange={setAgendaDay}
-                      displayValue={agendaDayLabel}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    aria-label={t("shop.agenda.nextDayAria")}
-                    title={t("shop.agenda.nextDay")}
-                    onClick={() => moveAgendaDay(1)}
-                    className="app-icon-button agenda-date-arrow"
-                  >
-                    <ChevronRight className="size-5" />
-                  </button>
-                  <button
-                    type="button"
-                    disabled={isAgendaToday}
-                    aria-current={isAgendaToday ? "date" : undefined}
-                    onClick={() => setAgendaDay(agendaToday)}
-                    className="agenda-today-button"
-                  >
-                    {t("shop.agenda.today")}
-                  </button>
-                </div>
-              </div>
-
-              <WaitingCards
-                controller={waiting}
-                mode="shop"
-                staff={staff}
-                day={agendaDay}
-                timeZone={shopTimeZone}
-                onChanged={() => setAgendaRefresh((v) => v + 1)}
-              />
-
-              {/* Indicadores do dia em seção expansível (substitui os antigos cartões
-                  soltos, que repetiam os mesmos números). */}
-              <details className="app-action-card group overflow-hidden" open>
-                <summary className="flex min-h-14 list-none items-center gap-3 px-4 text-sm font-bold [&::-webkit-details-marker]:hidden">
-                  <BarChart3 className="size-5 text-gold" />
-                  <span className="flex-1">{t("shop.agenda.insights")}</span>
-                  <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
-                </summary>
-                <div className="border-t border-border/70 p-3">
-                  {actor ? (
-                    <ProfessionalInsights
-                      shopId={shop.id}
-                      day={agendaDay}
-                      revision={agendaRefresh}
-                      staffId={actor.staff_id}
-                      role={actor.role}
-                    />
-                  ) : (
-                    <BusinessInsights
-                      shopId={shop?.id}
-                      day={agendaDay}
-                      revision={agendaRefresh}
-                      embedded
-                    />
-                  )}
-                </div>
-              </details>
-
-              <div className="agenda-filters space-y-3 rounded-2xl border border-border bg-card p-4">
-                <label className="block space-y-1 text-xs font-semibold">
-                  <span className="sr-only">{t("shop.agenda.searchLabel")}</span>
-                  <span className="relative block">
-                    <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                    <input
-                      type="search"
-                      value={agendaSearch}
-                      onChange={(event) => setAgendaSearch(event.target.value)}
-                      placeholder={t("shop.agenda.searchPlaceholder")}
-                      className="w-full rounded-xl border border-border bg-background py-2 pl-10 pr-3 text-sm"
-                    />
-                  </span>
-                </label>
-                <div
-                  className={`grid gap-2 ${showAgendaStaffFilter ? "grid-cols-2" : "grid-cols-1"}`}
-                >
-                  {showAgendaStaffFilter && (
-                    <label className="min-w-0 space-y-1 text-xs font-semibold">
-                      <span>{t("shop.staffFallback")}</span>
-                      <select
-                        aria-label={t("shop.staffFallback")}
-                        value={agendaStaff}
-                        onChange={(event) => setAgendaStaff(event.target.value)}
-                        className="w-full rounded-xl border border-border bg-background px-2 py-2 text-sm"
+                  <>
+                    {/* Mudanças esperando a decisão dos donos: no topo, com um botão que leva lá. */}
+                    {pendingDecisions > 0 && openApprovals && (
+                      <Notice
+                        tone="pending"
+                        icon={Hourglass}
+                        role="none"
+                        title={
+                          pendingDecisions === 1
+                            ? t("eq.attention.decisionsOne")
+                            : t("eq.attention.decisionsMany", { count: pendingDecisions })
+                        }
+                        action={{ label: t("eq.attention.review"), onClick: openApprovals }}
                       >
-                        <option value="">{t("shop.agenda.allTeam")}</option>
-                        {staff.map((member) => (
-                          <option key={member.id} value={member.id}>
-                            {member.display_name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
-                  <label className="min-w-0 space-y-1 text-xs font-semibold">
-                    <span>{t("shop.agenda.status")}</span>
-                    <select
-                      aria-label={t("shop.agenda.status")}
-                      value={agendaStatus}
-                      onChange={(event) => setAgendaStatus(event.target.value)}
-                      className="w-full rounded-xl border border-border bg-background px-2 py-2 text-sm"
-                    >
-                      <option value="">{t("shop.agenda.allStatuses")}</option>
-                      <option value="pending">{t("status.pending")}</option>
-                      <option value="reschedule_requested">
-                        {t("status.reschedule_requested")}
-                      </option>
-                      <option value="confirmed">{t("status.confirmed")}</option>
-                      <option value="completed">{t("status.completed")}</option>
-                      <option value="cancelled">{t("status.cancelled")}</option>
-                    </select>
-                  </label>
-                </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span role="status">
-                    {t(
-                      scopedAppointments.length === 1
-                        ? "shop.agenda.countOne"
-                        : "shop.agenda.countMany",
-                      {
-                        shown: filteredAppointments.length,
-                        total: scopedAppointments.length,
-                      },
+                        {t("eq.attention.decisionsHint")}
+                      </Notice>
                     )}
-                  </span>
-                  {(agendaSearch || effectiveAgendaStaff || agendaStatus) && (
-                    <button
-                      onClick={() => {
-                        setAgendaSearch("");
-                        setAgendaStaff("");
-                        setAgendaStatus("");
-                      }}
-                      className="underline"
-                    >
-                      {t("shop.agenda.clearFilters")}
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="agenda-list" aria-label={t("shop.agenda.listAria")}>
-                {filteredAppointments.length > 0 && (
-                  <div className="agenda-list-heading" aria-hidden="true">
-                    <span>{t("shop.agenda.time")}</span>
-                    <span>{t("shop.customerFallback")}</span>
-                    <span>{t("shop.serviceFallback")}</span>
-                    <span>{t("shop.staffFallback")}</span>
-                    <span>{t("shop.agenda.status")}</span>
-                  </div>
-                )}
-                {filteredAppointments.map((row) => (
-                  <article key={row.id} className="agenda-appointment app-action-card">
-                    <div className="agenda-appointment-summary">
-                      <div className="agenda-time" aria-label={t("shop.agenda.time")}>
-                        <Clock3 className="size-4" />
-                        <span>{formatSlotLabel(new Date(row.starts_at), shopTimeZone)}</span>
-                      </div>
-                      <div className="agenda-client" data-label={t("shop.customerFallback")}>
-                        <p>{row.customer?.full_name ?? t("shop.customerFallback")}</p>
-                      </div>
-                      <div className="agenda-detail" data-label={t("shop.serviceFallback")}>
-                        <Scissors className="size-4" />
-                        <span>{row.service?.name ?? t("shop.serviceFallback")}</span>
-                      </div>
-                      <div className="agenda-detail" data-label={t("shop.staffFallback")}>
-                        <Users className="size-4" />
-                        <span>{row.staff?.display_name ?? "—"}</span>
-                      </div>
-                      <div className="agenda-status" data-label={t("shop.agenda.status")}>
-                        <span className={`status-pill status-${row.status}`}>
-                          {t(`status.${row.status}` as MessageKey)}
-                        </span>
-                        {row.series_id ? (
-                          <span className="mt-1 inline-flex rounded-full border border-gold/40 bg-gold/10 px-2 py-0.5 text-[10px] font-semibold text-gold">
-                            {t("shop.agenda.recurring")}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                    <div className="agenda-appointment-details">
-                      {row.visibility !== "busy" && (
-                        <AttendanceControls
-                          id={row.id}
-                          startsAt={row.starts_at}
-                          endsAt={row.ends_at}
-                          active={row.status === "pending" || row.status === "confirmed"}
-                          status={row.status}
-                          onChanged={() => setAgendaRefresh((v) => v + 1)}
-                        />
-                      )}
-                      {row.visibility === "busy" && (
-                        <p className="rounded-xl bg-muted/30 p-3 text-xs text-muted-foreground">
-                          {t("shop.agenda.busyPrivate")}
-                        </p>
-                      )}
-                      {row.status === "cancelled" && cancellationDetails[row.id] && (
-                        <p className="border-t border-border pt-2 text-xs text-muted-foreground">
-                          {cancellationDetails[row.id].source === "customer"
-                            ? t("shop.agenda.cancelledByCustomer")
-                            : t("shop.agenda.cancelledByShop")}
-                          {` · ${cancellationReasonLabel(cancellationDetails[row.id].reason)}`}
-                        </p>
-                      )}
-                      {row.visibility !== "busy" && (
-                        <div className="flex flex-wrap gap-2">
-                          {row.status === "reschedule_requested" && (
-                            <button
-                              disabled={updatingAppointment !== null}
-                              onClick={() => setCancelTarget(row)}
-                              className="action-button action-danger"
-                            >
-                              <X className="size-4" />
-                              {t("shop.agenda.cancelForGood")}
-                            </button>
-                          )}
-                          {row.status === "confirmed" && (
-                            <button
-                              disabled={updatingAppointment !== null}
-                              onClick={() => setWithdrawTarget(row)}
-                              className="action-button action-danger"
-                            >
-                              <X className="size-4" />
-                              {t("shop.withdraw.confirm")}
-                            </button>
-                          )}
-                          {row.status === "pending" && (
-                            <button
-                              onClick={() => void setAppointmentStatus(row, "confirmed")}
-                              disabled={updatingAppointment !== null}
-                              className="action-button action-confirm"
-                            >
-                              <Check className="size-3.5" />
-                              {t("shop.agenda.confirm")}
-                            </button>
-                          )}
-                          {(row.status === "pending" || row.status === "confirmed") && (
-                            <>
-                              <button
-                                onClick={() => void setAppointmentStatus(row, "completed")}
-                                disabled={updatingAppointment !== null}
-                                className="action-button action-success"
-                              >
-                                <CircleCheck className="size-3.5" />
-                                {t("shop.agenda.complete")}
-                              </button>
-                              <button
-                                onClick={() => setCancelTarget(row)}
-                                disabled={updatingAppointment !== null}
-                                className="action-button action-danger"
-                              >
-                                <X className="size-3.5" />
-                                {t("shop.cancel")}
-                              </button>
-                              {row.series_id ? (
-                                <button
-                                  type="button"
-                                  disabled={updatingAppointment !== null}
-                                  onClick={() => void stopSeriesFromShop(row.series_id!)}
-                                  className="action-button action-danger"
-                                >
-                                  {t("shop.agenda.stopSeries")}
-                                </button>
-                              ) : null}
-                            </>
-                          )}
-                          {row.status === "completed" &&
-                            settings?.survey_program_enabled !== false && (
-                              <button
-                                onClick={() => setSurveyTarget(row)}
-                                className="action-button action-edit"
-                              >
-                                <MessageSquarePlus className="size-3.5" />
-                                {t("shop.agenda.feedback")}
-                              </button>
-                            )}
-                        </div>
-                      )}
-                      {(row.status === "pending" || row.status === "confirmed") && (
-                        <p className="text-xs text-muted-foreground">
-                          {t(
-                            row.visibility !== "busy" &&
-                              (demo?.now ?? new Date()) >= new Date(row.starts_at)
-                              ? "shop.agenda.completeHint"
-                              : "shop.agenda.completeHintBefore",
-                          )}
-                        </p>
-                      )}
-                    </div>
-                  </article>
-                ))}
-                {filteredAppointments.length === 0 && !loading && (
-                  <EmptyState
-                    tone="calendar"
-                    title={
-                      scopedAppointments.length
-                        ? t("shop.agenda.emptyFilteredTitle")
-                        : t("shop.agenda.emptyDayTitle")
-                    }
-                    description={
-                      scopedAppointments.length
-                        ? t("shop.agenda.emptyFilteredHint")
-                        : t("shop.agenda.emptyDayHint")
-                    }
-                  />
-                )}
-              </div>
-
-              {/* Extras: valores e visão do parceiro, abaixo da lista. */}
-              {canViewMoney && (
-                <section
-                  aria-label={t("shop.money.aria")}
-                  className="space-y-3 rounded-2xl border border-primary/20 bg-card p-4"
-                >
-                  <h3 className="text-sm font-bold">{t("shop.money.title")}</h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <p className="text-xs text-muted-foreground">{t("shop.money.completed")}</p>
-                      <p className="mt-1 text-xl font-bold text-emerald-600 dark:text-emerald-400">
-                        {formatPrice(completedValue, intlLocale)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">{t("shop.money.expected")}</p>
-                      <p className="mt-1 text-xl font-bold text-primary">
-                        {formatPrice(expectedValue, intlLocale)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
-                    <span className="text-xs text-muted-foreground">
-                      {t("shop.money.cancellations")}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAgendaStatus("cancelled");
-                        setAgendaSearch("");
-                        setAgendaStaff("");
-                      }}
-                      className="action-button action-danger min-w-11 justify-center"
-                      aria-label={t(
-                        cancelledCount === 1
-                          ? "shop.money.cancellationsAriaOne"
-                          : "shop.money.cancellationsAriaMany",
-                        { count: cancelledCount },
-                      )}
-                    >
-                      {cancelledCount}
-                    </button>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">{t("shop.money.estimate")}</p>
-                </section>
-              )}
-              {actor?.role === "associate" && shop?.id && actor.staff_id && (
-                <div className="space-y-3">
-                  <div className="rounded-2xl border border-primary/20 bg-card p-4">
-                    <PartnerOverview
+                    <ShopSetupChecklist
                       shopId={shop.id}
-                      staffId={actor.staff_id}
-                      shopSlug={shop.slug}
-                      bookingSlug={actor.staff?.booking_slug}
-                      customDomain={shop.custom_domain}
-                      customDomainStatus={shop.custom_domain_status}
+                      publicUrl={shopPublicOrigin({
+                        slug: shop.slug,
+                        customDomain: shop.custom_domain,
+                        customDomainStatus: shop.custom_domain_status,
+                      })}
+                      services={services}
+                      businessHours={businessHours}
+                      settings={settings}
+                      onOpen={(target) => {
+                        if (target === "horarios" || target === "servicos") return setTab(target);
+                        setTab("configuracoes");
+                        setSettingsSection("aparencia");
+                        if (target === "landing") setLandingOpen(true);
+                        else {
+                          setBrandStep("logo");
+                          setBrandOpen(true);
+                        }
+                      }}
                     />
-                  </div>
-                  <PartnerCatalogSuggestions shopId={shop.id} staffId={actor.staff_id} />
-                </div>
-              )}
-              {actor && (actor.role === "owner" || actor.role === "partner") && shop?.id && (
-                <div className="rounded-2xl border border-border bg-card p-4">
-                  <ClientDirectory
-                    shopId={shop.id}
-                    staffId={actor.staff_id}
-                    scope="shop"
-                    title={t("shop.clients.title")}
-                  />
-                </div>
-              )}
-            </section>
+                  </>
+                )
+              }
+              extras={[
+                ...(actor?.role === "associate" && actor.staff_id
+                  ? [
+                      {
+                        id: "partner",
+                        icon: Wallet,
+                        label: t("agenda.extra.partner"),
+                        wide: true,
+                        content: (
+                          <PartnerOverview
+                            shopId={shop.id}
+                            staffId={actor.staff_id}
+                            shopSlug={shop.slug}
+                            bookingSlug={actor.staff?.booking_slug}
+                            customDomain={shop.custom_domain}
+                            customDomainStatus={shop.custom_domain_status}
+                          />
+                        ),
+                      },
+                      {
+                        id: "suggestions",
+                        icon: Lightbulb,
+                        label: t("agenda.extra.suggestions"),
+                        count: suggestionCount ?? undefined,
+                        countLabel:
+                          suggestionCount != null
+                            ? t("team.suggest.countAria", { count: suggestionCount })
+                            : undefined,
+                        content: (
+                          <PartnerCatalogSuggestions
+                            shopId={shop.id}
+                            staffId={actor.staff_id}
+                            onCount={setSuggestionCount}
+                          />
+                        ),
+                      },
+                    ]
+                  : []),
+                ...(actor && (actor.role === "owner" || actor.role === "partner")
+                  ? [
+                      {
+                        id: "clients",
+                        icon: Users,
+                        label: t("shop.clients.title"),
+                        content: (
+                          <div className="rounded-2xl border border-border bg-card p-4">
+                            <ClientDirectory
+                              shopId={shop.id}
+                              staffId={actor.staff_id}
+                              scope="shop"
+                              title={t("shop.clients.title")}
+                              openOnHash="agenda-extra-clients"
+                            />
+                          </div>
+                        ),
+                      },
+                    ]
+                  : []),
+              ]}
+            />
           )}
 
           {tab === "servicos" && shop && (
-            <section className="space-y-4">
-              <div className="app-section-title">
-                <Scissors />
-                <h2>{t("shop.nav.services")}</h2>
-                {canCreateServices && (
-                  <button
-                    type="button"
-                    disabled={busy}
-                    className="ml-auto flex min-h-11 items-center gap-2 rounded-xl bg-primary px-3 text-xs font-bold text-primary-foreground"
-                    onClick={() => {
-                      setEditingService(null);
-                      setServiceName("");
-                      setServiceDescription("");
-                      setServiceDuration("30");
-                      setCustomDurationOpen(false);
-                      setServicePrep("");
-                      setServicePrice("45");
-                      setServiceIcon("Scissors");
-                      setError(null);
-                      setServiceFormOpen(true);
-                    }}
-                  >
-                    <Plus className="size-4" />
-                    {t("shop.add")}
-                  </button>
-                )}
-              </div>
-              <CatalogFilters
-                query={serviceQuery}
-                onQuery={setServiceQuery}
-                status={serviceStatus}
-                onStatus={setServiceStatus}
-                total={services.length}
-                active={services.filter((row) => row.active).length}
-                visible={visibleServices.length}
-                label={t("shop.services.search")}
-                viewMode={serviceView}
-                onViewMode={setServiceView}
-              />
-              <SlotModeNotice
-                settings={settings}
-                services={services}
-                hours={businessHours}
-                onOpenSettings={canManageShopSettings ? openSlotModeSettings : undefined}
-              />
-              <div
-                className={
-                  serviceView === "grid"
-                    ? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
-                    : "flex flex-col gap-2"
-                }
-              >
-                {visibleServices.map((s) => (
-                  <div
-                    key={s.id}
-                    className={
-                      serviceView === "grid"
-                        ? "grid grid-cols-2 items-center gap-3 rounded-2xl border border-border bg-card p-4"
-                        : "flex flex-wrap items-stretch overflow-hidden rounded-2xl border border-border bg-card"
-                    }
-                  >
-                    <div
-                      className={
-                        serviceView === "grid"
-                          ? "col-span-2 flex items-center gap-3"
-                          : "flex min-w-0 flex-1 items-stretch"
-                      }
-                    >
-                      {serviceView === "list" ? (
-                        <span className="flex w-16 shrink-0 items-center justify-center overflow-hidden bg-gold/10">
-                          <ServiceIcon
-                            icon={s.icon}
-                            className="size-5 text-gold"
-                            imageClassName="size-full min-h-14 w-16 object-cover !rounded-none !p-0"
-                          />
-                        </span>
-                      ) : (
-                        <ServiceIcon
-                          icon={s.icon}
-                          className="size-9 shrink-0 rounded-xl bg-gold/10 p-2 text-gold"
-                          imageClassName="size-18 shrink-0 rounded-2xl"
-                        />
-                      )}
-                      <div
-                        className={
-                          serviceView === "list"
-                            ? "flex min-w-0 flex-1 flex-col justify-center gap-0.5 px-3 py-3"
-                            : "min-w-0"
-                        }
-                      >
-                        <p
-                          className={`text-sm font-bold ${serviceView === "list" ? "line-clamp-2 break-words" : ""}`}
-                        >
-                          {s.name}
-                        </p>
-                        {s.description ? (
-                          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                            {s.description}
-                          </p>
-                        ) : null}
-                        <span
-                          className={
-                            s.active
-                              ? "text-xs text-emerald-700 dark:text-emerald-300"
-                              : "text-xs text-muted-foreground"
-                          }
-                        >
-                          {s.active ? t("shop.services.available") : t("shop.services.paused")}
-                        </span>
-                      </div>
-                    </div>
-                    <div
-                      className={
-                        serviceView === "list"
-                          ? "flex shrink-0 items-center px-2 py-3 text-right sm:px-3"
-                          : undefined
-                      }
-                    >
-                      <p className="text-xs text-muted-foreground">
-                        <span className="block text-lg font-bold text-foreground">
-                          {formatPrice(s.price_cents, intlLocale)}
-                        </span>
-                        <span
-                          className={`mt-1 flex items-center gap-1 ${serviceView === "list" ? "justify-end" : ""}`}
-                        >
-                          <Clock3 size={12} />
-                          {s.duration_minutes} min
-                        </span>
-                      </p>
-                    </div>
-                    <div
-                      className={
-                        serviceView === "grid"
-                          ? "flex justify-end"
-                          : "flex shrink-0 items-center gap-2 py-3 pr-3"
-                      }
-                    >
-                      <Switch
-                        disabled={busy || !canEditServices}
-                        checked={s.active}
-                        onCheckedChange={() => void toggleService(s)}
-                        aria-label={t("shop.activateAria", { name: s.name })}
-                      />
-                    </div>
-                    {(canEditServices || canChangeGlobalCatalog) && (
-                      <div
-                        className={
-                          serviceView === "list"
-                            ? "grid basis-full grid-cols-2 gap-2 px-3 pb-3 sm:flex sm:basis-auto sm:shrink-0 sm:items-center sm:py-3 sm:pl-0 sm:pr-3"
-                            : "contents"
-                        }
-                      >
-                        {canEditServices && (
-                          <button
-                            disabled={busy}
-                            className={`action-button action-edit ${
-                              canChangeGlobalCatalog ? "" : "col-span-2"
-                            }`}
-                            aria-label={t("shop.editAria", { name: s.name })}
-                            onClick={() => {
-                              setEditingService(s);
-                              setServiceName(s.name);
-                              setServiceDescription(s.description ?? "");
-                              setServiceDuration(String(s.duration_minutes));
-                              setServicePrep(s.prep_minutes == null ? "" : String(s.prep_minutes));
-                              setServicePrice(String(s.price_cents / 100));
-                              setServiceIcon(s.icon || "Scissors");
-                              setError(null);
-                              setServiceFormOpen(true);
-                            }}
-                          >
-                            <Pencil className="size-4" /> {t("shop.edit")}
-                          </button>
-                        )}
-                        {canChangeGlobalCatalog && (
-                          <button
-                            disabled={busy}
-                            aria-label={t("shop.deleteAria", { name: s.name })}
-                            onClick={() => {
-                              setDeleteService(s);
-                              setDeleteError(null);
-                            }}
-                            className={`action-button action-danger ${canEditServices ? "" : "col-span-2"}`}
-                          >
-                            <Trash2 size={14} />
-                            {t("shop.delete")}
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-                {visibleServices.length === 0 && !loading && (
-                  <p className="col-span-full rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-                    {services.length
-                      ? t("shop.services.emptyFiltered")
-                      : t("shop.services.emptyFirst")}
-                  </p>
-                )}
-              </div>
-
-              <Dialog
-                open={serviceFormOpen}
-                onOpenChange={(open) => {
-                  if (!busy) {
-                    setServiceFormOpen(open);
-                    if (!open) setServiceImageToCrop(null);
-                  }
-                }}
-              >
-                <DialogContent
-                  className="max-h-[85dvh] w-[calc(100%-2rem)] overflow-hidden rounded-3xl p-0 sm:rounded-3xl"
-                  onEscapeKeyDown={(event) => {
-                    if (busy) event.preventDefault();
-                  }}
-                  onPointerDownOutside={(event) => {
-                    if (busy) event.preventDefault();
-                  }}
-                >
-                  <DialogScrollArea className="grid max-h-[calc(85dvh-2px)] gap-4 overflow-y-auto p-6">
-                    <DialogTitle>
-                      {editingService
-                        ? t("shop.serviceForm.editTitle")
-                        : t("shop.serviceForm.newTitle")}
-                    </DialogTitle>
-                    <DialogDescription>{t("shop.serviceForm.description")}</DialogDescription>
-                    <form
-                      id="service-form"
-                      onSubmit={createService}
-                      className="space-y-3 rounded-2xl border border-border bg-card p-4"
-                    >
-                      <label htmlFor="service-name" className="block text-xs font-semibold">
-                        {t("shop.serviceForm.name")}
-                      </label>
-                      <input
-                        id="service-name"
-                        required
-                        value={serviceName}
-                        onChange={(e) => setServiceName(e.target.value)}
-                        placeholder={t("shop.serviceForm.namePlaceholder")}
-                        className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
-                      />
-                      <label
-                        htmlFor="service-description"
-                        className="block space-y-2 text-xs font-semibold"
-                      >
-                        {t("shop.serviceForm.details")}
-                        <textarea
-                          id="service-description"
-                          value={serviceDescription}
-                          onChange={(e) => setServiceDescription(e.target.value.slice(0, 500))}
-                          placeholder={t("shop.serviceForm.detailsPlaceholder")}
-                          rows={3}
-                          maxLength={500}
-                          className="w-full resize-y rounded-xl border border-border bg-background px-3 py-2 text-sm font-normal"
-                        />
-                        <span className="block text-[11px] font-normal text-muted-foreground">
-                          {serviceDescription.length}/500
-                        </span>
-                      </label>
-                      <div className="space-y-2">
-                        <span className="block text-xs font-semibold">
-                          {t("shop.serviceForm.duration")}
-                        </span>
-                        <div className="flex flex-wrap gap-1.5">
-                          {["15", "20", "30", "45", "60", "90", "120"].map((minutes) => {
-                            const selected = !customDurationOpen && serviceDuration === minutes;
-                            return (
-                              <button
-                                key={minutes}
-                                type="button"
-                                onClick={() => {
-                                  setServiceDuration(minutes);
-                                  setCustomDurationOpen(false);
-                                }}
-                                aria-pressed={selected}
-                                className={`min-h-11 rounded-xl border px-3 text-xs font-bold transition-colors ${
-                                  selected
-                                    ? "border-primary bg-primary text-primary-foreground"
-                                    : "border-border bg-background text-muted-foreground hover:border-primary/50"
-                                }`}
-                              >
-                                {minutes} min
-                              </button>
-                            );
-                          })}
-                          <button
-                            type="button"
-                            onClick={() => setCustomDurationOpen((value) => !value)}
-                            aria-pressed={customDurationOpen}
-                            className={`min-h-11 rounded-xl border px-3 text-xs font-bold transition-colors ${
-                              customDurationOpen
-                                ? "border-primary bg-primary text-primary-foreground"
-                                : "border-dashed border-border bg-background text-muted-foreground hover:border-primary/50"
-                            }`}
-                          >
-                            {t("shop.custom")}
-                          </button>
-                        </div>
-                        {customDurationOpen && (
-                          <label className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 p-2">
-                            <span className="text-xs font-semibold">
-                              {t("shop.serviceForm.customDuration")}
-                            </span>
-                            <input
-                              type="number"
-                              min={5}
-                              max={600}
-                              step={5}
-                              value={serviceDuration}
-                              onChange={(e) => setServiceDuration(e.target.value)}
-                              inputMode="numeric"
-                              placeholder="min"
-                              className="w-24 rounded-lg border border-border bg-background px-2 py-1 text-sm"
-                            />
-                            <span className="text-xs text-muted-foreground">min</span>
-                          </label>
-                        )}
-                      </div>
-                      {canChangeGlobalCatalog && prepSupported && (
-                        <label className="block space-y-2 text-xs font-semibold">
-                          {t("shop.serviceForm.prep")}
-                          <select
-                            value={servicePrep}
-                            onChange={(e) => setServicePrep(e.target.value)}
-                            className="min-h-11 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm font-normal"
-                          >
-                            <option value="">
-                              {t("shop.serviceForm.prepShop", {
-                                minutes: validPrepMinutes(settings?.prep_minutes),
-                              })}
-                            </option>
-                            {PREP_OPTIONS.map((minutes) => (
-                              <option key={minutes} value={String(minutes)}>
-                                {minutes === 0
-                                  ? t("slots.prep.none")
-                                  : t("slots.prep.option", { minutes })}
-                              </option>
-                            ))}
-                          </select>
-                          <span className="block text-[11px] font-normal text-muted-foreground">
-                            {t("shop.serviceForm.prepHint")}
-                          </span>
-                        </label>
-                      )}
-                      <label className="space-y-2 text-xs font-semibold">
-                        {t("shop.serviceForm.price")}
-                        <input
-                          required
-                          value={servicePrice}
-                          onChange={(e) => setServicePrice(e.target.value)}
-                          placeholder={t("shop.serviceForm.price")}
-                          inputMode="decimal"
-                          className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
-                        />
-                      </label>
-
-                      <div className="space-y-2 pt-2">
-                        <span className="block text-xs font-semibold">
-                          {t("shop.serviceForm.image")}
-                        </span>
-                        <div className="relative">
-                          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                          <input
-                            type="search"
-                            value={serviceIconQuery}
-                            onChange={(e) => setServiceIconQuery(e.target.value)}
-                            placeholder={t("shop.serviceForm.iconSearch")}
-                            aria-label={t("shop.serviceForm.iconSearch")}
-                            className="min-h-11 w-full rounded-xl border border-border bg-background py-2 pl-9 pr-3 text-sm"
-                          />
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => iconInputRef.current?.click()}
-                            disabled={uploadingIcon}
-                            aria-label={t("shop.serviceForm.uploadAria")}
-                            title={t("shop.serviceForm.uploadAria")}
-                            className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-background px-3 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted disabled:opacity-60"
-                          >
-                            {uploadingIcon ? (
-                              <RefreshCw className="size-4 animate-spin" />
-                            ) : (
-                              <>
-                                <Upload className="size-4" />
-                                {t("shop.uploadPhoto")}
-                              </>
-                            )}
-                          </button>
-                          <input
-                            ref={iconInputRef}
-                            type="file"
-                            accept={SERVICE_IMAGE_ACCEPT}
-                            className="sr-only"
-                            onChange={handleIconUpload}
-                            disabled={uploadingIcon}
-                          />
-                          <span className="text-[11px] text-muted-foreground">
-                            {serviceIconQuery.trim()
-                              ? t("shop.serviceForm.iconsFound", {
-                                  count: filteredIconGroups.reduce(
-                                    (total, group) => total + group.icons.length,
-                                    0,
-                                  ),
-                                })
-                              : t("shop.serviceForm.imageHint")}
-                          </span>
-                        </div>
-                        <div className="app-service-icon-picker space-y-3 rounded-xl border border-border bg-muted/30 p-3 sm:max-h-64 sm:overflow-y-auto sm:overscroll-contain">
-                          {filteredIconGroups.length === 0 && (
-                            <p className="py-4 text-center text-xs text-muted-foreground">
-                              {t("shop.serviceForm.noIcons")}
-                            </p>
-                          )}
-                          {filteredIconGroups.map((group, groupIndex) => (
-                            <div
-                              key={group.id}
-                              className={`space-y-2 ${
-                                iconGroupsCollapsed &&
-                                groupIndex > 0 &&
-                                group.id !== selectedIconGroupId
-                                  ? "hidden sm:block"
-                                  : ""
-                              }`}
-                            >
-                              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                                {serviceIconGroupLabel(group.id)}
-                              </p>
-                              <div className="flex flex-wrap gap-2">
-                                {group.icons.map((preset) => {
-                                  const isSelected = serviceIcon === preset.id;
-                                  return (
-                                    <button
-                                      key={preset.id}
-                                      type="button"
-                                      onClick={() => setServiceIcon(preset.id)}
-                                      title={preset.label}
-                                      aria-label={preset.label}
-                                      aria-pressed={isSelected}
-                                      className={`flex size-11 items-center justify-center rounded-xl border transition-colors ${
-                                        isSelected
-                                          ? "border-primary bg-primary/10 text-primary"
-                                          : "border-border bg-background text-muted-foreground hover:bg-muted"
-                                      }`}
-                                    >
-                                      <ServiceIcon
-                                        icon={preset.id}
-                                        className="size-5"
-                                        imageClassName="size-10 rounded-xl"
-                                      />
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          ))}
-                          {iconGroupsCollapsed && filteredIconGroups.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => setShowAllServiceIcons(true)}
-                              className="flex min-h-11 w-full items-center justify-center rounded-xl border border-border bg-background px-3 text-xs font-semibold text-foreground transition-colors hover:bg-muted sm:hidden"
-                            >
-                              {t("shop.serviceForm.showAllIcons")}
-                            </button>
-                          )}
-                        </div>
-                        {isServiceImageSource(serviceIcon) && (
-                          <div className="mt-2 flex items-center gap-2 rounded-xl border border-border p-2">
-                            <img
-                              src={serviceIcon}
-                              alt={t("shop.serviceForm.customIconAlt")}
-                              className="aspect-square size-12 shrink-0 rounded-xl bg-muted object-cover object-center"
-                            />
-                            <span className="text-[10px] text-muted-foreground">
-                              {t("shop.serviceForm.customImage")}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {error && (
-                        <p role="alert" className="text-sm text-destructive">
-                          {error}
-                        </p>
-                      )}
-                      <button
-                        type="submit"
-                        disabled={busy}
-                        className="w-full rounded-xl bg-primary py-3 text-xs font-semibold text-primary-foreground disabled:opacity-60"
-                      >
-                        {busy
-                          ? t("common.saving")
-                          : editingService
-                            ? t("shop.serviceForm.save")
-                            : t("shop.serviceForm.create")}
-                      </button>
-                      {editingService && (
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => {
-                            setEditingService(null);
-                            setServiceName("");
-                            setServiceDescription("");
-                            setServiceDuration("30");
-                            setCustomDurationOpen(false);
-                            setServicePrep("");
-                            setServicePrice("45");
-                            setServiceFormOpen(false);
-                          }}
-                          className="text-sm underline"
-                        >
-                          {t("shop.cancelEdit")}
-                        </button>
-                      )}
-                    </form>
-                  </DialogScrollArea>
-                </DialogContent>
-              </Dialog>
-              <ServiceImageCropDialog
-                file={serviceImageToCrop}
-                onCancel={() => setServiceImageToCrop(null)}
-                onConfirm={saveCroppedServiceImage}
-              />
-            </section>
+            <ServicesTab
+              shopId={shop.id}
+              services={services}
+              staff={staff}
+              terms={catalogExtras.terms}
+              loading={loading}
+              loadError={error ?? catalogLoadError}
+              catalogLoadFailed={Boolean(catalogLoadError)}
+              onRetry={() => void loadCatalog()}
+              canCreate={canCreateServices}
+              canEdit={canEditServices}
+              canChangeGlobal={canChangeGlobalCatalog}
+              isAssociate={!demo && actor?.role === "associate"}
+              shopTerms={shopServiceTerms}
+              prepSupported={prepSupported}
+              shopPrep={validPrepMinutes(settings?.prep_minutes)}
+              awaiting={catalogExtras.awaiting}
+              slotNotice={
+                services.length > 0 ? (
+                  <SlotModeNotice
+                    settings={settings}
+                    services={services}
+                    hours={businessHours}
+                    onOpenSettings={canManageShopSettings ? openSlotModeSettings : undefined}
+                  />
+                ) : null
+              }
+              actions={{
+                save: saveService,
+                toggle: toggleService,
+                remove: removeService,
+                uploadImage: (file) => uploadCatalogPicture(file, "service"),
+              }}
+              onOpenApprovals={openApprovals}
+            />
           )}
-
           {tab === "equipe" && shop && (
-            <section className="space-y-4">
-              <div className="app-section-title">
-                <Users />
-                <h2>{t("shop.nav.team")}</h2>
-                <button
-                  type="button"
-                  disabled={busy}
-                  className="ml-auto flex min-h-11 items-center gap-2 rounded-xl bg-primary px-3 text-xs font-bold text-primary-foreground"
-                  onClick={() => {
-                    setEditingStaff(null);
-                    setStaffName("");
-                    setStaffSlug("");
-                    setStaffSlugTouched(false);
-                    setStaffBio("");
-                    setStaffAvatar(null);
-                    setError(null);
-                    setStaffFormOpen(true);
-                  }}
-                >
-                  <Plus className="size-4" />
-                  {t("shop.add")}
-                </button>
-              </div>
-              <CatalogFilters
-                query={staffQuery}
-                onQuery={setStaffQuery}
-                status={staffStatus}
-                onStatus={setStaffStatus}
-                total={staff.length}
-                active={staff.filter((row) => row.active).length}
-                visible={visibleStaff.length}
-                label={t("shop.staff.search")}
-                viewMode={staffView}
-                onViewMode={setStaffView}
-              />
-              {!demo &&
-                shop.id &&
-                actor &&
-                (actor.role === "owner" || actor.role === "partner") && (
+            <TeamTab
+              shopId={shop.id}
+              staff={staff}
+              services={services}
+              terms={catalogExtras.terms}
+              loading={loading}
+              loadError={error ?? catalogLoadError}
+              catalogLoadFailed={Boolean(catalogLoadError)}
+              onRetry={() => void loadCatalog()}
+              awaiting={catalogExtras.awaiting}
+              linkOrigin={catalogLinkOrigin}
+              timeZone={shopTimeZone}
+              today={
+                teamToday
+                  ? {
+                      appointments: teamToday,
+                      blocks,
+                      dayStart: shopDayRange(agendaToday, shopTimeZone).start.getTime(),
+                      dayEnd: shopDayRange(agendaToday, shopTimeZone).end.getTime(),
+                      now: (demo?.now ?? new Date()).getTime(),
+                    }
+                  : null
+              }
+              access={catalogExtras.access}
+              accessCard={
+                !demo && actor && (actor.role === "owner" || actor.role === "partner") ? (
                   <ShopTeamAccessCard
                     shopId={shop.id}
                     canApplyProtected={!!capabilities?.canApplyOperations}
                     canEditSociety={actor.role === "owner" || actor.role === "partner"}
+                    staff={staff}
+                    currentUserId={profile.user.id}
+                    onOpenDecisions={openApprovals}
                     onChanged={() => {
                       setGovernanceRevision((value) => value + 1);
                       void loadCatalog();
                     }}
                   />
-                )}
-              <div
-                className={
-                  staffView === "grid" ? "grid gap-3 sm:grid-cols-2" : "flex flex-col gap-2"
-                }
-              >
-                {visibleStaff.map((member) => (
-                  <div
-                    key={member.id}
-                    className={
-                      staffView === "grid"
-                        ? "grid grid-cols-2 items-center gap-3 rounded-2xl border border-border bg-card p-4"
-                        : "flex flex-wrap items-stretch overflow-hidden rounded-2xl border border-border bg-card"
+                ) : null
+              }
+              actions={{
+                save: saveStaff,
+                toggle: toggleStaff,
+                remove: removeStaff,
+                uploadPhoto: (file) => uploadCatalogPicture(file, "staff"),
+              }}
+              onOpenAgenda={(staffId) => {
+                setAgendaFocusStaff(staffId);
+                setAgendaDay(agendaToday);
+                setTab("agenda");
+              }}
+              onBlockTime={
+                canManageOperations
+                  ? (staffId) => {
+                      setHoursBlockRequest({ staffId });
+                      setTab("horarios");
                     }
-                  >
-                    <div
-                      className={
-                        staffView === "grid"
-                          ? "col-span-2 flex items-center gap-3"
-                          : "flex min-w-0 flex-1 basis-full items-stretch sm:basis-0"
-                      }
-                    >
-                      {staffView === "list" ? (
-                        <span className="flex w-16 shrink-0 items-center justify-center overflow-hidden bg-gold/10">
-                          <StaffPhoto
-                            src={member.avatar_url}
-                            className="size-full min-h-14 w-16"
-                            fallback={<Users className="size-5 text-gold" />}
-                          />
-                        </span>
-                      ) : (
-                        <StaffPhoto
-                          src={member.avatar_url}
-                          className="size-12 rounded-2xl"
-                          fallback={
-                            <Users className="size-12 shrink-0 rounded-2xl bg-gold/10 p-3 text-gold" />
-                          }
-                        />
-                      )}
-                      <div
-                        className={
-                          staffView === "list"
-                            ? "flex min-w-0 flex-1 flex-col justify-center px-3 py-3"
-                            : "min-w-0"
-                        }
-                      >
-                        <p className="text-sm font-bold">{member.display_name}</p>
-                        {member.booking_slug ? (
-                          <p className="font-mono text-xs text-muted-foreground">
-                            /{member.booking_slug}
-                          </p>
-                        ) : null}
-                        {member.bio ? (
-                          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                            {member.bio}
-                          </p>
-                        ) : null}
-                        <span
-                          className={
-                            member.active
-                              ? "text-xs text-emerald-700 dark:text-emerald-300"
-                              : "text-xs text-muted-foreground"
-                          }
-                        >
-                          {member.active ? t("shop.services.available") : t("shop.services.paused")}
-                        </span>
-                      </div>
-                    </div>
-                    <label
-                      className={
-                        staffView === "grid"
-                          ? "col-span-2 flex items-center justify-between text-xs text-muted-foreground"
-                          : "flex items-center justify-between gap-3 px-3 py-3 text-xs text-muted-foreground sm:w-auto"
-                      }
-                    >
-                      {t("shop.staff.acceptBookings")}{" "}
-                      <Switch
-                        disabled={busy}
-                        checked={member.active}
-                        onCheckedChange={() => void toggleStaff(member)}
-                        aria-label={t("shop.activateAria", { name: member.display_name })}
-                      />
-                    </label>
-                    <div
-                      className={
-                        staffView === "list"
-                          ? "flex basis-full items-center gap-2 px-3 pb-3 sm:basis-auto sm:self-center sm:py-3 sm:pl-0"
-                          : "contents"
-                      }
-                    >
-                      <button
-                        disabled={busy}
-                        className={`action-button action-edit ${staffView === "list" ? "flex-1 sm:flex-none" : ""}`}
-                        aria-label={t("shop.editAria", { name: member.display_name })}
-                        onClick={() => {
-                          setEditingStaff(member);
-                          setStaffName(member.display_name);
-                          setStaffSlug(member.booking_slug ?? slugifyPt(member.display_name));
-                          setStaffSlugTouched(true);
-                          setStaffBio(member.bio ?? "");
-                          setStaffAvatar(member.avatar_url ?? null);
-                          setError(null);
-                          setStaffFormOpen(true);
-                        }}
-                      >
-                        <Pencil className="size-4" /> {t("shop.edit")}
-                      </button>
-                      <button
-                        disabled={busy}
-                        aria-label={t("shop.deleteAria", { name: member.display_name })}
-                        onClick={() => {
-                          setDeleteStaff(member);
-                          setDeleteError(null);
-                        }}
-                        className={`action-button action-danger ${staffView === "list" ? "flex-1 sm:flex-none" : ""}`}
-                      >
-                        <Trash2 size={14} />
-                        {t("shop.delete")}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-                {visibleStaff.length === 0 && !loading && (
-                  <p className="col-span-full rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-                    {staff.length ? t("shop.staff.emptyFiltered") : t("shop.staff.emptyFirst")}
-                  </p>
-                )}
-              </div>
-
-              <Dialog
-                open={staffFormOpen}
-                onOpenChange={(open) => {
-                  if (!busy) setStaffFormOpen(open);
-                }}
-              >
-                <DialogContent
-                  className="max-h-[85dvh] w-[calc(100%-2rem)] overflow-hidden rounded-3xl p-0 sm:rounded-3xl"
-                  onEscapeKeyDown={(event) => {
-                    if (busy) event.preventDefault();
-                  }}
-                  onPointerDownOutside={(event) => {
-                    if (busy) event.preventDefault();
-                  }}
-                >
-                  <DialogScrollArea className="grid max-h-[calc(85dvh-2px)] gap-4 overflow-y-auto p-6">
-                    <DialogTitle>
-                      {editingStaff ? t("shop.staffForm.editTitle") : t("shop.staffForm.newTitle")}
-                    </DialogTitle>
-                    <DialogDescription>{t("shop.staffForm.description")}</DialogDescription>
-                    <form
-                      id="staff-form"
-                      onSubmit={createStaff}
-                      className="space-y-3 rounded-2xl border border-border bg-card p-4"
-                    >
-                      <label htmlFor="staff-name" className="block text-xs font-semibold">
-                        {t("shop.staffForm.name")}
-                      </label>
-                      <input
-                        id="staff-name"
-                        required
-                        value={staffName}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          setStaffName(next);
-                          if (!staffSlugTouched) setStaffSlug(slugifyPt(next));
-                        }}
-                        placeholder={t("shop.staffForm.namePlaceholder")}
-                        className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
-                      />
-                      <label htmlFor="staff-slug" className="block text-xs font-semibold">
-                        {t("shop.staffForm.slug")}
-                      </label>
-                      <input
-                        id="staff-slug"
-                        required
-                        value={staffSlug}
-                        onChange={(e) => {
-                          setStaffSlugTouched(true);
-                          setStaffSlug(slugifyPt(e.target.value));
-                        }}
-                        placeholder={t("shop.staffForm.slugPlaceholder")}
-                        className="w-full rounded-xl border border-border bg-background px-3 py-2 font-mono text-sm"
-                        autoCapitalize="off"
-                        autoCorrect="off"
-                        spellCheck={false}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        {richText(t("shop.staffForm.linkHint"), {
-                          appLink: (
-                            <span className="font-semibold">
-                              …/app?barber={staffSlug || "slug"}
-                            </span>
-                          ),
-                          domainLink: (
-                            <span className="font-semibold">/{staffSlug || "slug"}/</span>
-                          ),
-                        })}
-                      </p>
-                      <div className="space-y-2">
-                        <span className="block text-xs font-semibold">
-                          {t("shop.staffForm.photo")}
-                        </span>
-                        <div className="flex flex-wrap items-center gap-3">
-                          <StaffPhoto
-                            src={staffAvatar}
-                            className="size-16 rounded-2xl"
-                            fallback={
-                              <span className="flex size-16 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-                                <Users className="size-6" />
-                              </span>
-                            }
-                          />
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              disabled={uploadingStaffAvatar || busy}
-                              onClick={() => staffAvatarInputRef.current?.click()}
-                              className="flex min-h-11 items-center gap-2 rounded-xl border border-dashed border-border px-3 text-xs font-semibold"
-                            >
-                              {uploadingStaffAvatar ? (
-                                <RefreshCw className="size-4 animate-spin" />
-                              ) : (
-                                <Upload className="size-4" />
-                              )}
-                              {staffAvatar
-                                ? t("shop.staffForm.changePhoto")
-                                : t("shop.uploadPhoto")}
-                            </button>
-                            {staffAvatar && (
-                              <button
-                                type="button"
-                                disabled={busy}
-                                onClick={() => setStaffAvatar(null)}
-                                className="min-h-11 rounded-xl border border-border px-3 text-xs font-semibold text-muted-foreground"
-                              >
-                                {t("shop.staffForm.removePhoto")}
-                              </button>
-                            )}
-                          </div>
-                          <input
-                            ref={staffAvatarInputRef}
-                            type="file"
-                            accept={SERVICE_IMAGE_ACCEPT}
-                            className="sr-only"
-                            onChange={handleStaffAvatarUpload}
-                            disabled={uploadingStaffAvatar}
-                          />
-                        </div>
-                        <p className="text-[11px] text-muted-foreground">
-                          {t("shop.staffForm.photoHint")}
-                        </p>
-                      </div>
-                      <label htmlFor="staff-bio" className="block space-y-2 text-xs font-semibold">
-                        {t("shop.staffForm.bio")}
-                        <textarea
-                          id="staff-bio"
-                          value={staffBio}
-                          onChange={(e) => setStaffBio(e.target.value.slice(0, 280))}
-                          placeholder={t("shop.staffForm.bioPlaceholder")}
-                          rows={3}
-                          maxLength={280}
-                          className="w-full resize-y rounded-xl border border-border bg-background px-3 py-2 text-sm font-normal"
-                        />
-                        <span className="block text-[11px] font-normal text-muted-foreground">
-                          {staffBio.length}/280
-                        </span>
-                      </label>
-                      {error && (
-                        <p role="alert" className="text-sm text-destructive">
-                          {error}
-                        </p>
-                      )}
-                      <button
-                        type="submit"
-                        disabled={busy}
-                        className="w-full rounded-xl bg-primary py-3 text-xs font-semibold text-primary-foreground disabled:opacity-60"
-                      >
-                        {busy
-                          ? t("common.saving")
-                          : editingStaff
-                            ? t("shop.staffForm.save")
-                            : t("shop.staffForm.create")}
-                      </button>
-                      {editingStaff && (
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => {
-                            setEditingStaff(null);
-                            setStaffName("");
-                            setStaffSlug("");
-                            setStaffSlugTouched(false);
-                            setStaffBio("");
-                            setStaffAvatar(null);
-                            setStaffFormOpen(false);
-                          }}
-                          className="text-sm underline"
-                        >
-                          {t("shop.cancelEdit")}
-                        </button>
-                      )}
-                    </form>
-                  </DialogScrollArea>
-                </DialogContent>
-              </Dialog>
-              <ServiceImageCropDialog
-                file={staffImageToCrop}
-                onCancel={() => setStaffImageToCrop(null)}
-                onConfirm={saveCroppedStaffAvatar}
-                title={t("shop.staffCrop.title")}
-                description={t("shop.staffCrop.description")}
-                imageAlt={t("shop.staffCrop.alt")}
-                outputName="barbeiro-1x1.webp"
-                focusY={PORTRAIT_FOCUS_Y}
-              />
-            </section>
+                  : undefined
+              }
+              onOpenApprovals={openApprovals}
+            />
           )}
 
           {tab === "horarios" && shop && (
-            <section className="space-y-6">
-              <div>
-                <div className="app-section-title">
-                  <Clock3 />
-                  <h2>{t("shop.nav.hours")}</h2>
-                </div>
-              </div>
-              <div className="space-y-3 rounded-2xl border border-border bg-card p-4">
-                <h3 className="text-xs font-semibold text-muted-foreground">
-                  {t("shop.hours.weekly")}
-                </h3>
-                {businessHours.map((row) => (
-                  <div
-                    key={row.weekday}
-                    className="grid grid-cols-[1fr_auto] items-center gap-3 border-b border-border/60 pb-3 last:border-0 last:pb-0 sm:grid-cols-[120px_1fr]"
-                  >
-                    <label className="flex items-center gap-2 text-sm font-semibold">
-                      <Switch
-                        checked={row.is_open}
-                        aria-label={t("shop.hours.openAria", { day: t(weekdays[row.weekday]) })}
-                        disabled={busy || !canEditBusinessHours}
-                        onCheckedChange={(checked) =>
-                          updateHours(row.weekday, { is_open: checked })
-                        }
-                      />
-                      {t(weekdays[row.weekday])}
-                    </label>
-                    {row.is_open ? (
-                      <div className="hours-range col-span-2 flex items-center gap-2 sm:col-span-1">
-                        <TimePicker
-                          label={t("shop.hours.opens")}
-                          value={row.opens_at.slice(0, 5)}
-                          disabled={busy || !canEditBusinessHours}
-                          onChange={(value) => updateHours(row.weekday, { opens_at: value })}
-                        />
-                        <span className="text-xs text-muted-foreground">
-                          {t("shop.hours.until")}
-                        </span>
-                        <TimePicker
-                          label={t("shop.hours.closes")}
-                          value={row.closes_at.slice(0, 5)}
-                          disabled={busy || !canEditBusinessHours}
-                          onChange={(value) => updateHours(row.weekday, { closes_at: value })}
-                        />
-                      </div>
-                    ) : (
-                      <span className="text-xs font-semibold text-muted-foreground">
-                        {t("shop.hours.closed")}
-                      </span>
-                    )}
-                  </div>
-                ))}
-                {canEditBusinessHours ? (
-                  <button
-                    onClick={() => void saveBusinessHours()}
-                    disabled={busy}
-                    className="w-full rounded-xl bg-primary py-3 text-xs font-semibold text-primary-foreground disabled:opacity-60"
-                  >
-                    {busy ? t("common.saving") : t("shop.hours.save")}
-                  </button>
-                ) : (
-                  <p className="text-xs text-muted-foreground">{t("shop.error.roleHours")}</p>
-                )}
-              </div>
-              <SlotModeNotice
-                settings={settings}
-                services={services}
-                hours={businessHours}
-                onOpenSettings={canManageShopSettings ? openSlotModeSettings : undefined}
-              />
-
-              <form
-                onSubmit={createBlock}
-                className="space-y-3 rounded-2xl border border-border bg-card p-4"
-              >
-                <div>
-                  <h3 className="text-xs font-semibold text-muted-foreground">
-                    {t("shop.block.newTitle")}
-                  </h3>
-                  <p className="mt-1 text-xs text-muted-foreground">{t("shop.block.newHint")}</p>
-                </div>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                  <DatePicker
-                    label={t("shop.block.date")}
-                    value={blockDate}
-                    onChange={setBlockDate}
-                    disabled={busy}
-                  />
-                  <TimePicker
-                    label={t("shop.block.start")}
-                    value={blockStart}
-                    onChange={setBlockStart}
-                    disabled={busy}
-                  />
-                  <TimePicker
-                    label={t("shop.block.end")}
-                    value={blockEnd}
-                    onChange={setBlockEnd}
-                    disabled={busy}
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor={blockStaffFieldId}
-                    className="block text-xs font-semibold text-muted-foreground"
-                  >
-                    {t("shop.block.staff")}
-                  </label>
-                  <select
-                    id={blockStaffFieldId}
-                    value={ownBlocksOnly ? (actor?.staff_id ?? "") : blockStaffId}
-                    onChange={(e) => setBlockStaffId(e.target.value)}
-                    disabled={ownBlocksOnly}
-                    className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground disabled:opacity-80"
-                  >
-                    {!ownBlocksOnly && <option value="">{t("shop.block.wholeShop")}</option>}
-                    {(ownBlocksOnly
-                      ? staff.filter((member) => member.id === actor?.staff_id)
-                      : staff
-                    ).map((member) => (
-                      <option key={member.id} value={member.id}>
-                        {t("shop.block.onlyStaff", { name: member.display_name })}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label
-                    htmlFor={blockReasonFieldId}
-                    className="block text-xs font-semibold text-muted-foreground"
-                  >
-                    {t("shop.block.reason")}
-                  </label>
-                  <div className="mt-1 flex flex-wrap gap-1.5">
-                    {[
-                      t("shop.block.reasonHoliday"),
-                      t("shop.block.reasonBreak"),
-                      t("shop.block.reasonMaintenance"),
-                      t("shop.block.reasonAbsence"),
-                    ].map((reason) => (
-                      <button
-                        key={reason}
-                        type="button"
-                        onClick={() => {
-                          setBlockReason(reason);
-                          setBlockCustomOpen(false);
-                        }}
-                        aria-pressed={blockReason === reason}
-                        className={`min-h-11 rounded-xl border px-3 text-xs font-bold transition-colors ${
-                          blockReason === reason
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-border bg-background text-muted-foreground hover:border-primary/50"
-                        }`}
-                      >
-                        {reason}
-                      </button>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setBlockCustomOpen((value) => !value);
-                        setBlockReason("");
-                      }}
-                      aria-pressed={blockCustomOpen}
-                      className={`min-h-11 rounded-xl border px-3 text-xs font-bold transition-colors ${
-                        blockCustomOpen
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-dashed border-border bg-background text-muted-foreground hover:border-primary/50"
-                      }`}
-                    >
-                      {t("shop.custom")}
-                    </button>
-                  </div>
-                  {blockCustomOpen && (
-                    <label className="mt-2 flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 p-2">
-                      <span className="text-xs font-semibold">
-                        {t("shop.block.reasonQuestion")}
-                      </span>
-                      <input
-                        id={blockReasonFieldId}
-                        value={blockReason}
-                        onChange={(e) => setBlockReason(e.target.value)}
-                        placeholder={t("shop.block.reasonPlaceholder")}
-                        className="min-w-0 flex-1 rounded-lg border border-border bg-background px-2 py-1 text-sm text-foreground"
-                      />
-                    </label>
-                  )}
-                </div>
-                <button
-                  type="submit"
-                  disabled={busy}
-                  className="w-full rounded-xl bg-primary py-3 text-xs font-semibold text-primary-foreground disabled:opacity-60"
-                >
-                  {busy ? t("common.saving") : t("shop.block.submit")}
-                </button>
-              </form>
-
-              <div className="space-y-2">
-                <h3 className="text-xs font-semibold text-muted-foreground">
-                  {t("shop.block.upcoming")}
-                </h3>
-                {blocks.map((block) => (
-                  <div
-                    key={block.id}
-                    className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3"
-                  >
-                    <div>
-                      <p className="text-sm font-bold">
-                        {block.reason ?? t("shop.block.defaultReason")}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {t("shop.block.range", {
-                          start: formatShopDate(block.starts_at, shopTimeZone, {
-                            dateStyle: "short",
-                            timeStyle: "short",
-                          }),
-                          end: formatSlotLabel(new Date(block.ends_at), shopTimeZone),
-                          who: block.staff?.display_name ?? t("shop.block.wholeShop"),
-                        })}
-                      </p>
-                    </div>
-                    {(!ownBlocksOnly ||
-                      (!!actor?.staff_id && block.staff_id === actor.staff_id)) && (
-                      <button
-                        onClick={() => void deleteBlock(block.id)}
-                        disabled={busy}
-                        aria-label={t("shop.block.deleteAria")}
-                        className="action-button action-danger"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-                {blocks.length === 0 && (
-                  <p className="text-sm text-muted-foreground">{t("shop.block.empty")}</p>
-                )}
-              </div>
-            </section>
+            <HoursTab
+              shopId={shop.id}
+              timeZone={shopTimeZone}
+              demoNow={demo?.now}
+              hours={businessHours}
+              blocks={blocks}
+              staff={staff}
+              loading={loading}
+              loadError={hoursLoadError}
+              onRetry={() => void loadCatalog()}
+              canEditHours={canEditBusinessHours}
+              ownStaffId={ownBlocksOnly ? (actor?.staff_id ?? null) : null}
+              slotNotice={{
+                settings,
+                services,
+                onOpenSettings: canManageShopSettings ? openSlotModeSettings : undefined,
+              }}
+              onSaveHours={saveBusinessHours}
+              onCreateBlock={createBlock}
+              onDeleteBlock={deleteBlock}
+              loadDayAppointments={loadHoursDay}
+              blockRequest={hoursBlockRequest}
+              onBlockRequestHandled={() => setHoursBlockRequest(null)}
+              onOpenApprovals={openApprovals}
+            />
           )}
 
           {tab === "configuracoes" && shop && settings && (
@@ -3426,72 +1856,99 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   setSettingsSection(null);
                   setTab("agenda");
                 }}
+                overview={{
+                  settings,
+                  publicUrl: shopPublicOrigin({
+                    slug: shop.slug,
+                    customDomain: shop.custom_domain,
+                    customDomainStatus: shop.custom_domain_status,
+                  }),
+                  customDomain: shop.custom_domain,
+                  customDomainStatus: shop.custom_domain_status,
+                  ...settingsSignals,
+                  pendingDecisions,
+                  teamHint:
+                    actor?.role === "associate"
+                      ? t("eq.settings.teamHintAssociate")
+                      : actor?.role === "employee"
+                        ? t("eq.settings.teamHintEmployee")
+                        : undefined,
+                }}
                 renderSection={(section) => {
+                  const shopLink = (withDomainShortcut: boolean) => {
+                    const landing = parseLandingConfig(settings.landing);
+                    return (
+                      <ShopLinkCard
+                        publicUrl={shopPublicOrigin({
+                          slug: shop.slug,
+                          customDomain: shop.custom_domain,
+                          customDomainStatus: shop.custom_domain_status,
+                        })}
+                        openHref={`/b/${shop.slug}`}
+                        autoUrl={shopPublicOrigin({ slug: shop.slug })}
+                        landingEnabled={landing.enabled}
+                        blocks={{
+                          staff: landing.show_staff,
+                          today: landing.show_staff && landing.show_today,
+                          services: landing.show_services,
+                          hours: landing.show_hours,
+                        }}
+                        photo={settings.login_image_url}
+                        logoUrl={settings.logo_url}
+                        logoBackground={settings.logo_background_color}
+                        primary={settings.primary_color ?? undefined}
+                        hideLink={Boolean(demo)}
+                        onEditPage={canManageBranding ? () => setLandingOpen(true) : undefined}
+                        onOpenDomain={
+                          withDomainShortcut && settingsSections.includes("enderecos")
+                            ? () => setSettingsSection("enderecos")
+                            : undefined
+                        }
+                      />
+                    );
+                  };
                   if (section === "aparencia") {
                     return (
-                      <div className="grid gap-3">
-                        <button
-                          type="button"
-                          onClick={() => setBrandOpen(true)}
-                          className="flex min-h-16 w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left transition hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-                            <Palette className="size-5" aria-hidden />
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block text-sm font-bold">
-                              {t("shop.settings.brand")}
-                            </span>
-                            <span className="block text-xs text-muted-foreground">
-                              {t("shop.settings.brandHint")}
-                            </span>
-                          </span>
-                          <ChevronRight
-                            className="size-4 shrink-0 text-muted-foreground"
-                            aria-hidden
+                      <AppearanceOverview
+                        brand={
+                          <BrandSummaryCard
+                            settings={settings}
+                            shopName={shop.name}
+                            onEdit={() => {
+                              setBrandStep("logo");
+                              setBrandOpen(true);
+                            }}
                           />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setLandingOpen(true)}
-                          className="flex min-h-16 w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left transition hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-                            <Globe2 className="size-5" aria-hidden />
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block text-sm font-bold">
-                              {t("landingEditor.title")}
-                            </span>
-                            <span className="block text-xs text-muted-foreground">
-                              {t("landingEditor.cardHint")}
-                            </span>
-                          </span>
-                          <ChevronRight
-                            className="size-4 shrink-0 text-muted-foreground"
-                            aria-hidden
-                          />
-                        </button>
-                      </div>
+                        }
+                        page={shopLink(true)}
+                      />
                     );
                   }
                   if (section === "agendamento") {
                     return (
                       <>
-                        <ShopTimezoneCard
-                          shopId={shop?.id}
-                          timeZone={shop?.timezone}
-                          canEdit={!demo && canManageShopChannels}
-                        />
+                        <BookingOverview settings={settings} timeZone={shopTimeZone} />
                         <SlotModeSettings
                           settings={settings}
                           services={services}
                           hours={businessHours}
                           onSave={saveSlotMode}
                         />
-                        <WaitingSettings
+                        <BookingRulesSettings
                           settings={settings}
-                          onSaved={setSettings}
+                          timeZone={shopTimeZone}
+                          staffNames={staff
+                            .filter((member) => member.active)
+                            .map((member) => member.display_name)
+                            .slice(0, 2)}
+                          onSave={saveBookingRules}
+                        />
+                        <WaitingSettings
+                          id={BOOKING_CARD_IDS.waiting}
+                          settings={settings}
+                          onSaved={(patch) =>
+                            setSettings((current) => (current ? { ...current, ...patch } : current))
+                          }
                           onSaveRequest={
                             !demo && actor
                               ? async (enabled, cutoff) => {
@@ -3508,168 +1965,24 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                               : undefined
                           }
                         />
-                        <form
-                          onSubmit={saveSettings}
-                          aria-labelledby="booking-rules-title"
-                          className="app-action-card space-y-5 p-5"
-                        >
-                          <div>
-                            <p className="text-xs text-muted-foreground">
-                              {t("shop.settings.rulesSection")}
-                            </p>
-                            <h3
-                              id="booking-rules-title"
-                              className="flex items-center gap-2 font-bold"
-                            >
-                              <SlidersHorizontal className="size-4" aria-hidden />
-                              {t("shop.settings.rulesTitle")}
-                            </h3>
-                            <p className="mt-1 text-sm text-muted-foreground">
-                              {t("shop.settings.rulesIntro")}
-                            </p>
-                          </div>
-                          <div className="space-y-2">
-                            <label
-                              htmlFor="booking-instructions"
-                              className="text-xs font-semibold text-muted-foreground"
-                            >
-                              {t("shop.settings.instructions")}
-                            </label>
-                            <textarea
-                              id="booking-instructions"
-                              maxLength={240}
-                              rows={3}
-                              value={settings.booking_instructions}
-                              onChange={(event) => {
-                                setSettingsSaved(false);
-                                setSettings({
-                                  ...settings,
-                                  booking_instructions: event.target.value,
-                                });
-                              }}
-                              placeholder={t("shop.settings.instructionsPlaceholder")}
-                              className="w-full resize-none rounded-xl border border-border bg-background px-3 py-3 text-sm"
-                            />
-                            <p className="text-right text-xs text-muted-foreground">
-                              {settings.booking_instructions.length}/240
-                            </p>
-                          </div>
-
-                          <div className="space-y-2">
-                            <label
-                              htmlFor="booking-horizon"
-                              className="text-xs font-semibold text-muted-foreground"
-                            >
-                              {t("shop.settings.horizon")}
-                            </label>
-                            <select
-                              id="booking-horizon"
-                              value={settings.booking_horizon_days}
-                              onChange={(event) => {
-                                setSettingsSaved(false);
-                                setSettings({
-                                  ...settings,
-                                  booking_horizon_days: Number(event.target.value),
-                                });
-                              }}
-                              className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm"
-                            >
-                              {[7, 14, 21, 30].map((days) => (
-                                <option key={days} value={days}>
-                                  {t("shop.settings.days", { days })}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-
-                          <div className="space-y-2">
-                            <label
-                              htmlFor="staff-assignment-mode"
-                              className="text-xs font-semibold text-muted-foreground"
-                            >
-                              {t("shop.settings.assignment")}
-                            </label>
-                            <select
-                              id="staff-assignment-mode"
-                              value={
-                                (settings as { staff_assignment_mode?: string })
-                                  .staff_assignment_mode ?? "client_pick"
-                              }
-                              onChange={(event) => {
-                                setSettingsSaved(false);
-                                setSettings({
-                                  ...settings,
-                                  staff_assignment_mode: event.target.value,
-                                } as typeof settings);
-                              }}
-                              className="w-full rounded-xl border border-border bg-background px-3 py-3 text-sm"
-                            >
-                              <option value="client_pick">{t("shop.settings.assignClient")}</option>
-                              <option value="favorite_then_pick">
-                                {t("shop.settings.assignFavorite")}
-                              </option>
-                              <option value="random_available">
-                                {t("shop.settings.assignRandom")}
-                              </option>
-                            </select>
-                          </div>
-
-                          <div className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-background/60 p-4">
-                            <div>
-                              <p className="text-sm font-bold">{t("shop.settings.surveys")}</p>
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                {t("shop.settings.surveysHint")}
-                              </p>
-                            </div>
-                            <Switch
-                              checked={settings.survey_program_enabled}
-                              onCheckedChange={(checked) => {
-                                setSettingsSaved(false);
-                                setSettings({ ...settings, survey_program_enabled: checked });
-                              }}
-                              aria-label={t("shop.settings.surveysAria")}
-                            />
-                          </div>
-
-                          <button
-                            type="submit"
-                            disabled={busy}
-                            className="action-button action-confirm w-full"
-                          >
-                            <Save className="size-4" aria-hidden />
-                            {busy ? t("common.saving") : t("shop.settings.save")}
-                          </button>
-                          {settingsSaved && (
-                            <p
-                              role="status"
-                              className="text-center text-xs font-semibold text-primary"
-                            >
-                              {t("shop.settings.saved")}
-                            </p>
-                          )}
-                        </form>
+                        <ShopTimezoneCard
+                          id={BOOKING_CARD_IDS.timezone}
+                          shopId={shop?.id}
+                          timeZone={shop?.timezone}
+                          canEdit={!demo && canManageShopChannels}
+                        />
                       </>
                     );
                   }
                   if (section === "pontos") {
-                    return (
-                      <div className="space-y-3 rounded-2xl border border-border bg-card p-4">
-                        <p className="text-sm text-muted-foreground">
-                          {t("shop.settings.pontos.text")}
-                        </p>
-                        <a href="/shop/pontos" className="action-button action-confirm w-full">
-                          <Gift className="size-4" aria-hidden />
-                          {t("shop.settings.pontos.open")}
-                        </a>
-                      </div>
-                    );
+                    return <LoyaltySettingsSummary enabled={settings.loyalty_enabled} />;
                   }
                   if (section === "avisos") {
                     return (
                       <>
-                        {canManageShopChannels && <WhatsAppSettingsCard shopId={shop.id} />}
-                        {!demo && (canManageShopChannels || actor?.role === "associate") && (
-                          <GoogleIntegrationsCard
+                        {canManageShopChannels && <WhatsAppChannelCard shopId={shop.id} />}
+                        {(canManageShopChannels || actor?.role === "associate") && (
+                          <GoogleConnectionCard
                             shopId={shop.id}
                             returnPath="/shop?secao=avisos"
                             canCopyWholeShop={canManageShopChannels}
@@ -3681,6 +1994,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   if (section === "enderecos") {
                     return (
                       <>
+                        {shopLink(false)}
                         {canManageShopChannels && <ShopDomainCard shopId={shop.id} />}
                         <SlugRedirectsCard
                           shopId={shop.id}
@@ -3693,17 +2007,27 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   if (section === "equipe" && actor) {
                     return (
                       <>
+                        {/* Decisões pendentes primeiro; depois o próprio acesso e a saída. */}
                         <TeamGovernance
-                          key={governanceRevision}
+                          revision={governanceRevision}
                           shopId={shop.id}
                           profile={effectiveProfile}
+                          services={services}
+                          staff={staff}
+                          businessHours={businessHours}
+                          blocks={blocks}
+                          settings={settings}
+                          timeZone={shopTimeZone}
                           onChanged={() => {
                             setGovernanceRevision((value) => value + 1);
                             void loadCatalog();
                           }}
                         />
+                        <MyAccessCard role={actor.role} capabilities={capabilities} />
                         <ShopDepartureCard
                           shopId={shop.id}
+                          role={actor.role}
+                          onOpenPeople={openPeople}
                           canApproveRelease={actor.role === "owner" || actor.role === "partner"}
                           canRequestDeparture={
                             actor.role === "owner" ||
@@ -3714,24 +2038,21 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       </>
                     );
                   }
-                  if (section === "idioma") return <LanguageSettingsCard hideHeading />;
+                  if (section === "idioma") {
+                    return (
+                      <div className="grid items-start gap-4 lg:grid-cols-2">
+                        <LanguageSettingsCard />
+                        <ThemeSettingsCard />
+                      </div>
+                    );
+                  }
+                  if (section === "conta") return <ChangePasswordCard />;
                   return null;
                 }}
               />
             </section>
           )}
         </div>
-
-        {!demo && (
-          <section className="space-y-3">
-            <div className="app-section-title">
-              <KeyRound />
-              <h2>{t("shop.account.title")}</h2>
-            </div>
-            <p className="text-xs text-muted-foreground">{t("shop.account.hint")}</p>
-            <ChangePasswordCard />
-          </section>
-        )}
       </main>
 
       <nav
@@ -3757,72 +2078,105 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
               tab === id ? "app-nav-current" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Icon
-              className={`mb-1.5 h-5 w-5 transition-transform duration-300 ease-out ${tab === id ? "scale-110" : ""}`}
-            />
-            <span className="text-xs font-semibold">{label}</span>
+            <span className="relative mb-1.5">
+              <Icon
+                className={`h-5 w-5 transition-transform duration-300 ease-out ${tab === id ? "scale-110" : ""}`}
+              />
+              {/* Decisões dos donos esperando: bolha no item Ajustes. */}
+              {id === "configuracoes" && (
+                <CountBadge
+                  count={pendingDecisions}
+                  tone="pending"
+                  label={t("eq.nav.pending", { count: pendingDecisions })}
+                  className="absolute -right-3 -top-2"
+                />
+              )}
+            </span>
+            {/* Abaixo de 340 px o rótulo diminui um pouco para não encostar na pílula da aba. */}
+            <span className="text-xs font-semibold max-[339px]:text-[11px] max-[339px]:tracking-tight">
+              {label}
+            </span>
           </button>
         ))}
       </nav>
 
-      <Dialog open={landingOpen} onOpenChange={setLandingOpen}>
-        <DialogContent className="max-h-[92dvh] w-[calc(100vw-1.5rem)] max-w-5xl overflow-hidden rounded-3xl border-border bg-card p-0">
-          <DialogScrollArea className="grid max-h-[calc(92dvh-2px)] gap-4 overflow-y-auto p-5 sm:p-6">
-            <DialogTitle className="text-lg font-extrabold tracking-tight">
-              {t("landingEditor.title")}
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              {t("landingEditor.description")}
-            </DialogDescription>
-            {!shop || !settings ? (
-              <p className="text-sm text-muted-foreground">{t("shop.brand.loading")}</p>
-            ) : (
-              <LandingEditor
-                key={shop.id}
-                shopId={shop.id}
-                shopSlug={shop.slug}
-                publicUrl={shopPublicOrigin({
-                  slug: shop.slug,
-                  customDomain: shop.custom_domain,
-                  customDomainStatus: shop.custom_domain_status,
-                })}
-                settings={settings}
-                timeZone={shop.timezone}
-                onSaved={setSettings}
-              />
-            )}
-          </DialogScrollArea>
-        </DialogContent>
-      </Dialog>
+      {/* Página da barbearia: fechar com mudanças pergunta antes ("Sair sem salvar?"). */}
+      <GuardedEditorDialog
+        open={landingOpen}
+        onOpenChange={setLandingOpen}
+        className="max-w-5xl"
+        title={t("landingEditor.title")}
+        description={t("landingEditor.description")}
+        descriptionHidden
+      >
+        {(guard) =>
+          !shop || !settings ? (
+            <LoadingState variant="cards" count={2} label={t("shop.brand.loading")} />
+          ) : (
+            <LandingEditor
+              key={shop.id}
+              shopId={shop.id}
+              shopSlug={shop.slug}
+              publicUrl={shopPublicOrigin({
+                slug: shop.slug,
+                customDomain: shop.custom_domain,
+                customDomainStatus: shop.custom_domain_status,
+              })}
+              settings={settings}
+              timeZone={shop.timezone}
+              onSaved={setSettings}
+              guard={guard}
+              onChangePhoto={
+                canManageBranding
+                  ? () =>
+                      guard.requestClose(() => {
+                        setBrandStep("entrada");
+                        setBrandOpen(true);
+                      })
+                  : undefined
+              }
+              onOpenDomain={
+                settingsSections.includes("enderecos")
+                  ? () =>
+                      guard.requestClose(() => {
+                        setTab("configuracoes");
+                        setSettingsSection("enderecos");
+                      })
+                  : undefined
+              }
+            />
+          )
+        }
+      </GuardedEditorDialog>
 
       {/* Identidade visual: dono, sócio e parceiro personalizam a barbearia. */}
-      <Dialog open={brandOpen} onOpenChange={setBrandOpen}>
-        <DialogContent className="max-h-[92dvh] w-[calc(100vw-1.5rem)] max-w-2xl overflow-hidden rounded-3xl border-border bg-card p-0">
-          <DialogScrollArea className="grid max-h-[calc(92dvh-2px)] gap-4 overflow-y-auto p-5 sm:p-6">
-            <DialogTitle className="text-lg font-extrabold tracking-tight">
-              {t("shop.settings.brand")}
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              {t("shop.brand.description")}
-            </DialogDescription>
-            {!shop || !settings ? (
-              <p className="text-sm text-muted-foreground">{t("shop.brand.loading")}</p>
-            ) : (
-              <BrandIdentityEditor
-                key={shop.id}
-                audience="shop"
-                shopName={shop.name}
-                settings={settings}
-                mode={demo ? "demo" : "supabase"}
-                onSaved={(next) => {
-                  setSettings(next);
-                  if (demo) demo.dispatch({ type: "settings.save", settings: next });
-                }}
-              />
-            )}
-          </DialogScrollArea>
-        </DialogContent>
-      </Dialog>
+      <GuardedEditorDialog
+        open={brandOpen}
+        onOpenChange={setBrandOpen}
+        title={t("shop.settings.brand")}
+        description={t("shop.brand.description")}
+        descriptionHidden
+      >
+        {(guard) =>
+          !shop || !settings ? (
+            <LoadingState variant="cards" count={2} label={t("shop.brand.loading")} />
+          ) : (
+            <BrandIdentityEditor
+              key={`${shop.id}:${brandStep}`}
+              audience="shop"
+              shopName={shop.name}
+              settings={settings}
+              mode={demo ? "demo" : "supabase"}
+              guard={guard}
+              initialStep={brandStep}
+              onSaved={(next) => {
+                setSettings(next);
+                if (demo) demo.dispatch({ type: "settings.save", settings: next });
+              }}
+            />
+          )
+        }
+      </GuardedEditorDialog>
     </div>
   );
 }

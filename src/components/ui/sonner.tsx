@@ -1,3 +1,4 @@
+import { AlertTriangle, CheckCircle2, Info, Loader2, XCircle } from "lucide-react";
 import { Toaster as Sonner } from "sonner";
 
 import { useTheme } from "@/lib/use-theme";
@@ -6,6 +7,16 @@ type ToasterProps = React.ComponentProps<typeof Sonner>;
 
 // Avisos no alto da tela: não disputam espaço com a barra inferior nem com o banner do PWA.
 const TOAST_TOP_OFFSET = { top: "max(1rem, env(safe-area-inset-top))" };
+
+// Mesmos ícones dos tons do sistema (src/components/visual/tones.ts); a cor e a faixa lateral
+// de cada tipo vêm do bloco "Avisos rápidos" em styles.css.
+const TOAST_ICONS = {
+  success: <CheckCircle2 aria-hidden />,
+  error: <XCircle aria-hidden />,
+  warning: <AlertTriangle aria-hidden />,
+  info: <Info aria-hidden />,
+  loading: <Loader2 aria-hidden className="motion-safe:animate-spin" />,
+};
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme } = useTheme();
@@ -16,6 +27,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       position="top-center"
       offset={TOAST_TOP_OFFSET}
       mobileOffset={TOAST_TOP_OFFSET}
+      icons={TOAST_ICONS}
       className="toaster group"
       // O CSS do sonner fica fora das camadas do Tailwind e venceria as classes: as cores
       // e o canto entram pelas variáveis dele, ligadas aos tokens do sistema.

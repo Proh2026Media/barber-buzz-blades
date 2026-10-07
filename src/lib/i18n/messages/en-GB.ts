@@ -17,16 +17,12 @@ export const enGB: Record<MessageKey, string> = {
   "errors.integration.googleNotReady":
     "The Google connection isn't ready in this environment yet. Please contact support.",
   "errors.rateLimit": "Too many attempts in a row. Please wait a minute and try again.",
-  "landing.support":
-    "Open your shop, share the link and manage bookings with the people who work there.",
-  "landing.footer":
-    "Booking, loyalty and management for barbershops — customers book appointments; the shop organises team, services and notices.",
   "register.shopNamePlaceholder": "E.g.: High Street Barbers",
   "register.whatsapp": "WhatsApp (with dialling code)",
   "register.errorWhatsapp": "Enter your WhatsApp number with dialling code.",
   "profile.whatsappNumber": "Number with dialling code",
-  "level.maxText": "You've reached the top of the loyalty programme.",
-  "booking.dayAria": "{weekday}, {day} {month}",
+  "booking.favorite": "Favourite",
+  "booking.favoriteSaved": "{name} is now your favourite",
   "sports.football": "Football",
   "sports.extraTime": "Extra time",
   "sports.final": "Full time",
@@ -61,6 +57,7 @@ export const enGB: Record<MessageKey, string> = {
     "**Revoke at Google:** you can also remove Barba & Cabelo's access directly at Google, at any time, at {link}.",
   "plat.shell.brandOpenError": "Couldn't open the customisation. Please try again.",
   "plat.shops.customize": "Customise",
+  "plat.newShop.customizeNow": "Customise now",
   "plat.brand.title": "Customise {name}",
   "plat.perm.admin": "platform administrator",
   "shop.deleteService.body":
@@ -83,16 +80,12 @@ export const enGB: Record<MessageKey, string> = {
   "shop.settings.assignFavorite": "Favourite barber first, otherwise any available",
   "shop.settings.surveysHint":
     "Controls the barbershop's programme. Each customer's own choice is still respected.",
-  "ins.biz.aggregateNote":
-    "Aggregated results. “I'd rather not answer” isn't included in the breakdowns.",
   "ins.pro.globalTitle": "Anonymised barbershop overview",
   "brand.validate.colors": "Check the colours. Use the hex format #RRGGBB.",
   "brand.layout.cardHint": "Highlights the form in a centred card over the image.",
   "app.google.denied":
     "Connection cancelled on Google. If you saw “app not verified”, use Advanced → continue.",
   "team.partner.rhythmTitle": "Your clients' rhythm",
-  "team.suggest.hint":
-    "Accept to copy the price/duration into your catalogue, or keep your own settings.",
   "wait.cutoff.example":
     "For a 3pm appointment, the wait can start by {start} and ends by {end}. After {start}, withdrawing the confirmation frees the time straight away.",
   "brand.editor.subtitlePlatform":
@@ -160,7 +153,6 @@ export const enGB: Record<MessageKey, string> = {
   "cad.cliente.terms.age":
     "and confirm you are 18 or over (or use it with a parent or guardian's permission).",
   "cad.cliente.ownerLink": "Register your barbershop",
-  "cad.nome.text": "This way the barbershop knows who you are in the diary and reminders.",
   "cad.dono.termsText":
     "I have read and accept the {terms}, the {privacy} and the {dpa} for barbershops. I am 18 or over and authorised to represent this barbershop.",
   "cad.dono.termsNeeded": "Tick the box above to continue.",

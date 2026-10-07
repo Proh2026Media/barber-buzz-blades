@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import type { ReactNode } from "react";
-import { LegalPageShell } from "@/features/legal/LegalPageShell";
+import { LegalPageShell, LegalSection as Section } from "@/features/legal/LegalPageShell";
 import { legalHead } from "@/features/legal/legal-head";
 import { useLegalI18n } from "@/features/legal/legal-locale";
 import { PLATFORM_OPERATOR } from "@/features/legal/operator";
@@ -26,17 +25,6 @@ export const Route = createFileRoute("/termos")({
     }),
   component: TermosPage,
 });
-
-const headingClass = "text-lg font-bold text-foreground";
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="space-y-3">
-      <h2 className={headingClass}>{title}</h2>
-      {children}
-    </section>
-  );
-}
 
 function TermosPage() {
   const { lang } = Route.useSearch();
@@ -68,6 +56,7 @@ function TermosPage() {
 
   return (
     <LegalPageShell
+      doc="terms"
       title={t("legal.termsLink")}
       updatedAt={TERMS_VERSION}
       locale={locale}
@@ -124,12 +113,15 @@ function TermosPage() {
         <p>
           {legalRichText(t("legal.terms.s7Contact"), {
             email: (
-              <a href={`mailto:${PLATFORM_OPERATOR.privacyEmail}`} className={legalLinkClass}>
+              <a
+                href={`mailto:${PLATFORM_OPERATOR.privacyEmail}`}
+                className={`${legalLinkClass} whitespace-nowrap`}
+              >
                 {PLATFORM_OPERATOR.privacyEmail}
               </a>
             ),
             name: <strong>{PLATFORM_OPERATOR.legalName}</strong>,
-            cnpj: <strong>{PLATFORM_OPERATOR.cnpj}</strong>,
+            cnpj: <strong className="whitespace-nowrap">{PLATFORM_OPERATOR.cnpj}</strong>,
           })}
         </p>
         <p>{t("legal.terms.s7Delete")}</p>

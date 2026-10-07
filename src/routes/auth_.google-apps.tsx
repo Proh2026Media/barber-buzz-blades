@@ -1,8 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { ArrowLeft, Info, ShieldAlert } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { platformAuthOrigin } from "@/lib/auth/return-origin";
-import { t as tNow } from "@/lib/i18n";
+import { t as tNow, useI18n } from "@/lib/i18n";
+import { announce, Hint, MoreDetails, Steps } from "@/components/visual";
+import { GoogleMark, ResultHero } from "@/features/auth/entry";
 
 export const Route = createFileRoute("/auth_/google-apps")({
   ssr: false,
@@ -17,20 +20,56 @@ export const Route = createFileRoute("/auth_/google-apps")({
   component: GoogleAppsCallback,
 });
 
+type Phase = "connecting" | "success" | "cancelled" | "error";
+type BackTarget = { path: string; origin: string; params: Record<string, string> };
+
+/** Segundos até voltar sozinho: rápido no sucesso, com tempo para ler nos demais. */
+const BACK_SECONDS: Record<Exclude<Phase, "connecting">, number> = {
+  success: 3,
+  cancelled: 6,
+  error: 6,
+};
+
+function goBack({ path, origin, params }: BackTarget) {
+  const query = new URLSearchParams(params);
+  const [pathname, existing = ""] = path.split("?");
+  const merged = new URLSearchParams(existing);
+  for (const [key, value] of query.entries()) merged.set(key, value);
+  const target = `${origin.replace(/\/$/, "")}${pathname}?${merged.toString()}`;
+  window.location.assign(target);
+}
+
 function GoogleAppsCallback() {
   const { code, state, error: oauthError, error_description } = Route.useSearch();
-  const [message, setMessage] = useState(() => tNow("app.google.connecting"));
+  const { t } = useI18n();
+  const [phase, setPhase] = useState<Phase>("connecting");
+  // Detalhe técnico (para o suporte) ou a dica do Google: fica recolhido.
+  const [detail, setDetail] = useState<string | null>(null);
+  const [back, setBack] = useState<BackTarget | null>(null);
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+  // Qualquer toque ou tecla na tela (abrir "Detalhes", ler a dica) para a volta automática:
+  // a página não sai no meio da leitura. O botão continua voltando na hora.
+  const [paused, setPaused] = useState(false);
+
+  // Volta automática com a contagem à vista; o botão volta na hora.
+  useEffect(() => {
+    if (secondsLeft === null || !back || paused) return;
+    if (secondsLeft <= 0) {
+      goBack(back);
+      return;
+    }
+    const timer = window.setTimeout(() => setSecondsLeft((value) => (value ?? 1) - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [secondsLeft, back, paused]);
 
   useEffect(() => {
     let cancelled = false;
 
-    function goBack(path: string, origin: string, params: Record<string, string>) {
-      const query = new URLSearchParams(params);
-      const [pathname, existing = ""] = path.split("?");
-      const merged = new URLSearchParams(existing);
-      for (const [key, value] of query.entries()) merged.set(key, value);
-      const target = `${origin.replace(/\/$/, "")}${pathname}?${merged.toString()}`;
-      window.location.assign(target);
+    function settle(next: Exclude<Phase, "connecting">, target: BackTarget, info: string | null) {
+      setPhase(next);
+      setDetail(info);
+      setBack(target);
+      setSecondsLeft(BACK_SECONDS[next]);
     }
 
     async function finish() {
@@ -41,17 +80,19 @@ function GoogleAppsCallback() {
           oauthError === "access_denied"
             ? tNow("app.google.denied")
             : tNow("app.google.refused", { detail: error_description || oauthError });
-        setMessage(denied);
-        window.setTimeout(() => {
-          goBack("/shop", fallbackOrigin, { google: "error", reason: denied });
-        }, 2200);
+        settle(
+          oauthError === "access_denied" ? "cancelled" : "error",
+          { path: "/shop", origin: fallbackOrigin, params: { google: "error", reason: denied } },
+          denied,
+        );
         return;
       }
       if (!code || !state) {
-        setMessage(tNow("app.google.incomplete"));
-        window.setTimeout(() => {
-          goBack("/shop", fallbackOrigin, {});
-        }, 1600);
+        settle(
+          "error",
+          { path: "/shop", origin: fallbackOrigin, params: {} },
+          tNow("app.google.incomplete"),
+        );
         return;
       }
 
@@ -78,19 +119,24 @@ function GoogleAppsCallback() {
         if (!response.ok) throw new Error(payload.error || tNow("app.google.completeFailed"));
 
         if (cancelled) return;
-        setMessage(tNow("app.google.connected"));
-        const path = payload.return_path || "/shop";
-        const origin = payload.return_origin || fallbackOrigin;
-        window.setTimeout(() => {
-          goBack(path, origin, { google: "connected" });
-        }, 500);
+        announce(tNow("app.google.connected"));
+        settle(
+          "success",
+          {
+            path: payload.return_path || "/shop",
+            origin: payload.return_origin || fallbackOrigin,
+            params: { google: "connected" },
+          },
+          null,
+        );
       } catch (err) {
         if (cancelled) return;
         const detail = err instanceof Error ? err.message : tNow("app.google.failed");
-        setMessage(detail);
-        window.setTimeout(() => {
-          goBack("/shop", fallbackOrigin, { google: "error", reason: detail });
-        }, 2200);
+        settle(
+          "error",
+          { path: "/shop", origin: fallbackOrigin, params: { google: "error", reason: detail } },
+          detail,
+        );
       }
     }
 
@@ -100,9 +146,93 @@ function GoogleAppsCallback() {
     };
   }, [code, state, oauthError, error_description]);
 
+  const hero =
+    phase === "connecting"
+      ? {
+          tone: "progress" as const,
+          icon: undefined,
+          title: t("entry.gapps.connecting"),
+          line: null,
+        }
+      : phase === "success"
+        ? { tone: "success" as const, icon: undefined, title: t("entry.gapps.okTitle"), line: null }
+        : phase === "cancelled"
+          ? {
+              tone: "neutral" as const,
+              icon: Info,
+              title: t("entry.gapps.cancelTitle"),
+              line: t("entry.gapps.cancelLine"),
+            }
+          : {
+              tone: "danger" as const,
+              icon: undefined,
+              title: t("entry.gapps.errorTitle"),
+              line: t("entry.gapps.errorLine"),
+            };
+
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-background px-6 text-center">
-      <p className="text-sm text-muted-foreground">{message}</p>
-    </div>
+    <main className="mb-page flex min-h-dvh items-center justify-center bg-background px-4 py-8 text-foreground">
+      <div
+        className="entry-result-card w-full max-w-sm space-y-5 p-6 sm:p-8"
+        onPointerDownCapture={() => setPaused(true)}
+        onKeyDownCapture={() => setPaused(true)}
+      >
+        <p className="flex items-center justify-center gap-2 text-sm font-semibold">
+          <GoogleMark />
+          {t("entry.gapps.title")}
+        </p>
+        <ResultHero tone={hero.tone} icon={hero.icon} title={hero.title}>
+          {hero.line}
+        </ResultHero>
+        {phase !== "cancelled" && phase !== "error" && (
+          <Steps
+            orientation="vertical"
+            label={t("entry.gapps.stepsLabel")}
+            className="rounded-2xl border border-border bg-background/60 p-4"
+            steps={[
+              { key: "auth", label: t("entry.gapps.step.authorized"), status: "done" },
+              {
+                key: "save",
+                label: t("entry.gapps.step.saving"),
+                status: phase === "success" ? "done" : "current",
+              },
+              {
+                key: "back",
+                label: t("entry.gapps.step.back"),
+                status: phase === "success" ? "current" : "upcoming",
+              },
+            ]}
+          />
+        )}
+        {/* Cancelado no Google: a saída mais provável ("app não verificado") fica à vista. */}
+        {phase === "cancelled" && (
+          <Hint icon={ShieldAlert} className="text-sm">
+            {t("entry.gapps.unverifiedHint")}
+          </Hint>
+        )}
+        {detail && phase !== "cancelled" && (
+          <MoreDetails summary={phase === "error" ? t("entry.gapps.details") : undefined}>
+            <p className="text-xs [overflow-wrap:anywhere]">{detail}</p>
+          </MoreDetails>
+        )}
+        {back && (
+          <div className="grid gap-1.5">
+            <button
+              type="button"
+              className="action-button entry-submit"
+              onClick={() => goBack(back)}
+            >
+              <ArrowLeft aria-hidden="true" />
+              {t("entry.gapps.back")}
+            </button>
+            {!paused && secondsLeft !== null && secondsLeft > 0 && (
+              <p className="text-center text-xs text-muted-foreground tabular-nums">
+                {t("entry.gapps.backIn", { seconds: secondsLeft })}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+    </main>
   );
 }

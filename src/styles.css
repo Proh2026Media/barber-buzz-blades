@@ -803,6 +803,212 @@ body:has(.arena-workspace)
   background: #88133766;
 }
 
+/* Tons de estado — fonte única dos componentes de src/components/visual.
+   Mesmo significado = mesma cor e mesmo ícone em todo o sistema:
+   success (deu certo, concluído, livre) · info (confirmado, agendado, informação) ·
+   warning (precisa de ação) · pending (aguardando alguém) · danger (erro, cancelado,
+   bloqueado) · neutral (desligado, pausado, fechado) · progress (em andamento) ·
+   highlight (destaque da marca). Valores literais por superfície: no tema escuro,
+   os cartões off-white, as janelas e os avisos rápidos voltam aos tons claros,
+   e o texto fica acima de 4,5:1 nos dois casos. */
+:root,
+.dark .arena-workspace :is(.bg-card, .app-action-card, .booking-section, .platform-metric-board),
+.dark
+  body:has(.arena-workspace)
+  :is([role="dialog"], [role="alertdialog"]):not([data-radix-popper-content-wrapper] *):not(
+    .dialog-surface-page
+  ),
+.dark body:has(.arena-workspace) [data-sonner-toaster],
+.dark :is(.auth-page .auth-brand-panel, .platform-register-panel, .entry-result-card),
+.dark .public-card {
+  --tone-on-ink: #ffffff;
+  --tone-success-ink: #065f46;
+  --tone-success-bg: #d1fae5;
+  --tone-success-soft: #ecfdf5;
+  --tone-success-line: #059669;
+  --tone-info-ink: #1e40af;
+  --tone-info-bg: #dbeafe;
+  --tone-info-soft: #eff6ff;
+  --tone-info-line: #2563eb;
+  --tone-warning-ink: #9a3412;
+  --tone-warning-bg: #ffedd5;
+  --tone-warning-soft: #fff7ed;
+  --tone-warning-line: #ea580c;
+  --tone-pending-ink: #92400e;
+  --tone-pending-bg: #fef3c7;
+  --tone-pending-soft: #fffbeb;
+  --tone-pending-line: #b45309;
+  --tone-danger-ink: #b42318;
+  --tone-danger-bg: #fee4e2;
+  --tone-danger-soft: #fef3f2;
+  --tone-danger-line: #d92d20;
+  --tone-neutral-ink: #4f4c45;
+  --tone-neutral-bg: #e4e0d8;
+  --tone-neutral-soft: #efece6;
+  --tone-neutral-line: #8a857a;
+  --tone-highlight-ink: #6f4b20;
+}
+.dark {
+  --tone-on-ink: #171816;
+  --tone-success-ink: #6ee7b7;
+  --tone-success-bg: #133b2f;
+  --tone-success-soft: #193129;
+  --tone-success-line: #34d399;
+  --tone-info-ink: #93c5fd;
+  --tone-info-bg: #20305a;
+  --tone-info-soft: #212a42;
+  --tone-info-line: #60a5fa;
+  --tone-warning-ink: #fdba74;
+  --tone-warning-bg: #542918;
+  --tone-warning-soft: #3f261c;
+  --tone-warning-line: #fb923c;
+  --tone-pending-ink: #fcd34d;
+  --tone-pending-bg: #512d17;
+  --tone-pending-soft: #3e291b;
+  --tone-pending-line: #fbbf24;
+  --tone-danger-ink: #fda29b;
+  --tone-danger-bg: #52251d;
+  --tone-danger-soft: #3e241e;
+  --tone-danger-line: #f97066;
+  --tone-neutral-ink: #d3cfc6;
+  --tone-neutral-bg: #3b3c35;
+  --tone-neutral-soft: #31322d;
+  --tone-neutral-line: #8f8b82;
+  --tone-highlight-ink: #dfbc85;
+}
+/* Cada classe tone-* liga as variáveis locais lidas pelos componentes:
+   --tone-ink (texto/ícone), --tone-bg (selo), --tone-soft (aviso), --tone-line (barra, ponto). */
+.tone-success {
+  --tone-ink: var(--tone-success-ink);
+  --tone-bg: var(--tone-success-bg);
+  --tone-soft: var(--tone-success-soft);
+  --tone-line: var(--tone-success-line);
+}
+.tone-info {
+  --tone-ink: var(--tone-info-ink);
+  --tone-bg: var(--tone-info-bg);
+  --tone-soft: var(--tone-info-soft);
+  --tone-line: var(--tone-info-line);
+}
+.tone-warning {
+  --tone-ink: var(--tone-warning-ink);
+  --tone-bg: var(--tone-warning-bg);
+  --tone-soft: var(--tone-warning-soft);
+  --tone-line: var(--tone-warning-line);
+}
+.tone-pending {
+  --tone-ink: var(--tone-pending-ink);
+  --tone-bg: var(--tone-pending-bg);
+  --tone-soft: var(--tone-pending-soft);
+  --tone-line: var(--tone-pending-line);
+}
+.tone-danger {
+  --tone-ink: var(--tone-danger-ink);
+  --tone-bg: var(--tone-danger-bg);
+  --tone-soft: var(--tone-danger-soft);
+  --tone-line: var(--tone-danger-line);
+}
+.tone-neutral {
+  --tone-ink: var(--tone-neutral-ink);
+  --tone-bg: var(--tone-neutral-bg);
+  --tone-soft: var(--tone-neutral-soft);
+  --tone-line: var(--tone-neutral-line);
+}
+/* Destaque e andamento seguem a marca e a superfície onde aparecem. */
+.tone-highlight {
+  --tone-ink: var(--tone-highlight-ink);
+  --tone-bg: color-mix(in oklab, var(--gold) 12%, var(--card));
+  --tone-soft: color-mix(in oklab, var(--gold) 7%, var(--card));
+  --tone-line: var(--gold);
+}
+.tone-progress {
+  --tone-ink: var(--foreground);
+  --tone-bg: var(--muted);
+  --tone-soft: color-mix(in oklab, var(--muted) 45%, var(--card));
+  --tone-line: var(--primary);
+}
+:is(
+  .tone-success,
+  .tone-info,
+  .tone-warning,
+  .tone-pending,
+  .tone-danger,
+  .tone-neutral,
+  .tone-highlight,
+  .tone-progress
+) {
+  --tone-border: color-mix(in oklab, var(--tone-line) 32%, transparent);
+}
+/* Barras fixas no pé (mudanças não salvas): ficam acima da barra de navegação flutuante;
+   dentro de janelas, encostam no fim da janela. */
+:root {
+  --app-sticky-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+body:has(.app-mobile-nav) {
+  --app-sticky-bottom: calc(var(--app-floating-bottom) + var(--app-nav-height) + 0.75rem);
+}
+:is([role="dialog"], [role="alertdialog"]) {
+  --app-sticky-bottom: 0.5rem;
+}
+/* No painel quem rola é o <main>, e o padding inferior dele já reserva a barra flutuante: a barra
+   fixa (UnsavedBar) só precisa de uma folga, senão soma a barra duas vezes e para ~105 px acima. */
+.arena-workspace:has(.app-mobile-nav) > main {
+  --app-sticky-bottom: 0.25rem;
+}
+/* Campo com erro: borda vermelha pelo estado acessível (aria-invalid), em qualquer tela. */
+body :is(input, textarea, select)[aria-invalid="true"][aria-invalid],
+body :is(input, textarea, select)[aria-invalid="true"][aria-invalid]:focus {
+  border-color: var(--destructive) !important;
+}
+body :is(input, textarea, select)[aria-invalid="true"][aria-invalid]:focus {
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--destructive) 18%, transparent) !important;
+}
+/* Avisos rápidos (sonner): ícone e faixa lateral na cor do tipo, os mesmos tons dos selos. */
+[data-sonner-toaster] [data-sonner-toast][data-type="success"] {
+  --toast-tone-ink: var(--tone-success-ink);
+  --toast-tone-line: var(--tone-success-line);
+}
+[data-sonner-toaster] [data-sonner-toast][data-type="error"] {
+  --toast-tone-ink: var(--tone-danger-ink);
+  --toast-tone-line: var(--tone-danger-line);
+}
+[data-sonner-toaster] [data-sonner-toast][data-type="warning"] {
+  --toast-tone-ink: var(--tone-warning-ink);
+  --toast-tone-line: var(--tone-warning-line);
+}
+[data-sonner-toaster] [data-sonner-toast][data-type="info"] {
+  --toast-tone-ink: var(--tone-info-ink);
+  --toast-tone-line: var(--tone-info-line);
+}
+[data-sonner-toaster] [data-sonner-toast][data-type="loading"] {
+  --toast-tone-ink: var(--foreground);
+  --toast-tone-line: var(--primary);
+}
+[data-sonner-toaster]
+  [data-sonner-toast][data-styled="true"]:is(
+    [data-type="success"],
+    [data-type="error"],
+    [data-type="warning"],
+    [data-type="info"],
+    [data-type="loading"]
+  ) {
+  box-shadow:
+    inset 4px 0 0 var(--toast-tone-line),
+    0 10px 24px rgb(0 0 0 / 12%);
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-icon] {
+  width: 20px;
+  height: 20px;
+  color: var(--toast-tone-ink, currentColor);
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-icon] svg {
+  width: 20px;
+  height: 20px;
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-title] {
+  font-weight: 600;
+}
+
 /* Keep navigation outside the application's scrolling content. */
 body:has(.arena-workspace) {
   overflow: hidden;
@@ -1448,6 +1654,21 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
 .app-mobile-nav button:active {
   transform: scale(0.96);
 }
+/* Celular de 320 px: com 5 itens, o rótulo ativo ("Reservas") encostava nas bordas da
+   pílula. Menos recuo lateral e letra um pouco menor deixam folga dentro dela. */
+@media (max-width: 359px) {
+  .app-mobile-nav-floating {
+    left: max(0.5rem, env(safe-area-inset-left));
+    right: max(0.5rem, env(safe-area-inset-right));
+  }
+  .app-mobile-nav button {
+    padding-inline: 0.125rem !important;
+  }
+  .app-mobile-nav button span {
+    font-size: 10.5px !important;
+    letter-spacing: -0.01em !important;
+  }
+}
 /* O item ativo precisa de contraste garantido em tema claro e escuro.
    Com a pílula deslizante, ela desenha o fundo e o texto usa a cor de leitura.
    Sem pílula (barra do painel da barbearia), o próprio botão recebe o fundo da marca. */
@@ -1698,7 +1919,7 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border-radius: 0.75rem;
+  border-radius: var(--button-radius);
   color: var(--muted-foreground);
   font-size: 0.78rem;
   font-weight: 750;
@@ -1715,12 +1936,6 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
 .agenda-scope button[aria-pressed="true"] svg {
   color: var(--gold);
 }
-.agenda-date-navigation {
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) 44px auto;
-  align-items: center;
-  gap: 0.5rem;
-}
 .agenda-date-arrow {
   min-width: 44px;
   min-height: 44px;
@@ -1730,16 +1945,6 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
 .agenda-date-current {
   min-width: 0;
   position: relative;
-}
-.agenda-date-caption {
-  display: block;
-  margin: 0 0.5rem -0.05rem;
-  color: var(--gold);
-  font-size: 0.65rem;
-  line-height: 1;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 .agenda-date-current .schedule-field {
   min-height: 44px;
@@ -1759,10 +1964,10 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
 .agenda-date-current .schedule-field span span::first-letter {
   text-transform: uppercase;
 }
-@media (max-width: 420px) {
-  .agenda-date-current .schedule-field > svg:last-child {
-    display: none;
-  }
+/* A seta do seletor some na Agenda: o ícone de calendário já indica o toque, e a data cabe
+   inteira também na coluna estreita do computador. */
+.agenda-date-current .schedule-field > svg:last-child {
+  display: none;
 }
 /* Em telas bem estreitas o dia da semana longo quebra em até duas linhas em vez de ganhar reticências. */
 @media (max-width: 380px) {
@@ -1774,165 +1979,8 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
     line-height: 1.2;
   }
 }
-.agenda-today-button {
-  min-height: 44px;
-  padding: 0 0.9rem;
-  border: 1px solid color-mix(in oklab, var(--gold) 35%, var(--border));
-  border-radius: 999px;
-  color: var(--gold);
-  background: color-mix(in oklab, var(--gold) 9%, var(--app-elevated));
-  font-size: 0.75rem;
-  font-weight: 800;
-}
-.agenda-today-button:disabled {
-  cursor: default;
-  opacity: 0.55;
-}
-.agenda-filters input,
-.agenda-filters select {
-  min-height: 44px;
-}
-.agenda-list {
-  display: grid;
-  gap: 0.6rem;
-}
-.agenda-list-heading,
-.agenda-appointment-summary {
-  display: grid;
-  grid-template-columns: 78px minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1fr) 10.5rem;
-  align-items: center;
-  gap: 0.75rem;
-}
-.agenda-list-heading {
-  padding: 0 1rem 0.1rem;
-  color: var(--muted-foreground);
-  font-size: 0.67rem;
-  font-weight: 750;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-.agenda-list-heading > span:last-child {
-  justify-self: end;
-}
-.agenda-appointment {
-  overflow: hidden;
-}
-.agenda-appointment-summary {
-  min-height: 72px;
-  padding: 0.75rem 1rem;
-}
-.agenda-time {
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding-right: 0.75rem;
-  border-right: 1px solid color-mix(in oklab, var(--gold) 28%, var(--border));
-  color: var(--gold);
-}
-.agenda-time span {
-  font-size: 0.92rem;
-  font-weight: 850;
-  font-variant-numeric: tabular-nums;
-}
-.agenda-client,
-.agenda-detail,
-.agenda-status {
-  min-width: 0;
-}
-.agenda-client p {
-  overflow: hidden;
-  color: var(--foreground);
-  font-size: 0.88rem;
-  font-weight: 800;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.agenda-detail {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  color: var(--muted-foreground);
-  font-size: 0.78rem;
-}
-.agenda-detail svg {
-  flex: 0 0 auto;
-  color: var(--gold);
-}
-.agenda-detail span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.agenda-status {
-  justify-self: end;
-}
-.agenda-appointment-details {
-  display: grid;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem 1rem;
-  border-top: 1px solid color-mix(in oklab, var(--border) 72%, transparent);
-  background: color-mix(in oklab, var(--muted) 30%, transparent);
-}
-
-@media (max-width: 639px) {
-  .agenda-list-heading {
-    display: none;
-  }
-  .agenda-appointment-summary {
-    grid-template-columns: 72px minmax(0, 1fr);
-    grid-template-rows: repeat(4, auto);
-    gap: 0.35rem 0.75rem;
-    padding: 0.85rem;
-  }
-  .agenda-time {
-    grid-column: 1;
-    grid-row: 1 / 5;
-    align-self: stretch;
-    flex-direction: column;
-    justify-content: center;
-    gap: 0.35rem;
-    padding-right: 0.75rem;
-  }
-  .agenda-client,
-  .agenda-detail,
-  .agenda-status {
-    grid-column: 2;
-    justify-self: start;
-  }
-  .agenda-client {
-    grid-row: 1;
-  }
-  .agenda-detail[data-label="Serviço"] {
-    grid-row: 2;
-  }
-  .agenda-detail[data-label="Profissional"] {
-    grid-row: 3;
-  }
-  .agenda-status {
-    grid-row: 4;
-    margin-top: 0.15rem;
-  }
-  .agenda-appointment-details {
-    padding: 0.75rem 0.85rem 0.9rem;
-  }
-}
-
-/* Até 440 px o botão "Hoje" desce para a própria linha, para a data caber inteira entre as setas. */
-@media (max-width: 440px) {
-  .agenda-date-navigation {
-    grid-template-columns: 44px minmax(0, 1fr) 44px;
-  }
-  .agenda-today-button {
-    grid-column: 1 / -1;
-    border-radius: 0.75rem;
-  }
-  /* No próprio dia o botão fica desativado: some no celular, e o rótulo "Hoje" acima da data já
-     informa o estado. No computador continua na 4ª coluna para a data não pular de largura. */
-  .agenda-today-button:disabled {
-    display: none;
-  }
-}
+/* Cartões, linha do tempo e filtros da Agenda usam os componentes visuais comuns
+   (src/features/shop/agenda/): as antigas grades .agenda-appointment/.agenda-detail saíram. */
 
 /*
  * Os dois cartões de fidelidade invertem a superfície do tema para ganhar contraste.
@@ -2056,7 +2104,8 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
  * O novo estado inverte essa composição: o gradiente pertence ao fundo e o
  * conteúdo usa uma única cor de alto contraste conforme o tema.
  */
-.arena-workspace .mb-loyalty-tier-mark {
+.arena-workspace .mb-loyalty-tier-mark,
+.public-page .mb-loyalty-tier-mark {
   color: #11110f;
   border-color: color-mix(in oklab, #11110f 22%, transparent);
   background-size: 400% 400%;
@@ -2067,7 +2116,8 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
 }
 /* O fundo do selo é o mesmo gradiente claro nos dois temas, então a tinta escura base
    vale também no tema escuro (o branco anterior ficava em ~1,5:1). */
-.arena-workspace .mb-loyalty-tier-classic {
+.arena-workspace .mb-loyalty-tier-classic,
+.public-page .mb-loyalty-tier-classic {
   background-image: radial-gradient(
     circle at center,
     var(--loyalty-silver-1),
@@ -2075,7 +2125,8 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
     var(--loyalty-silver-3)
   );
 }
-.arena-workspace .mb-loyalty-tier-select {
+.arena-workspace .mb-loyalty-tier-select,
+.public-page .mb-loyalty-tier-select {
   background-image: radial-gradient(
     circle at 30% 30%,
     var(--loyalty-bronze-1),
@@ -2083,7 +2134,8 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
     var(--loyalty-bronze-3)
   );
 }
-.arena-workspace .mb-loyalty-tier-privilege {
+.arena-workspace .mb-loyalty-tier-privilege,
+.public-page .mb-loyalty-tier-privilege {
   background-image: radial-gradient(
     circle at 70% 20%,
     var(--loyalty-gold-1),
@@ -2091,7 +2143,8 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
     var(--loyalty-gold-3)
   );
 }
-.arena-workspace .mb-loyalty-tier-exclusive {
+.arena-workspace .mb-loyalty-tier-exclusive,
+.public-page .mb-loyalty-tier-exclusive {
   background-image: radial-gradient(
     circle at 50% 50%,
     var(--loyalty-hologram-1),
@@ -2165,6 +2218,38 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   background: var(--primary);
   color: var(--primary-foreground);
   box-shadow: 0 6px 16px color-mix(in oklab, var(--primary) 26%, transparent);
+}
+/* Agendar: resumo com o botão principal sempre à vista. No celular fica fixo acima da barra de
+   navegação; no computador vira a coluna da direita, presa ao topo enquanto os passos rolam. */
+.booking-summary-bar {
+  /* O `main` já reserva a faixa da barra flutuante no padding inferior, e o fixo conta a partir
+     dele: -1rem deixa o resumo a ~8 px acima da barra (ou do fim da tela, sem barra). */
+  bottom: -1rem;
+}
+@media (min-width: 1024px) {
+  .booking-summary-bar {
+    top: 1rem;
+    bottom: auto;
+  }
+}
+/* "Mais datas" ao lado do mês: botão compacto, no mesmo peso do cabeçalho da faixa de dias. */
+.booking-section .schedule-field {
+  min-height: 2.75rem;
+  gap: 0.45rem;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.875rem;
+}
+.booking-section .schedule-field > svg:first-child {
+  width: 1rem;
+  height: 1rem;
+}
+/* Alternador grade/lista dentro dos passos: discreto (sem moldura), só os ícones.
+   O botão escolhido usa o mesmo estado de Serviços e Equipe (bg-primary), que mantém
+   contraste também no cartão off-white do tema escuro. */
+.booking-view-toggle {
+  border-color: transparent;
+  background: transparent;
+  padding: 0;
 }
 
 /* Rounded hardware + soft motion; membership metal gradients stay untouched. */
@@ -2288,6 +2373,31 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
   background: #2c2d29;
   border-color: #46473e;
   color: #e5dfd5;
+}
+/* App do cliente: cor do cabeçalho como token (anel do selo de avisos) e o sininho
+   preenchido quando a tela de Avisos está aberta ("você está aqui" no próprio ícone). */
+.arena-workspace > header {
+  --app-header-surface: #20211f;
+}
+.arena-workspace > header .app-icon-button.app-nav-current {
+  background: #f1ede6;
+  border-color: #f1ede6;
+  color: #20211f;
+}
+/* Início do cliente: ilustração do vazio parada (menos movimento disputando a atenção). */
+.customer-home .mb-empty-art {
+  animation: none;
+}
+/* Início do cliente no computador: duas colunas (o que acontece | cartão de membro) numa
+   largura maior que a coluna de leitura das outras telas. */
+@media (min-width: 1024px) {
+  .arena-workspace > main.customer-main-wide {
+    padding-inline: max(1rem, calc((100% - 64rem) / 2));
+  }
+  /* Agenda da barbearia no computador: duas colunas (dia à esquerda, linha do tempo à direita). */
+  .arena-workspace > main.shop-agenda-wide {
+    padding-inline: max(1.5rem, calc((100% - 70rem) / 2));
+  }
 }
 
 /* Logo da barbearia no cabeçalho: quadrado encostado à esquerda, cantos conforme a marca. */
@@ -2472,9 +2582,6 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
   filter: blur(36px);
   pointer-events: none;
   animation: mb-loyalty-sheen-float 8s var(--ease-soft) infinite;
-}
-.mb-waiting-timer {
-  animation: mb-soft-pulse 2.2s var(--ease-soft) infinite;
 }
 
 /* Antecedência: thumb alinhado, precisão progressiva e seletor em roleta. */
@@ -2748,7 +2855,6 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
   .mb-live-dot,
   .mb-loyalty-sheen,
   .loyalty-card-pattern,
-  .mb-waiting-timer,
   .animate-shimmer,
   .text-gradient-silver,
   .text-gradient-bronze,
@@ -2870,6 +2976,36 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
 }
 .brand-color-popover input[type="color"]::-webkit-color-swatch-wrapper {
   padding: 0;
+}
+/* Seletor de cor da marca: abre sobre a janela off-white da identidade, então fica off-white
+   também no tema escuro (texto, bordas e selos de leitura nos tons claros). */
+.dark .brand-color-popover {
+  --card: #f7f5f0;
+  --card-foreground: #242421;
+  --popover: #f7f5f0;
+  --popover-foreground: #242421;
+  --foreground: #242421;
+  --background: #eeebe4;
+  --muted: #e4e0d8;
+  --muted-foreground: #66635c;
+  --border: #d3cec3;
+  --input: #d3cec3;
+  --ring: #706b60;
+  --primary: var(--brand-primary, #292925);
+  --primary-foreground: var(--brand-primary-foreground, #fafafa);
+  --destructive: #b42318;
+  --tone-success-ink: #065f46;
+  --tone-success-bg: #d1fae5;
+  --tone-success-line: #059669;
+  --tone-warning-ink: #9a3412;
+  --tone-warning-bg: #ffedd5;
+  --tone-warning-line: #ea580c;
+  --tone-danger-ink: #b42318;
+  --tone-danger-bg: #fee4e2;
+  --tone-danger-line: #d92d20;
+  color-scheme: light;
+  color: var(--card-foreground);
+  background-color: var(--card);
 }
 
 /* Login: a identidade visual da loja respeita os mesmos três modos de canto. */
@@ -3869,7 +4005,13 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   background: #141412;
   box-shadow: 0 16px 40px rgb(20 20 18 / 0.18);
   aspect-ratio: 16 / 10;
-  min-height: 16rem;
+}
+/* Altura mínima só a partir de 640 px: no celular ela forçava ~410 px de largura e a janela
+   da identidade rolava para o lado. No celular, o editor mostra a moldura de celular. */
+@media (min-width: 640px) {
+  .login-screen-preview-framed {
+    min-height: 16rem;
+  }
 }
 .login-screen-preview-framed .auth-workspace {
   position: absolute;
@@ -3972,6 +4114,21 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
 }
 .login-preview-phone .auth-layout-split::after {
   display: none;
+}
+/* Moldura de celular reduzida (PhoneFitFrame): altura natural, a tela inteira sem rolar. */
+.login-preview-phone.login-preview-phone-fit {
+  aspect-ratio: auto;
+  max-height: none;
+}
+.login-preview-phone-fit .login-screen-preview-framed {
+  height: auto;
+  min-height: 0;
+}
+.login-preview-phone-fit .login-screen-preview-framed .auth-workspace {
+  position: relative;
+  inset: auto;
+  height: auto;
+  min-height: 0;
 }
 
 /* Landing + cadastro (apex beauty…) */
@@ -4126,8 +4283,7 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   animation: platform-landing-rise 0.7s ease-out 0.2s both;
 }
 .platform-landing-cta-primary,
-.platform-landing-cta-secondary,
-.platform-register-submit {
+.platform-landing-cta-secondary {
   display: inline-flex;
   min-height: 3.25rem;
   align-items: center;
@@ -4143,14 +4299,13 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
     background 0.18s ease,
     border-color 0.18s ease;
 }
-.platform-landing-cta-primary,
-.platform-register-submit {
+.platform-landing-cta-primary {
   background: #f4f1ea;
   color: #171512;
   border: 0;
 }
-.platform-landing-cta-primary:hover,
-.platform-register-submit:hover:not(:disabled) {
+/* Só o botão claro da página inicial clareia no hover (o do cadastro é action-button). */
+.platform-landing-cta-primary:hover {
   transform: translateY(-1px);
   background: #fff;
 }
@@ -4212,6 +4367,109 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   }
 }
 
+/* Páginas públicas (início, página da loja, documentos, clube).
+   Cartões off-white nos dois temas, como no app: a capa fotográfica continua escura e os tons
+   de estado claros entram pelo bloco "Tons de estado" (.dark .public-card). */
+.public-page :is(.rounded-xl, .rounded-lg) {
+  border-radius: var(--control-radius);
+}
+.public-page :is(.rounded-2xl, .rounded-3xl) {
+  border-radius: var(--panel-radius);
+}
+.public-card,
+.dark .public-card {
+  --card: #f7f5f0;
+  --card-foreground: #242421;
+  --foreground: #242421;
+  --background: #eeebe4;
+  --muted: #e4e0d8;
+  --muted-foreground: #66635c;
+  --border: #d3cec3;
+  --input: #d3cec3;
+  --accent: #e4e0d8;
+  --accent-foreground: #242421;
+  --ring: #706b60;
+  --destructive: #b42318;
+  --gold: var(--brand-accent, #8a602f);
+  --primary: var(--brand-primary, #292925);
+  --primary-foreground: var(--brand-primary-foreground, #fafafa);
+  color: var(--card-foreground);
+  background-color: var(--card);
+  color-scheme: light;
+}
+/* Tinta da marca legível sobre o off-white (ícones de seção, links "Agendar com"). */
+.public-card .public-accent {
+  color: var(--brand-accent-readable, #6f4b20);
+}
+/* Horário "próximo": contorno forte na cor do texto, para se destacar das outras pílulas. */
+.public-slot-next {
+  border-width: 2px;
+  border-color: var(--foreground);
+}
+/* Ações rápidas sobre a capa (Como chegar, WhatsApp, Instagram): sempre claras sobre escuro. */
+.hero-quick-action {
+  background: color-mix(in oklab, #f4f1ea 12%, transparent);
+  border: 1px solid color-mix(in oklab, #f4f1ea 26%, transparent);
+  color: #f7f5f0;
+}
+.hero-quick-action:hover {
+  background: color-mix(in oklab, #f4f1ea 20%, transparent);
+}
+/* Barra fixa da loja: entra deslizando quando o botão principal sai da tela. */
+.public-sticky-bar {
+  animation: public-bar-in 0.22s var(--ease-out, ease-out) both;
+}
+@keyframes public-bar-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+/* Barra fina de leitura no cabeçalho dos documentos. */
+.legal-progress {
+  transform-origin: left center;
+  transition: transform 0.12s linear;
+}
+@media (prefers-reduced-motion: reduce) {
+  .public-sticky-bar,
+  .legal-progress,
+  .public-page .mb-loyalty-tier-mark {
+    animation: none;
+    transition: none;
+  }
+}
+/* Início do site: no celular uma coluna (escolhas primeiro); no computador, escolhas à
+   esquerda e exemplos do produto à direita, sem metade vazia. */
+.platform-landing-wide {
+  max-width: 40rem;
+}
+.platform-landing-grid {
+  display: grid;
+  gap: 2rem;
+}
+.platform-landing-actions-grid {
+  display: grid;
+  gap: 0.75rem;
+  animation: platform-landing-rise 0.7s ease-out 0.14s both;
+}
+@media (min-width: 1024px) {
+  .platform-landing-wide {
+    max-width: 72rem;
+  }
+  .platform-landing-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    align-items: center;
+    gap: 3.5rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .platform-landing-actions-grid {
+    animation: none;
+  }
+}
+
 .platform-register-stage {
   max-width: 28rem;
   margin-inline: auto;
@@ -4263,59 +4521,12 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   color: #1c1b18;
   letter-spacing: 0.12em;
 }
-.platform-register-steps {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.4rem;
-  margin: 0 0 1.35rem;
-  padding: 0;
-  list-style: none;
-}
-.platform-register-steps li {
-  display: flex;
-  min-height: 2.5rem;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
-  border-radius: var(--control-radius, 0.75rem);
-  background: #ece8df;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #6b675f;
-}
-.platform-register-steps li span {
-  display: inline-flex;
-  width: 1.15rem;
-  height: 1.15rem;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: color-mix(in oklab, #1c1b18 10%, transparent);
-  font-size: 0.65rem;
-}
-.platform-register-steps li[data-state="current"] {
-  background: #1c1b18;
-  color: #f4f1ea;
-}
-.platform-register-steps li[data-state="current"] span {
-  background: color-mix(in oklab, #f4f1ea 18%, transparent);
-}
-.platform-register-steps li[data-state="done"] {
-  background: color-mix(in oklab, var(--gold, #8a602f) 18%, white);
-  color: #5c4020;
-}
 .platform-register-title {
   margin: 0;
   font-size: 1.55rem;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: #171512;
-}
-.platform-register-lead {
-  margin: 0.4rem 0 0;
-  font-size: 0.9rem;
-  line-height: 1.45;
-  color: #5f5a52;
 }
 .platform-register-form {
   display: grid;
@@ -4360,12 +4571,6 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   border-color: #1c1b18;
   box-shadow: 0 0 0 4px color-mix(in oklab, #1c1b18 10%, transparent);
 }
-.platform-register-otp {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  letter-spacing: 0.35em;
-  text-align: center;
-  font-size: 1.25rem;
-}
 .platform-register-note {
   display: flex;
   align-items: flex-start;
@@ -4374,52 +4579,6 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   font-size: 0.75rem;
   line-height: 1.4;
   color: #6b675f;
-}
-.platform-register-submit {
-  width: 100%;
-  cursor: pointer;
-  background: #1c1b18;
-  color: #f4f1ea;
-}
-.platform-register-submit:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  transform: none;
-}
-.platform-register-linkish {
-  min-height: 2.75rem;
-  border: 0;
-  background: transparent;
-  color: #5f5a52;
-  font-size: 0.875rem;
-  font-weight: 600;
-  text-decoration: underline;
-  cursor: pointer;
-}
-.platform-register-otp-dest {
-  margin: 0;
-  font-size: 0.9rem;
-  color: #5f5a52;
-}
-.platform-register-finishing {
-  display: grid;
-  justify-items: center;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
-  padding: 1.5rem 0.5rem;
-  text-align: center;
-  font-size: 0.95rem;
-  color: #5f5a52;
-}
-.platform-register-info {
-  margin: 0.85rem 0 0;
-  font-size: 0.875rem;
-  color: #3f3b35;
-}
-.platform-register-error {
-  margin: 0.85rem 0 0;
-  font-size: 0.875rem;
-  color: #a33b2d;
 }
 .platform-register-footer {
   margin: 1.25rem 0 0;
@@ -4438,6 +4597,209 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+/* Entrada no sistema (/auth, /cadastrar, /auth/google-apps): um só visual.
+   Painel off-white nos dois temas (os tokens claros vêm do bloco "Tons de estado" e daqui),
+   campos brancos com borda, raio pelo modo de canto e botão principal escuro. */
+.dark .auth-page .auth-brand-panel,
+.dark .platform-register-panel,
+.entry-result-card {
+  --card: #f7f5f0;
+  --card-foreground: #242421;
+  --foreground: #242421;
+  --background: #eeebe4;
+  --primary: var(--brand-primary, #292925);
+  --primary-foreground: var(--brand-primary-foreground, #fafafa);
+  --gold: var(--brand-accent, #8a602f);
+  --gold-foreground: var(--brand-accent-foreground, #111111);
+  --muted: #e4e0d8;
+  --muted-foreground: #66635c;
+  --border: #d3cec3;
+  --input: #d3cec3;
+  --accent: #e4e0d8;
+  --accent-foreground: #242421;
+  --ring: #706b60;
+  --destructive: #b42318;
+  color-scheme: light;
+  color: var(--foreground);
+  background-color: var(--card);
+}
+.platform-register-panel {
+  --card: #f7f5f0;
+  --foreground: #1c1b18;
+  --muted-foreground: #5f5a52;
+  --border: #d3cec3;
+  --primary: #292925;
+  --primary-foreground: #f7f5f0;
+  --gold: #8a602f;
+  --destructive: #b42318;
+}
+.auth-page :is(.rounded-xl, .rounded-lg),
+.platform-register :is(.rounded-xl, .rounded-lg) {
+  border-radius: var(--control-radius);
+}
+.auth-page :is(.rounded-2xl, .rounded-3xl),
+.platform-register :is(.rounded-2xl, .rounded-3xl) {
+  border-radius: var(--panel-radius);
+}
+.auth-page .rounded-full,
+.platform-register .rounded-full {
+  border-radius: 9999px;
+}
+/* Campos brancos com borda, iguais aos do cadastro da barbearia. */
+.auth-page .auth-brand-panel :is(.auth-input-wrap, .auth-google-action) {
+  background: #fff;
+  border-color: color-mix(in oklab, #1c1b18 16%, transparent);
+  box-shadow: 0 1px 2px rgb(28 29 25 / 0.05);
+}
+.auth-page .auth-input-wrap:has([aria-invalid="true"]) {
+  border-color: var(--destructive);
+}
+.auth-page .auth-input-wrap:has([aria-invalid="true"]):focus-within {
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--destructive) 18%, transparent);
+}
+/* O anel de erro fica só na moldura: o campo interno (sem borda própria) não ganha a faixa
+   vermelha da regra global entre o ícone e o texto. */
+.auth-page .auth-input-wrap :is(input, textarea)[aria-invalid="true"]:focus {
+  box-shadow: none !important;
+}
+/* Aba escolhida: pílula escura com texto claro nos dois temas (figura sobre o fundo). */
+.auth-page .auth-mode-tabs button[aria-selected="true"],
+.auth-page .entry-channel-tabs button[aria-selected="true"] {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+/* WhatsApp no cadastro do cliente: a coluna nunca passa da largura do formulário (320 px). */
+.auth-page .auth-whatsapp-group {
+  grid-template-columns: minmax(0, 1fr);
+}
+.auth-page .auth-whatsapp-group > :is(label, .auth-whatsapp-error, .auth-whatsapp-optin) {
+  grid-column: 1 / -1;
+  grid-row: auto;
+}
+
+/* Campo de código: 6 caixas quadradas que sempre cabem na largura. */
+.entry-code-slot {
+  border: 1.5px solid color-mix(in oklab, #1c1b18 18%, transparent);
+  border-radius: var(--control-radius);
+  background: #fff;
+  color: #171512;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+.entry-code-slot[data-active] {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 16%, transparent);
+}
+.entry-code-slot[data-state="error"] {
+  border-color: var(--destructive);
+}
+.entry-code-slot[data-state="error"][data-active] {
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--destructive) 18%, transparent);
+}
+.entry-code-slot[data-state="success"] {
+  border-color: var(--tone-success-line);
+}
+/* O campo invisível do código leva aria-invalid (leitor de tela), mas não a moldura da regra
+   global: a borda vermelha já aparece nas caixas (data-state="error"). */
+body .entry-code input[aria-invalid="true"][aria-invalid],
+body .entry-code input[aria-invalid="true"][aria-invalid]:focus {
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+/* Dentro do app (Conta → WhatsApp), a regra global de campos pintava o campo invisível do
+   código por cima das 6 caixas. O :not(#…) só dá peso ao seletor para vencer aquela regra. */
+body:has(.arena-workspace) .entry-code input:not(#entry-code-x),
+body:has(.arena-workspace) .entry-code input:not(#entry-code-x):focus {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Botão principal da entrada: escuro, texto azul de confirmar (cores de ação aprovadas). */
+.entry-submit {
+  width: 100%;
+  min-height: 3.25rem;
+  border-radius: var(--button-radius);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.entry-submit > svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+/* Processando ("Enviando…", "Criando…"): o botão mantém a cor cheia com o ícone girando, em vez
+   do cinza de desativado, que parecia botão quebrado. */
+.entry-submit.action-button.action-confirm[aria-busy="true"]:disabled {
+  background: #292925;
+  border-color: #30312b;
+  color: #8fc5ff;
+  cursor: wait;
+}
+@media (hover: none) {
+  .entry-submit.action-button:hover {
+    background: #292925;
+    box-shadow: none;
+  }
+}
+.entry-link-button {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0 0.5rem;
+  border-radius: var(--button-radius);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--foreground);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, currentColor 35%, transparent);
+  text-underline-offset: 4px;
+}
+.entry-link-button:hover:not(:disabled) {
+  text-decoration-color: currentColor;
+}
+.entry-link-button:disabled {
+  color: var(--muted-foreground);
+  cursor: not-allowed;
+}
+
+/* Cadastro da barbearia: no computador, resumo ao vivo à esquerda e formulário à direita. */
+.entry-cad-aside {
+  display: none;
+}
+@media (min-width: 1024px) {
+  /* clip (e não hidden): sem área de rolagem própria, o resumo fixo (sticky) acompanha. */
+  .platform-register:has(.entry-cad-layout) {
+    overflow: clip;
+  }
+  .platform-register-stage:has(.entry-cad-layout) {
+    max-width: 64rem;
+  }
+  .entry-cad-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 30rem;
+    gap: 3rem;
+    align-items: start;
+  }
+  .entry-cad-aside {
+    position: sticky;
+    top: 1.5rem;
+    display: grid;
+    gap: 1.25rem;
+    padding-top: 1rem;
+  }
+}
+
+/* Cartão de resultado isolado (volta da conexão com o Google). */
+.entry-result-card {
+  border: 1px solid var(--border);
+  border-radius: var(--panel-radius);
+  box-shadow: 0 24px 60px rgb(0 0 0 / 0.14);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .platform-landing-photo img,
   .platform-register-photo img,

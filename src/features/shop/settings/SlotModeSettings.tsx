@@ -2,21 +2,33 @@ import { useEffect, useId, useState } from "react";
 import {
   AlertTriangle,
   CalendarClock,
-  Check,
-  CheckCircle2,
   Clock3,
   Coffee,
   Globe2,
   Hourglass,
   LayoutGrid,
   Rows3,
-  Save,
   Settings2,
   Sparkles,
-  X,
 } from "lucide-react";
+import {
+  ChoiceCards,
+  ChoiceChips,
+  Hint,
+  IconList,
+  IconTile,
+  StatusBadge,
+  PreviewPanel,
+  SectionHeader,
+  Tag,
+  TimeChips,
+  Timeline,
+  UnsavedBar,
+  type ActionState,
+  type TimelineRow,
+} from "@/components/visual";
 import type { Tables } from "@/integrations/supabase/types";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, type MessageKey } from "@/lib/i18n";
 import {
   PREP_OPTIONS,
   SLOT_STEP_MINUTES,
@@ -32,6 +44,14 @@ type ServiceLike = Pick<Tables<"services">, "name" | "duration_minutes" | "activ
 type HoursLike = Pick<Tables<"business_hours">, "weekday" | "is_open" | "opens_at" | "closes_at">;
 
 const EXAMPLE_COUNT = 4;
+
+/** Resultado do salvamento, com a frase própria desta tela. */
+type SaveResult = Exclude<ActionState, "saving">;
+const SAVE_TEXT: Record<SaveResult, MessageKey> = {
+  saved: "slots.status.applied",
+  pending: "slots.status.pending",
+  error: "slots.status.error",
+};
 
 /**
  * Opções mostradas ao dono. "Ajustável" cobre os modos `flexible` (15 min, o padrão)
@@ -72,7 +92,7 @@ function useSlotExample(services: ServiceLike[], hours: HoursLike[]) {
   const closesAt = day?.closes_at.slice(0, 5) ?? "19:00";
   const [openHour, openMinute] = opensAt.split(":").map(Number);
   const open = openHour * 60 + openMinute;
-  return { short, long, opensAt, closesAt, open };
+  return { short, long, opensAt, closesAt, open, weekday: day?.weekday ?? null };
 }
 
 function exampleFor(
@@ -120,16 +140,28 @@ export function SlotModeSettings({
   const savedPrep = validPrepMinutes(settings.prep_minutes);
   const [prep, setPrep] = useState(savedPrep);
   const [busy, setBusy] = useState(false);
-  const [status, setStatus] = useState<"applied" | "pending" | "error" | null>(null);
+  const [status, setStatus] = useState<SaveResult | null>(null);
   const example = useSlotExample(services, hours);
   const groupName = useId();
 
+  // Só os campos deste cartão: salvar ou mexer em outro cartão não apaga a escolha em andamento.
+  const {
+    slot_mode: savedMode,
+    slot_step_minutes: savedStep,
+    prep_minutes: savedPrepRaw,
+  } = settings;
   useEffect(() => {
-    const next = choiceFromRule(slotRuleFromSettings(settings));
+    const next = choiceFromRule(
+      slotRuleFromSettings({
+        slot_mode: savedMode,
+        slot_step_minutes: savedStep,
+        prep_minutes: savedPrepRaw,
+      }),
+    );
     setChoice(next.choice);
     setStep(next.step);
-    setPrep(validPrepMinutes(settings.prep_minutes));
-  }, [settings]);
+    setPrep(validPrepMinutes(savedPrepRaw));
+  }, [savedMode, savedStep, savedPrepRaw]);
 
   const mode = modeFor(choice, step);
   const changed =
@@ -143,7 +175,8 @@ export function SlotModeSettings({
     setBusy(true);
     setStatus(null);
     try {
-      setStatus(await onSave(mode, choice === "interval" ? step : saved.stepMinutes, prep));
+      const result = await onSave(mode, choice === "interval" ? step : saved.stepMinutes, prep);
+      setStatus(result === "applied" ? "saved" : "pending");
     } catch {
       setStatus("error");
     } finally {
@@ -151,81 +184,74 @@ export function SlotModeSettings({
     }
   }
 
+  const timeline: TimelineRow[] = [
+    {
+      kind: "booked",
+      time: current.start,
+      label: t("slots.timeline.booked", { service: example.short.name }),
+      minutes: example.short.minutes,
+    },
+    ...(prep > 0
+      ? [
+          {
+            kind: "prep" as const,
+            time: current.shortEnd,
+            label: t("slots.timeline.prep", { minutes: prep }),
+            minutes: prep,
+          },
+        ]
+      : []),
+    current.first
+      ? {
+          kind: "free" as const,
+          time: current.first,
+          label: t("slots.timeline.first", { service: example.long.name }),
+          minutes: example.long.minutes,
+        }
+      : {
+          kind: "none" as const,
+          time: "—",
+          label: t("slots.timeline.none", { service: example.long.name }),
+        },
+  ];
+
   return (
     <section
       id="forma-dos-horarios"
-      className="app-action-card space-y-5 p-5"
+      tabIndex={-1}
+      className="app-action-card scroll-mt-24 space-y-5 p-5 outline-none"
       aria-labelledby={`${groupName}-title`}
     >
-      <div className="flex items-start gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-          <CalendarClock className="size-5" aria-hidden />
-        </span>
-        <div className="min-w-0">
-          <h3 id={`${groupName}-title`} className="font-bold">
-            {t("slots.title")}
-          </h3>
-          <p className="text-sm text-muted-foreground">{t("slots.intro")}</p>
-        </div>
-      </div>
+      <SectionHeader
+        icon={CalendarClock}
+        id={`${groupName}-title`}
+        title={t("slots.title")}
+        description={t("slots.intro")}
+      />
 
-      <fieldset className="grid gap-2 sm:grid-cols-2">
-        <legend className="sr-only">{t("slots.title")}</legend>
-        {SLOT_CHOICES.map((option) => {
-          const optionExample = exampleFor(example, modeFor(option, step), step, prep);
-          const selected = choice === option;
-          const Icon = option === "literal" ? Rows3 : LayoutGrid;
-          return (
-            <label
-              key={option}
-              className={`relative flex cursor-pointer flex-col gap-3 rounded-2xl border-2 p-4 transition ${
-                selected
-                  ? "border-primary bg-primary/5"
-                  : "border-border bg-card hover:border-primary/40"
-              }`}
-            >
-              <input
-                type="radio"
-                name={groupName}
-                value={option}
-                checked={selected}
-                disabled={busy}
-                onChange={() => {
-                  setChoice(option);
-                  setStatus(null);
-                }}
-                className="peer sr-only"
-              />
-              <span className="flex items-center gap-2">
-                <span
-                  className={`grid size-9 shrink-0 place-items-center rounded-xl ${
-                    selected ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
-                  }`}
-                >
-                  <Icon className="size-4" aria-hidden />
-                </span>
-                <span className="min-w-0 flex-1 text-sm font-bold">
-                  {t(`slots.mode.${option}.title`)}
-                </span>
-                <span
-                  aria-hidden
-                  className={`grid size-6 shrink-0 place-items-center rounded-full border-2 peer-focus-visible:ring-2 peer-focus-visible:ring-primary ${
-                    selected
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-muted-foreground/40"
-                  }`}
-                >
-                  {selected && <Check className="size-3.5" />}
-                </span>
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {t(`slots.mode.${option}.text`)}
-              </span>
-              <TimeChips times={optionExample.list} label={t("slots.preview.listAria")} more />
-            </label>
-          );
-        })}
-      </fieldset>
+      <ChoiceCards
+        legend={t("slots.title")}
+        name={groupName}
+        value={choice}
+        disabled={busy}
+        onChange={(option) => {
+          setChoice(option);
+          setStatus(null);
+        }}
+        options={SLOT_CHOICES.map((option) => ({
+          value: option,
+          title: t(`slots.mode.${option}.title`),
+          description: t(`slots.mode.${option}.text`),
+          icon: option === "literal" ? Rows3 : LayoutGrid,
+          content: (
+            <TimeChips
+              times={exampleFor(example, modeFor(option, step), step, prep).list}
+              label={t("slots.preview.listAria")}
+              more
+            />
+          ),
+        }))}
+      />
 
       {choice === "interval" && (
         <ChoiceChips
@@ -263,209 +289,34 @@ export function SlotModeSettings({
         />
       )}
 
-      <div
-        className="space-y-3 rounded-2xl border border-border bg-background/60 p-4"
-        aria-live="polite"
-      >
-        <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-          <Hourglass className="size-3.5" aria-hidden />
-          {t("slots.preview.title")}
-        </p>
-        <SampleTimeline
-          rows={[
-            {
-              kind: "booked",
-              time: current.start,
-              label: t("slots.timeline.booked", { service: example.short.name }),
-              minutes: example.short.minutes,
-            },
-            ...(prep > 0
-              ? [
-                  {
-                    kind: "prep" as const,
-                    time: current.shortEnd,
-                    label: t("slots.timeline.prep", { minutes: prep }),
-                    minutes: prep,
-                  },
-                ]
-              : []),
-            current.first
-              ? {
-                  kind: "free" as const,
-                  time: current.first,
-                  label: t("slots.timeline.first", { service: example.long.name }),
-                  minutes: example.long.minutes,
-                }
-              : {
-                  kind: "none" as const,
-                  time: "—",
-                  label: t("slots.timeline.none", { service: example.long.name }),
-                  minutes: 0,
-                },
-          ]}
-        />
-      </div>
+      <PreviewPanel icon={Hourglass} title={t("slots.preview.title")} live>
+        <Timeline rows={timeline} />
+      </PreviewPanel>
 
-      <ul className="space-y-2 text-xs text-muted-foreground">
-        <li className="flex items-center gap-2">
-          <Coffee className="size-4 shrink-0 text-gold" aria-hidden />
-          {t("slots.breaks")}
-        </li>
-        <li className="flex items-center gap-2">
-          <Globe2 className="size-4 shrink-0 text-gold" aria-hidden />
-          {t("slots.scope")}
-        </li>
-      </ul>
+      <IconList
+        items={[
+          { icon: Coffee, text: t("slots.breaks") },
+          { icon: Globe2, text: t("slots.scope") },
+        ]}
+      />
 
-      <button
-        type="button"
-        onClick={() => void save()}
-        disabled={busy || !changed}
-        className="action-button action-confirm w-full"
-      >
-        <Save className="size-4" aria-hidden />
-        {busy ? t("common.saving") : t("slots.save")}
-      </button>
-      {status && <SaveStatus status={status} text={t(`slots.status.${status}`)} />}
+      {/* Mesmo padrão dos outros cartões de Agendamento: a barra só aparece com mudança e
+          mostra o resultado (aplicado, aguardando aprovação, erro com "Tentar de novo"). */}
+      <UnsavedBar
+        dirty={changed}
+        saving={busy}
+        state={status}
+        stateText={status ? t(SAVE_TEXT[status]) : undefined}
+        onSave={() => void save()}
+        onDiscard={() => {
+          setChoice(savedChoice.choice);
+          setStep(savedChoice.step);
+          setPrep(savedPrep);
+          setStatus(null);
+        }}
+        saveLabel={t("slots.save")}
+      />
     </section>
-  );
-}
-
-/** Horários de exemplo em "pílulas", como o cliente vê. */
-function TimeChips({ times, label, more }: { times: string[]; label: string; more?: boolean }) {
-  return (
-    <ul className="flex flex-wrap gap-1.5" aria-label={label}>
-      {times.map((time) => (
-        <li
-          key={time}
-          className="rounded-lg border border-border bg-background px-2.5 py-1 text-xs font-bold tabular-nums"
-        >
-          {time}
-        </li>
-      ))}
-      {more && times.length > 0 && (
-        <li aria-hidden className="px-1 py-1 text-xs font-bold text-muted-foreground">
-          …
-        </li>
-      )}
-    </ul>
-  );
-}
-
-/** Escolha rápida em botões (intervalo, folga): mais visível que uma lista suspensa. */
-function ChoiceChips({
-  icon: Icon,
-  label,
-  hint,
-  options,
-  value,
-  disabled,
-  onChange,
-}: {
-  icon: typeof Clock3;
-  label: string;
-  hint?: string;
-  options: Array<{ value: number; label: string; note?: string }>;
-  value: number;
-  disabled?: boolean;
-  onChange: (value: number) => void;
-}) {
-  const labelId = useId();
-  return (
-    <div className="space-y-2">
-      <p id={labelId} className="flex items-center gap-2 text-sm font-bold">
-        <Icon className="size-4 text-gold" aria-hidden />
-        {label}
-      </p>
-      <div role="radiogroup" aria-labelledby={labelId} className="flex flex-wrap gap-2">
-        {options.map((option) => {
-          const selected = option.value === value;
-          return (
-            <button
-              key={option.value}
-              type="button"
-              role="radio"
-              aria-checked={selected}
-              disabled={disabled}
-              onClick={() => onChange(option.value)}
-              className={`flex min-h-11 min-w-14 flex-col items-center justify-center rounded-xl border px-3 text-sm font-bold tabular-nums transition ${
-                selected
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-background hover:border-primary/40"
-              }`}
-            >
-              {option.label}
-              {option.note && (
-                <span className="text-[10px] font-semibold leading-none opacity-80">
-                  {option.note}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
-    </div>
-  );
-}
-
-type TimelineRow = {
-  kind: "booked" | "prep" | "free" | "none";
-  time: string;
-  label: string;
-  minutes: number;
-};
-
-/** Mini agenda do exemplo: atendimento marcado, folga e o próximo horário livre. */
-function SampleTimeline({ rows }: { rows: TimelineRow[] }) {
-  return (
-    <ol className="space-y-1.5">
-      {rows.map((row) => {
-        const height = row.kind === "none" ? 40 : Math.min(72, Math.max(32, row.minutes * 1.1));
-        const styles = {
-          booked: "bg-primary text-primary-foreground",
-          prep: "border border-dashed border-gold/60 bg-[repeating-linear-gradient(135deg,transparent_0_6px,color-mix(in_srgb,var(--gold)_14%,transparent)_6px_12px)] text-foreground",
-          free: "border-2 border-emerald-600 bg-emerald-50 text-emerald-900",
-          none: "border border-destructive/40 bg-destructive/5 text-destructive",
-        }[row.kind];
-        const Icon = { booked: Clock3, prep: Sparkles, free: CheckCircle2, none: X }[row.kind];
-        return (
-          <li key={`${row.kind}-${row.time}`} className="flex items-stretch gap-3">
-            <span className="w-11 shrink-0 pt-1.5 text-right text-xs font-bold tabular-nums text-muted-foreground">
-              {row.time}
-            </span>
-            <span
-              className={`flex min-w-0 flex-1 items-center gap-2 rounded-xl px-3 text-xs font-semibold ${styles}`}
-              style={{ minHeight: height }}
-            >
-              <Icon className="size-4 shrink-0" aria-hidden />
-              <span className="min-w-0">{row.label}</span>
-            </span>
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
-
-/** Resultado do salvamento com ícone e cor (feito, aguardando aprovação, erro). */
-function SaveStatus({ status, text }: { status: "applied" | "pending" | "error"; text: string }) {
-  const Icon =
-    status === "applied" ? CheckCircle2 : status === "pending" ? Hourglass : AlertTriangle;
-  const tone =
-    status === "applied"
-      ? "border-emerald-600/30 bg-emerald-50 text-emerald-900"
-      : status === "pending"
-        ? "border-amber-600/30 bg-amber-50 text-amber-900"
-        : "border-destructive/30 bg-destructive/5 text-destructive";
-  return (
-    <p
-      role={status === "error" ? "alert" : "status"}
-      className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold ${tone}`}
-    >
-      <Icon className="size-4 shrink-0" aria-hidden />
-      {text}
-    </p>
   );
 }
 
@@ -475,6 +326,7 @@ export function SlotModeNotice({
   services,
   hours,
   onOpenSettings,
+  preview = false,
 }: {
   settings: Pick<
     Tables<"barbershop_settings">,
@@ -483,6 +335,8 @@ export function SlotModeNotice({
   services: ServiceLike[];
   hours: HoursLike[];
   onOpenSettings?: () => void;
+  /** O funcionamento mudou e ainda não foi salvo: o exemplo é uma prévia. */
+  preview?: boolean;
 }) {
   const { t } = useI18n();
   const rule = slotRuleFromSettings(settings);
@@ -491,46 +345,58 @@ export function SlotModeNotice({
   const prep = rule.prepMinutes ?? 0;
   return (
     <aside
-      className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card p-4"
+      className="space-y-3 rounded-2xl border border-border bg-card p-4"
       aria-label={t("slots.notice.title")}
     >
-      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-        <CalendarClock className="size-5" aria-hidden />
-      </span>
-      <div className="min-w-0 flex-1 space-y-2">
-        <p className="text-sm font-bold">{t("slots.notice.title")}</p>
+      {/* Título e "Mudar" na mesma linha; as pílulas ganham a largura toda embaixo (320 px). */}
+      <div className="flex items-center gap-3">
+        <IconTile icon={CalendarClock} />
+        <p className="min-w-0 flex-1 text-sm font-bold">{t("slots.notice.title")}</p>
+        {onOpenSettings && (
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            aria-label={t("slots.notice.link")}
+            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold transition hover:border-primary/40"
+          >
+            <Settings2 className="size-4" aria-hidden />
+            <span className="max-[379px]:sr-only">{t("slots.notice.link")}</span>
+          </button>
+        )}
+      </div>
+      <div className="min-w-0 space-y-2">
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-semibold">
+          <Tag>
             {rule.mode === "literal"
               ? t("slots.mode.literal.title")
               : t("slots.notice.badge.interval", {
                   step: rule.mode === "custom" ? rule.stepMinutes : SLOT_STEP_MINUTES,
                 })}
-          </span>
-          {prep > 0 && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-[11px] font-semibold">
-              <Sparkles className="size-3 text-gold" aria-hidden />
-              {t("slots.notice.badge.prep", { minutes: prep })}
-            </span>
+          </Tag>
+          {prep > 0 && <Tag icon={Sparkles}>{t("slots.notice.badge.prep", { minutes: prep })}</Tag>}
+          {preview && (
+            <StatusBadge tone="pending" variant="dot" label={t("slots.notice.preview")} />
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {/* Diz de qual dia é o exemplo, para ligar o resumo à barra da semana. */}
           <span className="text-xs text-muted-foreground">
-            {example.long.name} · {example.long.minutes} min
+            {example.weekday !== null && (
+              <strong className="font-semibold text-foreground">
+                {t(`shop.weekday.${example.weekday}` as MessageKey)} ·{" "}
+              </strong>
+            )}
+            {example.long.name} · {t("slots.chip.minutes", { minutes: example.long.minutes })}
           </span>
-          <TimeChips times={current.list} label={t("slots.preview.listAria")} more />
+          {current.list.length > 0 ? (
+            <TimeChips times={current.list} label={t("slots.preview.listAria")} more />
+          ) : (
+            <Hint icon={AlertTriangle} tone="warning">
+              {t("slots.notice.empty")}
+            </Hint>
+          )}
         </div>
       </div>
-      {onOpenSettings && (
-        <button
-          type="button"
-          onClick={onOpenSettings}
-          className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold transition hover:border-primary/40"
-        >
-          <Settings2 className="size-4" aria-hidden />
-          {t("slots.notice.link")}
-        </button>
-      )}
     </aside>
   );
 }

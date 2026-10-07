@@ -1,23 +1,38 @@
-import { useEffect, useId, useRef, useState, type DragEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type DragEvent } from "react";
 import {
   Bell,
   Calendar,
-  Camera,
-  Check,
   ChevronRight,
-  Eye,
   Home,
   ImagePlus,
+  LogIn,
+  Maximize2,
+  Palette,
+  Pipette,
+  RotateCcw,
   Scissors,
+  Shapes,
+  ShieldCheck,
   Sparkles,
   Star,
   Trash2,
   Type,
-  Undo2,
   Upload,
+  type LucideIcon,
 } from "lucide-react";
+import {
+  ChoiceChips,
+  Field,
+  MoreDetails,
+  Notice,
+  STATE,
+  StatusBadge,
+  UnsavedBar,
+  focusFirstInvalid,
+} from "@/components/visual";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { Tables } from "@/integrations/supabase/types";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, type MessageKey } from "@/lib/i18n";
 import {
   BRAND_FONT_OPTIONS,
   BRAND_FONT_SCOPE_OPTIONS,
@@ -25,6 +40,7 @@ import {
   BRAND_LOGIN_LAYOUT_OPTIONS,
   CUSTOM_FONT_ACCEPT,
   DEFAULT_ACCENT_COLOR,
+  DEFAULT_CORNER_STYLE,
   DEFAULT_LOGIN_IMAGE,
   DEFAULT_PRIMARY_COLOR,
   HEX_COLOR_PATTERN,
@@ -33,6 +49,7 @@ import {
   brandDraftFromSettings,
   brandFontScopeClass,
   brandVariables,
+  contrastingForeground,
   isBrandDraftDirty,
   normalizeBrandFont,
   validateBrandDraft,
@@ -43,18 +60,19 @@ import { applyShopFavicon } from "@/lib/shop/favicon";
 import { persistBrandIdentity } from "@/lib/shop/branding-persist";
 import {
   analyzeFontFiles,
-  fontFaceLabel,
   inferFontFile,
   normalizeFontFaces,
   type PendingBrandFontFace,
 } from "@/lib/shop/font-files";
 import { BrandColorPicker } from "./BrandColorPicker";
 import { BrandFontFace } from "./BrandFontFace";
-import { Switch } from "@/components/ui/switch";
+import { CompactChoiceTiles } from "./settings/CompactChoiceTiles";
+import type { EditorGuard } from "./settings/GuardedEditorDialog";
 import { ServiceImageCropDialog } from "./ServiceImageCropDialog";
 import { LoginLayoutPreview } from "./LoginLayoutPreview";
 import { LoginScreenPreview } from "./LoginScreenPreview";
 import { LoginPreviewDialog } from "./LoginPreviewDialog";
+import { DesktopFitFrame, PhoneFitFrame } from "./PhoneFitFrame";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 
 type BrandIdentityEditorProps = {
@@ -65,6 +83,10 @@ type BrandIdentityEditorProps = {
   onSaved: (settings: Tables<"barbershop_settings">) => void;
   /** Quem está editando muda apenas os textos de apoio. */
   audience?: "shop" | "platform";
+  /** Proteção da janela contra fechar com mudanças não salvas. */
+  guard?: EditorGuard;
+  /** Etapa aberta primeiro (ex.: "entrada" ao trocar a foto da capa da página). */
+  initialStep?: BrandStep;
 };
 
 /**
@@ -72,8 +94,111 @@ type BrandIdentityEditorProps = {
  * Mantém o próprio rascunho e só o substitui quando os dados salvos mudam,
  * para que recargas do painel (como o relógio da demo) não apaguem a edição.
  */
-const BRAND_STEPS = ["logo", "fonte", "cores", "entrada"] as const;
-type BrandStep = (typeof BRAND_STEPS)[number];
+// Ordem de impacto: marca, cores, fonte, formato e, por fim, a tela de entrada.
+const BRAND_STEPS = ["logo", "cores", "fonte", "formato", "entrada"] as const;
+export type BrandStep = (typeof BRAND_STEPS)[number];
+
+const STEP_ICONS: Record<BrandStep, LucideIcon> = {
+  logo: ImagePlus,
+  cores: Palette,
+  fonte: Type,
+  formato: Shapes,
+  entrada: LogIn,
+};
+
+/** Combinações prontas de cor principal + destaque (valores da paleta curada). */
+const COLOR_COMBOS = [
+  { id: "classic", primary: "#292925", accent: "#8A602F", label: "brand.combo.classic" },
+  { id: "night", primary: "#111827", accent: "#C58B36", label: "brand.combo.night" },
+  { id: "petrol", primary: "#1F4E5F", accent: "#C2410C", label: "brand.combo.petrol" },
+  { id: "navy", primary: "#234E70", accent: "#B45309", label: "brand.combo.navy" },
+  { id: "moss", primary: "#3D5A40", accent: "#C58B36", label: "brand.combo.moss" },
+  { id: "wine", primary: "#9F1239", accent: "#8A602F", label: "brand.combo.wine" },
+] as const satisfies ReadonlyArray<{
+  id: string;
+  primary: string;
+  accent: string;
+  label: MessageKey;
+}>;
+
+/** Pesos da fonte com nomes simples (do mais fino ao mais grosso). */
+function weightLabel(face: { weight: number; style: string }, t: ReturnType<typeof useI18n>["t"]) {
+  const key = `brand.weight.${face.weight}` as MessageKey;
+  const base = [100, 200, 300, 400, 500, 600, 700, 800, 900].includes(face.weight)
+    ? t(key)
+    : String(face.weight);
+  return face.style === "italic" ? `${base} ${t("brand.font.italic")}` : base;
+}
+
+/** Bolinha de cor (ou xadrez para "sem fundo") dentro das pílulas. */
+function Swatch({ color, empty }: { color?: string; empty?: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`size-5 shrink-0 rounded-full border border-black/20 ${empty ? "checkerboard" : ""}`}
+      style={empty ? undefined : { backgroundColor: color }}
+    />
+  );
+}
+
+/** Mini cabeçalho com as duas cores e o botão "Agendar" pintado. */
+function ComboSketch({ primary, accent, book }: { primary: string; accent: string; book: string }) {
+  return (
+    <span className="flex flex-col gap-1.5 rounded-lg border border-black/10 bg-[#f7f5f0] p-2">
+      <span className="flex items-center">
+        <span
+          className="size-4 rounded-full border border-black/15"
+          style={{ backgroundColor: primary }}
+        />
+        <span
+          className="-ms-1.5 size-4 rounded-full border border-black/15"
+          style={{ backgroundColor: accent }}
+        />
+        <span className="ms-auto h-1.5 w-6 rounded-full" style={{ backgroundColor: accent }} />
+      </span>
+      <span
+        className="truncate rounded-md px-1 py-1 text-center text-xs font-bold"
+        style={{ backgroundColor: primary, color: contrastingForeground(primary) }}
+      >
+        {book}
+      </span>
+    </span>
+  );
+}
+
+/** Onde a fonte da marca aparece: só o nome no topo × nome e títulos (em dourado). */
+function FontScopeSketch({ scope }: { scope: "header" | "titles" }) {
+  const titles = scope === "titles";
+  return (
+    <span className="flex flex-col gap-1.5 rounded-lg border border-black/10 bg-[#f7f5f0] p-2">
+      <span className="h-2.5 w-3/4 rounded-full bg-[#8a602f]" />
+      <span className={`h-2 w-1/2 rounded-full ${titles ? "bg-[#8a602f]" : "bg-black/20"}`} />
+      <span className="h-1.5 w-full rounded-full bg-black/10" />
+      <span className={`h-2 w-2/5 rounded-full ${titles ? "bg-[#8a602f]" : "bg-black/20"}`} />
+      <span className="h-1.5 w-5/6 rounded-full bg-black/10" />
+    </span>
+  );
+}
+
+/** Barras do app coladas nas bordas × flutuantes, com espaço em volta. */
+function ChromeSketch({ floating }: { floating: boolean }) {
+  return (
+    <span className="relative block aspect-[4/3] overflow-hidden rounded-lg border border-black/10 bg-[#eeebe4]">
+      <span
+        className={`absolute bg-[#292925] ${
+          floating ? "inset-x-1.5 top-1.5 h-3 rounded-md" : "inset-x-0 top-0 h-3.5"
+        }`}
+      />
+      <span className="absolute inset-x-3 top-7 h-1.5 rounded-full bg-black/15" />
+      <span className="absolute inset-x-3 top-10 h-1.5 w-1/2 rounded-full bg-black/10" />
+      <span
+        className={`absolute bg-[#292925] ${
+          floating ? "inset-x-1.5 bottom-1.5 h-3.5 rounded-md" : "inset-x-0 bottom-0 h-4"
+        }`}
+      />
+    </span>
+  );
+}
 
 export function BrandIdentityEditor({
   shopName,
@@ -81,10 +206,14 @@ export function BrandIdentityEditor({
   mode,
   onSaved,
   audience = "shop",
+  guard,
+  initialStep = "logo",
 }: BrandIdentityEditorProps) {
   const { t } = useI18n();
   const nameId = useId();
   const taglineId = useId();
+  const formRef = useRef<HTMLFormElement>(null);
+  const isMobile = useIsMobile();
   const fileInput = useRef<HTMLInputElement>(null);
   const loginPhotoInput = useRef<HTMLInputElement>(null);
   const fontInput = useRef<HTMLInputElement>(null);
@@ -99,16 +228,26 @@ export function BrandIdentityEditor({
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Arquivo recusado (tipo ou tamanho): aparece junto do quadro que o recebeu, não na barra de salvar.
+  const [fileError, setFileError] = useState<{
+    field: "logo" | "login" | "font";
+    text: string;
+  } | null>(null);
   const [saved, setSaved] = useState(false);
   const [loginPreviewOpen, setLoginPreviewOpen] = useState(false);
-  const [step, setStep] = useState<BrandStep>("logo");
+  const [step, setStep] = useState<BrandStep>(initialStep);
+  // Erros de campo só aparecem depois da primeira tentativa de salvar.
+  const [showErrors, setShowErrors] = useState(false);
+  const [logoBgCustom, setLogoBgCustom] = useState(false);
   const bigPreviewRef = useRef<HTMLElement | null>(null);
   const [bigPreviewVisible, setBigPreviewVisible] = useState(true);
   useEffect(() => {
     const node = bigPreviewRef.current;
     if (!node || typeof IntersectionObserver === "undefined") return;
-    const observer = new IntersectionObserver(([entry]) =>
-      setBigPreviewVisible(entry.isIntersecting),
+    // A mini prévia fixa entra quando sobra menos de um terço da prévia grande à vista.
+    const observer = new IntersectionObserver(
+      ([entry]) => setBigPreviewVisible(entry.isIntersecting && entry.intersectionRatio > 0.33),
+      { threshold: [0, 0.33, 0.66, 1] },
     );
     observer.observe(node);
     return () => observer.disconnect();
@@ -162,6 +301,34 @@ export function BrandIdentityEditor({
     pendingFontFaces !== null ||
     isBrandDraftDirty(draft, settings);
   const validationError = validateBrandDraft(draft);
+  const taglineInvalid = draft.tagline.trim().length < 1 || draft.tagline.trim().length > 60;
+  // O que mudou em cada etapa: vira um ponto âmbar no trilho de etapas.
+  const savedDraft = useMemo(
+    () => brandDraftFromSettings(settings),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- recalcula só quando o salvo muda
+    [savedKey],
+  );
+  const changed = (keys: (keyof BrandDraft)[]) =>
+    keys.some((key) => JSON.stringify(draft[key]) !== JSON.stringify(savedDraft[key]));
+  const stepChanged: Record<BrandStep, boolean> = {
+    logo:
+      logoFile !== null ||
+      changed(["logo_url", "display_name", "tagline", "logo_background_color"]),
+    cores: changed(["primary_color", "accent_color"]),
+    fonte:
+      pendingFontFaces !== null ||
+      changed([
+        "font_family",
+        "font_scope",
+        "header_font_weight",
+        "header_font_style",
+        "custom_font_url",
+        "custom_font_name",
+        "custom_font_faces",
+      ]),
+    formato: changed(["corner_style", "floating_chrome"]),
+    entrada: loginImageFile !== null || changed(["login_layout", "login_image_url"]),
+  };
   const previewLogo = logoPreviewUrl ?? draft.logo_url;
   // Mostra a logo em edição no favicon, mas ao fechar o editor devolve o
   // favicon salvo da loja (e não o ícone padrão), já que o efeito do painel
@@ -192,6 +359,24 @@ export function BrandIdentityEditor({
     previewFontFaces.find((face) => face.weight === 400)?.url ??
     previewFontFaces[0]?.url ??
     draft.custom_font_url;
+  // Prévia da tela de entrada (passo "Tela de entrada"): computador em 16:10, celular reduzido.
+  const loginScreen = (
+    <LoginScreenPreview
+      framed
+      layout={draft.login_layout}
+      shopName={previewName}
+      logoUrl={previewLogo}
+      logoBackgroundColor={draft.logo_background_color}
+      loginImageUrl={previewLoginImage}
+      primaryColor={draft.primary_color}
+      accentColor={draft.accent_color}
+      fontFamily={draft.font_family}
+      customFontUrl={previewFontUrl}
+      headerFontWeight={draft.header_font_weight}
+      headerFontStyle={draft.header_font_style}
+      cornerStyle={draft.corner_style}
+    />
+  );
   const recognizedFontKind =
     fontKind ??
     (previewFontFaces.length > 1 ||
@@ -232,10 +417,10 @@ export function BrandIdentityEditor({
     if (!file) return;
     const problem = validateBrandLogo(file);
     if (problem) {
-      setError(problem);
+      setFileError({ field: "logo", text: problem });
       return;
     }
-    setError(null);
+    setFileError(null);
     setSaved(false);
     setLogoFile(file);
     setLogoPreviewUrl((current) => {
@@ -263,10 +448,10 @@ export function BrandIdentityEditor({
     if (!file) return;
     const problem = validateBrandLogo(file, "image");
     if (problem) {
-      setError(problem);
+      setFileError({ field: "login", text: problem });
       return;
     }
-    setError(null);
+    setFileError(null);
     setLoginCropSource(file);
   }
 
@@ -294,10 +479,10 @@ export function BrandIdentityEditor({
     if (!files.length) return;
     const result = analyzeFontFiles(files);
     if (result.error !== null) {
-      setError(result.error);
+      setFileError({ field: "font", text: result.error });
       return;
     }
-    setError(null);
+    setFileError(null);
     setSaved(false);
     setPendingFontFaces((current) => {
       current?.forEach((face) => URL.revokeObjectURL(face.preview_url));
@@ -348,23 +533,27 @@ export function BrandIdentityEditor({
     });
     setFontKind(null);
     setError(null);
+    setFileError(null);
     setSaved(false);
   }
 
-  async function save(event: React.FormEvent) {
-    event.preventDefault();
-    if (busy) return;
+  /** Grava a identidade; devolve `true` quando salvou (usado também por "Salvar e sair"). */
+  async function persist(): Promise<boolean> {
+    if (busy) return false;
     if (validationError) {
-      setError(validationError);
-      // Leva à etapa do campo com problema: cores e fundo da logo ficam na
-      // etapa "Cores"; nome e frase de efeito na etapa "Logo".
+      setShowErrors(true);
+      // Leva à etapa do campo com problema: cores na etapa "Cores"; nome, frase e fundo
+      // da logo na etapa "Logo e nome". Lá, o campo é marcado e recebe o foco.
       const colorsInvalid =
-        !HEX_COLOR_PATTERN.test(draft.primary_color) ||
-        !HEX_COLOR_PATTERN.test(draft.accent_color) ||
-        (draft.logo_background_color !== null &&
-          !HEX_COLOR_PATTERN.test(draft.logo_background_color));
+        !HEX_COLOR_PATTERN.test(draft.primary_color) || !HEX_COLOR_PATTERN.test(draft.accent_color);
+      const logoBgInvalid =
+        draft.logo_background_color !== null &&
+        !HEX_COLOR_PATTERN.test(draft.logo_background_color);
+      if (logoBgInvalid) setLogoBgCustom(true);
       setStep(colorsInvalid ? "cores" : "logo");
-      return;
+      setError(colorsInvalid || logoBgInvalid ? validationError : null);
+      window.requestAnimationFrame(() => focusFirstInvalid(formRef.current));
+      return false;
     }
     setBusy(true);
     setError(null);
@@ -380,18 +569,88 @@ export function BrandIdentityEditor({
       );
       onSaved(next);
       setSaved(true);
+      setShowErrors(false);
+      return true;
     } catch (err) {
       setError(friendlyAuthError(err, t("brand.save.error")));
+      return false;
     } finally {
       setBusy(false);
     }
   }
 
+  function save(event: React.FormEvent) {
+    event.preventDefault();
+    void persist();
+  }
+
+  const persistRef = useRef(persist);
+  persistRef.current = persist;
+  useEffect(() => {
+    guard?.setDirty(dirty);
+  }, [guard, dirty]);
+  useEffect(() => {
+    if (!guard) return;
+    guard.registerSave(() => persistRef.current());
+    return () => guard.registerSave(null);
+  }, [guard]);
+
+  const nextStep = BRAND_STEPS[stepIndex + 1];
+  const logoBgValue = draft.logo_background_color?.toUpperCase() ?? null;
+  const logoBgChoice: string = logoBgCustom
+    ? "custom"
+    : logoBgValue === null
+      ? "none"
+      : logoBgValue === "#FFFFFF"
+        ? "white"
+        : logoBgValue === "#000000"
+          ? "black"
+          : logoBgValue === draft.primary_color.toUpperCase()
+            ? "primary"
+            : "custom";
+  const comboValue =
+    COLOR_COMBOS.find(
+      (combo) =>
+        combo.primary === draft.primary_color.toUpperCase() &&
+        combo.accent === draft.accent_color.toUpperCase(),
+    )?.id ?? null;
+  const fontLibraryValue = previewFontUrl ? null : normalizeBrandFont(draft.font_family);
+  /** Arquivo recusado: aviso vermelho junto do quadro, com o botão que abre a escolha de novo. */
+  const fileNotice = (field: "logo" | "login" | "font") =>
+    fileError?.field === field ? (
+      <Notice
+        tone="danger"
+        title={fileError.text}
+        action={{
+          label: t(field === "font" ? "brand.file.chooseOtherFont" : "brand.file.chooseOtherImage"),
+          icon: field === "font" ? Upload : ImagePlus,
+          onClick: () =>
+            (field === "logo"
+              ? fileInput
+              : field === "login"
+                ? loginPhotoInput
+                : fontInput
+            ).current?.click(),
+        }}
+        onDismiss={() => setFileError(null)}
+      />
+    ) : null;
+
   return (
-    <form onSubmit={save} noValidate className="brand-editor space-y-6" aria-busy={busy}>
+    <form
+      ref={formRef}
+      onSubmit={save}
+      noValidate
+      className="brand-editor min-w-0 space-y-5"
+      aria-busy={busy}
+    >
       <BrandFontFace url={previewFontUrl} faces={previewFontFaces} />
-      {/* Prévia ao vivo */}
+      {/* Prévia ao vivo, com o selo de não salva / igual ao app. */}
       <section ref={bigPreviewRef} aria-label={t("brand.preview.aria")} className="space-y-2">
+        {/* Com mudança, o ponto na etapa e a barra de salvar já avisam: aqui só o "igual ao app". */}
+        <div className="flex min-h-7 justify-end">
+          {!dirty && <StatusBadge {...STATE.active} size="sm" label={t("brand.preview.same")} />}
+        </div>
         <div
           className={`brand-preview overflow-hidden rounded-[var(--panel-radius)] border border-border bg-card shadow-md ${brandFontScopeClass(draft.font_scope)} ${brandCornerClass(draft.corner_style)} ${draft.floating_chrome ? "brand-chrome-floating" : ""}`}
           style={previewStyle}
@@ -457,14 +716,13 @@ export function BrandIdentityEditor({
             ))}
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">{t("brand.preview.liveHint")}</p>
       </section>
 
       <div className="sticky -top-5 z-10 -mx-1 space-y-2 bg-card/95 px-1 pb-2 pt-3 backdrop-blur sm:-top-6">
         <div
           aria-hidden="true"
           hidden={bigPreviewVisible}
-          className={`brand-preview flex items-center gap-3 overflow-hidden rounded-[var(--panel-radius)] border border-border bg-card px-3 py-2 ${brandFontScopeClass(draft.font_scope)} ${brandCornerClass(draft.corner_style)}`}
+          className={`brand-preview me-10 flex items-center gap-3 overflow-hidden rounded-[var(--panel-radius)] border border-border bg-card px-3 py-2 ${brandFontScopeClass(draft.font_scope)} ${brandCornerClass(draft.corner_style)}`}
           style={previewStyle}
         >
           <span
@@ -485,140 +743,136 @@ export function BrandIdentityEditor({
               {draft.tagline.trim() || t("brand.preview.taglinePlaceholder")}
             </span>
           </span>
-          <span className="flex min-h-8 shrink-0 items-center rounded-lg bg-primary px-3 text-[11px] font-bold text-primary-foreground">
-            {t("brand.preview.book")}
-          </span>
         </div>
+        {/* Trilho de etapas: rola para o lado no celular; ponto âmbar = etapa alterada. */}
         <div
           role="tablist"
           aria-label={t("brand.step.aria")}
-          className="grid grid-cols-2 gap-1.5 sm:grid-cols-4"
+          className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none]"
         >
-          {BRAND_STEPS.map((id, index) => {
+          {BRAND_STEPS.map((id) => {
             const selected = step === id;
+            const Icon = STEP_ICONS[id];
             return (
               <button
                 key={id}
+                id={`${nameId}-tab-${id}`}
                 type="button"
                 role="tab"
                 aria-selected={selected}
+                aria-controls={`${nameId}-panel-${id}`}
+                tabIndex={selected ? 0 : -1}
                 onClick={() => setStep(id)}
-                className={`flex min-h-11 items-center justify-center gap-1.5 rounded-xl border px-2 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                onKeyDown={(event) => {
+                  // Padrão de abas: setas, Home e End trocam de etapa; Tab sai do trilho.
+                  const last = BRAND_STEPS.length - 1;
+                  const index = BRAND_STEPS.indexOf(id);
+                  const target =
+                    event.key === "ArrowRight"
+                      ? (index + 1) % BRAND_STEPS.length
+                      : event.key === "ArrowLeft"
+                        ? (index - 1 + BRAND_STEPS.length) % BRAND_STEPS.length
+                        : event.key === "Home"
+                          ? 0
+                          : event.key === "End"
+                            ? last
+                            : null;
+                  if (target === null) return;
+                  event.preventDefault();
+                  const nextId = BRAND_STEPS[target]!;
+                  setStep(nextId);
+                  document.getElementById(`${nameId}-tab-${nextId}`)?.focus();
+                }}
+                className={`relative flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border px-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                   selected
                     ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-background text-muted-foreground hover:text-foreground"
+                    : "border-border bg-background text-foreground hover:border-primary/40"
                 }`}
               >
-                <span aria-hidden="true">{index + 1}.</span>
-                {t(`brand.step.${id}` as const)}
+                <Icon className="size-4" aria-hidden="true" />
+                {t(`brand.stepName.${id}` as const)}
+                {stepChanged[id] && (
+                  <>
+                    <span
+                      aria-hidden
+                      className="tone-pending size-2 rounded-full bg-[color:var(--tone-line)] ring-2 ring-card"
+                    />
+                    <span className="sr-only">{t("visual.unsaved.badge")}</span>
+                  </>
+                )}
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Página de acesso */}
+      {/* Tela de entrada */}
       <section
+        id={`${nameId}-panel-entrada`}
+        role="tabpanel"
+        aria-labelledby={`${nameId}-tab-entrada`}
         className="space-y-4"
-        aria-labelledby={`${nameId}-login`}
         hidden={step !== "entrada"}
       >
-        <div>
-          <h4 id={`${nameId}-login`} className="text-sm font-bold">
-            {t("brand.login.title")}
-          </h4>
-          <p className="text-xs text-muted-foreground">{t("brand.login.hint")}</p>
+        <CompactChoiceTiles
+          legend={t("brand.login.modelAria")}
+          value={draft.login_layout}
+          onChange={(value) => update({ login_layout: value })}
+          options={BRAND_LOGIN_LAYOUT_OPTIONS.map((option) => ({
+            value: option.value,
+            label: t(option.labelKey),
+            description: t(option.hintKey),
+            media: (
+              <LoginLayoutPreview
+                compact
+                layout={option.value}
+                imageUrl={previewLoginImage}
+                logoUrl={previewLogo}
+                logoBackgroundColor={draft.logo_background_color}
+                shopName={previewName}
+              />
+            ),
+          }))}
+        />
+
+        <div className="space-y-2">
+          {/* No celular, a prévia é a tela de celular (igual ao "Celular" da tela cheia),
+              reduzida para caber inteira: sem rolagem dentro da janela que já rola. */}
+          {isMobile ? (
+            <PhoneFitFrame className="login-preview-phone mx-auto w-full max-w-[17.5rem] rounded-[1.5rem] border border-border/40 shadow-lg">
+              {loginScreen}
+            </PhoneFitFrame>
+          ) : (
+            <DesktopFitFrame className="rounded-[var(--panel-radius)]">
+              {loginScreen}
+            </DesktopFitFrame>
+          )}
+          <button
+            type="button"
+            onClick={() => setLoginPreviewOpen(true)}
+            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-semibold transition hover:border-primary/40"
+          >
+            <Maximize2 className="size-4" aria-hidden="true" />
+            {t("brand.login.fullscreen")}
+          </button>
         </div>
 
-        <div
-          role="radiogroup"
-          aria-label={t("brand.login.modelAria")}
-          className="grid gap-2 sm:grid-cols-3"
-        >
-          {BRAND_LOGIN_LAYOUT_OPTIONS.map((option) => {
-            const selected = draft.login_layout === option.value;
-            return (
-              <button
-                key={option.value}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                onClick={() => update({ login_layout: option.value })}
-                className={`login-model-option min-w-0 border p-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                  selected
-                    ? "border-primary bg-primary/5 ring-1 ring-primary/30"
-                    : "border-border bg-background hover:border-primary/40"
-                }`}
-              >
-                <LoginLayoutPreview
-                  compact
-                  layout={option.value}
-                  imageUrl={previewLoginImage}
-                  logoUrl={previewLogo}
-                  logoBackgroundColor={draft.logo_background_color}
-                  shopName={previewName}
-                />
-                <span className="mt-2 flex items-center justify-between gap-2 text-xs font-bold">
-                  {t(option.labelKey)}
-                  {selected && <Check className="size-4 text-primary" aria-hidden="true" />}
-                </span>
-                <span className="mt-1 block text-[11px] leading-snug text-muted-foreground">
-                  {t(option.hintKey)}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground">
-                {t("brand.login.realPreview")}
-              </p>
-              <p className="text-[11px] text-muted-foreground">
-                {t("brand.login.realPreviewHint")}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setLoginPreviewOpen(true)}
-              className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-3 text-xs font-bold hover:bg-muted"
-            >
-              <Eye className="size-4" aria-hidden="true" />
-              {t("brand.login.seeIt")}
-            </button>
-          </div>
-          <LoginScreenPreview
-            framed
-            layout={draft.login_layout}
-            shopName={previewName}
-            logoUrl={previewLogo}
-            logoBackgroundColor={draft.logo_background_color}
-            loginImageUrl={previewLoginImage}
-            primaryColor={draft.primary_color}
-            accentColor={draft.accent_color}
-            fontFamily={draft.font_family}
-            customFontUrl={previewFontUrl}
-            headerFontWeight={draft.header_font_weight}
-            headerFontStyle={draft.header_font_style}
-            cornerStyle={draft.corner_style}
+        {/* Foto: a atual em miniatura, Trocar e Voltar à padrão (neutro, não apaga nada). */}
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-background/60 p-3">
+          <img
+            src={previewLoginImage}
+            alt={t("brand.login.photoName")}
+            className="h-16 w-16 shrink-0 rounded-xl object-cover"
           />
-        </div>
-
-        <div className="flex flex-col gap-3 rounded-2xl border border-border bg-background p-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <Camera className="size-5" aria-hidden="true" />
-            </span>
-            <span className="min-w-0">
-              <span className="block text-sm font-bold">{t("brand.login.photo")}</span>
-              <span className="block text-xs leading-relaxed text-muted-foreground">
-                {t("brand.login.photoHint")}
+          <span className="min-w-0 flex-1 basis-32">
+            <span className="block text-sm font-bold">{t("brand.login.photoName")}</span>
+            {(draft.login_image_url || loginImageFile) && (
+              <span className="block text-sm text-muted-foreground">
+                {t("brand.login.photoCustom")}
               </span>
-            </span>
-          </div>
-          <div className="flex shrink-0 flex-wrap gap-2">
+            )}
+          </span>
+          <div className="flex w-full flex-wrap gap-2 sm:w-auto">
             <input
               ref={loginPhotoInput}
               type="file"
@@ -633,9 +887,9 @@ export function BrandIdentityEditor({
             <button
               type="button"
               onClick={() => loginPhotoInput.current?.click()}
-              className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-3 text-xs font-bold hover:bg-muted"
+              className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-semibold transition hover:border-primary/40 sm:flex-none"
             >
-              <ImagePlus className="size-4" />
+              <ImagePlus className="size-4" aria-hidden="true" />
               {draft.login_image_url || loginImageFile
                 ? t("brand.login.changePhoto")
                 : t("brand.login.uploadPhoto")}
@@ -644,21 +898,25 @@ export function BrandIdentityEditor({
               <button
                 type="button"
                 onClick={removeLoginImage}
-                className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-3 text-xs font-bold text-destructive hover:bg-destructive/10"
+                className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-semibold transition hover:border-primary/40 sm:flex-none"
               >
-                <Trash2 className="size-4" /> {t("brand.login.default")}
+                <RotateCcw className="size-4" aria-hidden="true" /> {t("brand.login.backToDefault")}
               </button>
             )}
           </div>
         </div>
+        {fileNotice("login")}
       </section>
 
       {/* Logo e nome */}
-      <section className="space-y-4" aria-labelledby={`${nameId}-section`} hidden={step !== "logo"}>
-        <h4 id={`${nameId}-section`} className="text-sm font-bold">
-          {t("brand.logo.section")}
-        </h4>
-        <div className="grid gap-4 sm:grid-cols-[auto_1fr] sm:items-start">
+      <section
+        id={`${nameId}-panel-logo`}
+        role="tabpanel"
+        aria-labelledby={`${nameId}-tab-logo`}
+        className="space-y-5"
+        hidden={step !== "logo"}
+      >
+        <div className="grid gap-4 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-start">
           <div
             onDragOver={(event) => {
               event.preventDefault();
@@ -670,26 +928,30 @@ export function BrandIdentityEditor({
               dragging ? "border-primary bg-primary/5" : "border-border bg-background/60"
             }`}
           >
+            {/* O quadro inteiro é o botão; o rótulo fica sempre à vista (também no toque). */}
             <button
               type="button"
               onClick={() => fileInput.current?.click()}
               aria-label={previewLogo ? t("brand.logo.changeAria") : t("brand.logo.chooseAria")}
-              className="group relative flex size-28 items-center justify-center overflow-hidden rounded-2xl border border-border bg-white shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex flex-col items-center gap-2 rounded-2xl p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              {previewLogo ? (
-                <img
-                  src={previewLogo}
-                  alt={t("brand.logo.currentAlt")}
-                  className="size-full object-contain p-2"
-                />
-              ) : (
-                <span className="flex flex-col items-center gap-1 text-muted-foreground">
-                  <ImagePlus className="size-7" />
-                  <span className="text-[11px] font-semibold">{t("brand.logo.none")}</span>
-                </span>
-              )}
-              <span className="absolute inset-x-0 bottom-0 bg-black/60 py-1 text-[11px] font-bold text-white opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100">
-                {previewLogo ? t("brand.logo.change") : t("brand.logo.choose")}
+              <span
+                className="flex size-28 items-center justify-center overflow-hidden rounded-2xl border border-border shadow-sm"
+                style={{ backgroundColor: draft.logo_background_color || "#ffffff" }}
+              >
+                {previewLogo ? (
+                  <img
+                    src={previewLogo}
+                    alt={t("brand.logo.currentAlt")}
+                    className="size-full object-contain p-2"
+                  />
+                ) : (
+                  <ImagePlus className="size-8 text-muted-foreground" aria-hidden="true" />
+                )}
+              </span>
+              <span className="flex items-center gap-1.5 text-sm font-semibold">
+                <ImagePlus className="size-4 text-gold" aria-hidden="true" />
+                {previewLogo ? t("brand.logo.tapChange") : t("brand.logo.tapChoose")}
               </span>
             </button>
             <input
@@ -703,476 +965,397 @@ export function BrandIdentityEditor({
                 event.target.value = "";
               }}
             />
-            <div className="flex flex-wrap justify-center gap-1.5">
+            {previewLogo && (
               <button
                 type="button"
-                onClick={() => fileInput.current?.click()}
-                className="flex min-h-11 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs font-bold hover:bg-muted"
+                onClick={removeLogo}
+                className="flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold text-destructive transition hover:bg-destructive/10"
               >
-                <ImagePlus className="size-3.5" />
-                {previewLogo ? t("brand.logo.change") : t("brand.logo.choose")}
+                <Trash2 className="size-4" aria-hidden="true" />
+                {t("brand.common.remove")}
               </button>
-              {previewLogo && (
-                <button
-                  type="button"
-                  onClick={removeLogo}
-                  className="flex min-h-11 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs font-bold text-destructive hover:bg-destructive/10"
-                >
-                  <Trash2 className="size-3.5" />
-                  {t("brand.common.remove")}
-                </button>
-              )}
-            </div>
-            <p className="max-w-[11rem] text-[11px] leading-snug text-muted-foreground">
-              {t("brand.logo.hint")}
+            )}
+            <p className="max-w-[12rem] text-sm text-muted-foreground">
+              {t("brand.logo.hintShort")}
             </p>
           </div>
+          {fileError?.field === "logo" && (
+            <div className="sm:col-span-2 sm:row-start-2">{fileNotice("logo")}</div>
+          )}
 
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <label htmlFor={nameId} className="text-xs font-semibold text-muted-foreground">
-                {t("brand.name.label")}
-              </label>
-              <input
-                id={nameId}
-                maxLength={80}
-                value={draft.display_name}
-                onChange={(event) => update({ display_name: event.target.value })}
-                placeholder={shopName}
-                className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              />
-              <p className="text-xs text-muted-foreground">
-                {t("brand.name.emptyHint", { name: shopName })}
-              </p>
-            </div>
-            <div className="space-y-1.5">
-              <label htmlFor={taglineId} className="text-xs font-semibold text-muted-foreground">
-                {t("brand.tagline.label")}
-              </label>
-              <input
-                id={taglineId}
-                aria-required="true"
-                maxLength={60}
-                value={draft.tagline}
-                onChange={(event) => update({ tagline: event.target.value })}
-                placeholder="Club & Lounge"
-                className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              />
-              <p className="text-right text-[11px] text-muted-foreground">
-                {draft.tagline.length}/60
-              </p>
-            </div>
+          <div className="min-w-0 space-y-4">
+            <Field id={nameId} label={t("brand.name.label")}>
+              {(props) => (
+                <input
+                  {...props}
+                  maxLength={80}
+                  value={draft.display_name}
+                  onChange={(event) => update({ display_name: event.target.value })}
+                  placeholder={shopName}
+                  className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+              )}
+            </Field>
+            <Field
+              id={taglineId}
+              required
+              label={
+                <>
+                  {t("brand.tagline.label")}
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    {t("brand.tagline.required")}
+                  </span>
+                </>
+              }
+              hint={draft.tagline.length >= 48 ? `${draft.tagline.length}/60` : undefined}
+              error={showErrors && taglineInvalid ? t("brand.validate.tagline") : undefined}
+            >
+              {(props) => (
+                <input
+                  {...props}
+                  maxLength={60}
+                  value={draft.tagline}
+                  onChange={(event) => update({ tagline: event.target.value })}
+                  placeholder={t("brand.tagline.placeholder")}
+                  className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+              )}
+            </Field>
           </div>
+        </div>
+
+        {/* Fundo da logo: escolhas rápidas com amostra; "Outra cor" abre o seletor completo. */}
+        <div className="space-y-3">
+          <ChoiceChips
+            label={t("brand.logoBg.title")}
+            value={logoBgChoice}
+            onChange={(choice) => {
+              if (choice === "custom") {
+                setLogoBgCustom(true);
+                return;
+              }
+              setLogoBgCustom(false);
+              update({
+                logo_background_color:
+                  choice === "none"
+                    ? null
+                    : choice === "white"
+                      ? "#FFFFFF"
+                      : choice === "black"
+                        ? "#000000"
+                        : draft.primary_color.toUpperCase(),
+              });
+            }}
+            options={[
+              { value: "none", label: t("brand.color.noBackground"), media: <Swatch empty /> },
+              { value: "white", label: t("brand.logoBg.white"), media: <Swatch color="#FFFFFF" /> },
+              {
+                value: "primary",
+                label: t("brand.colors.primary"),
+                media: <Swatch color={draft.primary_color} />,
+              },
+              { value: "black", label: t("brand.logoBg.black"), media: <Swatch color="#000000" /> },
+              { value: "custom", label: t("brand.color.other"), icon: Pipette },
+            ]}
+          />
+          {logoBgChoice === "custom" && (
+            <BrandColorPicker
+              label={t("brand.logoBg.title")}
+              value={draft.logo_background_color ?? ""}
+              defaultValue=""
+              allowEmpty
+              sampleText={t("brand.logoBg.sample")}
+              onChange={(value) => update({ logo_background_color: value || null })}
+            />
+          )}
         </div>
       </section>
 
-      {/* Fonte */}
-      <section className="space-y-4" aria-labelledby={`${nameId}-font`} hidden={step !== "fonte"}>
-        <div className="flex items-start gap-2">
-          <Type className="mt-0.5 size-4 text-primary" aria-hidden="true" />
-          <div>
-            <h4 id={`${nameId}-font`} className="text-sm font-bold">
-              {t("brand.font.title")}
-            </h4>
-            <p className="text-xs text-muted-foreground">{t("brand.font.hint")}</p>
-          </div>
-        </div>
+      {/* Fonte: biblioteca primeiro (a escolha mais comum), cada uma com o nome da barbearia. */}
+      <section
+        id={`${nameId}-panel-fonte`}
+        role="tabpanel"
+        aria-labelledby={`${nameId}-tab-fonte`}
+        className="space-y-5"
+        hidden={step !== "fonte"}
+      >
+        <CompactChoiceTiles
+          legend={t("brand.font.libraryAria")}
+          showLegend
+          columns={2}
+          value={fontLibraryValue}
+          onChange={(value) => selectLibraryFont(value)}
+          options={BRAND_FONT_OPTIONS.map((font) => ({
+            value: font.value,
+            label: font.label,
+            description: t(font.hintKey),
+            media: (
+              <span
+                className="block truncate rounded-lg bg-background px-2 py-2 text-lg font-extrabold leading-tight text-foreground"
+                style={{ fontFamily: font.stack }}
+              >
+                {previewName}
+              </span>
+            ),
+          }))}
+        />
 
-        <div className="space-y-2">
-          <p className="text-xs font-semibold text-muted-foreground">
-            {t("brand.font.whereLabel")}
-          </p>
-          <div
-            role="radiogroup"
-            aria-label={t("brand.font.whereAria")}
-            className="grid gap-2 sm:grid-cols-2"
-          >
-            {BRAND_FONT_SCOPE_OPTIONS.map((scope) => {
-              const selected = draft.font_scope === scope.value;
-              return (
-                <button
-                  key={scope.value}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  onClick={() => update({ font_scope: scope.value })}
-                  className={`min-h-16 rounded-2xl border px-4 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                    selected
-                      ? "border-primary bg-primary/5 ring-1 ring-primary/30"
-                      : "border-border bg-background hover:border-primary/40"
-                  }`}
-                >
-                  <span className="flex items-center justify-between gap-2 text-sm font-bold">
-                    {t(scope.labelKey)}
-                    {selected && <Check className="size-4 text-primary" aria-hidden="true" />}
-                  </span>
-                  <span className="mt-1 block text-[11px] leading-snug text-muted-foreground">
-                    {t(scope.hintKey)}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <CompactChoiceTiles
+          legend={t("brand.font.whereLabel")}
+          showLegend
+          columns={2}
+          value={draft.font_scope}
+          onChange={(value) => update({ font_scope: value })}
+          options={BRAND_FONT_SCOPE_OPTIONS.map((scope) => ({
+            value: scope.value,
+            label: t(scope.labelKey),
+            description: t(scope.hintKey),
+            media: <FontScopeSketch scope={scope.value} />,
+          }))}
+        />
 
-        <div className="rounded-2xl border border-border bg-background/70 p-3" style={previewStyle}>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-bold">{t("brand.font.upload")}</p>
-              <p className="text-[11px] text-muted-foreground">{t("brand.font.uploadHint")}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => fontInput.current?.click()}
-              className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-4 text-xs font-bold hover:bg-muted"
-            >
-              <Upload className="size-4" />
-              {previewFontUrl ? t("brand.font.changeFiles") : t("brand.font.chooseFiles")}
-            </button>
-          </div>
-          <input
-            ref={fontInput}
-            type="file"
-            accept={CUSTOM_FONT_ACCEPT}
-            multiple
-            className="sr-only"
-            tabIndex={-1}
-            onChange={(event) => {
-              acceptFonts(Array.from(event.target.files ?? []));
-              event.target.value = "";
+        <div style={previewStyle}>
+          <ChoiceChips
+            label={t("brand.font.weightTitle")}
+            value={`${draft.header_font_weight}-${draft.header_font_style}`}
+            onChange={(value) => {
+              const [weight, style] = value.split("-");
+              update({
+                header_font_weight: Number(weight),
+                header_font_style: style === "italic" ? "italic" : "normal",
+              });
             }}
-          />
-          {previewFontUrl && (
-            <div className="mt-3 rounded-xl border border-primary/25 bg-primary/5 px-3 py-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="truncate text-xs font-bold">
-                      {draft.custom_font_name || t("brand.font.customFallback")}
-                    </p>
-                    <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
-                      {recognizedFontKind === "family"
-                        ? t("brand.font.familyDetected")
-                        : t("brand.font.single")}
-                    </span>
-                  </div>
-                  <p className="mt-0.5 text-[11px] text-muted-foreground">
-                    {previewFontFaces.length > 1
-                      ? t("brand.font.variations", { count: previewFontFaces.length })
-                      : recognizedFontKind === "family"
-                        ? t("brand.font.variableDetected")
-                        : t("brand.font.singleHint")}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={removeCustomFont}
-                  className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg px-2 text-xs font-bold text-destructive hover:bg-destructive/10"
-                >
-                  <Trash2 className="size-3.5" />
-                  {t("brand.common.remove")}
-                </button>
-              </div>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {previewFontFaces.map((face) => (
-                  <span
-                    key={`${face.file_name}-${face.weight}-${face.style}`}
-                    title={face.file_name}
-                    className="rounded-lg border border-border bg-card px-2 py-1 text-[10px] font-semibold text-muted-foreground"
-                  >
-                    {fontFaceLabel(face)}
-                  </span>
-                ))}
-              </div>
-              <div className="mt-2 min-w-0">
-                <p
-                  className="mt-1 truncate text-base font-bold"
-                  style={{ fontFamily: "var(--brand-font)" }}
-                >
-                  {previewName}
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground">
-              {t("brand.font.weightTitle")}
-            </p>
-            <p className="text-[11px] text-muted-foreground">{t("brand.font.weightHint")}</p>
-          </div>
-          <div
-            role="radiogroup"
-            aria-label={t("brand.font.weightAria")}
-            className="flex flex-wrap gap-2"
-            style={previewStyle}
-          >
-            {headerFaceOptions.map((face) => {
-              const selected =
-                draft.header_font_weight === face.weight && draft.header_font_style === face.style;
-              return (
-                <button
-                  key={`${face.weight}-${face.style}`}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  onClick={() =>
-                    update({
-                      header_font_weight: face.weight,
-                      header_font_style: face.style,
-                    })
-                  }
-                  className={`min-h-10 rounded-xl border px-3 text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                    selected
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border bg-background text-foreground hover:border-primary/40"
-                  }`}
+            options={headerFaceOptions.map((face) => ({
+              value: `${face.weight}-${face.style}`,
+              label: weightLabel(face, t),
+              media: (
+                <span
+                  aria-hidden="true"
+                  className="text-base leading-none"
                   style={{
                     fontFamily: "var(--brand-font)",
                     fontWeight: face.weight,
                     fontStyle: face.style,
                   }}
                 >
-                  {fontFaceLabel(face)}
-                </button>
-              );
-            })}
-          </div>
+                  Aa
+                </span>
+              ),
+            }))}
+          />
         </div>
 
-        <div>
-          <p className="mb-2 text-xs font-semibold text-muted-foreground">
-            {t("brand.font.library")}
-          </p>
-          <div
-            role="radiogroup"
-            aria-label={t("brand.font.libraryAria")}
-            className="grid gap-2 sm:grid-cols-2"
-          >
-            {BRAND_FONT_OPTIONS.map((font) => {
-              const selected =
-                !previewFontUrl && normalizeBrandFont(draft.font_family) === font.value;
-              return (
-                <button
-                  key={font.value}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  onClick={() => selectLibraryFont(font.value)}
-                  className={`flex min-h-16 items-center gap-3 rounded-2xl border px-3 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                    selected
-                      ? "border-primary bg-primary/5 ring-1 ring-primary/30"
-                      : "border-border bg-background hover:border-primary/40"
-                  }`}
-                  style={{ fontFamily: font.stack }}
-                >
-                  <span
-                    className={`flex size-11 shrink-0 items-center justify-center rounded-xl text-xl font-extrabold ${selected ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}
-                    aria-hidden="true"
+        {/* Fonte própria: opção avançada, recolhida. */}
+        <MoreDetails
+          summary={t("brand.font.own")}
+          icon={Upload}
+          defaultOpen={Boolean(previewFontUrl)}
+        >
+          <div className="space-y-3" style={previewStyle}>
+            <button
+              type="button"
+              onClick={() => fontInput.current?.click()}
+              className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-semibold transition hover:border-primary/40 sm:w-auto"
+            >
+              <Upload className="size-4" aria-hidden="true" />
+              {previewFontUrl ? t("brand.font.changeFiles") : t("brand.font.chooseFiles")}
+            </button>
+            <input
+              ref={fontInput}
+              type="file"
+              accept={CUSTOM_FONT_ACCEPT}
+              multiple
+              className="sr-only"
+              tabIndex={-1}
+              onChange={(event) => {
+                acceptFonts(Array.from(event.target.files ?? []));
+                event.target.value = "";
+              }}
+            />
+            {fileNotice("font")}
+            {previewFontUrl && (
+              <div className="space-y-2 rounded-xl border border-border bg-background/60 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <StatusBadge
+                    {...STATE.active}
+                    label={
+                      !hasVariableFont && previewFontFaces.length <= 1
+                        ? t("brand.font.loadedOne")
+                        : t("brand.font.loadedMany", {
+                            count: hasVariableFont ? 9 : previewFontFaces.length,
+                          })
+                    }
+                  />
+                  <button
+                    type="button"
+                    onClick={removeCustomFont}
+                    className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold text-destructive transition hover:bg-destructive/10"
                   >
-                    Aa
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-bold">{font.label}</span>
-                    <span className="block text-[11px] leading-snug text-muted-foreground">
-                      {t(font.hintKey)}
-                    </span>
-                  </span>
-                  {selected && (
-                    <Check className="size-4 shrink-0 text-primary" aria-hidden="true" />
-                  )}
-                </button>
-              );
-            })}
+                    <Trash2 className="size-4" aria-hidden="true" />
+                    {t("brand.common.remove")}
+                  </button>
+                </div>
+                <p
+                  className="truncate text-lg font-bold"
+                  style={{ fontFamily: "var(--brand-font)" }}
+                  title={draft.custom_font_name || t("brand.font.customFallback")}
+                >
+                  {previewName}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {draft.custom_font_name || t("brand.font.customFallback")}
+                  {recognizedFontKind === "family" ? "" : ` · ${t("brand.font.single")}`}
+                </p>
+              </div>
+            )}
           </div>
-        </div>
+        </MoreDetails>
       </section>
 
-      {/* Cantos */}
+      {/* Cores: combinações prontas primeiro; depois, cada cor. */}
       <section
-        className="space-y-3"
-        aria-labelledby={`${nameId}-corners`}
+        id={`${nameId}-panel-cores`}
+        role="tabpanel"
+        aria-labelledby={`${nameId}-tab-cores`}
+        className="space-y-5"
         hidden={step !== "cores"}
       >
-        <div>
-          <h4 id={`${nameId}-corners`} className="text-sm font-bold">
-            {t("brand.corners.title")}
-          </h4>
-          <p className="text-xs text-muted-foreground">{t("brand.corners.hint")}</p>
-        </div>
-        <div
-          role="radiogroup"
-          aria-label={t("brand.corners.aria")}
-          className="grid gap-2 sm:grid-cols-3"
-        >
-          {BRAND_CORNER_OPTIONS.map((option) => {
-            const selected = draft.corner_style === option.value;
-            return (
-              <button
-                key={option.value}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                onClick={() => update({ corner_style: option.value })}
-                className={`min-h-28 border px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                  selected
-                    ? "border-primary bg-primary/5 ring-1 ring-primary/30"
-                    : "border-border bg-background hover:border-primary/40"
-                }`}
-                style={{ borderRadius: option.panelRadius }}
-              >
-                <span className="mb-3 flex items-center gap-1.5" aria-hidden="true">
-                  <span
-                    className="h-7 flex-1 border border-primary/50 bg-primary/10"
-                    style={{ borderRadius: option.controlRadius }}
-                  />
-                  <span
-                    className="h-7 w-12 bg-primary"
-                    style={{ borderRadius: option.buttonRadius }}
-                  />
-                </span>
-                <span className="flex items-center justify-between gap-2 text-xs font-bold">
-                  {t(option.labelKey)}
-                  {selected && <Check className="size-4 text-primary" aria-hidden="true" />}
-                </span>
-                <span className="mt-1 block text-[11px] leading-snug text-muted-foreground">
-                  {t(option.hintKey)}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </section>
+        <CompactChoiceTiles
+          legend={t("brand.combo.title")}
+          showLegend
+          value={comboValue}
+          onChange={(id) => {
+            const combo = COLOR_COMBOS.find((item) => item.id === id);
+            if (combo) update({ primary_color: combo.primary, accent_color: combo.accent });
+          }}
+          options={COLOR_COMBOS.map((combo) => ({
+            value: combo.id,
+            label: t(combo.label),
+            media: (
+              <ComboSketch
+                primary={combo.primary}
+                accent={combo.accent}
+                book={t("brand.preview.book")}
+              />
+            ),
+          }))}
+        />
 
-      {/* Estrutura do app */}
-      <section className="space-y-3" aria-labelledby={`${nameId}-chrome`} hidden={step !== "cores"}>
-        <div>
-          <h4 id={`${nameId}-chrome`} className="text-sm font-bold">
-            {t("brand.chrome.title")}
-          </h4>
-          <p className="text-xs text-muted-foreground">{t("brand.chrome.hint")}</p>
-        </div>
-        <label className="flex min-h-16 cursor-pointer items-center justify-between gap-4 rounded-2xl border border-border bg-background px-4 py-3">
-          <span className="min-w-0">
-            <span className="block text-sm font-bold">{t("brand.chrome.floating")}</span>
-            <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">
-              {t("brand.chrome.floatingHint")}
-            </span>
-          </span>
-          <Switch
-            checked={draft.floating_chrome}
-            onCheckedChange={(checked) => update({ floating_chrome: checked })}
-            aria-label={t("brand.chrome.floatingAria")}
-          />
-        </label>
-      </section>
-
-      {/* Cores */}
-      <section className="space-y-3" aria-labelledby={`${nameId}-colors`} hidden={step !== "cores"}>
-        <div>
-          <h4 id={`${nameId}-colors`} className="text-sm font-bold">
-            {t("brand.colors.title")}
-          </h4>
-          <p className="text-xs text-muted-foreground">{t("brand.colors.hint")}</p>
-          <p className="mt-2 rounded-xl border border-emerald-600/20 bg-emerald-600/10 px-3 py-2 text-[11px] font-semibold leading-relaxed text-emerald-800 dark:text-emerald-300">
-            {t("brand.colors.contrast")}
-          </p>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <BrandColorPicker
-            label={t("brand.colors.primary")}
-            description={t("brand.colors.primaryHint")}
-            value={draft.primary_color}
-            defaultValue={DEFAULT_PRIMARY_COLOR}
-            onChange={(value) => update({ primary_color: value })}
-          />
-          <BrandColorPicker
-            label={t("brand.colors.accent")}
-            description={t("brand.colors.accentHint")}
-            value={draft.accent_color}
-            defaultValue={DEFAULT_ACCENT_COLOR}
-            sampleText={t("brand.colors.vipSample")}
-            onChange={(value) => update({ accent_color: value })}
-          />
-        </div>
-      </section>
-
-      {/* Fundo da logo */}
-      <section className="space-y-3" aria-labelledby={`${nameId}-logo-bg`} hidden={step !== "logo"}>
-        <div>
-          <h4 id={`${nameId}-logo-bg`} className="text-sm font-bold">
-            {t("brand.logoBg.title")}
-          </h4>
-          <p className="text-xs text-muted-foreground">{t("brand.logoBg.hint")}</p>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <BrandColorPicker
-            label={t("brand.logoBg.title")}
-            description={t("brand.logoBg.pickerHint")}
-            value={draft.logo_background_color ?? ""}
-            defaultValue=""
-            allowEmpty
-            sampleText={t("brand.logoBg.sample")}
-            onChange={(value) => update({ logo_background_color: value || null })}
-          />
-        </div>
-      </section>
-
-      {stepIndex < BRAND_STEPS.length - 1 && (
-        <button
-          type="button"
-          onClick={() => setStep(BRAND_STEPS[stepIndex + 1])}
-          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 text-xs font-bold hover:bg-muted"
-        >
-          {t("brand.step.next", { step: t(`brand.step.${BRAND_STEPS[stepIndex + 1]}` as const) })}
-          <ChevronRight className="size-4" aria-hidden="true" />
-        </button>
-      )}
-
-      {/* Ações */}
-      <div className="brand-editor-actions sticky bottom-2 z-10 space-y-2 rounded-2xl border border-border bg-card/95 p-3 shadow-lg backdrop-blur">
-        {error && (
-          <p role="alert" className="text-xs font-semibold text-destructive">
-            {error}
-          </p>
-        )}
-        <div className="flex items-center justify-between gap-3">
-          <p role="status" className="min-w-0 truncate text-xs font-semibold text-muted-foreground">
-            {busy
-              ? t("brand.save.saving")
-              : dirty
-                ? t("brand.save.unsaved")
-                : saved
-                  ? t("brand.save.saved")
-                  : t("brand.save.allSaved")}
-          </p>
-          <div className="flex shrink-0 gap-2">
-            {dirty && !busy && (
-              <button
-                type="button"
-                onClick={discard}
-                className="flex min-h-11 items-center gap-1.5 rounded-xl border border-border bg-background px-3 text-xs font-bold hover:bg-muted"
-              >
-                <Undo2 className="size-4" />
-                {t("brand.save.discard")}
-              </button>
-            )}
-            <button
-              type="submit"
-              disabled={busy || !dirty}
-              className="flex min-h-11 items-center gap-1.5 rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
-            >
-              <Check className="size-4" />
-              {busy ? t("brand.save.saving") : t("brand.save.submit")}
-            </button>
+        <div className="space-y-3">
+          <p className="text-sm font-bold">{t("brand.colors.custom")}</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <BrandColorPicker
+              label={t("brand.colors.primary")}
+              description={t("brand.colors.primaryShort")}
+              value={draft.primary_color}
+              defaultValue={DEFAULT_PRIMARY_COLOR}
+              onChange={(value) => update({ primary_color: value })}
+            />
+            <BrandColorPicker
+              label={t("brand.colors.accent")}
+              description={t("brand.colors.accentShort")}
+              value={draft.accent_color}
+              defaultValue={DEFAULT_ACCENT_COLOR}
+              sampleText={t("brand.colors.vipSample")}
+              onChange={(value) => update({ accent_color: value })}
+            />
           </div>
         </div>
-      </div>
+
+        <div className="space-y-2">
+          <StatusBadge tone="success" icon={ShieldCheck} label={t("brand.colors.readingSafe")} />
+          <MoreDetails>
+            <p className="text-sm text-muted-foreground">{t("brand.colors.contrast")}</p>
+          </MoreDetails>
+        </div>
+      </section>
+
+      {/* Formato: cantos e barras, em cartões ilustrados. */}
+      <section
+        id={`${nameId}-panel-formato`}
+        role="tabpanel"
+        aria-labelledby={`${nameId}-tab-formato`}
+        className="space-y-5"
+        hidden={step !== "formato"}
+      >
+        <CompactChoiceTiles
+          legend={t("brand.corners.title")}
+          showLegend
+          value={draft.corner_style}
+          onChange={(value) => update({ corner_style: value })}
+          options={BRAND_CORNER_OPTIONS.map((option) => ({
+            value: option.value,
+            label: t(option.labelKey),
+            note: option.value === DEFAULT_CORNER_STYLE ? t("brand.corner.defaultNote") : undefined,
+            description: t(option.hintKey),
+            media: (
+              <span
+                className="flex flex-col gap-1.5 border border-border bg-background p-2"
+                style={{ borderRadius: option.panelRadius }}
+              >
+                <span
+                  className="h-5 border border-primary/50 bg-primary/10"
+                  style={{ borderRadius: option.controlRadius }}
+                />
+                <span
+                  className="h-5 w-2/3 bg-primary"
+                  style={{ borderRadius: option.buttonRadius }}
+                />
+              </span>
+            ),
+          }))}
+        />
+        <CompactChoiceTiles
+          legend={t("brand.chrome.title")}
+          showLegend
+          columns={2}
+          value={draft.floating_chrome ? "floating" : "attached"}
+          onChange={(value) => update({ floating_chrome: value === "floating" })}
+          options={[
+            {
+              value: "attached",
+              label: t("brand.chrome.attached"),
+              note: t("brand.corner.defaultNote"),
+              media: <ChromeSketch floating={false} />,
+            },
+            {
+              value: "floating",
+              label: t("brand.chrome.floatingTile"),
+              description: t("brand.chrome.floatingAria"),
+              media: <ChromeSketch floating />,
+            },
+          ]}
+        />
+      </section>
+
+      {error && validationError && <Notice tone="danger" title={error} />}
+
+      {nextStep && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => setStep(nextStep)}
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold text-muted-foreground transition hover:text-foreground"
+          >
+            {t("brand.step.next", { step: t(`brand.stepName.${nextStep}` as const) })}
+            <ChevronRight className="size-4" aria-hidden="true" />
+          </button>
+        </div>
+      )}
+
+      {/* Salvar: barra fixa só quando há mudança, com o resultado embutido. */}
+      <UnsavedBar
+        dirty={dirty}
+        saving={busy}
+        state={busy ? "saving" : saved ? "saved" : error && !validationError ? "error" : null}
+        stateText={saved ? t("brand.save.saved") : (error ?? undefined)}
+        onSave={() => void persist()}
+        onDiscard={discard}
+        saveLabel={t("brand.save.submit")}
+      />
       <ServiceImageCropDialog
         file={loginCropSource}
-        title={t("brand.loginCrop.title")}
+        title={t("brand.loginCrop.titleEntry")}
         description={t("brand.loginCrop.description")}
         imageAlt={t("brand.loginCrop.alt")}
         outputName="login-1x1.webp"

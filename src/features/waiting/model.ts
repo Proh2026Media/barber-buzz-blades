@@ -1,4 +1,4 @@
-import { getLocale, INTL_LOCALE, t, type MessageKey } from "../../lib/i18n/index.ts";
+import { t, type MessageKey } from "../../lib/i18n/index.ts";
 
 export type SlotWait = {
   id: string;
@@ -42,21 +42,10 @@ export function blocksSlot(w: SlotWait, now: Date) {
     (Date.parse(w.hold_until) > +now || (w.has_interest && Date.parse(w.claim_until) > +now))
   );
 }
-export function remaining(deadline: string, now: Date) {
-  const seconds = Math.max(0, Math.ceil((Date.parse(deadline) - +now) / 1000));
-  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
-}
-export function cutoffExample(cutoff: number) {
-  const locale = INTL_LOCALE[getLocale()];
-  const display = (minutes: number) => {
-    const date = new Date(2026, 0, 2, 15, -minutes);
-    const time = date.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
-    return date.getDate() === 1 ? t("wait.cutoff.prevDay", { time }) : time;
-  };
-  return t("wait.cutoff.example", { start: display(cutoff + 15), end: display(cutoff) });
-}
 const eventKinds = ["exclusive", "expired", "restored", "disabled", "claimed", "left"];
-/** Texto do aviso no idioma atual; tipos desconhecidos aparecem como vieram. */
+/** Texto do aviso no idioma atual; tipo desconhecido vira um aviso genérico (nunca o código cru). */
 export function eventLabel(kind: string) {
-  return eventKinds.includes(kind) ? t(`wait.event.${kind}` as MessageKey) : kind;
+  return eventKinds.includes(kind)
+    ? t(`wait.event.${kind}` as MessageKey)
+    : t("wait.event.unknown");
 }

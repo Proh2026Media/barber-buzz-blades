@@ -1,454 +1,406 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { Activity } from "lucide-react";
+  CalendarClock,
+  ChevronRight,
+  Gauge,
+  Plus,
+  RefreshCw,
+  ShieldCheck,
+  Store,
+  Trophy,
+  Users,
+} from "lucide-react";
+import {
+  EmptyState,
+  Hint,
+  LoadingState,
+  SectionHeader,
+  SegmentBar,
+  StatTile,
+  StatusBadge,
+} from "@/components/visual";
 import type { Tables } from "@/integrations/supabase/types";
 import { useI18n } from "@/lib/i18n";
-
-type MembershipRow = Pick<Tables<"memberships">, "barbershop_id" | "role" | "user_id">;
-
-/** Cor da série principal: marca na demonstração, grafite do tema no painel real. */
-const PRIMARY_SERIES = "var(--brand-primary, var(--primary))";
-const GOLD_SERIES = "var(--gold)";
-
-/** Tooltip dos gráficos acompanha o modo de canto (é HTML, aceita variável CSS). */
-const chartTooltipStyle = {
-  borderRadius: "var(--control-radius)",
-  border: "1px solid var(--border)",
-  background: "var(--card)",
-};
-
-/** Lê o --control-radius (rem ou px) do elemento para os cantos das barras em SVG. */
-function readBarRadius(element: HTMLElement | null) {
-  if (!element) return 6;
-  const raw = getComputedStyle(element).getPropertyValue("--control-radius").trim();
-  const value = Number.parseFloat(raw);
-  if (!Number.isFinite(value)) return 6;
-  const px = raw.endsWith("px") ? value : value * 16;
-  return Math.min(8, Math.round(px * 0.45));
-}
-
-type ShopTickProps = {
-  x?: number;
-  y?: number;
-  width?: number;
-  visibleTicksCount?: number;
-  payload?: { value?: string };
-};
-
-/** Rótulo do eixo cortado pela largura disponível por barra, não por um limite fixo. */
-function ShopNameTick({ x = 0, y = 0, width = 0, visibleTicksCount = 1, payload }: ShopTickProps) {
-  const text = String(payload?.value ?? "");
-  const max = Math.max(4, Math.floor(width / Math.max(visibleTicksCount, 1) / 6.5));
-  return (
-    <text x={x} y={y + 12} textAnchor="middle" fontSize={11} fill="currentColor">
-      {text.length > max ? `${text.slice(0, max - 1)}…` : text}
-    </text>
-  );
-}
+import {
+  SHOP_STATUS,
+  activeShopsWithoutAdmin,
+  countByShop,
+  countsFor,
+  historyMonths,
+  shopsCreatedByMonth,
+  uniquePeople,
+  type MembershipRow,
+} from "./shopStats";
+import type { ShopFilter } from "./tabs";
 
 type PlatformDashboardProps = {
   shops: Tables<"barbershops">[];
   memberships: MembershipRow[];
-  sportsModules: Record<string, boolean>;
   loading?: boolean;
+  /** A última leitura falhou (texto amigável). Sem barbearias na tela, vira o erro no lugar do vazio. */
+  loadError?: string | null;
+  onRetry?: () => void;
+  /** Hora da última leitura dos dados (para "Atualizado às 14:32"). */
+  updatedAt?: Date | null;
+  refreshing?: boolean;
+  onRefresh?: () => void;
+  /** Abre a aba Barbearias já filtrada. */
+  onOpenShops?: (filter: ShopFilter) => void;
+  /** Abre a ficha de uma barbearia. */
+  onOpenShop?: (shopId: string) => void;
+  onCreateShop?: () => void;
 };
 
-function useCountUp(target: number, active: boolean, durationMs = 700) {
-  const [value, setValue] = useState(0);
-  useEffect(() => {
-    if (!active) {
-      setValue(0);
-      return;
-    }
-    let frame = 0;
-    const start = performance.now();
-    const tick = (now: number) => {
-      const progress = Math.min(1, (now - start) / durationMs);
-      const eased = 1 - (1 - progress) ** 3;
-      setValue(Math.round(target * eased));
-      if (progress < 1) frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [target, active, durationMs]);
-  return value;
-}
-
-function MetricCell({
-  label,
-  value,
-  detail,
-  share,
-  tone = "neutral",
-  loading,
-}: {
-  label: string;
-  value: number;
-  detail: string;
-  /** 0–1 fill for the thin meter; omit to hide. */
-  share?: number | null;
-  tone?: "neutral" | "ok" | "warn";
-  loading?: boolean;
-}) {
-  const shown = useCountUp(value, !loading);
-  const width = Math.max(0, Math.min(100, Math.round((share ?? 0) * 100)));
-  return (
-    <div className={`platform-metric platform-metric-${tone}`}>
-      <p className="platform-metric-label">{label}</p>
-      <p className="platform-metric-value" aria-live="polite">
-        {loading ? "—" : shown}
-      </p>
-      {share != null && !loading && (
-        <div className="platform-metric-meter" aria-hidden="true">
-          <span style={{ width: `${width}%` }} />
-        </div>
-      )}
-      <p className="platform-metric-detail">{detail}</p>
-    </div>
-  );
-}
-
+/**
+ * Visão geral da plataforma: números com ícone (cada um leva à lista filtrada), a divisão
+ * ativas × suspensas, o ranking com o nome inteiro e o crescimento real por mês.
+ * Nada de série inventada: sem dado, aparece esqueleto (carregando) ou um vazio honesto.
+ */
 export function PlatformDashboard({
   shops,
   memberships,
-  sportsModules,
   loading = false,
+  loadError = null,
+  onRetry,
+  updatedAt,
+  refreshing = false,
+  onRefresh,
+  onOpenShops,
+  onOpenShop,
+  onCreateShop,
 }: PlatformDashboardProps) {
   const { t, intlLocale } = useI18n();
-  const [mounted, setMounted] = useState(false);
-  const [barRadius, setBarRadius] = useState(6);
-  const barCardRef = useRef<HTMLElement | null>(null);
-  useEffect(() => {
-    setBarRadius(readBarRadius(barCardRef.current));
-    setMounted(true);
-  }, []);
 
   const stats = useMemo(() => {
+    const counts = countByShop(memberships);
     const active = shops.filter((shop) => shop.status === "active").length;
     const suspended = shops.length - active;
-    const customers = memberships.filter((row) => row.role === "customer").length;
-    const admins = memberships.filter((row) => row.role === "shop_admin").length;
-    const sportsOn = shops.filter((shop) => sportsModules[shop.id]).length;
-    const byShop = shops.map((shop) => {
-      const rows = memberships.filter((row) => row.barbershop_id === shop.id);
-      return {
-        id: shop.id,
-        name: shop.name,
-        fullName: shop.name,
-        customers: rows.filter((row) => row.role === "customer").length,
-        team: rows.filter((row) => row.role !== "customer").length,
-        status: shop.status,
-      };
-    });
-    const topShops = [...byShop].sort((a, b) => b.customers - a.customers).slice(0, 6);
-    const statusPie = [
-      { name: t("plat.dash.active"), value: active, color: PRIMARY_SERIES },
-      { name: t("plat.dash.suspended"), value: Math.max(suspended, 0), color: "#a8a29e" },
-    ].filter((row) => row.value > 0);
-    const baseline = Math.max(customers, 8);
-    const trend = Array.from({ length: 8 }, (_, index) => {
-      const wave = Math.sin(index * 0.85) * 0.12 + index * 0.04;
-      return {
-        label: t("plat.dash.weekShort", { n: index + 1 }),
-        clientes: Math.max(2, Math.round(baseline * (0.55 + wave))),
-        reservas: Math.max(1, Math.round(baseline * (0.35 + wave * 0.8))),
-      };
-    });
-    const shopTotal = Math.max(shops.length, 1);
+    const customerLinks = memberships.filter((row) => row.role === "customer").length;
+    const ranking = shops
+      .map((shop) => ({ shop, ...countsFor(counts, shop.id) }))
+      .sort((a, b) => b.customers - a.customers)
+      .slice(0, 6);
     return {
       active,
       suspended,
-      customers,
-      admins,
-      sportsOn,
-      topShops,
-      statusPie,
-      trend,
-      shopTotal,
-      avgCustomers: shops.length ? customers / shops.length : 0,
+      customers: uniquePeople(memberships, "customer"),
+      admins: uniquePeople(memberships, "shop_admin"),
+      withoutAdmin: activeShopsWithoutAdmin(shops, counts).length,
+      avgCustomers: shops.length ? Math.round(customerLinks / shops.length) : 0,
+      ranking,
+      topCustomers: Math.max(1, ...ranking.map((row) => row.customers)),
+      months: shopsCreatedByMonth(shops),
+      history: historyMonths(shops),
     };
-  }, [shops, memberships, sportsModules, t]);
+  }, [shops, memberships]);
+
+  // Depois de uma falha, nunca fica "Carregando…" parado: diz que não está atualizado.
+  const updatedLabel = loading
+    ? t("plat.dash.loading")
+    : updatedAt
+      ? t("plat.dash.updatedAt", {
+          time: updatedAt.toLocaleTimeString(intlLocale, { hour: "2-digit", minute: "2-digit" }),
+        })
+      : loadError
+        ? t("plat.dash.notUpdated")
+        : undefined;
+  const header = (
+    <SectionHeader
+      as="h3"
+      icon={Gauge}
+      title={t("plat.dash.heading")}
+      description={updatedLabel}
+      aside={
+        onRefresh ? (
+          <button
+            type="button"
+            onClick={onRefresh}
+            disabled={refreshing || loading}
+            aria-label={t("plat.dash.refresh")}
+            title={t("plat.dash.refresh")}
+            className="app-icon-button disabled:opacity-60"
+          >
+            <RefreshCw
+              className={`size-5 ${refreshing ? "motion-safe:animate-spin" : ""}`}
+              aria-hidden
+            />
+          </button>
+        ) : null
+      }
+    />
+  );
+
+  // Falhou e não há nada na tela: é erro, não "nenhuma barbearia" (evita criar uma duplicada).
+  if (!loading && shops.length === 0 && loadError) {
+    return (
+      <section className="space-y-4" aria-label={t("plat.dash.aria")}>
+        {header}
+        <EmptyState
+          status="danger"
+          title={t("plat.dash.loadErrorTitle")}
+          description={loadError}
+          action={
+            onRetry ? (
+              <button
+                type="button"
+                onClick={onRetry}
+                className="flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+              >
+                <RefreshCw className="size-4" aria-hidden />
+                {t("visual.retry")}
+              </button>
+            ) : undefined
+          }
+        />
+      </section>
+    );
+  }
+
+  if (!loading && shops.length === 0) {
+    return (
+      <section className="space-y-4" aria-label={t("plat.dash.aria")}>
+        {header}
+        <EmptyState
+          tone="store"
+          title={t("plat.dash.emptyTitle")}
+          description={t("plat.dash.emptyBody")}
+          action={
+            onCreateShop ? (
+              <button
+                type="button"
+                onClick={onCreateShop}
+                className="flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+              >
+                <Plus className="size-4" aria-hidden />
+                {t("plat.newShop.submit")}
+              </button>
+            ) : undefined
+          }
+        />
+      </section>
+    );
+  }
+
+  const suspendedMeta = SHOP_STATUS.suspended;
+  const activeMeta = SHOP_STATUS.active;
+  // Sem crescimento para mostrar, o cartão do mês é só uma linha: o ranking ocupa a largura
+  // toda (em duas colunas no computador) e o mês desce, sem deixar um vazio ao lado.
+  const growthEmpty = stats.history < 1 || stats.months.every((item) => item.count === 0);
+  const wideRanking = !loading && growthEmpty;
 
   return (
-    <section className="platform-dash space-y-5" aria-label={t("plat.dash.aria")}>
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
-            {t("plat.dash.eyebrow")}
-          </p>
-          <h2 className="mt-1 text-[1.35rem] font-[650] tracking-[-0.02em]">
-            {t("plat.dash.title")}
-          </h2>
-          <p className="mt-1 max-w-xl text-sm text-muted-foreground">{t("plat.dash.subtitle")}</p>
-        </div>
-        <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground">
-          <Activity className="size-3.5 text-primary" aria-hidden />
-          {t("plat.dash.refreshNote")}
-        </span>
-      </div>
+    <section className="space-y-4" aria-label={t("plat.dash.aria")}>
+      {header}
 
       <div
-        className="platform-metric-board bg-card"
+        className="grid grid-cols-2 gap-3 lg:grid-cols-4"
         role="group"
         aria-label={t("plat.dash.metricsAria")}
       >
-        <MetricCell
-          label={t("plat.dash.activeShops")}
-          value={stats.active}
-          detail={
-            loading
-              ? t("plat.dash.loading")
-              : stats.shopTotal === 1
-                ? t("plat.dash.onlyShop")
-                : t("plat.dash.shareOfNetwork", {
-                    percent: Math.round((stats.active / stats.shopTotal) * 100),
-                  })
-          }
-          share={loading ? null : stats.active / stats.shopTotal}
-          tone="ok"
+        <StatTile
+          icon={Store}
+          label={t("plat.dash.active")}
+          value={loading ? undefined : stats.active}
+          hint={t("plat.dash.ofTotal", { count: stats.active, total: shops.length })}
           loading={loading}
+          onClick={onOpenShops ? () => onOpenShops("active") : undefined}
         />
-        <MetricCell
-          label={t("plat.dash.suspendedLabel")}
-          value={stats.suspended}
-          detail={
-            loading
-              ? t("plat.dash.loading")
-              : stats.suspended === 0
-                ? t("plat.dash.noneOffline")
-                : t("plat.dash.offlineNow")
-          }
-          share={loading ? null : stats.suspended / stats.shopTotal}
-          tone="warn"
+        <StatTile
+          icon={suspendedMeta.icon}
+          tone={stats.suspended > 0 ? suspendedMeta.tone : undefined}
+          label={t("plat.dash.suspended")}
+          value={loading ? undefined : stats.suspended}
+          hint={stats.suspended === 0 ? t("plat.dash.noneOffline") : t("plat.dash.offline")}
           loading={loading}
+          onClick={onOpenShops ? () => onOpenShops("suspended") : undefined}
         />
-        <MetricCell
+        <StatTile
+          icon={Users}
           label={t("plat.dash.customers")}
-          value={stats.customers}
-          detail={
-            loading
-              ? t("plat.dash.loading")
-              : shops.length === 0
-                ? t("plat.dash.noShopsYet")
-                : t("plat.dash.avgPerShop", {
-                    avg: stats.avgCustomers.toLocaleString(intlLocale, {
-                      minimumFractionDigits: 1,
-                      maximumFractionDigits: 1,
-                    }),
-                  })
+          value={loading ? undefined : stats.customers.toLocaleString(intlLocale)}
+          hint={t("plat.dash.avg", { avg: stats.avgCustomers.toLocaleString(intlLocale) })}
+          loading={loading}
+          onClick={onOpenShops ? () => onOpenShops("all") : undefined}
+        />
+        <StatTile
+          icon={ShieldCheck}
+          tone={stats.withoutAdmin > 0 ? "warning" : undefined}
+          label={t("plat.dash.admins")}
+          value={loading ? undefined : stats.admins}
+          hint={
+            stats.withoutAdmin > 0
+              ? t("plat.dash.noAdmin", { count: stats.withoutAdmin })
+              : t("plat.dash.allAdmins")
           }
           loading={loading}
-        />
-        <MetricCell
-          label={t("plat.dash.shopAdmins")}
-          value={stats.admins}
-          detail={loading ? t("plat.dash.loading") : t("plat.dash.managementAccounts")}
-          loading={loading}
+          onClick={
+            onOpenShops ? () => onOpenShops(stats.withoutAdmin > 0 ? "noAdmin" : "all") : undefined
+          }
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-        <article className="rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-5">
-          <div className="mb-4 flex items-center justify-between gap-2">
-            <div>
-              <h3 className="text-sm font-bold">{t("plat.dash.trendTitle")}</h3>
-              <p className="text-xs text-muted-foreground">{t("plat.dash.trendHint")}</p>
-            </div>
-          </div>
-          <div className="h-56 w-full">
-            {mounted && (
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={stats.trend} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="platformClients" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={PRIMARY_SERIES} stopOpacity={0.35} />
-                      <stop offset="100%" stopColor={PRIMARY_SERIES} stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="platformBookings" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={GOLD_SERIES} stopOpacity={0.35} />
-                      <stop offset="100%" stopColor={GOLD_SERIES} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border/60" />
-                  <XAxis
-                    dataKey="label"
-                    tick={{ fontSize: 11 }}
-                    stroke="currentColor"
-                    className="text-muted-foreground"
-                  />
-                  <YAxis
-                    tick={{ fontSize: 11 }}
-                    stroke="currentColor"
-                    className="text-muted-foreground"
-                  />
-                  <Tooltip contentStyle={chartTooltipStyle} separator=": " />
-                  <Area
-                    type="monotone"
-                    dataKey="clientes"
-                    name={t("plat.dash.customers")}
-                    stroke={PRIMARY_SERIES}
-                    fill="url(#platformClients)"
-                    strokeWidth={2.5}
-                    animationDuration={1100}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="reservas"
-                    name={t("plat.dash.bookings")}
-                    stroke={GOLD_SERIES}
-                    fill="url(#platformBookings)"
-                    strokeWidth={2.5}
-                    animationDuration={1300}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-          <ul className="mt-1 flex flex-wrap gap-3 text-xs font-semibold">
-            <li className="inline-flex items-center gap-2">
-              <span className="size-2.5 rounded-full" style={{ background: PRIMARY_SERIES }} />
-              {t("plat.dash.customers")}
-            </li>
-            <li className="inline-flex items-center gap-2">
-              <span className="size-2.5 rounded-full" style={{ background: GOLD_SERIES }} />
-              {t("plat.dash.bookings")}
-            </li>
-          </ul>
-        </article>
-
-        <article className="rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-5">
-          <h3 className="text-sm font-bold">{t("plat.dash.statusTitle")}</h3>
-          <p className="mb-3 text-xs text-muted-foreground">{t("plat.dash.statusHint")}</p>
-          <div className="h-48 w-full">
-            {mounted && stats.statusPie.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={stats.statusPie}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius={48}
-                    outerRadius={72}
-                    paddingAngle={stats.statusPie.length > 1 ? 3 : 0}
-                    stroke={stats.statusPie.length > 1 ? "var(--card)" : "none"}
-                    animationDuration={1000}
-                  >
-                    {stats.statusPie.map((row) => (
-                      <Cell key={row.name} fill={row.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={chartTooltipStyle} separator=": " />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                {t("plat.dash.noShops")}
-              </p>
-            )}
-          </div>
-          <ul className="mt-1 flex flex-wrap gap-3 text-xs font-semibold">
-            {stats.statusPie.map((row) => (
-              <li key={row.name} className="inline-flex items-center gap-2">
-                <span className="size-2.5 rounded-full" style={{ background: row.color }} />
-                {row.name}: {row.value}
-              </li>
-            ))}
-          </ul>
-        </article>
-      </div>
-
-      <article
-        ref={barCardRef}
-        className="rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-5"
-      >
-        <div className="mb-4">
-          <h3 className="text-sm font-bold">{t("plat.dash.topTitle")}</h3>
-          <p className="text-xs text-muted-foreground">{t("plat.dash.topHint")}</p>
+      {!loading && (
+        <div className="app-action-card p-4">
+          <SegmentBar
+            summary={t("plat.dash.split", { active: stats.active, suspended: stats.suspended })}
+            showSummary
+            legend
+            segments={[
+              {
+                key: "active",
+                label: t("plat.dash.active"),
+                value: stats.active,
+                tone: activeMeta.tone,
+                icon: activeMeta.icon,
+              },
+              {
+                key: "suspended",
+                label: t("plat.dash.suspended"),
+                value: stats.suspended,
+                tone: suspendedMeta.tone,
+                icon: suspendedMeta.icon,
+              },
+            ]}
+          />
         </div>
-        <div className="h-64 w-full">
-          {mounted && stats.topShops.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats.topShops} margin={{ top: 8, right: 8, left: -18, bottom: 8 }}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  className="stroke-border/60"
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="name"
-                  interval={0}
-                  tick={<ShopNameTick />}
-                  stroke="currentColor"
-                  className="text-muted-foreground"
-                />
-                <YAxis
-                  allowDecimals={false}
-                  tick={{ fontSize: 11 }}
-                  stroke="currentColor"
-                  className="text-muted-foreground"
-                />
-                <Tooltip
-                  formatter={(value: number, _name, item) => [
-                    value,
-                    item?.dataKey === "team"
-                      ? t("plat.dash.team")
-                      : item?.payload?.fullName
-                        ? t("plat.dash.customersOf", { name: item.payload.fullName })
-                        : t("plat.dash.customers"),
-                  ]}
-                  contentStyle={chartTooltipStyle}
-                  separator=": "
-                />
-                <Bar
-                  dataKey="customers"
-                  name={t("plat.dash.customers")}
-                  radius={[barRadius, barRadius, 0, 0]}
-                  maxBarSize={48}
-                  fill={PRIMARY_SERIES}
-                  animationDuration={1200}
-                />
-                <Bar
-                  dataKey="team"
-                  name={t("plat.dash.team")}
-                  radius={[barRadius, barRadius, 0, 0]}
-                  maxBarSize={48}
-                  fill={GOLD_SERIES}
-                  animationDuration={1400}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+      )}
+
+      <div className={`grid gap-4 ${wideRanking ? "" : "lg:grid-cols-2 lg:items-start"}`}>
+        <article className="space-y-3 rounded-3xl border border-border bg-card p-4 sm:p-5">
+          <SectionHeader
+            icon={Trophy}
+            title={t("plat.dash.topTitle")}
+            description={t("plat.dash.topTap")}
+          />
+          {loading ? (
+            <LoadingState variant="list" count={3} hideLabel />
           ) : (
-            <p className="flex h-full items-center justify-center text-sm text-muted-foreground">
-              {t("plat.dash.topEmpty")}
-            </p>
+            <ol className={`space-y-1 ${wideRanking ? "lg:columns-2 lg:gap-x-6" : ""}`}>
+              {stats.ranking.map((row, index) => {
+                const width = Math.round((row.customers / stats.topCustomers) * 100);
+                const suspended = row.shop.status === "suspended";
+                return (
+                  <li key={row.shop.id} className="break-inside-avoid">
+                    <button
+                      type="button"
+                      onClick={() => onOpenShop?.(row.shop.id)}
+                      className="flex min-h-14 w-full items-center gap-3 rounded-2xl px-2 py-2 text-left transition hover:bg-muted/50"
+                    >
+                      <span className="grid size-7 shrink-0 place-items-center rounded-full bg-muted text-xs font-bold tabular-nums">
+                        {index + 1}
+                      </span>
+                      <span className="min-w-0 flex-1 space-y-1.5">
+                        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <span className="min-w-0 break-words text-sm font-semibold">
+                            {row.shop.name}
+                          </span>
+                          {suspended && (
+                            <StatusBadge
+                              tone={suspendedMeta.tone}
+                              icon={suspendedMeta.icon}
+                              label={t("plat.shops.suspended")}
+                              size="sm"
+                            />
+                          )}
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <span
+                            aria-hidden
+                            className="h-2 flex-1 overflow-hidden rounded-full bg-muted"
+                          >
+                            <span
+                              className="block h-full rounded-full bg-primary"
+                              style={{ width: `${Math.max(width, row.customers > 0 ? 4 : 0)}%` }}
+                            />
+                          </span>
+                          <span className="shrink-0 text-xs font-semibold tabular-nums">
+                            {t(
+                              row.customers === 1
+                                ? "plat.shops.customerOne"
+                                : "plat.shops.customerMany",
+                              { count: row.customers.toLocaleString(intlLocale) },
+                            )}
+                          </span>
+                        </span>
+                        <span
+                          className={`block text-xs font-semibold ${
+                            row.admins === 0
+                              ? "text-[color:var(--tone-warning-ink)]"
+                              : "text-muted-foreground"
+                          }`}
+                        >
+                          {row.admins === 0
+                            ? t("plat.shops.noAdmin")
+                            : t(row.admins === 1 ? "plat.shops.adminOne" : "plat.shops.adminMany", {
+                                count: row.admins,
+                              })}
+                        </span>
+                      </span>
+                      <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
           )}
-        </div>
-        {stats.topShops.length > 0 && (
-          <ul className="mt-1 flex flex-wrap gap-3 text-xs font-semibold">
-            <li className="inline-flex items-center gap-2">
-              <span className="size-2.5 rounded-full" style={{ background: PRIMARY_SERIES }} />
-              {t("plat.dash.customers")}
-            </li>
-            <li className="inline-flex items-center gap-2">
-              <span className="size-2.5 rounded-full" style={{ background: GOLD_SERIES }} />
-              {t("plat.dash.team")}
-            </li>
-          </ul>
-        )}
-      </article>
+        </article>
+
+        <article className="space-y-3 rounded-3xl border border-border bg-card p-4 sm:p-5">
+          <SectionHeader icon={CalendarClock} title={t("plat.dash.growthTitle")} />
+          {loading ? (
+            <LoadingState variant="stats" count={1} hideLabel />
+          ) : stats.history < 1 ? (
+            <Hint icon={CalendarClock} tone="muted">
+              {t("plat.dash.growthEmpty")}
+            </Hint>
+          ) : stats.months.every((item) => item.count === 0) ? (
+            <Hint icon={CalendarClock} tone="muted">
+              {t("plat.dash.growthNone")}
+            </Hint>
+          ) : (
+            <GrowthColumns months={stats.months} locale={intlLocale} />
+          )}
+        </article>
+      </div>
     </section>
+  );
+}
+
+/** Colunas simples: o número em cima, o mês embaixo. Também é a alternativa em texto. */
+function GrowthColumns({
+  months,
+  locale,
+}: {
+  months: ReturnType<typeof shopsCreatedByMonth>;
+  locale: string;
+}) {
+  const { t } = useI18n();
+  const max = Math.max(1, ...months.map((item) => item.count));
+  return (
+    <ul className="grid h-40 grid-cols-6 items-end gap-2" aria-label={t("plat.dash.growthTitle")}>
+      {months.map((item) => {
+        const month = item.date.toLocaleDateString(locale, { month: "short" }).replace(".", "");
+        const height = Math.round((item.count / max) * 100);
+        return (
+          <li
+            key={`${item.year}-${item.month}`}
+            className="flex h-full min-w-0 flex-col items-center justify-end gap-1"
+            aria-label={t("plat.dash.growthItem", { month, count: item.count })}
+          >
+            <span aria-hidden className="text-xs font-bold tabular-nums">
+              {item.count}
+            </span>
+            <span
+              aria-hidden
+              className={`w-full max-w-10 rounded-t-xl ${item.count > 0 ? "bg-primary" : "bg-muted"}`}
+              style={{ height: item.count > 0 ? `${Math.max(height, 8)}%` : "4px" }}
+            />
+            <span aria-hidden className="text-xs font-semibold capitalize text-muted-foreground">
+              {month}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

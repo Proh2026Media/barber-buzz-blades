@@ -1,19 +1,42 @@
-import { useCallback, useEffect, useState } from "react";
-import { LogOut, UserMinus } from "lucide-react";
-import { SettingsCardHeader } from "@/features/shop/settings/SettingsCardHeader";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  ChevronRight,
+  DoorOpen,
+  Gift,
+  Hourglass,
+  Link2,
+  Loader2,
+  Lock,
+  Plus,
+  Send,
+  Store,
+  UserMinus,
+  Users,
+  X,
+} from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import {
+  ActionResult,
+  ChoiceCards,
+  Field,
+  IconList,
+  IconTile,
+  Notice,
+  PersonAvatar,
+  SectionHeader,
+  StatusBadge,
+  Steps,
+  type ActionState,
+  type IconListItem,
+} from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
 import { t as tNow, useI18n } from "@/lib/i18n";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
+import { isOwnerRole, type ShopRole } from "../roles";
+import { activeOwners, firstName, loadTeamMembers, type TeamMember } from "../team";
 
 type DepartureRequest = {
   id: string;
@@ -33,51 +56,99 @@ type DestShop = {
   slug: string;
 };
 
+type Mode = "take" | "forfeit";
+
 type ShopDepartureCardProps = {
   shopId: string;
-  /** Se true, mostra pedidos pendentes de liberação de carteira (sócio). */
+  /** Se true, mostra pedidos de saída de outros donos para liberar (dono/sócio). */
   canApproveRelease?: boolean;
-  /** Se true, mostra o formulário de saída do próprio usuário. */
+  /** Se true, mostra "Sair da barbearia" para o próprio usuário. */
   canRequestDeparture?: boolean;
+  /** Papel de quem está vendo (pré-condições de dono). */
+  role?: ShopRole | null;
+  /** Atalho para "Pessoas e papéis" (mudar o próprio papel antes de sair). */
+  onOpenPeople?: () => void;
 };
+
+function relative(iso: string, locale: string) {
+  const hours = (Date.now() - new Date(iso).getTime()) / 3_600_000;
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+  if (hours < 1) return rtf.format(-Math.max(1, Math.round(hours * 60)), "minute");
+  if (hours < 24) return rtf.format(-Math.round(hours), "hour");
+  return rtf.format(-Math.round(hours / 24), "day");
+}
 
 export function ShopDepartureCard({
   shopId,
   canApproveRelease = false,
   canRequestDeparture = true,
+  role = null,
+  onOpenPeople,
 }: ShopDepartureCardProps) {
   const { t, intlLocale } = useI18n();
-  const [mode, setMode] = useState<"take" | "forfeit">("forfeit");
-  const [destShopId, setDestShopId] = useState("");
-  const [newShopName, setNewShopName] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
+  const [requests, setRequests] = useState<DepartureRequest[]>([]);
+  const [members, setMembers] = useState<TeamMember[]>([]);
   const [destShops, setDestShops] = useState<DestShop[]>([]);
-  const [pending, setPending] = useState<DepartureRequest[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [destNames, setDestNames] = useState<Map<string, string>>(() => new Map());
+  const [listError, setListError] = useState<string | null>(null);
+  const [decision, setDecision] = useState<{
+    id: string;
+    state: ActionState;
+    text: string;
+  } | null>(null);
+  const [deciding, setDeciding] = useState<{ id: string; approve: boolean } | null>(null);
+
+  // Folha "Sair da barbearia".
+  const [open, setOpen] = useState(false);
+  const [step, setStep] = useState(0);
+  const [mode, setMode] = useState<Mode | null>(null);
+  const [destShopId, setDestShopId] = useState<string | null>(null);
+  const [newShopName, setNewShopName] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState<{ state: ActionState; text: string } | null>(null);
+
+  const ownerViewer = isOwnerRole(role);
 
   const load = useCallback(async () => {
-    setError(null);
-    if (canApproveRelease) {
-      const { data, error: listError } = await supabase.rpc("list_shop_departure_requests", {
+    setListError(null);
+    const { data: sessionProfile } = await supabase.auth.getUser();
+    const uid = sessionProfile.user?.id ?? null;
+    setUserId(uid);
+    if (canApproveRelease || canRequestDeparture) {
+      const { data, error: listFailure } = await supabase.rpc("list_shop_departure_requests", {
         p_shop_id: shopId,
       });
-      if (listError) setError(friendlyAuthError(listError));
-      else setPending((data as DepartureRequest[]) ?? []);
+      if (listFailure) setListError(friendlyAuthError(listFailure));
+      else {
+        const rows = Array.isArray(data) ? (data as unknown as DepartureRequest[]) : [];
+        setRequests(rows);
+        // Nome da barbearia de destino, quando quem decide consegue ler (só leitura; sem acesso
+        // o pedido mostra "outra barbearia").
+        const destIds = [
+          ...new Set(rows.map((row) => row.dest_shop_id).filter((id): id is string => !!id)),
+        ];
+        if (destIds.length) {
+          const { data: shops } = await supabase
+            .from("barbershops")
+            .select("id, name")
+            .in("id", destIds);
+          setDestNames(new Map((shops ?? []).map((shop) => [shop.id, shop.name])));
+        }
+      }
     }
-
-    const { data: sessionProfile } = await supabase.auth.getUser();
-    const userId = sessionProfile.user?.id;
-    if (userId) {
+    if (ownerViewer) setMembers(await loadTeamMembers(shopId).catch(() => []));
+    if (uid && canRequestDeparture) {
       const { data: actors, error: actorsError } = await supabase
         .from("shop_members")
         .select("barbershop_id")
-        .eq("user_id", userId)
+        .eq("user_id", uid)
         .eq("active", true)
         .neq("barbershop_id", shopId);
       if (actorsError) {
-        setError(friendlyAuthError(actorsError, tNow("team.departure.loadShopsFailed")));
+        setCreateError(friendlyAuthError(actorsError, tNow("team.departure.loadShopsFailed")));
         return;
       }
       const ids = (actors ?? []).map((row) => row.barbershop_id).filter(Boolean);
@@ -88,27 +159,47 @@ export function ShopDepartureCard({
           .in("id", ids)
           .eq("status", "active");
         if (shopsError) {
-          setError(friendlyAuthError(shopsError, tNow("team.departure.loadShopsFailed")));
+          setCreateError(friendlyAuthError(shopsError, tNow("team.departure.loadShopsFailed")));
           return;
         }
         setDestShops(shops ?? []);
-      } else {
-        setDestShops([]);
-      }
+      } else setDestShops([]);
     }
-  }, [shopId, canApproveRelease]);
+  }, [shopId, canApproveRelease, canRequestDeparture, ownerViewer]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
+  const pending = requests.filter((row) => row.status === "pending_release");
+  const mine = pending.find((row) => row.user_id === userId) ?? null;
+  const others = canApproveRelease ? pending.filter((row) => row.user_id !== userId) : [];
+  const owners = useMemo(() => activeOwners(members), [members]);
+  const otherOwners = owners.filter((owner) => owner.user_id !== userId);
+  const othersText = otherOwners.length
+    ? otherOwners.map((owner) => firstName(owner.display_name)).join(", ")
+    : t("eq.gov.otherOwners");
+  // Dono que leva os clientes precisa da liberação dos outros donos.
+  const needsRelease = ownerViewer && mode === "take";
+  const steps = mode === "take" ? ["clients", "dest", "review"] : ["clients", "review"];
+  const current = steps[Math.min(step, steps.length - 1)]!;
+
+  function startDeparture() {
+    setStep(0);
+    setMode(null);
+    setDestShopId(null);
+    setResult(null);
+    setCreateError(null);
+    setOpen(true);
+  }
+
   async function createDestinationShop() {
     if (!newShopName.trim()) {
-      setError(t("team.departure.nameRequired"));
+      setCreateError(t("team.departure.nameRequired"));
       return;
     }
-    setBusy(true);
-    setError(null);
+    setCreating(true);
+    setCreateError(null);
     try {
       const { data, error: rpcError } = await supabase.rpc("create_own_barbershop", {
         p_name: newShopName.trim(),
@@ -116,35 +207,21 @@ export function ShopDepartureCard({
       if (rpcError) throw rpcError;
       const payload = data as { shop_id?: string };
       if (!payload.shop_id) throw new Error(t("team.departure.createError"));
-      setDestShopId(payload.shop_id);
-      setMessage(t("team.departure.created"));
       await load();
+      setDestShopId(payload.shop_id);
+      setNewShopName("");
     } catch (err) {
-      setError(friendlyAuthError(err, t("team.departure.createFailed")));
+      setCreateError(friendlyAuthError(err, t("team.departure.createFailed")));
     } finally {
-      setBusy(false);
+      setCreating(false);
     }
-  }
-
-  /** Saída é irreversível: confere o destino e pede confirmação antes de enviar. */
-  function askDepartureConfirmation() {
-    setError(null);
-    if (mode === "take" && !destShopId) {
-      setError(t("team.departure.destRequired"));
-      return;
-    }
-    setConfirmOpen(true);
   }
 
   async function requestDeparture() {
-    setConfirmOpen(false);
-    setBusy(true);
-    setError(null);
-    setMessage("");
+    if (!mode || (mode === "take" && !destShopId)) return;
+    setSending(true);
+    setResult({ state: "saving", text: t("eq.leave.sending") });
     try {
-      if (mode === "take" && !destShopId) {
-        throw new Error(t("team.departure.destRequired"));
-      }
       const { data, error: rpcError } = await supabase.rpc("request_shop_departure", {
         p_shop_id: shopId,
         p_mode: mode,
@@ -152,197 +229,449 @@ export function ShopDepartureCard({
       });
       if (rpcError) throw rpcError;
       const payload = data as { status?: string };
-      if (payload.status === "pending_release") {
-        setMessage(t("team.departure.sent"));
-      } else {
-        setMessage(
-          mode === "take" ? t("team.departure.doneTake") : t("team.departure.doneForfeit"),
-        );
-      }
+      setResult(
+        payload.status === "pending_release"
+          ? { state: "pending", text: t("eq.leave.sentFor", { names: othersText }) }
+          : {
+              state: "saved",
+              text: mode === "take" ? t("eq.leave.doneTake") : t("eq.leave.doneForfeit"),
+            },
+      );
       await load();
     } catch (err) {
-      setError(friendlyAuthError(err, t("team.departure.failed")));
+      setResult({ state: "error", text: friendlyAuthError(err, t("team.departure.failed")) });
     } finally {
-      setBusy(false);
+      setSending(false);
     }
   }
 
   async function decide(id: string, approve: boolean) {
-    setBusy(true);
-    setError(null);
+    setDeciding({ id, approve });
+    setDecision(null);
     try {
       const { error: rpcError } = await supabase.rpc(
         approve ? "approve_portfolio_release" : "reject_portfolio_release",
         { p_request_id: id, p_note: null },
       );
       if (rpcError) throw rpcError;
-      setMessage(approve ? t("team.departure.released") : t("team.departure.rejected"));
+      setDecision({
+        id,
+        state: "saved",
+        text: approve ? t("eq.leave.released") : t("eq.leave.rejected"),
+      });
       await load();
     } catch (err) {
-      setError(friendlyAuthError(err, t("team.departure.decideFailed")));
+      setDecision({
+        id,
+        state: "error",
+        text: friendlyAuthError(err, t("team.departure.decideFailed")),
+      });
     } finally {
-      setBusy(false);
+      setDeciding(null);
     }
   }
 
+  const takeEffects: IconListItem[] = [
+    { icon: Users, tone: "gold", text: t("eq.leave.effectClients") },
+    { icon: Gift, tone: "gold", text: t("eq.leave.effectPoints") },
+    { icon: Link2, tone: "gold", text: t("eq.leave.effectLink") },
+  ];
+  const destName = destShops.find((shop) => shop.id === destShopId)?.name ?? "";
+  const review: IconListItem[] = [
+    { icon: DoorOpen, tone: "danger", text: t("eq.leave.effectAccess") },
+    ...(mode === "take"
+      ? [
+          {
+            icon: Users,
+            tone: "warning" as const,
+            text: t("eq.leave.effectGo", { shop: destName }),
+          },
+          { icon: Link2, tone: "warning" as const, text: t("eq.leave.effectLink") },
+        ]
+      : [{ icon: Store, tone: "success" as const, text: t("eq.leave.effectStay") }]),
+  ];
+  const canContinue =
+    (current === "clients" && !!mode) ||
+    (current === "dest" && !!destShopId) ||
+    current === "review";
+
+  const decisionFor = (id: string) =>
+    decision && decision.id === id ? (
+      <ActionResult
+        state={decision.state}
+        text={decision.text}
+        onDismiss={() => setDecision(null)}
+      />
+    ) : null;
+
+  if (!canRequestDeparture && others.length === 0 && !decision) return null;
+
   return (
-    <section className="space-y-3 rounded-3xl border border-border bg-card p-4">
-      <SettingsCardHeader
+    <section className="app-action-card space-y-4 p-4" aria-labelledby="departure-title">
+      <SectionHeader
         icon={UserMinus}
-        title={t("team.departure.title")}
-        intro={t("team.departure.hint")}
+        id="departure-title"
+        title={t("eq.leave.cardTitle")}
+        aside={
+          others.length > 0 ? (
+            <StatusBadge
+              tone="pending"
+              icon={Hourglass}
+              label={t("eq.leave.waitingCount", { count: others.length })}
+            />
+          ) : undefined
+        }
       />
 
-      {canApproveRelease && pending.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-semibold">{t("team.departure.pendingTitle")}</p>
-          {pending
-            .filter((row) => row.status === "pending_release")
-            .map((row) => (
-              <div
+      {listError && <ActionResult state="error" text={listError} onRetry={() => void load()} />}
+
+      {/* Pedidos de outros donos esperando a sua liberação (mesmo padrão das decisões). */}
+      {others.length > 0 && (
+        <ul className="space-y-3" aria-label={t("eq.leave.toDecide")}>
+          {others.map((row) => {
+            const name = row.requester_name || row.staff_name || t("eq.gov.someone");
+            const busy = deciding?.id === row.id;
+            return (
+              <li
                 key={row.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border bg-background px-3 py-2"
+                className="tone-pending space-y-3 rounded-2xl border border-border border-l-4 border-l-[color:var(--tone-line)] bg-card p-3"
               >
-                <div>
-                  <p className="text-sm font-semibold">
-                    {row.requester_name || row.staff_name || t("team.departure.partnerFallback")}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {t("team.departure.wantsToTake", {
-                      date: new Date(row.created_at).toLocaleString(intlLocale),
-                    })}
-                  </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <PersonAvatar name={name} seed={row.user_id} size="sm" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold">{name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t("eq.leave.wantsTake")} · {relative(row.created_at, intlLocale)}
+                    </p>
+                  </div>
+                  <StatusBadge
+                    tone="pending"
+                    icon={Hourglass}
+                    size="sm"
+                    label={t("eq.gov.waitingYou")}
+                  />
                 </div>
+                <IconList
+                  items={takeEffects.map((item, index) => {
+                    const dest = row.dest_shop_id ? destNames.get(row.dest_shop_id) : undefined;
+                    // Com o nome do destino, a primeira linha diz para onde os clientes vão.
+                    return index === 0 && dest
+                      ? { ...item, text: t("eq.leave.goTo", { shop: dest }) }
+                      : item;
+                  })}
+                />
+                {decisionFor(row.id)}
                 <div className="flex gap-2">
                   <button
                     type="button"
-                    disabled={busy}
-                    className="action-button action-confirm"
-                    onClick={() => void decide(row.id, true)}
+                    disabled={!!deciding}
+                    className="action-button action-danger min-h-11 flex-1 justify-center sm:flex-none"
+                    onClick={() => void decide(row.id, false)}
                   >
-                    {t("team.departure.release")}
+                    {busy && !deciding?.approve ? (
+                      <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />
+                    ) : (
+                      <X className="size-4" aria-hidden />
+                    )}
+                    {t("eq.gov.decline")}
                   </button>
                   <button
                     type="button"
-                    disabled={busy}
-                    className="action-button action-danger"
-                    onClick={() => void decide(row.id, false)}
+                    disabled={!!deciding}
+                    className="action-button action-confirm min-h-11 flex-1 justify-center sm:flex-none"
+                    onClick={() => void decide(row.id, true)}
                   >
-                    {t("team.departure.decline")}
+                    {busy && deciding?.approve ? (
+                      <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />
+                    ) : (
+                      <Check className="size-4" aria-hidden />
+                    )}
+                    {t("eq.leave.release")}
                   </button>
                 </div>
-              </div>
-            ))}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {decision && !others.some((row) => row.id === decision.id) && (
+        <ActionResult
+          state={decision.state}
+          text={decision.text}
+          onDismiss={() => setDecision(null)}
+        />
+      )}
+
+      {/* O próprio pedido: andamento, sem botões de decisão. */}
+      {mine && (
+        <div className="tone-pending space-y-3 rounded-2xl border border-border border-l-4 border-l-[color:var(--tone-line)] bg-card p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="flex-1 text-sm font-bold">{t("eq.leave.yourRequest")}</p>
+            <StatusBadge
+              tone="pending"
+              icon={Hourglass}
+              size="sm"
+              label={t("eq.leave.waitingRelease")}
+            />
+          </div>
+          <Steps
+            label={t("eq.leave.yourRequest")}
+            steps={[
+              { key: "sent", label: t("eq.leave.step.sent"), status: "done" },
+              { key: "release", label: t("eq.leave.step.release"), status: "current" },
+              { key: "done", label: t("eq.leave.step.done"), status: "upcoming" },
+            ]}
+          />
         </div>
       )}
 
-      {canRequestDeparture && (
-        <div className="space-y-3 rounded-2xl border border-border bg-background p-3">
-          <fieldset className="space-y-2">
-            <legend className="text-xs font-semibold">{t("team.departure.question")}</legend>
-            <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-[var(--control-radius)] border border-border/70 bg-card px-3 py-2 text-sm has-[:checked]:border-foreground has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60">
-              <input
-                type="radio"
-                name="departure-mode"
-                className="size-4 shrink-0 accent-foreground"
-                checked={mode === "forfeit"}
-                onChange={() => setMode("forfeit")}
-              />
-              {t("team.departure.forfeit")}
-            </label>
-            <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-[var(--control-radius)] border border-border/70 bg-card px-3 py-2 text-sm has-[:checked]:border-foreground has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60">
-              <input
-                type="radio"
-                name="departure-mode"
-                className="size-4 shrink-0 accent-foreground"
-                checked={mode === "take"}
-                onChange={() => setMode("take")}
-              />
-              {t("team.departure.take")}
-            </label>
-          </fieldset>
+      {/* Zona de risco: uma linha recolhida que abre a folha em etapas. */}
+      {canRequestDeparture && !mine && (
+        <button
+          type="button"
+          onClick={startDeparture}
+          className="flex min-h-14 w-full items-center gap-3 rounded-2xl border border-dashed border-border px-3 py-2 text-left transition hover:border-destructive/50"
+        >
+          <IconTile icon={DoorOpen} tone="danger" size="sm" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-bold text-destructive">{t("eq.leave.title")}</span>
+            <span className="block text-xs text-muted-foreground">
+              {ownerViewer ? t("eq.leave.lockedHint") : t("eq.leave.rowHint")}
+            </span>
+          </span>
+          {ownerViewer ? (
+            <Lock className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+          ) : (
+            <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+          )}
+        </button>
+      )}
 
-          {mode === "take" && (
-            <div className="space-y-2">
-              <label htmlFor="dest-shop" className="block text-xs font-semibold">
-                {t("team.departure.destination")}
-              </label>
-              <select
-                id="dest-shop"
-                value={destShopId}
-                onChange={(e) => setDestShopId(e.target.value)}
-                className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm"
+      <Dialog
+        open={open}
+        onOpenChange={(next) => {
+          if (!sending) setOpen(next);
+        }}
+      >
+        <DialogContent className="max-w-lg rounded-3xl border-border bg-card p-5">
+          <div className="pe-10">
+            <DialogTitle className="flex items-center gap-2 text-base font-extrabold">
+              <DoorOpen className="size-5 text-destructive" aria-hidden />
+              {t("eq.leave.title")}
+            </DialogTitle>
+            <DialogDescription className="sr-only">{t("eq.leave.rowHint")}</DialogDescription>
+          </div>
+
+          {result && result.state !== "saving" && result.state !== "error" ? (
+            <div className="space-y-4">
+              <ActionResult state={result.state} text={result.text} />
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="action-button action-confirm min-h-11 w-full justify-center"
               >
-                <option value="">{t("team.departure.select")}</option>
-                {destShops.map((shop) => (
-                  <option key={shop.id} value={shop.id}>
-                    {shop.name} (/{shop.slug})
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-muted-foreground">{t("team.departure.orCreate")}</p>
-              <div className="flex gap-2">
-                <input
-                  value={newShopName}
-                  onChange={(e) => setNewShopName(e.target.value)}
-                  placeholder={t("team.departure.newNamePlaceholder")}
-                  aria-label={t("team.departure.newNamePlaceholder")}
-                  className="min-h-11 min-w-0 flex-1 rounded-xl border border-border bg-card px-3 py-2 text-sm"
-                />
+                {t("eq.common.done")}
+              </button>
+            </div>
+          ) : ownerViewer ? (
+            // Dono ainda não pode sair: só a condição e o caminho para resolver (sem etapas que
+            // terminariam num erro do servidor).
+            <div className="space-y-4">
+              <Notice
+                tone="warning"
+                icon={Lock}
+                role="none"
+                title={otherOwners.length ? t("eq.leave.ownerFirst") : t("eq.leave.soleOwner")}
+              >
+                {otherOwners.length
+                  ? t("eq.leave.ownerFirstHint", {
+                      name: firstName(otherOwners[0]!.display_name),
+                    })
+                  : t("eq.leave.soleOwnerHint")}
+              </Notice>
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                 <button
                   type="button"
-                  disabled={busy}
-                  className="action-button"
-                  onClick={() => void createDestinationShop()}
+                  onClick={() => setOpen(false)}
+                  className="action-button min-h-11 justify-center"
                 >
-                  {t("team.departure.create")}
+                  {t("eq.leave.stay")}
                 </button>
+                {onOpenPeople && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      onOpenPeople();
+                    }}
+                    className="action-button action-confirm min-h-11 justify-center"
+                  >
+                    <Users className="size-4" aria-hidden />
+                    {t("eq.leave.openPeople")}
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <Steps
+                label={t("eq.leave.title")}
+                steps={steps.map((id, index) => ({
+                  key: id,
+                  label: t(`eq.leave.step.${id}` as "eq.leave.step.clients"),
+                  status: index < step ? "done" : index === step ? "current" : "upcoming",
+                }))}
+                onStepClick={(index) => setStep(index)}
+              />
+
+              {current === "clients" && (
+                <ChoiceCards
+                  legend={t("eq.leave.clientsQuestion")}
+                  showLegend
+                  value={mode}
+                  onChange={(value) => {
+                    setMode(value);
+                    if (value === "forfeit") setDestShopId(null);
+                  }}
+                  options={[
+                    {
+                      value: "forfeit",
+                      icon: Store,
+                      title: t("eq.leave.forfeit"),
+                      description: t("eq.leave.forfeitHint"),
+                    },
+                    {
+                      value: "take",
+                      icon: Users,
+                      title: t("eq.leave.take"),
+                      description: t("eq.leave.takeHint"),
+                      content: <IconList items={takeEffects} />,
+                    },
+                  ]}
+                />
+              )}
+
+              {current === "dest" && (
+                <div className="space-y-3">
+                  {destShops.length > 0 ? (
+                    <ChoiceCards
+                      legend={t("eq.leave.destQuestion")}
+                      showLegend
+                      value={destShopId}
+                      onChange={setDestShopId}
+                      options={destShops.map((shop) => ({
+                        value: shop.id,
+                        icon: Store,
+                        title: shop.name,
+                      }))}
+                    />
+                  ) : (
+                    <p className="text-sm font-bold">{t("eq.leave.destQuestion")}</p>
+                  )}
+                  <div className="space-y-2 rounded-2xl border border-dashed border-border p-3">
+                    <p className="flex items-center gap-2 text-sm font-bold">
+                      <Plus className="size-4 text-gold" aria-hidden />
+                      {t("eq.leave.createTitle")}
+                    </p>
+                    <Field
+                      label={t("team.departure.newNamePlaceholder")}
+                      error={createError ?? undefined}
+                    >
+                      {(props) => (
+                        <input
+                          {...props}
+                          value={newShopName}
+                          onChange={(e) => setNewShopName(e.target.value)}
+                          className="min-h-11 w-full rounded-[var(--control-radius)] border border-border bg-background px-3 text-sm"
+                        />
+                      )}
+                    </Field>
+                    <button
+                      type="button"
+                      disabled={creating || !newShopName.trim()}
+                      className="action-button action-confirm min-h-11 w-full justify-center"
+                      onClick={() => void createDestinationShop()}
+                    >
+                      {creating ? (
+                        <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />
+                      ) : (
+                        <Plus className="size-4" aria-hidden />
+                      )}
+                      {t("eq.leave.create")}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {current === "review" && mode && (
+                <div className="space-y-3">
+                  <IconList size="md" items={review} label={t("eq.leave.reviewLabel")} />
+                  {needsRelease && (
+                    <StatusBadge
+                      tone="pending"
+                      icon={Hourglass}
+                      label={t("eq.leave.needsRelease", { names: othersText })}
+                    />
+                  )}
+                </div>
+              )}
+
+              {result?.state === "error" && (
+                <ActionResult state="error" text={result.text} reveal={false} />
+              )}
+
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                {step === 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setOpen(false)}
+                    className="action-button min-h-11 justify-center"
+                  >
+                    {t("eq.leave.stay")}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={sending}
+                    onClick={() => setStep((value) => value - 1)}
+                    className="action-button min-h-11 justify-center"
+                  >
+                    <ArrowLeft className="size-4" aria-hidden />
+                    {t("eq.common.back")}
+                  </button>
+                )}
+                {current === "review" ? (
+                  <button
+                    type="button"
+                    disabled={sending || !mode}
+                    onClick={() => void requestDeparture()}
+                    className="action-button action-danger min-h-11 justify-center"
+                  >
+                    {sending ? (
+                      <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />
+                    ) : needsRelease ? (
+                      <Send className="size-4" aria-hidden />
+                    ) : (
+                      <DoorOpen className="size-4" aria-hidden />
+                    )}
+                    {needsRelease ? t("eq.leave.sendRequest") : t("eq.leave.confirm")}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={!canContinue}
+                    onClick={() => setStep((value) => value + 1)}
+                    className="action-button action-confirm min-h-11 justify-center"
+                  >
+                    {t("eq.common.continue")}
+                    <ArrowRight className="size-4" aria-hidden />
+                  </button>
+                )}
               </div>
             </div>
           )}
-
-          <button
-            type="button"
-            disabled={busy}
-            className="action-button action-danger w-full justify-center"
-            onClick={askDepartureConfirmation}
-          >
-            <LogOut size={14} />
-            {t("team.departure.confirm")}
-          </button>
-        </div>
-      )}
-
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent className="rounded-[var(--panel-radius)]">
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("fix.ajustes-marca.departureConfirmTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {mode === "take"
-                ? t("fix.ajustes-marca.departureConfirmTake", {
-                    shop: destShops.find((shop) => shop.id === destShopId)?.name ?? "",
-                  })
-                : t("fix.ajustes-marca.departureConfirmForfeit")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("integr.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              className="action-button action-danger"
-              onClick={() => void requestDeparture()}
-            >
-              {t("team.departure.confirm")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {message && <p className="text-sm text-foreground">{message}</p>}
-      {error && (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

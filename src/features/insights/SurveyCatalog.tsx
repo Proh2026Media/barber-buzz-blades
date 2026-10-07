@@ -1,5 +1,13 @@
 import { useState } from "react";
-import { ClipboardList } from "lucide-react";
+import { CalendarClock, ClipboardList, Hand, SkipForward } from "lucide-react";
+import {
+  ChoiceChips,
+  IconList,
+  MoreDetails,
+  PreviewPanel,
+  SectionHeader,
+  Tag,
+} from "@/components/visual";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { questions } from "./model";
 
@@ -40,19 +48,42 @@ export function SurveyCatalog({ compact = false }: { compact?: boolean }) {
   const { t } = useI18n();
 
   if (compact) {
+    // Temas em pílulas de escolha: tocar num tema mostra a pergunta exata e as respostas dele
+    // (transparência: as 8 perguntas ficam ao alcance, sem depender de dica flutuante).
     return (
-      <details className="rounded-xl border border-border bg-background/60 p-3 text-sm">
-        <summary className="cursor-pointer py-3 font-semibold">{t("surveys.seeAvailable")}</summary>
-        <div className="mt-3 space-y-3">
-          {keys.map((key) => (
-            <div key={key} className="border-t border-border pt-3 first:border-0 first:pt-0">
-              <p className="font-semibold">{t(metadata[key].name)}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{questions[key].title}</p>
+      <MoreDetails summary={t("surveys.seeAvailable")} icon={ClipboardList}>
+        <div className="space-y-3">
+          <ChoiceChips
+            label={t("conta.surveys.topics", { count: keys.length })}
+            value={selected}
+            onChange={(next) => setSelected(next)}
+            options={keys.map((key) => ({ value: key, label: t(metadata[key].name) }))}
+          />
+          <PreviewPanel title={t("conta.surveys.preview")} badge={t("conta.surveys.example")} live>
+            <p className="text-sm font-bold">{question.title}</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {Object.entries(question.options).map(([value, label]) => (
+                <span
+                  key={value}
+                  className="rounded-xl border border-border bg-background px-3 py-1.5 text-xs font-semibold"
+                >
+                  {label}
+                </span>
+              ))}
             </div>
-          ))}
-          <p className="text-xs text-muted-foreground">{t("surveys.oneAtATime")}</p>
+            <div className="mt-3">
+              <Tag icon={CalendarClock}>{t(metadata[selected].moment)}</Tag>
+            </div>
+          </PreviewPanel>
+          <IconList
+            items={[
+              { icon: Hand, text: t("conta.surveys.oneAtATime"), key: "one" },
+              { icon: CalendarClock, text: t("conta.surveys.every30"), key: "every" },
+              { icon: SkipForward, text: t("conta.surveys.skip"), key: "skip" },
+            ]}
+          />
         </div>
-      </details>
+      </MoreDetails>
     );
   }
 
@@ -61,14 +92,12 @@ export function SurveyCatalog({ compact = false }: { compact?: boolean }) {
       aria-label={t("ins.catalog.title")}
       className="space-y-4 rounded-2xl border border-primary/20 bg-card p-4"
     >
-      <div>
-        <h2 className="flex items-center gap-2 text-base font-bold">
-          <ClipboardList className="size-5 text-primary" /> {t("ins.catalog.title")}
-        </h2>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {t("ins.catalog.summary", { count: keys.length })}
-        </p>
-      </div>
+      <SectionHeader
+        as="h3"
+        icon={ClipboardList}
+        title={t("ins.catalog.title")}
+        description={t("ins.catalog.summary", { count: keys.length })}
+      />
       <div className="grid gap-4 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
         <div className="space-y-2" role="list" aria-label={t("ins.catalog.selectAria")}>
           {keys.map((key) => (

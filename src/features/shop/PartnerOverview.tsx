@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, Copy, Link2, Wallet } from "lucide-react";
+import { CheckCircle2, Link2, Receipt, RefreshCw, Repeat, Wallet } from "lucide-react";
+import {
+  CopyField,
+  LoadingState,
+  Notice,
+  PersonAvatar,
+  SectionHeader,
+  StatTile,
+} from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
 import { RhythmDashboard, type RhythmPayload } from "@/features/insights/RhythmDashboard";
@@ -55,7 +63,6 @@ export function PartnerOverview({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [retry, setRetry] = useState(0);
-  const [copied, setCopied] = useState(false);
   const [resolvedDomain, setResolvedDomain] = useState<{
     domain: string | null;
     status: string | null;
@@ -88,7 +95,8 @@ export function PartnerOverview({
       customDomain: resolvedDomain.domain,
       customDomainStatus: resolvedDomain.status,
     });
-    return `${origin}/app?barber=${encodeURIComponent(bookingSlug)}`;
+    // Endereço curto e legível: o domínio da loja + /nome (a rota leva ao agendamento dele).
+    return `${origin}/${encodeURIComponent(bookingSlug)}`;
   }, [shopSlug, bookingSlug, resolvedDomain.domain, resolvedDomain.status]);
 
   useEffect(() => {
@@ -185,131 +193,145 @@ export function PartnerOverview({
     };
   }, [demo, shopId, staffId, retry]);
 
-  function copyLink() {
-    if (!bookingLink) return;
-    void navigator.clipboard?.writeText(bookingLink).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+  if (loading) {
+    return <LoadingState label={t("team.partner.loading")} variant="stats" count={2} />;
   }
 
-  if (loading) {
-    return (
-      <p role="status" className="text-sm text-muted-foreground">
-        {t("team.partner.loading")}
-      </p>
-    );
-  }
+  const lastEntries = wallet?.entries.slice(0, 5) ?? [];
 
   return (
-    <div className="space-y-4">
-      {/* Link próprio */}
-      {bookingLink && (
-        <div className="rounded-2xl border border-border bg-card p-4">
-          <p className="mb-2 flex items-center gap-2 text-sm font-bold">
-            <Link2 className="size-4 text-gold" />
-            {t("team.partner.linkTitle")}
-          </p>
-          <p className="text-xs text-muted-foreground">{t("team.partner.linkHint")}</p>
-          <div className="mt-3 flex items-center gap-2">
-            <code className="min-w-0 flex-1 truncate rounded-lg bg-muted px-3 py-2 text-xs">
-              {bookingLink}
-            </code>
-            <button
-              type="button"
-              onClick={copyLink}
-              className="flex shrink-0 items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-semibold hover:bg-muted"
-            >
-              <Copy className="size-3.5" />
-              {copied ? t("team.partner.copied") : t("team.partner.copy")}
-            </button>
-          </div>
-        </div>
-      )}
+    // No computador, duas colunas lado a lado (link e carteira | clientes e ritmo), na
+    // largura da Agenda, em vez de uma coluna longa com um vazio ao lado.
+    <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 lg:space-y-0">
+      <div className="min-w-0 space-y-4">
+        {/* Link próprio: legível, com Copiar e Enviar. */}
+        {bookingLink && (
+          <section className="space-y-3 rounded-2xl border border-border bg-card p-4">
+            <SectionHeader
+              icon={Link2}
+              title={t("team.partner.linkTitle")}
+              description={t("team.partner.linkHint")}
+            />
+            <CopyField value={bookingLink} shareTitle={t("team.partner.linkTitle")} />
+          </section>
+        )}
 
-      {/* Carteira (expansível, fechada por padrão) */}
-      <details className="group overflow-hidden rounded-2xl border border-border bg-card">
-        <summary className="flex min-h-14 cursor-pointer list-none items-center gap-2 px-4 text-sm font-bold [&::-webkit-details-marker]:hidden">
-          <Wallet className="size-4 text-gold" />
-          <span className="flex-1">{t("team.partner.wallet")}</span>
-          <span className="text-xs font-semibold text-muted-foreground">
-            {error || !wallet ? "—" : formatBRL(wallet.total_completed_cents ?? 0, intlLocale)}
-          </span>
-          <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
-        </summary>
-        <div className="px-4 pb-4">
+        {/* Carteira: números com o período escrito e os últimos atendimentos. */}
+        <section className="space-y-3 rounded-2xl border border-border bg-card p-4">
+          <SectionHeader
+            icon={Wallet}
+            title={t("team.partner.wallet")}
+            description={t("team.partner.walletPeriod")}
+          />
           {error || !wallet ? (
-            <p className="text-sm text-destructive">{t("team.partner.loadError")}</p>
+            <Notice
+              tone="danger"
+              title={t("team.partner.loadError")}
+              action={{
+                label: t("common.retry"),
+                onClick: () => setRetry((n) => n + 1),
+                icon: RefreshCw,
+              }}
+            />
           ) : (
-            <div className="grid grid-cols-2 gap-3 [&>*]:min-w-0">
-              <div>
-                <p className="text-xs text-muted-foreground">{t("team.partner.appointments")}</p>
-                <p className="text-xl font-bold tabular-nums break-words sm:text-2xl">
-                  {wallet?.completed_count ?? 0}
-                </p>
+            <>
+              {/* O total ganha a linha inteira (cabe sem quebrar no celular); embaixo, quantidade e média. */}
+              <div className="grid grid-cols-2 gap-3">
+                <StatTile
+                  className="col-span-2"
+                  icon={Wallet}
+                  label={t("team.partner.produced")}
+                  value={formatBRL(wallet.total_completed_cents ?? 0, intlLocale)}
+                />
+                <StatTile
+                  icon={CheckCircle2}
+                  label={t("team.partner.appointments")}
+                  value={wallet.completed_count ?? 0}
+                />
+                <StatTile
+                  icon={Receipt}
+                  label={t("team.partner.average")}
+                  value={
+                    wallet.completed_count
+                      ? formatBRL(
+                          Math.round((wallet.total_completed_cents ?? 0) / wallet.completed_count),
+                          intlLocale,
+                        )
+                      : null
+                  }
+                />
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">{t("team.partner.produced")}</p>
-                <p className="text-xl font-bold tabular-nums break-words sm:text-2xl">
-                  {formatBRL(wallet?.total_completed_cents ?? 0, intlLocale)}
-                </p>
-              </div>
-            </div>
-          )}
-          {!error && wallet && wallet.entries.length > 0 && (
-            <div className="mt-3 space-y-2 border-t border-border pt-3">
-              {wallet.entries.slice(0, 5).map((entry) => (
-                <div
-                  key={entry.appointment_id}
-                  className="flex items-center justify-between gap-3 text-sm"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold">
-                      {entry.customer_name ?? t("team.partner.clientFallback")}
-                    </p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {entry.service_name} ·{" "}
-                      {new Date(entry.starts_at).toLocaleString(intlLocale, {
-                        dateStyle: "short",
-                        timeStyle: "short",
-                      })}
-                    </p>
-                  </div>
-                  <span className="shrink-0 font-bold tabular-nums">
-                    {formatBRL(entry.amount_cents, intlLocale)}
-                  </span>
+              {lastEntries.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-bold text-muted-foreground">
+                    {t("team.partner.latest")}
+                  </p>
+                  <ul className="space-y-1.5">
+                    {lastEntries.map((entry) => {
+                      const name = entry.customer_name ?? t("team.partner.clientFallback");
+                      return (
+                        <li
+                          key={entry.appointment_id}
+                          className="flex items-center gap-3 rounded-xl border border-border bg-background/60 p-2.5 text-sm"
+                        >
+                          <PersonAvatar
+                            name={name.replace(/\([^)]*\)/g, "").trim() || name}
+                            size="sm"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-semibold">{name}</p>
+                            {/* Serviço e data em linhas próprias: nada some cortado no celular. */}
+                            <p className="truncate text-xs text-muted-foreground">
+                              {entry.service_name ?? t("team.partner.serviceFallback")}
+                            </p>
+                            <p className="text-xs text-muted-foreground tabular-nums">
+                              {new Date(entry.starts_at).toLocaleString(intlLocale, {
+                                dateStyle: "short",
+                                timeStyle: "short",
+                              })}
+                            </p>
+                          </div>
+                          <span className="shrink-0 font-bold tabular-nums">
+                            {formatBRL(entry.amount_cents, intlLocale)}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
-        </div>
-      </details>
-
-      {/* Clientes (expansível) */}
-      <div className="rounded-2xl border border-border bg-card p-4">
-        <ClientDirectory
-          shopId={shopId}
-          staffId={staffId}
-          scope="own"
-          title={t("team.partner.yourClients")}
-        />
+        </section>
       </div>
 
-      {/* Ritmo */}
-      {error ? (
-        <div role="alert" className="space-y-2 text-sm text-destructive">
-          <p>{t("team.partner.loadError")}</p>
-          <button type="button" onClick={() => setRetry((n) => n + 1)} className="action-button">
-            {t("common.retry")}
-          </button>
-        </div>
-      ) : (
-        <RhythmDashboard
-          rhythm={rhythm}
-          title={t("team.partner.rhythmTitle")}
-          dayLabel={t("team.partner.rhythmDay")}
-        />
-      )}
+      <div className="min-w-0 space-y-4">
+        {/* Clientes do parceiro. */}
+        <section className="rounded-2xl border border-border bg-card p-4">
+          <ClientDirectory
+            shopId={shopId}
+            staffId={staffId}
+            scope="own"
+            title={t("team.partner.yourClients")}
+          />
+        </section>
+
+        {/* Ritmo: cartão com cabeçalho, como "Seu ritmo" do cliente. O gasto médio já está
+          na carteira ("Média por atendimento"), então não se repete aqui. */}
+        {!error && (
+          <section className="space-y-3 rounded-2xl border border-border bg-card p-4">
+            <SectionHeader icon={Repeat} title={t("team.partner.rhythmTitle")} />
+            <RhythmDashboard
+              rhythm={rhythm}
+              title={t("team.partner.rhythmTitle")}
+              dayLabel={t("team.partner.rhythmDay")}
+              subject="clients"
+              hideTitle
+              hideAvgSpend
+            />
+          </section>
+        )}
+      </div>
     </div>
   );
 }

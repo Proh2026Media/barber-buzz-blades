@@ -9,9 +9,55 @@ Atualizado em **03/10/2026**. Este documento resume decisões e entregas da conv
 3. Para retomar localmente, usar `npm run dev -- --host 0.0.0.0 --port 8080`. O endereço esperado é `http://localhost:8080`.
 4. Continuar a partir do próximo pedido do usuário.
 
-## Diretriz — interface visual e autoexplicativa (05/10, dono) — onda 1 feita
+## Diretriz — interface visual e autoexplicativa (05/10, dono) — ondas 1 e 2 feitas
 
-O dono pediu que o sistema fique muito mais visual, intuitivo e com menos texto técnico (registrado em `docs/mb-interface.md`, seção 4, "Mostrar em vez de explicar", e em `AGENTS.md`). **Onda 1 (feita):** "Como os horários aparecem" redesenhado — cartões de modo com pílulas de horário de exemplo, intervalo e folga como botões em vez de listas, mini agenda ilustrada ("já marcado", "folga", "pode começar"), dicas com ícones, resultado do salvamento com ícone e cor; o parágrafo técnico "Como isso vira horário para o cliente" em Serviços e Horários virou o resumo visual "Assim seus clientes veem os horários" (selos + pílulas + botão Mudar). Textos encurtados nos 5 idiomas; chaves antigas removidas. **Próximas ondas (a combinar com o dono):** demais telas do painel, app do cliente e plataforma.
+O dono pediu que o sistema fique muito mais visual, intuitivo e com menos texto técnico (registrado em `docs/mb-interface.md`, seção 4, "Mostrar em vez de explicar", e em `AGENTS.md`). **Onda 1 (feita):** "Como os horários aparecem" redesenhado — cartões de modo com pílulas de horário de exemplo, intervalo e folga como botões em vez de listas, mini agenda ilustrada ("já marcado", "folga", "pode começar"), dicas com ícones, resultado do salvamento com ícone e cor; o parágrafo técnico "Como isso vira horário para o cliente" em Serviços e Horários virou o resumo visual "Assim seus clientes veem os horários" (selos + pílulas + botão Mudar). Textos encurtados nos 5 idiomas; chaves antigas removidas.
+
+**Fundação da rodada 3 (feita):** componentes visuais comuns em `src/components/visual/` (import único `@/components/visual`): selo de estado, aviso e resultado de ação, escolha em pílulas e em cartões, cartão de número, etapas, mini agenda, barra dividida, prazo, janela de decisão, menu "⋯", barra de mudanças não salvas, campo com erro, copiar/enviar, avatar, linha de ajuste, lista de atenção, carregando e vazio ampliado. Cores de estado só pelos tons `--tone-*` de `src/styles.css` (claro, escuro e cartão off-white com AA); avisos rápidos com ícone e faixa por tipo; borda vermelha pelo `aria-invalid`; textos próprios nas chaves `visual.*`. `SlotModeSettings.tsx` é o modelo montado só com eles. Lista, regras e exemplos: `docs/mb-interface.md`, seção 4, "Componentes visuais comuns".
+
+**Onda 2 (feita, 07/10, Claude Code):** redesenho de todo o sistema com a fundação acima, em 12 áreas, cada uma com diagnóstico, implementação, revisão cética e ajuste, e depois uma revisão de consistência geral. Só interface: não mudou banco, migrations nem regras de permissão.
+
+- **Painel:**
+  - Agenda: linha do tempo com "Agora" e "Próximo", "Seu dia" com barra e filtros, um botão principal por atendimento e menu "⋯", faixa de 7 dias.
+  - Serviços e Equipe: cartões com selo Visível/Pausado e interruptor com rótulo, prévia antes de excluir, avisos junto do botão.
+  - Horários: selo "Aberta agora", "Sua semana" em barras numa régua comum, bloqueios desenhados por dia, bloqueio em janela guiada.
+- **Ajustes:**
+  - Menu mostra o estado atual de cada item com selos.
+  - Aparência e domínio menos técnicos.
+  - Agendamento, avisos e pontos com escolhas em pílulas, estado das conexões e confirmação antes de desconectar.
+  - Equipe e sociedade com pedidos legíveis e quem aprova.
+- **Cliente:**
+  - Início começa pelo próximo horário (Hoje, "em 1 hora", Remarcar).
+  - Agendar como passo a passo com resumo sempre visível.
+  - Reservas com selos de estado.
+  - Conta enxuta.
+- **Plataforma:** visão geral com números e barra de estados, acessos com mapa único de papéis.
+- **Entrada e páginas públicas:** formulários mais curtos, etapas visíveis, página da barbearia com horários em pílulas.
+- **Consistência:**
+  - Título de página único (ícone dourado + título).
+  - Mesmo estado sempre com a mesma cor e ícone: "Agora" dourado com tesoura, "Confirmado" azul, "Verificado" para o WhatsApp.
+  - Ícones de papel num só mapa (`src/features/demo/roles.ts` usa o `ROLE_META` de `src/features/shop/roles.tsx`); "Sócio" da demo virou "Dono (sócio)".
+
+Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (192 testes no total).
+
+**Pendências que dependem do dono ou de outra rodada:**
+
+- **Banco ou regra de dados:**
+  - colunas por profissional no computador;
+  - tocar no nome do cliente na Agenda para abrir o perfil (a RPC não devolve `customer_id`);
+  - pedidos de horário "aguardando aprovação" que sobrevivam a recarregar a página;
+  - pausa fixa semanal;
+  - levar o horário tocado na página pública até o Agendar;
+  - logo da barbearia nos cartões da plataforma.
+- **Decisões do dono:**
+  - vagas de "qualquer profissional" na lista de espera;
+  - "Toda semana" × "A cada 7 dias";
+  - o Parceiro da demo tem poderes de dono;
+  - nome da aba Reservas;
+  - Esportes sempre visível;
+  - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
+- **Limpeza:** chaves de dicionário sem uso ficaram para uma limpeza depois. O `CopyField` precisa de opção para esconder "Enviar" em valores técnicos e para não quebrar o link no meio da palavra.
+- **Visual:** nome da loja cortado em 320 px só na demonstração, por causa do botão extra de papel.
 
 ## Entrega — tempo de preparo entre atendimentos (05/10, Claude Code) — **migration pendente na VPS**
 
@@ -47,6 +93,7 @@ Em Ajustes → Página pública (`LandingEditor`), bloco "Preencher pelo CEP" (`
 ## Ajuste — layout da página Entrar/Cadastrar (03/10, noite)
 
 Relato do dono: a página quebrava o formulário ou rolava à toa. Medido antes: no computador (modelo dividido) o título da foto cortava no rodapé e o "Criar conta" ficava abaixo da dobra (documento 1265px em 1440×900); no celular a foto do topo (14rem) fazia até o "Entrar" rolar.
+
 - Regras novas em `.auth-page` (só a página real; a prévia em Ajustes mantém as antigas): foto fixa na altura da tela com título fluido; coluna do formulário até 33rem, centralizada; **cadastro em 2 colunas** quando cabe (nome | e-mail, WhatsApp | ajuda; interruptor e senha em linha inteira; mesma ordem de teclado); "Esqueci a senha" na linha do rótulo "Senha"; espaçamentos encolhem em telas baixas; faixa da foto no celular 9rem; botões de idioma/tema sem sobrepor; `overflow: clip` no contêiner.
 - **Tema escuro:** a cor de marca escura sumia no painel escuro (botão principal, "BEM-VINDO DE VOLTA", "Esqueci a senha", foco, interruptor) — em `.dark .auth-page .auth-brand-panel` o `--primary` vira um tom claro da marca com texto escuro. Decisão visual: marcas de cor viva aparecem clareadas no escuro, não na cor literal.
 - Depois (dividido): Entrar sem rolagem em 390×844, 1024×768, 1280×720, 1440×900, 1920×1080; Cadastrar com "Criar conta" visível em 1280×720 (684px), 1440×900 (723px) e sem rolagem em 1920×1080. Capa e cartão: Entrar ainda rola 25–78px em 1024×768 e 1280×720 (pela página, sem cortes). Nenhuma rolagem interna, corte ou rolagem horizontal nas combinações medidas.
@@ -59,6 +106,7 @@ Pedido do dono: o WhatsApp deixa de ser opcional no cadastro do cliente por e-ma
 ## Entrega — decisões do dono aplicadas (03/10, noite, Claude Code)
 
 Dono decidiu aplicar as quatro recomendações. **Frontend publicado; banco e `register-shop` pendentes** — guia: [implantacao-decisoes-2026-10-03.md](implantacao-decisoes-2026-10-03.md) (vem depois do guia dos ajustes finais).
+
 - **Avisos por WhatsApp só para número confirmado** (`20261003230000`): `enqueue_whatsapp_message` só enfileira aviso a cliente (destinatário por `customer_id`/`appointment_id`) se o número for o dele **e** estiver confirmado; avisos de equipe/dono inalterados; pendentes na fila para não confirmados viram `failed`. App do cliente: cartão "Confirme seu WhatsApp para receber lembretes" (`WhatsappConfirmBanner`) que abre o fluxo existente; aviso equivalente para dono/sócio em Ajustes.
 - **Aceite para contas antigas:** `TermsUpdateGate` mostra uma vez, após o login, "Atualizamos os Termos e a Política" (com Acordo de Dados para dono/sócio) quando falta aceite ou a versão mudou; "Agora não" adia para a próxima sessão; fora da demo, das páginas legais e de quem não está logado; com banco antigo não aparece.
 - **MCP de exemplo removido:** ferramenta fictícia `list_matches`, rotas `/.mcp/*`, `/.well-known/oauth-protected-resource`, `/.lovable/oauth/consent` e `mcpPlugin` do `vite.config.ts`; chaves `app.consent.*` removidas. Nada do produto dependia. `/mcp` cai na rota de barbearia (loja inexistente). O pacote `@lovable.dev/mcp-js` ficou no `package.json` (sem uso; remover com `npm uninstall @lovable.dev/mcp-js` e tirar de `bunfig.toml` quando for conveniente — não feito para não mexer em lockfile sem build no Hostinger).
@@ -70,6 +118,7 @@ Dono decidiu aplicar as quatro recomendações. **Frontend publicado; banco e `r
 ## Entrega — ajustes finais de 03/10 (noite, Claude Code)
 
 Pendências que não dependiam do agente da VPS, mais correções de banco/servidor preparadas e testadas. **Frontend publicado; banco e funções pendentes** — guia: [implantacao-ajustes-finais-2026-10-03.md](implantacao-ajustes-finais-2026-10-03.md).
+
 - **Telas:** título e descrição de `/privacidade`, `/termos` e `/acordo-de-dados` no idioma do `?lang=` já no HTML do servidor (`src/features/legal/legal-head.ts`); "Mostrar guia de configuração" em Ajustes para dono/sócio quando o guia foi escondido; editor de modelos do WhatsApp avisa (em vez de bloquear) quando o texto preenchido passa de 1000 caracteres — o servidor corta com "…"; só bloqueia modelo acima de 1000 sem variáveis (regra do banco). Chaves sem uso removidas.
 - **Banco (`20261003220000_ajustes_finais.sql`, não aplicada):** `validate_shop_ownership` permite apagar a loja inteira (SECURITY DEFINER; regra mantida para lojas existentes, inclusive dono saindo sob RLS); `save_my_whatsapp` sem revelar número confirmado em outra conta (grava sem confirmação); `enqueue_whatsapp_message` não envia a número confirmado em outra conta (destinatário pelo `customer_id`/`appointment_id` do pacote); `purge_auth_otp_challenges()` (7 dias, só service_role) chamada pela `whatsapp-dispatch` uma vez por hora. **Funções:** `google-connect` (janela da Agenda presa a −7/+60 dias), `whatsapp-dispatch` (limpeza; ignora se a função não existir).
 - **Testes:** novo `ajustes_finais.sql` (25 PASS); `correcoes_auditoria.sql` agora vale antes e depois da 180000 (10 PASS no estado atual); `privacy_requests.sql` cria a coluna `auth.users.phone` só se faltar (em produção existe; na cópia local sem GoTrue precisa rodar como `supabase_admin`: 43 PASS).
@@ -79,6 +128,7 @@ Pendências que não dependiam do agente da VPS, mais correções de banco/servi
 ## Entrega — cadastro de cliente e dono: aceite, nome, WhatsApp, guia da loja (03/10/2026, noite, Claude Code)
 
 Motivada pela análise dos formulários (cliente e dono). Guia: [implantacao-cadastro-2026-10-03.md](implantacao-cadastro-2026-10-03.md).
+
 - **Aplicado em produção às 19:34 PT de 03/10** pelo agente da VPS (stack `z2dbb7…`, HEAD `ddf9fbb`): backup `/root/backup-barba-cabelo-20261003-2233.dump` (1,1 MB, 19:33 PT); ensaio 27 PASS, `SLUG vinicius acao-cia`, ROLLBACK; migrations `20261003200000_cadastro_aceite` e `20261003210000_slugify_acentos`, depois `NOTIFY pgrst`; privilégios `f|f` (anon sem EXECUTE em `record_my_terms_acceptance`, usuário sem UPDATE no aceite); `register-shop` e `google-connect` republicadas, OPTIONS 200 (`google-connect` sem mudança em relação a `0a1ad57`). VPS continua sem push no GitHub — registro feito pelo Claude Code.
 - **Cliente (`/auth`):** campo obrigatório "Como você quer ser chamado?"; WhatsApp com máscara e conferência de DDD (Brasil; Portugal com +351), texto de ajuda claro, interruptor de avisos visível ao digitar o número (no lugar do aceite automático); WhatsApp vai nos metadados do cadastro (não se perde mais quando o e-mail precisa de confirmação) e é retomado no primeiro login; aceite logo acima de "Criar conta" com declaração de idade; aceite registrado também no Google (conta nova). Validação: nome/WhatsApp com mensagem traduzida ao lado do campo antes da checagem do navegador (form `noValidate` no cadastro + `reportValidity`). `NamePrompt` no app do cliente para quem está sem nome ou com nome = começo do e-mail (dispensável).
 - **Dono (`/cadastrar`):** caixa de aceite obrigatória (Termos, Política, **Acordo de Tratamento de Dados**, 18+ e representação); prévia do link da loja; "Este WhatsApp também é o da barbearia?" (Sim grava em `barbershop_settings.landing.whatsapp`); mostrar senha; erros por campo; sociedade recolhida ("não tenho sócios").
@@ -97,6 +147,7 @@ Motivada pela análise dos formulários (cliente e dono). Guia: [implantacao-cad
 ## Correção — aviso "Essa agenda não está disponível nesta conta Google" (03/10, noite)
 
 Relato do dono: o aviso aparecia e o seletor de agenda não deixava trocar. O mapa de erros (`src/lib/integrations/friendly-error.ts`) traduzia **qualquer** texto com `calendar … not` para "agenda indisponível" — inclusive o erro do Google quando a **Google Calendar API não está ativada no projeto do Google Cloud** ("has not been used in project … or it is disabled"). Nesse caso `list_calendars` falha, a lista fica vazia e o `<select>` fica desativado (o "nada acontece"). Também "Conexão Google expirada"/`invalid_grant` caía em "sessão expirada" (mandava entrar no app de novo, o que não resolve).
+
 - Agora: mensagens próprias e acionáveis para API desativada (`errors.integration.googleApiDisabled`), permissão da Agenda não marcada no consentimento (`googleScopeMissing`) e token vencido/revogado (`googleReconnect`); "agenda indisponível" só para a resposta real do `set_calendar`. Testes em `src/lib/integrations/friendly-error.test.ts` (4). Só frontend.
 - **Causa no servidor ainda não confirmada** (sem acesso aos logs daqui): ver o texto novo que a tela mostrar, ou `select last_error from google_connections` / `docker logs` do container de funções. Se for API desativada: Google Cloud → APIs e serviços → ativar **Google Calendar API** (e **People API**, usada por Contatos) no **mesmo projeto do client OAuth**.
 
@@ -122,6 +173,7 @@ No ensaio opcional, `loyalty_program_module.sql` foi rodado em autocommit: parou
 ## Correção — ensaio da implantação de 03/10 (noite, Claude Code)
 
 O ensaio no servidor (backup `/root/backup-barba-cabelo-20261003-1943.dump`, nada aplicado) parou em `column reference "status" is ambiguous` dentro de `request_shop_departure`: a variável local `status` tinha o nome da coluna, e o `WHERE` do `UPDATE` falhava **em qualquer modo — em produção, ninguém consegue sair de uma barbearia** desde 22/09. A `20261003150000` (ainda não aplicada) agora recria a função com `v_status` e colunas qualificadas, mesmas regras e permissões. O teste `correcoes_auditoria.sql` tinha `'confirmed'`/`'pending'` sem tipo num `UNION ALL` (texto × `appointment_status`); tipados.
+
 - Verificado num Postgres local `supabase/postgres:15.8.1.085` com as 75 migrations de produção + admin de plataforma de teste: ensaio do guia com 10 PASS e ROLLBACK; aplicação real das 5 migrations uma a uma; reaplicação sem erro; privilégios do passo 6 (`google_connections` sem SELECT para anon/authenticated; funções novas sem EXECUTE para anon); 27 testes SQL antigos (com as cadeias de reservas) **idênticos antes e depois** — 26 passam, `privacy_requests.sql` já falhava antes (`column "phone"`, teste desatualizado).
 - Limitação do ambiente local: `storage` da imagem é mais simples que o do servidor (colunas completadas à mão só no local); auth.users mínimo.
 

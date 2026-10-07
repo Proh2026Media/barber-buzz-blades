@@ -8,6 +8,8 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { ChevronLeft, Home, Link2Off } from "lucide-react";
+import { EmptyState } from "../components/visual";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -24,22 +26,35 @@ const APP_DESCRIPTION =
 
 function NotFoundComponent() {
   const { t } = useI18n();
+  // Link quebrado em desenho, com saída clara; o "404" fica pequeno, só para o suporte.
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-7xl font-semibold tracking-tight text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">{t("app.notFound.title")}</h2>
-        <p className="mt-2 text-sm text-muted-foreground">{t("app.notFound.body")}</p>
-        <div className="mt-6">
-          <Link
-            to="/"
-            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-          >
+    <main className="public-page flex min-h-dvh items-center justify-center bg-background p-4">
+      <EmptyState
+        className="public-card w-full max-w-sm"
+        status="neutral"
+        icon={Link2Off}
+        title={t("app.notFound.title")}
+        description={t("app.notFound.body")}
+        action={
+          <Link to="/" className="action-button action-confirm min-h-12 w-full">
+            <Home aria-hidden />
             {t("app.common.backHome")}
           </Link>
-        </div>
-      </div>
-    </div>
+        }
+        secondaryAction={
+          <button
+            type="button"
+            onClick={() => window.history.back()}
+            className="inline-flex min-h-11 items-center justify-center gap-1.5 text-sm font-semibold underline underline-offset-4"
+          >
+            <ChevronLeft className="size-4" aria-hidden />
+            {t("common.back")}
+          </button>
+        }
+      >
+        <p className="text-xs text-muted-foreground">{t("app.notFound.code")}</p>
+      </EmptyState>
+    </main>
   );
 }
 

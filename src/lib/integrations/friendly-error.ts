@@ -58,9 +58,28 @@ const PATTERNS: Array<{ test: RegExp; message: MessageKey }> = [
   },
 ];
 
+/**
+ * Qual mensagem amigável corresponde ao erro (ou `null`). Reconhece também um texto que já é a
+ * mensagem amigável no idioma atual, para nunca traduzir duas vezes — o "Toque em Desconectar"
+ * do Google casava com o padrão do WhatsApp e virava a mensagem errada.
+ */
+export function integrationErrorKind(raw: unknown): MessageKey | null {
+  const text = rawText(raw).trim();
+  if (!text) return null;
+  for (const entry of PATTERNS) {
+    if (t(entry.message) === text) return entry.message;
+  }
+  for (const entry of PATTERNS) {
+    if (entry.test.test(text)) return entry.message;
+  }
+  return null;
+}
+
 export function friendlyIntegrationError(raw: unknown, fallback: string): string {
   const text = rawText(raw).trim();
   if (!text) return fallback;
+  // Já traduzido antes (ex.: pelo callGoogle): devolve como está.
+  if (PATTERNS.some((entry) => t(entry.message) === text)) return text;
   for (const entry of PATTERNS) {
     if (entry.test.test(text)) return t(entry.message);
   }

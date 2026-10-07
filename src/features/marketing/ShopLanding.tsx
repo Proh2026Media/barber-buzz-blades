@@ -1,70 +1,70 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type CSSProperties,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Link } from "@tanstack/react-router";
 import {
-  CalendarClock,
+  CalendarPlus,
+  ChevronDown,
   ChevronRight,
   Clock3,
-  Instagram,
-  Loader2,
+  Info,
+  Link2Off,
   LogIn,
   MapPin,
-  MessageCircle,
+  Moon,
+  RefreshCw,
   Scissors,
-  UserRound,
+  Users,
+  WifiOff,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { useI18n } from "@/lib/i18n";
-import { brandCornerClass, brandVariables, DEFAULT_LOGIN_IMAGE } from "@/lib/shop/branding";
-import { BrandFontFace } from "@/features/shop/BrandFontFace";
-import { ServiceIcon } from "@/components/ui/service-icon";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { EmptyState, LoadingState, Notice, StatusBadge, type Tone } from "@/components/visual";
 import { StaffPhoto } from "@/components/ui/staff-photo";
+import { useI18n } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
+import { brandCornerClass, brandVariables, DEFAULT_LOGIN_IMAGE } from "@/lib/shop/branding";
+import { useShopFavicon } from "@/lib/shop/favicon";
+import { BrandFontFace } from "@/features/shop/BrandFontFace";
 import { useAvailabilitySignal } from "@/lib/shop/availability-signal";
 import {
+  BookLink,
+  MemberDayBadge,
+  QuickActions,
+  ServiceRow,
+  SlotPills,
+  TodayCard,
+  WeekHours,
+  type MemberDay,
+} from "./ShopLandingParts";
+import {
+  endedToday,
+  formatClock,
+  groupHours,
+  splitClosedToday,
   instagramUrl,
   mapsUrl,
+  nextOpeningAfterToday,
   openStateAt,
   parseLandingData,
+  sortStaffByAvailability,
   whatsappUrl,
   type LandingData,
 } from "./shop-landing";
 
 const REFRESH_MS = 60_000;
-const SLOTS_SHOWN = 6;
-/** `get_public_shop_landing` devolve no máximo 12 horários livres por profissional. */
-const SERVER_SLOTS_LIMIT = 12;
-/** Cor de destaque ajustada para leitura nos dois temas (ícones de seção). */
+/** Cor de destaque ajustada para leitura nos dois temas (ícones de seção fora dos cartões). */
 const accentIconClass =
   "text-[var(--brand-accent-readable)] dark:text-[var(--brand-accent-readable-dark,var(--brand-accent-readable))]";
+const heroIconButton = "app-icon-button hero-icon-button";
 
-/** Mostra um "HH:MM" da loja no formato de hora do idioma (ex.: 02:30 PM em en-US). */
-function formatClock(value: string | null | undefined, locale: string) {
-  if (!value) return value ?? "";
-  const match = /^(\d{1,2}):(\d{2})/.exec(value);
-  if (!match) return value;
-  try {
-    return new Intl.DateTimeFormat(locale, {
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZone: "UTC",
-    }).format(new Date(Date.UTC(2024, 0, 1, Number(match[1]), Number(match[2]))));
-  } catch {
-    return value;
-  }
-}
-
-function appPath(slug: string, barber?: string | null) {
-  const params = new URLSearchParams({ shop: slug });
-  if (barber) params.set("barber", barber);
-  return `/app?${params.toString()}`;
-}
+/** Situação da última atualização dos horários (selo "Ao vivo" ou "Sem conexão"). */
+export type LandingFreshness = {
+  /** Momento da última atualização que deu certo (ISO). */
+  updatedAt: string | null;
+  /** A última tentativa de atualizar falhou: os horários podem estar velhos. */
+  failed: boolean;
+  onRefresh: () => void;
+};
 
 function nowInZone(timeZone: string) {
   try {
@@ -84,20 +84,49 @@ export function ShopLanding({ shopRef, host }: { shopRef?: string; host?: string
   const { t } = useI18n();
   const [data, setData] = useState<LandingData | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "missing" | "error">("loading");
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
 
   const load = useCallback(async () => {
-    const { data: raw, error } = await supabase.rpc("get_public_shop_landing", {
-      p_shop_ref: shopRef ?? null,
-      p_host: host ?? null,
-    });
-    if (error) {
+    let result: Awaited<ReturnType<typeof supabase.rpc<"get_public_shop_landing">>> | null = null;
+    try {
+      result = await supabase.rpc("get_public_shop_landing", {
+        p_shop_ref: shopRef ?? null,
+        p_host: host ?? null,
+      });
+    } catch {
+      result = null;
+    }
+    if (!result || result.error) {
+      // Depois do primeiro carregamento, os horários antigos continuam, com o selo "Sem conexão".
+      setFailed(true);
       setState((current) => (current === "ready" ? current : "error"));
       return;
     }
-    const parsed = parseLandingData(raw);
+    const parsed = parseLandingData(result.data);
     setData(parsed);
+    setFailed(false);
+    setUpdatedAt(new Date().toISOString());
     setState(parsed ? "ready" : "missing");
   }, [shopRef, host]);
+
+  const retry = useCallback(() => {
+    setState("loading");
+    void load();
+  }, [load]);
+
+  // Aba do navegador com o nome e a logo da barbearia.
+  useShopFavicon(data?.shop.logo_url ?? null);
+  const tabName = data ? data.shop.display_name || data.shop.name : null;
+  const tabTitle = tabName ? t("shopLanding.docTitle", { name: tabName }) : null;
+  useEffect(() => {
+    if (!tabTitle) return;
+    const previous = document.title;
+    document.title = tabTitle;
+    return () => {
+      document.title = previous;
+    };
+  }, [tabTitle]);
 
   // Atualiza na hora quando a agenda muda; o recarregamento a cada minuto fica como reserva.
   useAvailabilitySignal(data?.shop.id, () => void load());
@@ -116,69 +145,144 @@ export function ShopLanding({ shopRef, host }: { shopRef?: string; host?: string
   }, [load]);
 
   if (state === "loading") {
+    // Esqueleto com o desenho da página (capa escura + cartões) e o verbo visível.
     return (
-      <main className="flex min-h-dvh items-center justify-center bg-background" role="status">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" aria-hidden />
-        <span className="sr-only">{t("shopLanding.loading")}</span>
+      <main className="public-page min-h-dvh bg-background">
+        <div aria-hidden className="bg-[#141412] px-4 pb-8 pt-[max(1rem,env(safe-area-inset-top))]">
+          <div className="mx-auto max-w-3xl space-y-4">
+            <span className="block size-12 rounded-[var(--control-radius)] bg-white/10" />
+            <span className="mt-8 block h-9 w-2/3 rounded-md bg-white/10 motion-safe:animate-pulse" />
+            <span className="block h-4 w-1/2 rounded-md bg-white/10 motion-safe:animate-pulse" />
+            <span className="block h-36 rounded-[var(--panel-radius)] bg-white/10 motion-safe:animate-pulse" />
+          </div>
+        </div>
+        <div className="mx-auto max-w-3xl px-4 py-6">
+          <LoadingState
+            label={t("shopLanding.loading")}
+            variant="cards"
+            count={2}
+            onRetry={retry}
+          />
+        </div>
       </main>
     );
   }
   if (state !== "ready" || !data) {
+    const missing = state === "missing";
+    // "Endereço errado" e "sem internet" com desenhos e saídas diferentes.
     return (
-      <main className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-background p-6 text-center">
-        <Scissors className="size-8 text-muted-foreground" aria-hidden />
-        <h1 className="text-xl font-extrabold">
-          {t(state === "missing" ? "shopLanding.missingTitle" : "shopLanding.errorTitle")}
-        </h1>
-        <p className="max-w-sm text-sm text-muted-foreground">
-          {t(state === "missing" ? "shopLanding.missingText" : "shopLanding.errorText")}
-        </p>
-        {state === "error" ? (
-          <button
-            type="button"
-            className="action-button action-confirm"
-            onClick={() => void load()}
-          >
-            {t("shopLanding.retry")}
-          </button>
-        ) : (
-          <Link to="/" className="action-button action-confirm">
-            {t("shopLanding.goHome")}
-          </Link>
-        )}
+      <main className="public-page flex min-h-dvh items-center justify-center bg-background p-4">
+        <EmptyState
+          className="public-card w-full max-w-sm"
+          status={missing ? "neutral" : "warning"}
+          icon={missing ? Link2Off : WifiOff}
+          title={t(missing ? "shopLanding.missingTitle" : "shopLanding.errorTitle")}
+          description={t(missing ? "shopLanding.checkLink" : "shopLanding.errorText")}
+          action={
+            missing ? (
+              <Link
+                to="/auth"
+                search={{ next: "" }}
+                className="action-button action-confirm min-h-12 w-full"
+              >
+                <LogIn aria-hidden />
+                {t("shopLanding.signIn")}
+              </Link>
+            ) : (
+              <button
+                type="button"
+                className="action-button action-confirm min-h-12 w-full"
+                onClick={retry}
+              >
+                <RefreshCw aria-hidden />
+                {t("shopLanding.retry")}
+              </button>
+            )
+          }
+          secondaryAction={
+            missing ? (
+              <Link
+                to="/"
+                className="inline-flex min-h-11 items-center justify-center text-sm font-semibold underline underline-offset-4"
+              >
+                {t("shopLanding.goHome")}
+              </Link>
+            ) : undefined
+          }
+        />
       </main>
     );
   }
-  return <ShopLandingView data={data} />;
+  return (
+    <ShopLandingView data={data} freshness={{ updatedAt, failed, onRefresh: () => void load() }} />
+  );
 }
 
 /** Parte visual, usada também na prévia do editor (sem links ativos). */
 export function ShopLandingView({
   data,
   preview = false,
+  freshness,
 }: {
   data: LandingData;
   preview?: boolean;
+  freshness?: LandingFreshness;
 }) {
   const { t, intlLocale } = useI18n();
   const { shop, landing, today } = data;
   const name = shop.display_name || shop.name;
   const headline = landing.headline || shop.tagline || t("shopLanding.defaultHeadline");
+  // Na prévia do editor o espaço é estreito: fica sempre em uma coluna.
+  const wide = !preview;
   const [nowHHMM, setNowHHMM] = useState(() => nowInZone(shop.timezone));
   useEffect(() => {
     const timer = window.setInterval(() => setNowHHMM(nowInZone(shop.timezone)), 30_000);
     return () => window.clearInterval(timer);
   }, [shop.timezone]);
   const open = openStateAt(today, nowHHMM);
+  const ended = endedToday(today, nowHHMM);
+  const nextOpen = open.kind === "closed" ? nextOpeningAfterToday(data.hours, today.weekday) : null;
 
-  const weekdayName = useMemo(() => {
+  // Com sessão salva neste aparelho, "Agendar" vai direto ao app (leitura local, sem login).
+  const [signedIn, setSignedIn] = useState(false);
+  useEffect(() => {
+    if (preview) return;
+    let active = true;
+    void supabase.auth
+      .getSession()
+      .then(({ data: session }) => {
+        if (active) setSignedIn(!!session.session);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [preview]);
+
+  // A barra fixa do celular (e o botão do painel lateral no computador) só aparece quando o
+  // botão principal do cartão "Hoje" sai da tela: nunca dois botões iguais à vista.
+  const ctaRef = useRef<HTMLDivElement>(null);
+  const [ctaVisible, setCtaVisible] = useState(true);
+  useEffect(() => {
+    if (preview) return;
+    const node = ctaRef.current;
+    if (!node || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(([entry]) => setCtaVisible(entry.isIntersecting));
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [preview]);
+
+  const dayLong = useMemo(() => {
     const base = new Date(Date.UTC(2024, 0, 7));
     const format = new Intl.DateTimeFormat(intlLocale, { weekday: "long", timeZone: "UTC" });
+    return (weekday: number) => format.format(new Date(base.getTime() + weekday * 86_400_000));
+  }, [intlLocale]);
+  const dayShort = useMemo(() => {
+    const base = new Date(Date.UTC(2024, 0, 7));
+    const format = new Intl.DateTimeFormat(intlLocale, { weekday: "short", timeZone: "UTC" });
     return (weekday: number) => {
       const label = format.format(new Date(base.getTime() + weekday * 86_400_000));
-      return (
-        label.charAt(0).toLocaleUpperCase(intlLocale) + label.slice(1).toLocaleLowerCase(intlLocale)
-      );
+      return label.charAt(0).toLocaleUpperCase(intlLocale) + label.slice(1);
     };
   }, [intlLocale]);
   const money = (cents: number) =>
@@ -197,8 +301,58 @@ export function ShopLandingView({
     instagram: instagramUrl(landing.instagram),
     whatsapp: whatsappUrl(landing.whatsapp),
   };
-  const hasAbout =
-    landing.enabled && (landing.about || contact.map || contact.instagram || contact.whatsapp);
+  const address = landing.enabled ? landing.address.trim() : "";
+  const showAbout = landing.enabled && !!landing.about.trim();
+
+  // Equipe: quem tem vaga hoje primeiro; o horário mais cedo vira o "Próximo horário livre".
+  const staff = useMemo(() => sortStaffByAvailability(data.staff), [data.staff]);
+  const freeStaff = staff.filter((member) => member.offers_services && member.free_today.length);
+  const nextSlot =
+    showToday && freeStaff[0] ? { time: freeStaff[0].free_today[0], member: freeStaff[0] } : null;
+  const dayOver = !today.is_open || open.kind === "closed";
+  const dayState: MemberDay = dayOver ? (ended ? "ended" : "off") : "full";
+  const memberDay = (member: (typeof staff)[number]): MemberDay =>
+    !member.offers_services ? "noOnline" : member.free_today.length > 0 ? "free" : dayState;
+  const anyOnline = staff.some((member) => member.offers_services);
+  const nextDayLabel = nextOpen
+    ? t("shopLanding.nextDay", { day: dayLong(nextOpen.weekday) })
+    : null;
+
+  const statusLabel =
+    open.kind === "open"
+      ? t("shopLanding.openUntil", { time: formatClock(open.until, intlLocale) })
+      : open.kind === "later"
+        ? t("shopLanding.opensAt", { time: formatClock(open.opens, intlLocale) })
+        : nextOpen
+          ? nextOpen.inDays === 1
+            ? t("shopLanding.closedOpensTomorrow", {
+                time: formatClock(nextOpen.opens, intlLocale),
+              })
+            : t("shopLanding.closedOpensDay", {
+                day: dayLong(nextOpen.weekday),
+                time: formatClock(nextOpen.opens, intlLocale),
+              })
+          : t("shopLanding.closedToday");
+  const statusTone: Tone =
+    open.kind === "open" ? "success" : open.kind === "later" ? "info" : "neutral";
+  const statusIcon = open.kind === "later" ? Clock3 : open.kind === "closed" ? Moon : undefined;
+  const updatedLabel = freshness?.updatedAt
+    ? new Date(freshness.updatedAt).toLocaleTimeString(intlLocale, {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : null;
+
+  /** O selo aberto/fechado do topo leva ao horário da semana (o visível nesta largura). */
+  const scrollToHours = () => {
+    const target = Array.from(document.querySelectorAll<HTMLElement>("[data-landing-hours]")).find(
+      (element) => element.offsetParent !== null,
+    );
+    if (!target) return;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    target.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    target.focus({ preventScroll: true });
+  };
 
   const style = brandVariables(
     shop.primary_color,
@@ -215,9 +369,46 @@ export function ShopLandingView({
     fontStyle: "var(--brand-header-font-style)",
   };
 
+  const statusBadge = (
+    <StatusBadge
+      tone={statusTone}
+      icon={statusIcon}
+      live={open.kind === "open"}
+      size="lg"
+      label={statusLabel}
+    />
+  );
+  const hoursSection = (aside: boolean) =>
+    showHours && (
+      <section
+        aria-labelledby={aside ? "landing-hours-aside" : "landing-hours"}
+        data-landing-hours
+        tabIndex={-1}
+        className={cn("scroll-mt-6 space-y-3 outline-none", wide && !aside && "lg:hidden")}
+      >
+        <h2
+          id={aside ? "landing-hours-aside" : "landing-hours"}
+          className="flex items-center gap-2 text-lg font-extrabold tracking-tight"
+        >
+          <Clock3 className={`size-5 ${accentIconClass}`} aria-hidden />
+          {t("shopLanding.hoursTitle")}
+        </h2>
+        <WeekHours
+          groups={splitClosedToday(groupHours(data.hours), today.weekday, today.is_open)}
+          todayWeekday={today.weekday}
+          openNow={open.kind === "open"}
+          dayShort={dayShort}
+        />
+      </section>
+    );
+
   return (
     <div
-      className={`shop-landing ${preview ? "" : "brand-page min-h-dvh"} bg-background text-foreground ${brandCornerClass(shop.corner_style)}`}
+      className={cn(
+        "shop-landing public-page bg-background text-foreground",
+        !preview && "brand-page min-h-dvh",
+        brandCornerClass(shop.corner_style),
+      )}
       style={style}
     >
       <BrandFontFace url={shop.custom_font_url} />
@@ -228,11 +419,15 @@ export function ShopLandingView({
           className="absolute inset-0 -z-10 size-full object-cover opacity-55"
         />
         <div
-          className="absolute inset-0 -z-10 bg-gradient-to-b from-black/30 via-black/45 to-[#141412]"
+          className="absolute inset-0 -z-10 bg-gradient-to-b from-black/30 via-black/50 to-[#141412]"
           aria-hidden
         />
         <div
-          className={`mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 ${preview ? "pt-4" : "pt-[max(1rem,env(safe-area-inset-top))]"}`}
+          className={cn(
+            "mx-auto flex max-w-3xl items-center justify-between gap-3 px-4",
+            wide && "lg:max-w-6xl",
+            preview ? "pt-4" : "pt-[max(1rem,env(safe-area-inset-top))]",
+          )}
         >
           <div className="flex min-w-0 items-center gap-3">
             {shop.logo_url ? (
@@ -248,348 +443,273 @@ export function ShopLandingView({
               </span>
             )}
           </div>
-          {!preview && <LanguageSwitcher buttonClassName="app-icon-button hero-icon-button" />}
+          {!preview && (
+            <div className="flex items-center gap-2">
+              <LanguageSwitcher showCode buttonClassName={heroIconButton} />
+              <ThemeToggle buttonClassName={heroIconButton} />
+            </div>
+          )}
         </div>
-        <div className="mx-auto max-w-3xl space-y-4 px-4 pb-8 pt-10">
-          <h1 className="text-4xl leading-tight sm:text-5xl" style={brandFont}>
-            {name}
-          </h1>
-          <p className="max-w-xl text-base text-[#f7f5f0]/85">{headline}</p>
-          <p
-            className={`inline-flex items-center gap-2 rounded-[var(--button-radius)] px-3 py-1.5 text-xs font-bold ${
-              open.kind === "open"
-                ? "bg-emerald-500/20 text-emerald-200"
-                : "bg-white/10 text-[#f7f5f0]/85"
-            }`}
-          >
-            <span
-              className={`size-2 rounded-full ${open.kind === "open" ? "bg-emerald-400" : "bg-white/50"}`}
-              aria-hidden
-            />
-            {open.kind === "open"
-              ? t("shopLanding.openUntil", { time: formatClock(open.until, intlLocale) })
-              : open.kind === "later"
-                ? t("shopLanding.opensAt", { time: formatClock(open.opens, intlLocale) })
-                : t("shopLanding.closedToday")}
-          </p>
-          <div className="flex flex-col gap-2 pt-2 sm:flex-row">
-            <LoginLink
-              slug={shop.slug}
-              preview={preview}
-              className="action-button action-confirm min-h-12 border-white/30 px-5 text-sm"
-            >
-              <LogIn aria-hidden />
-              {t("shopLanding.cta")}
-            </LoginLink>
+        <div
+          className={cn(
+            "mx-auto max-w-3xl px-4 pb-6 pt-8",
+            wide &&
+              "lg:grid lg:max-w-6xl lg:grid-cols-[minmax(0,1fr)_25rem] lg:items-end lg:gap-10 lg:pb-10",
+          )}
+        >
+          <div className="min-w-0 space-y-4">
+            <h1 className="text-4xl leading-tight sm:text-5xl" style={brandFont}>
+              {name}
+            </h1>
+            <p className="max-w-xl text-base text-[#f7f5f0]/85">{headline}</p>
+            {showHours ? (
+              <button
+                type="button"
+                onClick={scrollToHours}
+                aria-label={`${statusLabel}. ${t("shopLanding.seeWeek")}`}
+                className="inline-flex min-h-11 max-w-full items-center gap-1 rounded-[var(--button-radius)] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+              >
+                {statusBadge}
+                <ChevronDown className="size-4 shrink-0 text-[#f7f5f0]/80" aria-hidden />
+              </button>
+            ) : (
+              <p>{statusBadge}</p>
+            )}
+            {landing.enabled && (
+              <QuickActions
+                preview={preview}
+                map={contact.map}
+                whatsapp={contact.whatsapp}
+                instagram={contact.instagram}
+                instagramHandle={landing.instagram.trim()}
+                className="max-w-md"
+              />
+            )}
+            {address && (
+              <p className="flex max-w-md items-start gap-1.5 text-xs leading-snug text-[#f7f5f0]/80">
+                <MapPin className="mt-px size-3.5 shrink-0" aria-hidden />
+                <span className="min-w-0 [overflow-wrap:anywhere]">{address}</span>
+              </p>
+            )}
           </div>
-          <p className="text-xs text-[#f7f5f0]/70">{t("shopLanding.ctaHint")}</p>
+          <TodayCard
+            slug={shop.slug}
+            preview={preview}
+            signedIn={signedIn}
+            showToday={showToday}
+            next={nextSlot}
+            freeCount={freeStaff.length}
+            dayState={anyOnline ? dayState : null}
+            nextDayLabel={nextDayLabel}
+            ctaRef={ctaRef}
+            className={cn("mt-6", wide && "lg:mt-0")}
+          />
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl space-y-8 px-4 py-8 pb-[calc(7rem+env(safe-area-inset-bottom))]">
-        {showStaff && (
-          <section aria-labelledby="landing-staff" className="space-y-3">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <UserRound className={`size-5 ${accentIconClass}`} aria-hidden />
-                <h2 id="landing-staff" className="text-lg font-extrabold tracking-tight">
+      <div
+        className={cn(
+          "mx-auto max-w-3xl px-4 py-8",
+          wide &&
+            "pb-[calc(6rem+env(safe-area-inset-bottom))] lg:grid lg:max-w-6xl lg:grid-cols-[minmax(0,1fr)_25rem] lg:items-start lg:gap-10 lg:pb-12",
+        )}
+      >
+        <main className="min-w-0 space-y-8">
+          {showStaff && (
+            <section aria-labelledby="landing-staff" className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2
+                  id="landing-staff"
+                  className="flex items-center gap-2 text-lg font-extrabold tracking-tight"
+                >
+                  <Users className={`size-5 ${accentIconClass}`} aria-hidden />
                   {t("shopLanding.staffTitle")}
                 </h2>
+                {showToday && freshness && !freshness.failed && updatedLabel && (
+                  <StatusBadge
+                    tone="success"
+                    variant="dot"
+                    live
+                    label={t("shopLanding.live", { time: updatedLabel })}
+                  />
+                )}
               </div>
-              <p className="text-xs text-muted-foreground">
-                {t(showToday ? "shopLanding.staffHintToday" : "shopLanding.staffHint")}
-              </p>
-            </div>
-            <ul className="grid gap-3 sm:grid-cols-2">
-              {data.staff.map((member) => (
-                <li
-                  key={member.booking_slug ?? member.name}
-                  className="relative flex flex-col gap-3 rounded-[var(--panel-radius)] border border-border bg-card p-4 transition-colors hover:border-foreground/30"
+              {showToday && freshness?.failed && (
+                <Notice
+                  tone="warning"
+                  icon={WifiOff}
+                  title={t("shopLanding.offlineTitle")}
+                  action={{
+                    label: t("shopLanding.refresh"),
+                    onClick: freshness.onRefresh,
+                    icon: RefreshCw,
+                  }}
                 >
-                  <div className="flex items-start gap-3">
-                    <StaffPhoto
-                      src={member.avatar_url}
-                      className="size-14 rounded-full"
-                      fallback={
-                        <span
-                          className="flex size-14 shrink-0 items-center justify-center rounded-full bg-muted text-lg font-bold"
-                          aria-hidden
-                        >
-                          {member.name.slice(0, 1).toUpperCase()}
-                        </span>
-                      }
-                    />
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <h3 className="font-bold">{member.name}</h3>
-                      {member.bio && <p className="text-sm text-muted-foreground">{member.bio}</p>}
-                    </div>
-                  </div>
-                  {showToday &&
-                    (!member.offers_services ? (
-                      <p className="rounded-[var(--control-radius)] bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
-                        {t("shopLanding.memberNoServices")}
-                      </p>
-                    ) : member.free_today.length > 0 ? (
-                      <div className="space-y-1.5">
-                        <p className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-                          <CalendarClock className="size-3.5" aria-hidden />
-                          {member.min_duration_minutes
-                            ? t("shopLanding.todayFrom", { n: member.min_duration_minutes })
-                            : t("shopLanding.todayTitle")}
-                        </p>
-                        <ul
-                          className="flex flex-wrap gap-2"
-                          aria-label={t("shopLanding.slotsOf", { name: member.name })}
-                        >
-                          {member.free_today.slice(0, SLOTS_SHOWN).map((time) => (
-                            <li key={time}>
-                              <LoginLink
-                                slug={shop.slug}
-                                preview={preview}
-                                barber={member.booking_slug}
-                                className="relative z-10 inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--control-radius)] border border-border bg-background px-3 text-sm font-semibold tabular-nums hover:border-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                              >
-                                {formatClock(time, intlLocale)}
-                              </LoginLink>
-                            </li>
-                          ))}
-                          {member.free_today.length > SLOTS_SHOWN && (
-                            <li className="inline-flex min-h-11 items-center px-2 text-xs text-muted-foreground">
-                              {member.free_today.length >= SERVER_SLOTS_LIMIT
-                                ? t("fix.landing-espera-pwa.moreSlotsMany")
-                                : t("shopLanding.moreSlots", {
-                                    n: member.free_today.length - SLOTS_SHOWN,
-                                  })}
-                            </li>
+                  {t("shopLanding.offlineText")}
+                </Notice>
+              )}
+              <ul className="grid gap-3 sm:grid-cols-2">
+                {staff.map((member) => {
+                  const day = memberDay(member);
+                  const bookable = member.offers_services;
+                  return (
+                    <li
+                      key={member.booking_slug ?? member.name}
+                      className={cn(
+                        "public-card relative flex flex-col gap-3 rounded-[var(--panel-radius)] border border-border p-4",
+                        bookable ? "transition-colors hover:border-foreground/40" : "border-dashed",
+                      )}
+                    >
+                      <div className="flex items-start gap-3">
+                        <StaffPhoto
+                          src={member.avatar_url}
+                          className={cn("size-14 rounded-full", !bookable && "opacity-70")}
+                          fallback={
+                            <span
+                              className="flex size-14 shrink-0 items-center justify-center rounded-full bg-muted text-lg font-bold"
+                              aria-hidden
+                            >
+                              {member.name.slice(0, 1).toUpperCase()}
+                            </span>
+                          }
+                        />
+                        <div className="min-w-0 flex-1 space-y-1.5">
+                          <h3 className="font-bold leading-snug">{member.name}</h3>
+                          {(showToday || !bookable) && (
+                            <MemberDayBadge state={showToday ? day : "noOnline"} />
                           )}
-                        </ul>
+                          {member.bio && (
+                            <p className="text-sm text-muted-foreground">{member.bio}</p>
+                          )}
+                        </div>
                       </div>
-                    ) : (
-                      <p className="rounded-[var(--control-radius)] bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
-                        {today.is_open && open.kind !== "closed"
-                          ? t("shopLanding.memberNoSlots")
-                          : t("shopLanding.memberClosed")}
-                      </p>
-                    ))}
-                  <LoginLink
-                    slug={shop.slug}
-                    preview={preview}
-                    barber={member.booking_slug}
-                    className="mt-auto inline-flex min-h-11 items-center gap-1 self-start text-sm font-bold text-[var(--brand-accent-readable)] dark:text-[var(--brand-accent-readable-dark,var(--brand-accent-readable))] after:absolute after:inset-0 after:rounded-[var(--panel-radius)] after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
-                  >
-                    {t("shopLanding.bookWith", { name: member.name.split(" ")[0] })}
-                    <ChevronRight className="size-4" aria-hidden />
-                  </LoginLink>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+                      {showToday && day === "free" && (
+                        <SlotPills
+                          member={member}
+                          slug={shop.slug}
+                          preview={preview}
+                          signedIn={signedIn}
+                        />
+                      )}
+                      {bookable && (
+                        <BookLink
+                          slug={shop.slug}
+                          preview={preview}
+                          signedIn={signedIn}
+                          barber={member.booking_slug}
+                          className="public-accent mt-auto inline-flex min-h-11 items-center gap-1 self-start text-sm font-bold after:absolute after:inset-0 after:rounded-[var(--panel-radius)] after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
+                        >
+                          {showToday && day !== "free"
+                            ? t("shopLanding.otherDays")
+                            : t("shopLanding.bookWith", { name: member.name.split(" ")[0] })}
+                          <ChevronRight className="size-4" aria-hidden />
+                        </BookLink>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
 
-        {showServices && (
-          <section aria-labelledby="landing-services" className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Scissors className={`size-5 ${accentIconClass}`} aria-hidden />
-              <h2 id="landing-services" className="text-lg font-extrabold tracking-tight">
+          {showServices && (
+            <section aria-labelledby="landing-services" className="space-y-3">
+              <h2
+                id="landing-services"
+                className="flex items-center gap-2 text-lg font-extrabold tracking-tight"
+              >
+                <Scissors className={`size-5 ${accentIconClass}`} aria-hidden />
                 {t("shopLanding.servicesTitle")}
               </h2>
-            </div>
-            <ul className="divide-y divide-border rounded-[var(--panel-radius)] border border-border bg-card">
-              {data.services.map((service) => (
-                <li key={service.name} className="flex items-center gap-3 p-4">
-                  <span className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-[var(--control-radius)] bg-muted text-muted-foreground">
-                    <ServiceIcon
-                      icon={service.icon}
-                      className="size-6"
-                      imageClassName="size-full object-cover"
-                    />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold">{service.name}</p>
-                    {service.description && (
-                      <p className="text-xs text-muted-foreground">{service.description}</p>
-                    )}
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {t("shopLanding.minutes", { n: service.duration_minutes })}
-                    </p>
-                  </div>
-                  <p className="shrink-0 font-bold tabular-nums">{money(service.price_cents)}</p>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+              <ul className={cn("grid gap-2", wide && "lg:grid-cols-2 lg:gap-3")}>
+                {data.services.map((service) => (
+                  <ServiceRow
+                    key={service.name}
+                    service={service}
+                    price={money(service.price_cents)}
+                  />
+                ))}
+              </ul>
+            </section>
+          )}
 
-        {showHours && (
-          <section aria-labelledby="landing-hours" className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Clock3 className={`size-5 ${accentIconClass}`} aria-hidden />
-              <h2 id="landing-hours" className="text-lg font-extrabold tracking-tight">
-                {t("shopLanding.hoursTitle")}
+          {hoursSection(false)}
+
+          {showAbout && (
+            <section aria-labelledby="landing-about" className="space-y-2">
+              <h2
+                id="landing-about"
+                className="flex items-center gap-2 text-lg font-extrabold tracking-tight"
+              >
+                <Info className={`size-5 ${accentIconClass}`} aria-hidden />
+                {t("shopLanding.about")}
               </h2>
-            </div>
-            <ul className="rounded-[var(--panel-radius)] border border-border bg-card">
-              {[1, 2, 3, 4, 5, 6, 0].map((weekday) => {
-                const row = data.hours.find((item) => item.weekday === weekday);
-                const isToday = weekday === today.weekday;
-                return (
-                  <li
-                    key={weekday}
-                    className={`flex items-center justify-between gap-3 px-4 py-3 text-sm ${
-                      isToday ? "font-bold" : ""
-                    }`}
-                    aria-current={isToday ? "date" : undefined}
-                  >
-                    <span>
-                      {weekdayName(weekday)}
-                      {isToday && (
-                        <span className="ml-2 rounded-[var(--button-radius)] bg-muted px-2 py-0.5 text-[11px]">
-                          {t("shopLanding.today")}
-                        </span>
-                      )}
-                    </span>
-                    <span className="tabular-nums text-muted-foreground">
-                      {row?.is_open
-                        ? t("shopLanding.hoursRange", {
-                            from: formatClock(row.opens_at, intlLocale),
-                            to: formatClock(row.closes_at, intlLocale),
-                          })
-                        : t("shopLanding.closed")}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        )}
-
-        {hasAbout && (
-          <section aria-labelledby="landing-about" className="space-y-3">
-            <h2 id="landing-about" className="text-lg font-extrabold tracking-tight">
-              {t("shopLanding.aboutTitle", { name })}
-            </h2>
-            {landing.about && (
               <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
                 {landing.about}
               </p>
+            </section>
+          )}
+
+          {!preview && (
+            <footer className="space-y-2 border-t border-border pt-6 text-center text-xs text-muted-foreground">
+              <p>{t("shopLanding.footer")}</p>
+              <p className="flex justify-center gap-2">
+                <Link
+                  to="/privacidade"
+                  className="inline-flex min-h-11 items-center px-2 font-semibold text-foreground underline underline-offset-4"
+                >
+                  {t("shopLanding.privacy")}
+                </Link>
+                <Link
+                  to="/termos"
+                  className="inline-flex min-h-11 items-center px-2 font-semibold text-foreground underline underline-offset-4"
+                >
+                  {t("shopLanding.terms")}
+                </Link>
+              </p>
+            </footer>
+          )}
+        </main>
+
+        {wide && (
+          // Computador: painel lateral fixo com o horário e, quando o cartão "Hoje" sai da
+          // tela, o botão de agendar (sem barra atravessando a tela).
+          <aside className="hidden space-y-6 lg:sticky lg:top-6 lg:block">
+            {!ctaVisible && (
+              <div className="public-card space-y-2 rounded-[var(--panel-radius)] border border-border p-4">
+                <p className="text-sm font-bold">{name}</p>
+                <p>{statusBadge}</p>
+                <BookLink
+                  slug={shop.slug}
+                  preview={preview}
+                  signedIn={signedIn}
+                  className="action-button action-confirm min-h-12 w-full text-sm"
+                >
+                  <CalendarPlus aria-hidden />
+                  {t("shopLanding.bookCta")}
+                </BookLink>
+              </div>
             )}
-            <div className="flex flex-col gap-2">
-              {contact.map && (
-                <ContactLink href={contact.map} preview={preview} icon={<MapPin aria-hidden />}>
-                  {landing.address}
-                </ContactLink>
-              )}
-              {contact.whatsapp && (
-                <ContactLink
-                  href={contact.whatsapp}
-                  preview={preview}
-                  icon={<MessageCircle aria-hidden />}
-                >
-                  {t("shopLanding.whatsapp")}
-                </ContactLink>
-              )}
-              {contact.instagram && (
-                <ContactLink
-                  href={contact.instagram}
-                  preview={preview}
-                  icon={<Instagram aria-hidden />}
-                >
-                  {landing.instagram.startsWith("@") ? landing.instagram : `@${landing.instagram}`}
-                </ContactLink>
-              )}
-            </div>
-          </section>
+            {hoursSection(true)}
+          </aside>
         )}
-
-        {!preview && (
-          <footer className="space-y-2 border-t border-border pt-6 text-center text-xs text-muted-foreground">
-            <p>{t("shopLanding.footer")}</p>
-            <p className="flex justify-center gap-2">
-              <Link
-                to="/privacidade"
-                className="inline-flex min-h-11 items-center px-2 font-semibold text-foreground underline underline-offset-4"
-              >
-                {t("shopLanding.privacy")}
-              </Link>
-              <Link
-                to="/termos"
-                className="inline-flex min-h-11 items-center px-2 font-semibold text-foreground underline underline-offset-4"
-              >
-                {t("shopLanding.terms")}
-              </Link>
-            </p>
-          </footer>
-        )}
-      </main>
-
-      <div
-        className={`${preview ? "sticky" : "fixed"} inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 p-3 backdrop-blur-xl ${preview ? "" : "pb-[max(0.75rem,env(safe-area-inset-bottom))]"}`}
-      >
-        <div className="mx-auto max-w-3xl">
-          <LoginLink
-            slug={shop.slug}
-            preview={preview}
-            className="action-button action-confirm min-h-12 w-full text-sm"
-          >
-            <LogIn aria-hidden />
-            {t("shopLanding.cta")}
-          </LoginLink>
-        </div>
       </div>
+
+      {!preview && !ctaVisible && (
+        <div className="public-sticky-bar public-card fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl lg:hidden">
+          <div className="mx-auto max-w-3xl">
+            <BookLink
+              slug={shop.slug}
+              preview={preview}
+              signedIn={signedIn}
+              className="action-button action-confirm min-h-12 w-full text-sm"
+            >
+              <CalendarPlus aria-hidden />
+              {t("shopLanding.bookCta")}
+            </BookLink>
+          </div>
+        </div>
+      )}
     </div>
-  );
-}
-
-function LoginLink({
-  slug,
-  preview,
-  barber,
-  className,
-  children,
-}: {
-  slug: string;
-  preview: boolean;
-  barber?: string | null;
-  className: string;
-  children: ReactNode;
-}) {
-  if (preview)
-    return (
-      <span className={className} aria-disabled="true">
-        {children}
-      </span>
-    );
-  return (
-    <Link to="/auth" search={{ next: appPath(slug, barber), shop: slug }} className={className}>
-      {children}
-    </Link>
-  );
-}
-
-function ContactLink({
-  href,
-  preview,
-  icon,
-  children,
-}: {
-  href: string;
-  preview: boolean;
-  icon: ReactNode;
-  children: ReactNode;
-}) {
-  const className =
-    "flex min-h-11 items-center gap-3 rounded-[var(--control-radius)] border border-border bg-card px-3 text-sm font-semibold [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-[var(--brand-accent-readable)] dark:[&>svg]:text-[var(--brand-accent-readable-dark,var(--brand-accent-readable))]";
-  if (preview)
-    return (
-      <span className={className}>
-        {icon}
-        <span className="min-w-0 py-2.5 leading-snug [overflow-wrap:anywhere]">{children}</span>
-      </span>
-    );
-  return (
-    <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
-      {icon}
-      <span className="min-w-0 py-2.5 leading-snug [overflow-wrap:anywhere]">{children}</span>
-    </a>
   );
 }

@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { UserRound } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Check, Loader2, MessageCircle, UserRound } from "lucide-react";
+import { FieldMessage, IconTile, Notice } from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
 
@@ -43,13 +44,19 @@ function needsDisplayName(name: string | null | undefined, email: string | null 
   return Boolean(local) && current === local;
 }
 
+export type NamePromptState = "hidden" | "open" | "done";
+
 type Props = {
   /** Demonstração: o cartão nunca aparece. */
   disabled?: boolean;
   onSaved?: (name: string) => void;
+  /** Avisa quem agrupa as etapas do cadastro (aberto, concluído ou escondido). */
+  onStateChange?: (state: NamePromptState) => void;
+  /** Indicador de etapas, acima do título. */
+  header?: ReactNode;
 };
 
-export function NamePrompt({ disabled = false, onSaved }: Props) {
+export function NamePrompt({ disabled = false, onSaved, onStateChange, header }: Props) {
   const { t } = useI18n();
   const [userId, setUserId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -58,6 +65,11 @@ export function NamePrompt({ disabled = false, onSaved }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [savedName, setSavedName] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const visible = !disabled && open;
+  const state: NamePromptState = !visible ? "hidden" : savedName ? "done" : "open";
+  useEffect(() => {
+    onStateChange?.(state);
+  }, [onStateChange, state]);
 
   useEffect(() => {
     if (disabled) return;
@@ -119,7 +131,8 @@ export function NamePrompt({ disabled = false, onSaved }: Props) {
       setSavedName(normalized);
       onSaved?.(normalized);
     } catch {
-      setOpen(false);
+      // Sem rede: o cartão continua aberto, com o aviso e o nome digitado.
+      setError(t("cad.nome.errorSave"));
     } finally {
       setBusy(false);
     }
@@ -130,42 +143,30 @@ export function NamePrompt({ disabled = false, onSaved }: Props) {
     setOpen(false);
   }
 
-  if (disabled || !open) return null;
+  if (!visible) return null;
 
   if (savedName) {
     return (
-      <section
-        role="status"
-        className="app-action-card flex items-center gap-3 border border-border/70 bg-card p-4 text-sm"
-      >
-        <UserRound className="size-5 shrink-0 text-primary" aria-hidden="true" />
-        <p className="min-w-0 flex-1">{t("cad.nome.saved", { name: savedName })}</p>
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          className="inline-flex min-h-11 items-center rounded-[var(--button-radius)] px-3 text-sm font-semibold text-primary"
-        >
-          {t("common.close")}
-        </button>
-      </section>
+      <Notice
+        tone="success"
+        title={t("cad.nome.saved", { name: savedName })}
+        onDismiss={() => setOpen(false)}
+        className="rounded-2xl p-4"
+      />
     );
   }
 
+  // Prévia do resultado no lugar da explicação: o lembrete já com o nome digitado.
+  const previewName = name.trim().split(/\s+/)[0] || t("cad.nome.previewFallback");
+
   return (
-    <section
-      aria-labelledby="name-prompt-title"
-      className="app-action-card space-y-3 border border-primary/25 bg-card p-4"
-    >
-      <div className="flex items-start gap-3">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-[var(--control-radius)] bg-primary/10 text-primary">
-          <UserRound className="size-5" aria-hidden="true" />
-        </span>
-        <div className="min-w-0">
-          <h2 id="name-prompt-title" className="text-base font-semibold text-foreground">
-            {t("cad.nome.title")}
-          </h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">{t("cad.nome.text")}</p>
-        </div>
+    <section aria-labelledby="name-prompt-title" className="app-action-card space-y-3 p-4">
+      {header}
+      <div className="flex items-center gap-3">
+        <IconTile icon={UserRound} />
+        <h2 id="name-prompt-title" className="min-w-0 text-base font-semibold text-foreground">
+          {t("cad.nome.title")}
+        </h2>
       </div>
       <form onSubmit={(event) => void save(event)} className="space-y-3" noValidate>
         <label className="block space-y-1.5 text-sm font-semibold text-foreground/85">
@@ -184,15 +185,29 @@ export function NamePrompt({ disabled = false, onSaved }: Props) {
               setError(null);
             }}
             aria-invalid={error ? true : undefined}
-            aria-describedby={error ? "name-prompt-error" : undefined}
+            aria-describedby={error ? "name-prompt-error" : "name-prompt-preview"}
             className="min-h-11 w-full rounded-[var(--control-radius)] border border-border bg-background px-3 py-2 text-[15px] font-normal text-foreground outline-none focus:border-primary focus:ring-4 focus:ring-primary/10"
           />
         </label>
         {error && (
-          <p id="name-prompt-error" role="alert" className="text-sm text-destructive">
-            {error}
-          </p>
+          <FieldMessage tone="error" id="name-prompt-error">
+            <span role="alert">{error}</span>
+          </FieldMessage>
         )}
+        <div
+          id="name-prompt-preview"
+          className="flex items-start gap-2 rounded-2xl bg-muted/60 p-3"
+        >
+          <MessageCircle className="mt-0.5 size-4 shrink-0 text-gold" aria-hidden />
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold text-muted-foreground">
+              {t("cad.nome.previewLabel")}
+            </p>
+            <p className="mt-1 rounded-xl rounded-tl-sm bg-card px-3 py-2 text-sm shadow-sm">
+              {t("cad.nome.preview", { name: previewName })}
+            </p>
+          </div>
+        </div>
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
@@ -205,8 +220,14 @@ export function NamePrompt({ disabled = false, onSaved }: Props) {
           <button
             type="submit"
             disabled={busy}
-            className="flex min-h-11 items-center justify-center rounded-[var(--button-radius)] bg-primary px-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+            aria-busy={busy || undefined}
+            className="flex min-h-11 items-center justify-center gap-1.5 rounded-[var(--button-radius)] bg-primary px-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
           >
+            {busy ? (
+              <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />
+            ) : (
+              <Check className="size-4" aria-hidden />
+            )}
             {busy ? t("common.wait") : t("cad.nome.save")}
           </button>
         </div>

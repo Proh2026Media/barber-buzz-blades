@@ -3,8 +3,13 @@ import { test } from "node:test";
 import {
   DEFAULT_LANDING,
   cleanLandingConfig,
+  endedToday,
+  groupHours,
   instagramUrl,
+  nextOpeningAfterToday,
   openStateAt,
+  sortStaffByAvailability,
+  splitClosedToday,
   parseLandingConfig,
   parseLandingData,
   validateLandingConfig,
@@ -59,6 +64,95 @@ test("open state follows today's hours", () => {
   assert.deepEqual(openStateAt(today, "12:00"), { kind: "open", until: "19:00" });
   assert.deepEqual(openStateAt(today, "19:00"), { kind: "closed" });
   assert.deepEqual(openStateAt({ ...today, is_open: false }, "12:00"), { kind: "closed" });
+});
+
+test("next opening looks at the following days", () => {
+  const week = [0, 1, 2, 3, 4, 5, 6].map((weekday) => ({
+    weekday,
+    is_open: weekday !== 0,
+    opens_at: weekday === 6 ? "08:00" : "09:00",
+    closes_at: "19:00",
+  }));
+  assert.deepEqual(nextOpeningAfterToday(week, 1), { inDays: 1, weekday: 2, opens: "09:00" });
+  assert.deepEqual(nextOpeningAfterToday(week, 6), { inDays: 2, weekday: 1, opens: "09:00" });
+  assert.deepEqual(nextOpeningAfterToday(week, 5), { inDays: 1, weekday: 6, opens: "08:00" });
+  assert.equal(
+    nextOpeningAfterToday(
+      week.map((row) => ({ ...row, is_open: false })),
+      1,
+    ),
+    null,
+  );
+  const today = { date: "", weekday: 1, is_open: true, opens_at: "09:00", closes_at: "19:00" };
+  assert.equal(endedToday(today, "19:00"), true);
+  assert.equal(endedToday(today, "18:59"), false);
+  assert.equal(endedToday({ ...today, is_open: false }, "20:00"), false);
+});
+
+test("hours are grouped by equal consecutive days", () => {
+  const week = [0, 1, 2, 3, 4, 5, 6].map((weekday) => ({
+    weekday,
+    is_open: weekday !== 0,
+    opens_at: weekday === 6 ? "08:00" : "09:00",
+    closes_at: weekday === 6 ? "14:00" : "19:00",
+  }));
+  const groups = groupHours(week);
+  assert.deepEqual(
+    groups.map((group) => group.days),
+    [[1, 2, 3, 4, 5], [6], [0]],
+  );
+  assert.equal(groups[2].is_open, false);
+  // Dia sem linha conta como fechado e não se junta a dias abertos.
+  assert.deepEqual(
+    groupHours(week.filter((row) => row.weekday !== 3)).map((group) => group.days),
+    [[1, 2], [3], [4, 5], [6], [0]],
+  );
+});
+
+test("today closed by exception gets its own closed row", () => {
+  const week = [0, 1, 2, 3, 4, 5, 6].map((weekday) => ({
+    weekday,
+    is_open: weekday !== 0,
+    opens_at: "09:00",
+    closes_at: "19:00",
+  }));
+  const groups = groupHours(week);
+  // Hoje aberto: nada muda.
+  assert.equal(splitClosedToday(groups, 3, true), groups);
+  const split = splitClosedToday(groups, 3, false);
+  assert.deepEqual(
+    split.map((group) => group.days),
+    [[1, 2], [3], [4, 5, 6], [0]],
+  );
+  assert.equal(split[1].is_open, false);
+  assert.equal(split[2].opens_at, "09:00");
+  // Hoje na ponta do grupo: sem grupo vazio.
+  assert.deepEqual(
+    splitClosedToday(groups, 1, false).map((group) => group.days),
+    [[1], [2, 3, 4, 5, 6], [0]],
+  );
+});
+
+test("staff with free slots come first", () => {
+  const member = (name: string, free: string[], offers = true) => ({
+    name,
+    bio: "",
+    avatar_url: null,
+    booking_slug: name,
+    free_today: free,
+    offers_services: offers,
+    min_duration_minutes: 30,
+  });
+  const sorted = sortStaffByAvailability([
+    member("sem-agenda", [], false),
+    member("lotado", []),
+    member("tarde", ["15:00"]),
+    member("cedo", ["09:30", "16:00"]),
+  ]);
+  assert.deepEqual(
+    sorted.map((item) => item.name),
+    ["cedo", "tarde", "lotado", "sem-agenda"],
+  );
 });
 
 test("contact links are built safely", () => {

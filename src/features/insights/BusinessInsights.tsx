@@ -1,5 +1,32 @@
 import { useEffect, useState } from "react";
-import { BarChart3 } from "lucide-react";
+import {
+  BarChart3,
+  CalendarCheck,
+  CheckCircle2,
+  Clock3,
+  MousePointerClick,
+  RefreshCw,
+  RotateCcw,
+  Smile,
+  Star,
+  Store,
+  User,
+  Users,
+  UserX,
+  Wallet,
+  XCircle,
+} from "lucide-react";
+import {
+  IconList,
+  IconTile,
+  LoadingState,
+  MoreDetails,
+  Notice,
+  SectionHeader,
+  SegmentBar,
+  StatTile,
+} from "@/components/visual";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
 import { useI18n } from "@/lib/i18n";
@@ -200,92 +227,153 @@ export function BusinessInsights({
       }
       aria-label={t("ins.biz.aria")}
     >
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="flex items-center gap-2 text-sm font-bold">
-          {!embedded && <BarChart3 className="size-5 text-primary" />}
-          {day ? t("ins.biz.titleDay") : t("ins.biz.title30")}
-        </h3>
-        <button
-          disabled={loading}
-          onClick={() => setVersion((v) => v + 1)}
-          className="text-xs underline"
-        >
-          {t("ins.biz.refresh")}
-        </button>
-      </div>
+      {embedded ? (
+        <h3 className="text-sm font-bold">{day ? t("ins.biz.titleDay") : t("ins.biz.title30")}</h3>
+      ) : (
+        <SectionHeader
+          as="h3"
+          icon={BarChart3}
+          title={day ? t("ins.biz.titleDay") : t("ins.biz.title30")}
+          aside={
+            // Dentro da Agenda, o "Atualizar" da própria Agenda já recarrega estes números.
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => setVersion((v) => v + 1)}
+              aria-label={t("ins.biz.refresh")}
+              title={t("ins.biz.refresh")}
+              className="app-icon-button"
+            >
+              <RefreshCw
+                className={cn("size-4", loading && "motion-safe:animate-spin")}
+                aria-hidden
+              />
+            </button>
+          }
+        />
+      )}
       {loading ? (
-        <p role="status" className="text-xs">
-          {t("ins.biz.loading")}
-        </p>
+        <LoadingState variant="stats" count={4} label={t("ins.biz.loading")} />
       ) : error ? (
-        <p role="alert" className="text-xs text-destructive">
-          {t("ins.biz.loadError")}
-        </p>
+        <Notice
+          tone="danger"
+          title={t("ins.biz.loadError")}
+          action={{
+            label: t("visual.retry"),
+            onClick: () => setVersion((v) => v + 1),
+            icon: RotateCcw,
+          }}
+        />
       ) : (
         summary && (
           <>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {[
-                [t("ins.biz.customers"), summary.customers],
-                [t("ins.biz.bookings"), summary.bookings],
-                [t("ins.biz.completed"), summary.completed],
-                [t("ins.biz.cancelled"), summary.cancelled],
-                [t("ins.biz.noShows"), summary.no_shows],
-                [
-                  t("ins.biz.customerDelay", { count: delays.customer_sample }),
-                  delays.customer_mean === null
-                    ? t("ins.biz.noRecords")
-                    : `${Math.round(delays.customer_mean)} min`,
-                ],
-                [
-                  t("ins.biz.shopDelay", { count: delays.shop_sample }),
-                  delays.shop_mean === null
-                    ? t("ins.biz.noRecords")
-                    : `${Math.round(delays.shop_mean)} min`,
-                ],
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-xl border border-border bg-background/60 p-3">
-                  <p className="text-lg font-bold">{value}</p>
-                  <p className="text-[11px] text-muted-foreground">{label}</p>
-                </div>
-              ))}
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {/* Na Agenda, reservas, concluídos, cancelados e valor já estão em "Seu dia". */}
+              {!embedded && (
+                <>
+                  <StatTile
+                    icon={Wallet}
+                    tone="highlight"
+                    label={t("ins.biz.completedValueShort")}
+                    className="col-span-2 sm:col-span-1"
+                    value={(summary.quoted_completed_cents / 100).toLocaleString(intlLocale, {
+                      style: "currency",
+                      currency: "BRL",
+                      currencyDisplay: "narrowSymbol",
+                    })}
+                  />
+                  <StatTile
+                    icon={CalendarCheck}
+                    tone="highlight"
+                    label={t("ins.biz.bookings")}
+                    value={summary.bookings}
+                  />
+                </>
+              )}
+              <StatTile
+                icon={Users}
+                tone="highlight"
+                label={t("ins.biz.customersShort")}
+                value={summary.customers}
+              />
+              {!embedded && (
+                <>
+                  <StatTile
+                    icon={CheckCircle2}
+                    tone="success"
+                    label={t("ins.biz.completed")}
+                    value={summary.completed}
+                  />
+                  <StatTile
+                    icon={XCircle}
+                    tone="danger"
+                    label={t("ins.biz.cancelled")}
+                    value={summary.cancelled}
+                  />
+                </>
+              )}
+              <StatTile
+                icon={UserX}
+                tone="danger"
+                label={t("ins.biz.noShows")}
+                value={summary.no_shows}
+              />
+              {/* Fora da Agenda, o atraso ocupa a linha inteira (cliente | barbearia lado a
+                  lado) em vez de ficar sozinho na última linha. */}
+              <DelayTile
+                delays={delays}
+                wide={!embedded}
+                className={embedded ? "col-span-2 sm:col-span-1" : "col-span-2 sm:col-span-3"}
+              />
             </div>
-            <p className="text-xs text-muted-foreground">{t("ins.biz.delayNote")}</p>
-            <p className="text-sm">
-              {t("ins.biz.completedValue")}{" "}
-              <strong>
-                {(summary.quoted_completed_cents / 100).toLocaleString(intlLocale, {
-                  style: "currency",
-                  currency: "BRL",
-                  currencyDisplay: "narrowSymbol",
-                })}
-              </strong>
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {t("ins.biz.priceNote", {
-                missing: summary.missing_price,
-                sample: summary.wait_sample,
-              })}
-            </p>
-            <details className="text-xs">
-              <summary className="cursor-pointer font-semibold">{t("ins.biz.usage")}</summary>
-              <div className="mt-2 space-y-1">
-                <p>{t("ins.biz.usageStarted", { count: summary.usage.booking_started ?? 0 })}</p>
-                <p>
-                  {t("ins.biz.usageSucceeded", { count: summary.usage.booking_succeeded ?? 0 })}
-                </p>
-                <p>{t("ins.biz.usageFailed", { count: summary.usage.booking_failed ?? 0 })}</p>
-                <p className="text-muted-foreground">{t("ins.biz.usageNote")}</p>
-              </div>
-            </details>
-            <details className="text-xs" open={!day}>
-              <summary className="cursor-pointer font-semibold">{t("ins.biz.experience")}</summary>
-              <div className="mt-3 space-y-4">
+            <MoreDetails summary={t("ins.biz.howCalculated")}>
+              <IconList
+                size="sm"
+                items={[
+                  { key: "delay", icon: Clock3, text: t("ins.biz.delayNote") },
+                  {
+                    key: "price",
+                    icon: Wallet,
+                    text: t("ins.biz.priceNoteShort", { missing: summary.missing_price }),
+                  },
+                ]}
+              />
+            </MoreDetails>
+            <MoreDetails summary={t("ins.biz.usage")} icon={MousePointerClick}>
+              <IconList
+                size="md"
+                items={[
+                  {
+                    key: "started",
+                    icon: MousePointerClick,
+                    text: t("ins.biz.usageStarted", {
+                      count: summary.usage.booking_started ?? 0,
+                    }),
+                  },
+                  {
+                    key: "succeeded",
+                    tone: "success",
+                    text: t("ins.biz.usageSucceeded", {
+                      count: summary.usage.booking_succeeded ?? 0,
+                    }),
+                  },
+                  {
+                    key: "failed",
+                    tone: "danger",
+                    text: t("ins.biz.usageFailed", { count: summary.usage.booking_failed ?? 0 }),
+                  },
+                ]}
+              />
+              <p className="text-xs">{t("ins.biz.usageNote")}</p>
+            </MoreDetails>
+            <MoreDetails summary={t("ins.biz.experience")} icon={Smile} defaultOpen={!day}>
+              <div className="space-y-4 text-xs text-foreground">
                 <div>
                   <p className="font-semibold">{t("ins.biz.rating")}</p>
                   {summary.rating_sample >= 5 && summary.rating_average !== null ? (
                     <>
-                      <p className="mt-1 text-2xl font-bold text-primary">
+                      <p className="mt-1 flex flex-wrap items-center gap-2 text-2xl font-bold text-primary">
+                        <Stars value={Number(summary.rating_average)} />
                         {Number(summary.rating_average).toLocaleString(intlLocale, {
                           minimumFractionDigits: 1,
                           maximumFractionDigits: 2,
@@ -347,7 +435,7 @@ export function BusinessInsights({
                 </div>
                 <p className="text-muted-foreground">{t("ins.biz.aggregateNote")}</p>
               </div>
-            </details>
+            </MoreDetails>
           </>
         )
       )}
@@ -355,12 +443,105 @@ export function BusinessInsights({
   );
 }
 
+/** Amostra pequena: barrinha "3 de 5 respostas para mostrar o resultado". */
 function InsufficientSample({ count }: { count: number }) {
   const { t } = useI18n();
+  const text = t("ins.biz.sampleProgress", { count, total: 5 });
   return (
-    <p className="mt-1 text-muted-foreground">
-      {t(count === 1 ? "ins.biz.sampleOne" : "ins.biz.sampleMany", { count })}
-    </p>
+    <SegmentBar
+      className="mt-1"
+      size="sm"
+      segments={[{ key: "answers", label: text, value: Math.min(count, 5), tone: "pending" }]}
+      total={5}
+      summary={text}
+      showSummary
+      legend={false}
+    />
+  );
+}
+
+/** Nota média em estrelas (meia estrela arredonda para cima a partir de ,5). */
+function Stars({ value }: { value: number }) {
+  const full = Math.round(value);
+  return (
+    <span className="inline-flex text-gold" aria-hidden>
+      {[1, 2, 3, 4, 5].map((index) => (
+        <Star key={index} className={cn("size-5", index <= full ? "fill-current" : "opacity-35")} />
+      ))}
+    </span>
+  );
+}
+
+/** Atraso médio: cliente × barbearia em barrinhas, com "—" quando não há registro. */
+function DelayTile({
+  delays,
+  wide = false,
+  className,
+}: {
+  delays: DelaySummary;
+  /** Linha inteira: cliente e barbearia lado a lado a partir de 640 px. */
+  wide?: boolean;
+  className?: string;
+}) {
+  const { t } = useI18n();
+  const max = Math.max(delays.customer_mean ?? 0, delays.shop_mean ?? 0, 1);
+  const rows = [
+    {
+      key: "customer",
+      icon: User,
+      label: t("ins.biz.delayCustomer"),
+      mean: delays.customer_mean,
+      sample: delays.customer_sample,
+    },
+    {
+      key: "shop",
+      icon: Store,
+      label: t("ins.biz.delayShop"),
+      mean: delays.shop_mean,
+      sample: delays.shop_sample,
+    },
+  ];
+  return (
+    <div className={cn("app-action-card min-w-0 space-y-2 p-4", className)}>
+      <p className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+        <IconTile icon={Clock3} tone="highlight" size="sm" />
+        {t("ins.biz.avgDelay")}
+      </p>
+      <div className={cn("space-y-2", wide && "sm:grid sm:grid-cols-2 sm:gap-6 sm:space-y-0")}>
+        {rows.map((row) => {
+          const Icon = row.icon;
+          return (
+            <div key={row.key} className="space-y-1">
+              <p className="flex items-center gap-1.5 text-xs">
+                <Icon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                <span className="min-w-0 flex-1 font-semibold">{row.label}</span>
+                <span className="font-bold tabular-nums">
+                  {row.mean === null ? (
+                    <>
+                      <span aria-hidden>—</span>
+                      <span className="sr-only">{t("ins.biz.noRecords")}</span>
+                    </>
+                  ) : (
+                    t("agenda.minutes", { minutes: Math.round(row.mean) })
+                  )}
+                </span>
+              </p>
+              <span className="block h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden>
+                <span
+                  className="block h-full rounded-full bg-gold"
+                  style={{ width: `${row.mean === null ? 0 : (row.mean / max) * 100}%` }}
+                />
+              </span>
+              <p className="text-[11px] text-muted-foreground">
+                {t(row.sample === 1 ? "ins.biz.delayRecordsOne" : "ins.biz.delayRecords", {
+                  count: row.sample,
+                })}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 function MetricRows({

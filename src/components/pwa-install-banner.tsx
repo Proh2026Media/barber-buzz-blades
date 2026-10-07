@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { Download, X } from "lucide-react";
+import { useRouterState } from "@tanstack/react-router";
+import { Maximize2, Share, Smartphone, SquarePlus, X, Zap } from "lucide-react";
+import { Tag } from "@/components/visual";
 import { useI18n } from "@/lib/i18n";
 
 type BeforeInstallPromptEvent = Event & {
@@ -7,7 +9,23 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
 
-const DISMISS_KEY = "arena:pwa-install-dismissed";
+/** "Agora não" vale por 30 dias neste aparelho. */
+const DISMISS_KEY = "arena:pwa-install-dismissed-until";
+const DISMISS_MS = 30 * 24 * 60 * 60 * 1000;
+
+/** Nunca por cima da entrada e do cadastro: o convite não cobre formulário. */
+function hiddenOn(pathname: string) {
+  return pathname.startsWith("/auth") || pathname.startsWith("/cadastrar");
+}
+
+/** No iPhone o Safari não oferece o botão de instalar: o convite mostra os 2 passos. */
+function isIos() {
+  if (typeof navigator === "undefined") return false;
+  return (
+    /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
+}
 
 function isStandalone() {
   if (typeof window === "undefined") return false;
@@ -17,71 +35,122 @@ function isStandalone() {
   );
 }
 
-/** Banner discreto para instalar o app como PWA (quando o navegador permitir). */
+function dismissedRecently() {
+  try {
+    return Number(window.localStorage.getItem(DISMISS_KEY) || 0) > Date.now();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Convite para pôr o app na tela inicial: ícone do app, os ganhos reais em pílulas e uma ação.
+ * Android/computador: botão "Adicionar à tela inicial" (quando o navegador permite).
+ * iPhone: os 2 passos (Compartilhar → Adicionar à Tela de Início), só no app e no painel.
+ */
 export function PwaInstallBanner() {
   const { t } = useI18n();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
-  const [visible, setVisible] = useState(false);
+  const [ios, setIos] = useState(false);
+  const [dismissed, setDismissed] = useState(true);
 
   useEffect(() => {
-    if (isStandalone()) return;
-    try {
-      if (sessionStorage.getItem(DISMISS_KEY) === "1") return;
-    } catch {
-      // ignore
-    }
+    if (isStandalone() || dismissedRecently()) return;
+    setDismissed(false);
+    setIos(isIos());
 
     const onPrompt = (event: Event) => {
       event.preventDefault();
       setDeferred(event as BeforeInstallPromptEvent);
-      setVisible(true);
     };
     window.addEventListener("beforeinstallprompt", onPrompt);
     return () => window.removeEventListener("beforeinstallprompt", onPrompt);
   }, []);
 
-  if (!visible || !deferred) return null;
+  const inApp = ["/app", "/shop", "/demo"].some((prefix) => pathname.startsWith(prefix));
+  const showIos = ios && !deferred && inApp;
+  if (dismissed || hiddenOn(pathname) || (!deferred && !showIos)) return null;
+
+  function dismiss() {
+    try {
+      window.localStorage.setItem(DISMISS_KEY, String(Date.now() + DISMISS_MS));
+    } catch {
+      // Sem armazenamento: some só enquanto esta tela estiver aberta.
+    }
+    setDismissed(true);
+  }
 
   return (
     <div className="pwa-install-banner pointer-events-none fixed inset-x-0 bottom-[var(--app-banner-bottom)] z-[80] flex justify-center p-3">
-      <div className="pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-2xl border border-border bg-card/95 p-3 shadow-2xl backdrop-blur-xl">
-        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#20211f] text-[#dfbc85]">
-          <Download className="size-5" />
+      <section
+        aria-label={t("entry.pwa.title")}
+        className="entry-result-card pointer-events-auto w-full max-w-md p-3 shadow-2xl"
+      >
+        <div className="flex items-start gap-3">
+          <img
+            src="/icons/icon-192.png"
+            alt=""
+            className="size-12 shrink-0 rounded-[var(--control-radius)]"
+          />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold tracking-tight">{t("entry.pwa.title")}</p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              <Tag icon={Zap}>{t("entry.pwa.oneTap")}</Tag>
+              <Tag icon={Maximize2}>{t("entry.pwa.fullScreen")}</Tag>
+            </div>
+          </div>
+          <button
+            type="button"
+            aria-label={t("ui.pwa.dismiss")}
+            className="app-icon-button -me-1 -mt-1 size-11 shrink-0"
+            onClick={dismiss}
+          >
+            <X size={16} aria-hidden="true" />
+          </button>
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold tracking-tight">{t("ui.pwa.title")}</p>
-          <p className="text-xs text-muted-foreground">{t("ui.pwa.hint")}</p>
-        </div>
-        <button
-          type="button"
-          className="min-h-11 shrink-0 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
-          onClick={() => {
-            void (async () => {
-              await deferred.prompt();
-              await deferred.userChoice;
-              setVisible(false);
-              setDeferred(null);
-            })();
-          }}
-        >
-          {t("ui.pwa.install")}
-        </button>
-        <button
-          type="button"
-          aria-label={t("ui.pwa.dismiss")}
-          className="app-icon-button size-11 shrink-0"
-          onClick={() => {
-            try {
-              sessionStorage.setItem(DISMISS_KEY, "1");
-            } catch {
-              // ignore
-            }
-            setVisible(false);
-          }}
-        >
-          <X size={16} />
-        </button>
-      </div>
+        {showIos ? (
+          <ol aria-label={t("entry.pwa.iosLabel")} className="mt-3 grid grid-cols-2 gap-2">
+            {(
+              [
+                [Share, t("entry.pwa.iosShare")],
+                [SquarePlus, t("entry.pwa.iosAdd")],
+              ] as const
+            ).map(([Icon, label], index) => (
+              <li
+                key={label}
+                className="flex min-h-11 items-center gap-2 rounded-[var(--control-radius)] border border-border bg-background/60 px-2.5 py-2 text-xs font-semibold"
+              >
+                <span
+                  aria-hidden="true"
+                  className="grid size-5 shrink-0 place-items-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground"
+                >
+                  {index + 1}
+                </span>
+                <Icon className="size-4 shrink-0 text-gold" aria-hidden="true" />
+                <span className="min-w-0">{label}</span>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          deferred && (
+            <button
+              type="button"
+              className="action-button action-confirm mt-3 w-full"
+              onClick={() => {
+                void (async () => {
+                  await deferred.prompt();
+                  await deferred.userChoice;
+                  setDeferred(null);
+                })();
+              }}
+            >
+              <Smartphone aria-hidden="true" />
+              {t("entry.pwa.add")}
+            </button>
+          )
+        )}
+      </section>
     </div>
   );
 }

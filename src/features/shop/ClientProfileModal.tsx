@@ -1,10 +1,33 @@
-import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { X, User } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  ArrowRight,
+  CalendarClock,
+  Flag,
+  History,
+  RefreshCw,
+  Repeat,
+  Store,
+  UserRound,
+  Wallet,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
 import { RhythmDashboard, type RhythmPayload } from "@/features/insights/RhythmDashboard";
-import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
+import {
+  APPOINTMENT_STATUS,
+  AppointmentStatusBadge,
+  EmptyState,
+  LoadingState,
+  Notice,
+  PersonAvatar,
+  StatTile,
+  StatusBadge,
+  Tag,
+  type AppointmentStatus,
+} from "@/components/visual";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { ClientNoticeBell } from "./ClientNoticeBell";
+import { t as tNow, useI18n } from "@/lib/i18n";
 
 export type ClientHistoryRow = {
   appointment_id: string;
@@ -27,13 +50,7 @@ export type ClientProfilePayload = {
   history: ClientHistoryRow[];
 };
 
-const STATUS_KEY: Record<string, MessageKey> = {
-  pending: "status.pending",
-  reschedule_requested: "status.reschedule_requested",
-  confirmed: "status.confirmed",
-  completed: "status.completed",
-  cancelled: "status.cancelled",
-};
+const UPCOMING = new Set(["pending", "confirmed", "reschedule_requested"]);
 
 function formatBRL(cents: number, intlLocale: string) {
   return (cents / 100).toLocaleString(intlLocale, {
@@ -43,24 +60,27 @@ function formatBRL(cents: number, intlLocale: string) {
   });
 }
 
-function formatDate(iso: string | null, intlLocale: string) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleString(intlLocale, { dateStyle: "medium", timeStyle: "short" });
+function isStatus(value: string): value is AppointmentStatus {
+  return value in APPOINTMENT_STATUS;
 }
 
 /**
- * Perfil do cliente com histórico completo e ritmo. Aberto a partir da lista de
- * clientes do parceiro/dono/sócio.
+ * Perfil do cliente: a próxima visita em destaque, os números (na barbearia e com você), o
+ * caminho primeira → última → próxima, o ritmo e o histórico em linha do tempo. "Avisar" fica
+ * à mão no topo. Janela do projeto (foco preso nela e devolvido à lista ao fechar).
  */
 export function ClientProfileModal({
   shopId,
   customerId,
   customerName,
+  ownVisits,
   onClose,
 }: {
   shopId: string;
   customerId: string;
   customerName: string | null;
+  /** Visitas com o parceiro que abriu (a lista dele conta só as próprias). */
+  ownVisits?: number;
   onClose: () => void;
 }) {
   const { t, intlLocale } = useI18n();
@@ -69,11 +89,7 @@ export function ClientProfileModal({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [retry, setRetry] = useState(0);
-  const closeButton = useRef<HTMLButtonElement>(null);
-  // Guarda o onClose mais recente: o chamador recria a função a cada render
-  // (o painel re-renderiza a cada segundo) e isso não pode devolver o foco ao Fechar.
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  const now = demo?.now.getTime() ?? Date.now();
 
   useEffect(() => {
     let cancelled = false;
@@ -162,150 +178,240 @@ export function ClientProfileModal({
     };
   }, [demo, shopId, customerId, customerName, retry]);
 
-  useEffect(() => {
-    closeButton.current?.focus();
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onCloseRef.current();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, []);
+  const dateTime = useMemo(
+    () =>
+      new Intl.DateTimeFormat(intlLocale, {
+        weekday: "short",
+        day: "2-digit",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    [intlLocale],
+  );
+  const dateOnly = useMemo(
+    () => new Intl.DateTimeFormat(intlLocale, { day: "2-digit", month: "short", year: "numeric" }),
+    [intlLocale],
+  );
 
-  if (typeof document === "undefined") return null;
+  // A próxima visita (a mais perto no futuro) sai do histórico e ganha cartão próprio.
+  const upcoming = useMemo(() => {
+    if (!profile) return null;
+    return (
+      [...profile.history]
+        .filter((row) => UPCOMING.has(row.status) && new Date(row.starts_at).getTime() > now)
+        .sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0] ?? null
+    );
+  }, [profile, now]);
+  const past = profile?.history.filter((row) => row !== upcoming) ?? [];
+  const name = profile?.customer_name ?? customerName ?? t("team.partner.clientFallback");
 
-  // Portal na raiz do painel: o painel animado (mb-panel) tem transform e prenderia o
-  // overlay fixed dentro dele, atrás da barra inferior e do cabeçalho. A raiz
-  // (.arena-workspace) não tem transform e mantém modo de canto, marca e cartão off-white.
-  const host = document.querySelector<HTMLElement>(".arena-workspace") ?? document.body;
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[100] flex items-end justify-center bg-background/70 backdrop-blur-sm sm:items-center sm:p-4"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        // Mesmo sinal das janelas Radix: esconde o banner de instalação enquanto aberta.
-        data-state="open"
-        aria-label={t("team.profile.aria", {
-          name: profile?.customer_name ?? customerName ?? t("team.clients.clientLower"),
-        })}
-        className="flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border border-border bg-card shadow-2xl sm:rounded-3xl"
-      >
-        <div className="flex items-center justify-between border-b border-border p-4">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-foreground">
-              <User className="size-5" />
-            </div>
-            <div className="min-w-0">
-              <h2 className="truncate text-base font-bold">
-                {profile?.customer_name ?? customerName ?? t("team.partner.clientFallback")}
-              </h2>
-              <p className="text-xs text-muted-foreground">{t("team.profile.subtitle")}</p>
-            </div>
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="flex max-h-[90dvh] w-[calc(100vw-1.5rem)] max-w-lg flex-col gap-0 overflow-hidden rounded-3xl border-border bg-card p-0">
+        <div className="flex items-center gap-3 border-b border-border p-4 pr-14">
+          <PersonAvatar
+            name={name.replace(/\([^)]*\)/g, "").trim() || name}
+            src={profile?.avatar_url}
+            seed={customerId}
+            size="md"
+          />
+          <div className="min-w-0 flex-1">
+            {/* Nome inteiro em até 2 linhas; a última visita aparece no caminho logo abaixo. */}
+            <DialogTitle className="line-clamp-2 break-words text-base font-bold">
+              {name}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("team.profile.aria", { name })}
+            </DialogDescription>
           </div>
-          <button
-            ref={closeButton}
-            onClick={onClose}
-            aria-label={t("team.profile.close")}
-            className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-muted/80"
-          >
-            <X className="size-5" />
-          </button>
+          <ClientNoticeBell shopId={shopId} customerId={customerId} customerName={name} />
         </div>
 
-        <div className="dialog-scroll-area flex-1 space-y-5 overflow-y-auto p-5">
+        <div className="dialog-scroll-area flex-1 space-y-5 overflow-y-auto p-4 sm:p-5">
           {loading ? (
-            <p role="status" className="text-sm text-muted-foreground">
-              {t("team.profile.loading")}
-            </p>
+            <LoadingState label={t("team.profile.loading")} variant="stats" count={2} />
           ) : error || !profile ? (
-            <div role="alert" className="space-y-2 text-sm text-destructive">
-              <p>{t("team.profile.loadError")}</p>
-              <button
-                type="button"
-                onClick={() => setRetry((n) => n + 1)}
-                className="action-button"
-              >
-                {t("common.retry")}
-              </button>
-            </div>
+            <Notice
+              tone="danger"
+              title={t("team.profile.loadError")}
+              action={{
+                label: t("common.retry"),
+                onClick: () => setRetry((n) => n + 1),
+                icon: RefreshCw,
+              }}
+            />
           ) : (
             <>
+              {upcoming && (
+                <section className="tone-info space-y-2 rounded-2xl border border-[color:var(--tone-border)] bg-[color:var(--tone-soft)] p-4">
+                  <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-[color:var(--tone-ink)]">
+                    <CalendarClock className="size-4" aria-hidden />
+                    {t("team.profile.next")}
+                  </p>
+                  <p className="text-lg font-extrabold text-foreground first-letter:uppercase">
+                    {dateTime.format(new Date(upcoming.starts_at))}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-1.5 text-sm text-foreground">
+                    <span className="font-semibold">
+                      {upcoming.service_name ?? t("team.partner.serviceFallback")}
+                    </span>
+                    {upcoming.staff_name && (
+                      <span className="text-muted-foreground">
+                        · {t("team.profile.with", { name: upcoming.staff_name })}
+                      </span>
+                    )}
+                    {isStatus(upcoming.status) && (
+                      <AppointmentStatusBadge status={upcoming.status} size="sm" />
+                    )}
+                  </div>
+                </section>
+              )}
+
               <div className="grid grid-cols-2 gap-3">
-                <div className="app-action-card p-3">
-                  <p className="text-2xl font-bold tabular-nums">{profile.visits}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {profile.visits === 1
-                      ? t("team.profile.visitOne")
-                      : t("team.profile.visitMany")}
-                  </p>
-                </div>
-                <div className="app-action-card p-3">
-                  <p className="text-2xl font-bold tabular-nums">
-                    {formatBRL(profile.total_spent_cents, intlLocale)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{t("team.profile.totalSpent")}</p>
-                </div>
+                <StatTile
+                  icon={Repeat}
+                  label={
+                    profile.visits === 1
+                      ? t("team.profile.visitsShopOne")
+                      : t("team.profile.visitsShopMany")
+                  }
+                  value={profile.visits}
+                  hint={
+                    ownVisits != null
+                      ? t(
+                          ownVisits === 1 ? "team.clients.withYouOne" : "team.clients.withYouMany",
+                          { count: ownVisits },
+                        )
+                      : t("team.profile.sinceStart")
+                  }
+                />
+                <StatTile
+                  icon={Wallet}
+                  label={t("team.profile.totalSpent")}
+                  value={formatBRL(profile.total_spent_cents, intlLocale)}
+                  hint={t("team.profile.sinceStart")}
+                />
               </div>
 
-              <div className="flex items-center justify-between rounded-xl bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
-                <span>
-                  {t("team.profile.firstVisit", {
-                    date: formatDate(profile.first_visit, intlLocale),
-                  })}
-                </span>
-                <span>
-                  {t("team.profile.lastVisit", {
-                    date: formatDate(profile.last_visit, intlLocale),
-                  })}
-                </span>
-              </div>
+              {(profile.first_visit || profile.last_visit || upcoming) && (
+                <ol
+                  className="flex flex-wrap items-center gap-1.5 text-xs"
+                  aria-label={t("team.profile.trail")}
+                >
+                  {profile.first_visit && (
+                    <li className="flex items-center gap-1.5">
+                      <Tag icon={Flag}>
+                        {t("team.profile.firstShort", {
+                          date: dateOnly.format(new Date(profile.first_visit)),
+                        })}
+                      </Tag>
+                    </li>
+                  )}
+                  {profile.last_visit && profile.last_visit !== profile.first_visit && (
+                    <li className="flex items-center gap-1.5">
+                      <ArrowRight className="size-3.5 text-muted-foreground" aria-hidden />
+                      <Tag icon={History}>
+                        {t("team.profile.lastShort", {
+                          date: dateOnly.format(new Date(profile.last_visit)),
+                        })}
+                      </Tag>
+                    </li>
+                  )}
+                  {upcoming && (
+                    <li className="flex items-center gap-1.5">
+                      <ArrowRight className="size-3.5 text-muted-foreground" aria-hidden />
+                      <StatusBadge
+                        tone="info"
+                        icon={CalendarClock}
+                        size="sm"
+                        label={t("team.profile.nextShort", {
+                          date: dateOnly.format(new Date(upcoming.starts_at)),
+                        })}
+                      />
+                    </li>
+                  )}
+                </ol>
+              )}
 
               <RhythmDashboard
                 rhythm={profile.rhythm}
                 title={t("team.profile.rhythmTitle")}
                 dayLabel={t("team.profile.rhythmDay")}
+                subject="client"
               />
 
               <section className="space-y-2">
-                <h3 className="text-sm font-bold">{t("team.profile.history")}</h3>
-                {profile.history.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">{t("team.profile.historyEmpty")}</p>
+                <h3 className="flex items-center gap-2 text-sm font-bold">
+                  <History className="size-4 text-gold" aria-hidden />
+                  {t("team.profile.history")}
+                </h3>
+                {past.length === 0 ? (
+                  <EmptyState
+                    tone="calendar"
+                    variant="plain"
+                    title={t("team.profile.historyEmpty")}
+                  />
                 ) : (
-                  profile.history.map((row) => (
-                    <div
-                      key={row.appointment_id}
-                      className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-3"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold">
-                          {row.service_name ?? t("team.partner.serviceFallback")}
-                        </p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {formatDate(row.starts_at, intlLocale)}
-                          {row.staff_name ? ` · ${row.staff_name}` : ""}
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-2">
-                        <span className={`status-pill status-${row.status}`}>
-                          {STATUS_KEY[row.status] ? t(STATUS_KEY[row.status]) : row.status}
-                        </span>
-                        <span className="text-xs font-bold tabular-nums">
-                          {formatBRL(row.amount_cents, intlLocale)}
-                        </span>
-                      </div>
-                    </div>
-                  ))
+                  <ol className="space-y-1.5">
+                    {past.map((row) => {
+                      const meta = isStatus(row.status) ? APPOINTMENT_STATUS[row.status] : null;
+                      return (
+                        <li
+                          key={row.appointment_id}
+                          className="flex items-start gap-3 rounded-xl border border-border bg-card p-3"
+                        >
+                          {meta ? (
+                            // O selo com texto (2ª linha) já diz a situação ao leitor de tela.
+                            <span aria-hidden className="shrink-0">
+                              <StatusBadge
+                                tone={meta.tone}
+                                icon={meta.icon}
+                                label={t(meta.labelKey)}
+                                variant="icon"
+                                size="md"
+                              />
+                            </span>
+                          ) : (
+                            <UserRound className="size-5 text-muted-foreground" aria-hidden />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold">
+                              {row.service_name ?? t("team.partner.serviceFallback")}
+                            </p>
+                            <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                              <span>{dateTime.format(new Date(row.starts_at))}</span>
+                              {isStatus(row.status) && (
+                                <AppointmentStatusBadge status={row.status} size="sm" />
+                              )}
+                            </p>
+                            {row.staff_name && (
+                              <p className="text-xs text-muted-foreground">
+                                {t("team.profile.with", { name: row.staff_name })}
+                              </p>
+                            )}
+                          </div>
+                          <span
+                            className={`shrink-0 text-xs font-bold tabular-nums ${row.status === "cancelled" ? "text-muted-foreground line-through" : ""}`}
+                          >
+                            {formatBRL(row.amount_cents, intlLocale)}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ol>
                 )}
               </section>
+              {ownVisits != null && (
+                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Store className="size-3.5" aria-hidden />
+                  {t("team.profile.shopWide")}
+                </p>
+              )}
             </>
           )}
         </div>
-      </div>
-    </div>,
-    host,
+      </DialogContent>
+    </Dialog>
   );
 }

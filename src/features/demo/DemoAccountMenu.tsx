@@ -1,60 +1,12 @@
-import {
-  Building2,
-  Clock3,
-  LogOut,
-  Shield,
-  User,
-  Smartphone,
-  Handshake,
-  Briefcase,
-  Scissors,
-  FlaskConical,
-  type LucideIcon,
-} from "lucide-react";
+import { useId } from "react";
+import { Check, Clock3, DoorOpen, FlaskConical, Trophy, User } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
-import { useDemoChrome, type DemoRole } from "./chrome";
+import { Hint } from "@/components/visual";
+import { useDemoChrome } from "./chrome";
+import { DEMO_ROLES } from "./roles";
 import { formatShopDate } from "@/lib/shop/appointments";
-import { useI18n, type MessageKey } from "@/lib/i18n";
-
-const demoRoles: {
-  id: DemoRole;
-  labelKey: MessageKey;
-  hintKey: MessageKey;
-  icon: LucideIcon;
-}[] = [
-  {
-    id: "platform",
-    labelKey: "demo.role.platform",
-    hintKey: "demo.role.platformHint",
-    icon: Shield,
-  },
-  { id: "owner", labelKey: "demo.role.owner", hintKey: "demo.role.ownerHint", icon: Building2 },
-  {
-    id: "partner",
-    labelKey: "demo.role.partner",
-    hintKey: "demo.role.partnerHint",
-    icon: Handshake,
-  },
-  {
-    id: "associate",
-    labelKey: "demo.role.associate",
-    hintKey: "demo.role.associateHint",
-    icon: Briefcase,
-  },
-  {
-    id: "employee",
-    labelKey: "demo.role.employee",
-    hintKey: "demo.role.employeeHint",
-    icon: Scissors,
-  },
-  {
-    id: "customer",
-    labelKey: "demo.role.customer",
-    hintKey: "demo.role.customerHint",
-    icon: Smartphone,
-  },
-];
+import { useI18n } from "@/lib/i18n";
 
 export function DemoRoleSelector() {
   const chrome = useDemoChrome();
@@ -70,7 +22,7 @@ export function DemoRoleSelector() {
         role="group"
         aria-label={t("demo.switcher.aria")}
       >
-        {demoRoles.map((r) => {
+        {DEMO_ROLES.map((r) => {
           const Icon = r.icon;
           const active = role === r.id;
           return (
@@ -105,26 +57,37 @@ export function DemoRoleSelector() {
           <PopoverContent
             align="end"
             sideOffset={8}
-            className="z-[70] w-52 rounded-2xl border-border p-2 shadow-xl"
+            collisionPadding={12}
+            className="z-[70] w-72 max-w-[calc(100vw-24px)] rounded-2xl border-border p-2 shadow-xl"
           >
             <div className="space-y-1">
-              <p className="px-3 pb-1 pt-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                {t("demo.switcher.title")}
+              <p className="flex items-center gap-2 px-3 pb-1 pt-1 text-xs font-semibold text-muted-foreground">
+                <FlaskConical className="size-3.5 text-gold" aria-hidden />
+                {t("demo.switcher.heading")}
               </p>
-              {demoRoles.map((r) => {
+              {DEMO_ROLES.map((r) => {
                 const Icon = r.icon;
                 const active = role === r.id;
                 return (
                   <button
                     key={r.id}
+                    type="button"
                     onClick={() => setRole(r.id)}
                     aria-pressed={active}
-                    className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-semibold transition-colors ${
+                    className={`flex min-h-12 w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors ${
                       active ? "bg-primary text-primary-foreground" : "hover:bg-muted"
                     }`}
                   >
-                    <Icon className="size-4 shrink-0" />
-                    <span>{t(r.labelKey)}</span>
+                    <Icon className={`size-4 shrink-0 ${active ? "" : "text-gold"}`} aria-hidden />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold">{t(r.labelKey)}</span>
+                      <span
+                        className={`block text-xs ${active ? "text-primary-foreground/80" : "text-muted-foreground"}`}
+                      >
+                        {t(r.hintKey)}
+                      </span>
+                    </span>
+                    {active && <Check className="size-4 shrink-0" aria-hidden />}
                   </button>
                 );
               })}
@@ -136,7 +99,7 @@ export function DemoRoleSelector() {
   );
 }
 
-/** Menu sutil no ícone de perfil: ver perfil, trocar visão da demo e sair. */
+/** Menu do ícone de perfil: ver perfil do cliente, ferramentas da demonstração e sair dela. */
 export function DemoAccountMenu({
   onViewProfile,
 }: {
@@ -144,9 +107,12 @@ export function DemoAccountMenu({
 } = {}) {
   const chrome = useDemoChrome();
   const { t, intlLocale } = useI18n();
+  const sportsId = useId();
   if (!chrome) return null;
 
-  const { role, setRole, exit, state, dispatch } = chrome;
+  const { role, exit, state, dispatch } = chrome;
+  const item =
+    "flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold hover:bg-muted";
 
   return (
     <Popover>
@@ -165,59 +131,70 @@ export function DemoAccountMenu({
         className="account-menu-popover z-[70] w-72 max-h-none max-w-[calc(100vw-24px)] overflow-visible rounded-2xl border-border p-2 shadow-xl"
       >
         <div className="space-y-1">
-          <p className="px-3 pb-1 pt-2 text-[11px] font-semibold text-muted-foreground">
-            {t("demo.menu.account")}
-          </p>
-          <button
-            type="button"
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold hover:bg-muted"
-            onClick={() => {
-              if (onViewProfile) onViewProfile();
-              else chrome.requestOpenProfile();
-            }}
-          >
-            <User className="size-4 text-gold" />
-            {t("demo.menu.viewProfile")}
-          </button>
+          {/* No papel Plataforma não há perfil próprio: "Ver perfil" levaria ao app do cliente. */}
+          {role !== "platform" && (
+            <>
+              <p className="px-3 pb-1 pt-2 text-xs font-semibold text-muted-foreground">
+                {t("demo.menu.account")}
+              </p>
+              <button
+                type="button"
+                className={item}
+                onClick={() => {
+                  if (onViewProfile) onViewProfile();
+                  else chrome.requestOpenProfile();
+                }}
+              >
+                <User className="size-4 text-gold" aria-hidden />
+                {role === "customer" ? t("demo.menu.viewProfile") : t("demo.menu.viewCustomer")}
+              </button>
+            </>
+          )}
 
           {role !== "platform" && (
             <>
               <div className="my-1 border-t border-border" />
-              <p className="px-3 pb-1 pt-2 text-[11px] font-semibold text-muted-foreground">
-                {t("demo.menu.tools")}
-              </p>
-              <div className="px-3 py-1 text-xs text-muted-foreground">
-                {t("demo.menu.clock")}{" "}
-                <span className="font-semibold tabular-nums text-foreground">
+              <p className="flex items-center gap-2 px-3 pb-1 pt-2 text-xs font-semibold text-muted-foreground">
+                <Clock3 className="size-3.5 text-gold" aria-hidden />
+                {t("demo.menu.clockTitle")}
+                <span className="ms-auto font-bold tabular-nums text-foreground">
                   {formatShopDate(
                     state.now,
                     state.shop.timezone,
-                    {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    },
+                    { hour: "2-digit", minute: "2-digit" },
                     intlLocale,
                   )}
                 </span>
-              </div>
+              </p>
               <div className="flex gap-1.5 px-2 pb-1">
                 {[1, 5, 10].map((minutes) => (
                   <button
                     key={minutes}
                     type="button"
-                    className="flex flex-1 items-center justify-center gap-1 rounded-xl border border-border py-2 text-xs font-semibold hover:bg-muted"
+                    aria-label={t("demo.menu.advanceAria", { minutes })}
+                    className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-border text-xs font-semibold tabular-nums hover:bg-muted"
                     onClick={() =>
                       dispatch({ type: "clock.advance", milliseconds: minutes * 60000 })
                     }
                   >
-                    <Clock3 className="size-3.5" />+{minutes}
+                    {t("demo.menu.advance", { minutes })}
                   </button>
                 ))}
               </div>
+              <Hint icon={Clock3} className="px-3 pb-1">
+                {t("demo.menu.clockHint")}
+              </Hint>
               {role === "customer" && (
-                <label className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
-                  <span className="font-semibold">{t("demo.menu.sports")}</span>
+                <label
+                  htmlFor={sportsId}
+                  className="flex min-h-11 cursor-pointer items-center gap-3 px-3 py-2 text-sm"
+                >
+                  <Trophy className="size-4 shrink-0 text-gold" aria-hidden />
+                  <span className="min-w-0 flex-1 font-semibold">
+                    {t("demo.menu.sportsModule")}
+                  </span>
                   <Switch
+                    id={sportsId}
                     checked={state.settings.sports_enabled}
                     onCheckedChange={(enabled) =>
                       dispatch({
@@ -231,14 +208,10 @@ export function DemoAccountMenu({
             </>
           )}
 
-          <div className="my-1 border-t border-border" />
-          <button
-            type="button"
-            onClick={exit}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-destructive hover:bg-destructive/10"
-          >
-            <LogOut className="size-4" />
-            {t("demo.menu.exit")}
+          {role !== "platform" && <div className="my-1 border-t border-border" />}
+          <button type="button" onClick={exit} className={item}>
+            <DoorOpen className="size-4 text-muted-foreground" aria-hidden />
+            {t("demo.menu.leave")}
           </button>
         </div>
       </PopoverContent>

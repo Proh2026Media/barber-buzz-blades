@@ -8,17 +8,50 @@ import {
 } from "react";
 import {
   ArrowLeft,
+  CalendarClock,
+  CheckCircle2,
   Gift,
+  Hourglass,
   Loader2,
+  Lock,
   Minus,
+  Pencil,
   Plus,
+  PlusCircle,
+  RotateCcw,
+  Save,
   Search,
   ShieldCheck,
+  Sparkles,
+  Star,
   Trash2,
   Trophy,
+  Undo2,
   Users,
 } from "lucide-react";
+import {
+  ActionResult,
+  ChoiceCards,
+  ChoiceChips,
+  ConfirmDialog,
+  CountBadge,
+  DetailList,
+  Field,
+  FieldMessage,
+  IconList,
+  InlineStatus,
+  LoadingState,
+  Notice,
+  PersonAvatar,
+  SectionHeader,
+  StatTile,
+  StatusBadge,
+  Tag,
+  type ActionState,
+} from "@/components/visual";
 import { toast } from "sonner";
+import { TierBadge, TierMedal, useTierBenefit } from "./TierBadge";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { brandCornerClass, brandFontScopeClass, brandVariables } from "@/lib/shop/branding";
@@ -41,6 +74,8 @@ import {
   FALLBACK_PROGRAM,
   MAX_TIERS,
   parseLoyaltyProgram,
+  tierFor,
+  tierStyleKey,
   validateTiers,
   type LoyaltyProgram,
   type LoyaltyReward,
@@ -107,7 +142,25 @@ export function LoyaltyAdminPage({ profile }: { profile: SessionProfile }) {
     ? actor.role === "owner" || actor.role === "partner"
     : profile.memberships.some((m) => m.role === "platform_admin");
 
-  const [part, setPart] = useState<Part>(canManage ? "regras" : "resgates");
+  // Parte pedida no endereço (?parte=resgates…), vinda dos atalhos de Ajustes.
+  const [requestedPart] = useState<Part | null>(() => {
+    if (typeof window === "undefined") return null;
+    const value = new URLSearchParams(window.location.search).get("parte");
+    return value === "regras" ||
+      value === "recompensas" ||
+      value === "clientes" ||
+      value === "resgates"
+      ? value
+      : null;
+  });
+  const [part, setPart] = useState<Part>(
+    requestedPart && (canManage || requestedPart === "resgates" || requestedPart === "clientes")
+      ? requestedPart
+      : canManage
+        ? "regras"
+        : "resgates",
+  );
+  const [partChosen, setPartChosen] = useState(Boolean(requestedPart));
   const [program, setProgram] = useState<LoyaltyProgram | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -144,6 +197,36 @@ export function LoyaltyAdminPage({ profile }: { profile: SessionProfile }) {
   useEffect(() => {
     void loadProgram();
   }, [loadProgram]);
+
+  // Resgates esperando entrega: uma consulta para o contador da aba, o resumo e a lista.
+  const [redemptions, setRedemptions] = useState<RedemptionRow[] | null>(null);
+  const [redemptionsError, setRedemptionsError] = useState<string | null>(null);
+  const loadRedemptions = useCallback(async () => {
+    if (!shop?.id) return;
+    const { data, error: rpcError } = await supabase.rpc("list_shop_loyalty_redemptions", {
+      p_shop_id: shop.id,
+      p_status: "pending",
+    });
+    if (rpcError) setRedemptionsError(friendlyAuthError(rpcError, t("loyalty.admin.loadError")));
+    else {
+      setRedemptionsError(null);
+      setRedemptions((data ?? []) as RedemptionRow[]);
+    }
+  }, [shop?.id, t]);
+  useEffect(() => {
+    void loadRedemptions();
+  }, [loadRedemptions]);
+  const pendingCount = redemptions?.length ?? 0;
+
+  // Abre em Resgates quando há prêmios esperando entrega (a não ser que a pessoa já tenha escolhido).
+  useEffect(() => {
+    if (!partChosen && pendingCount > 0) setPart("resgates");
+  }, [partChosen, pendingCount]);
+
+  function choosePart(next: Part) {
+    setPart(next);
+    setPartChosen(true);
+  }
 
   const parts: Array<{ id: Part; label: string; icon: typeof Gift }> = [
     ...(canManage
@@ -197,52 +280,101 @@ export function LoyaltyAdminPage({ profile }: { profile: SessionProfile }) {
         {!shop ? (
           <EmptyState tone="bell" title={t("loyalty.admin.noShop")} />
         ) : loading ? (
-          <p className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
-            <Loader2 className="size-4 animate-spin" aria-hidden />
-            {t("loyalty.admin.loading")}
-          </p>
+          <LoadingState variant="stats" count={4} label={t("loyalty.admin.loading")} />
         ) : loadError ? (
-          <div className="space-y-3 rounded-2xl border border-border bg-card p-4" role="alert">
-            <p className="text-sm">{loadError}</p>
-            <button
-              type="button"
-              className="action-button action-confirm"
-              onClick={() => void loadProgram()}
-            >
-              {t("loyalty.admin.retry")}
-            </button>
-          </div>
+          <EmptyState
+            status="danger"
+            title={t("loyalty.admin.loadFailedTitle")}
+            description={loadError}
+            action={
+              <button
+                type="button"
+                className="action-button action-confirm"
+                onClick={() => void loadProgram()}
+              >
+                <RotateCcw className="size-4" aria-hidden />
+                {t("loyalty.admin.retry")}
+              </button>
+            }
+          />
         ) : program && !program.enabled ? (
           <>
             <EmptyState
-              tone="bell"
+              tone="gift"
               title={t("loyalty.admin.disabledTitle")}
               description={t("loyalty.admin.disabledText")}
             />
             {/* Resgates feitos antes do desligamento continuam podendo ser entregues ou cancelados. */}
-            <RedemptionsPart shopId={shop.id} intlLocale={intlLocale} />
+            <RedemptionsPart
+              rows={redemptions}
+              error={redemptionsError}
+              onReload={loadRedemptions}
+              intlLocale={intlLocale}
+            />
           </>
         ) : program ? (
           <>
-            <p className="text-sm text-muted-foreground">{t("loyalty.admin.intro")}</p>
+            {/* Resumo do clube: o essencial à vista, e o que pede ação (resgates) leva direto à aba. */}
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <StatTile
+                icon={Star}
+                label={t("loyalty.admin.stat.perVisit")}
+                value={t("loyalty.admin.stat.points", { n: program.points_per_visit })}
+              />
+              <StatTile
+                icon={Trophy}
+                label={t("loyalty.admin.stat.levels")}
+                value={program.tiers.length}
+                hint={program.tiers.map((tier) => tier.name).join(" · ")}
+              />
+              <StatTile
+                icon={Gift}
+                label={t("loyalty.admin.stat.rewards")}
+                value={program.rewards.filter((reward) => reward.active).length}
+                onClick={canManage ? () => choosePart("recompensas") : undefined}
+              />
+              <StatTile
+                icon={Hourglass}
+                label={t("loyalty.admin.stat.waiting")}
+                value={redemptions ? pendingCount : undefined}
+                loading={!redemptions && !redemptionsError}
+                // Mesmo tom âmbar do selo "esperando entrega" no menu de Ajustes.
+                tone={pendingCount > 0 ? "pending" : undefined}
+                onClick={() => choosePart("resgates")}
+                pressed={part === "resgates"}
+              />
+            </div>
             <nav
-              className="grid grid-cols-2 gap-2 sm:grid-cols-4"
+              className="grid grid-cols-2 gap-1 rounded-2xl border border-border bg-card p-1 sm:grid-cols-4"
               aria-label={t("loyalty.admin.partsLabel")}
             >
               {parts.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
                   type="button"
-                  onClick={() => setPart(id)}
+                  onClick={() => choosePart(id)}
                   aria-pressed={part === id}
-                  className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border px-3 text-sm font-bold transition-colors ${
+                  className={cn(
+                    "flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 text-sm font-bold transition-colors",
                     part === id
-                      ? "border-foreground bg-foreground text-background"
-                      : "border-border bg-card text-foreground"
-                  }`}
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
                 >
-                  <Icon className="size-4" aria-hidden />
+                  <Icon className="size-4 shrink-0" aria-hidden />
                   {label}
+                  {id === "resgates" && (
+                    <CountBadge
+                      count={pendingCount}
+                      tone="pending"
+                      label={t(
+                        pendingCount === 1
+                          ? "loyalty.admin.waitingOne"
+                          : "loyalty.admin.waitingMany",
+                        { count: pendingCount },
+                      )}
+                    />
+                  )}
                 </button>
               ))}
             </nav>
@@ -253,9 +385,21 @@ export function LoyaltyAdminPage({ profile }: { profile: SessionProfile }) {
             {part === "recompensas" && canManage && (
               <RewardsPart shopId={shop.id} program={program} onChanged={loadProgram} />
             )}
-            {part === "resgates" && <RedemptionsPart shopId={shop.id} intlLocale={intlLocale} />}
+            {part === "resgates" && (
+              <RedemptionsPart
+                rows={redemptions}
+                error={redemptionsError}
+                onReload={loadRedemptions}
+                intlLocale={intlLocale}
+              />
+            )}
             {part === "clientes" && (
-              <CustomersPart shopId={shop.id} canAdjust={canManage} myId={profile.user.id} />
+              <CustomersPart
+                shopId={shop.id}
+                program={program}
+                canAdjust={canManage}
+                myId={profile.user.id}
+              />
             )}
           </>
         ) : null}
@@ -280,9 +424,30 @@ function RulesPart({
   const [tiers, setTiers] = useState<LoyaltyTier[]>(program.tiers);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<ActionState | null>(null);
 
   const custom = mode === "custom";
   const problem = custom ? validateTiers(tiers) : null;
+  const dirty =
+    mode !== program.mode ||
+    (custom &&
+      (clampInt(perVisit, 1, 1000) !== program.points_per_visit ||
+        clampInt(welcome, 0, 1000) !== program.welcome_bonus ||
+        JSON.stringify(tiers) !== JSON.stringify(program.tiers)));
+  const shownTiers = custom ? tiers : DEFAULT_TIERS;
+  const shownPerVisit = custom ? clampInt(perVisit, 1, 1000) : FALLBACK_PROGRAM.points_per_visit;
+  const shownWelcome = custom ? clampInt(welcome, 0, 1000) : FALLBACK_PROGRAM.welcome_bonus;
+  const previewProgram: LoyaltyProgram = {
+    ...program,
+    mode,
+    tiers: shownTiers,
+    points_per_visit: shownPerVisit,
+    welcome_bonus: shownWelcome,
+  };
+  const benefitFor = useTierBenefit(previewProgram);
+  /** Em qual atendimento o cliente chega a cada nível, pela regra mostrada. */
+  const visitFor = (min: number) =>
+    min <= shownWelcome ? 0 : Math.ceil((min - shownWelcome) / Math.max(1, shownPerVisit));
 
   function updateTier(index: number, patch: Partial<LoyaltyTier>) {
     setTiers((current) => current.map((tier, i) => (i === index ? { ...tier, ...patch } : tier)));
@@ -296,11 +461,16 @@ function RulesPart({
     });
   }
 
-  async function save(event: FormEvent) {
+  function save(event: FormEvent) {
     event.preventDefault();
-    if (problem) return;
+    void saveRules();
+  }
+
+  async function saveRules() {
+    if (problem || saving) return;
     setSaving(true);
     setError(null);
+    setResult(null);
     const { data: savedData, error: rpcError } = await supabase.rpc("save_loyalty_program", {
       p_shop_id: shopId,
       p_mode: mode,
@@ -314,6 +484,7 @@ function RulesPart({
     });
     if (rpcError) {
       setError(friendlyAuthError(rpcError, t("loyalty.admin.saveError")));
+      setResult("error");
       setSaving(false);
       return;
     }
@@ -340,181 +511,282 @@ function RulesPart({
       setWelcome(String(next.welcome_bonus));
     }
     setSaving(false);
-    toast.success(t("loyalty.admin.saved"));
+    setResult("saved");
+  }
+
+  /** Campo de número com − e + (44 px), para pontos por atendimento e bônus. */
+  function stepper(
+    label: string,
+    hint: string,
+    value: string,
+    setValue: (next: string) => void,
+    min: number,
+    step: number,
+  ) {
+    const current = clampInt(value, min, 1000);
+    return (
+      <Field label={label} hint={hint}>
+        {(props) => (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={current <= min}
+              onClick={() => setValue(String(Math.max(min, current - step)))}
+              aria-label={t("loyalty.admin.less", { label })}
+              className="grid size-11 shrink-0 place-items-center rounded-xl border border-border disabled:opacity-40"
+            >
+              <Minus className="size-4" aria-hidden />
+            </button>
+            <input
+              {...props}
+              type="number"
+              inputMode="numeric"
+              min={min}
+              max={1000}
+              required
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              className={`${fieldClass} min-h-11 min-w-0 flex-1 text-center text-lg font-bold tabular-nums`}
+            />
+            <button
+              type="button"
+              disabled={current >= 1000}
+              onClick={() => setValue(String(Math.min(1000, current + step)))}
+              aria-label={t("loyalty.admin.more", { label })}
+              className="grid size-11 shrink-0 place-items-center rounded-xl border border-border disabled:opacity-40"
+            >
+              <Plus className="size-4" aria-hidden />
+            </button>
+          </div>
+        )}
+      </Field>
+    );
   }
 
   return (
     <form onSubmit={save} className="space-y-4">
-      <fieldset className="space-y-2 rounded-2xl border border-border bg-card p-4">
-        <legend className="px-1 text-sm font-bold">{t("loyalty.admin.modeTitle")}</legend>
-        {(["default", "custom"] as const).map((option) => (
-          <label
-            key={option}
-            className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 ${
-              mode === option ? "border-foreground" : "border-border"
-            }`}
-          >
-            <input
-              type="radio"
-              name="loyalty-mode"
-              value={option}
-              checked={mode === option}
-              onChange={() => {
-                setMode(option);
-                if (option === "default") setTiers(DEFAULT_TIERS);
-              }}
-              className="mt-1 size-4"
-            />
-            <span>
-              <span className="block text-sm font-bold">
-                {t(option === "default" ? "loyalty.admin.modeDefault" : "loyalty.admin.modeCustom")}
-              </span>
-              <span className="block text-xs text-muted-foreground">
-                {t(
-                  option === "default"
-                    ? "loyalty.admin.modeDefaultHint"
-                    : "loyalty.admin.modeCustomHint",
-                )}
-              </span>
-            </span>
-          </label>
-        ))}
-      </fieldset>
+      <section className="app-action-card space-y-4 p-5" aria-labelledby="loyalty-mode-title">
+        <SectionHeader
+          icon={Trophy}
+          id="loyalty-mode-title"
+          title={t("loyalty.admin.modeTitle")}
+          description={t("loyalty.admin.modeIntro")}
+        />
+        <ChoiceCards
+          legend={t("loyalty.admin.modeTitle")}
+          name="loyalty-mode"
+          value={mode}
+          disabled={saving}
+          onChange={(option) => {
+            setMode(option);
+            setResult(null);
+            if (option === "default") setTiers(DEFAULT_TIERS);
+          }}
+          options={(["default", "custom"] as const).map((option) => ({
+            value: option,
+            icon: option === "default" ? Sparkles : Pencil,
+            title: t(
+              option === "default" ? "loyalty.admin.modeDefault" : "loyalty.admin.modeCustom",
+            ),
+            description: t(
+              option === "default"
+                ? "loyalty.admin.modeDefaultHint"
+                : "loyalty.admin.modeCustomHint",
+            ),
+          }))}
+        />
+      </section>
 
-      <div className="grid gap-3 rounded-2xl border border-border bg-card p-4 sm:grid-cols-2">
-        <label className="block space-y-1 text-xs font-semibold">
-          {t("loyalty.admin.perVisit")}
-          <input
-            type="number"
-            inputMode="numeric"
-            min={1}
-            max={1000}
-            required
-            disabled={!custom}
-            value={custom ? perVisit : String(FALLBACK_PROGRAM.points_per_visit)}
-            onChange={(e) => setPerVisit(e.target.value)}
-            className={`${fieldClass} disabled:opacity-60`}
+      {/* Pontos: cartões de número; na regra padrão ficam só para leitura. */}
+      {custom ? (
+        <div className="grid gap-3 rounded-2xl border border-border bg-card p-4 sm:grid-cols-2">
+          {stepper(
+            t("loyalty.admin.perVisit"),
+            t("loyalty.admin.perVisitHint"),
+            perVisit,
+            setPerVisit,
+            1,
+            5,
+          )}
+          {stepper(
+            t("loyalty.admin.welcome"),
+            t("loyalty.admin.welcomeHint"),
+            welcome,
+            setWelcome,
+            0,
+            10,
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-2">
+          <StatTile
+            icon={Star}
+            label={t("loyalty.admin.perVisit")}
+            value={t("loyalty.admin.stat.points", { n: FALLBACK_PROGRAM.points_per_visit })}
           />
-          <span className="block font-normal text-muted-foreground">
-            {custom ? t("loyalty.admin.perVisitHint") : t("fix.fidelidade-insights.fixedInDefault")}
-          </span>
-        </label>
-        <label className="block space-y-1 text-xs font-semibold">
-          {t("loyalty.admin.welcome")}
-          <input
-            type="number"
-            inputMode="numeric"
-            min={0}
-            max={1000}
-            required
-            disabled={!custom}
-            value={custom ? welcome : String(FALLBACK_PROGRAM.welcome_bonus)}
-            onChange={(e) => setWelcome(e.target.value)}
-            className={`${fieldClass} disabled:opacity-60`}
+          <StatTile
+            icon={Gift}
+            label={t("loyalty.admin.welcome")}
+            value={t("loyalty.admin.stat.points", { n: FALLBACK_PROGRAM.welcome_bonus })}
           />
-          <span className="block font-normal text-muted-foreground">
-            {custom ? t("loyalty.admin.welcomeHint") : t("fix.fidelidade-insights.fixedInDefault")}
-          </span>
-        </label>
-      </div>
+        </div>
+      )}
 
       <section className="space-y-3 rounded-2xl border border-border bg-card p-4">
-        <div>
-          <h2 className="text-sm font-bold">{t("loyalty.admin.tiersTitle")}</h2>
-          <p className="text-xs text-muted-foreground">{t("loyalty.admin.tiersHint")}</p>
+        <div className="flex flex-wrap items-start gap-2">
+          <div className="min-w-0 flex-1 basis-40">
+            <h2 className="text-sm font-bold">{t("loyalty.admin.tiersTitle")}</h2>
+            <p className="text-xs text-muted-foreground">{t("loyalty.admin.tiersHint")}</p>
+          </div>
+          {!custom && (
+            <StatusBadge tone="neutral" icon={Lock} label={t("loyalty.admin.readOnly")} size="sm" />
+          )}
         </div>
-        <ol className="space-y-3">
-          {(custom ? tiers : DEFAULT_TIERS).map((tier, index) => (
-            <li key={index} className="space-y-2 rounded-xl border border-border p-3">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-bold text-muted-foreground">
-                  {t("loyalty.admin.tierN", { n: index + 1 })}
-                </span>
-                {custom && index > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setTiers((current) => current.filter((_, i) => i !== index))}
-                    className="flex size-11 items-center justify-center rounded-xl text-destructive"
-                    aria-label={t("loyalty.admin.tierRemove", { n: index + 1 })}
-                  >
-                    <Trash2 className="size-4" aria-hidden />
-                  </button>
-                )}
-              </div>
-              <div className="grid gap-2 sm:grid-cols-[1fr_8rem]">
-                <label className="block space-y-1 text-xs font-semibold">
-                  {t("loyalty.admin.tierName")}
-                  <input
-                    value={tier.name}
-                    disabled={!custom}
-                    maxLength={30}
-                    required
-                    onChange={(e) => updateTier(index, { name: e.target.value })}
-                    className={fieldClass}
-                  />
-                </label>
-                <label className="block space-y-1 text-xs font-semibold">
-                  {t("loyalty.admin.tierMin")}
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    min={0}
-                    value={tier.min_points}
-                    disabled={!custom || index === 0}
-                    onChange={(e) =>
-                      updateTier(index, { min_points: clampInt(e.target.value, 0, 1000000) })
-                    }
-                    className={fieldClass}
-                  />
-                </label>
-              </div>
-              <label className="block space-y-1 text-xs font-semibold">
-                {t("loyalty.admin.tierBenefit")}
-                <input
-                  value={tier.benefit}
-                  disabled={!custom}
-                  maxLength={160}
-                  placeholder={t("loyalty.admin.tierBenefitPlaceholder")}
-                  onChange={(e) => updateTier(index, { benefit: e.target.value })}
-                  className={fieldClass}
-                />
-              </label>
-            </li>
-          ))}
+
+        {/* Escada de níveis: selo em gradiente, a partir de quantos pontos e em qual atendimento. */}
+        <ol className="space-y-2" aria-label={t("loyalty.admin.ladderAria")}>
+          {shownTiers.map((tier, index) => {
+            const visit = visitFor(tier.min_points);
+            const benefit = benefitFor(index);
+            return (
+              <li
+                key={`${tier.name}-${index}`}
+                className="flex items-start gap-3 rounded-xl border border-border/70 p-3"
+              >
+                <TierMedal tier={tierStyleKey(index, shownTiers.length)} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <TierBadge
+                      tier={tierStyleKey(index, shownTiers.length)}
+                      name={tier.name || t("loyalty.admin.tierN", { n: index + 1 })}
+                      size="sm"
+                    />
+                    <Tag>{t("loyalty.admin.fromPoints", { n: tier.min_points })}</Tag>
+                    <span className="text-xs font-semibold text-muted-foreground">
+                      {visit <= 0
+                        ? t("loyalty.admin.fromStart")
+                        : t("loyalty.admin.atVisit", { n: visit })}
+                    </span>
+                  </div>
+                  {benefit && <p className="mt-1 text-xs text-muted-foreground">{benefit}</p>}
+                </div>
+              </li>
+            );
+          })}
         </ol>
-        {custom && tiers.length < MAX_TIERS && (
+        {!custom && (
           <button
             type="button"
-            onClick={addTier}
-            className="flex min-h-11 items-center gap-2 rounded-xl border border-border px-3 text-sm font-bold"
+            onClick={() => {
+              setMode("custom");
+              setResult(null);
+            }}
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border px-3 text-sm font-bold transition hover:border-primary/40"
           >
-            <Plus className="size-4" aria-hidden />
-            {t("loyalty.admin.tierAdd")}
+            <Pencil className="size-4" aria-hidden />
+            {t("loyalty.admin.customize")}
           </button>
-        )}
-        {problem && (
-          <p className="text-sm font-semibold text-destructive" role="alert">
-            {t(TIER_PROBLEM_KEY[problem])}
-          </p>
         )}
       </section>
 
-      <p className="rounded-xl bg-muted px-3 py-2 text-xs text-muted-foreground">
-        {t("loyalty.admin.noRetroactive")}
-      </p>
-      {error && (
-        <p className="text-sm font-semibold text-destructive" role="alert">
-          {error}
-        </p>
+      {custom && (
+        <section className="space-y-3 rounded-2xl border border-border bg-card p-4">
+          <h2 className="text-sm font-bold">{t("loyalty.admin.editTiers")}</h2>
+          <ol className="space-y-3">
+            {tiers.map((tier, index) => (
+              <li key={index} className="space-y-2 rounded-xl border border-border p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
+                    <TierMedal tier={tierStyleKey(index, tiers.length)} size="sm" />
+                    {t("loyalty.admin.tierN", { n: index + 1 })}
+                  </span>
+                  {custom && index > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setTiers((current) => current.filter((_, i) => i !== index))}
+                      className="flex size-11 items-center justify-center rounded-xl text-destructive"
+                      aria-label={t("loyalty.admin.tierRemove", { n: index + 1 })}
+                    >
+                      <Trash2 className="size-4" aria-hidden />
+                    </button>
+                  )}
+                </div>
+                <div className="grid gap-2 sm:grid-cols-[1fr_8rem]">
+                  <label className="block space-y-1 text-xs font-semibold">
+                    {t("loyalty.admin.tierName")}
+                    <input
+                      value={tier.name}
+                      disabled={!custom}
+                      maxLength={30}
+                      required
+                      onChange={(e) => updateTier(index, { name: e.target.value })}
+                      className={fieldClass}
+                    />
+                  </label>
+                  <label className="block space-y-1 text-xs font-semibold">
+                    {t("loyalty.admin.tierMin")}
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      value={tier.min_points}
+                      disabled={!custom || index === 0}
+                      onChange={(e) =>
+                        updateTier(index, { min_points: clampInt(e.target.value, 0, 1000000) })
+                      }
+                      className={fieldClass}
+                    />
+                  </label>
+                </div>
+                <label className="block space-y-1 text-xs font-semibold">
+                  {t("loyalty.admin.tierBenefit")}
+                  <input
+                    value={tier.benefit}
+                    disabled={!custom}
+                    maxLength={160}
+                    placeholder={t("loyalty.admin.tierBenefitPlaceholder")}
+                    onChange={(e) => updateTier(index, { benefit: e.target.value })}
+                    className={fieldClass}
+                  />
+                </label>
+              </li>
+            ))}
+          </ol>
+          {custom && tiers.length < MAX_TIERS && (
+            <button
+              type="button"
+              onClick={addTier}
+              className="flex min-h-11 items-center gap-2 rounded-xl border border-border px-3 text-sm font-bold"
+            >
+              <Plus className="size-4" aria-hidden />
+              {t("loyalty.admin.tierAdd")}
+            </button>
+          )}
+          {problem && <Notice tone="danger" title={t(TIER_PROBLEM_KEY[problem])} />}
+        </section>
       )}
+
+      <IconList
+        items={[{ icon: CheckCircle2, tone: "success", text: t("loyalty.admin.noRetroactive") }]}
+      />
       <button
         type="submit"
-        disabled={saving || Boolean(problem)}
-        className="action-button action-confirm w-full"
+        disabled={saving || Boolean(problem) || !dirty}
+        aria-busy={saving || undefined}
+        className="action-button action-confirm w-full sm:w-auto sm:px-6"
       >
-        {saving && <Loader2 className="size-4 animate-spin" aria-hidden />}
-        {t("loyalty.admin.saveRules")}
+        {saving ? (
+          <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />
+        ) : (
+          <Save className="size-4" aria-hidden />
+        )}
+        {saving ? t("common.saving") : t("loyalty.admin.saveRules")}
       </button>
+      <ActionResult
+        state={result}
+        text={result === "error" ? (error ?? undefined) : t("loyalty.admin.saved")}
+        onRetry={() => void saveRules()}
+      />
     </form>
   );
 }
@@ -531,9 +803,11 @@ function RewardsPart({
   const { t } = useI18n();
   const [editing, setEditing] = useState<LoyaltyReward | "new" | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [toggleState, setToggleState] = useState<{ id: string; state: ActionState } | null>(null);
 
   async function toggle(reward: LoyaltyReward) {
     setTogglingId(reward.id);
+    setToggleState({ id: reward.id, state: "saving" });
     const { error } = await supabase.rpc("save_loyalty_reward", {
       p_shop_id: shopId,
       p_reward_id: reward.id,
@@ -543,7 +817,7 @@ function RewardsPart({
       p_active: !reward.active,
       p_sort_order: reward.sort_order,
     });
-    if (error) toast.error(friendlyAuthError(error, t("loyalty.admin.saveError")));
+    setToggleState({ id: reward.id, state: error ? "error" : "saved" });
     await onChanged();
     setTogglingId(null);
   }
@@ -553,7 +827,7 @@ function RewardsPart({
       <p className="text-sm text-muted-foreground">{t("loyalty.admin.rewardsHint")}</p>
       {program.rewards.length === 0 ? (
         <EmptyState
-          tone="scissors"
+          tone="gift"
           title={t("loyalty.admin.rewardsEmpty")}
           description={t("loyalty.admin.rewardsEmptyText")}
         />
@@ -562,30 +836,57 @@ function RewardsPart({
           {program.rewards.map((reward) => (
             <li
               key={reward.id}
-              className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3"
+              className={cn(
+                "flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card p-3",
+                !reward.active && "bg-muted/40",
+              )}
             >
-              <button
-                type="button"
-                onClick={() => setEditing(reward)}
-                className="min-w-0 flex-1 text-left"
+              <span
+                aria-hidden
+                className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-gold"
               >
-                <span className="block truncate text-sm font-bold">{reward.name}</span>
-                <span className="block text-xs text-muted-foreground">
-                  {t(
-                    reward.cost_points === 1
-                      ? "loyalty.admin.rewardCostOne"
-                      : "loyalty.admin.rewardCostMany",
-                    { n: reward.cost_points },
+                <Gift className="size-5" />
+              </span>
+              <div className="min-w-0 flex-1 basis-32">
+                <p className="truncate text-sm font-bold">{reward.name}</p>
+                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                  <Tag icon={Star}>
+                    {t(
+                      reward.cost_points === 1
+                        ? "loyalty.admin.rewardCostOne"
+                        : "loyalty.admin.rewardCostMany",
+                      { n: reward.cost_points },
+                    )}
+                  </Tag>
+                  <StatusBadge
+                    tone={reward.active ? "success" : "neutral"}
+                    variant="dot"
+                    label={t(
+                      reward.active ? "loyalty.admin.rewardVisible" : "loyalty.admin.rewardPaused",
+                    )}
+                  />
+                  {toggleState?.id === reward.id && (
+                    <InlineStatus state={toggleState.state} onRetry={() => void toggle(reward)} />
                   )}
-                  {!reward.active && ` · ${t("loyalty.admin.rewardPaused")}`}
-                </span>
-              </button>
-              <Switch
-                checked={reward.active}
-                disabled={togglingId === reward.id}
-                onCheckedChange={() => void toggle(reward)}
-                aria-label={t("loyalty.admin.rewardToggle", { name: reward.name })}
-              />
+                </div>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditing(reward)}
+                  aria-label={t("loyalty.admin.rewardEditOf", { name: reward.name })}
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-border px-3 text-xs font-semibold transition hover:border-primary/40"
+                >
+                  <Pencil className="size-3.5" aria-hidden />
+                  {t("loyalty.admin.edit")}
+                </button>
+                <Switch
+                  checked={reward.active}
+                  disabled={togglingId === reward.id}
+                  onCheckedChange={() => void toggle(reward)}
+                  aria-label={t("loyalty.admin.rewardToggle", { name: reward.name })}
+                />
+              </div>
             </li>
           ))}
         </ul>
@@ -594,7 +895,7 @@ function RewardsPart({
         <button
           type="button"
           onClick={() => setEditing("new")}
-          className="action-button action-confirm w-full"
+          className="action-button action-confirm w-full sm:w-auto sm:px-6"
         >
           <Plus className="size-4" aria-hidden />
           {t("loyalty.admin.rewardAdd")}
@@ -735,27 +1036,30 @@ function RewardDialog({
   );
 }
 
-function RedemptionsPart({ shopId, intlLocale }: { shopId: string; intlLocale: string }) {
+/** Dias inteiros até a data (0 = hoje, 1 = amanhã), no calendário do aparelho. */
+function daysUntil(value: string) {
+  const end = new Date(value);
+  const today = new Date();
+  const a = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
+  const b = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+  return Math.round((a - b) / 86_400_000);
+}
+
+function RedemptionsPart({
+  rows,
+  error,
+  onReload,
+  intlLocale,
+}: {
+  rows: RedemptionRow[] | null;
+  error: string | null;
+  onReload: () => Promise<void>;
+  intlLocale: string;
+}) {
   const { t } = useI18n();
-  const [rows, setRows] = useState<RedemptionRow[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    const { data, error: rpcError } = await supabase.rpc("list_shop_loyalty_redemptions", {
-      p_shop_id: shopId,
-      p_status: "pending",
-    });
-    if (rpcError) setError(friendlyAuthError(rpcError, t("loyalty.admin.loadError")));
-    else {
-      setError(null);
-      setRows((data ?? []) as RedemptionRow[]);
-    }
-  }, [shopId, t]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const [cancelling, setCancelling] = useState<RedemptionRow | null>(null);
+  const [result, setResult] = useState<{ state: ActionState; text: string } | null>(null);
 
   async function resolve(row: RedemptionRow, action: "fulfill" | "cancel") {
     setBusyId(row.id);
@@ -765,83 +1069,166 @@ function RedemptionsPart({ shopId, intlLocale }: { shopId: string; intlLocale: s
     });
     setBusyId(null);
     if (rpcError) {
-      toast.error(friendlyAuthError(rpcError, t("loyalty.admin.saveError")));
+      const message = friendlyAuthError(rpcError, t("loyalty.admin.saveError"));
+      if (action === "cancel") throw new Error(message);
+      setResult({ state: "error", text: message });
       return;
     }
-    toast.success(
-      t(action === "fulfill" ? "loyalty.admin.redeemFulfilled" : "loyalty.admin.redeemCancelled"),
-    );
-    await load();
+    const name = row.full_name || t("loyalty.admin.customerUnnamed");
+    setResult({
+      state: "saved",
+      text:
+        action === "fulfill"
+          ? t("loyalty.admin.redeemFulfilledOf", { reward: row.reward_name, name })
+          : t("loyalty.admin.redeemCancelledOf", { n: row.cost_points, name }),
+    });
+    await onReload();
   }
 
   const dateFormat = new Intl.DateTimeFormat(intlLocale, { day: "2-digit", month: "short" });
 
   if (error)
     return (
-      <p className="text-sm font-semibold text-destructive" role="alert">
-        {error}
-      </p>
+      <Notice
+        tone="danger"
+        title={error}
+        action={{ label: t("visual.retry"), icon: RotateCcw, onClick: () => void onReload() }}
+      />
     );
-  if (!rows)
-    return (
-      <p className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
-        <Loader2 className="size-4 animate-spin" aria-hidden />
-        {t("loyalty.admin.loading")}
-      </p>
-    );
+  if (!rows) return <LoadingState variant="list" count={2} label={t("loyalty.admin.loading")} />;
 
   return (
     <section className="space-y-3">
       <p className="text-sm text-muted-foreground">{t("loyalty.admin.redemptionsHint")}</p>
+      <ActionResult
+        state={result?.state}
+        text={result?.text}
+        onDismiss={() => setResult(null)}
+        autoHideMs={6000}
+      />
       {rows.length === 0 ? (
-        <EmptyState tone="waiting" title={t("loyalty.admin.redemptionsEmpty")} />
+        <EmptyState
+          status="success"
+          title={t("loyalty.admin.redemptionsEmpty")}
+          description={t("loyalty.admin.redemptionsEmptyText")}
+        />
       ) : (
         <ul className="space-y-2">
-          {rows.map((row) => (
-            <li key={row.id} className="space-y-3 rounded-2xl border border-border bg-card p-4">
-              <div>
-                <p className="text-sm font-bold">{row.reward_name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {t("loyalty.admin.redemptionLine", {
-                    name: row.full_name || t("loyalty.admin.customerUnnamed"),
-                    n: row.cost_points,
-                    date: dateFormat.format(new Date(row.expires_at)),
-                  })}
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  disabled={busyId === row.id}
-                  onClick={() => void resolve(row, "cancel")}
-                  className="action-button action-danger"
-                >
-                  {t("loyalty.admin.redeemCancel")}
-                </button>
-                <button
-                  type="button"
-                  disabled={busyId === row.id}
-                  onClick={() => void resolve(row, "fulfill")}
-                  className="action-button action-success"
-                >
-                  {t("loyalty.admin.redeemFulfill")}
-                </button>
-              </div>
-            </li>
-          ))}
+          {rows.map((row) => {
+            const name = row.full_name || t("loyalty.admin.customerUnnamed");
+            const days = daysUntil(row.expires_at);
+            return (
+              <li key={row.id} className="space-y-3 rounded-2xl border border-border bg-card p-4">
+                <div className="flex items-start gap-3">
+                  <PersonAvatar name={name} seed={row.user_id} size="sm" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold">{name}</p>
+                    <p className="flex flex-wrap items-center gap-1.5 text-sm">
+                      <Gift className="size-4 shrink-0 text-gold" aria-hidden />
+                      <span className="min-w-0 break-words">{row.reward_name}</span>
+                    </p>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                      <Tag icon={Star}>
+                        {t("loyalty.admin.stat.points", { n: row.cost_points })}
+                      </Tag>
+                      {days <= 0 ? (
+                        <StatusBadge
+                          tone="danger"
+                          icon={CalendarClock}
+                          size="sm"
+                          label={t("loyalty.admin.expiresToday")}
+                        />
+                      ) : days === 1 ? (
+                        <StatusBadge
+                          tone="warning"
+                          icon={CalendarClock}
+                          size="sm"
+                          label={t("loyalty.admin.expiresTomorrow")}
+                        />
+                      ) : (
+                        <StatusBadge
+                          tone="neutral"
+                          icon={CalendarClock}
+                          size="sm"
+                          label={t("loyalty.admin.expiresOn", {
+                            date: dateFormat.format(new Date(row.expires_at)),
+                          })}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row-reverse sm:items-center">
+                  <button
+                    type="button"
+                    disabled={busyId === row.id}
+                    onClick={() => void resolve(row, "fulfill")}
+                    aria-busy={busyId === row.id || undefined}
+                    className="action-button action-success w-full sm:w-auto sm:px-5"
+                  >
+                    {busyId === row.id ? (
+                      <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />
+                    ) : (
+                      <CheckCircle2 className="size-4" aria-hidden />
+                    )}
+                    {t("loyalty.admin.redeemFulfill")}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busyId === row.id}
+                    onClick={() => setCancelling(row)}
+                    className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-3 text-sm font-semibold text-muted-foreground transition hover:text-destructive"
+                  >
+                    <Undo2 className="size-4" aria-hidden />
+                    {t("loyalty.admin.redeemCancel")}
+                  </button>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
-      <p className="text-xs text-muted-foreground">{t("loyalty.admin.redeemCancelHint")}</p>
+      <ConfirmDialog
+        open={Boolean(cancelling)}
+        onOpenChange={(open) => !open && setCancelling(null)}
+        tone="danger"
+        icon={Undo2}
+        title={t("loyalty.admin.cancelTitle")}
+        description={cancelling?.reward_name}
+        consequences={
+          cancelling
+            ? [
+                {
+                  icon: Undo2,
+                  tone: "success",
+                  text: t("loyalty.admin.cancelReturns", {
+                    n: cancelling.cost_points,
+                    name: cancelling.full_name || t("loyalty.admin.customerUnnamed"),
+                  }),
+                },
+                { icon: Gift, tone: "danger", text: t("loyalty.admin.cancelNoReward") },
+              ]
+            : undefined
+        }
+        confirmLabel={t("loyalty.admin.cancelConfirm")}
+        confirmIcon={Undo2}
+        cancelLabel={t("loyalty.admin.cancelKeep")}
+        onConfirm={async () => {
+          if (cancelling) await resolve(cancelling, "cancel");
+        }}
+      />
     </section>
   );
 }
 
 function CustomersPart({
   shopId,
+  program,
   canAdjust,
   myId,
 }: {
   shopId: string;
+  program: LoyaltyProgram;
   canAdjust: boolean;
   myId: string;
 }) {
@@ -889,45 +1276,83 @@ function CustomersPart({
         />
       </label>
       {error ? (
-        <p className="text-sm font-semibold text-destructive" role="alert">
-          {error}
-        </p>
+        <Notice
+          tone="danger"
+          title={error}
+          action={{
+            label: t("visual.retry"),
+            icon: RotateCcw,
+            onClick: () => void load(search.trim()),
+          }}
+        />
       ) : !rows ? (
-        <p className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
-          <Loader2 className="size-4 animate-spin" aria-hidden />
-          {t("loyalty.admin.loading")}
-        </p>
+        <LoadingState variant="list" count={3} label={t("loyalty.admin.loading")} />
       ) : rows.length === 0 ? (
-        <EmptyState tone="waiting" title={t("loyalty.admin.customersEmpty")} />
+        <EmptyState
+          tone={search.trim() ? "search" : "people"}
+          title={t("loyalty.admin.customersEmpty")}
+        />
       ) : (
         <ul className="space-y-2">
-          {rows.map((row) => (
-            <li
-              key={row.user_id}
-              className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold">
-                  {row.full_name || t("loyalty.admin.customerUnnamed")}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {t("loyalty.admin.customerPoints", {
-                    n: row.points,
-                    total: row.lifetime_points,
-                  })}
-                </p>
-              </div>
-              {canAdjust && row.user_id !== myId && (
-                <button
-                  type="button"
-                  onClick={() => setAdjusting(row)}
-                  className="min-h-11 shrink-0 rounded-xl border border-border px-3 text-xs font-bold"
-                >
-                  {t("loyalty.admin.adjust")}
-                </button>
-              )}
-            </li>
-          ))}
+          {rows.map((row) => {
+            const name = row.full_name || t("loyalty.admin.customerUnnamed");
+            const position = tierFor(row.lifetime_points, program.tiers);
+            const style = tierStyleKey(position.index, program.tiers.length);
+            return (
+              <li
+                key={row.user_id}
+                className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card p-3"
+              >
+                <PersonAvatar name={name} seed={row.user_id} size="sm" />
+                <div className="min-w-0 flex-1 basis-36">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <p className="truncate text-sm font-bold">{name}</p>
+                    <TierBadge tier={style} name={position.tier.name} size="sm" />
+                  </div>
+                  {position.next ? (
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <span
+                        aria-hidden
+                        className="relative h-1.5 w-20 shrink-0 overflow-hidden rounded-full bg-muted"
+                      >
+                        <span
+                          className="absolute inset-y-0 left-0 rounded-full bg-[color:var(--gold)]"
+                          style={{ width: `${Math.max(6, position.progress)}%` }}
+                        />
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {t("loyalty.admin.toNext", {
+                          n: position.pointsToNext,
+                          name: position.next.name,
+                        })}
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {t("loyalty.admin.topLevel")}
+                    </p>
+                  )}
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-extrabold tabular-nums leading-none">{row.points}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {t("loyalty.admin.toUse", { total: row.lifetime_points })}
+                  </p>
+                </div>
+                {canAdjust && row.user_id !== myId && (
+                  <button
+                    type="button"
+                    onClick={() => setAdjusting(row)}
+                    aria-label={t("loyalty.admin.adjustOf", { name })}
+                    className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-border px-3 text-xs font-bold transition hover:border-primary/40"
+                  >
+                    <PlusCircle className="size-4" aria-hidden />
+                    {t("loyalty.admin.adjust")}
+                  </button>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
       {adjusting && (
@@ -966,7 +1391,8 @@ function AdjustDialog({
   const value = clampInt(amount, 1, 1000);
   const delta = direction === "add" ? value : -value;
   const result = customer.points + delta;
-  const invalid = result < 0 || reason.trim().length < 10;
+  const reasonLength = reason.trim().length;
+  const invalid = result < 0 || reasonLength < 10;
 
   async function save(event: FormEvent) {
     event.preventDefault();
@@ -1009,7 +1435,7 @@ function AdjustDialog({
                   onClick={() => setDirection(option)}
                   className={`flex min-h-11 items-center justify-center gap-2 rounded-xl border text-sm font-bold ${
                     direction === option
-                      ? "border-foreground bg-foreground text-background"
+                      ? "border-primary bg-primary text-primary-foreground"
                       : "border-border"
                   }`}
                 >
@@ -1022,50 +1448,64 @@ function AdjustDialog({
                 </button>
               ))}
             </div>
-            <label className="block space-y-1 text-xs font-semibold">
-              {t("loyalty.admin.adjustAmount")}
-              <input
-                type="number"
-                inputMode="numeric"
-                min={1}
-                max={1000}
-                required
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className={fieldClass}
-              />
-            </label>
-            <label className="block space-y-1 text-xs font-semibold">
-              {t("loyalty.admin.adjustReason")}
-              <textarea
-                value={reason}
-                required
-                minLength={10}
-                maxLength={240}
-                rows={2}
-                placeholder={t("loyalty.admin.adjustReasonPlaceholder")}
-                onChange={(e) => setReason(e.target.value)}
-                className={fieldClass}
-              />
-              <span className="block font-normal text-muted-foreground">
-                {t("loyalty.admin.adjustReasonHint")}
-              </span>
-            </label>
-            <p
-              className={`rounded-xl px-3 py-2 text-sm font-semibold ${
-                result < 0 ? "bg-destructive/10 text-destructive" : "bg-muted"
-              }`}
-              aria-live="polite"
+            <ChoiceChips
+              label={t("loyalty.admin.adjustAmount")}
+              options={[10, 50, 100].map((n) => ({
+                value: n,
+                label: `${direction === "add" ? "+" : "−"}${n}`,
+              }))}
+              value={value}
+              onChange={(next) => setAmount(String(next))}
+              other={{ min: 1, max: 1000, unit: t("points.short") }}
+            />
+            <Field
+              label={t("loyalty.admin.adjustReason")}
+              hint={t("loyalty.admin.adjustReasonHint")}
             >
-              {result < 0
-                ? t("loyalty.admin.adjustNegative")
-                : t("loyalty.admin.adjustPreview", { from: customer.points, to: result })}
-            </p>
-            {error && (
-              <p className="text-sm font-semibold text-destructive" role="alert">
-                {error}
-              </p>
-            )}
+              {(props) => (
+                <div className="space-y-1">
+                  <textarea
+                    {...props}
+                    value={reason}
+                    required
+                    minLength={10}
+                    maxLength={240}
+                    rows={2}
+                    placeholder={t("loyalty.admin.adjustReasonPlaceholder")}
+                    onChange={(e) => setReason(e.target.value)}
+                    className={`${fieldClass} text-base sm:text-sm`}
+                  />
+                  <FieldMessage tone={reasonLength >= 10 ? "success" : "hint"}>
+                    {reasonLength >= 10
+                      ? t("loyalty.admin.reasonOk")
+                      : t("loyalty.admin.reasonCount", { n: reasonLength, min: 10 })}
+                  </FieldMessage>
+                </div>
+              )}
+            </Field>
+            <div aria-live="polite">
+              {result < 0 ? (
+                <Notice tone="danger" title={t("loyalty.admin.adjustNegative")} />
+              ) : (
+                <DetailList
+                  items={[
+                    {
+                      label: t("loyalty.admin.adjustBalance"),
+                      icon: Star,
+                      previous: customer.points,
+                      value: (
+                        <span className="text-base font-extrabold tabular-nums">{result}</span>
+                      ),
+                      delta: {
+                        label: `${delta > 0 ? "+" : "−"}${Math.abs(delta)}`,
+                        tone: delta > 0 ? "success" : "danger",
+                      },
+                    },
+                  ]}
+                />
+              )}
+            </div>
+            {error && <Notice tone="danger" title={error} />}
           </form>
         </DialogScrollArea>
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

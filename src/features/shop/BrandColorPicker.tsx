@@ -1,7 +1,17 @@
 import { useId, useState } from "react";
-import { Check, ChevronDown, Pipette, RotateCcw } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  Pipette,
+  RotateCcw,
+  XCircle,
+  type LucideIcon,
+} from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useI18n } from "@/lib/i18n";
+import { FieldMessage, MoreDetails, StatusBadge, type Tone } from "@/components/visual";
+import { useI18n, type MessageKey } from "@/lib/i18n";
 import {
   BRAND_PALETTE,
   HEX_COLOR_PATTERN,
@@ -10,9 +20,17 @@ import {
   normalizeBrandColor,
 } from "@/lib/shop/branding";
 
+/** Leitura do texto sobre a cor em 3 níveis: fácil, pode cansar, difícil. */
+function readingLevel(ratio: number): { tone: Tone; icon: LucideIcon; label: MessageKey } {
+  if (ratio >= 4.5) return { tone: "success", icon: CheckCircle2, label: "brand.color.easy" };
+  if (ratio >= 3) return { tone: "warning", icon: AlertTriangle, label: "brand.color.tiring" };
+  return { tone: "danger", icon: XCircle, label: "brand.color.hard" };
+}
+
 type BrandColorPickerProps = {
   label: string;
-  description: string;
+  /** Para que serve a cor, em poucas palavras (aparece no botão). */
+  description?: string;
   value: string;
   defaultValue: string;
   /** Texto de exemplo mostrado sobre a cor para avaliar a leitura. */
@@ -44,7 +62,7 @@ export function BrandColorPicker({
   const validValue = isEmpty ? "#ffffff" : normalizeBrandColor(value, defaultValue);
   const invalid = !isEmpty && !HEX_COLOR_PATTERN.test(value);
   const foreground = contrastingForeground(validValue);
-  const ratio = contrastRatio(foreground, validValue);
+  const reading = readingLevel(contrastRatio(foreground, validValue));
   const paletteEntry = BRAND_PALETTE.find((entry) => entry.value === validValue);
   const paletteName = paletteEntry ? t(paletteEntry.nameKey) : undefined;
   // Compara o valor bruto: um hex parcial (ex.: "#12") não conta como padrão,
@@ -71,17 +89,18 @@ export function BrandColorPicker({
             <span className="flex min-w-0 flex-1 items-center justify-between gap-3 px-3 py-2">
               <span className="min-w-0">
                 <span className="block text-sm font-bold text-foreground">{label}</span>
-                <span className="block truncate text-xs text-muted-foreground">
-                  {isEmpty ? (
-                    t("brand.color.transparent")
-                  ) : (
-                    <>
-                      {paletteName ? `${paletteName} · ` : ""}
-                      <span className="font-mono">{validValue}</span>
-                      {isDefault ? ` · ${t("brand.color.defaultTag")}` : ""}
-                    </>
-                  )}
+                <span className="block truncate text-sm text-muted-foreground">
+                  {isEmpty
+                    ? t("brand.color.transparent")
+                    : `${paletteName ?? t("brand.color.customName")}${
+                        isDefault ? ` · ${t("brand.color.defaultTag")}` : ""
+                      }`}
                 </span>
+                {description && (
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {description}
+                  </span>
+                )}
               </span>
               <ChevronDown
                 className={`size-5 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
@@ -101,33 +120,27 @@ export function BrandColorPicker({
               className="flex min-h-24 flex-col justify-between rounded-2xl p-4 shadow-inner"
               style={{ backgroundColor: validValue, color: foreground }}
             >
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs font-semibold opacity-80">{label}</p>
-                <span className="rounded-full bg-black/10 px-2 py-0.5 font-mono text-[11px] font-bold">
-                  {validValue}
-                </span>
-              </div>
-              <div className="flex items-end justify-between gap-3">
-                <p className="text-base font-extrabold">{sample}</p>
-                <p className="text-[11px] font-semibold opacity-80">
-                  {t("brand.color.reading", {
-                    level:
-                      ratio >= 4.5
-                        ? t("brand.color.readingGreat")
-                        : ratio >= 3
-                          ? t("brand.color.readingGood")
-                          : t("brand.color.readingWeak"),
-                  })}{" "}
-                  · {ratio.toFixed(1)}:1
-                </p>
-              </div>
+              <p className="text-sm font-semibold opacity-80">
+                {isEmpty ? t("brand.color.transparent") : (paletteName ?? label)}
+              </p>
+              <p className="text-base font-extrabold">{sample}</p>
             </div>
+            {/* Leitura em 3 níveis, com ícone, cor e palavra (sem número). */}
+            {!isEmpty && (
+              <StatusBadge
+                tone={reading.tone}
+                icon={reading.icon}
+                label={t(reading.label)}
+                className="-mt-2"
+              />
+            )}
 
             <fieldset>
-              <legend className="mb-2 text-xs font-semibold text-muted-foreground">
+              <legend className="mb-2 text-sm font-semibold text-muted-foreground">
                 {t("brand.color.palette")}
               </legend>
-              <div className="grid grid-cols-8 gap-1.5">
+              {/* Amostras de pelo menos 44 px: a grade cria quantas colunas couberem. */}
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(2.75rem,1fr))] gap-1.5">
                 {BRAND_PALETTE.map((entry) => {
                   const selected = validValue === entry.value;
                   const name = t(entry.nameKey);
@@ -139,7 +152,7 @@ export function BrandColorPicker({
                       aria-pressed={selected}
                       title={name}
                       onClick={() => onChange(entry.value)}
-                      className={`flex aspect-square min-h-10 items-center justify-center rounded-xl border border-black/10 shadow-sm transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${selected ? "ring-2 ring-ring ring-offset-2" : ""}`}
+                      className={`flex aspect-square min-h-10 items-center justify-center rounded-xl border-2 border-white shadow-[0_0_0_1px_rgb(0_0_0/0.25)] transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${selected ? "ring-2 ring-ring ring-offset-2" : ""}`}
                       style={{ backgroundColor: entry.value }}
                     >
                       {selected && (
@@ -155,56 +168,62 @@ export function BrandColorPicker({
               </div>
             </fieldset>
 
-            <div className="grid grid-cols-[1fr_auto] items-end gap-2">
-              <div className="space-y-1.5">
-                <label htmlFor={hexId} className="text-xs font-semibold text-muted-foreground">
-                  {t("brand.color.hexLabel")}
+            <MoreDetails
+              summary={t("brand.color.more")}
+              icon={Pipette}
+              defaultOpen={invalid || (!isEmpty && !paletteEntry)}
+            >
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
+                <div className="space-y-1.5">
+                  <label htmlFor={hexId} className="text-sm font-semibold text-muted-foreground">
+                    {t("brand.color.hexLabel")}
+                  </label>
+                  <input
+                    id={hexId}
+                    value={value}
+                    maxLength={7}
+                    spellCheck={false}
+                    autoComplete="off"
+                    inputMode="text"
+                    aria-invalid={invalid}
+                    aria-describedby={invalid ? `${hexId}-error` : undefined}
+                    onChange={(event) => {
+                      const next = event.target.value.trim();
+                      // Com fundo opcional, apagar o campo volta ao estado "Sem fundo".
+                      if (allowEmpty && (next === "" || next === "#")) {
+                        onChange("");
+                        return;
+                      }
+                      onChange((next.startsWith("#") ? next : `#${next}`).toUpperCase());
+                    }}
+                    className="min-h-11 w-full rounded-xl border border-border bg-background px-3 font-mono text-sm font-semibold uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    placeholder={defaultValue}
+                  />
+                </div>
+                <label
+                  htmlFor={nativeId}
+                  className="relative flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-border bg-background px-3 text-xs font-bold transition hover:bg-muted focus-within:ring-2 focus-within:ring-ring"
+                >
+                  <Pipette className="size-4" aria-hidden="true" />
+                  {t("brand.color.other")}
+                  <input
+                    id={nativeId}
+                    type="color"
+                    value={validValue}
+                    aria-label={t("brand.color.nativeAria", {
+                      label: label.toLocaleLowerCase(intlLocale),
+                    })}
+                    onChange={(event) => onChange(event.target.value.toUpperCase())}
+                    className="absolute inset-0 size-full cursor-pointer opacity-0"
+                  />
                 </label>
-                <input
-                  id={hexId}
-                  value={value}
-                  maxLength={7}
-                  spellCheck={false}
-                  autoComplete="off"
-                  inputMode="text"
-                  aria-invalid={invalid}
-                  aria-describedby={invalid ? `${hexId}-error` : undefined}
-                  onChange={(event) => {
-                    const next = event.target.value.trim();
-                    // Com fundo opcional, apagar o campo volta ao estado "Sem fundo".
-                    if (allowEmpty && (next === "" || next === "#")) {
-                      onChange("");
-                      return;
-                    }
-                    onChange((next.startsWith("#") ? next : `#${next}`).toUpperCase());
-                  }}
-                  className="min-h-11 w-full rounded-xl border border-border bg-background px-3 font-mono text-sm font-semibold uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  placeholder={defaultValue}
-                />
               </div>
-              <label
-                htmlFor={nativeId}
-                className="relative flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-border bg-background px-3 text-xs font-bold transition hover:bg-muted focus-within:ring-2 focus-within:ring-ring"
-              >
-                <Pipette className="size-4" aria-hidden="true" />
-                {t("brand.color.other")}
-                <input
-                  id={nativeId}
-                  type="color"
-                  value={validValue}
-                  aria-label={t("brand.color.nativeAria", {
-                    label: label.toLocaleLowerCase(intlLocale),
-                  })}
-                  onChange={(event) => onChange(event.target.value.toUpperCase())}
-                  className="absolute inset-0 size-full cursor-pointer opacity-0"
-                />
-              </label>
-            </div>
-            {invalid && (
-              <p id={`${hexId}-error`} className="-mt-2 text-xs font-medium text-destructive">
-                {t("brand.color.invalid", { example: defaultValue })}
-              </p>
-            )}
+              {invalid && (
+                <FieldMessage id={`${hexId}-error`} tone="error" className="mt-2">
+                  {t("brand.color.invalid", { example: defaultValue || "#FFFFFF" })}
+                </FieldMessage>
+              )}
+            </MoreDetails>
 
             <div className="flex gap-2">
               <button
@@ -229,7 +248,6 @@ export function BrandColorPicker({
           </div>
         </PopoverContent>
       </Popover>
-      <p className="text-xs leading-relaxed text-muted-foreground">{description}</p>
     </div>
   );
 }

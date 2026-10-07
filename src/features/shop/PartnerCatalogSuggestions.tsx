@@ -1,8 +1,17 @@
-import { useCallback, useEffect, useState } from "react";
-import { Check, Lightbulb, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Check, Clock3, Lightbulb, Wallet } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  ActionResult,
+  CountBadge,
+  DetailList,
+  PersonAvatar,
+  SectionHeader,
+} from "@/components/visual";
 import { useI18n } from "@/lib/i18n";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
+import { useCatalogLabels } from "./catalog/labels";
 
 type Suggestion = {
   id: string;
@@ -15,19 +24,41 @@ type Suggestion = {
   created_at: string;
   serviceName?: string;
   fromName?: string;
+  fromAvatar?: string | null;
+  /** O que vale hoje para quem recebe (o próprio catálogo ou, sem ele, o da loja). */
+  currentPrice?: number;
+  currentDuration?: number;
 };
 
+/**
+ * Sugestões de preço/duração vindas de outros parceiros: cada uma mostra quem sugeriu e quando,
+ * "hoje → sugerido" com a diferença e duas saídas claras (usar ou manter o meu).
+ */
 export function PartnerCatalogSuggestions({
   shopId,
   staffId,
+  onCount,
 }: {
   shopId: string;
   staffId: string;
+  /** Quantas esperam decisão (o atalho do topo da Agenda só aparece quando há alguma). */
+  onCount?: (count: number | null) => void;
 }) {
   const { t, intlLocale } = useI18n();
+  const { duration, money } = useCatalogLabels();
   const [rows, setRows] = useState<Suggestion[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
+  /** Falha ao carregar a lista (o "Tentar de novo" recarrega). */
+  const [errorText, setErrorText] = useState<string | null>(null);
+  /** Falha ao decidir uma sugestão: fica no cartão dela e o "Tentar de novo" repete a escolha. */
+  const [failed, setFailed] = useState<{ rowId: string; accept: boolean; text: string } | null>(
+    null,
+  );
+
+  // Sem carregar (erro), a contagem é desconhecida: o atalho aparece sem bolha e leva ao aviso.
+  useEffect(() => {
+    onCount?.(errorText ? null : rows.length);
+  }, [rows.length, errorText, onCount]);
 
   const load = useCallback(async () => {
     const client = supabase as unknown as {
@@ -65,21 +96,39 @@ export function PartnerCatalogSuggestions({
       .eq("status", "pending")
       .order("created_at", { ascending: false });
     if (error) {
-      setMessage(friendlyAuthError(error));
+      setErrorText(friendlyAuthError(error));
       setRows([]);
       return;
     }
+    setErrorText(null);
     const base = data ?? [];
     const enriched = await Promise.all(
       base.map(async (row) => {
-        const [serviceRes, staffRes] = await Promise.all([
-          supabase.from("services").select("name").eq("id", row.service_id).maybeSingle(),
-          supabase.from("staff").select("display_name").eq("id", row.from_staff_id).maybeSingle(),
+        const [serviceRes, staffRes, ownRes] = await Promise.all([
+          supabase
+            .from("services")
+            .select("name, price_cents, duration_minutes")
+            .eq("id", row.service_id)
+            .maybeSingle(),
+          supabase
+            .from("staff")
+            .select("display_name, avatar_url")
+            .eq("id", row.from_staff_id)
+            .maybeSingle(),
+          supabase
+            .from("staff_services")
+            .select("price_cents, duration_minutes")
+            .eq("staff_id", staffId)
+            .eq("service_id", row.service_id)
+            .maybeSingle(),
         ]);
         return {
           ...row,
           serviceName: serviceRes.data?.name,
           fromName: staffRes.data?.display_name,
+          fromAvatar: staffRes.data?.avatar_url ?? null,
+          currentPrice: ownRes.data?.price_cents ?? serviceRes.data?.price_cents,
+          currentDuration: ownRes.data?.duration_minutes ?? serviceRes.data?.duration_minutes,
         };
       }),
     );
@@ -90,77 +139,153 @@ export function PartnerCatalogSuggestions({
     void load();
   }, [load]);
 
-  async function decide(id: string, accept: boolean) {
-    setBusyId(id);
-    setMessage(null);
+  const relative = useMemo(
+    () => new Intl.RelativeTimeFormat(intlLocale, { numeric: "auto" }),
+    [intlLocale],
+  );
+  function ago(iso: string) {
+    const days = Math.round((Date.now() - new Date(iso).getTime()) / 86_400_000);
+    return relative.format(-Math.max(0, days), "day");
+  }
+
+  function signed(value: number, format: (abs: number) => string) {
+    if (value === 0) return null;
+    return `${value > 0 ? "+" : "−"}${format(Math.abs(value))}`;
+  }
+
+  async function decide(row: Suggestion, accept: boolean) {
+    setBusyId(row.id);
+    setFailed(null);
     const { error } = await supabase.rpc("decide_partner_catalog_suggestion", {
-      p_suggestion_id: id,
+      p_suggestion_id: row.id,
       p_accept: accept,
     });
-    if (error) setMessage(friendlyAuthError(error));
+    if (error)
+      setFailed({ rowId: row.id, accept, text: friendlyAuthError(error, t("team.suggest.error")) });
     else {
-      setMessage(accept ? t("team.suggest.applied") : t("team.suggest.kept"));
+      const name =
+        row.proposed_display_name || row.serviceName || t("team.partner.serviceFallback");
+      if (accept) toast.success(t("team.suggest.applied"), { description: name });
+      else toast.success(t("team.suggest.kept"), { description: name });
       await load();
     }
     setBusyId(null);
   }
 
-  if (rows.length === 0 && !message) return null;
+  if (rows.length === 0 && !errorText) return null;
 
   return (
-    <section className="app-action-card space-y-3 p-4" aria-labelledby="partner-suggestions-title">
-      <div className="flex items-start gap-3">
-        <span className="rounded-xl bg-primary/10 p-2 text-primary">
-          <Lightbulb className="size-5" />
-        </span>
-        <div>
-          <h3 id="partner-suggestions-title" className="font-bold">
-            {t("team.suggest.title")}
-          </h3>
-          <p className="mt-1 text-xs text-muted-foreground">{t("team.suggest.hint")}</p>
-        </div>
-      </div>
-      <div className="space-y-2">
-        {rows.map((row) => (
-          <article key={row.id} className="rounded-2xl border border-border bg-background/60 p-3">
-            <p className="text-sm font-bold">
-              {row.proposed_display_name || row.serviceName || t("team.partner.serviceFallback")}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {t("team.suggest.from", { name: row.fromName ?? t("team.suggest.partnerFallback") })}{" "}
-              · {row.proposed_duration_minutes} min ·{" "}
-              {(row.proposed_price_cents / 100).toLocaleString(intlLocale, {
-                style: "currency",
-                currency: "BRL",
-                currencyDisplay: "narrowSymbol",
-              })}
-            </p>
-            <div className="mt-3 flex flex-wrap justify-end gap-2">
-              <button
-                type="button"
-                disabled={busyId === row.id}
-                onClick={() => void decide(row.id, false)}
-                className="action-button action-danger"
-              >
-                <X className="size-4" /> {t("team.suggest.keepMine")}
-              </button>
-              <button
-                type="button"
-                disabled={busyId === row.id}
-                onClick={() => void decide(row.id, true)}
-                className="action-button action-confirm"
-              >
-                <Check className="size-4" /> {t("team.suggest.accept")}
-              </button>
-            </div>
-          </article>
-        ))}
-      </div>
-      {message && (
-        <p role="status" className="text-xs font-semibold text-primary">
-          {message}
-        </p>
-      )}
+    <section
+      className="space-y-3 rounded-2xl border border-border bg-card p-4"
+      aria-labelledby="partner-suggestions-title"
+    >
+      <SectionHeader
+        icon={Lightbulb}
+        id="partner-suggestions-title"
+        title={t("team.suggest.title")}
+        tone="warning"
+        aside={
+          rows.length > 0 ? (
+            <CountBadge
+              count={rows.length}
+              label={t("team.suggest.countAria", { count: rows.length })}
+            />
+          ) : undefined
+        }
+      />
+      <ul className="space-y-3">
+        {rows.map((row) => {
+          const fromName = row.fromName ?? t("team.suggest.partnerFallback");
+          const priceDelta =
+            row.currentPrice != null ? row.proposed_price_cents - row.currentPrice : 0;
+          const durationDelta =
+            row.currentDuration != null ? row.proposed_duration_minutes - row.currentDuration : 0;
+          return (
+            <li
+              key={row.id}
+              className="space-y-3 rounded-2xl border border-border bg-background/60 p-3"
+            >
+              <div className="flex items-center gap-3">
+                <PersonAvatar
+                  name={fromName}
+                  src={row.fromAvatar}
+                  seed={row.from_staff_id}
+                  size="sm"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold">
+                    {row.proposed_display_name ||
+                      row.serviceName ||
+                      t("team.partner.serviceFallback")}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {t("team.suggest.from", { name: fromName })} · {ago(row.created_at)}
+                  </p>
+                </div>
+              </div>
+              <DetailList
+                items={[
+                  {
+                    key: "price",
+                    icon: Wallet,
+                    label: t("team.suggest.price"),
+                    previous:
+                      row.currentPrice != null && priceDelta !== 0
+                        ? money(row.currentPrice)
+                        : undefined,
+                    value: money(row.proposed_price_cents),
+                    delta: signed(priceDelta, money)
+                      ? { label: signed(priceDelta, money)!, tone: "neutral" }
+                      : undefined,
+                  },
+                  {
+                    key: "duration",
+                    icon: Clock3,
+                    label: t("team.suggest.duration"),
+                    previous:
+                      row.currentDuration != null && durationDelta !== 0
+                        ? duration(row.currentDuration)
+                        : undefined,
+                    value: duration(row.proposed_duration_minutes),
+                    delta: signed(durationDelta, (abs) => duration(abs))
+                      ? {
+                          label: signed(durationDelta, (abs) => duration(abs))!,
+                          tone: "neutral",
+                        }
+                      : undefined,
+                  },
+                ]}
+              />
+              <div className="flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  disabled={busyId === row.id}
+                  onClick={() => void decide(row, false)}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-semibold transition hover:border-primary/40 disabled:opacity-60"
+                >
+                  {t("team.suggest.keepMine")}
+                </button>
+                <button
+                  type="button"
+                  disabled={busyId === row.id}
+                  onClick={() => void decide(row, true)}
+                  className="action-button action-confirm"
+                >
+                  <Check className="size-4" aria-hidden /> {t("team.suggest.accept")}
+                </button>
+              </div>
+              {failed?.rowId === row.id && (
+                <ActionResult
+                  state="error"
+                  text={failed.text}
+                  onRetry={() => void decide(row, failed.accept)}
+                />
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {errorText && <ActionResult state="error" text={errorText} onRetry={() => void load()} />}
     </section>
   );
 }

@@ -1,10 +1,18 @@
 import {
+  ArrowLeft,
   ArrowRight,
+  Bell,
   Eye,
   EyeOff,
+  Hourglass,
+  KeyRound,
+  Loader2,
   LockKeyhole,
   Mail,
+  MailCheck,
+  MailOpen,
   MessageCircle,
+  MousePointerClick,
   Scissors,
   ShieldCheck,
   UserRound,
@@ -52,8 +60,27 @@ import { BrandFontFace } from "@/features/shop/BrandFontFace";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { t as tNow, useI18n } from "@/lib/i18n";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Switch } from "@/components/ui/switch";
+import {
+  announce,
+  FieldMessage,
+  Hint,
+  Notice,
+  StatusBadge,
+  Steps,
+  type StepItem,
+  type Tone,
+} from "@/components/visual";
+import {
+  CodeInput,
+  CodeSentCard,
+  ConsentNote,
+  ExampleBubble,
+  GoogleMark,
+  PasswordRules,
+  ResendButton,
+  ResultHero,
+} from "@/features/auth/entry";
 import { PRIVACY_VERSION, TERMS_VERSION } from "@/features/legal/versions";
 import { callOptionalRpc } from "@/lib/auth/optional-rpc";
 import { checkSignupPhone, nextMaskedPhone } from "@/lib/auth/signup-phone";
@@ -162,7 +189,7 @@ const NEW_ACCOUNT_WINDOW_MS = 60 * 60 * 1000;
 /** WhatsApp do cadastro que ficou só nos metadados (confirmação do e-mail): vale por 7 dias. */
 const SIGNUP_WHATSAPP_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
-type SignupFieldErrors = { name?: string; whatsapp?: string };
+type SignupFieldErrors = { name?: string; email?: string; whatsapp?: string; password?: string };
 
 /** Espera sugerida antes de reenviar o código, se o servidor não informar. */
 const PHONE_RESEND_SECONDS = 60;
@@ -280,7 +307,28 @@ function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
+  // Aviso da tela com o tom do estado (ícone e cor): andamento, sucesso ou informação.
+  const [notice, setNotice] = useState<{ text: string; tone: Tone } | null>(null);
+  const info = notice?.text ?? null;
+  function setInfo(text: string | null, tone: Tone = "info") {
+    setNotice(text ? { text, tone } : null);
+  }
+  // Resultado que troca o formulário: "Confira seu e-mail" (cadastro) ou "Link enviado" (senha).
+  const [emailResult, setEmailResult] = useState<{
+    kind: "signup" | "reset";
+    email: string;
+    withWhatsapp: boolean;
+  } | null>(null);
+  const [resetResendIn, setResetResendIn] = useState(0);
+  const [recoveryResendIn, setRecoveryResendIn] = useState(0);
+  const [linkExpired, setLinkExpired] = useState(false);
+  // Google em janela separada: a tela espera, com saída "Fechei a janela".
+  const [googleWaiting, setGoogleWaiting] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
+  // Janela de entrar com Google: o botão de fechar aparece se demorar.
+  const [popupSlow, setPopupSlow] = useState(false);
+  const emailInputRef = useRef<HTMLInputElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const [recoveryChannel, setRecoveryChannel] = useState<RecoveryChannel>("email");
   const [whatsapp, setWhatsapp] = useState("");
   // Cadastro do cliente: nome, aceite de avisos por WhatsApp e erros ao lado de cada campo.
@@ -289,6 +337,7 @@ function AuthPage() {
   const [fieldErrors, setFieldErrors] = useState<SignupFieldErrors>({});
   const nameInputRef = useRef<HTMLInputElement>(null);
   const signupPhoneRef = useRef<HTMLInputElement>(null);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
   // Conferências do primeiro acesso (aceite e WhatsApp guardado no cadastro): uma vez por tela.
   const firstAccessCheckedRef = useRef(false);
   const [otpCode, setOtpCode] = useState("");
@@ -326,6 +375,29 @@ function AuthPage() {
     const timer = window.setTimeout(() => setPhoneResendIn((value) => value - 1), 1000);
     return () => window.clearTimeout(timer);
   }, [phoneResendIn]);
+
+  useEffect(() => {
+    if (resetResendIn <= 0) return;
+    const timer = window.setTimeout(() => setResetResendIn((value) => value - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [resetResendIn]);
+
+  useEffect(() => {
+    if (recoveryResendIn <= 0) return;
+    const timer = window.setTimeout(() => setRecoveryResendIn((value) => value - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [recoveryResendIn]);
+
+  useEffect(() => {
+    if (!popup) return;
+    const timer = window.setTimeout(() => setPopupSlow(true), 8000);
+    return () => window.clearTimeout(timer);
+  }, [popup]);
+
+  // Resultado novo (e-mail enviado): o foco vai para o título, que diz o que aconteceu.
+  useEffect(() => {
+    if (emailResult) titleRef.current?.focus();
+  }, [emailResult]);
 
   const preferredNext = isSafeNext(next) ? next : "";
 
@@ -390,7 +462,7 @@ function AuthPage() {
         await goAfterAuthLocal();
         return;
       }
-      setInfo(tNow("fix.auth-rotas.emailConfirmedSignIn"));
+      setInfo(tNow("fix.auth-rotas.emailConfirmedSignIn"), "success");
     })();
     return () => {
       cancelled = true;
@@ -486,7 +558,8 @@ function AuthPage() {
     async function applySession(data: { access_token: string; refresh_token: string }) {
       sessionApplyingRef.current = true;
       setBusy(true);
-      setInfo(tNow("auth.info.signingIn"));
+      setGoogleWaiting(false);
+      setInfo(tNow("auth.info.signingIn"), "progress");
       const { error: sessionError } = await supabase.auth.setSession({
         access_token: data.access_token,
         refresh_token: data.refresh_token,
@@ -551,7 +624,7 @@ function AuthPage() {
           return;
         }
         setBusy(true);
-        setInfo(tNow("auth.info.signingIn"));
+        setInfo(tNow("auth.info.signingIn"), "progress");
         const { error: sessionError } = await supabase.auth.setSession({
           access_token: tokens.access_token,
           refresh_token: tokens.refresh_token,
@@ -590,7 +663,8 @@ function AuthPage() {
       if (event === "PASSWORD_RECOVERY") {
         setMode("recovery");
         setError(null);
-        setInfo(tNow("auth.info.setNewPassword"));
+        setEmailResult(null);
+        setNotice({ text: tNow("auth.info.setNewPassword"), tone: "info" });
       }
     });
     return () => subscription.unsubscribe();
@@ -622,7 +696,8 @@ function AuthPage() {
       window.history.replaceState(window.history.state, "", url.toString());
       setMode("forgot");
       setInfo(null);
-      setError(tNow("auth.error.linkExpired"));
+      setError(null);
+      setLinkExpired(true);
     })();
     return () => {
       cancelled = true;
@@ -641,7 +716,7 @@ function AuthPage() {
     let cancelled = false;
     void (async () => {
       setBusy(true);
-      setInfo(tNow("auth.info.openingGoogle"));
+      setNotice({ text: tNow("auth.info.openingGoogle"), tone: "progress" });
       try {
         const bridge = resolveAuthBridge({
           returnOrigin,
@@ -655,7 +730,7 @@ function AuthPage() {
             clearAuthBridge();
             if (!cancelled) {
               setError(tNow("auth.error.googlePopup"));
-              setInfo(null);
+              setNotice(null);
               setBusy(false);
             }
             return;
@@ -695,7 +770,7 @@ function AuthPage() {
       const inPopup = Boolean(popup || peekAuthBridge()?.popup);
 
       if (inPopup && (hasCode || peekAuthBridge())) {
-        setInfo(tNow("auth.info.finishingLogin"));
+        setInfo(tNow("auth.info.finishingLogin"), "progress");
         const result = await finishPopupOAuthAndNotifyOpener({
           returnOrigin,
           shop: effectiveShopRef,
@@ -704,7 +779,7 @@ function AuthPage() {
         });
         if (cancelled) return;
         if (result === "notified") {
-          setInfo(tNow("auth.info.canClose"));
+          setInfo(tNow("auth.info.canClose"), "success");
           return;
         }
         if (result === "error") {
@@ -843,17 +918,19 @@ function AuthPage() {
     try {
       const payload = await callVerifyPhone({ action: "request", destination: number });
       if (payload.already_verified) {
-        setInfo(tNow("fix2.whats.verified"));
+        setInfo(tNow("fix2.whats.verified"), "success");
         await goAfterAuth();
         return;
       }
       setPhoneUnavailable(false);
       setPhoneResendIn(payload.resend_after_seconds ?? PHONE_RESEND_SECONDS);
-      setInfo(tNow("fix2.whats.codeSent", { number: formatBrPhone(number) }));
+      // O número e o exemplo da mensagem aparecem no cartão do código; aqui só o anúncio.
+      announce(tNow("fix2.whats.codeSent", { number: formatBrPhone(number) }));
     } catch (err) {
       if (err instanceof ServerError && err.errorCode === "whatsapp_unavailable") {
+        // Tela de resultado: conta criada, WhatsApp para confirmar depois.
         setPhoneUnavailable(true);
-        setInfo(tNow("fix3.auth.phoneUnavailable"));
+        announce(tNow("fix3.auth.phoneUnavailable"));
         return;
       }
       setError(phoneErrorText(err));
@@ -874,12 +951,95 @@ function AuthPage() {
   async function skipPhoneVerification() {
     setBusy(true);
     setError(null);
-    setInfo(tNow("fix3.auth.phoneSkipped"));
+    setInfo(tNow("fix3.auth.phoneSkipped"), "success");
     try {
       await goAfterAuth();
     } finally {
       setBusy(false);
     }
+  }
+
+  /** Esqueci a senha pelo WhatsApp: pede o código (o mesmo pedido do primeiro envio). */
+  async function requestRecoveryCode() {
+    const base = import.meta.env.VITE_SUPABASE_URL || "";
+    const response = await fetch(`${base}/functions/v1/auth-otp`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "",
+      },
+      body: JSON.stringify({
+        action: "request",
+        shop: effectiveShopRef,
+        channel: "whatsapp",
+        purpose: "recovery",
+        destination: whatsapp,
+      }),
+    });
+    const payload = (await response.json().catch(() => ({}))) as {
+      error?: string;
+      error_code?: string;
+      message?: string;
+    };
+    if (!response.ok) throw serverError(payload, tNow("auth.error.sendCode"));
+    setOtpSent(true);
+    setRecoveryResendIn(PHONE_RESEND_SECONDS);
+    setInfo(tNow("auth.info.codeSentIfAccount"));
+  }
+
+  /** Esqueci a senha por e-mail: envia o link e mostra a tela "Link enviado". */
+  async function sendResetLink() {
+    const redirectTo = needsAuthOriginBridge()
+      ? buildPlatformAuthUrl({
+          shop: effectiveShopRef,
+          next: preferredNext || undefined,
+          returnOrigin: currentOrigin(),
+          recovery: true,
+        })
+      : `${window.location.origin}/auth?recovery=1${
+          preferredNext ? `&next=${encodeURIComponent(preferredNext)}` : ""
+        }${effectiveShopRef ? `&shop=${encodeURIComponent(effectiveShopRef)}` : ""}`;
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
+    if (error) throw error;
+    setLinkExpired(false);
+    setResetResendIn(PHONE_RESEND_SECONDS);
+    setEmailResult({ kind: "reset", email: email.trim(), withWhatsapp: false });
+    announce(tNow("auth.info.resetLinkSent"));
+  }
+
+  /** "Reenviar código" / "Enviar de novo": repete o mesmo envio, com espera à vista. */
+  async function resendFromForgot(kind: "code" | "link") {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      if (kind === "code") {
+        setOtpCode("");
+        await requestRecoveryCode();
+      } else {
+        await sendResetLink();
+      }
+    } catch (err) {
+      setError(
+        friendlyAuthError(err, tNow(kind === "code" ? "auth.error.sendCode" : "errors.generic")),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /** Troca de modo limpando avisos, senha e o resultado na tela (o e-mail fica). */
+  function switchMode(next: AuthMode) {
+    setMode(next);
+    setError(null);
+    setInfo(null);
+    setFieldErrors({});
+    setEmailResult(null);
+    setLinkExpired(false);
+    setPassword("");
+    setPasswordConfirm("");
+    setOtpSent(false);
+    setOtpCode("");
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -891,7 +1051,7 @@ function AuthPage() {
     try {
       if (mode === "verifyPhone") {
         if (phoneUnavailable) {
-          setInfo(tNow("fix3.auth.phoneSkipped"));
+          setInfo(tNow("fix3.auth.phoneSkipped"), "success");
           await goAfterAuth();
           return;
         }
@@ -916,6 +1076,7 @@ function AuthPage() {
           verified.whatsapp_opt_in_at
             ? tNow("fix2.whats.verifiedOptIn")
             : tNow("fix2.whats.verified"),
+          "success",
         );
         await goAfterAuth();
         return;
@@ -925,28 +1086,7 @@ function AuthPage() {
         if (recoveryChannel === "whatsapp" && effectiveShopRef) {
           const base = import.meta.env.VITE_SUPABASE_URL || "";
           if (!otpSent) {
-            const response = await fetch(`${base}/functions/v1/auth-otp`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "",
-              },
-              body: JSON.stringify({
-                action: "request",
-                shop: effectiveShopRef,
-                channel: "whatsapp",
-                purpose: "recovery",
-                destination: whatsapp,
-              }),
-            });
-            const payload = (await response.json().catch(() => ({}))) as {
-              error?: string;
-              error_code?: string;
-              message?: string;
-            };
-            if (!response.ok) throw serverError(payload, tNow("auth.error.sendCode"));
-            setOtpSent(true);
-            setInfo(tNow("auth.info.codeSentIfAccount"));
+            await requestRecoveryCode();
             return;
           }
 
@@ -980,25 +1120,13 @@ function AuthPage() {
           });
           if (verifyError) throw verifyError;
           setMode("recovery");
-          setInfo(tNow("auth.info.codeConfirmed"));
+          setInfo(tNow("auth.info.codeConfirmed"), "success");
           setOtpSent(false);
           setOtpCode("");
           return;
         }
 
-        const redirectTo = needsAuthOriginBridge()
-          ? buildPlatformAuthUrl({
-              shop: effectiveShopRef,
-              next: preferredNext || undefined,
-              returnOrigin: currentOrigin(),
-              recovery: true,
-            })
-          : `${window.location.origin}/auth?recovery=1${
-              preferredNext ? `&next=${encodeURIComponent(preferredNext)}` : ""
-            }${effectiveShopRef ? `&shop=${encodeURIComponent(effectiveShopRef)}` : ""}`;
-        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
-        if (error) throw error;
-        setInfo(tNow("auth.info.resetLinkSent"));
+        await sendResetLink();
         return;
       }
 
@@ -1009,7 +1137,7 @@ function AuthPage() {
         if (error) throw error;
         setPassword("");
         setPasswordConfirm("");
-        setInfo(tNow("auth.info.passwordUpdated"));
+        setInfo(tNow("auth.info.passwordUpdated"), "success");
         await goAfterAuth();
         return;
       }
@@ -1021,12 +1149,17 @@ function AuthPage() {
         return;
       }
 
-      // Cadastro: confere nome e WhatsApp antes de criar a conta (erro ao lado do campo).
+      // Cadastro: confere todos os campos antes de criar a conta (erro ao lado de cada um).
+      // E-mail e senha seguem a mesma regra do navegador (type=email, 6+ caracteres), mas a
+      // mensagem aparece junto do campo, com ícone, no idioma escolhido.
       const signupName = fullName.trim().replace(/\s+/g, " ");
       const phoneCheck = checkSignupPhone(whatsapp, locale);
       const nextErrors: SignupFieldErrors = {};
       if (signupName.length < NAME_MIN || signupName.length > NAME_MAX) {
         nextErrors.name = tNow("cad.cliente.nameError");
+      }
+      if (!email.trim() || emailInputRef.current?.validity.typeMismatch) {
+        nextErrors.email = tNow("cad.dono.errEmail");
       }
       if (!phoneCheck.ok) {
         if (phoneCheck.reason === "ddd") nextErrors.whatsapp = tNow("cad.cliente.phoneDddError");
@@ -1034,14 +1167,23 @@ function AuthPage() {
           nextErrors.whatsapp = tNow("cad.cliente.phoneLengthError");
         else nextErrors.whatsapp = tNow("cad.cliente.phoneRequired");
       }
+      if (password.length < 6) nextErrors.password = tNow("errors.passwordShort");
       setFieldErrors(nextErrors);
-      if (nextErrors.name || nextErrors.whatsapp) {
-        if (nextErrors.name) nameInputRef.current?.focus();
-        else signupPhoneRef.current?.focus();
+      // Foco no primeiro campo com erro, na ordem da tela.
+      const firstInvalid = nextErrors.name
+        ? nameInputRef.current
+        : nextErrors.email
+          ? emailInputRef.current
+          : nextErrors.whatsapp
+            ? signupPhoneRef.current
+            : nextErrors.password
+              ? passwordInputRef.current
+              : null;
+      if (firstInvalid) {
+        firstInvalid.focus();
         return;
       }
-      // Nome e WhatsApp primeiro (mensagem traduzida ao lado do campo); depois o navegador
-      // confere e-mail e senha. O formulário de cadastro usa noValidate para esta ordem.
+      // Rede de segurança: qualquer outra regra nativa que tenha passado.
       if (!form.reportValidity()) return;
       const signupPhone = phoneCheck.ok ? phoneCheck : null;
       const signupOptIn = Boolean(signupPhone) && phoneOptIn;
@@ -1109,7 +1251,7 @@ function AuthPage() {
           p_opt_in: signupOptIn,
         });
         if (waError) {
-          setInfo(tNow("auth.info.createdSaveWhatsapp"));
+          setInfo(tNow("auth.info.createdSaveWhatsapp"), "success");
           await goAfterAuth();
           return;
         }
@@ -1124,15 +1266,21 @@ function AuthPage() {
       }
 
       if (signUpData.session) {
-        setInfo(tNow("auth.info.createdNoWhatsapp"));
+        setInfo(tNow("auth.info.createdNoWhatsapp"), "success");
         await goAfterAuth();
         return;
       }
 
-      setInfo(
+      // Conta criada, falta confirmar o e-mail: tela "Confira seu e-mail" com os próximos passos.
+      setPassword("");
+      setEmailResult({
+        kind: "signup",
+        email: email.trim(),
+        withWhatsapp: Boolean(signupWhatsapp),
+      });
+      announce(
         signupWhatsapp ? tNow("cad.cliente.confirmEmailWhatsapp") : tNow("auth.info.confirmEmail"),
       );
-      setMode("signin");
     } catch (err) {
       setError(friendlyAuthError(err, tNow("auth.error.signinFailed")));
     } finally {
@@ -1140,8 +1288,20 @@ function AuthPage() {
     }
   }
 
+  /** "Fechei a janela": solta a tela se a janela do Google foi fechada sem concluir. */
+  function stopWaitingGoogle() {
+    if (popupWatchRef.current !== null) window.clearInterval(popupWatchRef.current);
+    popupWatchRef.current = null;
+    if (sessionApplyingRef.current) return;
+    setGoogleWaiting(false);
+    setGoogleBusy(false);
+    setBusy(false);
+    setInfo(null);
+  }
+
   async function handleGoogle() {
     setBusy(true);
+    setGoogleBusy(true);
     setError(null);
     setInfo(null);
     try {
@@ -1173,9 +1333,11 @@ function AuthPage() {
         if (!popupWin) {
           setError(tNow("auth.error.allowPopups"));
           setBusy(false);
+          setGoogleBusy(false);
           return;
         }
-        setInfo(tNow("auth.info.finishGooglePopup"));
+        setGoogleWaiting(true);
+        announce(tNow("auth.info.finishGooglePopup"));
         sessionApplyingRef.current = false;
         if (popupWatchRef.current !== null) window.clearInterval(popupWatchRef.current);
         const timer = window.setInterval(() => {
@@ -1185,6 +1347,8 @@ function AuthPage() {
             // A sessão chegou e está sendo aplicada: mantém "Entrando…" até sair da tela.
             if (sessionApplyingRef.current) return;
             setBusy(false);
+            setGoogleBusy(false);
+            setGoogleWaiting(false);
             setInfo(null);
           }
         }, 600);
@@ -1200,19 +1364,9 @@ function AuthPage() {
     } catch (err) {
       setError(friendlyAuthError(err, tNow("auth.error.google")));
       setBusy(false);
+      setGoogleBusy(false);
     }
   }
-
-  const eyebrow =
-    mode === "verifyPhone"
-      ? t("fix3.auth.phoneEyebrow")
-      : mode === "signup"
-        ? t("auth.eyebrow.signup")
-        : mode === "forgot"
-          ? t("auth.eyebrow.forgot")
-          : mode === "recovery"
-            ? t("auth.eyebrow.recovery")
-            : t("auth.eyebrow.signin");
 
   const title =
     mode === "verifyPhone"
@@ -1225,74 +1379,138 @@ function AuthPage() {
             ? t("auth.title.recovery")
             : t("auth.title.signin");
 
-  const subtitle =
-    mode === "verifyPhone"
-      ? t("fix3.auth.phoneSubtitle", { number: formatBrPhone(phoneNumber) })
-      : mode === "signup"
-        ? effectiveShopRef
-          ? t("auth.subtitle.signupShop")
-          : t("auth.subtitle.signup")
-        : mode === "forgot"
-          ? recoveryChannel === "whatsapp"
-            ? t("auth.subtitle.forgotWhatsapp")
-            : t("auth.subtitle.forgotEmail")
-          : mode === "recovery"
-            ? t("auth.subtitle.recovery")
-            : t("auth.subtitle.signin");
+  // Esqueci a senha pelo WhatsApp (só no login de uma barbearia).
+  const whatsappRecovery = recoveryChannel === "whatsapp" && Boolean(effectiveShopRef);
+  // Etapa de digitar o código: o erro aparece logo abaixo das caixas.
+  const codeStep =
+    (mode === "verifyPhone" && !phoneUnavailable) ||
+    (mode === "forgot" && whatsappRecovery && otpSent);
+  // Tela de resultado no lugar do formulário: o título fica no resultado.
+  const resultScreen = Boolean(emailResult) || (mode === "verifyPhone" && phoneUnavailable);
 
-  // Termos e Política abrem em nova aba, no idioma atual (?lang=), sem perder o cadastro.
-  const legalLinkClass =
-    "-my-3 inline-flex min-h-11 items-center font-semibold text-foreground underline underline-offset-2";
-  const legalLinks = (
+  /** Etapas mostradas sob o título: onde a pessoa está no fluxo. */
+  const flowSteps: StepItem[] | null = (() => {
+    const state = (index: number, current: number): StepItem["status"] =>
+      index < current ? "done" : index === current ? "current" : "upcoming";
+    if (mode === "signup") {
+      return [
+        { key: "data", label: t("entry.signup.step.data"), status: "current" },
+        // "Confirmar contato": vale para o código no WhatsApp e para o link no e-mail.
+        { key: "confirm", label: t("entry.signup.step.confirm"), status: "upcoming" },
+      ];
+    }
+    if (mode === "verifyPhone") {
+      return [
+        { key: "created", label: t("entry.phone.step.created"), status: "done" },
+        { key: "confirm", label: t("entry.phone.step.confirm"), status: "current" },
+        { key: "done", label: t("entry.phone.step.done"), status: "upcoming" },
+      ];
+    }
+    if (mode === "forgot" || mode === "recovery") {
+      const current = mode === "recovery" ? 2 : whatsappRecovery && otpSent ? 1 : 0;
+      const labels = whatsappRecovery
+        ? [t("entry.forgot.step.whatsapp"), t("entry.forgot.step.code")]
+        : [t("entry.forgot.step.email"), t("entry.forgot.step.link")];
+      return [...labels, t("entry.forgot.step.password")].map((label, index) => ({
+        key: String(index),
+        label,
+        status: state(index, current),
+      }));
+    }
+    return null;
+  })();
+
+  /** Botão principal: verbo do que acontece, ícone e o verbo no gerúndio enquanto espera. */
+  const submit = (() => {
+    if (mode === "verifyPhone") {
+      return phoneUnavailable
+        ? { label: t("entry.phone.enterApp"), busy: t("auth.info.signingIn"), icon: ArrowRight }
+        : { label: t("fix2.whats.confirm"), busy: t("fix2.whats.verifying"), icon: ShieldCheck };
+    }
+    if (mode === "forgot") {
+      if (whatsappRecovery) {
+        return otpSent
+          ? {
+              label: t("auth.submit.confirmCode"),
+              busy: t("fix2.whats.verifying"),
+              icon: ShieldCheck,
+            }
+          : {
+              label: t("auth.submit.sendCode"),
+              busy: t("fix2.whats.sending"),
+              icon: MessageCircle,
+            };
+      }
+      return { label: t("auth.submit.sendLink"), busy: t("entry.busy.sendLink"), icon: Mail };
+    }
+    if (mode === "recovery") {
+      return {
+        label: t("auth.submit.saveNewPassword"),
+        busy: t("entry.busy.savePassword"),
+        icon: KeyRound,
+      };
+    }
+    if (mode === "signup") {
+      return { label: t("auth.submit.signup"), busy: t("entry.busy.signup"), icon: ArrowRight };
+    }
+    return { label: t("auth.submit.signin"), busy: t("auth.info.signingIn"), icon: ArrowRight };
+  })();
+  const SubmitIcon = submit.icon;
+
+  // Frase do aceite com os nomes dos documentos em texto; os links ficam logo abaixo, em pílulas.
+  const docNames = (
     <>
-      <Link
-        to="/termos"
-        search={{ lang: locale }}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={legalLinkClass}
-      >
-        {t("auth.terms.link")}
-        <span className="sr-only"> {t("cad.cliente.newTab")}</span>
-      </Link>{" "}
+      <strong className="font-semibold text-foreground">{t("auth.terms.link")}</strong>{" "}
       {t("auth.terms.and")}{" "}
-      <Link
-        to="/privacidade"
-        search={{ lang: locale }}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={legalLinkClass}
-      >
-        {t("auth.privacy.link")}
-        <span className="sr-only"> {t("cad.cliente.newTab")}</span>
-      </Link>
+      <strong className="font-semibold text-foreground">{t("auth.privacy.link")}</strong>
     </>
   );
+
+  // Caminho de volta: à página da barbearia (ou ao início da plataforma).
+  const backTarget = shopContext.demo
+    ? null
+    : shopContext.shopRef
+      ? { href: `/b/${encodeURIComponent(shopContext.shopRef)}`, label: t("entry.back.shop") }
+      : hostShopSlug
+        ? { href: "/", label: t("entry.back.shop") }
+        : { href: "/", label: t("entry.back.home") };
 
   const fieldClass =
     "auth-input-wrap auth-brand-control flex min-h-[3.25rem] items-center border border-border/70 transition-[border-color,box-shadow] duration-200 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10";
   const inputClass =
     "min-h-[3.25rem] min-w-0 flex-1 bg-transparent px-3 py-3 text-[15px] text-foreground outline-none placeholder:text-muted-foreground/60";
   const labelClass = "block space-y-2 text-sm font-semibold text-foreground/85";
+  // Botão principal do /auth (enviar e telas de resultado): sempre na cor da marca da loja.
+  const primaryActionClass =
+    "auth-primary-action auth-brand-button flex min-h-[3.25rem] w-full items-center justify-center gap-2 bg-primary px-4 text-[15px] font-semibold text-primary-foreground shadow-[0_10px_24px_color-mix(in_oklch,var(--brand-primary)_22%,transparent)] transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_14px_28px_color-mix(in_oklch,var(--brand-primary)_28%,transparent)] active:translate-y-0 active:scale-[0.99] aria-busy:cursor-wait [&:disabled:not([aria-busy=true])]:opacity-60";
 
   if (popup) {
     return (
-      <main className="mb-page flex min-h-dvh items-center justify-center bg-background px-6 text-foreground">
-        <div className="mb-panel w-full max-w-sm space-y-3 border border-border/70 bg-card p-8 text-center shadow-sm">
-          <p className="text-sm font-semibold text-foreground/80">{t("auth.popup.title")}</p>
-          <h1 className="text-xl font-semibold tracking-tight">
-            {error ? t("auth.popup.failed") : info || t("auth.popup.connecting")}
-          </h1>
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
-          {!error ? (
-            <p className="text-sm text-muted-foreground">{t("auth.popup.autoClose")}</p>
+      <main className="mb-page flex min-h-dvh items-center justify-center bg-background px-4 text-foreground">
+        <div className="entry-result-card w-full max-w-sm space-y-5 p-6 sm:p-8">
+          <p className="flex items-center justify-center gap-2 text-sm font-semibold">
+            <GoogleMark />
+            {t("entry.popup.title")}
+          </p>
+          {error ? (
+            <ResultHero tone="danger" title={t("auth.popup.failed")}>
+              {error}
+            </ResultHero>
           ) : (
+            <ResultHero
+              tone={notice?.tone === "success" ? "success" : "progress"}
+              title={info || t("auth.popup.connecting")}
+            >
+              {t("auth.popup.autoClose")}
+            </ResultHero>
+          )}
+          {(error || popupSlow) && (
             <button
               type="button"
-              className="auth-brand-control mt-2 inline-flex min-h-11 w-full items-center justify-center bg-primary px-4 text-sm font-semibold text-primary-foreground"
+              className="action-button entry-submit"
               onClick={() => window.close()}
             >
-              {t("common.close")}
+              {t("entry.popup.close")}
             </button>
           )}
         </div>
@@ -1367,7 +1585,7 @@ function AuthPage() {
               )}
             </div>
             <p
-              className="auth-brand-name min-w-0 truncate text-sm font-bold"
+              className="auth-brand-name min-w-0 flex-1 truncate text-sm font-bold"
               aria-live="polite"
               aria-busy={brandLoading}
             >
@@ -1375,24 +1593,33 @@ function AuthPage() {
             </p>
           </div>
 
-          <div className="auth-eyebrow mt-8 flex flex-wrap items-center gap-2">
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">{eyebrow}</p>
-            {shopContext.demo && (
-              <span className="auth-brand-control border border-border/70 bg-muted/60 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                {t("common.demo")}
-              </span>
-            )}
-          </div>
-          <h1 className="auth-title mt-2 text-[2rem] font-bold leading-[1.05] tracking-tight text-foreground sm:text-[2.35rem]">
-            {title}
-          </h1>
-          <p className="mt-3 max-w-[26rem] text-[15px] leading-relaxed text-muted-foreground">
-            {subtitle}
-          </p>
+          {!resultScreen && (
+            <div className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2">
+              <h1
+                ref={titleRef}
+                tabIndex={-1}
+                className="auth-title text-[1.85rem] font-bold leading-[1.05] tracking-tight text-foreground outline-none sm:text-[2.2rem]"
+              >
+                {title}
+              </h1>
+              {shopContext.demo && (
+                <StatusBadge tone="highlight" size="sm" label={t("common.demo")} />
+              )}
+            </div>
+          )}
+          {!resultScreen && flowSteps && mode !== "signup" && (
+            <Steps
+              steps={flowSteps}
+              label={
+                mode === "verifyPhone" ? t("entry.phone.stepsLabel") : t("entry.forgot.stepsLabel")
+              }
+              className="mt-5"
+            />
+          )}
         </div>
 
         <div className="auth-form-body auth-form-stack px-6 pb-8 pt-8 sm:px-10 sm:pb-10">
-          {(mode === "signin" || mode === "signup") && (
+          {!resultScreen && (mode === "signin" || mode === "signup") && (
             <div
               className="auth-mode-tabs auth-brand-control grid grid-cols-2 gap-1 bg-muted/70 p-1"
               role="tablist"
@@ -1409,12 +1636,7 @@ function AuthPage() {
                   type="button"
                   role="tab"
                   aria-selected={mode === id}
-                  onClick={() => {
-                    setMode(id);
-                    setError(null);
-                    setInfo(null);
-                    setFieldErrors({});
-                  }}
+                  onClick={() => switchMode(id)}
                   className={`auth-brand-button min-h-11 px-3 py-2.5 text-sm font-semibold transition-[background-color,color,box-shadow] duration-300 ease-out ${
                     mode === id
                       ? "bg-card text-foreground"
@@ -1427,115 +1649,308 @@ function AuthPage() {
             </div>
           )}
 
-          <form
-            onSubmit={(e) => void handleSubmit(e)}
-            noValidate={mode === "signup"}
-            className={`auth-form-fields${mode === "signup" ? " is-signup" : ""}`}
-          >
-            {mode === "forgot" && effectiveShopRef && (
-              <div
-                className="auth-brand-control grid grid-cols-2 gap-1 bg-muted p-1"
-                role="tablist"
-                aria-label={t("auth.recoveryChannel")}
+          {emailResult && (
+            <section className="grid gap-5" aria-labelledby="auth-result-title">
+              <ResultHero
+                ref={titleRef}
+                id="auth-result-title"
+                tone="success"
+                icon={MailCheck}
+                title={
+                  emailResult.kind === "signup" ? t("entry.email.title") : t("entry.reset.title")
+                }
               >
-                {(
-                  [
-                    { id: "email" as const, label: t("auth.channel.email"), icon: Mail },
-                    {
-                      id: "whatsapp" as const,
-                      label: t("auth.channel.whatsapp"),
-                      icon: MessageCircle,
-                    },
-                  ] as const
-                ).map(({ id, label, icon: Icon }) => (
+                {emailResult.kind === "reset" && <p>{t("entry.reset.line")}</p>}
+                <p className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-xl border border-border bg-background px-3 py-1.5 text-sm font-semibold text-foreground [overflow-wrap:anywhere]">
+                  <Mail className="size-4 shrink-0 text-gold" aria-hidden="true" />
+                  {emailResult.email}
+                </p>
+              </ResultHero>
+              <Steps
+                orientation="vertical"
+                label={t("entry.email.stepsLabel")}
+                className="rounded-2xl border border-border bg-background/60 p-4"
+                steps={[
+                  {
+                    key: "open",
+                    label: t("entry.email.stepOpen"),
+                    icon: MailOpen,
+                    status: "upcoming",
+                  },
+                  {
+                    key: "tap",
+                    label: t("entry.email.stepTap"),
+                    icon: MousePointerClick,
+                    status: "upcoming",
+                  },
+                  ...(emailResult.kind === "reset"
+                    ? [
+                        {
+                          key: "new",
+                          label: t("entry.reset.stepNew"),
+                          icon: KeyRound,
+                          status: "upcoming" as const,
+                        },
+                      ]
+                    : emailResult.withWhatsapp
+                      ? [
+                          {
+                            key: "code",
+                            label: t("entry.email.stepCode"),
+                            icon: MessageCircle,
+                            status: "upcoming" as const,
+                          },
+                        ]
+                      : []),
+                ]}
+              />
+              <Hint>{t("entry.email.spam")}</Hint>
+              {error && <Notice tone="danger" title={error} />}
+              <div className="grid gap-2">
+                <button
+                  type="button"
+                  onClick={() => switchMode("signin")}
+                  className={primaryActionClass}
+                >
+                  {emailResult.kind === "signup"
+                    ? t("entry.email.confirmed")
+                    : t("auth.backToSignin")}
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </button>
+                {emailResult.kind === "signup" ? (
                   <button
-                    key={id}
                     type="button"
-                    role="tab"
-                    aria-selected={recoveryChannel === id}
-                    onClick={() => {
-                      setRecoveryChannel(id);
-                      setOtpSent(false);
-                      setOtpCode("");
-                      setError(null);
-                      setInfo(null);
-                    }}
-                    className={`auth-brand-button flex min-h-11 items-center justify-center gap-2 text-sm font-semibold transition-colors ${
-                      recoveryChannel === id
-                        ? "bg-card text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
+                    onClick={() => switchMode("signup")}
+                    className="entry-link-button"
                   >
-                    <Icon className="size-4" aria-hidden="true" />
-                    {label}
+                    {t("entry.email.other")}
                   </button>
-                ))}
-              </div>
-            )}
-
-            {mode === "signup" && (
-              <div className="auth-field-name space-y-1.5">
-                <label className={labelClass}>
-                  <span>{t("cad.cliente.nameLabel")}</span>
-                  <span className={fieldClass}>
-                    <UserRound
-                      className="ml-4 size-[18px] shrink-0 text-muted-foreground"
-                      aria-hidden="true"
-                    />
-                    <input
-                      ref={nameInputRef}
-                      type="text"
-                      // Sem validação nativa: o erro traduzido aparece ao lado do campo.
-                      aria-required="true"
-                      maxLength={NAME_MAX}
-                      autoComplete="name"
-                      autoCapitalize="words"
-                      placeholder={t("cad.cliente.namePlaceholder")}
-                      value={fullName}
-                      onChange={(e) => {
-                        setFullName(e.target.value);
-                        if (fieldErrors.name)
-                          setFieldErrors((prev) => ({ ...prev, name: undefined }));
-                      }}
-                      aria-invalid={fieldErrors.name ? true : undefined}
-                      aria-describedby={fieldErrors.name ? "signup-name-error" : undefined}
-                      className={inputClass}
-                    />
-                  </span>
-                </label>
-                {fieldErrors.name && (
-                  <p id="signup-name-error" role="alert" className="text-sm text-destructive">
-                    {fieldErrors.name}
-                  </p>
+                ) : (
+                  <ResendButton
+                    className="justify-center"
+                    secondsLeft={resetResendIn}
+                    totalSeconds={PHONE_RESEND_SECONDS}
+                    busy={busy}
+                    onClick={() => void resendFromForgot("link")}
+                    label={t("entry.reset.resend")}
+                    waitLabel={t("entry.reset.resendIn", { seconds: resetResendIn })}
+                    busyLabel={t("entry.busy.sendLink")}
+                  />
                 )}
               </div>
-            )}
+            </section>
+          )}
 
-            {mode !== "recovery" &&
-              mode !== "verifyPhone" &&
-              !(mode === "forgot" && recoveryChannel === "whatsapp" && effectiveShopRef) && (
-                <label className={`${labelClass} auth-field-email`}>
-                  <span>{t("auth.field.email")}</span>
-                  <span className={fieldClass}>
-                    <Mail
-                      className="ml-4 size-[18px] shrink-0 text-muted-foreground"
-                      aria-hidden="true"
-                    />
-                    <input
-                      type="email"
-                      required
-                      autoComplete="email"
-                      placeholder={t("auth.field.emailPlaceholder")}
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className={inputClass}
-                    />
-                  </span>
-                </label>
+          {mode === "verifyPhone" && phoneUnavailable && (
+            <section className="grid gap-5" aria-labelledby="auth-result-title">
+              <ResultHero
+                ref={titleRef}
+                id="auth-result-title"
+                tone="success"
+                title={t("entry.phone.step.created")}
+              >
+                <StatusBadge
+                  tone="pending"
+                  icon={Hourglass}
+                  label={t("entry.phone.unavailableBadge")}
+                />
+                <p className="mt-2">{t("entry.phone.unavailableLine")}</p>
+              </ResultHero>
+              {error && <Notice tone="danger" title={error} />}
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void skipPhoneVerification()}
+                aria-busy={busy ? true : undefined}
+                className={primaryActionClass}
+              >
+                {busy ? (
+                  <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden="true" />
+                ) : null}
+                {busy ? t("auth.info.signingIn") : t("entry.phone.enterApp")}
+                {!busy && <ArrowRight className="size-4" aria-hidden="true" />}
+              </button>
+            </section>
+          )}
+
+          {!resultScreen && mode === "signup" && (
+            <div className="grid gap-3">
+              {/* Um só aceite, antes dos dois caminhos ("Ao continuar…" cobre Google e e-mail). */}
+              <ConsentNote>
+                {t("auth.terms.before")} {docNames} {t("cad.cliente.terms.age")}
+              </ConsentNote>
+              <button
+                type="button"
+                onClick={() => void handleGoogle()}
+                disabled={busy}
+                className="auth-brand-button auth-google-action flex min-h-[3.25rem] w-full items-center justify-center gap-3 border border-border/70 px-3 text-[15px] font-semibold text-foreground transition-colors hover:border-foreground/25 hover:bg-muted/50 disabled:opacity-60"
+              >
+                {googleBusy ? (
+                  <Loader2 className="size-5 motion-safe:animate-spin" aria-hidden="true" />
+                ) : (
+                  <GoogleMark />
+                )}
+                {t("entry.signup.google")}
+              </button>
+              {googleWaiting && (
+                <Notice
+                  tone="progress"
+                  title={t("entry.google.waitTitle")}
+                  action={{ label: t("entry.google.waitClosed"), onClick: stopWaitingGoogle }}
+                />
+              )}
+              <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground">
+                <span className="h-px flex-1 bg-border" aria-hidden />
+                <span>{t("entry.signup.orEmail")}</span>
+                <span className="h-px flex-1 bg-border" aria-hidden />
+              </div>
+              {flowSteps && <Steps steps={flowSteps} label={t("entry.signup.stepsLabel")} />}
+            </div>
+          )}
+
+          {!resultScreen && (
+            <form
+              onSubmit={(e) => void handleSubmit(e)}
+              noValidate={mode === "signup"}
+              className={`auth-form-fields${mode === "signup" ? " is-signup" : ""}`}
+            >
+              {mode === "forgot" && linkExpired && (
+                <Notice
+                  tone="warning"
+                  title={t("entry.link.expiredTitle")}
+                  action={{
+                    label: t("entry.link.expiredAction"),
+                    onClick: () => {
+                      setRecoveryChannel("email");
+                      window.requestAnimationFrame(() => emailInputRef.current?.focus());
+                    },
+                  }}
+                >
+                  {t("entry.link.expiredDetail")}
+                </Notice>
+              )}
+              {mode === "forgot" && effectiveShopRef && (
+                <div
+                  className="entry-channel-tabs auth-brand-control grid grid-cols-2 gap-1 bg-muted p-1"
+                  role="tablist"
+                  aria-label={t("auth.recoveryChannel")}
+                >
+                  {(
+                    [
+                      { id: "email" as const, label: t("auth.channel.email"), icon: Mail },
+                      {
+                        id: "whatsapp" as const,
+                        label: t("auth.channel.whatsapp"),
+                        icon: MessageCircle,
+                      },
+                    ] as const
+                  ).map(({ id, label, icon: Icon }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      role="tab"
+                      aria-selected={recoveryChannel === id}
+                      onClick={() => {
+                        setRecoveryChannel(id);
+                        setOtpSent(false);
+                        setOtpCode("");
+                        setRecoveryResendIn(0);
+                        setError(null);
+                        setInfo(null);
+                      }}
+                      className={`auth-brand-button flex min-h-11 items-center justify-center gap-2 text-sm font-semibold transition-colors ${
+                        recoveryChannel === id
+                          ? "bg-card text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Icon className="size-4" aria-hidden="true" />
+                      {label}
+                    </button>
+                  ))}
+                </div>
               )}
 
-            {mode === "forgot" && recoveryChannel === "whatsapp" && effectiveShopRef && (
-              <>
+              {mode === "signup" && (
+                <div className="auth-field-name space-y-1.5">
+                  <label className={labelClass}>
+                    <span>{t("cad.cliente.nameLabel")}</span>
+                    <span className={fieldClass}>
+                      <UserRound
+                        className="ml-4 size-[18px] shrink-0 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                      <input
+                        ref={nameInputRef}
+                        type="text"
+                        // Sem validação nativa: o erro traduzido aparece ao lado do campo.
+                        aria-required="true"
+                        maxLength={NAME_MAX}
+                        autoComplete="name"
+                        autoCapitalize="words"
+                        placeholder={t("cad.cliente.namePlaceholder")}
+                        value={fullName}
+                        onChange={(e) => {
+                          setFullName(e.target.value);
+                          if (fieldErrors.name)
+                            setFieldErrors((prev) => ({ ...prev, name: undefined }));
+                        }}
+                        aria-invalid={fieldErrors.name ? true : undefined}
+                        aria-describedby={fieldErrors.name ? "signup-name-error" : undefined}
+                        className={inputClass}
+                      />
+                    </span>
+                  </label>
+                  {fieldErrors.name && (
+                    <FieldMessage id="signup-name-error" tone="error">
+                      <span role="alert">{fieldErrors.name}</span>
+                    </FieldMessage>
+                  )}
+                </div>
+              )}
+
+              {mode !== "recovery" &&
+                mode !== "verifyPhone" &&
+                !(mode === "forgot" && recoveryChannel === "whatsapp" && effectiveShopRef) && (
+                  <div className="auth-field-email space-y-1.5">
+                    <label className={labelClass}>
+                      <span>{t("auth.field.email")}</span>
+                      <span className={fieldClass}>
+                        <Mail
+                          className="ml-4 size-[18px] shrink-0 text-muted-foreground"
+                          aria-hidden="true"
+                        />
+                        <input
+                          ref={emailInputRef}
+                          type="email"
+                          required
+                          autoComplete="email"
+                          placeholder={t("auth.field.emailPlaceholder")}
+                          value={email}
+                          onChange={(e) => {
+                            setEmail(e.target.value);
+                            if (fieldErrors.email)
+                              setFieldErrors((prev) => ({ ...prev, email: undefined }));
+                          }}
+                          aria-invalid={mode === "signup" && fieldErrors.email ? true : undefined}
+                          aria-describedby={
+                            mode === "signup" && fieldErrors.email
+                              ? "signup-email-error"
+                              : undefined
+                          }
+                          className={inputClass}
+                        />
+                      </span>
+                    </label>
+                    {mode === "signup" && fieldErrors.email && (
+                      <FieldMessage id="signup-email-error" tone="error">
+                        <span role="alert">{fieldErrors.email}</span>
+                      </FieldMessage>
+                    )}
+                  </div>
+                )}
+
+              {mode === "forgot" && whatsappRecovery && !otpSent && (
                 <label className={labelClass}>
                   <span>{t("auth.field.whatsapp")}</span>
                   <span className={fieldClass}>
@@ -1555,136 +1970,244 @@ function AuthPage() {
                     />
                   </span>
                 </label>
-                {otpSent && (
-                  <label className={labelClass}>
-                    <span>{t("auth.field.otp")}</span>
-                    <InputOTP
-                      maxLength={6}
-                      value={otpCode}
-                      onChange={setOtpCode}
-                      containerClassName="justify-between"
-                    >
-                      <InputOTPGroup className="gap-2">
-                        {Array.from({ length: 6 }).map((_, index) => (
-                          <InputOTPSlot
-                            key={index}
-                            index={index}
-                            className="auth-brand-control size-11 border border-border/70 text-base"
-                          />
-                        ))}
-                      </InputOTPGroup>
-                    </InputOTP>
-                  </label>
-                )}
-              </>
-            )}
+              )}
 
-            {mode === "verifyPhone" && !phoneUnavailable && (
-              <label className={labelClass}>
-                <span>{t("fix2.whats.codeLabel")}</span>
-                <InputOTP
-                  maxLength={6}
-                  value={phoneCode}
-                  onChange={(value) => {
-                    setPhoneCode(value);
-                    setError(null);
-                  }}
-                  autoFocus
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  aria-describedby="phone-code-hint"
-                  containerClassName="justify-between"
-                >
-                  <InputOTPGroup className="gap-2">
-                    {Array.from({ length: 6 }).map((_, index) => (
-                      <InputOTPSlot
-                        key={index}
-                        index={index}
-                        className="auth-brand-control size-11 border border-border/70 text-base"
-                      />
-                    ))}
-                  </InputOTPGroup>
-                </InputOTP>
-                <span
-                  id="phone-code-hint"
-                  className="block text-xs font-normal text-muted-foreground"
-                >
-                  {t("fix2.whats.codeHint")}
-                </span>
-              </label>
-            )}
-
-            {mode === "verifyPhone" && (
-              <p className="auth-brand-control flex gap-2.5 border border-amber-500/30 bg-amber-500/10 px-3.5 py-2.5 text-sm leading-relaxed text-foreground">
-                <MessageCircle className="mt-0.5 size-4 shrink-0 text-gold" aria-hidden="true" />
-                <span>{t("fix3.auth.phoneLaterHint")}</span>
-              </p>
-            )}
-
-            {mode === "signup" && (
-              <div className="auth-whatsapp-group">
-                <label className={labelClass}>
-                  <span>{t("auth.field.whatsappSignupShop")}</span>
-                  <span className={fieldClass}>
-                    <MessageCircle
-                      className="ml-4 size-[18px] shrink-0 text-muted-foreground"
-                      aria-hidden="true"
-                    />
-                    <input
-                      ref={signupPhoneRef}
-                      type="tel"
-                      aria-required="true"
-                      inputMode="tel"
-                      autoComplete="tel"
-                      placeholder={locale === "pt-PT" ? "+351 912 345 678" : "(11) 99999-0000"}
-                      value={whatsapp}
-                      onChange={(e) => {
-                        setWhatsapp(nextMaskedPhone(whatsapp, e.target.value, locale));
-                        if (fieldErrors.whatsapp)
-                          setFieldErrors((prev) => ({ ...prev, whatsapp: undefined }));
+              {mode === "forgot" && whatsappRecovery && otpSent && (
+                <div className="grid gap-3">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl border border-border bg-background/60 p-3 text-sm">
+                    <MessageCircle className="size-4 shrink-0 text-gold" aria-hidden="true" />
+                    <span className="rounded-xl border border-border bg-card px-2 py-0.5 font-bold tabular-nums">
+                      {formatBrPhone(whatsapp)}
+                    </span>
+                    <button
+                      type="button"
+                      className="entry-link-button ms-auto"
+                      onClick={() => {
+                        setOtpSent(false);
+                        setOtpCode("");
+                        setError(null);
+                        setInfo(null);
                       }}
-                      aria-invalid={fieldErrors.whatsapp ? true : undefined}
-                      aria-describedby={
-                        fieldErrors.whatsapp
-                          ? "signup-whatsapp-error signup-whatsapp-hint"
-                          : "signup-whatsapp-hint"
-                      }
-                      className={inputClass}
-                    />
-                  </span>
-                </label>
-                {fieldErrors.whatsapp && (
-                  <p
-                    id="signup-whatsapp-error"
-                    role="alert"
-                    className="auth-whatsapp-error text-sm text-destructive"
+                    >
+                      {t("fix2.whats.changeNumber")}
+                    </button>
+                    {info && <p className="w-full text-xs text-muted-foreground">{info}</p>}
+                  </div>
+                  <label
+                    htmlFor="recovery-code"
+                    className="text-sm font-semibold text-foreground/85"
                   >
-                    {fieldErrors.whatsapp}
-                  </p>
-                )}
-                <p
-                  id="signup-whatsapp-hint"
-                  className="auth-whatsapp-hint text-xs font-normal leading-relaxed text-muted-foreground"
-                >
-                  {t("cad.cliente.whatsappHint")}
-                </p>
-                <label className="auth-whatsapp-optin auth-brand-control flex min-h-11 cursor-pointer items-center justify-between gap-3 border border-border/70 px-3.5 py-2.5 text-sm text-foreground">
-                  <span className="min-w-0">{t("cad.cliente.optInLabel")}</span>
-                  <Switch
-                    checked={phoneOptIn}
-                    onCheckedChange={setPhoneOptIn}
-                    aria-label={t("cad.cliente.optInLabel")}
+                    {t("auth.field.otp")}
+                  </label>
+                  <CodeInput
+                    id="recovery-code"
+                    value={otpCode}
+                    onChange={(value) => {
+                      setOtpCode(value);
+                      setError(null);
+                    }}
+                    autoFocus
+                    invalid={Boolean(error)}
+                    describedBy={error ? "auth-code-error" : undefined}
                   />
-                </label>
-              </div>
-            )}
+                  {error && <Notice id="auth-code-error" tone="danger" title={error} />}
+                  <ResendButton
+                    className="justify-self-start"
+                    secondsLeft={recoveryResendIn}
+                    totalSeconds={PHONE_RESEND_SECONDS}
+                    busy={busy}
+                    onClick={() => void resendFromForgot("code")}
+                    label={t("fix2.whats.resend")}
+                    waitLabel={t("fix2.whats.resendIn", { seconds: recoveryResendIn })}
+                    busyLabel={t("fix2.whats.sending")}
+                  />
+                </div>
+              )}
 
-            {(mode === "signin" || mode === "signup" || mode === "recovery") && (
-              <div className="auth-field-password">
+              {mode === "verifyPhone" && !phoneUnavailable && (
+                <div className="grid gap-3">
+                  <CodeSentCard
+                    toLabel={t("entry.code.sentTo")}
+                    number={formatBrPhone(phoneNumber)}
+                    sender={brand.displayName}
+                    message={t("entry.code.example")}
+                    exampleLabel={t("entry.example")}
+                    hideExample={phoneCode.length > 0}
+                  />
+                  <label htmlFor="phone-code" className="text-sm font-semibold text-foreground/85">
+                    {t("fix2.whats.codeLabel")}
+                  </label>
+                  <CodeInput
+                    id="phone-code"
+                    value={phoneCode}
+                    onChange={(value) => {
+                      setPhoneCode(value);
+                      setError(null);
+                    }}
+                    autoFocus
+                    invalid={Boolean(error)}
+                    describedBy={error ? "auth-code-error" : "phone-code-hint"}
+                  />
+                  {error ? (
+                    <Notice id="auth-code-error" tone="danger" title={error} />
+                  ) : (
+                    <Hint icon={Hourglass} className="text-xs">
+                      <span id="phone-code-hint">{t("fix2.whats.codeHint")}</span>
+                    </Hint>
+                  )}
+                </div>
+              )}
+
+              {mode === "signup" && (
+                <div className="auth-whatsapp-group">
+                  <label className={labelClass}>
+                    <span>{t("auth.field.whatsappSignupShop")}</span>
+                    <span className={fieldClass}>
+                      <MessageCircle
+                        className="ml-4 size-[18px] shrink-0 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                      <input
+                        ref={signupPhoneRef}
+                        type="tel"
+                        aria-required="true"
+                        inputMode="tel"
+                        autoComplete="tel"
+                        placeholder={locale === "pt-PT" ? "+351 912 345 678" : "(11) 99999-0000"}
+                        value={whatsapp}
+                        onChange={(e) => {
+                          setWhatsapp(nextMaskedPhone(whatsapp, e.target.value, locale));
+                          if (fieldErrors.whatsapp)
+                            setFieldErrors((prev) => ({ ...prev, whatsapp: undefined }));
+                        }}
+                        aria-invalid={fieldErrors.whatsapp ? true : undefined}
+                        aria-describedby={
+                          fieldErrors.whatsapp
+                            ? "signup-whatsapp-error signup-whatsapp-hint"
+                            : "signup-whatsapp-hint"
+                        }
+                        className={inputClass}
+                      />
+                    </span>
+                  </label>
+                  {fieldErrors.whatsapp && (
+                    <FieldMessage
+                      id="signup-whatsapp-error"
+                      tone="error"
+                      className="auth-whatsapp-error"
+                    >
+                      <span role="alert">{fieldErrors.whatsapp}</span>
+                    </FieldMessage>
+                  )}
+                  <p id="signup-whatsapp-hint" className="sr-only">
+                    {t("cad.cliente.whatsappHint")}
+                  </p>
+                  <div className="auth-whatsapp-optin auth-brand-control grid gap-3 border border-border/70 bg-background/50 px-3.5 py-3">
+                    <label className="flex min-h-11 cursor-pointer items-center justify-between gap-3 text-sm font-semibold text-foreground">
+                      <span className="flex min-w-0 items-center gap-2">
+                        <Bell className="size-4 shrink-0 text-gold" aria-hidden="true" />
+                        {t("entry.reminders.title")}
+                      </span>
+                      <Switch
+                        checked={phoneOptIn}
+                        onCheckedChange={setPhoneOptIn}
+                        aria-label={t("cad.cliente.optInLabel")}
+                      />
+                    </label>
+                    {phoneOptIn && (
+                      <ExampleBubble
+                        sender={brand.displayName}
+                        message={t("entry.reminders.example")}
+                        exampleLabel={t("entry.example")}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {(mode === "signin" || mode === "signup" || mode === "recovery") && (
+                <div className="auth-field-password">
+                  <label className={labelClass}>
+                    <span>
+                      {mode === "recovery" ? t("auth.field.newPassword") : t("auth.field.password")}
+                    </span>
+                    <span className={fieldClass}>
+                      <LockKeyhole
+                        className="ml-4 size-[18px] shrink-0 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        required
+                        minLength={6}
+                        autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                        placeholder={
+                          mode === "signin"
+                            ? t("entry.signin.passwordPlaceholder")
+                            : t("entry.newPasswordPlaceholder")
+                        }
+                        ref={passwordInputRef}
+                        value={password}
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          if (fieldErrors.password)
+                            setFieldErrors((prev) => ({ ...prev, password: undefined }));
+                        }}
+                        aria-invalid={mode === "signup" && fieldErrors.password ? true : undefined}
+                        aria-describedby={
+                          mode === "signup"
+                            ? fieldErrors.password
+                              ? "signup-password-error auth-password-rules"
+                              : "auth-password-rules"
+                            : undefined
+                        }
+                        className={inputClass}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((current) => !current)}
+                        className="auth-brand-button mr-1.5 flex size-11 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
+                        aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
+                        aria-pressed={showPassword}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="size-[18px]" aria-hidden="true" />
+                        ) : (
+                          <Eye className="size-[18px]" aria-hidden="true" />
+                        )}
+                      </button>
+                    </span>
+                  </label>
+                  {mode === "signup" && fieldErrors.password && (
+                    <FieldMessage id="signup-password-error" tone="error" className="mt-1.5">
+                      <span role="alert">{fieldErrors.password}</span>
+                    </FieldMessage>
+                  )}
+                  {mode === "signup" && (
+                    <PasswordRules
+                      id="auth-password-rules"
+                      password={password}
+                      showErrors={Boolean(fieldErrors.password)}
+                      className="mt-2"
+                    />
+                  )}
+                  {mode === "signin" && (
+                    <div className="auth-forgot-password">
+                      <button
+                        type="button"
+                        onClick={() => switchMode("forgot")}
+                        className="inline-flex min-h-11 items-center px-1 text-xs font-semibold text-primary underline-offset-4 transition-colors hover:underline"
+                      >
+                        {t("auth.forgot")}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {mode === "recovery" && (
                 <label className={labelClass}>
-                  <span>
-                    {mode === "recovery" ? t("auth.field.newPassword") : t("auth.field.password")}
-                  </span>
+                  <span>{t("auth.field.confirmPassword")}</span>
                   <span className={fieldClass}>
                     <LockKeyhole
                       className="ml-4 size-[18px] shrink-0 text-muted-foreground"
@@ -1694,173 +2217,94 @@ function AuthPage() {
                       type={showPassword ? "text" : "password"}
                       required
                       minLength={6}
-                      autoComplete={mode === "signin" ? "current-password" : "new-password"}
-                      placeholder={t("auth.field.passwordPlaceholder")}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      autoComplete="new-password"
+                      placeholder={t("auth.field.confirmPlaceholder")}
+                      value={passwordConfirm}
+                      onChange={(e) => setPasswordConfirm(e.target.value)}
+                      aria-describedby="auth-password-rules"
                       className={inputClass}
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((current) => !current)}
-                      className="auth-brand-button mr-1.5 flex size-11 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
-                      aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
-                      aria-pressed={showPassword}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="size-[18px]" aria-hidden="true" />
-                      ) : (
-                        <Eye className="size-[18px]" aria-hidden="true" />
-                      )}
-                    </button>
                   </span>
                 </label>
-                {mode === "signin" && (
-                  <div className="auth-forgot-password">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMode("forgot");
-                        setError(null);
-                        setInfo(null);
-                        setPassword("");
-                      }}
-                      className="inline-flex min-h-11 items-center px-1 text-xs font-semibold text-primary underline-offset-4 transition-colors hover:underline"
-                    >
-                      {t("auth.forgot")}
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
+              )}
+              {mode === "recovery" && (
+                <PasswordRules
+                  id="auth-password-rules"
+                  password={password}
+                  confirm={passwordConfirm}
+                  className="-mt-1"
+                />
+              )}
 
-            {mode === "recovery" && (
-              <label className={labelClass}>
-                <span>{t("auth.field.confirmPassword")}</span>
-                <span className={fieldClass}>
-                  <LockKeyhole
-                    className="ml-4 size-[18px] shrink-0 text-muted-foreground"
-                    aria-hidden="true"
-                  />
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    required
-                    minLength={6}
-                    autoComplete="new-password"
-                    placeholder={t("auth.field.confirmPlaceholder")}
-                    value={passwordConfirm}
-                    onChange={(e) => setPasswordConfirm(e.target.value)}
-                    className={inputClass}
-                  />
-                </span>
-              </label>
-            )}
+              {/* Resultado da ação logo acima do botão (no código, ele fica sob as caixas). */}
+              {error && !codeStep && <Notice tone="danger" title={error} />}
+              {notice && !(mode === "forgot" && whatsappRecovery && otpSent) && (
+                <Notice tone={notice.tone} title={notice.text} />
+              )}
 
-            {error && (
-              <p
-                className="auth-brand-control border border-destructive/20 bg-destructive/5 px-3.5 py-2.5 text-sm text-destructive"
-                role="alert"
-              >
-                {error}
-              </p>
-            )}
-            {info && (
-              <p
-                className="auth-brand-control border border-border bg-muted/50 px-3.5 py-2.5 text-sm text-foreground"
-                role="status"
-              >
-                {info}
-              </p>
-            )}
-
-            {mode === "signup" && (
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                {t("cad.cliente.terms.before")} {legalLinks} {t("cad.cliente.terms.age")}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              disabled={busy}
-              className="auth-primary-action auth-brand-button mt-1 flex min-h-[3.25rem] w-full items-center justify-center gap-2 bg-primary px-4 text-[15px] font-semibold text-primary-foreground shadow-[0_10px_24px_color-mix(in_oklch,var(--brand-primary)_22%,transparent)] transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_14px_28px_color-mix(in_oklch,var(--brand-primary)_28%,transparent)] active:translate-y-0 active:scale-[0.99] disabled:opacity-50"
-            >
-              <span>
-                {busy
-                  ? t("common.wait")
-                  : mode === "verifyPhone"
-                    ? phoneUnavailable
-                      ? t("fix3.auth.phoneContinue")
-                      : t("fix2.whats.confirm")
-                    : mode === "forgot"
-                      ? recoveryChannel === "whatsapp" && effectiveShopRef
-                        ? otpSent
-                          ? t("auth.submit.confirmCode")
-                          : t("auth.submit.sendCode")
-                        : t("auth.submit.sendLink")
-                      : mode === "recovery"
-                        ? t("auth.submit.saveNewPassword")
-                        : mode === "signup"
-                          ? t("auth.submit.signup")
-                          : t("auth.submit.signin")}
-              </span>
-              {!busy && <ArrowRight className="size-4" aria-hidden="true" />}
-            </button>
-            {mode === "verifyPhone" && !phoneUnavailable && (
-              <div className="grid gap-2 sm:grid-cols-2">
-                <button
-                  type="button"
-                  disabled={busy || phoneResendIn > 0}
-                  onClick={() => void resendPhoneCode()}
-                  className="auth-brand-button flex min-h-11 w-full items-center justify-center border border-border px-4 text-sm font-semibold disabled:opacity-50"
-                >
-                  {phoneResendIn > 0
-                    ? t("fix2.whats.resendIn", { seconds: phoneResendIn })
-                    : t("fix2.whats.resend")}
-                </button>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void skipPhoneVerification()}
-                  className="auth-brand-button flex min-h-11 w-full items-center justify-center border border-border px-4 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
-                >
-                  {t("fix3.auth.phoneSkip")}
-                </button>
-              </div>
-            )}
-            {mode === "forgot" && recoveryChannel === "whatsapp" && effectiveShopRef && otpSent && (
               <button
-                type="button"
+                type="submit"
                 disabled={busy}
-                className="auth-brand-button mt-2 flex min-h-11 w-full items-center justify-center border border-border px-4 text-sm font-semibold disabled:opacity-50"
-                onClick={() => {
-                  setOtpSent(false);
-                  setOtpCode("");
-                  setError(null);
-                  setInfo(t("auth.info.resendHint"));
-                }}
+                aria-busy={busy && !googleBusy ? true : undefined}
+                className={`${primaryActionClass} mt-1`}
               >
-                {t("auth.resendCode")}
+                {busy && !googleBusy && (
+                  <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden="true" />
+                )}
+                <span>{busy && !googleBusy ? submit.busy : submit.label}</span>
+                {!(busy && !googleBusy) && <SubmitIcon className="size-4" aria-hidden="true" />}
               </button>
-            )}
-          </form>
+              {mode === "verifyPhone" && !phoneUnavailable && (
+                <div className="grid justify-items-center gap-1">
+                  <ResendButton
+                    secondsLeft={phoneResendIn}
+                    totalSeconds={PHONE_RESEND_SECONDS}
+                    busy={busy}
+                    onClick={() => void resendPhoneCode()}
+                    label={t("fix2.whats.resend")}
+                    waitLabel={t("fix2.whats.resendIn", { seconds: phoneResendIn })}
+                    busyLabel={t("fix2.whats.sending")}
+                  />
+                  {/* Uma só saída: "Confirmar depois" entra no app. Número errado também passa
+                      por aqui (a troca é feita em Meu perfil), dito na legenda e não num link
+                      com cara de edição local. */}
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void skipPhoneVerification()}
+                    aria-describedby="phone-later-notes"
+                    className="entry-link-button text-muted-foreground"
+                  >
+                    {t("fix3.auth.phoneSkip")}
+                    <ArrowRight className="size-4" aria-hidden="true" />
+                  </button>
+                  <div id="phone-later-notes" className="grid gap-1">
+                    <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                      <UserRound className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+                      {t("entry.phone.wrongNumber")}
+                    </p>
+                    <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                      <LockKeyhole className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+                      {t("entry.phone.laterNote")}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </form>
+          )}
 
-          {(mode === "forgot" || mode === "recovery") && (
+          {!resultScreen && (mode === "forgot" || mode === "recovery") && (
             <button
               type="button"
-              onClick={() => {
-                setMode("signin");
-                setError(null);
-                setInfo(null);
-                setPassword("");
-                setPasswordConfirm("");
-              }}
-              className="auth-brand-button min-h-11 w-full text-center text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+              onClick={() => switchMode("signin")}
+              className="entry-link-button w-full text-muted-foreground"
             >
+              <ArrowLeft className="size-4" aria-hidden="true" />
               {t("auth.backToSignin")}
             </button>
           )}
 
-          {(mode === "signin" || mode === "signup") && (
+          {!resultScreen && mode === "signin" && (
             <>
               <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground">
                 <span className="h-px flex-1 bg-border" aria-hidden />
@@ -1868,71 +2312,68 @@ function AuthPage() {
                 <span className="h-px flex-1 bg-border" aria-hidden />
               </div>
 
-              <button
-                type="button"
-                onClick={() => void handleGoogle()}
-                disabled={busy}
-                className="auth-brand-button auth-google-action flex min-h-[3.25rem] w-full items-center justify-center gap-3 border border-border/70 px-3 text-[15px] font-semibold text-foreground transition-colors hover:border-foreground/25 hover:bg-muted/50 disabled:opacity-50"
-              >
-                <GoogleMark />
-                {t("auth.google")}
-              </button>
-              {mode === "signin" && (
-                <p className="-mt-3 text-center text-xs leading-relaxed text-muted-foreground">
-                  {t("auth.terms.before")} {legalLinks} {t("cad.cliente.terms.age")}
-                </p>
-              )}
+              <div className="grid gap-3">
+                <button
+                  type="button"
+                  onClick={() => void handleGoogle()}
+                  disabled={busy}
+                  className="auth-brand-button auth-google-action flex min-h-[3.25rem] w-full items-center justify-center gap-3 border border-border/70 px-3 text-[15px] font-semibold text-foreground transition-colors hover:border-foreground/25 hover:bg-muted/50 disabled:opacity-60"
+                >
+                  {googleBusy ? (
+                    <Loader2 className="size-5 motion-safe:animate-spin" aria-hidden="true" />
+                  ) : (
+                    <GoogleMark />
+                  )}
+                  {t("auth.google")}
+                </button>
+                {googleWaiting && (
+                  <Notice
+                    tone="progress"
+                    title={t("entry.google.waitTitle")}
+                    action={{ label: t("entry.google.waitClosed"), onClick: stopWaitingGoogle }}
+                  />
+                )}
+                <ConsentNote>
+                  {t("auth.terms.before")} {docNames} {t("cad.cliente.terms.age")}
+                </ConsentNote>
+              </div>
             </>
           )}
 
-          {mode === "signup" && (
-            <p className="border-t border-border/70 pt-5 text-center text-sm text-muted-foreground">
-              {t("cad.cliente.ownerQuestion")}{" "}
-              <Link
-                to="/cadastrar"
-                className="-my-3 inline-flex min-h-11 items-center font-semibold text-primary underline-offset-4 hover:underline"
-              >
+          {!resultScreen && mode === "signup" && !effectiveShopRef && (
+            <p className="flex flex-wrap items-center justify-center gap-x-1 border-t border-border/70 pt-4 text-center text-sm text-muted-foreground">
+              {t("cad.cliente.ownerQuestion")}
+              <Link to="/cadastrar" className="entry-link-button font-semibold text-primary">
+                <Scissors className="size-4" aria-hidden="true" />
                 {t("cad.cliente.ownerLink")}
               </Link>
             </p>
           )}
 
-          <div className="auth-panel-footer space-y-2 text-center text-xs text-muted-foreground">
-            <p className="flex items-center justify-center gap-1.5 font-medium">
-              <ShieldCheck className="size-3.5 text-gold" aria-hidden="true" />
-              {t("auth.protected")}
+          {(mode === "forgot" || mode === "recovery") && !emailResult && (
+            <ConsentNote className="auth-panel-footer">
+              {t("auth.terms.before")} {docNames}.
+            </ConsentNote>
+          )}
+          {backTarget && (mode === "signin" || mode === "signup") && (
+            <a
+              href={backTarget.href}
+              className="entry-link-button auth-panel-footer self-center text-muted-foreground"
+            >
+              <ArrowLeft className="size-4" aria-hidden="true" />
+              {backTarget.label}
+            </a>
+          )}
+          {mode === "signup" && effectiveShopRef && (
+            <p className="auth-panel-footer flex flex-wrap items-center justify-center gap-x-1 text-center text-xs text-muted-foreground">
+              {t("cad.cliente.ownerQuestion")}
+              <Link to="/cadastrar" className="entry-link-button text-xs">
+                {t("cad.cliente.ownerLink")}
+              </Link>
             </p>
-            {mode !== "signin" && mode !== "signup" && (
-              <p>
-                {t("auth.terms.before")} {legalLinks}.
-              </p>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </main>
-  );
-}
-
-function GoogleMark() {
-  return (
-    <svg viewBox="0 0 24 24" className="size-5 shrink-0" aria-hidden="true">
-      <path
-        fill="#4285F4"
-        d="M23.5 12.27c0-.79-.07-1.54-.2-2.27H12v4.3h6.46a5.53 5.53 0 0 1-2.4 3.63v3h3.87c2.27-2.09 3.57-5.17 3.57-8.66Z"
-      />
-      <path
-        fill="#34A853"
-        d="M12 24c3.24 0 5.96-1.07 7.94-2.91l-3.87-3a7.2 7.2 0 0 1-10.72-3.78H1.35v3.1A12 12 0 0 0 12 24Z"
-      />
-      <path
-        fill="#FBBC05"
-        d="M5.35 14.31A7.2 7.2 0 0 1 4.97 12c0-.8.14-1.58.38-2.31V6.6H1.35A12 12 0 0 0 0 12c0 1.94.46 3.77 1.35 5.4l4-3.09Z"
-      />
-      <path
-        fill="#EA4335"
-        d="M12 4.77c1.76 0 3.34.61 4.59 1.8l3.43-3.43A11.5 11.5 0 0 0 12 0 12 12 0 0 0 1.35 6.6l4 3.09A7.2 7.2 0 0 1 12 4.77Z"
-      />
-    </svg>
   );
 }
