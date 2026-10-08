@@ -109,6 +109,22 @@ const TEMPLATE_META: Array<{
   },
 ];
 
+/**
+ * A frase comum da queda cita o botão "Conectar" (o nome no cartão da plataforma). Aqui o botão
+ * vira "Reconectar WhatsApp" quando a conexão cai, então a frase cita esse nome. `dropped` marca a
+ * queda para o rótulo do botão (sem comparar textos, que mudam com o idioma).
+ */
+function channelError(err: unknown, fallback: string) {
+  const dropped = integrationErrorKind(err) === "errors.integration.whatsappDisconnected";
+  return {
+    state: "error" as const,
+    text: dropped
+      ? tNow("errors.integration.whatsappDisconnectedShop")
+      : friendlyIntegrationError(err, fallback),
+    dropped,
+  };
+}
+
 async function callChannel(body: Record<string, unknown>) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData.session?.access_token;
@@ -176,6 +192,8 @@ export function WhatsAppChannelCard({ shopId }: { shopId: string }) {
   const [connectResult, setConnectResult] = useState<{
     state: ActionState;
     text: string;
+    /** Erro de queda da conexão (o botão vira "Reconectar WhatsApp"). */
+    dropped?: boolean;
   } | null>(null);
   const [prefStatus, setPrefStatus] = useState<{
     field: "enabled" | "notify_booking" | "notify_reminder";
@@ -269,10 +287,7 @@ export function WhatsAppChannelCard({ shopId }: { shopId: string }) {
       await templatesLoad;
     } catch (err) {
       await templatesLoad;
-      setConnectResult({
-        state: "error",
-        text: friendlyIntegrationError(err, tNow("integr.wa.errStatus")),
-      });
+      setConnectResult(channelError(err, tNow("integr.wa.errStatus")));
     } finally {
       setChecked(true);
       setBusy(false);
@@ -322,10 +337,7 @@ export function WhatsAppChannelCard({ shopId }: { shopId: string }) {
           : { state: "pending", text: t("integr.wa.scanQr") },
       );
     } catch (err) {
-      setConnectResult({
-        state: "error",
-        text: friendlyIntegrationError(err, t("integr.wa.errConnect")),
-      });
+      setConnectResult(channelError(err, t("integr.wa.errConnect")));
     } finally {
       setBusy(false);
     }
@@ -465,6 +477,8 @@ export function WhatsAppChannelCard({ shopId }: { shopId: string }) {
     : null;
   // O motivo e o conserto ficam na mesma faixa do resultado, com um único botão logo abaixo.
   const showProblem = Boolean(problem) && connection !== "open" && connection !== "paused";
+  // A frase da queda manda tocar em "Reconectar WhatsApp": o botão usa esse nome também.
+  const dropped = showProblem || (connectResult?.state === "error" && !!connectResult.dropped);
 
   const moreActions = [
     ...(channel && channel.status === "open"
@@ -492,10 +506,15 @@ export function WhatsAppChannelCard({ shopId }: { shopId: string }) {
     const item = TEMPLATE_META.find((m) => m.key === key) ?? TEMPLATE_META[0];
     const Icon = item.icon;
     const unsaved = dirtyKeys.includes(key);
+    // Com interruptor ao lado (Lembrete), em tela estreita "Editar" e o interruptor descem
+    // juntos para a direita em vez de espremer o "quando" em uma palavra por linha.
     return (
-      <li key={key} className="flex items-center gap-3 py-2">
+      <li
+        key={key}
+        className={cn("flex items-center gap-3 py-2", trailing ? "flex-wrap gap-y-1" : null)}
+      >
         <Icon className="size-4 shrink-0 text-gold" aria-hidden />
-        <span className="min-w-0 flex-1">
+        <span className={cn("min-w-0 flex-1", trailing && "basis-28")}>
           <span className="flex items-center gap-1.5 text-sm font-semibold">
             {t(item.titleKey)}
             {unsaved && (
@@ -504,17 +523,19 @@ export function WhatsAppChannelCard({ shopId }: { shopId: string }) {
           </span>
           <span className="block text-xs text-muted-foreground">{when}</span>
         </span>
-        <button
-          type="button"
-          onClick={() => editTemplate(key)}
-          className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-border px-3 text-xs font-semibold transition hover:border-primary/40"
-          aria-label={t("integr.wa.editTextOf", { name: t(item.titleKey) })}
-          title={t("integr.wa.editTextOf", { name: t(item.titleKey) })}
-        >
-          <Pencil className="size-3.5" aria-hidden />
-          <span className="hidden sm:inline">{t("integr.wa.editText")}</span>
-        </button>
-        {trailing}
+        <span className="ml-auto flex shrink-0 items-center gap-3">
+          <button
+            type="button"
+            onClick={() => editTemplate(key)}
+            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-border px-3 text-xs font-semibold transition hover:border-primary/40"
+            aria-label={t("integr.wa.editTextOf", { name: t(item.titleKey) })}
+            title={t("integr.wa.editTextOf", { name: t(item.titleKey) })}
+          >
+            <Pencil className="size-3.5" aria-hidden />
+            <span className="hidden sm:inline">{t("integr.wa.editText")}</span>
+          </button>
+          {trailing}
+        </span>
       </li>
     );
   }
@@ -756,7 +777,8 @@ export function WhatsAppChannelCard({ shopId }: { shopId: string }) {
       {/* Resultado da conexão em uma frase grande, com o número e as ações raras ao lado. */}
       <div
         className={cn(
-          "flex items-center gap-3 rounded-2xl border p-3",
+          // Em tela estreita (320) os botões descem para a direita, abaixo da frase.
+          "flex flex-wrap items-center gap-3 rounded-2xl border p-3",
           `tone-${meta.tone === "progress" ? "neutral" : meta.tone}`,
           "border-[color:var(--tone-border)] bg-[color:var(--tone-soft)]",
         )}
@@ -768,7 +790,7 @@ export function WhatsAppChannelCard({ shopId }: { shopId: string }) {
           )}
           aria-hidden
         />
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 basis-36">
           <p className="text-sm font-bold text-[color:var(--tone-ink)]">{t(meta.result)}</p>
           {showProblem && <p className="mt-0.5 text-xs text-foreground">{problem}</p>}
           {channel?.display_phone && (
@@ -785,7 +807,7 @@ export function WhatsAppChannelCard({ shopId }: { shopId: string }) {
             </p>
           )}
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           <button
             type="button"
             disabled={busy}
@@ -825,7 +847,7 @@ export function WhatsAppChannelCard({ shopId }: { shopId: string }) {
               className="action-button action-confirm sm:px-5"
             >
               <QrCode className="size-4" aria-hidden />
-              {t(showProblem ? "integr.wa.reconnectWa" : "integr.wa.connect")}
+              {t(dropped ? "integr.wa.reconnectWa" : "integr.wa.connect")}
             </button>
           )}
         </div>
@@ -869,8 +891,9 @@ export function WhatsAppChannelCard({ shopId }: { shopId: string }) {
             )}
             {/* As três primeiras dividem o mesmo interruptor no banco: ficam agrupadas. */}
             <div className="rounded-xl border-l-4 border-gold/60 bg-background/60 pl-3 pr-2">
-              <div className="flex flex-wrap items-center gap-3 pt-2">
-                <span className="min-w-0 flex-1 basis-40">
+              {/* Interruptor sempre à direita, como em SettingRow: o texto quebra, ele não desce. */}
+              <div className="flex items-center gap-3 pt-2">
+                <span className="min-w-0 flex-1">
                   <span className="block text-sm font-bold">{t("integr.wa.bookingAlerts")}</span>
                   <span className="block text-xs text-muted-foreground">
                     {t("integr.wa.bookingAlertsHint")}

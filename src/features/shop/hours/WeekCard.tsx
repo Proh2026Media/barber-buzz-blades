@@ -89,6 +89,8 @@ export function WeekCard<Row extends HoursRow>({
   // Pedido enviado aos sócios: a semana mostra o horário atual e o pedido tracejado. Fica na
   // memória da aba (não some ao ir a outra aba e voltar).
   const [requested, setRequested] = useHoursMemory<Row[] | null>("week.requested", null);
+  // Pedido de outro sócio (lido da lista de pendentes): quem vê decide, não enviou.
+  const [requestedByOther, setRequestedByOther] = useHoursMemory("week.requestedByOther", false);
 
   const changed = useMemo(() => changedWeekdays(draft, saved), [draft, saved]);
   const changedSet = new Set(changed);
@@ -133,6 +135,7 @@ export function WeekCard<Row extends HoursRow>({
       const outcome = await onSave(draft);
       if (outcome === "pending") {
         setRequested(draft);
+        setRequestedByOther(false);
         onDraftChange(saved);
         setResult(null);
       } else {
@@ -364,7 +367,7 @@ export function WeekCard<Row extends HoursRow>({
         <Notice
           tone="pending"
           role="none"
-          title={t("hours.week.awaitingTitle")}
+          title={t(requestedByOther ? "hours.week.awaitingOtherTitle" : "hours.week.awaitingTitle")}
           action={
             onOpenApprovals
               ? { label: t("hours.seeRequests"), onClick: onOpenApprovals }

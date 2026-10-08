@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { toast } from "sonner";
 import {
-  Ban,
   Calendar,
   CheckCircle2,
   Clock3,
@@ -27,11 +26,13 @@ import {
   StatusBadge,
   type AttentionItem,
 } from "@/components/visual";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useDemo } from "@/features/demo/context";
 import { BusinessInsights } from "@/features/insights/BusinessInsights";
 import { CancellationDialog } from "@/features/insights/CancellationDialog";
 import type { CancellationReason } from "@/features/insights/cancellation";
 import { StaffSurveyDialog } from "@/features/insights/StaffSurveyDialog";
+import { ClientProfileModal } from "@/features/shop/ClientProfileModal";
 import { canHold } from "@/features/waiting/model";
 import type { WaitingController } from "@/features/waiting/useWaiting";
 import type { Tables } from "@/integrations/supabase/types";
@@ -41,6 +42,7 @@ import { cn } from "@/lib/utils";
 import { AgendaDayNav } from "./AgendaDayNav";
 import { AgendaInsights } from "./AgendaInsights";
 import { AppointmentCard, WaitPanel, type CardHandlers } from "./AppointmentCard";
+import { BlockRow, ClosedRow } from "./blocks";
 import { DaySummary } from "./DaySummary";
 import { CompleteEarlyDialog, StopSeriesDialog, WithdrawDialog } from "./dialogs";
 import {
@@ -58,6 +60,8 @@ import {
   type Interval,
 } from "./model";
 import { AppointmentSummary, useShopTime } from "./summary";
+import { useDesktop } from "./board";
+import { TeamDayBoard } from "./TeamDayBoard";
 import {
   AGENDA_STATE,
   type AgendaBlock,
@@ -69,14 +73,12 @@ import {
 const MINUTE = 60_000;
 
 /**
- * Cópia local idêntica dos blocos "livre" e "bloqueado" da mini agenda comum (Timeline em
- * components/visual): borda verde contínua com ✓ e vermelho listrado com ⊘, a mesma cara em
- * Ajustes, Horários e Agenda. Se a Timeline mudar, mudar aqui também.
+ * Cópia local idêntica do bloco "livre" da mini agenda comum (Timeline em components/visual):
+ * borda verde contínua com ✓, a mesma cara em Ajustes, Horários e Agenda. Se a Timeline mudar,
+ * mudar aqui também. O "Bloqueado" usa a faixa listrada de Horários (ver blocks.tsx).
  */
 const TIMELINE_LOOK = {
   free: "tone-success border-2 border-[color:var(--tone-line)] bg-[color:var(--tone-soft)] text-[color:var(--tone-ink)]",
-  blocked:
-    "tone-danger border border-dashed border-[color:var(--tone-line)] bg-[repeating-linear-gradient(135deg,transparent_0_6px,color-mix(in_srgb,var(--tone-line)_12%,transparent)_6px_12px)] text-[color:var(--tone-ink)]",
 } as const;
 
 export type AgendaExtra = {
@@ -96,6 +98,12 @@ export type AgendaExtra = {
    */
   wide?: boolean;
 };
+
+/*
+ * Atalhos (AgendaExtra): no computador as seções ficam na página, abaixo da lista, e o atalho
+ * rola até elas. No celular cada uma abre numa janela própria, sem perder o lugar na agenda; as
+ * que têm `count` (mesmo indefinido) ficam montadas escondidas, para a bolha se atualizar.
+ */
 
 export type AgendaActions = {
   /** Grava a nova situação; falha lança erro (o cartão mostra o problema). */
@@ -233,6 +241,10 @@ export function AgendaTab({
   const [cancelReason, setCancelReason] = useState<CancellationReason | "">("");
   const [cancelBusy, setCancelBusy] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [profileTarget, setProfileTarget] = useState<DayAppointment | null>(null);
+  const [boardTarget, setBoardTarget] = useState<string | null>(null);
+  const [openExtra, setOpenExtra] = useState<string | null>(null);
+  const desktop = useDesktop();
   const [clock, setClock] = useState(() => Date.now());
   useEffect(() => {
     const id = window.setInterval(() => setClock(Date.now()), 30_000);
@@ -353,6 +365,26 @@ export function AgendaTab({
     filtered ? [] : gaps,
     isToday && !filtered ? now : null,
   );
+  const openSpan = hours?.is_open
+    ? {
+        start: shopDateTime(day, hours.opens_at, timeZone).getTime(),
+        end: shopDateTime(day, hours.closes_at, timeZone).getTime(),
+      }
+    : null;
+  const daySpan = { start: range.start.getTime(), end: range.end.getTime() };
+  // Computador, visão da equipe toda: uma coluna por profissional (no celular, a lista).
+  const boardStaff = staff.filter(
+    (member) => member.active || daySet.some((row) => row.staff_id === member.id),
+  );
+  const boardMode =
+    desktop &&
+    showStaff &&
+    !activeStaffFilter &&
+    boardStaff.length > 1 &&
+    statusFilter !== "cancelled";
+  const boardRow = boardTarget
+    ? (appointments.find((row) => row.id === boardTarget) ?? null)
+    : null;
 
   // Esperas do dia, no mesmo escopo da lista ("Minha agenda" mostra só as suas).
   const dayWaits = waiting.waits.filter(
@@ -449,6 +481,7 @@ export function AgendaTab({
         onRefresh?.();
       }),
     onChanged: () => onRefresh?.(),
+    onOpenClient: setProfileTarget,
   };
 
   async function confirmCancel() {
@@ -705,6 +738,12 @@ export function AgendaTab({
                     <a
                       key={extra.id}
                       href={`#agenda-extra-${extra.id}`}
+                      // No celular abre a janela da seção; a âncora continua valendo (a lista de
+                      // clientes abre sozinha por ela).
+                      onClick={() => {
+                        if (!desktop) setOpenExtra(extra.id);
+                      }}
+                      aria-haspopup={desktop ? undefined : "dialog"}
                       className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-semibold transition hover:border-primary/40"
                     >
                       <Icon className="size-4 shrink-0 text-gold" aria-hidden />
@@ -890,6 +929,8 @@ export function AgendaTab({
                   />
                 ))}
 
+                {closedDay && visible.length > 0 && !boardMode && <ClosedRow />}
+
                 {visible.length === 0 ? (
                   <EmptyState
                     tone="search"
@@ -905,6 +946,27 @@ export function AgendaTab({
                         {t("agenda.filter.clear")}
                       </button>
                     }
+                  />
+                ) : boardMode ? (
+                  <TeamDayBoard
+                    dayStart={daySpan.start}
+                    dayEnd={daySpan.end}
+                    timeZone={timeZone}
+                    rows={visible.filter((row) => row.status !== "cancelled")}
+                    staff={boardStaff}
+                    blocks={dayBlocks}
+                    open={openSpan}
+                    now={isToday ? now : null}
+                    nextId={next?.id ?? null}
+                    waitIds={
+                      new Set(
+                        dayWaits.flatMap((wait) =>
+                          wait.appointment_id ? [wait.appointment_id] : [],
+                        ),
+                      )
+                    }
+                    serviceIconFor={serviceIconFor}
+                    onOpen={(row) => setBoardTarget(row.id)}
                   />
                 ) : (
                   <ol className="space-y-2.5" aria-label={t("shop.agenda.listAria")}>
@@ -925,48 +987,46 @@ export function AgendaTab({
                       if (entry.kind === "gap") {
                         const minutes = Math.round((entry.end - entry.at) / MINUTE);
                         return (
-                          <li
-                            key={entry.key}
-                            className={cn(
-                              TIMELINE_LOOK.free,
-                              "flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-semibold",
-                            )}
-                          >
-                            <CheckCircle2 className="size-4 shrink-0" aria-hidden />
-                            <span className="min-w-0 flex-1">{t("agenda.gap")}</span>
-                            <span className="tabular-nums">
-                              {time(entry.at)}–{time(entry.end)}
-                            </span>
-                            <span className="text-xs font-semibold opacity-80">
-                              {minutes >= 60
-                                ? t("agenda.hours", {
-                                    hours: Math.floor(minutes / 60),
-                                    minutes: String(minutes % 60).padStart(2, "0"),
-                                  })
-                                : t("agenda.minutes", { minutes })}
-                            </span>
+                          // Fundo do cartão por baixo: no tema escuro a faixa segue off-white.
+                          <li key={entry.key} className="rounded-2xl bg-card">
+                            <div
+                              className={cn(
+                                TIMELINE_LOOK.free,
+                                "flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-semibold",
+                              )}
+                            >
+                              <CheckCircle2 className="size-4 shrink-0" aria-hidden />
+                              <span className="min-w-0 flex-1">{t("agenda.gap")}</span>
+                              <span className="tabular-nums">
+                                {time(entry.at)}–{time(entry.end)}
+                              </span>
+                              <span className="text-xs font-semibold opacity-80">
+                                {minutes >= 60
+                                  ? t("agenda.hours", {
+                                      hours: Math.floor(minutes / 60),
+                                      minutes: String(minutes % 60).padStart(2, "0"),
+                                    })
+                                  : t("agenda.minutes", { minutes })}
+                              </span>
+                            </div>
                           </li>
                         );
                       }
                       if (entry.kind === "block") {
                         return (
-                          <li
-                            key={entry.key}
-                            className={cn(
-                              TIMELINE_LOOK.blocked,
-                              "flex flex-wrap items-center gap-2 rounded-2xl px-3 py-2 text-sm font-semibold",
-                            )}
-                          >
-                            <Ban className="size-4 shrink-0" aria-hidden />
-                            <span className="min-w-0 flex-1 break-words">
-                              {entry.item.reason || t("agenda.block")}
-                              {showStaff && entry.item.staff?.display_name
-                                ? ` · ${entry.item.staff.display_name}`
-                                : ""}
-                            </span>
-                            <span className="tabular-nums">
-                              {time(entry.at)}–{time(entry.end)}
-                            </span>
+                          <li key={entry.key}>
+                            <BlockRow
+                              block={entry.item}
+                              timeZone={timeZone}
+                              day={daySpan}
+                              open={openSpan}
+                              showWho={showStaff}
+                              photo={
+                                entry.item.staff_id
+                                  ? staffById.get(entry.item.staff_id)?.avatar_url
+                                  : null
+                              }
+                            />
                           </li>
                         );
                       }
@@ -1043,23 +1103,138 @@ export function AgendaTab({
             )}
           </div>
 
-          {extras
-            .filter((extra) => !extra.wide)
-            .map((extra) => (
-              <section key={extra.id} id={`agenda-extra-${extra.id}`} className="scroll-mt-24">
-                {extra.content}
-              </section>
-            ))}
+          {desktop &&
+            extras
+              .filter((extra) => !extra.wide)
+              .map((extra) => (
+                <section key={extra.id} id={`agenda-extra-${extra.id}`} className="scroll-mt-24">
+                  {extra.content}
+                </section>
+              ))}
         </div>
       </div>
 
-      {extras
-        .filter((extra) => extra.wide)
-        .map((extra) => (
-          <section key={extra.id} id={`agenda-extra-${extra.id}`} className="scroll-mt-24 lg:pt-2">
-            {extra.content}
-          </section>
-        ))}
+      {desktop &&
+        extras
+          .filter((extra) => extra.wide)
+          .map((extra) => (
+            <section
+              key={extra.id}
+              id={`agenda-extra-${extra.id}`}
+              className="scroll-mt-24 lg:pt-2"
+            >
+              {extra.content}
+            </section>
+          ))}
+
+      {/* Celular: seções com contagem ficam montadas escondidas enquanto a janela está fechada. */}
+      {!desktop &&
+        extras
+          .filter((extra) => "count" in extra && openExtra !== extra.id)
+          .map((extra) => (
+            <div key={extra.id} hidden>
+              {extra.content}
+            </div>
+          ))}
+      {!desktop && (
+        <Dialog
+          open={!!openExtra && extras.some((extra) => extra.id === openExtra)}
+          onOpenChange={(value) => {
+            if (value) return;
+            setOpenExtra(null);
+            if (window.location.hash.startsWith("#agenda-extra-")) {
+              window.history.replaceState(
+                window.history.state,
+                "",
+                window.location.pathname + window.location.search,
+              );
+            }
+          }}
+        >
+          {extras
+            .filter((extra) => extra.id === openExtra)
+            .map((extra) => {
+              const Icon = extra.icon;
+              return (
+                <DialogContent
+                  key={extra.id}
+                  aria-describedby={undefined}
+                  onOpenAutoFocus={(event) => {
+                    // Reforço: a janela sempre abre do topo (título e X à vista).
+                    const content = event.currentTarget as HTMLElement | null;
+                    if (content) content.scrollTop = 0;
+                  }}
+                  className="flex max-h-[90dvh] w-[calc(100vw-1.5rem)] max-w-lg flex-col gap-0 overflow-hidden rounded-3xl border-border bg-card p-0"
+                >
+                  <div className="flex min-h-14 items-center gap-2.5 border-b border-border px-4 py-3 pr-14">
+                    <Icon className="size-5 shrink-0 text-gold" aria-hidden />
+                    <DialogTitle className="min-w-0 break-words text-base font-bold">
+                      {extra.label}
+                    </DialogTitle>
+                  </div>
+                  {/* Sem id aqui: com a âncora dentro da janela (overflow-hidden), o navegador
+                      rolava a janela até a seção e escondia título e X em telas baixas. O hash
+                      continua mudando e a lista de clientes abre pelo hashchange. */}
+                  <section className="dialog-scroll-area flex-1 overflow-y-auto p-3">
+                    {extra.content}
+                  </section>
+                </DialogContent>
+              );
+            })}
+        </Dialog>
+      )}
+
+      <Dialog open={!!boardRow} onOpenChange={(value) => !value && setBoardTarget(null)}>
+        {boardRow && (
+          <DialogContent
+            aria-describedby={undefined}
+            className="w-[calc(100vw-1.5rem)] max-w-md gap-3 rounded-3xl border-border bg-background p-3 pt-2"
+          >
+            <DialogTitle className="flex min-h-11 items-center gap-2 pe-12 ps-1 text-base font-bold">
+              <PersonAvatar
+                name={boardRow.staff?.display_name ?? t("shop.staffFallback")}
+                src={staffById.get(boardRow.staff_id)?.avatar_url}
+                seed={boardRow.staff_id}
+                size="xs"
+              />
+              <span className="min-w-0 break-words">
+                {`${time(boardRow.starts_at)}–${time(boardRow.ends_at)} · ${
+                  boardRow.staff?.display_name ?? t("shop.staffFallback")
+                }`}
+              </span>
+            </DialogTitle>
+            <AppointmentCard
+              row={boardRow}
+              anchorId={false}
+              now={now}
+              timeZone={timeZone}
+              showStaff={false}
+              serviceIcon={serviceIconFor(boardRow)}
+              nextMinutes={
+                next?.id === boardRow.id ? minutesUntil(boardRow.starts_at, now) : undefined
+              }
+              cancellation={cancellationDetails[boardRow.id]}
+              waits={dayWaits.filter((wait) => wait.appointment_id === boardRow.id)}
+              waitNow={waiting.now}
+              waitBusy={waiting.busy}
+              feedback={feedback[boardRow.id]}
+              locked={locked}
+              loyalty={!!settings?.loyalty_enabled}
+              survey={settings?.survey_program_enabled !== false}
+              handlers={handlers}
+            />
+          </DialogContent>
+        )}
+      </Dialog>
+
+      {profileTarget && profileTarget.customer_id && (
+        <ClientProfileModal
+          shopId={shopId}
+          customerId={profileTarget.customer_id}
+          customerName={profileTarget.customer?.full_name ?? null}
+          onClose={() => setProfileTarget(null)}
+        />
+      )}
 
       <WithdrawDialog
         row={withdrawTarget}

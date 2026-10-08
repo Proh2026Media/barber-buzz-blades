@@ -7,6 +7,18 @@ import { getSessionProfile } from "@/lib/auth/session";
 import { maybeRedirectToCanonical, resolveShopFromCurrentHost } from "@/lib/shop/host";
 import { useI18n } from "@/lib/i18n";
 
+/** Dia (AAAA-MM-DD) e hora (HH:MM) no fuso da barbearia, como a página pública mostra. */
+const DAY_KEY = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+const TIME_KEY = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/** Abas que podem vir no endereço (com os apelidos em português do link). */
+function initialTabFor(tab: string | undefined, hasSlot: boolean) {
+  if (tab === "reservas") return "reservas";
+  if (tab === "conta" || tab === "perfil") return "perfil";
+  if (tab === "agendar" || tab === "agenda" || hasSlot) return "agenda";
+  return undefined;
+}
+
 export const Route = createFileRoute("/app")({
   ssr: false,
   validateSearch: (search: Record<string, unknown>) => ({
@@ -15,6 +27,12 @@ export const Route = createFileRoute("/app")({
     join: search.join === "1" || search.join === true || search.join === "true" ? true : undefined,
     tab: typeof search.tab === "string" ? search.tab : undefined,
     reserva: typeof search.reserva === "string" ? search.reserva : undefined,
+    // Horário tocado na página pública: o Agendar abre nesse dia com ele pré-escolhido
+    // (se ainda estiver livre). Nunca reserva sozinho: a pessoa confirma.
+    ...(typeof search.day === "string" && DAY_KEY.test(search.day) ? { day: search.day } : {}),
+    ...(typeof search.time === "string" && TIME_KEY.test(search.time) ? { time: search.time } : {}),
+    // ?tab=conta&focus=whatsapp: abre a Conta com o cartão do WhatsApp em foco.
+    ...(search.focus === "whatsapp" ? { focus: "whatsapp" as const } : {}),
   }),
   beforeLoad: async ({ location, search }) => {
     const searchStr =
@@ -31,7 +49,7 @@ export const Route = createFileRoute("/app")({
 });
 
 function AppRoute() {
-  const { barber, shop, join, tab, reserva } = Route.useSearch();
+  const { barber, shop, join, tab, reserva, day, time, focus } = Route.useSearch();
   const ctx = Route.useRouteContext() as { guestReservation?: boolean };
   const { t } = useI18n();
   const [hostShop, setHostShop] = useState<string | undefined>(undefined);
@@ -90,7 +108,9 @@ function AppRoute() {
       directBarberSlug={barber}
       directShopSlug={effectiveShop}
       promptJoin={Boolean(join)}
-      initialTab={tab === "reservas" ? "reservas" : undefined}
+      initialTab={initialTabFor(tab, Boolean(day && time))}
+      initialSlot={day && time ? { day, time } : undefined}
+      focusWhatsapp={focus === "whatsapp"}
       focusReservationToken={reserva}
     />
   );

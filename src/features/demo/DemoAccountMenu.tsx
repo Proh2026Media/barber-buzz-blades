@@ -41,8 +41,10 @@ export function DemoRoleSelector() {
         })}
       </div>
 
-      {/* Celular e tablet: um ícone igual aos do cabeçalho que abre a lista de perfis (alvos de 44px). */}
-      <div className="app-demo-slot-mobile lg:hidden">
+      {/* Celular e tablet: um ícone igual aos do cabeçalho que abre a lista de perfis (alvos de 44px).
+          Abaixo de 360 px o ícone sai e o "Ver como" passa para o menu de conta, para o nome da
+          barbearia continuar legível no cabeçalho. */}
+      <div className="app-demo-slot-mobile max-[359px]:hidden lg:hidden">
         <Popover>
           <PopoverTrigger asChild>
             <button
@@ -128,9 +130,47 @@ export function DemoAccountMenu({
         collisionPadding={12}
         avoidCollisions
         aria-label={t("demo.menu.aria")}
-        className="account-menu-popover z-[70] w-72 max-h-none max-w-[calc(100vw-24px)] overflow-visible rounded-2xl border-border p-2 shadow-xl"
+        className="account-menu-popover z-[70] w-72 max-h-none max-w-[calc(100vw-24px)] overflow-visible rounded-2xl border-border p-2 shadow-xl max-[359px]:max-h-[var(--radix-popover-content-available-height)]! max-[359px]:overflow-y-auto!"
       >
         <div className="space-y-1">
+          {/* Celular estreito (< 360 px): o seletor de papel do cabeçalho mora aqui. */}
+          <div className="min-[360px]:hidden">
+            <p className="flex items-center gap-2 px-3 pb-1 pt-2 text-xs font-semibold text-muted-foreground">
+              <FlaskConical className="size-3.5 text-gold" aria-hidden />
+              {t("demo.switcher.heading")}
+            </p>
+            <div
+              role="group"
+              aria-label={t("demo.switcher.aria")}
+              className="grid grid-cols-2 gap-1.5 px-2 pb-1"
+            >
+              {DEMO_ROLES.map((r) => {
+                const Icon = r.icon;
+                const active = role === r.id;
+                return (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => chrome.setRole(r.id)}
+                    aria-pressed={active}
+                    title={t(r.hintKey)}
+                    className={`flex min-h-11 min-w-0 items-center gap-2 rounded-xl border px-2.5 text-left text-xs font-semibold transition-colors ${
+                      active
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border hover:bg-muted"
+                    }`}
+                  >
+                    <Icon className={`size-4 shrink-0 ${active ? "" : "text-gold"}`} aria-hidden />
+                    <span className="min-w-0 flex-1 break-words leading-tight">
+                      {t(r.labelKey)}
+                    </span>
+                    {active && <Check className="size-3.5 shrink-0" aria-hidden />}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="my-1 border-t border-border" />
+          </div>
           {/* No papel Plataforma não há perfil próprio: "Ver perfil" levaria ao app do cliente. */}
           {role !== "platform" && (
             <>

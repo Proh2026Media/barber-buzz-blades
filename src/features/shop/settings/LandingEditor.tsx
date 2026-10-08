@@ -8,6 +8,7 @@ import {
   ImagePlus,
   Info,
   LayoutTemplate,
+  MapPin,
   PencilLine,
   Phone,
   RefreshCw,
@@ -24,6 +25,7 @@ import {
   MoreDetails,
   Notice,
   SectionHeader,
+  StatusBadge,
   TimeChips,
   UnsavedBar,
   focusFirstInvalid,
@@ -60,6 +62,15 @@ const PROBLEM_KEY: Record<LandingProblem, MessageKey> = {
   length: "landingEditor.problem.length",
   instagram: "landingEditor.problem.instagram",
   whatsapp: "landingEditor.problem.whatsapp",
+};
+
+/** Onde cada campo aparece na prévia (os demais ficam no topo: título, contato, endereço). */
+const PREVIEW_ANCHOR: Partial<Record<keyof LandingConfig, string>> = {
+  show_staff: "#landing-staff",
+  show_today: "#landing-staff",
+  show_services: "#landing-services",
+  show_hours: "[data-landing-hours]",
+  about: "#landing-about",
 };
 
 /** Blocos da página na ordem real; "horários de hoje" fica dentro do bloco da equipe. */
@@ -133,6 +144,9 @@ export function LandingEditor({
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ActionState | null>(null);
   const tabsId = useId();
+  // Último campo mexido e a caixa da prévia: "Prévia" abre já no bloco alterado.
+  const [lastChanged, setLastChanged] = useState<keyof LandingConfig | null>(null);
+  const previewBoxRef = useRef<HTMLDivElement>(null);
   // Último texto que o "Preencher pelo CEP" escreveu no endereço.
   const [cepAddress, setCepAddress] = useState<string | null>(null);
   // Depois que a pessoa abre e mexe no texto, o campo fica onde está (sem trocar de lugar e
@@ -243,9 +257,26 @@ export function LandingEditor({
 
   function update<K extends keyof LandingConfig>(key: K, value: LandingConfig[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
+    setLastChanged(key);
     setError(null);
     setResult(null);
   }
+
+  // Celular: ao abrir "Prévia", a página já rola até o bloco mexido por último.
+  useEffect(() => {
+    if (view !== "previa" || !lastChanged) return;
+    const frame = window.requestAnimationFrame(() => {
+      const box = previewBoxRef.current;
+      if (!box) return;
+      const selector = PREVIEW_ANCHOR[lastChanged];
+      const target = selector ? box.querySelector<HTMLElement>(selector) : null;
+      const block = target?.closest("section") ?? target;
+      box.scrollTop = block
+        ? box.scrollTop + block.getBoundingClientRect().top - box.getBoundingClientRect().top - 8
+        : 0;
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [view, lastChanged, previewData]);
 
   /** Grava a página; devolve `true` quando salvou (usado também por "Salvar e sair"). */
   async function persist(): Promise<boolean> {
@@ -321,10 +352,30 @@ export function LandingEditor({
   // Endereço montado pelo CEP e não mexido: o cartão verde já mostra; o texto fica recolhido.
   const addressFromCep =
     cepAddress !== null && (draft.address === cepAddress || addressTouched) && problem !== "length";
+  // Selo "Preenchido pelo CEP" enquanto o texto é exatamente o que o CEP montou; some ao editar.
+  const filledByCep = cepAddress !== null && draft.address === cepAddress;
+  const cepBadge = filledByCep ? (
+    <StatusBadge
+      tone="success"
+      icon={MapPin}
+      size="sm"
+      label={t("landingEditor.address.fromCep")}
+    />
+  ) : null;
 
   const addressField = (
     <Field
-      label={t("landingEditor.streetAddress")}
+      label={
+        // Recolhido, o selo já aparece no resumo acima de "Editar texto do endereço".
+        cepBadge && !addressFromCep ? (
+          <span className="inline-flex flex-wrap items-center gap-2">
+            {t("landingEditor.streetAddress")}
+            {cepBadge}
+          </span>
+        ) : (
+          t("landingEditor.streetAddress")
+        )
+      }
       hint={counter(draft.address, LANDING_LIMITS.address)}
       error={problem === "length" ? t(PROBLEM_KEY.length) : undefined}
     >
@@ -373,7 +424,9 @@ export function LandingEditor({
   return (
     <div className="space-y-4">
       <div
-        className="grid grid-cols-2 gap-2 lg:hidden"
+        // Celular: as abas ficam presas no topo da janela, então "Prévia" está sempre a um toque
+        // (com espaço à direita para o X de fechar).
+        className="sticky -top-5 z-10 -mx-1 grid grid-cols-2 gap-2 bg-card/95 pe-11 ps-1 pb-2 pt-3 backdrop-blur sm:-top-6 lg:hidden"
         role="tablist"
         aria-label={t("landingEditor.viewLabel")}
       >
@@ -412,6 +465,14 @@ export function LandingEditor({
               <Eye className="size-4" aria-hidden />
             )}
             {t(option === "editar" ? "landingEditor.tabEdit" : "landingEditor.tabPreview")}
+            {/* Mudança ainda não salva: ponto na aba "Prévia" convida a ver como ficou. */}
+            {option === "previa" && dirty && view === "editar" && (
+              <span
+                className="tone-pending size-2.5 shrink-0 rounded-full bg-[color:var(--tone-line)]"
+                role="img"
+                aria-label={t("visual.unsaved.badge")}
+              />
+            )}
           </button>
         ))}
       </div>
@@ -637,9 +698,21 @@ export function LandingEditor({
               />
             )}
             {addressFromCep ? (
-              <MoreDetails summary={t("landingEditor.address.editText")} icon={PencilLine}>
-                {addressField}
-              </MoreDetails>
+              <div className="space-y-1">
+                {/* Recolhido: o texto que vai para a página fica à vista, com o selo do CEP. */}
+                {filledByCep && (
+                  <div className="space-y-1.5 rounded-xl border border-border bg-background/60 p-3">
+                    <p className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+                      {t("landingEditor.streetAddress")}
+                      {cepBadge}
+                    </p>
+                    <p className="break-words text-sm">{draft.address}</p>
+                  </div>
+                )}
+                <MoreDetails summary={t("landingEditor.address.editText")} icon={PencilLine}>
+                  {addressField}
+                </MoreDetails>
+              </div>
             ) : (
               addressField
             )}
@@ -716,7 +789,10 @@ export function LandingEditor({
           <p className="text-xs font-semibold text-muted-foreground">
             {t(demo ? "landingEditor.previewHintDemo" : "landingEditor.previewHint")}
           </p>
-          <div className="relative max-h-[70dvh] overflow-y-auto rounded-2xl border border-border shadow-sm">
+          <div
+            ref={previewBoxRef}
+            className="relative max-h-[70dvh] overflow-y-auto rounded-2xl border border-border shadow-sm"
+          >
             {previewData ? (
               <ShopLandingView data={previewData} preview />
             ) : previewFailed ? (

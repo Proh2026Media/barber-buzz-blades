@@ -24,6 +24,7 @@ export function CatalogFilters({
   pausedLabel,
   viewMode = "grid",
   onViewMode,
+  statusFirst = false,
 }: {
   query: string;
   onQuery: (value: string) => void;
@@ -39,11 +40,32 @@ export function CatalogFilters({
   pausedLabel?: string;
   viewMode?: CatalogViewMode;
   onViewMode?: (value: CatalogViewMode) => void;
+  /** Pílulas de estado antes da busca (listas curtas, em que a busca é o recurso menos usado). */
+  statusFirst?: boolean;
 }) {
   const { t } = useI18n();
   const filtering = Boolean(query.trim()) || status !== "all";
+  const chips =
+    total > 0 ? (
+      <ChoiceChips
+        label={t("brand.catalog.filterAria")}
+        hideLabel
+        value={status}
+        onChange={onStatus}
+        options={[
+          { value: "all", label: t("brand.catalog.all"), count: total },
+          { value: "active", label: activeLabel ?? t("brand.catalog.active"), count: active },
+          {
+            value: "paused",
+            label: pausedLabel ?? t("brand.catalog.paused"),
+            count: total - active,
+          },
+        ]}
+      />
+    ) : null;
   return (
     <div className="catalog-filters space-y-3">
+      {statusFirst && chips}
       <div className="flex flex-wrap items-center gap-2">
         <label className="relative min-w-[10rem] flex-1">
           <span className="sr-only">{label}</span>
@@ -61,23 +83,7 @@ export function CatalogFilters({
         </label>
         {onViewMode && <CatalogViewToggle viewMode={viewMode} onViewMode={onViewMode} />}
       </div>
-      {total > 0 && (
-        <ChoiceChips
-          label={t("brand.catalog.filterAria")}
-          hideLabel
-          value={status}
-          onChange={onStatus}
-          options={[
-            { value: "all", label: t("brand.catalog.all"), count: total },
-            { value: "active", label: activeLabel ?? t("brand.catalog.active"), count: active },
-            {
-              value: "paused",
-              label: pausedLabel ?? t("brand.catalog.paused"),
-              count: total - active,
-            },
-          ]}
-        />
-      )}
+      {!statusFirst && chips}
       {/* Sem resultado, o estado vazio logo abaixo já oferece "Limpar busca" (um botão só). */}
       {filtering && visible > 0 && (
         <p role="status" className="flex flex-wrap items-center gap-2 text-sm font-semibold">

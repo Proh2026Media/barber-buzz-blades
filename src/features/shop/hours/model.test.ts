@@ -6,7 +6,9 @@ import {
   fromMinutes,
   groupWeek,
   liveStatus,
+  pendingHoursRequests,
   quickRanges,
+  requestedWeek,
   rulerRange,
   rulerTicks,
   toMinutes,
@@ -109,4 +111,61 @@ test("atalhos de bloqueio cabem no expediente", () => {
 test("dia da semana de uma data da loja", () => {
   assert.equal(weekdayOfKey("2026-10-05"), 1);
   assert.equal(weekdayOfKey("2026-10-11"), 0);
+});
+
+test("pedidos pendentes da aba Horários vêm da lista do servidor", () => {
+  const pending = pendingHoursRequests([
+    { id: "a", kind: "service.update", payload: { id: "s1" }, status: "pending" },
+    {
+      id: "b",
+      kind: "hours.replace",
+      payload: { hours: [{ weekday: 6, is_open: true, opens_at: "10:00", closes_at: "14:00" }] },
+      status: "pending",
+    },
+    // Mais antigo: o pedido de funcionamento mais recente é o que vale.
+    { id: "c", kind: "hours.replace", payload: { hours: [{ weekday: 1, is_open: false }] } },
+    {
+      id: "d",
+      kind: "availability.create",
+      payload: {
+        staff_id: null,
+        starts_at: "2026-10-09T15:00:00Z",
+        ends_at: "2026-10-09T16:00:00Z",
+      },
+    },
+    { id: "e", kind: "availability.delete", payload: { id: "block-1" } },
+    { id: "f", kind: "availability.delete", payload: { id: "block-2" }, status: "approved" },
+    null,
+  ]);
+  assert.deepEqual(pending.week, [
+    { weekday: 6, is_open: true, opens_at: "10:00", closes_at: "14:00" },
+  ]);
+  assert.equal(pending.creates.length, 1);
+  assert.equal(pending.creates[0]?.requestId, "d");
+  assert.deepEqual(pending.deletes, ["block-1"]);
+  assert.deepEqual(pendingHoursRequests(null), {
+    week: null,
+    weekByOther: false,
+    creates: [],
+    deletes: [],
+  });
+  // Sem saber quem vê, nunca diz que o pedido é de outra pessoa.
+  assert.equal(pending.weekByOther, false);
+
+  const merged = requestedWeek(pending.week ?? [], week());
+  assert.deepEqual(changedWeekdays(merged ?? [], week()), [6]);
+  assert.equal(requestedWeek([day(6)], week()), null);
+});
+
+test("semana pedida por outra pessoa fica marcada para quem decide", () => {
+  const row = {
+    id: "w",
+    kind: "hours.replace",
+    payload: { hours: [{ weekday: 6, is_open: true, opens_at: "10:00", closes_at: "14:00" }] },
+    status: "pending",
+    requested_by: "user-a",
+  };
+  assert.equal(pendingHoursRequests([row], "user-a").weekByOther, false);
+  assert.equal(pendingHoursRequests([row], "user-b").weekByOther, true);
+  assert.equal(pendingHoursRequests([{ ...row, requested_by: null }], "user-b").weekByOther, false);
 });

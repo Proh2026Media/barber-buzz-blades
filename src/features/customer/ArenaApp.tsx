@@ -153,15 +153,43 @@ type CustomerAppointment = Tables<"appointments"> & {
 
 import { ShopJoinDialog } from "./ShopJoinDialog";
 
+/**
+ * Serviço mais curto do profissional (empate: o mais antigo, a ordem da lista). É a mesma regra
+ * da página pública (`get_public_shop_landing`), então o horário tocado lá é conferido aqui com
+ * o mesmo serviço. A lista já vem em `created_at`.
+ */
+function shortestServiceIndex(
+  list: Pick<Tables<"services">, "id" | "duration_minutes" | "price_cents">[],
+  terms: ServiceTerms[] | null,
+  staffId: string,
+) {
+  let best = 0;
+  let bestMinutes = Infinity;
+  list.forEach((service, index) => {
+    const minutes = termsFor(terms, staffId, service)?.duration_minutes;
+    if (minutes != null && minutes < bestMinutes) {
+      best = index;
+      bestMinutes = minutes;
+    }
+  });
+  return best;
+}
+
 function ArenaApp({
   headerActions,
   directBarberSlug,
   directShopSlug,
   promptJoin = false,
   initialTab,
+  initialSlot,
+  focusWhatsapp = false,
   focusReservationToken,
 }: {
   headerActions?: ReactNode;
+  /** Horário tocado na página pública (dia AAAA-MM-DD e HH:MM no fuso da loja): só pré-escolhe. */
+  initialSlot?: { day: string; time: string };
+  /** Conta aberta pelo link "Número errado?": leva ao cartão do WhatsApp. */
+  focusWhatsapp?: boolean;
   directBarberSlug?: string;
   directShopSlug?: string;
   /** Vindo do pós-login (?join=1); o diálogo também abre se o Host/?shop= apontar loja nova. */
@@ -193,6 +221,11 @@ function ArenaApp({
   const demoChrome = useDemoChrome();
   const [tab, setTab] = useState(initialTab ?? "dashboard");
   const [focusToken] = useState(focusReservationToken);
+  // Foco no WhatsApp só na primeira abertura da Conta pelo link (some ao trocar de aba).
+  const [whatsappFocus, setWhatsappFocus] = useState(focusWhatsapp);
+  useEffect(() => {
+    if (tab !== "perfil") setWhatsappFocus(false);
+  }, [tab]);
   const [points, setPoints] = useState(0);
   const [lifetimePoints, setLifetimePoints] = useState(0);
   const [loyaltyProgram, setLoyaltyProgram] = useState<LoyaltyProgram>(FALLBACK_PROGRAM);
@@ -200,6 +233,10 @@ function ArenaApp({
   const { isDark: isDarkMode } = useTheme();
   const [showVipInfo, setShowVipInfo] = useState(false);
   const [serviceIdx, setServiceIdx] = useState(0);
+  // Veio de um horário tocado na página pública: o serviço sugerido é o mais curto do profissional.
+  const fromPublicSlot = useRef(Boolean(initialSlot));
+  // Horário do link que não dá para manter (dia que já passou ou fora do prazo de agendamento).
+  const [pickedSlotLost, setPickedSlotLost] = useState<"past" | "far" | null>(null);
   const [staffIdx, setStaffIdx] = useState(0);
   const [anyAvailable, setAnyAvailable] = useState(false);
   const [favoriteStaffId, setFavoriteStaffId] = useState<string | null>(null);
@@ -372,6 +409,9 @@ function ArenaApp({
   const [appointmentsError, setAppointmentsError] = useState<string | null>(null);
   const [appointmentsNotice, setAppointmentsNotice] = useState<string | null>(null);
   const [appointmentVersion, setAppointmentVersion] = useState(0);
+  // Qual ação da vaga liberada está em andamento no Início: o "busy" da fila é um só, e o giro
+  // precisa aparecer no botão tocado (Confirmar ou Desistir), não sempre no principal.
+  const [waitRun, setWaitRun] = useState<{ id: string; action: "claim" | "leave" } | null>(null);
   const [appointmentBusy, setAppointmentBusy] = useState<string | null>(null);
   const [rescheduleId, setRescheduleId] = useState<string | null>(null);
   const [cancelTarget, setCancelTarget] = useState<CustomerAppointment | null>(null);
@@ -470,6 +510,51 @@ function ArenaApp({
     if (!identity || alignedShop.current === identity) return;
     alignedShop.current = identity;
     setSelectedDay(shopDateKey(demo?.now ?? new Date(), shopTimeZone));
+  }, [demo, shopId, shopTimeZone]);
+  /**
+   * Horário vindo da página pública: abre o dia e marca o horário, que só fica escolhido se
+   * ainda estiver livre (senão a grade mostra o aviso "não está mais livre" e as outras opções).
+   * Roda depois do acerto de fuso acima e só até a pessoa mexer na escolha.
+   */
+  const initialSlotFor = useRef<string | null>(null);
+  const initialSlotIso = useRef<string | null>(null);
+  useEffect(() => {
+    const identity = demo ? "demo" : shopId ? `${shopId}:${shopTimeZone}` : null;
+    if (!initialSlot || !identity || initialSlotFor.current === identity) return;
+    initialSlotFor.current = identity;
+    const keys = buildBookingDateKeys(
+      demo?.now ?? new Date(),
+      shopSettings.booking_horizon_days,
+      shopTimeZone,
+    );
+    const inRange = keys.includes(initialSlot.day);
+    const at = shopDateTime(initialSlot.day, `${initialSlot.time}:00`, shopTimeZone);
+    const now = demo?.now ?? new Date();
+    // Link reaberto depois (dia ou hora que já passou) ou além do prazo: o horário não fica;
+    // o passo "Dia e horário" avisa e mostra as opções.
+    const lost = !inRange
+      ? keys[0] && initialSlot.day < keys[0]
+        ? "past"
+        : "far"
+      : at.getTime() <= now.getTime()
+        ? "past"
+        : null;
+    if (lost) {
+      setPickedSlotLost(lost);
+      if (inRange) setSelectedDay(initialSlot.day);
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.setTimeout(() => {
+        document
+          .getElementById("booking-step-when")
+          ?.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
+      }, 50);
+      return;
+    }
+    const iso = at.toISOString();
+    initialSlotIso.current = iso;
+    setSelectedDay(initialSlot.day);
+    setSelectedSlotAt(iso);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- uma vez por loja/fuso
   }, [demo, shopId, shopTimeZone]);
   // Virada do dia com o app aberto: o dia escolhido não pode ficar no passado.
   const firstBookingDay = bookingDayKeys[0];
@@ -634,7 +719,15 @@ function ArenaApp({
       setCatalogLoading(false);
       setCatalogError(null);
       setJoinOpen(false);
-      setServiceIdx(0);
+      setServiceIdx(
+        directBarberSlug && fromPublicSlot.current
+          ? shortestServiceIndex(
+              demo.services.filter((row) => row.active),
+              null,
+              "",
+            )
+          : 0,
+      );
       setStaffIdx(
         directBarberSlug
           ? Math.max(
@@ -954,7 +1047,11 @@ function ArenaApp({
             setFavoriteStaffId(favoriteId);
           }
 
-          setServiceIdx(0);
+          setServiceIdx(
+            directStaffId && fromPublicSlot.current
+              ? shortestServiceIndex(availableServices, terms, directStaffId)
+              : 0,
+          );
           if (directStaffId) {
             setAnyAvailable(false);
             setStaffIdx(
@@ -1605,6 +1702,7 @@ function ArenaApp({
   };
   const pickDay = (key: string) => {
     setSelectedDay(key);
+    setPickedSlotLost(null);
     setSelectedSlotAt(null);
     setBookingError(null);
     setBookingUncertain(false);
@@ -1627,6 +1725,26 @@ function ArenaApp({
     slotsFor === selectionKey &&
     !slotsLoading &&
     !bookingBusy;
+  // Horário da página pública: livre, recolhe serviço e profissional como um toque no horário e
+  // leva à conferência; ocupado, leva ao aviso e às outras opções do dia.
+  useEffect(() => {
+    const iso = initialSlotIso.current;
+    if (!iso || selectedSlotAt !== iso || (!selectedSlot && !slotGone)) return;
+    initialSlotIso.current = null;
+    if (selectedSlot) {
+      if (selectedService) setServiceOpen(false);
+      if (selectedStaff || anyAvailable) setStaffOpen(false);
+    }
+    // Só rola (sem foco): a página acabou de abrir e o anel de foco no título distrairia.
+    const target = selectedSlot ? "booking-step-review" : "booking-step-when";
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.setTimeout(() => {
+      document
+        .getElementById(target)
+        ?.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
+    }, 50);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- só a primeira resposta da grade
+  }, [selectedSlot, slotGone, selectedSlotAt]);
   const gridState: "needChoice" | "loading" | "error" | "empty" | "ready" =
     !selectedService || (!selectedStaff && !anyAvailable)
       ? "needChoice"
@@ -2141,14 +2259,38 @@ function ArenaApp({
         />
       ),
       action: {
-        label: waiting.busy ? t("home.attention.offerBusy") : t("home.attention.offerAction"),
-        icon: waiting.busy ? SpinningLoader : Check,
-        onClick: () =>
-          void waiting.act(wait.id, "claim").then((ok) => {
-            if (!ok) return;
-            setAppointmentVersion((v) => v + 1);
-            toast.success(t("home.attention.offerDone"));
-          }),
+        label:
+          waitRun?.id === wait.id && waitRun.action === "claim"
+            ? t("home.attention.offerBusy")
+            : t("home.attention.offerAction"),
+        icon: waitRun?.id === wait.id && waitRun.action === "claim" ? SpinningLoader : Check,
+        disabled: waiting.busy || waitRun !== null,
+        onClick: () => {
+          setWaitRun({ id: wait.id, action: "claim" });
+          void waiting
+            .act(wait.id, "claim")
+            .then((ok) => {
+              if (!ok) return;
+              setAppointmentVersion((v) => v + 1);
+              toast.success(t("home.attention.offerDone"));
+            })
+            .finally(() => setWaitRun(null));
+        },
+      },
+      // "Desistir": a mesma saída da vaga em Reservas; o erro aparece no aviso logo abaixo.
+      secondaryAction: {
+        label: t("wait.card.leave"),
+        icon: waitRun?.id === wait.id && waitRun.action === "leave" ? SpinningLoader : X,
+        disabled: waiting.busy || waitRun !== null,
+        onClick: () => {
+          setWaitRun({ id: wait.id, action: "leave" });
+          void waiting
+            .act(wait.id, "leave")
+            .then((ok) => {
+              if (ok) toast.success(t("wait.event.left"));
+            })
+            .finally(() => setWaitRun(null));
+        },
       },
     })),
     ...rescheduleRequests.map((row) => ({
@@ -2166,17 +2308,12 @@ function ArenaApp({
           }`}
         </>
       ),
-      aside: (
-        <button
-          type="button"
-          disabled={appointmentBusy !== null}
-          onClick={() => setCancelTarget(row)}
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-2 text-sm font-semibold text-muted-foreground hover:text-foreground disabled:opacity-50"
-        >
-          <XCircle className="size-4" aria-hidden />
-          {t("home.attention.cancelAction")}
-        </button>
-      ),
+      secondaryAction: {
+        label: t("home.attention.cancelAction"),
+        icon: XCircle,
+        disabled: appointmentBusy !== null,
+        onClick: () => setCancelTarget(row),
+      },
       action: {
         label: t("home.attention.rescheduleAction"),
         icon: CalendarClock,
@@ -2512,7 +2649,12 @@ function ArenaApp({
       >
         <div key={tab} className="mb-panel">
           {tab === "perfil" && (
-            <CustomerProfile onSaved={setCustomerName} shops={myShops} currentShopId={shopId}>
+            <CustomerProfile
+              onSaved={setCustomerName}
+              shops={myShops}
+              currentShopId={shopId}
+              focusWhatsapp={whatsappFocus}
+            >
               <CustomerRhythm
                 shopId={shopId}
                 visits={shopAppointments
@@ -2924,6 +3066,15 @@ function ArenaApp({
                             onChange={pickDay}
                             min={dateFromLocalKey(bookingDayKeys[0])}
                             max={dateFromLocalKey(bookingDayKeys[bookingDayKeys.length - 1])}
+                            // Como a faixa de dias: o 1º dia é "Hoje"; fechados com lua.
+                            todayKey={bookingDayKeys[0]}
+                            todayLabel={t("booking.today")}
+                            closedDays={
+                              closedWeekdays
+                                ? (date) => closedWeekdays.has(date.getDay())
+                                : undefined
+                            }
+                            closedLabel={t("booking.closed")}
                           />
                         }
                       />
@@ -2935,6 +3086,7 @@ function ArenaApp({
                         selectedIso={selectedSlot ? selectedSlotAt : null}
                         onSelect={(iso) => {
                           setSelectedSlotAt(iso);
+                          setPickedSlotLost(null);
                           setBookingError(null);
                           setBookingUncertain(false);
                           // Escolher o horário aceita o serviço e o profissional sugeridos: os
@@ -2985,6 +3137,15 @@ function ArenaApp({
                                       time: slotLabel(selectedSlotAt).time,
                                     })
                               }
+                            />
+                          ) : pickedSlotLost ? (
+                            <Notice
+                              tone="warning"
+                              title={t(
+                                pickedSlotLost === "past"
+                                  ? "booking.pickedSlotPast"
+                                  : "booking.pickedSlotFar",
+                              )}
                             />
                           ) : null
                         }

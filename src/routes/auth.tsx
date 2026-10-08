@@ -2,6 +2,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Bell,
+  CalendarClock,
   Eye,
   EyeOff,
   Hourglass,
@@ -129,6 +130,17 @@ const DEMO_AUTH_BRAND: AuthBrand = {
   displayName: "Arena Barber",
 };
 
+/**
+ * `who` vem no link e aparece em destaque no resumo da entrada: só aceita um primeiro nome
+ * (letras, inclusive acentuadas, com espaço, hífen ou apóstrofo; até 24). Fora disso, descarta
+ * e o resumo mostra só dia e hora (um link forjado não põe frase solta numa tela oficial).
+ */
+function pickedWho(value: unknown) {
+  if (typeof value !== "string") return undefined;
+  const name = value.normalize("NFC").trim();
+  return /^\p{L}[\p{L}\p{M}'’ -]{0,23}$/u.test(name) ? name : undefined;
+}
+
 export const Route = createFileRoute("/auth")({
   ssr: false,
   validateSearch: (
@@ -143,6 +155,8 @@ export const Route = createFileRoute("/auth")({
     bridged?: boolean;
     popup?: boolean;
     from_email?: boolean;
+    /** Nome do profissional do horário tocado na página pública (só para o resumo à vista). */
+    who?: string;
   } => {
     const recovery = s.recovery === "1" || s.recovery === true || s.recovery === "true";
     const demo = s.demo === "1" || s.demo === true || s.demo === "true";
@@ -154,6 +168,7 @@ export const Route = createFileRoute("/auth")({
         ? s.return_origin.trim()
         : undefined;
     const oauth = s.oauth === "google" ? ("google" as const) : undefined;
+    const who = pickedWho(s.who);
     return {
       next: typeof s.next === "string" ? s.next : "",
       ...(recovery ? { recovery: true as const } : {}),
@@ -164,6 +179,8 @@ export const Route = createFileRoute("/auth")({
       ...(bridged ? { bridged: true as const } : {}),
       ...(popup ? { popup: true as const } : {}),
       ...(fromEmail ? { from_email: true as const } : {}),
+      // Sempre presente: o roteador junta o search cru, então omitir não descartaria o valor.
+      who,
     };
   },
   component: AuthPage,
@@ -285,6 +302,78 @@ function resolveShopContext(next: string, directShop?: string, directDemo?: bool
   return { shopRef, demo };
 }
 
+/**
+ * Horário tocado na página pública, lido do destino (/app?day=…&time=…): a entrada mostra o
+ * resumo "Rafael · qui 09/10 · 10:00" para a pessoa saber que ele segue com ela.
+ */
+function pickedSlotFromNext(next: string) {
+  if (!isSafeNext(next)) return null;
+  try {
+    const target = new URL(next, "https://barba-e-cabelo.local");
+    if (target.pathname !== "/app") return null;
+    const day = target.searchParams.get("day") ?? "";
+    const time = target.searchParams.get("time") ?? "";
+    const dayMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day);
+    const timeMatch = /^(\d{2}):(\d{2})$/.exec(time);
+    if (!dayMatch || !timeMatch) return null;
+    const [, y, m, d] = dayMatch.map(Number);
+    const [, hh, mm] = timeMatch.map(Number);
+    return { at: new Date(Date.UTC(y, m - 1, d, hh, mm)) };
+  } catch {
+    return null;
+  }
+}
+
+function PickedSlotChip({ next, who }: { next: string; who?: string }) {
+  const { t, intlLocale } = useI18n();
+  const picked = pickedSlotFromNext(next);
+  if (!picked || Number.isNaN(picked.at.getTime())) return null;
+  // Link reaberto depois: some quando o horário já passou em qualquer fuso (a hora "de parede"
+  // mais 12 h ficou para trás). O Agendar avisa e pede outro horário.
+  if (picked.at.getTime() + 12 * 3_600_000 < Date.now()) return null;
+  // Data e hora "de parede" (fuso da loja), formatadas sem conversão de fuso.
+  const weekday = picked.at
+    .toLocaleDateString(intlLocale, { weekday: "short", timeZone: "UTC" })
+    .replace(".", "");
+  const date = picked.at.toLocaleDateString(intlLocale, {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "UTC",
+  });
+  const time = picked.at.toLocaleTimeString(intlLocale, {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "UTC",
+  });
+  const parts = [who, `${weekday} ${date}`, time].filter((part): part is string => !!part);
+  return (
+    <div
+      role="note"
+      aria-label={t("entry.pick.aria", { summary: parts.join(" · ") })}
+      className="mt-4 flex items-start gap-3 rounded-xl border border-border bg-background/70 px-3 py-2.5"
+    >
+      <CalendarClock className="mt-0.5 size-5 shrink-0 text-gold" aria-hidden="true" />
+      <span className="min-w-0 flex-1" aria-hidden="true">
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="text-xs font-semibold text-muted-foreground">
+            {t("entry.pick.label")}
+          </span>
+          <StatusBadge tone="pending" size="sm" label={t("entry.pick.pending")} />
+        </span>
+        {/* Quebra só entre as partes ("Rafael ·" / "qui 08/10 · 20:30"), nunca no meio. */}
+        <span className="mt-1 flex flex-wrap gap-x-1.5 text-base font-bold tabular-nums text-foreground">
+          {parts.map((part, index) => (
+            <span key={index} className="whitespace-nowrap">
+              {part}
+              {index < parts.length - 1 ? " ·" : ""}
+            </span>
+          ))}
+        </span>
+      </span>
+    </div>
+  );
+}
+
 function AuthPage() {
   const {
     next,
@@ -296,6 +385,7 @@ function AuthPage() {
     bridged,
     popup,
     from_email: fromEmail,
+    who,
   } = useSearch({
     from: "/auth",
   });
@@ -886,13 +976,13 @@ function AuthPage() {
     }
   }
 
-  async function goAfterAuthLocal() {
+  async function goAfterAuthLocal(nextOverride?: string) {
     if (await runFirstAccessChecks()) {
       sessionApplyingRef.current = false;
       setBusy(false);
       return;
     }
-    const path = await resolvePostAuthPath(preferredNext);
+    const path = await resolvePostAuthPath(nextOverride ?? preferredNext);
     if (effectiveShopRef && (path === "/app" || path.startsWith("/app"))) {
       const url = new URL(path, window.location.origin);
       if (!url.searchParams.get("shop")) url.searchParams.set("shop", effectiveShopRef);
@@ -943,6 +1033,26 @@ function AuthPage() {
     setPhoneCode("");
     try {
       await requestPhoneCode(phoneNumber);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /**
+   * "Número errado? Trocar em Meu perfil": entra no app direto na Conta, com o cartão do
+   * WhatsApp em foco. O resto do destino (loja, profissional, horário escolhido) segue junto.
+   */
+  async function fixNumberInProfile() {
+    setBusy(true);
+    setError(null);
+    try {
+      const target = new URL(
+        /^\/app(\?|$)/.test(preferredNext) ? preferredNext : "/app",
+        "https://barba-e-cabelo.local",
+      );
+      target.searchParams.set("tab", "conta");
+      target.searchParams.set("focus", "whatsapp");
+      await goAfterAuthLocal(`/app${target.search}`);
     } finally {
       setBusy(false);
     }
@@ -1607,6 +1717,9 @@ function AuthPage() {
               )}
             </div>
           )}
+          {!resultScreen && mode !== "forgot" && mode !== "recovery" && (
+            <PickedSlotChip next={preferredNext} who={who} />
+          )}
           {!resultScreen && flowSteps && mode !== "signup" && (
             <Steps
               steps={flowSteps}
@@ -2265,9 +2378,8 @@ function AuthPage() {
                     waitLabel={t("fix2.whats.resendIn", { seconds: phoneResendIn })}
                     busyLabel={t("fix2.whats.sending")}
                   />
-                  {/* Uma só saída: "Confirmar depois" entra no app. Número errado também passa
-                      por aqui (a troca é feita em Meu perfil), dito na legenda e não num link
-                      com cara de edição local. */}
+                  {/* "Confirmar depois" entra no app; "Número errado?" entra direto na Conta, com
+                      o cartão do WhatsApp em foco (a troca é feita lá, não aqui). */}
                   <button
                     type="button"
                     disabled={busy}
@@ -2278,11 +2390,17 @@ function AuthPage() {
                     {t("fix3.auth.phoneSkip")}
                     <ArrowRight className="size-4" aria-hidden="true" />
                   </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void fixNumberInProfile()}
+                    className="entry-link-button text-muted-foreground"
+                  >
+                    <UserRound className="size-4" aria-hidden="true" />
+                    {t("entry.phone.wrongNumberLink")}
+                    <ArrowRight className="size-4" aria-hidden="true" />
+                  </button>
                   <div id="phone-later-notes" className="grid gap-1">
-                    <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                      <UserRound className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-                      {t("entry.phone.wrongNumber")}
-                    </p>
                     <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
                       <LockKeyhole className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
                       {t("entry.phone.laterNote")}

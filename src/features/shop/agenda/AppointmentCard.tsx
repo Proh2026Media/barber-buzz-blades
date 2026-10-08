@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   CalendarCheck,
   CalendarClock,
+  ChevronRight,
   CircleCheck,
   ClipboardPen,
   Clock3,
@@ -62,10 +63,56 @@ export type CardHandlers = {
   onRestoreWait: (waitId: string) => void;
   /** Depois de registrar atraso ou falta. */
   onChanged: () => void;
+  /**
+   * Abre a ficha do cliente. Só vale quando o atendimento traz o `customer_id` (sem ele, o nome
+   * continua como texto).
+   */
+  onOpenClient?: (row: DayAppointment) => void;
 };
+
+/**
+ * Nome do cliente: com a ficha disponível vira botão (seta discreta e área de toque de 44 px);
+ * sem ela, só o texto.
+ */
+function CustomerName({
+  row,
+  name,
+  onOpen,
+  className,
+}: {
+  row: DayAppointment;
+  name: string;
+  onOpen?: (row: DayAppointment) => void;
+  className?: string;
+}) {
+  const { t } = useI18n();
+  if (!onOpen || !row.customer_id || row.visibility === "busy") {
+    return <span className={className}>{name}</span>;
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(row)}
+      title={t("agenda.client.open", { name })}
+      aria-label={t("agenda.client.open", { name })}
+      className={cn(
+        "relative inline-flex max-w-full items-center gap-0.5 rounded-md text-start underline decoration-muted-foreground/50 decoration-dotted underline-offset-4 transition hover:decoration-gold after:absolute after:-inset-x-1 after:-inset-y-3 after:content-['']",
+        className,
+      )}
+    >
+      <span className="min-w-0 break-words">{name}</span>
+      <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+    </button>
+  );
+}
 
 type CardProps = {
   row: DayAppointment;
+  /**
+   * Põe o id `agenda-row-<id>` (alvo do "ir até" e do "Ver e confirmar"). `false` na janela do
+   * quadro, onde o bloco do quadro já tem esse id.
+   */
+  anchorId?: boolean;
   now: number;
   timeZone: string;
   showStaff: boolean;
@@ -172,6 +219,7 @@ export function AppointmentCard(props: CardProps) {
 
 function FullCard({
   row,
+  anchorId = true,
   now,
   timeZone,
   showStaff,
@@ -222,7 +270,7 @@ function FullCard({
   if (row.status === "cancelled") {
     return (
       <article
-        id={`agenda-row-${row.id}`}
+        id={anchorId ? `agenda-row-${row.id}` : undefined}
         tabIndex={-1}
         className="app-action-card flex scroll-mt-28 flex-wrap items-center gap-x-3 gap-y-1.5 px-3 py-2.5 shadow-none"
       >
@@ -230,7 +278,7 @@ function FullCard({
           {start}
         </span>
         <span className="min-w-0 flex-1 basis-32 break-words text-sm font-semibold text-muted-foreground">
-          {customer} · {service}
+          <CustomerName row={row} name={customer} onOpen={handlers.onOpenClient} /> · {service}
         </span>
         <StatusBadge tone={meta.tone} icon={meta.icon} label={t(meta.labelKey)} size="sm" />
         {cancellation && !facts.no_show_at && (
@@ -407,7 +455,7 @@ function FullCard({
 
   return (
     <article
-      id={`agenda-row-${row.id}`}
+      id={anchorId ? `agenda-row-${row.id}` : undefined}
       tabIndex={-1}
       aria-label={`${start} · ${customer} · ${t(meta.labelKey)}`}
       className={cn(
@@ -435,7 +483,7 @@ function FullCard({
         <div className="min-w-0 flex-1 space-y-1.5">
           <p className="text-[15px] font-bold leading-snug break-words">
             <span className="sr-only">{`${start}–${end} · `}</span>
-            {customer}
+            <CustomerName row={row} name={customer} onOpen={handlers.onOpenClient} />
           </p>
           <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <ServiceIcon
@@ -443,8 +491,13 @@ function FullCard({
               className="size-4 shrink-0 text-gold"
               imageClassName="size-5 shrink-0 rounded-md"
             />
-            <span className="min-w-0 break-words">{service}</span>
-            <span className="shrink-0">· {t("agenda.minutes", { minutes: duration })}</span>
+            {/* Serviço e duração no mesmo texto: quebra entre palavras (nunca "Premiu/m"). */}
+            <span className="min-w-0 break-words">
+              {service}{" "}
+              <span className="whitespace-nowrap">
+                · {t("agenda.minutes", { minutes: duration })}
+              </span>
+            </span>
           </p>
           {showStaff && row.staff?.display_name && (
             <p className="flex items-center gap-1.5 text-xs font-semibold">

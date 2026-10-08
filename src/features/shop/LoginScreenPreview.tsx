@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
-import { ArrowRight, Eye, LockKeyhole, Mail, Scissors } from "lucide-react";
+import { ArrowRight, Eye, Lock, LockKeyhole, Mail, Scissors } from "lucide-react";
+import { GoogleMark } from "@/features/auth/entry";
 import {
   brandCornerClass,
   brandVariables,
@@ -112,15 +113,15 @@ export function LoginScreenPreview({
                 <p className="auth-brand-name min-w-0 truncate text-sm font-bold">{shopName}</p>
               </div>
             )}
-            <p className="auth-eyebrow text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
-              {t("auth.eyebrow.signin")}
-            </p>
-            <h3 className="mt-2 text-2xl font-extrabold tracking-tight text-foreground">
+            {/* Igual ao /auth atual: só o título (sem sobretítulo nem subtítulo). */}
+            <h3 className="auth-title text-[1.6rem] font-bold leading-[1.05] tracking-tight text-foreground">
               {t("auth.title.signin")}
             </h3>
-            <p className="mt-1.5 text-sm text-muted-foreground">{t("auth.subtitle.signin")}</p>
+          </div>
+
+          <div className="auth-form-body space-y-4 px-6 pb-8 pt-5 sm:px-8">
             <div
-              className="auth-mode-tabs auth-brand-control mt-5 grid grid-cols-2 gap-1 bg-muted/70 p-1"
+              className="auth-mode-tabs auth-brand-control grid grid-cols-2 gap-1 bg-muted/70 p-1"
               role="presentation"
             >
               <span className="auth-brand-button flex min-h-11 items-center justify-center bg-card text-sm font-semibold text-foreground shadow-sm">
@@ -130,9 +131,6 @@ export function LoginScreenPreview({
                 {t("auth.tab.signup")}
               </span>
             </div>
-          </div>
-
-          <div className="auth-form-body space-y-4 px-6 pb-8 pt-5 sm:px-8">
             <label className="block space-y-2 text-sm font-semibold text-foreground/85">
               <span>{t("auth.field.email")}</span>
               <span className="auth-input-wrap auth-brand-control flex min-h-[3.25rem] items-center border border-border/70">
@@ -142,31 +140,44 @@ export function LoginScreenPreview({
                 </span>
               </span>
             </label>
-            <div className="space-y-1">
-              <label className="block space-y-2 text-sm font-semibold text-foreground/85">
+            <div className="block space-y-2 text-sm font-semibold text-foreground/85">
+              {/* "Esqueci a senha" na linha do rótulo, como no /auth. */}
+              <span className="flex items-end justify-between gap-2">
                 <span>{t("auth.field.password")}</span>
-                <span className="auth-input-wrap auth-brand-control flex min-h-[3.25rem] items-center border border-border/70">
-                  <LockKeyhole className="ml-4 size-[18px] shrink-0 text-muted-foreground" />
-                  <span className="min-w-0 flex-1 px-3 text-[15px] text-muted-foreground/70">
-                    ••••••••
-                  </span>
-                  <span className="auth-brand-button mr-1.5 flex size-11 items-center justify-center text-muted-foreground">
-                    <Eye className="size-[18px]" />
-                  </span>
+                <span className="text-xs font-semibold text-primary">{t("auth.forgot")}</span>
+              </span>
+              <span className="auth-input-wrap auth-brand-control flex min-h-[3.25rem] items-center border border-border/70">
+                <LockKeyhole className="ml-4 size-[18px] shrink-0 text-muted-foreground" />
+                <span className="min-w-0 flex-1 px-3 text-[15px] text-muted-foreground/70">
+                  {t("entry.signin.passwordPlaceholder")}
                 </span>
-              </label>
-              <div className="auth-forgot-password">
-                <span className="inline-flex min-h-9 items-center px-1 text-xs font-semibold text-primary">
-                  {t("auth.forgot")}
+                <span className="auth-brand-button mr-1.5 flex size-11 items-center justify-center text-muted-foreground">
+                  <Eye className="size-[18px]" />
                 </span>
-              </div>
+              </span>
             </div>
             <span className="auth-primary-action auth-brand-button mt-1 flex min-h-[3.25rem] w-full items-center justify-center gap-2 bg-primary px-4 text-[15px] font-semibold text-primary-foreground">
               {t("auth.submit.signin")}
               <ArrowRight className="size-4" />
             </span>
-            <p className="auth-panel-footer text-center text-[11px] text-muted-foreground">
-              {t("auth.protected")} · {t("brand.preview.tag")}
+            <span className="flex items-center gap-3 text-xs font-medium text-muted-foreground">
+              <span className="h-px flex-1 bg-border" />
+              <span>{t("auth.orContinue")}</span>
+              <span className="h-px flex-1 bg-border" />
+            </span>
+            <span className="auth-brand-button auth-google-action flex min-h-[3.25rem] w-full items-center justify-center gap-3 border border-border/70 px-3 text-[15px] font-semibold text-foreground">
+              <GoogleMark />
+              {t("auth.google")}
+            </span>
+            <p className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
+              <Lock className="mt-0.5 size-3.5 shrink-0 text-gold" />
+              <span className="min-w-0">
+                {t("auth.terms.before")}{" "}
+                <strong className="font-semibold text-foreground">{t("auth.terms.link")}</strong>{" "}
+                {t("auth.terms.and")}{" "}
+                <strong className="font-semibold text-foreground">{t("auth.privacy.link")}</strong>{" "}
+                {t("cad.cliente.terms.age")}
+              </span>
             </p>
           </div>
         </div>

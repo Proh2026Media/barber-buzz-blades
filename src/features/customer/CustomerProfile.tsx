@@ -71,7 +71,10 @@ export function CustomerProfile({
   children,
   shops = [],
   currentShopId = null,
+  focusWhatsapp = false,
 }: {
+  /** Aberta pelo link "Número errado?" da entrada: rola e foca o cartão do WhatsApp. */
+  focusWhatsapp?: boolean;
   onSaved?: (name: string) => void;
   /** "Seu ritmo": exibido logo depois do WhatsApp, num cartão próprio. */
   children?: ReactNode;
@@ -110,6 +113,14 @@ export function CustomerProfile({
     returnNameFocus.current = true;
     setEditingName(false);
   }
+
+  // Link "Número errado?": assim que o cartão do WhatsApp aparece, ele vem para a tela com foco.
+  const whatsappFocused = useRef(false);
+  useEffect(() => {
+    if (!focusWhatsapp || loading || error || whatsappFocused.current) return;
+    whatsappFocused.current = true;
+    window.setTimeout(() => jumpTo(SECTION.whatsapp), 50);
+  }, [focusWhatsapp, loading, error]);
 
   // Só foca depois que o botão voltou à tela e saiu do "ocupado" (botão desativado não recebe foco).
   useEffect(() => {
@@ -508,7 +519,8 @@ export function CustomerProfile({
         >
           <div className="flex flex-wrap items-center gap-3">
             <IconTile icon={Languages} />
-            <div className="min-w-0 flex-1">
+            {/* Em 320 px o botão desce para a direita em vez de espremer o idioma atual. */}
+            <div className="min-w-0 flex-1 basis-28">
               <h3 id={`${uid}-language`} tabIndex={-1} className="text-base font-bold outline-none">
                 {t("language.title")}
               </h3>
@@ -519,7 +531,7 @@ export function CustomerProfile({
               aria-expanded={languageOpen}
               aria-controls={`${uid}-language-panel`}
               onClick={() => setLanguageOpen((open) => !open)}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-border px-3 text-sm font-semibold transition hover:border-primary/40"
+              className="ml-auto inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-border px-3 text-sm font-semibold transition hover:border-primary/40"
             >
               {languageOpen ? t("common.close") : t("conta.language.change")}
               <ChevronDown

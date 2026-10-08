@@ -1,6 +1,7 @@
 import { createFileRoute, Link, redirect, notFound } from "@tanstack/react-router";
 import { CalendarSearch, UserX, Users } from "lucide-react";
 import { EmptyState, LoadingState } from "@/components/visual";
+import { NotFoundPage } from "@/components/NotFoundPage";
 import { useI18n } from "@/lib/i18n";
 import { resolveShopFromCurrentHost } from "@/lib/shop/host";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,6 +61,9 @@ export const Route = createFileRoute("/$barberSlug")({
   },
   pendingComponent: BarberLinkOpening,
   component: BarberLinkMissing,
+  // A 404 desta rota fica nela mesma: a rota é só do navegador (ssr: false), e a 404 da raiz,
+  // desenhada já na hidratação, não batia com o HTML do servidor (aviso de hidratação).
+  notFoundComponent: NotFoundPage,
 });
 
 function BarberLinkOpening() {

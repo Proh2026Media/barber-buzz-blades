@@ -84,7 +84,8 @@ export function NextVisitCard({
   const header = (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
       <IconTile icon={CalendarClock} size="sm" />
-      <h2 id="next-visit-title" className="min-w-0 flex-1 text-base font-bold">
+      {/* basis: em 320 px o selo desce em vez de quebrar o título em três linhas. */}
+      <h2 id="next-visit-title" className="min-w-0 flex-1 basis-36 text-base font-bold">
         {t("home.nextTitle")}
       </h2>
       {visit && !loading && !error && <VisitStatus status={visit.status} />}
@@ -226,7 +227,7 @@ export function NextVisitCard({
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2">
           <FooterButton icon={ChevronRight} trailing onClick={onDetails}>
             {t("home.details")}
           </FooterButton>

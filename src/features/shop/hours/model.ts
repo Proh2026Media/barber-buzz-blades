@@ -255,3 +255,95 @@ export function blockSpanOn(block: PlacedBlock, dayKey: string): TimeSpan | null
   const end = block.endKey === dayKey ? block.endMinute : 1440;
   return clampSpan({ start, end }, { start: 0, end: 1440 });
 }
+
+/** Bloqueio pedido aos sócios, como foi enviado (instantes em ISO). */
+export type RequestedBlock = {
+  requestId: string;
+  staffId: string | null;
+  startsAt: string;
+  endsAt: string;
+  reason: string | null;
+};
+
+/** O que está "Aguardando aprovação" na aba Horários, lido dos pedidos pendentes da loja. */
+export type PendingHours = {
+  /** Semana pedida mais recente (`null` = nenhum pedido de funcionamento). */
+  week: HoursRow[] | null;
+  /** A semana pedida foi enviada por outra pessoa (quem vê decide, não esperou o próprio pedido). */
+  weekByOther: boolean;
+  creates: RequestedBlock[];
+  /** Bloqueios cuja remoção foi pedida. */
+  deletes: string[];
+};
+
+const text = (value: unknown) => (typeof value === "string" && value.trim() ? value : null);
+
+/**
+ * Lê a lista de `list_pending_shop_changes` (mais recente primeiro) e separa o que é da aba
+ * Horários: `hours.replace`, `availability.create` e `availability.delete`. Ignora o resto e
+ * qualquer linha malformada. Com `userId`, marca se a semana pedida é de outra pessoa
+ * (`requested_by`), para a aba não dizer "Pedido enviado" a quem só vai decidir.
+ */
+export function pendingHoursRequests(rows: unknown, userId?: string | null): PendingHours {
+  const result: PendingHours = { week: null, weekByOther: false, creates: [], deletes: [] };
+  if (!Array.isArray(rows)) return result;
+  for (const row of rows) {
+    if (!row || typeof row !== "object") continue;
+    const { id, kind, payload, status, requested_by } = row as Record<string, unknown>;
+    if (status && status !== "pending") continue;
+    if (!payload || typeof payload !== "object") continue;
+    const data = payload as Record<string, unknown>;
+    if (kind === "hours.replace" && !result.week && Array.isArray(data.hours)) {
+      const week = data.hours.flatMap((item): HoursRow[] => {
+        if (!item || typeof item !== "object") return [];
+        const day = item as Record<string, unknown>;
+        const weekday = Number(day.weekday);
+        const opens = text(day.opens_at);
+        const closes = text(day.closes_at);
+        if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6 || !opens || !closes) {
+          return [];
+        }
+        return [{ weekday, is_open: day.is_open === true, opens_at: opens, closes_at: closes }];
+      });
+      if (week.length) {
+        result.week = week;
+        result.weekByOther = !!userId && !!text(requested_by) && requested_by !== userId;
+      }
+    } else if (kind === "availability.create") {
+      const startsAt = text(data.starts_at);
+      const endsAt = text(data.ends_at);
+      if (!startsAt || !endsAt) continue;
+      result.creates.push({
+        requestId: String(id ?? `${startsAt}-${endsAt}`),
+        staffId: text(data.staff_id),
+        startsAt,
+        endsAt,
+        reason: text(data.reason),
+      });
+    } else if (kind === "availability.delete") {
+      const blockId = text(data.id);
+      if (blockId && !result.deletes.includes(blockId)) result.deletes.push(blockId);
+    }
+  }
+  return result;
+}
+
+/**
+ * Semana pedida sobre a gravada: o pedido pode trazer só alguns dias. `null` quando o pedido já
+ * é igual ao gravado (nada a mostrar tracejado).
+ */
+export function requestedWeek<Row extends HoursRow>(requested: HoursRow[], saved: Row[]) {
+  const byDay = new Map(requested.map((row) => [row.weekday, row]));
+  const merged = saved.map((row) => {
+    const wanted = byDay.get(row.weekday);
+    return wanted
+      ? {
+          ...row,
+          is_open: wanted.is_open,
+          opens_at: wanted.opens_at,
+          closes_at: wanted.closes_at,
+        }
+      : row;
+  });
+  return sameWeek(merged, saved) ? null : merged;
+}

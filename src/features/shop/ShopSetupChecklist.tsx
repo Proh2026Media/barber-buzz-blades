@@ -92,9 +92,10 @@ function sameColor(value: string | null | undefined, fallback: string) {
   return (value ?? fallback).trim().toUpperCase() === fallback.toUpperCase();
 }
 
-type Step = {
-  id: "hours" | "service" | "contact" | "brand" | "link";
-  done: boolean;
+export type SetupStepId = "hours" | "service" | "contact" | "brand" | "link";
+
+type StepMeta = {
+  id: SetupStepId;
   icon: LucideIcon;
   /** Nome curto na faixa de etapas. */
   short: MessageKey;
@@ -102,18 +103,145 @@ type Step = {
   hint: MessageKey;
   /** Botão com verbo completo ("Adicionar endereço e WhatsApp"). */
   action: MessageKey;
-  onAction: () => void;
+  /** Para onde o passo leva (o "link" compartilha ali mesmo, no guia). */
+  target: SetupTarget | null;
 };
 
+type Step = StepMeta & { done: boolean; onAction: () => void };
+
+/** Os cinco passos do guia, na ordem em que aparecem. */
+const STEP_META: StepMeta[] = [
+  {
+    id: "hours",
+    icon: Clock3,
+    short: "eq.guide.step.hours",
+    title: "cad.guia.hoursTitle",
+    hint: "cad.guia.hoursHint",
+    action: "eq.guide.action.hours",
+    target: "horarios",
+  },
+  {
+    id: "service",
+    icon: Scissors,
+    short: "eq.guide.step.service",
+    title: "cad.guia.serviceTitle",
+    hint: "cad.guia.serviceHint",
+    action: "cad.guia.serviceAction",
+    target: "servicos",
+  },
+  {
+    id: "contact",
+    icon: MapPin,
+    short: "eq.guide.step.contact",
+    title: "cad.guia.contactTitle",
+    hint: "cad.guia.contactHint",
+    action: "eq.guide.action.contact",
+    target: "landing",
+  },
+  {
+    id: "brand",
+    icon: Palette,
+    short: "eq.guide.step.brand",
+    title: "cad.guia.brandTitle",
+    hint: "cad.guia.brandHint",
+    action: "eq.guide.action.brand",
+    target: "brand",
+  },
+  {
+    id: "link",
+    icon: Share2,
+    short: "eq.guide.step.link",
+    title: "eq.guide.linkTitle",
+    hint: "eq.guide.linkHint",
+    action: "eq.guide.action.link",
+    target: null,
+  },
+];
+
+type SetupData = {
+  services: Tables<"services">[];
+  businessHours: Tables<"business_hours">[];
+  settings: Tables<"barbershop_settings">;
+};
+
+/** Quais passos já estão feitos, a partir dos dados do painel e do que ficou no aparelho. */
+function stepsDone(
+  { services, businessHours, settings }: SetupData,
+  stored: StoredState,
+): Record<SetupStepId, boolean> {
+  const landing = parseLandingConfig(settings.landing);
+  return {
+    hours: !!stored.hoursOk || hoursWereEdited(businessHours),
+    service: services.some((service) => service.active),
+    contact: landing.address.trim() !== "" && landing.whatsapp.trim() !== "",
+    brand:
+      !!settings.logo_url ||
+      !sameColor(settings.primary_color, DEFAULT_PRIMARY_COLOR) ||
+      !sameColor(settings.accent_color, DEFAULT_ACCENT_COLOR),
+    link: !!stored.linkCopied,
+  };
+}
+
+export type ShopSetupProgress = {
+  done: number;
+  total: number;
+  /** Próximo passo em aberto (`null` = tudo pronto). */
+  next: Omit<StepMeta, "title" | "hint"> | null;
+  /** O guia foi escondido nesta loja, neste aparelho. */
+  hidden: boolean;
+};
+
+/**
+ * Progresso do guia "Deixe sua barbearia pronta" para mostrar fora da Agenda (menu de Ajustes):
+ * os mesmos passos e a mesma conta do guia. `null` até ler o aparelho ou sem dados da loja.
+ */
+export function useShopSetupProgress(
+  input: (SetupData & { shopId: string }) | null,
+): ShopSetupProgress | null {
+  const shopId = input?.shopId ?? null;
+  const [stored, setStored] = useState<StoredState | null>(null);
+
+  useEffect(() => {
+    if (!shopId) return;
+    setStored(readStored(shopId));
+    const onShow = (event: Event) => {
+      if ((event as CustomEvent<string>).detail === shopId) setStored(readStored(shopId));
+    };
+    window.addEventListener(SHOW_EVENT, onShow);
+    return () => window.removeEventListener(SHOW_EVENT, onShow);
+  }, [shopId]);
+
+  if (!input || !stored) return null;
+  const done = stepsDone(input, stored);
+  const next = STEP_META.find((step) => !done[step.id]) ?? null;
+  return {
+    done: STEP_META.filter((step) => done[step.id]).length,
+    total: STEP_META.length,
+    next,
+    hidden: !!stored.hidden,
+  };
+}
+
 /** Anel de progresso "2/5" (sem percentual inventado). */
-function ProgressRing({ done, total, label }: { done: number; total: number; label: string }) {
+export function ProgressRing({
+  done,
+  total,
+  label,
+  size = "md",
+}: {
+  done: number;
+  total: number;
+  label: string;
+  /** `sm` = 44 px, para listas (menu de Ajustes). */
+  size?: "sm" | "md";
+}) {
   const radius = 20;
   const length = 2 * Math.PI * radius;
   return (
     <span
       role="img"
       aria-label={label}
-      className="relative grid size-14 shrink-0 place-items-center"
+      className={`relative grid shrink-0 place-items-center ${size === "sm" ? "size-11" : "size-14"}`}
     >
       <svg viewBox="0 0 48 48" className="absolute inset-0 size-full -rotate-90" aria-hidden>
         <circle cx="24" cy="24" r={radius} fill="none" strokeWidth="5" className="stroke-muted" />
@@ -129,7 +257,10 @@ function ProgressRing({ done, total, label }: { done: number; total: number; lab
           strokeDashoffset={length * (1 - done / total)}
         />
       </svg>
-      <span className="text-sm font-extrabold tabular-nums" aria-hidden>
+      <span
+        className={`font-extrabold tabular-nums ${size === "sm" ? "text-xs" : "text-sm"}`}
+        aria-hidden
+      >
         {done}/{total}
       </span>
     </span>
@@ -210,62 +341,12 @@ export function ShopSetupChecklist({
     });
   }
 
-  const landing = parseLandingConfig(settings.landing);
-  const steps: Step[] = [
-    {
-      id: "hours",
-      done: !!stored.hoursOk || hoursWereEdited(businessHours),
-      icon: Clock3,
-      short: "eq.guide.step.hours",
-      title: "cad.guia.hoursTitle",
-      hint: "cad.guia.hoursHint",
-      action: "eq.guide.action.hours",
-      onAction: () => onOpen("horarios"),
-    },
-    {
-      id: "service",
-      done: services.some((service) => service.active),
-      icon: Scissors,
-      short: "eq.guide.step.service",
-      title: "cad.guia.serviceTitle",
-      hint: "cad.guia.serviceHint",
-      action: "cad.guia.serviceAction",
-      onAction: () => onOpen("servicos"),
-    },
-    {
-      id: "contact",
-      done: landing.address.trim() !== "" && landing.whatsapp.trim() !== "",
-      icon: MapPin,
-      short: "eq.guide.step.contact",
-      title: "cad.guia.contactTitle",
-      hint: "cad.guia.contactHint",
-      action: "eq.guide.action.contact",
-      onAction: () => onOpen("landing"),
-    },
-    {
-      id: "brand",
-      done:
-        !!settings.logo_url ||
-        !sameColor(settings.primary_color, DEFAULT_PRIMARY_COLOR) ||
-        !sameColor(settings.accent_color, DEFAULT_ACCENT_COLOR),
-      icon: Palette,
-      short: "eq.guide.step.brand",
-      title: "cad.guia.brandTitle",
-      hint: "cad.guia.brandHint",
-      action: "eq.guide.action.brand",
-      onAction: () => onOpen("brand"),
-    },
-    {
-      id: "link",
-      done: !!stored.linkCopied,
-      icon: Share2,
-      short: "eq.guide.step.link",
-      title: "eq.guide.linkTitle",
-      hint: "eq.guide.linkHint",
-      action: "eq.guide.action.link",
-      onAction: () => void shareLink(),
-    },
-  ];
+  const done = stepsDone({ services, businessHours, settings }, stored);
+  const steps: Step[] = STEP_META.map((meta) => ({
+    ...meta,
+    done: done[meta.id],
+    onAction: () => (meta.target ? onOpen(meta.target) : void shareLink()),
+  }));
 
   const doneCount = steps.filter((step) => step.done).length;
   const complete = doneCount === steps.length;

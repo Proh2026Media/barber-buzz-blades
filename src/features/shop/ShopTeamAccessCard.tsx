@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import {
   BadgeCheck,
   CheckCircle2,
@@ -43,6 +43,7 @@ import { t as tNow, useI18n } from "@/lib/i18n";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { cn } from "@/lib/utils";
 import { FOUNDER_META, RoleBadge, formatPercent, isOwnerRole } from "./roles";
+import { TeamInviteContext } from "./team-invite";
 import {
   GovernanceModeBadge,
   OwnershipBar,
@@ -69,7 +70,6 @@ type ShopTeamAccessCardProps = {
 };
 
 type Outcome = { memberId: string | null; state: ActionState; text: string };
-
 const SHARE_OPTIONS = [10, 25, 40, 50];
 
 async function inviteMember(body: Record<string, unknown>) {
@@ -266,6 +266,20 @@ export function ShopTeamAccessCard({
     email: string;
     password: string | null;
   } | null>(null);
+  // Convite aberto pelo cartão de um profissional: hoje o servidor cria um cartão novo.
+  const [inviteFromCard, setInviteFromCard] = useState(false);
+
+  // Um só ponto zera o convite (aba Equipe e "Convidar outra" usam o mesmo).
+  const resetInvite = useCallback(() => {
+    setInviteEmail("");
+    setInviteName("");
+    setInviteRole(null);
+    setInviteShare(25);
+    setInviteError(null);
+    setInviteTouched(false);
+    setInviteDone(null);
+    setInviteFromCard(false);
+  }, []);
 
   const photoOf = useMemo(() => {
     const map = new Map((staff ?? []).map((row) => [row.id, row.avatar_url ?? null]));
@@ -296,6 +310,20 @@ export function ShopTeamAccessCard({
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Pedido da aba Equipe: abre o convite (com o nome do profissional, quando veio do cartão dele).
+  const inviteRequest = useContext(TeamInviteContext);
+  const pendingInvite = inviteRequest.request;
+  const clearInviteRequest = inviteRequest.clear;
+  useEffect(() => {
+    if (!pendingInvite) return;
+    clearInviteRequest();
+    if (!canEditSociety) return;
+    resetInvite();
+    setInviteName(pendingInvite.name ?? "");
+    setInviteFromCard(Boolean(pendingInvite.name));
+    setInviteOpen(true);
+  }, [pendingInvite, clearInviteRequest, canEditSociety, resetInvite]);
 
   function openManage(member: TeamMember) {
     setEditing(member);
@@ -397,16 +425,6 @@ export function ShopTeamAccessCard({
     await load();
     onChanged?.();
     setEditing((current) => (current ? { ...current, is_founder: true } : current));
-  }
-
-  function resetInvite() {
-    setInviteEmail("");
-    setInviteName("");
-    setInviteRole(null);
-    setInviteShare(25);
-    setInviteError(null);
-    setInviteTouched(false);
-    setInviteDone(null);
   }
 
   const emailOk = /^\S+@\S+\.\S+$/.test(inviteEmail.trim());
@@ -886,6 +904,11 @@ export function ShopTeamAccessCard({
                   />
                 )}
               </Field>
+              {inviteFromCard && (
+                <Notice tone="warning" icon={UserPlus} role="none" title={t("eq.invite.newCard")}>
+                  {t("eq.invite.newCardHint")}
+                </Notice>
+              )}
               <ChoiceCards
                 legend={t("eq.invite.roleQuestion")}
                 showLegend

@@ -1,5 +1,5 @@
 import { Check, Copy, ExternalLink, Eye, EyeOff, Share2 } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { Fragment, useEffect, useId, useRef, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { announce } from "./announce";
@@ -12,7 +12,9 @@ const BUTTON =
 /**
  * Valor para copiar ou enviar: link da loja, link do profissional, senha temporária, código.
  * Mostra o valor legível; "Copiar" vira "✓ Copiado" por 2 s; "Enviar" abre o compartilhamento do
- * celular (só aparece onde existe); "Abrir" para links. Em `secret`, o valor começa escondido.
+ * celular (só aparece onde existe e com `share`); "Abrir" para links. Em `secret`, o valor começa
+ * escondido. Endereços longos quebram só depois de "/", ".", "-" etc., nunca no meio de uma
+ * palavra ("carla-o / liveira").
  */
 export function CopyField({
   value,
@@ -22,6 +24,7 @@ export function CopyField({
   href,
   shareTitle,
   mono,
+  share: shareEnabled = true,
   className,
 }: {
   /** O que vai para a área de transferência. */
@@ -37,6 +40,11 @@ export function CopyField({
   shareTitle?: string;
   /** Fonte monoespaçada só no valor (códigos e senhas). */
   mono?: boolean;
+  /**
+   * Mostra "Enviar" (compartilhar do celular). `false` em valores técnicos que só se copiam
+   * (registro de DNS, por exemplo).
+   */
+  share?: boolean;
   className?: string;
 }) {
   const { t } = useI18n();
@@ -92,11 +100,12 @@ export function CopyField({
       >
         <span
           className={cn(
-            "min-w-0 flex-1 basis-40 break-all px-1 text-sm font-semibold",
+            // Quebra nos pontos naturais (<wbr>); `anywhere` só corta um trecho maior que a linha.
+            "min-w-0 flex-1 basis-40 px-1 text-sm font-semibold [overflow-wrap:anywhere]",
             mono && "font-mono tracking-wide",
           )}
         >
-          {shown ? shownText : "••••••••"}
+          {shown ? breakable(shownText) : "••••••••"}
         </span>
         <span className="flex min-w-0 flex-wrap gap-1.5">
           {secret && (
@@ -117,7 +126,7 @@ export function CopyField({
             )}
             {copied ? t("visual.copied") : t("visual.copy")}
           </button>
-          {canShare && (
+          {canShare && shareEnabled && (
             <button type="button" onClick={() => void share()} className={BUTTON}>
               <Share2 className="size-4" aria-hidden />
               {t("visual.share")}
@@ -134,4 +143,29 @@ export function CopyField({
       {failed && <FieldMessage tone="error">{t("visual.copyError")}</FieldMessage>}
     </div>
   );
+}
+
+/** Pontos onde um endereço ou código pode quebrar de linha sem partir uma palavra. */
+const BREAK_AFTER = /[./\-_?&=#@:]/;
+
+/**
+ * Põe um <wbr> (quebra opcional, invisível e fora da cópia) depois de cada "/", ".", "-"…:
+ * "arena-barber.beauty.com/carla-oliveira" quebra em "…beauty.com/" + "carla-oliveira".
+ */
+function breakable(text: string) {
+  const parts: string[] = [];
+  let start = 0;
+  for (let index = 0; index < text.length; index += 1) {
+    if (BREAK_AFTER.test(text[index]) && index < text.length - 1) {
+      parts.push(text.slice(start, index + 1));
+      start = index + 1;
+    }
+  }
+  parts.push(text.slice(start));
+  return parts.map((part, index) => (
+    <Fragment key={index}>
+      {index > 0 && <wbr />}
+      {part}
+    </Fragment>
+  ));
 }

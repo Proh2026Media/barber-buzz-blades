@@ -235,3 +235,30 @@ export function moneyOf<T extends TimedRow>(rows: T[], price: (row: T) => number
   }
   return { done, expected };
 }
+
+export type Placed<T> = { item: T; at: number; end: number; lane: number; lanes: number };
+
+/** Atendimentos que se sobrepõem no mesmo profissional dividem a largura da coluna. */
+export function placeInLanes<T>(items: Array<{ item: T; at: number; end: number }>): Placed<T>[] {
+  const sorted = [...items].sort((a, b) => a.at - b.at || b.end - a.end);
+  const placed: Placed<T>[] = [];
+  let cluster: Placed<T>[] = [];
+  let clusterEnd = -Infinity;
+  const close = () => {
+    const lanes = Math.max(1, ...cluster.map((entry) => entry.lane + 1));
+    for (const entry of cluster) entry.lanes = lanes;
+    cluster = [];
+  };
+  for (const current of sorted) {
+    if (current.at >= clusterEnd && cluster.length) close();
+    const used = new Set(cluster.filter((entry) => entry.end > current.at).map((e) => e.lane));
+    let lane = 0;
+    while (used.has(lane)) lane += 1;
+    const entry = { ...current, lane, lanes: 1 };
+    cluster.push(entry);
+    placed.push(entry);
+    clusterEnd = Math.max(clusterEnd, current.end);
+  }
+  if (cluster.length) close();
+  return placed;
+}

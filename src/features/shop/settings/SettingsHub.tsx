@@ -15,6 +15,7 @@ import {
   Monitor,
   Moon,
   Palette,
+  QrCode,
   Smartphone,
   Sun,
   Users,
@@ -41,7 +42,13 @@ import {
 } from "@/lib/shop/branding";
 import { SLOT_STEP_MINUTES, slotRuleFromSettings } from "@/lib/shop/appointments";
 import { useThemePreference } from "@/lib/use-theme-preference";
-import { isShopSetupGuideHidden, showShopSetupGuide } from "../ShopSetupChecklist";
+import {
+  ProgressRing,
+  isShopSetupGuideHidden,
+  showShopSetupGuide,
+  useShopSetupProgress,
+  type SetupTarget,
+} from "../ShopSetupChecklist";
 import { ColorDots, LogoChip, PageStatusBadge } from "./brand-bits";
 import { DOMAIN_BADGE, type DomainStatus } from "./domain-status";
 import type { SettingsSection } from "./section";
@@ -129,6 +136,7 @@ export function SettingsHub({
   renderSection,
   setupGuideShopId,
   onSetupGuideShown,
+  setupGuide,
   overview,
 }: {
   sections: SettingsSection[];
@@ -142,6 +150,16 @@ export function SettingsHub({
   setupGuideShopId?: string;
   /** Chamado depois de reexibir o guia, para levar a pessoa à Agenda. */
   onSetupGuideShown?: () => void;
+  /**
+   * Progresso do guia "Deixe sua barbearia pronta" em "Precisa da sua atenção" (anel "3/5" e o
+   * próximo passo, com um botão que leva direto a ele). Só para quem vê o guia na Agenda.
+   */
+  setupGuide?: {
+    shopId: string;
+    services: Tables<"services">[];
+    businessHours: Tables<"business_hours">[];
+    onOpenStep: (target: SetupTarget) => void;
+  };
   /** Dados para o resumo vivo de cada item e para "Precisa da sua atenção". */
   overview?: SettingsOverview;
 }) {
@@ -149,6 +167,17 @@ export function SettingsHub({
   const themePreference = useThemePreference();
   const current = section && sections.includes(section) ? section : null;
   const [guideHidden, setGuideHidden] = useState(false);
+  const setupSettings = overview?.settings ?? null;
+  const setup = useShopSetupProgress(
+    setupGuide && setupSettings
+      ? {
+          shopId: setupGuide.shopId,
+          services: setupGuide.services,
+          businessHours: setupGuide.businessHours,
+          settings: setupSettings,
+        }
+      : null,
+  );
 
   // Lê depois de montar (o estado fica no aparelho) para não divergir do HTML do servidor.
   useEffect(() => {
@@ -355,6 +384,49 @@ export function SettingsHub({
         onClick: () => onSectionChange("avisos"),
       },
     });
+  } else if (sections.includes("avisos") && whatsapp === "waitingQr") {
+    // Começou a conectar e o QR não foi lido: as mensagens ainda não saem.
+    attention.push({
+      id: "whatsapp-waiting",
+      tone: CONNECTION_META.waitingQr.tone,
+      icon: CONNECTION_META.waitingQr.icon,
+      // Mesmo nome do selo da linha "Avisos" (um estado, um rótulo).
+      title: t("settingsHub.summary.whatsapp", { state: t(CONNECTION_META.waitingQr.label) }),
+      description: t("settingsHub.attention.whatsappWaitingHint"),
+      action: {
+        label: t("settingsHub.attention.finishConnection"),
+        icon: QrCode,
+        onClick: () => onSectionChange("avisos"),
+      },
+    });
+  }
+  // Guia "Deixe sua barbearia pronta": o anel "3/5" e o próximo passo, com o botão que leva lá.
+  if (setupGuide && setup?.next && !setup.hidden) {
+    const next = setup.next;
+    attention.push({
+      id: "setup-guide",
+      tone: "info",
+      icon: ListChecks,
+      title: t("cad.guia.title"),
+      description: t("eq.guide.nextShort", { step: t(next.short) }),
+      aside: (
+        <ProgressRing
+          size="sm"
+          done={setup.done}
+          total={setup.total}
+          label={t("cad.guia.progress", { done: setup.done, total: setup.total })}
+        />
+      ),
+      action: {
+        label: t(next.action),
+        icon: next.icon,
+        onClick: () => {
+          if (next.target) setupGuide.onOpenStep(next.target);
+          // "Divulgar" compartilha pelo próprio guia, na Agenda.
+          else onSetupGuideShown?.();
+        },
+      },
+    });
   }
   if (sections.includes("equipe") && decisions > 0) {
     attention.push({
@@ -396,12 +468,15 @@ export function SettingsHub({
   return (
     <div className="space-y-4">
       <AttentionList items={attention} headingLevel="h3" />
-      <div className="grid items-start gap-4 md:grid-cols-2">
+      {/* minmax(0,1fr): um link longo (truncado) não alarga a coluna a 320 px. No computador,
+          duas colunas independentes: cada grupo se empilha logo abaixo do anterior, sem o buraco
+          que a grade deixava ao lado de um grupo curto. */}
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 md:block md:columns-2 md:gap-4">
         {groups.map((group) => (
           <section
             key={group.id}
             aria-labelledby={`ajustes-grupo-${group.id}`}
-            className="app-action-card px-2 py-2"
+            className="app-action-card min-w-0 break-inside-avoid px-2 py-2 md:mb-4"
           >
             <h3
               id={`ajustes-grupo-${group.id}`}
@@ -464,7 +539,22 @@ export function SettingsHub({
           <SettingRow
             icon={ListChecks}
             title={t("cad.guia.showAgain")}
-            description={t("cad.guia.showAgainHint")}
+            description={setup?.next ? undefined : t("cad.guia.showAgainHint")}
+            summary={
+              setup?.next ? (
+                <>
+                  <Tag icon={ListChecks}>
+                    {t("cad.guia.progress", { done: setup.done, total: setup.total })}
+                  </Tag>
+                  <StatusBadge
+                    tone="info"
+                    icon={setup.next.icon}
+                    size="sm"
+                    label={t("eq.guide.nextShort", { step: t(setup.next.short) })}
+                  />
+                </>
+              ) : undefined
+            }
             onClick={showGuide}
           />
         </div>

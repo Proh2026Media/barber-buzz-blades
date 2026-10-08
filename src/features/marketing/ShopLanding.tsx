@@ -498,6 +498,7 @@ export function ShopLandingView({
             signedIn={signedIn}
             showToday={showToday}
             next={nextSlot}
+            day={today.date || undefined}
             freeCount={freeStaff.length}
             dayState={anyOnline ? dayState : null}
             nextDayLabel={nextDayLabel}
@@ -589,6 +590,7 @@ export function ShopLandingView({
                           slug={shop.slug}
                           preview={preview}
                           signedIn={signedIn}
+                          day={today.date || undefined}
                         />
                       )}
                       {bookable && (

@@ -3,7 +3,8 @@ import { createContext, useCallback, useContext, useRef, useSyncExternalStore } 
 /**
  * Memória da aba Horários por barbearia: o painel desmonta a aba a cada troca, então o que ainda
  * não foi salvo (semana em edição, pedidos enviados aos sócios) fica aqui, fora da aba. Quem vai à
- * Agenda conferir algo e volta encontra a semana como deixou. Some ao recarregar a página.
+ * Agenda conferir algo e volta encontra a semana como deixou. O rascunho some ao recarregar a
+ * página; os pedidos aos sócios voltam da lista de pendentes do servidor (`usePendingHours`).
  */
 const store = new Map<string, unknown>();
 const listeners = new Set<() => void>();

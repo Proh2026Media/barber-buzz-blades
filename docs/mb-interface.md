@@ -340,6 +340,7 @@ Regras de uso:
 - **Cores**: nunca escrever cor de estado à mão (`bg-emerald-50`, `text-amber-900`…). Os tons vêm das variáveis `--tone-*` de `src/styles.css` (bloco "Tons de estado"), que já resolvem tema claro, escuro e cartão off-white com contraste AA.
 - **Cantos**: os componentes usam `rounded-xl`/`rounded-2xl` e `var(--button-radius)`, então seguem Retos, Semi e Arredondados sozinhos. Círculos ficam só onde são forma funcional (avatar, marcador de etapa, bolha de contagem, anel de prazo).
 - **Toque e teclado**: tudo que é clicável tem 44 px ou mais; escolhas usam papéis de rádio/caixa (setas trocam a opção); foco visível em dourado.
+  - Exceção aceita: o calendário do `DatePicker` (`src/components/ui/schedule-picker.tsx`) abaixo de 360 px. Sete colunas de 44 px não cabem com a margem de 16 px, então os dias ficam com cerca de 40 px de largura a 320 px (altura de 44 px mantida, acima dos 24 px do WCAG 2.5.8), sem cortar o sábado nem a seta.
 - Componentes de domínio (selo de nível do clube, selo de papel, faixa de dias, ticket da reserva, campo de código, barra do dia) ficam na área dona, montados sobre estes. Exemplo: um `RoleBadge` é um `StatusBadge` com o ícone e o rótulo do papel.
 
 **Tons de estado** (`Tone`): mesmo significado = mesma cor e mesmo ícone.
@@ -366,7 +367,7 @@ Estados prontos: `APPOINTMENT_STATUS` (situação do atendimento: a confirmar �
 - `ActionResult` — resultado de quem grava algo, logo abaixo do botão: `saving` (gira), `saved` (verde), `pending` (aguardando aprovação), `error` (vermelho, com "Tentar de novo"). Anuncia ao leitor de tela e rola até ele se estiver fora da vista. Ex.: `<ActionResult state={status} onRetry={salvar} autoHideMs={4000} />`.
 - `InlineStatus` — o mesmo, em linha, para quem grava na hora (interruptor): "Salvando…" → "✓ Salvo" → "Não salvou · Tentar de novo".
 - Avisos rápidos (`toast.success/error/warning/info` do sonner) já saem com ícone e faixa na cor do tipo; use-os só quando o botão saiu da tela ou a pessoa mudou de página.
-- `AttentionList` — "Precisa da sua atenção": itens ordenados por urgência, uma frase e **um** botão com verbo cada; some quando não há nada (ou mostra "Tudo em ordem" com `allClear`).
+- `AttentionList` — "Precisa da sua atenção": itens ordenados por urgência, uma frase e **um** botão com verbo cada; some quando não há nada (ou mostra "Tudo em ordem" com `allClear`). `secondaryAction` opcional põe uma saída discreta ao lado do botão (ex.: "Cancelar reserva" na remarcação pedida, "Desistir" da vaga liberada); sem espaço, ela desce para baixo do principal. As duas ações aceitam `disabled`.
 - `Countdown` — prazo correndo ("Restam 9 min", pílula ou anel), âmbar e vermelho no fim; nunca só "mm:ss".
 
 **Estrutura e números**
@@ -382,7 +383,8 @@ Estados prontos: `APPOINTMENT_STATUS` (situação do atendimento: a confirmar �
 
 - `ChoiceChips` — até ~6 opções à vista em pílulas de 44 px (escolha única = rádio; `multiple` = caixas), com nota ("Padrão"), ícone, foto, contagem, `scroll` para muitas opções e `other` ("Outro…" abre um campo numérico). Ex.: `<ChoiceChips icon={Clock3} label="De quanto em quanto tempo" options={…} value={step} onChange={setStep} />`.
 - `ChoiceCards` — cartões de escolha única com ícone, efeito em uma linha, exemplo dentro e ✓ à direita; `value={null}` para não pré-marcar escolha destrutiva.
-- `Steps` — etapas ligadas por linha (feita ✓, atual, a fazer, com problema), horizontal ou vertical; também para "como funciona" com ícones. `compact` mostra "Etapa 2 de 4 · Nome".
+- `Steps` — etapas ligadas por linha (feita ✓, atual, a fazer, com problema), horizontal ou vertical. `compact` mostra "Etapa 2 de 4 · Nome". `variant="static"` é o "como funciona" sem progresso (páginas públicas, regras, instruções): todos os passos na mesma tinta, com ícone ou número, sem ✓, sem etapa atual e sem o cinza de "a fazer" (que parece desativado); ali o `status` é dispensável. Não usar etapas "a fazer" cinzas para explicar um passo a passo.
+- `DatePicker` (`@/components/ui/schedule-picker`) — calendário de um dia. Opcionais: `closedDays` + `closedLabel` (dias fechados com número apagado e lua, como a faixa da semana), `todayLabel` + `todayKey` (hoje em anel dourado, diferente do dia escolhido, que é preenchido; `todayKey` no fuso da loja) e legenda automática. Sem essas opções, fica como antes. Em uso na Agenda e no Agendar do cliente.
 - `Timeline` — mini agenda ilustrada (já marcado, folga, livre, não cabe, bloqueado, fechado, aguardando), com altura pela duração. Mesmo código visual em Ajustes, Horários e Agenda.
 - `PreviewPanel` + `TimeChips` — moldura "Como fica na prática"/"Assim o cliente vê" (com etiqueta "Exemplo" ou "Prévia") e horários em pílulas.
 - `IconList` / `Hint` — frases curtas com ícone no lugar de parágrafos: dicas (ícone dourado) e consequências (✓ verde, ✕ vermelho, ⚠ laranja).
@@ -390,11 +392,11 @@ Estados prontos: `APPOINTMENT_STATUS` (situação do atendimento: a confirmar �
 
 **Ações, campos, vazio e carregando**
 
-- `ConfirmDialog` — decisão com o item afetado (`summary`), as consequências com ícone e dois botões com verbo + objeto ("Manter horário" / "Cancelar horário"); gira enquanto confirma e mostra o erro dentro da janela. Substitui `window.confirm`.
+- `ConfirmDialog` — decisão com o item afetado (`summary`), as consequências com ícone e dois botões com verbo + objeto ("Manter horário" / "Cancelar horário"); gira enquanto confirma e mostra o erro dentro da janela. Substitui `window.confirm`. O erro é lido na hora de mostrar: `errorText` (o resultado, "Nada foi apagado") e `errorDetail` (o motivo devolvido pela ação, guardado num estado antes de rejeitar) aparecem juntos num só aviso já na 1ª falha.
 - `MoreActions` — botão "⋯" com as ações secundárias: folha inferior no celular, menu no computador; destrutivas no fim, separadas.
 - `UnsavedBar` — barra fixa no pé do cartão quando há mudança não salva ("● 2 mudanças não salvas · Descartar · Salvar mudanças"), com o resultado embutido.
 - `Field` + `FieldMessage` — rótulo visível, dica e erro junto do campo (borda vermelha pelo `aria-invalid`); `focusFirstInvalid(form)` leva ao primeiro erro ao enviar.
-- `CopyField` — link, senha temporária ou código: valor legível (sem "https://"), "Copiar" vira "✓ Copiado", "Enviar" abre o compartilhamento do celular.
+- `CopyField` — link, senha temporária ou código: valor legível (sem "https://"), "Copiar" vira "✓ Copiado", "Enviar" abre o compartilhamento do celular. Endereços longos quebram só depois de "/", ".", "-" etc. (nunca "carla-o / liveira"); não é preciso montar `display` com espaços invisíveis. `share={false}` esconde "Enviar" em valores técnicos que só se copiam (registros de DNS do domínio próprio).
 - `EmptyState` — vazio sempre com título curto, uma linha e a próxima ação; ilustrações `calendar`, `scissors`, `bell`, `waiting`, `people`, `search`, `store`, `chart`, `connection`, `gift`; `status` troca a ilustração pelo ícone do estado ("Tudo em dia", "Não deu para carregar"); `variant="plain"` dentro de cartão.
 - `LoadingState` — esqueleto no formato do conteúdo (`cards`, `list`, `stats`, `lines`) com o verbo visível ("Buscando horários…"); se demorar, avisa e oferece "Tentar de novo". Substitui frases soltas "Carregando…".
 

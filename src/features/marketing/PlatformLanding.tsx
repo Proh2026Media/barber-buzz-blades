@@ -16,8 +16,7 @@ import {
 import type { ReactNode } from "react";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { IconTile, PersonAvatar, Tag, TimeChips } from "@/components/visual";
-import { HowSteps } from "@/features/marketing/HowSteps";
+import { IconTile, PersonAvatar, Steps, Tag, TimeChips } from "@/components/visual";
 import { TierBadge } from "@/features/loyalty/TierBadge";
 import { DEFAULT_TIERS, tierStyleKey } from "@/features/loyalty/program";
 import { useI18n } from "@/lib/i18n";
@@ -217,7 +216,8 @@ export function PlatformLanding() {
               </FeatureCard>
               <li className="public-card rounded-2xl border border-border p-4">
                 <p className="mb-3 text-sm font-bold">{t("landing.stepsTitle")}</p>
-                <HowSteps
+                <Steps
+                  variant="static"
                   orientation="vertical"
                   label={t("landing.stepsTitle")}
                   steps={[

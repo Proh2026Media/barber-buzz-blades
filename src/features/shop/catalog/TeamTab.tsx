@@ -1,13 +1,13 @@
 import {
   Ban,
   CalendarDays,
+  CalendarPlus,
   CalendarX2,
   Check,
   CheckCircle2,
   ChevronDown,
   Crown,
   EyeOff,
-  Handshake,
   Hourglass,
   KeyRound,
   Link2,
@@ -40,6 +40,8 @@ import { ServiceIcon } from "@/components/ui/service-icon";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { CatalogFilters, type CatalogStatus } from "../CatalogFilters";
+import { TeamInviteContext, type TeamInviteRequest } from "../team-invite";
+import { ROLE_META } from "../roles";
 import {
   readCatalogViewPreference,
   writeCatalogViewPreference,
@@ -111,6 +113,59 @@ function CopyLinkButton({ url, name }: { url: string; name: string }) {
   );
 }
 
+/**
+ * Duas formas de pôr alguém na equipe, lado a lado: só na agenda (cadastro do profissional) ou
+ * com acesso ao painel (convite por e-mail). O ícone e a linha curta mostram a diferença.
+ */
+function AddStaffChoices({ onAgenda, onPanel }: { onAgenda: () => void; onPanel: () => void }) {
+  const { t } = useI18n();
+  const choices = [
+    {
+      key: "agenda",
+      icon: CalendarPlus,
+      title: t("catalog.staff.addAgenda"),
+      hint: t("catalog.staff.addAgendaHint"),
+      onClick: onAgenda,
+      tone: "action-confirm",
+    },
+    {
+      key: "panel",
+      icon: KeyRound,
+      title: t("catalog.staff.addPanel"),
+      hint: t("catalog.staff.addPanelHint"),
+      onClick: onPanel,
+      tone: "action-edit",
+    },
+  ];
+  return (
+    <div
+      role="group"
+      aria-label={t("catalog.staff.addFirst")}
+      className="grid w-full grid-cols-2 gap-2 sm:max-w-xl"
+    >
+      {choices.map((choice) => (
+        <button
+          key={choice.key}
+          type="button"
+          onClick={choice.onClick}
+          className={cn(
+            "action-button min-h-[4.5rem] flex-col gap-1 px-2 py-2.5 text-center sm:flex-row sm:justify-start sm:gap-3 sm:px-3 sm:text-left",
+            choice.tone,
+          )}
+        >
+          <choice.icon className="!size-5" aria-hidden />
+          <span className="min-w-0">
+            <span className="block text-sm font-bold leading-tight">{choice.title}</span>
+            <span className="mt-0.5 block text-xs font-medium leading-tight opacity-85">
+              {choice.hint}
+            </span>
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /** Aba Equipe: quem atende, o dia de cada um, o que faz, o link e quem entra no painel. */
 export function TeamTab({
   shopId,
@@ -174,6 +229,24 @@ export function TeamTab({
   const [flashName, setFlashName] = useState<string | null>(null);
   const [flashId, setFlashId] = useState<string | null>(null);
   const [accessOpen, setAccessOpen] = useState(false);
+  const [inviteRequest, setInviteRequest] = useState<TeamInviteRequest | null>(null);
+  const inviteContext = useMemo(
+    () => ({ request: inviteRequest, clear: () => setInviteRequest(null) }),
+    [inviteRequest],
+  );
+
+  /** Abre "Acesso ao painel" e o convite (com o nome do profissional, se veio do cartão dele). */
+  function openInvite(name?: string) {
+    setAccessOpen(true);
+    setInviteRequest({ nonce: Date.now(), name });
+    window.setTimeout(
+      () =>
+        document
+          .getElementById("team-access")
+          ?.scrollIntoView({ block: "start", behavior: "smooth" }),
+      50,
+    );
+  }
 
   const visible = staff.filter(
     (row) =>
@@ -265,9 +338,21 @@ export function TeamTab({
       );
     if (row.role === "associate")
       return (
-        <StatusBadge tone="info" icon={Handshake} size="sm" label={t("catalog.role.associate")} />
+        <StatusBadge
+          tone={ROLE_META.associate.tone}
+          icon={ROLE_META.associate.icon}
+          size="sm"
+          label={t("catalog.role.associate")}
+        />
       );
-    return <StatusBadge tone="info" icon={Users} size="sm" label={t("catalog.role.employee")} />;
+    return (
+      <StatusBadge
+        tone={ROLE_META.employee.tone}
+        icon={ROLE_META.employee.icon}
+        size="sm"
+        label={t("catalog.role.employee")}
+      />
+    );
   }
 
   function dayLine(member: StaffRow) {
@@ -366,7 +451,7 @@ export function TeamTab({
       <div className="app-section-title">
         <Users />
         <h2>{t("shop.nav.team")}</h2>
-        {staff.length > 0 && (
+        {staff.length > 0 && !accessCard && (
           <button
             type="button"
             className="action-button action-confirm ml-auto"
@@ -377,6 +462,11 @@ export function TeamTab({
           </button>
         )}
       </div>
+
+      {/* Com convites liberados: "Só na agenda" ou "Com acesso ao painel", à vista. */}
+      {staff.length > 0 && accessCard && (
+        <AddStaffChoices onAgenda={() => openForm(null)} onPanel={() => openInvite()} />
+      )}
 
       {loadError && !loadFailedEmpty && (
         <Notice
@@ -397,6 +487,7 @@ export function TeamTab({
         label={t("shop.staff.search")}
         activeLabel={t("catalog.staff.filterActive")}
         pausedLabel={t("brand.catalog.paused")}
+        statusFirst
         viewMode={view}
         onViewMode={(next) => {
           setView(next);
@@ -424,14 +515,18 @@ export function TeamTab({
           title={t("catalog.staff.emptyTitle")}
           description={t("catalog.staff.emptyHint")}
           action={
-            <button
-              type="button"
-              className="action-button action-confirm"
-              onClick={() => openForm(null)}
-            >
-              <Plus className="size-4" aria-hidden />
-              {t("catalog.staff.addFirst")}
-            </button>
+            accessCard ? (
+              <AddStaffChoices onAgenda={() => openForm(null)} onPanel={() => openInvite()} />
+            ) : (
+              <button
+                type="button"
+                className="action-button action-confirm"
+                onClick={() => openForm(null)}
+              >
+                <Plus className="size-4" aria-hidden />
+                {t("catalog.staff.addFirst")}
+              </button>
+            )
           }
         />
       ) : visible.length === 0 ? (
@@ -494,16 +589,7 @@ export function TeamTab({
                       id: "invite",
                       label: t("catalog.staff.giveAccess"),
                       icon: UserPlus,
-                      onSelect: () => {
-                        setAccessOpen(true);
-                        window.setTimeout(
-                          () =>
-                            document
-                              .getElementById("team-access")
-                              ?.scrollIntoView({ block: "start", behavior: "smooth" }),
-                          50,
-                        );
-                      },
+                      onSelect: () => openInvite(member.display_name),
                     },
                   ]
                 : []),
@@ -657,7 +743,13 @@ export function TeamTab({
               aria-hidden
             />
           </button>
-          {accessOpen && <div className="border-t border-border p-3">{accessCard}</div>}
+          {accessOpen && (
+            <div className="border-t border-border p-3">
+              <TeamInviteContext.Provider value={inviteContext}>
+                {accessCard}
+              </TeamInviteContext.Provider>
+            </div>
+          )}
         </div>
       )}
 

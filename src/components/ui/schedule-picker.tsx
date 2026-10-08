@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { CalendarDays, Clock3, ChevronDown } from "lucide-react";
+import { CalendarDays, Clock3, ChevronDown, Moon } from "lucide-react";
 import { enGB, enUS, es, pt, ptBR } from "date-fns/locale";
-import { labelDayButton } from "react-day-picker";
-import { Calendar } from "./calendar";
+import { labelDayButton, type DayButtonProps } from "react-day-picker";
+import { Calendar, CalendarDayButton } from "./calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 import { dateFromLocalKey, localDateKey } from "@/lib/shop/appointments";
 import { useI18n, type Locale } from "@/lib/i18n";
@@ -24,6 +24,18 @@ type Props = {
   displayValue?: string;
 };
 
+/** Dia do calendário com a lua dos dias fechados (mesmo sinal da faixa da semana da Agenda). */
+function MarkedDayButton({ children, modifiers, ...props }: DayButtonProps) {
+  return (
+    <CalendarDayButton modifiers={modifiers} {...props}>
+      {children}
+      {modifiers.closed && <Moon aria-hidden className="size-2.5 shrink-0" />}
+    </CalendarDayButton>
+  );
+}
+
+const MARKED_DAY_COMPONENTS = { DayButton: MarkedDayButton };
+
 export function DatePicker({
   value,
   onChange,
@@ -34,9 +46,26 @@ export function DatePicker({
   compact = false,
   displayValue,
   dayMarks,
+  closedDays,
+  closedLabel,
+  todayLabel,
+  todayKey,
 }: Props & {
   min?: Date;
   max?: Date;
+  /**
+   * Dias em que a loja não abre: número esmaecido (contraste AA) com uma lua embaixo e, com
+   * `closedLabel`, legenda e nome do dia para leitor de tela. O dia continua tocável.
+   */
+  closedDays?: (date: Date) => boolean;
+  closedLabel?: string;
+  /**
+   * Com um texto ("Hoje"), hoje ganha anel dourado — diferente do dia escolhido, que é
+   * preenchido — e entra na legenda. Sem ele, o calendário fica como sempre foi.
+   */
+  todayLabel?: string;
+  /** Hoje no fuso da loja (AAAA-MM-DD). Padrão: a data do aparelho. */
+  todayKey?: string;
   /**
    * Marcas nos dias: `muted` = traço tracejado embaixo do número (ex.: loja fechada; o dia
    * continua tocável e legível) e `dotted` = pontinho vermelho no canto (ex.: já tem bloqueio).
@@ -50,7 +79,7 @@ export function DatePicker({
   };
 }) {
   const [open, setOpen] = useState(false);
-  const { locale, intlLocale } = useI18n();
+  const { locale, intlLocale, t } = useI18n();
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -71,7 +100,11 @@ export function DatePicker({
         </button>
       </PopoverTrigger>
       <PopoverContent
-        className="schedule-popover w-auto max-w-[calc(100vw-32px)] rounded-lg border-border p-1"
+        // Abaixo de 360 px, 7 colunas de 44 px não cabem com a margem de 16 px: o mês ocupa a
+        // largura da tela, sem respiro extra, e os dias ficam um pouco mais estreitos (cerca de
+        // 40 px a 320 px; 44 px de altura mantidos), sem cortar sábado nem a seta. Exceção
+        // registrada em docs/mb-interface.md.
+        className="schedule-popover w-auto max-w-[calc(100vw-32px)] rounded-lg border-border p-1 max-[359px]:p-0 max-[359px]:[&_[data-slot=calendar]]:w-[calc(100vw-34px)] max-[359px]:[&_[data-slot=calendar]]:p-0.5 max-[359px]:[&_td]:aspect-auto max-[359px]:[&_td_button]:aspect-auto max-[359px]:[&_td_button]:min-w-0"
         align="start"
         // Mantém o calendário dentro da margem de 16 px do celular (antes encostava na borda).
         collisionPadding={16}
@@ -82,11 +115,25 @@ export function DatePicker({
           mode="single"
           selected={dateFromLocalKey(value)}
           defaultMonth={dateFromLocalKey(value)}
+          {...(todayKey ? { today: dateFromLocalKey(todayKey) } : {})}
+          {...(closedDays ? { components: MARKED_DAY_COMPONENTS } : {})}
           modifiers={{
             ...(dayMarks?.muted ? { muted: dayMarks.muted } : {}),
             ...(dayMarks?.dotted ? { dotted: dayMarks.dotted } : {}),
+            ...(closedDays ? { closed: closedDays } : {}),
+            ...(todayLabel
+              ? { markedToday: todayKey ? dateFromLocalKey(todayKey) : new Date() }
+              : {}),
           }}
           modifiersClassNames={{
+            // Fechado: texto apagado (sem opacidade, que derrubaria o contraste) e a lua do botão.
+            closed: "[&>button:not([data-selected-single=true])]:text-muted-foreground",
+            // Hoje: anel dourado por dentro; o escolhido segue preenchido. Hoje escolhido: o anel
+            // dourado fica na borda, separado do preenchimento por uma faixa na cor do fundo de
+            // hoje (accent), para o dourado encostar só nele (contraste >= 3:1 no claro e no
+            // escuro; sobre o preenchimento ficava abaixo disso).
+            markedToday:
+              "[&>button:not([data-selected-single=true])]:ring-2 [&>button:not([data-selected-single=true])]:ring-inset [&>button:not([data-selected-single=true])]:ring-gold [&>button[data-selected-single=true]]:shadow-[inset_0_0_0_2px_var(--gold),inset_0_0_0_4px_var(--accent)]",
             muted:
               "relative before:pointer-events-none before:absolute before:bottom-0.5 before:left-1/2 before:w-3.5 before:-translate-x-1/2 before:border-t-2 before:border-dashed before:border-[color:var(--tone-neutral-line)]",
             dotted:
@@ -95,7 +142,19 @@ export function DatePicker({
           labels={{
             labelDayButton: (date, modifiers, options, dateLib) =>
               [
-                labelDayButton(date, modifiers, options, dateLib),
+                // "Selecionado" e, com `todayLabel`, "hoje" saem no idioma do app (não no
+                // "selected"/"Today" em inglês da biblioteca).
+                labelDayButton(
+                  date,
+                  todayLabel
+                    ? { ...modifiers, today: false, selected: false }
+                    : { ...modifiers, selected: false },
+                  options,
+                  dateLib,
+                ),
+                modifiers.selected ? t("visual.calendar.selected") : null,
+                modifiers.markedToday ? todayLabel : null,
+                modifiers.closed ? closedLabel : null,
                 modifiers.muted ? dayMarks?.mutedLabel : null,
                 modifiers.dotted ? dayMarks?.dottedLabel : null,
               ]
@@ -109,18 +168,33 @@ export function DatePicker({
             }
           }}
         />
-        {(dayMarks?.mutedLabel || dayMarks?.dottedLabel) && (
+        {(dayMarks?.mutedLabel ||
+          dayMarks?.dottedLabel ||
+          todayLabel ||
+          (closedDays && closedLabel)) && (
           <p
             className="flex flex-wrap gap-x-3 gap-y-1 px-3 pb-2 text-xs text-muted-foreground"
             aria-hidden
           >
-            {dayMarks.mutedLabel && (
+            {todayLabel && (
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-3.5 rounded-[min(var(--control-radius),0.3rem)] ring-2 ring-inset ring-gold" />
+                {todayLabel}
+              </span>
+            )}
+            {closedDays && closedLabel && (
+              <span className="inline-flex items-center gap-1.5">
+                <Moon className="size-3" />
+                {closedLabel}
+              </span>
+            )}
+            {dayMarks?.mutedLabel && (
               <span className="inline-flex items-center gap-1.5">
                 <span className="w-3.5 border-t-2 border-dashed border-[color:var(--tone-neutral-line)]" />
                 {dayMarks.mutedLabel}
               </span>
             )}
-            {dayMarks.dottedLabel && (
+            {dayMarks?.dottedLabel && (
               <span className="inline-flex items-center gap-1.5">
                 <span className="size-1.5 rounded-full bg-[color:var(--tone-danger-line)]" />
                 {dayMarks.dottedLabel}

@@ -218,56 +218,12 @@
   .border-gold {
     border-color: var(--gold);
   }
-  .text-silver {
-    color: #808080;
-  }
-  .text-bronze {
-    color: #cd7f32;
-  }
-  .text-hologram {
-    color: #70d6ff;
-  }
-  .glass {
-    background: var(--card);
-    backdrop-filter: blur(12px);
-    border: 1px solid var(--border);
-    transition:
-      background-color 0.3s ease,
-      border-color 0.3s ease;
-  }
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
-  }
-
-  @keyframes shimmer {
-    0% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-    100% {
-      background-position: 0% 50%;
-    }
-  }
-
-  @keyframes organic-float {
-    0% {
-      transform: translate(0%, 0%) scale(1) rotate(0deg);
-    }
-    33% {
-      transform: translate(2%, -2%) scale(1.02) rotate(0.5deg);
-    }
-    66% {
-      transform: translate(-2%, 2%) scale(0.98) rotate(-0.5deg);
-    }
-    100% {
-      transform: translate(0%, 0%) scale(1) rotate(0deg);
-    }
   }
 
   @keyframes gooey-flow {
@@ -303,10 +259,6 @@
       background-position: 10% 10%;
       background-size: 400% 400%;
     }
-  }
-
-  .animate-shimmer {
-    animation: gooey-flow 35s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   }
 
   .text-gradient-silver {
@@ -398,25 +350,6 @@
     display: inline-block;
   }
 
-  .text-gradient-hologram-icon {
-    background: radial-gradient(
-      circle at 50% 50%,
-      #ffffff 0%,
-      #b3e5fc 20%,
-      #4fc3f7 40%,
-      #f8bbd0 60%,
-      #fff9c4 80%,
-      #4fc3f7 100%
-    );
-    background-size: 400% 400%;
-    -webkit-background-clip: text !important;
-    background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
-    color: transparent !important;
-    animation: gooey-flow 30s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-    display: inline-block;
-  }
-
   /*
    * BACKUP — o modo escuro antes substituía o gradiente holográfico:
    * .dark .text-gradient-hologram {
@@ -438,127 +371,6 @@
     display: inline-block;
    * }
    */
-
-  .bg-silver-metallic {
-    background: radial-gradient(
-      circle at center,
-      #e0e0e0 0%,
-      #ffffff 30%,
-      #b0b0b0 60%,
-      #ffffff 100%
-    );
-    background-size: 500% 500%;
-    animation: gooey-flow 38s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-    box-shadow:
-      inset 0 1px 1px rgba(255, 255, 255, 0.5),
-      0 0 10px rgba(255, 255, 255, 0.1);
-  }
-
-  .bg-bronze-metallic {
-    background: radial-gradient(
-      circle at 80% 80%,
-      #cd7f32 0%,
-      #ffcba4 45%,
-      #8b4513 75%,
-      #ffcba4 100%
-    );
-    background-size: 500% 500%;
-    animation: gooey-flow 42s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-    box-shadow:
-      inset 0 1px 1px rgba(255, 255, 255, 0.3),
-      0 0 10px rgba(205, 127, 50, 0.1);
-  }
-
-  .bg-gold-metallic {
-    background: radial-gradient(
-      circle at 50% 10%,
-      #d4af37 0%,
-      #ffe29f 40%,
-      #8a6623 80%,
-      #ffe29f 100%
-    );
-    background-size: 500% 500%;
-    animation: gooey-flow 40s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-    box-shadow:
-      inset 0 1px 1px rgba(255, 255, 255, 0.4),
-      0 0 10px rgba(212, 175, 55, 0.2);
-  }
-
-  .bg-hologram-metallic {
-    background: radial-gradient(
-      circle at 50% 50%,
-      rgba(255, 255, 255, 0.95) 0%,
-      rgba(186, 230, 253, 0.4) 25%,
-      rgba(255, 255, 255, 0.85) 45%,
-      rgba(251, 207, 232, 0.4) 65%,
-      rgba(254, 249, 195, 0.4) 85%,
-      rgba(255, 255, 255, 0.95) 100%
-    );
-    background-size: 600% 600%;
-    animation: gooey-flow 48s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-    backdrop-filter: blur(12px);
-    box-shadow:
-      0 0 25px rgba(186, 230, 253, 0.3),
-      0 0 40px rgba(251, 207, 232, 0.2),
-      inset 0 1px 8px rgba(255, 255, 255, 1),
-      inset 0 -1px 6px rgba(0, 0, 0, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.9);
-  }
-
-  .bg-piano-black {
-    background: linear-gradient(135deg, #050505 0%, #111111 50%, #050505 100%);
-    background-size: 200% 200%;
-    animation: gooey-flow 15s ease infinite;
-    position: relative;
-    overflow: hidden;
-    /* Remover sombra conforme pedido */
-    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
-  }
-
-  /* Efeito Liquid Glass Escuro */
-  .bg-piano-black::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      165deg,
-      rgba(255, 255, 255, 0.08) 0%,
-      rgba(255, 255, 255, 0.03) 40%,
-      transparent 45%,
-      rgba(0, 0, 0, 0.2) 100%
-    );
-    pointer-events: none;
-  }
-
-  .bg-piano-black::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 50%;
-    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 0%, transparent 100%);
-    border-radius: 100% / 0 0 20% 20%;
-    pointer-events: none;
-  }
-
-  .dark .bg-hologram-metallic {
-    background: radial-gradient(
-      circle at 50% 50%,
-      #f0f9ff 0%,
-      #bae6fd 20%,
-      #ffffff 40%,
-      #fbcfe8 60%,
-      #fef9c3 80%,
-      #f0f9ff 100%
-    );
-    background-size: 600% 600%;
-    animation: gooey-flow 48s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-    box-shadow:
-      0 0 35px rgba(255, 255, 255, 0.25),
-      inset 0 1px 6px rgba(255, 255, 255, 0.9),
-      inset 0 -1px 6px rgba(0, 0, 0, 0.2);
-  }
 }
 
 /* Shared visual language for customer, shop and platform. */
@@ -588,12 +400,6 @@
 }
 /* Abertura/Fechamento lado a lado no celular: um pouco menos de folga interna para
    o rótulo "Fechamento" caber inteiro sem esmagar a seta. */
-@media (max-width: 420px) {
-  .hours-range .schedule-field {
-    gap: 0.45rem;
-    padding-inline: 0.65rem;
-  }
-}
 .schedule-field:disabled {
   opacity: 0.5;
 }
@@ -755,53 +561,6 @@ body:has(.arena-workspace)
   outline: 2px solid var(--gold);
   outline-offset: 3px;
 }
-.status-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  border-radius: 999px;
-  padding: 0.4rem 0.7rem;
-  font-size: 12px;
-  line-height: 1.35;
-  font-weight: 600;
-  white-space: nowrap;
-  text-transform: none;
-  letter-spacing: 0;
-}
-.status-pill::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-}
-.status-pending,
-.status-reschedule_requested {
-  color: #92400e;
-  background: #fef3c7;
-}
-.status-confirmed,
-.status-completed {
-  color: #065f46;
-  background: #d1fae5;
-}
-.status-cancelled {
-  color: #9f1239;
-  background: #ffe4e6;
-}
-.dark .status-pending {
-  color: #fde68a;
-  background: #78350f66;
-}
-.dark .status-confirmed,
-.dark .status-completed {
-  color: #6ee7b7;
-  background: #064e3b66;
-}
-.dark .status-cancelled {
-  color: #fda4af;
-  background: #88133766;
-}
 
 /* Tons de estado — fonte única dos componentes de src/components/visual.
    Mesmo significado = mesma cor e mesmo ícone em todo o sistema:
@@ -812,7 +571,7 @@ body:has(.arena-workspace)
    os cartões off-white, as janelas e os avisos rápidos voltam aos tons claros,
    e o texto fica acima de 4,5:1 nos dois casos. */
 :root,
-.dark .arena-workspace :is(.bg-card, .app-action-card, .booking-section, .platform-metric-board),
+.dark .arena-workspace :is(.bg-card, .app-action-card, .booking-section),
 .dark
   body:has(.arena-workspace)
   :is([role="dialog"], [role="alertdialog"]):not([data-radix-popper-content-wrapper] *):not(
@@ -1230,9 +989,13 @@ body:has(.arena-workspace) {
 .arena-workspace > main {
   padding-top: 1.25rem;
 }
-.arena-workspace section,
-.arena-workspace article {
-  scroll-margin-top: 1rem;
+/* Folga padrão na camada base: assim o scroll-mt-* de cada seção (que desconta o cabeçalho fixo)
+   vence; fora da camada, esta regra anulava os utilitários e o cabeçalho cobria o topo do cartão. */
+@layer base {
+  .arena-workspace section,
+  .arena-workspace article {
+    scroll-margin-top: 1rem;
+  }
 }
 .arena-workspace .bg-card {
   background-color: var(--app-elevated);
@@ -1240,7 +1003,7 @@ body:has(.arena-workspace) {
 /* Reading surfaces remain off-white, including on the charcoal theme.
    Janelas portadas (Dialog/AlertDialog) usam a mesma superfície dos cartões;
    popovers (data/hora, menu de conta) e janelas de página inteira ficam de fora. */
-.arena-workspace :is(.bg-card, .app-action-card, .booking-section, .platform-metric-board),
+.arena-workspace :is(.bg-card, .app-action-card, .booking-section),
 body:has(.arena-workspace)
   :is([role="dialog"], [role="alertdialog"]):not([data-radix-popper-content-wrapper] *):not(
     .dialog-surface-page
@@ -1420,53 +1183,8 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
 [data-slot="calendar"] button[data-range-middle="true"] {
   border-radius: 0.35rem;
 }
-.dark .arena-workspace :is(.bg-card, .app-action-card, .booking-section) .text-emerald-300,
-.dark .arena-workspace :is(.bg-card, .app-action-card, .booking-section) .dark\:text-emerald-300,
-.dark .arena-workspace :is(.bg-card, .app-action-card, .booking-section) .dark\:text-emerald-400,
-.dark
-  body:has(.arena-workspace)
-  :is([role="dialog"], [role="alertdialog"]):not(.dialog-surface-page)
-  :is(.text-emerald-300, .dark\:text-emerald-300, .dark\:text-emerald-400) {
-  color: #065f46;
-}
-/* Âmbar claro some no off-white: mesmo tom de .status-pending (≈6,8:1 sobre #f7f5f0). */
-.dark .arena-workspace :is(.bg-card, .app-action-card, .booking-section) .dark\:text-amber-300,
-.dark .arena-workspace :is(.bg-card, .app-action-card, .booking-section) .dark\:text-amber-400,
-.dark
-  body:has(.arena-workspace)
-  :is([role="dialog"], [role="alertdialog"]):not(.dialog-surface-page)
-  :is(.dark\:text-amber-300, .dark\:text-amber-400) {
-  color: #92400e;
-}
 .arena-workspace .shadow-sm {
   box-shadow: 0 10px 28px color-mix(in oklab, #1c1d19 6%, transparent);
-}
-.dark .arena-workspace :is(.bg-card, .app-action-card, .booking-section) .status-pending,
-.dark
-  body:has(.arena-workspace)
-  :is([role="dialog"], [role="alertdialog"]):not(.dialog-surface-page)
-  .status-pending {
-  color: #92400e;
-  background: #fef3c7;
-}
-.dark
-  .arena-workspace
-  :is(.bg-card, .app-action-card, .booking-section)
-  :is(.status-confirmed, .status-completed),
-.dark
-  body:has(.arena-workspace)
-  :is([role="dialog"], [role="alertdialog"]):not(.dialog-surface-page)
-  :is(.status-confirmed, .status-completed) {
-  color: #065f46;
-  background: #d1fae5;
-}
-.dark .arena-workspace :is(.bg-card, .app-action-card, .booking-section) .status-cancelled,
-.dark
-  body:has(.arena-workspace)
-  :is([role="dialog"], [role="alertdialog"]):not(.dialog-surface-page)
-  .status-cancelled {
-  color: #9f1239;
-  background: #ffe4e6;
 }
 .arena-workspace input:not([type="checkbox"]),
 .arena-workspace select,
@@ -1550,6 +1268,16 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
 .app-demo-switcher-option:hover {
   background: color-mix(in oklab, currentColor 14%, transparent);
 }
+/* A pílula visível tem 34 px (dentro do grupo de 44 px); a área de toque cobre o grupo
+   inteiro na vertical, para cada perfil manter 44 px de alvo. */
+.app-demo-switcher-option {
+  position: relative;
+}
+.app-demo-switcher-option::before {
+  content: "";
+  position: absolute;
+  inset: -5px 0;
+}
 .app-demo-switcher-option[aria-pressed="true"] {
   background: var(--primary);
   color: var(--primary-foreground);
@@ -1611,14 +1339,6 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   font-style: var(--brand-header-font-style, normal);
   font-synthesis: weight style;
   letter-spacing: -0.035em;
-}
-.app-status-dot {
-  display: inline-block;
-  width: 0.5rem;
-  height: 0.5rem;
-  margin-right: 0.4rem;
-  border-radius: 999px;
-  background: currentColor;
 }
 .app-mobile-nav {
   /* A barra flutua sobre o conteúdo: as classes utilitárias `fixed` cuidam do
@@ -1710,181 +1430,6 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
     width var(--duration-med) var(--ease-out),
     opacity var(--duration-fast) var(--ease-soft);
   will-change: transform;
-}
-
-/* Loyalty hierarchy: one expressive card, followed by useful progress. */
-.loyalty-card {
-  --tier-ink: #232421;
-  --tier-muted: #65675f;
-  --tier-line: rgb(54 57 51 / 18%);
-  position: relative;
-  overflow: hidden;
-  padding: 1.35rem;
-  border: 1px solid var(--tier-line);
-  border-radius: var(--panel-radius);
-  color: var(--tier-ink);
-  isolation: isolate;
-  box-shadow:
-    0 22px 45px rgb(28 29 25 / 14%),
-    inset 0 1px 0 rgb(255 255 255 / 55%);
-}
-.loyalty-card-classic {
-  background: linear-gradient(135deg, #f7f8f6 0%, #c9cdc9 52%, #f4f5f2 100%);
-}
-.loyalty-card-select {
-  --tier-ink: #2d1609;
-  --tier-muted: #6f3c1d;
-  --tier-line: rgb(108 55 21 / 24%);
-  background: linear-gradient(135deg, #f6d0ab 0%, #bb682f 50%, #f2b67d 100%);
-}
-.loyalty-card-privilege {
-  --tier-ink: #2d230c;
-  --tier-muted: #67531e;
-  --tier-line: rgb(104 79 13 / 24%);
-  background: linear-gradient(135deg, #fff2bd 0%, #d4ac42 52%, #fbe48a 100%);
-}
-.loyalty-card-exclusive {
-  --tier-ink: #f7fbff;
-  --tier-muted: #d8e5ea;
-  --tier-line: rgb(255 255 255 / 25%);
-  background:
-    radial-gradient(circle at 78% 15%, rgb(122 216 255 / 42%), transparent 28%),
-    radial-gradient(circle at 12% 90%, rgb(255 174 219 / 28%), transparent 34%),
-    linear-gradient(135deg, #080a0b 0%, #22282a 48%, #080a0b 100%);
-}
-.loyalty-card-pattern {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  opacity: 0.34;
-  background:
-    linear-gradient(115deg, transparent 22%, rgb(255 255 255 / 55%) 35%, transparent 48%),
-    repeating-linear-gradient(135deg, transparent 0 18px, rgb(255 255 255 / 14%) 18px 19px);
-  background-size:
-    220% 100%,
-    auto;
-  animation: loyalty-light 8s var(--ease-soft) infinite alternate;
-  pointer-events: none;
-}
-.loyalty-tier-badge {
-  display: inline-flex;
-  min-height: 28px;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.3rem 0.7rem;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  line-height: 1;
-  letter-spacing: 0.04em;
-}
-.loyalty-emblem {
-  display: flex;
-  width: 54px;
-  height: 54px;
-  flex: 0 0 54px;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--tier-line);
-  background: rgb(255 255 255 / 24%);
-  color: var(--tier-ink);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 45%);
-  backdrop-filter: blur(8px);
-  transition:
-    transform var(--duration-med) var(--ease-out),
-    background var(--duration-fast) var(--ease-soft);
-}
-.loyalty-emblem:hover {
-  transform: rotate(4deg) scale(1.06);
-  background: rgb(255 255 255 / 36%);
-}
-.loyalty-statement-link {
-  display: inline-flex;
-  min-height: 44px;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.65rem 0.8rem;
-  border: 1px solid var(--tier-line);
-  background: rgb(255 255 255 / 22%);
-  color: var(--tier-ink);
-  font-size: 0.8rem;
-  font-weight: 750;
-  backdrop-filter: blur(8px);
-}
-.loyalty-benefits {
-  padding: 1.25rem;
-  border: 1px solid color-mix(in oklab, var(--tier-color) 32%, var(--border));
-  border-radius: var(--panel-radius);
-  background: linear-gradient(
-    145deg,
-    color-mix(in oklab, var(--tier-color) 9%, var(--card)),
-    var(--card) 58%
-  );
-  color: var(--card-foreground);
-  box-shadow: 0 12px 30px color-mix(in oklab, var(--tier-color) 10%, transparent);
-}
-.loyalty-benefits-classic {
-  --tier-color: #7d8581;
-}
-.loyalty-benefits-select {
-  --tier-color: #b9672f;
-}
-.loyalty-benefits-privilege {
-  --tier-color: #b28a28;
-}
-.loyalty-benefits-exclusive {
-  --tier-color: #4aafc9;
-}
-.loyalty-benefit-icon {
-  display: flex;
-  width: 42px;
-  height: 42px;
-  flex: 0 0 42px;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--control-radius);
-  background: color-mix(in oklab, var(--tier-color) 18%, white);
-  color: color-mix(in oklab, var(--tier-color) 82%, #242421);
-}
-.loyalty-progress-fill {
-  background: linear-gradient(
-    90deg,
-    color-mix(in oklab, var(--tier-color) 76%, #242421),
-    var(--tier-color)
-  );
-  box-shadow: 0 0 14px color-mix(in oklab, var(--tier-color) 38%, transparent);
-}
-.loyalty-benefits-link {
-  display: flex;
-  width: 100%;
-  min-height: 44px;
-  margin-top: 1rem;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.65rem 0.85rem;
-  border: 1px solid color-mix(in oklab, var(--tier-color) 30%, var(--border));
-  background: color-mix(in oklab, var(--tier-color) 7%, var(--background));
-  color: var(--foreground);
-  font-size: 0.875rem;
-  font-weight: 650;
-  transition:
-    background var(--duration-fast) var(--ease-soft),
-    transform var(--duration-fast) var(--ease-out);
-}
-.loyalty-benefits-link:hover {
-  background: color-mix(in oklab, var(--tier-color) 13%, var(--background));
-}
-
-@keyframes loyalty-light {
-  from {
-    background-position:
-      120% 0,
-      0 0;
-  }
-  to {
-    background-position:
-      -80% 0,
-      0 0;
-  }
 }
 .app-action-card {
   border: 1px solid color-mix(in oklab, var(--border) 75%, transparent);
@@ -2082,20 +1627,6 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   --loyalty-hologram-2: #22566a;
   --loyalty-hologram-3: #70405c;
   --loyalty-hologram-4: #665b16;
-}
-.arena-workspace .mb-loyalty-member-card .mb-loyalty-sheen {
-  top: -20%;
-  right: -27rem;
-  left: auto;
-  width: 54rem;
-  height: 54rem;
-  transform: none;
-  animation: mb-loyalty-sheen-float-right 8s var(--ease-soft) infinite;
-  background: radial-gradient(
-    circle,
-    color-mix(in oklab, var(--loyalty-sheen-color) 32%, transparent),
-    transparent 70%
-  );
 }
 
 /*
@@ -2473,25 +2004,6 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
   }
 }
 
-@keyframes mb-loyalty-sheen-float {
-  0%,
-  100% {
-    transform: translateX(-50%) translateY(0);
-  }
-  50% {
-    transform: translateX(-50%) translateY(-4px);
-  }
-}
-@keyframes mb-loyalty-sheen-float-right {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-4px);
-  }
-}
-
 .mb-panel {
   animation: mb-panel-in var(--duration-slow) var(--ease-out) both;
 }
@@ -2565,25 +2077,6 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
 }
 */
 
-.mb-loyalty-sheen {
-  position: absolute;
-  top: -20%;
-  right: auto;
-  left: 50%;
-  width: 18rem;
-  height: 18rem;
-  transform: translateX(-50%);
-  border-radius: 999px;
-  background: radial-gradient(
-    circle,
-    color-mix(in oklab, var(--gold) 25%, transparent),
-    transparent 70%
-  );
-  filter: blur(36px);
-  pointer-events: none;
-  animation: mb-loyalty-sheen-float 8s var(--ease-soft) infinite;
-}
-
 /* Antecedência: thumb alinhado, precisão progressiva e seletor em roleta. */
 .waiting-cutoff-pill {
   display: inline-flex;
@@ -2609,90 +2102,6 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
 }
 .waiting-cutoff-pill:active {
   transform: scale(0.98);
-}
-.waiting-cutoff-slider {
-  position: relative;
-  display: flex;
-  min-height: 44px;
-  align-items: center;
-  padding-inline: 12px;
-  border-radius: 999px;
-  touch-action: none;
-  user-select: none;
-}
-.waiting-cutoff-rail {
-  position: relative;
-  display: flex;
-  width: 100%;
-  height: 44px;
-  align-items: center;
-}
-.waiting-cutoff-track {
-  position: relative;
-  width: 100%;
-  height: 8px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: color-mix(in oklab, var(--primary) 15%, transparent);
-  transition:
-    height var(--duration-fast) var(--ease-soft),
-    background-color var(--duration-fast) var(--ease-soft),
-    box-shadow var(--duration-fast) var(--ease-soft);
-}
-.waiting-cutoff-range {
-  position: absolute;
-  inset: 0 auto 0 0;
-  border-radius: inherit;
-  background: var(--primary);
-  transition: background-color var(--duration-fast) var(--ease-soft);
-}
-.waiting-cutoff-thumb {
-  position: absolute;
-  top: 50%;
-  min-height: 24px !important;
-  width: 24px;
-  height: 24px;
-  transform: translate(-50%, -50%);
-  border: 2px solid var(--primary);
-  border-radius: 999px;
-  background: var(--background);
-  box-shadow: 0 3px 9px color-mix(in oklab, var(--foreground) 18%, transparent);
-  transition:
-    width var(--duration-fast) var(--ease-out),
-    height var(--duration-fast) var(--ease-out),
-    border-color var(--duration-fast) var(--ease-soft),
-    border-width var(--duration-fast) var(--ease-soft),
-    background-color var(--duration-fast) var(--ease-soft),
-    box-shadow var(--duration-fast) var(--ease-soft);
-}
-.waiting-cutoff-thumb::before {
-  content: "";
-  position: absolute;
-  inset: -12px;
-  border-radius: inherit;
-}
-.waiting-cutoff-thumb:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 3px;
-}
-.waiting-cutoff-slider.is-precise .waiting-cutoff-track {
-  height: 12px;
-  background: color-mix(in oklab, var(--gold) 19%, transparent);
-  box-shadow: 0 0 0 4px color-mix(in oklab, var(--gold) 9%, transparent);
-}
-.waiting-cutoff-slider.is-precise .waiting-cutoff-range {
-  background: var(--gold);
-}
-.waiting-cutoff-slider.is-precise .waiting-cutoff-thumb {
-  min-height: 28px !important;
-  width: 28px;
-  height: 28px;
-  border-width: 4px;
-  border-color: var(--gold);
-  background: color-mix(in oklab, var(--gold) 12%, var(--background));
-  box-shadow:
-    0 0 0 5px color-mix(in oklab, var(--gold) 13%, transparent),
-    0 4px 12px color-mix(in oklab, var(--gold) 28%, transparent);
 }
 .duration-wheel-shell {
   position: relative;
@@ -2853,27 +2262,13 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
   .mb-stagger > *,
   .mb-empty-art,
   .mb-live-dot,
-  .mb-loyalty-sheen,
-  .loyalty-card-pattern,
-  .animate-shimmer,
   .text-gradient-silver,
   .text-gradient-bronze,
   .text-gradient-gold,
-  .text-gradient-hologram,
-  .text-gradient-hologram-icon,
-  .bg-silver-metallic,
-  .bg-bronze-metallic,
-  .bg-gold-metallic,
-  .bg-hologram-metallic,
-  .bg-piano-black {
+  .text-gradient-hologram {
     animation: none !important;
   }
   .app-mobile-nav-indicator {
-    transition: none;
-  }
-  .waiting-cutoff-track,
-  .waiting-cutoff-range,
-  .waiting-cutoff-thumb {
     transition: none;
   }
   .mb-panel,
@@ -2967,9 +2362,6 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
 
 /* Editor de identidade visual: a barra de salvar acompanha o fim do diálogo.
    Sem compensação de navegação: dentro do Dialog o `sticky bottom-2` basta. */
-.brand-editor-actions {
-  bottom: 0.5rem;
-}
 .brand-preview img,
 .brand-color-popover input[type="color"] {
   color-scheme: light;
@@ -3286,10 +2678,6 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
 .auth-layout-cover .auth-brand-identity {
   display: none;
 }
-.auth-layout-split .auth-eyebrow,
-.auth-layout-cover .auth-eyebrow {
-  margin-top: 0;
-}
 .auth-layout-card {
   place-items: center;
   padding: clamp(1rem, 4vw, 3rem);
@@ -3319,9 +2707,6 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
 .auth-layout-card .auth-brand-identity {
   padding-bottom: 1.25rem;
   border-bottom: 1px solid color-mix(in oklab, var(--border) 72%, transparent);
-}
-.auth-layout-card .auth-eyebrow {
-  margin-top: 1.75rem;
 }
 .auth-layout-card .auth-form-body {
   padding-top: 1.75rem;
@@ -3419,15 +2804,6 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
     grid-column: 1;
     grid-row: 1;
   }
-  .auth-whatsapp-group > .auth-whatsapp-hint {
-    display: flex;
-    grid-column: 2;
-    grid-row: 1;
-    align-self: end;
-    align-items: center;
-    min-height: 3.25rem;
-    line-height: 1.45;
-  }
   .auth-whatsapp-group > .auth-whatsapp-error {
     grid-row: 2;
   }
@@ -3498,9 +2874,6 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   .auth-page.auth-layout-card .auth-brand-identity {
     padding-bottom: 1rem;
   }
-  .auth-page.auth-layout-card .auth-eyebrow {
-    margin-top: 1.25rem;
-  }
 }
 @media (min-width: 761px) and (max-height: 760px) {
   .auth-page.auth-layout-cover {
@@ -3518,9 +2891,6 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
 }
 
 /* Miniaturas e prévia ao vivo do editor de identidade. */
-.login-model-option {
-  border-radius: var(--control-radius);
-}
 .login-model-preview {
   position: relative;
   isolation: isolate;
@@ -3870,9 +3240,6 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   .auth-layout-card .auth-brand-identity {
     padding-bottom: 1rem;
   }
-  .auth-layout-card .auth-eyebrow {
-    margin-top: 1.25rem;
-  }
   .auth-layout-card .auth-form-body {
     padding-top: 1.5rem;
     padding-bottom: 1.25rem;
@@ -3884,114 +3251,6 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   .login-model-preview * {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
-  }
-}
-
-.platform-metric-board {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0;
-  overflow: hidden;
-  border: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
-  border-radius: var(--panel-radius);
-  background: var(--card);
-}
-@media (min-width: 900px) {
-  .platform-metric-board {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-.platform-metric {
-  display: flex;
-  min-height: 8.5rem;
-  flex-direction: column;
-  justify-content: flex-start;
-  gap: 0.65rem;
-  padding: 1.15rem 1.2rem 1.2rem;
-  border-right: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
-  border-bottom: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
-}
-@media (min-width: 900px) {
-  .platform-metric:nth-child(4n) {
-    border-right: 0;
-  }
-  .platform-metric {
-    border-bottom: 0;
-  }
-}
-@media (max-width: 899px) {
-  .platform-metric:nth-child(2n) {
-    border-right: 0;
-  }
-  .platform-metric:nth-last-child(-n + 2) {
-    border-bottom: 0;
-  }
-}
-.platform-metric-label {
-  margin: 0;
-  color: var(--muted-foreground);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  line-height: 1.35;
-  text-transform: uppercase;
-  overflow-wrap: anywhere;
-  hyphens: auto;
-  /* Reserva duas linhas para os valores ficarem na mesma altura em qualquer idioma. */
-  min-height: calc(2 * 1.35em);
-}
-.platform-metric-value {
-  margin: 0;
-  color: var(--foreground);
-  font-size: clamp(2rem, 4vw, 2.55rem);
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-.platform-metric-meter {
-  height: 3px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: color-mix(in oklab, var(--muted) 70%, transparent);
-}
-.platform-metric-meter > span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: color-mix(in oklab, var(--foreground) 55%, var(--muted));
-  transition: width 700ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.platform-metric-ok .platform-metric-meter > span {
-  background: var(--brand-primary, var(--primary));
-}
-.platform-metric-warn .platform-metric-meter > span {
-  background: color-mix(in oklab, #b45309 75%, var(--foreground));
-}
-.platform-metric-detail {
-  margin: 0;
-  margin-top: auto;
-  color: var(--muted-foreground);
-  font-size: 0.75rem;
-  line-height: 1.35;
-}
-
-.platform-dash-kpi {
-  animation: none;
-}
-@keyframes platform-dash-rise {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .platform-metric-meter > span {
-    transition: none;
   }
 }
 
@@ -4191,12 +3450,6 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   width: 100%;
   justify-content: flex-start;
 }
-.platform-landing-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
 .platform-landing-top {
   display: flex;
   align-items: center;
@@ -4204,7 +3457,6 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   gap: 0.75rem;
   margin-bottom: 2.5rem;
 }
-.platform-landing-brand,
 .platform-register-brand {
   display: flex;
   align-items: center;
@@ -4233,21 +3485,12 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   background: color-mix(in oklab, #f4f1ea 20%, transparent);
   color: #fff;
 }
-.platform-landing-brand-name,
 .platform-register-brand-name {
   font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #f4f1ea;
-}
-.platform-landing-eyebrow {
-  margin: 0 0 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: color-mix(in oklab, var(--gold, #c4a574) 90%, white);
 }
 .platform-landing-title {
   margin: 0;
@@ -4267,69 +3510,13 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   color: color-mix(in oklab, #f4f1ea 92%, transparent);
   animation: platform-landing-rise 0.7s ease-out 0.08s both;
 }
-.platform-landing-support {
-  margin: 0.85rem 0 0;
-  max-width: 28rem;
-  font-size: 1rem;
-  line-height: 1.55;
-  color: color-mix(in oklab, #f4f1ea 72%, transparent);
-  animation: platform-landing-rise 0.7s ease-out 0.14s both;
-}
-.platform-landing-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-top: 2rem;
-  animation: platform-landing-rise 0.7s ease-out 0.2s both;
-}
-.platform-landing-cta-primary,
-.platform-landing-cta-secondary {
-  display: inline-flex;
-  min-height: 3.25rem;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0 1.35rem;
-  border-radius: var(--button-radius, 0.85rem);
-  font-size: 0.95rem;
-  font-weight: 700;
-  text-decoration: none;
-  transition:
-    transform 0.18s ease,
-    background 0.18s ease,
-    border-color 0.18s ease;
-}
-.platform-landing-cta-primary {
-  background: #f4f1ea;
-  color: #171512;
-  border: 0;
-}
 /* Só o botão claro da página inicial clareia no hover (o do cadastro é action-button). */
-.platform-landing-cta-primary:hover {
-  transform: translateY(-1px);
-  background: #fff;
-}
-.platform-landing-cta-secondary {
-  background: color-mix(in oklab, #f4f1ea 8%, transparent);
-  color: #f4f1ea;
-  border: 1px solid color-mix(in oklab, #f4f1ea 28%, transparent);
-}
-.platform-landing-cta-secondary:hover {
-  background: color-mix(in oklab, #f4f1ea 14%, transparent);
-}
 .platform-landing-footer {
   flex-shrink: 0;
   margin-top: 1.5rem;
   padding-top: 1rem;
   padding-bottom: 0.5rem;
   animation: platform-landing-rise 0.7s ease-out 0.28s both;
-}
-.platform-landing-footer-text {
-  max-width: 28rem;
-  margin: 0 0 0.75rem;
-  font-size: 0.8125rem;
-  line-height: 1.45;
-  color: color-mix(in oklab, white 72%, transparent);
 }
 .platform-landing-footer-nav {
   display: flex;
@@ -4348,13 +3535,6 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
 }
 .platform-landing-footer-nav a:hover {
   color: white;
-}
-.platform-landing-hint {
-  margin: 1.25rem 0 0;
-  max-width: 28rem;
-  font-size: 0.8rem;
-  line-height: 1.45;
-  color: color-mix(in oklab, #f4f1ea 58%, transparent);
 }
 @keyframes platform-landing-rise {
   from {
@@ -4533,18 +3713,7 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   gap: 0.9rem;
   margin-top: 1.25rem;
 }
-.platform-register-grid {
-  display: grid;
-  gap: 0.9rem;
-}
 @media (min-width: 480px) {
-  .platform-landing-actions {
-    flex-direction: row;
-    align-items: center;
-  }
-  .platform-register-grid {
-    grid-template-columns: 1fr 1fr;
-  }
   .platform-landing-stage {
     padding-inline: 2rem;
   }
@@ -4646,8 +3815,9 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
 .platform-register .rounded-full {
   border-radius: 9999px;
 }
-/* Campos brancos com borda, iguais aos do cadastro da barbearia. */
-.auth-page .auth-brand-panel :is(.auth-input-wrap, .auth-google-action) {
+/* Campos brancos com borda, iguais aos do cadastro da barbearia (e na prévia do editor). */
+.auth-page .auth-brand-panel :is(.auth-input-wrap, .auth-google-action),
+.login-screen-preview .auth-brand-panel :is(.auth-input-wrap, .auth-google-action) {
   background: #fff;
   border-color: color-mix(in oklab, #1c1b18 16%, transparent);
   box-shadow: 0 1px 2px rgb(28 29 25 / 0.05);
@@ -4805,8 +3975,6 @@ body:has(.arena-workspace) .entry-code input:not(#entry-code-x):focus {
   .platform-register-photo img,
   .platform-landing-title,
   .platform-landing-lead,
-  .platform-landing-support,
-  .platform-landing-actions,
   .platform-landing-footer {
     animation: none;
   }

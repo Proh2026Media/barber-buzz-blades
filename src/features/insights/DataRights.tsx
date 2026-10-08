@@ -333,9 +333,9 @@ export function DataRights({
           confirmIcon={Trash2}
           cancelLabel={t("conta.data.deleteCancel")}
           confirmDisabled={confirmText.trim().toUpperCase() !== confirmWord}
-          // A janela guarda o texto do erro no clique (antes de deleteError existir): ela diz o
-          // resultado ("nada foi apagado") e o motivo do servidor aparece logo acima, por children.
+          // Na falha, um só aviso: o resultado ("nada foi apagado") e, embaixo, o motivo.
           errorText={t("conta.data.notDeleted")}
+          errorDetail={deleteError}
           onConfirm={deleteAccountForever}
         >
           <Notice tone="warning" role="none" title={t("conta.data.ownerWarning")} />
@@ -353,8 +353,6 @@ export function DataRights({
               className="flex min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold tracking-wide"
             />
           </div>
-          {/* Motivo do servidor, logo acima do resultado "nada foi apagado" da janela. */}
-          {deleteError && <Notice tone="danger" title={deleteError} />}
         </ConfirmDialog>
       </section>
     );

@@ -1,15 +1,13 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
-  Link,
   createRootRouteWithContext,
   useRouter,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
-import { ChevronLeft, Home, Link2Off } from "lucide-react";
-import { EmptyState } from "../components/visual";
+import { NotFoundPage } from "../components/NotFoundPage";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -24,39 +22,8 @@ const APP_NAME = "Barba & Cabelo";
 const APP_DESCRIPTION =
   "Agendamento, fidelidade e gestão para barbearias: reserve seu horário, acompanhe pontos e organize a agenda da equipe.";
 
-function NotFoundComponent() {
-  const { t } = useI18n();
-  // Link quebrado em desenho, com saída clara; o "404" fica pequeno, só para o suporte.
-  return (
-    <main className="public-page flex min-h-dvh items-center justify-center bg-background p-4">
-      <EmptyState
-        className="public-card w-full max-w-sm"
-        status="neutral"
-        icon={Link2Off}
-        title={t("app.notFound.title")}
-        description={t("app.notFound.body")}
-        action={
-          <Link to="/" className="action-button action-confirm min-h-12 w-full">
-            <Home aria-hidden />
-            {t("app.common.backHome")}
-          </Link>
-        }
-        secondaryAction={
-          <button
-            type="button"
-            onClick={() => window.history.back()}
-            className="inline-flex min-h-11 items-center justify-center gap-1.5 text-sm font-semibold underline underline-offset-4"
-          >
-            <ChevronLeft className="size-4" aria-hidden />
-            {t("common.back")}
-          </button>
-        }
-      >
-        <p className="text-xs text-muted-foreground">{t("app.notFound.code")}</p>
-      </EmptyState>
-    </main>
-  );
-}
+// Página 404 compartilhada com as rotas só do navegador (ver NotFoundPage).
+const NotFoundComponent = NotFoundPage;
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);

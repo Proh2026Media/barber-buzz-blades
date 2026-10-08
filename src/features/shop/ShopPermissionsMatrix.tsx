@@ -503,9 +503,73 @@ export function ShopPermissionsMatrix({
             )}
           </div>
 
-          {/* Comparar papéis lado a lado (✓ / —), sem rolagem lateral. */}
+          {/* Comparar papéis: no celular, um bloco por papel com cada permissão em pílula ✓ / —;
+              do tablet para cima, a tabela lado a lado. */}
           <MoreDetails summary={t("eq.perm.compare")}>
-            <table className="w-full table-fixed text-left text-xs">
+            <ul className="space-y-3 sm:hidden">
+              {roles.map((item) => {
+                const allows = (permission: string) =>
+                  permission === "services"
+                    ? serviceLevelFor(matrix, item.id) !== "view"
+                    : (matrix[item.id]?.[permission] ?? false);
+                const allowed = compareRows.filter(allows).length;
+                // O que o papel pode fazer vem primeiro; o que não pode, depois.
+                const ordered = [
+                  ...compareRows.filter(allows),
+                  ...compareRows.filter((permission) => !allows(permission)),
+                ];
+                return (
+                  <li
+                    key={item.id}
+                    className="space-y-2.5 rounded-2xl border border-border bg-background/70 p-3"
+                  >
+                    <p className="flex items-center gap-2 text-sm font-bold text-foreground">
+                      <item.icon className="size-5 shrink-0 text-gold" aria-hidden />
+                      <span className="min-w-0 flex-1">{t(item.label)}</span>
+                      <span className="shrink-0 text-xs font-semibold text-muted-foreground">
+                        {t("eq.perm.compareCount", { count: allowed, total: compareRows.length })}
+                      </span>
+                    </p>
+                    <ul className="flex flex-wrap gap-1.5">
+                      {ordered.map((permission) => {
+                        if (permission === "services") {
+                          const level = serviceLevelFor(matrix, item.id);
+                          const text = textOf(SERVICES.manageAll);
+                          return (
+                            <li key={permission} className="max-w-full">
+                              <StatusBadge
+                                tone={level === "view" ? "neutral" : "success"}
+                                icon={level === "view" ? Minus : Check}
+                                size="sm"
+                                label={`${text.label}: ${levelLabel(level)}`}
+                              />
+                            </li>
+                          );
+                        }
+                        const on = matrix[item.id]?.[permission] ?? false;
+                        const text = textOf(permission);
+                        return (
+                          <li key={permission} className="max-w-full">
+                            <span aria-hidden>
+                              <StatusBadge
+                                tone={on ? "success" : "neutral"}
+                                icon={on ? Check : Minus}
+                                size="sm"
+                                label={text.label}
+                              />
+                            </span>
+                            <span className="sr-only">
+                              {t(on ? "eq.perm.can" : "eq.perm.cannot", { permission: text.label })}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </li>
+                );
+              })}
+            </ul>
+            <table className="hidden w-full table-fixed text-left text-xs text-foreground sm:table">
               <thead>
                 <tr className="border-b border-border/60">
                   <th scope="col" className="py-2 pe-2 font-semibold">

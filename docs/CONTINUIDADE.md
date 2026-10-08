@@ -40,15 +40,58 @@ O dono pediu que o sistema fique muito mais visual, intuitivo e com menos texto 
 
 Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (192 testes no total).
 
+**Onda 3 (feita, 08/10, Claude Code): pendências da onda 2 que não dependiam do dono nem do banco.** 6 frentes, cada uma com implementação, revisão cética e ajuste, depois limpeza e revisão final. Só interface.
+
+- **Componentes comuns:**
+  - `CopyField`: opção `share={false}`, usada nos valores de DNS; quebra o texto só depois de `/ . - _ ? & = # @ :`.
+  - `ConfirmDialog`: mostra o erro detalhado já na 1ª falha.
+  - `Steps`: variante `static`, para "como funciona" (substituiu o `HowSteps`).
+  - `AttentionList`: aceita `secondaryAction` e `disabled`.
+  - `DatePicker` (`schedule-picker.tsx`): opções `closedDays`, `closedLabel` e `todayLabel`. Abaixo de 360 px cada dia tem cerca de 40×44 px; a exceção está registrada em `docs/mb-interface.md`.
+- **Agenda:**
+  - no computador (≥ 1024 px), "Equipe" mostra uma coluna por profissional;
+  - bloqueios aparecem como faixa listrada vermelha;
+  - o nome do cliente abre a ficha quando há `customer_id` (agenda própria e demo; a visão de equipe em produção continua sem, porque `get_team_schedule` não devolve o id);
+  - no celular, os atalhos (clientes, link e carteira, sugestões) abrem em janela;
+  - os selos da ficha do cliente usam o mapa da Agenda.
+- **Equipe:**
+  - "Novo profissional" virou duas escolhas, "Só na agenda" e "Com acesso ao painel" (convite com o nome preenchido);
+  - filtros antes da busca;
+  - "Comparar papéis" em blocos por papel no celular;
+  - "Dono (conta antiga)" virou "Dono (sócio)";
+  - resultado de aprovar, recusar ou liberar saída aparece junto dos botões, com "Tentar de novo".
+- **Cliente:**
+  - a lista de espera em Reservas virou um cartão só, com estados coloridos;
+  - etapas "Enviar código → Digitar código → Confirmado" no WhatsApp;
+  - `RhythmDashboard` usa `StatTile`;
+  - na demo, abaixo de 360 px, o seletor de papel vai para o menu de conta.
+- **Página pública → entrada → app:**
+  - a pílula de horário leva profissional, dia e hora: `/auth` mostra o cartão "Seu horário · Falta confirmar" e `/app?day=…&time=…` abre o Agendar com o dia e o horário pré-escolhidos, se ainda estiverem livres. Nunca reserva sozinho, e o serviço continua sendo escolhido pela pessoa;
+  - `/app?tab=conta&focus=whatsapp` abre a Conta no cartão do WhatsApp;
+  - corrigido o descompasso de hidratação de `/$barberSlug`;
+  - a prévia do login em Ajustes segue o `/auth` atual.
+- **Ajustes e Horários:**
+  - "Precisa da sua atenção" mostra o WhatsApp não confirmado e o progresso do guia (anel "1/5", próximo passo);
+  - Horários lê os pedidos pendentes por `list_pending_shop_changes`, então "Aguardando aprovação" sobrevive a recarregar a página;
+  - selo "Preenchido pelo CEP";
+  - a frase de WhatsApp caído no cartão da loja diz "Reconectar WhatsApp";
+  - no editor da página pública, as abas Editar/Prévia ficam presas no topo no celular.
+- **Limpeza:**
+  - 670 chaves sem uso removidas dos dicionários (de 4.510 para 3.872 em pt-BR), conferidas contra os prefixos montados dinamicamente;
+  - cerca de 850 linhas de CSS sem uso removidas (`.status-pill`, cartões de fidelidade antigos, métricas antigas da plataforma etc.);
+  - 2 componentes sem importação removidos.
+- **Verificação:**
+  - tsc, 195 testes, eslint, prettier e build;
+  - fotos de todas as abas de cliente, dono e plataforma em 390 claro e escuro, 320 e 1280, e do `/auth`: sem texto de chave cru, sem erro no console e sem rolagem lateral.
+
 **Pendências que dependem do dono ou de outra rodada:**
 
 - **Banco ou regra de dados:**
-  - colunas por profissional no computador;
-  - tocar no nome do cliente na Agenda para abrir o perfil (a RPC não devolve `customer_id`);
-  - pedidos de horário "aguardando aprovação" que sobrevivam a recarregar a página;
+  - ficha do cliente pela Agenda na visão de equipe (`get_team_schedule` sem `customer_id`);
+  - "Dar acesso ao painel" a um profissional que ainda não tem conta cria outro profissional, em vez de ligar ao existente: `invite-shop-admin`/`apply_add_shop_member` procuram pelo `user_id`; precisa de mudança no servidor;
   - pausa fixa semanal;
-  - levar o horário tocado na página pública até o Agendar;
-  - logo da barbearia nos cartões da plataforma.
+  - logo da barbearia nos cartões da plataforma;
+  - e-mail para diferenciar pessoas com o mesmo nome na plataforma.
 - **Decisões do dono:**
   - vagas de "qualquer profissional" na lista de espera;
   - "Toda semana" × "A cada 7 dias";
@@ -56,8 +99,7 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - nome da aba Reservas;
   - Esportes sempre visível;
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
-- **Limpeza:** chaves de dicionário sem uso ficaram para uma limpeza depois. O `CopyField` precisa de opção para esconder "Enviar" em valores técnicos e para não quebrar o link no meio da palavra.
-- **Visual:** nome da loja cortado em 320 px só na demonstração, por causa do botão extra de papel.
+  - criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real (comportamento antigo): decidir se ficam bloqueados na demo.
 
 ## Entrega — tempo de preparo entre atendimentos (05/10, Claude Code) — **migration pendente na VPS**
 

@@ -29,8 +29,9 @@ const CONFIRM_CLASS: Record<ConfirmTone, string> = {
 /**
  * Janela de decisão: diz de qual item se trata (resumo), o que vai acontecer (consequências com
  * ícone) e oferece dois botões com verbo + objeto ("Manter horário" / "Cancelar horário").
- * Enquanto confirma, o botão gira e a janela não fecha; se falhar, o erro aparece dentro dela e a
- * pessoa pode tentar de novo. Substitui `window.confirm` e parágrafos de regra.
+ * Enquanto confirma, o botão gira e a janela não fecha; se falhar, o erro (`errorText` + motivo em
+ * `errorDetail`) aparece dentro dela já na 1ª falha e a pessoa pode tentar de novo. Substitui
+ * `window.confirm` e parágrafos de regra.
  */
 export function ConfirmDialog({
   open,
@@ -49,6 +50,7 @@ export function ConfirmDialog({
   cancelLabel,
   onConfirm,
   errorText,
+  errorDetail,
   confirmDisabled,
 }: {
   open: boolean;
@@ -77,25 +79,44 @@ export function ConfirmDialog({
   cancelLabel: string;
   /** Pode devolver uma promessa: a janela espera, fecha no sucesso e mostra o erro na falha. */
   onConfirm: () => unknown | Promise<unknown>;
+  /**
+   * Resultado da falha ("Nada foi apagado"). É lido na hora de mostrar, não no clique: se a ação
+   * guardar o motivo num estado antes de rejeitar, ele já aparece na 1ª falha.
+   */
   errorText?: string;
+  /** Motivo devolvido pela ação (uma linha), mostrado abaixo do resultado da falha. */
+  errorDetail?: ReactNode;
   confirmDisabled?: boolean;
 }) {
   const { t } = useI18n();
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Uma falha = um objeto novo (null = sem erro): cada nova falha é anunciada e focada de novo,
+  // mesmo que o texto seja igual ao da anterior.
+  const [failure, setFailure] = useState<object | null>(null);
+  const error = failure ? (errorText ?? t("visual.result.failed")) : null;
+  const errorDetailText = typeof errorDetail === "string" ? errorDetail : "";
   const confirmRef = useRef<HTMLButtonElement>(null);
   const HeaderIcon = icon ?? TONE_ICON[tone];
   const ConfirmIcon = confirmIcon;
   const hasDetails = Boolean(summary) || Boolean(consequences?.length);
 
   useEffect(() => {
-    if (open) setError(null);
+    if (open) setFailure(null);
   }, [open]);
+
+  // Anuncia depois de desenhar, com o texto já atualizado pelo pai (motivo incluído).
+  useEffect(() => {
+    if (failure && error) {
+      announce(errorDetailText ? `${error} ${errorDetailText}` : error, "assertive");
+    }
+    // Só a cada nova falha; o texto em si não deve reanunciar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [failure]);
 
   // Depois de uma falha, o foco volta ao botão de confirmar para tentar de novo pelo teclado.
   useEffect(() => {
-    if (error && !busy) confirmRef.current?.focus();
-  }, [error, busy]);
+    if (failure && !busy) confirmRef.current?.focus();
+  }, [failure, busy]);
 
   const details = hasDetails ? (
     <div className="space-y-4 text-foreground">
@@ -111,14 +132,12 @@ export function ConfirmDialog({
   async function confirm() {
     if (busy) return;
     setBusy(true);
-    setError(null);
+    setFailure(null);
     try {
       await onConfirm();
       onOpenChange(false);
     } catch {
-      const message = errorText ?? t("visual.result.failed");
-      setError(message);
-      announce(message, "assertive");
+      setFailure({});
     } finally {
       setBusy(false);
     }
@@ -167,7 +186,11 @@ export function ConfirmDialog({
             </AlertDialogDescription>
           ))}
         {children}
-        {error && <Notice tone="danger" title={error} role="none" />}
+        {error && (
+          <Notice tone="danger" title={error} role="none">
+            {errorDetail || undefined}
+          </Notice>
+        )}
         {/* Celular: um botão por linha (a saída segura primeiro). Computador: lado a lado. */}
         <AlertDialogFooter className="grid gap-2 sm:grid-cols-2 sm:space-x-0">
           <button

@@ -10,6 +10,7 @@ import {
   minutesUntil,
   momentOf,
   moneyOf,
+  placeInLanes,
   nextUp,
   weekKeys,
   weekdayOf,
@@ -148,4 +149,18 @@ test("moneyOf separates done and expected values", () => {
     moneyOf(rows, () => 1000),
     { done: 1000, expected: 2000 },
   );
+});
+
+test("placeInLanes divide só os atendimentos que se sobrepõem", () => {
+  const placed = placeInLanes([
+    { item: "a", at: 540, end: 600 },
+    { item: "b", at: 570, end: 630 },
+    { item: "c", at: 600, end: 660 },
+    { item: "d", at: 700, end: 730 },
+  ]);
+  const by = Object.fromEntries(placed.map((entry) => [entry.item, entry]));
+  assert.deepEqual([by.a.lane, by.b.lane, by.c.lane], [0, 1, 0]);
+  assert.deepEqual([by.a.lanes, by.b.lanes, by.c.lanes], [2, 2, 2]);
+  assert.equal(by.d.lane, 0);
+  assert.equal(by.d.lanes, 1);
 });

@@ -1,5 +1,15 @@
 import { useEffect, useId, useState } from "react";
-import { Bell, KeyRound, Loader2, MessageCircle, Pencil, Send, Trash2, X } from "lucide-react";
+import {
+  Bell,
+  KeyRound,
+  Loader2,
+  MessageCircle,
+  Pencil,
+  Send,
+  ShieldCheck,
+  Trash2,
+  X,
+} from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
   ActionResult,
@@ -40,6 +50,8 @@ type Props = {
   onStatusChange?: (status: WhatsappStatus) => void;
   /** id do cartão, para os atalhos do resumo da Conta. */
   id?: string;
+  /** Dentro de uma janela: sem moldura e sem cabeçalho próprio (o título é o da janela). */
+  bare?: boolean;
 };
 
 type OtpPayload = {
@@ -107,6 +119,7 @@ export function WhatsappProfileCard({
   initialVerified,
   onStatusChange,
   id,
+  bare = false,
 }: Props) {
   const { t } = useI18n();
   const uid = useId();
@@ -132,6 +145,8 @@ export function WhatsappProfileCard({
   const [retry, setRetry] = useState<(() => void) | null>(null);
   const [toggleState, setToggleState] = useState<ActionState | null>(null);
   const [toggleText, setToggleText] = useState<string | undefined>(undefined);
+  // Acabou de confirmar por código nesta tela: as três etapas aparecem concluídas.
+  const [justVerified, setJustVerified] = useState(false);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -195,6 +210,7 @@ export function WhatsappProfileCard({
     setBusy("send");
     setCodeError(null);
     setResult(null);
+    setJustVerified(false);
     try {
       const payload = await callVerifyPhone({ action: "request", destination: number });
       if (!payload.ok) {
@@ -315,6 +331,7 @@ export function WhatsappProfileCard({
       setCode("");
       setPendingNumber("");
       setAttemptsLeft(null);
+      setJustVerified(true);
       showResult(
         "saved",
         payload.whatsapp_opt_in_at ? t("fix2.whats.verifiedOptIn") : t("fix2.whats.verified"),
@@ -338,6 +355,33 @@ export function WhatsappProfileCard({
       : { ...STATE.attention, label: t("fix2.whats.badgeUnverified") };
   // Avisos ligados num número sem confirmar só passam a valer com o código: mostra pendente.
   const optInPending = optIn && !demo && (!savedNumber || !verified);
+
+  /** Enviar código → Digitar código → Confirmado, a partir da etapa em que o cartão está. */
+  const confirmSteps = (phase: 0 | 1 | 2) => (
+    <Steps
+      label={t("conta.whats.stepsLabel")}
+      steps={[
+        {
+          key: "send",
+          label: t("conta.whats.stepSend"),
+          icon: Send,
+          status: phase > 0 ? "done" : "current",
+        },
+        {
+          key: "type",
+          label: t("conta.whats.stepType"),
+          icon: KeyRound,
+          status: phase > 1 ? "done" : phase === 1 ? (codeError ? "error" : "current") : "upcoming",
+        },
+        {
+          key: "confirmed",
+          label: t("conta.whats.stepConfirmed"),
+          icon: ShieldCheck,
+          status: phase > 1 ? "done" : "upcoming",
+        },
+      ]}
+    />
+  );
 
   const optInRow = (
     <SettingRow
@@ -363,15 +407,17 @@ export function WhatsappProfileCard({
   return (
     <section
       id={id}
-      className="app-action-card scroll-mt-24 space-y-4 p-4 sm:p-5"
-      aria-labelledby={titleId}
+      className={bare ? "space-y-4" : "app-action-card scroll-mt-24 space-y-4 p-4 sm:p-5"}
+      aria-labelledby={bare ? undefined : titleId}
     >
-      <SectionHeader
-        icon={MessageCircle}
-        id={titleId}
-        title="WhatsApp"
-        aside={step === "edit" ? <StatusBadge {...badge} size="sm" /> : null}
-      />
+      {!bare && (
+        <SectionHeader
+          icon={MessageCircle}
+          id={titleId}
+          title="WhatsApp"
+          aside={step === "edit" ? <StatusBadge {...badge} size="sm" /> : null}
+        />
+      )}
 
       {step === "edit" && (
         // Para que serve o número, em duas dicas com ícone (no lugar do parágrafo).
@@ -394,14 +440,7 @@ export function WhatsappProfileCard({
           }}
           className="space-y-4"
         >
-          <Steps
-            label={t("conta.whats.stepsLabel")}
-            steps={[
-              { label: t("conta.whats.stepNumber"), status: "done" },
-              { label: t("conta.whats.stepCode"), status: codeError ? "error" : "current" },
-              { label: t("conta.whats.stepDone"), status: "upcoming" },
-            ]}
-          />
+          {confirmSteps(1)}
           <p className="text-sm">
             {t("conta.whats.sentTo")}{" "}
             <strong className="whitespace-nowrap tabular-nums">{formatBr(pendingNumber)}</strong>
@@ -485,6 +524,7 @@ export function WhatsappProfileCard({
                 setWhatsapp(formatBr(savedNumber));
                 setResult(null);
                 setToggleState(null);
+                setJustVerified(false);
               }}
               className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-border px-3 text-sm font-semibold transition hover:border-primary/40 disabled:opacity-50"
             >
@@ -492,13 +532,16 @@ export function WhatsappProfileCard({
               {t("fix2.whats.changeNumber")}
             </button>
           </div>
+          {!demo && !verified && confirmSteps(0)}
+          {!demo && verified && justVerified && confirmSteps(2)}
           {!verified && !demo && (
             <Notice
               tone="warning"
               role="none"
               title={t("conta.whats.consequence")}
               action={{
-                label: t("conta.whats.confirmMine"),
+                // Mesmo verbo da 1ª etapa logo acima ("Enviar código").
+                label: t("fix2.whats.sendCode"),
                 icon: Send,
                 onClick: () => void sendCode(savedNumber),
               }}
@@ -528,9 +571,8 @@ export function WhatsappProfileCard({
             />
           </div>
           {!savedNumber && optInRow}
-          {!demo && !removing && changed && whatsapp.trim() && (
-            <IconList size="sm" items={[{ icon: KeyRound, text: t("conta.whats.codeNext") }]} />
-          )}
+          {/* Número novo: as etapas mostram que vem um código (no lugar da frase). */}
+          {!demo && !removing && changed && whatsapp.trim() && confirmSteps(0)}
           <div className="flex flex-wrap gap-2">
             <button
               type="submit"

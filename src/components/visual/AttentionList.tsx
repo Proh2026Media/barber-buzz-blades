@@ -16,13 +16,25 @@ export type AttentionItem = {
   description?: ReactNode;
   /** Prazo ou contexto à direita do texto (ex.: `<Countdown …/>`). */
   aside?: ReactNode;
-  /** A única ação do item, com verbo ("Confirmar", "Revisar agora"). Leva direto ao ponto. */
-  action: { label: string; onClick: () => void; icon?: LucideIcon };
+  /** A ação principal do item, com verbo ("Confirmar", "Revisar agora"). Leva direto ao ponto. */
+  action: AttentionAction;
+  /**
+   * Saída opcional, discreta e ao lado da principal ("Cancelar horário", "Desistir"). Use só
+   * quando recusar for uma resposta tão comum quanto aceitar.
+   */
+  secondaryAction?: AttentionAction;
+};
+
+export type AttentionAction = {
+  label: string;
+  onClick: () => void;
+  icon?: LucideIcon;
+  disabled?: boolean;
 };
 
 /**
  * "Precisa da sua atenção": lista curta, ordenada por urgência, com ícone e cor do estado, uma
- * frase e UM botão por item. Só aparece quando há algo a fazer (ou, com `allClear`, mostra
+ * frase e UM botão principal por item (mais uma saída discreta opcional). Só aparece quando há algo a fazer (ou, com `allClear`, mostra
  * "Tudo em ordem" em verde). Acima de `max` itens, recolhe o resto em "Ver todos".
  */
 export function AttentionList({
@@ -72,6 +84,8 @@ export function AttentionList({
       <ul className="space-y-2">
         {visible.map((item) => {
           const ActionIcon = item.action.icon;
+          const second = item.secondaryAction;
+          const SecondIcon = second?.icon;
           return (
             <li
               key={item.id}
@@ -88,15 +102,31 @@ export function AttentionList({
                 )}
               </div>
               {item.aside}
-              <button
-                type="button"
-                onClick={item.action.onClick}
-                className="ms-auto inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-border bg-card px-3 text-sm font-semibold transition hover:border-primary/40"
-              >
-                {ActionIcon && <ActionIcon className="size-4" aria-hidden />}
-                {item.action.label}
-                <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
-              </button>
+              {/* Principal à direita e saída discreta à esquerda dela; sem espaço, a saída desce
+                  para baixo da principal. A ordem do teclado segue a importância. */}
+              <div className="ms-auto flex flex-row-reverse flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={item.action.onClick}
+                  disabled={item.action.disabled}
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-border bg-card px-3 text-sm font-semibold transition hover:border-primary/40 disabled:opacity-60"
+                >
+                  {ActionIcon && <ActionIcon className="size-4" aria-hidden />}
+                  {item.action.label}
+                  <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+                </button>
+                {second && (
+                  <button
+                    type="button"
+                    onClick={second.onClick}
+                    disabled={second.disabled}
+                    className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-2 text-sm font-semibold text-muted-foreground transition hover:text-foreground disabled:opacity-50"
+                  >
+                    {SecondIcon && <SecondIcon className="size-4" aria-hidden />}
+                    {second.label}
+                  </button>
+                )}
+              </div>
             </li>
           );
         })}

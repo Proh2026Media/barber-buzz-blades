@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { IconTile, LoadingState, MoreDetails, Notice, StatTile } from "@/components/visual";
+import { IconTile, LoadingState, MoreDetails, Notice, StatTile, Steps } from "@/components/visual";
 import {
   LegalBackButton,
   LegalCourtesyNotice,
@@ -23,7 +23,6 @@ import {
   legalHeaderButton,
 } from "@/features/legal/LegalPageShell";
 import { useLegalI18n } from "@/features/legal/legal-locale";
-import { HowSteps } from "@/features/marketing/HowSteps";
 import { legalRichText } from "@/features/legal/rich-text";
 import { TierBadge } from "@/features/loyalty/TierBadge";
 import { parseLoyaltyProgram, tierStyleKey, type LoyaltyProgram } from "@/features/loyalty/program";
@@ -500,7 +499,8 @@ function GenericProgram({ t }: { t: T }) {
     <section className="space-y-4">
       <SectionTitle icon={Trophy}>{t("legal.club.generalTitle")}</SectionTitle>
       <div className={cardClass}>
-        <HowSteps
+        <Steps
+          variant="static"
           orientation="vertical"
           label={t("legal.club.generalTitle")}
           steps={[

@@ -187,16 +187,16 @@ export function WhatsappConfirmBanner({
             </p>
           )}
           {/* O cartão de Meu perfil entra sem a moldura e sem o cabeçalho próprios ("WhatsApp ·
-              Não confirmado"): a janela já é o cartão e o título dela já diz isso. */}
-          <div className="[&>section]:border-0 [&>section]:bg-transparent [&>section]:p-0 [&>section]:shadow-none [&>section>div:first-child]:hidden">
-            <WhatsappProfileCard
-              demo={false}
-              disabled={false}
-              initialNumber={pending.number}
-              initialOptIn={pending.optIn}
-              initialVerified={false}
-            />
-          </div>
+              Não confirmado"): a janela já é o cartão e o título dela já diz isso. As etapas
+              Enviar código → Digitar código → Confirmado vêm do próprio cartão. */}
+          <WhatsappProfileCard
+            bare
+            demo={false}
+            disabled={false}
+            initialNumber={pending.number}
+            initialOptIn={pending.optIn}
+            initialVerified={false}
+          />
         </DialogContent>
       </Dialog>
     </>

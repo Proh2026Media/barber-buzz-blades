@@ -26,9 +26,6 @@ export const enGB: Record<MessageKey, string> = {
   "sports.football": "Football",
   "sports.extraTime": "Extra time",
   "sports.final": "Full time",
-  "team.gov.requestCancelled": "Request canceled. Nothing was applied.",
-  "team.perm.servicesHint": "Access level to this location's service catalogue",
-  "team.perm.level.allTitle": "Manage the whole catalogue",
   "legal.terms.s2Body2":
     "Optional integrations (for example, the shop's WhatsApp or Google Calendar/Contacts) depend on a connection and authorisation made by the person in charge of the barbershop.",
   "legal.terms.s3Item3":
@@ -59,13 +56,7 @@ export const enGB: Record<MessageKey, string> = {
   "plat.shops.customize": "Customise",
   "plat.newShop.customizeNow": "Customise now",
   "plat.brand.title": "Customise {name}",
-  "plat.perm.admin": "platform administrator",
-  "shop.deleteService.body":
-    "The service “{name}” will be removed from the catalogue. This can't be undone.",
-  "shop.agenda.insights": "Day's figures",
   "shop.agenda.listAria": "Day's appointments",
-  "shop.money.cancellationsAriaOne": "See {count} cancellation for the day",
-  "shop.money.cancellationsAriaMany": "See {count} cancellations for the day",
   "ins.q.service_interest.coloring": "Hair colouring",
   "brand.icon.barbaEBigode": "Beard and moustache",
   "brand.icon.bigode": "Moustache",
@@ -76,59 +67,29 @@ export const enGB: Record<MessageKey, string> = {
   "brand.icon.doce": "Sweets",
   "brand.icon.biscoito": "Biscuit",
   "brand.icon.check": "Tick",
-  "shop.settings.brandHint": "The barbershop's logo, name, font, colours and logo background.",
-  "shop.settings.assignFavorite": "Favourite barber first, otherwise any available",
-  "shop.settings.surveysHint":
-    "Controls the barbershop's programme. Each customer's own choice is still respected.",
-  "ins.pro.globalTitle": "Anonymised barbershop overview",
   "brand.validate.colors": "Check the colours. Use the hex format #RRGGBB.",
   "brand.layout.cardHint": "Highlights the form in a centred card over the image.",
   "app.google.denied":
     "Connection cancelled on Google. If you saw “app not verified”, use Advanced → continue.",
   "team.partner.rhythmTitle": "Your clients' rhythm",
-  "wait.cutoff.example":
-    "For a 3pm appointment, the wait can start by {start} and ends by {end}. After {start}, withdrawing the confirmation frees the time straight away.",
-  "brand.editor.subtitlePlatform":
-    "Logo, name, font and colours that this barbershop's customers and team see.",
-  "brand.editor.subtitleShop": "Customise your brand without hurting readability across the app.",
-  "brand.login.realPreviewHint":
-    "Shows the sign-in page with the draft's current photo, colours and corners.",
-  "brand.colors.title": "System colours",
-  "brand.colors.hint":
-    "They apply to the dashboard and the customer app. Success, error and cancellation notices keep their own colours.",
   "brand.colors.contrast":
     "Automatic contrast is on: the system picks light or dark text and icons and strengthens the colour when it would blend in, without changing the brand's background colour.",
   "brand.colors.primary": "Main colour",
   "brand.colors.accent": "Accent colour",
-  "brand.logoBg.hint":
-    "Colour that fills the logo square in the header. Use it when the logo has no background of its own (transparent); leave empty to keep it transparent.",
   "brand.color.triggerAria": "{label}: {value}. Open colour picker",
   "brand.color.hexLabel": "Colour code",
   "brand.color.other": "Other colour",
   "brand.loginPreview.mobile": "Mobile",
   "brand.crop.zoomValue": "{value} per cent",
   "brand.crop.recenter": "Re-centre",
-  "brand.step.cores": "Colours and corners",
   "landingEditor.description":
     "This is what customers see when they open your barbershop's address. Logo, colours and photo come from your brand identity.",
-  "shop.settings.group.aparencia.hint": "Logo, colours, tagline and the barbershop page.",
-  "fix.componentes-loja.perm.view_agenda_all": "Full diary overview",
-  "fix.componentes-loja.perm.view_agenda_allHint":
-    "See the diary of every professional at this location",
-  "fix.componentes-loja.perm.view_financial_allHint":
-    "Access turnover and full financial reports for this location",
-  "fix.componentes-loja.perm.view_reports_anonymized": "Anonymised overall metrics",
-  "fix.componentes-loja.perm.manage_services": "Manage full catalogue",
   "fix.ajustes-marca.domainNothingPending": "No domain is awaiting verification.",
-  "fix.ajustes-marca.departureConfirmForfeit":
-    "You'll lose access to this shop straight away and your clients will stay here. This can't be undone.",
   "fix2.edge.otpTooManyAttempts": "Too many incorrect codes. Request a new code to continue.",
   "fix2.edge.whatsappUnavailable":
     "We couldn't send the WhatsApp message just now. Please try again in a few minutes.",
   "legal.privacy.s11Item3":
     "**Disconnect Calendar/Contacts:** in the shop dashboard, under Settings → Notifications and integrations → Google Calendar and Contacts, use the disconnect option. We immediately revoke the authorisation with Google and delete the tokens, the connected Google account's email and the imported events from our database. If the revocation with Google fails (for example, because of a network error or an already expired token), the app still disconnects and we tell you to remove access at myaccount.google.com/permissions. Events already copied to your Google Calendar stay there and you can delete them.",
-  "fix3.google.eventsIntro":
-    "Events imported from the chosen calendar, so you can see busy times whilst managing bookings. Read-only: make changes in Google Calendar.",
   "fix3.google.disconnectedRevoked":
     "Google disconnected. The app's access to your Google Account has been revoked and imported data has been deleted.",
   "fix3.auth.phoneUnavailable":
@@ -155,23 +116,14 @@ export const enGB: Record<MessageKey, string> = {
   "cad.cliente.ownerLink": "Register your barbershop",
   "cad.dono.termsText":
     "I have read and accept the {terms}, the {privacy} and the {dpa} for barbershops. I am 18 or over and authorised to represent this barbershop.",
-  "cad.dono.termsNeeded": "Tick the box above to continue.",
   "cad.dono.errTerms": "To create the account, tick the acceptance box.",
   "cad.guia.hoursHint": "We've set Monday to Saturday, 9:00 to 19:00.",
   "cad.guia.hoursOk": "That's right",
   "cad.guia.serviceHint": "E.g. haircut, beard. With price and duration.",
   "cad.guia.brandTitle": "Choose your logo and colours",
-  "dec.termos.text":
-    "It only takes a minute: review the documents and tap I agree to carry on using the app as usual.",
   "dec.termos.error": "We couldn't save that just now. Please try again.",
   "dec.whats.title": "Confirm your WhatsApp to receive reminders",
   "dec.whats.titleOwner": "Your WhatsApp hasn't been confirmed yet",
-  "dec.tz.settings.intro":
-    "Booking times, the diary and notifications follow this time zone. Choose the one where the barbershop is, even if you open the app from somewhere else.",
-  "dec.tz.settings.effect":
-    "Once saved, booking times will follow {zone}. Opening hours keep the same numbers (e.g. 9:00 to 19:00), now in this time zone. Existing appointments keep the same moment and may show at a different hour.",
-  "landingEditor.cep.hint":
-    "Type the CEP (Brazilian postcode) and we'll fill in the street, neighbourhood and city. Or type the address straight into the field below.",
   "landingEditor.cep.label": "CEP (postcode)",
   "landingEditor.cep.district": "Neighbourhood",
   "landingEditor.cep.complement": "Flat, unit (optional)",

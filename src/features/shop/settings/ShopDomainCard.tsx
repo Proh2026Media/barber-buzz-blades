@@ -415,8 +415,9 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
               />
             ))}
         </div>
-        <CopyField label={t("domainCard.record.name")} value={host} mono />
-        <CopyField label={t("domainCard.record.value")} value={value} mono />
+        {/* Valores técnicos: só copiar e colar no provedor (sem "Enviar"). */}
+        <CopyField label={t("domainCard.record.name")} value={host} mono share={false} />
+        <CopyField label={t("domainCard.record.value")} value={value} mono share={false} />
       </div>
     );
   }

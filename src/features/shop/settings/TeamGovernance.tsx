@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import {
   ActionResult,
+  announce,
   Countdown,
   DetailList,
   EmptyState,
@@ -21,6 +22,7 @@ import {
   IconTile,
   LoadingState,
   MoreDetails,
+  Notice,
   PersonAvatar,
   SectionHeader,
   StatusBadge,
@@ -52,6 +54,38 @@ import {
 import { awaitingMe, fetchDecisionQueue, type ChangeRequest } from "./decision-queue";
 
 type Settled = { request: ChangeRequest; tone: Tone; text: string };
+type DecisionAction = "approve" | "decline" | "cancel";
+
+/**
+ * Resultado de uma decisão no lugar do pedido. O cartão encolhe ao virar resultado: se a frase
+ * ficar fora da vista (acima do botão que a pessoa tocou), rola até ela.
+ */
+function SettledResult({ done, detail }: { done: Settled; detail: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const nav = document.querySelector(".app-mobile-nav");
+    const bottomLimit = nav ? nav.getBoundingClientRect().top : window.innerHeight;
+    if (rect.top >= 0 && rect.bottom <= bottomLimit) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
+  }, []);
+  const icon =
+    done.tone === "success"
+      ? CheckCircle2
+      : done.tone === "danger"
+        ? XCircle
+        : done.tone === "pending"
+          ? Hourglass
+          : TimerOff;
+  return (
+    <Notice ref={ref} tone={done.tone} icon={icon} title={done.text} className="rounded-2xl p-3">
+      {detail}
+    </Notice>
+  );
+}
 
 /** Quanto tempo o resultado de uma decisão fica no lugar do pedido antes de sair da lista. */
 const SETTLE_MS = 5000;
@@ -176,10 +210,11 @@ export function TeamGovernance({
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [busy, setBusy] = useState<{ id: string; action: "approve" | "decline" | "cancel" } | null>(
-    null,
+  const [busy, setBusy] = useState<{ id: string; action: DecisionAction } | null>(null);
+  // Erro de cada pedido, com a ação que falhou (para "Tentar de novo" junto dos botões).
+  const [errors, setErrors] = useState<Record<string, { text: string; action: DecisionAction }>>(
+    {},
   );
-  const [errors, setErrors] = useState<Record<string, string>>({});
   const [settled, setSettled] = useState<Record<string, Settled>>({});
   const [now, setNow] = useState(() => Date.now());
   const timers = useRef<number[]>([]);
@@ -219,6 +254,11 @@ export function TeamGovernance({
   }, []);
 
   const memberByUser = useMemo(() => new Map(members.map((m) => [m.user_id, m])), [members]);
+  // Foto de quem pediu (a mesma do cartão do profissional), quando houver.
+  const photoOf = useMemo(() => {
+    const map = new Map((staff ?? []).map((row) => [row.id, row.avatar_url ?? null]));
+    return (staffId: string) => map.get(staffId) ?? null;
+  }, [staff]);
   const memberNames = useMemo(
     () =>
       new Map(
@@ -289,9 +329,20 @@ export function TeamGovernance({
     timers.current.push(id);
   }
 
-  async function decide(request: ChangeRequest, approve: boolean) {
-    setBusy({ id: request.id, action: approve ? "approve" : "decline" });
+  // O erro fica na tela (com o foco no "Tentar de novo") até a nova resposta chegar: some só no
+  // sucesso. Se a nova tentativa falhar com a mesma frase, o aviso é lido de novo.
+  function fail(request: ChangeRequest, text: string, action: DecisionAction) {
+    if (errors[request.id]?.text === text) announce(text, "assertive");
+    setErrors((current) => ({ ...current, [request.id]: { text, action } }));
+  }
+
+  function clearError(request: ChangeRequest) {
     setErrors(({ [request.id]: _drop, ...rest }) => rest);
+  }
+
+  async function decide(request: ChangeRequest, approve: boolean) {
+    if (busy?.id === request.id) return;
+    setBusy({ id: request.id, action: approve ? "approve" : "decline" });
     const { data, error } = await supabase.rpc("decide_shop_change", {
       p_request_id: request.id,
       p_approve: approve,
@@ -299,9 +350,10 @@ export function TeamGovernance({
     });
     setBusy(null);
     if (error) {
-      setErrors((current) => ({ ...current, [request.id]: friendlyAuthError(error) }));
+      fail(request, friendlyAuthError(error), approve ? "approve" : "decline");
       return;
     }
+    clearError(request);
     const result = data as { status?: string; remaining_approvals?: number } | null;
     if (result?.status === "expired") settle(request, "neutral", t("eq.gov.result.expired"));
     else if (result?.status === "pending") {
@@ -318,14 +370,15 @@ export function TeamGovernance({
   }
 
   async function cancel(request: ChangeRequest) {
+    if (busy?.id === request.id) return;
     setBusy({ id: request.id, action: "cancel" });
-    setErrors(({ [request.id]: _drop, ...rest }) => rest);
     const { error } = await supabase.rpc("cancel_shop_change", { p_request_id: request.id });
     setBusy(null);
     if (error) {
-      setErrors((current) => ({ ...current, [request.id]: friendlyAuthError(error) }));
+      fail(request, friendlyAuthError(error), "cancel");
       return;
     }
+    clearError(request);
     settle(request, "neutral", t("eq.gov.result.cancelled"));
     await load();
   }
@@ -349,6 +402,7 @@ export function TeamGovernance({
     });
     const requester = memberByUser.get(request.requested_by);
     const busyHere = busy?.id === request.id;
+    const failed = errors[request.id];
     // Já aprovado por quem vê: espera os outros donos, sem botões de decisão.
     const approvedMine = !own && approvedByMe(request);
     const tone: Tone = own || approvedMine ? "neutral" : "pending";
@@ -356,32 +410,12 @@ export function TeamGovernance({
     const waitingNames = mode === "equal" ? missingNames(request) : decidersText;
 
     if (done) {
-      const Icon =
-        done.tone === "success"
-          ? CheckCircle2
-          : done.tone === "danger"
-            ? XCircle
-            : done.tone === "pending"
-              ? Hourglass
-              : TimerOff;
       return (
-        <li
-          key={request.id}
-          className={cn(
-            TONE_CLASS[done.tone],
-            "flex items-center gap-3 rounded-2xl border-2 border-[color:var(--tone-line)] bg-[color:var(--tone-bg)] p-3 text-[color:var(--tone-ink)]",
-          )}
-        >
-          <Icon className="size-6 shrink-0" aria-hidden />
-          <div className="min-w-0">
-            <p role="status" className="text-sm font-bold">
-              {done.text}
-            </p>
-            <p className="text-xs opacity-90">
-              {view.title}
-              {view.subject ? ` · ${view.subject}` : ""}
-            </p>
-          </div>
+        <li key={request.id}>
+          <SettledResult
+            done={done}
+            detail={view.subject ? `${view.title} · ${view.subject}` : view.title}
+          />
         </li>
       );
     }
@@ -407,6 +441,7 @@ export function TeamGovernance({
             <span className="inline-flex min-w-0 items-center gap-1.5 text-xs font-semibold">
               <PersonAvatar
                 name={requester?.display_name ?? "?"}
+                src={requester ? photoOf(requester.staff_id) : null}
                 seed={requester?.user_id}
                 size="xs"
               />
@@ -479,15 +514,6 @@ export function TeamGovernance({
           ]}
         />
 
-        {errors[request.id] && (
-          <ActionResult
-            state="error"
-            text={errors[request.id]}
-            reveal={false}
-            onDismiss={() => setErrors(({ [request.id]: _drop, ...rest }) => rest)}
-          />
-        )}
-
         <div className="flex flex-wrap justify-end gap-2 empty:hidden">
           {own ? (
             <button
@@ -538,6 +564,20 @@ export function TeamGovernance({
             </>
           )}
         </div>
+
+        {/* Não deu certo: logo abaixo dos botões, com "Tentar de novo" a mesma ação. */}
+        {failed && (
+          <ActionResult
+            state="error"
+            text={failed.text}
+            onRetry={() =>
+              void (failed.action === "cancel"
+                ? cancel(request)
+                : decide(request, failed.action === "approve"))
+            }
+            onDismiss={() => clearError(request)}
+          />
+        )}
       </li>
     );
   };

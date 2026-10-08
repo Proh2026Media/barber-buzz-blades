@@ -18,8 +18,7 @@ import {
   SquareCheckBig,
   type LucideIcon,
 } from "lucide-react";
-import { StatusBadge, Tag, type Tone } from "@/components/visual";
-import { HowSteps } from "./HowSteps";
+import { StatusBadge, Steps, Tag, type Tone } from "@/components/visual";
 import { ServiceIcon } from "@/components/ui/service-icon";
 import { StaffPhoto } from "@/components/ui/staff-photo";
 import { useI18n } from "@/lib/i18n";
@@ -36,6 +35,12 @@ const SLOTS_SHOWN = 6;
 /** `get_public_shop_landing` devolve no máximo 12 horários livres por profissional. */
 const SERVER_SLOTS_LIMIT = 12;
 
+/** Horário tocado que segue escolhido para o app (sem a data de hoje, só abre a agenda). */
+function pickedSlot(day: string | undefined, time: string, member: LandingStaff) {
+  if (!day || !/^\d{4}-\d{2}-\d{2}$/.test(day) || !/^\d{2}:\d{2}$/.test(time)) return null;
+  return { day, time, who: member.name.split(" ")[0] };
+}
+
 /**
  * Link para agendar: com sessão salva no aparelho vai direto ao app; sem sessão passa pela
  * entrada e volta ao app com a loja (e o profissional) já escolhidos. Na prévia do editor não
@@ -46,6 +51,7 @@ export function BookLink({
   preview,
   signedIn,
   barber,
+  slot,
   className,
   ariaLabel,
   children,
@@ -54,6 +60,11 @@ export function BookLink({
   preview: boolean;
   signedIn: boolean;
   barber?: string | null;
+  /**
+   * Horário tocado: segue para o Agendar já escolhido (dia AAAA-MM-DD e HH:MM no fuso da loja),
+   * passando pela entrada com o resumo à vista. `who` é o nome mostrado no resumo da entrada.
+   */
+  slot?: { day: string; time: string; who: string } | null;
   className: string;
   ariaLabel?: string;
   children: ReactNode;
@@ -70,6 +81,7 @@ export function BookLink({
     join: undefined,
     tab: undefined,
     reserva: undefined,
+    ...(slot ? { day: slot.day, time: slot.time } : {}),
   };
   if (signedIn)
     return (
@@ -79,10 +91,14 @@ export function BookLink({
     );
   const params = new URLSearchParams({ shop: slug });
   if (barber) params.set("barber", barber);
+  if (slot) {
+    params.set("day", slot.day);
+    params.set("time", slot.time);
+  }
   return (
     <Link
       to="/auth"
-      search={{ next: `/app?${params.toString()}`, shop: slug }}
+      search={{ next: `/app?${params.toString()}`, shop: slug, ...(slot ? { who: slot.who } : {}) }}
       className={className}
       aria-label={ariaLabel}
     >
@@ -128,7 +144,8 @@ export function MemberDayBadge({
 export function BookingSteps({ className }: { className?: string }) {
   const { t } = useI18n();
   return (
-    <HowSteps
+    <Steps
+      variant="static"
       label={t("shopLanding.stepsLabel")}
       className={className}
       steps={[
@@ -150,6 +167,7 @@ export function TodayCard({
   signedIn,
   showToday,
   next,
+  day,
   freeCount,
   dayState,
   nextDayLabel,
@@ -162,6 +180,8 @@ export function TodayCard({
   showToday: boolean;
   /** Horário livre mais cedo de hoje e com quem. */
   next: { time: string; member: LandingStaff } | null;
+  /** Data de hoje no fuso da loja (AAAA-MM-DD): o horário tocado segue escolhido para o app. */
+  day?: string;
   freeCount: number;
   /** Situação da loja hoje quando não sobra horário (lotado, sem atendimento, encerrado). */
   dayState: MemberDay | null;
@@ -210,7 +230,8 @@ export function TodayCard({
           preview={preview}
           signedIn={signedIn}
           barber={next.member.booking_slug}
-          ariaLabel={`${t("shopLanding.nextFree")}: ${t("shopLanding.slotAria", {
+          slot={pickedSlot(day, next.time, next.member)}
+          ariaLabel={`${t("shopLanding.nextFree")}: ${t("shopLanding.slotPickAria", {
             time: formatClock(next.time, intlLocale),
             name: next.member.name,
           })}`}
@@ -240,11 +261,13 @@ export function TodayCard({
                 {t("shopLanding.nextWith", { name: next.member.name.split(" ")[0] })}
               </span>
             </span>
-            {/* O toque abre a agenda do profissional; ainda não guarda o horário mostrado. */}
+            {/* O toque leva o horário escolhido ao app; a reserva só vale depois de confirmar. */}
             {!preview && (
               <span className="mt-0.5 flex items-center gap-1 text-xs font-medium text-muted-foreground">
                 <Pointer className="size-3.5 shrink-0" aria-hidden />
-                {t("shopLanding.seeAgendaOf", { name: next.member.name.split(" ")[0] })}
+                {day
+                  ? t("shopLanding.tapToPick")
+                  : t("shopLanding.seeAgendaOf", { name: next.member.name.split(" ")[0] })}
               </span>
             )}
           </span>
@@ -279,11 +302,14 @@ export function SlotPills({
   slug,
   preview,
   signedIn,
+  day,
 }: {
   member: LandingStaff;
   slug: string;
   preview: boolean;
   signedIn: boolean;
+  /** Data de hoje no fuso da loja (AAAA-MM-DD): o horário tocado segue escolhido para o app. */
+  day?: string;
 }) {
   const { t, intlLocale } = useI18n();
   const [expanded, setExpanded] = useState(false);
@@ -312,7 +338,7 @@ export function SlotPills({
         {!preview && (
           <span className="ml-auto inline-flex items-center gap-1 font-medium">
             <Pointer className="size-3.5" aria-hidden />
-            {t("shopLanding.tapToOpen")}
+            {day ? t("shopLanding.tapToPick") : t("shopLanding.tapToOpen")}
           </span>
         )}
       </p>
@@ -328,7 +354,8 @@ export function SlotPills({
               preview={preview}
               signedIn={signedIn}
               barber={member.booking_slug}
-              ariaLabel={t("shopLanding.slotAria", {
+              slot={pickedSlot(day, time, member)}
+              ariaLabel={t(day ? "shopLanding.slotPickAria" : "shopLanding.slotAria", {
                 time: formatClock(time, intlLocale),
                 name: member.name,
               })}

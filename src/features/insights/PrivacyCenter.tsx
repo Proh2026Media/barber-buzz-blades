@@ -201,7 +201,8 @@ export function PrivacyCenter({
               tone="muted"
               title={t("conta.privacy.essential")}
               description={t("conta.privacy.essentialShort")}
-              control={
+              // O selo vai embaixo do texto: ao lado, em 320 px, espremia a descrição.
+              summary={
                 <StatusBadge {...STATE.active} size="sm" label={t("conta.privacy.always")} />
               }
             />

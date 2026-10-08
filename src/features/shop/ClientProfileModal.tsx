@@ -15,7 +15,6 @@ import { useDemo } from "@/features/demo/context";
 import { RhythmDashboard, type RhythmPayload } from "@/features/insights/RhythmDashboard";
 import {
   APPOINTMENT_STATUS,
-  AppointmentStatusBadge,
   EmptyState,
   LoadingState,
   Notice,
@@ -27,6 +26,7 @@ import {
 } from "@/components/visual";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { ClientNoticeBell } from "./ClientNoticeBell";
+import { AGENDA_STATE } from "./agenda/types";
 import { t as tNow, useI18n } from "@/lib/i18n";
 
 export type ClientHistoryRow = {
@@ -62,6 +62,14 @@ function formatBRL(cents: number, intlLocale: string) {
 
 function isStatus(value: string): value is AppointmentStatus {
   return value in APPOINTMENT_STATUS;
+}
+
+/**
+ * Selo da situação com a mesma cor, ícone e rótulo da Agenda ("A confirmar", "Cliente vai
+ * remarcar"…): quem vê a ficha reconhece o estado sem traduzir.
+ */
+function agendaMeta(status: AppointmentStatus) {
+  return AGENDA_STATE[status];
 }
 
 /**
@@ -262,7 +270,12 @@ export function ClientProfileModal({
                       </span>
                     )}
                     {isStatus(upcoming.status) && (
-                      <AppointmentStatusBadge status={upcoming.status} size="sm" />
+                      <StatusBadge
+                        tone={agendaMeta(upcoming.status).tone}
+                        icon={agendaMeta(upcoming.status).icon}
+                        label={t(agendaMeta(upcoming.status).labelKey)}
+                        size="sm"
+                      />
                     )}
                   </div>
                 </section>
@@ -355,7 +368,7 @@ export function ClientProfileModal({
                 ) : (
                   <ol className="space-y-1.5">
                     {past.map((row) => {
-                      const meta = isStatus(row.status) ? APPOINTMENT_STATUS[row.status] : null;
+                      const meta = isStatus(row.status) ? agendaMeta(row.status) : null;
                       return (
                         <li
                           key={row.appointment_id}
@@ -381,8 +394,13 @@ export function ClientProfileModal({
                             </p>
                             <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                               <span>{dateTime.format(new Date(row.starts_at))}</span>
-                              {isStatus(row.status) && (
-                                <AppointmentStatusBadge status={row.status} size="sm" />
+                              {meta && (
+                                <StatusBadge
+                                  tone={meta.tone}
+                                  icon={meta.icon}
+                                  label={t(meta.labelKey)}
+                                  size="sm"
+                                />
                               )}
                             </p>
                             {row.staff_name && (

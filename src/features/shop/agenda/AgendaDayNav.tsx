@@ -21,8 +21,9 @@ export function relativeDayLabel(
 /**
  * Troca de dia da Agenda: setas, calendário com o dia por extenso, o rótulo relativo
  * ("Amanhã") com o atalho de volta para hoje e a faixa da semana (hoje em anel, dia escolhido
- * preenchido, dias fechados com lua e contorno tracejado). Em telas muito estreitas (320 px)
- * a faixa rola por dentro para cada dia manter 44 px de toque.
+ * preenchido, dias fechados com lua e contorno tracejado). Como no DatePicker, as 7 colunas
+ * dividem a largura (44 px a 390, cerca de 35 px a 320, sempre com 48 px de altura): a semana
+ * inteira cabe, sem rolagem escondida nem sábado cortado.
  */
 export function AgendaDayNav({
   day,
@@ -114,6 +115,11 @@ export function AgendaDayNav({
             value={day}
             onChange={onChange}
             displayValue={dayLabel}
+            // Mesmo código da faixa da semana: hoje em anel dourado, fechado com lua.
+            todayKey={today}
+            todayLabel={t("shop.agenda.today")}
+            closedDays={(date) => closedWeekdays.has(date.getDay())}
+            closedLabel={t("agenda.day.closed")}
           />
         </div>
         <button
@@ -128,7 +134,7 @@ export function AgendaDayNav({
       </div>
       <ol
         ref={weekRef}
-        className="-m-1 grid grid-cols-[repeat(7,minmax(2.75rem,1fr))] gap-1 overflow-x-auto overscroll-x-contain p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="-m-1 grid grid-cols-7 gap-0.5 overflow-x-auto min-[360px]:gap-1 overscroll-x-contain p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         aria-label={t("agenda.day.weekAria")}
       >
         {weekKeys(day, 0).map((key) => {

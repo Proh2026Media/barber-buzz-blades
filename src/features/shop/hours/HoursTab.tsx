@@ -10,9 +10,11 @@ import type { BlockDraft, DayBooking, StaffOption } from "./BlockDialog";
 import { BlocksCard } from "./BlocksCard";
 import { HoursMemoryScope, useHoursMemory } from "./memory";
 import { useDayLabels } from "./labels";
+import { usePendingHours } from "./usePendingHours";
 import {
   blockSpanOn,
   liveStatus,
+  requestedWeek,
   sameWeek,
   toMinutes,
   weekdayOfKey,
@@ -48,15 +50,15 @@ const wallClock = (value: Date | string, timeZone: string) =>
  * que não foi salvo.
  */
 export function HoursTab(props: Parameters<typeof HoursTabContent>[0] & { shopId: string }) {
-  const { shopId, ...rest } = props;
   return (
-    <HoursMemoryScope.Provider value={shopId}>
-      <HoursTabContent {...rest} />
+    <HoursMemoryScope.Provider value={props.shopId}>
+      <HoursTabContent {...props} />
     </HoursMemoryScope.Provider>
   );
 }
 
 function HoursTabContent({
+  shopId,
   timeZone,
   demoNow,
   hours,
@@ -76,6 +78,7 @@ function HoursTabContent({
   onBlockRequestHandled,
   onOpenApprovals,
 }: {
+  shopId: string;
   timeZone: string;
   /** Relógio fixo da demonstração. */
   demoNow?: Date;
@@ -112,6 +115,54 @@ function HoursTabContent({
   useEffect(() => {
     if (storedDraft && sameWeek(storedDraft, hours)) setStoredDraft(null);
   }, [hours, storedDraft, setStoredDraft]);
+
+  // "Aguardando aprovação" vem dos pedidos pendentes da loja (sobrevive ao recarregar): ao chegar
+  // a lista, ela substitui o que a aba lembrava desta visita (aprovado ou recusado em outro lugar
+  // some daqui). Cada pedido enviado lê a lista de novo.
+  const [pendingRevision, setPendingRevision] = useState(0);
+  const pending = usePendingHours({ shopId, enabled: !demoNow, revision: pendingRevision });
+  const [, setWeekRequested] = useHoursMemory<HoursRowFull[] | null>("week.requested", null);
+  const [, setWeekByOther] = useHoursMemory("week.requestedByOther", false);
+  const [, setBlocksRequested] = useHoursMemory<PlacedBlock[]>("blocks.requested", []);
+  const [, setDeletesRequested] = useHoursMemory<string[]>("blocks.deleteRequested", []);
+  const staffRef = useRef(staff);
+  staffRef.current = staff;
+  useEffect(() => {
+    if (!pending) return;
+    setWeekRequested(pending.week ? requestedWeek(pending.week, hours) : null);
+    setWeekByOther(pending.weekByOther);
+    setBlocksRequested(
+      pending.creates.map((block) => ({
+        id: `request-${block.requestId}`,
+        staffId: block.staffId,
+        staffName:
+          staffRef.current.find((member) => member.id === block.staffId)?.display_name ?? null,
+        reason: block.reason,
+        startKey: shopDateKey(new Date(block.startsAt), timeZone),
+        endKey: shopDateKey(new Date(block.endsAt), timeZone),
+        startMinute: toMinutes(wallClock(block.startsAt, timeZone)),
+        endMinute: toMinutes(wallClock(block.endsAt, timeZone)),
+        requested: true,
+      })),
+    );
+    setDeletesRequested(pending.deletes);
+  }, [
+    pending,
+    hours,
+    timeZone,
+    setWeekRequested,
+    setWeekByOther,
+    setBlocksRequested,
+    setDeletesRequested,
+  ]);
+  /** Repassa o resultado e, se o pedido foi aos sócios, lê a lista de pendentes de novo. */
+  function tracked<A>(save: (value: A) => Promise<SaveOutcome>) {
+    return async (value: A) => {
+      const outcome = await save(value);
+      if (outcome === "pending") setPendingRevision((current) => current + 1);
+      return outcome;
+    };
+  }
 
   // O selo "aberta agora" acompanha o relógio (a cada minuto).
   const [tick, setTick] = useState(0);
@@ -236,7 +287,7 @@ function HoursTabContent({
         loading={loading}
         loadError={loadError}
         onRetry={onRetry}
-        onSave={onSaveHours}
+        onSave={tracked(onSaveHours)}
         onOpenApprovals={onOpenApprovals}
       />
       {/* Logo abaixo da semana: o efeito do funcionamento nos horários que o cliente vê. */}
@@ -253,8 +304,8 @@ function HoursTabContent({
       ownStaff={ownStaff}
       canDelete={(block) => !ownStaffId || block.staffId === ownStaffId}
       loadBookings={loadBookings}
-      onCreate={onCreateBlock}
-      onDelete={onDeleteBlock}
+      onCreate={tracked(onCreateBlock)}
+      onDelete={tracked(onDeleteBlock)}
       request={blockRequest}
       onRequestHandled={onBlockRequestHandled}
       onOpenApprovals={onOpenApprovals}

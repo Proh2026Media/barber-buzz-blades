@@ -28,7 +28,7 @@ export { ActionResult, InlineStatus, Notice, type NoticeAction, type NoticeProps
 export { Hint, IconList, MoreDetails, type IconListItem, type IconListTone } from "./Hint";
 export { ChoiceChips, type ChoiceChipOption, type ChoiceChipsOther } from "./ChoiceChips";
 export { ChoiceCards, type ChoiceCardOption } from "./ChoiceCards";
-export { Steps, type StepItem, type StepStatus } from "./Steps";
+export { Steps, type StaticStepItem, type StepItem, type StepStatus } from "./Steps";
 export { Timeline, type TimelineKind, type TimelineRow } from "./Timeline";
 export { PreviewPanel, TimeChips } from "./Preview";
 export { SegmentBar, type Segment } from "./SegmentBar";
@@ -41,6 +41,6 @@ export { SettingRow } from "./SettingRow";
 export { DetailList, type DetailItem } from "./DetailList";
 export { Field, FieldMessage, type FieldControlProps } from "./Field";
 export { LoadingState } from "./LoadingState";
-export { AttentionList, type AttentionItem } from "./AttentionList";
+export { AttentionList, type AttentionAction, type AttentionItem } from "./AttentionList";
 export { UnsavedBar } from "./UnsavedBar";
 export { EmptyState, type EmptyTone } from "@/components/ui/empty-state";

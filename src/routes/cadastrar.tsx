@@ -28,7 +28,6 @@ import {
   IconList,
   IconTile,
   Notice,
-  readableLink,
   StatusBadge,
   Steps,
   type StepItem,
@@ -1121,17 +1120,11 @@ function CadastrarPage() {
                   {shopName.trim()}
                 </ResultHero>
                 {created.slug && (
-                  // O endereço quebra só depois de "." e "-" (espaço invisível), nunca no meio
-                  // de uma palavra; o Copiar usa o `value`, sem esses espaços.
+                  // O CopyField já quebra o endereço só depois de "/", "." e "-".
                   <CopyField
                     value={shopPublicOrigin({ slug: created.slug })}
-                    display={readableLink(shopPublicOrigin({ slug: created.slug })).replace(
-                      /([.\-/])/g,
-                      "$1​",
-                    )}
                     label={t("cad.dono.yourLink")}
                     shareTitle={shopName.trim()}
-                    className="[&_.break-all]:[word-break:normal] [&_.break-all]:[overflow-wrap:anywhere]"
                   />
                 )}
                 {/* O que vem no painel: lista com ícone (não são botões); copiar o link já

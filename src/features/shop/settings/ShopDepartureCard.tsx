@@ -96,6 +96,8 @@ export function ShopDepartureCard({
     id: string;
     state: ActionState;
     text: string;
+    /** Qual escolha foi feita (para "Tentar de novo" repetir a mesma). */
+    approve?: boolean;
   } | null>(null);
   const [deciding, setDeciding] = useState<{ id: string; approve: boolean } | null>(null);
 
@@ -265,6 +267,7 @@ export function ShopDepartureCard({
         id,
         state: "error",
         text: friendlyAuthError(err, t("team.departure.decideFailed")),
+        approve,
       });
     } finally {
       setDeciding(null);
@@ -300,6 +303,11 @@ export function ShopDepartureCard({
       <ActionResult
         state={decision.state}
         text={decision.text}
+        onRetry={
+          decision.state === "error" && decision.approve !== undefined
+            ? () => void decide(id, decision.approve === true)
+            : undefined
+        }
         onDismiss={() => setDecision(null)}
       />
     ) : null;
@@ -360,7 +368,6 @@ export function ShopDepartureCard({
                       : item;
                   })}
                 />
-                {decisionFor(row.id)}
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -389,6 +396,8 @@ export function ShopDepartureCard({
                     {t("eq.leave.release")}
                   </button>
                 </div>
+                {/* Resultado logo abaixo dos botões que decidiram. */}
+                {decisionFor(row.id)}
               </li>
             );
           })}
@@ -616,8 +625,14 @@ export function ShopDepartureCard({
                 </div>
               )}
 
+              {/* No celular o botão principal fica no alto da pilha: o erro fica colado nele. */}
               {result?.state === "error" && (
-                <ActionResult state="error" text={result.text} reveal={false} />
+                <ActionResult
+                  state="error"
+                  text={result.text}
+                  reveal={false}
+                  onRetry={current === "review" ? () => void requestDeparture() : undefined}
+                />
               )}
 
               <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

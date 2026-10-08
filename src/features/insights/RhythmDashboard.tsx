@@ -1,5 +1,5 @@
 import { Clock3, Crown, Repeat, TrendingUp, Wallet } from "lucide-react";
-import type { ReactNode } from "react";
+import { StatTile } from "@/components/visual";
 import { useI18n } from "@/lib/i18n";
 
 export type RhythmPayload = {
@@ -30,38 +30,12 @@ function formatBRL(cents: number, locale: string) {
   });
 }
 
-function Stat({
-  icon,
-  label,
-  value,
-  hint,
-  text = false,
-  className,
-}: {
-  icon: ReactNode;
-  label: string;
-  value: string;
-  hint?: string;
-  /** Valor em palavras (ex.: nome do serviço): tamanho menor, até 2 linhas. */
-  text?: boolean;
-  className?: string;
-}) {
+/** Valor em palavras (nome do serviço) no StatTile comum: um pouco menor e até 2 linhas. */
+function TextValue({ value }: { value: string }) {
   return (
-    <div className={`app-action-card min-w-0 p-4 ${className ?? ""}`}>
-      <div className="mb-2 flex items-center gap-2 text-gold">{icon}</div>
-      <p
-        className={
-          text
-            ? "line-clamp-2 text-lg font-bold leading-snug tracking-tight break-words"
-            : "text-xl font-bold tabular-nums tracking-tight break-words hyphens-auto sm:text-2xl"
-        }
-        title={text ? value : undefined}
-      >
-        {value}
-      </p>
-      <p className="text-xs font-semibold text-muted-foreground">{label}</p>
-      {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
-    </div>
+    <span className="line-clamp-2 text-lg leading-snug" title={value}>
+      {value}
+    </span>
   );
 }
 
@@ -170,37 +144,36 @@ export function RhythmDashboard({
 
       <div className={`grid grid-cols-2 gap-3 ${hideInterval ? "sm:grid-cols-3" : ""}`}>
         {!hideInterval && (
-          <Stat
-            icon={<Repeat className="size-5" />}
+          <StatTile
+            icon={Repeat}
             label={t("rhythm.returnFrequency")}
             value={
               rhythm.avg_return_days != null
                 ? t("rhythm.days", { days: Math.round(rhythm.avg_return_days) })
-                : "—"
+                : null
             }
           />
         )}
-        <Stat
-          icon={<Clock3 className="size-5" />}
+        <StatTile
+          icon={Clock3}
           label={t("rhythm.preferredHour")}
           value={
-            rhythm.preferred_hour != null ? t("rhythm.hour", { hour: rhythm.preferred_hour }) : "—"
+            rhythm.preferred_hour != null ? t("rhythm.hour", { hour: rhythm.preferred_hour }) : null
           }
         />
-        <Stat
+        <StatTile
           className={hideAvgSpend && !hideInterval ? "col-span-2" : undefined}
-          icon={<Crown className="size-5" />}
+          icon={Crown}
           label={t("rhythm.topService")}
-          value={rhythm.top_service ?? "—"}
-          text={rhythm.top_service != null}
+          value={rhythm.top_service ? <TextValue value={rhythm.top_service} /> : null}
         />
         {!hideAvgSpend && (
-          <Stat
+          <StatTile
             className={hideInterval ? "col-span-2 sm:col-span-1" : undefined}
-            icon={<Wallet className="size-5" />}
+            icon={Wallet}
             label={t("rhythm.avgSpend")}
             value={
-              rhythm.avg_spend_cents != null ? formatBRL(rhythm.avg_spend_cents, intlLocale) : "—"
+              rhythm.avg_spend_cents != null ? formatBRL(rhythm.avg_spend_cents, intlLocale) : null
             }
           />
         )}

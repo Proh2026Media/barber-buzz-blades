@@ -23,7 +23,7 @@ import { TeamGovernance } from "@/features/shop/settings/TeamGovernance";
 import { countDecisionsForMe } from "@/features/shop/settings/decision-queue";
 import { PartnerCatalogSuggestions } from "./PartnerCatalogSuggestions";
 import { ShopTeamAccessCard } from "./ShopTeamAccessCard";
-import { ShopSetupChecklist } from "./ShopSetupChecklist";
+import { ShopSetupChecklist, type SetupTarget } from "./ShopSetupChecklist";
 import { BrandIdentityEditor } from "@/features/shop/BrandIdentityEditor";
 import { WhatsAppChannelCard } from "@/features/shop/settings/WhatsAppChannelCard";
 import { SlugRedirectsCard } from "@/features/shop/settings/SlugRedirectsCard";
@@ -1378,6 +1378,17 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     channels: canManageShopChannels,
     loyalty: canManageShopSettings && settings?.loyalty_enabled === true,
   });
+  // Passo do guia "Deixe sua barbearia pronta" (Agenda e "Precisa da sua atenção" em Ajustes).
+  const openSetupTarget = (target: SetupTarget) => {
+    if (target === "horarios" || target === "servicos") return setTab(target);
+    setTab("configuracoes");
+    setSettingsSection("aparencia");
+    if (target === "landing") setLandingOpen(true);
+    else {
+      setBrandStep("logo");
+      setBrandOpen(true);
+    }
+  };
   // "Ver pedido" (Serviços/Equipe): os pedidos aos sócios ficam em Ajustes → Equipe.
   const openApprovals = settingsSections.includes("equipe")
     ? () => {
@@ -1627,16 +1638,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       services={services}
                       businessHours={businessHours}
                       settings={settings}
-                      onOpen={(target) => {
-                        if (target === "horarios" || target === "servicos") return setTab(target);
-                        setTab("configuracoes");
-                        setSettingsSection("aparencia");
-                        if (target === "landing") setLandingOpen(true);
-                        else {
-                          setBrandStep("logo");
-                          setBrandOpen(true);
-                        }
-                      }}
+                      onOpen={openSetupTarget}
                     />
                   </>
                 )
@@ -1856,6 +1858,15 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   setSettingsSection(null);
                   setTab("agenda");
                 }}
+                setupGuide={
+                  // Mesmas condições do guia na Agenda (fora da demonstração e só com o
+                  // catálogo carregado, para não mostrar um passo errado por um instante).
+                  !demo &&
+                  !loading &&
+                  (!actor || actor.role === "owner" || actor.role === "partner")
+                    ? { shopId: shop.id, services, businessHours, onOpenStep: openSetupTarget }
+                    : undefined
+                }
                 overview={{
                   settings,
                   publicUrl: shopPublicOrigin({
