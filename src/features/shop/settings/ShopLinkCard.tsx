@@ -1,4 +1,4 @@
-import { Globe2, Link2, PencilLine } from "lucide-react";
+import { Eye, Globe2, Link2, PencilLine } from "lucide-react";
 import { CopyField, MoreDetails, SectionHeader } from "@/components/visual";
 import { useI18n } from "@/lib/i18n";
 import { PageSketch, PageStatusBadge, type PageBlocks } from "./brand-bits";
@@ -25,7 +25,10 @@ export function ShopLinkCard({
 }: {
   /** Link da página (origem pública: domínio próprio no ar ou o automático). */
   publicUrl: string;
-  /** Onde "Abrir" leva (padrão: o próprio link). */
+  /**
+   * "Ver como cliente": a página neste mesmo endereço e na mesma aba, sem sair da conta (a
+   * barra do topo volta ao painel). O "Abrir link público" do campo abre sempre o link de divulgar.
+   */
   openHref?: string;
   /** Link automático da plataforma, mostrado só quando o domínio próprio já está no ar. */
   autoUrl?: string | null;
@@ -70,6 +73,16 @@ export function ShopLinkCard({
               {t("shopLink.editPage")}
             </button>
           )}
+          {openHref && !hideLink && (
+            // Mesma aba: a barra "Abrir painel" da página pública é o caminho de volta.
+            <a
+              href={openHref}
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-semibold transition hover:border-primary/40 sm:w-auto"
+            >
+              <Eye className="size-4 shrink-0" aria-hidden />
+              {t("shopLink.viewAsCustomer")}
+            </a>
+          )}
           {onOpenDomain && (
             <button
               type="button"
@@ -88,7 +101,8 @@ export function ShopLinkCard({
         <CopyField
           label={t("shopLink.forSharing")}
           value={publicUrl}
-          href={openHref ?? publicUrl}
+          href={publicUrl}
+          openLabel={t("shopLink.openPublic")}
           shareTitle={t("shopLink.title")}
         />
       )}

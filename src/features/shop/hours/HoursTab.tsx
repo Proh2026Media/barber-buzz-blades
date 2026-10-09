@@ -14,6 +14,7 @@ import { usePendingHours } from "./usePendingHours";
 import {
   blockSpanOn,
   liveStatus,
+  maskColleagueBlock,
   requestedWeek,
   sameWeek,
   toMinutes,
@@ -178,17 +179,22 @@ function HoursTabContent({
 
   const placed: PlacedBlock[] = useMemo(
     () =>
-      blocks.map((block) => ({
-        id: block.id,
-        staffId: block.staff_id,
-        staffName: block.staff?.display_name ?? null,
-        reason: block.reason,
-        startKey: shopDateKey(new Date(block.starts_at), timeZone),
-        endKey: shopDateKey(new Date(block.ends_at), timeZone),
-        startMinute: toMinutes(wallClock(block.starts_at, timeZone)),
-        endMinute: toMinutes(wallClock(block.ends_at, timeZone)),
-      })),
-    [blocks, timeZone],
+      blocks.map((block) =>
+        maskColleagueBlock(
+          {
+            id: block.id,
+            staffId: block.staff_id,
+            staffName: block.staff?.display_name ?? null,
+            reason: block.reason,
+            startKey: shopDateKey(new Date(block.starts_at), timeZone),
+            endKey: shopDateKey(new Date(block.ends_at), timeZone),
+            startMinute: toMinutes(wallClock(block.starts_at, timeZone)),
+            endMinute: toMinutes(wallClock(block.ends_at, timeZone)),
+          },
+          ownStaffId,
+        ),
+      ),
+    [blocks, timeZone, ownStaffId],
   );
 
   const shopBlocksToday = placed

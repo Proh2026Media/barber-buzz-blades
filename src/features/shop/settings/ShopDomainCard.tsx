@@ -29,6 +29,7 @@ import {
   type StepItem,
 } from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
+import { guardedFetch } from "@/lib/demo-guard";
 import { useI18n } from "@/lib/i18n";
 import { friendlyAuthError, readErrorCode } from "@/lib/auth/friendly-error";
 import { DOMAIN_BADGE } from "./domain-status";
@@ -201,7 +202,7 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
     const token = sessionData.session?.access_token;
     if (!token) throw new Error(t("integr.err.session"));
     const base = import.meta.env.VITE_SUPABASE_URL || "";
-    const response = await fetch(`${base}/functions/v1/shop-domain`, {
+    const response = await guardedFetch(`${base}/functions/v1/shop-domain`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,

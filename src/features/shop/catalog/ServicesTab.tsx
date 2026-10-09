@@ -9,6 +9,7 @@ import {
   Scissors,
   Sparkles,
   Trash2,
+  UserRound,
   X,
   XCircle,
 } from "lucide-react";
@@ -72,7 +73,8 @@ export function ServicesTab({
   canCreate,
   canEdit,
   canChangeGlobal,
-  isAssociate,
+  ownCatalog,
+  canSuggest = ownCatalog,
   shopTerms,
   prepSupported,
   shopPrep,
@@ -94,8 +96,14 @@ export function ServicesTab({
   canCreate: boolean;
   canEdit: boolean;
   canChangeGlobal: boolean;
-  isAssociate: boolean;
-  /** Parceiro: preço e duração da loja por serviço (para comparar com os dele). */
+  /**
+   * "Meus serviços" (Parceiro, ou quem tem serviços próprios): preço, duração e "você atende"
+   * valem só na agenda de quem edita; a loja continua com os dela.
+   */
+  ownCatalog: boolean;
+  /** "Sugerir aos outros parceiros" no formulário. */
+  canSuggest?: boolean;
+  /** Catálogo próprio: preço e duração da loja por serviço (para comparar com os seus). */
   shopTerms: Record<string, { price_cents: number; duration_minutes: number }>;
   prepSupported: boolean;
   shopPrep: number;
@@ -199,11 +207,23 @@ export function ServicesTab({
       const outcome = await actions.toggle(row);
       if (outcome === "pending") pendingToast(row.name);
       else if (row.active)
-        toast.success(t("catalog.toast.servicePaused", { name: row.name }), {
-          description: t("catalog.toast.servicePausedHint"),
-          action: { label: t("catalog.toast.undo"), onClick: () => void undoPause(row) },
-        });
-      else toast.success(t("catalog.toast.serviceShown", { name: row.name }));
+        toast.success(
+          ownCatalog
+            ? t("catalog.own.toastOff", { name: row.name })
+            : t("catalog.toast.servicePaused", { name: row.name }),
+          {
+            description: ownCatalog
+              ? t("catalog.own.toastOffHint")
+              : t("catalog.toast.servicePausedHint"),
+            action: { label: t("catalog.toast.undo"), onClick: () => void undoPause(row) },
+          },
+        );
+      else
+        toast.success(
+          ownCatalog
+            ? t("catalog.own.toastOn", { name: row.name })
+            : t("catalog.toast.serviceShown", { name: row.name }),
+        );
       return outcome;
     } catch (cause) {
       // O erro aparece junto do controle que falhou (interruptor, janela ou zona de perigo),
@@ -249,7 +269,7 @@ export function ServicesTab({
     <section className="space-y-4">
       <div className="app-section-title">
         <Scissors />
-        <h2>{t("shop.nav.services")}</h2>
+        <h2>{t(ownCatalog ? "shop.nav.myServices" : "shop.nav.services")}</h2>
         {canCreate && services.length > 0 && (
           <button
             type="button"
@@ -270,6 +290,11 @@ export function ServicesTab({
         />
       )}
 
+      {/* Catálogo próprio: deixa claro que nada aqui muda a loja, só a sua agenda. */}
+      {ownCatalog && (
+        <Notice tone="highlight" icon={UserRound} role="none" title={t("catalog.own.band")} />
+      )}
+
       {slotNotice}
 
       <CatalogFilters
@@ -281,8 +306,8 @@ export function ServicesTab({
         active={activeCount}
         visible={visible.length}
         label={t("shop.services.search")}
-        activeLabel={t("catalog.service.filterVisible")}
-        pausedLabel={t("brand.catalog.paused")}
+        activeLabel={t(ownCatalog ? "catalog.own.youServe" : "catalog.service.filterVisible")}
+        pausedLabel={t(ownCatalog ? "catalog.own.youDont" : "brand.catalog.paused")}
         viewMode={view}
         onViewMode={(next) => {
           setView(next);
@@ -345,7 +370,7 @@ export function ServicesTab({
         <div className={view === "grid" ? "grid gap-3 sm:grid-cols-2" : "flex flex-col gap-2"}>
           {visible.map((service) => {
             const waiting = awaiting[service.id];
-            const own = isAssociate ? shopTerms[service.id] : undefined;
+            const own = ownCatalog ? shopTerms[service.id] : undefined;
             const differs =
               own &&
               (own.price_cents !== service.price_cents ||
@@ -354,13 +379,17 @@ export function ServicesTab({
             const statusBadge = waiting ? (
               <StatusBadge {...STATE.waiting} size="sm" label={t("catalog.awaiting")} />
             ) : service.active ? (
-              <StatusBadge {...STATE.active} size="sm" label={t("catalog.service.visible")} />
+              <StatusBadge
+                {...STATE.active}
+                size="sm"
+                label={t(ownCatalog ? "catalog.own.youServe" : "catalog.service.visible")}
+              />
             ) : (
               <StatusBadge
                 {...STATE.paused}
                 icon={EyeOff}
                 size="sm"
-                label={t("catalog.service.hidden")}
+                label={t(ownCatalog ? "catalog.own.youDont" : "catalog.service.hidden")}
               />
             );
             return (
@@ -404,7 +433,7 @@ export function ServicesTab({
                   </>
                 }
                 extra={
-                  view === "grid" && !isAssociate && doers.length > 0 ? (
+                  view === "grid" && !ownCatalog && doers.length > 0 ? (
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span className="flex gap-0.5" aria-hidden>
                         {doers.slice(0, 4).map(({ member }) => (
@@ -438,9 +467,13 @@ export function ServicesTab({
                 toggle={
                   <ItemToggle
                     checked={service.active}
-                    label={t("catalog.service.toggle")}
-                    ariaLabel={t("catalog.service.toggleAria", { name: service.name })}
-                    showLabel={view === "grid"}
+                    label={t(ownCatalog ? "catalog.own.youServe" : "catalog.service.toggle")}
+                    ariaLabel={t(
+                      ownCatalog ? "catalog.own.toggleAria" : "catalog.service.toggleAria",
+                      { name: service.name },
+                    )}
+                    // Catálogo próprio: o estado ("Você atende / não atende") fica só no selo.
+                    showLabel={view === "grid" && !ownCatalog}
                     disabled={!canEdit}
                     onChange={() => toggle(service)}
                   />
@@ -487,8 +520,9 @@ export function ServicesTab({
         onOpenChange={setFormOpen}
         editing={editing}
         canChangeGlobal={canChangeGlobal}
-        isAssociate={isAssociate}
-        shopTerms={editing && isAssociate ? shopTerms[editing.id] : null}
+        ownCatalog={ownCatalog}
+        canSuggest={canSuggest}
+        shopTerms={editing && ownCatalog ? shopTerms[editing.id] : null}
         prepSupported={prepSupported}
         shopPrep={shopPrep}
         starters={services.length === 0}

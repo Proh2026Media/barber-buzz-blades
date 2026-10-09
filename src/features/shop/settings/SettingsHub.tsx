@@ -18,6 +18,7 @@ import {
   QrCode,
   Smartphone,
   Sun,
+  UserRound,
   Users,
   Wrench,
   type LucideIcon,
@@ -25,6 +26,7 @@ import {
 import {
   AttentionList,
   IconTile,
+  PersonAvatar,
   STATE,
   SettingRow,
   StatusBadge,
@@ -61,6 +63,7 @@ const SECTION_ICONS: Record<SettingsSection, LucideIcon> = {
   pontos: Gift,
   avisos: BellRing,
   enderecos: Link2,
+  perfil: UserRound,
   equipe: Users,
   idioma: Languages,
   conta: KeyRound,
@@ -74,7 +77,7 @@ const GROUPS: { id: string; title: MessageKey; sections: SettingsSection[] }[] =
     title: "settingsHub.group.operation",
     sections: ["agendamento", "avisos", "pontos"],
   },
-  { id: "pessoas", title: "settingsHub.group.people", sections: ["equipe"] },
+  { id: "pessoas", title: "settingsHub.group.people", sections: ["perfil", "equipe"] },
   { id: "aparelho", title: "settingsHub.group.device", sections: ["idioma"] },
   { id: "conta", title: "settingsHub.group.account", sections: ["conta"] },
 ];
@@ -93,6 +96,10 @@ export type SettingsOverview = {
   pendingDecisions?: number;
   /** Descrição de "Equipe e sociedade" conforme o papel (parceiro, contratado). */
   teamHint?: string;
+  /** Descrição de "Avisos" para quem só liga a própria agenda do Google (sem WhatsApp da loja). */
+  avisosHint?: string;
+  /** "Meu perfil e link": como o cliente vê quem está usando o painel. */
+  ownProfile?: { id: string; name: string; avatarUrl: string | null; link: string | null };
 } & SettingsSignals;
 
 /** Linha de atalho que leva a outra página do painel (mesmo desenho do `SettingRow`). */
@@ -235,6 +242,17 @@ export function SettingsHub({
 
   /** Resumo vivo de cada item: o estado atual em pílulas e selos, sem precisar abrir. */
   function summaryFor(id: SettingsSection): ReactNode {
+    if (id === "perfil" && overview?.ownProfile) {
+      const own = overview.ownProfile;
+      return (
+        <>
+          <PersonAvatar name={own.name} src={own.avatarUrl} seed={own.id} size="xs" />
+          <span className="min-w-0 max-w-full truncate text-xs font-semibold text-muted-foreground">
+            {own.link ? readableLink(own.link) : own.name}
+          </span>
+        </>
+      );
+    }
     if (id === "equipe" && decisions > 0) {
       return (
         <StatusBadge
@@ -492,7 +510,9 @@ export function SettingsHub({
                   ? undefined
                   : id === "equipe" && overview?.teamHint
                     ? overview.teamHint
-                    : t(`settingsHub.hint.${id}` as const);
+                    : id === "avisos" && overview?.avisosHint
+                      ? overview.avisosHint
+                      : t(`settingsHub.hint.${id}` as const);
                 const href = SECTION_LINKS[id];
                 if (href) {
                   return (

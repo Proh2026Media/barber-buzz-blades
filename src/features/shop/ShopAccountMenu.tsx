@@ -1,11 +1,9 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
 import {
   Check,
   ChevronDown,
   KeyRound,
   Languages,
-  LayoutDashboard,
   LogOut,
   Store,
   type LucideIcon,
@@ -18,6 +16,9 @@ import { LanguageSettingsCard } from "@/components/LanguageSettingsCard";
 import { ThemeSettingsCard } from "@/features/shop/settings/ThemeSettingsCard";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { MyAreasSection } from "@/features/account/MyAreas";
+import { useAreaSwitch } from "@/features/account/useAreas";
+import type { AreaItem } from "@/lib/auth/areas";
 import { RoleBadge } from "./roles";
 
 const ITEM =
@@ -27,10 +28,11 @@ function MenuIcon({ icon: Icon }: { icon: LucideIcon }) {
   return <Icon className="size-4 shrink-0 text-gold" aria-hidden />;
 }
 
-export type ShopChoice = { id: string; name: string; role: string };
+/** Barbearia da pessoa com o papel ali (e a parte, para o selo "Dono · 50%"). */
+export type ShopChoice = { id: string; name: string; role: string; percent?: number | null };
 
 /** Lista de barbearias com o papel de cada uma; a atual vem marcada. */
-function ShopList({
+export function ShopList({
   shops,
   currentId,
   onPick,
@@ -56,7 +58,7 @@ function ShopList({
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate">{shop.name}</span>
-                <RoleBadge role={shop.role} className="mt-0.5" />
+                <RoleBadge role={shop.role} percent={shop.percent} className="mt-0.5" />
               </span>
               {current && <Check className="size-4 shrink-0 text-primary" aria-hidden />}
             </button>
@@ -128,31 +130,52 @@ export function ShopSwitcher({
 
 /**
  * Menu da conta do painel da barbearia (mesmo desenho do da plataforma): quem está conectado e
- * com que papel, trocar de barbearia, senha, idioma, painel da plataforma e sair.
+ * com que papel, "Minhas áreas" (cada barbearia, cliente e plataforma), senha, idioma e sair.
  */
 export function ShopAccountMenu({
   name,
   email,
   role,
+  percent,
   shopName,
   shops,
   currentShopId,
   onSwitchShop,
-  showPlatform,
+  areas,
+  currentBarbershopId,
   onSignOut,
 }: {
   name: string;
   email?: string | null;
   role?: string | null;
+  /** Parte do dono na loja aberta ("Dono · 50%"). */
+  percent?: number | null;
   shopName?: string | null;
   shops: ShopChoice[];
   currentShopId: string;
   onSwitchShop: (id: string) => void;
-  showPlatform?: boolean;
+  /** Áreas da conta (vazio quando só há uma). */
+  areas: AreaItem[];
+  /** Barbearia aberta no painel (marca a área atual). */
+  currentBarbershopId: string | null;
   onSignOut: () => void;
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
+  const areaSwitch = useAreaSwitch();
+  // Outra barbearia do próprio painel troca aqui mesmo ("Abrindo …" do painel); cliente e
+  // plataforma abrem o outro ambiente.
+  function pickArea(area: AreaItem) {
+    setOpen(false);
+    if (area.kind === "shop") {
+      if (area.shopId === currentBarbershopId) return;
+      if (area.actorId && shops.some((shop) => shop.id === area.actorId)) {
+        onSwitchShop(area.actorId);
+        return;
+      }
+    }
+    areaSwitch.open(area);
+  }
   const [panel, setPanel] = useState<"password" | "language" | null>(null);
 
   function openPanel(next: "password" | "language") {
@@ -187,7 +210,7 @@ export function ShopAccountMenu({
                 <p className="truncate text-xs text-muted-foreground">{email}</p>
               )}
               <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                {role && <RoleBadge role={role} />}
+                {role && <RoleBadge role={role} percent={percent} />}
                 {shopName && (
                   <span className="truncate text-xs font-semibold text-muted-foreground">
                     {shopName}
@@ -196,20 +219,28 @@ export function ShopAccountMenu({
               </div>
             </div>
           </div>
-          {shops.length > 1 && (
-            <div className="border-t border-border pt-1">
-              <p className="px-3 pb-1 pt-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                {t("eq.account.switchShop")}
-              </p>
-              <ShopList
-                shops={shops}
-                currentId={currentShopId}
-                onPick={(id) => {
-                  setOpen(false);
-                  onSwitchShop(id);
-                }}
-              />
-            </div>
+          {areas.length > 0 ? (
+            <MyAreasSection
+              areas={areas}
+              current={{ kind: "shop", shopId: currentBarbershopId }}
+              onPick={pickArea}
+            />
+          ) : (
+            shops.length > 1 && (
+              <div className="border-t border-border pt-1">
+                <p className="px-3 pb-1 pt-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  {t("eq.account.switchShop")}
+                </p>
+                <ShopList
+                  shops={shops}
+                  currentId={currentShopId}
+                  onPick={(id) => {
+                    setOpen(false);
+                    onSwitchShop(id);
+                  }}
+                />
+              </div>
+            )
           )}
           <div className="space-y-0.5 border-t border-border pt-1">
             <button type="button" className={ITEM} onClick={() => openPanel("password")}>
@@ -220,12 +251,6 @@ export function ShopAccountMenu({
               <MenuIcon icon={Languages} />
               {t("eq.account.language")}
             </button>
-            {showPlatform && (
-              <Link to="/platform" className={ITEM} onClick={() => setOpen(false)}>
-                <MenuIcon icon={LayoutDashboard} />
-                {t("eq.account.platform")}
-              </Link>
-            )}
           </div>
           <div className="mt-1 border-t border-border pt-1">
             <button type="button" className={cn(ITEM, "text-destructive")} onClick={onSignOut}>
@@ -235,6 +260,8 @@ export function ShopAccountMenu({
           </div>
         </PopoverContent>
       </Popover>
+
+      {areaSwitch.overlay}
 
       <Dialog open={panel !== null} onOpenChange={(next) => !next && setPanel(null)}>
         <DialogContent

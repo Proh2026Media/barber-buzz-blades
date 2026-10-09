@@ -48,11 +48,30 @@ const MODE_ICON: Record<GovernanceMode, LucideIcon> = {
   majority: PieChart,
 };
 
+/**
+ * Quem decide os pedidos de quem está vendo: a maior parte (maioria) ou os outros donos.
+ * Devolve os primeiros nomes ("Ana", "Bruno"); vazio quando não há outro dono conhecido.
+ */
+export function approversOf(
+  members: TeamMember[],
+  mode: GovernanceMode | null,
+  me: string,
+): string[] {
+  const others = activeOwners(members).filter((owner) => owner.user_id !== me);
+  const effective = mode ?? governanceModeOf(members);
+  return (effective === "majority" ? others.slice(0, 1) : others).map((owner) =>
+    firstName(owner.display_name),
+  );
+}
+
 /** Selo "como as decisões funcionam aqui" (sozinho, em conjunto ou pela maior parte). */
 export function GovernanceModeBadge({
   mode,
   leader,
   youDecideAlone,
+  short = false,
+  size = "md",
+  variant = "pill",
   className,
 }: {
   mode: GovernanceMode;
@@ -60,11 +79,17 @@ export function GovernanceModeBadge({
   leader?: TeamMember | null;
   /** O dono único é quem está vendo. */
   youDecideAlone?: boolean;
+  /** Rótulo curto para o topo do painel ("Decide sozinho", "Maior parte decide"). */
+  short?: boolean;
+  size?: "sm" | "md";
+  /** `icon`: só o ícone (o rótulo vira nome acessível), para telas estreitas. */
+  variant?: "pill" | "icon";
   className?: string;
 }) {
   const { t, intlLocale } = useI18n();
-  const label =
-    mode === "single"
+  const label = short
+    ? t(`eq.mode.short.${mode}` as const)
+    : mode === "single"
       ? youDecideAlone
         ? t("eq.mode.singleYou")
         : t("eq.mode.single")
@@ -81,7 +106,8 @@ export function GovernanceModeBadge({
       tone="highlight"
       icon={MODE_ICON[mode]}
       label={label}
-      size="md"
+      size={size}
+      variant={variant}
       className={className}
     />
   );

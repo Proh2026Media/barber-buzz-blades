@@ -12,6 +12,43 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { useCatalogLabels } from "./catalog/labels";
+import { useDemo } from "@/features/demo/context";
+
+type DemoValue = NonNullable<ReturnType<typeof useDemo>>;
+
+/** Id da sugestão fictícia da demonstração (um colega sugere outro preço). */
+const DEMO_SUGGESTION_ID = "demo-suggestion-1";
+
+/**
+ * Demonstração: uma sugestão fictícia de um colega (outro preço para o primeiro serviço),
+ * montada só com os dados da demonstração. Some depois de decidida.
+ */
+function demoSuggestions(demo: DemoValue, staffId: string): Suggestion[] {
+  if (demo.decidedSuggestions.includes(DEMO_SUGGESTION_ID)) return [];
+  const colleague = demo.staff.find((member) => member.id !== staffId);
+  const service = demo.services.find((row) => row.active) ?? demo.services[0];
+  if (!colleague || !service) return [];
+  const own = demo.staffServices.find(
+    (row) => row.staff_id === staffId && row.service_id === service.id,
+  );
+  return [
+    {
+      id: DEMO_SUGGESTION_ID,
+      service_id: service.id,
+      from_staff_id: colleague.id,
+      proposed_price_cents: service.price_cents + 500,
+      proposed_duration_minutes: service.duration_minutes,
+      proposed_display_name: null,
+      status: "pending",
+      created_at: new Date(Date.now() - 2 * 86_400_000).toISOString(),
+      serviceName: service.name,
+      fromName: colleague.display_name,
+      fromAvatar: colleague.avatar_url,
+      currentPrice: own?.price_cents ?? service.price_cents,
+      currentDuration: own?.duration_minutes ?? service.duration_minutes,
+    },
+  ];
+}
 
 type Suggestion = {
   id: string;
@@ -45,6 +82,7 @@ export function PartnerCatalogSuggestions({
   onCount?: (count: number | null) => void;
 }) {
   const { t, intlLocale } = useI18n();
+  const demo = useDemo();
   const { duration, money } = useCatalogLabels();
   const [rows, setRows] = useState<Suggestion[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -61,6 +99,12 @@ export function PartnerCatalogSuggestions({
   }, [rows.length, errorText, onCount]);
 
   const load = useCallback(async () => {
+    // Demonstração: só dados fictícios, nada vai ao banco.
+    if (demo) {
+      setErrorText(null);
+      setRows(demoSuggestions(demo, staffId));
+      return;
+    }
     const client = supabase as unknown as {
       from: (table: string) => {
         select: (columns: string) => {
@@ -133,7 +177,7 @@ export function PartnerCatalogSuggestions({
       }),
     );
     setRows(enriched);
-  }, [shopId, staffId]);
+  }, [demo, shopId, staffId]);
 
   useEffect(() => {
     void load();
@@ -154,6 +198,37 @@ export function PartnerCatalogSuggestions({
   }
 
   async function decide(row: Suggestion, accept: boolean) {
+    const name = row.proposed_display_name || row.serviceName || t("team.partner.serviceFallback");
+    if (demo) {
+      // Usar a sugestão muda só o catálogo do próprio Parceiro (como no real).
+      if (accept) {
+        const own = demo.staffServices.find(
+          (item) => item.staff_id === staffId && item.service_id === row.service_id,
+        );
+        const stamp = demo.now.toISOString();
+        demo.dispatch({
+          type: "staffService.save",
+          row: {
+            id: own?.id ?? `demo-own-${staffId}-${row.service_id}`,
+            barbershop_id: shopId,
+            staff_id: staffId,
+            service_id: row.service_id,
+            display_name: row.proposed_display_name ?? own?.display_name ?? null,
+            duration_minutes: row.proposed_duration_minutes,
+            price_cents: row.proposed_price_cents,
+            active: own?.active ?? true,
+            icon: own?.icon ?? null,
+            created_at: own?.created_at ?? stamp,
+            updated_at: stamp,
+          },
+        });
+      }
+      demo.dispatch({ type: "suggestion.decide", id: row.id });
+      toast.success(t(accept ? "team.suggest.applied" : "team.suggest.kept"), {
+        description: name,
+      });
+      return;
+    }
     setBusyId(row.id);
     setFailed(null);
     const { error } = await supabase.rpc("decide_partner_catalog_suggestion", {
@@ -163,8 +238,6 @@ export function PartnerCatalogSuggestions({
     if (error)
       setFailed({ rowId: row.id, accept, text: friendlyAuthError(error, t("team.suggest.error")) });
     else {
-      const name =
-        row.proposed_display_name || row.serviceName || t("team.partner.serviceFallback");
       if (accept) toast.success(t("team.suggest.applied"), { description: name });
       else toast.success(t("team.suggest.kept"), { description: name });
       await load();

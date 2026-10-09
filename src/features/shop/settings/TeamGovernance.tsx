@@ -33,12 +33,14 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import type { SessionProfile } from "@/lib/auth/session";
+import { useDemo } from "@/features/demo/context";
 import { useI18n } from "@/lib/i18n";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { cn } from "@/lib/utils";
 import { MANAGER_META } from "../roles";
 import {
   GovernanceModeBadge,
+  approversOf,
   OwnershipBar,
   activeOwners,
   firstName,
@@ -222,9 +224,18 @@ export function TeamGovernance({
   const canReview = actor?.role === "owner" || actor?.role === "partner";
   const me = profile.user.id;
 
+  // Demonstração: a sociedade fictícia da visão (quem tem quanto e o modo), sem pedidos reais.
+  const demoTeam = useDemo()?.team ?? null;
   const load = useCallback(async () => {
     if (!canReview) return;
     setLoadError(null);
+    if (demoTeam) {
+      setMembers(demoTeam);
+      setRequests([]);
+      setApprovals(new Map());
+      setLoaded(true);
+      return;
+    }
     const [queue, team] = await Promise.all([
       fetchDecisionQueue(shopId, me),
       loadTeamMembers(shopId).catch(() => null),
@@ -237,7 +248,7 @@ export function TeamGovernance({
     }
     setNow(Date.now());
     setLoaded(true);
-  }, [canReview, shopId, me]);
+  }, [canReview, shopId, me, demoTeam]);
 
   useEffect(() => {
     void load();
@@ -274,13 +285,8 @@ export function TeamGovernance({
   const leader = owners[0] ?? null;
   const canApply = !!profile.capabilities?.canApplyOperations;
   // Quem decide os pedidos de quem está vendo: a maior parte (maioria) ou os outros donos.
-  const deciders =
-    mode === "majority"
-      ? owners.filter((o) => o.user_id !== me).slice(0, 1)
-      : owners.filter((o) => o.user_id !== me);
-  const decidersText = deciders.length
-    ? deciders.map((o) => firstName(o.display_name)).join(", ")
-    : t("eq.gov.otherOwners");
+  const deciders = approversOf(members, mode, me);
+  const decidersText = deciders.length ? deciders.join(", ") : t("eq.gov.otherOwners");
 
   const pending = useMemo(
     () => requests.filter((request) => request.status === "pending"),

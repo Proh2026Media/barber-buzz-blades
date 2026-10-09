@@ -1,13 +1,11 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { LoyaltyAdminPage } from "@/features/loyalty/LoyaltyAdminPage";
-import { requireSession } from "@/lib/auth/guards";
-import { hasProfessionalAccess, homeForRole } from "@/lib/auth/session";
+import { requireProfessional } from "@/lib/auth/guards";
 
 export const Route = createFileRoute("/shop_/pontos")({
   ssr: false,
   beforeLoad: async () => {
-    const profile = await requireSession("/shop/pontos");
-    if (!hasProfessionalAccess(profile)) throw redirect({ to: homeForRole(profile.primaryRole) });
+    const profile = await requireProfessional("/shop/pontos");
     return { profile };
   },
   component: LoyaltyRoute,

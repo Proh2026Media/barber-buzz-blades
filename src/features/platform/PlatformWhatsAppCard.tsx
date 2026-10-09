@@ -35,6 +35,7 @@ import {
   type StatusMeta,
 } from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
+import { guardedFetch } from "@/lib/demo-guard";
 import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
 import { friendlyIntegrationError } from "@/lib/integrations/friendly-error";
 
@@ -75,7 +76,7 @@ async function callPlatformWhatsApp(action: "status" | "connect" | "logout") {
   if (!token) throw new Error(tNow("integr.err.session"));
 
   const base = import.meta.env.VITE_SUPABASE_URL || "";
-  const response = await fetch(`${base}/functions/v1/platform-whatsapp`, {
+  const response = await guardedFetch(`${base}/functions/v1/platform-whatsapp`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,

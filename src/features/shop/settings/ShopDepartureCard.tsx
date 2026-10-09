@@ -33,6 +33,7 @@ import {
   type IconListItem,
 } from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
+import { useDemo } from "@/features/demo/context";
 import { t as tNow, useI18n } from "@/lib/i18n";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { isOwnerRole, type ShopRole } from "../roles";
@@ -64,11 +65,18 @@ type ShopDepartureCardProps = {
   canApproveRelease?: boolean;
   /** Se true, mostra "Sair da barbearia" para o próprio usuário. */
   canRequestDeparture?: boolean;
+  /** Se false, sai sem levar clientes (só a opção "Sair e deixar os clientes"). */
+  canTakeClients?: boolean;
   /** Papel de quem está vendo (pré-condições de dono). */
   role?: ShopRole | null;
   /** Atalho para "Pessoas e papéis" (mudar o próprio papel antes de sair). */
   onOpenPeople?: () => void;
+  /** Conta de quem está vendo (na demonstração, sem perguntar ao servidor). */
+  viewerId?: string;
 };
+
+/** Id da barbearia de destino de exemplo na demonstração. */
+const DEMO_DEST_SHOP = "demo-dest-shop";
 
 function relative(iso: string, locale: string) {
   const hours = (Date.now() - new Date(iso).getTime()) / 3_600_000;
@@ -82,10 +90,16 @@ export function ShopDepartureCard({
   shopId,
   canApproveRelease = false,
   canRequestDeparture = true,
+  canTakeClients = true,
   role = null,
   onOpenPeople,
+  viewerId,
 }: ShopDepartureCardProps) {
   const { t, intlLocale } = useI18n();
+  // Demonstração: equipe fictícia, uma barbearia de destino de exemplo e a saída só simulada.
+  const demo = useDemo();
+  const demoOn = Boolean(demo);
+  const demoTeam = demo?.team ?? null;
   const [userId, setUserId] = useState<string | null>(null);
   const [requests, setRequests] = useState<DepartureRequest[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -116,6 +130,17 @@ export function ShopDepartureCard({
 
   const load = useCallback(async () => {
     setListError(null);
+    if (demoOn) {
+      setUserId(viewerId ?? null);
+      setRequests([]);
+      setMembers(demoTeam ?? []);
+      setDestShops((current) =>
+        current.some((shop) => shop.id === DEMO_DEST_SHOP)
+          ? current
+          : [{ id: DEMO_DEST_SHOP, name: tNow("demo.leave.destShop"), slug: "demo-destino" }],
+      );
+      return;
+    }
     const { data: sessionProfile } = await supabase.auth.getUser();
     const uid = sessionProfile.user?.id ?? null;
     setUserId(uid);
@@ -167,7 +192,7 @@ export function ShopDepartureCard({
         setDestShops(shops ?? []);
       } else setDestShops([]);
     }
-  }, [shopId, canApproveRelease, canRequestDeparture, ownerViewer]);
+  }, [shopId, canApproveRelease, canRequestDeparture, ownerViewer, demoOn, demoTeam, viewerId]);
 
   useEffect(() => {
     void load();
@@ -188,7 +213,8 @@ export function ShopDepartureCard({
 
   function startDeparture() {
     setStep(0);
-    setMode(null);
+    // Quem não leva clientes já começa com a única escolha possível.
+    setMode(canTakeClients ? null : "forfeit");
     setDestShopId(null);
     setResult(null);
     setCreateError(null);
@@ -198,6 +224,14 @@ export function ShopDepartureCard({
   async function createDestinationShop() {
     if (!newShopName.trim()) {
       setCreateError(t("team.departure.nameRequired"));
+      return;
+    }
+    if (demoOn) {
+      // Demonstração: a barbearia nova existe só nesta tela.
+      const id = `demo-new-shop-${destShops.length + 1}`;
+      setDestShops((current) => [...current, { id, name: newShopName.trim(), slug: id }]);
+      setDestShopId(id);
+      setNewShopName("");
       return;
     }
     setCreating(true);
@@ -221,6 +255,11 @@ export function ShopDepartureCard({
 
   async function requestDeparture() {
     if (!mode || (mode === "take" && !destShopId)) return;
+    if (demoOn) {
+      // Demonstração: mostra o fim do caminho sem tirar ninguém da loja.
+      setResult({ state: "saved", text: t("demo.leave.simulated") });
+      return;
+    }
     setSending(true);
     setResult({ state: "saving", text: t("eq.leave.sending") });
     try {
@@ -549,13 +588,17 @@ export function ShopDepartureCard({
                       title: t("eq.leave.forfeit"),
                       description: t("eq.leave.forfeitHint"),
                     },
-                    {
-                      value: "take",
-                      icon: Users,
-                      title: t("eq.leave.take"),
-                      description: t("eq.leave.takeHint"),
-                      content: <IconList items={takeEffects} />,
-                    },
+                    ...(canTakeClients
+                      ? [
+                          {
+                            value: "take" as const,
+                            icon: Users,
+                            title: t("eq.leave.take"),
+                            description: t("eq.leave.takeHint"),
+                            content: <IconList items={takeEffects} />,
+                          },
+                        ]
+                      : []),
                   ]}
                 />
               )}

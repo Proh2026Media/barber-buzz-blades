@@ -36,6 +36,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { useI18n } from "@/lib/i18n";
 import { shopPublicOrigin } from "@/lib/shop/host";
 import { AccountManagersPanel } from "./AccountManagersPanel";
+import { ShopTeamList } from "./ShopTeamList";
 import { DEFAULT_TIMEZONE, SHOP_STATUS, friendlyTimeZone, type ShopCounts } from "./shopStats";
 
 export type ShopModule = "sports" | "loyalty";
@@ -56,6 +57,8 @@ type ShopDetailProps = {
   onAddPerson: () => void;
   onPermissions: () => void;
   onTestAs: () => void;
+  /** Muda depois de adicionar alguém: recarrega a equipe. */
+  teamRevision?: number;
 };
 
 const SECONDARY =
@@ -79,6 +82,7 @@ export function ShopDetail({
   onAddPerson,
   onPermissions,
   onTestAs,
+  teamRevision = 0,
 }: ShopDetailProps) {
   const { t, intlLocale } = useI18n();
   const sportsId = useId();
@@ -90,6 +94,10 @@ export function ShopDetail({
   const [desired, setDesired] = useState<Partial<Record<ShopModule, boolean>>>({});
   const [confirmLoyaltyOff, setConfirmLoyaltyOff] = useState(false);
   const [confirmStatus, setConfirmStatus] = useState(false);
+  // Donos e sócios ativos da equipe (decisão 12: "sem administrador" é não ter nenhum). Até a
+  // equipe carregar, vale a contagem antiga.
+  const [teamOwners, setTeamOwners] = useState<number | null>(null);
+  const admins = teamOwners ?? counts.admins;
   const status = SHOP_STATUS[shop.status];
   const active = shop.status === "active";
   const url = shopPublicOrigin({
@@ -183,10 +191,10 @@ export function ShopDetail({
         <StatTile icon={Users} label={t("plat.dash.customers")} value={counts.customers} />
         <StatTile
           icon={ShieldCheck}
-          tone={counts.admins === 0 ? "warning" : undefined}
+          tone={admins === 0 ? "warning" : undefined}
           label={t("plat.dash.admins")}
-          value={counts.admins}
-          hint={counts.admins === 0 ? t("plat.shops.noAdmin") : undefined}
+          value={admins}
+          hint={admins === 0 ? t("plat.shops.noAdmin") : undefined}
         />
       </div>
 
@@ -224,9 +232,11 @@ export function ShopDetail({
             </button>
           }
         />
-        {counts.admins === 0 && active && (
+        {admins === 0 && active && (
           <Notice tone="warning" role="none" title={t("plat.shop.noAdminNotice")} />
         )}
+        {/* Quem é a equipe: nome, papel e a parte de cada dono. */}
+        <ShopTeamList shopId={shop.id} revision={teamRevision} onLoaded={setTeamOwners} />
         {!active && (
           <Hint icon={PauseCircle} tone="neutral">
             {t("plat.shop.reactivateToAdd")}

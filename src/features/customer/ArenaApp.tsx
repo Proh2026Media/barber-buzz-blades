@@ -1,6 +1,6 @@
 import { SurveyCard } from "@/features/insights/SurveyCard";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
-import { t as tNow, useI18n } from "@/lib/i18n";
+import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
 import { useWaiting } from "@/features/waiting/useWaiting";
 import { WaitingCards } from "@/features/waiting/WaitingUI";
 import { blocksSlot } from "@/features/waiting/model";
@@ -96,7 +96,7 @@ import {
   CalendarPlus,
   Check,
   Compass,
-  LogIn,
+  Plus,
   Trophy,
   User,
   Timer,
@@ -118,7 +118,22 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
-import { getSessionProfile } from "@/lib/auth/session";
+import { getSessionProfile, type SessionProfile } from "@/lib/auth/session";
+import type { AccessNotice } from "@/lib/auth/destination";
+import { useAreaSwitch, useMyAreas, useRememberArea } from "@/features/account/useAreas";
+import { CUSTOMER_META } from "@/features/shop/roles";
+import { CustomerAccountMenu } from "./CustomerAccountMenu";
+import { AskShopLink } from "./AskShopLink";
+import { CustomerShopSwitcher, OtherShopNotices } from "./CustomerShops";
+import {
+  customerShopHref,
+  otherShopBookings,
+  pickCustomerShop,
+  readLastCustomerShop,
+  saveLastCustomerShop,
+  upcomingByShop,
+  type OtherShopBookings,
+} from "./shop-choice";
 import { useDemo } from "@/features/demo/context";
 import { useDemoChrome } from "@/features/demo/chrome";
 import { DemoAccountMenu, DemoRoleSelector } from "@/features/demo/DemoAccountMenu";
@@ -175,6 +190,21 @@ function shortestServiceIndex(
   return best;
 }
 
+/** Motivo da recusa (lib/auth/guards) → tom e frases do aviso. */
+const REFUSAL_TONE: Record<AccessNotice, "info" | "pending" | "neutral"> = {
+  "sem-acesso": "info",
+  removido: "neutral",
+  aguardando: "pending",
+  "sem-plataforma": "info",
+};
+
+const REFUSAL_TEXT: Record<AccessNotice, { title: MessageKey; body: MessageKey }> = {
+  "sem-acesso": { title: "access.noPanel.title", body: "access.noPanel.body" },
+  removido: { title: "access.removed.title", body: "access.removed.body" },
+  aguardando: { title: "access.pending.title", body: "access.pending.body" },
+  "sem-plataforma": { title: "access.noPlatform.title", body: "access.noPlatform.body" },
+};
+
 function ArenaApp({
   headerActions,
   directBarberSlug,
@@ -184,8 +214,11 @@ function ArenaApp({
   initialSlot,
   focusWhatsapp = false,
   focusReservationToken,
+  accessNotice,
 }: {
   headerActions?: ReactNode;
+  /** Por que o painel (ou a plataforma) recusou a conta: o app explica no topo do Início. */
+  accessNotice?: AccessNotice;
   /** Horário tocado na página pública (dia AAAA-MM-DD e HH:MM no fuso da loja): só pré-escolhe. */
   initialSlot?: { day: string; time: string };
   /** Conta aberta pelo link "Número errado?": leva ao cartão do WhatsApp. */
@@ -274,6 +307,23 @@ function ArenaApp({
   const bookingLock = useRef(false);
   const [shopId, setShopId] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState("");
+  // Conta conectada (para "Minhas áreas" e o selo "Cliente" de quem tem outro ambiente).
+  const [account, setAccount] = useState<SessionProfile | null>(null);
+  const [refusal, setRefusal] = useState<AccessNotice | undefined>(accessNotice);
+  const outsideDemo = !demo && !demoChrome;
+  const myAreas = useMyAreas(outsideDemo ? account : null);
+  useRememberArea(outsideDemo ? (account?.user.id ?? null) : null, "app");
+  const dismissRefusal = () => {
+    setRefusal(undefined);
+    // Some do endereço também: recarregar não mostra o aviso de novo.
+    const url = new URL(window.location.href);
+    url.searchParams.delete("aviso");
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${url.pathname}${url.search}${url.hash}`,
+    );
+  };
   const [shopName, setShopName] = useState("");
   /** Fuso da barbearia: define os horários oferecidos, independente do aparelho. */
   const [shopTimeZone, setShopTimeZone] = useState<string>(DEFAULT_SHOP_TIMEZONE);
@@ -380,6 +430,11 @@ function ArenaApp({
   // Falha ao entrar na barbearia do link: aparece dentro da janela, com "Tentar de novo".
   const [joinError, setJoinError] = useState<string | null>(null);
   // "Agora não" sem outra barbearia: Agendar mostra como entrar (em vez de "sem serviços").
+  // Conta sem nenhuma barbearia de cliente (cadastro sem link): "Peça o link à sua barbearia".
+  const [noShop, setNoShop] = useState(false);
+  // A loja do endereço (?shop= ou subdomínio) não existe ou não está aberta: sem outra loja,
+  // o pedido de link mostra "não encontramos" em vez de voltar vazio.
+  const [directShopMissing, setDirectShopMissing] = useState(false);
   const [joinDeclined, setJoinDeclined] = useState<{ ref: string; name: string } | null>(null);
   // Barbearias em que o cliente entrou (Conta → Minhas barbearias).
   const [myShops, setMyShops] = useState<CustomerShop[]>([]);
@@ -396,10 +451,26 @@ function ArenaApp({
   const [appointments, setAppointments] = useState<CustomerAppointment[]>([]);
   // Cada loja é um ambiente separado: só as reservas da loja aberta aparecem aqui
   // (fuso, catálogo e remarcação são desta loja).
+  // Sem loja aberta, nada aparece misturado: as reservas de outras lojas viram o aviso
+  // "1 reserva na Loja B · Abrir" (OtherShopNotices).
   const shopAppointments = useMemo(
-    () => (shopId ? appointments.filter((row) => row.barbershop_id === shopId) : appointments),
+    () => (shopId ? appointments.filter((row) => row.barbershop_id === shopId) : []),
     [appointments, shopId],
   );
+  // Troca de loja sempre explícita ("Abrindo Barbearia X…"), pelo seletor do topo, pelo aviso
+  // de reservas em outra loja, pelo link de uma reserva de outra loja ou pelo link colado.
+  const shopSwitch = useAreaSwitch();
+  const openCustomerShop = (
+    slug: string,
+    name: string,
+    extra?: { tab?: string; reserva?: string },
+  ) => shopSwitch.go(customerShopHref(slug, extra), name);
+  // Reservas futuras em outras lojas (já carregadas): aviso "1 reserva na Loja B · Abrir".
+  const otherShopGroups = demo ? [] : otherShopBookings(appointments, shopId, Date.now(), myShops);
+  const upcomingPerShop = upcomingByShop(appointments, demo?.now.getTime() ?? Date.now());
+  const openOtherShop = (group: OtherShopBookings) => {
+    if (group.slug) openCustomerShop(group.slug, group.name, { tab: "reservas" });
+  };
   const [reservationFilter, setReservationFilter] = useState<ReservationFilter>("upcoming");
   const [appointmentsLoading, setAppointmentsLoading] = useState(false);
   const [appointmentsRefreshing, setAppointmentsRefreshing] = useState(false);
@@ -742,11 +813,14 @@ function ArenaApp({
     (async () => {
       setCatalogLoading(true);
       setCatalogError(null);
+      setNoShop(false);
+      setDirectShopMissing(false);
       setDirectLinkBroken(false);
       try {
         const profile = await getSessionProfile();
         if (!cancelled) {
           setCustomerName(profile?.profile?.full_name?.trim() || "");
+          setAccount(profile);
         }
         if (!profile?.user.id) {
           if (!cancelled) {
@@ -798,13 +872,24 @@ function ArenaApp({
             }
           } else if (directBarberSlug) {
             throw new Error(tNow("cust.shopLinkInvalid"));
+          } else if (!cancelled) {
+            setDirectShopMissing(true);
           }
         }
 
+        // Sem loja no endereço: a última aberta neste aparelho (se ainda é cliente dela) e,
+        // sem isso, a primeira da lista (lib: shop-choice).
+        const fallbackShop = (() => {
+          const id = pickCustomerShop(
+            customerMemberships.map((m) => m.barbershop_id as string),
+            readLastCustomerShop(profile.user.id),
+          );
+          return customerMemberships.find((m) => m.barbershop_id === id) ?? null;
+        })();
         if (!catalogShopId && !pendingJoinRef) {
-          catalogShopId = customerMemberships[0]?.barbershop_id ?? null;
-          if (!cancelled && customerMemberships[0]?.barbershop?.name) {
-            setShopName(customerMemberships[0].barbershop.name);
+          catalogShopId = fallbackShop?.barbershop_id ?? null;
+          if (!cancelled && fallbackShop?.barbershop?.name) {
+            setShopName(fallbackShop.barbershop.name);
           }
         }
 
@@ -814,11 +899,9 @@ function ArenaApp({
             setJoinShopName(pendingJoinName);
             setJoinOpen(true);
             // Enquanto não confirma, mostra loja já vinculada (se houver) ou mensagem.
-            if (!catalogShopId && customerMemberships[0]?.barbershop_id) {
-              catalogShopId = customerMemberships[0].barbershop_id;
-              if (customerMemberships[0].barbershop?.name) {
-                setShopName(customerMemberships[0].barbershop.name);
-              }
+            if (!catalogShopId && fallbackShop?.barbershop_id) {
+              catalogShopId = fallbackShop.barbershop_id;
+              if (fallbackShop.barbershop?.name) setShopName(fallbackShop.barbershop.name);
             }
           }
           // Se veio explicitamente com join=1 e não tem outra loja, não carrega catálogo errado.
@@ -838,12 +921,14 @@ function ArenaApp({
         }
 
         if (!catalogShopId) {
+          // Sem nenhuma barbearia: estado vazio neutro ("Peça o link à sua barbearia"), sem erro.
           if (!cancelled) {
             setUserId(profile.user.id);
             setShopId(null);
             setServices([]);
             setStaff([]);
-            setCatalogError(tNow("cust.noShopLinked"));
+            setCatalogError(null);
+            setNoShop(true);
           }
           return;
         }
@@ -992,6 +1077,8 @@ function ArenaApp({
           // Fuso junto com a loja: o alinhamento do dia não pode rodar com o fuso padrão.
           setShopTimeZone(validTimeZone(shopResult.data?.timezone));
           setShopId(catalogShopId);
+          // A próxima abertura sem link volta para esta loja (por conta, neste aparelho).
+          saveLastCustomerShop(profile.user.id, catalogShopId);
           setUserId(profile.user.id);
           setServices(availableServices);
           setServiceTerms(terms);
@@ -1560,23 +1647,45 @@ function ArenaApp({
   const focusHandled = useRef(false);
   useEffect(() => {
     if (!focusToken || focusHandled.current) return;
-    if (!appointmentsLoadedFor || appointmentsLoading) return;
+    // Espera a loja abrir também: sem ela, toda reserva pareceria de outra loja.
+    if (!appointmentsLoadedFor || appointmentsLoading || catalogLoading) return;
     focusHandled.current = true;
     setTab("reservas");
     const match = shopAppointments.find((row) => row.public_token === focusToken);
     if (!match) {
-      // Reserva de outra loja: só não destaca. Sumiu de vez: avisa.
-      if (!appointments.some((row) => row.public_token === focusToken)) setFocusMissing(true);
+      const elsewhere = appointments.find((row) => row.public_token === focusToken);
+      // Sumiu de vez: avisa.
+      if (!elsewhere) {
+        setFocusMissing(true);
+        return;
+      }
+      // Reserva de outra loja de que a pessoa é cliente: abre a loja certa já nessa reserva.
+      const target = myShops.find((shop) => shop.id === elsewhere.barbershop_id);
+      // Se o endereço já pediu essa loja e ela não abriu (suspensa, por exemplo), não salta de
+      // novo: recarregaria sem fim. Mostra o aviso de reserva indisponível.
+      const alreadyAsked =
+        !!target?.slug &&
+        !!directShopSlug &&
+        target.slug.toLowerCase() === directShopSlug.toLowerCase();
+      if (target?.slug && elsewhere.barbershop_id !== shopId && !alreadyAsked) {
+        openCustomerShop(target.slug, target.name, { tab: "reservas", reserva: focusToken });
+        return;
+      }
+      setFocusMissing(true);
       return;
     }
     revealReservation(match);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- revealReservation só usa setters e a demo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- revealReservation e a troca de loja só usam setters e a demo.
   }, [
     focusToken,
     shopAppointments,
     appointments,
     appointmentsLoadedFor,
     appointmentsLoading,
+    catalogLoading,
+    myShops,
+    shopId,
+    directShopSlug,
     demo,
   ]);
 
@@ -2443,6 +2552,9 @@ function ArenaApp({
     shopSettings.corner_style,
   );
 
+  // Sem barbearia aberta, o slogan padrão ("Club & Lounge") não é de ninguém: some.
+  const showTagline = Boolean(shopSettings.tagline) && !noShop;
+
   return (
     <div
       className={`arena-workspace customer-workspace bg-background text-foreground font-sans selection:bg-primary/20 transition-colors duration-300 ${brandFontScopeClass(shopSettings.font_scope)} ${brandCornerClass(shopSettings.corner_style)} ${shopSettings.floating_chrome ? "brand-chrome-floating" : ""}`}
@@ -2483,11 +2595,19 @@ function ArenaApp({
         onKeep={() => setStopSeriesTarget(null)}
         onConfirm={() => (stopSeriesTarget ? stopSeries(stopSeriesTarget) : undefined)}
       />
+      {shopSwitch.overlay}
       <ShopJoinDialog
         open={joinOpen}
         shopName={joinShopName || t("cust.thisShop")}
         busy={joinBusy}
         error={joinError}
+        ownTeam={
+          !!joinShopRef &&
+          !!account?.shopActors.some(
+            (a) =>
+              a.active && (a.barbershop_id === joinShopRef || a.barbershop?.slug === joinShopRef),
+          )
+        }
         onConfirm={() => void confirmShopJoin()}
         onDismiss={dismissShopJoin}
       />
@@ -2586,16 +2706,41 @@ function ArenaApp({
               diminui e usa duas linhas, para continuar legível ("onde estou"); só num espaço
               mínimo vira uma linha com reticências. */}
           <div className="@container flex min-w-0 flex-1 flex-col justify-center">
-            <h1
-              className={`brand-header-title break-normal hyphens-auto text-sm font-bold tracking-tight text-foreground leading-tight @max-[3.5rem]:text-xs @max-[3.5rem]:break-words @max-[2.25rem]:block @max-[2.25rem]:text-ellipsis @max-[2.25rem]:whitespace-nowrap ${
-                shopSettings.tagline ? "line-clamp-2 @min-[5.5rem]:line-clamp-1" : "line-clamp-2"
-              }`}
-            >
-              {shopSettings.display_name?.trim() || shopName || t("cust.shopFallback")}
+            {/* Com 2 ou mais barbearias o nome vira seletor de loja (com as reservas de cada). */}
+            <h1 className="min-w-0">
+              <CustomerShopSwitcher
+                shops={demo ? [] : myShops}
+                currentId={shopId}
+                upcoming={upcomingPerShop}
+                onPick={(shop) => openCustomerShop(shop.slug, shop.name)}
+                title={
+                  <span
+                    className={`brand-header-title break-normal hyphens-auto text-sm font-bold tracking-tight leading-tight @max-[3.5rem]:text-xs @max-[3.5rem]:break-words @max-[2.25rem]:block @max-[2.25rem]:text-ellipsis @max-[2.25rem]:whitespace-nowrap ${
+                      showTagline ? "line-clamp-2 @min-[5.5rem]:line-clamp-1" : "line-clamp-2"
+                    }`}
+                  >
+                    {shopSettings.display_name?.trim() || shopName || t("cust.shopFallback")}
+                  </span>
+                }
+              />
             </h1>
-            <p className="mt-1 hidden truncate text-[11px] font-medium text-primary @min-[5.5rem]:block">
-              {shopSettings.tagline}
-            </p>
+            {/* Onde estou "como quem": quem tem outro ambiente vê o selo "Cliente" no lugar do
+                slogan; conta só de cliente continua igual. */}
+            {myAreas.length > 0 ? (
+              <BookingBadge
+                size="sm"
+                tone={CUSTOMER_META.tone}
+                icon={CUSTOMER_META.icon}
+                label={t(CUSTOMER_META.label)}
+                className="mt-1 self-start"
+              />
+            ) : (
+              showTagline && (
+                <p className="mt-1 hidden truncate text-[11px] font-medium text-primary @min-[5.5rem]:block">
+                  {shopSettings.tagline}
+                </p>
+              )
+            )}
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1 max-[359px]:gap-0.5 sm:gap-2">
@@ -2629,6 +2774,14 @@ function ArenaApp({
               <DemoAccountMenu onViewProfile={() => setTab("perfil")} />
               <DemoRoleSelector />
             </>
+          ) : myAreas.length > 0 && account ? (
+            <CustomerAccountMenu
+              name={customerName || account.user.email || t("cust.customerFallback")}
+              email={account.user.email}
+              areas={myAreas}
+              current={tab === "perfil"}
+              onOpenAccount={() => setTab("perfil")}
+            />
           ) : (
             <button
               type="button"
@@ -2648,11 +2801,23 @@ function ArenaApp({
         className={`p-4 max-w-xl mx-auto ${tab === "dashboard" || tab === "agenda" || tab === "perfil" || tab === "esportes" ? "customer-main-wide" : ""}`}
       >
         <div key={tab} className="mb-panel">
+          {/* Veio de uma recusa do painel ou da plataforma: diz o motivo, uma vez. */}
+          {refusal && (
+            <Notice
+              tone={REFUSAL_TONE[refusal]}
+              title={t(REFUSAL_TEXT[refusal].title)}
+              onDismiss={dismissRefusal}
+              className="mb-4"
+            >
+              {t(REFUSAL_TEXT[refusal].body)}
+            </Notice>
+          )}
           {tab === "perfil" && (
             <CustomerProfile
               onSaved={setCustomerName}
               shops={myShops}
               currentShopId={shopId}
+              onOpenShop={(shop) => openCustomerShop(shop.slug, shop.name)}
               focusWhatsapp={whatsappFocus}
             >
               <CustomerRhythm
@@ -2721,6 +2886,13 @@ function ArenaApp({
             <div className="customer-home relative z-10 grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:gap-6">
               <div className="mb-stagger min-w-0 space-y-4">
                 <ProfileSetup disabled={Boolean(demoShopId)} onNameSaved={setCustomerName} />
+                <OtherShopNotices groups={otherShopGroups} onOpen={openOtherShop} />
+                {noShop && (
+                  <AskShopLink
+                    onOpen={shopSwitch.go}
+                    initialError={directShopMissing ? t("cust.askLink.notFound") : null}
+                  />
+                )}
                 <AttentionList
                   title={t("home.attention.title")}
                   items={attentionItems}
@@ -2729,7 +2901,7 @@ function ArenaApp({
                 {waiting.error && waitOffers.length > 0 && (
                   <Notice tone="danger" title={waiting.error} />
                 )}
-                {!attentionCoversVisit && (
+                {!attentionCoversVisit && !noShop && (
                   <NextVisitCard
                     cancelledAt={!nextAppointment ? nearestShopCancelled?.starts_at : undefined}
                     loading={appointmentsLoading}
@@ -2782,7 +2954,7 @@ function ArenaApp({
                   timeZone={shopTimeZone}
                 />
               </div>
-              {loyaltyOn && (
+              {loyaltyOn && !noShop && (
                 <MemberCard
                   className="lg:sticky lg:top-4"
                   name={customerName || t("cust.customerFallback")}
@@ -2807,7 +2979,15 @@ function ArenaApp({
                 {rescheduleId ? <CalendarClock /> : <Calendar />}
                 <h2>{rescheduleId ? t("booking.titleReschedule") : t("booking.title")}</h2>
               </div>
-              {bookingDone ? (
+              {noShop ? (
+                // Sem barbearia: o link da loja é o único caminho (sem busca de lojas).
+                <div className="mx-auto max-w-xl">
+                  <AskShopLink
+                    onOpen={shopSwitch.go}
+                    initialError={directShopMissing ? t("cust.askLink.notFound") : null}
+                  />
+                </div>
+              ) : bookingDone ? (
                 <div className="mx-auto max-w-xl">
                   <BookingDone
                     title={
@@ -2912,7 +3092,7 @@ function ArenaApp({
                                 }}
                                 className="action-button action-confirm"
                               >
-                                <LogIn aria-hidden />
+                                <Plus aria-hidden />
                                 {t("conta.join.enter")}
                               </button>
                             }
@@ -3327,6 +3507,7 @@ function ArenaApp({
                 items={attentionItems.filter((item) => !item.id.startsWith("offer-"))}
                 headingLevel="h3"
               />
+              <OtherShopNotices groups={otherShopGroups} onOpen={openOtherShop} />
               <WaitingCards
                 controller={waiting}
                 mode="mine"

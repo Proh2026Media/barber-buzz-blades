@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { KeyRound, Loader2, LogIn, MessageCircle, Scissors, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { guardedFetch } from "@/lib/demo-guard";
 import { friendlyAuthError, serverError } from "@/lib/auth/friendly-error";
 import { useI18n } from "@/lib/i18n";
 import { DEFAULT_SHOP_TIMEZONE, validTimeZone } from "@/lib/shop/appointments";
@@ -128,7 +129,7 @@ export function ReservationAccessGate({
     setError(null);
     try {
       const base = import.meta.env.VITE_SUPABASE_URL || "";
-      const response = await fetch(`${base}/functions/v1/auth-otp`, {
+      const response = await guardedFetch(`${base}/functions/v1/auth-otp`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -162,7 +163,7 @@ export function ReservationAccessGate({
     setError(null);
     try {
       const base = import.meta.env.VITE_SUPABASE_URL || "";
-      const response = await fetch(`${base}/functions/v1/auth-otp`, {
+      const response = await guardedFetch(`${base}/functions/v1/auth-otp`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

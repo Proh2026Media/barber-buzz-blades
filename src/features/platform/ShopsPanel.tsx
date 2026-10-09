@@ -67,6 +67,8 @@ type ShopsPanelProps = {
   onAddPerson: (shopId: string) => void;
   onPermissions: (shopId: string) => void;
   onTestAs: (shopId: string) => void;
+  /** Muda depois de adicionar alguém: a ficha recarrega a equipe. */
+  teamRevision?: number;
 };
 
 /**
@@ -94,6 +96,7 @@ export function ShopsPanel({
   onAddPerson,
   onPermissions,
   onTestAs,
+  teamRevision = 0,
 }: ShopsPanelProps) {
   const { t, intlLocale } = useI18n();
   const wide = useWideLayout();
@@ -167,6 +170,7 @@ export function ShopsPanel({
       onAddPerson={() => onAddPerson(selected.id)}
       onPermissions={() => onPermissions(selected.id)}
       onTestAs={() => onTestAs(selected.id)}
+      teamRevision={teamRevision}
     />
   ) : null;
 

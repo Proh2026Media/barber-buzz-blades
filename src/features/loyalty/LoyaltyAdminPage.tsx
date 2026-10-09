@@ -58,6 +58,7 @@ import { brandCornerClass, brandFontScopeClass, brandVariables } from "@/lib/sho
 import { BrandFontFace } from "@/features/shop/BrandFontFace";
 import { BrandRootVariables } from "@/features/shop/BrandRootVariables";
 import type { SessionProfile } from "@/lib/auth/session";
+import { readSavedShopActor, resolveShopActing } from "@/lib/auth/shop-acting";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { Switch } from "@/components/ui/switch";
@@ -124,18 +125,19 @@ function clampInt(value: string, min: number, max: number) {
 
 export function LoyaltyAdminPage({ profile }: { profile: SessionProfile }) {
   const { t, intlLocale } = useI18n();
-  const actor = useMemo(() => {
-    const saved =
-      typeof window === "undefined" ? null : window.localStorage.getItem("arena:active-shop-actor");
-    return (
-      profile.shopActors.find((candidate) => candidate.id === saved) ?? profile.activeShopActor
-    );
-  }, [profile]);
-  const shop =
-    actor?.barbershop ??
-    profile.memberships.find((m) => m.role === "shop_admin")?.barbershop ??
-    profile.memberships.find((m) => m.barbershop)?.barbershop ??
-    null;
+  // Mesma regra do painel (lib/auth/shop-acting): a loja escolhida no aparelho por esta conta,
+  // ou o shop_admin antigo; nunca uma loja vinda de vínculo de cliente.
+  const acting = useMemo(
+    () =>
+      resolveShopActing({
+        actors: profile.shopActors,
+        memberships: profile.memberships,
+        selectedActorId: readSavedShopActor(profile.user.id),
+      }),
+    [profile],
+  );
+  const actor = acting.actor;
+  const shop = acting.shop;
   // Sem vínculo de equipe (shop_admin legado), o servidor só deixa o admin da plataforma gerir:
   // loyalty_can_manage aceita is_platform_admin() ou shop_member owner/partner.
   const canManage = actor

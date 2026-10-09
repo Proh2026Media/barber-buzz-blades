@@ -43,4 +43,6 @@ export { Field, FieldMessage, type FieldControlProps } from "./Field";
 export { LoadingState } from "./LoadingState";
 export { AttentionList, type AttentionAction, type AttentionItem } from "./AttentionList";
 export { UnsavedBar } from "./UnsavedBar";
+export { ApprovalNote } from "./ApprovalNote";
+export { ApprovalNoteContext, useApprovalNote } from "./approval-note";
 export { EmptyState, type EmptyTone } from "@/components/ui/empty-state";

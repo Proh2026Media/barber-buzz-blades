@@ -3,6 +3,7 @@ import { useRouterState } from "@tanstack/react-router";
 import { Maximize2, Share, Smartphone, SquarePlus, X, Zap } from "lucide-react";
 import { Tag } from "@/components/visual";
 import { useI18n } from "@/lib/i18n";
+import { isStandalone } from "@/lib/standalone";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -24,14 +25,6 @@ function isIos() {
   return (
     /iphone|ipad|ipod/i.test(navigator.userAgent) ||
     (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
-  );
-}
-
-function isStandalone() {
-  if (typeof window === "undefined") return false;
-  return (
-    window.matchMedia("(display-mode: standalone)").matches ||
-    ("standalone" in navigator && Boolean((navigator as { standalone?: boolean }).standalone))
   );
 }
 

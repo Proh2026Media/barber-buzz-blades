@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { Link } from "@tanstack/react-router";
 import {
   CalendarPlus,
@@ -80,7 +88,16 @@ function nowInZone(timeZone: string) {
 }
 
 /** Página pública da loja: busca os dados e atualiza os horários de hoje a cada minuto. */
-export function ShopLanding({ shopRef, host }: { shopRef?: string; host?: string }) {
+export function ShopLanding({
+  shopRef,
+  host,
+  topBar,
+}: {
+  shopRef?: string;
+  host?: string;
+  /** Barra de quem já entrou: fica dentro da página para seguir o modo de canto da loja. */
+  topBar?: ReactNode;
+}) {
   const { t } = useI18n();
   const [data, setData] = useState<LandingData | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "missing" | "error">("loading");
@@ -171,50 +188,57 @@ export function ShopLanding({ shopRef, host }: { shopRef?: string; host?: string
     const missing = state === "missing";
     // "Endereço errado" e "sem internet" com desenhos e saídas diferentes.
     return (
-      <main className="public-page flex min-h-dvh items-center justify-center bg-background p-4">
-        <EmptyState
-          className="public-card w-full max-w-sm"
-          status={missing ? "neutral" : "warning"}
-          icon={missing ? Link2Off : WifiOff}
-          title={t(missing ? "shopLanding.missingTitle" : "shopLanding.errorTitle")}
-          description={t(missing ? "shopLanding.checkLink" : "shopLanding.errorText")}
-          action={
-            missing ? (
-              <Link
-                to="/auth"
-                search={{ next: "" }}
-                className="action-button action-confirm min-h-12 w-full"
-              >
-                <LogIn aria-hidden />
-                {t("shopLanding.signIn")}
-              </Link>
-            ) : (
-              <button
-                type="button"
-                className="action-button action-confirm min-h-12 w-full"
-                onClick={retry}
-              >
-                <RefreshCw aria-hidden />
-                {t("shopLanding.retry")}
-              </button>
-            )
-          }
-          secondaryAction={
-            missing ? (
-              <Link
-                to="/"
-                className="inline-flex min-h-11 items-center justify-center text-sm font-semibold underline underline-offset-4"
-              >
-                {t("shopLanding.goHome")}
-              </Link>
-            ) : undefined
-          }
-        />
-      </main>
+      <>
+        {topBar}
+        <main className="public-page flex min-h-dvh items-center justify-center bg-background p-4">
+          <EmptyState
+            className="public-card w-full max-w-sm"
+            status={missing ? "neutral" : "warning"}
+            icon={missing ? Link2Off : WifiOff}
+            title={t(missing ? "shopLanding.missingTitle" : "shopLanding.errorTitle")}
+            description={t(missing ? "shopLanding.checkLink" : "shopLanding.errorText")}
+            action={
+              missing ? (
+                <Link
+                  to="/auth"
+                  search={{ next: "" }}
+                  className="action-button action-confirm min-h-12 w-full"
+                >
+                  <LogIn aria-hidden />
+                  {t("shopLanding.signIn")}
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  className="action-button action-confirm min-h-12 w-full"
+                  onClick={retry}
+                >
+                  <RefreshCw aria-hidden />
+                  {t("shopLanding.retry")}
+                </button>
+              )
+            }
+            secondaryAction={
+              missing ? (
+                <Link
+                  to="/"
+                  className="inline-flex min-h-11 items-center justify-center text-sm font-semibold underline underline-offset-4"
+                >
+                  {t("shopLanding.goHome")}
+                </Link>
+              ) : undefined
+            }
+          />
+        </main>
+      </>
     );
   }
   return (
-    <ShopLandingView data={data} freshness={{ updatedAt, failed, onRefresh: () => void load() }} />
+    <ShopLandingView
+      data={data}
+      topBar={topBar}
+      freshness={{ updatedAt, failed, onRefresh: () => void load() }}
+    />
   );
 }
 
@@ -223,10 +247,12 @@ export function ShopLandingView({
   data,
   preview = false,
   freshness,
+  topBar,
 }: {
   data: LandingData;
   preview?: boolean;
   freshness?: LandingFreshness;
+  topBar?: ReactNode;
 }) {
   const { t, intlLocale } = useI18n();
   const { shop, landing, today } = data;
@@ -412,6 +438,7 @@ export function ShopLandingView({
       style={style}
     >
       <BrandFontFace url={shop.custom_font_url} />
+      {topBar}
       <header className="relative isolate overflow-hidden bg-[#141412] text-[#f7f5f0]">
         <img
           src={shop.hero_image_url || DEFAULT_LOGIN_IMAGE}

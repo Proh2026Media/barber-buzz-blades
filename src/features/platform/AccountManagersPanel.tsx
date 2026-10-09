@@ -28,6 +28,7 @@ import {
   type ActionState,
 } from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
+import { guardedFetch } from "@/lib/demo-guard";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import type { Tables } from "@/integrations/supabase/types";
 import { useI18n } from "@/lib/i18n";
@@ -156,7 +157,7 @@ export function AccountManagersPanel({
       if (!token) throw new Error(t("plat.invite.signInAgain"));
 
       const base = import.meta.env.VITE_SUPABASE_URL || "";
-      const response = await fetch(`${base}/functions/v1/invite-shop-admin`, {
+      const response = await guardedFetch(`${base}/functions/v1/invite-shop-admin`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

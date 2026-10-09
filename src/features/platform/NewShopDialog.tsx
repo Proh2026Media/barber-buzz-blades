@@ -7,6 +7,7 @@ import {
   Loader2,
   Palette,
   Plus,
+  UserPlus,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Field, Hint, IconTile, Notice, StatusBadge, readableLink } from "@/components/visual";
@@ -27,12 +28,14 @@ function slugFromName(name: string) {
 
 /**
  * Nova barbearia numa janela curta: nome + prévia do link (marcada como prévia, não como campo).
- * No fim, confirma com ✓ e oferece "Personalizar agora" ou "Ver na lista".
+ * No fim, confirma com ✓ e oferece "Adicionar pessoa" (primeiro passo: a loja nasce sem equipe),
+ * "Personalizar agora" ou "Ver na lista".
  */
 export function NewShopDialog({
   open,
   onOpenChange,
   onCreate,
+  onAddPerson,
   onCustomize,
   onShow,
   demoMode = false,
@@ -41,6 +44,12 @@ export function NewShopDialog({
   onOpenChange: (open: boolean) => void;
   /** Cria e devolve a barbearia nova (ou rejeita com a mensagem de erro). */
   onCreate: (name: string) => Promise<Tables<"barbershops"> | null>;
+  /**
+   * Primeira ação depois de criar: adicionar a equipe (o convite abre já com a loja). Ainda não
+   * dá para escolher "Dono" aqui: o banco só aceita dono novo cedendo parte de um dono que já
+   * existe (pendência de banco do plano de ambientes, onda 5).
+   */
+  onAddPerson?: (shop: Tables<"barbershops">) => void;
   onCustomize: (shop: Tables<"barbershops">) => void;
   onShow: (shop: Tables<"barbershops"> | null) => void;
   /** Na demonstração nada vai ao servidor: o envio só mostra o que aconteceria. */
@@ -109,13 +118,27 @@ export function NewShopDialog({
               </p>
             </div>
             <div className="grid gap-2">
+              {created.shop && onAddPerson && (
+                <button
+                  type="button"
+                  onClick={() => created.shop && onAddPerson(created.shop)}
+                  className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+                >
+                  <UserPlus className="size-4" aria-hidden />
+                  {t("plat.shop.addPerson")}
+                </button>
+              )}
               {created.shop && (
                 <button
                   type="button"
                   onClick={() => created.shop && onCustomize(created.shop)}
-                  className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+                  className={
+                    onAddPerson
+                      ? "flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-semibold"
+                      : "flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+                  }
                 >
-                  <Palette className="size-4" aria-hidden />
+                  <Palette className={onAddPerson ? "size-4 text-gold" : "size-4"} aria-hidden />
                   {t("plat.newShop.customizeNow")}
                 </button>
               )}

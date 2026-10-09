@@ -27,6 +27,7 @@ import {
 import { DatePicker } from "@/components/ui/schedule-picker";
 import {
   ActionResult,
+  ApprovalNote,
   ChoiceChips,
   Field,
   IconTile,
@@ -445,6 +446,8 @@ export function BlockDialog({
             onRetry={() => void submit()}
             reveal={false}
           />
+          {/* Dono em sociedade: o bloqueio vai para aprovação; avisado antes de salvar. */}
+          <ApprovalNote />
           <div className="flex gap-2">
             <button
               type="button"

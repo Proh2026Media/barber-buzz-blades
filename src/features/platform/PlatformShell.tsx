@@ -14,6 +14,7 @@ import {
 import { toast } from "sonner";
 import {
   BarChart3,
+  FlaskConical,
   KeyRound,
   LayoutDashboard,
   MessageCircleOff,
@@ -58,6 +59,7 @@ import { LoginPreviewDialog } from "@/features/shop/LoginPreviewDialog";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import type { SessionProfile } from "@/lib/auth/session";
+import { useMyAreas, useRememberArea } from "@/features/account/useAreas";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { t as tNow, useI18n } from "@/lib/i18n";
 import {
@@ -88,6 +90,12 @@ function readTabFromUrl(): PlatformTab {
   return platformTabFromSlug(new URLSearchParams(window.location.search).get("aba")) ?? "overview";
 }
 
+/** Ficha pedida no endereço (`?loja=`), ao voltar do "Testar como…" da ficha. */
+function readShopFromUrl(): string | null {
+  if (typeof window === "undefined") return null;
+  return new URLSearchParams(window.location.search).get("loja") || null;
+}
+
 function writeTabToUrl(tab: PlatformTab) {
   if (typeof window === "undefined") return;
   const url = new URL(window.location.href);
@@ -102,8 +110,11 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
   useScrollIndicators();
   const { t } = useI18n();
   const demoChrome = useDemoChrome();
+  // "Minhas áreas" no menu da conta e a última área usada neste aparelho (fora da demonstração).
+  const outsideDemo = !demoMode && !demoChrome;
+  const myAreas = useMyAreas(outsideDemo ? profile : null);
+  useRememberArea(outsideDemo ? profile.user.id : null, "platform");
   const mainRef = useRef<HTMLElement>(null);
-  const tourRef = useRef<HTMLDivElement>(null);
   const waRef = useRef<PlatformWhatsAppHandle>(null);
   const [shops, setShops] = useState<Tables<"barbershops">[]>([]);
   const [memberships, setMemberships] = useState<MembershipRow[]>([]);
@@ -115,7 +126,13 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
     demoMode ? "overview" : readTabFromUrl(),
   );
   const [shopFilter, setShopFilter] = useState<ShopFilter>("all");
-  const [selectedShopId, setSelectedShopId] = useState<string | null>(null);
+  const [selectedShopId, setSelectedShopId] = useState<string | null>(() =>
+    demoMode ? null : readShopFromUrl(),
+  );
+  // "Testar como…" da ficha: os papéis abrem numa janela ali mesmo (e, ao sair, voltam à ficha).
+  const [testAsShopId, setTestAsShopId] = useState<string | null>(null);
+  // Muda depois de adicionar alguém: a ficha recarrega a equipe.
+  const [teamRevision, setTeamRevision] = useState(0);
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const [permShopId, setPermShopId] = useState("");
   const [sportsModules, setSportsModules] = useState<Record<string, boolean>>({});
@@ -129,7 +146,6 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
   const [inviteShopId, setInviteShopId] = useState<string | null>(null);
   const [demoShopId, setDemoShopId] = useState("");
   const [waStatus, setWaStatus] = useState<PlatformWaReport | null>(null);
-  const [scrollToTour, setScrollToTour] = useState(false);
   const [loginTourOpen, setLoginTourOpen] = useState(false);
   const [loginTourSettings, setLoginTourSettings] = useState<Tables<"barbershop_settings"> | null>(
     null,
@@ -209,20 +225,18 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
     void loadShops();
   }, [loadShops]);
 
+  // A ficha pedida no endereço já abriu: tira o `?loja=` (recarregar volta à lista).
+  useEffect(() => {
+    if (demoMode || typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has("loja")) return;
+    url.searchParams.delete("loja");
+    window.history.replaceState(window.history.state, "", url);
+  }, [demoMode]);
+
   useEffect(() => {
     if (brandShop && demoState) setBrandSettings(demoState.settings);
   }, [brandShop, demoState]);
-
-  // "Testar como…" vindo da ficha: depois de trocar de aba, desce até o cartão do teste.
-  useEffect(() => {
-    if (!scrollToTour || platformTab !== "overview") return;
-    const id = window.setTimeout(() => {
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      tourRef.current?.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
-      setScrollToTour(false);
-    }, 80);
-    return () => window.clearTimeout(id);
-  }, [scrollToTour, platformTab]);
 
   async function openBranding(shop: Tables<"barbershops">) {
     setBrandError(null);
@@ -458,7 +472,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
         <div className="min-w-0">
           <p className="text-xs font-bold text-gold">{t("plat.header.eyebrow")}</p>
           <h1 className="break-words text-lg font-extrabold leading-tight tracking-tight max-[379px]:text-base">
-            {t("plat.header.title")}
+            {demoMode || demoChrome ? t("plat.header.titleDemo") : t("plat.header.title")}
           </h1>
         </div>
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
@@ -473,6 +487,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
             <PlatformAccountMenu
               name={accountName}
               email={profile.user.email}
+              areas={myAreas}
               onSignOut={() => void signOut()}
             />
           )}
@@ -586,10 +601,9 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
               }}
               onTestAs={(shopId) => {
                 if (!demoMode) setDemoShopId(shopId);
-                setSelectedShopId(null);
-                setPlatformTab("overview");
-                setScrollToTour(true);
+                setTestAsShopId(shopId);
               }}
+              teamRevision={teamRevision}
             />
           )}
         </div>
@@ -605,7 +619,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
         )}
         {/* Sem barbearias por falha de carga, o "Testar como…" não tem com o que testar. */}
         {platformTab === "overview" && !(loadError && shops.length === 0) && (
-          <div ref={tourRef} className="scroll-mt-4">
+          <div className="scroll-mt-4">
             {demoMode ? (
               <DemoTourHub
                 shopId={demoState?.shop.id ?? ""}
@@ -698,6 +712,10 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
         open={newShopOpen}
         onOpenChange={setNewShopOpen}
         onCreate={createShop}
+        onAddPerson={(shop) => {
+          showNewShop(shop);
+          openInvite(shop.id);
+        }}
         onCustomize={(shop) => {
           showNewShop(shop);
           void openBranding(shop);
@@ -710,12 +728,58 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
         open={inviteOpen}
         onOpenChange={(open) => {
           setInviteOpen(open);
-          if (!open) void loadShops("refresh");
+          if (!open) {
+            void loadShops("refresh");
+            setTeamRevision((value) => value + 1);
+          }
         }}
         shops={shops}
         initialShopId={inviteShopId}
         demoMode={demoMode}
       />
+
+      {/* "Testar como…" da ficha: os papéis ali mesmo, sem trocar de aba. */}
+      <Dialog open={!!testAsShopId} onOpenChange={(open) => !open && setTestAsShopId(null)}>
+        <DialogContent
+          aria-describedby={undefined}
+          className="max-h-[92dvh] w-[calc(100vw-1.5rem)] max-w-lg overflow-y-auto rounded-3xl border-border bg-card p-5"
+        >
+          <DialogTitle className="flex min-h-11 items-center gap-2 pr-12 text-lg font-bold">
+            <FlaskConical className="size-5 text-gold" aria-hidden />
+            {t("plat.testAs.title", {
+              name:
+                shops.find((shop) => shop.id === testAsShopId)?.name ??
+                t("plat.brand.shopFallback"),
+            })}
+          </DialogTitle>
+          {testAsShopId &&
+            (demoMode ? (
+              <DemoTourHub
+                bare
+                shopId={testAsShopId}
+                activeRole={demoChrome?.role}
+                onPreviewLogin={() => {
+                  setTestAsShopId(null);
+                  void openLoginTour();
+                }}
+                onSelectRole={(role) => {
+                  setTestAsShopId(null);
+                  demoChrome?.setRole(role);
+                }}
+              />
+            ) : (
+              <DemoTourHub
+                bare
+                returnToShop
+                shopId={testAsShopId}
+                onPreviewLogin={() => {
+                  setTestAsShopId(null);
+                  void openLoginTour();
+                }}
+              />
+            ))}
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={!!brandShop}

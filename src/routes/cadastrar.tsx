@@ -45,6 +45,7 @@ import {
   type MissingItem,
 } from "@/features/auth/entry";
 import { supabase } from "@/integrations/supabase/client";
+import { guardedFetch } from "@/lib/demo-guard";
 import { DEFAULT_LOGIN_IMAGE } from "@/lib/shop/branding";
 import { shopPublicOrigin } from "@/lib/shop/host";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -85,7 +86,7 @@ export const Route = createFileRoute("/cadastrar")({
 
 async function callRegisterShop(body: Record<string, unknown>) {
   const base = import.meta.env.VITE_SUPABASE_URL || "";
-  const response = await fetch(`${base}/functions/v1/register-shop`, {
+  const response = await guardedFetch(`${base}/functions/v1/register-shop`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

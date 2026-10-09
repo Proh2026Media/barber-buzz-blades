@@ -21,7 +21,9 @@ import {
 import { Link, createFileRoute, useSearch } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { guardedFetch } from "@/lib/demo-guard";
 import { resolvePostAuthPath } from "@/lib/auth/session";
+import { sanitizeNext } from "@/lib/auth/destination";
 import { friendlyAuthError, ServerError, serverError } from "@/lib/auth/friendly-error";
 import {
   AUTH_POPUP_MESSAGE,
@@ -232,7 +234,7 @@ async function callVerifyPhone(body: Record<string, unknown>): Promise<VerifyPho
     throw new ServerError(tNow("errors.sessionExpired"), "unauthorized");
   }
   const base = import.meta.env.VITE_SUPABASE_URL || "";
-  const response = await fetch(`${base}/functions/v1/auth-otp`, {
+  const response = await guardedFetch(`${base}/functions/v1/auth-otp`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -489,7 +491,8 @@ function AuthPage() {
     if (emailResult) titleRef.current?.focus();
   }, [emailResult]);
 
-  const preferredNext = isSafeNext(next) ? next : "";
+  // Só caminhos internos conhecidos e parâmetros conhecidos seguem adiante (lib/auth/destination).
+  const preferredNext = sanitizeNext(next) ?? "";
 
   // No apex (pop-up): grava destino da loja antes do Google.
   useEffect(() => {
@@ -982,6 +985,8 @@ function AuthPage() {
       setBusy(false);
       return;
     }
+    // O pedido do link vence quando é específico (agendar, reserva); sem destino, abre a última
+    // área usada neste aparelho ou a mais alta da conta.
     const path = await resolvePostAuthPath(nextOverride ?? preferredNext);
     if (effectiveShopRef && (path === "/app" || path.startsWith("/app"))) {
       const url = new URL(path, window.location.origin);
@@ -1072,7 +1077,7 @@ function AuthPage() {
   /** Esqueci a senha pelo WhatsApp: pede o código (o mesmo pedido do primeiro envio). */
   async function requestRecoveryCode() {
     const base = import.meta.env.VITE_SUPABASE_URL || "";
-    const response = await fetch(`${base}/functions/v1/auth-otp`, {
+    const response = await guardedFetch(`${base}/functions/v1/auth-otp`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1200,7 +1205,7 @@ function AuthPage() {
             return;
           }
 
-          const response = await fetch(`${base}/functions/v1/auth-otp`, {
+          const response = await guardedFetch(`${base}/functions/v1/auth-otp`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

@@ -22,6 +22,7 @@ export function CopyField({
   label,
   secret,
   href,
+  openLabel,
   shareTitle,
   mono,
   share: shareEnabled = true,
@@ -36,6 +37,8 @@ export function CopyField({
   secret?: boolean;
   /** Mostra "Abrir" (nova aba). */
   href?: string;
+  /** Rótulo do "Abrir" quando é preciso dizer o que abre (ex.: "Abrir link público"). */
+  openLabel?: string;
   /** Título usado no compartilhamento do celular. */
   shareTitle?: string;
   /** Fonte monoespaçada só no valor (códigos e senhas). */
@@ -135,7 +138,7 @@ export function CopyField({
           {href && (
             <a href={href} target="_blank" rel="noreferrer" className={BUTTON}>
               <ExternalLink className="size-4" aria-hidden />
-              {t("visual.open")}
+              {openLabel ?? t("visual.open")}
             </a>
           )}
         </span>

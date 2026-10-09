@@ -1,6 +1,6 @@
-import { Globe2, Headset, Smartphone, type LucideIcon } from "lucide-react";
+import { Headset, Smartphone, type LucideIcon } from "lucide-react";
 import type { MessageKey } from "@/lib/i18n";
-import { ROLE_META } from "@/features/shop/roles";
+import { PLATFORM_META, ROLE_META } from "@/features/shop/roles";
 import type { DemoRole } from "./chrome";
 
 /**
@@ -9,7 +9,7 @@ import type { DemoRole } from "./chrome";
  * Os papéis da equipe vêm de ROLE_META (selo do papel): mesmo significado, mesmo ícone.
  */
 export const ROLE_ICON = {
-  platform: Globe2,
+  platform: PLATFORM_META.icon,
   manager: Headset,
   owner: ROLE_META.owner.icon,
   partner: ROLE_META.partner.icon,
@@ -26,6 +26,8 @@ export type DemoRoleMeta = {
   labelKey: MessageKey;
   hintKey: MessageKey;
   group: DemoRoleGroup;
+  /** Selo curto do modo da sociedade, nas visões de dono. */
+  modeKey?: MessageKey;
 };
 
 /** Ordem: quem é atendido, quem atende e quem cuida de todas as barbearias. */
@@ -37,19 +39,30 @@ export const DEMO_ROLES: readonly DemoRoleMeta[] = [
     hintKey: "demo.role.customerHint",
     group: "outside",
   },
+  // Donos com o mesmo nome do produto ("Dono · %"); o modo da sociedade vem como selo.
   {
     id: "owner",
     icon: ROLE_ICON.owner,
-    labelKey: "demo.role.owner",
+    labelKey: "demo.role.ownerSolo",
     hintKey: "demo.who.ownerHint",
     group: "team",
+    modeKey: "eq.mode.short.single",
   },
   {
-    id: "partner",
-    icon: ROLE_ICON.partner,
-    labelKey: "demo.role.partner",
-    hintKey: "demo.role.partnerHint",
+    id: "equal",
+    icon: ROLE_ICON.owner,
+    labelKey: "demo.role.ownerEqual",
+    hintKey: "demo.role.equalHint",
     group: "team",
+    modeKey: "eq.mode.short.equal",
+  },
+  {
+    id: "minority",
+    icon: ROLE_ICON.owner,
+    labelKey: "demo.role.ownerMinority",
+    hintKey: "demo.role.minorityHint",
+    group: "team",
+    modeKey: "eq.mode.short.majority",
   },
   {
     id: "associate",

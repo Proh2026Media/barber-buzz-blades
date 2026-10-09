@@ -4,6 +4,7 @@ import { ArenaApp } from "@/features/customer/ArenaApp";
 import { ReservationAccessGate } from "@/features/customer/ReservationAccessGate";
 import { requireSession } from "@/lib/auth/guards";
 import { getSessionProfile } from "@/lib/auth/session";
+import { parseAccessNotice } from "@/lib/auth/destination";
 import { maybeRedirectToCanonical, resolveShopFromCurrentHost } from "@/lib/shop/host";
 import { useI18n } from "@/lib/i18n";
 
@@ -33,6 +34,8 @@ export const Route = createFileRoute("/app")({
     ...(typeof search.time === "string" && TIME_KEY.test(search.time) ? { time: search.time } : {}),
     // ?tab=conta&focus=whatsapp: abre a Conta com o cartão do WhatsApp em foco.
     ...(search.focus === "whatsapp" ? { focus: "whatsapp" as const } : {}),
+    // Recusa explicada (painel ou plataforma): o app mostra o motivo.
+    ...(parseAccessNotice(search.aviso) ? { aviso: parseAccessNotice(search.aviso) } : {}),
   }),
   beforeLoad: async ({ location, search }) => {
     const searchStr =
@@ -49,7 +52,7 @@ export const Route = createFileRoute("/app")({
 });
 
 function AppRoute() {
-  const { barber, shop, join, tab, reserva, day, time, focus } = Route.useSearch();
+  const { barber, shop, join, tab, reserva, day, time, focus, aviso } = Route.useSearch();
   const ctx = Route.useRouteContext() as { guestReservation?: boolean };
   const { t } = useI18n();
   const [hostShop, setHostShop] = useState<string | undefined>(undefined);
@@ -112,6 +115,7 @@ function AppRoute() {
       initialSlot={day && time ? { day, time } : undefined}
       focusWhatsapp={focus === "whatsapp"}
       focusReservationToken={reserva}
+      accessNotice={aviso}
     />
   );
 }

@@ -11,6 +11,7 @@ import {
 } from "../waiting/demo.ts";
 import { blocksSlot, type WaitAction, type WaitingEvent } from "../waiting/model.ts";
 import type { LoyaltyReward } from "../loyalty/program.ts";
+import { DEMO_ASSOCIATE_STAFF_ID, DEMO_EMPLOYEE_STAFF_ID } from "./team.ts";
 
 export const DEMO_CUSTOMER_ID = "demo-customer";
 
@@ -73,6 +74,10 @@ export type DemoState = {
   appointments: Tables<"appointments">[];
   businessHours: Tables<"business_hours">[];
   availabilityBlocks: Tables<"availability_blocks">[];
+  /** Catálogo próprio de cada profissional (o Parceiro personaliza preço e duração). */
+  staffServices: Tables<"staff_services">[];
+  /** Sugestões fictícias de catálogo que o Parceiro já decidiu (usar ou manter a dele). */
+  decidedSuggestions: string[];
   customerName: string;
   points: number;
   awarded: string[];
@@ -338,34 +343,88 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
       updated_at: stamp,
     })),
     availabilityBlocks: [],
+    staffServices: [],
+    decidedSuggestions: [],
     customerName: customers[0].name,
     points: 250,
     awarded: [],
     redemptions: [],
   };
   if (preset) {
+    // "Testar como…" copia só a aparência e o catálogo da loja real. Todos os ids viram
+    // fictícios (loja, equipe, serviços, horários) e nada aponta para a loja ou contas reais:
+    // a demonstração nunca consegue ler nem gravar dados reais por engano.
     state.shop = {
       ...preset.shop,
+      id: shopId,
       name: `${preset.shop.name} · Demo`,
+      slug: state.shop.slug,
       status: "active",
+      custom_domain: null,
+      custom_domain_status: "none",
+      domain_verify_token: null,
+      domain_verified_at: null,
+      domain_last_error: null,
       // As datas da demo são montadas no relógio do aparelho (ver deviceTimeZone).
       timezone: deviceTimeZone(),
     };
-    state.settings = { ...preset.settings, sports_enabled: true };
-    if (preset.services.length) state.services = preset.services.map((row) => ({ ...row }));
-    if (preset.staff.length) state.staff = preset.staff.map((row) => ({ ...row }));
+    state.settings = { ...preset.settings, barbershop_id: shopId, sports_enabled: true };
+    if (preset.services.length) {
+      state.services = preset.services.map((row, index) => ({
+        ...row,
+        id: `demo-service-${index + 1}`,
+        barbershop_id: shopId,
+      }));
+    }
+    if (preset.staff.length) {
+      state.staff = preset.staff.map((row, index) => ({
+        ...row,
+        id: `demo-staff-${index + 1}`,
+        barbershop_id: shopId,
+        user_id: null,
+      }));
+    }
     if (preset.businessHours.length) {
-      state.businessHours = preset.businessHours.map((row) => ({ ...row }));
+      state.businessHours = preset.businessHours.map((row) => ({
+        ...row,
+        id: `demo-hours-${row.weekday}`,
+        barbershop_id: shopId,
+      }));
     }
     const firstService = state.services[0]!;
     const firstStaff = state.staff[0]!;
     state.appointments = state.appointments.map((row, index) => ({
       ...row,
-      barbershop_id: preset.shop.id,
+      barbershop_id: shopId,
       service_id: state.services[index % state.services.length]?.id ?? firstService.id,
       staff_id: state.staff[index % state.staff.length]?.id ?? firstStaff.id,
     }));
   }
+  // Personagens próprios do Parceiro e do Contratado (plano de ambientes, onda 5): cada papel da
+  // demonstração tem o próprio cartão, a própria agenda e o próprio link, com ids fictícios.
+  state.staff = [
+    ...state.staff.filter(
+      (row) => row.id !== DEMO_ASSOCIATE_STAFF_ID && row.id !== DEMO_EMPLOYEE_STAFF_ID,
+    ),
+    {
+      ...common,
+      id: DEMO_ASSOCIATE_STAFF_ID,
+      display_name: "Rafa Lima",
+      user_id: null,
+      booking_slug: "rafa",
+      bio: "Parceiro da casa: agenda, serviços e valores próprios.",
+      avatar_url: null,
+    },
+    {
+      ...common,
+      id: DEMO_EMPLOYEE_STAFF_ID,
+      display_name: "Léo Souza",
+      user_id: null,
+      booking_slug: "leo",
+      bio: "Contratado: atende na agenda da casa.",
+      avatar_url: null,
+    },
+  ];
   // One-hour slots keep every service inside opening hours and avoid overlaps.
   // A janela de 120 dias para trás garante visitas recorrentes suficientes para
   // o "ritmo" (frequência de retorno) ter dados na demonstração.
@@ -539,6 +598,8 @@ export type DemoAction =
   | { type: "hours.save"; hours: Tables<"business_hours">[] }
   | { type: "block.add"; block: Tables<"availability_blocks"> }
   | { type: "block.delete"; id: string }
+  | { type: "staffService.save"; row: Tables<"staff_services"> }
+  | { type: "suggestion.decide"; id: string }
   | { type: "settings.save"; settings: Tables<"barbershop_settings"> }
   | { type: "shop.update"; shop: Partial<Pick<Tables<"barbershops">, "name" | "status">> }
   | { type: "clock.advance"; milliseconds: number }
@@ -869,5 +930,20 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
         ...state,
         availabilityBlocks: state.availabilityBlocks.filter((row) => row.id !== action.id),
       };
+    case "staffService.save":
+      return {
+        ...state,
+        staffServices: [
+          ...state.staffServices.filter(
+            (row) =>
+              !(row.staff_id === action.row.staff_id && row.service_id === action.row.service_id),
+          ),
+          action.row,
+        ],
+      };
+    case "suggestion.decide":
+      return state.decidedSuggestions.includes(action.id)
+        ? state
+        : { ...state, decidedSuggestions: [...state.decidedSuggestions, action.id] };
   }
 }

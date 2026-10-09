@@ -44,6 +44,7 @@ import {
   type ActionState,
 } from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
+import { guardedFetch } from "@/lib/demo-guard";
 import type { Tables } from "@/integrations/supabase/types";
 import { useDemo } from "@/features/demo/context";
 import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
@@ -131,7 +132,7 @@ async function callChannel(body: Record<string, unknown>) {
   if (!token) throw new Error(tNow("integr.err.session"));
 
   const base = import.meta.env.VITE_SUPABASE_URL || "";
-  const response = await fetch(`${base}/functions/v1/whatsapp-channel`, {
+  const response = await guardedFetch(`${base}/functions/v1/whatsapp-channel`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,

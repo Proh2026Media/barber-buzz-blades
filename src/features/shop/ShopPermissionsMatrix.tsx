@@ -32,6 +32,7 @@ import {
   type ActionState,
 } from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
+import { permissionLockedForRole } from "@/lib/auth/capabilities";
 import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { ROLE_META } from "./roles";
@@ -139,8 +140,30 @@ const GROUPS: { id: string; title: MessageKey; icon: LucideIcon; rows: string[] 
 ];
 
 /** O dono sempre pode mudar as permissões (senão ninguém mais poderia). */
-const isLocked = (role: string, permission: string) =>
+const alwaysOwner = (role: string, permission: string) =>
   role === "owner" && permission === "manage_permissions";
+
+/**
+ * Célula travada: sempre ligada para o dono, ou sem efeito para o Contratado (o banco só aplica
+ * mudanças da loja de dono ou sócio; a tela também ignora). Decisão do dono: "use Parceiro".
+ */
+const isLocked = (role: string, permission: string) =>
+  alwaysOwner(role, permission) || permissionLockedForRole(role, permission);
+
+/** Valor que vale de fato: célula sem efeito para o papel aparece (e é salva) desligada. */
+function withRoleLocks(matrix: Matrix): Matrix {
+  return Object.fromEntries(
+    Object.entries(matrix).map(([role, row]) => [
+      role,
+      Object.fromEntries(
+        Object.entries(row ?? {}).map(([permission, value]) => [
+          permission,
+          permissionLockedForRole(role, permission) ? false : value,
+        ]),
+      ),
+    ]),
+  );
+}
 
 /**
  * Permissões fictícias da demonstração (sem servidor): catálogo a partir dos textos
@@ -231,8 +254,8 @@ export function ShopPermissionsMatrix({
         const payload = demoPermissions();
         setError(null);
         setCatalog(payload.catalog);
-        setMatrix(payload.matrix);
-        setSaved(payload.matrix);
+        setMatrix(withRoleLocks(payload.matrix));
+        setSaved(withRoleLocks(payload.matrix));
         return;
       }
       setLoading(true);
@@ -247,8 +270,8 @@ export function ShopPermissionsMatrix({
           throw new Error("invalid");
         }
         setCatalog(Array.isArray(payload.catalog) ? payload.catalog : []);
-        setMatrix(payload.matrix);
-        setSaved(payload.matrix);
+        setMatrix(withRoleLocks(payload.matrix));
+        setSaved(withRoleLocks(payload.matrix));
       } catch {
         setCatalog([]);
         setMatrix({});
@@ -288,6 +311,8 @@ export function ShopPermissionsMatrix({
 
   const setServiceLevel = (level: ServiceLevel) => {
     if (!canEdit) return;
+    // "Todos" não vale para o Contratado (não muda o catálogo da loja).
+    if (level === "all" && permissionLockedForRole(role, SERVICES.manageAll)) return;
     setMatrix((current) => ({
       ...current,
       [role]: {
@@ -316,8 +341,8 @@ export function ShopPermissionsMatrix({
       const payload = data as unknown as PermissionsPayload | null;
       if (payload?.matrix) {
         setCatalog(Array.isArray(payload.catalog) ? payload.catalog : []);
-        setMatrix(payload.matrix);
-        setSaved(payload.matrix);
+        setMatrix(withRoleLocks(payload.matrix));
+        setSaved(withRoleLocks(payload.matrix));
       } else setSaved(matrix);
       setState("saved");
     } catch {
@@ -337,6 +362,19 @@ export function ShopPermissionsMatrix({
     };
   };
 
+  // Célula sem efeito para o Contratado: cadeado + "use Parceiro", sem interruptor.
+  const LockedEmployee = ({ className }: { className?: string }) => (
+    <span
+      className={cn(
+        "flex items-center gap-1 text-xs font-semibold text-muted-foreground",
+        className,
+      )}
+    >
+      <Lock className="size-3.5 shrink-0" aria-hidden />
+      {t("eq.perm.lockedEmployee")}
+    </span>
+  );
+
   const YesNo = ({ on, label }: { on: boolean; label: string }) =>
     on ? (
       <StatusBadge tone="success" icon={Check} variant="icon" label={label} />
@@ -351,6 +389,7 @@ export function ShopPermissionsMatrix({
       if (!hasServices) return null;
       const level = serviceLevelFor(matrix, role);
       const text = textOf(SERVICES.manageAll);
+      const allLocked = permissionLockedForRole(role, SERVICES.manageAll);
       return (
         <li key="services" className="space-y-2 py-3">
           <div className="flex items-start gap-3">
@@ -378,10 +417,12 @@ export function ShopPermissionsMatrix({
               options={(["view", "own", "all"] as const).map((value) => ({
                 value,
                 label: levelLabel(value),
+                disabled: value === "all" && allLocked,
               }))}
               className="ps-8"
             />
           )}
+          {allLocked && <LockedEmployee className="ps-8" />}
         </li>
       );
     }
@@ -396,12 +437,15 @@ export function ShopPermissionsMatrix({
         <label htmlFor={canEdit && !locked ? id : undefined} className="min-w-0 flex-1">
           <span className="block text-sm font-semibold">{text.label}</span>
           {text.hint && <span className="block text-xs text-muted-foreground">{text.hint}</span>}
-          {locked && (
-            <span className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground">
-              <Lock className="size-3.5" aria-hidden />
-              {t("eq.perm.alwaysOwner")}
-            </span>
-          )}
+          {locked &&
+            (alwaysOwner(role, permission) ? (
+              <span className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground">
+                <Lock className="size-3.5" aria-hidden />
+                {t("eq.perm.alwaysOwner")}
+              </span>
+            ) : (
+              <LockedEmployee className="mt-1" />
+            ))}
         </label>
         {canEdit && !locked ? (
           <Switch

@@ -7,7 +7,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useRef } from "react";
-import { CalendarCheck, Loader2, LogIn, Repeat, RotateCcw, Star } from "lucide-react";
+import { CalendarCheck, Loader2, Plus, Repeat, RotateCcw, Star, UserRound } from "lucide-react";
 import { IconList, Notice, PersonAvatar } from "@/components/visual";
 import { useI18n } from "@/lib/i18n";
 
@@ -17,6 +17,8 @@ type ShopJoinDialogProps = {
   busy?: boolean;
   /** Falha ao entrar: aparece dentro da janela, com "Tentar de novo". */
   error?: string | null;
+  /** A conta é da equipe desta loja: entrar cria a ficha de cliente dela aqui. */
+  ownTeam?: boolean;
   onConfirm: () => void;
   onDismiss: () => void;
 };
@@ -30,6 +32,7 @@ export function ShopJoinDialog({
   shopName,
   busy = false,
   error = null,
+  ownTeam = false,
   onConfirm,
   onDismiss,
 }: ShopJoinDialogProps) {
@@ -69,6 +72,9 @@ export function ShopJoinDialog({
             { icon: Repeat, text: t("conta.join.others"), key: "others" },
           ]}
         />
+        {ownTeam && (
+          <Notice tone="info" icon={UserRound} role="none" title={t("conta.join.ownTeam")} />
+        )}
         {error && (
           <Notice
             tone="danger"
@@ -96,7 +102,7 @@ export function ShopJoinDialog({
             {busy ? (
               <Loader2 className="motion-safe:animate-spin" aria-hidden />
             ) : (
-              <LogIn aria-hidden />
+              <Plus aria-hidden />
             )}
             {busy ? t("join.confirming") : t("conta.join.confirm", { shop: shopName })}
           </button>

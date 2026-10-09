@@ -36,8 +36,9 @@ import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { LOCALE_NATIVE_NAMES, t as tNow, useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-/** Barbearia em que o cliente entrou (para "Minhas barbearias"). */
-export type CustomerShop = { id: string; name: string; slug: string };
+import { customerShopHref, type CustomerShop } from "./shop-choice";
+
+export type { CustomerShop };
 
 const SECTION = {
   whatsapp: "conta-whatsapp",
@@ -72,6 +73,7 @@ export function CustomerProfile({
   shops = [],
   currentShopId = null,
   focusWhatsapp = false,
+  onOpenShop,
 }: {
   /** Aberta pelo link "Número errado?" da entrada: rola e foca o cartão do WhatsApp. */
   focusWhatsapp?: boolean;
@@ -81,6 +83,8 @@ export function CustomerProfile({
   /** Barbearias em que o cliente entrou; com mais de uma, aparece "Minhas barbearias". */
   shops?: CustomerShop[];
   currentShopId?: string | null;
+  /** Abre outra barbearia com a tela "Abrindo …" (sem isso, o link abre direto). */
+  onOpenShop?: (shop: CustomerShop) => void;
 }) {
   const demo = useDemo();
   const { t, locale } = useI18n();
@@ -497,7 +501,12 @@ export function CustomerProfile({
                       <StatusBadge {...STATE.active} size="sm" label={t("conta.shops.here")} />
                     ) : (
                       <a
-                        href={`/app?shop=${encodeURIComponent(shop.slug)}`}
+                        href={customerShopHref(shop.slug)}
+                        onClick={(event) => {
+                          if (!onOpenShop) return;
+                          event.preventDefault();
+                          onOpenShop(shop);
+                        }}
                         aria-label={t("conta.shops.openAria", { shop: shop.name })}
                         className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-border px-3 text-sm font-semibold transition hover:border-primary/40"
                       >

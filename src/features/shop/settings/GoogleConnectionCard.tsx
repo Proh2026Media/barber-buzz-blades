@@ -23,6 +23,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { guardedFetch } from "@/lib/demo-guard";
 import { useDemo } from "@/features/demo/context";
 import { t as tNow, useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -118,7 +119,7 @@ async function callGoogle(body: Record<string, unknown>) {
   if (!token) throw new Error(tNow("integr.err.session"));
 
   const base = import.meta.env.VITE_SUPABASE_URL || "";
-  const response = await fetch(`${base}/functions/v1/google-connect`, {
+  const response = await guardedFetch(`${base}/functions/v1/google-connect`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,

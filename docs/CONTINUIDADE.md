@@ -95,11 +95,83 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
 - **Decisões do dono:**
   - vagas de "qualquer profissional" na lista de espera;
   - "Toda semana" × "A cada 7 dias";
-  - o Parceiro da demo tem poderes de dono;
+  - ~~o Parceiro da demo tem poderes de dono~~ — resolvido na onda 1 da separação de ambientes (09/10): Parceiro e Contratado da demo têm as mesmas restrições do real;
   - nome da aba Reservas;
   - Esportes sempre visível;
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
-  - criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real (comportamento antigo): decidir se ficam bloqueados na demo.
+  - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
+
+## Entrega — separação de ambientes, onda 1: "como quem" e demonstração (09/10, Claude Code)
+
+Plano completo em [plano-ambientes.md](plano-ambientes.md) (seção 4, onda 1). Só interface: não mudou banco, migrations nem regras de permissão.
+
+- **Quem age e com qual poder:** regra única em `src/lib/auth/shop-acting.ts` (com testes em `shop-acting.test.ts`), usada pelo `ShopShell` e pelo `LoyaltyAdminPage`.
+  - Vínculo de equipe → poderes da matriz da loja.
+  - `shop_admin` antigo sem vínculo de equipe → continua abrindo a própria loja com os poderes de dono de hoje (grava direto), com selo "Dono".
+  - Sem vínculo de equipe nem `shop_admin` → nenhuma loja e nenhum poder. O painel nunca abre uma loja vinda de vínculo de cliente. O admin da plataforma vê "Você não está na equipe de nenhuma barbearia" com "Voltar à plataforma" (entra em loja só pela demonstração).
+- **Plataforma:** "Ir para minha barbearia" só aparece quando a conta tem loja para abrir.
+- **Troca de loja:** as permissões ficam presas à loja a que pertencem; enquanto as da nova chegam aparece "Abrindo {loja}…" (abas escondidas) e o painel volta à Agenda.
+- **Loja guardada no aparelho:** chave por conta (`arena:active-shop-actor:<user_id>`, a antiga só como reserva), com proteção contra armazenamento bloqueado.
+- **Ordem das lojas:** papel mais alto (dono/sócio, Parceiro, Contratado) e depois o vínculo mais antigo (`shop_members.created_at`).
+- **Demonstração fiel:**
+  - Parceiro e Contratado com as mesmas regras do real (sem Aparência, sem "Novo serviço", funcionamento só leitura, bloqueios só próprios, catálogo próprio por cima do da loja).
+  - "Testar como…" copia aparência e catálogo com ids fictícios (loja, equipe, serviços, horários; sem domínio próprio nem conta real).
+  - Sugestões de catálogo do Parceiro com dados fictícios e decisão local.
+  - Trava de rede (`src/lib/demo-guard.ts`, ligada no `fetch` do cliente Supabase): com a demonstração aberta em `/demo`, nada vai ao banco além da sessão. Testes em `src/lib/demo-guard.test.ts`, incluindo um que falha se um componente que lê o banco não souber da demonstração.
+- **Convite:** o texto agora diz "Envie a senha temporária para a pessoa. Quem já tem conta usa a senha de sempre." (nenhum e-mail é enviado).
+- **Pendente (precisa decidir leitura):** contagem de "Administradores" da plataforma pelos donos/sócios ativos da equipe (PLAT-01). Ver o relatório da onda.
+
+## Entrega — separação de ambientes, onda 2: entrada e troca de ambiente (09/10, Claude Code)
+
+Plano em [plano-ambientes.md](plano-ambientes.md) (seção 4, onda 2; decisões 1, 2, 3 e 5). Só interface: não mudou banco, migrations nem regras de permissão.
+
+- **Destino depois de entrar:** regra em `src/lib/auth/destination.ts` (testes da matriz papel × destino em `session.test.ts`).
+  - `/app` com loja, profissional, dia, hora, reserva ou `focus=whatsapp` é seguido por qualquer papel (o "Agendar" da página pública não cai mais no painel).
+  - `/shop` e `/platform` só quando a conta tem aquela área; `/app` genérico e entrada sem destino abrem a última área usada no aparelho (`arena:last-area:<user_id>`, com proteção contra armazenamento bloqueado) ou a mais alta da conta.
+  - Só caminhos internos conhecidos (`/app`, `/shop`, `/shop/pontos`, `/platform`, `/demo`, `/politica`, `/cadastrar`) e só parâmetros conhecidos e válidos passam (sem redirecionamento aberto; barra invertida, `//` e endereços externos caem).
+- **"Minhas áreas"** (`src/features/account/MyAreas.tsx`, lista em `src/lib/auth/areas.ts`): no menu da conta do painel, da plataforma e do app do cliente, só para contas com 2 ou mais áreas. Mostra Plataforma, cada barbearia com o selo do papel e "Agendar como cliente". Trocar de área cobre a tela com "Abrindo {área}…"; outra loja do próprio painel troca ali mesmo. Substitui "Ir para minha barbearia" e "Painel da plataforma" dos menus.
+- **App do cliente:** para quem tem outro ambiente, selo "Cliente" no cabeçalho (no lugar do slogan) e o avatar abre o menu com "Minhas áreas" e "Minha conta". Conta só de cliente continua igual.
+- **"/" e app instalado:** no endereço principal e no app instalado abrem a última área usada. No domínio da loja, pelo navegador, mostram a página pública com a barra "Você está vendo como cliente · Abrir painel" (também em `/b/<slug>`).
+- **Recusas explicadas:** `/shop` sem acesso leva a `/app?aviso=sem-acesso` ou `aviso=removido` (vínculo de equipe inativo); `/platform` e `/demo` sem permissão levam a `aviso=sem-plataforma`. O app mostra o motivo num aviso que some ao fechar. `aviso=aguardando` já tem texto, mas ainda não é detectado (precisa de banco).
+- **Loja de entrada do painel** (`initialShopEntry`/`shopEntryForHost` em `shop-acting.ts`): loja pedida em "Minhas áreas" (`/shop?unidade=`) → loja do domínio em que a pessoa trabalha → escolha salva → pergunta "Em qual barbearia você vai trabalhar agora?" (2 ou mais lojas) → a única loja. No domínio de uma loja em que não trabalha, aviso "Você está no endereço da A, mas trabalha na B" com "Abrir endereço da B". `/platform` no domínio de uma loja vai ao endereço principal.
+- **Página da loja no painel:** "Ver como cliente" (`/b/<slug>`, mesma conta) e "Abrir link público" (link de divulgar) com rótulos distintos; o guia concluído também diz "Abrir link público".
+
+## Entrega — separação de ambientes, onda 3: clareza do papel no painel (09/10, Claude Code)
+
+Plano em [plano-ambientes.md](plano-ambientes.md) (seção 4, onda 3; decisões 7, 8, 10 e 14). Só interface: não mudou banco, migrations nem regras de permissão.
+
+- **Capacidades com nome** (`src/lib/auth/capabilities.ts`, testes em `capabilities.test.ts`): `society`, `ownCatalog`, `suggestToPeers`, `ownBlocks`, `ownProfile`, `ownPhoto`, `ownWallet`, `leaveShop`, `takeClientsOnLeave`, `googleOwnAgenda`, `googleWholeShop`. O `ShopShell` e o `shopPowers` perguntam por elas; não sobrou `role === "associate"` no painel. As abas de cada papel continuam as de antes (teste).
+- **Selo de papel tocável** (`RoleAccessButton.tsx`): "Dono · X%" para todos os donos (topo, menu da conta, troca de loja, "Minhas áreas", "Seu acesso") e o modo da sociedade como selo ("Decisão em conjunto", "Maior parte decide"; dono único só "Dono · 100%"). Tocar abre "Seu acesso" resumido: papel, modo, "valem na hora" ou "esperam o OK de Ana", ✓/— e atalho para Ajustes → Equipe e sociedade.
+- **Aviso antes de salvar:** quando a mudança vai para aprovação, os botões Salvar mostram "Vai para aprovação de {nomes}" (`ApprovalNote` + `ApprovalNoteContext` em `components/visual`, dentro do `UnsavedBar` e nas janelas de serviço, profissional e bloqueio).
+- **Matriz de permissões:** para o Contratado, "Todos os serviços", "Funcionamento", "Equipe" e "Permissões" ficam travados com "Contratado não muda a loja. Para mais autonomia, use Parceiro." A tela também ignora essas permissões para o Contratado (o banco já não as aplicava).
+- **Contratado (decisões 7):** "Sair da barbearia" só sem levar clientes; Google só com a própria agenda (Ajustes → Avisos, resumo "Sua agenda do Google"). Bloqueios próprios aparecem quando o dono libera "Serviços: os seus" (o banco ainda exige essa permissão; ver pendência). **Atenção: "sair sem levar clientes" vale só na tela.** A RPC `request_shop_departure` ainda aceita `p_mode = 'take'` de um Contratado que a chame direto; falta a migration que recuse `take` quando `role = 'employee'` (ver pendência).
+- **Parceiro:** aba "Meus serviços", faixa "Preços e serviços que valem só na sua agenda", selos e interruptor "Você atende / Você não atende".
+- **"Meu perfil e link"** (Ajustes → Pessoas, `MyProfileCard.tsx`) para todo profissional: prévia, link para copiar/enviar e "Editar meu perfil" (mesma janela do cadastro; o link não muda; a foto do Contratado fica travada).
+- **Sociedade num lugar só:** "Pessoas e papéis" (convites, %, permissões) saiu da aba Equipe e foi para Ajustes → Equipe e sociedade, junto das decisões, do modo, de "Seu acesso" e da saída. A aba Equipe leva até lá ("Acesso ao painel") e o convite pelo cartão do profissional abre lá já com o nome.
+- **Bloqueios de colegas:** para quem só cuida da própria agenda aparecem como "Colega indisponível", sem nome nem motivo (só na tela).
+- **Ajustes da revisão (09/10):** "Seu acesso" mostra "Editar os próprios serviços" ✓ para quem edita os serviços da loja; o resumo do selo não repete "valem na hora" e, na demonstração, diz "valem na hora" (lá nada vai para aprovação); o atalho do selo leva quem não é dono ao cartão "Seu acesso" (`team-mine`); "Meus serviços" sem rótulo repetido no interruptor; a barra de baixo mantém "Serviços" (uma linha), e "Meus serviços" fica no título da aba.
+- **Pendências de banco:** `request_shop_departure` recusar `p_mode = 'take'` quando o membro é `employee` (errcode 42501); bloqueio próprio do Contratado sem depender de "serviços próprios"; foto do próprio perfil para o Contratado (política do storage); filtrar nome/motivo dos bloqueios de colegas no banco (hoje chegam ao aparelho).
+
+## Entrega — separação de ambientes, onda 5 (parte de interface): cliente com várias lojas, plataforma e demonstração fiel (09/10, Claude Code)
+
+Plano em [plano-ambientes.md](plano-ambientes.md) (seção 4, onda 5, itens 1, 3 e 4; decisões 10, 11 e 13). Só interface: não mudou banco, migrations nem regras de permissão.
+
+- **Cliente com várias lojas** (`src/features/customer/shop-choice.ts`, testes em `shop-choice.test.ts`):
+  - Nome da loja no topo vira seletor com 2 ou mais lojas, com o contador de reservas futuras de cada uma (`CustomerShops.tsx`). Toda troca mostra "Abrindo {loja}…" (também em Conta → Minhas barbearias).
+  - Última loja aberta lembrada no aparelho, por conta (`arena:last-customer-shop:<user_id>`, com proteção contra armazenamento bloqueado); sem ela, a primeira da lista.
+  - Aviso "1 reserva em {loja} · Abrir" no Início e em Reservas, só com as reservas já carregadas. Link de reserva (`?reserva=`) de outra loja de que a pessoa é cliente abre a loja certa já na reserva.
+  - Sem loja aberta, nada aparece misturado (as reservas de outras lojas viram o aviso).
+  - Sem nenhuma loja (decisão 13): estado vazio neutro "Peça o link à sua barbearia" com campo para colar o link (`AskShopLink.tsx`; leitura do link em `src/lib/shop/shop-link.ts`, com testes). Domínio próprio é conferido pela consulta pública `resolve_shop_by_host`. O slogan padrão some.
+  - "Entrar em {loja}?" virou "Adicionar {loja} às suas barbearias?" (ícone de +).
+- **Plataforma:**
+  - Ficha da barbearia lista a equipe (nome e "Dono · %", Parceiro, Contratado, modo da sociedade) com a RPC que o admin já lê (`list_shop_team_members`). Na ficha, "Administradores" e o aviso "sem administrador" passam a contar donos/sócios ativos da equipe quando ela carrega (decisão 12); a lista de atenção e o painel geral seguem com a contagem antiga (pendência da onda 1).
+  - "Testar como…" abre os papéis numa janela na própria ficha; ao sair da demonstração, volta para a ficha (`/demo?volta=ficha` → `/platform?aba=barbearias&loja=<id>`).
+  - Na demonstração o papel fica no endereço (`?view=`, com `replace`) e o título vira "Plataforma · demonstração".
+  - Depois de criar a barbearia, a primeira ação é "Adicionar pessoa" (convite já com a loja). **"Adicionar dono" não dá ainda:** o banco só aceita dono novo cedendo parte de um dono que já existe (ver pendência).
+- **Demonstração** (`src/features/demo/team.ts`):
+  - Personagens próprios: Parceiro "Rafa Lima" e Contratado "Léo Souza" (cartões, agenda e link próprios, ids fictícios).
+  - Visões de dono com os nomes do produto: "Dono · 100%" (decide sozinho), "Dono · 50%" (decisão em conjunto, com a sócia fictícia Ana) e "Dono · 30%" (maior parte decide). O antigo `?view=partner` abre a visão de 50%.
+  - Ajustes → Equipe e sociedade também na demonstração: modo, barra de participação, "Seu acesso" e a saída simulada (destino fictício; nada sai de verdade). Nas visões de sociedade, "Seu acesso" diz "esperam o OK de Ana" e o Salvar avisa "No real, vai para aprovação de Ana" (na demonstração a mudança ainda vale na hora).
 
 ## Entrega — tempo de preparo entre atendimentos (05/10, Claude Code) — **migration pendente na VPS**
 

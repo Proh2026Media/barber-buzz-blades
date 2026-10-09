@@ -8,6 +8,7 @@ import {
   Moon,
   Store,
   Trash2,
+  UserRound,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -128,20 +129,23 @@ export function BlocksCard({
   const busyDays = days.filter((dayKey) => blocksOn(dayKey).length > 0);
   const countLabel = (count: number) =>
     count === 1 ? t("hours.blocks.countOne") : t("hours.blocks.countMany", { count });
-  const reasonOf = (block: PlacedBlock) => block.reason || t("shop.block.defaultReason");
+  // Colega (para quem só cuida da própria agenda): "Colega indisponível", sem nome nem motivo.
+  const reasonOf = (block: PlacedBlock) =>
+    block.colleague ? t("hours.blocks.colleague") : block.reason || t("shop.block.defaultReason");
   const iconOf = (block: PlacedBlock): LucideIcon =>
-    BLOCK_REASONS.find((item) => t(item.key) === block.reason)?.icon ?? Ban;
+    block.colleague
+      ? UserRound
+      : (BLOCK_REASONS.find((item) => t(item.key) === block.reason)?.icon ?? Ban);
+  const whoOf = (block: PlacedBlock) =>
+    block.colleague ? null : (block.staffName ?? t("shop.block.wholeShop"));
   const timeOf = (block: PlacedBlock) =>
     block.startKey === block.endKey
       ? rangeLabel(fromMinutes(block.startMinute), fromMinutes(block.endMinute))
       : `${labels.date(block.startKey)} ${fromMinutes(block.startMinute)} → ${labels.date(block.endKey)} ${fromMinutes(block.endMinute)}`;
   const describe = (block: PlacedBlock) =>
-    [
-      reasonOf(block),
-      labels.date(block.startKey),
-      timeOf(block),
-      block.staffName ?? t("shop.block.wholeShop"),
-    ].join(", ");
+    [reasonOf(block), labels.date(block.startKey), timeOf(block), whoOf(block)]
+      .filter(Boolean)
+      .join(", ");
 
   function blockItem(block: PlacedBlock) {
     const Icon = iconOf(block);
@@ -162,19 +166,21 @@ export function BlocksCard({
           <p className="truncate text-sm font-bold">{reasonOf(block)}</p>
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
             <Tag icon={Clock3}>{timeOf(block)}</Tag>
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-              {block.staffId ? (
-                <PersonAvatar
-                  name={block.staffName ?? ""}
-                  src={member?.avatar_url}
-                  seed={block.staffId}
-                  size="xs"
-                />
-              ) : (
-                <Store className="size-4" aria-hidden />
-              )}
-              {block.staffName ?? t("shop.block.wholeShop")}
-            </span>
+            {!block.colleague && (
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                {block.staffId ? (
+                  <PersonAvatar
+                    name={block.staffName ?? ""}
+                    src={member?.avatar_url}
+                    seed={block.staffId}
+                    size="xs"
+                  />
+                ) : (
+                  <Store className="size-4" aria-hidden />
+                )}
+                {block.staffName ?? t("shop.block.wholeShop")}
+              </span>
+            )}
             {block.requested && (
               <StatusBadge {...STATE.waiting} size="sm" label={t("hours.blocks.requested")} />
             )}

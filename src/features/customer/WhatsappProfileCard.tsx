@@ -26,6 +26,7 @@ import {
 } from "@/components/visual";
 import { CodeInput, ResendButton } from "@/features/auth/entry";
 import { supabase } from "@/integrations/supabase/client";
+import { guardedFetch } from "@/lib/demo-guard";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { useI18n } from "@/lib/i18n";
 
@@ -89,7 +90,7 @@ async function callVerifyPhone(body: Record<string, unknown>): Promise<OtpPayloa
   const token = data.session?.access_token;
   if (!token) return { error: "Sessão expirada", error_code: "unauthorized" };
   const base = import.meta.env.VITE_SUPABASE_URL || "";
-  const response = await fetch(`${base}/functions/v1/auth-otp`, {
+  const response = await guardedFetch(`${base}/functions/v1/auth-otp`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

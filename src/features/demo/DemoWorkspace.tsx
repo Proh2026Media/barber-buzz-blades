@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useReducer, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { SessionProfile } from "@/lib/auth/session";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,15 +10,42 @@ import { DemoChromeContext, type DemoRole } from "./chrome";
 import { createDemoState, demoReducer, type DemoShopPreset } from "./model";
 import { DemoRoleSelector, DemoAccountMenu } from "./DemoAccountMenu";
 import { t as tNow, useI18n } from "@/lib/i18n";
+import { armDemoGuard, disarmDemoGuard } from "@/lib/demo-guard";
+import {
+  DEMO_ASSOCIATE_STAFF_ID,
+  DEMO_EMPLOYEE_STAFF_ID,
+  demoTeam,
+  demoViewer,
+  isDemoTeamView,
+} from "./team";
+
+/**
+ * Enquanto a demonstração está aberta, nada vai ao banco (ver lib/demo-guard). Arma já na
+ * primeira renderização, porque os efeitos dos filhos (ShopShell, ArenaApp) rodam antes
+ * dos deste componente.
+ */
+function useDemoNetworkGuard() {
+  useState(() => {
+    armDemoGuard();
+    return true;
+  });
+  useEffect(() => {
+    armDemoGuard();
+    return disarmDemoGuard;
+  }, []);
+}
 
 export function DemoWorkspace({
   profile,
   shopId,
   initialRole = "customer",
+  returnToShop,
 }: {
   profile: SessionProfile;
   shopId?: string;
   initialRole?: DemoRole;
+  /** Veio do "Testar como…" da ficha: ao sair, volta para a ficha desta barbearia. */
+  returnToShop?: string;
 }) {
   const { t } = useI18n();
   const [preset, setPreset] = useState<DemoShopPreset | null>(null);
@@ -87,7 +114,9 @@ export function DemoWorkspace({
     <ConfiguredDemoWorkspace
       profile={profile}
       preset={preset ?? undefined}
+      shopParam={shopId}
       initialRole={initialRole}
+      returnToShop={returnToShop}
     />
   );
 }
@@ -95,22 +124,42 @@ export function DemoWorkspace({
 function ConfiguredDemoWorkspace({
   profile,
   preset,
+  shopParam,
   initialRole = "customer",
+  returnToShop,
 }: {
   profile: SessionProfile;
   preset?: DemoShopPreset;
+  /** Barbearia escolhida no "Testar como…" (fica no endereço junto com a visão). */
+  shopParam?: string;
   initialRole?: DemoRole;
+  returnToShop?: string;
 }) {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const [role, setRole] = useState<DemoRole>(initialRole);
+  useDemoNetworkGuard();
+  const [role, setRoleState] = useState<DemoRole>(initialRole);
+  // O papel escolhido fica no endereço (?view=): recarregar ou compartilhar abre a mesma visão.
+  const setRole = (next: DemoRole) => {
+    setRoleState(next);
+    void navigate({
+      to: "/demo",
+      search: {
+        shop: shopParam,
+        view: next,
+        ...(returnToShop ? { volta: "ficha" as const } : {}),
+      },
+      replace: true,
+      resetScroll: false,
+    });
+  };
   const [openProfileRequest, setOpenProfileRequest] = useState(false);
   const [state, dispatch] = useReducer(demoReducer, undefined, () =>
     createDemoState(new Date(), preset),
   );
 
   useEffect(() => {
-    setRole(initialRole);
+    setRoleState(initialRole);
   }, [initialRole]);
 
   useEffect(() => {
@@ -128,6 +177,15 @@ function ConfiguredDemoWorkspace({
   }, [role]);
 
   const exit = () => {
+    // A página da plataforma volta a ler o banco (a checagem de acesso roda antes de sair daqui).
+    disarmDemoGuard();
+    // Veio da ficha da barbearia: volta para ela (aba Barbearias, ficha aberta).
+    if (returnToShop) {
+      void navigate({
+        href: `/platform?aba=barbearias&loja=${encodeURIComponent(returnToShop)}`,
+      });
+      return;
+    }
     void navigate({ to: "/platform" });
   };
 
@@ -145,6 +203,34 @@ function ConfiguredDemoWorkspace({
     clearOpenProfileRequest: () => setOpenProfileRequest(false),
   };
 
+  // Personagens de cada papel e a equipe fictícia da visão (estáveis entre os tiques do relógio,
+  // para as telas de sociedade não recarregarem à toa).
+  const ownerStaff =
+    state.staff.find(
+      (row) => row.id !== DEMO_ASSOCIATE_STAFF_ID && row.id !== DEMO_EMPLOYEE_STAFF_ID,
+    ) ?? null;
+  const associateStaff = state.staff.find((row) => row.id === DEMO_ASSOCIATE_STAFF_ID) ?? null;
+  const employeeStaff = state.staff.find((row) => row.id === DEMO_EMPLOYEE_STAFF_ID) ?? null;
+  const teamKey = [role, ownerStaff, associateStaff, employeeStaff]
+    .map((row) => (row && typeof row === "object" ? `${row.id}:${row.display_name}` : row))
+    .join("|");
+  const fallbackOwnerName = t("demo.role.owner");
+  const team = useMemo(
+    () =>
+      isDemoTeamView(role)
+        ? demoTeam(role, {
+            viewerId: profile.user.id,
+            owner: ownerStaff ?? { id: "demo-staff", display_name: fallbackOwnerName },
+            associate: associateStaff,
+            employee: employeeStaff,
+            stamp: new Date(0).toISOString(),
+          })
+        : undefined,
+    // A equipe só muda quando muda a visão ou o nome/cartão de alguém (teamKey).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [teamKey, profile.user.id, fallbackOwnerName],
+  );
+
   let content: ReactNode;
   if (role === "platform") {
     // Com o mesmo contexto da Loja e do Cliente, Relatórios e pedidos de privacidade leem os
@@ -154,45 +240,41 @@ function ConfiguredDemoWorkspace({
         <PlatformShell profile={profile} demoMode />
       </DemoContext.Provider>
     );
-  } else if (role !== "customer") {
-    // Create a mock activeShopActor for the demo
+  } else if (isDemoTeamView(role)) {
+    // Cada visão da equipe tem o próprio personagem (Dono, Parceiro, Contratado) e a própria
+    // sociedade (dono único, partes iguais, menor parte), com ids fictícios.
+    const viewer = demoViewer(role);
+    const viewerStaff =
+      viewer.staff === "associate"
+        ? associateStaff
+        : viewer.staff === "employee"
+          ? employeeStaff
+          : ownerStaff;
     const mockActor = {
-      id: "demo-actor",
+      id: `demo-actor-${role}`,
       user_id: profile.user.id,
       barbershop_id: state.shop.id,
-      staff_id: state.staff[0]?.id ?? "demo-staff",
-      role: role as "owner" | "partner" | "associate" | "employee",
-      ownership_percent: role === "owner" ? 100 : role === "partner" ? 50 : null,
+      staff_id: viewerStaff?.id ?? "demo-staff",
+      role: viewer.role,
+      ownership_percent: viewer.percent,
       active: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_at: state.now.toISOString(),
+      updated_at: state.now.toISOString(),
       barbershop: state.shop,
-      staff: state.staff[0],
+      staff: viewerStaff ?? null,
     };
-
-    // Compute governance mode based on the role
-    const mode = role === "owner" ? "single" : role === "partner" ? "equal" : null;
-
-    // Import capabilitiesFor if needed, but it's easier to just mock it or rely on ShopShell using it.
-    // Wait, ShopShell recalculates capabilities via RPC get_shop_access_context!
-    // But in demo mode, supabase.rpc won't have this demo shop.
-    // Let's pass a fully mocked profile to ShopShell.
-
-    // Actually, ShopShell does this:
-    // const actor = profile.shopActors.find((candidate) => candidate.id === selectedActorId) ?? profile.activeShopActor;
-    // So we just need to provide it in profile.shopActors.
-
+    // O painel usa este vínculo fictício; as permissões saem das regras do papel
+    // (lib/auth/shop-acting), sem consultar o banco.
     const demoProfile = {
       ...profile,
       shopActors: [mockActor],
       activeShopActor: mockActor,
-      // ShopShell will call RPC, which will fail or return empty, and it might override capabilities.
-      // We should probably patch ShopShell to not call the RPC if in demo mode!
     };
 
     content = (
-      <DemoContext.Provider value={{ ...state, dispatch, exit }}>
+      <DemoContext.Provider value={{ ...state, dispatch, exit, team }}>
         <ShopShell
+          key={role}
           profile={demoProfile as unknown as SessionProfile}
           headerActions={
             <>

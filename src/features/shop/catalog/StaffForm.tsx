@@ -1,7 +1,8 @@
-import { Camera, Eye, ImageOff, Link2, Loader2, Plus, Save } from "lucide-react";
+import { Camera, Eye, ImageOff, Link2, Loader2, Lock, Plus, Save } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
   ActionResult,
+  ApprovalNote,
   CopyField,
   Field,
   FieldMessage,
@@ -60,6 +61,10 @@ export function StaffForm({
   onSaved,
   onDelete,
   onPause,
+  title,
+  saveLabel,
+  slugLocked = false,
+  photoLocked = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -72,6 +77,14 @@ export function StaffForm({
   onDelete?: () => void;
   /** "Pausar" na zona de perigo (só para quem está ativo). Lança erro se não gravar. */
   onPause?: () => Promise<unknown>;
+  /** Título da janela (padrão: "Editar profissional" / "Novo profissional"). */
+  title?: string;
+  /** Texto do botão de salvar (padrão: "Salvar profissional" / "Adicionar"). */
+  saveLabel?: string;
+  /** "Meu perfil": o endereço do link não muda aqui (só o dono muda); aparece pronto para copiar. */
+  slugLocked?: boolean;
+  /** "Meu perfil" do Contratado: a foto fica como está (só a mostra). */
+  photoLocked?: boolean;
 }) {
   const { t } = useI18n();
   const formRef = useRef<HTMLFormElement>(null);
@@ -109,7 +122,9 @@ export function StaffForm({
   function validate(): Errors {
     const next: Errors = {};
     if (!name.trim()) next.name = t("catalog.staff.error.name");
-    if (!finalSlug || !isValidBookingSlug(finalSlug)) next.slug = t("catalog.staff.error.slug");
+    if (!slugLocked && (!finalSlug || !isValidBookingSlug(finalSlug))) {
+      next.slug = t("catalog.staff.error.slug");
+    }
     return next;
   }
 
@@ -126,7 +141,8 @@ export function StaffForm({
     }
     const draft: StaffDraft = {
       display_name: name.trim(),
-      booking_slug: finalSlug,
+      // Link travado: o endereço continua o mesmo, mesmo trocando o nome.
+      booking_slug: slugLocked ? (editing?.booking_slug ?? finalSlug) : finalSlug,
       bio: bio.trim() || null,
       avatar_url: avatar,
     };
@@ -189,7 +205,7 @@ export function StaffForm({
           {/* Título fixo: o "×" da janela não cobre o conteúdo que rola. */}
           <div className="border-b border-border px-5 pb-3 pr-14 pt-5 sm:px-6">
             <DialogTitle>
-              {editing ? t("shop.staffForm.editTitle") : t("shop.staffForm.newTitle")}
+              {title ?? (editing ? t("shop.staffForm.editTitle") : t("shop.staffForm.newTitle"))}
             </DialogTitle>
             <DialogDescription className="sr-only">{t("catalog.staff.formAria")}</DialogDescription>
           </div>
@@ -201,29 +217,39 @@ export function StaffForm({
                 badge={t("catalog.preview.badge")}
               >
                 <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3">
-                  <button
-                    type="button"
-                    disabled={uploading}
-                    onClick={() => fileRef.current?.click()}
-                    aria-label={
-                      avatar ? t("catalog.image.changePhoto") : t("catalog.staff.addPhoto")
-                    }
-                    className="shrink-0 rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
-                  >
+                  {photoLocked ? (
                     <PersonAvatar
                       name={shownName}
                       src={avatar}
                       size="lg"
                       seed={editing?.id}
-                      badge={
-                        uploading ? (
-                          <Loader2 className="motion-safe:animate-spin" aria-hidden />
-                        ) : (
-                          <Camera aria-hidden />
-                        )
-                      }
+                      className="shrink-0"
                     />
-                  </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={uploading}
+                      onClick={() => fileRef.current?.click()}
+                      aria-label={
+                        avatar ? t("catalog.image.changePhoto") : t("catalog.staff.addPhoto")
+                      }
+                      className="shrink-0 rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                    >
+                      <PersonAvatar
+                        name={shownName}
+                        src={avatar}
+                        size="lg"
+                        seed={editing?.id}
+                        badge={
+                          uploading ? (
+                            <Loader2 className="motion-safe:animate-spin" aria-hidden />
+                          ) : (
+                            <Camera aria-hidden />
+                          )
+                        }
+                      />
+                    </button>
+                  )}
                   <span className="min-w-0 flex-1 space-y-0.5">
                     <span
                       className={`block break-words text-sm font-bold hyphens-auto ${name.trim() ? "" : "text-muted-foreground"}`}
@@ -237,40 +263,51 @@ export function StaffForm({
                     ) : null}
                   </span>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    disabled={uploading}
-                    onClick={() => fileRef.current?.click()}
-                    className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-semibold transition hover:border-primary/40 disabled:opacity-60"
-                  >
-                    <Camera className="size-4 text-gold" aria-hidden />
-                    {avatar ? t("catalog.image.changePhoto") : t("catalog.staff.addPhoto")}
-                  </button>
-                  {avatar && (
-                    <button
-                      type="button"
-                      onClick={() => setAvatar(null)}
-                      className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-semibold transition hover:border-primary/40"
-                    >
-                      <ImageOff className="size-4 text-gold" aria-hidden />
-                      {t("catalog.image.removePhoto")}
-                    </button>
-                  )}
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    accept={SERVICE_IMAGE_ACCEPT}
-                    className="sr-only"
-                    tabIndex={-1}
-                    aria-hidden
-                    onChange={pickFile}
-                  />
-                </div>
-                {photoError ? (
-                  <FieldMessage tone="error">{photoError}</FieldMessage>
+                {photoLocked ? (
+                  <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Lock className="size-4 shrink-0" aria-hidden />
+                    {t("catalog.staff.photoByOwner")}
+                  </p>
                 ) : (
-                  <p className="text-xs text-muted-foreground">{t("catalog.image.photoHint")}</p>
+                  <>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={uploading}
+                        onClick={() => fileRef.current?.click()}
+                        className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-semibold transition hover:border-primary/40 disabled:opacity-60"
+                      >
+                        <Camera className="size-4 text-gold" aria-hidden />
+                        {avatar ? t("catalog.image.changePhoto") : t("catalog.staff.addPhoto")}
+                      </button>
+                      {avatar && (
+                        <button
+                          type="button"
+                          onClick={() => setAvatar(null)}
+                          className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-semibold transition hover:border-primary/40"
+                        >
+                          <ImageOff className="size-4 text-gold" aria-hidden />
+                          {t("catalog.image.removePhoto")}
+                        </button>
+                      )}
+                      <input
+                        ref={fileRef}
+                        type="file"
+                        accept={SERVICE_IMAGE_ACCEPT}
+                        className="sr-only"
+                        tabIndex={-1}
+                        aria-hidden
+                        onChange={pickFile}
+                      />
+                    </div>
+                    {photoError ? (
+                      <FieldMessage tone="error">{photoError}</FieldMessage>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        {t("catalog.image.photoHint")}
+                      </p>
+                    )}
+                  </>
                 )}
               </PreviewPanel>
 
@@ -292,52 +329,67 @@ export function StaffForm({
                 )}
               </Field>
 
-              <Field
-                label={
-                  <span className="inline-flex items-center gap-2">
-                    <Link2 className="size-4 text-gold" aria-hidden />
-                    {t("catalog.staff.link")}
-                  </span>
-                }
-                error={errors.slug}
-                success={slugChanged && !errors.slug ? t("catalog.staff.oldLinkWorks") : undefined}
-                hint={!editing ? t("catalog.staff.linkHint") : undefined}
-              >
-                {(props) => (
-                  <div className="flex min-h-11 w-full items-stretch overflow-hidden rounded-xl border border-border bg-background focus-within:ring-2 focus-within:ring-ring">
-                    {host && (
-                      <span
-                        className="flex min-w-0 max-w-[45%] items-center border-r border-border bg-muted/50 px-2.5 text-xs text-muted-foreground"
-                        title={`${host}/`}
-                      >
-                        <span className="truncate">{host}/</span>
+              {slugLocked ? (
+                editing?.booking_slug && linkOrigin ? (
+                  <CopyField
+                    label={t("catalog.staff.linkReady")}
+                    value={`${linkOrigin}/${editing.booking_slug}`}
+                    shareTitle={editing.display_name}
+                  />
+                ) : null
+              ) : (
+                <>
+                  <Field
+                    label={
+                      <span className="inline-flex items-center gap-2">
+                        <Link2 className="size-4 text-gold" aria-hidden />
+                        {t("catalog.staff.link")}
                       </span>
+                    }
+                    error={errors.slug}
+                    success={
+                      slugChanged && !errors.slug ? t("catalog.staff.oldLinkWorks") : undefined
+                    }
+                    hint={!editing ? t("catalog.staff.linkHint") : undefined}
+                  >
+                    {(props) => (
+                      <div className="flex min-h-11 w-full items-stretch overflow-hidden rounded-xl border border-border bg-background focus-within:ring-2 focus-within:ring-ring">
+                        {host && (
+                          <span
+                            className="flex min-w-0 max-w-[45%] items-center border-r border-border bg-muted/50 px-2.5 text-xs text-muted-foreground"
+                            title={`${host}/`}
+                          >
+                            <span className="truncate">{host}/</span>
+                          </span>
+                        )}
+                        <input
+                          {...props}
+                          value={slug}
+                          onChange={(event) => {
+                            setSlugTouched(true);
+                            setSlug(draftSlug(event.target.value));
+                            if (errors.slug)
+                              setErrors((current) => ({ ...current, slug: undefined }));
+                          }}
+                          onBlur={() => setSlug((current) => slugifyPt(current))}
+                          placeholder={slugifyPt(name) || t("catalog.staff.slugPlaceholder")}
+                          className="min-w-0 flex-1 bg-transparent px-2.5 py-2 text-sm font-semibold outline-none"
+                          autoCapitalize="off"
+                          autoCorrect="off"
+                          spellCheck={false}
+                        />
+                      </div>
                     )}
-                    <input
-                      {...props}
-                      value={slug}
-                      onChange={(event) => {
-                        setSlugTouched(true);
-                        setSlug(draftSlug(event.target.value));
-                        if (errors.slug) setErrors((current) => ({ ...current, slug: undefined }));
-                      }}
-                      onBlur={() => setSlug((current) => slugifyPt(current))}
-                      placeholder={slugifyPt(name) || t("catalog.staff.slugPlaceholder")}
-                      className="min-w-0 flex-1 bg-transparent px-2.5 py-2 text-sm font-semibold outline-none"
-                      autoCapitalize="off"
-                      autoCorrect="off"
-                      spellCheck={false}
-                    />
-                  </div>
-                )}
-              </Field>
+                  </Field>
 
-              {editing?.booking_slug && linkOrigin && !slugChanged && (
-                <CopyField
-                  label={t("catalog.staff.linkReady")}
-                  value={`${linkOrigin}/${editing.booking_slug}`}
-                  shareTitle={editing.display_name}
-                />
+                  {editing?.booking_slug && linkOrigin && !slugChanged && (
+                    <CopyField
+                      label={t("catalog.staff.linkReady")}
+                      value={`${linkOrigin}/${editing.booking_slug}`}
+                      shareTitle={editing.display_name}
+                    />
+                  )}
+                </>
               )}
 
               <Field label={t("catalog.staff.bio")} optional>
@@ -388,6 +440,8 @@ export function StaffForm({
               onRetry={() => formRef.current?.requestSubmit()}
               reveal={false}
             />
+            {/* Dono em sociedade: a mudança vai para aprovação; avisado antes de salvar. */}
+            <ApprovalNote />
             <div className="flex gap-2">
               <button
                 type="button"
@@ -412,9 +466,8 @@ export function StaffForm({
                 )}
                 {saving
                   ? t("common.saving")
-                  : editing
-                    ? t("shop.staffForm.save")
-                    : t("shop.staffForm.create")}
+                  : (saveLabel ??
+                    (editing ? t("shop.staffForm.save") : t("shop.staffForm.create")))}
               </button>
             </div>
           </div>

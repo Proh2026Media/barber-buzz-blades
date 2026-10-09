@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Info, ShieldAlert } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { guardedFetch } from "@/lib/demo-guard";
 import { platformAuthOrigin } from "@/lib/auth/return-origin";
 import { t as tNow, useI18n } from "@/lib/i18n";
 import { announce, Hint, MoreDetails, Steps } from "@/components/visual";
@@ -106,7 +107,7 @@ function GoogleAppsCallback() {
         };
         if (token) headers.Authorization = `Bearer ${token}`;
 
-        const response = await fetch(`${base}/functions/v1/google-connect`, {
+        const response = await guardedFetch(`${base}/functions/v1/google-connect`, {
           method: "POST",
           headers,
           body: JSON.stringify({ action: "complete", code, state }),

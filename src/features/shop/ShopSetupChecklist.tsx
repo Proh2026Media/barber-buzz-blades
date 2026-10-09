@@ -380,7 +380,7 @@ export function ShopSetupChecklist({
             className="action-button action-confirm min-h-11 flex-1 justify-center sm:flex-none"
           >
             <ExternalLink className="size-4" aria-hidden />
-            {t("eq.guide.seePage")}
+            {t("shopLink.openPublic")}
           </a>
           <button
             type="button"

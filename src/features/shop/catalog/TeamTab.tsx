@@ -5,7 +5,7 @@ import {
   CalendarX2,
   Check,
   CheckCircle2,
-  ChevronDown,
+  ChevronRight,
   Crown,
   EyeOff,
   Hourglass,
@@ -40,7 +40,6 @@ import { ServiceIcon } from "@/components/ui/service-icon";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { CatalogFilters, type CatalogStatus } from "../CatalogFilters";
-import { TeamInviteContext, type TeamInviteRequest } from "../team-invite";
 import { ROLE_META } from "../roles";
 import {
   readCatalogViewPreference,
@@ -181,7 +180,8 @@ export function TeamTab({
   timeZone,
   today,
   access,
-  accessCard,
+  onInvite,
+  onOpenAccess,
   actions,
   onOpenAgenda,
   onBlockTime,
@@ -209,8 +209,13 @@ export function TeamTab({
   } | null;
   /** Quem entra no painel, por profissional (null: não se aplica, como na demonstração). */
   access: TeamAccess[] | null;
-  /** Cartão de convites, sociedade e permissões (fica recolhido no fim). */
-  accessCard: ReactNode | null;
+  /**
+   * Convidar ao painel (dono/sócio). Os convites, a sociedade e as permissões ficam num lugar só,
+   * em Ajustes → Equipe e sociedade; daqui o convite abre lá, já com o nome do profissional.
+   */
+  onInvite?: (name?: string) => void;
+  /** Abre Ajustes → Equipe e sociedade (pessoas, %, convites e permissões). */
+  onOpenAccess?: () => void;
   actions: StaffActions;
   onOpenAgenda?: (staffId: string) => void;
   onBlockTime?: (staffId: string) => void;
@@ -228,25 +233,9 @@ export function TeamTab({
   const [blockedTarget, setBlockedTarget] = useState<StaffRow | null>(null);
   const [flashName, setFlashName] = useState<string | null>(null);
   const [flashId, setFlashId] = useState<string | null>(null);
-  const [accessOpen, setAccessOpen] = useState(false);
-  const [inviteRequest, setInviteRequest] = useState<TeamInviteRequest | null>(null);
-  const inviteContext = useMemo(
-    () => ({ request: inviteRequest, clear: () => setInviteRequest(null) }),
-    [inviteRequest],
-  );
-
-  /** Abre "Acesso ao painel" e o convite (com o nome do profissional, se veio do cartão dele). */
-  function openInvite(name?: string) {
-    setAccessOpen(true);
-    setInviteRequest({ nonce: Date.now(), name });
-    window.setTimeout(
-      () =>
-        document
-          .getElementById("team-access")
-          ?.scrollIntoView({ block: "start", behavior: "smooth" }),
-      50,
-    );
-  }
+  // Convites ficam em Ajustes → Equipe e sociedade (com o nome do profissional, se veio do cartão).
+  const canInvite = Boolean(onInvite);
+  const openInvite = (name?: string) => onInvite?.(name);
 
   const visible = staff.filter(
     (row) =>
@@ -451,7 +440,7 @@ export function TeamTab({
       <div className="app-section-title">
         <Users />
         <h2>{t("shop.nav.team")}</h2>
-        {staff.length > 0 && !accessCard && (
+        {staff.length > 0 && !canInvite && (
           <button
             type="button"
             className="action-button action-confirm ml-auto"
@@ -464,7 +453,7 @@ export function TeamTab({
       </div>
 
       {/* Com convites liberados: "Só na agenda" ou "Com acesso ao painel", à vista. */}
-      {staff.length > 0 && accessCard && (
+      {staff.length > 0 && canInvite && (
         <AddStaffChoices onAgenda={() => openForm(null)} onPanel={() => openInvite()} />
       )}
 
@@ -515,7 +504,7 @@ export function TeamTab({
           title={t("catalog.staff.emptyTitle")}
           description={t("catalog.staff.emptyHint")}
           action={
-            accessCard ? (
+            canInvite ? (
               <AddStaffChoices onAgenda={() => openForm(null)} onPanel={() => openInvite()} />
             ) : (
               <button
@@ -583,7 +572,7 @@ export function TeamTab({
                     },
                   ]
                 : []),
-              ...(accessCard && !hasAccess
+              ...(canInvite && !hasAccess
                 ? [
                     {
                       id: "invite",
@@ -711,46 +700,30 @@ export function TeamTab({
         </div>
       )}
 
-      {accessCard && (
-        <div id="team-access" className="scroll-mt-28 rounded-2xl border border-border bg-card">
-          <button
-            type="button"
-            onClick={() => setAccessOpen((value) => !value)}
-            aria-expanded={accessOpen}
-            className="flex min-h-14 w-full items-center gap-3 rounded-2xl px-4 py-3 text-left"
-          >
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-              <KeyRound className="size-5" aria-hidden />
+      {onOpenAccess && (
+        <button
+          type="button"
+          onClick={onOpenAccess}
+          className="flex min-h-14 w-full items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-left transition hover:border-primary/40"
+        >
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+            <KeyRound className="size-5" aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-bold">{t("catalog.access.title")}</span>
+            <span className="block text-xs text-muted-foreground">
+              {access
+                ? accessCount === 1
+                  ? t("catalog.access.countOne")
+                  : t("catalog.access.countMany", { count: accessCount })
+                : t("catalog.access.hint")}
             </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-sm font-bold">{t("catalog.access.title")}</span>
-              <span className="block text-xs text-muted-foreground">
-                {access
-                  ? accessCount === 1
-                    ? t("catalog.access.countOne")
-                    : t("catalog.access.countMany", { count: accessCount })
-                  : t("catalog.access.hint")}
-              </span>
-            </span>
-            <span className="text-xs font-semibold text-muted-foreground">
-              {accessOpen ? t("catalog.access.close") : t("catalog.access.manage")}
-            </span>
-            <ChevronDown
-              className={cn(
-                "size-4 shrink-0 text-muted-foreground transition-transform",
-                accessOpen && "rotate-180",
-              )}
-              aria-hidden
-            />
-          </button>
-          {accessOpen && (
-            <div className="border-t border-border p-3">
-              <TeamInviteContext.Provider value={inviteContext}>
-                {accessCard}
-              </TeamInviteContext.Provider>
-            </div>
-          )}
-        </div>
+          </span>
+          <span className="text-xs font-semibold text-muted-foreground">
+            {t("catalog.access.manage")}
+          </span>
+          <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+        </button>
       )}
 
       <StaffForm

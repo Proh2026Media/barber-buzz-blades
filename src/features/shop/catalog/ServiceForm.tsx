@@ -14,6 +14,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActionResult,
+  ApprovalNote,
   Field,
   FieldMessage,
   ChoiceChips,
@@ -83,7 +84,8 @@ export function ServiceForm({
   onOpenChange,
   editing,
   canChangeGlobal,
-  isAssociate,
+  ownCatalog,
+  canSuggest = ownCatalog,
   shopTerms,
   prepSupported,
   shopPrep,
@@ -99,8 +101,10 @@ export function ServiceForm({
   editing: ServiceRow | null;
   /** Gerencia o catálogo da loja (folga e exclusão aparecem). */
   canChangeGlobal: boolean;
-  /** Parceiro: a mudança vale só no catálogo dele. */
-  isAssociate: boolean;
+  /** Catálogo próprio ("Meus serviços"): a mudança vale só na agenda de quem edita. */
+  ownCatalog: boolean;
+  /** Mostra "Sugerir aos outros parceiros" (só o Parceiro sugere). */
+  canSuggest?: boolean;
   /** Preço/duração da loja, para o parceiro comparar com o dele. */
   shopTerms?: { price_cents: number; duration_minutes: number } | null;
   prepSupported: boolean;
@@ -191,7 +195,7 @@ export function ServiceForm({
       price_cents: priceCents ?? 0,
       prep_minutes: prep === PREP_SHOP ? null : prep,
       icon,
-      suggestToPartners: isAssociate && suggest,
+      suggestToPartners: canSuggest && suggest,
     };
     setState("saving");
     setSubmitError(null);
@@ -267,7 +271,7 @@ export function ServiceForm({
             <DialogDescription className="sr-only">
               {t("catalog.service.formAria")}
             </DialogDescription>
-            {isAssociate && (
+            {ownCatalog && (
               <StatusBadge
                 tone="highlight"
                 icon={Sparkles}
@@ -495,7 +499,7 @@ export function ServiceForm({
                 required
                 error={errors.price}
                 hint={
-                  isAssociate && shopTerms
+                  ownCatalog && shopTerms
                     ? t("catalog.service.shopPrice", {
                         price: money(shopTerms.price_cents),
                         duration: durationLabel(shopTerms.duration_minutes),
@@ -554,7 +558,7 @@ export function ServiceForm({
                 {errors.duration && <FieldMessage tone="error">{errors.duration}</FieldMessage>}
               </div>
 
-              {isAssociate && (
+              {canSuggest && (
                 <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-2xl border border-border bg-background/60 p-3 text-sm">
                   <input
                     type="checkbox"
@@ -694,6 +698,8 @@ export function ServiceForm({
               onRetry={() => formRef.current?.requestSubmit()}
               reveal={false}
             />
+            {/* Dono em sociedade: a mudança vai para aprovação; avisado antes de salvar. */}
+            <ApprovalNote />
             <div className="flex gap-2">
               <button
                 type="button"

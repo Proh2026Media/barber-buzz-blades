@@ -1,5 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import {
+  DEMO_ASSOCIATE_STAFF_ID,
+  DEMO_EMPLOYEE_STAFF_ID,
+  DEMO_PEER_OWNER,
+  demoTeam,
+  demoViewer,
+} from "./team.ts";
 import { createDemoState, DEMO_REWARDS, demoLifetimePoints, demoReducer } from "./model.ts";
 
 test("demo starts during business hours even when opened late at night", () => {
@@ -279,16 +286,91 @@ test("demo can copy one selected shop while keeping fictional customers and appo
     })),
   });
 
-  assert.equal(state.shop.id, selectedShopId);
+  // Aparência e catálogo vêm da loja escolhida; os ids são todos fictícios (decisão 11).
+  assert.equal(state.shop.id, "demo-shop");
   assert.equal(state.shop.name, "Barbearia Escolhida · Demo");
   assert.equal(state.settings.display_name, "Marca Escolhida");
+  assert.equal(state.settings.barbershop_id, "demo-shop");
   assert.equal(state.services.length, 2);
-  assert.equal(state.staff.length, 1);
+  // A equipe copiada mais os personagens próprios do Parceiro e do Contratado.
+  assert.deepEqual(
+    state.staff.map((row) => row.id),
+    ["demo-staff-1", DEMO_ASSOCIATE_STAFF_ID, DEMO_EMPLOYEE_STAFF_ID],
+  );
   assert.equal(state.customers.length, 200);
   assert.ok(state.customers.every((customer) => customer.id.startsWith("demo-")));
-  assert.ok(
-    state.appointments.every((appointment) => appointment.barbershop_id === selectedShopId),
-  );
+  assert.ok(state.appointments.every((appointment) => appointment.barbershop_id === "demo-shop"));
+});
+
+test("demo copied from a real shop never carries real ids", () => {
+  const base = createDemoState(new Date("2026-09-16T12:00:00"));
+  const realShop = "3f1c2b9a-0000-4000-8000-00000000abcd";
+  const state = createDemoState(new Date("2026-09-16T12:00:00"), {
+    shop: {
+      ...base.shop,
+      id: realShop,
+      slug: "loja-real",
+      custom_domain: "loja.com.br",
+      custom_domain_status: "active",
+    },
+    settings: { ...base.settings, barbershop_id: realShop },
+    services: [{ ...base.services[0]!, id: "real-service-uuid", barbershop_id: realShop }],
+    staff: [
+      { ...base.staff[0]!, id: "real-staff-uuid", barbershop_id: realShop, user_id: "real-user" },
+    ],
+    businessHours: base.businessHours.map((row) => ({
+      ...row,
+      id: `real-hours-${row.weekday}`,
+      barbershop_id: realShop,
+    })),
+  });
+  const text = JSON.stringify({
+    shop: state.shop,
+    settings: state.settings,
+    services: state.services,
+    staff: state.staff,
+    hours: state.businessHours,
+    appointments: state.appointments,
+  });
+  for (const real of [
+    realShop,
+    "real-service-uuid",
+    "real-staff-uuid",
+    "real-user",
+    "real-hours-",
+  ]) {
+    assert.equal(text.includes(real), false, real);
+  }
+  assert.equal(state.shop.custom_domain, null);
+  assert.notEqual(state.shop.slug, "loja-real");
+});
+
+test("demo partner keeps an own catalog and decides suggestions locally", () => {
+  const initial = createDemoState(new Date("2026-09-16T12:00:00"));
+  const service = initial.services[0]!;
+  const staffId = initial.staff[0]!.id;
+  const row = {
+    id: "demo-own-1",
+    barbershop_id: initial.shop.id,
+    staff_id: staffId,
+    service_id: service.id,
+    display_name: null,
+    duration_minutes: 40,
+    price_cents: 5500,
+    active: true,
+    icon: null,
+    created_at: initial.now.toISOString(),
+    updated_at: initial.now.toISOString(),
+  };
+  let state = demoReducer(initial, { type: "staffService.save", row });
+  state = demoReducer(state, { type: "staffService.save", row: { ...row, price_cents: 6000 } });
+  assert.equal(state.staffServices.length, 1);
+  assert.equal(state.staffServices[0]!.price_cents, 6000);
+  // O catálogo da loja não muda quando o Parceiro personaliza o dele.
+  assert.equal(state.services[0]!.price_cents, service.price_cents);
+  state = demoReducer(state, { type: "suggestion.decide", id: "demo-suggestion-1" });
+  state = demoReducer(state, { type: "suggestion.decide", id: "demo-suggestion-1" });
+  assert.deepEqual(state.decidedSuggestions, ["demo-suggestion-1"]);
 });
 
 test("demo redemption reserves points and cancelling gives them back", () => {
@@ -312,4 +394,35 @@ test("demo redemption refuses rewards the customer cannot afford", () => {
   const next = demoReducer(start, { type: "loyalty.redeem", rewardId: DEMO_REWARDS[0].id });
   assert.equal(next.points, 10);
   assert.equal(next.redemptions.length, 0);
+});
+
+test("cada papel da equipe tem o próprio personagem e a sociedade de cada visão", () => {
+  const state = createDemoState(new Date("2026-09-16T12:00:00"));
+  const owner = state.staff[0]!;
+  const associate = state.staff.find((row) => row.id === DEMO_ASSOCIATE_STAFF_ID)!;
+  const employee = state.staff.find((row) => row.id === DEMO_EMPLOYEE_STAFF_ID)!;
+  assert.notEqual(owner.id, associate.id);
+  assert.notEqual(associate.id, employee.id);
+  // Os personagens também atendem (têm horários na agenda fictícia).
+  assert.ok(state.appointments.some((row) => row.staff_id === associate.id));
+  const team = (view: Parameters<typeof demoTeam>[0]) =>
+    demoTeam(view, { viewerId: "me", owner, associate, employee, stamp: state.now.toISOString() });
+  const owners = (view: Parameters<typeof demoTeam>[0]) =>
+    team(view)
+      .filter((member) => member.role === "owner")
+      .map((member) => [member.user_id, member.ownership_percent]);
+  assert.deepEqual(owners("owner"), [["me", 100]]);
+  assert.deepEqual(owners("equal"), [
+    ["me", 50],
+    [DEMO_PEER_OWNER.userId, 50],
+  ]);
+  assert.deepEqual(owners("minority"), [
+    [DEMO_PEER_OWNER.userId, 70],
+    ["me", 30],
+  ]);
+  // Parceiro e Contratado veem a si mesmos na equipe (e o dono fictício).
+  assert.equal(team("associate").find((m) => m.user_id === "me")?.role, "associate");
+  assert.equal(team("employee").find((m) => m.user_id === "me")?.role, "employee");
+  assert.deepEqual(demoViewer("minority"), { role: "owner", percent: 30, staff: "owner" });
+  assert.ok(team("equal").every((member) => member.id.startsWith("demo-")));
 });

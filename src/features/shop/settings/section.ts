@@ -6,6 +6,7 @@ export const SETTINGS_SECTIONS = [
   "pontos",
   "avisos",
   "enderecos",
+  "perfil",
   "equipe",
   "idioma",
   "conta",

@@ -37,6 +37,7 @@ import {
   type ActionState,
 } from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
+import { guardedFetch } from "@/lib/demo-guard";
 import type { Tables } from "@/integrations/supabase/types";
 import { ShopPermissionsMatrix } from "@/features/shop/ShopPermissionsMatrix";
 import { t as tNow, useI18n } from "@/lib/i18n";
@@ -78,7 +79,7 @@ async function inviteMember(body: Record<string, unknown>) {
   if (!token) throw new Error(tNow("team.access.sessionExpired"));
 
   const base = import.meta.env.VITE_SUPABASE_URL || "";
-  const response = await fetch(`${base}/functions/v1/invite-shop-admin`, {
+  const response = await guardedFetch(`${base}/functions/v1/invite-shop-admin`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -523,19 +524,8 @@ export function ShopTeamAccessCard({
       )}
       {resultFor(null)}
 
-      {owners.length > 1 && (
-        <div className="space-y-2 rounded-2xl bg-background/70 p-3">
-          <GovernanceModeBadge mode={mode} leader={owners[0]} />
-          <OwnershipBar
-            owners={owners.map((owner) => ({
-              key: owner.user_id,
-              name: owner.display_name,
-              percent: Number(owner.ownership_percent ?? 0),
-            }))}
-          />
-        </div>
-      )}
-
+      {/* Modo da sociedade e a barra de % ficam logo acima, em "Decisões entre donos" (mesma
+          tela): aqui não se repetem. */}
       {!loaded ? (
         <LoadingState variant="list" count={3} label={t("eq.people.loading")} />
       ) : loadError ? (

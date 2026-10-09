@@ -2,6 +2,7 @@ import { Loader2, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { ApprovalNote } from "./ApprovalNote";
 import { InlineStatus } from "./Notice";
 import { StatusBadge } from "./StatusBadge";
 import type { ActionState } from "./status";
@@ -72,6 +73,8 @@ export function UnsavedBar({
           <StatusBadge tone="pending" variant="dot" label={pendingText} />
         )}
       </div>
+      {/* Mudança que vai para aprovação de outro dono: avisado antes de salvar. */}
+      {dirty && !result && <ApprovalNote className="basis-full px-1" />}
       {(dirty || saving) && (
         <div className="flex flex-1 basis-56 gap-2 sm:flex-none sm:basis-auto">
           {onDiscard && (

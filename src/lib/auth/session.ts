@@ -2,6 +2,14 @@ import type { Session, User } from "@supabase/supabase-js";
 import type { Tables, Enums } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import { capabilitiesFor, type ShopCapabilities, type ShopPermissionMap } from "./capabilities";
+import { hasShopToOpen, sortShopActors } from "./shop-acting";
+import { areaAccessFor } from "./areas";
+import {
+  decidePostAuthPath,
+  readLastArea,
+  type AccessNotice,
+  type AreaAccess,
+} from "./destination";
 
 export { capabilitiesFor, type ShopCapabilities, type ShopPermissionMap } from "./capabilities";
 
@@ -75,7 +83,11 @@ export async function getSessionProfile(): Promise<SessionProfile | null> {
   if (actorsResult.error && !schemaMissing) throw actorsResult.error;
 
   const list = schemaMissing ? [] : ((membershipsResult.data ?? []) as Membership[]);
-  const shopActors = schemaMissing ? [] : ((actorsResult.data ?? []) as unknown as ShopActor[]);
+  // Ordem fixa (papel mais alto, depois o vínculo mais antigo): a primeira loja aberta não
+  // depende da ordem em que o banco devolve as linhas.
+  const shopActors = schemaMissing
+    ? []
+    : sortShopActors((actorsResult.data ?? []) as unknown as ShopActor[]);
   const activeShopActor = shopActors[0] ?? null;
   let governanceMode: SessionProfile["governanceMode"] = null;
   let canApplyProtected: boolean | undefined;
@@ -140,33 +152,46 @@ export async function getSessionProfile(): Promise<SessionProfile | null> {
   };
 }
 
-function isSafeAppPath(value: string): boolean {
-  return value.startsWith("/") && !value.startsWith("//") && value !== "/";
+/** Áreas que a conta pode abrir (plataforma, painel de barbearia; o app do cliente vale sempre). */
+export function areaAccessOf(
+  profile: Pick<SessionProfile, "shopActors" | "memberships">,
+): AreaAccess {
+  return areaAccessFor(profile);
 }
 
-/** Rank used so login never "downgrades" (e.g. platform_admin → /shop via ?next=). */
-function pathRank(path: string): number {
-  if (path.startsWith("/platform")) return 3;
-  if (path.startsWith("/shop")) return 2;
-  if (path.startsWith("/app")) return 1;
-  return 0;
-}
-
+/**
+ * Destino depois de entrar (e ao abrir "/" ou o app instalado). A regra fica em
+ * `destination.ts`: o pedido do link vence quando é específico; sem destino, abre a última área
+ * usada neste aparelho ou a mais alta da conta. Só caminhos e parâmetros conhecidos passam.
+ */
 export async function resolvePostAuthPath(preferredNext?: string): Promise<string> {
   const profile = await getSessionProfile();
   if (!profile) return "/auth";
+  return decidePostAuthPath({
+    next: preferredNext,
+    access: areaAccessOf(profile),
+    lastArea: readLastArea(profile.user.id),
+  });
+}
 
-  const home =
-    profile.primaryRole === "platform_admin"
-      ? "/platform"
-      : profile.shopActors.length
-        ? "/shop"
-        : homeForRole(profile.primaryRole);
-  if (preferredNext && isSafeAppPath(preferredNext)) {
-    // Only follow next when it is at least as privileged as the role home.
-    if (pathRank(preferredNext) >= pathRank(home)) return preferredNext;
+/**
+ * Por que o painel recusou a conta: vínculo de equipe encerrado ("removido") ou nenhum vínculo
+ * ("sem-acesso"). O convite aguardando aprovação dos donos ainda não é legível pela pessoa
+ * convidada (precisa de consulta no banco).
+ */
+export async function professionalRefusal(profile: SessionProfile): Promise<AccessNotice> {
+  try {
+    const { data, error } = await supabase
+      .from("shop_members")
+      .select("id")
+      .eq("user_id", profile.user.id)
+      .eq("active", false)
+      .limit(1);
+    if (!error && data && data.length > 0) return "removido";
+  } catch {
+    // Sem resposta: mostra o motivo geral.
   }
-  return home;
+  return "sem-acesso";
 }
 
 export function hasProfessionalAccess(profile: SessionProfile): boolean {
@@ -179,4 +204,9 @@ export function hasProfessionalAccess(profile: SessionProfile): boolean {
 
 export function hasAnyRole(memberships: Membership[], roles: AppRole[]): boolean {
   return memberships.some((m) => roles.includes(m.role));
+}
+
+/** A conta tem barbearia para abrir no painel (equipe ou shop_admin antigo; nunca de cliente). */
+export function hasShopAccess(profile: Pick<SessionProfile, "shopActors" | "memberships">) {
+  return hasShopToOpen({ actors: profile.shopActors, memberships: profile.memberships });
 }

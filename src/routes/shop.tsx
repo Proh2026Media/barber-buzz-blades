@@ -1,14 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ShopShell } from "@/features/shop/ShopShell";
-import { requireSession } from "@/lib/auth/guards";
-import { hasProfessionalAccess, homeForRole } from "@/lib/auth/session";
-import { redirect } from "@tanstack/react-router";
+import { requireProfessional } from "@/lib/auth/guards";
 
 export const Route = createFileRoute("/shop")({
   ssr: false,
   beforeLoad: async () => {
-    const profile = await requireSession("/shop");
-    if (!hasProfessionalAccess(profile)) throw redirect({ to: homeForRole(profile.primaryRole) });
+    // Sem acesso ao painel: vai ao app do cliente com o motivo (sem acesso ou removido).
+    const profile = await requireProfessional("/shop");
     return { profile };
   },
   component: ShopRoute,

@@ -1,4 +1,13 @@
-import { BadgeCheck, Crown, Handshake, Headset, Users, type LucideIcon } from "lucide-react";
+import {
+  BadgeCheck,
+  Crown,
+  Globe2,
+  Handshake,
+  Headset,
+  Smartphone,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import { StatusBadge, type Tone } from "@/components/visual";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 
@@ -26,6 +35,20 @@ export const FOUNDER_META = {
 
 /** Gerente de conta da plataforma (pedidos com prazo). */
 export const MANAGER_META = { icon: Headset, tone: "neutral" as Tone, label: "eq.role.manager" };
+
+/** Admin da plataforma (fora da equipe da loja): mesmo ícone do seletor da demonstração. */
+export const PLATFORM_META = {
+  icon: Globe2,
+  tone: "neutral" as Tone,
+  label: "demo.who.platform" as MessageKey,
+};
+
+/** Área de cliente (app de agendamento): mesmo ícone do seletor da demonstração. */
+export const CUSTOMER_META = {
+  icon: Smartphone,
+  tone: "neutral" as Tone,
+  label: "area.customer" as MessageKey,
+};
 
 export function isOwnerRole(role: string | null | undefined): role is "owner" | "partner" {
   return role === "owner" || role === "partner";

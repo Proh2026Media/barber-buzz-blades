@@ -7,17 +7,30 @@ import {
   maybeRedirectToCanonical,
   resolveShopFromCurrentHost,
 } from "@/lib/shop/host";
+import { isStandalone } from "@/lib/standalone";
 import { PlatformLanding } from "@/features/marketing/PlatformLanding";
 import { ShopLanding } from "@/features/marketing/ShopLanding";
+import { SignedInBar } from "@/features/marketing/SignedInBar";
 
 type PanelHome = "/app" | "/shop" | "/platform";
+
+/**
+ * "/" com sessão: no endereço principal e no app instalado, abre a última área usada neste
+ * aparelho (ou a mais alta da conta). No domínio de uma barbearia, pelo navegador, mostra a
+ * página pública com a barra "Você está vendo como cliente · Abrir painel".
+ */
+function opensArea() {
+  return isPlatformApexHost() || isStandalone();
+}
 
 export const Route = createFileRoute("/")({
   // SSR ligado para crawlers (verificação OAuth Google) lerem a landing e os links legais.
   beforeLoad: async () => {
     // A sessão fica no navegador: no servidor nunca há perfil (o IndexPage confere depois).
-    if (typeof window !== "undefined") {
-      // Mesma regra do login: profissional de shop_members vai ao painel da loja.
+    if (typeof window === "undefined") return;
+    const onShopHost = !isPlatformApexHost();
+    if (onShopHost && maybeRedirectToCanonical(await resolveShopFromCurrentHost())) return;
+    if (opensArea()) {
       let home = "/auth";
       try {
         home = await resolvePostAuthPath();
@@ -26,12 +39,7 @@ export const Route = createFileRoute("/")({
       }
       if (home !== "/auth") throw redirect({ to: home as PanelHome });
     }
-
-    if (typeof window !== "undefined" && !isPlatformApexHost()) {
-      const resolved = await resolveShopFromCurrentHost();
-      if (maybeRedirectToCanonical(resolved)) return;
-      return { shopHost: currentHostname() };
-    }
+    if (onShopHost) return { shopHost: currentHostname() };
   },
   component: IndexPage,
 });
@@ -42,8 +50,9 @@ function IndexPage() {
   const navigate = useNavigate();
 
   // Primeira carga vinda do servidor (ex.: app instalado abrindo "/"): o beforeLoad rodou sem
-  // sessão e não roda de novo na hidratação. Quem já entrou segue ao painel do seu papel.
+  // sessão e não roda de novo na hidratação. Aplica a mesma regra aqui.
   useEffect(() => {
+    if (!opensArea()) return;
     let active = true;
     void resolvePostAuthPath()
       .then((home) => {
@@ -70,6 +79,8 @@ function IndexPage() {
     };
   }, [shopHost]);
 
-  if (shopHost) return <ShopLanding host={shopHost} />;
+  if (shopHost) {
+    return <ShopLanding host={shopHost} topBar={<SignedInBar />} />;
+  }
   return <PlatformLanding />;
 }
