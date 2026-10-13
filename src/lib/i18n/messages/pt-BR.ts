@@ -2728,6 +2728,7 @@ export const ptBR = {
   "hours.weekly.loadError": "Não foi possível carregar as pausas fixas.",
   "hours.weekly.tag": "Pausa fixa",
   "hours.weekly.skipEffect": "Só neste dia. A pausa fixa continua nos outros.",
+  "hours.weekly.keep": "Manter pausa fixa",
   "hours.weekly.deleteTitle": "Apagar esta pausa fixa?",
   "hours.weekly.deleteEffect": "Os próximos dias voltam a ficar livres para os clientes.",
   "hours.weekly.deleteConfirm": "Apagar pausa fixa",

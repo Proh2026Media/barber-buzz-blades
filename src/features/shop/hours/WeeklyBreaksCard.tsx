@@ -340,7 +340,7 @@ export function WeeklyBreaksCard({
         confirmLabel={t("hours.weekly.deleteConfirm")}
         busyLabel={t("hours.blocks.deleting")}
         confirmIcon={Trash2}
-        cancelLabel={t("hours.blocks.keep")}
+        cancelLabel={t("hours.weekly.keep")}
         onConfirm={async () => {
           if (!confirming) return;
           const { error } = await supabase

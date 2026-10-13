@@ -2732,6 +2732,7 @@ export const enUS: Record<MessageKey, string> = {
   "hours.weekly.loadError": "Couldn't load the recurring breaks.",
   "hours.weekly.tag": "Recurring break",
   "hours.weekly.skipEffect": "Only this day. The recurring break stays on the other days.",
+  "hours.weekly.keep": "Keep recurring break",
   "hours.weekly.deleteTitle": "Delete this recurring break?",
   "hours.weekly.deleteEffect": "The next days become free for clients again.",
   "hours.weekly.deleteConfirm": "Delete recurring break",

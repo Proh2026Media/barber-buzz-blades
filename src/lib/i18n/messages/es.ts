@@ -2743,6 +2743,7 @@ export const es: Record<MessageKey, string> = {
   "hours.weekly.loadError": "No se pudieron cargar las pausas fijas.",
   "hours.weekly.tag": "Pausa fija",
   "hours.weekly.skipEffect": "Solo este día. La pausa fija sigue en los demás.",
+  "hours.weekly.keep": "Mantener pausa fija",
   "hours.weekly.deleteTitle": "¿Borrar esta pausa fija?",
   "hours.weekly.deleteEffect": "Los próximos días vuelven a quedar libres para los clientes.",
   "hours.weekly.deleteConfirm": "Borrar pausa fija",
