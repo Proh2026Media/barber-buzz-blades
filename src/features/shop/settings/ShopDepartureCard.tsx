@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
+  CalendarClock,
   Check,
   ChevronRight,
   DoorOpen,
@@ -13,6 +14,7 @@ import {
   Plus,
   Send,
   Store,
+  Undo2,
   UserMinus,
   Users,
   X,
@@ -38,6 +40,7 @@ import { t as tNow, useI18n } from "@/lib/i18n";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { isOwnerRole, type ShopRole } from "../roles";
 import { activeOwners, firstName, loadTeamMembers, type TeamMember } from "../team";
+import { DepartureBookings } from "./DepartureBookings";
 
 type DepartureRequest = {
   id: string;
@@ -49,6 +52,8 @@ type DepartureRequest = {
   created_at: string;
   staff_name: string | null;
   requester_name: string | null;
+  /** Reservas marcadas que o dono ainda precisa passar ou cancelar (servidor novo). */
+  future_bookings?: number;
 };
 
 type DestShop = {
@@ -73,6 +78,8 @@ type ShopDepartureCardProps = {
   onOpenPeople?: () => void;
   /** Conta de quem está vendo (na demonstração, sem perguntar ao servidor). */
   viewerId?: string;
+  /** Fuso da loja (dia e hora das reservas de quem sai). */
+  timeZone?: string;
 };
 
 /** Id da barbearia de destino de exemplo na demonstração. */
@@ -94,6 +101,7 @@ export function ShopDepartureCard({
   role = null,
   onOpenPeople,
   viewerId,
+  timeZone,
 }: ShopDepartureCardProps) {
   const { t, intlLocale } = useI18n();
   // Demonstração: equipe fictícia, uma barbearia de destino de exemplo e a saída só simulada.
@@ -114,6 +122,10 @@ export function ShopDepartureCard({
     approve?: boolean;
   } | null>(null);
   const [deciding, setDeciding] = useState<{ id: string; approve: boolean } | null>(null);
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [withdrawResult, setWithdrawResult] = useState<{ state: ActionState; text: string } | null>(
+    null,
+  );
 
   // Folha "Sair da barbearia".
   const [open, setOpen] = useState(false);
@@ -206,8 +218,8 @@ export function ShopDepartureCard({
   const othersText = otherOwners.length
     ? otherOwners.map((owner) => firstName(owner.display_name)).join(", ")
     : t("eq.gov.otherOwners");
-  // Dono que leva os clientes precisa da liberação dos outros donos.
-  const needsRelease = ownerViewer && mode === "take";
+  // Levar os clientes sempre espera a liberação: do dono (Parceiro) ou dos outros donos.
+  const needsRelease = mode === "take";
   const steps = mode === "take" ? ["clients", "dest", "review"] : ["clients", "review"];
   const current = steps[Math.min(step, steps.length - 1)]!;
 
@@ -269,10 +281,19 @@ export function ShopDepartureCard({
         p_dest_shop_id: mode === "take" ? destShopId : null,
       });
       if (rpcError) throw rpcError;
-      const payload = data as { status?: string };
+      const payload = data as { status?: string; future_bookings?: number };
+      const futureBookings = Number(payload.future_bookings ?? 0);
       setResult(
         payload.status === "pending_release"
-          ? { state: "pending", text: t("eq.leave.sentFor", { names: othersText }) }
+          ? {
+              state: "pending",
+              text:
+                futureBookings > 0
+                  ? t("eq.leave.sentBookings", { count: futureBookings })
+                  : ownerViewer
+                    ? t("eq.leave.sentFor", { names: othersText })
+                    : t("eq.leave.sentOwner"),
+            }
           : {
               state: "saved",
               text: mode === "take" ? t("eq.leave.doneTake") : t("eq.leave.doneForfeit"),
@@ -286,7 +307,26 @@ export function ShopDepartureCard({
     }
   }
 
+  async function withdrawRequest(id: string) {
+    setWithdrawing(true);
+    setWithdrawResult(null);
+    try {
+      const { error: rpcError } = await supabase.rpc("cancel_shop_departure", { p_request_id: id });
+      if (rpcError) throw rpcError;
+      setWithdrawResult({ state: "saved", text: t("eq.leave.requestCancelled") });
+      await load();
+    } catch (err) {
+      setWithdrawResult({
+        state: "error",
+        text: friendlyAuthError(err, t("eq.leave.cancelRequestFailed")),
+      });
+    } finally {
+      setWithdrawing(false);
+    }
+  }
+
   async function decide(id: string, approve: boolean) {
+    const row = requests.find((request) => request.id === id);
     setDeciding({ id, approve });
     setDecision(null);
     try {
@@ -298,7 +338,11 @@ export function ShopDepartureCard({
       setDecision({
         id,
         state: "saved",
-        text: approve ? t("eq.leave.released") : t("eq.leave.rejected"),
+        text: approve
+          ? row?.mode === "forfeit"
+            ? t("eq.leave.exitReleased")
+            : t("eq.leave.released")
+          : t("eq.leave.rejected"),
       });
       await load();
     } catch (err) {
@@ -321,6 +365,7 @@ export function ShopDepartureCard({
   const destName = destShops.find((shop) => shop.id === destShopId)?.name ?? "";
   const review: IconListItem[] = [
     { icon: DoorOpen, tone: "danger", text: t("eq.leave.effectAccess") },
+    { icon: CalendarClock, tone: "warning", text: t("eq.leave.effectBookings") },
     ...(mode === "take"
       ? [
           {
@@ -329,6 +374,15 @@ export function ShopDepartureCard({
             text: t("eq.leave.effectGo", { shop: destName }),
           },
           { icon: Link2, tone: "warning" as const, text: t("eq.leave.effectLink") },
+          ...(ownerViewer
+            ? []
+            : [
+                {
+                  icon: Hourglass,
+                  tone: "pending" as const,
+                  text: t("eq.leave.effectOwnerRelease"),
+                },
+              ]),
         ]
       : [{ icon: Store, tone: "success" as const, text: t("eq.leave.effectStay") }]),
   ];
@@ -351,7 +405,7 @@ export function ShopDepartureCard({
       />
     ) : null;
 
-  if (!canRequestDeparture && others.length === 0 && !decision) return null;
+  if (!canRequestDeparture && !canApproveRelease && others.length === 0 && !decision) return null;
 
   return (
     <section className="app-action-card space-y-4 p-4" aria-labelledby="departure-title">
@@ -378,6 +432,8 @@ export function ShopDepartureCard({
           {others.map((row) => {
             const name = row.requester_name || row.staff_name || t("eq.gov.someone");
             const busy = deciding?.id === row.id;
+            const take = row.mode === "take";
+            const futureBookings = Number(row.future_bookings ?? 0);
             return (
               <li
                 key={row.id}
@@ -388,7 +444,8 @@ export function ShopDepartureCard({
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-bold">{name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {t("eq.leave.wantsTake")} · {relative(row.created_at, intlLocale)}
+                      {take ? t("eq.leave.wantsTake") : t("eq.leave.wantsForfeit")} ·{" "}
+                      {relative(row.created_at, intlLocale)}
                     </p>
                   </div>
                   <StatusBadge
@@ -398,32 +455,55 @@ export function ShopDepartureCard({
                     label={t("eq.gov.waitingYou")}
                   />
                 </div>
-                <IconList
-                  items={takeEffects.map((item, index) => {
-                    const dest = row.dest_shop_id ? destNames.get(row.dest_shop_id) : undefined;
-                    // Com o nome do destino, a primeira linha diz para onde os clientes vão.
-                    return index === 0 && dest
-                      ? { ...item, text: t("eq.leave.goTo", { shop: dest }) }
-                      : item;
-                  })}
-                />
+                {take && (
+                  <IconList
+                    items={takeEffects.map((item, index) => {
+                      const dest = row.dest_shop_id ? destNames.get(row.dest_shop_id) : undefined;
+                      // Com o nome do destino, a primeira linha diz para onde os clientes vão.
+                      return index === 0 && dest
+                        ? { ...item, text: t("eq.leave.goTo", { shop: dest }) }
+                        : item;
+                    })}
+                  />
+                )}
+                {futureBookings > 0 && (
+                  <>
+                    <Notice
+                      tone="warning"
+                      icon={CalendarClock}
+                      role="none"
+                      title={t("eq.leave.futureCount", { count: futureBookings })}
+                    >
+                      {t("eq.leave.resolveFirst")}
+                    </Notice>
+                    <DepartureBookings
+                      shopId={shopId}
+                      staffId={row.staff_id}
+                      title={t("eq.leave.bookingsOf", { name: firstName(name) })}
+                      timeZone={timeZone}
+                      onChanged={() => void load()}
+                    />
+                  </>
+                )}
                 <div className="flex gap-2">
+                  {take && (
+                    <button
+                      type="button"
+                      disabled={!!deciding}
+                      className="action-button action-danger min-h-11 flex-1 justify-center sm:flex-none"
+                      onClick={() => void decide(row.id, false)}
+                    >
+                      {busy && !deciding?.approve ? (
+                        <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />
+                      ) : (
+                        <X className="size-4" aria-hidden />
+                      )}
+                      {t("eq.gov.decline")}
+                    </button>
+                  )}
                   <button
                     type="button"
-                    disabled={!!deciding}
-                    className="action-button action-danger min-h-11 flex-1 justify-center sm:flex-none"
-                    onClick={() => void decide(row.id, false)}
-                  >
-                    {busy && !deciding?.approve ? (
-                      <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />
-                    ) : (
-                      <X className="size-4" aria-hidden />
-                    )}
-                    {t("eq.gov.decline")}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={!!deciding}
+                    disabled={!!deciding || futureBookings > 0}
                     className="action-button action-confirm min-h-11 flex-1 justify-center sm:flex-none"
                     onClick={() => void decide(row.id, true)}
                   >
@@ -432,7 +512,7 @@ export function ShopDepartureCard({
                     ) : (
                       <Check className="size-4" aria-hidden />
                     )}
-                    {t("eq.leave.release")}
+                    {take ? t("eq.leave.release") : t("eq.leave.releaseExit")}
                   </button>
                 </div>
                 {/* Resultado logo abaixo dos botões que decidiram. */}
@@ -450,7 +530,18 @@ export function ShopDepartureCard({
         />
       )}
 
-      {/* O próprio pedido: andamento, sem botões de decisão. */}
+      {/* Reservas de quem já saiu da equipe sem ninguém resolver (só aparece se houver). */}
+      {canApproveRelease && !demoOn && (
+        <DepartureBookings
+          shopId={shopId}
+          staffId={null}
+          title={t("eq.leave.orphanTitle")}
+          hint={t("eq.leave.orphanHint")}
+          timeZone={timeZone}
+        />
+      )}
+
+      {/* O próprio pedido: andamento e a opção de desistir. */}
       {mine && (
         <div className="tone-pending space-y-3 rounded-2xl border border-border border-l-4 border-l-[color:var(--tone-line)] bg-card p-3">
           <div className="flex flex-wrap items-center gap-2">
@@ -470,7 +561,38 @@ export function ShopDepartureCard({
               { key: "done", label: t("eq.leave.step.done"), status: "upcoming" },
             ]}
           />
+          {Number(mine.future_bookings ?? 0) > 0 && (
+            <p className="flex items-center gap-2 text-xs text-muted-foreground">
+              <CalendarClock className="size-4 shrink-0 text-gold" aria-hidden />
+              {t("eq.leave.futureCount", { count: Number(mine.future_bookings) })}
+            </p>
+          )}
+          <button
+            type="button"
+            disabled={withdrawing}
+            onClick={() => void withdrawRequest(mine.id)}
+            className="action-button min-h-11 w-full justify-center sm:w-auto"
+          >
+            {withdrawing ? (
+              <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />
+            ) : (
+              <Undo2 className="size-4" aria-hidden />
+            )}
+            {t("eq.leave.cancelRequest")}
+          </button>
         </div>
+      )}
+      {withdrawResult && (
+        <ActionResult
+          state={withdrawResult.state}
+          text={withdrawResult.text}
+          onRetry={
+            withdrawResult.state === "error" && mine
+              ? () => void withdrawRequest(mine.id)
+              : undefined
+          }
+          onDismiss={() => setWithdrawResult(null)}
+        />
       )}
 
       {/* Zona de risco: uma linha recolhida que abre a folha em etapas. */}
@@ -662,7 +784,11 @@ export function ShopDepartureCard({
                     <StatusBadge
                       tone="pending"
                       icon={Hourglass}
-                      label={t("eq.leave.needsRelease", { names: othersText })}
+                      label={
+                        ownerViewer
+                          ? t("eq.leave.needsRelease", { names: othersText })
+                          : t("eq.leave.needsOwner")
+                      }
                     />
                   )}
                 </div>

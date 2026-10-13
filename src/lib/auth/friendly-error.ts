@@ -88,6 +88,14 @@ const PATTERNS: Array<{ test: RegExp; message: MessageKey }> = [
   // Regras da sociedade (saída da barbearia, partes dos donos): antes do padrão de permissão.
   { test: /s[óo]cio [úu]nico/i, message: "eq.leave.soleOwnerError" },
   { test: /active ownership must total 100/i, message: "eq.error.ownershipTotal" },
+  // Saída da equipe e convite (20261013190000_saida_equipe_reservas.sql).
+  { test: /reserva\(s\) futura\(s\)/i, message: "eq.leave.futureBookingsError" },
+  { test: /n[ãa]o est[áa] livre nesse hor[áa]rio/i, message: "eq.leave.reassignBusy" },
+  {
+    test: /sem levar clientes n[ãa]o pode ser recusada/i,
+    message: "eq.leave.forfeitNotRejectable",
+  },
+  { test: /j[áa] est[áa] na equipe desta barbearia/i, message: "eq.invite.alreadyMember" },
   {
     test: /invalid login credentials|invalid_credentials|email.*password/i,
     message: "errors.invalidCredentials",

@@ -2514,6 +2514,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                             canApproveRelease={powers.society}
                             canRequestDeparture={powers.leaveShop}
                             canTakeClients={powers.takeClients}
+                            timeZone={shopTimeZone}
                           />
                         </>
                       );

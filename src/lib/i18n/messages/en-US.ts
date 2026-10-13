@@ -440,7 +440,8 @@ export const enUS: Record<MessageKey, string> = {
   "booking.repeatIntervalNote": "Repeats: every {days} days.",
   "booking.errorPast": "That time has already passed. Choose another time.",
   "booking.errorUnavailable": "That time is no longer available. Choose another time.",
-  "booking.errorLeadTime": "That time is too soon. The shop asks for some notice: pick a later time.",
+  "booking.errorLeadTime":
+    "That time is too soon. The shop asks for some notice: pick a later time.",
   "booking.staffNotForService": "{name} doesn't offer this service. Choose another barber.",
   "booking.errorTaken": "This time was just booked. Choose another time.",
   "booking.errorGeneric": "Couldn't book. Refresh the times and try again.",
@@ -982,6 +983,47 @@ export const enUS: Record<MessageKey, string> = {
   "eq.leave.soleOwnerError":
     "You're the only owner. Hand the shop over to someone else before leaving.",
   "eq.leave.lockedHint": "Stop being an owner before leaving",
+  "eq.leave.wantsForfeit": "Wants to leave without their clients",
+  "eq.leave.futureCount": "Upcoming bookings to sort out: {count}",
+  "eq.leave.resolveFirst":
+    "Before releasing, pass each booking to a colleague or cancel it and let the client know.",
+  "eq.leave.releaseExit": "Release departure",
+  "eq.leave.exitReleased": "Departure released: they have left the team",
+  "eq.leave.effectBookings":
+    "Bookings you already have: the owner passes them to a colleague or cancels them, letting the client know, before releasing your departure.",
+  "eq.leave.effectOwnerRelease":
+    "Taking your clients needs the owner's release. Until then, you stay on the team.",
+  "eq.leave.needsOwner": "Needs the owner's release",
+  "eq.leave.sentOwner": "Request sent: now the owner releases your departure.",
+  "eq.leave.sentBookings":
+    "Request sent. You have {count} upcoming booking(s): the owner passes them to a colleague or cancels them, letting the client know, and then releases your departure.",
+  "eq.leave.cancelRequest": "Withdraw request",
+  "eq.leave.requestCancelled": "Request withdrawn: you stay on the team.",
+  "eq.leave.cancelRequestFailed": "Couldn't withdraw the request. Please try again.",
+  "eq.leave.bookingsOf": "Upcoming bookings with {name}",
+  "eq.leave.orphanTitle": "Bookings of people who left the team",
+  "eq.leave.orphanHint": "Pass them to a colleague or cancel them and let the client know.",
+  "eq.leave.passTo": "Pass to",
+  "eq.leave.pass": "Pass",
+  "eq.leave.chooseColleague": "Choose a colleague",
+  "eq.leave.noFree": "No colleague is free at this time: cancel and let the client know.",
+  "eq.leave.cancelBooking": "Cancel and notify",
+  "eq.leave.cancelConfirm": "Cancel this booking?",
+  "eq.leave.cancelNotice": "The client gets the cancellation notice.",
+  "eq.leave.cancelYes": "Yes, cancel",
+  "eq.leave.keep": "Go back",
+  "eq.leave.passed": "Booking passed to {name}. The client gets the change notice.",
+  "eq.leave.bookingCancelled": "Booking cancelled. The client gets the notice.",
+  "eq.leave.bookingsFailed": "Couldn't load the bookings.",
+  "eq.leave.bookingFailed": "Couldn't change the booking. Please try again.",
+  "eq.leave.waitingBookings": "Bookings still to sort out",
+  "eq.leave.futureBookingsError":
+    "This professional still has upcoming bookings. Pass them to someone else or cancel them first.",
+  "eq.leave.reassignBusy": "This professional isn't free at that time. Choose someone else.",
+  "eq.leave.forfeitNotRejectable":
+    "Leaving without clients can't be declined: sort out the bookings and release the departure.",
+  "eq.invite.alreadyMember":
+    "This person is already on the team. To change their role, use Manage.",
   "eq.error.ownershipTotal":
     "The owners' shares must add up to 100%. Adjust them in People and roles.",
   "eq.guide.title": "Almost ready to take bookings",

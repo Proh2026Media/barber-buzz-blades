@@ -205,8 +205,18 @@ reset role;
 
 select set_config('request.jwt.claim.sub', assoc_id::text, true) from rp_ctx;
 set local role authenticated;
+-- Desde 20261013190000_saida_equipe_reservas.sql (P-62), levar a carteira espera o dono.
 select pg_temp.check_rp(
-  (select public.request_shop_departure(c.shop_id, 'take', c.dest_id)->>'status' from rp_ctx c) = 'completed',
-  'Parceiro continua podendo sair levando a carteira');
+  (select public.request_shop_departure(c.shop_id, 'take', c.dest_id)->>'status' from rp_ctx c) = 'pending_release',
+  'Parceiro pede para sair levando a carteira e espera a liberação do dono');
+reset role;
+select set_config('request.jwt.claim.sub', owner_id::text, true) from rp_ctx;
+set local role authenticated;
+select pg_temp.check_rp(
+  (select public.approve_portfolio_release(r.id)->>'status'
+   from public.shop_departure_requests r join rp_ctx c
+     on r.barbershop_id = c.shop_id and r.user_id = c.assoc_id
+   where r.status = 'pending_release') = 'completed',
+  'Dono libera e o Parceiro sai levando a carteira');
 reset role;
 select set_config('request.jwt.claim.sub', '', true);

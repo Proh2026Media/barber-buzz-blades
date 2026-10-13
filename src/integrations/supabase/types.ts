@@ -1529,6 +1529,18 @@ export type Database = {
         Args: { p_shop_id: string };
         Returns: Json;
       };
+      cancel_shop_departure: {
+        Args: { p_request_id: string };
+        Returns: Json;
+      };
+      list_departure_appointments: {
+        Args: { p_shop_id: string; p_staff_id?: string | null };
+        Returns: Json;
+      };
+      reassign_appointment_staff: {
+        Args: { p_appointment_id: string; p_staff_id: string };
+        Returns: Json;
+      };
       create_own_barbershop: {
         Args: { p_name: string };
         Returns: Json;

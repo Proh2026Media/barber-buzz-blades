@@ -297,12 +297,15 @@ export function ShopTeamAccessCard({
     : t("eq.gov.otherOwners");
   const showLegacy = members.some((member) => member.role === "partner");
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (): Promise<TeamMember[] | null> => {
     setLoadError(null);
     try {
-      setMembers(await loadTeamMembers(shopId));
+      const fresh = await loadTeamMembers(shopId);
+      setMembers(fresh);
+      return fresh;
     } catch (err) {
       setLoadError(friendlyAuthError(err, tNow("team.access.loadError")));
+      return null;
     } finally {
       setLoaded(true);
     }
@@ -396,7 +399,15 @@ export function ShopTeamAccessCard({
             };
       setDialogResult(result);
       setOutcome(result);
-      await load();
+      const fresh = await load();
+      // A janela Gerenciar continua aberta: passa a mostrar o estado salvo (ativo, papel e %).
+      const saved = fresh?.find((member) => member.id === editing.id);
+      if (saved) {
+        setEditing(saved);
+        setDraftRole(isOwnerRole(saved.role) ? "owner" : (saved.role as EditableRole));
+        setDraftShare(Number(saved.ownership_percent ?? 25));
+        setDraftActive(saved.active);
+      }
       onChanged?.();
     } catch (err) {
       setDialogResult({

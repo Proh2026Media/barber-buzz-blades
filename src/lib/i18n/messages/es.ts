@@ -441,7 +441,8 @@ export const es: Record<MessageKey, string> = {
   "booking.repeatIntervalNote": "Se repite: cada {days} días.",
   "booking.errorPast": "Esa hora ya pasó. Elige otra hora.",
   "booking.errorUnavailable": "Esa hora ya no está disponible. Elige otra hora.",
-  "booking.errorLeadTime": "Esa hora es demasiado pronto. La barbería pide algo de antelación: elige una hora más tarde.",
+  "booking.errorLeadTime":
+    "Esa hora es demasiado pronto. La barbería pide algo de antelación: elige una hora más tarde.",
   "booking.staffNotForService": "{name} no hace este servicio. Elige otro profesional.",
   "booking.errorTaken": "Esta hora se acaba de reservar. Elige otra hora.",
   "booking.errorGeneric": "No se pudo reservar. Actualiza las horas e inténtalo de nuevo.",
@@ -984,6 +985,47 @@ export const es: Record<MessageKey, string> = {
   "eq.leave.openPeople": "Abrir Personas y roles",
   "eq.leave.soleOwnerError": "Eres el único dueño. Pasa el local a otra persona antes de salir.",
   "eq.leave.lockedHint": "Antes de salir, deja de ser dueño",
+  "eq.leave.wantsForfeit": "Quiere irse sin sus clientes",
+  "eq.leave.futureCount": "Reservas próximas por resolver: {count}",
+  "eq.leave.resolveFirst":
+    "Antes de liberar, pasa cada reserva a un compañero o cancélala avisando al cliente.",
+  "eq.leave.releaseExit": "Liberar salida",
+  "eq.leave.exitReleased": "Salida liberada: la persona dejó el equipo",
+  "eq.leave.effectBookings":
+    "Reservas que ya tienes: el dueño las pasa a un compañero o las cancela avisando al cliente antes de liberar tu salida.",
+  "eq.leave.effectOwnerRelease":
+    "Llevarte a tus clientes depende de la liberación del dueño. Hasta entonces, sigues en el equipo.",
+  "eq.leave.needsOwner": "Necesita la liberación del dueño",
+  "eq.leave.sentOwner": "Solicitud enviada: ahora el dueño libera tu salida.",
+  "eq.leave.sentBookings":
+    "Solicitud enviada. Tienes {count} reserva(s) próxima(s): el dueño las pasa a un compañero o las cancela avisando al cliente, y luego libera tu salida.",
+  "eq.leave.cancelRequest": "Retirar solicitud",
+  "eq.leave.requestCancelled": "Solicitud retirada: sigues en el equipo.",
+  "eq.leave.cancelRequestFailed": "No se pudo retirar la solicitud. Inténtalo de nuevo.",
+  "eq.leave.bookingsOf": "Reservas próximas con {name}",
+  "eq.leave.orphanTitle": "Reservas de quien dejó el equipo",
+  "eq.leave.orphanHint": "Pásalas a un compañero o cancélalas avisando al cliente.",
+  "eq.leave.passTo": "Pasar a",
+  "eq.leave.pass": "Pasar",
+  "eq.leave.chooseColleague": "Elige un compañero",
+  "eq.leave.noFree": "Ningún compañero está libre a esta hora: cancela avisando al cliente.",
+  "eq.leave.cancelBooking": "Cancelar y avisar",
+  "eq.leave.cancelConfirm": "¿Cancelar esta reserva?",
+  "eq.leave.cancelNotice": "El cliente recibe el aviso de cancelación.",
+  "eq.leave.cancelYes": "Sí, cancelar",
+  "eq.leave.keep": "Volver",
+  "eq.leave.passed": "Reserva pasada a {name}. El cliente recibe el aviso del cambio.",
+  "eq.leave.bookingCancelled": "Reserva cancelada. El cliente recibe el aviso.",
+  "eq.leave.bookingsFailed": "No se pudieron cargar las reservas.",
+  "eq.leave.bookingFailed": "No se pudo cambiar la reserva. Inténtalo de nuevo.",
+  "eq.leave.waitingBookings": "Faltan resolver las reservas",
+  "eq.leave.futureBookingsError":
+    "Este profesional todavía tiene reservas próximas. Pásalas a otro profesional o cancélalas antes.",
+  "eq.leave.reassignBusy": "Este profesional no está libre a esa hora. Elige otro.",
+  "eq.leave.forfeitNotRejectable":
+    "Salir sin clientes no se rechaza: resuelve las reservas y libera la salida.",
+  "eq.invite.alreadyMember":
+    "Esta persona ya está en el equipo. Para cambiar su rol, usa Gestionar.",
   "eq.error.ownershipTotal":
     "Las partes de los dueños deben sumar 100%. Ajústalas en Personas y roles.",
   "eq.guide.title": "Falta poco para recibir reservas",
