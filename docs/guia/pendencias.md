@@ -29,7 +29,6 @@ Atualizada em 13/10/2026, depois da aplicação de `20261013210000_convite_boas_
 
 | Ordem | Itens      | O quê                                                                           | Por quê                                                             |
 | ----- | ---------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| 1     | P-10       | Pausa fixa semanal (almoço que se repete)                                       | Hoje o almoço diário é um bloqueio por dia.                         |
 | 2     | P-20       | Guia de configuração da loja guardado no banco, com "Equipe e sócios"           | Fecha a onda 4: o progresso do guia muda de aparelho para aparelho. |
 | 3     | P-11, P-12 | Logo nos cartões da plataforma; e-mail para diferenciar nomes iguais            | Uso frequente do admin da plataforma.                               |
 | 4     | P-67, P-27 | Corrigir `PLATFORM_BASE_HOST` no Coolify; automação do certificado da loja nova | Dependem do dono (mexem no ambiente do servidor).                   |
@@ -124,7 +123,9 @@ Regra para todos os itens: migration nova em `supabase/migrations/`, teste SQL e
 - **Por quê:** `get_team_schedule` ([20261003150000_correcoes_auditoria.sql](../../supabase/migrations/20261003150000_correcoes_auditoria.sql), linhas 959-1011) devolve `customer_name`, mas não `customer_id`. Na agenda própria e na demonstração o nome já abre a ficha.
 - **Pronto quando:** a RPC devolve `customer_id` só para quem pode ver aquele cliente, e o nome abre a ficha também na visão de equipe.
 
-### P-10 — Pausa fixa semanal · pendente
+### P-10 — Pausa fixa semanal · feito — aplicado em 13/10/2026 (18:01, horário de Brasília)
+
+- **Aplicado e testado em 13/10/2026:** `20261013220000_pausa_semanal.sql`. A regra (`availability_block_rules`: dias da semana, início, fim, loja toda ou profissional) vira bloqueios comuns nos próximos 120 dias; `whatsapp-dispatch` estende a janela de hora em hora. Horários livres, validação da reserva e agenda não mudaram. Aba Horários com o cartão "Pausa fixa"; nos bloqueios, etiqueta "Pausa fixa" e apagar um dia vale só para ele. Teste SQL 14 PASS; na Loja Teste, o Contratado criou e apagou a própria pausa e não conseguiu criar a da loja toda. Limite: sociedade que exige aprovação não cria pausa fixa da loja toda (sem fila de pedidos). Guia: [implantacao-pausa-semanal-2026-10-13.md](../implantacao-pausa-semanal-2026-10-13.md).
 
 - **Por quê:** `availability_blocks` só tem início e fim ([20260915160000_shop_availability.sql](../../supabase/migrations/20260915160000_shop_availability.sql), linhas 18-28), sem repetição. Hoje o almoço diário é um bloqueio por dia.
 - **Pronto quando:** existe bloqueio que se repete por dia da semana, respeitado por `available_slots_internal` e desenhado em Horários.

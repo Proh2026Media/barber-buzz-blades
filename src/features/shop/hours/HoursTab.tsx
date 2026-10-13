@@ -23,12 +23,13 @@ import {
   type TimeSpan,
 } from "./model";
 import { WeekCard } from "./WeekCard";
+import { WeeklyBreaksCard } from "./WeeklyBreaksCard";
 
 type HoursRowFull = Tables<"business_hours">;
 
 export type HoursBlock = Pick<
   Tables<"availability_blocks">,
-  "id" | "staff_id" | "starts_at" | "ends_at" | "reason"
+  "id" | "staff_id" | "starts_at" | "ends_at" | "reason" | "rule_id"
 > & { staff: { display_name: string } | null };
 
 export type HoursAppointment = {
@@ -78,6 +79,7 @@ function HoursTabContent({
   blockRequest,
   onBlockRequestHandled,
   onOpenApprovals,
+  weeklyBreaks,
 }: {
   shopId: string;
   timeZone: string;
@@ -101,6 +103,8 @@ function HoursTabContent({
   blockRequest: { staffId: string | null } | null;
   onBlockRequestHandled: () => void;
   onOpenApprovals?: () => void;
+  /** Pausa fixa semanal (fora da demonstração). */
+  weeklyBreaks?: { canManageShop: boolean; onChanged: () => void };
 }) {
   const { t } = useI18n();
   const labels = useDayLabels();
@@ -190,6 +194,7 @@ function HoursTabContent({
             endKey: shopDateKey(new Date(block.ends_at), timeZone),
             startMinute: toMinutes(wallClock(block.starts_at, timeZone)),
             endMinute: toMinutes(wallClock(block.ends_at, timeZone)),
+            weekly: !!block.rule_id,
           },
           ownStaffId,
         ),
@@ -301,21 +306,32 @@ function HoursTabContent({
     </div>
   );
   const blocksCard = (
-    <BlocksCard
-      blocks={placed}
-      staff={staffOptions}
-      hours={hours}
-      todayKey={todayKey}
-      nowMinutes={nowMinutes}
-      ownStaff={ownStaff}
-      canDelete={(block) => !ownStaffId || block.staffId === ownStaffId}
-      loadBookings={loadBookings}
-      onCreate={tracked(onCreateBlock)}
-      onDelete={tracked(onDeleteBlock)}
-      request={blockRequest}
-      onRequestHandled={onBlockRequestHandled}
-      onOpenApprovals={onOpenApprovals}
-    />
+    <div className="space-y-6">
+      <BlocksCard
+        blocks={placed}
+        staff={staffOptions}
+        hours={hours}
+        todayKey={todayKey}
+        nowMinutes={nowMinutes}
+        ownStaff={ownStaff}
+        canDelete={(block) => !ownStaffId || block.staffId === ownStaffId}
+        loadBookings={loadBookings}
+        onCreate={tracked(onCreateBlock)}
+        onDelete={tracked(onDeleteBlock)}
+        request={blockRequest}
+        onRequestHandled={onBlockRequestHandled}
+        onOpenApprovals={onOpenApprovals}
+      />
+      {weeklyBreaks && (
+        <WeeklyBreaksCard
+          shopId={shopId}
+          staff={staffOptions}
+          ownStaff={ownStaff}
+          canManageShop={weeklyBreaks.canManageShop}
+          onChanged={weeklyBreaks.onChanged}
+        />
+      )}
+    </div>
   );
 
   return (

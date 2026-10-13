@@ -82,6 +82,10 @@ test("o cliente do banco passa toda chamada pela trava da demonstração", () =>
  * já os esconde quando `demo` está ligado, ou ficam em páginas fora do /demo).
  */
 const OUTSIDE_DEMO = new Map<string, string>([
+  [
+    "features/shop/hours/WeeklyBreaksCard.tsx",
+    "Horários: o painel só passa a pausa fixa fora da demonstração",
+  ],
   ["features/auth/ChangePasswordCard.tsx", "Ajustes → Conta só fora da demonstração"],
   ["features/customer/AskShopLink.tsx", "rota /app: só sem barbearia (a demonstração tem loja)"],
   ["features/customer/NamePrompt.tsx", "rota /app"],

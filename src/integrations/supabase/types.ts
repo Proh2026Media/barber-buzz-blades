@@ -608,6 +608,61 @@ export type Database = {
           },
         ];
       };
+      availability_block_rules: {
+        Row: {
+          id: string;
+          barbershop_id: string;
+          staff_id: string | null;
+          /** 0 = domingo … 6 = sábado. */
+          weekdays: number[];
+          start_time: string;
+          end_time: string;
+          reason: string | null;
+          created_by: string | null;
+          created_at: string;
+          materialized_until: string | null;
+        };
+        Insert: {
+          id?: string;
+          barbershop_id: string;
+          staff_id?: string | null;
+          weekdays: number[];
+          start_time: string;
+          end_time: string;
+          reason?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          materialized_until?: string | null;
+        };
+        Update: {
+          id?: string;
+          barbershop_id?: string;
+          staff_id?: string | null;
+          weekdays?: number[];
+          start_time?: string;
+          end_time?: string;
+          reason?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          materialized_until?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "availability_block_rules_barbershop_id_fkey";
+            columns: ["barbershop_id"];
+            isOneToOne: false;
+            referencedRelation: "barbershops";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "availability_block_rules_staff_id_fkey";
+            columns: ["staff_id"];
+            isOneToOne: false;
+            referencedRelation: "staff";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       availability_blocks: {
         Row: {
           id: string;
@@ -617,6 +672,8 @@ export type Database = {
           ends_at: string;
           reason: string | null;
           created_at: string;
+          /** Pausa fixa semanal que gerou o bloqueio (nulo = bloqueio avulso). */
+          rule_id?: string | null;
         };
         Insert: {
           id?: string;
@@ -626,6 +683,7 @@ export type Database = {
           ends_at: string;
           reason?: string | null;
           created_at?: string;
+          rule_id?: string | null;
         };
         Update: {
           id?: string;
@@ -635,6 +693,7 @@ export type Database = {
           ends_at?: string;
           reason?: string | null;
           created_at?: string;
+          rule_id?: string | null;
         };
         Relationships: [
           {
@@ -1502,6 +1561,7 @@ export type Database = {
           reason: string | null;
           created_at: string;
           staff_display_name: string | null;
+          rule_id?: string | null;
         }[];
       };
       list_platform_shop_owners: {

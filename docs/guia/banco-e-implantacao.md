@@ -169,10 +169,11 @@ Pasta: [supabase/migrations/](../../supabase/migrations/). A situação vem dest
 | 89  | `20261013190000_saida_equipe_reservas`                       | Reconvite, reativação, reservas de quem sai, liberação do Parceiro; `apply_*` fechadas       | aplicada em 13/10/2026 [G]                                 |
 | 90  | `20261013200000_saida_aguarde_dono`                          | Mensagem "Aguarde a liberação do dono" ao concluir a saída                                   | aplicada em 13/10/2026 [G]                                 |
 | 91  | `20261013210000_convite_boas_vindas_papeis`                  | Link de convite, boas-vindas, primeiro dono, cartão existente, bloqueio e foto próprios      | aplicada em 13/10/2026 [H]                                 |
+| 92  | `20261013220000_pausa_semanal`                               | Pausa fixa semanal: regra que gera bloqueios por 120 dias; `list_shop_blocks` com `rule_id`  | aplicada em 13/10/2026 [I]                                 |
 
 Nota da nº 34: no banco remoto ela falhava em `text = uuid`, e por isso a coluna `icon` e o bucket não existiam. A nº 41 (`20260920010000_service_images_storage`) cria o mesmo efeito e foi aplicada; o arquivo da nº 34 também recebeu o cast correto (`barbershop_id::text`) para instalações novas. Fonte: CONTINUIDADE "Slider da espera e imagens de serviço" (20/09/2026).
 
-Ordem em que foram aplicadas (13/10/2026): 83 → 84 → 85 → 86 → 87, e depois 88 → 89 (16:42) e 90 (17:06, [G] = [implantacao-equipe-saida-2026-10-13.md](../implantacao-equipe-saida-2026-10-13.md)) e 91 (17:50, [H] = [implantacao-convite-papeis-2026-10-13.md](../implantacao-convite-papeis-2026-10-13.md)). A 85 recria `apply_shop_change` a partir da versão da 84. A 86 não depende delas (recria `request_shop_departure` a partir da nº 76, já aplicada). A 87 depende da 85 (recria `available_slots_internal`, `appointments_enforce_service_terms` e `apply_shop_change` a partir das versões dela). Guia único das cinco: [implantacao-noite-2026-10-13.md](../implantacao-noite-2026-10-13.md).
+Ordem em que foram aplicadas (13/10/2026): 83 → 84 → 85 → 86 → 87, e depois 88 → 89 (16:42) e 90 (17:06, [G] = [implantacao-equipe-saida-2026-10-13.md](../implantacao-equipe-saida-2026-10-13.md)) e 91 (17:50, [H] = [implantacao-convite-papeis-2026-10-13.md](../implantacao-convite-papeis-2026-10-13.md)) e 92 (18:01, [I] = [implantacao-pausa-semanal-2026-10-13.md](../implantacao-pausa-semanal-2026-10-13.md)). A 85 recria `apply_shop_change` a partir da versão da 84. A 86 não depende delas (recria `request_shop_departure` a partir da nº 76, já aplicada). A 87 depende da 85 (recria `available_slots_internal`, `appointments_enforce_service_terms` e `apply_shop_change` a partir das versões dela). Guia único das cinco: [implantacao-noite-2026-10-13.md](../implantacao-noite-2026-10-13.md).
 
 ## 4. Como escrever uma migration nova
 
@@ -264,7 +265,7 @@ Código em [supabase/functions/](../../supabase/functions/) (Deno), com código 
 **O que `whatsapp-dispatch` faz a cada chamada** (o cron do host a chama a cada minuto, seção 8; código em [index.ts](../../supabase/functions/whatsapp-dispatch/index.ts), a partir da linha 25):
 
 1. roda `process_whatsapp_reminders` (lembretes), `extend_booking_series` (séries recorrentes), `process_pending_client_notices` (avisos pendentes) e `expire_shop_change_requests` (vencimento dos pedidos de mudança da sociedade);
-2. uma vez por hora (no minuto 17, em UTC), roda `purge_auth_otp_challenges`. Pelos registros, chamada e função ainda não estão no servidor: a chamada entrou no commit `d94d678` e a função vem na migration nº 83 (seção 12);
+2. uma vez por hora (no minuto 17, em UTC), roda `purge_auth_otp_challenges`. Pelos registros, chamada e função ainda não estão no servidor: a chamada entrou no commit `d94d678` e a função vem na migration nº 83 (seção 12). No minuto 23 roda `extend_availability_block_rules` (pausas fixas semanais, migration nº 92), que mantém 120 dias de bloqueios gerados;
 3. dispara `email-dispatch` e `google-calendar-dispatch`;
 4. pega até 20 itens da fila `whatsapp_outbox` (`claim_whatsapp_outbox`, linha 79) e envia pela Evolution API.
 

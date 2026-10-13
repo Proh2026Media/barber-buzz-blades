@@ -248,6 +248,8 @@ export type PlacedBlock = {
   requested?: boolean;
   /** Bloqueio de um colega visto por quem só cuida da própria agenda: sem nome nem motivo. */
   colleague?: boolean;
+  /** Gerado por uma pausa fixa semanal (apagar tira só aquele dia). */
+  weekly?: boolean;
 };
 
 /**

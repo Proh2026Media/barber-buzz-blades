@@ -101,6 +101,15 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## Entrega — pausa fixa semanal (13/10, noite, Cursor) — **aplicado em produção**
+
+- **O que:** P-10. Guia: [implantacao-pausa-semanal-2026-10-13.md](implantacao-pausa-semanal-2026-10-13.md).
+  - **Banco:** `20261013220000_pausa_semanal` — tabela `availability_block_rules` (dias da semana, início, fim, loja toda ou profissional), coluna `availability_blocks.rule_id`, geração de bloqueios comuns por 120 dias (gatilho ao criar), `extend_availability_block_rules()` só para o servidor, apagar a regra limpa só o futuro, `list_shop_blocks` com `rule_id`. As funções de horários e reserva não mudaram. Backup `/root/backup-barba-cabelo-20261013-180108.dump`; aplicada às 18:01:15 numa transação. Ensaio: pausa_semanal 14 (novo), booking_rules_single_source 33, convite_boas_vindas_papeis 30, saida_equipe_reservas 29, guard_own_professional_rows 7, shop_team_governance 14, tempo_preparo 17, hours_replace_change 12, sem falhas.
+  - **Função:** `whatsapp-dispatch` estende as pausas no minuto 23 de cada hora (publicada às 18:02, reiniciando só o container das funções).
+  - **Tela:** cartão "Pausa fixa" na aba Horários (`WeeklyBreaksCard.tsx`, fora da demonstração); bloqueios gerados com etiqueta "Pausa fixa" nos próximos 7 dias e fora da lista "Mais adiante"; apagar um dia avisa que a pausa continua nos outros. Textos nos 4 dicionários.
+- **Reteste (API, Loja Teste):** 5 checagens certas (Contratado cria e apaga a própria pausa; não cria a da loja toda; 120 bloqueios de 30 min gerados). Sem dados de teste deixados.
+- **Limite:** sociedade que exige aprovação não cria pausa fixa da loja toda (sem fila de pedidos para regra).
+
 ## Entrega — convite com link, boas-vindas, regras de papel e pendências autônomas (13/10, noite, Cursor) — **aplicado em produção**
 
 - **O que:** pedido do dono para aplicar tudo o que não depende dele. Guia: [implantacao-convite-papeis-2026-10-13.md](implantacao-convite-papeis-2026-10-13.md). Lista atualizada em [guia/pendencias.md](guia/pendencias.md).

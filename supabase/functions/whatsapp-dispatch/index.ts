@@ -48,6 +48,14 @@ Deno.serve(async (req) => {
         /* ignore if migration not applied yet */
       }
     }
+    // Pausas fixas semanais: mantém os próximos 120 dias de bloqueios gerados.
+    if (new Date().getUTCMinutes() === 23) {
+      try {
+        await admin.rpc("extend_availability_block_rules");
+      } catch {
+        /* ignore if migration not applied yet */
+      }
+    }
 
     // Melhor esforço: despacha e-mails no mesmo cron.
     try {

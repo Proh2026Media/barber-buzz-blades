@@ -21,6 +21,7 @@ export function shopBlockFromListed(row: ListedShopBlock): ShopBlock {
     ends_at: row.ends_at,
     reason: row.reason,
     created_at: row.created_at,
+    rule_id: row.rule_id ?? null,
     staff: row.staff_display_name ? { display_name: row.staff_display_name } : null,
   };
 }

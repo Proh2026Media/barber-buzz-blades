@@ -6,6 +6,7 @@ import {
   CalendarX2,
   Clock3,
   Moon,
+  Repeat,
   Store,
   Trash2,
   UserRound,
@@ -106,8 +107,9 @@ export function BlocksCard({
   const all = useMemo(() => [...blocks, ...requested], [blocks, requested]);
   const days = Array.from({ length: DAYS_AHEAD }, (_, index) => shiftDateKey(todayKey, index));
   const lastKey = days.at(-1) ?? todayKey;
+  // As pausas fixas se repetem por meses: na lista dos distantes ficam só os bloqueios avulsos.
   const later = all
-    .filter((block) => block.startKey > lastKey)
+    .filter((block) => block.startKey > lastKey && !block.weekly)
     .sort((a, b) =>
       (a.startKey + fromMinutes(a.startMinute)).localeCompare(
         b.startKey + fromMinutes(b.startMinute),
@@ -166,6 +168,7 @@ export function BlocksCard({
           <p className="truncate text-sm font-bold">{reasonOf(block)}</p>
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
             <Tag icon={Clock3}>{timeOf(block)}</Tag>
+            {block.weekly && <Tag icon={Repeat}>{t("hours.weekly.tag")}</Tag>}
             {!block.colleague && (
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
                 {block.staffId ? (
@@ -460,6 +463,9 @@ export function BlocksCard({
         }
         consequences={[
           { icon: CalendarCheck, tone: "success", text: t("hours.blocks.deleteEffect") },
+          ...(confirming?.weekly
+            ? [{ icon: Repeat, tone: "info" as const, text: t("hours.weekly.skipEffect") }]
+            : []),
         ]}
         confirmLabel={t("hours.blocks.deleteConfirm")}
         busyLabel={t("hours.blocks.deleting")}

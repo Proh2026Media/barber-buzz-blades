@@ -2268,6 +2268,14 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 blockRequest={hoursBlockRequest}
                 onBlockRequestHandled={() => setHoursBlockRequest(null)}
                 onOpenApprovals={openApprovals}
+                weeklyBreaks={
+                  demo
+                    ? undefined
+                    : {
+                        canManageShop: !ownBlocksOnly && powers.writeMode === "direct",
+                        onChanged: () => void loadBlocks(),
+                      }
+                }
               />
             )}
 

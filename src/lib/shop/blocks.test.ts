@@ -14,8 +14,18 @@ const base = {
 test("bloqueio completo vira a linha com o nome do profissional", () => {
   assert.deepEqual(
     shopBlockFromListed({ ...base, reason: "Médico", staff_display_name: "Carlão" }),
-    { ...base, reason: "Médico", staff: { display_name: "Carlão" } },
+    { ...base, reason: "Médico", rule_id: null, staff: { display_name: "Carlão" } },
   );
+});
+
+test("bloqueio gerado por pausa fixa mantém a regra", () => {
+  const block = shopBlockFromListed({
+    ...base,
+    reason: "Almoço",
+    staff_display_name: "Carlão",
+    rule_id: "r1",
+  });
+  assert.equal(block.rule_id, "r1");
 });
 
 test("bloqueio de colega chega sem motivo e sem nome, mas com o profissional", () => {
