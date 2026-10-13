@@ -909,12 +909,12 @@ function ArenaApp({
             if (!cancelled) {
               setUserId(profile.user.id);
               setShopId(null);
-              setServices([]);
-              setStaff([]);
+            setServices([]);
+            setStaff([]);
               setCatalogError(null);
-            }
-            return;
           }
+          return;
+        }
         } else if (!cancelled) {
           setJoinOpen(false);
           setJoinShopRef(null);
@@ -1156,7 +1156,7 @@ function ArenaApp({
             setStaffIdx(favIdx >= 0 ? favIdx : 0);
           } else {
             setAnyAvailable(false);
-            setStaffIdx(0);
+          setStaffIdx(0);
           }
         }
       } catch (err) {
@@ -1535,7 +1535,7 @@ function ArenaApp({
       }
       if (code === "23P01") setBookingError(t("booking.errorTaken"));
       else if (code === "22023")
-        setBookingError(
+      setBookingError(
           /passou/i.test(message) ? t("booking.errorPast") : t("booking.errorUnavailable"),
         );
       else setBookingUncertain(true);
@@ -2515,9 +2515,9 @@ function ArenaApp({
   const NavItem = ({ id, icon: Icon, label }: NavItemProps) => {
     const pressed = navTabFor(tab) === id;
     return (
-      <button
+    <button
         type="button"
-        onClick={() => setTab(id)}
+      onClick={() => setTab(id)}
         aria-pressed={pressed}
         aria-current={pressed ? "page" : undefined}
         className={`relative z-10 flex min-w-0 flex-col items-center justify-center p-2.5 ${
@@ -2527,9 +2527,9 @@ function ArenaApp({
         <Icon
           className={`mb-1.5 h-5 w-5 transition-transform duration-300 ease-out ${pressed ? "scale-110" : ""}`}
         />
-        <span className="text-xs font-semibold">{label}</span>
-      </button>
-    );
+      <span className="text-xs font-semibold">{label}</span>
+    </button>
+  );
   };
 
   const navItems: NavItemProps[] = [
@@ -2698,7 +2698,7 @@ function ArenaApp({
                   : undefined
               }
             >
-              <Scissors className="size-6" />
+            <Scissors className="size-6" />
             </span>
           )}
           {/* Container: as linhas do nome e o slogan dependem do espaço que sobra ao lado dos
@@ -2783,15 +2783,15 @@ function ArenaApp({
               onOpenAccount={() => setTab("perfil")}
             />
           ) : (
-            <button
-              type="button"
+          <button
+            type="button"
               aria-label={t("nav.myAccount")}
               aria-current={tab === "perfil" ? "page" : undefined}
-              onClick={() => setTab("perfil")}
+            onClick={() => setTab("perfil")}
               className={`app-icon-button ${tab === "perfil" ? "app-nav-current" : ""}`}
-            >
-              <User size={20} />
-            </button>
+          >
+            <User size={20} />
+          </button>
           )}
         </div>
       </header>
@@ -2953,7 +2953,7 @@ function ArenaApp({
                   appointments={appointmentContext}
                   timeZone={shopTimeZone}
                 />
-              </div>
+                    </div>
               {loyaltyOn && !noShop && (
                 <MemberCard
                   className="lg:sticky lg:top-4"
@@ -2967,18 +2967,18 @@ function ArenaApp({
                   onOpenClub={() => setShowVipInfo(true)}
                 />
               )}
-            </div>
-          )}
+          </div>
+        )}
 
-          {tab === "agenda" && (
+        {tab === "agenda" && (
             // Agendar em passos numa página só: 1 Serviço → 2 Profissional → 3 Dia e horário →
             // 4 Conferir. O resumo com o botão fica sempre à vista (fixo no celular, coluna da
             // direita no computador).
             <div className="space-y-5">
-              <div className="app-section-title">
+            <div className="app-section-title">
                 {rescheduleId ? <CalendarClock /> : <Calendar />}
                 <h2>{rescheduleId ? t("booking.titleReschedule") : t("booking.title")}</h2>
-              </div>
+            </div>
               {noShop ? (
                 // Sem barbearia: o link da loja é o único caminho (sem busca de lojas).
                 <div className="mx-auto max-w-xl">
@@ -2999,19 +2999,19 @@ function ArenaApp({
                     now={bookingNow}
                     timeZone={shopTimeZone}
                     onSeeBookings={() => {
-                      setReservationFilter("upcoming");
-                      setTab("reservas");
-                    }}
+                    setReservationFilter("upcoming");
+                    setTab("reservas");
+                  }}
                     onAnother={() => {
                       setBookingDone(null);
-                      setBookingError(null);
+                    setBookingError(null);
                       setAgainMissing(null);
                       setServiceOpen(true);
                       setStaffOpen(!directLinkActive);
                       scrollToStep("booking-step-service");
                     }}
                   />
-                </div>
+                  </div>
               ) : (
                 <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-6">
                   <div className="min-w-0 space-y-4">
@@ -3030,7 +3030,7 @@ function ArenaApp({
                         }}
                       />
                     )}
-                    {catalogLoading && (
+                  {catalogLoading && (
                       <BookingLoading
                         variant="cards"
                         count={2}
@@ -3058,7 +3058,7 @@ function ArenaApp({
                         !serviceOpen && selectedService ? (
                           <ChangeButton
                             label={`${t("booking.change")} · ${t("booking.service")}`}
-                            disabled={bookingBusy}
+                      disabled={bookingBusy}
                             onClick={() => setServiceOpen(true)}
                           />
                         ) : services.length > 1 ? (
@@ -3082,9 +3082,9 @@ function ArenaApp({
                               shop: joinDeclined.name || t("cust.thisShop"),
                             })}
                             action={
-                              <button
+                        <button
                                 type="button"
-                                onClick={() => {
+                          onClick={() => {
                                   setJoinShopRef(joinDeclined.ref);
                                   setJoinShopName(joinDeclined.name);
                                   setJoinError(null);
@@ -3094,7 +3094,7 @@ function ArenaApp({
                               >
                                 <Plus aria-hidden />
                                 {t("conta.join.enter")}
-                              </button>
+                        </button>
                             }
                           />
                         ) : (
@@ -3148,7 +3148,7 @@ function ArenaApp({
                         directLinkActive ? null : !staffOpen && staffHasValue ? (
                           <ChangeButton
                             label={t("booking.changeStaff")}
-                            disabled={bookingBusy}
+                                    disabled={bookingBusy}
                             onClick={() => setStaffOpen(true)}
                           />
                         ) : staffChoices.length > 1 ? (
@@ -3330,18 +3330,18 @@ function ArenaApp({
                           ) : null
                         }
                       />
-                      <WaitingCards
-                        controller={{
-                          ...waiting,
-                          waits: waiting.waits.filter((w) => w.staff_id === selectedStaffId),
-                        }}
-                        mode="opportunities"
-                        staff={staff}
+                  <WaitingCards
+                    controller={{
+                      ...waiting,
+                      waits: waiting.waits.filter((w) => w.staff_id === selectedStaffId),
+                    }}
+                    mode="opportunities"
+                    staff={staff}
                         service={bookingService ?? undefined}
                         timeZone={shopTimeZone}
-                        day={selectedDay}
-                        onChanged={() => setTab("reservas")}
-                      />
+                    day={selectedDay}
+                    onChanged={() => setTab("reservas")}
+                  />
                     </StepCard>
 
                     <StepCard
@@ -3413,8 +3413,8 @@ function ArenaApp({
                             <span className="sr-only">{t("booking.shopNoteAria")}: </span>
                             {shopSettings.booking_instructions}
                           </span>
-                        </p>
-                      )}
+                    </p>
+                  )}
                     </StepCard>
                   </div>
                   <BookingSummaryBar
@@ -3459,20 +3459,20 @@ function ArenaApp({
                     )}
                   </BookingSummaryBar>
                 </div>
-              )}
-            </div>
-          )}
+            )}
+          </div>
+        )}
 
-          {tab === "reservas" && (
+        {tab === "reservas" && (
             // Reservas: título → o que pede ação (Precisa de você, lista de espera) → filtros →
             // tickets agrupados por quando acontecem.
             <div className="space-y-5">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <div className="app-section-title min-w-0 flex-1">
-                  <Clock3 />
+                <Clock3 />
                   <h2>{t("bookings.title")}</h2>
-                </div>
-                {!demo && (
+              </div>
+              {!demo && (
                   <div className="flex items-center gap-2">
                     {appointmentsUpdatedAt && (
                       <span className="text-xs text-muted-foreground" aria-live="polite">
@@ -3486,22 +3486,22 @@ function ArenaApp({
                             })}
                       </span>
                     )}
-                    <button
-                      type="button"
+                <button
+                  type="button"
                       aria-label={t("bookings.refresh")}
                       title={t("bookings.refresh")}
-                      disabled={appointmentsRefreshing || !!appointmentBusy}
-                      onClick={() => setAppointmentVersion((version) => version + 1)}
+                  disabled={appointmentsRefreshing || !!appointmentBusy}
+                  onClick={() => setAppointmentVersion((version) => version + 1)}
                       className="grid size-11 place-items-center rounded-xl border border-border bg-card text-foreground transition hover:border-primary/40 disabled:opacity-60"
-                    >
+                >
                       <RefreshCw
                         className={`size-5 ${appointmentsRefreshing ? "motion-safe:animate-spin" : ""}`}
                         aria-hidden
                       />
-                    </button>
+                </button>
                   </div>
-                )}
-              </div>
+              )}
+            </div>
               <AttentionList
                 title={t("home.attention.title")}
                 items={attentionItems.filter((item) => !item.id.startsWith("offer-"))}
@@ -3557,11 +3557,11 @@ function ArenaApp({
                   title={t("bookings.noticeMissing")}
                   onDismiss={() => setFocusMissing(false)}
                 />
-              )}
-              {appointmentsLoading ? (
+            )}
+            {appointmentsLoading ? (
                 <BookingLoading variant="cards" count={2} label={t("bookings.loading")} />
-              ) : visibleReservations.length === 0 &&
-                appointmentsError ? null : visibleReservations.length === 0 ? (
+            ) : visibleReservations.length === 0 &&
+              appointmentsError ? null : visibleReservations.length === 0 ? (
                 <EmptyState
                   tone={reservationFilter === "upcoming" ? "calendar" : "search"}
                   title={
@@ -3576,22 +3576,22 @@ function ArenaApp({
                   }
                   action={
                     reservationFilter === "upcoming" || reservationFilter === "history" ? (
-                      <button
+                <button
                         type="button"
-                        onClick={() => setTab("agenda")}
+                  onClick={() => setTab("agenda")}
                         className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
-                      >
+                >
                         <CalendarPlus className="size-4" aria-hidden />
                         {t("bookings.bookNow")}
-                      </button>
+                </button>
                     ) : (
-                      <button
+                            <button
                         type="button"
                         onClick={() => setReservationFilter("history")}
                         className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border px-4 text-sm font-semibold"
                       >
                         {t("bookings.seeAll")}
-                      </button>
+                            </button>
                     )
                   }
                 />
@@ -3621,16 +3621,16 @@ function ArenaApp({
                       {group.rows.map((row) => renderReservation(row))}
                     </section>
                   ))}
-                </div>
-              )}
-            </div>
-          )}
+                          </div>
+            )}
+          </div>
+        )}
 
-          {tab === "esportes" && shopSettings.sports_enabled && (
+        {tab === "esportes" && shopSettings.sports_enabled && (
             <SportsBoard demo={Boolean(demo)} onBack={() => setTab("dashboard")} />
-          )}
+        )}
 
-          {tab === "notifications" && (
+        {tab === "notifications" && (
             <div className="space-y-5">
               <CustomerPageHeader
                 icon={Bell}
@@ -3675,8 +3675,8 @@ function ArenaApp({
                   toast.success(t("home.attention.offerDone"));
                 }}
               />
-            </div>
-          )}
+          </div>
+        )}
         </div>
       </main>
 
@@ -3689,7 +3689,7 @@ function ArenaApp({
         <span
           aria-hidden
           className="app-mobile-nav-indicator"
-          style={{
+                        style={{
             width: `calc((100% - 0.9rem - ${(navItems.length - 1) * 0.3}rem) / ${navItems.length})`,
             transform: `translateX(calc(${Math.max(0, activeNavIndex)} * (100% + 0.3rem)))`,
             opacity: activeNavIndex >= 0 ? 1 : 0,

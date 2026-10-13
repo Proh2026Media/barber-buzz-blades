@@ -4,7 +4,7 @@ Atualizado em **03/10/2026**. Este documento resume decisões e entregas da conv
 
 ## Comece aqui
 
-1. **Desde 13/10/2026, comece por [LEIA-PRIMEIRO.md](LEIA-PRIMEIRO.md)**: regras de trabalho e roteiro pelo guia em [guia/](guia/). Este arquivo é o diário detalhado de cada entrega, para consulta; os itens abaixo são de 03/10.
+1. Ler `AGENTS.md`, `docs/mb-interface.md` e este documento. Para e-mail Titan, SMTP Coolify, login Google, Agenda/Contatos e domínio da API: [mb-operacao.md](mb-operacao.md).
 2. Inspecionar `git status` e os arquivos relevantes ao próximo pedido. O workspace tem muitas alterações e arquivos não rastreados que compõem o aplicativo; **não descartar nem sobrescrever esse trabalho**.
 3. Para retomar localmente, usar `npm run dev -- --host 0.0.0.0 --port 8080`. O endereço esperado é `http://localhost:8080`.
 4. Continuar a partir do próximo pedido do usuário.
