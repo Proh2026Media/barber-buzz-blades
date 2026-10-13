@@ -101,6 +101,15 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## Entrega — pendências da saída fechadas e painéis conferidos no navegador (13/10, noite, Cursor) — **aplicado em produção**
+
+- **O que:** pedido do dono para fechar as pendências da entrega abaixo. Detalhes: seção 8 de [implantacao-equipe-saida-2026-10-13.md](implantacao-equipe-saida-2026-10-13.md).
+  - **Banco:** `20261013200000_saida_aguarde_dono` (mensagem "Aguarde a liberação do dono"); backup `/root/backup-barba-cabelo-20261013-2006.dump`, aplicada 17:06:08–09 (Brasília), ensaio sem falhas.
+  - **Tela:** "Liberar clientes" com janela de confirmação igual à de "Cancelar e avisar"; mensagem do dono traduzida em `friendly-error.ts`; subtítulo do Contratado sem "levando ou não seus clientes". Textos nos 4 dicionários. Commits `496eece` e `531feff`.
+  - **Conferido no site:** painéis do Parceiro e do Contratado (agenda, números, cancelar, concluir, saída), janela de liberar como dono, mensagem do dono pela API; fotos em 320 e 1280, claro e escuro (fora do repositório).
+- **Estado deixado na Loja Teste:** igual ao da entrega abaixo; dados criados nesta rodada apagados. Lojas de teste mantidas (decisão do dono).
+- **Pendente:** nada desta frente. Fora do escopo: OTP real de WhatsApp e login real do Google.
+
 ## Entrega — papéis atuais, fuso rápido e saída da equipe com reservas (13/10, fim da tarde, Cursor) — **aplicado em produção**
 
 - **O que:** decisões do dono de 13/10 para P-56 a P-62, mais o achado P-64 e o ajuste P-65. Guia completo, medições e retestes: [implantacao-equipe-saida-2026-10-13.md](implantacao-equipe-saida-2026-10-13.md).
@@ -111,7 +120,7 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - **Retestes no site (contas da Loja Teste):** página pública com horários de hoje e horário escolhido levando a `/auth` com "Falta confirmar"; equipe sem "sem permissão" (pela API, cada conta); reservas de quem saiu passadas e canceladas pela tela, com aviso na fila; reativar e reconvidar; saída do Parceiro só com a liberação do dono depois de resolver a reserva; saída do Contratado com reserva sem recusa e com desistência.
 - **Onde:** `supabase/migrations/20261013180000_*.sql`, `20261013190000_*.sql`; `supabase/tests/papeis_atuais_e_fuso.sql`, `saida_equipe_reservas.sql`, `regras_papel_banco.sql`; `src/features/shop/settings/{DepartureBookings,ShopDepartureCard}.tsx`, `src/features/shop/{ShopTeamAccessCard,ShopShell}.tsx`, `src/lib/auth/friendly-error.ts`, dicionários; guias `pendencias.md`, `banco-e-implantacao.md` (última aplicada `20261013190000`), `papeis-e-permissoes.md`, `testes-reais-loja-teste.md`.
 - **Estado deixado na Loja Teste:** antecedência 2 h; `show_today` ligado; Dono 70%, Sócio 30%, Cliente Dois (Parceiro) e Contratado ativos; Parceiro saiu de novo para a Loja Teste B; reservas do `cliente@` em 14/10 (Sócio) e 15/10 (Dono e Contratado), uma de 14/10 cancelada. Arena e Externa sem mudança de dados.
-- **Pendente:** painel do Parceiro e do Contratado conferido só pela API (não no navegador); fotos em 320/1280 e tema escuro; OTP real e Google real fora do escopo.
+- **Pendente:** ~~painel do Parceiro e do Contratado conferido só pela API; fotos em 320/1280 e tema escuro~~ — fechado na entrega acima; OTP real e Google real fora do escopo.
 
 ## Aplicação da noite de 13/10 e Loja Teste (13/10, tarde, Cursor) — **aplicado em produção**
 

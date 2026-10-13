@@ -50,7 +50,7 @@ Regra para todos os itens: migration nova em `supabase/migrations/`, teste SQL e
 
 ### P-01 — Contratado não pode sair levando clientes, também no banco · feito — aplicado em 13/10/2026 (15:12, horário de Brasília)
 
-- **Aplicado e testado em 13/10/2026:** na Loja Teste, a saída do Contratado só oferece "Deixar aqui" e o pedido concluiu em `forfeit`, com o cliente ficando na loja. Restos: o subtítulo do cartão ainda diz "levando ou não seus clientes" para o Contratado; `list_shop_departure_requests` responde 403 para ele (a tela mostra erro de permissão; ver P-58).
+- **Aplicado e testado em 13/10/2026:** na Loja Teste, a saída do Contratado só oferece "Deixar aqui" e o pedido concluiu em `forfeit`, com o cliente ficando na loja. Restos, resolvidos em 13/10/2026 (noite): o subtítulo do Contratado agora diz "Deixar a equipe. Seus clientes continuam nesta barbearia." (commit `531feff`); o 403 de `list_shop_departure_requests` saiu com a P-58.
 
 - **Feito em 13/10/2026 (Cursor):** `20261013120000_regras_papel_banco.sql` recusa `take` de `employee` com `42501`; teste `regras_papel_banco.sql` (19 PASS no ensaio em produção, cobre Contratado, Parceiro e dono único). Aplicação autorizada para a noite de 13/10 pelo guia único [implantacao-noite-2026-10-13.md](../implantacao-noite-2026-10-13.md) (detalhes em [implantacao-regras-papel-2026-10-13.md](../implantacao-regras-papel-2026-10-13.md)).
 

@@ -51,7 +51,20 @@ Commit `44aaa1f` (banco, tela e testes) publicado; montagem na Hostinger conclu�
 - **Saída do Contratado sem levar clientes, com reserva (P-61):** `pending_release`; recusar responde "A saída sem levar clientes não pode ser recusada…"; o sócio não desiste por ele; o próprio Contratado desistiu (`cancelled`). Pausar o Contratado com a reserva em Gerenciar foi recusado com "Ainda há reservas marcadas com este profissional…"; depois do segundo envio (`b35a4e1`, montagem concluída), a mesma janela mostra a reserva com "Passar para" e "Cancelar e avisar".
 - **Selo da página pública (P-65):** depois do segundo envio, com 2 h de antecedência às 17:00, o cartão "Hoje" e cada profissional mostram "Sem horário livre hoje".
 
-Não verificado: painel do Parceiro e do Contratado no navegador (conferido pela API); OTP real de WhatsApp e login real do Google; fotos em 320 e 1280 e no tema escuro.
+Não verificado nesta rodada (fechado na seção 8): painel do Parceiro e do Contratado no navegador; fotos em 320 e 1280 e no tema escuro. Fora do escopo: OTP real de WhatsApp e login real do Google.
+
+## 8. Terceira rodada (13/10, noite): pendências fechadas
+
+- **Banco:** `20261013200000_saida_aguarde_dono` recria `complete_shop_departure` com a mensagem "Aguarde a liberação do dono" (antes, "do sócio"; quem libera é o dono). Backup `/root/backup-barba-cabelo-20261013-2006.dump` (1.232.993 bytes) às 17:06:07; aplicada 17:06:08–17:06:09 numa transação, com `NOTIFY pgrst`; conferência `t|f` (texto novo presente, antigo ausente). Ensaio antes em `BEGIN … ROLLBACK`: saida_equipe_reservas 29 (teste novo da mensagem; sem a migration ele falha), regras_papel_banco 20, slug_redirects_departure 5, partner_tools 13, loyalty_program_module 46, correcoes_auditoria 10, shop_team_governance 14.
+- **Tela:** "Liberar clientes" abre a mesma janela de confirmação de "Cancelar e avisar": quem sai, para onde vão os clientes e o que muda (clientes, pontos e link passam para a outra barbearia; a pessoa sai da equipe). `friendly-error.ts` traduz as duas versões da mensagem para "Aguarde a liberação do dono para concluir a saída.". O subtítulo da saída do Contratado passou a dizer "Deixar a equipe. Seus clientes continuam nesta barbearia." (antes, "levando ou não seus clientes"). Textos nos 4 dicionários. Outros "sócio" do sistema falam de co-donos e continuam certos.
+- **Envios:** `496eece` (montagem concluída) e `531feff` (subtítulo do Contratado).
+- **Retestes no site (navegador em aba separada, sessão das contas de teste; a do usuário não foi tocada):**
+  - **Parceiro (`cliente2@`), 390 px, tema escuro:** Agenda com "Seu dia" e valores; "Mais números do dia" abre; menu do atendimento com Concluir, Pedir para remarcar e Cancelar; cancelar pela janela deu "horário cancelado" sem "sem permissão"; saída com duas opções, "Continuar" desligado até escolher e revisão com o texto das reservas (não enviado).
+  - **Contratado:** Agenda sem valores; "Concluir atendimento" com o aviso de horário ainda não iniciado e conclusão sem "sem permissão"; saída só com "Deixar aqui".
+  - **Espera:** a fila da Loja Teste está desligada, então a tela não aparece; `get_waiting_state` responde 200.
+  - **Liberar clientes (dono, 390 px):** com um pedido simulado do Parceiro levando clientes, a janela "Liberar os clientes de Cliente?" mostrou quem sai, "Outra barbearia" e as 4 consequências; "Voltar" fechou sem liberar (pedido seguiu `pending_release`). O Parceiro, tentando concluir pela API, recebeu "Aguarde a liberação do dono" (403).
+  - **Fotos (fora do repositório):** Contratado em 320 e 1280, claro e escuro; Parceiro em 320 e 1280, escuro; tema trocado pelo botão do app. Sem rolagem lateral em 320 (largura da página = 320). A captura às vezes devolvia um quadro antigo logo depois de trocar o tema; a página em si já estava no tema certo (cores conferidas pelo navegador).
+- **Estado devolvido:** apagados o pedido simulado, as 2 reservas de teste de hoje (18:00) e os 3 avisos de e-mail que elas geraram; Parceiro e Contratado ativos; tema do app de volta ao escuro; sessão de teste removida da aba. A reserva de hoje `ad18586a…` (criada às 15:45, antes desta rodada) ficou como estava.
 
 ## 7. Estado deixado na Loja Teste
 
