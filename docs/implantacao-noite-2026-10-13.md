@@ -1,14 +1,16 @@
 # Implantação da noite de 13/10/2026 — guia único
 
+> **Aplicado em 13/10/2026, à tarde** (o dono antecipou: "o sistema ainda não está rodando"), pelo Cursor a partir do Mac do dono (`ssh vps-barba`). Backup `/root/backup-barba-cabelo-20261013-1811.dump` (1,2 MB); ensaio 144 PASS desfeito; migrations entre 15:12:47 e 15:12:55; funções publicadas às 15:13; todas as conferências iguais às esperadas. Registro: CONTINUIDADE, 13/10. Não reaplicar.
+
 Para o agente com acesso à VPS (stack `z2dbb7dkyzhc8vjiywq34mhn`). Aplicação **autorizada pelo dono em 13/10/2026** para a noite (horário de pouco movimento). Este guia junta, numa ordem só, tudo o que estava pendente no servidor:
 
-| Ordem | Migration                                   | Função a publicar                     | Pendência              | Guia de origem (detalhes)                                                                    |
-| ----- | ------------------------------------------- | ------------------------------------- | ---------------------- | -------------------------------------------------------------------------------------------- |
-| 1     | `20261003220000_ajustes_finais.sql`         | `google-connect`, `whatsapp-dispatch` | P-21                   | [implantacao-ajustes-finais-2026-10-03.md](implantacao-ajustes-finais-2026-10-03.md)         |
-| 2     | `20261003230000_decisoes_whatsapp_fuso.sql` | `register-shop`                       | P-22                   | [implantacao-decisoes-2026-10-03.md](implantacao-decisoes-2026-10-03.md)                     |
-| 3     | `20261005120000_tempo_preparo.sql`          | —                                     | P-23                   | [implantacao-preparo-2026-10-05.md](implantacao-preparo-2026-10-05.md)                       |
-| 4     | `20261013120000_regras_papel_banco.sql`     | `invite-shop-admin`                   | P-01, P-04, P-07, P-16 | [implantacao-regras-papel-2026-10-13.md](implantacao-regras-papel-2026-10-13.md)             |
-| 5     | `20261013150000_antecedencia_minima.sql`    | —                                     | P-54                   | este guia (seção "O que muda")                                                               |
+| Ordem | Migration                                   | Função a publicar                     | Pendência              | Guia de origem (detalhes)                                                            |
+| ----- | ------------------------------------------- | ------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------ |
+| 1     | `20261003220000_ajustes_finais.sql`         | `google-connect`, `whatsapp-dispatch` | P-21                   | [implantacao-ajustes-finais-2026-10-03.md](implantacao-ajustes-finais-2026-10-03.md) |
+| 2     | `20261003230000_decisoes_whatsapp_fuso.sql` | `register-shop`                       | P-22                   | [implantacao-decisoes-2026-10-03.md](implantacao-decisoes-2026-10-03.md)             |
+| 3     | `20261005120000_tempo_preparo.sql`          | —                                     | P-23                   | [implantacao-preparo-2026-10-05.md](implantacao-preparo-2026-10-05.md)               |
+| 4     | `20261013120000_regras_papel_banco.sql`     | `invite-shop-admin`                   | P-01, P-04, P-07, P-16 | [implantacao-regras-papel-2026-10-13.md](implantacao-regras-papel-2026-10-13.md)     |
+| 5     | `20261013150000_antecedencia_minima.sql`    | —                                     | P-54                   | este guia (seção "O que muda")                                                       |
 
 Regras (as mesmas de [implantacao-2026-10-03.md](implantacao-2026-10-03.md)):
 
@@ -134,14 +136,14 @@ Q "select (select count(*) from public.barbershop_settings where min_lead_minute
 
 Esperado, linha a linha:
 
-| Conferência      | Saída esperada  |
-| ---------------- | --------------- |
-| estado           | `t\|t\|t\|t\|t` |
-| 1 — ajustes      | `f\|f\|f`       |
-| 2 — WhatsApp/fuso | `f\|t\|2`      |
-| 3 — preparo      | `0\|0\|f\|f`    |
-| 4 — papéis       | `f\|t\|f\|3`    |
-| 5 — antecedência | `0\|f\|f\|f\|t` |
+| Conferência       | Saída esperada  |
+| ----------------- | --------------- |
+| estado            | `t\|t\|t\|t\|t` |
+| 1 — ajustes       | `f\|f\|f`       |
+| 2 — WhatsApp/fuso | `f\|t\|2`       |
+| 3 — preparo       | `0\|0\|f\|f`    |
+| 4 — papéis        | `f\|t\|f\|3`    |
+| 5 — antecedência  | `0\|f\|f\|f\|t` |
 
 Todas as migrations podem ser reaplicadas sem erro (conferido; a 5 também na cópia de 13/10).
 

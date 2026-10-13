@@ -1,6 +1,6 @@
 # Pendências — lista única e priorizada
 
-Situação em **13/10/2026** (rodadas do Cursor, a segunda com as decisões do dono do mesmo dia; antes, 12/10/2026). Esta é a lista única do que falta fazer. O registro detalhado de cada entrega continua em [CONTINUIDADE.md](../CONTINUIDADE.md), do mais novo para o mais antigo. Porta de entrada: [LEIA-PRIMEIRO.md](../LEIA-PRIMEIRO.md).
+Situação em **13/10/2026** (rodadas do Cursor: a segunda com as decisões do dono do mesmo dia; a terceira com a aplicação das 5 migrations e os testes reais na Loja Teste; antes, 12/10/2026). Esta é a lista única do que falta fazer. O registro detalhado de cada entrega continua em [CONTINUIDADE.md](../CONTINUIDADE.md), do mais novo para o mais antigo. Porta de entrada: [LEIA-PRIMEIRO.md](../LEIA-PRIMEIRO.md).
 
 **Como usar**
 
@@ -8,32 +8,39 @@ Situação em **13/10/2026** (rodadas do Cursor, a segunda com as decisões do d
 - Situação: **pendente**, **feito — falta aplicar no banco**, **a decidir** (depende do dono), **não confirmado** (não deu para conferir daqui).
 - Cada item foi conferido no código e nas migrations em 12/10/2026. As linhas citadas são dessa data.
 - **Papéis da equipe no banco × nomes na tela:** `owner` e `partner` = **Dono** (sócio; `partner` é o nome antigo e aparece igual), `associate` = **Parceiro**, `employee` = **Contratado** ([roles.tsx](../../src/features/shop/roles.tsx), linhas 16-27; rótulos em `pt-BR.ts`, linhas 718-721). `shop_admin` é o papel antigo de `memberships`, que pode existir sem vínculo de equipe (CONTINUIDADE, onda 1 de 09/10).
-- Último id usado: **P-54**.
+- Último id usado: **P-63**.
 
 **Índice**
 
 1. [As 5 recomendadas para a próxima rodada](#1-as-5-recomendadas-para-a-próxima-rodada)
-2. [Banco e servidor: precisa de migration](#2-banco-e-servidor-precisa-de-migration) (P-01 a P-14)
+2. [Banco e servidor: precisa de migration](#2-banco-e-servidor-precisa-de-migration) (P-01 a P-14 e P-56 a P-62)
 3. [Onda 4 do plano de ambientes](#3-onda-4-do-plano-de-ambientes-convite-e-primeira-chegada) (P-15 a P-20)
 4. [Migrations escritas e não aplicadas; operação do servidor](#4-migrations-escritas-e-não-aplicadas-operação-do-servidor) (P-21 a P-29)
 5. [Decisões do dono em aberto](#5-decisões-do-dono-em-aberto) (P-30 a P-39 e P-53)
 6. [Testes manuais com contas reais](#6-testes-manuais-com-contas-reais) (P-40 a P-43)
-7. [Dívida técnica](#7-dívida-técnica) (P-44 a P-48, P-51 e P-52)
+7. [Dívida técnica](#7-dívida-técnica) (P-44 a P-48, P-51, P-52, P-55 e P-63)
 8. [Ideias futuras](#8-ideias-futuras) (P-49, P-50 e P-54)
 
 ---
 
 ## 1. As 5 recomendadas para a próxima rodada
 
-Atualizada em 13/10/2026, depois das decisões do dono do mesmo dia (P-25 feito; P-53 decidido; P-54 feito, falta aplicar; aplicação da noite e loja de teste autorizadas).
+Atualizada em 13/10/2026, depois da aplicação das 5 migrations (15:12) e dos testes reais na Loja Teste. P-21, P-22, P-23, P-01, P-04, P-07, P-16 e P-54 estão aplicados; P-40 e P-41 foram testados (resultados na seção 6).
 
-| Ordem | Itens                                          | O quê                                                                                                    | Por quê                                                                                                                                                                                         |
-| ----- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1     | P-21, P-22, P-23, P-01, P-04, P-07, P-16, P-54 | Aplicar as 5 migrations e publicar 4 funções pelo guia único [implantacao-noite-2026-10-13.md](../implantacao-noite-2026-10-13.md) | Autorizado pelo dono para a noite de 13/10. Ensaio completo (144 PASS) feito numa cópia da estrutura do banco. Até aplicar, fuso, preparo, regras de papel, senha do convite e antecedência ficam parados. |
-| 2     | P-40, P-41                                     | Testar com contas reais na "Loja Teste" ([testes-reais-loja-teste.md](../testes-reais-loja-teste.md))     | Autorizado pelo dono em 13/10. Roteiro, criação e limpeza prontos; depende da aplicação da noite.                                                                                              |
-| 3     | P-15                                           | Convite com link de entrada (WhatsApp e e-mail)                                                          | Com a P-16 feita, a pessoa já é obrigada a trocar a senha; falta o link para não depender de repassar a senha à mão (decisão 9).                                                                 |
-| 4     | P-17                                           | Boas-vindas "Você agora é Parceiro na Barbearia X"                                                       | Fecha a onda 4 para quem já tinha conta. Precisa guardar "boas-vindas vista" por vínculo (banco).                                                                                               |
-| 5     | P-02, P-03                                     | Bloqueio da própria agenda e troca da própria foto pelo Contratado, no banco                             | Últimas regras de papel da decisão 7 que ainda dependem da matriz de permissões.                                                                                                                |
+| Ordem | Itens            | O quê                                                                                              | Por quê                                                                                                                                                                                    |
+| ----- | ---------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1     | P-58             | 19 funções do banco que só aceitam o `shop_admin` antigo                                           | Sócio convidado, Parceiro e Contratado veem "Você não tem permissão…" na Agenda (presença, cancelar, espera, números). Trava a sociedade real. Precisa de migration e autorização do dono. |
+| 2     | P-56, P-57       | Fuso da loja lento (página pública estoura o tempo) e `list_pending_shop_changes` que sempre falha | A página pública da Loja Teste (5 profissionais) leva ~7 s e o visitante tem limite de 3 s; a Arena leva ~1,7 s e cresce com a equipe. Mesma migration de P-58 pode levar as duas.         |
+| 3     | P-61, P-62       | Saída da equipe: reservas futuras com quem saiu e Parceiro que leva a carteira sem liberação       | Decisões do dono antes de mexer (seção 2).                                                                                                                                                 |
+| 4     | P-15             | Convite com link de entrada (WhatsApp e e-mail)                                                    | Com a P-16 aplicada, a pessoa já é obrigada a trocar a senha; falta o link para não depender de repassar a senha à mão (decisão 9).                                                        |
+| 5     | P-59, P-60, P-02 | Reconvidar quem saiu, reativar a ficha do profissional; bloqueio da própria agenda do Contratado   | Achados dos testes de 13/10 na tela Equipe e sociedade, mais a regra de papel que falta.                                                                                                   |
+
+----- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 | P-21, P-22, P-23, P-01, P-04, P-07, P-16, P-54 | Aplicar as 5 migrations e publicar 4 funções pelo guia único [implantacao-noite-2026-10-13.md](../implantacao-noite-2026-10-13.md) | Autorizado pelo dono para a noite de 13/10. Ensaio completo (144 PASS) feito numa cópia da estrutura do banco. Até aplicar, fuso, preparo, regras de papel, senha do convite e antecedência ficam parados. |
+| 2 | P-40, P-41 | Testar com contas reais na "Loja Teste" ([testes-reais-loja-teste.md](../testes-reais-loja-teste.md)) | Autorizado pelo dono em 13/10. Roteiro, criação e limpeza prontos; depende da aplicação da noite. |
+| 3 | P-15 | Convite com link de entrada (WhatsApp e e-mail) | Com a P-16 feita, a pessoa já é obrigada a trocar a senha; falta o link para não depender de repassar a senha à mão (decisão 9). |
+| 4 | P-17 | Boas-vindas "Você agora é Parceiro na Barbearia X" | Fecha a onda 4 para quem já tinha conta. Precisa guardar "boas-vindas vista" por vínculo (banco). |
+| 5 | P-02, P-03 | Bloqueio da própria agenda e troca da própria foto pelo Contratado, no banco | Últimas regras de papel da decisão 7 que ainda dependem da matriz de permissões. |
 
 ---
 
@@ -41,7 +48,9 @@ Atualizada em 13/10/2026, depois das decisões do dono do mesmo dia (P-25 feito;
 
 Regra para todos os itens: migration nova em `supabase/migrations/`, teste SQL em `supabase/tests/` rodado em `BEGIN … ROLLBACK`, e um guia de implantação para o agente da VPS (modelo: [implantacao-preparo-2026-10-05.md](../implantacao-preparo-2026-10-05.md)). Detalhes em [banco-e-implantacao.md](banco-e-implantacao.md). Exceção: a parte de equipe de P-12 é só tela.
 
-### P-01 — Contratado não pode sair levando clientes, também no banco · feito — falta aplicar no banco
+### P-01 — Contratado não pode sair levando clientes, também no banco · feito — aplicado em 13/10/2026 (15:12, horário de Brasília)
+
+- **Aplicado e testado em 13/10/2026:** na Loja Teste, a saída do Contratado só oferece "Deixar aqui" e o pedido concluiu em `forfeit`, com o cliente ficando na loja. Restos: o subtítulo do cartão ainda diz "levando ou não seus clientes" para o Contratado; `list_shop_departure_requests` responde 403 para ele (a tela mostra erro de permissão; ver P-58).
 
 - **Feito em 13/10/2026 (Cursor):** `20261013120000_regras_papel_banco.sql` recusa `take` de `employee` com `42501`; teste `regras_papel_banco.sql` (19 PASS no ensaio em produção, cobre Contratado, Parceiro e dono único). Aplicação autorizada para a noite de 13/10 pelo guia único [implantacao-noite-2026-10-13.md](../implantacao-noite-2026-10-13.md) (detalhes em [implantacao-regras-papel-2026-10-13.md](../implantacao-regras-papel-2026-10-13.md)).
 
@@ -66,7 +75,9 @@ Regra para todos os itens: migration nova em `supabase/migrations/`, teste SQL e
 - **Gancho na tela:** em [MyProfileCard.tsx](../../src/features/shop/settings/MyProfileCard.tsx) a foto do Contratado aparece travada ("A foto quem troca é o dono da barbearia."). A trava vem de `ownPhoto` ([capabilities.ts](../../src/lib/auth/capabilities.ts), linha 126), que precisa mudar junto com a política.
 - **Pronto quando:** o Contratado envia e troca só arquivos em `<loja>/staff/<seu staff_id>/` (políticas de insert e update), sem acesso às fotos de serviço nem às dos colegas.
 
-### P-04 — Bloqueios de colegas sem nome e sem motivo vindos do banco · feito — falta aplicar no banco
+### P-04 — Bloqueios de colegas sem nome e sem motivo vindos do banco · feito — aplicado em 13/10/2026 (15:12, horário de Brasília)
+
+- **Aplicado e testado em 13/10/2026:** o bloqueio do dono com motivo escrito aparece ao Parceiro como "Colega indisponível"; na rede, `list_shop_blocks` devolve `reason` e `staff_display_name` nulos, e a leitura direta da tabela devolve lista vazia.
 
 - **Feito em 13/10/2026 (Cursor):** mesma migration da P-01. Política de leitura refeita (visão geral lê tudo; os demais, os próprios e os da loja inteira) e RPC `list_shop_blocks` com motivo e nome nulos para colegas. O `ShopShell` já usa a RPC e volta à leitura antiga enquanto ela não existir. Vai na aplicação da noite de 13/10 ([implantacao-noite-2026-10-13.md](../implantacao-noite-2026-10-13.md)); a conferência na aba Rede está no roteiro da loja de teste (P-41).
 
@@ -87,7 +98,9 @@ Regra para todos os itens: migration nova em `supabase/migrations/`, teste SQL e
 - **Gancho na tela:** [NewShopDialog.tsx](../../src/features/platform/NewShopDialog.tsx) oferece "Adicionar pessoa"; depois da mudança pode oferecer "Adicionar dono" com o papel já escolhido.
 - **Pronto quando:** loja sem dono ativo aceita `owner` com 100% (ou sem %), e a regra de ceder parte continua para lojas que já têm dono.
 
-### P-07 — Contagem de "Administradores" na plataforma (PLAT-01, decisão 12) · feito — falta aplicar no banco
+### P-07 — Contagem de "Administradores" na plataforma (PLAT-01, decisão 12) · feito — aplicado em 13/10/2026 (15:12, horário de Brasília)
+
+- **Aplicado em 13/10/2026:** conferência do guia ok. A tela `/platform` não foi aberta nos testes (exige a conta de admin do dono).
 
 - **Feito em 13/10/2026 (Cursor):** RPC `list_platform_shop_owners` (mesma migration da P-01); `shopCounts.ts` conta por ela, com volta ao `shop_admin` enquanto ela não existir; demonstração com o dono fictício. Levantamento (só leitura): 0 contas `shop_admin` sem vínculo de equipe; as 2 lojas ativas dão o mesmo resultado nas duas contas. Vai na aplicação da noite de 13/10 ([implantacao-noite-2026-10-13.md](../implantacao-noite-2026-10-13.md)).
 
@@ -132,20 +145,52 @@ A tela já trava e ignora `manage_services`, `manage_operations`, `manage_team` 
 
 Hoje ficam no aparelho e por domínio: `arena:last-area:<user_id>`, `arena:active-shop-actor:<user_id>` e `arena:last-customer-shop:<user_id>` (CONTINUIDADE, ondas 1, 2 e 5 de 09/10; no código, `destination.ts` linha 167, `shop-acting.ts` linha 282 e `shop-choice.ts` linha 13, conferido em 12/10). No perfil, valeriam entre aparelhos e domínios. Origem do pedido: relatório da onda 2, fora do repositório; nenhum documento do projeto registra esta pendência.
 
+### P-56 — Fuso da loja lento derruba a página pública e os horários · pendente
+
+- **Achado nos testes de 13/10/2026.** `shop_tz` valida o fuso varrendo `pg_timezone_names` (~0,5–0,75 s por chamada) e é chamada 2 vezes por `available_slots_internal` (~1,4 s por profissional e dia). A página pública da Loja Teste (5 profissionais) levou ~7 s e o visitante tem limite de 3 s; a Arena leva ~1,7 s e piora a cada profissional novo. Vem da `20261002190000_booking_rules_single_source` (antiga, não das de 13/10).
+- **Saída sugerida:** migration que valide o fuso sem varrer `pg_timezone_names` (por exemplo, `now() at time zone` em bloco protegido, ou guardar o fuso já validado) e chame `shop_tz` uma vez por consulta.
+- **Contorno em uso:** na Loja Teste, `landing.show_today` desligado.
+
+### P-57 — `list_pending_shop_changes` sempre falha · pendente
+
+Marcada `STABLE`, mas faz `UPDATE` (expira pedidos antigos): o Postgres recusa com `0A000`. A tela de aprovação usa outro caminho e funcionou nos testes; a função fica quebrada para quem a chamar. Vem de 24/09/2026. Saída: tirar o `UPDATE` ou marcar `VOLATILE`.
+
+### P-58 — 19 funções só aceitam o `shop_admin` antigo · pendente (prioridade)
+
+- **Achado nos testes de 13/10/2026.** Estas funções conferem só `has_shop_role(loja, 'shop_admin')` (tabela `memberships`) e recusam quem entrou pela equipe (`shop_members`): `cancel_appointment`, `create_booking_series`, `create_direct_appointment`, `get_appointment_attendance`, `get_appointment_cancellations`, `get_available_slots`, `get_business_insights`, `get_occurrence_insights`, `get_service_interest_insights`, `get_staff_busy_intervals_without_waits`, `get_waiting_state`, `guard_waiting_settings`, `pick_available_staff`, `record_attendance`, `record_customer_survey_response`, `record_customer_usage`, `save_appointment_occurrence`, `waiting_action`, `withdraw_appointment_confirmation`.
+- **Efeito:** o sócio de 30% e o Parceiro recebem "Not allowed" até em `get_appointment_attendance`; a Agenda mostra "Você não tem permissão para fazer isso com esta conta.". Também `list_shop_departure_requests` responde 403 ao Parceiro e ao Contratado. Nas lojas reais, hoje, cada loja tem só o dono original com `shop_admin`, por isso ainda não apareceu.
+- **Saída:** migration que troque a conferência pela permissão da equipe certa (`shop_can…`/`has_shop_member_role`), mantendo o `shop_admin` antigo, com teste por papel.
+
+### P-59 — Reconvidar quem saiu da equipe · pendente
+
+Convidar de novo uma conta que já saiu dá `This account already belongs to the professional team` (a linha inativa continua em `shop_members`); a tela mostra só "Não foi possível enviar o convite". Contorno: Gerenciar → Ativo. Saída: o convite reativar a linha, ou a tela explicar e oferecer "Reativar".
+
+### P-60 — Reativar membro e janela Gerenciar · pendente
+
+Reativar o membro em Gerenciar não reativa a ficha `staff` dele (continua fora da agenda e da página pública); e a janela Gerenciar continua mostrando o estado antigo depois de salvar, até fechar e abrir de novo.
+
+### P-61 — Reservas futuras com quem saiu da equipe · a decidir
+
+Depois da saída do Contratado e do Parceiro, as reservas futuras com eles continuaram "confirmadas", com profissional inativo. Decidir: cancelar e avisar o cliente, passar para outro profissional, ou pedir ao dono que resolva antes de liberar a saída.
+
+### P-62 — Parceiro leva a carteira sem liberação do dono · a decidir
+
+`request_shop_departure` só pede liberação quando quem sai é dono/sócio (`owner`/`partner`); o Parceiro (`associate`) sai na hora levando a carteira para a loja de destino, que ele mesmo pode criar no próprio fluxo. O roteiro de teste esperava liberação do dono. Decidir se a regra fica assim (e corrigir o roteiro) ou se o Parceiro também passa pela liberação.
+
 ---
 
 ## 3. Onda 4 do plano de ambientes: convite e primeira chegada
 
 Fonte: [plano-ambientes.md](../plano-ambientes.md), seção 4 ("Onda 4") e decisões 6 e 9 (aprovadas em 09/10). **Nada da onda 4 foi começado** (conferido em 12/10: nenhuma marca de troca de senha nem de boas-vindas no código ou nas migrations). Precisa de banco e de função.
 
-| Id   | O quê                                                                                                                                                                 | Situação hoje (conferida)                                                                                                                                                                                                                                                                                   | Pronto quando                                                                       |
-| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| P-15 | Convite com link de entrada no domínio da loja, por e-mail (fila `email_outbox`) ou WhatsApp, com cartão pronto para compartilhar                                     | [invite-shop-admin](../../supabase/functions/invite-shop-admin/index.ts) cria a conta com senha temporária (linhas 166-181) e não envia nada. O texto diz "Envie a senha temporária para a pessoa" (`pt-BR.ts`, linha 865). Tela: [ShopTeamAccessCard.tsx](../../src/features/shop/ShopTeamAccessCard.tsx). | A pessoa recebe um link que abre a loja certa; quem já tinha conta também é avisado |
-| P-16 | Troca obrigatória da senha temporária no primeiro login — **feito — falta aplicar no banco** (aqui: publicar a função `invite-shop-admin`; sem migration), 13/10/2026 | Janela "Crie sua senha" (`PasswordChangeGate.tsx`) pela marca `must_change_password` nos dados da conta, gravada pela função de convite. Publicação na noite de 13/10: [implantacao-noite-2026-10-13.md](../implantacao-noite-2026-10-13.md), passo 6                                                                 | Conta criada por convite não usa o painel antes de trocar a senha                   |
-| P-17 | Tela "Você agora é Parceiro na Barbearia X", também para quem já tinha conta                                                                                          | Não existe. Exige guardar "boas-vindas vista" por vínculo                                                                                                                                                                                                                                                   | Aparece uma vez por vínculo novo, com loja, papel e resumo de "Seu acesso"          |
-| P-18 | `/cadastrar` com sessão aberta ("Você vai usar a conta x@y") e, no erro de e-mail em uso, "Entrar e abrir minha barbearia"                                            | [cadastrar.tsx](../../src/routes/cadastrar.tsx) não lê a sessão. O plano aponta `register-shop` e trechos de `cadastrar.tsx` (linhas de 09/10)                                                                                                                                                              | Cliente com conta abre uma barbearia com o mesmo e-mail                             |
-| P-19 | Gerente de conta: esconder o convite até existir tela (decisão 6)                                                                                                     | O painel da plataforma ainda mostra [AccountManagersPanel](../../src/features/platform/AccountManagersPanel.tsx) (`PlatformShell.tsx` linha 573, `ShopDetail.tsx` linha 245). O gerente entra pelo `/app` ([session.ts](../../src/lib/auth/session.ts), linhas 39-45)                                       | Não há como criar gerente sem tela própria, ou a tela própria existe                |
-| P-20 | Guia de configuração da loja guardado no banco, com o passo "Equipe e sócios" (S9)                                                                                    | [ShopSetupChecklist.tsx](../../src/features/shop/ShopSetupChecklist.tsx) guarda no aparelho (`shopSetup:<loja>`, linhas 34-48)                                                                                                                                                                              | O progresso do guia é o mesmo em qualquer aparelho                                  |
+| Id   | O quê                                                                                                                                                                            | Situação hoje (conferida)                                                                                                                                                                                                                                                                                   | Pronto quando                                                                       |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| P-15 | Convite com link de entrada no domínio da loja, por e-mail (fila `email_outbox`) ou WhatsApp, com cartão pronto para compartilhar                                                | [invite-shop-admin](../../supabase/functions/invite-shop-admin/index.ts) cria a conta com senha temporária (linhas 166-181) e não envia nada. O texto diz "Envie a senha temporária para a pessoa" (`pt-BR.ts`, linha 865). Tela: [ShopTeamAccessCard.tsx](../../src/features/shop/ShopTeamAccessCard.tsx). | A pessoa recebe um link que abre a loja certa; quem já tinha conta também é avisado |
+| P-16 | Troca obrigatória da senha temporária no primeiro login — **feito — função `invite-shop-admin` publicada em 13/10/2026 (15:13)** e testada com 3 contas convidadas na Loja Teste | Janela "Crie sua senha" (`PasswordChangeGate.tsx`) pela marca `must_change_password` nos dados da conta, gravada pela função de convite. Publicação na noite de 13/10: [implantacao-noite-2026-10-13.md](../implantacao-noite-2026-10-13.md), passo 6                                                       | Conta criada por convite não usa o painel antes de trocar a senha                   |
+| P-17 | Tela "Você agora é Parceiro na Barbearia X", também para quem já tinha conta                                                                                                     | Não existe. Exige guardar "boas-vindas vista" por vínculo                                                                                                                                                                                                                                                   | Aparece uma vez por vínculo novo, com loja, papel e resumo de "Seu acesso"          |
+| P-18 | `/cadastrar` com sessão aberta ("Você vai usar a conta x@y") e, no erro de e-mail em uso, "Entrar e abrir minha barbearia"                                                       | [cadastrar.tsx](../../src/routes/cadastrar.tsx) não lê a sessão. O plano aponta `register-shop` e trechos de `cadastrar.tsx` (linhas de 09/10)                                                                                                                                                              | Cliente com conta abre uma barbearia com o mesmo e-mail                             |
+| P-19 | Gerente de conta: esconder o convite até existir tela (decisão 6)                                                                                                                | O painel da plataforma ainda mostra [AccountManagersPanel](../../src/features/platform/AccountManagersPanel.tsx) (`PlatformShell.tsx` linha 573, `ShopDetail.tsx` linha 245). O gerente entra pelo `/app` ([session.ts](../../src/lib/auth/session.ts), linhas 39-45)                                       | Não há como criar gerente sem tela própria, ou a tela própria existe                |
+| P-20 | Guia de configuração da loja guardado no banco, com o passo "Equipe e sócios" (S9)                                                                                               | [ShopSetupChecklist.tsx](../../src/features/shop/ShopSetupChecklist.tsx) guarda no aparelho (`shopSetup:<loja>`, linhas 34-48)                                                                                                                                                                              | O progresso do guia é o mesmo em qualquer aparelho                                  |
 
 ---
 
@@ -153,7 +198,7 @@ Fonte: [plano-ambientes.md](../plano-ambientes.md), seção 4 ("Onda 4") e decis
 
 ### Migrations (aplicar nesta ordem)
 
-O repositório tem 87 migrations (as duas de 13/10 estão na seção 2 e em P-54). Pelo CONTINUIDADE (linha 246), a última aplicada em produção é `20261003210000_slugify_acentos` (03/10, 19:34 PT). Não há registro de aplicação das três abaixo; **não confirmado** se o agente da VPS aplicou depois de 05/10 sem registrar.
+**Aplicadas em 13/10/2026.** As três abaixo, mais a `20261013120000` (P-01, P-04, P-07) e a `20261013150000` (P-54), foram aplicadas entre 15:12:47 e 15:12:55 (horário de Brasília) pelo guia [implantacao-noite-2026-10-13.md](../implantacao-noite-2026-10-13.md): estado antes `f|f|f|f|f`, backup `/root/backup-barba-cabelo-20261013-1811.dump` (1,2 MB), ensaio 144 PASS desfeito, conferências iguais às esperadas. Última aplicada: `20261013150000_antecedencia_minima`. Detalhes no CONTINUIDADE (13/10).
 
 Como conferir no servidor: a consulta do passo 1 de [implantacao-preparo-2026-10-05.md](../implantacao-preparo-2026-10-05.md) (linha 37) responde pela 220000 (`purge_auth_otp_challenges`) e pela 230000 (`set_shop_timezone`). O guia de ajustes finais não tem consulta, e nenhum guia confere a própria 05120000, que cria a coluna `barbershop_settings.prep_minutes` (`20261005120000_tempo_preparo.sql`, linha 28). Consulta sugerida para as três de uma vez (só leitura; não está nos guias):
 
@@ -172,7 +217,7 @@ select
 | P-22 | `20261003230000_decisoes_whatsapp_fuso.sql` | `register-shop`                       | [implantacao-decisoes-2026-10-03.md](../implantacao-decisoes-2026-10-03.md)             | Avisos só para WhatsApp confirmado; fuso da loja no cadastro e em Ajustes ([ShopTimezoneCard.tsx](../../src/features/shop/settings/ShopTimezoneCard.tsx) fica "disponível em breve" sem a RPC) |
 | P-23 | `20261005120000_tempo_preparo.sql`          | nenhuma                               | [implantacao-preparo-2026-10-05.md](../implantacao-preparo-2026-10-05.md)               | Campos de tempo de preparo (escondidos até a coluna `prep_minutes` existir)                                                                                                                    |
 
-Situação dos três: **feito — falta aplicar no banco**. **Aplicação autorizada pelo dono para a noite de 13/10/2026**, junto com a `20261013120000` e a `20261013150000` (P-54), pelo guia único [implantacao-noite-2026-10-13.md](../implantacao-noite-2026-10-13.md) (ensaio completo esperado: 144 PASS). Em 13/10/2026 (Cursor), uma consulta de leitura no banco de produção confirmou `f|f|f` (nenhuma das três aplicada), e o ensaio encadeado das três com os testes dos guias deu **111 PASS** em transação desfeita, sem deixar nada gravado (CONTINUIDADE, registro de 13/10). Sempre: backup, ensaio em `BEGIN … ROLLBACK`, nunca rodar arquivo de `supabase/tests/` fora de transação (incidente de 03/10 no CONTINUIDADE).
+Situação dos três: **feito — aplicado em 13/10/2026 (15:12, horário de Brasília)**; funções `google-connect`, `whatsapp-dispatch` e `register-shop` publicadas às 15:13. Histórico: aplicação autorizada pelo dono para a noite de 13/10/2026, junto com a `20261013120000` e a `20261013150000` (P-54), pelo guia único [implantacao-noite-2026-10-13.md](../implantacao-noite-2026-10-13.md) (ensaio completo esperado: 144 PASS). Em 13/10/2026 (Cursor), uma consulta de leitura no banco de produção confirmou `f|f|f` (nenhuma das três aplicada), e o ensaio encadeado das três com os testes dos guias deu **111 PASS** em transação desfeita, sem deixar nada gravado (CONTINUIDADE, registro de 13/10). Sempre: backup, ensaio em `BEGIN … ROLLBACK`, nunca rodar arquivo de `supabase/tests/` fora de transação (incidente de 03/10 no CONTINUIDADE).
 
 ### Operação do servidor (sem migration)
 
@@ -201,7 +246,7 @@ Quando o documento de origem não traz recomendação, a coluna diz **sugestão*
 | P-37 | Profissional que abre o app da própria loja (C11): criar ficha de cliente?                                                                                       | Cria a ficha, e o [ShopJoinDialog.tsx](../../src/features/customer/ShopJoinDialog.tsx) avisa ("Isso cria sua ficha de cliente nesta barbearia", linha 76)                        | Se mudar (não criar, ou marcar como ficha de equipe), mexe em `join_shop_as_customer` e nas regras de `memberships`                                                                       |
 | P-38 | Avisos por WhatsApp do dono no cadastro da loja                                                                                                                  | `register-shop` grava o consentimento sempre ligado (`p_opt_in: true`, [index.ts](../../supabase/functions/register-shop/index.ts), linha 122)                                   | Sem recomendação registrada. Fonte: CONTINUIDADE, linha 253                                                                                                                               |
 | P-39 | Acordo de Tratamento de Dados (`/acordo-de-dados`)                                                                                                               | Rascunho                                                                                                                                                                         | Revisão por advogado (foro, RGPD art. 28, arts. 33/34 no pt-PT). CONTINUIDADE, linhas 230 e 250                                                                                           |
-| P-53 | Grade de horários: (a) a contagem recomeça no fim de cada bloqueio (almoço/folga)? (b) no modo de 15 em 15, recusar reserva de cliente que comece fora da grade? | **Feito — decidido pelo dono em 13/10/2026: manter as duas.** Implementado assim em 02/10 (`booking_rules_single_source`; CONTINUIDADE, "Regras de agendamento numa fonte só") | Nada a mudar. Sem (a), depois de um almoço que termina às 13:10 os horários seguiriam 13:15, 13:30…; sem (b), um cliente poderia marcar 13:07 por fora da tela                          |
+| P-53 | Grade de horários: (a) a contagem recomeça no fim de cada bloqueio (almoço/folga)? (b) no modo de 15 em 15, recusar reserva de cliente que comece fora da grade? | **Feito — decidido pelo dono em 13/10/2026: manter as duas.** Implementado assim em 02/10 (`booking_rules_single_source`; CONTINUIDADE, "Regras de agendamento numa fonte só")   | Nada a mudar. Sem (a), depois de um almoço que termina às 13:10 os horários seguiriam 13:15, 13:30…; sem (b), um cliente poderia marcar 13:07 por fora da tela                            |
 
 **Notas e fontes da tabela**
 
@@ -219,9 +264,13 @@ Também em aberto, menor: fila de aprovação fictícia nas visões de sócio da
 
 A demonstração não cobre várias lojas, domínio de loja nem login real, e `localhost` conta como endereço principal. Fazer num subdomínio real, sem gravar dados de teste em lojas de clientes. Registrar o resultado no CONTINUIDADE.
 
-**13/10/2026:** o dono autorizou a "Loja Teste" (`loja-teste.beauty.contheiner.digital`) com contas de teste. Roteiro de P-40 e P-41, criação das contas e da loja, certificado e limpeza: [testes-reais-loja-teste.md](../testes-reais-loja-teste.md) (scripts em `supabase/manutencao/loja-teste-*.sql`, conferidos numa cópia da estrutura do banco). Nada foi criado ainda: depende da aplicação da noite.
+**13/10/2026:** a "Loja Teste" (`loja-teste.beauty.contheiner.digital`) foi criada e testada com contas `@loja-teste.invalid` (dono, sócio, Parceiro, Contratado, cliente e cliente promovido a Parceiro), sem código real de WhatsApp nem login real do Google. Durante o P-41 nasceu também a "Loja Teste B" (`loja-teste-b`, destino da saída do Parceiro, sem certificado próprio). Senhas só nas Chaves do macOS do dono (serviço "Barba e Cabelo - Loja Teste"). Roteiro e limpeza: [testes-reais-loja-teste.md](../testes-reais-loja-teste.md). Registro completo: CONTINUIDADE, 13/10.
 
-### P-40 — Contas de teste e o que conferir em cada uma · pendente (roteiro pronto)
+### P-40 — Contas de teste e o que conferir em cada uma · feito em parte (13/10/2026)
+
+- **Passou:** troca obrigatória da senha (P-16) nas 3 contas convidadas (a janela não fecha com Esc, toque fora, `/app` nem recarregar; senha nova entra, temporária é recusada); "Agendar com Dono" na página pública → login → `/app` com o Dono já escolhido; janela de aceite dos termos para todas as contas; Contratado removido vai a `/app?aviso=removido` ("Você não faz mais parte da equipe"); cliente promovido a Parceiro vê o painel e continua cliente no app; `/` no subdomínio para profissional mostra "Você está vendo como cliente · Abrir painel"; `/` no endereço principal leva o dono ao painel.
+- **Não testado:** destino depois de escolher um horário na página pública (o cartão "horários de hoje" ficou desligado na Loja Teste por causa de P-56); `/platform` e admin sem loja (exigem a conta de admin do dono); dono com 2 lojas, Contratado em outra loja e `shop_admin` antigo sem vínculo; troca por "Minhas áreas" e aviso "endereço da A, trabalha na B".
+- Achados: P-58, P-59, P-60.
 
 Contas (seção 6 do plano de ambientes, mais as das ondas de 09/10):
 
@@ -232,7 +281,14 @@ Contas (seção 6 do plano de ambientes, mais as das ondas de 09/10):
 
 Para cada uma: destino depois do login vindo de "Agendar" na página pública; `/` no endereço principal e no domínio da loja (barra "Você está vendo como cliente · Abrir painel"); troca por "Minhas áreas"; troca de loja sem sobrar permissão da anterior; aviso "Você está no endereço da A, mas trabalha na B"; `/platform` no domínio de loja indo ao endereço principal.
 
-### P-41 — Sociedade, matriz e saída · pendente (roteiro pronto)
+### P-41 — Sociedade, matriz e saída · feito (13/10/2026), com achados
+
+- **Dono 100%:** muda a antecedência sozinho e vale na hora.
+- **Dono 70% × sócio 30%** (modo "decide quem tem a maior parte"): o de 70% decide sozinho; o de 30% vê "Vai para aprovação de Dono" e "Mudança enviada aos demais sócios"; o de 70% aprova e a mudança é aplicada. O sócio não recebe aviso de que foi aprovada (só vê o valor novo). O teste 50%/50% não foi feito.
+- **Matriz do Contratado:** itens de dono travados ("Contratado não muda a loja…").
+- **Bloqueios de colegas (P-04)** e **saída do Contratado (P-01):** passaram (ver os itens).
+- **Saída do Parceiro levando a carteira:** concluiu **na hora**, sem liberação do dono; o roteiro esperava que aguardasse (P-62). A carteira levada é só de quem teve atendimento concluído com ele, então o cliente de teste (só com reserva futura) ficou na loja.
+- Achados: P-57, P-58, P-61, P-62.
 
 Ajustes → Equipe e sociedade com dono 100%, 50% e 30%; "Vai para aprovação de…" antes de salvar; aprovação pelo outro sócio; matriz travada para o Contratado; saída do Contratado sem levar clientes; saída do Parceiro levando a carteira (a `request_shop_departure` corrigida em 03/10 nunca foi usada com login real).
 
@@ -299,6 +355,14 @@ Continua em `package.json` (linha 24) e em `bunfig.toml` (linha 6) desde que o M
 - CONTINUIDADE, "Comece aqui" (linha 9): manda usar a porta 8080, mas nesta máquina o servidor local roda em 8090, o padrão do `scripts/foto.mjs`. O cabeçalho (linha 3) diz "Atualizado em 03/10/2026", mas há entregas até 09/10.
 - **Saída:** atualizar esses trechos numa rodada própria. Nesta rodada, os documentos-fonte ficaram só para leitura.
 
+### P-55 — Montagem do site quebrada por versão nova do TanStack Start · feito (13/10/2026)
+
+As montagens na Hostinger falharam de 12/10 21:12 a 13/10 (5 seguidas) porque o npm instalava `@tanstack/react-start` 1.169.x, que dá "Could not resolve entry module index.html". Corrigido no `package.json` com `>=1.167.50 <1.169.0` (instala 1.168.61); montagem conferida numa cópia limpa e na Hostinger. O projeto não tem `package-lock.json` (só `bun.lock`), então outra dependência pode repetir isso: avaliar travar as versões da montagem.
+
+### P-63 — Roteiro da loja de teste desatualizado · feito (13/10/2026)
+
+O roteiro mandava criar os clientes antes da loja (a ligação do cliente à loja falha em silêncio se a loja não existe) e esperava aprovação no modo "decide quem tem a maior parte" para o dono de 70%. Corrigido em [testes-reais-loja-teste.md](../testes-reais-loja-teste.md).
+
 ---
 
 ## 8. Ideias futuras
@@ -313,7 +377,9 @@ Depende das respostas de P-35. Hoje a carteira (`get_partner_wallet`, [202609171
 
 Fonte das perguntas: transcrição de uma conversa de 08/10, fora do repositório; nenhum documento do projeto as registra. Confirmar as perguntas com o dono antes de usar.
 
-### P-54 — Antecedência mínima para reservar · feito — falta aplicar no banco
+### P-54 — Antecedência mínima para reservar · feito — aplicado em 13/10/2026 (15:12, horário de Brasília)
+
+- **Aplicado e testado em 13/10/2026:** todas as lojas ficaram com 30 min (Arena e Externa conferidas). Na Loja Teste, o dono a 100% mudou para 1 h e valeu na hora; com 2 h, a reserva do cliente para dentro do prazo foi recusada com "Este horário precisa ser reservado com pelo menos 2 h de antecedência. Escolha um horário mais tarde." e a de fora do prazo passou; a remarcação feita pelo dono não é barrada. A tela aberta do cliente se atualizou sozinha depois da mudança.
 
 - **Pedido do dono em 13/10/2026:** antecedência configurável por loja, padrão 30 minutos.
 - **Feito em 13/10/2026 (Cursor):** migration `20261013150000_antecedencia_minima.sql` (coluna `barbershop_settings.min_lead_minutes`: 0, 15, 30, 60, 120, 240, 720 ou 1440; padrão 30). A lista de horários livres (app, "qualquer profissional", página pública) não oferece horário antes de agora + antecedência. A reserva ou remarcação feita pelo próprio cliente dentro da antecedência é recusada com mensagem amigável (`22023`, tolerância de 5 min). O painel da equipe, os cancelamentos, a lista de espera e as séries recorrentes não são barrados. Mesma aprovação entre sócios das outras regras de agendamento (`settings.operational`).

@@ -11,22 +11,22 @@ Princípios:
 
 ## 1. Nome, endereço e contas
 
-| Item     | Valor                                                                          |
-| -------- | ------------------------------------------------------------------------------ |
+| Item     | Valor                                                                                  |
+| -------- | -------------------------------------------------------------------------------------- |
 | Loja     | **Loja Teste**, endereço `loja-teste` → `https://loja-teste.beauty.contheiner.digital` |
-| Opcional | **Loja Teste B**, `loja-teste-b` (só para os casos com duas lojas)              |
+| Opcional | **Loja Teste B**, `loja-teste-b` (só para os casos com duas lojas)                     |
 
 Em 13/10/2026 (consulta só de leitura): os dois endereços estavam livres e não havia nenhuma conta `@loja-teste.invalid`.
 
-| Conta                         | Papel                                  | Como nasce                                                                                     |
-| ----------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `dono@loja-teste.invalid`     | Dono 100% da Loja Teste                | passo 2 (servidor) e passo 3 (script cria a loja com ele como dono)                            |
-| `socio@loja-teste.invalid`    | Dono (sócio) com 30%                   | convite pelo dono no app (passo 5): testa a senha temporária e a troca obrigatória (P-16)      |
-| `parceiro@loja-teste.invalid` | Parceiro                               | convite pelo dono no app                                                                       |
-| `contratado@loja-teste.invalid` | Contratado                           | convite pelo dono no app                                                                       |
-| `cliente@loja-teste.invalid`  | Cliente da Loja Teste                  | passo 2, já ligada à loja (`shop: loja-teste` nos dados da conta)                              |
-| `cliente2@loja-teste.invalid` | Cliente que depois vira Parceiro       | passo 2, ligada à loja; o dono convida o mesmo e-mail como Parceiro (conta que já existe)      |
-| `dono-b@loja-teste.invalid`   | Dono da Loja Teste B (opcional)        | passo 2 e passo 3 com a variante B                                                             |
+| Conta                           | Papel                            | Como nasce                                                                                |
+| ------------------------------- | -------------------------------- | ----------------------------------------------------------------------------------------- |
+| `dono@loja-teste.invalid`       | Dono 100% da Loja Teste          | passo 2 (servidor) e passo 3 (script cria a loja com ele como dono)                       |
+| `socio@loja-teste.invalid`      | Dono (sócio) com 30%             | convite pelo dono no app (passo 5): testa a senha temporária e a troca obrigatória (P-16) |
+| `parceiro@loja-teste.invalid`   | Parceiro                         | convite pelo dono no app                                                                  |
+| `contratado@loja-teste.invalid` | Contratado                       | convite pelo dono no app                                                                  |
+| `cliente@loja-teste.invalid`    | Cliente da Loja Teste            | passo 2, já ligada à loja (`shop: loja-teste` nos dados da conta)                         |
+| `cliente2@loja-teste.invalid`   | Cliente que depois vira Parceiro | passo 2, ligada à loja; o dono convida o mesmo e-mail como Parceiro (conta que já existe) |
+| `dono-b@loja-teste.invalid`     | Dono da Loja Teste B (opcional)  | passo 2 e passo 3 com a variante B                                                        |
 
 ## 2. Criar as contas (servidor, com o dono)
 
@@ -45,13 +45,16 @@ conta() {  # conta <email> "<nome>" [loja]
   unset PW
 }
 conta dono@loja-teste.invalid "Dono Teste"
-conta cliente@loja-teste.invalid "Cliente Teste"
-conta cliente2@loja-teste.invalid "Cliente Dois Teste"
+# só depois do passo 3 (a loja precisa existir):
+conta cliente@loja-teste.invalid "Cliente Teste" loja-teste
+conta cliente2@loja-teste.invalid "Cliente Dois Teste" loja-teste
 # opcional: conta dono-b@loja-teste.invalid "Dono B Teste"
 unset SRK
 ```
 
-Esperado: `200` em cada linha. Criar pela API de administração não manda e-mail (`email_confirm: true`). Se o Auth recusar o domínio `.invalid` (`400`/`422`), **parar**: não trocar por e-mail de outra pessoa; combinar com o dono um endereço dele (a limpeza do passo 8 precisa ser ajustada junto, porque acha as contas pelo domínio). Que o Auth aceita `.invalid` **não foi confirmado**.
+**Ordem:** criar o `dono@`, rodar o passo 3 e só então criar os clientes. O cadastro só liga o cliente à loja se ela já existir; antes disso, a ligação falha em silêncio (achado de 13/10/2026, P-63).
+
+Esperado: `200` em cada linha. Criar pela API de administração não manda e-mail (`email_confirm: true`). Se o Auth recusar o domínio `.invalid` (`400`/`422`), **parar**: não trocar por e-mail de outra pessoa; combinar com o dono um endereço dele (a limpeza do passo 8 precisa ser ajustada junto, porque acha as contas pelo domínio). Em 13/10/2026 o Auth aceitou `.invalid` (`200`).
 
 ## 3. Criar a loja (servidor)
 
@@ -108,32 +111,32 @@ Para cada conta nova, anotar a senha temporária mostrada só no gerenciador de 
 
 Para cada conta, em janela anônima (uma conta por vez):
 
-| Caso                                  | Conta                                       | Conferir                                                                                                                                       |
-| ------------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Primeiro acesso por convite (P-16)    | socio, parceiro, contratado                 | "Crie sua senha" aparece antes de qualquer tela e não deixa seguir sem trocar; a senha nova funciona; a temporária deixa de funcionar         |
-| Destino vindo de "Agendar"            | cliente                                     | página pública → horário → `/auth` com "Seu horário · Falta confirmar" → `/app` com dia e hora escolhidos; nunca reserva sozinho             |
-| `/` no subdomínio da loja             | dono, parceiro                              | barra "Você está vendo como cliente · Abrir painel" quando cabe; "Minhas áreas" troca entre painel e app                                     |
-| `/` no endereço principal             | dono                                        | vai à área certa sem misturar lojas                                                                                                            |
-| Cliente promovido a Parceiro          | cliente2                                    | depois do convite, aparece o painel; continua cliente no app                                                                                   |
-| Dono com 2 lojas (opcional, Loja B)   | dono-b convida `dono@…` como sócio na B     | troca de loja sem sobrar permissão da anterior                                                                                                 |
-| Dono numa loja, Contratado em outra (opcional) | dono-b convida `socio@…` como Contratado na B | aviso "Você está no endereço da A, mas trabalha na B" ao abrir o endereço errado                                                       |
-| Cliente de duas lojas (opcional)      | cliente entra pelo link da Loja Teste B     | seletor de loja do cliente                                                                                                                     |
-| Contratado removido                   | dono remove `contratado@…`                  | ao entrar de novo, sem painel; sem dados da loja                                                                                               |
-| `/platform` no domínio da loja        | conta de admin do dono (só abrir, sem mexer) | vai ao endereço principal                                                                                                                      |
+| Caso                                           | Conta                                         | Conferir                                                                                                                              |
+| ---------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Primeiro acesso por convite (P-16)             | socio, parceiro, contratado                   | "Crie sua senha" aparece antes de qualquer tela e não deixa seguir sem trocar; a senha nova funciona; a temporária deixa de funcionar |
+| Destino vindo de "Agendar"                     | cliente                                       | página pública → horário → `/auth` com "Seu horário · Falta confirmar" → `/app` com dia e hora escolhidos; nunca reserva sozinho      |
+| `/` no subdomínio da loja                      | dono, parceiro                                | barra "Você está vendo como cliente · Abrir painel" quando cabe; "Minhas áreas" troca entre painel e app                              |
+| `/` no endereço principal                      | dono                                          | vai à área certa sem misturar lojas                                                                                                   |
+| Cliente promovido a Parceiro                   | cliente2                                      | depois do convite, aparece o painel; continua cliente no app                                                                          |
+| Dono com 2 lojas (opcional, Loja B)            | dono-b convida `dono@…` como sócio na B       | troca de loja sem sobrar permissão da anterior                                                                                        |
+| Dono numa loja, Contratado em outra (opcional) | dono-b convida `socio@…` como Contratado na B | aviso "Você está no endereço da A, mas trabalha na B" ao abrir o endereço errado                                                      |
+| Cliente de duas lojas (opcional)               | cliente entra pelo link da Loja Teste B       | seletor de loja do cliente                                                                                                            |
+| Contratado removido                            | dono remove `contratado@…`                    | ao entrar de novo, sem painel; sem dados da loja                                                                                      |
+| `/platform` no domínio da loja                 | conta de admin do dono (só abrir, sem mexer)  | vai ao endereço principal                                                                                                             |
 
 Fora deste roteiro: "admin da plataforma que também é dono" (exigiria pôr a conta real de admin na equipe da loja de teste) e "`shop_admin` antigo sem vínculo de equipe" (em 13/10 não havia nenhuma conta assim no banco).
 
 ## 7. Roteiro P-41 — sociedade, matriz e saída
 
 1. Com o dono a 100%: mudar um ajuste de Agendamento (ex.: "Antecedência mínima" para 1 h) aplica na hora.
-2. Depois do sócio com 30%: o mesmo ajuste mostra "Vai para aprovação de…" antes de salvar; o pedido aparece para o sócio, que aprova ou recusa; o resultado aparece para os dois.
+2. Depois do sócio com 30%, no modo padrão "decide quem tem a maior parte": o dono de 70% continua decidindo sozinho. Entrando como o sócio de 30%, o mesmo ajuste mostra "Vai para aprovação de Dono" antes de salvar; o pedido aparece para o dono, que aprova ou recusa; o valor novo aparece para os dois. (Para testar aprovação vinda do dono, usar 50%/50%.)
 3. Ajustes → Acessos: a matriz do Contratado fica travada nos itens de dono.
 4. Bloqueios (P-04): o dono cria um bloqueio com motivo. Entrando como Parceiro, Horários mostra "Colega indisponível" e, na aba Rede do navegador, a resposta de `list_shop_blocks` vem sem motivo e sem nome.
 5. Saída do Contratado: só aparece "sair sem levar clientes"; o pedido conclui sem levar a carteira (P-01).
-6. Saída do Parceiro levando a carteira: o pedido espera a liberação do dono; o dono libera; os clientes do Parceiro vão com ele (a `request_shop_departure` corrigida em 03/10 nunca foi usada com login real).
-7. Antecedência (P-54): com 1 h, o cliente não vê horários na próxima hora. Com a tela de agendar aberta desde antes da mudança, tentar um horário que entrou na janela mostra "Esse horário está muito em cima da hora…". Pelo painel, o dono ainda remarca para perto.
+6. Saída do Parceiro levando a carteira: escolher "Levar comigo" pede a barbearia de destino (pode ser criada ali mesmo, ex.: "Loja Teste B"). Pela regra atual o pedido do Parceiro conclui na hora; só a saída de dono/sócio espera a liberação de outro sócio (P-62, a decidir). Vão junto só os clientes com atendimento **concluído** com o Parceiro; para ver a carteira mudar de loja, concluir antes um atendimento dele.
+7. Antecedência (P-54): com 1 h, o cliente não vê horários na próxima hora. Com a tela de agendar aberta desde antes da mudança, tentar um horário que entrou na janela mostra "Esse horário está muito em cima da hora…". O dono ainda remarca para perto (em 13/10 conferido pela API).
 
-Registrar o resultado de cada linha no `docs/CONTINUIDADE.md` (o que passou, o que falhou, com print quando ajudar).
+Registrar o resultado de cada linha no `docs/CONTINUIDADE.md` (o que passou, o que falhou, com print quando ajudar). Primeira rodada: 13/10/2026 (resultados em [pendencias.md](guia/pendencias.md), P-40 e P-41).
 
 ## 8. Apagar tudo
 
