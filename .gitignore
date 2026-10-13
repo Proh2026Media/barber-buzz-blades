@@ -51,3 +51,6 @@ supabase/tests/waiting_concurrency.py
 *.njsproj
 *.sln
 *.sw?
+
+# Fotos de tela geradas por scripts/foto.mjs
+.fotos/
