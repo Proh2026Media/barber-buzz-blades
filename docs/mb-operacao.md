@@ -183,7 +183,7 @@ Em **Ajustes da loja** o card **Google Agenda e Contatos** inicia o fluxo B.
    - `https://supabasebeauty.contheiner.digital/auth/v1/callback` ← login (fluxo A; é o retorno em uso desde 30/09/2026)
    - `https://beauty.contheiner.digital/auth/google-apps` ← Agenda/Contatos (fluxo B)
    - (local, se testar) `http://localhost:<porta>/auth/google-apps` — nesta máquina o servidor local roda em 8090; o que está cadastrado no Google Cloud hoje: não confirmado
-   - `https://supabase-teste.proh.media/auth/v1/callback`: **não é mais deste projeto** (leva ao Flow TEST desde 29/09/2026). Se ainda estiver na lista, cabe ao dono decidir retirá-lo.
+   - `https://supabase-teste.proh.media/auth/v1/callback`: **não é mais deste projeto** (leva ao Flow TEST desde 29/09/2026). Se ainda estiver na lista, retirar (passo a passo na P-69 de [guia/pendencias.md](guia/pendencias.md)). Em 13/10/2026 o servidor e o código já não tinham esse endereço.
    - O projeto Google Cloud do app é o `proh-media-drive` ([guia/banco-e-implantacao.md](guia/banco-e-implantacao.md), seção 11).
 6. Copiar **Client ID** e **Client Secret**. Não versionar no Git.
 
