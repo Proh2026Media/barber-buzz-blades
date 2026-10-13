@@ -42,6 +42,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { ShopPermissionsMatrix } from "@/features/shop/ShopPermissionsMatrix";
 import { t as tNow, useI18n } from "@/lib/i18n";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
+import { DepartureBookings } from "./settings/DepartureBookings";
 import { cn } from "@/lib/utils";
 import { FOUNDER_META, RoleBadge, formatPercent, isOwnerRole } from "./roles";
 import { TeamInviteContext } from "./team-invite";
@@ -68,6 +69,8 @@ type ShopTeamAccessCardProps = {
   currentUserId?: string;
   /** "Ver pedido": leva às decisões entre donos. */
   onOpenDecisions?: () => void;
+  /** Fuso da loja: horários das reservas que impedem pausar alguém. */
+  timeZone?: string;
 };
 
 type Outcome = { memberId: string | null; state: ActionState; text: string };
@@ -236,6 +239,7 @@ export function ShopTeamAccessCard({
   staff,
   currentUserId,
   onOpenDecisions,
+  timeZone,
 }: ShopTeamAccessCardProps) {
   const { t } = useI18n();
   const roleOptions = useRoleOptions();
@@ -243,6 +247,8 @@ export function ShopTeamAccessCard({
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
+  // Pausar com reservas marcadas: a janela mostra as reservas para passar ou cancelar.
+  const [bookingsBlock, setBookingsBlock] = useState<string | null>(null);
 
   // Gerenciar uma pessoa (folha com papel, parte, acesso e responsável principal).
   const [editing, setEditing] = useState<TeamMember | null>(null);
@@ -398,6 +404,7 @@ export function ShopTeamAccessCard({
               text: t("eq.member.saved", { name: firstName(editing.display_name) }),
             };
       setDialogResult(result);
+      setBookingsBlock(null);
       setOutcome(result);
       const fresh = await load();
       // A janela Gerenciar continua aberta: passa a mostrar o estado salvo (ativo, papel e %).
@@ -410,6 +417,8 @@ export function ShopTeamAccessCard({
       }
       onChanged?.();
     } catch (err) {
+      const hint = (err as { hint?: string } | null)?.hint;
+      setBookingsBlock(hint === "future_bookings" ? editing.id : null);
       setDialogResult({
         memberId: editing.id,
         state: "error",
@@ -746,6 +755,15 @@ export function ShopTeamAccessCard({
                       </button>
                     ) : undefined
                   }
+                />
+              )}
+
+              {bookingsBlock === editing.id && editing.staff_id && (
+                <DepartureBookings
+                  shopId={shopId}
+                  staffId={editing.staff_id}
+                  title={t("eq.leave.bookingsOf", { name: firstName(editing.display_name) })}
+                  timeZone={timeZone}
                 />
               )}
 

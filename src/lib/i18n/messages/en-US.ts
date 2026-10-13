@@ -3786,7 +3786,7 @@ export const enUS: Record<MessageKey, string> = {
   "shopLanding.nextWith": "with {name}",
   "shopLanding.staffFreeOne": "1 professional free today",
   "shopLanding.staffFreeMany": "{n} professionals free today",
-  "shopLanding.fullToday": "Fully booked today",
+  "shopLanding.fullToday": "No times left today",
   "shopLanding.offToday": "Not working today",
   "shopLanding.endedToday": "Done for today",
   "shopLanding.freeToday": "Free today",

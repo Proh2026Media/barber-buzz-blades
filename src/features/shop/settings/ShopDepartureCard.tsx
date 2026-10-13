@@ -467,24 +467,23 @@ export function ShopDepartureCard({
                   />
                 )}
                 {futureBookings > 0 && (
-                  <>
-                    <Notice
-                      tone="warning"
-                      icon={CalendarClock}
-                      role="none"
-                      title={t("eq.leave.futureCount", { count: futureBookings })}
-                    >
-                      {t("eq.leave.resolveFirst")}
-                    </Notice>
-                    <DepartureBookings
-                      shopId={shopId}
-                      staffId={row.staff_id}
-                      title={t("eq.leave.bookingsOf", { name: firstName(name) })}
-                      timeZone={timeZone}
-                      onChanged={() => void load()}
-                    />
-                  </>
+                  <Notice
+                    tone="warning"
+                    icon={CalendarClock}
+                    role="none"
+                    title={t("eq.leave.futureCount", { count: futureBookings })}
+                  >
+                    {t("eq.leave.resolveFirst")}
+                  </Notice>
                 )}
+                {/* Sempre montada: some sozinha sem reservas e guarda o aviso da última resolvida. */}
+                <DepartureBookings
+                  shopId={shopId}
+                  staffId={row.staff_id}
+                  title={t("eq.leave.bookingsOf", { name: firstName(name) })}
+                  timeZone={timeZone}
+                  onChanged={() => void load()}
+                />
                 <div className="flex gap-2">
                   {take && (
                     <button

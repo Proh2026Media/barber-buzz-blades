@@ -8,7 +8,7 @@ Situação em **13/10/2026** (rodadas do Cursor: a segunda com as decisões do d
 - Situação: **pendente**, **feito — falta aplicar no banco**, **a decidir** (depende do dono), **não confirmado** (não deu para conferir daqui).
 - Cada item foi conferido no código e nas migrations em 12/10/2026. As linhas citadas são dessa data.
 - **Papéis da equipe no banco × nomes na tela:** `owner` e `partner` = **Dono** (sócio; `partner` é o nome antigo e aparece igual), `associate` = **Parceiro**, `employee` = **Contratado** ([roles.tsx](../../src/features/shop/roles.tsx), linhas 16-27; rótulos em `pt-BR.ts`, linhas 718-721). `shop_admin` é o papel antigo de `memberships`, que pode existir sem vínculo de equipe (CONTINUIDADE, onda 1 de 09/10).
-- Último id usado: **P-63**.
+- Último id usado: **P-65**.
 
 **Índice**
 
@@ -18,22 +18,22 @@ Situação em **13/10/2026** (rodadas do Cursor: a segunda com as decisões do d
 4. [Migrations escritas e não aplicadas; operação do servidor](#4-migrations-escritas-e-não-aplicadas-operação-do-servidor) (P-21 a P-29)
 5. [Decisões do dono em aberto](#5-decisões-do-dono-em-aberto) (P-30 a P-39 e P-53)
 6. [Testes manuais com contas reais](#6-testes-manuais-com-contas-reais) (P-40 a P-43)
-7. [Dívida técnica](#7-dívida-técnica) (P-44 a P-48, P-51, P-52, P-55 e P-63)
+7. [Dívida técnica](#7-dívida-técnica) (P-44 a P-48, P-51, P-52, P-55, P-63, P-64 e P-65)
 8. [Ideias futuras](#8-ideias-futuras) (P-49, P-50 e P-54)
 
 ---
 
 ## 1. As 5 recomendadas para a próxima rodada
 
-Atualizada em 13/10/2026, depois da aplicação das 5 migrations (15:12) e dos testes reais na Loja Teste. P-21, P-22, P-23, P-01, P-04, P-07, P-16 e P-54 estão aplicados; P-40 e P-41 foram testados (resultados na seção 6).
+Atualizada em 13/10/2026, depois da aplicação de `20261013180000` e `20261013190000` (16:42), que resolveram P-56 a P-62 e P-64 ([implantacao-equipe-saida-2026-10-13.md](../implantacao-equipe-saida-2026-10-13.md)). Antes, na mesma data, a aplicação das 5 migrations (15:12) e os testes reais na Loja Teste. P-21, P-22, P-23, P-01, P-04, P-07, P-16 e P-54 estão aplicados; P-40 e P-41 foram testados (resultados na seção 6).
 
-| Ordem | Itens            | O quê                                                                                              | Por quê                                                                                                                                                                                    |
-| ----- | ---------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1     | P-58             | 19 funções do banco que só aceitam o `shop_admin` antigo                                           | Sócio convidado, Parceiro e Contratado veem "Você não tem permissão…" na Agenda (presença, cancelar, espera, números). Trava a sociedade real. Precisa de migration e autorização do dono. |
-| 2     | P-56, P-57       | Fuso da loja lento (página pública estoura o tempo) e `list_pending_shop_changes` que sempre falha | A página pública da Loja Teste (5 profissionais) leva ~7 s e o visitante tem limite de 3 s; a Arena leva ~1,7 s e cresce com a equipe. Mesma migration de P-58 pode levar as duas.         |
-| 3     | P-61, P-62       | Saída da equipe: reservas futuras com quem saiu e Parceiro que leva a carteira sem liberação       | Decisões do dono antes de mexer (seção 2).                                                                                                                                                 |
-| 4     | P-15             | Convite com link de entrada (WhatsApp e e-mail)                                                    | Com a P-16 aplicada, a pessoa já é obrigada a trocar a senha; falta o link para não depender de repassar a senha à mão (decisão 9).                                                        |
-| 5     | P-59, P-60, P-02 | Reconvidar quem saiu, reativar a ficha do profissional; bloqueio da própria agenda do Contratado   | Achados dos testes de 13/10 na tela Equipe e sociedade, mais a regra de papel que falta.                                                                                                   |
+| Ordem | Itens      | O quê                                                                              | Por quê                                                                                                                             |
+| ----- | ---------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | P-15       | Convite com link de entrada (WhatsApp e e-mail)                                    | Com a P-16 aplicada, a pessoa já é obrigada a trocar a senha; falta o link para não depender de repassar a senha à mão (decisão 9). |
+| 2     | P-02, P-03 | Bloqueio da própria agenda e troca da própria foto pelo Contratado, no banco       | Últimas regras de papel da decisão 7 que ainda dependem da matriz de permissões.                                                    |
+| 3     | P-17       | Boas-vindas "Você agora é Parceiro na Barbearia X"                                 | Fecha a onda 4 para quem já tinha conta.                                                                                            |
+| 4     | P-08       | "Dar acesso ao painel" liga ao profissional que já existe                          | Hoje cria outro profissional.                                                                                                       |
+| 5     | P-05, P-06 | Convite aguardando aprovação visível; primeiro dono de loja criada pela plataforma | Restos da sociedade no banco.                                                                                                       |
 
 ----- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1 | P-21, P-22, P-23, P-01, P-04, P-07, P-16, P-54 | Aplicar as 5 migrations e publicar 4 funções pelo guia único [implantacao-noite-2026-10-13.md](../implantacao-noite-2026-10-13.md) | Autorizado pelo dono para a noite de 13/10. Ensaio completo (144 PASS) feito numa cópia da estrutura do banco. Até aplicar, fuso, preparo, regras de papel, senha do convite e antecedência ficam parados. |
@@ -145,35 +145,49 @@ A tela já trava e ignora `manage_services`, `manage_operations`, `manage_team` 
 
 Hoje ficam no aparelho e por domínio: `arena:last-area:<user_id>`, `arena:active-shop-actor:<user_id>` e `arena:last-customer-shop:<user_id>` (CONTINUIDADE, ondas 1, 2 e 5 de 09/10; no código, `destination.ts` linha 167, `shop-acting.ts` linha 282 e `shop-choice.ts` linha 13, conferido em 12/10). No perfil, valeriam entre aparelhos e domínios. Origem do pedido: relatório da onda 2, fora do repositório; nenhum documento do projeto registra esta pendência.
 
-### P-56 — Fuso da loja lento derruba a página pública e os horários · pendente
+### P-56 — Fuso da loja lento derruba a página pública e os horários · feito — aplicado em 13/10/2026 (16:42)
+
+- **Feito em 13/10/2026:** `20261013180000_papeis_atuais_e_fuso.sql`. `shop_tz` caiu de ~407 ms para 1,3 ms por chamada; a página pública da Loja Teste, de 4,4 s para 93 ms no banco (0,65 s até os dados chegarem ao navegador); a Arena, de 1,4 s para 5 ms. `landing.show_today` religado na Loja Teste e conferido no site.
 
 - **Achado nos testes de 13/10/2026.** `shop_tz` valida o fuso varrendo `pg_timezone_names` (~0,5–0,75 s por chamada) e é chamada 2 vezes por `available_slots_internal` (~1,4 s por profissional e dia). A página pública da Loja Teste (5 profissionais) levou ~7 s e o visitante tem limite de 3 s; a Arena leva ~1,7 s e piora a cada profissional novo. Vem da `20261002190000_booking_rules_single_source` (antiga, não das de 13/10).
 - **Saída sugerida:** migration que valide o fuso sem varrer `pg_timezone_names` (por exemplo, `now() at time zone` em bloco protegido, ou guardar o fuso já validado) e chame `shop_tz` uma vez por consulta.
 - **Contorno em uso:** na Loja Teste, `landing.show_today` desligado.
 
-### P-57 — `list_pending_shop_changes` sempre falha · pendente
+### P-57 — `list_pending_shop_changes` sempre falha · feito — aplicado em 13/10/2026 (16:42)
+
+- **Feito em 13/10/2026:** marcada `VOLATILE` na mesma migration da P-56; responde 200 aos donos e 403 aos demais.
 
 Marcada `STABLE`, mas faz `UPDATE` (expira pedidos antigos): o Postgres recusa com `0A000`. A tela de aprovação usa outro caminho e funcionou nos testes; a função fica quebrada para quem a chamar. Vem de 24/09/2026. Saída: tirar o `UPDATE` ou marcar `VOLATILE`.
 
-### P-58 — 19 funções só aceitam o `shop_admin` antigo · pendente (prioridade)
+### P-58 — 19 funções só aceitam o `shop_admin` antigo · feito — aplicado em 13/10/2026 (16:42)
+
+- **Feito em 13/10/2026:** mesma migration da P-56. Inventário central em 4 auxiliares (`shop_is_team`, `shop_can_see_booking`, `shop_can_act_on_appointment`, `shop_can_view_reports`) que seguem a matriz atual e nunca devolvem nulo; o `shop_admin` antigo continua aceito. Teste por papel em `supabase/tests/papeis_atuais_e_fuso.sql` (26 PASS). Conferido pela API com o login de cada conta da Loja Teste. `list_shop_departure_requests` abre para toda a equipe (cada um vê os próprios pedidos).
 
 - **Achado nos testes de 13/10/2026.** Estas funções conferem só `has_shop_role(loja, 'shop_admin')` (tabela `memberships`) e recusam quem entrou pela equipe (`shop_members`): `cancel_appointment`, `create_booking_series`, `create_direct_appointment`, `get_appointment_attendance`, `get_appointment_cancellations`, `get_available_slots`, `get_business_insights`, `get_occurrence_insights`, `get_service_interest_insights`, `get_staff_busy_intervals_without_waits`, `get_waiting_state`, `guard_waiting_settings`, `pick_available_staff`, `record_attendance`, `record_customer_survey_response`, `record_customer_usage`, `save_appointment_occurrence`, `waiting_action`, `withdraw_appointment_confirmation`.
 - **Efeito:** o sócio de 30% e o Parceiro recebem "Not allowed" até em `get_appointment_attendance`; a Agenda mostra "Você não tem permissão para fazer isso com esta conta.". Também `list_shop_departure_requests` responde 403 ao Parceiro e ao Contratado. Nas lojas reais, hoje, cada loja tem só o dono original com `shop_admin`, por isso ainda não apareceu.
 - **Saída:** migration que troque a conferência pela permissão da equipe certa (`shop_can…`/`has_shop_member_role`), mantendo o `shop_admin` antigo, com teste por papel.
 
-### P-59 — Reconvidar quem saiu da equipe · pendente
+### P-59 — Reconvidar quem saiu da equipe · feito — aplicado em 13/10/2026 (16:42)
+
+- **Feito em 13/10/2026:** `20261013190000_saida_equipe_reservas.sql`. O convite reativa a linha (papel novo e ficha de profissional ativa); conta ativa recebe "Esta pessoa já está na equipe. Para mudar o papel, use Gerenciar." Retestado no site.
 
 Convidar de novo uma conta que já saiu dá `This account already belongs to the professional team` (a linha inativa continua em `shop_members`); a tela mostra só "Não foi possível enviar o convite". Contorno: Gerenciar → Ativo. Saída: o convite reativar a linha, ou a tela explicar e oferecer "Reativar".
 
-### P-60 — Reativar membro e janela Gerenciar · pendente
+### P-60 — Reativar membro e janela Gerenciar · feito — aplicado em 13/10/2026 (16:42)
+
+- **Feito em 13/10/2026:** mesma migration da P-59. Ativar/pausar o vínculo leva junto a ficha de profissional; pausar apaga o acesso antigo de dono (`shop_admin`). A janela Gerenciar passa a mostrar o estado salvo. Retestado no site.
 
 Reativar o membro em Gerenciar não reativa a ficha `staff` dele (continua fora da agenda e da página pública); e a janela Gerenciar continua mostrando o estado antigo depois de salvar, até fechar e abrir de novo.
 
-### P-61 — Reservas futuras com quem saiu da equipe · a decidir
+### P-61 — Reservas futuras com quem saiu da equipe · feito — aplicado em 13/10/2026 (16:42)
+
+- **Feito em 13/10/2026 (decisão do dono: resolver antes de liberar):** o banco recusa tirar da equipe, concluir ou liberar a saída de quem tem reserva futura (gatilho `shop_members_exit_future_bookings`, `complete_shop_departure`, `approve_portfolio_release`). Saída sem levar clientes com reserva vira pedido que o dono não recusa (só resolve e libera) e que o próprio profissional pode desistir (`cancel_shop_departure`). Em Ajustes → Equipe e sociedade, o dono passa cada reserva para um colega livre (`reassign_appointment_staff`, que gera o aviso de remarcação) ou cancela com o aviso já existente; reservas de quem saiu antes aparecem em "Reservas de quem saiu da equipe". Retestado no site.
 
 Depois da saída do Contratado e do Parceiro, as reservas futuras com eles continuaram "confirmadas", com profissional inativo. Decidir: cancelar e avisar o cliente, passar para outro profissional, ou pedir ao dono que resolva antes de liberar a saída.
 
-### P-62 — Parceiro leva a carteira sem liberação do dono · a decidir
+### P-62 — Parceiro leva a carteira sem liberação do dono · feito — aplicado em 13/10/2026 (16:42)
+
+- **Feito em 13/10/2026 (decisão do dono: depende da liberação):** a saída levando clientes de qualquer papel espera a liberação de um dono. Retestado no site: o Parceiro não conclui sozinho, outro Parceiro não aprova, o dono só libera depois de resolver as reservas.
 
 `request_shop_departure` só pede liberação quando quem sai é dono/sócio (`owner`/`partner`); o Parceiro (`associate`) sai na hora levando a carteira para a loja de destino, que ele mesmo pode criar no próprio fluxo. O roteiro de teste esperava liberação do dono. Decidir se a regra fica assim (e corrigir o roteiro) ou se o Parceiro também passa pela liberação.
 
@@ -269,7 +283,7 @@ A demonstração não cobre várias lojas, domínio de loja nem login real, e `l
 ### P-40 — Contas de teste e o que conferir em cada uma · feito em parte (13/10/2026)
 
 - **Passou:** troca obrigatória da senha (P-16) nas 3 contas convidadas (a janela não fecha com Esc, toque fora, `/app` nem recarregar; senha nova entra, temporária é recusada); "Agendar com Dono" na página pública → login → `/app` com o Dono já escolhido; janela de aceite dos termos para todas as contas; Contratado removido vai a `/app?aviso=removido` ("Você não faz mais parte da equipe"); cliente promovido a Parceiro vê o painel e continua cliente no app; `/` no subdomínio para profissional mostra "Você está vendo como cliente · Abrir painel"; `/` no endereço principal leva o dono ao painel.
-- **Não testado:** destino depois de escolher um horário na página pública (o cartão "horários de hoje" ficou desligado na Loja Teste por causa de P-56); `/platform` e admin sem loja (exigem a conta de admin do dono); dono com 2 lojas, Contratado em outra loja e `shop_admin` antigo sem vínculo; troca por "Minhas áreas" e aviso "endereço da A, trabalha na B".
+- **Não testado:** destino depois de escolher um horário na página pública (o cartão "horários de hoje" ficou desligado na Loja Teste por causa de P-56; **testado depois, em 13/10 às 16:48**: o horário escolhido leva a `/auth` com "Seu horário · Falta confirmar"); `/platform` e admin sem loja (exigem a conta de admin do dono); dono com 2 lojas, Contratado em outra loja e `shop_admin` antigo sem vínculo; troca por "Minhas áreas" e aviso "endereço da A, trabalha na B".
 - Achados: P-58, P-59, P-60.
 
 Contas (seção 6 do plano de ambientes, mais as das ondas de 09/10):
@@ -362,6 +376,14 @@ As montagens na Hostinger falharam de 12/10 21:12 a 13/10 (5 seguidas) porque o 
 ### P-63 — Roteiro da loja de teste desatualizado · feito (13/10/2026)
 
 O roteiro mandava criar os clientes antes da loja (a ligação do cliente à loja falha em silêncio se a loja não existe) e esperava aprovação no modo "decide quem tem a maior parte" para o dono de 70%. Corrigido em [testes-reais-loja-teste.md](../testes-reais-loja-teste.md).
+
+### P-64 — Funções internas da equipe abertas a qualquer conta logada · feito — aplicado em 13/10/2026 (16:42)
+
+Achado ao escrever P-59/P-60: `apply_add_shop_member` e `apply_update_shop_member` (que gravam vínculo, papel e % sem conferir quem chama) podiam ser chamadas direto pela API por qualquer conta logada. A `20261013190000_saida_equipe_reservas.sql` tirou o acesso de `public`, `anon` e `authenticated` e deixou só o servidor; as telas continuam pelo `shop_add_member`/`shop_update_member`, que conferem a permissão. Teste em `saida_equipe_reservas.sql`; conferido em produção (`f` para `authenticated`).
+
+### P-65 — Selo "Lotado hoje" quando só não sobra horário · feito (13/10/2026)
+
+Na página pública, sem horário livre no resto do dia por causa da antecedência ou do fechamento, o selo dizia "Lotado hoje", o que dá a entender que a agenda encheu. Trocado por "Sem horário livre hoje" (pt-BR e pt-PT), "No times left today" (en) e "Sin horarios libres hoy" (es).
 
 ---
 

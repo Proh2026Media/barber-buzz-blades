@@ -133,10 +133,12 @@ Fora deste roteiro: "admin da plataforma que também é dono" (exigiria pôr a c
 3. Ajustes → Acessos: a matriz do Contratado fica travada nos itens de dono.
 4. Bloqueios (P-04): o dono cria um bloqueio com motivo. Entrando como Parceiro, Horários mostra "Colega indisponível" e, na aba Rede do navegador, a resposta de `list_shop_blocks` vem sem motivo e sem nome.
 5. Saída do Contratado: só aparece "sair sem levar clientes"; o pedido conclui sem levar a carteira (P-01).
-6. Saída do Parceiro levando a carteira: escolher "Levar comigo" pede a barbearia de destino (pode ser criada ali mesmo, ex.: "Loja Teste B"). Pela regra atual o pedido do Parceiro conclui na hora; só a saída de dono/sócio espera a liberação de outro sócio (P-62, a decidir). Vão junto só os clientes com atendimento **concluído** com o Parceiro; para ver a carteira mudar de loja, concluir antes um atendimento dele.
+6. Saída do Parceiro levando a carteira: escolher "Levar comigo" pede a barbearia de destino (pode ser criada ali mesmo, ex.: "Loja Teste B"). O pedido espera a liberação do dono (P-62, desde 13/10). Com reserva futura do Parceiro, "Liberar clientes" fica desligado até o dono passar a reserva para um colega ou cancelar avisando (P-61). Vão junto só os clientes com atendimento **concluído** com o Parceiro; para ver a carteira mudar de loja, concluir antes um atendimento dele.
 7. Antecedência (P-54): com 1 h, o cliente não vê horários na próxima hora. Com a tela de agendar aberta desde antes da mudança, tentar um horário que entrou na janela mostra "Esse horário está muito em cima da hora…". O dono ainda remarca para perto (em 13/10 conferido pela API).
+8. Reservas de quem sai (P-61): com uma reserva futura do Contratado, Gerenciar → Pausado é recusado e mostra a reserva; o pedido de saída dele vira "esperando você" sem "Recusar"; ele pode desistir. Reservas de quem já saiu aparecem em "Reservas de quem saiu da equipe".
+9. Reconvite (P-59/P-60): convidar quem saiu reativa a pessoa e a ficha; convidar quem está ativo mostra "Esta pessoa já está na equipe".
 
-Registrar o resultado de cada linha no `docs/CONTINUIDADE.md` (o que passou, o que falhou, com print quando ajudar). Primeira rodada: 13/10/2026 (resultados em [pendencias.md](guia/pendencias.md), P-40 e P-41).
+Registrar o resultado de cada linha no `docs/CONTINUIDADE.md` (o que passou, o que falhou, com print quando ajudar). Primeira rodada: 13/10/2026 (resultados em [pendencias.md](guia/pendencias.md), P-40 e P-41). Segunda rodada, no mesmo dia, depois de P-56 a P-62: [implantacao-equipe-saida-2026-10-13.md](implantacao-equipe-saida-2026-10-13.md), seção 6.
 
 ## 8. Apagar tudo
 

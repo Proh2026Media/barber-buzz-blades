@@ -2493,6 +2493,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                                   staff={staff}
                                   currentUserId={profile.user.id}
                                   onOpenDecisions={openApprovals}
+                                  timeZone={shopTimeZone}
                                   onChanged={() => {
                                     setGovernanceRevision((value) => value + 1);
                                     void loadCatalog();

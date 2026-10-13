@@ -3789,7 +3789,7 @@ export const ptBR = {
   "shopLanding.nextWith": "com {name}",
   "shopLanding.staffFreeOne": "1 profissional com horário hoje",
   "shopLanding.staffFreeMany": "{n} profissionais com horário hoje",
-  "shopLanding.fullToday": "Lotado hoje",
+  "shopLanding.fullToday": "Sem horário livre hoje",
   "shopLanding.offToday": "Sem atendimento hoje",
   "shopLanding.endedToday": "Encerrado por hoje",
   "shopLanding.freeToday": "Livre hoje",

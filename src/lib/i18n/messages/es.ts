@@ -3809,7 +3809,7 @@ export const es: Record<MessageKey, string> = {
   "shopLanding.nextWith": "con {name}",
   "shopLanding.staffFreeOne": "1 profesional con horario hoy",
   "shopLanding.staffFreeMany": "{n} profesionales con horario hoy",
-  "shopLanding.fullToday": "Completo hoy",
+  "shopLanding.fullToday": "Sin horarios libres hoy",
   "shopLanding.offToday": "Sin atención hoy",
   "shopLanding.endedToday": "Terminó por hoy",
   "shopLanding.freeToday": "Libre hoy",
