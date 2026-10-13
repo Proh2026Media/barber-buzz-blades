@@ -38,7 +38,7 @@ Desfazer: `pg_restore` do backup acima (só se algo grave aparecer; as migration
 
 ## 5. Site
 
-Commit `44aaa1f` (banco, tela e testes) publicado; montagem na Hostinger concluída. Depois dos retestes, um segundo envio com: confirmação "Reserva passada…" que não sumia mais junto com a última reserva; reservas na própria janela Gerenciar quando a pausa é recusada; selo "Sem horário livre hoje" no lugar de "Lotado hoje" (P-65).
+Commit `44aaa1f` (banco, tela e testes) publicado; montagem na Hostinger concluída. Depois dos retestes, um segundo envio (`b35a4e1`, montagem concluída em 52,6 s) com: confirmação "Reserva passada…" que não sumia mais junto com a última reserva; reservas na própria janela Gerenciar quando a pausa é recusada; selo "Sem horário livre hoje" no lugar de "Lotado hoje" (P-65).
 
 ## 6. Retestes no site publicado (13/10, contas da Loja Teste)
 
@@ -48,7 +48,8 @@ Commit `44aaa1f` (banco, tela e testes) publicado; montagem na Hostinger conclu�
 - **Reativar (P-60):** Gerenciar → Ativo no Contratado: vínculo e ficha ativos, a janela passou a mostrar "Ativo" e "Mudanças de Contratado salvas".
 - **Reconvite (P-59):** convidar `contratado@` (ativo) mostrou "Esta pessoa já está na equipe. Para mudar o papel, use Gerenciar."; convidar `parceiro@` (que tinha saído) como Parceiro deu "entrou na equipe", com vínculo e ficha reativados.
 - **Saída do Parceiro levando clientes (P-62):** com uma reserva de 15/10, o pedido nasceu `pending_release` com 1 reserva; o Parceiro não conclui sozinho ("Aguarde a liberação do sócio"), outro Parceiro não aprova, o dono não libera com reserva pendente. Na tela do dono, "Liberar clientes" ficou desligado até passar a reserva para o Dono; depois, "Clientes liberados: a saída foi concluída" e o Parceiro ficou inativo.
-- **Saída do Contratado sem levar clientes, com reserva (P-61):** `pending_release`; recusar responde "A saída sem levar clientes não pode ser recusada…"; o sócio não desiste por ele; o próprio Contratado desistiu (`cancelled`). Pausar o Contratado com a reserva em Gerenciar foi recusado com "Ainda há reservas marcadas com este profissional…".
+- **Saída do Contratado sem levar clientes, com reserva (P-61):** `pending_release`; recusar responde "A saída sem levar clientes não pode ser recusada…"; o sócio não desiste por ele; o próprio Contratado desistiu (`cancelled`). Pausar o Contratado com a reserva em Gerenciar foi recusado com "Ainda há reservas marcadas com este profissional…"; depois do segundo envio (`b35a4e1`, montagem concluída), a mesma janela mostra a reserva com "Passar para" e "Cancelar e avisar".
+- **Selo da página pública (P-65):** depois do segundo envio, com 2 h de antecedência às 17:00, o cartão "Hoje" e cada profissional mostram "Sem horário livre hoje".
 
 Não verificado: painel do Parceiro e do Contratado no navegador (conferido pela API); OTP real de WhatsApp e login real do Google; fotos em 320 e 1280 e no tema escuro.
 
