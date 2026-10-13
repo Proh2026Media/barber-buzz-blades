@@ -228,7 +228,7 @@ Em ordem cronológica. Cada item traz o que aconteceu, a lição e a fonte. Os d
 
 - **O que houve:** segundo o registro da sessão do Claude Code, o disco do Mac encheu (`/private/tmp`) durante a verificação por fotos de tela da onda 3; os comandos falharam com `ENOSPC`, e a verificação foi interrompida e retomada depois de liberar espaço. Pela mesma fonte, em 09/10 o servidor local de desenvolvimento caiu com o disco quase cheio.
 - **Situação:** **não confirmado** — a fonte fica fora do repositório, e nada disso está no CONTINUIDADE. Nenhum documento diz que a verificação da onda 3 ficou incompleta: o CONTINUIDADE (onda 3, 08/10, item "Verificação") registra como feitas as fotos de cliente, dono e plataforma em 390 claro e escuro, 320 e 1280, e do `/auth`.
-- **Lição:** apagar fotos e saídas temporárias depois de conferir e não gerar arquivos grandes. O disco continua apertado ([como-trabalhar.md](como-trabalhar.md#7-armadilhas-conhecidas), "Disco do Mac quase cheio").
+- **Lição:** apagar fotos e saídas temporárias depois de conferir e não gerar arquivos grandes. A causa principal foi achada e corrigida em 12/10: um gancho de backup do Claude Code copiava pastas inteiras a cada `rm` ([como-trabalhar.md](como-trabalhar.md#7-armadilhas-conhecidas), "Espaço no disco do Mac").
 - **Fonte:** registro da sessão do Claude Code, fora do repositório (outro agente não consegue conferir).
 
 ### Até 12/10 — ferramenta de fotos fora do repositório

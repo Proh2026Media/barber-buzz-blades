@@ -282,7 +282,7 @@ Continua em `package.json` (linha 24) e em `bunfig.toml` (linha 6) desde que o M
 
 - [mb-operacao.md](../mb-operacao.md) (atualizado em 23/09), "Mapa rápido" (linhas 16-19): dá a API de hoje como `supabase-teste.proh.media`, `supabasebeauty.contheiner.digital` com "DNS A pendente", o e-mail Titan como "A configurar" e o login Google como "A configurar no Coolify".
 - Pelo CONTINUIDADE de 29/09 e 02/10 (linhas 397-400): o endereço oficial é `supabase-barbearia.proh.media`; `supabase-teste` agora leva a outro servidor (não usar); `supabasebeauty` está no mesmo servidor e é o que o site publicado usa; o login Google foi restaurado em 30/09; o e-mail do sistema é o SMTP da Hostinger (Titan abandonado).
-- [AGENTS.md](../../AGENTS.md) (seção "Operação") e o CONTINUIDADE ("Comece aqui", linha 7) ainda apontam a mb-operacao.md para "e-mail Titan".
+- [AGENTS.md](../../AGENTS.md) (seção "Operação") ainda aponta a mb-operacao.md para "e-mail Titan". O CONTINUIDADE ("Comece aqui", linha 7) foi corrigido em 13/10/2026: agora manda começar pelo [LEIA-PRIMEIRO.md](../LEIA-PRIMEIRO.md).
 - CONTINUIDADE, "Comece aqui" (linha 9): manda usar a porta 8080, mas nesta máquina o servidor local roda em 8090, o padrão do `scripts/foto.mjs`. O cabeçalho (linha 3) diz "Atualizado em 03/10/2026", mas há entregas até 09/10.
 - **Saída:** atualizar esses trechos numa rodada própria. Nesta rodada, os documentos-fonte ficaram só para leitura.
 
