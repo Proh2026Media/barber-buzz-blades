@@ -120,6 +120,9 @@ export function ShopTeamList({
             <PersonAvatar name={member.display_name} seed={member.staff_id} size="sm" />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-semibold">{member.display_name}</span>
+              {member.email && (
+                <span className="block truncate text-xs text-muted-foreground">{member.email}</span>
+              )}
               <RoleBadge
                 role={member.role}
                 percent={isOwnerRole(member.role) ? member.ownership_percent : null}

@@ -41,6 +41,8 @@ type Assignment = {
   can_view_dashboard: boolean;
   created_at: string;
   label?: string | null;
+  /** Para diferenciar nomes iguais (só com a migration 20261013230000). */
+  email?: string | null;
   shop_name?: string | null;
 };
 
@@ -129,12 +131,21 @@ export function AccountManagersPanel({
         names.set(userId, profile?.full_name || null);
       }),
     );
+    const userIds = [...new Set(base.map((row) => row.user_id))];
+    const emails = new Map<string, string | null>();
+    if (userIds.length) {
+      const { data: found } = await supabase.rpc("platform_user_emails", {
+        p_user_ids: userIds,
+      });
+      for (const item of found ?? []) emails.set(item.user_id, item.email);
+    }
     const shopName = (id: string) => shops.find((s) => s.id === id)?.name ?? null;
     setAllRows(all.map((row) => ({ ...row, shop_name: shopName(row.barbershop_id) })));
     setRows(
       base.map((row) => ({
         ...row,
         label: names.get(row.user_id) ?? null,
+        email: emails.get(row.user_id) ?? null,
         shop_name: shopName(row.barbershop_id),
       })),
     );
@@ -303,6 +314,9 @@ export function AccountManagersPanel({
                 <PersonAvatar name={name} size="sm" seed={row.user_id} />
                 <div className="min-w-0 flex-1">
                   <p className="break-words text-sm font-semibold">{name}</p>
+                  {row.email && (
+                    <p className="truncate text-xs text-muted-foreground">{row.email}</p>
+                  )}
                   {(row.can_view_dashboard || others.length > 0) && (
                     <div className="mt-1 flex flex-wrap items-center gap-1.5">
                       {row.can_view_dashboard && <SeesNumbers />}
@@ -337,13 +351,18 @@ export function AccountManagersPanel({
       ) : (
         // Lista de todos: uma pessoa por cartão, com as barbearias de que cuida logo abaixo.
         <ul className="grid gap-3 lg:grid-cols-2 lg:items-start">
-          {groupByPerson(rows).map(({ userId, label, items }) => {
+          {groupByPerson(rows).map(({ userId, label, email, items }) => {
             const name = label ?? t("plat.mgr.noName");
             return (
               <li key={userId} className="rounded-2xl border border-border bg-background p-3">
                 <div className="flex items-center gap-3">
                   <PersonAvatar name={name} size="sm" seed={userId} />
-                  <p className="min-w-0 flex-1 break-words text-sm font-semibold">{name}</p>
+                  <span className="min-w-0 flex-1">
+                    <span className="block break-words text-sm font-semibold">{name}</span>
+                    {email && (
+                      <span className="block truncate text-xs text-muted-foreground">{email}</span>
+                    )}
+                  </span>
                   <Tag icon={Store}>
                     {t(items.length === 1 ? "plat.mgr.shopCountOne" : "plat.mgr.shopCountMany", {
                       count: items.length,
@@ -502,10 +521,19 @@ export function AccountManagersPanel({
 
 /** Um cartão por pessoa, na ordem em que aparecem (vínculos mais novos primeiro). */
 function groupByPerson(rows: Assignment[]) {
-  const groups = new Map<string, { userId: string; label: string | null; items: Assignment[] }>();
+  const groups = new Map<
+    string,
+    { userId: string; label: string | null; email: string | null; items: Assignment[] }
+  >();
   for (const row of rows) {
-    const group = groups.get(row.user_id) ?? { userId: row.user_id, label: null, items: [] };
+    const group = groups.get(row.user_id) ?? {
+      userId: row.user_id,
+      label: null,
+      email: null,
+      items: [],
+    };
     group.label = group.label ?? row.label ?? null;
+    group.email = group.email ?? row.email ?? null;
     group.items.push(row);
     groups.set(row.user_id, group);
   }

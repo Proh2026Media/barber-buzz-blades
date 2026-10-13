@@ -165,6 +165,7 @@ export function SettingsHub({
     shopId: string;
     services: Tables<"services">[];
     businessHours: Tables<"business_hours">[];
+    staffCount: number;
     onOpenStep: (target: SetupTarget) => void;
   };
   /** Dados para o resumo vivo de cada item e para "Precisa da sua atenção". */
@@ -181,6 +182,7 @@ export function SettingsHub({
           shopId: setupGuide.shopId,
           services: setupGuide.services,
           businessHours: setupGuide.businessHours,
+          staffCount: setupGuide.staffCount,
           settings: setupSettings,
         }
       : null,

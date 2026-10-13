@@ -1697,9 +1697,11 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     loyalty: canManageShopSettings && settings?.loyalty_enabled === true,
   });
   // Passo do guia "Deixe sua barbearia pronta" (Agenda e "Precisa da sua atenção" em Ajustes).
+  const activeStaffCount = staff.filter((member) => member.active).length;
   const openSetupTarget = (target: SetupTarget) => {
     if (target === "horarios" || target === "servicos") return setTab(target);
     setTab("configuracoes");
+    if (target === "equipe") return setSettingsSection("equipe");
     setSettingsSection("aparencia");
     if (target === "landing") setLandingOpen(true);
     else {
@@ -2082,6 +2084,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         services={services}
                         businessHours={businessHours}
                         settings={settings}
+                        staffCount={activeStaffCount}
                         onOpen={openSetupTarget}
                       />
                     </>
@@ -2303,7 +2306,13 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     // Mesmas condições do guia na Agenda (fora da demonstração e só com o
                     // catálogo carregado, para não mostrar um passo errado por um instante).
                     !demo && !loading && powers.ownerLike
-                      ? { shopId: shop.id, services, businessHours, onOpenStep: openSetupTarget }
+                      ? {
+                          shopId: shop.id,
+                          services,
+                          businessHours,
+                          staffCount: activeStaffCount,
+                          onOpenStep: openSetupTarget,
+                        }
                       : undefined
                   }
                   overview={{

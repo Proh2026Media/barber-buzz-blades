@@ -101,6 +101,15 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## Entrega — guia da loja no banco, logo e e-mails na plataforma (13/10, noite, Cursor) — **aplicado em produção**
+
+- **O que:** P-20, P-12, P-11 e a marcação de P-13 (já feita na `20261013210000`). Guia: [implantacao-guia-e-emails-2026-10-13.md](implantacao-guia-e-emails-2026-10-13.md).
+  - **Banco:** `20261013230000_guia_loja_e_emails` — `shop_setup_guides` (só pelas funções `get_shop_setup_guide` e `save_shop_setup_guide`, para dono/sócio, `shop_admin` e admin da plataforma; 5 chaves verdadeiro/falso) e `platform_user_emails` (só admin da plataforma). Backup `/root/backup-barba-cabelo-20261013-210805.dump`; aplicada às 18:08:08 numa transação. Ensaio: guia_loja_e_emails 11 (novo), shop_role_permissions 39.
+  - **Tela:** guia "Deixe sua barbearia pronta" com 6 passos (novo "Equipe e sócios", com "Trabalho sozinho"), estado juntando aparelho e banco (`src/lib/shop/setup-guide.ts`); logo da loja na lista e na ficha da plataforma (`ShopLogo.tsx`); e-mail na equipe da ficha e nos gerentes de conta. Textos nos 4 dicionários.
+- **Reteste (API, Loja Teste):** 5 checagens certas; guia de teste apagado.
+- **Não testado:** telas da plataforma (exigem a conta de admin do dono); o guia com dois aparelhos de verdade.
+- **P-14 ficou de fora de propósito** (mexe na entrada de todas as contas; ver pendências).
+
 ## Entrega — pausa fixa semanal (13/10, noite, Cursor) — **aplicado em produção**
 
 - **O que:** P-10. Guia: [implantacao-pausa-semanal-2026-10-13.md](implantacao-pausa-semanal-2026-10-13.md).

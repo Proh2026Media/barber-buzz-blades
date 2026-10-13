@@ -25,14 +25,15 @@ Situação em **13/10/2026** (rodadas do Cursor: a segunda com as decisões do d
 
 ## 1. As 5 recomendadas para a próxima rodada
 
-Atualizada em 13/10/2026, depois da aplicação de `20261013210000_convite_boas_vindas_papeis.sql` (17:50), que resolveu P-02, P-03, P-05, P-06, P-08, P-09, P-15, P-17, P-18 e P-66 ([implantacao-convite-papeis-2026-10-13.md](../implantacao-convite-papeis-2026-10-13.md)). Antes, na mesma data: `20261013180000` e `20261013190000` (16:42; P-56 a P-62 e P-64) e as 5 migrations da noite (15:12). P-19 e P-47 também saíram nesta rodada (só tela).
+Atualizada em 13/10/2026 (noite), depois de `20261013220000_pausa_semanal` (18:01, P-10) e `20261013230000_guia_loja_e_emails` (18:08, P-11, P-12, P-13 e P-20). Antes: `20261013210000_convite_boas_vindas_papeis.sql` (17:50), que resolveu P-02, P-03, P-05, P-06, P-08, P-09, P-15, P-17, P-18 e P-66 ([implantacao-convite-papeis-2026-10-13.md](../implantacao-convite-papeis-2026-10-13.md)). Antes, na mesma data: `20261013180000` e `20261013190000` (16:42; P-56 a P-62 e P-64) e as 5 migrations da noite (15:12). P-19 e P-47 também saíram nesta rodada (só tela).
 
-| Ordem | Itens      | O quê                                                                           | Por quê                                                             |
-| ----- | ---------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| 2     | P-20       | Guia de configuração da loja guardado no banco, com "Equipe e sócios"           | Fecha a onda 4: o progresso do guia muda de aparelho para aparelho. |
-| 3     | P-11, P-12 | Logo nos cartões da plataforma; e-mail para diferenciar nomes iguais            | Uso frequente do admin da plataforma.                               |
-| 4     | P-67, P-27 | Corrigir `PLATFORM_BASE_HOST` no Coolify; automação do certificado da loja nova | Dependem do dono (mexem no ambiente do servidor).                   |
-| 5     | P-42, P-43 | Testes com login real (WhatsApp, Google) e em aparelho físico                   | Dependem do dono; a Loja Teste não cobre código real nem aparelho.  |
+| Ordem | Itens      | O quê                                                                           | Por quê                                                            |
+| ----- | ---------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| 1     | P-67, P-27 | Corrigir `PLATFORM_BASE_HOST` no Coolify; automação do certificado da loja nova | Dependem do dono (mexem no ambiente do servidor).                  |
+| 2     | P-42, P-43 | Testes com login real (WhatsApp, Google) e em aparelho físico                   | Dependem do dono; a Loja Teste não cobre código real nem aparelho. |
+| 3     | P-29       | Registro de acessos (logs) com prazo de guarda                                  | Depende da decisão do dono sobre o que guardar e por quanto tempo. |
+| 4     | P-14       | "Última área" e loja escolhida no perfil                                        | Opcional; muda a entrada de todas as contas.                       |
+| 5     | P-45       | Dividir o pacote do site em partes menores                                      | Site mais rápido no celular; sem banco.                            |
 
 ---
 
@@ -130,11 +131,15 @@ Regra para todos os itens: migration nova em `supabase/migrations/`, teste SQL e
 - **Por quê:** `availability_blocks` só tem início e fim ([20260915160000_shop_availability.sql](../../supabase/migrations/20260915160000_shop_availability.sql), linhas 18-28), sem repetição. Hoje o almoço diário é um bloqueio por dia.
 - **Pronto quando:** existe bloqueio que se repete por dia da semana, respeitado por `available_slots_internal` e desenhado em Horários.
 
-### P-11 — Logo da barbearia nos cartões da plataforma · pendente
+### P-11 — Logo da barbearia nos cartões da plataforma · feito em 13/10/2026 (só tela)
+
+- **Feito em 13/10/2026:** a plataforma já lia `barbershop_settings`; passou a ler também `logo_url` e `logo_background_color` e a mostrar o logo inteiro sobre a cor de fundo na lista e na ficha (`ShopLogo.tsx`); sem logo, as iniciais. Sem migration. Na tela da plataforma **não testado** (exige a conta de admin do dono). Guia: [implantacao-guia-e-emails-2026-10-13.md](../implantacao-guia-e-emails-2026-10-13.md).
 
 Listado em "Banco ou regra de dados" no CONTINUIDADE (onda 3, 08/10). A lista da plataforma não usa `logo_url` (só a prévia do login usa, `PlatformShell.tsx` linha 844). O que falta no banco: **não confirmado** (pode ser só leitura de `barbershop_settings`).
 
-### P-12 — E-mail para diferenciar pessoas com o mesmo nome na plataforma · pendente
+### P-12 — E-mail para diferenciar pessoas com o mesmo nome na plataforma · feito — aplicado em 13/10/2026 (18:08, horário de Brasília)
+
+- **Aplicado em 13/10/2026:** equipe na ficha da loja com o e-mail embaixo do nome (só tela); `platform_user_emails` (só admin da plataforma) e e-mail na lista de gerentes de conta. Teste SQL cobre; na Loja Teste, o dono recebeu 403 na função. Pela tela da plataforma **não testado** (exige a conta de admin do dono). Guia: [implantacao-guia-e-emails-2026-10-13.md](../implantacao-guia-e-emails-2026-10-13.md).
 
 Mesma fonte de P-11. Na plataforma, as pessoas aparecem pelo nome em duas listas (conferido em `src/features/platform/` em 12/10):
 
@@ -143,11 +148,15 @@ Mesma fonte de P-11. Na plataforma, as pessoas aparecem pelo nome em duas listas
 
 Se o pedido original incluía outras listas: **não confirmado**.
 
-### P-13 — `save_shop_permissions` zera as permissões travadas do Contratado · pendente (opcional)
+### P-13 — `save_shop_permissions` zera as permissões travadas do Contratado · feito — aplicado em 13/10/2026 (17:50)
+
+- **Feito na `20261013210000_convite_boas_vindas_papeis`** (comentário "P-13" no topo da migration; teste em `convite_boas_vindas_papeis.sql`). Marcado como feito na rodada seguinte.
 
 A tela já trava e ignora `manage_services`, `manage_operations`, `manage_team` e `manage_permissions` no papel `employee`, mas o banco ainda aceita gravá-las, sem efeito (função na [20260925140000](../../supabase/migrations/20260925140000_shop_society_founder_and_team.sql), linha 754).
 
 ### P-14 — "Última área" e loja escolhida guardadas no perfil · pendente (opcional)
+
+- **Não feito em 13/10/2026 (de propósito):** mexe na entrada de todas as contas (destino depois do login, loja escolhida e área do cliente) em três domínios; sem teste com login real nos três, o risco não compensa o ganho. Fica para uma rodada com o dono testando.
 
 Hoje ficam no aparelho e por domínio: `arena:last-area:<user_id>`, `arena:active-shop-actor:<user_id>` e `arena:last-customer-shop:<user_id>` (CONTINUIDADE, ondas 1, 2 e 5 de 09/10; no código, `destination.ts` linha 167, `shop-acting.ts` linha 282 e `shop-choice.ts` linha 13, conferido em 12/10). No perfil, valeriam entre aparelhos e domínios. Origem do pedido: relatório da onda 2, fora do repositório; nenhum documento do projeto registra esta pendência.
 
@@ -205,7 +214,7 @@ Achado em 13/10/2026 ao escrever P-02: as políticas de `availability_blocks` s�
 
 ## 3. Onda 4 do plano de ambientes: convite e primeira chegada
 
-Fonte: [plano-ambientes.md](../plano-ambientes.md), seção 4 ("Onda 4") e decisões 6 e 9 (aprovadas em 09/10). Em 13/10/2026 saíram P-15, P-16, P-17, P-18 e P-19; falta P-20. Guia da entrega de 13/10 (17:50): [implantacao-convite-papeis-2026-10-13.md](../implantacao-convite-papeis-2026-10-13.md).
+Fonte: [plano-ambientes.md](../plano-ambientes.md), seção 4 ("Onda 4") e decisões 6 e 9 (aprovadas em 09/10). Em 13/10/2026 saíram P-15 a P-20 (onda 4 completa). Guia da entrega de 13/10 (17:50): [implantacao-convite-papeis-2026-10-13.md](../implantacao-convite-papeis-2026-10-13.md).
 
 | Id   | O quê                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Situação hoje (conferida)                                                                                                                                                                                                                                                                                   | Pronto quando                                                                       |
 | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
@@ -214,7 +223,7 @@ Fonte: [plano-ambientes.md](../plano-ambientes.md), seção 4 ("Onda 4") e decis
 | P-17 | **Feito — aplicado em 13/10/2026 (17:50)**: `welcome_seen_at` por vínculo e janela de boas-vindas depois da troca de senha. Tela "Você agora é Parceiro na Barbearia X", também para quem já tinha conta                                                                                                                                                                                                                                                                           | Não existe. Exige guardar "boas-vindas vista" por vínculo                                                                                                                                                                                                                                                   | Aparece uma vez por vínculo novo, com loja, papel e resumo de "Seu acesso"          |
 | P-18 | **Feito em 13/10/2026**: com a conta aberta, "Você vai usar a conta x@y" e "Abrir minha barbearia" (`create_own_barbershop`, que passou a gravar o fundador); no erro de e-mail em uso, "Entrar e abrir minha barbearia". Pela tela **não testado** com login real. `/cadastrar` com sessão aberta ("Você vai usar a conta x@y") e, no erro de e-mail em uso, "Entrar e abrir minha barbearia"                                                                                     | [cadastrar.tsx](../../src/routes/cadastrar.tsx) não lê a sessão. O plano aponta `register-shop` e trechos de `cadastrar.tsx` (linhas de 09/10)                                                                                                                                                              | Cliente com conta abre uma barbearia com o mesmo e-mail                             |
 | P-19 | **Feito em 13/10/2026**: o botão "Vincular" saiu; a seção só aparece quando já existe gerente (para remover). Gerente de conta: esconder o convite até existir tela (decisão 6)                                                                                                                                                                                                                                                                                                    | O painel da plataforma ainda mostra [AccountManagersPanel](../../src/features/platform/AccountManagersPanel.tsx) (`PlatformShell.tsx` linha 573, `ShopDetail.tsx` linha 245). O gerente entra pelo `/app` ([session.ts](../../src/lib/auth/session.ts), linhas 39-45)                                       | Não há como criar gerente sem tela própria, ou a tela própria existe                |
-| P-20 | Guia de configuração da loja guardado no banco, com o passo "Equipe e sócios" (S9)                                                                                                                                                                                                                                                                                                                                                                                                 | [ShopSetupChecklist.tsx](../../src/features/shop/ShopSetupChecklist.tsx) guarda no aparelho (`shopSetup:<loja>`, linhas 34-48)                                                                                                                                                                              | O progresso do guia é o mesmo em qualquer aparelho                                  |
+| P-20 | **Feito — aplicado em 13/10/2026 (18:08)**: `shop_setup_guides` com o que foi marcado à mão, lido e gravado pelas funções `get/save_shop_setup_guide`; o guia junta aparelho e banco e ganhou o passo "Equipe e sócios" ("Trabalho sozinho" ou mais de um profissional). Guia: [implantacao-guia-e-emails-2026-10-13.md](../implantacao-guia-e-emails-2026-10-13.md). Guia de configuração da loja guardado no banco, com o passo "Equipe e sócios" (S9)                           | [ShopSetupChecklist.tsx](../../src/features/shop/ShopSetupChecklist.tsx) guarda no aparelho (`shopSetup:<loja>`, linhas 34-48)                                                                                                                                                                              | O progresso do guia é o mesmo em qualquer aparelho                                  |
 
 ---
 

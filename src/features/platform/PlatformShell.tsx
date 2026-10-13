@@ -50,6 +50,7 @@ import { ShopsPanel } from "./ShopsPanel";
 import { NewShopDialog } from "./NewShopDialog";
 import { InviteMemberDialog } from "./InviteMemberDialog";
 import type { ShopModule } from "./ShopDetail";
+import type { ShopLogoInfo } from "./ShopLogo";
 import {
   activeShopsWithoutAdmin,
   countByShop,
@@ -146,6 +147,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
   const [permShopId, setPermShopId] = useState("");
   const [sportsModules, setSportsModules] = useState<Record<string, boolean>>({});
   const [loyaltyModules, setLoyaltyModules] = useState<Record<string, boolean>>({});
+  const [shopLogos, setShopLogos] = useState<Record<string, ShopLogoInfo>>({});
   const [brandShop, setBrandShop] = useState<Tables<"barbershops"> | null>(null);
   const [brandSettings, setBrandSettings] = useState<Tables<"barbershop_settings"> | null>(null);
   const [brandLoading, setBrandLoading] = useState(false);
@@ -187,6 +189,12 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
         setOwners([{ barbershop_id: demoState.shop.id, user_id: DEMO_OWNER_USER_ID }]);
         setSportsModules({ [demoState.shop.id]: demoState.settings.sports_enabled });
         setLoyaltyModules({ [demoState.shop.id]: demoState.settings.loyalty_enabled });
+        setShopLogos({
+          [demoState.shop.id]: {
+            url: demoState.settings.logo_url,
+            background: demoState.settings.logo_background_color,
+          },
+        });
         setUpdatedAt(new Date());
         setLoading(false);
         return [demoState.shop];
@@ -198,7 +206,9 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
         supabase.from("memberships").select("barbershop_id, role, user_id"),
         supabase
           .from("barbershop_settings")
-          .select("barbershop_id, sports_enabled, loyalty_enabled"),
+          .select(
+            "barbershop_id, sports_enabled, loyalty_enabled, logo_url, logo_background_color",
+          ),
         supabase.rpc("list_platform_shop_owners"),
       ]);
       const ownersMissing =
@@ -225,6 +235,14 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
         setLoyaltyModules(
           Object.fromEntries(
             (modulesResult.data ?? []).map((row) => [row.barbershop_id, row.loyalty_enabled]),
+          ),
+        );
+        setShopLogos(
+          Object.fromEntries(
+            (modulesResult.data ?? []).map((row) => [
+              row.barbershop_id,
+              { url: row.logo_url, background: row.logo_background_color },
+            ]),
           ),
         );
         setDemoShopId(
@@ -606,6 +624,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
               onRetry={() => void loadShops()}
               sportsModules={sportsModules}
               loyaltyModules={loyaltyModules}
+              logos={shopLogos}
               demoMode={demoMode}
               filter={shopFilter}
               onFilterChange={setShopFilter}

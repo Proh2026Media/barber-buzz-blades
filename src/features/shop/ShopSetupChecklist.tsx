@@ -10,6 +10,7 @@ import {
   Palette,
   Scissors,
   Share2,
+  Users,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -19,25 +20,24 @@ import type { Tables } from "@/integrations/supabase/types";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { parseLandingConfig } from "@/features/marketing/shop-landing";
 import { DEFAULT_ACCENT_COLOR, DEFAULT_PRIMARY_COLOR } from "@/lib/shop/branding";
+import {
+  cleanSetupGuide,
+  fetchSetupGuide,
+  saveSetupGuide,
+  type SetupGuideState,
+} from "@/lib/shop/setup-guide";
 
 /** Para onde cada passo leva: abas do painel ou janelas de Ajustes > Aparência. */
-export type SetupTarget = "horarios" | "servicos" | "landing" | "brand";
+export type SetupTarget = "horarios" | "servicos" | "landing" | "brand" | "equipe";
 
-type StoredState = {
-  hoursOk?: boolean;
-  linkCopied?: boolean;
-  hidden?: boolean;
-  /** "Tudo pronto!" já foi mostrado uma vez nesta loja (neste aparelho). */
-  celebrated?: boolean;
-};
+type StoredState = SetupGuideState;
 
 const storageKey = (shopId: string) => `shopSetup:${shopId}`;
 
 function readStored(shopId: string): StoredState {
   try {
     const raw = window.localStorage.getItem(storageKey(shopId));
-    const parsed: unknown = raw ? JSON.parse(raw) : null;
-    return parsed && typeof parsed === "object" ? (parsed as StoredState) : {};
+    return cleanSetupGuide(raw ? JSON.parse(raw) : null);
   } catch {
     return {};
   }
@@ -51,13 +51,74 @@ function writeStored(shopId: string, next: StoredState) {
   }
 }
 
-/** Avisa o guia já montado (se houver) que o estado salvo mudou. */
-const SHOW_EVENT = "shop-setup:show";
+/**
+ * O guia fica no banco (vale em qualquer aparelho) e numa cópia no aparelho, que abre na hora e
+ * cobre o banco sem a migration 20261013230000. `latest` é o estado mais novo desta visita.
+ */
+const CHANGE_EVENT = "shop-setup:change";
+const latest = new Map<string, StoredState>();
+const synced = new Set<string>();
 
-/** O dono/sócio escolheu "Esconder guia" para esta loja neste aparelho? */
+function currentState(shopId: string): StoredState {
+  return latest.get(shopId) ?? readStored(shopId);
+}
+
+/** Guarda no aparelho e avisa os guias montados (Agenda e Ajustes). */
+function publish(shopId: string, state: StoredState) {
+  latest.set(shopId, state);
+  writeStored(shopId, state);
+  window.dispatchEvent(new CustomEvent(CHANGE_EVENT, { detail: { shopId, state } }));
+}
+
+/** Marca algo no guia: aparelho na hora, banco em segundo plano. */
+function updateGuide(shopId: string, patch: StoredState, notify = true) {
+  const next = { ...currentState(shopId), ...patch };
+  if (notify) publish(shopId, next);
+  else {
+    latest.set(shopId, next);
+    writeStored(shopId, next);
+  }
+  void saveSetupGuide(shopId, patch);
+}
+
+/**
+ * Lê o guia do banco uma vez por visita e junta com o do aparelho (o banco vence). O que só
+ * existia no aparelho sobe para o banco, para não se perder o que já foi marcado antes.
+ */
+async function syncFromServer(shopId: string) {
+  if (synced.has(shopId)) return;
+  synced.add(shopId);
+  const remote = await fetchSetupGuide(shopId);
+  if (!remote) return;
+  const local = currentState(shopId);
+  const onlyLocal = Object.fromEntries(
+    Object.entries(local).filter(([key]) => !(key in remote)),
+  ) as StoredState;
+  if (Object.keys(onlyLocal).length) void saveSetupGuide(shopId, onlyLocal);
+  publish(shopId, { ...local, ...remote });
+}
+
+/** Estado do guia desta loja (`null` até ler o aparelho), acompanhando as mudanças. */
+function useGuideState(shopId: string | null): StoredState | null {
+  const [stored, setStored] = useState<StoredState | null>(null);
+  useEffect(() => {
+    if (!shopId) return;
+    setStored(currentState(shopId));
+    const onChange = (event: Event) => {
+      const detail = (event as CustomEvent<{ shopId: string; state: StoredState }>).detail;
+      if (detail.shopId === shopId) setStored(detail.state);
+    };
+    window.addEventListener(CHANGE_EVENT, onChange);
+    void syncFromServer(shopId);
+    return () => window.removeEventListener(CHANGE_EVENT, onChange);
+  }, [shopId]);
+  return stored;
+}
+
+/** O dono/sócio escolheu "Esconder guia" para esta loja? */
 export function isShopSetupGuideHidden(shopId: string): boolean {
   if (typeof window === "undefined") return false;
-  return !!readStored(shopId).hidden;
+  return !!currentState(shopId).hidden;
 }
 
 /**
@@ -66,9 +127,7 @@ export function isShopSetupGuideHidden(shopId: string): boolean {
  */
 export function showShopSetupGuide(shopId: string) {
   if (typeof window === "undefined") return;
-  const { hidden: _hidden, ...rest } = readStored(shopId);
-  writeStored(shopId, rest);
-  window.dispatchEvent(new CustomEvent(SHOW_EVENT, { detail: shopId }));
+  updateGuide(shopId, { hidden: false });
 }
 
 /**
@@ -92,7 +151,7 @@ function sameColor(value: string | null | undefined, fallback: string) {
   return (value ?? fallback).trim().toUpperCase() === fallback.toUpperCase();
 }
 
-export type SetupStepId = "hours" | "service" | "contact" | "brand" | "link";
+export type SetupStepId = "hours" | "service" | "team" | "contact" | "brand" | "link";
 
 type StepMeta = {
   id: SetupStepId;
@@ -109,7 +168,7 @@ type StepMeta = {
 
 type Step = StepMeta & { done: boolean; onAction: () => void };
 
-/** Os cinco passos do guia, na ordem em que aparecem. */
+/** Os seis passos do guia, na ordem em que aparecem. */
 const STEP_META: StepMeta[] = [
   {
     id: "hours",
@@ -128,6 +187,15 @@ const STEP_META: StepMeta[] = [
     hint: "cad.guia.serviceHint",
     action: "cad.guia.serviceAction",
     target: "servicos",
+  },
+  {
+    id: "team",
+    icon: Users,
+    short: "eq.guide.step.team",
+    title: "cad.guia.teamTitle",
+    hint: "cad.guia.teamHint",
+    action: "eq.guide.action.team",
+    target: "equipe",
   },
   {
     id: "contact",
@@ -162,17 +230,20 @@ type SetupData = {
   services: Tables<"services">[];
   businessHours: Tables<"business_hours">[];
   settings: Tables<"barbershop_settings">;
+  /** Profissionais ativos na agenda (mais de um = já tem equipe). */
+  staffCount: number;
 };
 
 /** Quais passos já estão feitos, a partir dos dados do painel e do que ficou no aparelho. */
 function stepsDone(
-  { services, businessHours, settings }: SetupData,
+  { services, businessHours, settings, staffCount }: SetupData,
   stored: StoredState,
 ): Record<SetupStepId, boolean> {
   const landing = parseLandingConfig(settings.landing);
   return {
     hours: !!stored.hoursOk || hoursWereEdited(businessHours),
     service: services.some((service) => service.active),
+    team: !!stored.teamOk || staffCount > 1,
     contact: landing.address.trim() !== "" && landing.whatsapp.trim() !== "",
     brand:
       !!settings.logo_url ||
@@ -187,7 +258,7 @@ export type ShopSetupProgress = {
   total: number;
   /** Próximo passo em aberto (`null` = tudo pronto). */
   next: Omit<StepMeta, "title" | "hint"> | null;
-  /** O guia foi escondido nesta loja, neste aparelho. */
+  /** O guia foi escondido nesta loja. */
   hidden: boolean;
 };
 
@@ -198,19 +269,7 @@ export type ShopSetupProgress = {
 export function useShopSetupProgress(
   input: (SetupData & { shopId: string }) | null,
 ): ShopSetupProgress | null {
-  const shopId = input?.shopId ?? null;
-  const [stored, setStored] = useState<StoredState | null>(null);
-
-  useEffect(() => {
-    if (!shopId) return;
-    setStored(readStored(shopId));
-    const onShow = (event: Event) => {
-      if ((event as CustomEvent<string>).detail === shopId) setStored(readStored(shopId));
-    };
-    window.addEventListener(SHOW_EVENT, onShow);
-    return () => window.removeEventListener(SHOW_EVENT, onShow);
-  }, [shopId]);
-
+  const stored = useGuideState(input?.shopId ?? null);
   if (!input || !stored) return null;
   const done = stepsDone(input, stored);
   const next = STEP_META.find((step) => !done[step.id]) ?? null;
@@ -278,6 +337,7 @@ export function ShopSetupChecklist({
   services,
   businessHours,
   settings,
+  staffCount,
   onOpen,
 }: {
   shopId: string;
@@ -285,31 +345,21 @@ export function ShopSetupChecklist({
   services: Tables<"services">[];
   businessHours: Tables<"business_hours">[];
   settings: Tables<"barbershop_settings">;
+  staffCount: number;
   onOpen: (target: SetupTarget) => void;
 }) {
   const { t } = useI18n();
-  const [stored, setStored] = useState<StoredState>({});
-  const [loaded, setLoaded] = useState(false);
-  const [canShare, setCanShare] = useState(false);
-
   // Lê depois de montar para não divergir da renderização no servidor.
+  const guide = useGuideState(shopId);
+  const loaded = guide !== null;
+  const stored = guide ?? {};
+  const [canShare, setCanShare] = useState(false);
   useEffect(() => {
-    setStored(readStored(shopId));
-    setLoaded(true);
     setCanShare(typeof navigator !== "undefined" && typeof navigator.share === "function");
-    const onShow = (event: Event) => {
-      if ((event as CustomEvent<string>).detail === shopId) setStored(readStored(shopId));
-    };
-    window.addEventListener(SHOW_EVENT, onShow);
-    return () => window.removeEventListener(SHOW_EVENT, onShow);
-  }, [shopId]);
+  }, []);
 
   function remember(patch: StoredState) {
-    setStored((current) => {
-      const next = { ...current, ...patch };
-      writeStored(shopId, next);
-      return next;
-    });
+    updateGuide(shopId, patch);
   }
 
   async function copyLink() {
@@ -341,7 +391,7 @@ export function ShopSetupChecklist({
     });
   }
 
-  const done = stepsDone({ services, businessHours, settings }, stored);
+  const done = stepsDone({ services, businessHours, settings, staffCount }, stored);
   const steps: Step[] = STEP_META.map((meta) => ({
     ...meta,
     done: done[meta.id],
@@ -351,10 +401,10 @@ export function ShopSetupChecklist({
   const doneCount = steps.filter((step) => step.done).length;
   const complete = doneCount === steps.length;
 
-  // A comemoração aparece numa visita só: fica gravada para a próxima.
+  // A comemoração aparece numa visita só: fica gravada para a próxima (sem sumir agora).
   useEffect(() => {
     if (!loaded || !complete || stored.celebrated || stored.hidden) return;
-    writeStored(shopId, { ...readStored(shopId), celebrated: true });
+    updateGuide(shopId, { celebrated: true }, false);
   }, [loaded, complete, stored.celebrated, stored.hidden, shopId]);
 
   if (!loaded || stored.hidden) return null;
@@ -484,6 +534,16 @@ export function ShopSetupChecklist({
               >
                 <Check className="size-4" aria-hidden />
                 {t("cad.guia.hoursOk")}
+              </button>
+            )}
+            {next.id === "team" && (
+              <button
+                type="button"
+                onClick={() => remember({ teamOk: true })}
+                className="action-button min-h-11 flex-1 justify-center sm:flex-none"
+              >
+                <Check className="size-4" aria-hidden />
+                {t("cad.guia.teamSolo")}
               </button>
             )}
             {next.id === "link" && canShare && (

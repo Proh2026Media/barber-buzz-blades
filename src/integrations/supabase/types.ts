@@ -1706,6 +1706,12 @@ export type Database = {
       };
       mark_shop_welcome_seen: { Args: { p_shop_id: string }; Returns: boolean };
       get_my_pending_shop_invites: { Args: Record<string, never>; Returns: Json };
+      get_shop_setup_guide: { Args: { p_shop_id: string }; Returns: Json };
+      save_shop_setup_guide: { Args: { p_shop_id: string; p_patch: Json }; Returns: Json };
+      platform_user_emails: {
+        Args: { p_user_ids: string[] };
+        Returns: { user_id: string; email: string | null }[];
+      };
       shop_update_member: {
         Args: {
           p_shop_id: string;

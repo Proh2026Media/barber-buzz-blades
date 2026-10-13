@@ -11,17 +11,12 @@ import {
   Users,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import {
-  ChoiceChips,
-  EmptyState,
-  LoadingState,
-  PersonAvatar,
-  StatusBadge,
-} from "@/components/visual";
+import { ChoiceChips, EmptyState, LoadingState, StatusBadge } from "@/components/visual";
 import type { Tables } from "@/integrations/supabase/types";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { ShopDetail, type ShopModule } from "./ShopDetail";
+import { ShopLogo, type ShopLogoInfo } from "./ShopLogo";
 import {
   SHOP_STATUS,
   activeShopsWithoutAdmin,
@@ -56,6 +51,8 @@ type ShopsPanelProps = {
   onRetry?: () => void;
   sportsModules: Record<string, boolean>;
   loyaltyModules: Record<string, boolean>;
+  /** Logo e fundo da marca de cada loja (sem logo: iniciais). */
+  logos?: Record<string, ShopLogoInfo>;
   demoMode?: boolean;
   filter: ShopFilter;
   onFilterChange: (filter: ShopFilter) => void;
@@ -87,6 +84,7 @@ export function ShopsPanel({
   onRetry,
   sportsModules,
   loyaltyModules,
+  logos = {},
   demoMode = false,
   filter,
   onFilterChange,
@@ -166,6 +164,7 @@ export function ShopsPanel({
       counts={countsFor(counts, selected.id)}
       sports={sportsModules[selected.id] ?? false}
       loyalty={loyaltyModules[selected.id] ?? false}
+      logo={logos[selected.id] ?? null}
       demoMode={demoMode}
       headingId={headingId}
       onSetModule={(module, enabled) => onSetModule(selected.id, module, enabled)}
@@ -290,7 +289,7 @@ export function ShopsPanel({
                           highlightId === shop.id && "ring-4 ring-[color:var(--tone-success-line)]",
                         )}
                       >
-                        <PersonAvatar name={shop.name} size="sm" seed={shop.id} />
+                        <ShopLogo name={shop.name} seed={shop.id} logo={logos[shop.id]} />
                         <span className="min-w-0 flex-1 space-y-1">
                           <span className="block break-words text-sm font-bold leading-snug">
                             {shop.name}

@@ -23,7 +23,6 @@ import {
   CopyField,
   Hint,
   Notice,
-  PersonAvatar,
   SectionHeader,
   SettingRow,
   StatTile,
@@ -38,6 +37,7 @@ import { shopPublicOrigin } from "@/lib/shop/host";
 import { AccountManagersPanel } from "./AccountManagersPanel";
 import { ShopTeamList } from "./ShopTeamList";
 import { DEFAULT_TIMEZONE, SHOP_STATUS, friendlyTimeZone, type ShopCounts } from "./shopStats";
+import { ShopLogo, type ShopLogoInfo } from "./ShopLogo";
 
 export type ShopModule = "sports" | "loyalty";
 
@@ -47,6 +47,7 @@ type ShopDetailProps = {
   counts: ShopCounts;
   sports: boolean;
   loyalty: boolean;
+  logo?: ShopLogoInfo | null;
   demoMode?: boolean;
   headingId?: string;
   /** Grava o módulo; rejeita se não salvou (a linha mostra o erro e o "Tentar de novo"). */
@@ -74,6 +75,7 @@ export function ShopDetail({
   counts,
   sports,
   loyalty,
+  logo = null,
   demoMode = false,
   headingId,
   onSetModule,
@@ -167,7 +169,7 @@ export function ShopDetail({
   return (
     <div className="space-y-5">
       <div className="flex items-start gap-3">
-        <PersonAvatar name={shop.name} size="md" seed={shop.id} />
+        <ShopLogo name={shop.name} seed={shop.id} logo={logo} size="md" />
         <div className="min-w-0 flex-1">
           <h3 id={headingId} className="break-words text-lg font-bold leading-tight">
             {shop.name}
