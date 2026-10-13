@@ -109,6 +109,7 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
 - **Reteste (API, Loja Teste):** 5 checagens certas; guia de teste apagado.
 - **Não testado:** telas da plataforma (exigem a conta de admin do dono); o guia com dois aparelhos de verdade.
 - **P-14 ficou de fora de propósito** (mexe na entrada de todas as contas; ver pendências).
+- **Também nesta rodada:** `google-connect` limpa a fila da Agenda Google ao desconectar (P-48, publicada às 18:10); eslint sem erros (regra de recarga rápida desligada só em `src/components/ui/`, prettier em `auth.tsx`; P-44); pacote medido e caminho dos idiomas sob demanda registrado, sem mudança (P-45).
 
 ## Entrega — pausa fixa semanal (13/10, noite, Cursor) — **aplicado em produção**
 

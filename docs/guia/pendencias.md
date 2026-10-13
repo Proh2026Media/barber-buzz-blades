@@ -350,13 +350,18 @@ Medido em 12/10/2026 com `npx eslint .` e com o build de 12/10/2026, 14:16 (past
 
 ### P-44 — Avisos e erros do eslint · feito em parte (13/10/2026)
 
+- **Mais em 13/10/2026 (noite):** a regra de recarga rápida ficou desligada só nos componentes base de `src/components/ui/` (padrão da biblioteca, que exporta as variantes junto do componente); prettier em `src/routes/auth.tsx` (27 erros antigos, só formatação). `eslint src supabase/functions`: 0 erros e 26 avisos, todos `react-refresh/only-export-components` em 10 arquivos de `src/features` (mais em `roles.tsx`: 8; `team.tsx`: 5). Os avisos só afetam a recarga rápida no desenvolvimento; mover os exports mexe em dezenas de importações e ficou para quando esses arquivos forem mexidos.
+
 - **Feito em 13/10/2026:** `scratch/**` e `.fotos/**` nos ignores do `eslint.config.js`; prettier nas 4 funções (só formatação; erros do eslint de 26 para 0). Falta: os avisos `react-refresh/only-export-components`.
 
 - **35 avisos** `react-refresh/only-export-components` em 17 arquivos de `src` (mais em `src/features/shop/roles.tsx`: 8; `src/features/shop/team.tsx`: 5; `ShopSetupChecklist.tsx` e `service-icon.tsx`: 3 cada). Saída: mover o que não é componente para um `.ts` ao lado. O aviso antigo do `MyAreas.tsx` já não aparece.
 - **Erros de prettier** em 4 funções do servidor: `whatsapp-channel/index.ts` (17), `platform-whatsapp/index.ts` (5), `_shared/domain-manager.ts` (3), `_shared/evolution.ts` (1).
 - A pasta `scratch/` é ignorada pelo git, mas não pelo eslint: gera mais 52 erros só na máquina local. Saída: incluir `scratch/` nos ignores do `eslint.config.js`.
 
-### P-45 — Tamanho do pacote · pendente
+### P-45 — Tamanho do pacote · pendente (medido em 13/10/2026)
+
+- **Medido em 13/10/2026 (noite):** `index-*.js` com 1.788.103 bytes (519.699 comprimido com gzip); `ShopShell-*.js` 470.525 (129.013). Os 5 dicionários de `src/lib/i18n/messages/` somam 1.046.738 bytes de código-fonte e entram inteiros no `index` (os textos de en-US, es e pt-PT foram achados nele): todo visitante baixa os 5 idiomas.
+- **Maior ganho:** carregar só pt-BR e buscar os outros idiomas sob demanda (`import()` em `translate.ts`; `getLocale` passa ao idioma salvo só depois de carregado). **Não feito de propósito:** as páginas legais saem do servidor já traduzidas por `?lang=` (`legal-head.ts`, `legal-locale.ts`), usadas pela verificação do Google, e a tela de idioma mostra uma frase em cada idioma (`LanguageSettingsCard.tsx`). Precisa carregar todos no servidor, esperar o idioma antes de hidratar a página legal e testar as 5 línguas no navegador; numa rodada própria.
 
 No build de 12/10/2026 (14:16), o maior `index-*.js` de `.output/public/assets/` (nesse build, `index-BusXRZec.js`; o nome muda a cada build) tem 1.753.793 bytes, e `ShopShell-*.js` tem 448.742 bytes. Os maiores arquivos de código, fora os dicionários: `ArenaApp.tsx` (3.714 linhas), `ShopShell.tsx` (2.617) e `routes/auth.tsx` (2.502). Saída: dividir por rota e por aba com carregamento sob demanda. Tamanho comprimido: **não confirmado**.
 
@@ -377,6 +382,7 @@ Continua em `package.json` (linha 24) e em `bunfig.toml` (linha 6) desde que o M
 ### P-48 — Pequenos restos · pendente
 
 - `supabase/tests/privacy_requests.sql` só passa como `supabase_admin` na cópia local (CONTINUIDADE, linha 238).
+- **Feito em 13/10/2026 (noite):** `google-connect` (desconectar) apaga da fila os envios `pending` e `failed` da pessoa; publicada às 18:10 (cópia `/root/functions-backup-google-connect-20261013-181002`), reiniciando só o container das funções; responde normalmente (401 sem login). Com conta Google real **não testado**.
 - Fila `google_calendar_pushes` continua depois de desconectar o Google ([google-verificacao.md](../google-verificacao.md), item 6 do fim). **Conferido em 13/10/2026:** o `disconnect` apaga `google_connections` e `google_calendar_events`, mas não a fila; os pendentes viram falha depois de 5 tentativas e ficam guardados, e reaparecem em `get_my_google_connection` se a pessoa reconectar. Tabela vazia em produção hoje. Saída: no `disconnect`, apagar os pendentes e falhas da pessoa.
 - `professionalRefusal` ([session.ts](../../src/lib/auth/session.ts); desde 13/10 também lê o convite aguardando) e `requireProfessional` ([guards.ts](../../src/lib/auth/guards.ts), linha 43) sem teste automático: conferido no código em 12/10, nenhum `*.test.ts` cita as duas. Precisariam simular o Supabase. Origem do item: relatório da onda 2, fora do repositório.
 - No celular de 360 px o exemplo "Mínimo 6 caracteres" corta (CONTINUIDADE, linha 214). Se ainda acontece: **não confirmado**.

@@ -225,6 +225,17 @@ Deno.serve(async (req) => {
           `[google-connect] falha ao apagar eventos importados de ${user.id}: ${eventsError.message}`,
         );
       }
+      // Envios à Agenda Google que ainda esperavam ou falharam não reaparecem ao reconectar.
+      const { error: pushesError } = await admin
+        .from("google_calendar_pushes")
+        .delete()
+        .eq("user_id", user.id)
+        .in("status", ["pending", "failed"]);
+      if (pushesError) {
+        console.warn(
+          `[google-connect] falha ao limpar a fila da Agenda de ${user.id}: ${pushesError.message}`,
+        );
+      }
       return json({
         ok: true,
         connected: false,

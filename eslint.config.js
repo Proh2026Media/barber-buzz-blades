@@ -52,6 +52,11 @@ export default tseslint.config(
   },
   eslintPluginPrettier,
   {
+    // Componentes base (shadcn): exportam as variantes de estilo junto do componente.
+    files: ["src/components/ui/**/*.tsx"],
+    rules: { "react-refresh/only-export-components": "off" },
+  },
+  {
     // The MCP Vite plugin regenerates these files on every dev/build startup.
     // Keep semantic lint checks; formatting belongs to the generator.
     files: [

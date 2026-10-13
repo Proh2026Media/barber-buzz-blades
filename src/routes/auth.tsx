@@ -172,7 +172,7 @@ export const Route = createFileRoute("/auth")({
     const oauth = s.oauth === "google" ? ("google" as const) : undefined;
     const who = pickedWho(s.who);
     return {
-    next: typeof s.next === "string" ? s.next : "",
+      next: typeof s.next === "string" ? s.next : "",
       ...(recovery ? { recovery: true as const } : {}),
       ...(typeof s.shop === "string" && s.shop.trim() ? { shop: s.shop.trim() } : {}),
       ...(demo ? { demo: true as const } : {}),
@@ -1322,9 +1322,9 @@ function AuthPage() {
       // confirmado), escolha de avisos e o aceite mostrado acima do botão.
       const signupWhatsapp = signupPhone?.e164 ?? "";
       const { data: signUpData, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
+        email,
+        password,
+        options: {
           data: {
             full_name: signupName,
             ...(effectiveShopRef ? { shop: effectiveShopRef } : {}),
@@ -1336,8 +1336,8 @@ function AuthPage() {
             age_confirmed: true,
           },
           emailRedirectTo,
-          },
-        });
+        },
+      });
       if (error) {
         const msg = error.message || "";
         if (/confirmação|confirmation|sending.*email|enviando e-mail/i.test(msg)) {
@@ -1600,7 +1600,7 @@ function AuthPage() {
     "auth-primary-action auth-brand-button flex min-h-[3.25rem] w-full items-center justify-center gap-2 bg-primary px-4 text-[15px] font-semibold text-primary-foreground shadow-[0_10px_24px_color-mix(in_oklch,var(--brand-primary)_22%,transparent)] transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_14px_28px_color-mix(in_oklch,var(--brand-primary)_28%,transparent)] active:translate-y-0 active:scale-[0.99] aria-busy:cursor-wait [&:disabled:not([aria-busy=true])]:opacity-60";
 
   if (popup) {
-  return (
+    return (
       <main className="mb-page flex min-h-dvh items-center justify-center bg-background px-4 text-foreground">
         <div className="entry-result-card w-full max-w-sm space-y-5 p-6 sm:p-8">
           <p className="flex items-center justify-center gap-2 text-sm font-semibold">
@@ -1716,7 +1716,7 @@ function AuthPage() {
                 className="auth-title text-[1.85rem] font-bold leading-[1.05] tracking-tight text-foreground outline-none sm:text-[2.2rem]"
               >
                 {title}
-        </h1>
+              </h1>
               {shopContext.demo && (
                 <StatusBadge tone="highlight" size="sm" label={t("common.demo")} />
               )}
@@ -1998,7 +1998,7 @@ function AuthPage() {
                         className="ml-4 size-[18px] shrink-0 text-muted-foreground"
                         aria-hidden="true"
                       />
-          <input
+                      <input
                         ref={nameInputRef}
                         type="text"
                         // Sem validação nativa: o erro traduzido aparece ao lado do campo.
@@ -2040,11 +2040,11 @@ function AuthPage() {
                         />
                         <input
                           ref={emailInputRef}
-            type="email"
-            required
+                          type="email"
+                          required
                           autoComplete="email"
                           placeholder={t("auth.field.emailPlaceholder")}
-            value={email}
+                          value={email}
                           onChange={(e) => {
                             setEmail(e.target.value);
                             if (fieldErrors.email)
@@ -2075,8 +2075,8 @@ function AuthPage() {
                     <MessageCircle
                       className="ml-4 size-[18px] shrink-0 text-muted-foreground"
                       aria-hidden="true"
-          />
-          <input
+                    />
+                    <input
                       type="tel"
                       required
                       inputMode="tel"
@@ -2256,8 +2256,8 @@ function AuthPage() {
                       />
                       <input
                         type={showPassword ? "text" : "password"}
-            required
-            minLength={6}
+                        required
+                        minLength={6}
                         autoComplete={mode === "signin" ? "current-password" : "new-password"}
                         placeholder={
                           mode === "signin"
@@ -2265,7 +2265,7 @@ function AuthPage() {
                             : t("entry.newPasswordPlaceholder")
                         }
                         ref={passwordInputRef}
-            value={password}
+                        value={password}
                         onChange={(e) => {
                           setPassword(e.target.value);
                           if (fieldErrors.password)
@@ -2360,9 +2360,9 @@ function AuthPage() {
                 <Notice tone={notice.tone} title={notice.text} />
               )}
 
-          <button
-            type="submit"
-            disabled={busy}
+              <button
+                type="submit"
+                disabled={busy}
                 aria-busy={busy && !googleBusy ? true : undefined}
                 className={`${primaryActionClass} mt-1`}
               >
@@ -2371,7 +2371,7 @@ function AuthPage() {
                 )}
                 <span>{busy && !googleBusy ? submit.busy : submit.label}</span>
                 {!(busy && !googleBusy) && <SubmitIcon className="size-4" aria-hidden="true" />}
-          </button>
+              </button>
               {mode === "verifyPhone" && !phoneUnavailable && (
                 <div className="grid justify-items-center gap-1">
                   <ResendButton
@@ -2385,17 +2385,17 @@ function AuthPage() {
                   />
                   {/* "Confirmar depois" entra no app; "Número errado?" entra direto na Conta, com
                       o cartão do WhatsApp em foco (a troca é feita lá, não aqui). */}
-        <button
+                  <button
                     type="button"
-          disabled={busy}
+                    disabled={busy}
                     onClick={() => void skipPhoneVerification()}
                     aria-describedby="phone-later-notes"
                     className="entry-link-button text-muted-foreground"
-        >
+                  >
                     {t("fix3.auth.phoneSkip")}
                     <ArrowRight className="size-4" aria-hidden="true" />
-        </button>
-        <button
+                  </button>
+                  <button
                     type="button"
                     disabled={busy}
                     onClick={() => void fixNumberInProfile()}
@@ -2404,7 +2404,7 @@ function AuthPage() {
                     <UserRound className="size-4" aria-hidden="true" />
                     {t("entry.phone.wrongNumberLink")}
                     <ArrowRight className="size-4" aria-hidden="true" />
-        </button>
+                  </button>
                   <div id="phone-later-notes" className="grid gap-1">
                     <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
                       <LockKeyhole className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
