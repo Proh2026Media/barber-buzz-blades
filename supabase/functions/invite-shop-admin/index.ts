@@ -170,7 +170,12 @@ Deno.serve(async (req) => {
         email,
         password,
         email_confirm: true,
-        user_metadata: fullName ? { full_name: fullName } : undefined,
+        // Senha temporária repassada à mão: o app pede uma senha própria no primeiro acesso
+        // (src/lib/auth/password-change.ts).
+        user_metadata: {
+          ...(fullName ? { full_name: fullName } : {}),
+          must_change_password: true,
+        },
       });
       if (createError || !createdUser.user) {
         return json({ error: createError?.message ?? "Failed to create user" }, 400);

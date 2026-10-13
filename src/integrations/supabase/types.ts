@@ -1457,6 +1457,23 @@ export type Database = {
         Args: { p_shop_id: string };
         Returns: Json;
       };
+      list_shop_blocks: {
+        Args: { p_shop_id: string; p_from?: string };
+        Returns: {
+          id: string;
+          barbershop_id: string;
+          staff_id: string | null;
+          starts_at: string;
+          ends_at: string;
+          reason: string | null;
+          created_at: string;
+          staff_display_name: string | null;
+        }[];
+      };
+      list_platform_shop_owners: {
+        Args: Record<PropertyKey, never>;
+        Returns: { barbershop_id: string; user_id: string }[];
+      };
       get_professional_insights: {
         Args: { p_shop_id: string; p_from: string; p_to: string };
         Returns: Json;

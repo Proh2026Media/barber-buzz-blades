@@ -112,6 +112,7 @@ function walk(dir: string): string[] {
  * comentários), para um "demonstração" solto num comentário não bastar.
  */
 const DEMO_BY_PROP = new Map<string, RegExp>([
+  ["features/auth/PasswordChangeGate.tsx", /if \(disabled\) return/],
   ["features/customer/NamePrompt.tsx", /if \(disabled\) return/],
   ["features/customer/WhatsappConfirmBanner.tsx", /if \(disabled\) return/],
   ["features/customer/WhatsappProfileCard.tsx", /if \(demo\)/],

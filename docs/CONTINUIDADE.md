@@ -1,6 +1,6 @@
 # Transição para a próxima IA — Barba & Cabelo
 
-Atualizado em **03/10/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
+Atualizado em **13/10/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
 ## Comece aqui
 
@@ -100,6 +100,27 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - Esportes sempre visível;
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
+
+## Entrega — senha própria no primeiro acesso de quem foi convidado (13/10, Cursor) — **função pendente na VPS**
+
+- **O que:** a pessoa que entra pela primeira vez com a senha temporária do convite vê a janela "Crie sua senha" (nova senha, confirmação, regras à vista) antes de usar o painel, a plataforma ou o app. A janela só fecha depois de salvar; a outra saída é "Sair da conta". A janela de Termos espera a senha ser criada. Contas que já existiam não são afetadas. É a P-16 da onda 4.
+- **Onde:** `src/features/auth/PasswordChangeGate.tsx` (montado no `ShopShell`, no `PlatformShell` e no `ArenaApp`, desligado na demonstração), `src/lib/auth/password-change.ts` (marca `must_change_password` nos dados da conta, com teste), `ChangePasswordCard.tsx` (opções `heading` e `onSaved`; toda troca de senha desliga a marca), `TermsUpdateGate.tsx`, `supabase/functions/invite-shop-admin/index.ts` (grava a marca só em conta criada agora), 3 textos novos `password.gate.*` nos 4 dicionários. Sem migration: a marca fica nos dados da conta do Auth.
+- **Como foi verificado:** verificar.sh (ok); 258 testes; fotos 320/390/1280 claro e escuro em `/platform` com uma sessão simulada marcada (cópia temporária do `foto.mjs`, fora do repositório): janela "Crie sua senha" aberta, sem rolagem lateral, sem chave crua, sem erro no console. **Não verificado:** convite real e troca real de senha (exigiria criar conta no Auth de produção).
+- **Pendente:** publicar a função `invite-shop-admin` na VPS ([implantacao-regras-papel-2026-10-13.md](implantacao-regras-papel-2026-10-13.md), passo 4); até lá nenhuma conta nova recebe a marca e nada muda. P-15 (link do convite) e P-17 (boas-vindas) continuam pendentes.
+
+## Entrega — regras de papel no banco e administradores da plataforma (13/10, Cursor) — **migration pendente na VPS**
+
+- **O que:** (1) Contratado que chame a função direto não sai mais levando clientes (P-01). (2) O aparelho de Parceiro e Contratado deixa de receber nome e motivo dos bloqueios dos colegas; continua vendo "Colega indisponível" no horário certo (P-04). (3) Painel geral e lista de atenção da plataforma contam "Administradores" pelos donos e sócios ativos da equipe, a mesma regra da ficha da loja (P-07). (4) Os testes `favicon` e `slugify`, que nunca rodavam, entraram no `npm test` (P-51).
+- **Onde:** `supabase/migrations/20261013120000_regras_papel_banco.sql` (`request_shop_departure` copiada da `20261003150000` com a recusa do `take` de `employee`; política "Professional members read blocks" refeita; RPCs `list_shop_blocks` e `list_platform_shop_owners`), teste `supabase/tests/regras_papel_banco.sql`, guia [implantacao-regras-papel-2026-10-13.md](implantacao-regras-papel-2026-10-13.md). Tela: `ShopShell.tsx` lê os bloqueios pela `list_shop_blocks` e volta à leitura antiga se ela não existir; `src/lib/shop/blocks.ts`; `src/features/platform/shopCounts.ts` (contas puras, com teste; `shopStats.ts` reexporta), `PlatformShell.tsx`, `PlatformDashboard.tsx`, `ShopsPanel.tsx`; demonstração da plataforma com o dono fictício no lugar do `shop_admin` "demo-admin"; tipos em `types.ts`.
+- **Levantamento no banco (só leitura, 13/10):** 1 vínculo `shop_admin` e **0** contas `shop_admin` sem vínculo de equipe. Lojas ativas: `arena-barber` (1 dono, 1 `shop_admin`) e `externabarbearia` (sem equipe nenhuma). A contagem nova não muda o resultado de nenhuma das duas.
+- **Como foi verificado:** verificar.sh (ok); 258 testes; ensaio no banco de produção em `BEGIN … ROLLBACK` a partir desta máquina (SSH `vps-barba`): teste novo 19 PASS; regressão com a migration: `correcoes_auditoria` 10, `guard_own_professional_rows` 7, `booking_rules_single_source` 33, `slot_offer_mode` 26, cadeia `booking_reliability` → `slot_waiting` → `optional_occurrences` → `auto_confirmation_modules` 81, todos sem FAIL. Foto de `/demo?view=platform` (390): "1 administrador" e "Todas com administrador".
+- **Pendente:** aplicar a migration na VPS (guia acima). Até lá o painel e a plataforma funcionam como antes.
+
+## Registro — ensaio das 3 migrations pendentes no banco de produção (13/10, Cursor)
+
+- **O que:** conferido por consulta de leitura que P-21, P-22 e P-23 **continuam não aplicadas** (`f|f|f`). Ensaio encadeado das três, com os testes de cada guia, numa transação desfeita: **111 PASS** (25 + 43 + 17 + 26, exatamente os números dos guias), nenhum FAIL ou ERROR, `ROLLBACK`. Depois, `f|f|f` e nenhum usuário `@example.invalid`: nada ficou gravado.
+- **Lições:** (1) encadear testes numa só transação exige voltar ao papel de administrador entre os arquivos (`reset role` e limpar `request.jwt.claim.*`), senão o teste seguinte cria a loja como o usuário simulado pelo anterior e esbarra em `guard_protected_shop_change`; os guias rodam um teste por transação e não têm esse problema. (2) O ensaio levou 71 s e, nesse tempo, segurou as tabelas `barbershop_settings` e `services` (o `add column` trava a tabela até o fim da transação): fazer ensaios longos fora do horário de movimento.
+- **Pendente:** aplicar de fato (P-21 → P-22 → P-23) é decisão do dono ou tarefa do agente da VPS; não foi feito daqui.
 
 ## Entrega — separação de ambientes, onda 1: "como quem" e demonstração (09/10, Claude Code)
 

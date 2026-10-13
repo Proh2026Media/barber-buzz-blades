@@ -97,6 +97,8 @@ import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import type { Json } from "@/integrations/supabase/types";
+import { isMissingRpcError } from "@/lib/auth/optional-rpc";
+import { shopBlockFromListed, type ShopBlock } from "@/lib/shop/blocks";
 import { capabilitiesFor, type SessionProfile } from "@/lib/auth/session";
 import {
   demoCapabilities,
@@ -138,6 +140,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { useAvailabilitySignal } from "@/lib/shop/availability-signal";
 import { TermsUpdateGate } from "@/features/legal/TermsUpdateGate";
+import { PasswordChangeGate } from "@/features/auth/PasswordChangeGate";
 import { WhatsappConfirmBanner } from "@/features/customer/WhatsappConfirmBanner";
 
 type ShopShellProps = {
@@ -152,9 +155,27 @@ type DayAppointment = Tables<"appointments"> & {
   visibility?: "full" | "busy";
 };
 
-type AvailabilityBlock = Tables<"availability_blocks"> & {
-  staff: Pick<Tables<"staff">, "display_name"> | null;
-};
+type AvailabilityBlock = ShopBlock;
+
+/**
+ * Bloqueios que ainda não terminaram. Pela `list_shop_blocks`, que não entrega nome nem motivo
+ * dos colegas a quem não tem a visão geral; sem ela no banco, a leitura direta de antes.
+ */
+async function fetchUpcomingShopBlocks(shopId: string) {
+  const from = new Date().toISOString();
+  const listed = await supabase.rpc("list_shop_blocks", { p_shop_id: shopId, p_from: from });
+  if (!listed.error) {
+    return { data: (listed.data ?? []).map(shopBlockFromListed), error: null };
+  }
+  if (!isMissingRpcError(listed.error, listed.status)) return { data: null, error: listed.error };
+  const legacy = await supabase
+    .from("availability_blocks")
+    .select("*, staff:staff(display_name)")
+    .eq("barbershop_id", shopId)
+    .gte("ends_at", from)
+    .order("starts_at", { ascending: true });
+  return { data: legacy.data, error: legacy.error };
+}
 
 const weekdays = [
   "shop.weekday.0",
@@ -610,12 +631,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         .select("*")
         .eq("barbershop_id", shop.id)
         .order("weekday", { ascending: true }),
-      supabase
-        .from("availability_blocks")
-        .select("*, staff:staff(display_name)")
-        .eq("barbershop_id", shop.id)
-        .gte("ends_at", new Date().toISOString())
-        .order("starts_at", { ascending: true }),
+      fetchUpcomingShopBlocks(shop.id),
       supabase.from("barbershop_settings").select("*").eq("barbershop_id", shop.id).single(),
     ]);
     if (requestId !== catalogRequestRef.current) return;
@@ -949,8 +965,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
           price_cents: service.price_cents,
           active: service.active,
           icon: service.icon,
-      };
-      if (demo) {
+        };
+        if (demo) {
           saveDemoOwnCatalog(own);
           // Na demonstração a sugestão aos colegas é só simulada.
           if (draft.suggestToPartners) suggestion = "sent";
@@ -1307,18 +1323,13 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
    */
   async function loadBlocks() {
     if (demo || !shop?.id) return;
-    const { data, error: blocksError } = await supabase
-      .from("availability_blocks")
-      .select("*, staff:staff(display_name)")
-      .eq("barbershop_id", shop.id)
-      .gte("ends_at", new Date().toISOString())
-      .order("starts_at", { ascending: true });
+    const { data, error: blocksError } = await fetchUpcomingShopBlocks(shop.id);
     if (!blocksError) setBlocks(data ?? []);
   }
 
   /** Atendimentos de um dia, para o bloqueio avisar quem já está marcado no horário. */
   async function loadHoursDay(day: string): Promise<HoursAppointment[]> {
-      if (demo) {
+    if (demo) {
       return demo.appointments
         .filter((row) => shopDateKey(new Date(row.starts_at), shopTimeZone) === day)
         .map((row) => ({
@@ -1455,10 +1466,10 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       } else if (powers.writeMode !== "direct") {
         throw new Error(t("shop.error.roleDeleteBlock"));
       } else {
-      const { error: deleteError } = await supabase
-        .from("availability_blocks")
-        .delete()
-        .eq("id", id);
+        const { error: deleteError } = await supabase
+          .from("availability_blocks")
+          .delete()
+          .eq("id", id);
         if (deleteError) throw deleteError;
       }
       await loadBlocks();
@@ -1534,12 +1545,12 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       return applied ? "applied" : "pending";
     }
     if (powers.writeMode !== "direct") throw new Error(t("shop.error.roleSettings"));
-      const { data, error: updateError } = await supabase
-        .from("barbershop_settings")
+    const { data, error: updateError } = await supabase
+      .from("barbershop_settings")
       .update(change)
-        .eq("barbershop_id", settings.barbershop_id)
-        .select("*")
-        .single();
+      .eq("barbershop_id", settings.barbershop_id)
+      .select("*")
+      .single();
     if (updateError) throw updateError;
     setSettings(data);
     return "applied";
@@ -1737,7 +1748,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       { id: "agenda" as const, icon: Calendar, label: t("shop.nav.agenda") },
       {
         id: "servicos" as const,
-                  icon: Scissors,
+        icon: Scissors,
         // Na barra de baixo fica "Serviços" (uma linha, igual às outras abas); "Meus serviços"
         // aparece no título da aba e na faixa da página.
         label: t("shop.nav.services"),
@@ -1776,12 +1787,13 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       {settings && (
         <BrandFontFace url={settings.custom_font_url} faces={settings.custom_font_faces} />
       )}
+      <PasswordChangeGate disabled={Boolean(demo)} />
       <TermsUpdateGate disabled={Boolean(demo)} withDpa={powers.ownerLike} />
       <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur-xl px-4 py-3">
         {/* Cabeçalho com largura fixa no computador: não muda de posição ao trocar de aba
             e não aperta o nome da loja nem o selo do papel nas abas estreitas. */}
         <div className="mx-auto flex w-full max-w-[70rem] items-center justify-between gap-2">
-                    <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1">
             {/* Onde estou e com que papel: nome da loja (troca de loja) + selo do papel. */}
             {pendingEntry ? (
               <h1 className="sr-only">
@@ -1831,9 +1843,9 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   }
                   className="mt-0.5"
                 />
-                      </>
-                    )}
-                  </div>
+              </>
+            )}
+          </div>
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <ThemeToggle />
             {headerActions}
@@ -1853,9 +1865,9 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 currentBarbershopId={shop?.id ?? null}
                 onSignOut={() => void signOut()}
               />
-                  )}
-                </div>
-            </div>
+            )}
+          </div>
+        </div>
       </header>
 
       {/* A Agenda usa a largura do computador em duas colunas; as outras abas seguem estreitas. */}
@@ -2087,7 +2099,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                                 title={t("shop.clients.title")}
                                 openOnHash="agenda-extra-clients"
                               />
-                  </div>
+                            </div>
                           ),
                         },
                       ]
@@ -2213,13 +2225,13 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
             )}
 
             {tab === "configuracoes" && shop && !opening && settings && (
-          <section className="space-y-6">
-            <div>
-              <div className="app-section-title">
+              <section className="space-y-6">
+                <div>
+                  <div className="app-section-title">
                     <Settings2 />
                     <h2>{t("shop.nav.settings")}</h2>
-              </div>
-            </div>
+                  </div>
+                </div>
                 {powers.ownerLike && (
                   <WhatsappConfirmBanner disabled={Boolean(demo)} variant="owner" />
                 )}
@@ -2451,7 +2463,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                                   }}
                                 />
                               </TeamInviteContext.Provider>
-              </div>
+                            </div>
                           )}
                           <MyAccessCard
                             role={actor.role}
@@ -2475,15 +2487,15 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         <div className="grid items-start gap-4 lg:grid-cols-2">
                           <LanguageSettingsCard />
                           <ThemeSettingsCard />
-              </div>
+                        </div>
                       );
                     }
                     if (section === "conta") return <ChangePasswordCard />;
                     return null;
                   }}
                 />
-          </section>
-        )}
+              </section>
+            )}
           </div>
         </ApprovalNoteContext.Provider>
       </main>
@@ -2504,10 +2516,10 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
             }}
           />
           {shopNavItems.map(({ id, icon: Icon, label }) => (
-          <button
-            key={id}
-            onClick={() => setTab(id)}
-            aria-pressed={tab === id}
+            <button
+              key={id}
+              onClick={() => setTab(id)}
+              aria-pressed={tab === id}
               className={`relative z-10 flex min-w-0 flex-col items-center justify-center p-2.5 ${
                 tab === id ? "app-nav-current" : "text-muted-foreground hover:text-foreground"
               }`}
@@ -2530,9 +2542,9 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
               <span className="text-center text-xs leading-tight font-semibold max-[339px]:text-[11px] max-[339px]:tracking-tight">
                 {label}
               </span>
-          </button>
-        ))}
-      </nav>
+            </button>
+          ))}
+        </nav>
       )}
 
       {/* Página da barbearia: fechar com mudanças pergunta antes ("Sair sem salvar?"). */}

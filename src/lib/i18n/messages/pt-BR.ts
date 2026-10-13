@@ -312,6 +312,10 @@ export const ptBR = {
   "password.saved": "Senha atualizada.",
   "password.error": "Não foi possível atualizar a senha.",
   "password.save": "Salvar nova senha",
+  "password.gate.title": "Crie sua senha",
+  "password.gate.lead":
+    "Você entrou com uma senha temporária. Para proteger sua conta, escolha uma senha só sua antes de continuar.",
+  "password.gate.saved": "Senha criada. Use ela nos próximos acessos.",
   "points.title": "Meus pontos",
   "points.error": "Não foi possível carregar o extrato.",
   "common.retry": "Tentar novamente",

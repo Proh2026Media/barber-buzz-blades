@@ -28,6 +28,7 @@ import {
   countByShop,
   countsFor,
   type MembershipRow,
+  type ShopOwnerRow,
 } from "./shopStats";
 import type { ShopFilter } from "./tabs";
 
@@ -47,6 +48,8 @@ function useWideLayout() {
 type ShopsPanelProps = {
   shops: Tables<"barbershops">[];
   memberships: MembershipRow[];
+  /** Donos e sócios ativos de cada loja; nulo = banco sem a lista (conta pelo papel antigo). */
+  owners?: ShopOwnerRow[] | null;
   loading: boolean;
   /** A última leitura falhou: sem barbearias na tela, mostra o erro no lugar do vazio. */
   loadError?: string | null;
@@ -78,6 +81,7 @@ type ShopsPanelProps = {
 export function ShopsPanel({
   shops,
   memberships,
+  owners = null,
   loading,
   loadError = null,
   onRetry,
@@ -102,7 +106,7 @@ export function ShopsPanel({
   const wide = useWideLayout();
   const headingId = useId();
   const [search, setSearch] = useState("");
-  const counts = useMemo(() => countByShop(memberships), [memberships]);
+  const counts = useMemo(() => countByShop(memberships, owners), [memberships, owners]);
   const withoutAdmin = useMemo(
     () => new Set(activeShopsWithoutAdmin(shops, counts).map((shop) => shop.id)),
     [shops, counts],

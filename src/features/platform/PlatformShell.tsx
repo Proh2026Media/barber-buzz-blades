@@ -50,7 +50,14 @@ import { ShopsPanel } from "./ShopsPanel";
 import { NewShopDialog } from "./NewShopDialog";
 import { InviteMemberDialog } from "./InviteMemberDialog";
 import type { ShopModule } from "./ShopDetail";
-import { activeShopsWithoutAdmin, countByShop, type MembershipRow } from "./shopStats";
+import {
+  activeShopsWithoutAdmin,
+  countByShop,
+  type MembershipRow,
+  type ShopOwnerRow,
+} from "./shopStats";
+import { isMissingRpcError } from "@/lib/auth/optional-rpc";
+import { DEMO_OWNER_USER_ID } from "@/features/demo/team";
 import { platformTabFromSlug, platformTabSlug, type PlatformTab, type ShopFilter } from "./tabs";
 import { DemoAccountMenu, DemoRoleSelector } from "@/features/demo/DemoAccountMenu";
 import { DemoTourHub } from "@/features/demo/DemoTourHub";
@@ -77,6 +84,7 @@ import {
   normalizeLoginLayout,
 } from "@/lib/shop/branding";
 import { TermsUpdateGate } from "@/features/legal/TermsUpdateGate";
+import { PasswordChangeGate } from "@/features/auth/PasswordChangeGate";
 
 type PlatformShellProps = {
   profile: SessionProfile;
@@ -118,6 +126,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
   const waRef = useRef<PlatformWhatsAppHandle>(null);
   const [shops, setShops] = useState<Tables<"barbershops">[]>([]);
   const [memberships, setMemberships] = useState<MembershipRow[]>([]);
+  const [owners, setOwners] = useState<ShopOwnerRow[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -166,14 +175,14 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
     async (mode: "initial" | "refresh" = "initial") => {
       if (demoState) {
         setShops([demoState.shop]);
-        setMemberships([
-          ...demoState.customers.map((customer) => ({
+        setMemberships(
+          demoState.customers.map((customer) => ({
             barbershop_id: demoState.shop.id,
             role: "customer" as const,
             user_id: customer.id,
           })),
-          { barbershop_id: demoState.shop.id, role: "shop_admin" as const, user_id: "demo-admin" },
-        ]);
+        );
+        setOwners([{ barbershop_id: demoState.shop.id, user_id: DEMO_OWNER_USER_ID }]);
         setSportsModules({ [demoState.shop.id]: demoState.settings.sports_enabled });
         setLoyaltyModules({ [demoState.shop.id]: demoState.settings.loyalty_enabled });
         setUpdatedAt(new Date());
@@ -182,14 +191,21 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       }
       if (mode === "refresh") setRefreshing(true);
       else setLoading(true);
-      const [shopsResult, membershipsResult, modulesResult] = await Promise.all([
+      const [shopsResult, membershipsResult, modulesResult, ownersResult] = await Promise.all([
         supabase.from("barbershops").select("*").order("created_at", { ascending: true }),
         supabase.from("memberships").select("barbershop_id, role, user_id"),
         supabase
           .from("barbershop_settings")
           .select("barbershop_id, sports_enabled, loyalty_enabled"),
+        supabase.rpc("list_platform_shop_owners"),
       ]);
-      const failure = shopsResult.error || membershipsResult.error || modulesResult.error;
+      const ownersMissing =
+        ownersResult.error && isMissingRpcError(ownersResult.error, ownersResult.status);
+      const failure =
+        shopsResult.error ||
+        membershipsResult.error ||
+        modulesResult.error ||
+        (ownersMissing ? null : ownersResult.error);
       let list: Tables<"barbershops">[] = [];
       if (failure) {
         setLoadError(friendlyAuthError(failure, tNow("plat.shell.loadError")));
@@ -198,6 +214,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
         setLoadError(null);
         setShops(list);
         setMemberships(membershipsResult.data ?? []);
+        setOwners(ownersMissing ? null : (ownersResult.data ?? []));
         setSportsModules(
           Object.fromEntries(
             (modulesResult.data ?? []).map((row) => [row.barbershop_id, row.sports_enabled]),
@@ -366,7 +383,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
     window.setTimeout(() => setHighlightId(null), 2500);
   }
 
-  const counts = useMemo(() => countByShop(memberships), [memberships]);
+  const counts = useMemo(() => countByShop(memberships, owners), [memberships, owners]);
 
   const attention: AttentionItem[] = useMemo(() => {
     if (loading) return [];
@@ -461,6 +478,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       style={brandStyle ? (brandStyle as CSSProperties) : undefined}
     >
       <BrandRootVariables vars={brandStyle} />
+      <PasswordChangeGate disabled={demoMode} />
       <TermsUpdateGate disabled={demoMode} />
       {demoBrandSettings && (
         <BrandFontFace
@@ -528,6 +546,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
               <PlatformDashboard
                 shops={shops}
                 memberships={memberships}
+                owners={owners}
                 loading={loading}
                 loadError={loadError}
                 onRetry={() => void loadShops()}
@@ -578,6 +597,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
             <ShopsPanel
               shops={shops}
               memberships={memberships}
+              owners={owners}
               loading={loading}
               loadError={loadError}
               onRetry={() => void loadShops()}

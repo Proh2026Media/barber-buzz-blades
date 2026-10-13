@@ -253,7 +253,7 @@ export type PlacedBlock = {
 /**
  * Quem só cuida da própria agenda vê o bloqueio de um colega como "Colega indisponível", sem o
  * nome nem o motivo (decisão do dono). Bloqueio da loja inteira e os próprios ficam como estão.
- * Obs.: o banco ainda envia nome e motivo; aqui só não aparecem.
+ * Antes da migration 20261013120000 o banco ainda envia nome e motivo; aqui só não aparecem.
  */
 export function maskColleagueBlock(block: PlacedBlock, ownStaffId: string | null): PlacedBlock {
   if (!ownStaffId || !block.staffId || block.staffId === ownStaffId) return block;

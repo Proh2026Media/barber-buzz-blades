@@ -316,6 +316,10 @@ export const es: Record<MessageKey, string> = {
   "password.saved": "Contraseña actualizada.",
   "password.error": "No se pudo actualizar la contraseña.",
   "password.save": "Guardar nueva contraseña",
+  "password.gate.title": "Crea tu contraseña",
+  "password.gate.lead":
+    "Entraste con una contraseña temporal. Para proteger tu cuenta, elige una contraseña propia antes de continuar.",
+  "password.gate.saved": "Contraseña creada. Úsala en los próximos accesos.",
   "points.title": "Mis puntos",
   "points.error": "No se pudo cargar el historial.",
   "common.retry": "Intentar de nuevo",

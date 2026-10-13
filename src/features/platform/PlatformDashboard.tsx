@@ -28,14 +28,18 @@ import {
   countsFor,
   historyMonths,
   shopsCreatedByMonth,
+  uniqueAdmins,
   uniquePeople,
   type MembershipRow,
+  type ShopOwnerRow,
 } from "./shopStats";
 import type { ShopFilter } from "./tabs";
 
 type PlatformDashboardProps = {
   shops: Tables<"barbershops">[];
   memberships: MembershipRow[];
+  /** Donos e sócios ativos de cada loja; nulo = banco sem a lista (conta pelo papel antigo). */
+  owners?: ShopOwnerRow[] | null;
   loading?: boolean;
   /** A última leitura falhou (texto amigável). Sem barbearias na tela, vira o erro no lugar do vazio. */
   loadError?: string | null;
@@ -59,6 +63,7 @@ type PlatformDashboardProps = {
 export function PlatformDashboard({
   shops,
   memberships,
+  owners = null,
   loading = false,
   loadError = null,
   onRetry,
@@ -72,7 +77,7 @@ export function PlatformDashboard({
   const { t, intlLocale } = useI18n();
 
   const stats = useMemo(() => {
-    const counts = countByShop(memberships);
+    const counts = countByShop(memberships, owners);
     const active = shops.filter((shop) => shop.status === "active").length;
     const suspended = shops.length - active;
     const customerLinks = memberships.filter((row) => row.role === "customer").length;
@@ -84,7 +89,7 @@ export function PlatformDashboard({
       active,
       suspended,
       customers: uniquePeople(memberships, "customer"),
-      admins: uniquePeople(memberships, "shop_admin"),
+      admins: uniqueAdmins(memberships, owners),
       withoutAdmin: activeShopsWithoutAdmin(shops, counts).length,
       avgCustomers: shops.length ? Math.round(customerLinks / shops.length) : 0,
       ranking,
@@ -92,7 +97,7 @@ export function PlatformDashboard({
       months: shopsCreatedByMonth(shops),
       history: historyMonths(shops),
     };
-  }, [shops, memberships]);
+  }, [shops, memberships, owners]);
 
   // Depois de uma falha, nunca fica "Carregando…" parado: diz que não está atualizado.
   const updatedLabel = loading

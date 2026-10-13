@@ -317,6 +317,10 @@ export const ptPT: Record<MessageKey, string> = {
   "password.saved": "Palavra-passe atualizada.",
   "password.error": "Não foi possível atualizar a palavra-passe.",
   "password.save": "Guardar nova palavra-passe",
+  "password.gate.title": "Crie a sua palavra-passe",
+  "password.gate.lead":
+    "Entrou com uma palavra-passe temporária. Para proteger a sua conta, escolha uma palavra-passe só sua antes de continuar.",
+  "password.gate.saved": "Palavra-passe criada. Use-a nos próximos acessos.",
   "points.title": "Os meus pontos",
   "points.error": "Não foi possível carregar o extrato.",
   "common.retry": "Tentar novamente",

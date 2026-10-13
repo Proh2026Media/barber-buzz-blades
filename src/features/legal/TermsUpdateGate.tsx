@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { callOptionalRpc } from "@/lib/auth/optional-rpc";
+import { mustChangePassword } from "@/lib/auth/password-change";
 import { useI18n } from "@/lib/i18n";
 import { DPA_VERSION, PRIVACY_VERSION, TERMS_VERSION } from "./versions";
 
@@ -74,7 +75,8 @@ export function TermsUpdateGate({ disabled = false, withDpa = false }: Props) {
       try {
         const { data } = await supabase.auth.getSession();
         const user = data.session?.user;
-        if (!user || cancelled || postponed(user.id)) return;
+        // Senha temporária ainda não trocada: a janela de senha vem antes (PasswordChangeGate).
+        if (!user || cancelled || postponed(user.id) || mustChangePassword(user)) return;
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("*")

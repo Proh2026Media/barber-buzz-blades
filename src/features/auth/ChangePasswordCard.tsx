@@ -4,6 +4,7 @@ import { ActionResult, IconTile, SectionHeader, type ActionState } from "@/compo
 import { PASSWORD_MIN, PasswordRules } from "@/features/auth/entry";
 import { supabase } from "@/integrations/supabase/client";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
+import { MUST_CHANGE_PASSWORD_KEY } from "@/lib/auth/password-change";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +12,10 @@ type ChangePasswordCardProps = {
   className?: string;
   /** Começa recolhido numa linha "Senha ••••••" com o botão "Trocar senha" (ação rara). */
   collapsible?: boolean;
+  /** Sem o título "Trocar senha" (quando a janela em volta já tem o seu). */
+  heading?: boolean;
+  /** Chamado depois de a senha nova ser gravada. */
+  onSaved?: () => void;
 };
 
 /** Campo de senha com o botão de olho (Mostrar/Ocultar) dentro. */
@@ -71,7 +76,12 @@ function PasswordField({
   );
 }
 
-export function ChangePasswordCard({ className, collapsible = false }: ChangePasswordCardProps) {
+export function ChangePasswordCard({
+  className,
+  collapsible = false,
+  heading = true,
+  onSaved,
+}: ChangePasswordCardProps) {
   const { t } = useI18n();
   const uid = useId();
   const rulesId = `${uid}-rules`;
@@ -88,12 +98,16 @@ export function ChangePasswordCard({ className, collapsible = false }: ChangePas
     setResult(null);
     setBusy(true);
     try {
-      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+        data: { [MUST_CHANGE_PASSWORD_KEY]: false },
+      });
       if (updateError) throw updateError;
       setNewPassword("");
       setConfirmPassword("");
       setResult({ state: "saved", text: t("password.saved") });
       if (collapsible) setOpen(false);
+      onSaved?.();
     } catch (err) {
       setResult({ state: "error", text: friendlyAuthError(err, t("password.error")) });
     } finally {
@@ -137,10 +151,13 @@ export function ChangePasswordCard({ className, collapsible = false }: ChangePas
   return (
     <form
       onSubmit={(event) => void changePassword(event)}
-      className={cn(collapsible ? "space-y-4" : "app-action-card space-y-4 p-4 sm:p-5", className)}
+      className={cn(
+        collapsible || !heading ? "space-y-4" : "app-action-card space-y-4 p-4 sm:p-5",
+        className,
+      )}
       aria-label={t("password.title")}
     >
-      <SectionHeader icon={KeyRound} title={t("password.title")} as="h3" />
+      {heading && <SectionHeader icon={KeyRound} title={t("password.title")} as="h3" />}
       <PasswordField
         id={`${uid}-new`}
         label={t("password.new")}

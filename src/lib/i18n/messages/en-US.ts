@@ -316,6 +316,10 @@ export const enUS: Record<MessageKey, string> = {
   "password.saved": "Password updated.",
   "password.error": "We couldn't update your password.",
   "password.save": "Save new password",
+  "password.gate.title": "Create your password",
+  "password.gate.lead":
+    "You signed in with a temporary password. To protect your account, choose a password of your own before continuing.",
+  "password.gate.saved": "Password created. Use it next time you sign in.",
   "points.title": "My points",
   "points.error": "We couldn't load your statement.",
   "common.retry": "Try again",
