@@ -182,3 +182,10 @@ test("edge error codes map to everyday messages instead of the raw server text",
     "Barbearia fechada hoje",
   );
 });
+
+test("saída à espera da liberação fala do dono, com a mensagem antiga ou a nova do banco", () => {
+  const expected = "Aguarde a liberação do dono para concluir a saída.";
+  for (const message of ["Aguarde a liberação do sócio", "Aguarde a liberação do dono"]) {
+    assert.equal(friendlyAuthError({ code: "42501", message }), expected);
+  }
+});

@@ -121,6 +121,8 @@ select pg_temp.check_se(
   'Parceiro vê o próprio pedido');
 select pg_temp.expect_se_error(format('select public.approve_portfolio_release(%L)', :'assoc_req'),
   'Parceiro não libera o próprio pedido', '42501');
+select pg_temp.expect_se_error(format('select public.complete_shop_departure(%L)', :'assoc_req'),
+  'Parceiro não conclui antes da liberação e a mensagem fala do dono', '42501', 'liberação do dono');
 reset role;
 
 select pg_temp.as_user(:'employee_id');

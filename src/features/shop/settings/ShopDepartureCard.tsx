@@ -23,6 +23,8 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import {
   ActionResult,
   ChoiceCards,
+  ConfirmDialog,
+  DetailList,
   Field,
   IconList,
   IconTile,
@@ -122,6 +124,9 @@ export function ShopDepartureCard({
     approve?: boolean;
   } | null>(null);
   const [deciding, setDeciding] = useState<{ id: string; approve: boolean } | null>(null);
+  // "Liberar clientes" confirma antes: a carteira muda de loja e não volta sozinha.
+  const [releaseAsk, setReleaseAsk] = useState<DepartureRequest | null>(null);
+  const [releaseError, setReleaseError] = useState<string | undefined>();
   const [withdrawing, setWithdrawing] = useState(false);
   const [withdrawResult, setWithdrawResult] = useState<{ state: ActionState; text: string } | null>(
     null,
@@ -325,7 +330,7 @@ export function ShopDepartureCard({
     }
   }
 
-  async function decide(id: string, approve: boolean) {
+  async function decide(id: string, approve: boolean, fromDialog = false) {
     const row = requests.find((request) => request.id === id);
     setDeciding({ id, approve });
     setDecision(null);
@@ -346,12 +351,12 @@ export function ShopDepartureCard({
       });
       await load();
     } catch (err) {
-      setDecision({
-        id,
-        state: "error",
-        text: friendlyAuthError(err, t("team.departure.decideFailed")),
-        approve,
-      });
+      const text = friendlyAuthError(err, t("team.departure.decideFailed"));
+      if (fromDialog) {
+        setReleaseError(text);
+        throw err;
+      }
+      setDecision({ id, state: "error", text, approve });
     } finally {
       setDeciding(null);
     }
@@ -504,7 +509,12 @@ export function ShopDepartureCard({
                     type="button"
                     disabled={!!deciding || futureBookings > 0}
                     className="action-button action-confirm min-h-11 flex-1 justify-center sm:flex-none"
-                    onClick={() => void decide(row.id, true)}
+                    onClick={() => {
+                      if (take) {
+                        setReleaseError(undefined);
+                        setReleaseAsk(row);
+                      } else void decide(row.id, true);
+                    }}
                   >
                     {busy && deciding?.approve ? (
                       <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />
@@ -521,6 +531,48 @@ export function ShopDepartureCard({
           })}
         </ul>
       )}
+      <ConfirmDialog
+        open={!!releaseAsk}
+        onOpenChange={(next) => {
+          if (!next) setReleaseAsk(null);
+        }}
+        tone="info"
+        icon={Users}
+        title={t("eq.leave.releaseConfirm", {
+          name: firstName(
+            releaseAsk?.requester_name || releaseAsk?.staff_name || t("eq.gov.someone"),
+          ),
+        })}
+        summary={
+          releaseAsk ? (
+            <DetailList
+              items={[
+                {
+                  icon: UserMinus,
+                  label: t("eq.leave.releaseWho"),
+                  value: releaseAsk.requester_name || releaseAsk.staff_name || t("eq.gov.someone"),
+                },
+                {
+                  icon: Store,
+                  label: t("eq.leave.releaseTo"),
+                  value:
+                    (releaseAsk.dest_shop_id && destNames.get(releaseAsk.dest_shop_id)) ||
+                    t("eq.leave.releaseOtherShop"),
+                },
+              ]}
+            />
+          ) : undefined
+        }
+        consequences={[
+          ...takeEffects,
+          { icon: DoorOpen, tone: "danger", text: t("eq.leave.releaseLeaves") },
+        ]}
+        confirmLabel={t("eq.leave.releaseYes")}
+        confirmIcon={Check}
+        cancelLabel={t("eq.leave.keep")}
+        errorText={releaseError}
+        onConfirm={() => (releaseAsk ? decide(releaseAsk.id, true, true) : undefined)}
+      />
       {decision && !others.some((row) => row.id === decision.id) && (
         <ActionResult
           state={decision.state}

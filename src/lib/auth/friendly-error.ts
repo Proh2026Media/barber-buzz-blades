@@ -90,6 +90,7 @@ const PATTERNS: Array<{ test: RegExp; message: MessageKey }> = [
   { test: /active ownership must total 100/i, message: "eq.error.ownershipTotal" },
   // Saída da equipe e convite (20261013190000_saida_equipe_reservas.sql).
   { test: /reserva\(s\) futura\(s\)/i, message: "eq.leave.futureBookingsError" },
+  { test: /aguarde a libera[çc][ãa]o do (dono|s[óo]cio)/i, message: "eq.leave.waitOwner" },
   { test: /n[ãa]o est[áa] livre nesse hor[áa]rio/i, message: "eq.leave.reassignBusy" },
   {
     test: /sem levar clientes n[ãa]o pode ser recusada/i,
