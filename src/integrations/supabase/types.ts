@@ -91,6 +91,7 @@ export type Database = {
           slot_mode: string;
           slot_step_minutes: number;
           prep_minutes: number;
+          min_lead_minutes: number;
           created_at: string;
           updated_at: string;
         };
@@ -125,6 +126,7 @@ export type Database = {
           slot_mode?: string;
           slot_step_minutes?: number;
           prep_minutes?: number;
+          min_lead_minutes?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -159,6 +161,7 @@ export type Database = {
           slot_mode?: string;
           slot_step_minutes?: number;
           prep_minutes?: number;
+          min_lead_minutes?: number;
           created_at?: string;
           updated_at?: string;
         };

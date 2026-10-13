@@ -1537,7 +1537,11 @@ function ArenaApp({
       if (code === "23P01") setBookingError(t("booking.errorTaken"));
       else if (code === "22023")
         setBookingError(
-          /passou/i.test(message) ? t("booking.errorPast") : t("booking.errorUnavailable"),
+          /passou/i.test(message)
+            ? t("booking.errorPast")
+            : /antecedência/i.test(message)
+              ? t("booking.errorLeadTime")
+              : t("booking.errorUnavailable"),
         );
       else setBookingUncertain(true);
       setAvailabilityVersion((v) => v + 1);

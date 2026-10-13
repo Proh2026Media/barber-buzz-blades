@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import {
+  AlarmClock,
   CalendarCheck,
   CalendarRange,
   ChevronRight,
@@ -35,9 +36,11 @@ import {
   buildBookingDateKeys,
   formatShopDate,
   slotRuleFromSettings,
+  validMinLeadMinutes,
 } from "@/lib/shop/appointments";
 import { cn } from "@/lib/utils";
 import { clockInTimeZone } from "@/features/register-owner/timezones";
+import { useMinLeadLabel } from "./MinLeadSettings";
 import { useTimeZoneName } from "@/features/register-owner/TimeZonePicker";
 import { BOOKING_CARD_IDS } from "./booking-cards";
 
@@ -117,6 +120,7 @@ export function BookingOverview({
     return () => window.clearInterval(timer);
   }, []);
   const rule = slotRuleFromSettings(settings);
+  const leadLabel = useMinLeadLabel();
   const lastDay = useLastBookableDay(settings.booking_horizon_days, timeZone);
   const mode = staffModeOf(settings);
   const instructions = settings.booking_instructions?.trim();
@@ -141,6 +145,21 @@ export function BookingOverview({
         </Tag>
       ),
     },
+    // Antes da migration 20261013150000 a coluna não vem do banco e o cartão não aparece.
+    ...("min_lead_minutes" in settings
+      ? [
+          {
+            id: BOOKING_CARD_IDS.lead,
+            icon: AlarmClock,
+            label: t("lead.title"),
+            value: (
+              <Tag className="whitespace-nowrap">
+                {leadLabel(validMinLeadMinutes(settings.min_lead_minutes))}
+              </Tag>
+            ),
+          },
+        ]
+      : []),
     {
       id: BOOKING_CARD_IDS.horizon,
       icon: CalendarRange,

@@ -224,6 +224,7 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
       slot_mode: "flexible",
       slot_step_minutes: 15,
       prep_minutes: 0,
+      min_lead_minutes: 30,
       created_at: stamp,
       updated_at: stamp,
     },

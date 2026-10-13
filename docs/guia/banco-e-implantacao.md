@@ -12,7 +12,7 @@ Situações usadas: **feito**, **feito — falta aplicar no banco**, **pendente*
 
 1. [Visão da infraestrutura](#1-visão-da-infraestrutura)
 2. [Como o site é publicado](#2-como-o-site-é-publicado)
-3. [Inventário das 86 migrations](#3-inventário-das-86-migrations)
+3. [Inventário das 87 migrations](#3-inventário-das-87-migrations)
 4. [Como escrever uma migration nova](#4-como-escrever-uma-migration-nova)
 5. [Como as migrations são aplicadas](#5-como-as-migrations-são-aplicadas)
 6. [Testes SQL](#6-testes-sql)
@@ -40,7 +40,7 @@ Situações usadas: **feito**, **feito — falta aplicar no banco**, **pendente*
 - **`supabase-teste.proh.media` não é mais deste projeto**: desde 29/09/2026 leva a outro serviço (Flow TEST). Não usar. O host `*.supabase.co` antigo (nuvem Lovable) está morto; `supabase/config.toml` ainda guarda o `project_id` dele, sem uso conhecido. Fonte: CONTINUIDADE (29/09/2026 e "Diagnóstico do login em produção", 21/09/2026).
 - O Studio não tem domínio público; acesso por túnel SSH, conforme [supabase/README.md](../../supabase/README.md) ("Studio").
 - Serviços do Supabase em 02/10/2026: `meta`, `studio` e `supavisor` religados com `unless-stopped`; `analytics`, `vector` e `imgproxy` desligados de propósito. O `realtime` foi religado às ~18h de 02/10/2026 (a entrada das 12h30 o dava como desligado). Fonte: CONTINUIDADE (02/10/2026).
-- **Não usar "Redeploy" do serviço no Coolify.** Ele desfaz ajustes feitos à mão no `docker-compose.yml`, por exemplo o `restart: unless-stopped` do Realtime, que na configuração salva do Coolify ainda está `"no"`. Fonte: CONTINUIDADE "Regras de agendamento numa fonte só" (02/10/2026) e [implantacao-2026-10-03.md](../implantacao-2026-10-03.md), regra 5.
+- **Não usar "Redeploy" do serviço no Coolify sem necessidade.** Ele recria todos os containers do serviço a partir da configuração salva no Coolify e desfaz o que só estiver no `docker-compose.yml` do servidor. Desde 13/10/2026 a configuração salva tem, no `realtime-dev`, `restart: unless-stopped` e limite de 0,5 CPU / 512 MB, iguais ao arquivo do servidor (P-25; CONTINUIDADE, entrega de 13/10). Para mexer num container só: `docker compose -p z2dbb7dkyzhc8vjiywq34mhn -f docker-compose.yml up -d --no-deps <serviço>` na pasta do serviço, depois de conferir com `--dry-run` que só ele muda. Fonte: CONTINUIDADE "Regras de agendamento numa fonte só" (02/10/2026) e [implantacao-2026-10-03.md](../implantacao-2026-10-03.md), regra 5.
 - A VPS **não tem credencial de push** no GitHub. O agente da VPS devolve o relatório e outra máquina registra no CONTINUIDADE. Fonte: CONTINUIDADE "Implantação aplicada em produção" (03/10/2026).
 
 ## 2. Como o site é publicado
@@ -65,7 +65,7 @@ git push origin main            (Proh2026Media/barber-buzz-blades — fonte da v
 - O comando de compilação configurado na Hostinger é **não confirmado** (o projeto define `npm run build` = `vite build && node scripts/copy-pwa.mjs` em `package.json`).
 - **Publicar o site não aplica nada no banco nem nas funções.** Migrations e Edge functions vão à VPS por outro caminho (seções 5 e 7). Por isso a tela nova precisa funcionar com o banco antigo (ver seção 4).
 
-## 3. Inventário das 86 migrations
+## 3. Inventário das 87 migrations
 
 Pasta: [supabase/migrations/](../../supabase/migrations/). A situação vem destas fontes:
 
@@ -163,16 +163,17 @@ Pasta: [supabase/migrations/](../../supabase/migrations/). A situação vem dest
 | 84  | `20261003230000_decisoes_whatsapp_fuso`                      | Aviso só a WhatsApp confirmado; fuso por loja                                                | **feito — falta aplicar no banco** [E]                                                                                        |
 | 85  | `20261005120000_tempo_preparo`                               | Tempo de preparo entre atendimentos                                                          | **feito — falta aplicar no banco** [E]                                                                                        |
 | 86  | `20261013120000_regras_papel_banco`                          | Contratado sem levar clientes; bloqueios de colegas sem nome/motivo; donos para a plataforma | **feito — falta aplicar no banco** (guia [implantacao-regras-papel-2026-10-13.md](../implantacao-regras-papel-2026-10-13.md)) |
+| 87  | `20261013150000_antecedencia_minima`                         | Antecedência mínima para o cliente reservar (padrão 30 min)                                  | **feito — falta aplicar no banco** (guia [implantacao-noite-2026-10-13.md](../implantacao-noite-2026-10-13.md))               |
 
 Nota da nº 34: no banco remoto ela falhava em `text = uuid`, e por isso a coluna `icon` e o bucket não existiam. A nº 41 (`20260920010000_service_images_storage`) cria o mesmo efeito e foi aplicada; o arquivo da nº 34 também recebeu o cast correto (`barbershop_id::text`) para instalações novas. Fonte: CONTINUIDADE "Slider da espera e imagens de serviço" (20/09/2026).
 
-Ordem obrigatória das pendentes: 83 → 84 → 85. A 85 recria `apply_shop_change` a partir da versão da 84. A 86 não depende delas (recria `request_shop_departure` a partir da nº 76, já aplicada); se for no mesmo dia, aplicar por último.
+Ordem obrigatória das pendentes: 83 → 84 → 85 → 86 → 87. A 85 recria `apply_shop_change` a partir da versão da 84. A 86 não depende delas (recria `request_shop_departure` a partir da nº 76, já aplicada). A 87 depende da 85 (recria `available_slots_internal`, `appointments_enforce_service_terms` e `apply_shop_change` a partir das versões dela). Guia único das cinco: [implantacao-noite-2026-10-13.md](../implantacao-noite-2026-10-13.md).
 
 ## 4. Como escrever uma migration nova
 
 Regras tiradas das migrations recentes e dos incidentes registrados no CONTINUIDADE.
 
-1. **Nome:** `supabase/migrations/AAAAMMDDHHMMSS_nome_curto.sql`, com data posterior à última (`20261005120000`). Os nomes recentes estão em pt-BR (`tempo_preparo`, `ajustes_finais`).
+1. **Nome:** `supabase/migrations/AAAAMMDDHHMMSS_nome_curto.sql`, com data posterior à última (`20261013150000` em 13/10/2026). Os nomes recentes estão em pt-BR (`tempo_preparo`, `ajustes_finais`).
 2. **Cabeçalho:** comentário em pt-BR dizendo o problema, a regra e de qual migration cada função foi copiada (padrão de `20261003150000_correcoes_auditoria.sql` e `20261005120000_tempo_preparo.sql`).
 3. **Idempotente:** os guias exigem que a migration possa ser reaplicada sem erro. Usar `add column if not exists`, `create or replace function`, `drop policy if exists` antes de `create policy` e `drop trigger if exists` antes de `create trigger`.
 4. **Partir da versão mais recente da função.** Antes de recriar uma função, achar a última migration que a define (`grep -l "function public.<nome>" supabase/migrations/*.sql | tail -1`). Recriar a partir de versão antiga desfaz correções.
@@ -210,7 +211,7 @@ O banco não tem pipeline automático: as migrations são aplicadas à mão com 
 
 ## 6. Testes SQL
 
-- Pasta [supabase/tests/](../../supabase/tests/): 33 arquivos `.sql` e 1 script Python (`waiting_concurrency.py`).
+- Pasta [supabase/tests/](../../supabase/tests/): 34 arquivos `.sql` e 1 script Python (`waiting_concurrency.py`).
 - **Ensaio no próprio banco de produção a partir desta máquina (13/10/2026):** o Mac do dono tem o apelido SSH `vps-barba` para a VPS. Funciona mandar o arquivo pela entrada padrão: `{ echo 'BEGIN;'; cat <migration> <teste>; echo 'ROLLBACK;'; } | ssh vps-barba 'docker exec -i supabase-db-z2dbb7dkyzhc8vjiywq34mhn psql -U postgres -d postgres -X -v ON_ERROR_STOP=1'`. Serve **só** para consulta de leitura e ensaio desfeito; aplicar continua com o agente da VPS ou com autorização do dono. Ao encadear vários testes numa transação, pôr entre eles `reset role; select set_config('request.jwt.claim.sub','',true);` (sem isso o teste seguinte roda como o usuário simulado pelo anterior). Ensaio com `add column` trava a tabela até o `ROLLBACK` (71 s no ensaio das três pendentes): evitar horário de movimento.
 - **Formato:** o arquivo não abre nem fecha transação. Ele cria dados com UUIDs aleatórios, simula o usuário com `set_config('request.jwt.claim.sub', <id>, true)` + `set local role authenticated` e chama uma função `pg_temp` que faz `raise notice 'PASS: …'` ou `raise exception 'FAIL: …'` (exemplo: `tempo_preparo.sql`).
 - **Rodar sempre assim** (na VPS; `DB` = container do Postgres):
@@ -332,21 +333,22 @@ Fontes: [beauty-saas-infra.md](../beauty-saas-infra.md), [mb-operacao.md](../mb-
 
 ## 12. O que falta aplicar no servidor
 
-Em ordem. Cada item tem guia próprio; seguir as regras da seção 5.
+**Aplicação autorizada pelo dono para a noite de 13/10/2026**, tudo junto, pelo guia único [implantacao-noite-2026-10-13.md](../implantacao-noite-2026-10-13.md) (backup, estado, ensaio completo com 144 PASS esperados, aplicação, conferências, funções, verificação e como desfazer). Os itens abaixo continuam como referência; os guias de cada um têm os detalhes.
 
 1. **Migration `20261003220000_ajustes_finais.sql`** + funções **`google-connect`** e **`whatsapp-dispatch`**. Guia: [implantacao-ajustes-finais-2026-10-03.md](../implantacao-ajustes-finais-2026-10-03.md) (ensaio: 25 PASS; privilégios `f|f|f`). A última publicação de funções registrada no CONTINUIDADE (03/10/2026, 19:34 PT) usou o HEAD `ddf9fbb`. Depois dele só mudaram `google-connect` e `whatsapp-dispatch` (`d94d678`) e `register-shop` (`08732f5`); confira com `git diff --stat ddf9fbb HEAD -- supabase/functions`. Pelos registros de 02/10/2026 e 03/10/2026, as demais funções no servidor estão iguais às do repositório (dedução, não confirmado).
 2. **Migration `20261003230000_decisoes_whatsapp_fuso.sql`** + função **`register-shop`** (mudou em `08732f5`, 03/10/2026 20:32 -0300). Guia: [implantacao-decisoes-2026-10-03.md](../implantacao-decisoes-2026-10-03.md) (ensaio: 43 PASS; `f|t|2`). Antes de aplicar, anotar quantos clientes deixam de receber WhatsApp até confirmar o número. O guia pede também para **relatar**, sem desligar, se o Auth tem o servidor OAuth 2.1 apontando para `/.lovable/oauth/consent`.
 3. **Migration `20261005120000_tempo_preparo.sql`** (sem funções). Guia: [implantacao-preparo-2026-10-05.md](../implantacao-preparo-2026-10-05.md) (pré-requisito `t|t`; ensaio: 43 PASS; conferência `0|0|f|f`). Até ela, salvar o tempo de preparo não funciona (o campo fica escondido).
 4. **Migration `20261013120000_regras_papel_banco.sql`** + função **`invite-shop-admin`** (marca de senha temporária). Guia: [implantacao-regras-papel-2026-10-13.md](../implantacao-regras-papel-2026-10-13.md) (ensaio: 19 PASS, já feito em produção em 13/10; conferência `f|t|f|3`).
-5. **Registrar** no CONTINUIDADE cada aplicação (horário, backup, contagens), por uma máquina com push.
+5. **Migration `20261013150000_antecedencia_minima.sql`** (sem funções; depende do item 3). Ao aplicar, todas as lojas passam a exigir 30 minutos de antecedência. Ensaio: 14 PASS (cópia da estrutura, 13/10); conferência `0|f|f|f|t`.
+6. **Registrar** no CONTINUIDADE cada aplicação (horário, backup, contagens), por uma máquina com push.
 
-Em 13/10/2026 uma consulta de leitura confirmou que os itens 1 a 3 continuam fora do banco (`f|f|f`), e o ensaio encadeado dos três deu 111 PASS sem deixar nada gravado.
+Em 13/10/2026 uma consulta de leitura confirmou que os itens 1 a 3 continuam fora do banco (`f|f|f`), e o ensaio encadeado dos três deu 111 PASS sem deixar nada gravado. Na mesma data, numa cópia da estrutura do banco num container temporário da VPS (já removido), a cadeia dos cinco itens com os testes deu 144 PASS, e os cinco seguidos dos testes de agenda, 131 PASS.
 
 Pendências de servidor que não são migration prontas:
 
-- **A decidir:** gravar `restart: unless-stopped` do Realtime na configuração do Coolify (hoje um "Redeploy" desfaz) e pôr limite de CPU/memória no Realtime (sugestão registrada: 0,5 CPU / 512 MB). Fonte: CONTINUIDADE 02/10/2026.
+- **Feito (13/10/2026, P-25):** `restart: unless-stopped` e limite de 0,5 CPU / 512 MB do `realtime-dev` gravados na configuração salva do Coolify e no arquivo do servidor; só o `realtime-dev` foi recriado; realtime conferido antes e depois (CONTINUIDADE, entrega de 13/10).
 - **Pendente:** dar à VPS um acesso de push ao GitHub, ou manter o registro por outra máquina (CONTINUIDADE 03/10/2026).
-- **Pendente:** roteador de certificado por loja nova em `beauty-shop-certs.yaml` (seção 10).
+- **Pendente:** roteador de certificado por loja nova em `beauty-shop-certs.yaml` (seção 10). Exemplo pronto no passo 4 de [testes-reais-loja-teste.md](../testes-reais-loja-teste.md).
 - **A decidir:** tarefa `google-drive/share-expire` no crontab do root (seção 8).
 - **Pendente (migrations ainda não escritas):** itens de banco do plano de ambientes. Bloqueio próprio do Contratado sem depender de "serviços próprios"; foto do próprio perfil do Contratado (política do storage); convite "aguardando aprovação"; primeiro dono de loja criada pela plataforma; onda 4 (convite com link e boas-vindas). Recusa do `take` de Contratado, bloqueios de colegas sem nome/motivo e contagem de administradores já estão na nº 86; a troca obrigatória de senha está na função `invite-shop-admin` (item 4 acima). Fontes: [plano-ambientes.md](../plano-ambientes.md) (status de 09/10/2026) e CONTINUIDADE onda 3 (09/10/2026). Prioridade em [pendencias.md](pendencias.md).
 

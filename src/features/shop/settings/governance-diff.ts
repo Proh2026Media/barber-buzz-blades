@@ -403,6 +403,21 @@ export function describeChange(
         before != null ? t("eq.diff.minutes", { n: before }) : null,
       );
     }
+    const lead = (value: number | null) => {
+      if (value == null) return null;
+      if (value === 0) return t("lead.none");
+      return value >= 60 && value % 60 === 0
+        ? t("lead.chip.hours", { hours: value / 60 })
+        : t("lead.chip.minutes", { minutes: value });
+    };
+    if (changed("min_lead_minutes") && num(payload.min_lead_minutes) != null) {
+      push(
+        "lead",
+        t("lead.title"),
+        lead(num(payload.min_lead_minutes))!,
+        lead(num(was("min_lead_minutes"))),
+      );
+    }
     return view;
   }
 

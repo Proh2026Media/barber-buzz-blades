@@ -48,6 +48,7 @@ import {
   StatusBadge,
 } from "@/components/visual";
 import { SlotModeNotice, SlotModeSettings } from "@/features/shop/settings/SlotModeSettings";
+import { MinLeadSettings } from "@/features/shop/settings/MinLeadSettings";
 import { ShopTimezoneCard } from "@/features/shop/settings/ShopTimezoneCard";
 import { useSettingsSignals } from "@/features/shop/settings/useSettingsSignals";
 import { isPlatformApexHost, resolveShopFromCurrentHost, shopPublicOrigin } from "@/lib/shop/host";
@@ -1556,6 +1557,33 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     return "applied";
   }
 
+  async function saveMinLead(minutes: number): Promise<"applied" | "pending"> {
+    if (!settings) throw new Error(t("shop.error.saveSettings"));
+    const change = { min_lead_minutes: minutes };
+    if (demo) {
+      if (!canManageShopSettings) throw new Error(t("shop.error.roleSettings"));
+      const next = { ...settings, ...change };
+      demo.dispatch({ type: "settings.save", settings: next });
+      setSettings(next);
+      return "applied";
+    }
+    if (powers.writeMode === "governed") {
+      const applied = await submitProtectedChange("settings.operational", change);
+      if (applied) await loadCatalog();
+      return applied ? "applied" : "pending";
+    }
+    if (powers.writeMode !== "direct") throw new Error(t("shop.error.roleSettings"));
+    const { data, error: updateError } = await supabase
+      .from("barbershop_settings")
+      .update(change)
+      .eq("barbershop_id", settings.barbershop_id)
+      .select("*")
+      .single();
+    if (updateError) throw updateError;
+    setSettings(data);
+    return "applied";
+  }
+
   function openSlotModeSettings() {
     setTab("configuracoes");
     setSettingsSection("agendamento");
@@ -2342,6 +2370,14 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                             hours={businessHours}
                             onSave={saveSlotMode}
                           />
+                          {/* Antes da migration 20261013150000 a coluna não vem do banco. */}
+                          {"min_lead_minutes" in settings && (
+                            <MinLeadSettings
+                              settings={settings}
+                              timeZone={shopTimeZone}
+                              onSave={saveMinLead}
+                            />
+                          )}
                           <BookingRulesSettings
                             settings={settings}
                             timeZone={shopTimeZone}

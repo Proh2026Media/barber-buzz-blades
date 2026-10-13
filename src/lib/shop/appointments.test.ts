@@ -7,6 +7,7 @@ import {
   buildSlotsForWindow,
   dateFromLocalKey,
   localDateKey,
+  minLeadParts,
   minutesLabel,
   previewSlotMinutes,
   shopDateKey,
@@ -14,6 +15,7 @@ import {
   shopDayRange,
   slotRuleFromSettings,
   termsFor,
+  validMinLeadMinutes,
   type SlotRule,
 } from "./appointments.ts";
 
@@ -90,6 +92,50 @@ test("uses the configured opening and closing times", () => {
   );
   assert.equal(slots[0].getTime(), at(10, 30).getTime());
   assert.equal(slots.at(-1)?.getTime(), at(12, 30).getTime());
+});
+
+test("minimum lead time hides starts before now + lead (cenário de supabase/tests/antecedencia_minima.sql)", () => {
+  const window = { is_open: true, opens_at: "09:00", closes_at: "19:00" };
+  const now = at(10, 5);
+  const none = buildSlotsForWindow(day, 30, [], window, now, undefined, {
+    mode: "flexible",
+    stepMinutes: 15,
+    leadMinutes: 0,
+  });
+  assert.equal(none[0].getTime(), at(10, 15).getTime());
+  const twoHours = buildSlotsForWindow(day, 30, [], window, now, undefined, {
+    mode: "flexible",
+    stepMinutes: 15,
+    leadMinutes: 120,
+  });
+  assert.equal(twoHours[0].getTime(), at(12, 15).getTime());
+  assert.ok(twoHours.every((slot) => slot.getTime() >= at(12, 5).getTime()));
+  // Exatamente agora + antecedência ainda vale.
+  const exact = buildSlotsForWindow(day, 30, [], window, at(10, 0), undefined, {
+    mode: "flexible",
+    stepMinutes: 15,
+    leadMinutes: 30,
+  });
+  assert.equal(exact[0].getTime(), at(10, 30).getTime());
+  // 24 h: nada hoje.
+  assert.deepEqual(
+    buildSlotsForWindow(day, 30, [], window, now, undefined, {
+      mode: "flexible",
+      stepMinutes: 15,
+      leadMinutes: 1440,
+    }),
+    [],
+  );
+});
+
+test("minimum lead time from settings: only the allowed values, none before the migration", () => {
+  assert.equal(slotRuleFromSettings({ min_lead_minutes: 60 }).leadMinutes, 60);
+  assert.equal(slotRuleFromSettings({ min_lead_minutes: 45 }).leadMinutes, 0);
+  assert.equal(slotRuleFromSettings({}).leadMinutes, 0);
+  assert.equal(validMinLeadMinutes(1440), 1440);
+  assert.deepEqual(minLeadParts(30), { minutes: 30 });
+  assert.deepEqual(minLeadParts(120), { hours: 2 });
+  assert.deepEqual(minLeadParts(1440), { hours: 24 });
 });
 
 test("closed days have no slots", () => {
@@ -268,15 +314,17 @@ function describeModes() {
       mode: "flexible",
       stepMinutes: 15,
       prepMinutes: 0,
+      leadMinutes: 0,
     });
     assert.deepEqual(slotRuleFromSettings({ slot_mode: "custom", slot_step_minutes: 25 }), {
       mode: "custom",
       stepMinutes: 15,
       prepMinutes: 0,
+      leadMinutes: 0,
     });
     assert.deepEqual(
       slotRuleFromSettings({ slot_mode: "literal", slot_step_minutes: 30, prep_minutes: 7 }),
-      { mode: "literal", stepMinutes: 30, prepMinutes: 0 },
+      { mode: "literal", stepMinutes: 30, prepMinutes: 0, leadMinutes: 0 },
     );
     assert.equal(slotRuleFromSettings({ prep_minutes: 10 }).prepMinutes, 10);
   });

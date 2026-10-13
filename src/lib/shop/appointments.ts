@@ -152,6 +152,21 @@ export function validPrepMinutes(value: number | null | undefined) {
   return (PREP_OPTIONS as readonly number[]).includes(value ?? -1) ? value! : 0;
 }
 
+/** Antecedência mínima para o cliente reservar (`min_lead_minutes` da loja; 0 = sem mínimo). */
+export const MIN_LEAD_OPTIONS = [0, 15, 30, 60, 120, 240, 720, 1440] as const;
+/** Valor que o banco grava nas lojas (padrão da coluna). */
+export const DEFAULT_MIN_LEAD_MINUTES = 30;
+
+/** Sem a coluna (banco antes da migration 20261013150000) não há regra: 0. */
+export function validMinLeadMinutes(value: number | null | undefined) {
+  return (MIN_LEAD_OPTIONS as readonly number[]).includes(value ?? -1) ? value! : 0;
+}
+
+/** Antecedência em horas inteiras (1 h, 2 h, 24 h) ou em minutos (15 min, 30 min). */
+export function minLeadParts(minutes: number): { hours: number } | { minutes: number } {
+  return minutes >= 60 && minutes % 60 === 0 ? { hours: minutes / 60 } : { minutes };
+}
+
 export type SlotRule = {
   mode: SlotMode;
   stepMinutes: number;
@@ -159,11 +174,18 @@ export type SlotRule = {
   prepMinutes?: number;
   /** Bloqueios (almoço, folga): a contagem recomeça no fim de cada um. */
   blocks?: Array<{ starts_at: string; ends_at: string }>;
+  /** Antecedência mínima: nenhum início antes de agora + estes minutos. */
+  leadMinutes?: number;
 };
 
 export function slotRuleFromSettings(
   settings:
-    | { slot_mode?: string | null; slot_step_minutes?: number | null; prep_minutes?: number | null }
+    | {
+        slot_mode?: string | null;
+        slot_step_minutes?: number | null;
+        prep_minutes?: number | null;
+        min_lead_minutes?: number | null;
+      }
     | null
     | undefined,
 ): SlotRule {
@@ -173,7 +195,12 @@ export function slotRuleFromSettings(
   const step = (SLOT_STEP_OPTIONS as readonly number[]).includes(settings?.slot_step_minutes ?? 0)
     ? settings!.slot_step_minutes!
     : SLOT_STEP_MINUTES;
-  return { mode, stepMinutes: step, prepMinutes: validPrepMinutes(settings?.prep_minutes) };
+  return {
+    mode,
+    stepMinutes: step,
+    prepMinutes: validPrepMinutes(settings?.prep_minutes),
+    leadMinutes: validMinLeadMinutes(settings?.min_lead_minutes),
+  };
 }
 
 /**
@@ -217,6 +244,7 @@ export function termsFor(
  * fim de cada bloqueio; só os inícios em que o serviço inteiro cabe antes de ocupado ou fechamento.
  * Atendimento em `busy` com `prep_minutes` ocupa também o preparo dele, e o novo precisa deixar o
  * próprio preparo (`rule.prepMinutes`) livre antes dele. Bloqueios e esperas não pedem preparo.
+ * Com `rule.leadMinutes`, nenhum início antes de agora + a antecedência mínima.
  */
 export function buildSlotsForWindow(
   day: Date | string,
@@ -271,6 +299,7 @@ export function buildSlotsForWindow(
       (b) => [new Date(b.starts_at).getTime(), new Date(b.ends_at).getTime(), false] as const,
     ),
   ];
+  const earliest = now.getTime() + (rule?.leadMinutes ?? 0) * 60_000;
   const slots: Date[] = [];
   for (const [from, to] of windows) {
     for (let at = from; at + durationMs <= to; at += stepMs) {
@@ -278,7 +307,7 @@ export function buildSlotsForWindow(
         ([bStart, bEnd, isAppointment]) =>
           at < bEnd && at + durationMs + (isAppointment ? prepMs : 0) > bStart,
       );
-      if (!overlaps && at > now.getTime()) slots.push(new Date(at));
+      if (!overlaps && at > now.getTime() && at >= earliest) slots.push(new Date(at));
     }
   }
   return slots;
