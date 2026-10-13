@@ -935,6 +935,7 @@ export const ptBR = {
   "eq.leave.cardTitle": "Saída da barbearia",
   "eq.leave.title": "Sair da barbearia",
   "eq.leave.rowHint": "Deixar a equipe, levando ou não seus clientes.",
+  "eq.leave.rowHintStay": "Deixar a equipe. Seus clientes continuam nesta barbearia.",
   "eq.leave.waitingCount": "{count} esperando você",
   "eq.leave.toDecide": "Pedidos de saída para você decidir",
   "eq.leave.wantsTake": "Quer sair levando os clientes",

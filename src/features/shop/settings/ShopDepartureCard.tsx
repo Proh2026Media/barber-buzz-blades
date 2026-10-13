@@ -225,6 +225,7 @@ export function ShopDepartureCard({
     : t("eq.gov.otherOwners");
   // Levar os clientes sempre espera a liberação: do dono (Parceiro) ou dos outros donos.
   const needsRelease = mode === "take";
+  const rowHintKey = canTakeClients ? "eq.leave.rowHint" : "eq.leave.rowHintStay";
   const steps = mode === "take" ? ["clients", "dest", "review"] : ["clients", "review"];
   const current = steps[Math.min(step, steps.length - 1)]!;
 
@@ -657,7 +658,7 @@ export function ShopDepartureCard({
           <span className="min-w-0 flex-1">
             <span className="block text-sm font-bold text-destructive">{t("eq.leave.title")}</span>
             <span className="block text-xs text-muted-foreground">
-              {ownerViewer ? t("eq.leave.lockedHint") : t("eq.leave.rowHint")}
+              {ownerViewer ? t("eq.leave.lockedHint") : t(rowHintKey)}
             </span>
           </span>
           {ownerViewer ? (
@@ -680,7 +681,7 @@ export function ShopDepartureCard({
               <DoorOpen className="size-5 text-destructive" aria-hidden />
               {t("eq.leave.title")}
             </DialogTitle>
-            <DialogDescription className="sr-only">{t("eq.leave.rowHint")}</DialogDescription>
+            <DialogDescription className="sr-only">{t(rowHintKey)}</DialogDescription>
           </div>
 
           {result && result.state !== "saving" && result.state !== "error" ? (

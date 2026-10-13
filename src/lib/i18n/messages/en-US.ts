@@ -936,6 +936,7 @@ export const enUS: Record<MessageKey, string> = {
   "eq.leave.cardTitle": "Leaving the shop",
   "eq.leave.title": "Leave the shop",
   "eq.leave.rowHint": "Leave the team, taking your clients or not.",
+  "eq.leave.rowHintStay": "Leave the team. Your clients stay at this barbershop.",
   "eq.leave.waitingCount": "{count} waiting for you",
   "eq.leave.toDecide": "Leave requests for you to decide",
   "eq.leave.wantsTake": "Wants to leave with their clients",

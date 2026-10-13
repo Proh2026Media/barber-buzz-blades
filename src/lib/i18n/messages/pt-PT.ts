@@ -942,6 +942,7 @@ export const ptPT: Record<MessageKey, string> = {
   "eq.leave.cardTitle": "Saída da barbearia",
   "eq.leave.title": "Sair da barbearia",
   "eq.leave.rowHint": "Deixar a equipa, levando ou não os seus clientes.",
+  "eq.leave.rowHintStay": "Deixar a equipa. Os seus clientes continuam nesta barbearia.",
   "eq.leave.waitingCount": "{count} à sua espera",
   "eq.leave.toDecide": "Pedidos de saída para decidir",
   "eq.leave.wantsTake": "Quer sair levando os clientes",
