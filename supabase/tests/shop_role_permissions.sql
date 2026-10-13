@@ -162,8 +162,8 @@ select pg_temp.check_perm(
 -- ---------------------------------------------------------------------------
 
 select pg_temp.check_perm(
-  jsonb_array_length(get_shop_permissions(:'shop')->'catalog')=11,
-  'Catálogo devolve as onze permissões');
+  jsonb_array_length(get_shop_permissions(:'shop')->'catalog')=12,
+  'Catálogo devolve as doze permissões (com o bloqueio próprio)');
 select pg_temp.check_perm(
   get_shop_permissions(:'shop')->'roles' = '["owner","partner","associate","employee"]'::jsonb,
   'Matriz devolve os quatro papéis');

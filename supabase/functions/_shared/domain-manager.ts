@@ -62,9 +62,10 @@ async function callDomainManager(
       return {
         ok: false,
         status: response.status,
-        error: typeof data === "object" && data && "error" in data
-          ? String((data as { error: unknown }).error)
-          : `domain-manager ${path} HTTP ${response.status}`,
+        error:
+          typeof data === "object" && data && "error" in data
+            ? String((data as { error: unknown }).error)
+            : `domain-manager ${path} HTTP ${response.status}`,
         data,
       };
     }

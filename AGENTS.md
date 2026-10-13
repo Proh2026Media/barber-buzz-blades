@@ -29,9 +29,9 @@ Registro da revisão MB em andamento: [docs/mb-revisao.md](docs/mb-revisao.md).
 
 O app é instalável (manifesto, service worker, ícones). Detalhes em [docs/pwa.md](docs/pwa.md).
 
-## Operação (Coolify, Titan, Google)
+## Operação (Coolify, e-mail, Google)
 
-Passo a passo de e-mail Titan, SMTP do Auth, login Google, domínio `supabasebeauty` e checklists: [docs/mb-operacao.md](docs/mb-operacao.md).
+Passo a passo do e-mail do sistema (SMTP da Hostinger, remetente `noreply@contheiner.digital`; o Titan foi abandonado em 02/10/2026), SMTP do Auth, login Google, domínios da API (`supabase-barbearia.proh.media` e `supabasebeauty.contheiner.digital`), certificado de loja nova e checklists: [docs/mb-operacao.md](docs/mb-operacao.md). Estado atual dos servidores: [docs/guia/banco-e-implantacao.md](docs/guia/banco-e-implantacao.md).
 
 ## 9. Vez entre ferramentas (regra obrigatória)
 

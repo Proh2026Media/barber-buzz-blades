@@ -218,3 +218,14 @@ test("bloqueio de colega: 'Colega indisponível', sem nome nem motivo", () => {
   assert.equal(maskColleagueBlock({ ...base, staffId: null }, "eu").colleague, undefined);
   assert.equal(maskColleagueBlock(base, null), base);
 });
+
+test("Contratado com a permissão de bloqueio própria: bloqueia a agenda e envia a própria foto", () => {
+  const on = powersOf("employee", { manage_own_blocks: true });
+  assert.equal(on.ownBlocks, true);
+  assert.equal(on.ownCatalog, false);
+  assert.equal(on.ownPhoto, true);
+  const off = powersOf("employee", { manage_own_blocks: false });
+  assert.equal(off.ownBlocks, false);
+  // A pasta da própria foto não depende do bloqueio: basta a regra nova existir no banco.
+  assert.equal(off.ownPhoto, true);
+});

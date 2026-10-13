@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   BarChart3,
   CalendarDays,
+  CalendarOff,
   Check,
   Clock3,
   EyeOff,
@@ -103,6 +104,11 @@ const PERMISSION: Record<string, { label: MessageKey; hint: MessageKey; icon: Lu
     hint: "eq.perm.servicesHint",
     icon: Scissors,
   },
+  manage_own_blocks: {
+    label: "eq.perm.manage_own_blocks",
+    hint: "eq.perm.manage_own_blocksHint",
+    icon: CalendarOff,
+  },
   manage_operations: {
     label: "eq.perm.manage_operations",
     hint: "eq.perm.manage_operationsHint",
@@ -135,7 +141,13 @@ const GROUPS: { id: string; title: MessageKey; icon: LucideIcon; rows: string[] 
     id: "manage",
     title: "eq.perm.group.manage",
     icon: Settings2,
-    rows: ["services", "manage_operations", "manage_team", "manage_permissions"],
+    rows: [
+      "services",
+      "manage_own_blocks",
+      "manage_operations",
+      "manage_team",
+      "manage_permissions",
+    ],
   },
 ];
 
@@ -185,8 +197,8 @@ function demoPermissions(): PermissionsPayload {
     matrix: {
       owner: only(keys),
       partner: only(keys.filter((key) => key !== "manage_permissions")),
-      associate: only(["view_own_score", "manage_own_services"]),
-      employee: only(["view_own_score"]),
+      associate: only(["view_own_score", "manage_own_services", "manage_own_blocks"]),
+      employee: only(["view_own_score", "manage_own_blocks"]),
     },
   };
 }

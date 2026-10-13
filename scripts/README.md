@@ -12,6 +12,7 @@ Ferramentas de linha de comando usadas por agentes (Cursor, Codex, Claude Code) 
 | [copy-pwa.mjs](#copy-pwamjs)                                     | Copia o service worker para a saída da montagem           | `npm run build` (automático)                        |
 | [sync-shop-domains.sh](#sync-shop-domainssh)                     | Lista os domínios próprios das barbearias                 | À mão, em operação                                  |
 | [sync-traefik-custom-domains.sh](#sync-traefik-custom-domainssh) | Gera a configuração do Traefik para os domínios próprios  | À mão, no servidor (alternativa manual)             |
+| [cert-loja.sh](#cert-lojash)                                     | Certificado do subdomínio de cada loja nova               | À mão, do Mac (`ssh vps-barba`)                     |
 
 ---
 
@@ -227,4 +228,17 @@ SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... scripts/sync-shop-domains.sh
 
 ```bash
 SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... scripts/sync-traefik-custom-domains.sh
+```
+
+---
+
+## cert-loja.sh
+
+**O que faz.** Do Mac, roda pela conexão `ssh vps-barba` o [vps/cert-lojas-sync.sh](vps/cert-lojas-sync.sh), sem deixar arquivo na VPS. O script lê as lojas ativas no banco e acrescenta em `/data/coolify/proxy/dynamic/beauty-shop-certs.yaml` só os roteadores de certificado que faltam (nunca remove). Antes de gravar, faz cópia, valida o arquivo e troca de uma vez; no fim, diz se algum endereço ainda recebe o certificado padrão do Traefik.
+
+**Quando usar.** Depois de criar uma loja nova (P-27). Por padrão só simula; `--aplicar` grava. Guia, saída esperada e como desfazer: [docs/implantacao-certificado-loja-2026-10-13.md](../docs/implantacao-certificado-loja-2026-10-13.md).
+
+```bash
+scripts/cert-loja.sh             # simula: mostra o que faltaria
+scripts/cert-loja.sh --aplicar   # grava os que faltam e confere o certificado
 ```

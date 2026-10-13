@@ -45,6 +45,12 @@ type Assignment = {
 };
 
 /**
+ * Decisão 6 do plano de ambientes: o gerente de conta ainda não tem tela própria, então ninguém
+ * novo é vinculado. Os vínculos que já existem continuam visíveis e podem ser removidos.
+ */
+const LINKING_ENABLED = false;
+
+/**
  * Gerentes de conta: pessoas da plataforma que cuidam de uma barbearia. Com `shopId`, mostra só
  * os gerentes daquela barbearia (dentro da ficha) e o formulário já vem com ela escolhida.
  * A lista vem primeiro; o formulário abre numa janela e o resultado aparece logo abaixo do botão.
@@ -227,6 +233,9 @@ export function AccountManagersPanel({
   const removeName = removeTarget?.label ?? t("plat.mgr.noName");
   const removeShop = removeTarget?.shop_name ?? t("plat.mgr.shopFallback");
 
+  // Sem vínculo nenhum, a seção não aparece: não há o que gerenciar nem como vincular.
+  if (!LINKING_ENABLED && loaded && !loadError && rows.length === 0) return null;
+
   return (
     <section className="space-y-3">
       <SectionHeader
@@ -234,18 +243,20 @@ export function AccountManagersPanel({
         icon={Briefcase}
         title={t("plat.mgr.title")}
         aside={
-          <button
-            type="button"
-            onClick={() => {
-              setFormError(null);
-              setFormOpen(true);
-            }}
-            disabled={disabled}
-            className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-3 text-sm font-semibold transition hover:border-primary/40 disabled:opacity-50"
-          >
-            <Link2 className="size-4 text-gold" aria-hidden />
-            {t("plat.mgr.link")}
-          </button>
+          LINKING_ENABLED && (
+            <button
+              type="button"
+              onClick={() => {
+                setFormError(null);
+                setFormOpen(true);
+              }}
+              disabled={disabled}
+              className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-3 text-sm font-semibold transition hover:border-primary/40 disabled:opacity-50"
+            >
+              <Link2 className="size-4 text-gold" aria-hidden />
+              {t("plat.mgr.link")}
+            </button>
+          )
         }
       />
       <IconList

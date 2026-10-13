@@ -142,6 +142,7 @@ import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { useAvailabilitySignal } from "@/lib/shop/availability-signal";
 import { TermsUpdateGate } from "@/features/legal/TermsUpdateGate";
 import { PasswordChangeGate } from "@/features/auth/PasswordChangeGate";
+import { ShopWelcomeDialog } from "./ShopWelcomeDialog";
 import { WhatsappConfirmBanner } from "@/features/customer/WhatsappConfirmBanner";
 
 type ShopShellProps = {
@@ -724,7 +725,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       return {
         id: String(row.id),
         barbershop_id: shopId,
-        customer_id: "",
+        // Só vem para quem pode ver o cliente (dono ou o próprio atendimento): abre a ficha.
+        customer_id: typeof row.customer_id === "string" ? row.customer_id : "",
         service_id: "",
         staff_id: String(row.staff_id),
         starts_at: String(row.starts_at),
@@ -1043,7 +1045,11 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       if (demo) return await serviceImageToDataUrl(file);
       return kind === "service"
         ? await uploadServiceImage(shop.id, file)
-        : await uploadStaffAvatar(shop.id, file);
+        : await uploadStaffAvatar(
+            shop.id,
+            file,
+            powers.society ? undefined : (ownStaffRow?.id ?? undefined),
+          );
     } catch (cause) {
       throw new Error(
         cause instanceof Error && cause.message
@@ -1722,8 +1728,9 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   // Pessoas e papéis, convites e permissões (dono/sócio). Com nome: abre o convite já preenchido.
   const openTeamAccess =
     teamSectionOpen && powers.society
-      ? (invite?: { name?: string }) => {
-          if (invite) setTeamInvite({ nonce: Date.now(), name: invite.name });
+      ? (invite?: { name?: string; staffId?: string }) => {
+          if (invite)
+            setTeamInvite({ nonce: Date.now(), name: invite.name, staffId: invite.staffId });
           openTeamSection("team-access");
         }
       : undefined;
@@ -1816,6 +1823,16 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         <BrandFontFace url={settings.custom_font_url} faces={settings.custom_font_faces} />
       )}
       <PasswordChangeGate disabled={Boolean(demo)} />
+      {!demo && actor && shop && (
+        <ShopWelcomeDialog
+          pending={(actor as { welcome_seen_at?: string | null }).welcome_seen_at === null}
+          shopId={shop.id}
+          shopName={shop.name}
+          role={actor.role}
+          percent={actor.ownership_percent}
+          capabilities={accessCapabilities}
+        />
+      )}
       <TermsUpdateGate disabled={Boolean(demo)} withDpa={powers.ownerLike} />
       <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur-xl px-4 py-3">
         {/* Cabeçalho com largura fixa no computador: não muda de posição ao trocar de aba
@@ -2199,7 +2216,9 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     : null
                 }
                 access={catalogExtras.access}
-                onInvite={openTeamAccess ? (name) => openTeamAccess({ name }) : undefined}
+                onInvite={
+                  openTeamAccess ? (name, staffId) => openTeamAccess({ name, staffId }) : undefined
+                }
                 onOpenAccess={openTeamAccess ? () => openTeamAccess() : undefined}
                 actions={{
                   save: saveStaff,

@@ -94,9 +94,11 @@ export function capabilitiesFor(
 
   const viewMoney = allowed("view_money", role !== "employee");
   const editOwnCatalog = allowed("manage_own_services", role === "associate");
-  // O banco libera o próprio bloqueio com "serviços próprios" (20260929170000). Se um dia
-  // existir uma permissão só de bloqueios (`manage_own_blocks`), ela passa a decidir.
+  // Bloqueio da própria agenda: permissão própria (`manage_own_blocks`, 20261013210000). Sem
+  // ela no banco, vale a regra antiga (junto com "serviços próprios").
   const ownBlocks = !full && allowed("manage_own_blocks", editOwnCatalog);
+  // A mesma migration abriu a pasta da própria foto a qualquer profissional da equipe.
+  const ownPhotoFolder = !!permissions && typeof permissions.manage_own_blocks === "boolean";
 
   return {
     viewFullShop: allowed("view_agenda_all", full),
@@ -122,8 +124,9 @@ export function capabilitiesFor(
     suggestToPeers: role === "associate" && editOwnCatalog,
     ownBlocks,
     ownProfile: true,
-    // Envio de foto: dono, sócio e parceiro, ou quem tem serviços próprios (regra do banco).
-    ownPhoto: role !== "employee" || editOwnCatalog,
+    // Envio de foto: dono, sócio e parceiro, quem tem serviços próprios ou, com a pasta
+    // própria no banco, também o Contratado (só a própria foto).
+    ownPhoto: role !== "employee" || editOwnCatalog || ownPhotoFolder,
     ownWallet: !full && viewMoney,
     leaveShop: true,
     // O Contratado sai sem levar clientes (decisão do dono, plano de ambientes, decisão 7).

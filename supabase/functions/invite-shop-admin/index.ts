@@ -15,7 +15,55 @@ type InviteBody = {
   /** Quando true, cria/vincula gerente de conta (sem papel de equipe na loja). */
   as_account_manager?: boolean;
   can_view_dashboard?: boolean;
+  /** "Dar acesso ao painel" pelo cartão do profissional: liga a conta a esse cartão (P-08). */
+  staff_id?: string;
 };
+
+const ROLE_LABEL: Record<string, string> = {
+  owner: "Dono",
+  partner: "Dono",
+  associate: "Parceiro",
+  employee: "Contratado",
+};
+
+/** Domínios reservados para teste (RFC 2606/6761): nunca recebem e-mail de verdade. */
+function isTestAddress(email: string) {
+  return /\.(invalid|test|example|localhost)$/i.test(email);
+}
+
+function newInviteToken() {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  return btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+async function sha256Hex(value: string) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+/** Endereço da loja: domínio próprio ativo ou o subdomínio na plataforma. */
+function shopOrigin(shop: {
+  slug: string;
+  custom_domain?: string | null;
+  custom_domain_status?: string | null;
+}) {
+  if (shop.custom_domain && shop.custom_domain_status === "active") {
+    return `https://${shop.custom_domain}`;
+  }
+  // No servidor, PLATFORM_BASE_HOST aponta para o alvo dos domínios próprios
+  // ("dominios.<base>"), que não atende as lojas pelo subdomínio.
+  const base = (Deno.env.get("PLATFORM_BASE_HOST") ?? "beauty.contheiner.digital")
+    .trim()
+    .toLowerCase()
+    .replace(/\.$/, "")
+    .replace(/^dominios\./, "");
+  return `https://${shop.slug}.${base}`;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -66,29 +114,45 @@ Deno.serve(async (req) => {
     const roleRaw = body.role ?? "employee";
     // "partner" legado = co-dono (owner).
     const role = roleRaw === "partner" ? "owner" : roleRaw;
-    const ownershipPercent = role === "owner" ? Number(body.ownership_percent) : null;
+    let ownershipPercent = role === "owner" ? Number(body.ownership_percent) : null;
+    const staffId = body.staff_id?.trim() || null;
     const password =
       body.password?.trim() || crypto.randomUUID().replace(/-/g, "").slice(0, 16) + "Aa1!";
 
     if (!email || !barbershopId) {
       return json({ error: "email and barbershop_id are required" }, 400);
     }
-    if (
-      !asAccountManager &&
-      role === "owner" &&
-      (!Number.isFinite(ownershipPercent) || ownershipPercent! <= 0 || ownershipPercent! >= 100)
-    ) {
-      return json({ error: "ownership_percent must be between 0 and 100 for co-owners" }, 400);
-    }
 
     const { data: shop, error: shopError } = await admin
       .from("barbershops")
-      .select("id, name, slug")
+      .select("id, name, slug, custom_domain, custom_domain_status")
       .eq("id", barbershopId)
       .maybeSingle();
 
     if (shopError) return json({ error: shopError.message }, 500);
     if (!shop) return json({ error: "Barbershop not found" }, 404);
+
+    if (!asAccountManager && role === "owner") {
+      // Loja sem dono ativo (criada pela plataforma): o primeiro dono entra com 100% (P-06).
+      const { count: activeOwners } = await admin
+        .from("shop_members")
+        .select("id", { count: "exact", head: true })
+        .eq("barbershop_id", barbershopId)
+        .eq("active", true)
+        .in("role", ["owner", "partner"]);
+      if (!activeOwners) {
+        if (body.ownership_percent != null && ownershipPercent !== 100) {
+          return json({ error: "O primeiro dono da barbearia entra com 100%." }, 400);
+        }
+        ownershipPercent = 100;
+      } else if (
+        !Number.isFinite(ownershipPercent) ||
+        ownershipPercent! <= 0 ||
+        ownershipPercent! >= 100
+      ) {
+        return json({ error: "ownership_percent must be between 0 and 100 for co-owners" }, 400);
+      }
+    }
 
     const { data: platformMembership, error: roleError } = await admin
       .from("memberships")
@@ -148,11 +212,13 @@ Deno.serve(async (req) => {
     let userId: string | null = null;
     let created = false;
     let tempPassword: string | null = null;
+    // Conta de um convite anterior que ainda não trocou a senha temporária também recebe link.
+    let stillTemporary = false;
 
     // Percorre todas as páginas do Auth: acima de 1000 contas o e-mail pode
     // não estar na primeira página.
     const perPage = 1000;
-    let existing: { id: string } | undefined;
+    let existing: { id: string; user_metadata?: Record<string, unknown> } | undefined;
     for (let page = 1; page <= 200; page++) {
       const { data: listed, error: listError } = await admin.auth.admin.listUsers({
         page,
@@ -165,6 +231,7 @@ Deno.serve(async (req) => {
 
     if (existing) {
       userId = existing.id;
+      stillTemporary = existing.user_metadata?.must_change_password === true;
     } else {
       const { data: createdUser, error: createError } = await admin.auth.admin.createUser({
         email,
@@ -239,22 +306,97 @@ Deno.serve(async (req) => {
     // Admin/gerente aplicam direto; dono usa shop_add_member (pode ficar pending em sociedade igualitária).
     const rpcName =
       isPlatformAdmin || isShopAccountManager ? "platform_add_shop_member" : "shop_add_member";
-    const { data: memberResult, error: memberError } = await userClient.rpc(rpcName, {
+    const memberArgs: Record<string, unknown> = {
       p_shop_id: barbershopId,
       p_user_id: userId,
       p_role: role,
       p_ownership_percent: ownershipPercent,
       p_display_name: fullName,
+    };
+    let { data: memberResult, error: memberError } = await userClient.rpc(rpcName, {
+      ...memberArgs,
+      ...(staffId ? { p_staff_id: staffId } : {}),
     });
+    // Banco ainda sem p_staff_id (migration 20261013210000): segue criando o cartão como antes.
+    if (
+      memberError &&
+      staffId &&
+      /p_staff_id|could not find the function/i.test(memberError.message)
+    ) {
+      ({ data: memberResult, error: memberError } = await userClient.rpc(rpcName, memberArgs));
+    }
     if (memberError) {
       if (created) await admin.auth.admin.deleteUser(userId);
-      return json({ error: memberError.message }, 400);
+      return json({ error: memberError.message, hint: memberError.hint ?? undefined }, 400);
     }
 
     const status =
       typeof memberResult === "object" && memberResult && "status" in memberResult
         ? (memberResult as { status?: string }).status
         : "applied";
+    const pending = status === "pending";
+
+    // P-15: link de entrada no domínio da loja. Conta nova (ou que ainda usa a senha temporária)
+    // recebe um link que entra sem senha e pede a senha nova; quem já tinha conta recebe o
+    // endereço da loja para entrar com a senha de sempre.
+    const origin = shopOrigin(shop);
+    let inviteLink = `${origin}/auth?next=${encodeURIComponent("/shop")}`;
+    let linkKind: "entry" | "login" = "login";
+    if (created || stillTemporary) {
+      const token = newInviteToken();
+      const { error: linkError } = await admin.from("shop_invite_links").insert({
+        token_hash: await sha256Hex(token),
+        barbershop_id: barbershopId,
+        user_id: userId,
+        role,
+        created_by: user.id,
+      });
+      if (!linkError) {
+        inviteLink = `${origin}/convite?t=${token}`;
+        linkKind = "entry";
+      } else {
+        console.error("invite-shop-admin: link de convite não gravado", linkError.message);
+      }
+    }
+
+    let emailStatus: "queued" | "skipped_test" | "failed" = "failed";
+    if (isTestAddress(email)) {
+      emailStatus = "skipped_test";
+    } else {
+      const roleLabel = ROLE_LABEL[role] ?? "Equipe";
+      const greeting = fullName ? `Olá, ${fullName}!` : "Olá!";
+      const lines =
+        linkKind === "entry"
+          ? [
+              greeting,
+              "",
+              `Você foi convidado para a equipe da ${shop.name} como ${roleLabel}.`,
+              pending ? "O convite ainda espera a aprovação dos donos." : "",
+              "Toque no link para entrar e criar sua senha (vale por 7 dias):",
+              inviteLink,
+            ]
+          : [
+              greeting,
+              "",
+              pending
+                ? `Você foi convidado para a equipe da ${shop.name} como ${roleLabel}. O convite ainda espera a aprovação dos donos.`
+                : `Você agora faz parte da equipe da ${shop.name} como ${roleLabel}.`,
+              "Entre com o seu e-mail e a senha que você já usa:",
+              inviteLink,
+            ];
+      const { data: queued, error: queueError } = await admin.rpc("enqueue_email_message", {
+        p_shop_id: barbershopId,
+        p_to_email: email,
+        p_template_key: "team.invite",
+        p_subject: `Convite para a equipe — ${shop.name}`,
+        p_body: lines.filter((line, index) => line !== "" || index === 1).join("\n"),
+        p_dedupe_key: `team.invite:${barbershopId}:${userId}:${Date.now()}`,
+        p_payload: { role, link_kind: linkKind },
+      });
+      emailStatus = !queueError && queued ? "queued" : "failed";
+      if (queueError)
+        console.error("invite-shop-admin: e-mail não enfileirado", queueError.message);
+    }
 
     return json({
       ok: true,
@@ -267,6 +409,9 @@ Deno.serve(async (req) => {
       ownership_percent: ownershipPercent,
       status: status ?? "applied",
       member_result: memberResult,
+      invite_link: inviteLink,
+      link_kind: linkKind,
+      email_status: emailStatus,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unexpected error";

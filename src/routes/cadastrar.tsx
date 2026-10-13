@@ -168,6 +168,19 @@ function CadastrarPage() {
   const [registerFailed, setRegisterFailed] = useState(false);
   // Conta criada: endereço devolvido pelo servidor e se a sessão já abriu.
   const [created, setCreated] = useState<{ slug: string; signedIn: boolean } | null>(null);
+  // Conta já aberta neste aparelho: a barbearia nasce nela, sem criar outra conta.
+  const [sessionEmail, setSessionEmail] = useState<string | null>(null);
+  const [emailInUse, setEmailInUse] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void supabase.auth.getSession().then(({ data }) => {
+      if (!cancelled) setSessionEmail(data.session?.user.email ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (resendIn <= 0) return;
@@ -289,7 +302,41 @@ function CadastrarPage() {
       return;
     }
     clearFieldError("shopName");
+    if (sessionEmail) {
+      void openWithAccount();
+      return;
+    }
     setStep("acesso");
+  }
+
+  /**
+   * Com a conta aberta: cria a barbearia nela (create_own_barbershop) e abre o painel, onde os
+   * termos de dono são aceitos. O fuso vai em seguida; se não gravar, fica o padrão.
+   */
+  async function openWithAccount() {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const { data, error: rpcError } = await supabase.rpc("create_own_barbershop", {
+        p_name: shopName.trim(),
+      });
+      if (rpcError) throw rpcError;
+      const shopId = (data as { shop_id?: string } | null)?.shop_id;
+      if (shopId && timeZone) {
+        await supabase.from("barbershops").update({ timezone: timeZone }).eq("id", shopId);
+      }
+      window.location.assign("/shop");
+    } catch (err) {
+      setError(friendlyAuthError(err, t("register.errorCreate")));
+      setBusy(false);
+    }
+  }
+
+  async function switchAccount() {
+    await supabase.auth.signOut();
+    setSessionEmail(null);
+    setError(null);
   }
 
   /** Confere cada campo; devolve os erros por campo (vazio = tudo certo). */
@@ -308,6 +355,7 @@ function CadastrarPage() {
   /** Erro do servidor: vai para o campo certo quando houver um; senão, aviso geral. */
   function handleServerError(err: unknown, fallback: MessageKey): boolean {
     const code = readErrorCode(err);
+    setEmailInUse(code === "email_in_use");
     const field = code ? SERVER_FIELD[code] : undefined;
     if (!field) {
       setError(friendlyAuthError(err, t(fallback)));
@@ -747,9 +795,35 @@ function CadastrarPage() {
                   </div>
                 )}
 
-                <button type="submit" className="action-button action-confirm entry-submit">
-                  {t("entry.cad.continue")}
-                  <ArrowRight aria-hidden="true" />
+                {sessionEmail && (
+                  <Notice
+                    tone="info"
+                    icon={UserRound}
+                    role="none"
+                    title={t("entry.cad.signedInAs", { email: sessionEmail })}
+                    action={{
+                      label: t("entry.cad.useOther"),
+                      onClick: () => void switchAccount(),
+                    }}
+                  >
+                    {t("entry.cad.signedInHint")}
+                  </Notice>
+                )}
+                {sessionEmail && error && <Notice tone="danger" title={error} />}
+
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="action-button action-confirm entry-submit"
+                >
+                  {sessionEmail ? (
+                    submitContent(t("entry.cad.openWithAccount"), t("register.creating"), Store)
+                  ) : (
+                    <>
+                      {t("entry.cad.continue")}
+                      <ArrowRight aria-hidden="true" />
+                    </>
+                  )}
                 </button>
               </form>
             )}
@@ -804,6 +878,15 @@ function CadastrarPage() {
                     )}
                   </div>
                   {fieldError("email")}
+                  {emailInUse && fieldErrors.email && (
+                    <a
+                      href="/auth?next=%2Fcadastrar"
+                      className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-primary underline-offset-4 hover:underline"
+                    >
+                      <Mail className="size-4" aria-hidden="true" />
+                      {t("entry.cad.signInToOpen")}
+                    </a>
+                  )}
                 </div>
 
                 <div className="grid gap-1.5">

@@ -88,9 +88,9 @@ update public.appointments set booked_price_cents = 7000 where id = :'ap_assoc';
 -- ---------------------------------------------------------------------------
 
 select pg_temp.check_se(
-  not has_function_privilege('authenticated', 'public.apply_add_shop_member(uuid, uuid, public.shop_member_role, numeric, text)', 'execute')
+  not has_function_privilege('authenticated', 'public.apply_add_shop_member(uuid, uuid, public.shop_member_role, numeric, text, uuid)', 'execute')
   and not has_function_privilege('authenticated', 'public.apply_update_shop_member(uuid, uuid, public.shop_member_role, numeric, boolean)', 'execute')
-  and has_function_privilege('service_role', 'public.apply_add_shop_member(uuid, uuid, public.shop_member_role, numeric, text)', 'execute')
+  and has_function_privilege('service_role', 'public.apply_add_shop_member(uuid, uuid, public.shop_member_role, numeric, text, uuid)', 'execute')
   and not has_function_privilege('authenticated', 'public.staff_future_appointment_count(uuid)', 'execute')
   and not has_function_privilege('anon', 'public.list_departure_appointments(uuid, uuid)', 'execute')
   and has_function_privilege('authenticated', 'public.list_departure_appointments(uuid, uuid)', 'execute')

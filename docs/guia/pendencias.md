@@ -8,14 +8,14 @@ Situação em **13/10/2026** (rodadas do Cursor: a segunda com as decisões do d
 - Situação: **pendente**, **feito — falta aplicar no banco**, **a decidir** (depende do dono), **não confirmado** (não deu para conferir daqui).
 - Cada item foi conferido no código e nas migrations em 12/10/2026. As linhas citadas são dessa data.
 - **Papéis da equipe no banco × nomes na tela:** `owner` e `partner` = **Dono** (sócio; `partner` é o nome antigo e aparece igual), `associate` = **Parceiro**, `employee` = **Contratado** ([roles.tsx](../../src/features/shop/roles.tsx), linhas 16-27; rótulos em `pt-BR.ts`, linhas 718-721). `shop_admin` é o papel antigo de `memberships`, que pode existir sem vínculo de equipe (CONTINUIDADE, onda 1 de 09/10).
-- Último id usado: **P-65**.
+- Último id usado: **P-67**.
 
 **Índice**
 
 1. [As 5 recomendadas para a próxima rodada](#1-as-5-recomendadas-para-a-próxima-rodada)
-2. [Banco e servidor: precisa de migration](#2-banco-e-servidor-precisa-de-migration) (P-01 a P-14 e P-56 a P-62)
+2. [Banco e servidor: precisa de migration](#2-banco-e-servidor-precisa-de-migration) (P-01 a P-14, P-56 a P-62 e P-66)
 3. [Onda 4 do plano de ambientes](#3-onda-4-do-plano-de-ambientes-convite-e-primeira-chegada) (P-15 a P-20)
-4. [Migrations escritas e não aplicadas; operação do servidor](#4-migrations-escritas-e-não-aplicadas-operação-do-servidor) (P-21 a P-29)
+4. [Migrations escritas e não aplicadas; operação do servidor](#4-migrations-escritas-e-não-aplicadas-operação-do-servidor) (P-21 a P-29 e P-67)
 5. [Decisões do dono em aberto](#5-decisões-do-dono-em-aberto) (P-30 a P-39 e P-53)
 6. [Testes manuais com contas reais](#6-testes-manuais-com-contas-reais) (P-40 a P-43)
 7. [Dívida técnica](#7-dívida-técnica) (P-44 a P-48, P-51, P-52, P-55, P-63, P-64 e P-65)
@@ -25,22 +25,15 @@ Situação em **13/10/2026** (rodadas do Cursor: a segunda com as decisões do d
 
 ## 1. As 5 recomendadas para a próxima rodada
 
-Atualizada em 13/10/2026, depois da aplicação de `20261013180000` e `20261013190000` (16:42), que resolveram P-56 a P-62 e P-64 ([implantacao-equipe-saida-2026-10-13.md](../implantacao-equipe-saida-2026-10-13.md)). Antes, na mesma data, a aplicação das 5 migrations (15:12) e os testes reais na Loja Teste. P-21, P-22, P-23, P-01, P-04, P-07, P-16 e P-54 estão aplicados; P-40 e P-41 foram testados (resultados na seção 6).
+Atualizada em 13/10/2026, depois da aplicação de `20261013210000_convite_boas_vindas_papeis.sql` (17:50), que resolveu P-02, P-03, P-05, P-06, P-08, P-09, P-15, P-17, P-18 e P-66 ([implantacao-convite-papeis-2026-10-13.md](../implantacao-convite-papeis-2026-10-13.md)). Antes, na mesma data: `20261013180000` e `20261013190000` (16:42; P-56 a P-62 e P-64) e as 5 migrations da noite (15:12). P-19 e P-47 também saíram nesta rodada (só tela).
 
-| Ordem | Itens      | O quê                                                                              | Por quê                                                                                                                             |
-| ----- | ---------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| 1     | P-15       | Convite com link de entrada (WhatsApp e e-mail)                                    | Com a P-16 aplicada, a pessoa já é obrigada a trocar a senha; falta o link para não depender de repassar a senha à mão (decisão 9). |
-| 2     | P-02, P-03 | Bloqueio da própria agenda e troca da própria foto pelo Contratado, no banco       | Últimas regras de papel da decisão 7 que ainda dependem da matriz de permissões.                                                    |
-| 3     | P-17       | Boas-vindas "Você agora é Parceiro na Barbearia X"                                 | Fecha a onda 4 para quem já tinha conta.                                                                                            |
-| 4     | P-08       | "Dar acesso ao painel" liga ao profissional que já existe                          | Hoje cria outro profissional.                                                                                                       |
-| 5     | P-05, P-06 | Convite aguardando aprovação visível; primeiro dono de loja criada pela plataforma | Restos da sociedade no banco.                                                                                                       |
-
------ | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1 | P-21, P-22, P-23, P-01, P-04, P-07, P-16, P-54 | Aplicar as 5 migrations e publicar 4 funções pelo guia único [implantacao-noite-2026-10-13.md](../implantacao-noite-2026-10-13.md) | Autorizado pelo dono para a noite de 13/10. Ensaio completo (144 PASS) feito numa cópia da estrutura do banco. Até aplicar, fuso, preparo, regras de papel, senha do convite e antecedência ficam parados. |
-| 2 | P-40, P-41 | Testar com contas reais na "Loja Teste" ([testes-reais-loja-teste.md](../testes-reais-loja-teste.md)) | Autorizado pelo dono em 13/10. Roteiro, criação e limpeza prontos; depende da aplicação da noite. |
-| 3 | P-15 | Convite com link de entrada (WhatsApp e e-mail) | Com a P-16 feita, a pessoa já é obrigada a trocar a senha; falta o link para não depender de repassar a senha à mão (decisão 9). |
-| 4 | P-17 | Boas-vindas "Você agora é Parceiro na Barbearia X" | Fecha a onda 4 para quem já tinha conta. Precisa guardar "boas-vindas vista" por vínculo (banco). |
-| 5 | P-02, P-03 | Bloqueio da própria agenda e troca da própria foto pelo Contratado, no banco | Últimas regras de papel da decisão 7 que ainda dependem da matriz de permissões. |
+| Ordem | Itens      | O quê                                                                           | Por quê                                                             |
+| ----- | ---------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| 1     | P-10       | Pausa fixa semanal (almoço que se repete)                                       | Hoje o almoço diário é um bloqueio por dia.                         |
+| 2     | P-20       | Guia de configuração da loja guardado no banco, com "Equipe e sócios"           | Fecha a onda 4: o progresso do guia muda de aparelho para aparelho. |
+| 3     | P-11, P-12 | Logo nos cartões da plataforma; e-mail para diferenciar nomes iguais            | Uso frequente do admin da plataforma.                               |
+| 4     | P-67, P-27 | Corrigir `PLATFORM_BASE_HOST` no Coolify; automação do certificado da loja nova | Dependem do dono (mexem no ambiente do servidor).                   |
+| 5     | P-42, P-43 | Testes com login real (WhatsApp, Google) e em aparelho físico                   | Dependem do dono; a Loja Teste não cobre código real nem aparelho.  |
 
 ---
 
@@ -61,14 +54,18 @@ Regra para todos os itens: migration nova em `supabase/migrations/`, teste SQL e
 - **Pronto quando:** `p_mode = 'take'` com membro `employee` falha com `42501`; `forfeit` continua aceito; teste SQL cobre Contratado, Parceiro e dono.
 - Fonte: CONTINUIDADE, onda 3 de 09/10 ("Pendências de banco").
 
-### P-02 — Bloqueio da própria agenda para o Contratado sem depender de "serviços próprios" · pendente
+### P-02 — Bloqueio da própria agenda para o Contratado sem depender de "serviços próprios" · feito — aplicado em 13/10/2026 (17:50, horário de Brasília)
+
+- **Aplicado e testado em 13/10/2026:** saída (a): permissão nova `manage_own_blocks` ("Bloquear a própria agenda"), ligada por padrão para todos os papéis e usada na política; linha nova na matriz de permissões. Na Loja Teste, um Contratado sem "serviços próprios" criou e apagou bloqueio na própria agenda e não conseguiu na do colega (403). Guia: [implantacao-convite-papeis-2026-10-13.md](../implantacao-convite-papeis-2026-10-13.md).
 
 - **Por quê:** decisão 7. A política "Professionals manage own blocks" exige `shop_can_manage_own_services` ([20260917150000_shop_role_permissions.sql](../../supabase/migrations/20260917150000_shop_role_permissions.sql), linhas 277-282), que vem desligada para o Contratado.
 - **Duas saídas:** (a) permissão nova `manage_own_blocks` no `shop_permission_catalog`, ligada por padrão para todos os papéis, usada na política; (b) só tirar a exigência da política.
 - **Gancho na tela:** [capabilities.ts](../../src/lib/auth/capabilities.ts) (linhas 97-99) já lê `manage_own_blocks` se ela vier em `get_my_shop_permissions`.
 - **Pronto quando:** Contratado com a matriz padrão cria e apaga só o próprio bloqueio; bloqueio de colega continua recusado.
 
-### P-03 — Contratado troca a própria foto · pendente
+### P-03 — Contratado troca a própria foto · feito — aplicado em 13/10/2026 (17:50, horário de Brasília)
+
+- **Aplicado e testado em 13/10/2026:** a foto de quem não gerencia a equipe vai para `<loja>/staff/<staff_id>/…` ([service-image.ts](../../src/lib/shop/service-image.ts)); as políticas do bucket aceitam essa pasta para o próprio profissional; `ownPhoto` libera o Contratado quando a regra nova existe no banco. Na Loja Teste: envio na própria pasta 200, na do colega e de serviço recusados, foto gravada no perfil. Guia: [implantacao-convite-papeis-2026-10-13.md](../implantacao-convite-papeis-2026-10-13.md).
 
 - **Por quê:** as políticas do bucket `barbershop-services` ([20260924140000_service_description_staff_media.sql](../../supabase/migrations/20260924140000_service_description_staff_media.sql): envio nas linhas 162-180, troca 182-216, exclusão 218-236) aceitam o admin da plataforma (`is_platform_admin`), o `shop_admin` antigo, `owner`/`partner`/`associate` e quem tem `manage_services` ou `manage_own_services`. O Contratado só entra se o dono lhe der `manage_own_services`, que vem desligada para ele (`shop_permission_default`, [20260917170000_shop_permission_money_semantics.sql](../../supabase/migrations/20260917170000_shop_permission_money_semantics.sql), linha 51).
 - **Pré-requisito:** hoje a foto é gravada em `<loja>/staff/<uuid aleatório>.<ext>` ([service-image.ts](../../src/lib/shop/service-image.ts), linha 79). O caminho não diz de quem é a foto, então nenhuma política consegue limitar o Contratado ao próprio perfil. Gravar em `<loja>/staff/<staff_id>/…`, para a política comparar a pasta com `current_staff_id(loja)` ([20260917120000_shop_team_governance.sql](../../supabase/migrations/20260917120000_shop_team_governance.sql), linha 88).
@@ -86,13 +83,17 @@ Regra para todos os itens: migration nova em `supabase/migrations/`, teste SQL e
 - **Arquivos da tela:** `ShopShell.tsx` e [BlocksCard.tsx](../../src/features/shop/hours/BlocksCard.tsx).
 - **Pronto quando:** a resposta da API para Parceiro/Contratado não traz motivo nem nome de colega (conferir na aba Rede do navegador).
 
-### P-05 — Convite "aguardando aprovação" legível pela pessoa convidada · pendente
+### P-05 — Convite "aguardando aprovação" legível pela pessoa convidada · feito — aplicado em 13/10/2026 (17:50, horário de Brasília)
+
+- **Aplicado em 13/10/2026:** `get_my_pending_shop_invites()` e `professionalRefusal` chamando a função antes dos outros motivos. Teste SQL cobre o convite pendente em sociedade igualitária; com login real **não testado** (exige sociedade 50/50 na Loja Teste). Guia: [implantacao-convite-papeis-2026-10-13.md](../implantacao-convite-papeis-2026-10-13.md).
 
 - **Por quê:** em sociedade igualitária o convite fica em `shop_change_requests`, que a pessoa convidada não lê. O motivo `aguardando` nunca é detectado.
 - **Gancho na tela:** `ACCESS_NOTICES` já tem `"aguardando"` ([destination.ts](../../src/lib/auth/destination.ts), linha 24), com texto pronto. Falta [session.ts](../../src/lib/auth/session.ts) (`professionalRefusal`, linhas 177-195) chamar uma RPC como `get_my_pending_shop_invites()` (loja e papel).
 - **Pronto quando:** a conta com convite pendente cai em `/app?aviso=aguardando` e vê o aviso.
 
-### P-06 — Primeiro dono de uma barbearia criada pela plataforma · pendente
+### P-06 — Primeiro dono de uma barbearia criada pela plataforma · feito — aplicado em 13/10/2026 (17:50, horário de Brasília)
+
+- **Aplicado em 13/10/2026:** loja sem dono ativo aceita o primeiro dono com 100% (no banco e na `invite-shop-admin`); a janela da loja recém-criada oferece "Adicionar dono", que abre o convite em Dono com o aviso "Primeiro dono da barbearia: entra com 100% e decide sozinho". Teste SQL cobre; pela tela da plataforma **não testado** (exige a conta de admin do dono). Guia: [implantacao-convite-papeis-2026-10-13.md](../implantacao-convite-papeis-2026-10-13.md).
 
 - **Por quê:** `apply_add_shop_member` exige que um dono existente ceda parte ([20260925140000_shop_society_founder_and_team.sql](../../supabase/migrations/20260925140000_shop_society_founder_and_team.sql), linhas 103 e 134) e o [invite-shop-admin](../../supabase/functions/invite-shop-admin/index.ts) recusa 100% (linhas 79-81). Loja sem dono não consegue receber o primeiro.
 - **Gancho na tela:** [NewShopDialog.tsx](../../src/features/platform/NewShopDialog.tsx) oferece "Adicionar pessoa"; depois da mudança pode oferecer "Adicionar dono" com o papel já escolhido.
@@ -109,12 +110,16 @@ Regra para todos os itens: migration nova em `supabase/migrations/`, teste SQL e
 - **Antes:** levantar no banco quantas contas têm `shop_admin` sem vínculo de equipe (risco da seção 6 do plano de ambientes).
 - **Pronto quando:** painel geral, lista de atenção e ficha mostram o mesmo número.
 
-### P-08 — "Dar acesso ao painel" liga ao profissional que já existe · pendente
+### P-08 — "Dar acesso ao painel" liga ao profissional que já existe · feito — aplicado em 13/10/2026 (17:50, horário de Brasília)
+
+- **Aplicado e testado em 13/10/2026:** `p_staff_id` nas funções de convite; o convite feito pelo cartão envia o `staff_id` e a tela avisa "Vai ligar a conta ao cartão de …". Na Loja Teste, o convite pelo cartão "só na agenda" ligou a conta nova ao mesmo cartão, sem duplicar. Guia: [implantacao-convite-papeis-2026-10-13.md](../implantacao-convite-papeis-2026-10-13.md).
 
 - **Por quê:** dar acesso a um profissional "só na agenda" cria outro profissional. `apply_add_shop_member` procura o `staff` pelo `user_id` (mesma migration de P-06, a partir da linha 70) e não recebe o id do profissional existente.
 - **Pronto quando:** o convite feito pelo cartão do profissional liga a conta à linha de `staff` existente, sem duplicar. Fonte: CONTINUIDADE, onda 3 de 08/10.
 
-### P-09 — Ficha do cliente pela Agenda na visão de equipe · pendente
+### P-09 — Ficha do cliente pela Agenda na visão de equipe · feito — aplicado em 13/10/2026 (17:50, horário de Brasília)
+
+- **Aplicado e testado em 13/10/2026:** `get_team_schedule` devolve `customer_id` só para quem vê a loja inteira ou para o próprio atendimento; a Agenda usa o campo e o nome abre a ficha. Conferido pela API na Loja Teste (dono recebe; Contratado não recebe o cliente dos colegas). Guia: [implantacao-convite-papeis-2026-10-13.md](../implantacao-convite-papeis-2026-10-13.md).
 
 - **Por quê:** `get_team_schedule` ([20261003150000_correcoes_auditoria.sql](../../supabase/migrations/20261003150000_correcoes_auditoria.sql), linhas 959-1011) devolve `customer_name`, mas não `customer_id`. Na agenda própria e na demonstração o nome já abre a ficha.
 - **Pronto quando:** a RPC devolve `customer_id` só para quem pode ver aquele cliente, e o nome abre a ficha também na visão de equipe.
@@ -191,20 +196,24 @@ Depois da saída do Contratado e do Parceiro, as reservas futuras com eles conti
 
 `request_shop_departure` só pede liberação quando quem sai é dono/sócio (`owner`/`partner`); o Parceiro (`associate`) sai na hora levando a carteira para a loja de destino, que ele mesmo pode criar no próprio fluxo. O roteiro de teste esperava liberação do dono. Decidir se a regra fica assim (e corrigir o roteiro) ou se o Parceiro também passa pela liberação.
 
+### P-66 — Dono sem o `shop_admin` antigo não bloqueia a agenda de colegas · feito — aplicado em 13/10/2026 (17:50, horário de Brasília)
+
+Achado em 13/10/2026 ao escrever P-02: as políticas de `availability_blocks` só deixavam gravar bloqueio da loja ou de colega o admin da plataforma e o `shop_admin` antigo. Um dono convidado pela equipe (sem `shop_admin`) recebia erro de permissão ao bloquear a agenda de um colega ou da loja inteira (conferido em produção antes da migration). Política nova "Team managers manage availability blocks" (pode aplicar mudanças e gerencia o funcionamento). Teste em `convite_boas_vindas_papeis.sql`. Guia: [implantacao-convite-papeis-2026-10-13.md](../implantacao-convite-papeis-2026-10-13.md).
+
 ---
 
 ## 3. Onda 4 do plano de ambientes: convite e primeira chegada
 
-Fonte: [plano-ambientes.md](../plano-ambientes.md), seção 4 ("Onda 4") e decisões 6 e 9 (aprovadas em 09/10). **Nada da onda 4 foi começado** (conferido em 12/10: nenhuma marca de troca de senha nem de boas-vindas no código ou nas migrations). Precisa de banco e de função.
+Fonte: [plano-ambientes.md](../plano-ambientes.md), seção 4 ("Onda 4") e decisões 6 e 9 (aprovadas em 09/10). Em 13/10/2026 saíram P-15, P-16, P-17, P-18 e P-19; falta P-20. Guia da entrega de 13/10 (17:50): [implantacao-convite-papeis-2026-10-13.md](../implantacao-convite-papeis-2026-10-13.md).
 
-| Id   | O quê                                                                                                                                                                            | Situação hoje (conferida)                                                                                                                                                                                                                                                                                   | Pronto quando                                                                       |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| P-15 | Convite com link de entrada no domínio da loja, por e-mail (fila `email_outbox`) ou WhatsApp, com cartão pronto para compartilhar                                                | [invite-shop-admin](../../supabase/functions/invite-shop-admin/index.ts) cria a conta com senha temporária (linhas 166-181) e não envia nada. O texto diz "Envie a senha temporária para a pessoa" (`pt-BR.ts`, linha 865). Tela: [ShopTeamAccessCard.tsx](../../src/features/shop/ShopTeamAccessCard.tsx). | A pessoa recebe um link que abre a loja certa; quem já tinha conta também é avisado |
-| P-16 | Troca obrigatória da senha temporária no primeiro login — **feito — função `invite-shop-admin` publicada em 13/10/2026 (15:13)** e testada com 3 contas convidadas na Loja Teste | Janela "Crie sua senha" (`PasswordChangeGate.tsx`) pela marca `must_change_password` nos dados da conta, gravada pela função de convite. Publicação na noite de 13/10: [implantacao-noite-2026-10-13.md](../implantacao-noite-2026-10-13.md), passo 6                                                       | Conta criada por convite não usa o painel antes de trocar a senha                   |
-| P-17 | Tela "Você agora é Parceiro na Barbearia X", também para quem já tinha conta                                                                                                     | Não existe. Exige guardar "boas-vindas vista" por vínculo                                                                                                                                                                                                                                                   | Aparece uma vez por vínculo novo, com loja, papel e resumo de "Seu acesso"          |
-| P-18 | `/cadastrar` com sessão aberta ("Você vai usar a conta x@y") e, no erro de e-mail em uso, "Entrar e abrir minha barbearia"                                                       | [cadastrar.tsx](../../src/routes/cadastrar.tsx) não lê a sessão. O plano aponta `register-shop` e trechos de `cadastrar.tsx` (linhas de 09/10)                                                                                                                                                              | Cliente com conta abre uma barbearia com o mesmo e-mail                             |
-| P-19 | Gerente de conta: esconder o convite até existir tela (decisão 6)                                                                                                                | O painel da plataforma ainda mostra [AccountManagersPanel](../../src/features/platform/AccountManagersPanel.tsx) (`PlatformShell.tsx` linha 573, `ShopDetail.tsx` linha 245). O gerente entra pelo `/app` ([session.ts](../../src/lib/auth/session.ts), linhas 39-45)                                       | Não há como criar gerente sem tela própria, ou a tela própria existe                |
-| P-20 | Guia de configuração da loja guardado no banco, com o passo "Equipe e sócios" (S9)                                                                                               | [ShopSetupChecklist.tsx](../../src/features/shop/ShopSetupChecklist.tsx) guarda no aparelho (`shopSetup:<loja>`, linhas 34-48)                                                                                                                                                                              | O progresso do guia é o mesmo em qualquer aparelho                                  |
+| Id   | O quê                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Situação hoje (conferida)                                                                                                                                                                                                                                                                                   | Pronto quando                                                                       |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| P-15 | **Feito — aplicado em 13/10/2026 (17:50)** e testado na Loja Teste: link `/convite?t=…` no endereço da loja (vale 7 dias e só entra enquanto a conta não tem senha própria), cartão com Copiar e "Enviar pelo WhatsApp", e-mail pela fila (`team.invite`, nunca para endereço de teste); conta que já existe recebe o endereço de login da loja. Convite com link de entrada no domínio da loja, por e-mail (fila `email_outbox`) ou WhatsApp, com cartão pronto para compartilhar | [invite-shop-admin](../../supabase/functions/invite-shop-admin/index.ts) cria a conta com senha temporária (linhas 166-181) e não envia nada. O texto diz "Envie a senha temporária para a pessoa" (`pt-BR.ts`, linha 865). Tela: [ShopTeamAccessCard.tsx](../../src/features/shop/ShopTeamAccessCard.tsx). | A pessoa recebe um link que abre a loja certa; quem já tinha conta também é avisado |
+| P-16 | Troca obrigatória da senha temporária no primeiro login — **feito — função `invite-shop-admin` publicada em 13/10/2026 (15:13)** e testada com 3 contas convidadas na Loja Teste                                                                                                                                                                                                                                                                                                   | Janela "Crie sua senha" (`PasswordChangeGate.tsx`) pela marca `must_change_password` nos dados da conta, gravada pela função de convite. Publicação na noite de 13/10: [implantacao-noite-2026-10-13.md](../implantacao-noite-2026-10-13.md), passo 6                                                       | Conta criada por convite não usa o painel antes de trocar a senha                   |
+| P-17 | **Feito — aplicado em 13/10/2026 (17:50)**: `welcome_seen_at` por vínculo e janela de boas-vindas depois da troca de senha. Tela "Você agora é Parceiro na Barbearia X", também para quem já tinha conta                                                                                                                                                                                                                                                                           | Não existe. Exige guardar "boas-vindas vista" por vínculo                                                                                                                                                                                                                                                   | Aparece uma vez por vínculo novo, com loja, papel e resumo de "Seu acesso"          |
+| P-18 | **Feito em 13/10/2026**: com a conta aberta, "Você vai usar a conta x@y" e "Abrir minha barbearia" (`create_own_barbershop`, que passou a gravar o fundador); no erro de e-mail em uso, "Entrar e abrir minha barbearia". Pela tela **não testado** com login real. `/cadastrar` com sessão aberta ("Você vai usar a conta x@y") e, no erro de e-mail em uso, "Entrar e abrir minha barbearia"                                                                                     | [cadastrar.tsx](../../src/routes/cadastrar.tsx) não lê a sessão. O plano aponta `register-shop` e trechos de `cadastrar.tsx` (linhas de 09/10)                                                                                                                                                              | Cliente com conta abre uma barbearia com o mesmo e-mail                             |
+| P-19 | **Feito em 13/10/2026**: o botão "Vincular" saiu; a seção só aparece quando já existe gerente (para remover). Gerente de conta: esconder o convite até existir tela (decisão 6)                                                                                                                                                                                                                                                                                                    | O painel da plataforma ainda mostra [AccountManagersPanel](../../src/features/platform/AccountManagersPanel.tsx) (`PlatformShell.tsx` linha 573, `ShopDetail.tsx` linha 245). O gerente entra pelo `/app` ([session.ts](../../src/lib/auth/session.ts), linhas 39-45)                                       | Não há como criar gerente sem tela própria, ou a tela própria existe                |
+| P-20 | Guia de configuração da loja guardado no banco, com o passo "Equipe e sócios" (S9)                                                                                                                                                                                                                                                                                                                                                                                                 | [ShopSetupChecklist.tsx](../../src/features/shop/ShopSetupChecklist.tsx) guarda no aparelho (`shopSetup:<loja>`, linhas 34-48)                                                                                                                                                                              | O progresso do guia é o mesmo em qualquer aparelho                                  |
 
 ---
 
@@ -235,12 +244,15 @@ Situação dos três: **feito — aplicado em 13/10/2026 (15:12, horário de Bra
 
 ### Operação do servidor (sem migration)
 
-- **P-24 — Acesso de push da VPS ao GitHub · pendente.** A VPS não envia ao `origin` (`vez.sh pedir` falhou em 03/10), então cada implantação precisa ser registrada por outra máquina. CONTINUIDADE, linha 270.
+- **P-24 — Acesso de push da VPS ao GitHub · a decidir (conferido em 13/10/2026).** A VPS não envia ao `origin` (`vez.sh pedir` falhou em 03/10), então cada implantação precisa ser registrada por outra máquina. CONTINUIDADE, linha 270. Levantamento só de leitura em 13/10: nenhuma chave privada em `~/.ssh`, `ssh -T git@github.com` recusado, sem `gh` nem credencial salva; `/root/barber-buzz-blades` parado em `ddf9fbb` (03/10). Recomendado: manter o registro por outra máquina (não criar credencial na VPS).
 - **P-25 — Realtime volta a parar num "Redeploy" · feito (13/10/2026).** Por decisão do dono, a configuração salva do Coolify (`docker_compose_raw` e `docker_compose` do serviço) passou a ter, no `realtime-dev`, `restart: unless-stopped` e o limite de 0,5 CPU / 512 MB; o arquivo do servidor ganhou o mesmo limite. Backups antes de mexer; só o `realtime-dev` foi recriado (os outros containers mantiveram o mesmo id). Realtime conferido antes (2/2 sinais recebidos) e depois (3/3, média de ~160 ms). Detalhes no CONTINUIDADE, entrega de 13/10. Continua valendo: não usar "Redeploy" sem necessidade.
 - **P-26 — Tarefa do crontab do root chamando `google-drive/share-expire` · a decidir.** Função que não existe neste projeto (erros 500 inofensivos a cada 15 min). Provavelmente de outro projeto; não remover sem o dono confirmar. CONTINUIDADE, linha 418.
-- **P-27 — Certificado de subdomínio para cada loja nova · pendente (passo manual).** Ao criar loja, acrescentar o roteador dela em `/data/coolify/proxy/dynamic/beauty-shop-certs.yaml`. CONTINUIDADE, linha 495. Exemplo pronto, com conferência do certificado: passo 4 de [testes-reais-loja-teste.md](../testes-reais-loja-teste.md).
+- **P-27 — Certificado de subdomínio para cada loja nova · feito em parte (13/10/2026): um comando seguro; falta a automação (dono).** `scripts/cert-loja.sh` (do Mac) roda `scripts/vps/cert-lojas-sync.sh` na VPS: lê as lojas ativas, só acrescenta os roteadores que faltam em `beauty-shop-certs.yaml` (nunca remove), faz cópia antes, valida o arquivo e confere o certificado. Padrão `--simular`; grava só com `--aplicar`. Aplicado às 17:37 de 13/10 para a `loja-teste-b` (cópia `/root/beauty-shop-certs.yaml.bak-20261013-203724`), que passou a ter certificado do Let's Encrypt. Guia: [implantacao-certificado-loja-2026-10-13.md](../implantacao-certificado-loja-2026-10-13.md). Falta decidir a automação (cron a cada 10 min proposto no guia, não instalado).
+- **P-67 — `PLATFORM_BASE_HOST` errado no servidor das funções · a decidir (dono).** Achado em 13/10/2026 ao publicar o convite: no container das funções vale `dominios.beauty.contheiner.digital` (o alvo dos domínios próprios), não a base das lojas `beauty.contheiner.digital`. A `invite-shop-admin` passou a tirar o `dominios.` do começo. Em `shop-domain` e `domain-verify` a variável monta os alvos de CNAME (`dominios.<base>,<base>`), que hoje viram `dominios.dominios.…` e `dominios.…`: o segundo é o alvo real, então nada quebrou visivelmente. Corrigir exige mudar o ambiente no Coolify (sem "Redeploy" do stack). Recomendado: trocar para `beauty.contheiner.digital` numa janela autorizada e reiniciar só o container das funções.
 - **P-28 — Reenviar a verificação OAuth do Google · pendente (dono).** Política e funcionalidade corrigidas em 03/10; falta gravar o vídeo e reenviar no projeto `proh-media-drive`. Guia: [google-verificacao.md](../google-verificacao.md).
-- **P-29 — Conferir no servidor: logs de 6 meses (Marco Civil) e VPN do painel · não confirmado.** Citados a partir da documentação de operação, nunca conferidos. CONTINUIDADE, linha 304.
+- **P-29 — Conferir no servidor: logs de 6 meses (Marco Civil) e VPN do painel · a decidir (conferido em 13/10/2026).** Levantamento só de leitura:
+  - **Logs:** hoje nada guarda 6 meses. journald 7 dias; syslog e auth.log 4 semanas; Traefik sem log de acesso; logs do Docker com 3 arquivos de 10 MB por container; `auth.audit_log_entries` sem limpeza (desde 14/09), mas com `ip_address` vazio em todas as linhas. Faltam o IP no registro do login e uma guarda de 180 dias. Recomendado: log de acesso do Traefik em arquivo com guarda de 180 dias e IP no registro do login (mexem no proxy e no Auth: precisam de janela autorizada).
+  - **Painel:** a porta 8000 do Coolify só abre pela Tailscale (regra do firewall descarta pela interface pública). **Achado:** as portas 6001 e 6002 do Coolify respondem pelo IP público (404). Recomendado bloquear como a 8000. Firewall do painel da Hostinger e IPv6: **não confirmado**.
 
 ---
 
@@ -284,6 +296,7 @@ A demonstração não cobre várias lojas, domínio de loja nem login real, e `l
 
 - **Passou:** troca obrigatória da senha (P-16) nas 3 contas convidadas (a janela não fecha com Esc, toque fora, `/app` nem recarregar; senha nova entra, temporária é recusada); "Agendar com Dono" na página pública → login → `/app` com o Dono já escolhido; janela de aceite dos termos para todas as contas; Contratado removido vai a `/app?aviso=removido` ("Você não faz mais parte da equipe"); cliente promovido a Parceiro vê o painel e continua cliente no app; `/` no subdomínio para profissional mostra "Você está vendo como cliente · Abrir painel"; `/` no endereço principal leva o dono ao painel.
 - **Não testado:** destino depois de escolher um horário na página pública (o cartão "horários de hoje" ficou desligado na Loja Teste por causa de P-56; **testado depois, em 13/10 às 16:48**: o horário escolhido leva a `/auth` com "Seu horário · Falta confirmar"); `/platform` e admin sem loja (exigem a conta de admin do dono); dono com 2 lojas, Contratado em outra loja e `shop_admin` antigo sem vínculo; troca por "Minhas áreas" e aviso "endereço da A, trabalha na B".
+- **13/10/2026 (17:55), pela API:** dono com 2 lojas: o dono da Loja Teste foi convidado como Contratado na Loja Teste B por conta que já existe; entrou sem senha nova, recebeu só o endereço de login da B e passou a ter 2 vínculos, com boas-vindas pendentes na nova. Pela tela (troca por "Minhas áreas", aviso "endereço da A, trabalha na B"): **não testado**.
 - Achados: P-58, P-59, P-60.
 
 Contas (seção 6 do plano de ambientes, mais as das ondas de 09/10):
@@ -325,7 +338,9 @@ Teclado virtual aberto e safe-area do iOS, leitor de tela real, rede lenta, app 
 
 Medido em 12/10/2026 com `npx eslint .` e com o build de 12/10/2026, 14:16 (pasta `.output`). Para rodar tudo de uma vez: `scripts/verificar.sh` ([scripts/README.md](../../scripts/README.md)).
 
-### P-44 — Avisos e erros do eslint · pendente
+### P-44 — Avisos e erros do eslint · feito em parte (13/10/2026)
+
+- **Feito em 13/10/2026:** `scratch/**` e `.fotos/**` nos ignores do `eslint.config.js`; prettier nas 4 funções (só formatação; erros do eslint de 26 para 0). Falta: os avisos `react-refresh/only-export-components`.
 
 - **35 avisos** `react-refresh/only-export-components` em 17 arquivos de `src` (mais em `src/features/shop/roles.tsx`: 8; `src/features/shop/team.tsx`: 5; `ShopSetupChecklist.tsx` e `service-icon.tsx`: 3 cada). Saída: mover o que não é componente para um `.ts` ao lado. O aviso antigo do `MyAreas.tsx` já não aparece.
 - **Erros de prettier** em 4 funções do servidor: `whatsapp-channel/index.ts` (17), `platform-whatsapp/index.ts` (5), `_shared/domain-manager.ts` (3), `_shared/evolution.ts` (1).
@@ -335,11 +350,15 @@ Medido em 12/10/2026 com `npx eslint .` e com o build de 12/10/2026, 14:16 (past
 
 No build de 12/10/2026 (14:16), o maior `index-*.js` de `.output/public/assets/` (nesse build, `index-BusXRZec.js`; o nome muda a cada build) tem 1.753.793 bytes, e `ShopShell-*.js` tem 448.742 bytes. Os maiores arquivos de código, fora os dicionários: `ArenaApp.tsx` (3.714 linhas), `ShopShell.tsx` (2.617) e `routes/auth.tsx` (2.502). Saída: dividir por rota e por aba com carregamento sob demanda. Tamanho comprimido: **não confirmado**.
 
-### P-46 — Pacote sem uso `@lovable.dev/mcp-js` · pendente
+### P-46 — Pacote sem uso `@lovable.dev/mcp-js` · feito (13/10/2026)
+
+- **Feito em 13/10/2026:** saiu do `package.json` e do `bunfig.toml`; `bun.lock` refeito (só esse pacote e as dependências dele saíram); montagem conferida.
 
 Continua em `package.json` (linha 24) e em `bunfig.toml` (linha 6) desde que o MCP de exemplo saiu (03/10). Remover com `npm uninstall @lovable.dev/mcp-js` numa rodada com build completo, porque mexe no lockfile.
 
-### P-47 — Chaves de texto sem uso · pendente
+### P-47 — Chaves de texto sem uso · feito (13/10/2026)
+
+- **Feito em 13/10/2026:** `catalog.access.close` saiu dos 4 dicionários. Também saíram `eq.invite.newCard` e `eq.invite.newCardHint`, trocadas pelo aviso do cartão ligado (P-08).
 
 - Já saíram do `pt-BR.ts`: as citadas pelas ondas (`cust.noShopLinked`, `demo.role.partner`, `demo.role.partnerHint`) e as de 03/10 (`fix.ajustes-marca.waTooLongFilled`, `auth.info.createdWithWhatsapp`, `fix.fidelidade-insights.policyTiersNotice` e `fix.fidelidade-insights.policyPointRate`; CONTINUIDADE, linha 304).
 - `fix.fidelidade-insights.policyFooter` continua no `pt-BR.ts` (linha 3931) e **está em uso** ([politica.tsx](../../src/routes/politica.tsx), linha 278). Não apagar.
@@ -348,8 +367,8 @@ Continua em `package.json` (linha 24) e em `bunfig.toml` (linha 6) desde que o M
 ### P-48 — Pequenos restos · pendente
 
 - `supabase/tests/privacy_requests.sql` só passa como `supabase_admin` na cópia local (CONTINUIDADE, linha 238).
-- Fila `google_calendar_pushes` continua depois de desconectar o Google ([google-verificacao.md](../google-verificacao.md), item 6 do fim).
-- `professionalRefusal` ([session.ts](../../src/lib/auth/session.ts), linha 182) e `requireProfessional` ([guards.ts](../../src/lib/auth/guards.ts), linha 43) sem teste automático: conferido no código em 12/10, nenhum `*.test.ts` cita as duas. Precisariam simular o Supabase. Origem do item: relatório da onda 2, fora do repositório.
+- Fila `google_calendar_pushes` continua depois de desconectar o Google ([google-verificacao.md](../google-verificacao.md), item 6 do fim). **Conferido em 13/10/2026:** o `disconnect` apaga `google_connections` e `google_calendar_events`, mas não a fila; os pendentes viram falha depois de 5 tentativas e ficam guardados, e reaparecem em `get_my_google_connection` se a pessoa reconectar. Tabela vazia em produção hoje. Saída: no `disconnect`, apagar os pendentes e falhas da pessoa.
+- `professionalRefusal` ([session.ts](../../src/lib/auth/session.ts); desde 13/10 também lê o convite aguardando) e `requireProfessional` ([guards.ts](../../src/lib/auth/guards.ts), linha 43) sem teste automático: conferido no código em 12/10, nenhum `*.test.ts` cita as duas. Precisariam simular o Supabase. Origem do item: relatório da onda 2, fora do repositório.
 - No celular de 360 px o exemplo "Mínimo 6 caracteres" corta (CONTINUIDADE, linha 214). Se ainda acontece: **não confirmado**.
 - `.env` é versionado (1 commit, `95bc8b4`), só com variáveis públicas (`SUPABASE_URL`, `*_PUBLISHABLE_KEY`, `*_PROJECT_ID`). A cópia local foi apontada para o servidor atual (CONTINUIDADE, linha 398) e essa alteração não deve entrar em commit. O `scripts/autossave.sh` já exclui `.env` e `.env.*` (linha 17; AGENTS.md, seção 9). Um `git add` manual não exclui, e o `.gitignore` não vale para arquivo que já está versionado.
 
@@ -361,7 +380,9 @@ Continua em `package.json` (linha 24) e em `bunfig.toml` (linha 6) desde que o M
 - Dois testes versionados ficam fora da lista e nunca rodam: `src/lib/shop/favicon.test.ts` e `src/lib/shop/slugify.test.ts`. Rodados à mão em 12/10 (`node --test`), passam: 3 testes.
 - **Saída:** acrescentar os dois à lista. Todo teste novo também precisa entrar nela, senão não roda.
 
-### P-52 — Documentos-fonte desatualizados · pendente
+### P-52 — Documentos-fonte desatualizados · feito (13/10/2026)
+
+- **Feito em 13/10/2026:** [mb-operacao.md](../mb-operacao.md) reescrito nos trechos de mapa, contas, e-mail (SMTP da Hostinger, remetente `noreply@contheiner.digital`), endereços da API, redirecionamentos do Google e checklists, com cada fato conferido; [AGENTS.md](../../AGENTS.md) (Operação) e [supabase/README.md](../../supabase/README.md) sem o Titan, com aviso para reaplicar pela seção 5 do [banco-e-implantacao.md](banco-e-implantacao.md).
 
 - [mb-operacao.md](../mb-operacao.md) (atualizado em 23/09), "Mapa rápido" (linhas 16-19): dá a API de hoje como `supabase-teste.proh.media`, `supabasebeauty.contheiner.digital` com "DNS A pendente", o e-mail Titan como "A configurar" e o login Google como "A configurar no Coolify".
 - Pelo CONTINUIDADE de 29/09 e 02/10 (linhas 397-400): o endereço oficial é `supabase-barbearia.proh.media`; `supabase-teste` agora leva a outro servidor (não usar); `supabasebeauty` está no mesmo servidor e é o que o site publicado usa; o login Google foi restaurado em 30/09; o e-mail do sistema é o SMTP da Hostinger (Titan abandonado).

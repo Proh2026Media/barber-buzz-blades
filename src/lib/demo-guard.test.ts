@@ -91,6 +91,7 @@ const OUTSIDE_DEMO = new Map<string, string>([
   ["features/platform/AccountManagersPanel.tsx", "plataforma: escondido em demoMode"],
   ["features/platform/PlatformWhatsAppCard.tsx", "plataforma: escondido em demoMode"],
   ["features/shop/ShopTeamAccessCard.tsx", "aba Equipe: só fora da demonstração"],
+  ["features/shop/ShopWelcomeDialog.tsx", "ShopShell: só fora da demonstração"],
   ["features/shop/settings/ShopDomainCard.tsx", "Ajustes → Endereços: só fora da demonstração"],
   ["features/shop/settings/SlugRedirectsCard.tsx", "Ajustes → Endereços: só fora da demonstração"],
   ["features/shop/settings/decision-queue.ts", "contagem de decisões: só fora da demonstração"],

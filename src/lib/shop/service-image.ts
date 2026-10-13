@@ -73,10 +73,14 @@ export async function uploadServiceImage(shopId: string, file: File) {
   return `${data.publicUrl}?v=${Date.now()}`;
 }
 
-/** Foto do profissional: mesmo bucket de mídia da loja, pasta staff/. */
-export async function uploadStaffAvatar(shopId: string, file: File) {
+/**
+ * Foto do profissional: mesmo bucket de mídia da loja, pasta staff/. Com `staffId`, grava na
+ * pasta do próprio profissional (staff/<id>/), a única que quem não gerencia a equipe pode usar.
+ */
+export async function uploadStaffAvatar(shopId: string, file: File, staffId?: string) {
   const extension = EXTENSION_BY_TYPE[file.type] ?? "webp";
-  const path = `${shopId}/staff/${crypto.randomUUID()}.${extension}`;
+  const folder = staffId ? `${shopId}/staff/${staffId}` : `${shopId}/staff`;
+  const path = `${folder}/${crypto.randomUUID()}.${extension}`;
   const { error } = await supabase.storage.from(SERVICE_IMAGE_BUCKET).upload(path, file, {
     cacheControl: "3600",
     contentType: file.type || "image/webp",

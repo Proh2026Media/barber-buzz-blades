@@ -176,10 +176,19 @@ export async function resolvePostAuthPath(preferredNext?: string): Promise<strin
 
 /**
  * Por que o painel recusou a conta: vínculo de equipe encerrado ("removido") ou nenhum vínculo
- * ("sem-acesso"). O convite aguardando aprovação dos donos ainda não é legível pela pessoa
- * convidada (precisa de consulta no banco).
+ * ("sem-acesso"), ou convite ainda aguardando a aprovação dos donos ("aguardando"). Sem a
+ * função dos convites no banco, segue para os outros motivos.
  */
 export async function professionalRefusal(profile: SessionProfile): Promise<AccessNotice> {
+  try {
+    const rpc = supabase.rpc.bind(supabase) as unknown as (
+      fn: string,
+    ) => PromiseLike<{ data: unknown; error: unknown }>;
+    const { data, error } = await rpc("get_my_pending_shop_invites");
+    if (!error && Array.isArray(data) && data.length > 0) return "aguardando";
+  } catch {
+    // Função ainda não aplicada: segue.
+  }
   try {
     const { data, error } = await supabase
       .from("shop_members")

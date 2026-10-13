@@ -1,7 +1,8 @@
 import { createContext } from "react";
 
 /** Pedido de convite vindo da aba Equipe ("Com acesso ao painel", "Dar acesso ao painel"). */
-export type TeamInviteRequest = { nonce: number; name?: string };
+/** `staffId`: cartão do profissional que vai ganhar o acesso (liga a conta a ele, sem criar outro). */
+export type TeamInviteRequest = { nonce: number; name?: string; staffId?: string };
 
 /**
  * Liga os botões da aba Equipe ao convite do cartão de acessos (ShopTeamAccessCard): a aba

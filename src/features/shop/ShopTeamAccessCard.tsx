@@ -5,8 +5,10 @@ import {
   Crown,
   Handshake,
   Hourglass,
+  Link2,
   Lock,
   Mail,
+  MessageCircle,
   PauseCircle,
   PieChart,
   RefreshCw,
@@ -74,6 +76,19 @@ type ShopTeamAccessCardProps = {
 };
 
 type Outcome = { memberId: string | null; state: ActionState; text: string };
+type InviteDone = {
+  pending: boolean;
+  email: string;
+  name: string;
+  role: EditableRole | null;
+  shopName: string;
+  password: string | null;
+  /** Link de entrada no domínio da loja (P-15); nulo enquanto a função antiga estiver no ar. */
+  link: string | null;
+  /** "entry": entra sem senha e cria a senha; "login": conta antiga, entra com a senha de sempre. */
+  linkKind: "entry" | "login" | null;
+  emailStatus: "queued" | "skipped_test" | "failed" | null;
+};
 const SHARE_OPTIONS = [10, 25, 40, 50];
 
 async function inviteMember(body: Record<string, unknown>) {
@@ -97,6 +112,11 @@ async function inviteMember(body: Record<string, unknown>) {
     status?: string;
     temporary_password?: string | null;
     email?: string;
+    created?: boolean;
+    barbershop?: { name?: string } | null;
+    invite_link?: string;
+    link_kind?: "entry" | "login";
+    email_status?: "queued" | "skipped_test" | "failed";
   } = {};
   try {
     payload = raw ? (JSON.parse(raw) as typeof payload) : {};
@@ -231,6 +251,54 @@ function ShareChooser({
   );
 }
 
+/** Resultado do convite: link para mandar pelo WhatsApp e o que aconteceu com o e-mail. */
+function InviteShareCard({ done }: { done: InviteDone }) {
+  const { t } = useI18n();
+  if (!done.link) return null;
+  const roleLabel = done.role ? t(`eq.role.${done.role}` as const) : t("eq.invite.newPerson");
+  const shop = done.shopName || t("eq.invite.theShop");
+  const message =
+    done.linkKind === "entry"
+      ? t("eq.invite.shareEntry", { shop, role: roleLabel, link: done.link })
+      : t("eq.invite.shareLogin", { shop, role: roleLabel, link: done.link });
+  const emailNote =
+    done.emailStatus === "queued"
+      ? { tone: "success" as const, text: t("eq.invite.emailQueued", { email: done.email }) }
+      : done.emailStatus === "skipped_test"
+        ? { tone: "muted" as const, text: t("eq.invite.emailTest") }
+        : { tone: "warning" as const, text: t("eq.invite.emailFailed") };
+  return (
+    <div className="space-y-3">
+      <CopyField
+        label={done.linkKind === "entry" ? t("eq.invite.entryLink") : t("eq.invite.loginLink")}
+        value={done.link}
+        shareTitle={t("eq.invite.shareTitle", { shop })}
+      />
+      <a
+        href={`https://wa.me/?text=${encodeURIComponent(message)}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="action-button action-confirm min-h-11 w-full justify-center"
+      >
+        <MessageCircle className="size-4" aria-hidden />
+        {t("eq.invite.sendWhatsapp")}
+      </a>
+      <Hint icon={Mail} tone={emailNote.tone}>
+        {emailNote.text}
+      </Hint>
+      {done.linkKind === "entry" ? (
+        <Hint icon={Lock} tone="muted">
+          {t("eq.invite.entryHint")}
+        </Hint>
+      ) : (
+        <Hint icon={UserPlus} tone="muted">
+          {t("eq.invite.existingHint", { email: done.email })}
+        </Hint>
+      )}
+    </div>
+  );
+}
+
 export function ShopTeamAccessCard({
   shopId,
   canApplyProtected,
@@ -268,13 +336,9 @@ export function ShopTeamAccessCard({
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteTouched, setInviteTouched] = useState(false);
-  const [inviteDone, setInviteDone] = useState<{
-    pending: boolean;
-    email: string;
-    password: string | null;
-  } | null>(null);
-  // Convite aberto pelo cartão de um profissional: hoje o servidor cria um cartão novo.
-  const [inviteFromCard, setInviteFromCard] = useState(false);
+  const [inviteDone, setInviteDone] = useState<InviteDone | null>(null);
+  // Convite aberto pelo cartão de um profissional: a conta é ligada a esse cartão.
+  const [inviteStaffId, setInviteStaffId] = useState<string | null>(null);
 
   // Um só ponto zera o convite (aba Equipe e "Convidar outra" usam o mesmo).
   const resetInvite = useCallback(() => {
@@ -285,7 +349,7 @@ export function ShopTeamAccessCard({
     setInviteError(null);
     setInviteTouched(false);
     setInviteDone(null);
-    setInviteFromCard(false);
+    setInviteStaffId(null);
   }, []);
 
   const photoOf = useMemo(() => {
@@ -331,7 +395,7 @@ export function ShopTeamAccessCard({
     if (!canEditSociety) return;
     resetInvite();
     setInviteName(pendingInvite.name ?? "");
-    setInviteFromCard(Boolean(pendingInvite.name));
+    setInviteStaffId(pendingInvite.staffId ?? null);
     setInviteOpen(true);
   }, [pendingInvite, clearInviteRequest, canEditSociety, resetInvite]);
 
@@ -470,12 +534,19 @@ export function ShopTeamAccessCard({
         full_name: inviteName.trim() || undefined,
         role: inviteRole,
         ownership_percent: inviteRole === "owner" ? inviteShare : undefined,
+        staff_id: inviteStaffId ?? undefined,
       });
       const pending = payload.status === "pending";
       setInviteDone({
         pending,
         email: payload.email ?? inviteEmail.trim(),
+        name: inviteName.trim(),
+        role: inviteRole,
+        shopName: payload.barbershop?.name ?? "",
         password: payload.temporary_password ?? null,
+        link: payload.invite_link ?? null,
+        linkKind: payload.link_kind ?? null,
+        emailStatus: payload.email_status ?? null,
       });
       setOutcome({
         memberId: null,
@@ -849,7 +920,8 @@ export function ShopTeamAccessCard({
                     : undefined
                 }
               />
-              {inviteDone.password && (
+              <InviteShareCard done={inviteDone} />
+              {inviteDone.password && !inviteDone.link && (
                 <div className="space-y-2">
                   <CopyField
                     label={t("eq.invite.password")}
@@ -923,9 +995,16 @@ export function ShopTeamAccessCard({
                   />
                 )}
               </Field>
-              {inviteFromCard && (
-                <Notice tone="warning" icon={UserPlus} role="none" title={t("eq.invite.newCard")}>
-                  {t("eq.invite.newCardHint")}
+              {inviteStaffId && (
+                <Notice
+                  tone="info"
+                  icon={Link2}
+                  role="none"
+                  title={t("eq.invite.linkCard", {
+                    name: inviteName.trim() || t("eq.invite.newPerson"),
+                  })}
+                >
+                  {t("eq.invite.linkCardHint")}
                 </Notice>
               )}
               <ChoiceCards

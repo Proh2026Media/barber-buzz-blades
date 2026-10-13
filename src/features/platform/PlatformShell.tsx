@@ -153,6 +153,8 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
   const [newShopOpen, setNewShopOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteShopId, setInviteShopId] = useState<string | null>(null);
+  // Loja recém-criada: o convite já abre como "primeiro dono" (100%).
+  const [inviteFirstOwner, setInviteFirstOwner] = useState(false);
   const [demoShopId, setDemoShopId] = useState("");
   const [waStatus, setWaStatus] = useState<PlatformWaReport | null>(null);
   const [loginTourOpen, setLoginTourOpen] = useState(false);
@@ -364,8 +366,9 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
     setPlatformTab("shops");
   }
 
-  function openInvite(shopId?: string | null) {
+  function openInvite(shopId?: string | null, firstOwner = false) {
     setInviteShopId(shopId ?? null);
+    setInviteFirstOwner(firstOwner);
     setInviteOpen(true);
   }
 
@@ -734,7 +737,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
         onCreate={createShop}
         onAddPerson={(shop) => {
           showNewShop(shop);
-          openInvite(shop.id);
+          openInvite(shop.id, true);
         }}
         onCustomize={(shop) => {
           showNewShop(shop);
@@ -755,6 +758,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
         }}
         shops={shops}
         initialShopId={inviteShopId}
+        firstOwner={inviteFirstOwner}
         demoMode={demoMode}
       />
 

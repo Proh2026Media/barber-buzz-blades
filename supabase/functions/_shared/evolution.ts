@@ -13,10 +13,9 @@ export function json(body: unknown, status = 200) {
 }
 
 export function evolutionConfig() {
-  const url = (Deno.env.get("EVOLUTION_API_URL") ?? "https://evolutionapi.contheiner.digital").replace(
-    /\/$/,
-    "",
-  );
+  const url = (
+    Deno.env.get("EVOLUTION_API_URL") ?? "https://evolutionapi.contheiner.digital"
+  ).replace(/\/$/, "");
   const apiKey = Deno.env.get("EVOLUTION_API_KEY") ?? Deno.env.get("AUTHENTICATION_API_KEY");
   if (!apiKey) throw new Error("Missing EVOLUTION_API_KEY");
   return { url, apiKey };

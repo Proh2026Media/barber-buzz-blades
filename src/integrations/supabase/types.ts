@@ -248,6 +248,8 @@ export type Database = {
           active: boolean;
           created_at: string;
           updated_at: string;
+          /** Nulo: a janela de boas-vindas ainda não foi vista (vínculo novo ou papel novo). */
+          welcome_seen_at?: string | null;
         };
         Insert: {
           id?: string;
@@ -259,8 +261,37 @@ export type Database = {
           active?: boolean;
           created_at?: string;
           updated_at?: string;
+          welcome_seen_at?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["shop_members"]["Insert"]>;
+        Relationships: [];
+      };
+      shop_invite_links: {
+        Row: {
+          id: string;
+          token_hash: string;
+          barbershop_id: string;
+          user_id: string;
+          role: Database["public"]["Enums"]["shop_member_role"];
+          created_by: string | null;
+          created_at: string;
+          expires_at: string;
+          last_used_at: string | null;
+          use_count: number;
+        };
+        Insert: {
+          id?: string;
+          token_hash: string;
+          barbershop_id: string;
+          user_id: string;
+          role: Database["public"]["Enums"]["shop_member_role"];
+          created_by?: string | null;
+          created_at?: string;
+          expires_at?: string;
+          last_used_at?: string | null;
+          use_count?: number;
+        };
+        Update: Partial<Database["public"]["Tables"]["shop_invite_links"]["Insert"]>;
         Relationships: [];
       };
       shop_change_requests: {
@@ -1598,6 +1629,7 @@ export type Database = {
           p_role: Database["public"]["Enums"]["shop_member_role"];
           p_ownership_percent?: number | null;
           p_display_name?: string | null;
+          p_staff_id?: string | null;
         };
         Returns: string;
       };
@@ -1608,9 +1640,12 @@ export type Database = {
           p_role: Database["public"]["Enums"]["shop_member_role"];
           p_ownership_percent?: number | null;
           p_display_name?: string | null;
+          p_staff_id?: string | null;
         };
         Returns: Json;
       };
+      mark_shop_welcome_seen: { Args: { p_shop_id: string }; Returns: boolean };
+      get_my_pending_shop_invites: { Args: Record<string, never>; Returns: Json };
       shop_update_member: {
         Args: {
           p_shop_id: string;

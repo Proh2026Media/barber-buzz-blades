@@ -1,10 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import {
-  corsHeaders,
-  evolutionFetch,
-  instanceNameForShop,
-  json,
-} from "../_shared/evolution.ts";
+import { corsHeaders, evolutionFetch, instanceNameForShop, json } from "../_shared/evolution.ts";
 
 type Body = {
   action?: "status" | "connect" | "create" | "logout" | "settings";
@@ -15,11 +10,14 @@ type Body = {
   enabled?: boolean;
 };
 
-function mapEvolutionState(state: string | undefined): "disconnected" | "qr" | "connecting" | "open" {
+function mapEvolutionState(
+  state: string | undefined,
+): "disconnected" | "qr" | "connecting" | "open" {
   const value = (state ?? "").toLowerCase();
   if (value === "open") return "open";
   if (value === "connecting") return "connecting";
-  if (value.includes("qr") || value === "close") return value.includes("qr") ? "qr" : "disconnected";
+  if (value.includes("qr") || value === "close")
+    return value.includes("qr") ? "qr" : "disconnected";
   return "disconnected";
 }
 
@@ -157,8 +155,7 @@ Deno.serve(async (req) => {
             qrcode: true,
           }),
         })) as { qrcode?: { base64?: string }; base64?: string };
-        const fromCreate =
-          created?.qrcode?.base64 ?? created?.base64 ?? null;
+        const fromCreate = created?.qrcode?.base64 ?? created?.base64 ?? null;
         return typeof fromCreate === "string" ? fromCreate : null;
       } catch (err) {
         const message = err instanceof Error ? err.message : "";
@@ -199,11 +196,17 @@ Deno.serve(async (req) => {
           state = "disconnected";
         }
 
-        if (state !== "open" && (action === "connect" || action === "create" || state === "disconnected")) {
+        if (
+          state !== "open" &&
+          (action === "connect" || action === "create" || state === "disconnected")
+        ) {
           try {
-            const connectData = (await evolutionFetch(`/instance/connect/${channel.instance_name}`, {
-              method: "GET",
-            })) as { base64?: string; qrcode?: { base64?: string }; code?: string };
+            const connectData = (await evolutionFetch(
+              `/instance/connect/${channel.instance_name}`,
+              {
+                method: "GET",
+              },
+            )) as { base64?: string; qrcode?: { base64?: string }; code?: string };
 
             qrcode =
               normalizeQr(
@@ -214,9 +217,12 @@ Deno.serve(async (req) => {
           } catch (err) {
             if (!isMissingInstance(err)) throw err;
             qrcode = normalizeQr(await ensureInstance()) ?? qrcode;
-            const connectData = (await evolutionFetch(`/instance/connect/${channel.instance_name}`, {
-              method: "GET",
-            })) as { base64?: string; qrcode?: { base64?: string }; code?: string };
+            const connectData = (await evolutionFetch(
+              `/instance/connect/${channel.instance_name}`,
+              {
+                method: "GET",
+              },
+            )) as { base64?: string; qrcode?: { base64?: string }; code?: string };
             qrcode =
               normalizeQr(
                 connectData?.base64 ??
@@ -228,11 +234,16 @@ Deno.serve(async (req) => {
 
         if (state === "open") {
           try {
-            const info = (await evolutionFetch(`/instance/fetchInstances?instanceName=${channel.instance_name}`, {
-              method: "GET",
-            })) as Array<{ ownerJid?: string; instance?: { ownerJid?: string } }> | {
-              ownerJid?: string;
-            };
+            const info = (await evolutionFetch(
+              `/instance/fetchInstances?instanceName=${channel.instance_name}`,
+              {
+                method: "GET",
+              },
+            )) as
+              | Array<{ ownerJid?: string; instance?: { ownerJid?: string } }>
+              | {
+                  ownerJid?: string;
+                };
             const row = Array.isArray(info) ? info[0] : info;
             const jid = row?.ownerJid ?? row?.instance?.ownerJid;
             if (typeof jid === "string" && jid.includes("@")) {
@@ -244,7 +255,13 @@ Deno.serve(async (req) => {
         }
 
         const nextStatus =
-          state === "open" ? "open" : qrcode ? "qr" : state === "connecting" ? "connecting" : "disconnected";
+          state === "open"
+            ? "open"
+            : qrcode
+              ? "qr"
+              : state === "connecting"
+                ? "connecting"
+                : "disconnected";
 
         const { data: updated } = await admin
           .from("whatsapp_channels")

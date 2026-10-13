@@ -47,6 +47,7 @@ export function InviteMemberDialog({
   onOpenChange,
   shops,
   initialShopId,
+  firstOwner = false,
   demoMode = false,
 }: {
   open: boolean;
@@ -54,6 +55,8 @@ export function InviteMemberDialog({
   shops: Tables<"barbershops">[];
   /** Barbearia já escolhida (vem da ficha ou da lista de atenção). */
   initialShopId?: string | null;
+  /** Loja recém-criada, ainda sem dono: abre em "Dono" e o primeiro dono entra com 100%. */
+  firstOwner?: boolean;
   /** Na demonstração nada vai ao servidor: o envio só mostra o que aconteceria. */
   demoMode?: boolean;
 }) {
@@ -83,12 +86,14 @@ export function InviteMemberDialog({
     if (!open) return;
     const wanted = activeShops.find((item) => item.id === initialShopId);
     setShop(wanted?.id ?? activeShops[0]?.id ?? "");
+    if (firstOwner) setRole("owner");
     setError(null);
     setResult(null);
     setDemoNote(null);
     guard.reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, initialShopId]);
+  }, [open, initialShopId, firstOwner]);
+  const soleOwner = firstOwner && role === "owner" && shop === initialShopId;
 
   const roleLabel = (value: InviteRole) =>
     value === "owner"
@@ -122,7 +127,7 @@ export function InviteMemberDialog({
             barbershop_id: shop,
             full_name: name.trim() || undefined,
             role,
-            ownership_percent: role === "owner" ? share : undefined,
+            ownership_percent: role === "owner" ? (soleOwner ? 100 : share) : undefined,
           },
         },
       );
@@ -227,7 +232,12 @@ export function InviteMemberDialog({
             ]}
           />
 
-          {role === "owner" && (
+          {soleOwner && (
+            <Hint icon={User} tone="success">
+              {t("plat.invite.firstOwnerHint")}
+            </Hint>
+          )}
+          {role === "owner" && !soleOwner && (
             <div className="space-y-3 rounded-2xl border border-border bg-background p-3">
               <ChoiceChips
                 label={t("plat.invite.share")}

@@ -7,7 +7,9 @@ type Body = {
   action?: "status" | "connect" | "logout";
 };
 
-function mapEvolutionState(state: string | undefined): "disconnected" | "qr" | "connecting" | "open" {
+function mapEvolutionState(
+  state: string | undefined,
+): "disconnected" | "qr" | "connecting" | "open" {
   const value = (state ?? "").toLowerCase();
   if (value === "open") return "open";
   if (value === "connecting") return "connecting";
@@ -159,9 +161,11 @@ Deno.serve(async (req) => {
           const info = (await evolutionFetch(
             `/instance/fetchInstances?instanceName=${instanceName}`,
             { method: "GET" },
-          )) as Array<{ ownerJid?: string; instance?: { ownerJid?: string } }> | {
-            ownerJid?: string;
-          };
+          )) as
+            | Array<{ ownerJid?: string; instance?: { ownerJid?: string } }>
+            | {
+                ownerJid?: string;
+              };
           const row = Array.isArray(info) ? info[0] : info;
           const jid = row?.ownerJid ?? row?.instance?.ownerJid;
           if (typeof jid === "string" && jid.includes("@")) {
@@ -173,7 +177,13 @@ Deno.serve(async (req) => {
       }
 
       status =
-        state === "open" ? "open" : qrcode ? "qr" : state === "connecting" ? "connecting" : "disconnected";
+        state === "open"
+          ? "open"
+          : qrcode
+            ? "qr"
+            : state === "connecting"
+              ? "connecting"
+              : "disconnected";
     } catch (err) {
       lastError = err instanceof Error ? err.message : "Falha Evolution";
       return json(

@@ -97,6 +97,10 @@ const PATTERNS: Array<{ test: RegExp; message: MessageKey }> = [
     message: "eq.leave.forfeitNotRejectable",
   },
   { test: /j[áa] est[áa] na equipe desta barbearia/i, message: "eq.invite.alreadyMember" },
+  // Convite (20261013210000_convite_boas_vindas_papeis.sql).
+  { test: /j[áa] est[áa] ligado a outra conta/i, message: "eq.invite.staffLinked" },
+  { test: /j[áa] tem outro cart[ãa]o de profissional/i, message: "eq.invite.otherCard" },
+  { test: /primeiro dono da barbearia entra com 100/i, message: "eq.invite.firstOwner" },
   {
     test: /invalid login credentials|invalid_credentials|email.*password/i,
     message: "errors.invalidCredentials",

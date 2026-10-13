@@ -15,6 +15,7 @@ import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as PoliticaRouteImport } from './routes/politica'
 import { Route as PlatformRouteImport } from './routes/platform'
 import { Route as DemoRouteImport } from './routes/demo'
+import { Route as ConviteRouteImport } from './routes/convite'
 import { Route as CadastrarRouteImport } from './routes/cadastrar'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
@@ -53,6 +54,11 @@ const PlatformRoute = PlatformRouteImport.update({
 const DemoRoute = DemoRouteImport.update({
   id: '/demo',
   path: '/demo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConviteRoute = ConviteRouteImport.update({
+  id: '/convite',
+  path: '/convite',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CadastrarRoute = CadastrarRouteImport.update({
@@ -108,6 +114,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
   '/cadastrar': typeof CadastrarRoute
+  '/convite': typeof ConviteRoute
   '/demo': typeof DemoRoute
   '/platform': typeof PlatformRoute
   '/politica': typeof PoliticaRoute
@@ -125,6 +132,7 @@ export interface FileRoutesByTo {
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
   '/cadastrar': typeof CadastrarRoute
+  '/convite': typeof ConviteRoute
   '/demo': typeof DemoRoute
   '/platform': typeof PlatformRoute
   '/politica': typeof PoliticaRoute
@@ -143,6 +151,7 @@ export interface FileRoutesById {
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
   '/cadastrar': typeof CadastrarRoute
+  '/convite': typeof ConviteRoute
   '/demo': typeof DemoRoute
   '/platform': typeof PlatformRoute
   '/politica': typeof PoliticaRoute
@@ -162,6 +171,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/cadastrar'
+    | '/convite'
     | '/demo'
     | '/platform'
     | '/politica'
@@ -179,6 +189,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/cadastrar'
+    | '/convite'
     | '/demo'
     | '/platform'
     | '/politica'
@@ -196,6 +207,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/cadastrar'
+    | '/convite'
     | '/demo'
     | '/platform'
     | '/politica'
@@ -214,6 +226,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRoute
   AuthRoute: typeof AuthRoute
   CadastrarRoute: typeof CadastrarRoute
+  ConviteRoute: typeof ConviteRoute
   DemoRoute: typeof DemoRoute
   PlatformRoute: typeof PlatformRoute
   PoliticaRoute: typeof PoliticaRoute
@@ -267,6 +280,13 @@ declare module '@tanstack/react-router' {
       path: '/demo'
       fullPath: '/demo'
       preLoaderRoute: typeof DemoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/convite': {
+      id: '/convite'
+      path: '/convite'
+      fullPath: '/convite'
+      preLoaderRoute: typeof ConviteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cadastrar': {
@@ -342,6 +362,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRoute,
   AuthRoute: AuthRoute,
   CadastrarRoute: CadastrarRoute,
+  ConviteRoute: ConviteRoute,
   DemoRoute: DemoRoute,
   PlatformRoute: PlatformRoute,
   PoliticaRoute: PoliticaRoute,

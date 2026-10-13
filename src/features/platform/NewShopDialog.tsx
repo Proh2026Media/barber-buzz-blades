@@ -125,7 +125,7 @@ export function NewShopDialog({
                   className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
                 >
                   <UserPlus className="size-4" aria-hidden />
-                  {t("plat.shop.addPerson")}
+                  {t("plat.shop.addOwner")}
                 </button>
               )}
               {created.shop && (

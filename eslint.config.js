@@ -9,6 +9,7 @@ export default tseslint.config(
   {
     ignores: [
       "**/._*",
+      ".fotos/**",
       ".kilo/**",
       ".nitro",
       ".output",
@@ -16,6 +17,7 @@ export default tseslint.config(
       ".vinxi",
       ".wrangler",
       "dist",
+      "scratch/**",
       "supabase/.temp",
     ],
   },

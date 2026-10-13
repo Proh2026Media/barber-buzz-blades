@@ -213,7 +213,7 @@ export function TeamTab({
    * Convidar ao painel (dono/sócio). Os convites, a sociedade e as permissões ficam num lugar só,
    * em Ajustes → Equipe e sociedade; daqui o convite abre lá, já com o nome do profissional.
    */
-  onInvite?: (name?: string) => void;
+  onInvite?: (name?: string, staffId?: string) => void;
   /** Abre Ajustes → Equipe e sociedade (pessoas, %, convites e permissões). */
   onOpenAccess?: () => void;
   actions: StaffActions;
@@ -235,7 +235,7 @@ export function TeamTab({
   const [flashId, setFlashId] = useState<string | null>(null);
   // Convites ficam em Ajustes → Equipe e sociedade (com o nome do profissional, se veio do cartão).
   const canInvite = Boolean(onInvite);
-  const openInvite = (name?: string) => onInvite?.(name);
+  const openInvite = (name?: string, staffId?: string) => onInvite?.(name, staffId);
 
   const visible = staff.filter(
     (row) =>
@@ -578,7 +578,7 @@ export function TeamTab({
                       id: "invite",
                       label: t("catalog.staff.giveAccess"),
                       icon: UserPlus,
-                      onSelect: () => openInvite(member.display_name),
+                      onSelect: () => openInvite(member.display_name, member.id),
                     },
                   ]
                 : []),

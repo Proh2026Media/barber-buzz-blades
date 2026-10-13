@@ -16,7 +16,11 @@ const DISMISS_MS = 30 * 24 * 60 * 60 * 1000;
 
 /** Nunca por cima da entrada e do cadastro: o convite não cobre formulário. */
 function hiddenOn(pathname: string) {
-  return pathname.startsWith("/auth") || pathname.startsWith("/cadastrar");
+  return (
+    pathname.startsWith("/auth") ||
+    pathname.startsWith("/cadastrar") ||
+    pathname.startsWith("/convite")
+  );
 }
 
 /** No iPhone o Safari não oferece o botão de instalar: o convite mostra os 2 passos. */
