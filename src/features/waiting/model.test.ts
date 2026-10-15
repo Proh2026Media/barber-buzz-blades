@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createDemoState, demoReducer } from "../demo/model.ts";
-import { canHold, blocksSlot } from "./model.ts";
+import { canHold, blocksSlot, waitOpportunities, type SlotWait } from "./model.ts";
 import { waitingDemoAction } from "./demo.ts";
 
 function fixture() {
@@ -128,4 +128,47 @@ test("disabling preserves an already claimed appointment and direct demo booking
     settings: { ...state.settings, waiting_enabled: false },
   });
   assert.equal(state.appointments.find((row) => row.id === claimed.id)?.status, "confirmed");
+});
+test("'qualquer profissional' vê as vagas de todos, cada uma pela duração do próprio profissional", () => {
+  const now = new Date("2026-09-17T12:00:00Z");
+  const wait = (id: string, staff_id: string, minutes: number, extra: Partial<SlotWait> = {}) => ({
+    id,
+    appointment_id: null,
+    staff_id,
+    starts_at: "2026-09-17T15:00:00Z",
+    ends_at: new Date(Date.parse("2026-09-17T15:00:00Z") + minutes * 60000).toISOString(),
+    hold_until: "2026-09-17T12:10:00Z",
+    claim_until: "2026-09-17T12:15:00Z",
+    state: "holding" as const,
+    mine: false,
+    has_interest: false,
+    service_id: null,
+    restorable: false,
+    ...extra,
+  });
+  const waits: SlotWait[] = [
+    wait("ana-30", "ana", 30),
+    wait("bia-30", "bia", 30),
+    wait("caio-60", "caio", 60),
+    wait("ana-ocupada", "ana", 60, { has_interest: true }),
+    wait("ana-vencida", "ana", 60, { hold_until: "2026-09-17T11:59:00Z" }),
+    wait("ana-amanha", "ana", 60, { starts_at: "2026-09-18T15:00:00Z", ends_at: "2026-09-18T16:00:00Z" }),
+  ];
+  // Ana faz o corte em 30 min, Bia em 45 min, Caio não faz o serviço.
+  const durationFor = (staffId: string) => ({ ana: 30, bia: 45 })[staffId] ?? null;
+  const base = { durationFor, day: "2026-09-17", dayOf: (iso: string) => iso.slice(0, 10), now };
+  const ids = (staffId: string | null) =>
+    waitOpportunities(waits, { ...base, staffId }).map((w) => w.id);
+  assert.deepEqual(ids(null), ["ana-30"]);
+  assert.deepEqual(ids("ana"), ["ana-30"]);
+  assert.deepEqual(ids("bia"), []);
+  assert.deepEqual(ids("caio"), []);
+  const longer = waitOpportunities([...waits, wait("bia-45", "bia", 45)], { ...base, staffId: null });
+  assert.deepEqual(
+    longer.map((w) => [w.id, w.staff_id]),
+    [
+      ["ana-30", "ana"],
+      ["bia-45", "bia"],
+    ],
+  );
 });

@@ -9,60 +9,7 @@ import {
 } from "@/components/visual";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-
-type MatchStatus = "live" | "extra" | "final";
-type Match = {
-  id: number;
-  league: string;
-  home: string;
-  away: string;
-  scoreH: number;
-  scoreA: number;
-  status: MatchStatus;
-  /** Minuto do jogo ao vivo ("82'"). */
-  minute?: string;
-};
-
-/** Placares fictícios da demonstração (fora dela ainda não há fonte de jogos). */
-const DEMO_MATCHES: Match[] = [
-  {
-    id: 1,
-    league: "Brasileirão",
-    home: "Flamengo",
-    away: "Palmeiras",
-    scoreH: 2,
-    scoreA: 1,
-    status: "live",
-    minute: "82'",
-  },
-  {
-    id: 2,
-    league: "Champions League",
-    home: "Real Madrid",
-    away: "Man City",
-    scoreH: 3,
-    scoreA: 3,
-    status: "extra",
-  },
-  {
-    id: 3,
-    league: "Brasileirão",
-    home: "Galo",
-    away: "Cruzeiro",
-    scoreH: 1,
-    scoreA: 0,
-    status: "final",
-  },
-  {
-    id: 4,
-    league: "NBA",
-    home: "Lakers",
-    away: "Celtics",
-    scoreH: 102,
-    scoreA: 108,
-    status: "final",
-  },
-];
+import { sportsMatches, type Match } from "./sports";
 
 type Filter = "all" | "football" | "nba";
 
@@ -118,7 +65,7 @@ export function SportsBoard({
 }) {
   const { t } = useI18n();
   const [filter, setFilter] = useState<Filter>("all");
-  const matches = demo ? DEMO_MATCHES : [];
+  const matches = sportsMatches(demo);
   const isNba = (m: Match) => m.league === "NBA";
   const counts: Record<Filter, number> = {
     all: matches.length,

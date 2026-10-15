@@ -1,5 +1,7 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+**15/10/2026 — retomada na Claude:** ler [passagem-claude-2026-10-15.md](passagem-claude-2026-10-15.md) antes deste diário. O servidor já tem o `PLATFORM_BASE_HOST` certo (P-67) e o timer de certificado (P-27). O código da lista de espera (P-31) e da aba Esportes (P-33) está no disco, sem commit. P-32 e P-38 não foram feitos. Este diário, abaixo, segue na noite de **13/10/2026**.
+
 Atualizado em **13/10/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
 ## Comece aqui

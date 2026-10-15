@@ -3,7 +3,8 @@ import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
 import { useWaiting } from "@/features/waiting/useWaiting";
 import { WaitingCards } from "@/features/waiting/WaitingUI";
-import { blocksSlot } from "@/features/waiting/model";
+import { blocksSlot, waitOpportunities } from "@/features/waiting/model";
+import { showSportsTab, sportsMatches } from "./sports";
 import { CancellationDialog } from "@/features/insights/CancellationDialog";
 import { cancellationReasonLabel, type CancellationReason } from "@/features/insights/cancellation";
 // Agendar e Reservas: passos, ticket da reserva, filtros e janelas.
@@ -529,9 +530,10 @@ function ArenaApp({
   }, [demo, userId, appointmentVersion]);
 
   const selectedService = services[serviceIdx] ?? null;
+  const sportsTab = showSportsTab(shopSettings.sports_enabled, sportsMatches(Boolean(demo)));
   useEffect(() => {
-    if (tab === "esportes" && !shopSettings.sports_enabled) setTab("dashboard");
-  }, [tab, shopSettings.sports_enabled]);
+    if (tab === "esportes" && !sportsTab) setTab("dashboard");
+  }, [tab, sportsTab]);
   useEffect(() => {
     if (demo || !shopId) return;
     let cancelled = false;
@@ -1870,15 +1872,19 @@ function ArenaApp({
             ? "empty"
             : "ready";
   // Vagas da lista de espera que podem abrir neste dia (aparecem na grade como "pode vagar").
-  const mayOpenWaits = waiting.waits.filter(
-    (w) =>
-      !w.has_interest &&
-      w.staff_id === selectedStaffId &&
-      bookingService &&
-      bookingService.duration_minutes * 60000 <= Date.parse(w.ends_at) - Date.parse(w.starts_at) &&
-      shopDateKey(new Date(w.starts_at), shopTimeZone) === selectedDay &&
-      Date.parse(w.hold_until) > +waiting.now,
-  );
+  // "Qualquer profissional" vê as de todos; cada vaga usa a duração do próprio profissional.
+  const waitDurationFor = (staffId: string) =>
+    selectedService ? (termsFor(serviceTerms, staffId, selectedService)?.duration_minutes ?? null) : null;
+  const mayOpenWaits =
+    selectedService && (selectedStaffId || anyAvailable)
+      ? waitOpportunities(waiting.waits, {
+          staffId: anyAvailable ? null : (selectedStaffId ?? null),
+          durationFor: waitDurationFor,
+          day: selectedDay,
+          dayOf: (startsAt) => shopDateKey(new Date(startsAt), shopTimeZone),
+          now: waiting.now,
+        })
+      : [];
   const selectedDayIndex = bookingDayKeys.indexOf(selectedDay);
   const nextOpenDay = bookingDayKeys
     .slice(selectedDayIndex + 1)
@@ -2541,7 +2547,7 @@ function ArenaApp({
     { id: "dashboard", icon: Compass, label: t("nav.home") },
     { id: "agenda", icon: Calendar, label: t("nav.book") },
     { id: "reservas", icon: Clock3, label: t("nav.bookings") },
-    ...(shopSettings.sports_enabled
+    ...(sportsTab
       ? [{ id: "esportes" as const, icon: Trophy, label: t("nav.sports") }]
       : []),
     { id: "perfil", icon: User, label: t("nav.account") },
@@ -3337,10 +3343,8 @@ function ArenaApp({
                         }
                       />
                       <WaitingCards
-                        controller={{
-                          ...waiting,
-                          waits: waiting.waits.filter((w) => w.staff_id === selectedStaffId),
-                        }}
+                        controller={{ ...waiting, waits: mayOpenWaits }}
+                        durationFor={waitDurationFor}
                         mode="opportunities"
                         staff={staff}
                         service={bookingService ?? undefined}
@@ -3632,7 +3636,7 @@ function ArenaApp({
             </div>
           )}
 
-          {tab === "esportes" && shopSettings.sports_enabled && (
+          {tab === "esportes" && sportsTab && (
             <SportsBoard demo={Boolean(demo)} onBack={() => setTab("dashboard")} />
           )}
 

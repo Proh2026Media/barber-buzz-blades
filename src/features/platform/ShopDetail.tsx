@@ -134,6 +134,7 @@ export function ShopDetail({
     value: boolean,
     icon: typeof Trophy,
     title: string,
+    description?: string,
   ) {
     const state = moduleState[module];
     const shown = desired[module] ?? value;
@@ -141,6 +142,7 @@ export function ShopDetail({
       <SettingRow
         icon={icon}
         title={title}
+        description={description}
         controlId={id}
         status={state}
         statusText={
@@ -212,7 +214,14 @@ export function ShopDetail({
       <section className="space-y-2">
         <SectionHeader as="h4" icon={LayoutGrid} title={t("plat.shop.modules")} />
         <div className="divide-y divide-border rounded-2xl border border-border bg-background px-3">
-          {moduleRow("sports", sportsId, sports, Trophy, t("plat.shop.sports"))}
+          {moduleRow(
+            "sports",
+            sportsId,
+            sports,
+            Trophy,
+            t("plat.shop.sports"),
+            t("plat.shop.sportsHint"),
+          )}
           {moduleRow("loyalty", loyaltyId, loyalty, Star, t("plat.shops.loyalty"))}
         </div>
       </section>

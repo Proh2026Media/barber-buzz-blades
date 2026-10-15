@@ -93,7 +93,9 @@ Se a conferência terminar com "AINDA É O TRAEFIK DEFAULT CERT", o Let's Encryp
 - Uma loja só: apagar do arquivo as 8 linhas do bloco `beauty-shop-<slug>:`, com cópia de segurança antes (para as lojas de teste, é o passo 8.4 de [testes-reais-loja-teste.md](testes-reais-loja-teste.md)). Se a loja continuar ativa, um cron instalado (seção 6) acrescentaria o bloco de volta.
 - Tirar o roteador não apaga o certificado já emitido (fica no `acme.json` do Traefik, que **não** deve ser editado à mão); o endereço volta a receber o certificado padrão.
 
-## 6. Proposta de automação (para o dono aprovar; **não instalada**)
+## 6. Proposta de automação pelo cron — **não usar; o timer do systemd já está instalado (15/10/2026)**
+
+Em 15/10 entrou o timer `barba-cert-lojas.timer` (a cada 10 minutos), instalado por `scripts/cert-loja-rotina.sh`. Não existe `/etc/cron.d/barba-cert-lojas` e não se deve criar. Estado e o que falta versionar: [passagem-claude-2026-10-15.md](passagem-claude-2026-10-15.md). O texto abaixo fica como histórico da proposta que não foi a escolhida.
 
 Hoje, quem cria uma loja precisa lembrar de rodar o script. Proposta: uma tarefa própria no cron do host, num arquivo novo em `/etc/cron.d/` (como as três `barba-*` que já existem), **sem tocar no crontab do root**.
 

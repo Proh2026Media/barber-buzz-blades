@@ -1,6 +1,8 @@
 # Leia primeiro — Barba & Cabelo
 
-Porta de entrada para o agente que vai continuar o projeto (principalmente o **Agent do Cursor**; vale também para Claude Code, Codex e outros). Atualizado em **13/10/2026**. Leia esta página inteira antes de editar qualquer arquivo; ela leva a todo o resto.
+Porta de entrada para o agente que vai continuar o projeto (Cursor, Claude Code, Codex e outros). Atualizado em **15/10/2026**.
+
+**Se você é a Claude retomando em 15/10:** leia primeiro [passagem-claude-2026-10-15.md](passagem-claude-2026-10-15.md). Ele diz onde o Cursor parou, o que já está no servidor e o que não pode ser descartado. Esta página vem em seguida.
 
 ## O que é o projeto
 
@@ -25,6 +27,7 @@ No Cursor os passos 1 a 3 e o autossave rodam sozinhos pelos ganchos de [.cursor
 
 | Ordem | Documento                                                  | Quando ler                                                                                                   |
 | ----- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| 0     | [passagem-claude-2026-10-15.md](passagem-claude-2026-10-15.md) | Primeiro, se a retomada for a de 15/10. Onde paramos, o que já foi ao servidor e o que falta.            |
 | 1     | [guia/como-trabalhar.md](guia/como-trabalhar.md)           | Sempre. Vez, idioma, verificação, fotos das telas, como registrar a entrega e armadilhas conhecidas.         |
 | 2     | [guia/pendencias.md](guia/pendencias.md)                   | Sempre. Lista única e priorizada (`P-01` em diante); a seção 1 traz as 5 recomendadas para a próxima rodada. |
 | 3     | [guia/arquitetura.md](guia/arquitetura.md)                 | Antes de mudar código: stack, mapa de pastas, sessão e áreas, idiomas, tema, PWA, demonstração.              |

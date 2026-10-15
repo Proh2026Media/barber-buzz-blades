@@ -25,7 +25,7 @@ import {
 } from "@/components/visual";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-import { CLAIM_MINUTES, HOLD_MINUTES } from "./model";
+import { CLAIM_MINUTES, HOLD_MINUTES, waitOpportunities } from "./model";
 import type { WaitingController } from "./useWaiting";
 import { DEFAULT_SHOP_TIMEZONE, formatShopDate, shopDateKey } from "@/lib/shop/appointments";
 
@@ -40,6 +40,7 @@ export function WaitingCards({
   day,
   appointmentId,
   onChanged,
+  durationFor,
   timeZone = DEFAULT_SHOP_TIMEZONE,
 }: {
   controller: WaitingController;
@@ -49,6 +50,8 @@ export function WaitingCards({
   day?: string;
   appointmentId?: string;
   onChanged?: () => void;
+  /** Duração do serviço com cada profissional (`null` = não faz); sem ela, a do catálogo. */
+  durationFor?: (staffId: string) => number | null;
   /** Fuso da barbearia: datas e horários seguem a parede da loja, não o aparelho. */
   timeZone?: string;
 }) {
@@ -68,19 +71,24 @@ export function WaitingCards({
   );
   const isPending = (id: string, action: "join" | "claim" | "leave") =>
     busy && pending?.id === id && pending.action === action;
-  const rows = waits.filter((w) => {
-    const key = shopDateKey(new Date(w.starts_at), timeZone);
-    if (mode === "shop")
-      return (!appointmentId || w.appointment_id === appointmentId) && (!day || key === day);
-    if (mode === "mine") return w.mine;
-    return (
-      !w.has_interest &&
-      service &&
-      service.duration_minutes * 60000 <= Date.parse(w.ends_at) - Date.parse(w.starts_at) &&
-      key === day &&
-      Date.parse(w.hold_until) > +now
-    );
-  });
+  const dayOf = (startsAt: string) => shopDateKey(new Date(startsAt), timeZone);
+  const rows =
+    mode === "opportunities"
+      ? service && day
+        ? waitOpportunities(waits, {
+            staffId: null,
+            durationFor: durationFor ?? (() => service.duration_minutes),
+            day,
+            dayOf,
+            now,
+          })
+        : []
+      : waits.filter((w) =>
+          mode === "shop"
+            ? (!appointmentId || w.appointment_id === appointmentId) &&
+              (!day || dayOf(w.starts_at) === day)
+            : w.mine,
+        );
   // O erro de consulta só interessa com espera ou vaga na tela; o de uma ação feita aqui fica
   // à vista mesmo que a vaga tenha saído da lista (ex.: confirmar depois do prazo).
   const queryError = error && error !== actionError ? error : null;

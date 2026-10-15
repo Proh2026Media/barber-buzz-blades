@@ -1668,6 +1668,7 @@ export const enUS: Record<MessageKey, string> = {
   "plat.shops.sheetTitle": "Barbershop details",
   "plat.shop.link": "Page link",
   "plat.shop.sports": "Sports",
+  "plat.shop.sportsHint": "Customers see the tab only when a game is live or coming up.",
   "plat.shop.modules": "Modules",
   "plat.shop.saved": "Saved",
   "plat.shop.notSaved": "Not saved",

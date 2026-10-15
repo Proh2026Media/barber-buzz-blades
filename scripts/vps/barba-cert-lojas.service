@@ -1,0 +1,14 @@
+# Barba & Cabelo: roteador de certificado para loja nova (P-27).
+# Roda o script instalado; quem dispara é barba-cert-lojas.timer (a cada 10 min).
+# Guia: docs/implantacao-certificado-loja-2026-10-13.md (seção 6).
+[Unit]
+Description=Barba & Cabelo - roteador de certificado para loja nova (P-27)
+After=docker.service
+Wants=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/barba-cert-lojas-sync.sh --aplicar --sem-conferir
+SyslogIdentifier=barba-cert-lojas
+Nice=10
+TimeoutStartSec=180

@@ -42,6 +42,30 @@ export function blocksSlot(w: SlotWait, now: Date) {
     (Date.parse(w.hold_until) > +now || (w.has_interest && Date.parse(w.claim_until) > +now))
   );
 }
+/**
+ * Vagas da lista de espera que o cliente pode pegar em Agendar. Com um profissional escolhido,
+ * só as dele; com "Qualquer profissional" (`staffId` nulo), as de todos. Em ambos os casos a
+ * vaga precisa ser de quem faz o serviço e caber na duração dele (`durationFor` devolve `null`
+ * quando o profissional não faz o serviço) — a mesma conta que o banco faz ao entrar na espera.
+ */
+export function waitOpportunities(
+  waits: SlotWait[],
+  opts: {
+    staffId: string | null;
+    durationFor: (staffId: string) => number | null;
+    day: string;
+    dayOf: (startsAt: string) => string;
+    now: Date;
+  },
+) {
+  return waits.filter((w) => {
+    if (w.has_interest || Date.parse(w.hold_until) <= +opts.now) return false;
+    if (opts.staffId !== null && w.staff_id !== opts.staffId) return false;
+    if (opts.dayOf(w.starts_at) !== opts.day) return false;
+    const duration = opts.durationFor(w.staff_id);
+    return duration !== null && duration * 60000 <= Date.parse(w.ends_at) - Date.parse(w.starts_at);
+  });
+}
 const eventKinds = ["exclusive", "expired", "restored", "disabled", "claimed", "left"];
 /** Texto do aviso no idioma atual; tipo desconhecido vira um aviso genérico (nunca o código cru). */
 export function eventLabel(kind: string) {

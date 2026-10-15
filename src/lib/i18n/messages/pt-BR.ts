@@ -1662,6 +1662,7 @@ export const ptBR = {
   "plat.shops.sheetTitle": "Ficha da barbearia",
   "plat.shop.link": "Link da página",
   "plat.shop.sports": "Esportes",
+  "plat.shop.sportsHint": "A aba aparece para o cliente só quando há jogo acontecendo ou por vir.",
   "plat.shop.modules": "Módulos",
   "plat.shop.saved": "Salvo",
   "plat.shop.notSaved": "Não salvou",

@@ -1673,6 +1673,7 @@ export const es: Record<MessageKey, string> = {
   "plat.shops.sheetTitle": "Ficha de la barbería",
   "plat.shop.link": "Enlace de la página",
   "plat.shop.sports": "Deportes",
+  "plat.shop.sportsHint": "La pestaña solo aparece al cliente cuando hay un partido en curso o por jugarse.",
   "plat.shop.modules": "Módulos",
   "plat.shop.saved": "Guardado",
   "plat.shop.notSaved": "No se guardó",

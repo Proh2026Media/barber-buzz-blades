@@ -1671,6 +1671,7 @@ export const ptPT: Record<MessageKey, string> = {
   "plat.shops.sheetTitle": "Ficha da barbearia",
   "plat.shop.link": "Ligação da página",
   "plat.shop.sports": "Desporto",
+  "plat.shop.sportsHint": "O separador só aparece ao cliente quando há um jogo a decorrer ou por vir.",
   "plat.shop.modules": "Módulos",
   "plat.shop.saved": "Guardado",
   "plat.shop.notSaved": "Não guardou",

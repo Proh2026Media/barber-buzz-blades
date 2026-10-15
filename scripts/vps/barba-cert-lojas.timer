@@ -1,0 +1,11 @@
+# Barba & Cabelo: dispara barba-cert-lojas.service a cada 10 minutos (P-27).
+[Unit]
+Description=Barba & Cabelo - certificado de loja nova a cada 10 min (P-27)
+
+[Timer]
+OnCalendar=*:0/10
+RandomizedDelaySec=30
+Persistent=false
+
+[Install]
+WantedBy=timers.target
