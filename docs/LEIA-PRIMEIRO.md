@@ -1,8 +1,8 @@
 # Leia primeiro — Barba & Cabelo
 
-Porta de entrada para o agente que vai continuar o projeto (Cursor, Claude Code, Codex e outros). Atualizado em **15/10/2026**.
+Porta de entrada para o agente que vai continuar o projeto (Cursor, Claude Code, Codex e outros). Atualizado em **15/10/2026 (noite)**.
 
-**Se você é a Claude retomando em 15/10:** leia primeiro [passagem-claude-2026-10-15.md](passagem-claude-2026-10-15.md). Ele diz onde o Cursor parou, o que já está no servidor e o que não pode ser descartado. Esta página vem em seguida.
+**Situação em 15/10 (noite):** a passagem de 15/10 foi concluída no Claude Code (entrada "Passagem de 15/10" no [CONTINUIDADE.md](CONTINUIDADE.md)). O que falta está no topo de [guia/pendencias.md](guia/pendencias.md): os pacotes do Google (P-69 e depois P-28) e os testes reais do dono.
 
 ## O que é o projeto
 
@@ -27,7 +27,6 @@ No Cursor os passos 1 a 3 e o autossave rodam sozinhos pelos ganchos de [.cursor
 
 | Ordem | Documento                                                  | Quando ler                                                                                                   |
 | ----- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| 0     | [passagem-claude-2026-10-15.md](passagem-claude-2026-10-15.md) | Primeiro, se a retomada for a de 15/10. Onde paramos, o que já foi ao servidor e o que falta.            |
 | 1     | [guia/como-trabalhar.md](guia/como-trabalhar.md)           | Sempre. Vez, idioma, verificação, fotos das telas, como registrar a entrega e armadilhas conhecidas.         |
 | 2     | [guia/pendencias.md](guia/pendencias.md)                   | Sempre. Lista única e priorizada (`P-01` em diante); a seção 1 traz as 5 recomendadas para a próxima rodada. |
 | 3     | [guia/arquitetura.md](guia/arquitetura.md)                 | Antes de mudar código: stack, mapa de pastas, sessão e áreas, idiomas, tema, PWA, demonstração.              |
@@ -39,7 +38,8 @@ Também:
 
 - **Interface:** [mb-interface.md](mb-interface.md) (diretrizes `/mb`, ler antes de mudar telas e fluxos) e [mb-revisao.md](mb-revisao.md) (revisão em andamento).
 - **Ferramentas de linha de comando:** [../scripts/README.md](../scripts/README.md) (`vez.sh`, `autossave.sh`, `verificar.sh`, `foto.mjs` e outras).
-- **Operação** (Coolify, login Google): [mb-operacao.md](mb-operacao.md). Tem trechos desatualizados (o e-mail do sistema hoje é o SMTP da Hostinger, não o Titan, e o endereço da API mudou): confira antes [guia/banco-e-implantacao.md](guia/banco-e-implantacao.md) e a P-52 em [guia/pendencias.md](guia/pendencias.md). **PWA:** [pwa.md](pwa.md).
+- **Operação** (Coolify, e-mail do sistema, login Google, certificado de loja nova): [mb-operacao.md](mb-operacao.md), atualizado em 13/10 e 15/10; o estado dos servidores fica em [guia/banco-e-implantacao.md](guia/banco-e-implantacao.md). **PWA:** [pwa.md](pwa.md).
+- **Tarefas para executor de fora** (agente da VPS, alguém no Google Cloud, no painel da Hostinger…): um pacote por tarefa, com regras, diagnóstico, passo a passo com esperado, como desfazer e o relatório de volta. Servidor: `docs/implantacao-<tema>-<data>.md`; o resto: [pacotes/](pacotes/). Passagens antigas entre ferramentas ficam como histórico (ex.: [passagem-claude-2026-10-15.md](passagem-claude-2026-10-15.md)).
 - **Diário de entregas:** [CONTINUIDADE.md](CONTINUIDADE.md), do mais novo para o mais antigo. É longo; use-o para consultar o detalhe de uma entrega, não como primeira leitura. Os guias acima já resumem o que importa dele.
 
 ## Ao terminar uma entrega

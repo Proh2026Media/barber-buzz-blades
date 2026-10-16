@@ -3,7 +3,7 @@ import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
 import { useWaiting } from "@/features/waiting/useWaiting";
 import { WaitingCards } from "@/features/waiting/WaitingUI";
-import { blocksSlot, waitOpportunities } from "@/features/waiting/model";
+import { blocksSlot, mayOpenStarts, waitOpportunities } from "@/features/waiting/model";
 import { showSportsTab, sportsMatches } from "./sports";
 import { CancellationDialog } from "@/features/insights/CancellationDialog";
 import { cancellationReasonLabel, type CancellationReason } from "@/features/insights/cancellation";
@@ -90,7 +90,7 @@ import { BrandFontFace } from "@/features/shop/BrandFontFace";
 import { BrandRootVariables } from "@/features/shop/BrandRootVariables";
 import { DatePicker } from "@/components/ui/schedule-picker";
 import { EmptyState } from "@/components/ui/empty-state";
-import { useState, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { useState, useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from "react";
 import {
   Bell,
   Calendar,
@@ -139,7 +139,12 @@ import {
 import { useDemo } from "@/features/demo/context";
 import { useDemoChrome } from "@/features/demo/chrome";
 import { DemoAccountMenu, DemoRoleSelector } from "@/features/demo/DemoAccountMenu";
-import { DEMO_REWARDS, demoLifetimePoints, DEMO_CUSTOMER_ID } from "@/features/demo/model";
+import {
+  DEMO_REWARDS,
+  demoLifetimePoints,
+  DEMO_CUSTOMER_ID,
+  type DemoState,
+} from "@/features/demo/model";
 import {
   filterReservations,
   type ReservationFilter,
@@ -190,6 +195,51 @@ function shortestServiceIndex(
     }
   });
   return best;
+}
+
+/**
+ * Demonstração: horários livres de um profissional, com as regras da tela de Agendar
+ * (atendimentos com preparo, bloqueios da loja e dele, vagas guardadas da lista de espera).
+ * "Qualquer profissional" junta a grade de cada um, como `get_available_slots` com
+ * `p_staff_id` nulo na loja real.
+ */
+function demoStaffSlots(
+  demo: DemoState,
+  staffId: string,
+  day: string,
+  durationMinutes: number,
+  serviceId: string,
+  timeZone: string,
+) {
+  const occupied = demo.appointments.filter(
+    (row) =>
+      row.staff_id === staffId &&
+      row.status !== "cancelled" &&
+      row.status !== "reschedule_requested",
+  );
+  const blocks = demo.availabilityBlocks.filter(
+    (row) => row.staff_id === null || row.staff_id === staffId,
+  );
+  // O dia da semana vem da data escolhida, não do fuso do aparelho.
+  const weekday = weekdayForDateKey(day);
+  const hours = demo.businessHours.find((row) => row.weekday === weekday) ?? null;
+  // Preparo depois de cada serviço: o do serviço, senão o da barbearia.
+  const prepFor = (id: string | null) =>
+    validPrepMinutes(
+      demo.services.find((row) => row.id === id)?.prep_minutes ?? demo.settings.prep_minutes,
+    );
+  return buildSlotsForWindow(
+    day,
+    durationMinutes,
+    [
+      ...occupied.map((row) => ({ ...row, prep_minutes: prepFor(row.service_id) })),
+      ...demo.waits.filter((w) => blocksSlot(w, demo.now) && w.staff_id === staffId),
+    ],
+    hours,
+    demo.now,
+    timeZone,
+    { ...slotRuleFromSettings(demo.settings), prepMinutes: prepFor(serviceId), blocks },
+  );
 }
 
 /** Motivo da recusa (lib/auth/guards) → tom e frases do aviso. */
@@ -784,6 +834,15 @@ function ArenaApp({
       setCustomerName(demo.customerName);
       setShopName(demo.shop.name);
       setShopSettings(demo.settings);
+      // O modo de escolher profissional que o dono definiu, como na loja real: com
+      // "Começa em qualquer um", o Agendar já abre em "Qualquer profissional".
+      const demoMode = demo.settings.staff_assignment_mode;
+      const mode =
+        demoMode === "favorite_then_pick" || demoMode === "random_available"
+          ? demoMode
+          : "client_pick";
+      setStaffAssignmentMode(mode);
+      setAnyAvailable(mode === "random_available" && !directBarberSlug);
       setUserId(DEMO_CUSTOMER_ID);
       setServices(demo.services.filter((row) => row.active));
       setServiceTerms(null);
@@ -1234,44 +1293,22 @@ function ArenaApp({
       setSlotsLoading(true);
       try {
         if (demo) {
-          const occupied = demo.appointments.filter(
-            (row) =>
-              row.staff_id === selectedStaffId &&
-              row.status !== "cancelled" &&
-              row.status !== "reschedule_requested",
-          );
-          const blocks = demo.availabilityBlocks.filter(
-            (row) => row.staff_id === null || row.staff_id === selectedStaffId,
-          );
-          // O dia da semana vem da data escolhida, não do fuso do aparelho.
-          const weekday = weekdayForDateKey(selectedDay);
-          const hours = demo.businessHours.find((row) => row.weekday === weekday) ?? null;
-          // Preparo depois de cada serviço: o do serviço, senão o da barbearia.
-          const prepFor = (serviceId: string | null) =>
-            validPrepMinutes(
-              demo.services.find((row) => row.id === serviceId)?.prep_minutes ??
-                demo.settings.prep_minutes,
-            );
-          setSlots(
-            buildSlotsForWindow(
+          // "Qualquer profissional": a união das grades da equipe, como na loja real.
+          const staffIds = anyAvailable ? staff.map((row) => row.id) : [selectedStaffId!];
+          const union = new Map<string, Date>();
+          for (const id of staffIds) {
+            for (const slot of demoStaffSlots(
+              demo,
+              id,
               selectedDay,
               selectedServiceDuration,
-              [
-                ...occupied.map((row) => ({ ...row, prep_minutes: prepFor(row.service_id) })),
-                ...demo.waits.filter(
-                  (w) => blocksSlot(w, demo.now) && w.staff_id === selectedStaffId,
-                ),
-              ],
-              hours,
-              demo.now,
+              selectedServiceId,
               shopTimeZone,
-              {
-                ...slotRuleFromSettings(demo.settings),
-                prepMinutes: prepFor(selectedServiceId),
-                blocks,
-              },
-            ),
-          );
+            )) {
+              union.set(slot.toISOString(), slot);
+            }
+          }
+          setSlots([...union.values()].sort((a, b) => a.getTime() - b.getTime()));
           setSlotsFor(selectionKey);
           return;
         }
@@ -1416,6 +1453,26 @@ function ArenaApp({
       ]);
     };
     try {
+      if (anyAvailable && demo) {
+        // Demonstração: o primeiro da equipe livre nesse horário (o favorito antes), pela mesma
+        // grade da tela. Na loja real quem escolhe é `pick_available_staff`.
+        const prefer = staffAssignmentMode === "favorite_then_pick" ? favoriteStaffId : null;
+        const order = [...staff].sort((a, b) => Number(b.id === prefer) - Number(a.id === prefer));
+        const iso = selectedSlot.toISOString();
+        const free = order.find((row) =>
+          demoStaffSlots(
+            demo,
+            row.id,
+            selectedDay,
+            bookingService.duration_minutes,
+            bookingService.id,
+            shopTimeZone,
+          ).some((slot) => slot.toISOString() === iso),
+        );
+        if (!free) throw new Error(t("cust.noStaffAtTime"));
+        staffId = free.id;
+        staffName = free.display_name;
+      }
       if (anyAvailable && !demo) {
         const prefer = staffAssignmentMode === "favorite_then_pick" ? favoriteStaffId : null;
         const { data: picked, error: pickError } = await supabase.rpc("pick_available_staff", {
@@ -1873,15 +1930,19 @@ function ArenaApp({
             : "ready";
   // Vagas da lista de espera que podem abrir neste dia (aparecem na grade como "pode vagar").
   // "Qualquer profissional" vê as de todos; cada vaga usa a duração do próprio profissional.
+  // Quem não está na equipe carregada (desligado ou fora da lista) não oferece vaga, mesmo sem a
+  // lista de termos (demonstração ou falha ao carregar), em que `termsFor` aceitaria qualquer id.
   const waitDurationFor = (staffId: string) =>
-    selectedService ? (termsFor(serviceTerms, staffId, selectedService)?.duration_minutes ?? null) : null;
+    selectedService && staff.some((member) => member.id === staffId)
+      ? (termsFor(serviceTerms, staffId, selectedService)?.duration_minutes ?? null)
+      : null;
   const mayOpenWaits =
     selectedService && (selectedStaffId || anyAvailable)
       ? waitOpportunities(waiting.waits, {
           staffId: anyAvailable ? null : (selectedStaffId ?? null),
           durationFor: waitDurationFor,
           day: selectedDay,
-          dayOf: (startsAt) => shopDateKey(new Date(startsAt), shopTimeZone),
+          timeZone: shopTimeZone,
           now: waiting.now,
         })
       : [];
@@ -2518,17 +2579,25 @@ function ArenaApp({
     id: string;
     icon: LucideIcon;
     label: string;
+    /** Nome completo para leitor de tela quando a barra mostra um rótulo curto (contém o curto). */
+    ariaLabel?: string;
+    /** Textos medidos (invisíveis) para decidir o rótulo da barra: o curto e, se houver, o longo. */
+    measure?: { short: string; long?: string };
   };
 
   // Meus pontos é uma tela filha do Início (o caminho para ela sai do cartão de membro).
   // Avisos não pertence a nenhum item da barra: o destaque fica no sininho do cabeçalho.
   const navTabFor = (current: string) => (current === "pontos" ? "dashboard" : current);
-  const NavItem = ({ id, icon: Icon, label }: NavItemProps) => {
+  // Função, não componente: um componente declarado aqui dentro seria outro a cada render e
+  // recriaria os botões da barra (e a medida da pílula ficaria presa aos botões antigos).
+  const renderNavItem = ({ id, icon: Icon, label, ariaLabel, measure }: NavItemProps) => {
     const pressed = navTabFor(tab) === id;
     return (
       <button
+        key={id}
         type="button"
         onClick={() => setTab(id)}
+        aria-label={ariaLabel}
         aria-pressed={pressed}
         aria-current={pressed ? "page" : undefined}
         className={`relative z-10 flex min-w-0 flex-col items-center justify-center p-2.5 ${
@@ -2539,20 +2608,113 @@ function ArenaApp({
           className={`mb-1.5 h-5 w-5 transition-transform duration-300 ease-out ${pressed ? "scale-110" : ""}`}
         />
         <span className="text-xs font-semibold">{label}</span>
+        {/* Réguas invisíveis: a largura natural dos rótulos, com a mesma fonte da barra. */}
+        <span aria-hidden data-measure="short" className="app-nav-measure text-xs font-semibold">
+          {measure?.short ?? label}
+        </span>
+        {measure?.long && (
+          <span aria-hidden data-measure="long" className="app-nav-measure text-xs font-semibold">
+            {measure.long}
+          </span>
+        )}
       </button>
     );
   };
 
+  // P-32 (15/10): a barra mostra "Meus agendamentos" quando o nome cabe e "Agendamentos" quando
+  // não cabe (Esportes ligado, tela estreita); se nem o curto couber (texto ampliado, zoom alto),
+  // a barra volta a colunas iguais e corta o rótulo com reticências, sem esconder aba. As colunas
+  // dividem a barra por igual, mas nenhuma fica menor que o próprio rótulo
+  // (`minmax(min-content, 1fr)`), e a pílula acompanha o botão ativo medido (antes da primeira
+  // medida vale a conta de colunas iguais, sem animar). A conta fica no topo (menu da conta ou
+  // ícone "Minha conta"), fora da barra (dono, 15/10).
+  // Nível 0: nome longo; 1: nome curto; 2: curto em colunas iguais, com reticências.
+  const navRef = useRef<HTMLElement>(null);
+  const [navPill, setNavPill] = useState<{ x: number; width: number } | null>(null);
+  const [navPillAnimated, setNavPillAnimated] = useState(false);
+  const [navLevel, setNavLevel] = useState<0 | 1 | 2>(0);
+  const navLastActive = useRef(-1);
+  const bookingsLabel = navLevel === 0 ? t("nav.bookings") : t("nav.bookingsShort");
   const navItems: NavItemProps[] = [
     { id: "dashboard", icon: Compass, label: t("nav.home") },
     { id: "agenda", icon: Calendar, label: t("nav.book") },
-    { id: "reservas", icon: Clock3, label: t("nav.bookings") },
-    ...(sportsTab
-      ? [{ id: "esportes" as const, icon: Trophy, label: t("nav.sports") }]
-      : []),
-    { id: "perfil", icon: User, label: t("nav.account") },
+    {
+      id: "reservas",
+      icon: Clock3,
+      label: bookingsLabel,
+      // Nome completo para o leitor de tela quando a barra mostra o curto (que está contido nele).
+      ariaLabel: bookingsLabel === t("nav.bookings") ? undefined : t("nav.bookings"),
+      measure: { short: t("nav.bookingsShort"), long: t("nav.bookings") },
+    },
+    ...(sportsTab ? [{ id: "esportes" as const, icon: Trophy, label: t("nav.sports") }] : []),
   ];
   const activeNavIndex = navItems.findIndex((item) => item.id === navTabFor(tab));
+  useLayoutEffect(() => {
+    const nav = navRef.current;
+    if (!nav || typeof ResizeObserver === "undefined") return;
+    const buttons = () => nav.querySelectorAll<HTMLElement>(":scope > button");
+    let frame = 0;
+    const measure = () => {
+      const items = [...buttons()];
+      if (!items.length) return;
+      // Nível pela largura natural dos rótulos (réguas invisíveis), não pelo transbordo da barra:
+      // assim a posição antiga da pílula, um giro de tela ou o texto ampliado não enganam a conta.
+      const navStyle = getComputedStyle(nav);
+      const available =
+        nav.clientWidth - parseFloat(navStyle.paddingLeft) - parseFloat(navStyle.paddingRight);
+      const gap = parseFloat(navStyle.columnGap) || 0;
+      const need = (kind: "long" | "short") =>
+        items.reduce((sum, item) => {
+          const style = getComputedStyle(item);
+          const ruler =
+            item.querySelector<HTMLElement>(`[data-measure="${kind}"]`) ??
+            item.querySelector<HTMLElement>('[data-measure="short"]');
+          return (
+            sum +
+            (ruler?.getBoundingClientRect().width ?? 0) +
+            parseFloat(style.paddingLeft) +
+            parseFloat(style.paddingRight)
+          );
+        }, 0) +
+        gap * (items.length - 1);
+      const level = need("long") <= available + 0.5 ? 0 : need("short") <= available + 0.5 ? 1 : 2;
+      if (level !== navLevel) {
+        setNavLevel(level);
+        return;
+      }
+      const pill = nav.querySelector<HTMLElement>(".app-mobile-nav-indicator");
+      const button = items[activeNavIndex];
+      // Sem aba ativa (Conta ou Avisos, abertos pelo topo), a pílula some onde está; ao voltar,
+      // aparece direto no lugar, sem deslizar de onde estava.
+      const appearing = navLastActive.current < 0 && activeNavIndex >= 0;
+      navLastActive.current = activeNavIndex;
+      if (!pill || !button) return;
+      // Folga da pílula em volta do rótulo; nos cantos arredondados, mais, porque a ponta curva
+      // comeria as bordas do rótulo mais largo (cabe no vão entre as colunas e no recuo da barra).
+      const radius = parseFloat(getComputedStyle(pill).borderTopLeftRadius) || 0;
+      const extra = radius >= 20 ? 4 : 3;
+      const next = {
+        x: button.offsetLeft - pill.offsetLeft - extra,
+        width: button.offsetWidth + 2 * extra,
+      };
+      if (appearing) setNavPillAnimated(false);
+      setNavPill((prev) => (prev && prev.x === next.x && prev.width === next.width ? prev : next));
+      frame = requestAnimationFrame(() => setNavPillAnimated(true));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(nav);
+    buttons().forEach((button) => observer.observe(button));
+    // As réguas mudam de tamanho com o idioma, a fonte que termina de carregar e o texto ampliado.
+    nav.querySelectorAll("[data-measure]").forEach((ruler) => observer.observe(ruler));
+    // A fonte do rótulo pode chegar depois da primeira medida.
+    void document.fonts?.ready.then(measure);
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+    };
+    // O modo de cantos (raio da pílula) pode chegar depois da primeira medida, sem mudar tamanho.
+  }, [activeNavIndex, navItems.length, navLevel, shopSettings.corner_style]);
   const brandStyle = brandVariables(
     shopSettings.primary_color,
     shopSettings.accent_color,
@@ -2756,7 +2918,9 @@ function ArenaApp({
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1 max-[359px]:gap-0.5 sm:gap-2">
-          <ThemeToggle />
+          {/* Abaixo de 260 px (zoom alto) não cabem todos os botões: o da conta, única entrada
+              para a conta, fica; o do tema sai (o app segue o tema do aparelho). */}
+          <ThemeToggle className="max-[259px]:hidden" />
           <button
             type="button"
             onClick={() => setTab("notifications")}
@@ -2783,7 +2947,7 @@ function ArenaApp({
           {headerActions}
           {demoChrome ? (
             <>
-              <DemoAccountMenu onViewProfile={() => setTab("perfil")} />
+              <DemoAccountMenu onViewProfile={() => setTab("perfil")} current={tab === "perfil"} />
               <DemoRoleSelector />
             </>
           ) : myAreas.length > 0 && account ? (
@@ -3294,9 +3458,9 @@ function ArenaApp({
                             ? new Date(rescheduleRow.starts_at).toISOString()
                             : null
                         }
-                        mayOpen={mayOpenWaits.map((wait) => ({
-                          iso: new Date(wait.starts_at).toISOString(),
-                          onClick: () => scrollToStep(`wait-${wait.id}`),
+                        mayOpen={mayOpenStarts(mayOpenWaits).map(({ iso, waitId }) => ({
+                          iso,
+                          onClick: () => scrollToStep(`wait-${waitId}`),
                         }))}
                         disabled={bookingBusy}
                         empty={{
@@ -3344,7 +3508,6 @@ function ArenaApp({
                       />
                       <WaitingCards
                         controller={{ ...waiting, waits: mayOpenWaits }}
-                        durationFor={waitDurationFor}
                         mode="opportunities"
                         staff={staff}
                         service={bookingService ?? undefined}
@@ -3692,22 +3855,37 @@ function ArenaApp({
 
       {/* Bottom Navigation */}
       <nav
-        className="app-mobile-nav app-mobile-nav-floating fixed left-4 right-4 z-40 mx-auto grid max-w-[34rem] overflow-hidden"
-        style={{ gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))` }}
+        ref={navRef}
+        className={`app-mobile-nav app-mobile-nav-floating app-mobile-nav-fit ${
+          navLevel === 2 ? "app-mobile-nav-compact " : ""
+        }fixed left-4 right-4 z-40 mx-auto grid max-w-[34rem] overflow-hidden`}
+        style={{
+          gridTemplateColumns: `repeat(${navItems.length}, ${
+            navLevel === 2 ? "minmax(0, 1fr)" : "minmax(min-content, 1fr)"
+          })`,
+        }}
         aria-label={t("nav.main")}
       >
         <span
           aria-hidden
           className="app-mobile-nav-indicator"
-          style={{
-            width: `calc((100% - 0.9rem - ${(navItems.length - 1) * 0.3}rem) / ${navItems.length})`,
-            transform: `translateX(calc(${Math.max(0, activeNavIndex)} * (100% + 0.3rem)))`,
-            opacity: activeNavIndex >= 0 ? 1 : 0,
-          }}
+          style={
+            navPill
+              ? {
+                  width: `${navPill.width}px`,
+                  transform: `translateX(${navPill.x}px)`,
+                  opacity: activeNavIndex >= 0 ? 1 : 0,
+                  transition: navPillAnimated ? undefined : "none",
+                }
+              : {
+                  width: `calc((100% - 0.9rem - ${(navItems.length - 1) * 0.3}rem) / ${navItems.length})`,
+                  transform: `translateX(calc(${Math.max(0, activeNavIndex)} * (100% + 0.3rem)))`,
+                  opacity: activeNavIndex >= 0 ? 1 : 0,
+                  transition: "none",
+                }
+          }
         />
-        {navItems.map((item) => (
-          <NavItem key={item.id} {...item} />
-        ))}
+        {navItems.map((item) => renderNavItem(item))}
       </nav>
       <ClubInfoDialog
         isOpen={showVipInfo && loyaltyOn}

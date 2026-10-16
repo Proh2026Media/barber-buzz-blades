@@ -2,17 +2,19 @@
 
 Ferramentas de linha de comando usadas por agentes (Cursor, Codex, Claude Code) e pelo dono. Rodar sempre a partir da raiz do repositório. Regras gerais de trabalho: [AGENTS.md](../AGENTS.md) e [docs/guia/como-trabalhar.md](../docs/guia/como-trabalhar.md).
 
-| Script                                                           | Para quê                                                  | Quem chama                                          |
-| ---------------------------------------------------------------- | --------------------------------------------------------- | --------------------------------------------------- |
-| [vez.sh](#vezsh)                                                 | Só uma ferramenta edita por vez                           | Agentes, à mão; Cursor pelos ganchos                |
-| [autossave.sh](#autossavesh)                                     | Salva, envia ao `origin` (publica o site) e devolve a vez | Agentes ao terminar; Cursor ao fim de cada resposta |
-| [cursor-pretool-vez.sh](#cursor-pretool-vezsh)                   | Bloqueia ferramentas do Cursor sem a vez                  | Só o gancho `preToolUse` do Cursor                  |
-| [verificar.sh](#verificarsh)                                     | Tipos, testes, eslint, prettier e montagem, com resumo    | Agentes antes de enviar                             |
-| [foto.mjs](#fotomjs)                                             | Foto de uma tela do app no servidor local, com relatório  | Agentes ao mexer em interface                       |
-| [copy-pwa.mjs](#copy-pwamjs)                                     | Copia o service worker para a saída da montagem           | `npm run build` (automático)                        |
-| [sync-shop-domains.sh](#sync-shop-domainssh)                     | Lista os domínios próprios das barbearias                 | À mão, em operação                                  |
-| [sync-traefik-custom-domains.sh](#sync-traefik-custom-domainssh) | Gera a configuração do Traefik para os domínios próprios  | À mão, no servidor (alternativa manual)             |
-| [cert-loja.sh](#cert-lojash)                                     | Certificado do subdomínio de cada loja nova               | À mão, do Mac (`ssh vps-barba`)                     |
+| Script                                                                       | Para quê                                                        | Quem chama                                               |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------- | -------------------------------------------------------- |
+| [vez.sh](#vezsh)                                                             | Só uma ferramenta edita por vez                                 | Agentes, à mão; Cursor pelos ganchos                     |
+| [autossave.sh](#autossavesh)                                                 | Salva, envia ao `origin` (publica o site) e devolve a vez       | Agentes ao terminar; Cursor ao fim de cada resposta      |
+| [cursor-pretool-vez.sh](#cursor-pretool-vezsh)                               | Bloqueia ferramentas do Cursor sem a vez                        | Só o gancho `preToolUse` do Cursor                       |
+| [verificar.sh](#verificarsh)                                                 | Tipos, testes, eslint, prettier e montagem, com resumo          | Agentes antes de enviar                                  |
+| [foto.mjs](#fotomjs)                                                         | Foto de uma tela do app no servidor local, com relatório        | Agentes ao mexer em interface                            |
+| [copy-pwa.mjs](#copy-pwamjs)                                                 | Copia o service worker para a saída da montagem                 | `npm run build` (automático)                             |
+| [sync-shop-domains.sh](#sync-shop-domainssh)                                 | Lista os domínios próprios das barbearias                       | À mão, em operação                                       |
+| [sync-traefik-custom-domains.sh](#sync-traefik-custom-domainssh)             | Gera a configuração do Traefik para os domínios próprios        | À mão, no servidor (alternativa manual)                  |
+| [cert-loja.sh](#cert-lojash)                                                 | Confere o certificado de cada loja ou grava na hora o que falta | À mão, do Mac (`ssh vps-barba`)                          |
+| [cert-loja-rotina.sh](#cert-loja-rotinash)                                   | Liga, confere ou desliga a rotina do certificado de loja nova   | À mão, do Mac (`ssh vps-barba`)                          |
+| [vps/barba-cert-lojas.service e .timer](#vpsbarba-cert-lojasservice-e-timer) | Certificado de loja nova a cada 10 min, sozinho                 | O systemd da VPS (instalados pelo `cert-loja-rotina.sh`) |
 
 ---
 
@@ -105,7 +107,7 @@ Formatação errada se corrige com `npx prettier --write <arquivo>`.
 
 **O que faz.** Abre uma página do app no servidor local num navegador sem janela, tira uma foto (PNG) e imprime **uma linha JSON por foto** com o que importa para revisar a tela: largura, rolagem lateral, janelas abertas, textos de dicionário sem tradução e erros do console.
 
-**Quando usar.** Sempre que mexer em interface: para ver a tela de verdade no celular (390 px) e no computador, nos temas claro e escuro, antes de dizer que ficou pronto. Precisa do servidor local de desenvolvimento rodando (`npm run dev`; nesta máquina ele roda em `http://localhost:8090`, o padrão de `--base`).
+**Quando usar.** Sempre que mexer em interface: para ver a tela de verdade no celular (390 px) e no computador, nos temas claro e escuro, antes de dizer que ficou pronto. Precisa do servidor local de desenvolvimento rodando: `npm run dev -- --port 8090 --host` (8090 é o padrão de `--base`). O `npm run dev` sozinho sobe na 8080; nesse caso, use `--base http://localhost:8080`.
 
 ```text
 node scripts/foto.mjs <caminho> [mais caminhos...] [opções]
@@ -114,7 +116,9 @@ node scripts/foto.mjs <caminho> [mais caminhos...] [opções]
   --largura <px>         padrão 390
   --altura <px>          padrão 844
   --escuro               tema escuro do aparelho (prefers-color-scheme: dark)
-  --pagina-inteira       foto da página inteira
+  --idioma <código>      idioma do app: pt-BR (padrão do app), pt-PT, en-US, en-GB ou es
+  --pagina-inteira       foto da página inteira, inclusive a rolagem interna dos painéis
+                         (até 8000 px)
   --sem-login            não simula conta (páginas públicas e /auth)
   --passos '<json>'      lista de passos, em ordem (ver abaixo)
   --avaliar '<js>'       expressão avaliada na página; o resultado entra no relatório
@@ -124,18 +128,22 @@ node scripts/foto.mjs <caminho> [mais caminhos...] [opções]
 
 Vários caminhos na mesma chamada reaproveitam o navegador (mais rápido); cada um gera sua linha JSON.
 
+**Idioma** (`--idioma`): grava a escolha na chave `arena:locale` do `localStorage` antes de qualquer script do app, a mesma que o seletor de idioma usa (`LOCALE_STORAGE_KEY` em `src/lib/i18n/locale.ts`). Sem a opção, vale o padrão do app (pt-BR). O nome padrão do arquivo ganha o idioma, ex.: `demo-owner-en-US-390-claro.png`. Valor fora da lista encerra com erro.
+
 **Visões da demonstração** (`/demo?view=…`): `platform`, `owner`, `equal`, `minority`, `associate`, `employee`, `customer`.
 
 **Passos** (`--passos`), executados em ordem depois que a página carrega:
 
-| Passo                                 | O que faz                                                                                                         |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `{"esperar": 1200}`                   | espera N milissegundos                                                                                            |
-| `{"aba": "Agenda"}`                   | toca no item da barra inferior (`nav.app-mobile-nav`) com esse rótulo; se não achar, lista os rótulos que existem |
-| `{"clicar": "<seletor>"}`             | clica no primeiro elemento do seletor do Playwright, ex.: `header button:has-text("Parceiro")`                    |
-| `{"papel": ["tab", "Equipe"]}`        | toca no elemento com esse papel e nome acessível                                                                  |
-| `{"digitar": ["<seletor>", "texto"]}` | preenche o campo                                                                                                  |
-| `{"rolar": 600}`                      | rola a tela N pixels (roda do mouse no centro)                                                                    |
+| Passo                                 | O que faz                                                                                                                                                                                                                                                                                                                                                                                      |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `{"esperar": 1200}`                   | espera N milissegundos                                                                                                                                                                                                                                                                                                                                                                         |
+| `{"aba": "Agenda"}`                   | toca no item da barra inferior (`nav.app-mobile-nav`) com esse rótulo; se não achar, lista os rótulos que existem                                                                                                                                                                                                                                                                              |
+| `{"clicar": "<seletor>"}`             | clica no primeiro elemento do seletor do Playwright, ex.: `header button:has-text("Parceiro")`                                                                                                                                                                                                                                                                                                 |
+| `{"papel": ["tab", "Equipe"]}`        | toca no elemento com esse papel e nome acessível                                                                                                                                                                                                                                                                                                                                               |
+| `{"digitar": ["<seletor>", "texto"]}` | preenche o campo                                                                                                                                                                                                                                                                                                                                                                               |
+| `{"rolar": 600}`                      | rola a tela N pixels (roda do mouse no centro)                                                                                                                                                                                                                                                                                                                                                 |
+| `{"foto": "nome.png"}`                | tira uma foto no meio da sequência, só da parte visível, na mesma pasta da foto final (`--saida`). Sem `.png`, a ferramenta acrescenta; sem nome, vira `passo-<N>.png` (N = posição do passo). Serve para roteiros com várias telas: o estado da `/demo` vive na memória e se perde ao recarregar, então cada tela é fotografada sem sair da página. A foto final continua sendo tirada no fim |
+| `{"largura": 320}`                    | muda a largura da janela sem recarregar a página (a altura fica); o estado da demonstração continua. O relatório mede a largura do fim; o nome padrão da foto final continua com a de `--largura`                                                                                                                                                                                              |
 
 **Relatório** (uma linha por foto):
 
@@ -153,21 +161,23 @@ Vários caminhos na mesma chamada reaproveitam o navegador (mais rápido); cada 
 }
 ```
 
-| Campo             | Significado                                                                                                                                                           |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `foto`            | arquivo gerado (`null` se a página não abriu)                                                                                                                         |
-| `larguraTela`     | largura da janela                                                                                                                                                     |
-| `larguraConteudo` | largura real do conteúdo; maior que a tela = estouro lateral                                                                                                          |
-| `rolagemLateral`  | `true` se há rolagem para o lado (defeito no celular)                                                                                                                 |
-| `janelasAbertas`  | títulos das janelas (`dialog`/`alertdialog`) visíveis                                                                                                                 |
-| `chavesCruas`     | textos visíveis com cara de chave de dicionário (ex.: `shop.agenda.today`) — tradução faltando em `src/lib/i18n/`; domínios, e-mails e nomes de arquivo são ignorados |
-| `errosConsole`    | erros do console e exceções da página                                                                                                                                 |
-| `avaliacao`       | resultado do `--avaliar`                                                                                                                                              |
-| `endereco`        | endereço final (mostra se a página redirecionou)                                                                                                                      |
-| `erro`, `aviso`   | só aparecem quando algo deu errado (passo que falhou, página que não abriu, redirecionamento para `/auth`)                                                            |
-| `bloqueadas`      | só aparece se a página tentou acessar endereços de fora (abortados)                                                                                                   |
+| Campo             | Significado                                                                                                                                                                 |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `foto`            | arquivo gerado (`null` se a página não abriu)                                                                                                                               |
+| `larguraTela`     | largura da janela                                                                                                                                                           |
+| `larguraConteudo` | largura real do conteúdo; maior que a tela = estouro lateral                                                                                                                |
+| `rolagemLateral`  | `true` se há rolagem para o lado ou algo passa da borda (`foraDaTela`); defeito no celular                                                                                  |
+| `foraDaTela`      | só aparece quando algo passa da borda da tela: até 10 elementos ou textos, com a posição (ex.: `texto "…": de 380 a 412 px`)                                                |
+| `janelasAbertas`  | títulos das janelas (`dialog`/`alertdialog`) visíveis                                                                                                                       |
+| `chavesCruas`     | textos visíveis com cara de chave de dicionário (ex.: `shop.agenda.today`) — tradução faltando em `src/lib/i18n/`; domínios, e-mails e nomes de arquivo são ignorados       |
+| `errosConsole`    | erros do console e exceções da página                                                                                                                                       |
+| `avaliacao`       | resultado do `--avaliar`                                                                                                                                                    |
+| `endereco`        | endereço final (mostra se a página redirecionou)                                                                                                                            |
+| `erro`, `aviso`   | só aparecem quando algo deu errado (passo que falhou, página que não abriu, redirecionamento para `/auth`)                                                                  |
+| `bloqueadas`      | só aparece se a página tentou acessar endereços de fora (abortados)                                                                                                         |
+| `fotosDosPassos`  | só aparece com passos `foto`: os arquivos tirados no meio da sequência, com caminho relativo à raiz do projeto. As outras checagens do relatório valem só para a foto final |
 
-Código de saída: **0** se a página abriu e os passos rodaram; **1** se não abriu ou um passo falhou (a foto do momento da falha é salva mesmo assim).
+Código de saída: **0** se a página abriu e os passos rodaram; **1** se não abriu, se o servidor respondeu 400 ou mais, se o app mostrou a tela de página não encontrada, se um passo falhou ou se o `--avaliar` deu erro (a foto do momento é salva mesmo assim).
 
 **Login simulado e rede.** Por padrão a ferramenta simula a conta de um **admin da plataforma sem barbearia** (a `/demo` exige `platform_admin`: `src/routes/demo.tsx` → `requireRole` em `src/lib/auth/guards.ts` → `getSessionProfile` em `src/lib/auth/session.ts`). Ela grava uma sessão falsa na chave `sb-supabasebeauty-auth-token` do `localStorage` (a mesma de `src/integrations/supabase/client.ts`) e responde com dados falsos mínimos **toda** chamada cujo caminho comece com `/auth/v1`, `/rest/v1`, `/functions/v1`, `/storage/v1` ou `/realtime/v1` (perfil e vínculo `platform_admin` para a sessão; listas vazias para o resto). Só o servidor local e o Google Fonts passam; qualquer outro endereço é abortado e o WebSocket do realtime é fechado. **Nenhuma chamada chega ao banco real.** Com `--sem-login` não há sessão falsa (páginas públicas e `/auth`); as chamadas ao Supabase continuam respondidas com dados falsos e vazios. Fora da `/demo` (ex.: `/platform`, `/shop`) as telas abrem, mas vazias, porque não há dados de verdade.
 
@@ -185,6 +195,9 @@ node scripts/foto.mjs /auth --sem-login
 node scripts/foto.mjs "/demo?view=owner" --passos '[{"aba":"Equipe"},{"esperar":500}]'
 node scripts/foto.mjs "/demo?view=owner" --passos '[{"clicar":"header button:has-text(\"Dono\")"}]'
 node scripts/foto.mjs "/demo?view=customer" --pagina-inteira --avaliar 'document.title'
+node scripts/foto.mjs "/demo?view=customer" --idioma en-US
+# Várias telas sem recarregar (o estado da /demo se perde ao recarregar):
+node scripts/foto.mjs "/demo?view=owner" --passos '[{"aba":"Agenda"},{"foto":"agenda.png"},{"aba":"Equipe"},{"foto":"equipe-390.png"},{"largura":320},{"foto":"equipe-320.png"}]'
 # As sete visões de uma vez:
 node scripts/foto.mjs "/demo?view=platform" "/demo?view=owner" "/demo?view=equal" \
   "/demo?view=minority" "/demo?view=associate" "/demo?view=employee" "/demo?view=customer"
@@ -236,9 +249,48 @@ SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... scripts/sync-traefik-custom-domai
 
 **O que faz.** Do Mac, roda pela conexão `ssh vps-barba` o [vps/cert-lojas-sync.sh](vps/cert-lojas-sync.sh), sem deixar arquivo na VPS. O script lê as lojas ativas no banco e acrescenta em `/data/coolify/proxy/dynamic/beauty-shop-certs.yaml` só os roteadores de certificado que faltam (nunca remove). Antes de gravar, faz cópia, valida o arquivo e troca de uma vez; no fim, diz se algum endereço ainda recebe o certificado padrão do Traefik.
 
-**Quando usar.** Depois de criar uma loja nova (P-27). Por padrão só simula; `--aplicar` grava. Guia, saída esperada e como desfazer: [docs/implantacao-certificado-loja-2026-10-13.md](../docs/implantacao-certificado-loja-2026-10-13.md).
+**Quando usar.** Desde 15/10/2026 a loja nova não depende mais dele: o timer da VPS ([vps/barba-cert-lojas.service e .timer](#vpsbarba-cert-lojasservice-e-timer)) acrescenta o roteador sozinho em até ~10 min (P-27). O `cert-loja.sh` fica para conferir os certificados (a simulação mostra o de cada loja; o timer roda com `--sem-conferir`) ou para aplicar na hora, sem esperar a rodada. Por padrão só simula; `--aplicar` grava. Se coincidir com uma rodada do timer, a trava (`flock`) faz a segunda execução sair sem mexer. Guia, saída esperada e como desfazer: [docs/implantacao-certificado-loja-2026-10-13.md](../docs/implantacao-certificado-loja-2026-10-13.md).
 
 ```bash
-scripts/cert-loja.sh             # simula: mostra o que faltaria
+scripts/cert-loja.sh             # simula: mostra o que faltaria e o certificado de cada loja
 scripts/cert-loja.sh --aplicar   # grava os que faltam e confere o certificado
 ```
+
+---
+
+## cert-loja-rotina.sh
+
+**O que faz.** Do Mac, cuida pela conexão `ssh vps-barba` da rotina automática do certificado de loja nova (P-27): um timer do systemd na VPS que roda o [vps/cert-lojas-sync.sh](vps/cert-lojas-sync.sh) a cada 10 minutos ([próxima seção](#vpsbarba-cert-lojasservice-e-timer)). Não usa o crontab do root nem `/etc/cron.d`.
+
+| Comando                                | Efeito                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scripts/cert-loja-rotina.sh status`   | Padrão, também sem argumento. Mostra se o timer está ligado (`Timer: enabled / active`), a próxima rodada, o resultado da última (`Última rodada: success (código 0)`) e até 20 linhas do registro da última hora. Sem o timer: "Rotina não instalada."                                                                                                                                                                                                         |
+| `scripts/cert-loja-rotina.sh instalar` | Envia por `scp` os três arquivos de `vps/` para uma pasta temporária da VPS (permissão 700), confere a sintaxe (`bash -n`), instala o script em `/usr/local/sbin/barba-cert-lojas-sync.sh` (root, 0750) e as unidades em `/etc/systemd/system/` (root, 0644), confere as unidades (`systemd-analyze verify`), roda `daemon-reload` e `enable --now` do timer, mostra a próxima rodada e apaga a pasta temporária. Também serve para atualizar: instala por cima |
+| `scripts/cert-loja-rotina.sh desligar` | `disable --now` do timer, apaga as duas unidades e roda `daemon-reload`. O script em `/usr/local/sbin` fica                                                                                                                                                                                                                                                                                                                                                     |
+
+Outro argumento mostra o uso e sai com código 2.
+
+**Variável opcional.** `VPS_SSH` (padrão `vps-barba`, o apelido SSH desta máquina).
+
+**Quando usar.** **Já instalado em 15/10/2026.** `status` a qualquer hora, para conferir. `instalar` só quando `vps/cert-lojas-sync.sh` (ou uma das unidades) mudar: a VPS roda a cópia instalada, não o repositório. O SHA-256 conferido na passagem de 15/10 é `6a5f2944…3ddd` (completo na seção 6.4 do guia); se o do arquivo local continua igual, não reinstalar. `desligar` só por decisão do dono (ex.: cadastros falsos gastando a cota do Let's Encrypt). Nunca criar `/etc/cron.d/barba-cert-lojas` nem recriar o proxy do Coolify. Guia: [docs/implantacao-certificado-loja-2026-10-13.md](../docs/implantacao-certificado-loja-2026-10-13.md), seção 6.
+
+```bash
+scripts/cert-loja-rotina.sh                    # o mesmo que status
+shasum -a 256 scripts/vps/cert-lojas-sync.sh   # antes de reinstalar: comparar com o da passagem
+scripts/cert-loja-rotina.sh instalar           # só se vps/cert-lojas-sync.sh mudou
+scripts/cert-loja-rotina.sh desligar
+```
+
+---
+
+## vps/barba-cert-lojas.service e .timer
+
+**O que fazem.** Unidades do systemd que rodam na VPS, sozinhas, o certificado de loja nova (P-27). Não se chamam à mão: o [cert-loja-rotina.sh](#cert-loja-rotinash) copia e liga.
+
+| Arquivo                                                      | Instalado em                                   | O que tem                                                                                                                                                                                        |
+| ------------------------------------------------------------ | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [vps/barba-cert-lojas.timer](vps/barba-cert-lojas.timer)     | `/etc/systemd/system/barba-cert-lojas.timer`   | `OnCalendar=*:0/10` (minutos 00, 10, 20… de cada hora), `RandomizedDelaySec=30`, `Persistent=false` (não recupera rodada perdida), `WantedBy=timers.target`                                      |
+| [vps/barba-cert-lojas.service](vps/barba-cert-lojas.service) | `/etc/systemd/system/barba-cert-lojas.service` | `Type=oneshot`, `ExecStart=/usr/local/sbin/barba-cert-lojas-sync.sh --aplicar --sem-conferir`, `SyslogIdentifier=barba-cert-lojas`, `Nice=10`, `TimeoutStartSec=180`, depois do `docker.service` |
+| [vps/cert-lojas-sync.sh](vps/cert-lojas-sync.sh)             | `/usr/local/sbin/barba-cert-lojas-sync.sh`     | o script que o serviço roda (o mesmo do [cert-loja.sh](#cert-lojash))                                                                                                                            |
+
+**Quando usar.** Mudou um dos três arquivos? Rodar `scripts/cert-loja-rotina.sh instalar`; senão a VPS continua com a versão antiga. Registro: `journalctl -t barba-cert-lojas` (na VPS) ou `scripts/cert-loja-rotina.sh status` (do Mac).

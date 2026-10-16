@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createDemoState, demoReducer } from "../demo/model.ts";
-import { canHold, blocksSlot, waitOpportunities, type SlotWait } from "./model.ts";
+import { canHold, blocksSlot, mayOpenStarts, waitOpportunities, type SlotWait } from "./model.ts";
+import { termsFor, type ServiceTerms } from "../../lib/shop/appointments.ts";
 import { waitingDemoAction } from "./demo.ts";
 
 function fixture() {
@@ -152,18 +153,24 @@ test("'qualquer profissional' vê as vagas de todos, cada uma pela duração do 
     wait("caio-60", "caio", 60),
     wait("ana-ocupada", "ana", 60, { has_interest: true }),
     wait("ana-vencida", "ana", 60, { hold_until: "2026-09-17T11:59:00Z" }),
-    wait("ana-amanha", "ana", 60, { starts_at: "2026-09-18T15:00:00Z", ends_at: "2026-09-18T16:00:00Z" }),
+    wait("ana-amanha", "ana", 60, {
+      starts_at: "2026-09-18T15:00:00Z",
+      ends_at: "2026-09-18T16:00:00Z",
+    }),
   ];
   // Ana faz o corte em 30 min, Bia em 45 min, Caio não faz o serviço.
   const durationFor = (staffId: string) => ({ ana: 30, bia: 45 })[staffId] ?? null;
-  const base = { durationFor, day: "2026-09-17", dayOf: (iso: string) => iso.slice(0, 10), now };
+  const base = { durationFor, day: "2026-09-17", timeZone: "UTC", now };
   const ids = (staffId: string | null) =>
     waitOpportunities(waits, { ...base, staffId }).map((w) => w.id);
   assert.deepEqual(ids(null), ["ana-30"]);
   assert.deepEqual(ids("ana"), ["ana-30"]);
   assert.deepEqual(ids("bia"), []);
   assert.deepEqual(ids("caio"), []);
-  const longer = waitOpportunities([...waits, wait("bia-45", "bia", 45)], { ...base, staffId: null });
+  const longer = waitOpportunities([...waits, wait("bia-45", "bia", 45)], {
+    ...base,
+    staffId: null,
+  });
   assert.deepEqual(
     longer.map((w) => [w.id, w.staff_id]),
     [
@@ -171,4 +178,133 @@ test("'qualquer profissional' vê as vagas de todos, cada uma pela duração do 
       ["bia-45", "bia"],
     ],
   );
+});
+
+// P-31: uma conta só (waitOpportunities + mayOpenStarts).
+const p31Now = new Date("2026-10-15T15:00:00Z"); // 12:00 em Brasília
+const p31Tz = "America/Sao_Paulo";
+function p31Wait(
+  id: string,
+  staff_id: string,
+  startsAt: string,
+  minutes: number,
+  extra: Partial<SlotWait> = {},
+): SlotWait {
+  return {
+    id,
+    appointment_id: `apt-${id}`,
+    staff_id,
+    starts_at: startsAt,
+    ends_at: new Date(Date.parse(startsAt) + minutes * 60000).toISOString(),
+    hold_until: "2026-10-15T15:08:00Z",
+    claim_until: "2026-10-15T15:13:00Z",
+    state: "holding",
+    mine: false,
+    has_interest: false,
+    service_id: null,
+    restorable: false,
+    ...extra,
+  };
+}
+const p31Cut = { id: "corte", duration_minutes: 30, price_cents: 4500 };
+const p31Pick = (waits: SlotWait[], terms: ServiceTerms[] | null, staffId: string | null) =>
+  waitOpportunities(waits, {
+    staffId,
+    durationFor: (id) => termsFor(terms, id, p31Cut)?.duration_minutes ?? null,
+    day: "2026-10-15",
+    timeZone: p31Tz,
+    now: p31Now,
+  }).map((w) => w.id);
+
+test("P-31: com serviços por profissional, cada vaga usa a duração dele; quem não faz não aparece", () => {
+  // Como get_booking_terms devolve: Ana 30 min, Bia 45 min, Caio sem linha (não faz o corte).
+  const terms: ServiceTerms[] = [
+    { staff_id: "ana", service_id: "corte", duration_minutes: 30, price_cents: 4500 },
+    { staff_id: "bia", service_id: "corte", duration_minutes: 45, price_cents: 5000 },
+  ];
+  const waits = [
+    p31Wait("bia-16h", "bia", "2026-10-15T19:00:00Z", 45), // 45 em 45: cabe no limite
+    p31Wait("ana-14h", "ana", "2026-10-15T17:00:00Z", 30),
+    p31Wait("bia-14h", "bia", "2026-10-15T17:00:00Z", 30), // Bia leva 45: não cabe
+    p31Wait("caio-14h", "caio", "2026-10-15T17:00:00Z", 60), // não faz o serviço
+  ];
+  assert.deepEqual(p31Pick(waits, terms, null), ["ana-14h", "bia-16h"]);
+  assert.deepEqual(p31Pick(waits, terms, "ana"), ["ana-14h"]);
+  assert.deepEqual(p31Pick(waits, terms, "bia"), ["bia-16h"]);
+  assert.deepEqual(p31Pick(waits, terms, "caio"), []);
+  // Um minuto a menos que a duração dela já não cabe.
+  assert.deepEqual(
+    p31Pick([p31Wait("bia-44", "bia", "2026-10-15T19:00:00Z", 44)], terms, null),
+    [],
+  );
+});
+
+test("P-31: sem duração por profissional, todos usam a do catálogo (lista do banco ou demonstração)", () => {
+  // Loja sem staff_services: o banco devolve todos com os valores do catálogo.
+  const catalog: ServiceTerms[] = ["ana", "bia", "caio"].map((staff_id) => ({
+    staff_id,
+    service_id: "corte",
+    duration_minutes: 30,
+    price_cents: 4500,
+  }));
+  const waits = [
+    p31Wait("caio-14h", "caio", "2026-10-15T17:00:00Z", 30),
+    p31Wait("ana-14h", "ana", "2026-10-15T17:00:00Z", 30),
+    p31Wait("bia-15h", "bia", "2026-10-15T18:00:00Z", 20), // 20 min não cabe um corte de 30
+  ];
+  assert.deepEqual(p31Pick(waits, catalog, null), ["ana-14h", "caio-14h"]);
+  // Sem lista (demonstração: ArenaApp chama setServiceTerms(null)): o mesmo resultado.
+  assert.deepEqual(p31Pick(waits, null, null), ["ana-14h", "caio-14h"]);
+});
+
+test("P-31: vagas de dois profissionais no mesmo horário: as duas em ordem, um selo só na grade", () => {
+  const waits = [
+    p31Wait("bia-17h", "bia", "2026-10-15T20:00:00Z", 30),
+    p31Wait("bia-14h", "bia", "2026-10-15T17:00:00Z", 30),
+    p31Wait("ana-14h", "ana", "2026-10-15T17:00:00Z", 30),
+  ];
+  const list = waitOpportunities(waits, {
+    staffId: null,
+    durationFor: () => 30,
+    day: "2026-10-15",
+    timeZone: p31Tz,
+    now: p31Now,
+  });
+  assert.deepEqual(
+    list.map((w) => w.id),
+    ["ana-14h", "bia-14h", "bia-17h"],
+  );
+  assert.deepEqual(mayOpenStarts(list), [
+    { iso: "2026-10-15T17:00:00.000Z", waitId: "ana-14h" },
+    { iso: "2026-10-15T20:00:00.000Z", waitId: "bia-17h" },
+  ]);
+  // Formato do banco (+00:00) e o do app (Z) caem no mesmo selo.
+  assert.equal(
+    mayOpenStarts([
+      p31Wait("a", "ana", "2026-10-15T17:00:00+00:00", 30),
+      p31Wait("b", "bia", "2026-10-15T17:00:00.000Z", 30),
+    ]).length,
+    1,
+  );
+});
+
+test("P-31: o dia da vaga é o do fuso da loja", () => {
+  // 22:30 de 15/10 em Brasília = 01:30Z de 16/10; em Lisboa (UTC+1 em outubro) já é 16/10.
+  const late = [p31Wait("ana-2230", "ana", "2026-10-16T01:30:00Z", 30)];
+  const base = { staffId: null, durationFor: () => 30, now: p31Now };
+  assert.equal(waitOpportunities(late, { ...base, day: "2026-10-15", timeZone: p31Tz }).length, 1);
+  assert.equal(waitOpportunities(late, { ...base, day: "2026-10-16", timeZone: p31Tz }).length, 0);
+  assert.equal(
+    waitOpportunities(late, { ...base, day: "2026-10-16", timeZone: "Europe/Lisbon" }).length,
+    1,
+  );
+});
+
+test("P-31: guarda que termina agora, vaga com interessado ou já minha não é oferecida", () => {
+  const waits = [
+    p31Wait("fim-agora", "ana", "2026-10-15T17:00:00Z", 30, { hold_until: p31Now.toISOString() }),
+    p31Wait("com-interesse", "bia", "2026-10-15T17:00:00Z", 30, { has_interest: true }),
+    p31Wait("minha", "caio", "2026-10-15T17:00:00Z", 30, { has_interest: true, mine: true }),
+  ];
+  assert.deepEqual(p31Pick(waits, null, null), []);
 });

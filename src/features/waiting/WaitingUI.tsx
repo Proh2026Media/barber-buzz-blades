@@ -25,7 +25,7 @@ import {
 } from "@/components/visual";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-import { CLAIM_MINUTES, HOLD_MINUTES, waitOpportunities } from "./model";
+import { CLAIM_MINUTES, HOLD_MINUTES } from "./model";
 import type { WaitingController } from "./useWaiting";
 import { DEFAULT_SHOP_TIMEZONE, formatShopDate, shopDateKey } from "@/lib/shop/appointments";
 
@@ -40,9 +40,9 @@ export function WaitingCards({
   day,
   appointmentId,
   onChanged,
-  durationFor,
   timeZone = DEFAULT_SHOP_TIMEZONE,
 }: {
+  /** Em "opportunities", `controller.waits` já chega filtrada por `waitOpportunities`. */
   controller: WaitingController;
   mode: "opportunities" | "mine" | "shop";
   staff: Tables<"staff">[];
@@ -50,8 +50,6 @@ export function WaitingCards({
   day?: string;
   appointmentId?: string;
   onChanged?: () => void;
-  /** Duração do serviço com cada profissional (`null` = não faz); sem ela, a do catálogo. */
-  durationFor?: (staffId: string) => number | null;
   /** Fuso da barbearia: datas e horários seguem a parede da loja, não o aparelho. */
   timeZone?: string;
 }) {
@@ -71,22 +69,17 @@ export function WaitingCards({
   );
   const isPending = (id: string, action: "join" | "claim" | "leave") =>
     busy && pending?.id === id && pending.action === action;
-  const dayOf = (startsAt: string) => shopDateKey(new Date(startsAt), timeZone);
+  // Oportunidades: a lista já vem pronta de `waitOpportunities` (ArenaApp), a única conta;
+  // aqui só desenha. Sem serviço não há o que pedir ("Tenho interesse" envia o serviço).
   const rows =
     mode === "opportunities"
-      ? service && day
-        ? waitOpportunities(waits, {
-            staffId: null,
-            durationFor: durationFor ?? (() => service.duration_minutes),
-            day,
-            dayOf,
-            now,
-          })
+      ? service
+        ? waits
         : []
       : waits.filter((w) =>
           mode === "shop"
             ? (!appointmentId || w.appointment_id === appointmentId) &&
-              (!day || dayOf(w.starts_at) === day)
+              (!day || shopDateKey(new Date(w.starts_at), timeZone) === day)
             : w.mine,
         );
   // O erro de consulta só interessa com espera ou vaga na tela; o de uma ação feita aqui fica

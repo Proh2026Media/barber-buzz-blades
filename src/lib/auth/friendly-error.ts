@@ -33,6 +33,7 @@ const ERROR_CODE_MESSAGES: Record<string, MessageKey | null> = {
   account_without_email: "fix3.errors.accountWithoutEmail",
   missing_fields: "register.errorFillAll",
   terms_required: "cad.dono.errTerms",
+  invalid_opt_in: null,
   internal_error: null,
   server_misconfigured: null,
   session_failed: null,

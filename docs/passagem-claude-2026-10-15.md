@@ -1,5 +1,7 @@
 # Passagem para a Claude — 15/10/2026
 
+> **Concluída em 15/10/2026 (noite) no Claude Code.** O que foi feito e o que ficou estão na entrada "Passagem de 15/10" do [CONTINUIDADE.md](CONTINUIDADE.md) e no topo de [guia/pendencias.md](guia/pendencias.md). Este texto fica como registro: vários pontos abaixo ("sem commit", "último commit `aa5a358`", P-31/P-32/P-38 a fazer) já não valem.
+
 Documento para continuar o Barba & Cabelo na Claude, no mesmo papel de [LEIA-PRIMEIRO.md](LEIA-PRIMEIRO.md) quando o trabalho veio da Claude para o Cursor. Atualizado na noite de **15/10/2026** (horário de Brasília).
 
 **Recado para colar na Claude:**
@@ -45,20 +47,20 @@ O que falta da P-27 é só versionar e descrever: os três arquivos abaixo estã
 
 `git status` na noite de 15/10. Não apagar, não reverter e não sobrescrever para "começar limpo".
 
-| Arquivo | Situação |
-| --- | --- |
-| `src/features/waiting/model.ts` | Função nova `waitOpportunities` (P-31) |
-| `src/features/waiting/model.test.ts` | Teste novo. `node --test src/features/waiting/model.test.ts`: 9 passaram, 0 falharam, nesta passagem |
-| `src/features/waiting/WaitingUI.tsx` | Modo "oportunidades" usa `waitOpportunities` |
-| `src/features/customer/ArenaApp.tsx` | "Qualquer profissional" vê as vagas de todos; aba Esportes usa `showSportsTab` |
-| `src/features/customer/sports.ts` | **Arquivo novo**, não rastreado. Jogos fictícios saíram de `SportsBoard.tsx` para cá |
-| `src/features/customer/SportsBoard.tsx` | Passa a ler `sports.ts` |
-| `src/features/platform/ShopDetail.tsx` | Dica no interruptor de Esportes |
-| `src/lib/i18n/messages/{pt-BR,pt-PT,en-US,es}.ts` | Só a chave nova `plat.shop.sportsHint` |
-| `scripts/cert-loja-rotina.sh` | **Novo**, não rastreado. Instala o timer a partir do Mac |
-| `scripts/vps/barba-cert-lojas.service` | **Novo**, não rastreado. Já está instalado na VPS |
-| `scripts/vps/barba-cert-lojas.timer` | **Novo**, não rastreado. Já está instalado na VPS |
-| `.env` | Alterado só na ordem das linhas. **Não entra em commit.** O `scripts/autossave.sh` já exclui `.env` |
+| Arquivo                                           | Situação                                                                                             |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `src/features/waiting/model.ts`                   | Função nova `waitOpportunities` (P-31)                                                               |
+| `src/features/waiting/model.test.ts`              | Teste novo. `node --test src/features/waiting/model.test.ts`: 9 passaram, 0 falharam, nesta passagem |
+| `src/features/waiting/WaitingUI.tsx`              | Modo "oportunidades" usa `waitOpportunities`                                                         |
+| `src/features/customer/ArenaApp.tsx`              | "Qualquer profissional" vê as vagas de todos; aba Esportes usa `showSportsTab`                       |
+| `src/features/customer/sports.ts`                 | **Arquivo novo**, não rastreado. Jogos fictícios saíram de `SportsBoard.tsx` para cá                 |
+| `src/features/customer/SportsBoard.tsx`           | Passa a ler `sports.ts`                                                                              |
+| `src/features/platform/ShopDetail.tsx`            | Dica no interruptor de Esportes                                                                      |
+| `src/lib/i18n/messages/{pt-BR,pt-PT,en-US,es}.ts` | Só a chave nova `plat.shop.sportsHint`                                                               |
+| `scripts/cert-loja-rotina.sh`                     | **Novo**, não rastreado. Instala o timer a partir do Mac                                             |
+| `scripts/vps/barba-cert-lojas.service`            | **Novo**, não rastreado. Já está instalado na VPS                                                    |
+| `scripts/vps/barba-cert-lojas.timer`              | **Novo**, não rastreado. Já está instalado na VPS                                                    |
+| `.env`                                            | Alterado só na ordem das linhas. **Não entra em commit.** O `scripts/autossave.sh` já exclui `.env`  |
 
 A tela **não** foi aberta no navegador nesta passagem. O teste automático cobre a conta da lista de espera, não o desenho da aba nem o celular.
 
@@ -70,20 +72,20 @@ Detalhe para não "corrigir" à toa: em `WaitingUI`, o modo oportunidades chama 
 
 O dono pediu para seguir. Estas opções ficaram combinadas nesta conversa. [guia/pendencias.md](guia/pendencias.md) ainda lista várias como "a decidir". Tratar como decididas.
 
-| Id | Decisão | No código / no servidor |
-| --- | --- | --- |
-| P-31 | Quem escolhe "Qualquer profissional" vê as vagas da lista de espera de todos os barbeiros. Cada vaga usa a duração daquele profissional. Se ele não faz o serviço, a vaga não aparece. | Começado nos arquivos da tabela acima. Falta conferir na tela e publicar. |
-| P-32 | A aba deixa de se chamar "Reservas". pt-BR: **Meus agendamentos**. Se não couber na barra a 320 px, a barra mostra **Agendamentos**. pt-PT: **As minhas marcações**. en-US: **My appointments** (en-GB herda). es: **Mis citas**. | **Não feito.** `nav.bookings` continua "Reservas" / "Marcações" / "Bookings" / "Reservas". |
-| P-33 | A aba Esportes só aparece com o módulo ligado pela plataforma **e** com pelo menos um jogo acontecendo ou por vir. Jogo encerrado não conta. | `showSportsTab` está no disco. Fora da demonstração, `sportsMatches()` devolve lista vazia: **não existe cadastro de jogos de verdade**. No app real a aba continua oculta mesmo com o módulo ligado. Não inventar API de placar, não integrar serviço externo. |
-| P-34 | Não há bônus de pontos no check-in em dia de jogo. | Nada a programar. Só registrar na pendência. |
-| P-35 e P-50 | O acerto com o Parceiro continua fora do app. Sem comissão, aluguel de cadeira nem cobrança aqui. | Nada a programar. Só registrar. |
-| P-37 | O profissional que abre o app da própria loja continua ganhando ficha de cliente, com o aviso que já existe. | Nada a mudar. Só registrar. |
-| P-38 | No cadastro da barbearia, perguntar se o dono quer avisos por WhatsApp. A opção já vem marcada. A função não pode mais gravar o aceite sempre ligado, ignorando a tela. | **Não feito.** `supabase/functions/register-shop/index.ts` ainda manda `p_opt_in: true` (por volta da linha 122). |
-| P-26 | A tarefa do crontab do root que chama `google-drive/share-expire` fica como está. É de outro projeto. | Não apagar. Só registrar a decisão. |
-| P-27 | Timer a cada 10 minutos, systemd, sem cron, sem recriar o proxy. | **Aplicado na VPS.** Falta o Git e o guia. |
-| P-67 | `PLATFORM_BASE_HOST` = `beauty.contheiner.digital` no Coolify, no `.env` do serviço e no container das funções. | **Aplicado.** Não repetir. |
-| P-70 | Pausa fixa da loja toda, quando a sociedade exige aprovação, continua para depois do primeiro uso real. | Não fazer agora. |
-| Reinício da VPS | Não testar. O mesmo servidor tem outros projetos. | Só registrar que o teste não foi feito. |
+| Id              | Decisão                                                                                                                                                                                                                           | No código / no servidor                                                                                                                                                                                                                                         |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P-31            | Quem escolhe "Qualquer profissional" vê as vagas da lista de espera de todos os barbeiros. Cada vaga usa a duração daquele profissional. Se ele não faz o serviço, a vaga não aparece.                                            | Começado nos arquivos da tabela acima. Falta conferir na tela e publicar.                                                                                                                                                                                       |
+| P-32            | A aba deixa de se chamar "Reservas". pt-BR: **Meus agendamentos**. Se não couber na barra a 320 px, a barra mostra **Agendamentos**. pt-PT: **As minhas marcações**. en-US: **My appointments** (en-GB herda). es: **Mis citas**. | **Não feito.** `nav.bookings` continua "Reservas" / "Marcações" / "Bookings" / "Reservas".                                                                                                                                                                      |
+| P-33            | A aba Esportes só aparece com o módulo ligado pela plataforma **e** com pelo menos um jogo acontecendo ou por vir. Jogo encerrado não conta.                                                                                      | `showSportsTab` está no disco. Fora da demonstração, `sportsMatches()` devolve lista vazia: **não existe cadastro de jogos de verdade**. No app real a aba continua oculta mesmo com o módulo ligado. Não inventar API de placar, não integrar serviço externo. |
+| P-34            | Não há bônus de pontos no check-in em dia de jogo.                                                                                                                                                                                | Nada a programar. Só registrar na pendência.                                                                                                                                                                                                                    |
+| P-35 e P-50     | O acerto com o Parceiro continua fora do app. Sem comissão, aluguel de cadeira nem cobrança aqui.                                                                                                                                 | Nada a programar. Só registrar.                                                                                                                                                                                                                                 |
+| P-37            | O profissional que abre o app da própria loja continua ganhando ficha de cliente, com o aviso que já existe.                                                                                                                      | Nada a mudar. Só registrar.                                                                                                                                                                                                                                     |
+| P-38            | No cadastro da barbearia, perguntar se o dono quer avisos por WhatsApp. A opção já vem marcada. A função não pode mais gravar o aceite sempre ligado, ignorando a tela.                                                           | **Não feito.** `supabase/functions/register-shop/index.ts` ainda manda `p_opt_in: true` (por volta da linha 122).                                                                                                                                               |
+| P-26            | A tarefa do crontab do root que chama `google-drive/share-expire` fica como está. É de outro projeto.                                                                                                                             | Não apagar. Só registrar a decisão.                                                                                                                                                                                                                             |
+| P-27            | Timer a cada 10 minutos, systemd, sem cron, sem recriar o proxy.                                                                                                                                                                  | **Aplicado na VPS.** Falta o Git e o guia.                                                                                                                                                                                                                      |
+| P-67            | `PLATFORM_BASE_HOST` = `beauty.contheiner.digital` no Coolify, no `.env` do serviço e no container das funções.                                                                                                                   | **Aplicado.** Não repetir.                                                                                                                                                                                                                                      |
+| P-70            | Pausa fixa da loja toda, quando a sociedade exige aprovação, continua para depois do primeiro uso real.                                                                                                                           | Não fazer agora.                                                                                                                                                                                                                                                |
+| Reinício da VPS | Não testar. O mesmo servidor tem outros projetos.                                                                                                                                                                                 | Só registrar que o teste não foi feito.                                                                                                                                                                                                                         |
 
 Continua em aberto de propósito, sem decisão nova: P-14 (opcional), P-30 (manter "Toda semana"), P-36 (sugestão: não trocar de domínio ao mudar de loja), P-39 (acordo de dados, revisão de advogado), P-45 (dividir o pacote), P-49 (reembolso, sem meio de pagamento).
 

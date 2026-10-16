@@ -1,6 +1,6 @@
 # MB — Operação (Coolify, e-mail, Google)
 
-Atualizado em **13/10/2026** (Mapa rápido, Contas e IDs, e-mail, domínio da API e checklists). O texto original é de 23/09/2026; as seções 5, 5b, 5c e 5d mantêm as datas delas.  
+Atualizado em **13/10/2026** (Mapa rápido, Contas e IDs, e-mail, domínio da API e checklists) e em **15/10/2026** (certificado por loja automático). O texto original é de 23/09/2026; as seções 5, 5b, 5c e 5d mantêm as datas delas.  
 Passo a passo operacional do Barba & Cabelo: e-mail do sistema (SMTP da Hostinger), Auth no Coolify, login Google e domínios. Linguagem curta, uma ação por etapa — no mesmo espírito do `/mb` (próximo passo claro, sem misturar assuntos).
 
 **Fonte do estado atual:** [guia/banco-e-implantacao.md](guia/banco-e-implantacao.md) (seções 1, 10 e 11). Se este documento divergir dele, vale o guia.
@@ -11,19 +11,19 @@ Passo a passo operacional do Barba & Cabelo: e-mail do sistema (SMTP da Hostinge
 
 ## Mapa rápido
 
-| O quê                         | Onde fica                                                                     | Status (13/10/2026)                                                                                         |
-| ----------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| App                           | Hostinger → `beauty.contheiner.digital`                                       | Em produção; usa `VITE_SUPABASE_*` gravadas na compilação                                                   |
-| Supabase (Auth, DB)           | Coolify → `barba-cabelo` / `supabase-barba-cabelo`                            | Em uso                                                                                                      |
-| API Supabase (oficial)        | `https://supabase-barbearia.proh.media`                                       | Em uso (`API_EXTERNAL_URL`); certificado válido                                                             |
-| API Supabase (mesmo servidor) | `https://supabasebeauty.contheiner.digital`                                   | Em uso: é o endereço que o site publicado usa e o retorno do login Google; certificado válido               |
-| `supabase-teste.proh.media`   | Outro serviço (Flow TEST)                                                     | **Não é mais deste projeto** desde 29/09/2026. Não usar                                                     |
-| E-mail do sistema (SMTP)      | Hostinger, remetente `noreply@contheiner.digital`                             | Em uso desde 02/10/2026 (Auth e funções); Titan abandonado                                                  |
-| Login Google (botão)          | OAuth no GoTrue (`GOTRUE_EXTERNAL_GOOGLE_*`)                                  | Restaurado em 30/09/2026                                                                                    |
-| Google Agenda + Contatos      | Edge `google-connect` + card em Ajustes; cópia por `google-calendar-dispatch` | Ligado; verificação do Google pendente ([google-verificacao.md](google-verificacao.md))                     |
-| WhatsApp (Evolution)          | Coolify `evolution-api` + funções no Supabase                                 | Ligado (por loja; ver seção 5)                                                                              |
-| Certificado por loja          | `/data/coolify/proxy/dynamic/beauty-shop-certs.yaml`                          | Manual com script: [implantacao-certificado-loja-2026-10-13.md](implantacao-certificado-loja-2026-10-13.md) |
-| Servidor local (esta máquina) | `npm run dev -- --port 8090 --host`                                           | Porta 8090 (padrão do `scripts/foto.mjs`); sem `--port`, o Vite sobe em 8080                                |
+| O quê                         | Onde fica                                                                     | Status (13/10/2026)                                                                                                                                                               |
+| ----------------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| App                           | Hostinger → `beauty.contheiner.digital`                                       | Em produção; usa `VITE_SUPABASE_*` gravadas na compilação                                                                                                                         |
+| Supabase (Auth, DB)           | Coolify → `barba-cabelo` / `supabase-barba-cabelo`                            | Em uso                                                                                                                                                                            |
+| API Supabase (oficial)        | `https://supabase-barbearia.proh.media`                                       | Em uso (`API_EXTERNAL_URL`); certificado válido                                                                                                                                   |
+| API Supabase (mesmo servidor) | `https://supabasebeauty.contheiner.digital`                                   | Em uso: é o endereço que o site publicado usa e o retorno do login Google; certificado válido                                                                                     |
+| `supabase-teste.proh.media`   | Outro serviço (Flow TEST)                                                     | **Não é mais deste projeto** desde 29/09/2026. Não usar                                                                                                                           |
+| E-mail do sistema (SMTP)      | Hostinger, remetente `noreply@contheiner.digital`                             | Em uso desde 02/10/2026 (Auth e funções); Titan abandonado                                                                                                                        |
+| Login Google (botão)          | OAuth no GoTrue (`GOTRUE_EXTERNAL_GOOGLE_*`)                                  | Restaurado em 30/09/2026                                                                                                                                                          |
+| Google Agenda + Contatos      | Edge `google-connect` + card em Ajustes; cópia por `google-calendar-dispatch` | Ligado; verificação do Google pendente ([google-verificacao.md](google-verificacao.md))                                                                                           |
+| WhatsApp (Evolution)          | Coolify `evolution-api` + funções no Supabase                                 | Ligado (por loja; ver seção 5)                                                                                                                                                    |
+| Certificado por loja          | `/data/coolify/proxy/dynamic/beauty-shop-certs.yaml`                          | Automático desde 15/10/2026: timer `barba-cert-lojas` na VPS, a cada 10 min (seção 6 de [implantacao-certificado-loja-2026-10-13.md](implantacao-certificado-loja-2026-10-13.md)) |
+| Servidor local (esta máquina) | `npm run dev -- --port 8090 --host`                                           | Porta 8090 (padrão do `scripts/foto.mjs`); sem `--port`, o Vite sobe em 8080                                                                                                      |
 
 **Centralizar no Coolify:** Supabase, envs SMTP e secrets Google.  
 **Fora do Coolify (inevitável):** caixa de e-mail na Hostinger (hPanel → E-mails); Client ID/Secret no Google Cloud (colar no Coolify); variáveis `VITE_*` no painel da Hostinger.  
@@ -59,7 +59,7 @@ Detalhes extras do BaaS: [supabase/README.md](../supabase/README.md). Continuaç
 6. Google Agenda + Contatos — **ligado**; falta reenviar a verificação do Google (P-28, [google-verificacao.md](google-verificacao.md)).
 7. Domínio `supabasebeauty` com TLS — **feito** (seção 4).
 8. Site publicado com `VITE_SUPABASE_*` apontando para `supabasebeauty.contheiner.digital` — em uso.
-9. Certificado do subdomínio de cada loja nova — manual com script (seção 5c).
+9. Certificado do subdomínio de cada loja nova — **feito** (automático desde 15/10/2026: timer `barba-cert-lojas` na VPS, a cada 10 min; seção 5c).
 
 ---
 
@@ -311,13 +311,13 @@ Atualizado em **23/09/2026**.
 
 ### Caminho A — subdomínio automático
 
-| Item   | Valor                                                                                                                                                                                                                                                     |
-| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Padrão | `https://{slug}.beauty.contheiner.digital`                                                                                                                                                                                                                |
-| DNS    | Cloudflare: `*.beauty` → `187.127.60.78` (DNS only)                                                                                                                                                                                                       |
-| Proxy  | Traefik no VPS (`wildcard-beauty.yaml`) → Hostinger `beauty.contheiner.digital`                                                                                                                                                                           |
-| TLS    | Let’s Encrypt no Traefik, **um roteador por loja** em `beauty-shop-certs.yaml` (o curinga entrega o "TRAEFIK DEFAULT CERT"). Loja nova: `scripts/cert-loja.sh` ([implantacao-certificado-loja-2026-10-13.md](implantacao-certificado-loja-2026-10-13.md)) |
-| Auth   | `ADDITIONAL_REDIRECT_URLS` com `https://beauty.contheiner.digital/**` e `https://*.beauty.contheiner.digital/**`                                                                                                                                          |
+| Item   | Valor                                                                                                                                                                                                                                                                                                                                                                         |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Padrão | `https://{slug}.beauty.contheiner.digital`                                                                                                                                                                                                                                                                                                                                    |
+| DNS    | Cloudflare: `*.beauty` → `187.127.60.78` (DNS only)                                                                                                                                                                                                                                                                                                                           |
+| Proxy  | Traefik no VPS (`wildcard-beauty.yaml`) → Hostinger `beauty.contheiner.digital`                                                                                                                                                                                                                                                                                               |
+| TLS    | Let’s Encrypt no Traefik, **um roteador por loja** em `beauty-shop-certs.yaml` (o curinga entrega o "TRAEFIK DEFAULT CERT"). Loja nova: automático desde 15/10/2026, timer `barba-cert-lojas` na VPS a cada 10 min (seção 6 de [implantacao-certificado-loja-2026-10-13.md](implantacao-certificado-loja-2026-10-13.md)). Conferir ou aplicar na hora: `scripts/cert-loja.sh` |
+| Auth   | `ADDITIONAL_REDIRECT_URLS` com `https://beauty.contheiner.digital/**` e `https://*.beauty.contheiner.digital/**`                                                                                                                                                                                                                                                              |
 
 Subdomínio `*.beauty…` e domínio próprio: o login Google abre um **pop-up** no apex (`beauty…`); a aba principal permanece no domínio da loja e recebe a sessão sem navegar para beauty. Logout usa `/auth` relativo. Código: `src/lib/auth/return-origin.ts`.
 
@@ -363,7 +363,7 @@ Script manual de fallback (se a API falhar): `scripts/sync-traefik-custom-domain
 - [x] Envs `DOMAIN_MANAGER_URL` + `DOMAIN_MANAGER_API_KEY` no Coolify
 - [x] Deploy da Edge Function `shop-domain`
 - [x] Registro A `beauty` → IP Hostinger (conferido em 13/10/2026)
-- [ ] Certificado por loja automático (hoje: `scripts/cert-loja.sh` à mão; proposta de cron no guia do certificado)
+- [x] Certificado por loja automático (15/10/2026: timer `barba-cert-lojas` do systemd na VPS, a cada 10 min, sem cron; seção 6 do [guia do certificado](implantacao-certificado-loja-2026-10-13.md))
 - [ ] Hostinger rebuild do front (commit `cac9bc4` em `main`) — até lá UI só no local
 - [ ] Testar `https://{slug}.beauty…/auth` e `/app`
 - [ ] Testar domínio próprio de ponta a ponta

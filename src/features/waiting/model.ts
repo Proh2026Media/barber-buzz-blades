@@ -1,4 +1,5 @@
 import { t, type MessageKey } from "../../lib/i18n/index.ts";
+import { shopDateKey } from "../../lib/shop/appointments.ts";
 
 export type SlotWait = {
   id: string;
@@ -43,10 +44,12 @@ export function blocksSlot(w: SlotWait, now: Date) {
   );
 }
 /**
- * Vagas da lista de espera que o cliente pode pegar em Agendar. Com um profissional escolhido,
- * só as dele; com "Qualquer profissional" (`staffId` nulo), as de todos. Em ambos os casos a
- * vaga precisa ser de quem faz o serviço e caber na duração dele (`durationFor` devolve `null`
- * quando o profissional não faz o serviço) — a mesma conta que o banco faz ao entrar na espera.
+ * Vagas da lista de espera que o cliente pode pegar em Agendar. É a única conta: a grade
+ * ("pode vagar") e os cartões usam o resultado. `staffId` = profissional escolhido; `null` =
+ * "Qualquer profissional" (as vagas de todos). A vaga só entra se o profissional dela faz o
+ * serviço e a duração dele cabe no intervalo (`durationFor` devolve `null` quando não faz) — a
+ * mesma conta de `waiting_action('join')` no banco. Dia no fuso da loja. Ordem: horário e, no
+ * mesmo horário, o profissional (estável entre as consultas a cada 10 s).
  */
 export function waitOpportunities(
   waits: SlotWait[],
@@ -54,17 +57,36 @@ export function waitOpportunities(
     staffId: string | null;
     durationFor: (staffId: string) => number | null;
     day: string;
-    dayOf: (startsAt: string) => string;
+    timeZone: string;
     now: Date;
   },
-) {
-  return waits.filter((w) => {
-    if (w.has_interest || Date.parse(w.hold_until) <= +opts.now) return false;
-    if (opts.staffId !== null && w.staff_id !== opts.staffId) return false;
-    if (opts.dayOf(w.starts_at) !== opts.day) return false;
-    const duration = opts.durationFor(w.staff_id);
-    return duration !== null && duration * 60000 <= Date.parse(w.ends_at) - Date.parse(w.starts_at);
-  });
+): SlotWait[] {
+  return waits
+    .filter((w) => {
+      if (w.has_interest || Date.parse(w.hold_until) <= +opts.now) return false;
+      if (opts.staffId !== null && w.staff_id !== opts.staffId) return false;
+      if (shopDateKey(new Date(w.starts_at), opts.timeZone) !== opts.day) return false;
+      const duration = opts.durationFor(w.staff_id);
+      return (
+        duration !== null && duration * 60000 <= Date.parse(w.ends_at) - Date.parse(w.starts_at)
+      );
+    })
+    .sort(
+      (a, b) =>
+        Date.parse(a.starts_at) - Date.parse(b.starts_at) || a.staff_id.localeCompare(b.staff_id),
+    );
+}
+/**
+ * Selos "pode vagar" da grade: um por horário. Vagas de dois profissionais no mesmo início
+ * ("Qualquer profissional") viram um selo só, que leva ao primeiro cartão daquele horário.
+ */
+export function mayOpenStarts(opportunities: SlotWait[]) {
+  const first = new Map<string, string>();
+  for (const w of opportunities) {
+    const iso = new Date(w.starts_at).toISOString();
+    if (!first.has(iso)) first.set(iso, w.id);
+  }
+  return [...first].map(([iso, waitId]) => ({ iso, waitId }));
 }
 const eventKinds = ["exclusive", "expired", "restored", "disabled", "claimed", "left"];
 /** Texto do aviso no idioma atual; tipo desconhecido vira um aviso genérico (nunca o código cru). */

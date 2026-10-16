@@ -733,8 +733,11 @@ export function TimeGrid({
     ...(currentIso && !slots.some((slot) => slot.toISOString() === currentIso)
       ? [{ kind: "current" as const, date: new Date(currentIso), iso: currentIso }]
       : []),
+    // O selo some no horário livre e no próprio horário que está sendo remarcado.
     ...mayOpen
-      .filter((item) => !slots.some((slot) => slot.toISOString() === item.iso))
+      .filter(
+        (item) => item.iso !== currentIso && !slots.some((slot) => slot.toISOString() === item.iso),
+      )
       .map((item) => ({
         kind: "mayOpen" as const,
         date: new Date(item.iso),
@@ -825,7 +828,7 @@ export function TimeGrid({
                     // Sem papel, um aria-label em <span> é ignorado por muitos leitores: o texto
                     // falado vai em sr-only e o visual fica escondido deles.
                     <span
-                      key={item.iso}
+                      key={`${item.kind}:${item.iso}`}
                       className={cn(
                         SLOT,
                         "border-dashed border-muted-foreground/50 bg-muted/40 text-muted-foreground",
@@ -844,7 +847,7 @@ export function TimeGrid({
                 if (item.kind === "mayOpen") {
                   return (
                     <button
-                      key={item.iso}
+                      key={`${item.kind}:${item.iso}`}
                       type="button"
                       disabled={disabled}
                       onClick={item.onClick}
@@ -865,7 +868,7 @@ export function TimeGrid({
                 const selected = item.iso === selectedIso;
                 return (
                   <button
-                    key={item.iso}
+                    key={`${item.kind}:${item.iso}`}
                     type="button"
                     disabled={disabled}
                     onClick={() => onSelect(item.iso)}

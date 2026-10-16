@@ -102,7 +102,7 @@ O plano foi montado só com leitura do código e dos mapas já conferidos. Nenhu
   - Pela página da loja, pelo link do profissional ou pelo link de reserva, sempre chegando à loja e ao horário pedidos, mesmo que a pessoa tenha papel profissional.
   - Cadastro sem loja vai para um estado vazio neutro: "Peça o link à sua barbearia", com campo para colar o link.
 - **Onde estou:** logo e nome da loja. Quando há mais de uma loja, o nome vira seletor. Para quem tem outro papel, aparece o selo "Cliente".
-- **Abas:** as atuais (Início, Agendar, Reservas, Esportes, Conta).
+- **Abas:** as atuais (Início, Agendar, Reservas, Esportes, Conta). Atualização de 15/10/2026: a barra do cliente tem Início, Agendar, "Meus agendamentos" e Esportes (só com jogo); a Conta fica no topo (P-32).
 - **O que vê:** dados só da loja aberta, mais um aviso quando há reservas em outra loja ("1 reserva na Loja B · Abrir").
 - **Não vê:** nada do painel.
 - **Como troca:** pelo seletor de loja no cabeçalho e por "Minhas áreas" no avatar (Painel da Barbearia X, Plataforma).

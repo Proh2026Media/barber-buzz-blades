@@ -1374,8 +1374,9 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
 .app-mobile-nav button:active {
   transform: scale(0.96);
 }
-/* Celular de 320 px: com 5 itens, o rótulo ativo ("Reservas") encostava nas bordas da
-   pílula. Menos recuo lateral e letra um pouco menor deixam folga dentro dela. */
+/* Celular de 320 px: menos recuo lateral e letra um pouco menor nas barras de baixo (criado
+   quando a barra do cliente tinha 5 itens e "Reservas" encostava na pílula; desde 15/10/2026 a
+   barra do cliente mede os rótulos, ver .app-mobile-nav-fit). */
 @media (max-width: 359px) {
   .app-mobile-nav-floating {
     left: max(0.5rem, env(safe-area-inset-left));
@@ -1388,6 +1389,35 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
     font-size: 10.5px !important;
     letter-spacing: -0.01em !important;
   }
+}
+/* Barra do cliente (P-32): o rótulo não quebra; a coluna cresce só o que falta ao rótulo
+   ("Agendamentos" a 320 px) e as outras dividem o resto por igual. Com o recuo lateral
+   mínimo, a largura mínima da coluna fica perto do texto; o botão ocupa a coluna inteira. */
+.app-mobile-nav-fit button {
+  padding-inline: 0.125rem !important;
+}
+.app-mobile-nav-fit button span {
+  white-space: nowrap;
+}
+/* Rótulos que não cabem nem com a coluna crescendo (texto ampliado, zoom alto): a barra volta
+   a colunas iguais (classe posta pelo ArenaApp) e o rótulo é cortado com reticências. */
+.app-mobile-nav-fit.app-mobile-nav-compact button span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Réguas invisíveis da barra do cliente: a largura natural de cada rótulo, para decidir entre o
+   nome longo, o curto e o modo com reticências. Não ocupam lugar nem são lidas. */
+.app-mobile-nav-fit button span.app-nav-measure,
+.app-mobile-nav-fit.app-mobile-nav-compact button span.app-nav-measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  max-width: none;
+  overflow: visible;
+  visibility: hidden;
+  pointer-events: none;
+  white-space: nowrap;
 }
 /* O item ativo precisa de contraste garantido em tema claro e escuro.
    Com a pílula deslizante, ela desenha o fundo e o texto usa a cor de leitura.

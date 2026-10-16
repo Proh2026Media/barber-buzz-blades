@@ -3,6 +3,7 @@ import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ArrowLeft,
   ArrowRight,
+  Bell,
   CheckCircle2,
   Clock,
   Eye,
@@ -148,6 +149,9 @@ function CadastrarPage() {
   const [whatsapp, setWhatsapp] = useState("");
   // Padrão "Sim": o número confirmado também vira o WhatsApp público da loja.
   const [shopWhatsappSame, setShopWhatsappSame] = useState(true);
+  // P-38 (decisão do dono, 15/10): avisos por WhatsApp para o dono, já marcado. Exceção
+  // aprovada à regra MB de não marcar autorização por padrão (docs/guia/pendencias.md).
+  const [whatsappOptIn, setWhatsappOptIn] = useState(true);
   const [hasSociety, setHasSociety] = useState(false);
   const [societyType, setSocietyType] = useState<"majority" | "equal" | "minority">("majority");
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -445,7 +449,7 @@ function CadastrarPage() {
     setError(null);
     setRegisterFailed(false);
     try {
-      // Campos do aceite e do WhatsApp da loja: o register-shop antigo os ignora.
+      // Campos do aceite, do WhatsApp da loja e dos avisos: o register-shop antigo os ignora.
       const payload = await callRegisterShop({
         action: "register",
         verification_token: token,
@@ -459,6 +463,7 @@ function CadastrarPage() {
         privacy_version: PRIVACY_VERSION,
         dpa_version: DPA_VERSION,
         shop_whatsapp_same: shopWhatsappSame,
+        whatsapp_opt_in: whatsappOptIn,
         timezone: timeZone,
       });
       const slug = payload.shop_slug || previewSlug;
@@ -964,6 +969,37 @@ function CadastrarPage() {
                     {t("register.whatsappNote")}
                   </p>
                 </div>
+
+                {/* O cartão inteiro marca e desmarca (alvo ≥ 44 px); o nome acessível é só o título. */}
+                <label
+                  htmlFor="cad-whatsapp-optin"
+                  className="flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border border-border bg-white p-3"
+                >
+                  <input
+                    id="cad-whatsapp-optin"
+                    type="checkbox"
+                    checked={whatsappOptIn}
+                    onChange={(e) => setWhatsappOptIn(e.target.checked)}
+                    aria-labelledby="cad-whatsapp-optin-title"
+                    aria-describedby="cad-whatsapp-optin-hint"
+                    className="mt-0.5 size-6 shrink-0 cursor-pointer accent-[#1c1b18]"
+                  />
+                  <span className="grid min-w-0 gap-0.5">
+                    <span
+                      id="cad-whatsapp-optin-title"
+                      className="flex items-center gap-1.5 text-[0.85rem] font-semibold leading-snug text-foreground"
+                    >
+                      <Bell className="size-3.5 shrink-0 text-gold" aria-hidden="true" />
+                      {t("cad.dono.whatsappOptIn")}
+                    </span>
+                    <span
+                      id="cad-whatsapp-optin-hint"
+                      className="text-xs leading-snug text-muted-foreground"
+                    >
+                      {t("cad.dono.whatsappOptInHint")}
+                    </span>
+                  </span>
+                </label>
 
                 <ChoiceCards
                   legend={t("cad.dono.shopWhatsappQuestion")}

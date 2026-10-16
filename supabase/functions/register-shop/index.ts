@@ -21,6 +21,11 @@ type Body = {
   dpa_version?: string;
   /** Usar o WhatsApp confirmado do dono como contato público da barbearia. */
   shop_whatsapp_same?: boolean;
+  /**
+   * P-38: o dono quer avisos por WhatsApp (a tela já traz marcado). Só booleano; sem o campo
+   * (tela anterior à pergunta, PWA com o pacote antigo) fica ligado, como sempre foi gravado.
+   */
+  whatsapp_opt_in?: boolean;
   /** Fuso horário IANA da barbearia (opcional; inválido é ignorado e fica o padrão). */
   timezone?: string;
 };
@@ -66,6 +71,7 @@ type ErrorCode =
   | "password_too_short"
   | "email_in_use"
   | "terms_required"
+  | "invalid_opt_in"
   | "internal_error";
 
 function fail(
@@ -115,11 +121,11 @@ async function phoneTaken(admin: any, whatsapp: string): Promise<boolean> {
  */
 // deno-lint-ignore no-explicit-any
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function saveOwnerWhatsapp(admin: any, userId: string, whatsapp: string) {
+async function saveOwnerWhatsapp(admin: any, userId: string, whatsapp: string, optIn: boolean) {
   const applied = await admin.rpc("apply_verified_whatsapp", {
     p_user_id: userId,
     p_whatsapp: whatsapp,
-    p_opt_in: true,
+    p_opt_in: optIn,
   });
   if (!applied.error) return "ok" as const;
   if (applied.error.code === "23505") return "taken" as const;
@@ -129,7 +135,10 @@ async function saveOwnerWhatsapp(admin: any, userId: string, whatsapp: string) {
   }
   const legacy = await admin
     .from("profiles")
-    .update({ whatsapp_e164: whatsapp, whatsapp_opt_in_at: new Date().toISOString() })
+    .update({
+      whatsapp_e164: whatsapp,
+      whatsapp_opt_in_at: optIn ? new Date().toISOString() : null,
+    })
     .eq("id", userId);
   if (legacy.error?.code === "23505") return "taken" as const;
   if (legacy.error) {
@@ -423,6 +432,13 @@ Deno.serve(async (req) => {
       const fullName = body.full_name?.trim() ?? "";
       const email = body.email?.trim().toLowerCase() ?? "";
       const password = body.password ?? "";
+      // P-38: com o campo, só vale booleano (antes do token: um pedido sem login mostra qual
+      // versão está no ar, sem gravar nada). Sem o campo, fica ligado como antes.
+      const optInInformed = Object.prototype.hasOwnProperty.call(body, "whatsapp_opt_in");
+      if (optInInformed && typeof body.whatsapp_opt_in !== "boolean") {
+        return fail("invalid_opt_in", "Escolha se quer receber avisos pelo WhatsApp.", 400);
+      }
+      const whatsappOptIn = optInInformed ? body.whatsapp_opt_in === true : true;
 
       if (!token) {
         return fail("verification_expired", "Confirme o WhatsApp antes de continuar.", 400);
@@ -523,7 +539,7 @@ Deno.serve(async (req) => {
 
       // WhatsApp confirmado pelo código: entra como verificado. Se outra conta o
       // confirmou nesse meio-tempo, desfaz a conta nova.
-      const savedWhatsapp = await saveOwnerWhatsapp(admin, userId, whatsapp);
+      const savedWhatsapp = await saveOwnerWhatsapp(admin, userId, whatsapp, whatsappOptIn);
       if (savedWhatsapp === "taken") {
         await admin.auth.admin.deleteUser(userId);
         return fail("phone_in_use", "Este WhatsApp já está em uma conta.", 409);

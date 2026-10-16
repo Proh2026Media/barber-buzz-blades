@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useId, useState } from "react";
 import { Check, Clock3, DoorOpen, FlaskConical, Trophy, User } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
@@ -104,12 +104,16 @@ export function DemoRoleSelector() {
 /** Menu do ícone de perfil: ver perfil do cliente, ferramentas da demonstração e sair dela. */
 export function DemoAccountMenu({
   onViewProfile,
+  current = false,
 }: {
   onViewProfile?: () => void;
+  /** A conta está aberta: o ícone marca onde a pessoa está (a Conta não fica na barra). */
+  current?: boolean;
 } = {}) {
   const chrome = useDemoChrome();
   const { t, intlLocale } = useI18n();
   const sportsId = useId();
+  const [open, setOpen] = useState(false);
   if (!chrome) return null;
 
   const { role, exit, state, dispatch } = chrome;
@@ -117,9 +121,14 @@ export function DemoAccountMenu({
     "flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold hover:bg-muted";
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button type="button" aria-label={t("demo.menu.trigger")} className="app-icon-button">
+        <button
+          type="button"
+          aria-label={t("demo.menu.trigger")}
+          aria-current={current ? "page" : undefined}
+          className={`app-icon-button ${current ? "app-nav-current" : ""}`}
+        >
           <User size={20} />
         </button>
       </PopoverTrigger>
@@ -181,6 +190,7 @@ export function DemoAccountMenu({
                 type="button"
                 className={item}
                 onClick={() => {
+                  setOpen(false);
                   if (onViewProfile) onViewProfile();
                   else chrome.requestOpenProfile();
                 }}

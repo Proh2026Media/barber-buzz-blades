@@ -33,6 +33,9 @@ const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 /** Chave em que o cliente Supabase guarda a sessão (src/integrations/supabase/client.ts). */
 const CHAVE_SESSAO = "sb-supabasebeauty-auth-token";
+/** Mesmos valores de LOCALES e LOCALE_STORAGE_KEY em src/lib/i18n/locale.ts. */
+const IDIOMAS = ["pt-BR", "pt-PT", "en-US", "en-GB", "es"];
+const CHAVE_IDIOMA = "arena:locale";
 const PREFIXOS_SUPABASE = ["/auth/v1", "/rest/v1", "/functions/v1", "/storage/v1", "/realtime/v1"];
 const HOSTS_LIBERADOS = new Set(["fonts.googleapis.com", "fonts.gstatic.com"]);
 /** Primeira versão com context.routeWebSocket, usado para barrar o realtime do Supabase. */
@@ -47,6 +50,7 @@ const AJUDA = `Uso: node scripts/foto.mjs <caminho> [mais caminhos...] [opções
   --largura <px>         padrão 390
   --altura <px>          padrão 844
   --escuro               tema escuro do aparelho (prefers-color-scheme: dark)
+  --idioma <código>      idioma do app: pt-BR (padrão do app), pt-PT, en-US, en-GB ou es
   --pagina-inteira       foto da página inteira, inclusive a rolagem interna dos painéis
                          (até ${ALTURA_MAXIMA} px)
   --sem-login            não simula conta (páginas públicas e /auth)
@@ -57,9 +61,15 @@ const AJUDA = `Uso: node scripts/foto.mjs <caminho> [mais caminhos...] [opções
                            {"papel": ["tab", "Equipe"]}   elemento com esse papel e nome acessível
                            {"digitar": ["<seletor>", "texto"]}
                            {"rolar": 600}
+                           {"foto": "nome.png"}           foto da parte visível no meio da sequência
+                                                          (mesma pasta; com vários caminhos, o nome
+                                                          ganha o prefixo de cada um)
+                           {"largura": 320}               muda a largura sem recarregar a página
+                                                          (inteiro de 100 a 8000)
   --avaliar '<js>'       expressão avaliada na página; o resultado entra no relatório
   --saida <pasta>        padrão: .fotos (ignorada pelo git)
-  --nome <arquivo.png>   padrão: derivado do caminho, da largura e do tema (só com um caminho)
+  --nome <arquivo.png>   padrão: derivado do caminho, do idioma (com --idioma), da largura em uso
+                         na foto final e do tema (só com um caminho)
 
 Servidor local: npm run dev -- --port 8090 --host (8090 é o padrão de --base). O npm run dev
 sozinho sobe na 8080; nesse caso use --base http://localhost:8080.
@@ -86,6 +96,7 @@ function lerOpcoes(argv) {
     largura: 390,
     altura: 844,
     escuro: false,
+    idioma: null,
     paginaInteira: false,
     semLogin: false,
     passos: [],
@@ -123,6 +134,12 @@ function lerOpcoes(argv) {
       case "--escuro":
         op.escuro = true;
         break;
+      case "--idioma": {
+        op.idioma = valor(++i, a);
+        if (!IDIOMAS.includes(op.idioma))
+          falhar(`--idioma precisa ser um de: ${IDIOMAS.join(", ")}`);
+        break;
+      }
       case "--pagina-inteira":
         op.paginaInteira = true;
         break;
@@ -182,7 +199,7 @@ function nomePadrao(caminho, op) {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "")
       .slice(0, 80) || "inicio";
-  return `${base}-${op.largura}-${op.escuro ? "escuro" : "claro"}.png`;
+  return `${base}${op.idioma ? `-${op.idioma}` : ""}-${op.largura}-${op.escuro ? "escuro" : "claro"}.png`;
 }
 
 /** Caminho do arquivo para o relatório: relativo à pasta atual, ou absoluto se ficar fora dela. */
@@ -564,6 +581,20 @@ async function abrirContexto(browser, op) {
   /** Endereços de fora abortados nesta foto (vão para o relatório como "bloqueadas"). */
   const bloqueadas = new Set();
 
+  // Idioma escolhido gravado como o app grava (o seletor de idioma usa a mesma chave).
+  if (op.idioma) {
+    await context.addInitScript(
+      ({ chave, idioma }) => {
+        try {
+          localStorage.setItem(chave, idioma);
+        } catch {
+          /* sem armazenamento: fica o idioma padrão */
+        }
+      },
+      { chave: CHAVE_IDIOMA, idioma: op.idioma },
+    );
+  }
+
   // Sessão falsa no aparelho antes de qualquer script do app (só no endereço local).
   if (comLogin) {
     await context.addInitScript(
@@ -818,18 +849,21 @@ function medirRolagemInterna(escolher) {
  * mostrar tudo (no máximo ALTURA_MAXIMA). Devolve um aviso, se houver.
  */
 async function aumentarParaPaginaInteira(page, op) {
-  let altura = op.altura;
+  // O passo {"largura"} pode ter mudado a janela: cresce só a altura da janela em uso.
+  const vp = page.viewportSize() ?? { width: op.largura, height: op.altura };
+  const largura = vp.width;
+  let altura = vp.height;
   let escondido = await page.evaluate(medirRolagemInterna, true);
   for (let rodada = 0; rodada < 3 && escondido > 1 && altura < ALTURA_MAXIMA; rodada++) {
     const anterior = altura;
     altura = Math.min(ALTURA_MAXIMA, altura + escondido);
-    await page.setViewportSize({ width: op.largura, height: altura });
+    await page.setViewportSize({ width: largura, height: altura });
     await page.waitForTimeout(300);
     const resto = await page.evaluate(medirRolagemInterna, false);
     if (resto >= escondido) {
       // O painel não cresce com a janela (altura fixa): volta ao tamanho anterior.
       altura = anterior;
-      await page.setViewportSize({ width: op.largura, height: altura });
+      await page.setViewportSize({ width: largura, height: altura });
       await page.waitForTimeout(300);
       return "o painel que rola por dentro tem altura fixa; a foto mostra só a parte visível dele";
     }
@@ -966,6 +1000,19 @@ async function executarPasso(page, passo) {
       await page.waitForTimeout(300);
       return;
     }
+    case "largura": {
+      // Muda o tamanho da janela sem recarregar (o estado da demonstração continua).
+      const largura = Number(valor);
+      if (!Number.isInteger(largura) || largura < 100 || largura > 8000) {
+        throw new Error(
+          `largura espera um inteiro de 100 a 8000, ex.: {"largura": 320} (veio ${JSON.stringify(valor)})`,
+        );
+      }
+      const vp = page.viewportSize();
+      await page.setViewportSize({ width: largura, height: vp.height });
+      await page.waitForTimeout(500);
+      return;
+    }
     case "rolar": {
       const vp = page.viewportSize();
       await page.mouse.move(vp.width / 2, vp.height / 2);
@@ -975,7 +1022,7 @@ async function executarPasso(page, passo) {
     }
     default:
       throw new Error(
-        `passo desconhecido: "${tipo}" (use esperar, aba, clicar, papel, digitar ou rolar)`,
+        `passo desconhecido: "${tipo}" (use esperar, aba, clicar, papel, digitar, rolar, largura ou foto)`,
       );
   }
 }
@@ -1015,7 +1062,7 @@ async function fotografar({ context, bloqueadas }, caminho, op, dicionario) {
   });
   page.on("pageerror", (e) => errosConsole.push(`(exceção) ${String(e.message).slice(0, 300)}`));
 
-  const arquivo = join(op.saida, op.nome ?? nomePadrao(caminho, op));
+  let arquivo = join(op.saida, op.nome ?? nomePadrao(caminho, op));
   const relatorio = {
     foto: caminhoParaMostrar(arquivo),
     larguraTela: op.largura,
@@ -1053,7 +1100,22 @@ async function fotografar({ context, bloqueadas }, caminho, op, dicionario) {
 
     for (let i = 0; i < op.passos.length; i++) {
       try {
-        await executarPasso(page, op.passos[i]);
+        const passo = op.passos[i];
+        if (passo && typeof passo === "object" && !Array.isArray(passo) && "foto" in passo) {
+          // Foto no meio da sequência: o estado da demonstração vive na memória e some ao
+          // recarregar, então um roteiro com várias telas precisa fotografar sem sair da página.
+          const nome = String(passo.foto || `passo-${i + 1}`);
+          // Com vários caminhos, cada um ganha o próprio prefixo (os passos são os mesmos).
+          const prefixo =
+            op.caminhos.length > 1 ? `${nomePadrao(caminho, op).replace(/\.png$/, "")}-` : "";
+          const destino = join(op.saida, prefixo + (nome.endsWith(".png") ? nome : `${nome}.png`));
+          mkdirSync(op.saida, { recursive: true });
+          await page.waitForTimeout(300);
+          await page.screenshot({ path: destino, animations: "disabled", caret: "hide" });
+          (relatorio.fotosDosPassos ??= []).push(caminhoParaMostrar(destino));
+          continue;
+        }
+        await executarPasso(page, passo);
       } catch (e) {
         relatorio.erro ??= `passo ${i + 1} ${JSON.stringify(op.passos[i])} falhou: ${String(e.message).split("\n")[0]}`;
         ok = false;
@@ -1098,6 +1160,12 @@ async function fotografar({ context, bloqueadas }, caminho, op, dicionario) {
         ok = false;
       }
       mkdirSync(op.saida, { recursive: true });
+      // O passo {"largura"} pode ter mudado a janela: o nome padrão diz a largura da foto.
+      const janela = page.viewportSize() ?? { width: op.largura, height: op.altura };
+      if (!op.nome && janela.width !== op.largura) {
+        arquivo = join(op.saida, nomePadrao(caminho, { ...op, largura: janela.width }));
+        relatorio.foto = caminhoParaMostrar(arquivo);
+      }
       try {
         if (op.paginaInteira) {
           const aviso = await aumentarParaPaginaInteira(page, op);
@@ -1111,7 +1179,7 @@ async function fotografar({ context, bloqueadas }, caminho, op, dicionario) {
         });
       } finally {
         if (op.paginaInteira) {
-          await page.setViewportSize({ width: op.largura, height: op.altura }).catch(() => {});
+          await page.setViewportSize(janela).catch(() => {});
         }
       }
     } catch (e) {

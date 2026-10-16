@@ -4,34 +4,34 @@ Atualizado em **26/09/2026**. Fonte: [mb-interface.md](mb-interface.md). Regra: 
 
 ## Inventário de jornadas
 
-| Jornada | Papel | Status revisão |
-| --- | --- | --- |
-| Acesso / login / Google / OTP | Cliente e loja | Feito — erros amigáveis; reenvio OTP (auth + gate + cadastrar) |
-| Agendar / remarcar | Cliente | Feito — linguagem e recuperação de horário |
-| Reservas / cancelar / recorrência | Cliente | Feito — diálogo com contexto |
-| Cancelar na agenda da loja | Equipe | Feito — diálogo com contexto |
-| Navegação inferior / perfil | Cliente | Feito — aba Conta + “Você está em…” |
-| Configurações WhatsApp / Google | Loja | Feito — erros traduzidos + reconectar |
-| Cadastro de loja OTP | Dono | Feito — reenvio com cooldown 60s |
-| Cantos / identidade visual | Loja | Já alinhado ao perfil MB (não alterado) |
-| Agenda / Serviços / Equipe / Horários | Equipe | Auditoria de toque, rótulos e textos no celular — ajustado toque |
-| Esportes | Cliente | Filtros com 44px |
+| Jornada                               | Papel          | Status revisão                                                                                                                                                                                                                       |
+| ------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Acesso / login / Google / OTP         | Cliente e loja | Feito — erros amigáveis; reenvio OTP (auth + gate + cadastrar)                                                                                                                                                                       |
+| Agendar / remarcar                    | Cliente        | Feito — linguagem e recuperação de horário                                                                                                                                                                                           |
+| Reservas / cancelar / recorrência     | Cliente        | Feito — diálogo com contexto                                                                                                                                                                                                         |
+| Cancelar na agenda da loja            | Equipe         | Feito — diálogo com contexto                                                                                                                                                                                                         |
+| Navegação inferior / perfil           | Cliente        | Feito — aba Conta + “Você está em…”. **Mudou em 15/10/2026:** a Conta saiu da barra por decisão do dono e fica no topo (ícone ou menu da conta, marcado com `aria-current`); ver docs/mb-interface.md, "Tela, navegação e adaptação" |
+| Configurações WhatsApp / Google       | Loja           | Feito — erros traduzidos + reconectar                                                                                                                                                                                                |
+| Cadastro de loja OTP                  | Dono           | Feito — reenvio com cooldown 60s                                                                                                                                                                                                     |
+| Cantos / identidade visual            | Loja           | Já alinhado ao perfil MB (não alterado)                                                                                                                                                                                              |
+| Agenda / Serviços / Equipe / Horários | Equipe         | Auditoria de toque, rótulos e textos no celular — ajustado toque                                                                                                                                                                     |
+| Esportes                              | Cliente        | Filtros com 44px                                                                                                                                                                                                                     |
 
 ## Achados e tratamento
 
-| Prioridade | Achado | Tratamento | Verificação |
-| --- | --- | --- | --- |
-| Bloqueio | Sucesso de booking sempre “confirmada” | Copy → “Horário reservado” + próximo passo | Código |
-| Bloqueio | Erro de booking limpava horário | Limpa só no sucesso; “Atualizar horários” | Código |
-| Frequente | Cancelamento sem contexto | Resumo serviço/data/hora; CTAs nomeados | Código |
-| Frequente | `window.confirm` na recorrência | `AlertDialog` | Código |
-| Frequente | Erros de auth crus | `friendlyAuthError` (inclui envio principal do login, Google, perfil, troca de senha e catálogo) | Navegador (login com senha errada) |
-| Frequente | Gate/cadastro sem reenviar OTP | Reenvio (+ cooldown no cadastrar) | Código |
-| Frequente | Perfil fora da nav | Aba **Conta**; header com `aria-current`; faixa “Você está em…” | Código |
-| Secundário | Dialog “Close” | “Fechar” | Código |
-| Secundário | Input / TimePicker / header toque | ≥ 44px | Código |
-| Secundário | Erros técnicos Google/WhatsApp | `friendlyIntegrationError` + reconectar | Código |
-| Pendente | Validação em aparelho real | Ainda não | — |
+| Prioridade | Achado                                 | Tratamento                                                                                                                      | Verificação                        |
+| ---------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| Bloqueio   | Sucesso de booking sempre “confirmada” | Copy → “Horário reservado” + próximo passo                                                                                      | Código                             |
+| Bloqueio   | Erro de booking limpava horário        | Limpa só no sucesso; “Atualizar horários”                                                                                       | Código                             |
+| Frequente  | Cancelamento sem contexto              | Resumo serviço/data/hora; CTAs nomeados                                                                                         | Código                             |
+| Frequente  | `window.confirm` na recorrência        | `AlertDialog`                                                                                                                   | Código                             |
+| Frequente  | Erros de auth crus                     | `friendlyAuthError` (inclui envio principal do login, Google, perfil, troca de senha e catálogo)                                | Navegador (login com senha errada) |
+| Frequente  | Gate/cadastro sem reenviar OTP         | Reenvio (+ cooldown no cadastrar)                                                                                               | Código                             |
+| Frequente  | Perfil fora da nav                     | Aba **Conta**; header com `aria-current`; faixa “Você está em…” (desde 15/10/2026 a Conta fica só no topo, por decisão do dono) | Código                             |
+| Secundário | Dialog “Close”                         | “Fechar”                                                                                                                        | Código                             |
+| Secundário | Input / TimePicker / header toque      | ≥ 44px                                                                                                                          | Código                             |
+| Secundário | Erros técnicos Google/WhatsApp         | `friendlyIntegrationError` + reconectar                                                                                         | Código                             |
+| Pendente   | Validação em aparelho real             | Ainda não                                                                                                                       | —                                  |
 
 ## Verificado nesta rodada
 
@@ -43,7 +43,7 @@ Atualizado em **26/09/2026**. Fonte: [mb-interface.md](mb-interface.md). Regra: 
 - Telas logadas no navegador emulado 390×844 (demo e painel real, sem salvar nada):
   - Reserva: resumo antes de confirmar, horário e botão ≥ 44px, sucesso “Horário reservado” com próximo passo.
   - Cancelamento: janela com resumo e botões nomeados; Esc fecha sem cancelar. **Corrigido:** após cancelar não havia confirmação — agora aparece “Horário cancelado: …” (e aviso ao parar repetição).
-  - Aba Conta: `aria-current="page"` e faixa “Você está em Perfil”.
+  - Aba Conta: `aria-current="page"` e faixa “Você está em Perfil”. Desde 15/10/2026 a Conta não está na barra: o `aria-current` fica no ícone ou menu da conta, no topo.
   - Editor WhatsApp: pílulas de 18px no texto, prévia formatada, troca de dado, restaurar com confirmação. **Corrigido:** menu da pílula abria fora da tela (âncora `fixed` dentro de cartão com transform); itens do menu com 44px e “(atual)” para leitor de tela; texto “alguns emojis contam como dois”.
   - Aviso do Google: cabe no celular; “Agora não” fecha sem iniciar o OAuth. **Corrigido:** o X de fechar das janelas (componente compartilhado) tinha 16px de largura — agora 44×44.
 - Auditoria automática no celular (painel da loja e app do cliente): nenhum texto em inglês nem botão sem nome. **Corrigido:** interruptores (componente compartilhado) com área de toque 44×44 sem mudar o visual; alternador Grade/Lista, motivos de bloqueio em Horários e filtros de Esportes com 44px.

@@ -215,6 +215,7 @@ Antes de alterar uma regra de negócio que gere confusão, registrar a regra atu
 - Em celular, usar uma coluna como ponto de partida. Em telas maiores, distribuir resumo e conteúdo sem mudar a lógica da tarefa.
 - Manter uma ação principal por contexto de decisão. Reservar menor destaque para ações secundárias e separar ações destrutivas.
 - Usar navegação inferior quando houver poucos destinos principais frequentes que caibam com rótulos legíveis. Caso contrário, escolher estrutura adequada; não forçar todas as funções em ícones apertados.
+- Conta e perfil ficam no topo (ícone ou menu da conta no cabeçalho), não na barra inferior; a barra fica com as tarefas principais (decisão do dono, 15/10/2026).
 - Identificar o local atual com texto e estado visual. Preservar nomes entre menu, página, ajuda e mensagens.
 - Priorizar ações recorrentes em regiões de alcance confortável, sem cobrir conteúdo ou exigir posições fixas impossíveis em todos os aparelhos.
 - Permitir que nomes, preços, datas e rótulos aumentem sem corte silencioso. Não usar reticências como solução padrão para instruções essenciais.

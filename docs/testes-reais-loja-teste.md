@@ -1,6 +1,6 @@
 # Testes reais com a "Loja Teste" (P-40 e P-41)
 
-Preparado em 13/10/2026. O dono autorizou uma loja de teste no próprio subdomínio, com contas de teste. **Nada disto foi criado ainda.** Só começar depois da implantação da noite ([implantacao-noite-2026-10-13.md](implantacao-noite-2026-10-13.md)): a limpeza depende da migration 1 (apagar loja inteira) e o teste de convite depende da função `invite-shop-admin` publicada.
+Preparado em 13/10/2026; seções 4 e 8.4 atualizadas em 15/10/2026 (certificado automático). O dono autorizou uma loja de teste no próprio subdomínio, com contas de teste. A Loja Teste foi criada e testada em 13/10/2026, e a Loja Teste B nasceu nos mesmos testes (CONTINUIDADE, 13/10); as duas continuavam ativas em 15/10 ([passagem-claude-2026-10-15.md](passagem-claude-2026-10-15.md)). Só começar depois da implantação da noite ([implantacao-noite-2026-10-13.md](implantacao-noite-2026-10-13.md)): a limpeza depende da migration 1 (apagar loja inteira) e o teste de convite depende da função `invite-shop-admin` publicada.
 
 Princípios:
 
@@ -74,27 +74,18 @@ A loja nasce com os horários padrão e sem serviços: o dono cadastra um servi�
 
 ## 4. Certificado do subdomínio (servidor)
 
-O DNS curinga `*.beauty` já leva à VPS; **não mexer em DNS**. Falta o certificado, que é por loja (P-27). Acrescentar um bloco em `/data/coolify/proxy/dynamic/beauty-shop-certs.yaml`, igual aos que já existem:
+O DNS curinga `*.beauty` já leva à VPS; **não mexer em DNS**. O certificado é por loja (P-27). **Desde 15/10/2026 o timer `barba-cert-lojas` da VPS acrescenta sozinho, em até ~10 min, o roteador da loja ativa que ainda não tem** em `/data/coolify/proxy/dynamic/beauty-shop-certs.yaml` (seção 6 de [implantacao-certificado-loja-2026-10-13.md](implantacao-certificado-loja-2026-10-13.md)). Depois do passo 3, esperar uns 10 minutos e conferir:
 
 ```bash
-F=/data/coolify/proxy/dynamic/beauty-shop-certs.yaml
-cp -a "$F" "/root/beauty-shop-certs.yaml.bak-$(date +%Y%m%d-%H%M)"
-cat >> "$F" <<'YAML'
-    beauty-shop-loja-teste:
-      rule: Host(`loja-teste.beauty.contheiner.digital`)
-      entryPoints:
-        - https
-      service: hostinger-beauty@file
-      priority: 30
-      tls:
-        certResolver: letsencrypt
-YAML
-sleep 60
 echo | openssl s_client -connect loja-teste.beauty.contheiner.digital:443 -servername loja-teste.beauty.contheiner.digital 2>/dev/null | openssl x509 -noout -issuer -subject
 curl -s -o /dev/null -w '%{http_code}\n' https://loja-teste.beauty.contheiner.digital/
 ```
 
-Esperado: emissor Let's Encrypt (não "TRAEFIK DEFAULT CERT") e `200`. O Traefik relê a pasta sozinho; não reiniciar o proxy. Para a Loja Teste B, outro bloco com `loja-teste-b`.
+Esperado: emissor Let's Encrypt (não "TRAEFIK DEFAULT CERT") e `200`. O Traefik relê a pasta sozinho; não reiniciar o proxy. Para a Loja Teste B, o mesmo com `loja-teste-b`.
+
+- **Não acrescentar o bloco à mão.** Se o timer já tiver gravado, o bloco `beauty-shop-loja-teste` fica duplicado no arquivo (como o Traefik reage a nome repetido: não confirmado). Para não esperar a rodada, rodar do Mac `scripts/cert-loja.sh --aplicar loja-teste`: só acrescenta o que falta, com cópia e validação.
+- Estado do timer, do Mac: `scripts/cert-loja-rotina.sh status`. Se responder "Rotina não instalada.", usar o `scripts/cert-loja.sh --aplicar` acima.
+- Em 13/10/2026, antes do timer, a Loja Teste ganhou o bloco à mão (cópia `/root/beauty-shop-certs.yaml.bak-20261013-1816`) e a Loja Teste B pelo `scripts/cert-loja.sh` (17:37 de Brasília). Em 15/10 as duas tinham roteador.
 
 ## 5. Montar a equipe (no app, pelo dono)
 
@@ -152,7 +143,7 @@ Registrar o resultado de cada linha no `docs/CONTINUIDADE.md` (o que passou, o q
    Esperado: `NOTICE: lojas=1 contas=N vinculos_em_loja_real=0 pessoas_reais_na_loja_teste=0 admins=0 fotos_no_storage=0`, `NOTICE: LOJA TESTE APAGADA`, `ROLLBACK`.
 
 3. Limpeza de verdade: o mesmo comando sem o `sed` (`docker exec -i "$DB" psql … < supabase/manutencao/loja-teste-apagar.sql`). Esperado: as mesmas linhas e `COMMIT`.
-4. Tirar o bloco `beauty-shop-loja-teste` (e o da B) de `beauty-shop-certs.yaml`, ou voltar o backup do passo 4.
+4. Tirar o bloco `beauty-shop-loja-teste` (e o da B) de `beauty-shop-certs.yaml`, com cópia antes, ou voltar o backup do passo 4. Fazer só depois do passo 3: com a loja ainda ativa, o timer `barba-cert-lojas` (desde 15/10/2026) devolve o bloco em até ~10 min. Um backup antigo também não tem os blocos de lojas criadas depois dele; os das lojas ativas o timer devolve sozinho.
 5. Conferir: `select count(*) from public.barbershops where slug like 'loja-teste%'` e `select count(*) from auth.users where email like '%@loja-teste.invalid'` dão `0`.
 
 O script de limpeza só apaga as lojas `loja-teste`/`Loja Teste` e `loja-teste-b`/`Loja Teste B` e as contas `@loja-teste.invalid`. Ele **aborta sem apagar nada** se: alguma conta de teste estiver em equipe, reserva ou aviso de outra loja; alguma pessoa de verdade tiver reservado ou entrado na loja de teste; alguma conta de teste for admin da plataforma ou gerente de conta; ou se sobrar resíduo no fim. Conferido em 13/10/2026 numa cópia da estrutura do banco: loja com equipe de 4, cliente e uma reserva apagadas por inteiro, sem sobrar conta, perfil ou sinal de agenda.
