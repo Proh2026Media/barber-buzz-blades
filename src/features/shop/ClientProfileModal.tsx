@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
+  BellRing,
   CalendarClock,
+  ContactRound,
   Flag,
   History,
+  MessageCircle,
   RefreshCw,
   Repeat,
   Store,
@@ -25,8 +28,14 @@ import {
   type AppointmentStatus,
 } from "@/components/visual";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { InlineStatus, type ActionState } from "@/components/visual";
+import { formatSignupPhone } from "@/lib/auth/signup-phone";
 import { ClientNoticeBell } from "./ClientNoticeBell";
 import { AGENDA_STATE } from "./agenda/types";
+import { InviteCard } from "./clients/InviteCard";
+import { NicknameEditor } from "./clients/NicknameEditor";
+import { clientDisplay, whatsappLink } from "./clients/model";
 import { t as tNow, useI18n } from "@/lib/i18n";
 
 export type ClientHistoryRow = {
@@ -41,12 +50,30 @@ export type ClientHistoryRow = {
 export type ClientProfilePayload = {
   customer_id: string;
   customer_name: string | null;
+  /** Migration 20261016130000 (ausentes antes dela): apelido e horário recorrente ativo. */
+  nickname?: string | null;
+  recurring?: boolean;
   avatar_url: string | null;
   visits: number;
   total_spent_cents: number;
   first_visit: string | null;
   last_visit: string | null;
   rhythm: RhythmPayload;
+  history: ClientHistoryRow[];
+};
+
+/** Ficha do cliente do balcão (sem conta), de `get_shop_client`. */
+type WalkInPayload = {
+  shop_client_id: string;
+  customer_id: string | null;
+  has_account: boolean;
+  name: string | null;
+  nickname: string | null;
+  whatsapp: string | null;
+  notify_whatsapp: boolean;
+  visits: number;
+  total_spent_cents: number;
+  last_visit: string | null;
   history: ClientHistoryRow[];
 };
 
@@ -80,16 +107,69 @@ function agendaMeta(status: AppointmentStatus) {
 export function ClientProfileModal({
   shopId,
   customerId,
+  shopClientId = null,
+  customerName,
+  ownVisits,
+  publicOrigin = null,
+  shopName = "",
+  onClose,
+  onChanged,
+}: {
+  shopId: string;
+  /** Cliente com conta. Nulo quando é cliente do balcão (`shopClientId`). */
+  customerId: string | null;
+  /** Cliente do balcão (sem conta), marcado pela equipe. */
+  shopClientId?: string | null;
+  customerName: string | null;
+  /** Visitas com o parceiro que abriu (a lista dele conta só as próprias). */
+  ownVisits?: number;
+  /** Endereço público da barbearia, para o convite de cadastro do cliente do balcão. */
+  publicOrigin?: string | null;
+  shopName?: string;
+  onClose: () => void;
+  /** Apelido ou dados do cliente mudaram (a agenda recarrega). */
+  onChanged?: () => void;
+}) {
+  if (!customerId && shopClientId) {
+    return (
+      <WalkInClientModal
+        shopId={shopId}
+        shopClientId={shopClientId}
+        customerName={customerName}
+        publicOrigin={publicOrigin}
+        shopName={shopName}
+        onClose={onClose}
+        onChanged={onChanged}
+      />
+    );
+  }
+  if (!customerId) return null;
+  return (
+    <AccountClientModal
+      shopId={shopId}
+      customerId={customerId}
+      customerName={customerName}
+      ownVisits={ownVisits}
+      onClose={onClose}
+      onChanged={onChanged}
+    />
+  );
+}
+
+function AccountClientModal({
+  shopId,
+  customerId,
   customerName,
   ownVisits,
   onClose,
+  onChanged,
 }: {
   shopId: string;
   customerId: string;
   customerName: string | null;
-  /** Visitas com o parceiro que abriu (a lista dele conta só as próprias). */
   ownVisits?: number;
   onClose: () => void;
+  onChanged?: () => void;
 }) {
   const { t, intlLocale } = useI18n();
   const demo = useDemo();
@@ -135,6 +215,8 @@ export function ClientProfileModal({
       setProfile({
         customer_id: customerId,
         customer_name: demo.customers.find((c) => c.id === customerId)?.name ?? customerName,
+        nickname: demo.shopClients.find((c) => c.profile_id === customerId)?.nickname ?? null,
+        recurring: demo.series.some((row) => row.customer_id === customerId && row.active),
         avatar_url: null,
         visits: completed.length,
         total_spent_cents: totalCents,
@@ -213,6 +295,29 @@ export function ClientProfileModal({
   }, [profile, now]);
   const past = profile?.history.filter((row) => row !== upcoming) ?? [];
   const name = profile?.customer_name ?? customerName ?? t("team.partner.clientFallback");
+  // Apelido só existe com a migration nova (a chave vem no pacote) ou na demonstração.
+  const nicknameReady = !!profile && (!!demo || "nickname" in profile);
+
+  async function saveNickname(next: string | null) {
+    if (demo) {
+      demo.dispatch({
+        type: "client.nickname",
+        customerId,
+        shopClientId: null,
+        nickname: next,
+      });
+    } else {
+      const { error: saveError } = await supabase.rpc("set_client_nickname", {
+        p_shop_id: shopId,
+        p_customer_id: customerId,
+        p_shop_client_id: null,
+        p_nickname: next ?? "",
+      });
+      if (saveError) throw saveError;
+    }
+    setProfile((current) => (current ? { ...current, nickname: next } : current));
+    onChanged?.();
+  }
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -232,6 +337,15 @@ export function ClientProfileModal({
             <DialogDescription className="sr-only">
               {t("team.profile.aria", { name })}
             </DialogDescription>
+            {profile?.recurring && (
+              <StatusBadge
+                tone="highlight"
+                icon={Repeat}
+                size="sm"
+                label={t("agenda.recurring.client")}
+                className="mt-1"
+              />
+            )}
           </div>
           <ClientNoticeBell shopId={shopId} customerId={customerId} customerName={name} />
         </div>
@@ -251,6 +365,9 @@ export function ClientProfileModal({
             />
           ) : (
             <>
+              {nicknameReady && (
+                <NicknameEditor value={profile.nickname ?? null} onSave={saveNickname} />
+              )}
               {upcoming && (
                 <section className="tone-info space-y-2 rounded-2xl border border-[color:var(--tone-border)] bg-[color:var(--tone-soft)] p-4">
                   <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-[color:var(--tone-ink)]">
@@ -426,6 +543,327 @@ export function ClientProfileModal({
                   {t("team.profile.shopWide")}
                 </p>
               )}
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
+ * Ficha do cliente do balcão (sem conta no app): nome, apelido, WhatsApp informado pelo
+ * barbeiro, avisos, visitas e o convite para se cadastrar (sem conta não há horário recorrente).
+ */
+function WalkInClientModal({
+  shopId,
+  shopClientId,
+  customerName,
+  publicOrigin,
+  shopName,
+  onClose,
+  onChanged,
+}: {
+  shopId: string;
+  shopClientId: string;
+  customerName: string | null;
+  publicOrigin: string | null;
+  shopName: string;
+  onClose: () => void;
+  onChanged?: () => void;
+}) {
+  const { t, intlLocale } = useI18n();
+  const demo = useDemo();
+  const [client, setClient] = useState<WalkInPayload | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [retry, setRetry] = useState(0);
+  const [notifyState, setNotifyState] = useState<ActionState | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(false);
+    if (demo) {
+      const row = demo.shopClients.find((item) => item.id === shopClientId);
+      if (!row) {
+        setError(true);
+        setLoading(false);
+        return;
+      }
+      const rows = demo.appointments.filter((item) => item.shop_client_id === shopClientId);
+      const completed = rows.filter((item) => item.status === "completed");
+      setClient({
+        shop_client_id: row.id,
+        customer_id: row.profile_id,
+        has_account: !!row.profile_id,
+        name: row.full_name,
+        nickname: row.nickname,
+        whatsapp: row.whatsapp_e164,
+        notify_whatsapp: row.notify_whatsapp,
+        visits: completed.length,
+        total_spent_cents: completed.reduce((sum, item) => sum + (demo.prices[item.id] ?? 0), 0),
+        last_visit:
+          completed
+            .map((item) => item.starts_at)
+            .sort()
+            .at(-1) ?? null,
+        history: rows
+          .map((item) => ({
+            appointment_id: item.id,
+            starts_at: item.starts_at,
+            service_name: demo.services.find((s) => s.id === item.service_id)?.name ?? null,
+            staff_name: demo.staff.find((s) => s.id === item.staff_id)?.display_name ?? null,
+            status: item.status,
+            amount_cents: demo.prices[item.id] ?? 0,
+          }))
+          .sort((a, b) => b.starts_at.localeCompare(a.starts_at)),
+      });
+      setLoading(false);
+      return;
+    }
+    void (async () => {
+      try {
+        const result = await supabase.rpc("get_shop_client", {
+          p_shop_id: shopId,
+          p_shop_client_id: shopClientId,
+        });
+        if (cancelled) return;
+        if (result.error || !result.data) setError(true);
+        else setClient(result.data as unknown as WalkInPayload);
+      } catch {
+        if (!cancelled) setError(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [demo, shopId, shopClientId, retry]);
+
+  const dateTime = useMemo(
+    () =>
+      new Intl.DateTimeFormat(intlLocale, {
+        weekday: "short",
+        day: "2-digit",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    [intlLocale],
+  );
+
+  async function saveNickname(next: string | null) {
+    if (demo) {
+      demo.dispatch({
+        type: "client.nickname",
+        customerId: null,
+        shopClientId,
+        nickname: next,
+      });
+    } else {
+      const { error: saveError } = await supabase.rpc("set_client_nickname", {
+        p_shop_id: shopId,
+        p_customer_id: null,
+        p_shop_client_id: shopClientId,
+        p_nickname: next ?? "",
+      });
+      if (saveError) throw saveError;
+    }
+    setClient((current) => (current ? { ...current, nickname: next } : current));
+    onChanged?.();
+  }
+
+  async function toggleNotify(next: boolean) {
+    if (!client) return;
+    const previous = client.notify_whatsapp;
+    setClient({ ...client, notify_whatsapp: next });
+    setNotifyState("saving");
+    try {
+      if (demo) {
+        demo.dispatch({ type: "client.update", id: shopClientId, notify_whatsapp: next });
+      } else {
+        const { error: saveError } = await supabase.rpc("update_shop_client", {
+          p_shop_id: shopId,
+          p_shop_client_id: shopClientId,
+          p_notify: next,
+        });
+        if (saveError) throw saveError;
+      }
+      setNotifyState("saved");
+    } catch {
+      setClient((current) => (current ? { ...current, notify_whatsapp: previous } : current));
+      setNotifyState("error");
+    }
+  }
+
+  const shown = clientDisplay(client?.name ?? customerName, client?.nickname);
+  const title = shown.primary ?? t("team.partner.clientFallback");
+  const phone = client?.whatsapp ? formatSignupPhone(client.whatsapp) : null;
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="flex max-h-[90dvh] w-[calc(100vw-1.5rem)] max-w-lg flex-col gap-0 overflow-hidden rounded-3xl border-border bg-card p-0">
+        <div className="flex items-center gap-3 border-b border-border p-4 pr-14">
+          <PersonAvatar name={title} seed={shopClientId} size="md" />
+          <div className="min-w-0 flex-1">
+            <DialogTitle className="line-clamp-2 break-words text-base font-bold">
+              {title}
+            </DialogTitle>
+            {shown.secondary && (
+              <p className="break-words text-sm text-muted-foreground">{shown.secondary}</p>
+            )}
+            <DialogDescription className="sr-only">
+              {t("team.profile.aria", { name: title })}
+            </DialogDescription>
+            <Tag icon={ContactRound} className="mt-1">
+              {t("agenda.client.walkIn")}
+            </Tag>
+          </div>
+        </div>
+
+        <div className="dialog-scroll-area flex-1 space-y-5 overflow-y-auto p-4 sm:p-5">
+          {loading ? (
+            <LoadingState label={t("team.profile.loading")} variant="stats" count={2} />
+          ) : error || !client ? (
+            <Notice
+              tone="danger"
+              title={t("team.profile.loadError")}
+              action={{
+                label: t("common.retry"),
+                onClick: () => setRetry((n) => n + 1),
+                icon: RefreshCw,
+              }}
+            />
+          ) : (
+            <>
+              <NicknameEditor value={client.nickname} onSave={saveNickname} />
+
+              {phone && client.whatsapp && (
+                <div className="space-y-3 rounded-2xl border border-border bg-background/60 p-3">
+                  <a
+                    href={whatsappLink(client.whatsapp, "")}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex min-h-11 items-center gap-2 text-sm font-semibold"
+                  >
+                    <MessageCircle className="size-4 shrink-0 text-gold" aria-hidden />
+                    <span className="tabular-nums">{phone}</span>
+                    <span className="text-xs font-medium text-muted-foreground">
+                      · {t("client.walkIn.openChat")}
+                    </span>
+                  </a>
+                  <label className="flex min-h-11 items-center gap-3">
+                    <BellRing className="size-4 shrink-0 text-gold" aria-hidden />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold">{t("bk.notify")}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        {t("bk.notifyHint")}
+                      </span>
+                    </span>
+                    <Switch
+                      checked={client.notify_whatsapp}
+                      onCheckedChange={(value) => void toggleNotify(value)}
+                      aria-label={t("bk.notify")}
+                    />
+                  </label>
+                  <InlineStatus state={notifyState} onRetry={() => setNotifyState(null)} />
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <StatTile
+                  icon={Repeat}
+                  label={
+                    client.visits === 1
+                      ? t("team.profile.visitsShopOne")
+                      : t("team.profile.visitsShopMany")
+                  }
+                  value={client.visits}
+                  hint={t("team.profile.sinceStart")}
+                />
+                <StatTile
+                  icon={Wallet}
+                  label={t("team.profile.totalSpent")}
+                  value={formatBRL(client.total_spent_cents, intlLocale)}
+                  hint={t("team.profile.sinceStart")}
+                />
+              </div>
+
+              <InviteCard
+                whatsappE164={client.whatsapp}
+                clientName={client.name}
+                shopName={shopName}
+                publicOrigin={publicOrigin}
+                context="profile"
+              />
+
+              <section className="space-y-2">
+                <h3 className="flex items-center gap-2 text-sm font-bold">
+                  <History className="size-4 text-gold" aria-hidden />
+                  {t("team.profile.history")}
+                </h3>
+                {client.history.length === 0 ? (
+                  <EmptyState
+                    tone="calendar"
+                    variant="plain"
+                    title={t("team.profile.historyEmpty")}
+                  />
+                ) : (
+                  <ol className="space-y-1.5">
+                    {client.history.map((row) => {
+                      const meta = isStatus(row.status) ? agendaMeta(row.status) : null;
+                      return (
+                        <li
+                          key={row.appointment_id}
+                          className="flex items-start gap-3 rounded-xl border border-border bg-card p-3"
+                        >
+                          {meta ? (
+                            <span aria-hidden className="shrink-0">
+                              <StatusBadge
+                                tone={meta.tone}
+                                icon={meta.icon}
+                                label={t(meta.labelKey)}
+                                variant="icon"
+                                size="md"
+                              />
+                            </span>
+                          ) : (
+                            <UserRound className="size-5 text-muted-foreground" aria-hidden />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold">
+                              {row.service_name ?? t("team.partner.serviceFallback")}
+                            </p>
+                            <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                              <span>{dateTime.format(new Date(row.starts_at))}</span>
+                              {meta && (
+                                <StatusBadge
+                                  tone={meta.tone}
+                                  icon={meta.icon}
+                                  label={t(meta.labelKey)}
+                                  size="sm"
+                                />
+                              )}
+                            </p>
+                            {row.staff_name && (
+                              <p className="text-xs text-muted-foreground">
+                                {t("team.profile.with", { name: row.staff_name })}
+                              </p>
+                            )}
+                          </div>
+                          <span
+                            className={`shrink-0 text-xs font-bold tabular-nums ${row.status === "cancelled" ? "text-muted-foreground line-through" : ""}`}
+                          >
+                            {formatBRL(row.amount_cents, intlLocale)}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                )}
+              </section>
             </>
           )}
         </div>

@@ -17,10 +17,14 @@ import {
   MIN_LEAD_OPTIONS,
   formatShopDate,
   minLeadParts,
+  shiftDateKey,
   shopDateKey,
+  shopDateTime,
   validMinLeadMinutes,
 } from "@/lib/shop/appointments";
+import { useDemo } from "@/features/demo/context";
 import { clockInTimeZone } from "@/features/register-owner/timezones";
+import { liveStatus, toMinutes, weekdayOfKey, type HoursRow } from "@/features/shop/hours/model";
 import { BOOKING_CARD_IDS } from "./booking-cards";
 
 type SaveResult = Exclude<ActionState, "saving">;
@@ -43,37 +47,64 @@ export function useMinLeadLabel() {
 }
 
 /**
+ * Primeiro instante com a loja aberta a partir de `from`, pelo expediente da semana no fuso da
+ * loja. Sem nenhum dia aberto, fica o próprio `from`.
+ */
+function firstOpenFrom(from: Date, hours: HoursRow[], timeZone: string) {
+  const day = shopDateKey(from, timeZone);
+  const status = liveStatus({
+    hours,
+    todayWeekday: weekdayOfKey(day),
+    nowMinutes: toMinutes(clockInTimeZone(timeZone, from)),
+    shopBlocks: [],
+  });
+  if (status.kind !== "closed" || !status.next) return from;
+  return shopDateTime(shiftDateKey(day, status.next.inDays), status.next.opensAt, timeZone);
+}
+
+/**
  * Antecedência mínima para o cliente reservar. Só aparece quando o banco já tem a coluna
  * `min_lead_minutes` (migration 20261013150000); antes dela não existe regra a mostrar.
  */
 export function MinLeadSettings({
   settings,
   timeZone,
+  hours,
   onSave,
 }: {
   settings: Tables<"barbershop_settings">;
   timeZone: string;
+  /** Expediente da semana: a prévia não oferece um horário com a loja fechada. */
+  hours?: HoursRow[];
   onSave: (minutes: number) => Promise<"applied" | "pending">;
 }) {
   const { t, intlLocale } = useI18n();
+  const demo = useDemo();
   const leadLabel = useMinLeadLabel();
   const groupId = useId();
   const saved = validMinLeadMinutes(settings.min_lead_minutes);
   const [lead, setLead] = useState(saved);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<SaveResult | null>(null);
-  const [now, setNow] = useState(() => new Date());
+  const [clock, setClock] = useState(() => new Date());
 
   useEffect(() => {
     setLead(saved);
   }, [saved]);
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 30_000);
+    const timer = window.setInterval(() => setClock(new Date()), 30_000);
     return () => window.clearInterval(timer);
   }, []);
 
+  // Na demonstração vale o relógio dela (o mesmo da Agenda), não o do aparelho.
+  const now = demo?.now ?? clock;
   const changed = lead !== saved;
-  const first = new Date(now.getTime() + lead * 60_000);
+  // O primeiro horário que o cliente vê: depois da antecedência e com a loja aberta (de madrugada,
+  // a prévia mostra a abertura, não um horário com a loja fechada).
+  const earliest = new Date(now.getTime() + lead * 60_000);
+  const week = hours ?? demo?.businessHours;
+  const first = week?.length ? firstOpenFrom(earliest, week, timeZone) : earliest;
+  const closedFirst = first.getTime() > earliest.getTime();
   const sameDay = shopDateKey(first, timeZone) === shopDateKey(now, timeZone);
   const firstClock = clockInTimeZone(timeZone, first);
   const firstText = sameDay
@@ -82,19 +113,33 @@ export function MinLeadSettings({
         day: formatShopDate(first, timeZone, { weekday: "short" }, intlLocale),
         time: firstClock,
       });
-  const timeline: TimelineRow[] =
-    lead === 0
-      ? [{ kind: "free", time: clockInTimeZone(timeZone, now), label: t("lead.preview.anytime") }]
-      : [
-          {
-            kind: "closed",
-            icon: EyeOff,
-            time: clockInTimeZone(timeZone, now),
-            label: t("lead.preview.hidden", { lead: leadLabel(lead) }),
-            minutes: lead,
-          },
-          { kind: "free", time: firstClock, label: firstText },
-        ];
+  const timeline: TimelineRow[] = [];
+  if (lead > 0) {
+    timeline.push({
+      kind: "closed",
+      icon: EyeOff,
+      time: clockInTimeZone(timeZone, now),
+      label: t("lead.preview.hidden", { lead: leadLabel(lead) }),
+      minutes: lead,
+    });
+  }
+  // A antecedência acaba com a loja fechada: o bloco "Fechado" e, depois, a abertura.
+  if (closedFirst) {
+    // Em outro dia, o dia vai junto ("Fechado · dom."): sem ele, parecia fechado hoje.
+    const otherDay = shopDateKey(earliest, timeZone) !== shopDateKey(now, timeZone);
+    timeline.push({
+      kind: "closed",
+      time: clockInTimeZone(timeZone, earliest),
+      label: otherDay
+        ? `${t("shop.hours.closed")} · ${formatShopDate(earliest, timeZone, { weekday: "short" }, intlLocale)}`
+        : t("shop.hours.closed"),
+    });
+  }
+  timeline.push({
+    kind: "free",
+    time: firstClock,
+    label: lead === 0 && !closedFirst ? t("lead.preview.anytime") : firstText,
+  });
 
   async function save() {
     if (busy) return;

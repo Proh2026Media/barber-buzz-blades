@@ -2,19 +2,20 @@
 
 Ferramentas de linha de comando usadas por agentes (Cursor, Codex, Claude Code) e pelo dono. Rodar sempre a partir da raiz do repositório. Regras gerais de trabalho: [AGENTS.md](../AGENTS.md) e [docs/guia/como-trabalhar.md](../docs/guia/como-trabalhar.md).
 
-| Script                                                                       | Para quê                                                        | Quem chama                                               |
-| ---------------------------------------------------------------------------- | --------------------------------------------------------------- | -------------------------------------------------------- |
-| [vez.sh](#vezsh)                                                             | Só uma ferramenta edita por vez                                 | Agentes, à mão; Cursor pelos ganchos                     |
-| [autossave.sh](#autossavesh)                                                 | Salva, envia ao `origin` (publica o site) e devolve a vez       | Agentes ao terminar; Cursor ao fim de cada resposta      |
-| [cursor-pretool-vez.sh](#cursor-pretool-vezsh)                               | Bloqueia ferramentas do Cursor sem a vez                        | Só o gancho `preToolUse` do Cursor                       |
-| [verificar.sh](#verificarsh)                                                 | Tipos, testes, eslint, prettier e montagem, com resumo          | Agentes antes de enviar                                  |
-| [foto.mjs](#fotomjs)                                                         | Foto de uma tela do app no servidor local, com relatório        | Agentes ao mexer em interface                            |
-| [copy-pwa.mjs](#copy-pwamjs)                                                 | Copia o service worker para a saída da montagem                 | `npm run build` (automático)                             |
-| [sync-shop-domains.sh](#sync-shop-domainssh)                                 | Lista os domínios próprios das barbearias                       | À mão, em operação                                       |
-| [sync-traefik-custom-domains.sh](#sync-traefik-custom-domainssh)             | Gera a configuração do Traefik para os domínios próprios        | À mão, no servidor (alternativa manual)                  |
-| [cert-loja.sh](#cert-lojash)                                                 | Confere o certificado de cada loja ou grava na hora o que falta | À mão, do Mac (`ssh vps-barba`)                          |
-| [cert-loja-rotina.sh](#cert-loja-rotinash)                                   | Liga, confere ou desliga a rotina do certificado de loja nova   | À mão, do Mac (`ssh vps-barba`)                          |
-| [vps/barba-cert-lojas.service e .timer](#vpsbarba-cert-lojasservice-e-timer) | Certificado de loja nova a cada 10 min, sozinho                 | O systemd da VPS (instalados pelo `cert-loja-rotina.sh`) |
+| Script                                                                       | Para quê                                                           | Quem chama                                               |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------ | -------------------------------------------------------- |
+| [vez.sh](#vezsh)                                                             | Só uma ferramenta edita por vez                                    | Agentes, à mão; Cursor pelos ganchos                     |
+| [autossave.sh](#autossavesh)                                                 | Salva, envia ao `origin` (publica o site) e devolve a vez          | Agentes ao terminar; Cursor ao fim de cada resposta      |
+| [cursor-pretool-vez.sh](#cursor-pretool-vezsh)                               | Bloqueia ferramentas do Cursor sem a vez                           | Só o gancho `preToolUse` do Cursor                       |
+| [verificar.sh](#verificarsh)                                                 | Tipos, testes, eslint, prettier e montagem, com resumo             | Agentes antes de enviar                                  |
+| [foto.mjs](#fotomjs)                                                         | Foto de uma tela do app no servidor local, com relatório           | Agentes ao mexer em interface                            |
+| [banco-local.sh](#banco-localsh)                                             | Cópia local do banco no Docker para testar migrations e testes SQL | Agentes antes de levar migration ao servidor             |
+| [copy-pwa.mjs](#copy-pwamjs)                                                 | Copia o service worker para a saída da montagem                    | `npm run build` (automático)                             |
+| [sync-shop-domains.sh](#sync-shop-domainssh)                                 | Lista os domínios próprios das barbearias                          | À mão, em operação                                       |
+| [sync-traefik-custom-domains.sh](#sync-traefik-custom-domainssh)             | Gera a configuração do Traefik para os domínios próprios           | À mão, no servidor (alternativa manual)                  |
+| [cert-loja.sh](#cert-lojash)                                                 | Confere o certificado de cada loja ou grava na hora o que falta    | À mão, do Mac (`ssh vps-barba`)                          |
+| [cert-loja-rotina.sh](#cert-loja-rotinash)                                   | Liga, confere ou desliga a rotina do certificado de loja nova      | À mão, do Mac (`ssh vps-barba`)                          |
+| [vps/barba-cert-lojas.service e .timer](#vpsbarba-cert-lojasservice-e-timer) | Certificado de loja nova a cada 10 min, sozinho                    | O systemd da VPS (instalados pelo `cert-loja-rotina.sh`) |
 
 ---
 
@@ -206,6 +207,22 @@ node scripts/foto.mjs "/demo?view=platform" "/demo?view=owner" "/demo?view=equal
 Para olhar a foto, abrir o PNG (agentes: ferramenta de leitura de imagem). A pasta `.fotos/` é ignorada pelo git; apagar ao terminar (`rm -rf .fotos`), principalmente com pouco disco.
 
 ---
+
+## banco-local.sh
+
+Cópia local do banco no Docker deste Mac, para testar migrations e os testes SQL antes de levar ao servidor (nada vai à VPS). Criado em 16/10/2026; o guia de banco dizia que essa cópia "não está documentada".
+
+```bash
+open -a Docker                                   # se o Docker estiver desligado
+scripts/banco-local.sh subir 20261014120000      # banco igual ao de produção (para na migration indicada)
+scripts/banco-local.sh testes supabase/migrations/<nova>.sql   # todos os testes, com a nova na frente
+scripts/banco-local.sh parar                     # apaga o container
+```
+
+- `subir` usa a imagem `supabase/postgres:15.8.1.085` (~3 GB na primeira vez), completa o que o Auth e o Storage criariam num Supabase completo (colunas de `auth.users`, `auth.identities`, `auth.sessions`, colunas de `storage.buckets/objects`), aplica as migrations em ordem (cada uma em transação) e cria um admin da plataforma fictício (alguns testes usam um).
+- `testes` roda cada arquivo de `supabase/tests` dentro de `BEGIN … ROLLBACK` (as cadeias que dependem de `booking_reliability.sql` na mesma transação); `slug_redirects_departure.sql` abre e fecha a própria transação e roda sem as extras. Mostra `ok`/`XX` por arquivo e o total; sai com erro se algo falhou.
+- Em 16/10/2026: 96 migrations, 1.074 PASS e 0 FAIL.
+- Não substitui o ensaio no servidor (dados reais), mas pega erro de SQL, permissão e regressão antes.
 
 ## copy-pwa.mjs
 

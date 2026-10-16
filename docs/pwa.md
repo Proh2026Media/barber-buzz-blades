@@ -24,3 +24,5 @@ No Chrome desktop, o ícone de instalação aparece na barra de endereço quando
 - Em `npm run dev` o service worker fica desligado de propósito (não atrapalha o HMR).
 - Instalação real exige origem segura (HTTPS) fora de localhost.
 - Confirme no Supabase Auth as Redirect URLs do domínio/IP usados no celular.
+- **Login com Google no app instalado (16/10/2026):** no iPhone a janela do Google não tem o armazenamento do app. O app começa o login e recebe o código de volta pelo banco (rota `/auth/retorno`, migration `20261016120000_retorno_google_app_instalado`); a janela pede para ser fechada (OK/X no canto). Detalhes em [guia/arquitetura.md](guia/arquitetura.md), seção 9.
+- O manifesto não trava mais a tela em pé (`orientation: any`): no tablet instalado o app gira.

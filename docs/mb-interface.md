@@ -216,6 +216,11 @@ Antes de alterar uma regra de negócio que gere confusão, registrar a regra atu
 - Manter uma ação principal por contexto de decisão. Reservar menor destaque para ações secundárias e separar ações destrutivas.
 - Usar navegação inferior quando houver poucos destinos principais frequentes que caibam com rótulos legíveis. Caso contrário, escolher estrutura adequada; não forçar todas as funções em ícones apertados.
 - Conta e perfil ficam no topo (ícone ou menu da conta no cabeçalho), não na barra inferior; a barra fica com as tarefas principais (decisão do dono, 15/10/2026).
+- No computador e no tablet deitado (a partir de 1024 px), a mesma navegação vira coluna lateral fixa, com ícone e nome; nada flutua sobre o conteúdo (pedido do dono, 16/10/2026: o computador não deve parecer adaptação do celular).
+  - Com a coluna lateral, o conteúdo começa logo depois dela, na mesma posição em todas as abas (o título não pula ao trocar de aba); cada aba limita só a largura de leitura à direita (`--app-read-width` em `src/styles.css`: 46rem nas telas de leitura, 70rem na Agenda e em Horários, 64rem na plataforma; a partir de 1536 px, um pouco mais). O cabeçalho vai de ponta a ponta, com o nome da loja sobre a coluna.
+  - Ação principal do topo da aba (Agendar, Novo serviço, Adicionar): sempre `action-button action-confirm`, igual em todas as abas e nos dois temas.
+- Ferramentas de lista longa (busca, filtros por estado, troca grade/lista) só aparecem quando ajudam: mais de 6 itens, algo pausado ou o recurso em uso. Selo que repete o que o interruptor ao lado já diz não aparece (16/10/2026).
+- Subtela de ajustes com muitos cartões vira lista: cada ajuste abre sozinho, e a seta (e o Voltar do celular) volta à lista (Ajustes → Agendamento, 16/10/2026).
 - Identificar o local atual com texto e estado visual. Preservar nomes entre menu, página, ajuda e mensagens.
 - Priorizar ações recorrentes em regiões de alcance confortável, sem cobrir conteúdo ou exigir posições fixas impossíveis em todos os aparelhos.
 - Permitir que nomes, preços, datas e rótulos aumentem sem corte silencioso. Não usar reticências como solução padrão para instruções essenciais.
@@ -342,6 +347,7 @@ Regras de uso:
 - **Cantos**: os componentes usam `rounded-xl`/`rounded-2xl` e `var(--button-radius)`, então seguem Retos, Semi e Arredondados sozinhos. Círculos ficam só onde são forma funcional (avatar, marcador de etapa, bolha de contagem, anel de prazo).
 - **Toque e teclado**: tudo que é clicável tem 44 px ou mais; escolhas usam papéis de rádio/caixa (setas trocam a opção); foco visível em dourado.
   - Exceção aceita: o calendário do `DatePicker` (`src/components/ui/schedule-picker.tsx`) abaixo de 360 px. Sete colunas de 44 px não cabem com a margem de 16 px, então os dias ficam com cerca de 40 px de largura a 320 px (altura de 44 px mantida, acima dos 24 px do WCAG 2.5.8), sem cortar o sábado nem a seta.
+  - Exceção aceita: a faixa dos 7 dias da Agenda (`src/features/shop/agenda/AgendaDayNav.tsx`) abaixo de 390 px. Os 7 dias ficam à vista sem rolar (decisão de 08/10, commit 4b88e44), com cerca de 36 px de largura a 320 px e 48 px de altura (acima dos 24 px do WCAG 2.5.8). Registrado na revisão de 16/10/2026.
 - Componentes de domínio (selo de nível do clube, selo de papel, faixa de dias, ticket da reserva, campo de código, barra do dia) ficam na área dona, montados sobre estes. Exemplo: um `RoleBadge` é um `StatusBadge` com o ícone e o rótulo do papel.
 
 **Tons de estado** (`Tone`): mesmo significado = mesma cor e mesmo ícone.

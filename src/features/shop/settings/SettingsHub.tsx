@@ -145,6 +145,7 @@ export function SettingsHub({
   onSetupGuideShown,
   setupGuide,
   overview,
+  onBack,
 }: {
   sections: SettingsSection[];
   section: SettingsSection | null;
@@ -170,6 +171,8 @@ export function SettingsHub({
   };
   /** Dados para o resumo vivo de cada item e para "Precisa da sua atenção". */
   overview?: SettingsOverview;
+  /** Seta de voltar com um ajuste aberto dentro da subtela: volta à lista dela, não ao menu. */
+  onBack?: () => void;
 }) {
   const { t, locale } = useI18n();
   const themePreference = useThemePreference();
@@ -208,9 +211,9 @@ export function SettingsHub({
         <div className="flex min-h-11 items-center gap-2">
           <button
             type="button"
-            onClick={() => onSectionChange(null)}
-            aria-label={t("shop.settings.back")}
-            title={t("shop.settings.back")}
+            onClick={() => (onBack ? onBack() : onSectionChange(null))}
+            aria-label={onBack ? t("shop.settings.backToList") : t("shop.settings.back")}
+            title={onBack ? t("shop.settings.backToList") : t("shop.settings.back")}
             className="-ms-1 grid size-11 shrink-0 place-items-center rounded-xl border border-border bg-card text-foreground transition hover:border-primary/40"
           >
             <ArrowLeft className="size-5" aria-hidden />

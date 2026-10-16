@@ -1,8 +1,8 @@
 # Leia primeiro — Barba & Cabelo
 
-Porta de entrada para o agente que vai continuar o projeto (Cursor, Claude Code, Codex e outros). Atualizado em **15/10/2026 (noite)**.
+Porta de entrada para o agente que vai continuar o projeto (Cursor, Claude Code, Codex e outros). Atualizado em **16/10/2026 (madrugada)**.
 
-**Situação em 15/10 (noite):** a passagem de 15/10 foi concluída no Claude Code (entrada "Passagem de 15/10" no [CONTINUIDADE.md](CONTINUIDADE.md)). O que falta está no topo de [guia/pendencias.md](guia/pendencias.md): os pacotes do Google (P-69 e depois P-28) e os testes reais do dono.
+**Situação em 16/10:** entrega do Claude Code com agendamento pelo barbeiro no painel, apelido e cliente do balcão, selo de cliente recorrente, login Google no app instalado e simplificação visual (entrada de 16/10 no [CONTINUIDADE.md](CONTINUIDADE.md); análise em [analise-visual-2026-10-16.md](analise-visual-2026-10-16.md)). Antes da publicação, uma revisão de código (19 achados), um teste de interface completo (15) e uma revisão final independente (25) acharam e corrigiram defeitos (lista na mesma entrada). O site já está no ar; **falta aplicar no banco as migrations nº 95 e 96** (P-73, pacote [implantacao-agendamento-painel-2026-10-16.md](implantacao-agendamento-painel-2026-10-16.md), revisado às 05:57 com os hashes novos). Novos registros: P-77 (decisão do dono) e P-78 (melhoria pequena). Depois, no topo de [guia/pendencias.md](guia/pendencias.md): os pacotes do Google (P-69 e P-28) e os testes reais do dono.
 
 ## O que é o projeto
 

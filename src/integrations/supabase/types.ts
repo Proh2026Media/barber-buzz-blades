@@ -473,7 +473,8 @@ export type Database = {
         Row: {
           id: string;
           barbershop_id: string;
-          customer_id: string;
+          /** Nulo: cliente do balcão (sem conta, ver `shop_client_id`) ou conta excluída. */
+          customer_id: string | null;
           service_id: string;
           staff_id: string;
           starts_at: string;
@@ -484,11 +485,15 @@ export type Database = {
           series_id: string | null;
           created_at: string;
           updated_at: string;
+          /** Migration 20261016130000 (ausente antes dela): cliente do balcão. */
+          shop_client_id?: string | null;
+          /** Migration 20261016130000 (ausente antes dela): quem da equipe marcou. */
+          booked_by?: string | null;
         };
         Insert: {
           id?: string;
           barbershop_id: string;
-          customer_id: string;
+          customer_id?: string | null;
           service_id: string;
           staff_id: string;
           starts_at: string;
@@ -499,11 +504,13 @@ export type Database = {
           series_id?: string | null;
           created_at?: string;
           updated_at?: string;
+          shop_client_id?: string | null;
+          booked_by?: string | null;
         };
         Update: {
           id?: string;
           barbershop_id?: string;
-          customer_id?: string;
+          customer_id?: string | null;
           service_id?: string;
           staff_id?: string;
           starts_at?: string;
@@ -514,8 +521,17 @@ export type Database = {
           series_id?: string | null;
           created_at?: string;
           updated_at?: string;
+          shop_client_id?: string | null;
+          booked_by?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: "appointments_shop_client_id_fkey";
+            columns: ["shop_client_id"];
+            isOneToOne: false;
+            referencedRelation: "shop_clients";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "appointments_barbershop_id_fkey";
             columns: ["barbershop_id"];
@@ -545,6 +561,45 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      shop_clients: {
+        Row: {
+          id: string;
+          barbershop_id: string;
+          profile_id: string | null;
+          full_name: string | null;
+          whatsapp_e164: string | null;
+          nickname: string | null;
+          notify_whatsapp: boolean;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          barbershop_id: string;
+          profile_id?: string | null;
+          full_name?: string | null;
+          whatsapp_e164?: string | null;
+          nickname?: string | null;
+          notify_whatsapp?: boolean;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          barbershop_id?: string;
+          profile_id?: string | null;
+          full_name?: string | null;
+          whatsapp_e164?: string | null;
+          nickname?: string | null;
+          notify_whatsapp?: boolean;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
       };
       availability_signals: {
         Row: {
@@ -1670,6 +1725,60 @@ export type Database = {
       };
       list_active_custom_domains: {
         Args: Record<string, never>;
+        Returns: Json;
+      };
+      oauth_relay_put: {
+        Args: { p_id: string; p_code: string };
+        Returns: boolean;
+      };
+      oauth_relay_take: {
+        Args: { p_id: string };
+        Returns: string | null;
+      };
+      find_shop_client: {
+        Args: { p_shop_id: string; p_whatsapp: string };
+        Returns: Json;
+      };
+      get_team_slots: {
+        Args: { p_shop_id: string; p_staff_id: string; p_service_id: string; p_date: string };
+        Returns: { starts_at: string; ends_at: string }[];
+      };
+      book_for_client: {
+        Args: {
+          p_shop_id: string;
+          p_staff_id: string;
+          p_service_id: string;
+          p_starts_at: string;
+          p_customer_id?: string | null;
+          p_shop_client_id?: string | null;
+          p_name?: string | null;
+          p_whatsapp?: string | null;
+          p_nickname?: string | null;
+          p_notify?: boolean | null;
+        };
+        Returns: Json;
+      };
+      set_client_nickname: {
+        Args: {
+          p_shop_id: string;
+          p_customer_id: string | null;
+          p_shop_client_id: string | null;
+          p_nickname: string;
+        };
+        Returns: string | null;
+      };
+      update_shop_client: {
+        Args: {
+          p_shop_id: string;
+          p_shop_client_id: string;
+          p_full_name?: string | null;
+          p_whatsapp?: string | null;
+          p_notify?: boolean | null;
+        };
+        Returns: Json;
+      };
+      get_shop_client: {
+        Args: { p_shop_id: string; p_shop_client_id: string };
         Returns: Json;
       };
       create_direct_appointment: {

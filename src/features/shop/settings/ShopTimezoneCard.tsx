@@ -197,10 +197,12 @@ export function ShopTimezoneCard({
     setEditing(false);
   }
 
-  const shopClock = clockInTimeZone(saved, now);
-  const deviceClock = clockInTimeZone(deviceTimeZone, now);
-  const deviceDiff = clockDiff(saved, deviceTimeZone, now);
-  const draftDiff = clockDiff(saved, draft, now);
+  // Na demonstração, o relógio dela (o mesmo da Agenda e da linha "Horário da barbearia").
+  const clockNow = demo?.now ?? now;
+  const shopClock = clockInTimeZone(saved, clockNow);
+  const deviceClock = clockInTimeZone(deviceTimeZone, clockNow);
+  const deviceDiff = clockDiff(saved, deviceTimeZone, clockNow);
+  const draftDiff = clockDiff(saved, draft, clockNow);
   const hoursLabel = (diff: number) =>
     t("dec.tz.settings.diff", {
       sign: diff > 0 ? "+" : "−",

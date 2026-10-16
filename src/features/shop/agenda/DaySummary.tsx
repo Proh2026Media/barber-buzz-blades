@@ -171,63 +171,68 @@ export function DaySummary({
         </div>
       )}
 
-      <div role="group" aria-label={t("agenda.filter.aria")} className="flex flex-wrap gap-1.5">
-        <button
-          type="button"
-          aria-pressed={filter === ""}
-          onClick={() => onFilter("")}
-          className={cn(
-            "inline-flex min-h-11 items-center gap-1.5 rounded-xl border px-3 text-sm font-semibold transition",
-            filter === ""
-              ? "border-primary bg-primary text-primary-foreground"
-              : "border-border bg-background hover:border-primary/40",
-          )}
-        >
-          {t("agenda.filter.all")}
-          <span className="tabular-nums opacity-80">{total}</span>
-        </button>
-        {AGENDA_GROUPS.filter((group) => counts[group] > 0 || filter === group).map((group) => {
-          const meta = AGENDA_STATE[group];
-          const Icon = meta.icon;
-          const on = filter === group;
-          return (
-            <button
-              key={group}
-              type="button"
-              aria-pressed={on}
-              onClick={() => onFilter(on ? "" : group)}
-              className={cn(
-                TONE_CLASS[meta.tone],
-                "inline-flex min-h-11 items-center gap-1.5 rounded-xl border px-3 text-sm font-semibold transition",
-                on
-                  ? "border-[color:var(--tone-ink)] bg-[color:var(--tone-bg)] text-[color:var(--tone-ink)] ring-2 ring-[color:var(--tone-line)]"
-                  : "border-border bg-background hover:border-[color:var(--tone-line)]",
-              )}
-            >
-              <Icon className="size-4 shrink-0 text-[color:var(--tone-ink)]" aria-hidden />
-              {t(meta.labelKey)}
-              <span className="tabular-nums opacity-80">
-                <span className="sr-only">: </span>
-                {counts[group]}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      {(filter !== "" || AGENDA_GROUPS.filter((group) => counts[group] > 0).length > 1) && (
+        <div role="group" aria-label={t("agenda.filter.aria")} className="flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            aria-pressed={filter === ""}
+            onClick={() => onFilter("")}
+            className={cn(
+              "inline-flex min-h-11 items-center gap-1.5 rounded-xl border px-3 text-sm font-semibold transition",
+              filter === ""
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-background hover:border-primary/40",
+            )}
+          >
+            {t("agenda.filter.all")}
+            <span className="tabular-nums opacity-80">{total}</span>
+          </button>
+          {AGENDA_GROUPS.filter((group) => counts[group] > 0 || filter === group).map((group) => {
+            const meta = AGENDA_STATE[group];
+            const Icon = meta.icon;
+            const on = filter === group;
+            return (
+              <button
+                key={group}
+                type="button"
+                aria-pressed={on}
+                onClick={() => onFilter(on ? "" : group)}
+                className={cn(
+                  TONE_CLASS[meta.tone],
+                  "inline-flex min-h-11 items-center gap-1.5 rounded-xl border px-3 text-sm font-semibold transition",
+                  on
+                    ? "border-[color:var(--tone-ink)] bg-[color:var(--tone-bg)] text-[color:var(--tone-ink)] ring-2 ring-[color:var(--tone-line)]"
+                    : "border-border bg-background hover:border-[color:var(--tone-line)]",
+                )}
+              >
+                <Icon className="size-4 shrink-0 text-[color:var(--tone-ink)]" aria-hidden />
+                {t(meta.labelKey)}
+                <span className="tabular-nums opacity-80">
+                  <span className="sr-only">: </span>
+                  {counts[group]}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {money && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl bg-muted/50 px-3 py-2.5 text-sm">
+        <div className="flex items-center gap-4 rounded-xl bg-muted/50 px-3 py-2.5 text-sm">
           <Wallet className="size-4 shrink-0 text-gold" aria-hidden />
-          <span>
-            <strong className="tone-success text-[color:var(--tone-ink)] tabular-nums">
-              {formatMoney(money.done)}
-            </strong>{" "}
-            <span className="text-muted-foreground">{t("agenda.money.done")}</span>
-          </span>
-          <span>
-            <strong className="tabular-nums">{formatMoney(money.expected)}</strong>{" "}
-            <span className="text-muted-foreground">{t("agenda.money.expected")}</span>
-          </span>
+          {/* Os dois valores quebram entre si, alinhados ao texto (não embaixo do ícone). */}
+          <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1">
+            <span>
+              <strong className="tone-success text-[color:var(--tone-ink)] tabular-nums">
+                {formatMoney(money.done)}
+              </strong>{" "}
+              <span className="text-muted-foreground">{t("agenda.money.done")}</span>
+            </span>
+            <span>
+              <strong className="tabular-nums">{formatMoney(money.expected)}</strong>{" "}
+              <span className="text-muted-foreground">{t("agenda.money.expected")}</span>
+            </span>
+          </div>
         </div>
       )}
 

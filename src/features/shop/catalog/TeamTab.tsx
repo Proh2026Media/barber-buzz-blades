@@ -39,7 +39,7 @@ import {
 import { ServiceIcon } from "@/components/ui/service-icon";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-import { CatalogFilters, type CatalogStatus } from "../CatalogFilters";
+import { CATALOG_SHORT_LIST, CatalogFilters, type CatalogStatus } from "../CatalogFilters";
 import { ROLE_META } from "../roles";
 import {
   readCatalogViewPreference,
@@ -72,45 +72,6 @@ export type StaffActions = {
   remove: (row: StaffRow) => Promise<SaveOutcome>;
   uploadPhoto: (file: File) => Promise<string>;
 };
-
-/** Botão pequeno "Copiar link" que vira "✓ Copiado" por 2 s. */
-function CopyLinkButton({ url, name }: { url: string; name: string }) {
-  const { t } = useI18n();
-  const [copied, setCopied] = useState(false);
-  useEffect(() => {
-    if (!copied) return;
-    const timer = window.setTimeout(() => setCopied(false), 2000);
-    return () => window.clearTimeout(timer);
-  }, [copied]);
-  return (
-    <button
-      type="button"
-      onClick={async () => {
-        try {
-          await navigator.clipboard.writeText(url);
-          setCopied(true);
-          announce(t("visual.copied"));
-        } catch {
-          toast.error(t("catalog.staff.copyFailed"));
-        }
-      }}
-      aria-label={t("catalog.staff.copyLinkAria", { name })}
-      className={cn(
-        "inline-flex min-h-11 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition",
-        copied
-          ? "tone-success border-[color:var(--tone-border)] bg-[color:var(--tone-soft)] text-[color:var(--tone-ink)]"
-          : "border-border bg-background hover:border-primary/40",
-      )}
-    >
-      {copied ? (
-        <Check className="size-4" aria-hidden />
-      ) : (
-        <Link2 className="size-4 text-gold" aria-hidden />
-      )}
-      {copied ? t("visual.copied") : t("catalog.staff.copyLink")}
-    </button>
-  );
-}
 
 /**
  * Duas formas de pôr alguém na equipe, lado a lado: só na agenda (cadastro do profissional) ou
@@ -224,10 +185,14 @@ export function TeamTab({
   const { t, intlLocale } = useI18n();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<CatalogStatus>("all");
-  const [view, setView] = useState<CatalogViewMode>(() =>
+  const [savedView, setView] = useState<CatalogViewMode>(() =>
     readCatalogViewPreference(shopId, "staff", "grid"),
   );
+  // Lista curta não mostra a troca grade/lista: vale o padrão (a escolha salva volta quando a
+  // lista crescer). Sem isso, quem salvou "lista" ficava preso nela.
+  const view: CatalogViewMode = staff.length > CATALOG_SHORT_LIST ? savedView : "grid";
   const [formOpen, setFormOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<StaffRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<StaffRow | null>(null);
   const [blockedTarget, setBlockedTarget] = useState<StaffRow | null>(null);
@@ -440,6 +405,19 @@ export function TeamTab({
       <div className="app-section-title">
         <Users />
         <h2>{t("shop.nav.team")}</h2>
+        {/* Com convites liberados: um botão só; as duas formas aparecem ao tocar. */}
+        {staff.length > 0 && canInvite && (
+          <button
+            type="button"
+            aria-expanded={addOpen}
+            aria-controls="team-add-choices"
+            className="action-button action-confirm ml-auto"
+            onClick={() => setAddOpen((value) => !value)}
+          >
+            <Plus className="size-4" aria-hidden />
+            {t("catalog.staff.add")}
+          </button>
+        )}
         {staff.length > 0 && !canInvite && (
           <button
             type="button"
@@ -452,9 +430,20 @@ export function TeamTab({
         )}
       </div>
 
-      {/* Com convites liberados: "Só na agenda" ou "Com acesso ao painel", à vista. */}
-      {staff.length > 0 && canInvite && (
-        <AddStaffChoices onAgenda={() => openForm(null)} onPanel={() => openInvite()} />
+      {/* "Só na agenda" ou "Com acesso ao painel", depois de tocar em "Adicionar". */}
+      {staff.length > 0 && canInvite && addOpen && (
+        <div id="team-add-choices">
+          <AddStaffChoices
+            onAgenda={() => {
+              setAddOpen(false);
+              openForm(null);
+            }}
+            onPanel={() => {
+              setAddOpen(false);
+              openInvite();
+            }}
+          />
+        </div>
       )}
 
       {loadError && !loadFailedEmpty && (
@@ -562,6 +551,23 @@ export function TeamTab({
                     },
                   ]
                 : []),
+              ...(link
+                ? [
+                    {
+                      id: "link",
+                      label: t("catalog.staff.copyLink"),
+                      icon: Link2,
+                      onSelect: () => {
+                        void navigator.clipboard
+                          ?.writeText(link)
+                          .then(() =>
+                            toast.success(t("visual.copied"), { description: member.display_name }),
+                          )
+                          .catch(() => toast.error(t("catalog.staff.copyFailed")));
+                      },
+                    },
+                  ]
+                : []),
               ...(onBlockTime
                 ? [
                     {
@@ -608,7 +614,8 @@ export function TeamTab({
                   />
                 }
                 title={member.display_name}
-                subtitle={view === "grid" ? member.bio : undefined}
+                // A apresentação (bio) é da página pública e do formulário: na lista, só alongava.
+                subtitle={undefined}
                 facts={roleBadge(member)}
                 extra={
                   view === "grid" ? (
@@ -621,22 +628,26 @@ export function TeamTab({
                               list: does.map((row) => row.service.name).join(", "),
                             })}
                           </span>
-                          {does.slice(0, 5).map(({ service }) => (
-                            <span
-                              key={service.id}
-                              title={service.name}
-                              aria-hidden
-                              className="grid size-8 place-items-center overflow-hidden rounded-lg bg-muted text-gold"
-                            >
-                              <ServiceIcon
-                                icon={service.icon}
-                                className="size-4"
-                                imageClassName="size-8 object-cover !rounded-none !p-0"
-                              />
-                            </span>
-                          ))}
+                          {does.length < activeServices.length &&
+                            does.slice(0, 5).map(({ service }) => (
+                              <span
+                                key={service.id}
+                                title={service.name}
+                                aria-hidden
+                                className="grid size-8 place-items-center overflow-hidden rounded-lg bg-muted text-gold"
+                              >
+                                <ServiceIcon
+                                  icon={service.icon}
+                                  className="size-4"
+                                  imageClassName="size-8 object-cover !rounded-none !p-0"
+                                />
+                              </span>
+                            ))}
                           <span className="text-xs font-semibold text-muted-foreground" aria-hidden>
-                            {does.length > 5 ? `+${does.length - 5} · ` : ""}
+                            {/* "+N" só quando os ícones aparecem (quem faz todos fica sem eles). */}
+                            {does.length < activeServices.length && does.length > 5
+                              ? `+${does.length - 5} · `
+                              : ""}
                             {does.length === activeServices.length
                               ? t("catalog.staff.doesAll")
                               : t("catalog.staff.doesCount", { count: does.length })}
@@ -646,28 +657,14 @@ export function TeamTab({
                           )}
                         </div>
                       )}
-                      {(link || onOpenAgenda) && (
-                        <div className="flex flex-wrap gap-2">
-                          {link && <CopyLinkButton url={link} name={member.display_name} />}
-                          {onOpenAgenda && member.active && (
-                            <button
-                              type="button"
-                              onClick={() => onOpenAgenda(member.id)}
-                              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-border bg-background px-3 text-xs font-semibold transition hover:border-primary/40"
-                            >
-                              <CalendarDays className="size-4 text-gold" aria-hidden />
-                              {t("catalog.staff.seeAgenda")}
-                            </button>
-                          )}
-                        </div>
-                      )}
+                      {/* "Copiar link" e "Ver agenda" ficam no menu ⋯ do cartão. */}
                     </div>
                   ) : null
                 }
                 status={
                   waiting ? (
                     <StatusBadge {...STATE.waiting} size="sm" label={t("catalog.awaiting")} />
-                  ) : member.active ? (
+                  ) : member.active && view === "grid" ? null : member.active ? (
                     <StatusBadge {...STATE.active} size="sm" label={t("catalog.staff.receiving")} />
                   ) : (
                     <StatusBadge

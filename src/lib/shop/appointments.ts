@@ -6,17 +6,17 @@ export type AppointmentRow = Tables<"appointments">;
 
 export type ReservationFilter = "upcoming" | "history" | "completed" | "cancelled";
 
-export function filterReservations<T extends Pick<AppointmentRow, "starts_at" | "status">>(
-  rows: T[],
-  filter: ReservationFilter,
-  now: number,
-): T[] {
+export function filterReservations<
+  T extends Pick<AppointmentRow, "starts_at" | "status"> & { ends_at?: string | null },
+>(rows: T[], filter: ReservationFilter, now: number): T[] {
   return rows
     .filter((row) => {
+      // Em andamento (começou e o término ainda não chegou) continua em Próximos, não em
+      // Anteriores. Sem o término, vale o início.
       const upcoming =
         row.status === "reschedule_requested" ||
         ((row.status === "pending" || row.status === "confirmed") &&
-          new Date(row.starts_at).getTime() > now);
+          new Date(row.ends_at || row.starts_at).getTime() > now);
       return filter === "upcoming"
         ? upcoming
         : filter === "history"

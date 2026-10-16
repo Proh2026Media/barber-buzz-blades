@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Info, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Info, ShieldAlert, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { guardedFetch } from "@/lib/demo-guard";
 import { platformAuthOrigin } from "@/lib/auth/return-origin";
@@ -40,9 +40,30 @@ function goBack({ path, origin, params }: BackTarget) {
   window.location.assign(target);
 }
 
+/**
+ * A conexão começou no app instalado? (marca `instalado=1` no caminho de volta, guardado no
+ * `state`). Lido sem conferir a assinatura: serve só para escolher o que mostrar; quem valida o
+ * `state` é a função `google-connect`.
+ */
+function startedInInstalledApp(state: string): boolean {
+  try {
+    const body = state.split(".")[0];
+    if (!body) return false;
+    const json = atob(body.replace(/-/g, "+").replace(/_/g, "/"));
+    const parsed = JSON.parse(json) as { r?: unknown };
+    return typeof parsed.r === "string" && /[?&]instalado=1(&|$)/.test(parsed.r);
+  } catch {
+    return false;
+  }
+}
+
 function GoogleAppsCallback() {
   const { code, state, error: oauthError, error_description } = Route.useSearch();
   const { t } = useI18n();
+  // App instalado: esta página está numa janela por cima do app, sem a sessão dele. Em vez de
+  // abrir o painel aqui dentro, pede para fechar a janela (o app confere a conexão ao voltar).
+  const [installedApp] = useState(() => startedInInstalledApp(state));
+  const [closeTried, setCloseTried] = useState(false);
   const [phase, setPhase] = useState<Phase>("connecting");
   // Detalhe técnico (para o suporte) ou a dica do Google: fica recolhido.
   const [detail, setDetail] = useState<string | null>(null);
@@ -54,14 +75,14 @@ function GoogleAppsCallback() {
 
   // Volta automática com a contagem à vista; o botão volta na hora.
   useEffect(() => {
-    if (secondsLeft === null || !back || paused) return;
+    if (secondsLeft === null || !back || paused || installedApp) return;
     if (secondsLeft <= 0) {
       goBack(back);
       return;
     }
     const timer = window.setTimeout(() => setSecondsLeft((value) => (value ?? 1) - 1), 1000);
     return () => window.clearTimeout(timer);
-  }, [secondsLeft, back, paused]);
+  }, [secondsLeft, back, paused, installedApp]);
 
   useEffect(() => {
     let cancelled = false;
@@ -216,7 +237,36 @@ function GoogleAppsCallback() {
             <p className="text-xs [overflow-wrap:anywhere]">{detail}</p>
           </MoreDetails>
         )}
-        {back && (
+        {back && installedApp && (
+          <div className="grid gap-1.5">
+            <p className="text-center text-sm">{t("entry.gapps.closeLine")}</p>
+            <button
+              type="button"
+              className="action-button entry-submit"
+              onClick={() => {
+                setCloseTried(true);
+                window.close();
+              }}
+            >
+              <X aria-hidden="true" />
+              {t("relay.close")}
+            </button>
+            {closeTried && (
+              <p className="text-center text-sm text-muted-foreground">{t("relay.closeHint")}</p>
+            )}
+            {/* Se a volta caiu no próprio app (não numa janela por cima), o painel continua a um
+                toque. */}
+            <button
+              type="button"
+              className="mx-auto inline-flex min-h-11 items-center gap-2 px-3 text-sm font-semibold text-muted-foreground underline-offset-4 hover:underline"
+              onClick={() => goBack(back)}
+            >
+              <ArrowLeft className="size-4" aria-hidden="true" />
+              {t("entry.gapps.back")}
+            </button>
+          </div>
+        )}
+        {back && !installedApp && (
           <div className="grid gap-1.5">
             <button
               type="button"

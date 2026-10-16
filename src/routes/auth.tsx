@@ -86,7 +86,18 @@ import {
 } from "@/features/auth/entry";
 import { PRIVACY_VERSION, TERMS_VERSION } from "@/features/legal/versions";
 import { callOptionalRpc } from "@/lib/auth/optional-rpc";
-import { checkSignupPhone, nextMaskedPhone } from "@/lib/auth/signup-phone";
+import {
+  checkGoogleRelay,
+  clearPendingRelay,
+  googleRelayAvailable,
+  readPendingRelay,
+  shouldUseGoogleRelay,
+  startGoogleRelay,
+  type PendingRelay,
+} from "@/lib/auth/google-relay";
+import { RELAY_TTL_MS } from "@/lib/auth/google-relay-model";
+import { isAppleTouchDevice } from "@/lib/standalone";
+import { checkSignupPhone, formatSignupPhone, nextMaskedPhone } from "@/lib/auth/signup-phone";
 
 /** verifyPhone: logo após o cadastro com WhatsApp, confirma o número por código. */
 type AuthMode = "signin" | "signup" | "forgot" | "recovery" | "verifyPhone";
@@ -159,6 +170,10 @@ export const Route = createFileRoute("/auth")({
     from_email?: boolean;
     /** Nome do profissional do horário tocado na página pública (só para o resumo à vista). */
     who?: string;
+    /** Abre direto em "Cadastrar" (convite da barbearia para o cliente do balcão). */
+    cadastro?: boolean;
+    /** WhatsApp do convite, só dígitos com o código do país (preenche o campo do cadastro). */
+    whatsapp?: string;
   } => {
     const recovery = s.recovery === "1" || s.recovery === true || s.recovery === "true";
     const demo = s.demo === "1" || s.demo === true || s.demo === "true";
@@ -171,6 +186,10 @@ export const Route = createFileRoute("/auth")({
         : undefined;
     const oauth = s.oauth === "google" ? ("google" as const) : undefined;
     const who = pickedWho(s.who);
+    const cadastro = s.cadastro === "1" || s.cadastro === true || s.cadastro === "true";
+    const whatsappRaw =
+      typeof s.whatsapp === "string" || typeof s.whatsapp === "number" ? String(s.whatsapp) : "";
+    const whatsapp = /^\d{10,15}$/.test(whatsappRaw) ? whatsappRaw : undefined;
     return {
       next: typeof s.next === "string" ? s.next : "",
       ...(recovery ? { recovery: true as const } : {}),
@@ -183,6 +202,8 @@ export const Route = createFileRoute("/auth")({
       ...(fromEmail ? { from_email: true as const } : {}),
       // Sempre presente: o roteador junta o search cru, então omitir não descartaria o valor.
       who,
+      ...(cadastro ? { cadastro: true as const } : {}),
+      ...(whatsapp ? { whatsapp } : {}),
     };
   },
   component: AuthPage,
@@ -376,6 +397,7 @@ function PickedSlotChip({ next, who }: { next: string; who?: string }) {
   );
 }
 
+/** iPhone ou iPad (o iPad com iPadOS se apresenta como Mac com tela de toque). */
 function AuthPage() {
   const {
     next,
@@ -388,11 +410,16 @@ function AuthPage() {
     popup,
     from_email: fromEmail,
     who,
+    cadastro,
+    whatsapp: invitedWhatsapp,
   } = useSearch({
     from: "/auth",
   });
   const { t, locale } = useI18n();
-  const [mode, setMode] = useState<AuthMode>(recovery ? "recovery" : "signin");
+  // Convite da barbearia ("Cadastre-se no app"): abre em Cadastrar, com o WhatsApp preenchido.
+  const [mode, setMode] = useState<AuthMode>(
+    recovery ? "recovery" : cadastro ? "signup" : "signin",
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
@@ -417,12 +444,19 @@ function AuthPage() {
   // Google em janela separada: a tela espera, com saída "Fechei a janela".
   const [googleWaiting, setGoogleWaiting] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
+  // App instalado: o Google abre numa janela por cima; o código volta pelo banco (google-relay).
+  const [relayPending, setRelayPending] = useState<PendingRelay | null>(null);
+  // iPhone com o app instalado e banco ainda sem a ponte (antes da migration nº 95): o Google
+  // ficaria preso na janela; um aviso sugere entrar com e-mail e senha.
+  const [googleInstalledWarning, setGoogleInstalledWarning] = useState(false);
   // Janela de entrar com Google: o botão de fechar aparece se demorar.
   const [popupSlow, setPopupSlow] = useState(false);
   const emailInputRef = useRef<HTMLInputElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const [recoveryChannel, setRecoveryChannel] = useState<RecoveryChannel>("email");
-  const [whatsapp, setWhatsapp] = useState("");
+  const [whatsapp, setWhatsapp] = useState(() =>
+    invitedWhatsapp ? formatSignupPhone(`+${invitedWhatsapp}`) : "",
+  );
   // Cadastro do cliente: nome, aceite de avisos por WhatsApp e erros ao lado de cada campo.
   const [fullName, setFullName] = useState("");
   const [phoneOptIn, setPhoneOptIn] = useState(true);
@@ -442,6 +476,10 @@ function AuthPage() {
   const shopContext = resolveShopContext(next, shop, demo);
   const [hostShopSlug, setHostShopSlug] = useState<string | null>(null);
   const effectiveShopRef = shopContext.shopRef || hostShopSlug;
+  // A volta do Google no app instalado guarda a função da primeira renderização (antes de achar a
+  // loja pelo endereço): ela lê a loja daqui, sempre atual.
+  const effectiveShopRefLatest = useRef(effectiveShopRef);
+  effectiveShopRefLatest.current = effectiveShopRef;
   const [brand, setBrand] = useState<AuthBrand>(
     shopContext.demo ? DEMO_AUTH_BRAND : DEFAULT_AUTH_BRAND,
   );
@@ -461,6 +499,111 @@ function AuthPage() {
   );
 
   useShopFavicon(brand.logoUrl);
+
+  // App instalado: espera do Google guardada no aparelho (a tela pode ter sido recarregada).
+  useEffect(() => {
+    const pending = readPendingRelay();
+    if (pending) setRelayPending(pending);
+    if (!shouldUseGoogleRelay() || !isAppleTouchDevice()) return;
+    let cancelled = false;
+    void googleRelayAvailable().then((ready) => {
+      if (!cancelled) setGoogleInstalledWarning(!ready);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Volta do Google sem login dentro do próprio app (cancelado ou recusado, ver
+  // auth_.retorno.tsx): avisa e limpa o endereço.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("google") !== "falhou") return;
+    url.searchParams.delete("google");
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${url.pathname}${url.search}${url.hash}`,
+    );
+    setError(tNow("relay.failed"));
+  }, []);
+
+  // Confere a volta do Google: a cada poucos segundos com a tela à vista e ao voltar ao
+  // primeiro plano (quando a pessoa fecha a janela do Google).
+  useEffect(() => {
+    if (!relayPending) return;
+    const pending = relayPending;
+    let cancelled = false;
+    let running = false;
+    setGoogleWaiting(true);
+    setGoogleBusy(true);
+    setBusy(true);
+
+    function stop(message: string) {
+      clearPendingRelay();
+      setRelayPending(null);
+      setGoogleWaiting(false);
+      setGoogleBusy(false);
+      setBusy(false);
+      setInfo(null);
+      setError(message);
+    }
+
+    async function tick() {
+      if (running || cancelled || document.visibilityState === "hidden") return;
+      running = true;
+      try {
+        const result = await checkGoogleRelay(pending);
+        if (cancelled) return;
+        if (result === "signed-in") {
+          cancelled = true;
+          sessionApplyingRef.current = true;
+          setInfo(tNow("auth.info.signingIn"), "progress");
+          await goAfterAuthLocal(pending.next, pending.shop);
+          return;
+        }
+        if (result === "failed") stop(tNow("relay.failed"));
+        else if (Date.now() - pending.startedAt > RELAY_TTL_MS) stop(tNow("relay.expired"));
+        // A janela do Google (mesmo armazenamento, Android) desistiu e apagou a espera.
+        else if (readPendingRelay()?.id !== pending.id) stop(tNow("relay.failed"));
+      } catch {
+        // Sem conexão agora: tenta de novo na próxima volta.
+      } finally {
+        running = false;
+      }
+    }
+
+    const onVisible = () => void tick();
+    const timer = window.setInterval(onVisible, 2500);
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    window.addEventListener("pageshow", onVisible);
+    void tick();
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+      window.removeEventListener("pageshow", onVisible);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [relayPending]);
+
+  // Google em janela separada sem a ponte (banco antigo ou navegador): se a sessão aparecer neste
+  // aparelho enquanto a tela espera (o Android divide o armazenamento), entra sem pedir de novo.
+  useEffect(() => {
+    if (!googleWaiting || relayPending) return;
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event !== "SIGNED_IN" || !session || sessionApplyingRef.current) return;
+      sessionApplyingRef.current = true;
+      setInfo(tNow("auth.info.signingIn"), "progress");
+      void goAfterAuthLocal();
+    });
+    return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [googleWaiting, relayPending]);
 
   useEffect(() => {
     if (phoneResendIn <= 0) return;
@@ -979,7 +1122,7 @@ function AuthPage() {
     }
   }
 
-  async function goAfterAuthLocal(nextOverride?: string) {
+  async function goAfterAuthLocal(nextOverride?: string, shopFallback?: string) {
     if (await runFirstAccessChecks()) {
       sessionApplyingRef.current = false;
       setBusy(false);
@@ -988,9 +1131,10 @@ function AuthPage() {
     // O pedido do link vence quando é específico (agendar, reserva); sem destino, abre a última
     // área usada neste aparelho ou a mais alta da conta.
     const path = await resolvePostAuthPath(nextOverride ?? preferredNext);
-    if (effectiveShopRef && (path === "/app" || path.startsWith("/app"))) {
+    const shopRef = effectiveShopRefLatest.current || shopFallback;
+    if (shopRef && (path === "/app" || path.startsWith("/app"))) {
       const url = new URL(path, window.location.origin);
-      if (!url.searchParams.get("shop")) url.searchParams.set("shop", effectiveShopRef);
+      if (!url.searchParams.get("shop")) url.searchParams.set("shop", shopRef);
       url.searchParams.set("join", "1");
       window.location.href = `${url.pathname}${url.search}`;
       return;
@@ -1408,6 +1552,10 @@ function AuthPage() {
     if (popupWatchRef.current !== null) window.clearInterval(popupWatchRef.current);
     popupWatchRef.current = null;
     if (sessionApplyingRef.current) return;
+    if (relayPending) {
+      clearPendingRelay();
+      setRelayPending(null);
+    }
     setGoogleWaiting(false);
     setGoogleBusy(false);
     setBusy(false);
@@ -1420,6 +1568,18 @@ function AuthPage() {
     setError(null);
     setInfo(null);
     try {
+      // App instalado (principalmente iPhone): o Google abre numa janela sem o armazenamento do
+      // app. O app começa o login aqui e recebe o código de volta pelo banco.
+      if (shouldUseGoogleRelay() && (await googleRelayAvailable())) {
+        setGoogleWaiting(true);
+        announce(tNow("relay.waitTitle"));
+        await startGoogleRelay({
+          next: preferredNext || undefined,
+          shop: effectiveShopRef || undefined,
+        });
+        setRelayPending(readPendingRelay());
+        return;
+      }
       // Domínio da loja: pop-up no apex. A aba principal permanece no domínio personalizado.
       if (needsAuthOriginBridge()) {
         let shopRef = effectiveShopRef;
@@ -1477,6 +1637,10 @@ function AuthPage() {
       });
       if (error) throw error;
     } catch (err) {
+      // Falhou antes de abrir o Google: sem o aviso de espera junto com o erro.
+      clearPendingRelay();
+      setRelayPending(null);
+      setGoogleWaiting(false);
       setError(friendlyAuthError(err, tNow("auth.error.google")));
       setBusy(false);
       setGoogleBusy(false);
@@ -1910,12 +2074,22 @@ function AuthPage() {
                 )}
                 {t("entry.signup.google")}
               </button>
+              {googleInstalledWarning && !googleWaiting && (
+                <Notice tone="warning" role="none" title={t("relay.unavailableTitle")}>
+                  {t("relay.unavailableLine")}
+                </Notice>
+              )}
               {googleWaiting && (
                 <Notice
                   tone="progress"
-                  title={t("entry.google.waitTitle")}
-                  action={{ label: t("entry.google.waitClosed"), onClick: stopWaitingGoogle }}
-                />
+                  title={relayPending ? t("relay.waitTitle") : t("entry.google.waitTitle")}
+                  action={{
+                    label: relayPending ? t("relay.cancel") : t("entry.google.waitClosed"),
+                    onClick: stopWaitingGoogle,
+                  }}
+                >
+                  {relayPending ? t("relay.waitLine") : null}
+                </Notice>
               )}
               <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground">
                 <span className="h-px flex-1 bg-border" aria-hidden />
@@ -2449,12 +2623,22 @@ function AuthPage() {
                   )}
                   {t("auth.google")}
                 </button>
+                {googleInstalledWarning && !googleWaiting && (
+                  <Notice tone="warning" role="none" title={t("relay.unavailableTitle")}>
+                    {t("relay.unavailableLine")}
+                  </Notice>
+                )}
                 {googleWaiting && (
                   <Notice
                     tone="progress"
-                    title={t("entry.google.waitTitle")}
-                    action={{ label: t("entry.google.waitClosed"), onClick: stopWaitingGoogle }}
-                  />
+                    title={relayPending ? t("relay.waitTitle") : t("entry.google.waitTitle")}
+                    action={{
+                      label: relayPending ? t("relay.cancel") : t("entry.google.waitClosed"),
+                      onClick: stopWaitingGoogle,
+                    }}
+                  >
+                    {relayPending ? t("relay.waitLine") : null}
+                  </Notice>
                 )}
                 <ConsentNote>
                   {t("auth.terms.before")} {docNames} {t("cad.cliente.terms.age")}

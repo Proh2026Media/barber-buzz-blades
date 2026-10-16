@@ -51,3 +51,14 @@ export function focusFirstInvalid(root: ParentNode | null | undefined = document
   field.focus({ preventScroll: true });
   return true;
 }
+
+/**
+ * Onde termina a parte visível da tela: o topo da barra de navegação quando ela flutua no pé
+ * (celular), ou a altura da janela quando ela é a coluna lateral do computador (styles.css).
+ */
+export function visibleBottomLimit(): number {
+  if (typeof document === "undefined") return 0;
+  const nav = document.querySelector<HTMLElement>(".app-mobile-nav");
+  if (!nav || getComputedStyle(nav).position !== "fixed") return window.innerHeight;
+  return nav.getBoundingClientRect().top;
+}

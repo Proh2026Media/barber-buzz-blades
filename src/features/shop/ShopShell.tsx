@@ -18,7 +18,10 @@ import {
   type StaffDraft,
 } from "./catalog/types";
 import type { CancellationReason } from "@/features/insights/cancellation";
-import { AgendaTab } from "./agenda/AgendaTab";
+import { AgendaTab, type BookRequest } from "./agenda/AgendaTab";
+import type { DayAppointment } from "./agenda/types";
+import { BookClientDialog } from "./agenda/BookClientDialog";
+import { demoClientFields } from "@/features/demo/clients";
 import { TeamGovernance } from "@/features/shop/settings/TeamGovernance";
 import { countDecisionsForMe } from "@/features/shop/settings/decision-queue";
 import { PartnerCatalogSuggestions } from "./PartnerCatalogSuggestions";
@@ -47,13 +50,14 @@ import {
   SectionHeader,
   StatusBadge,
 } from "@/components/visual";
-import { SlotModeNotice, SlotModeSettings } from "@/features/shop/settings/SlotModeSettings";
+import { SlotModeSettings } from "@/features/shop/settings/SlotModeSettings";
 import { MinLeadSettings } from "@/features/shop/settings/MinLeadSettings";
 import { ShopTimezoneCard } from "@/features/shop/settings/ShopTimezoneCard";
 import { useSettingsSignals } from "@/features/shop/settings/useSettingsSignals";
 import { isPlatformApexHost, resolveShopFromCurrentHost, shopPublicOrigin } from "@/lib/shop/host";
 import {
   readSectionFromUrl,
+  useSettingsItem,
   useSettingsSection,
   type SettingsSection,
 } from "@/features/shop/settings/section";
@@ -62,7 +66,15 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { HoursTab, type HoursAppointment } from "./hours/HoursTab";
 import type { BlockDraft } from "./hours/BlockDialog";
 import { EmptyState } from "@/components/ui/empty-state";
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { ShopAccountMenu, ShopList, ShopSwitcher } from "./ShopAccountMenu";
 import { useMyAreas, useRememberArea } from "@/features/account/useAreas";
 import { PLATFORM_META, isOwnerRole } from "./roles";
@@ -148,13 +160,6 @@ import { WhatsappConfirmBanner } from "@/features/customer/WhatsappConfirmBanner
 type ShopShellProps = {
   profile: SessionProfile;
   headerActions?: ReactNode;
-};
-
-type DayAppointment = Tables<"appointments"> & {
-  service: Pick<Tables<"services">, "name" | "price_cents"> | null;
-  staff: Pick<Tables<"staff">, "display_name"> | null;
-  customer: Pick<Tables<"profiles">, "full_name"> | null;
-  visibility?: "full" | "busy";
 };
 
 type AvailabilityBlock = ShopBlock;
@@ -430,6 +435,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   const [settings, setSettings] = useState<Tables<"barbershop_settings"> | null>(null);
   useShopFavicon(settings?.logo_url);
   const [settingsSection, setSettingsSection] = useSettingsSection(tab === "configuracoes");
+  const [bookingItem, setBookingItem] = useSettingsItem(settingsSection, "agendamento");
   const [brandOpen, setBrandOpen] = useState(false);
   const [landingOpen, setLandingOpen] = useState(false);
   const [brandStep, setBrandStep] = useState<BrandStep>("logo");
@@ -546,6 +552,16 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   >({});
   // "Ver agenda dele" (Equipe) abre a Agenda já filtrada pelo profissional.
   const [agendaFocusStaff, setAgendaFocusStaff] = useState<string | null>(null);
+  // "Agendar cliente" (barbeiro marca pelo painel): pedido aberto e se o banco já tem a função.
+  const [bookRequest, setBookRequest] = useState<BookRequest | null>(null);
+  const [bookOpen, setBookOpen] = useState(false);
+  const [bookingReady, setBookingReady] = useState(false);
+  // Cada aba abre do topo: quem rola é o <main>, que guardava a rolagem da aba anterior (a
+  // plataforma já fazia assim). Atalhos que rolam até uma âncora rodam depois e continuam valendo.
+  const mainRef = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    mainRef.current?.scrollTo({ top: 0 });
+  }, [tab]);
   // Sugestões de preço esperando o parceiro decidir (0 esconde o atalho; null = não carregou).
   const [suggestionCount, setSuggestionCount] = useState<number | null>(0);
   // Equipe → "Bloquear horário": a aba Horários abre a janela de bloqueio com o profissional.
@@ -587,13 +603,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
             ...row,
             service: demo.services.find((service) => service.id === row.service_id) ?? null,
             staff: demo.staff.find((staff) => staff.id === row.staff_id) ?? null,
-            customer: {
-              full_name:
-                row.customer_id === demo.customerId
-                  ? demo.customerName
-                  : (demo.customers.find((customer) => customer.id === row.customer_id)?.name ??
-                    "Cliente demo"),
-            },
+            ...demoClientFields(demo, row),
           }))
           .sort((a, b) => a.starts_at.localeCompare(b.starts_at)),
       );
@@ -726,7 +736,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         id: String(row.id),
         barbershop_id: shopId,
         // Só vem para quem pode ver o cliente (dono ou o próprio atendimento): abre a ficha.
-        customer_id: typeof row.customer_id === "string" ? row.customer_id : "",
+        customer_id: typeof row.customer_id === "string" ? row.customer_id : null,
         service_id: "",
         staff_id: String(row.staff_id),
         starts_at: String(row.starts_at),
@@ -743,6 +753,19 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         staff: { display_name: String(row.staff_name ?? t("shop.staffFallback")) },
         customer: row.customer_name ? { full_name: String(row.customer_name) } : null,
         visibility: row.visibility === "full" ? "full" : "busy",
+        // Migration 20261016130000 (sem ela as chaves não vêm e tudo fica como antes).
+        shop_client_id: typeof row.shop_client_id === "string" ? row.shop_client_id : null,
+        customer_nickname: typeof row.customer_nickname === "string" ? row.customer_nickname : null,
+        has_account: typeof row.has_account === "boolean" ? row.has_account : undefined,
+        booked_by_team: typeof row.booked_by_team === "boolean" ? row.booked_by_team : undefined,
+        series_kind:
+          row.series_kind === "weekday" || row.series_kind === "interval_days"
+            ? row.series_kind
+            : null,
+        series_interval_days:
+          typeof row.series_interval_days === "number" ? row.series_interval_days : null,
+        customer_recurring:
+          typeof row.customer_recurring === "boolean" ? row.customer_recurring : undefined,
       };
     });
     // Falha ao ler os cancelados não derruba a agenda: só ficam de fora da lista.
@@ -752,6 +775,27 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       : ((cancelledResult.data ?? []) as DayAppointment[])
           .filter((row) => !known.has(row.id))
           .map((row) => ({ ...row, visibility: "full" as const }));
+    const walkInIds = [
+      ...new Set(
+        cancelled.flatMap((row) =>
+          !row.customer && row.shop_client_id ? [row.shop_client_id] : [],
+        ),
+      ),
+    ];
+    if (walkInIds.length) {
+      const { data: clients } = await supabase
+        .from("shop_clients")
+        .select("id, full_name, nickname")
+        .in("id", walkInIds);
+      const byId = new Map((clients ?? []).map((client) => [client.id, client]));
+      for (const row of cancelled) {
+        const client = row.shop_client_id ? byId.get(row.shop_client_id) : undefined;
+        if (!client) continue;
+        row.customer = { full_name: client.full_name };
+        row.customer_nickname = client.nickname;
+        row.has_account = false;
+      }
+    }
     return {
       data: [...scheduled, ...cancelled].sort((a, b) => a.starts_at.localeCompare(b.starts_at)),
       error: null,
@@ -1593,6 +1637,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   function openSlotModeSettings() {
     setTab("configuracoes");
     setSettingsSection("agendamento");
+    // "Mudar" em "Assim seus clientes veem os horários" abre direto o ajuste da forma dos horários.
+    window.setTimeout(() => setBookingItem(BOOKING_CARD_IDS.slots), 0);
   }
 
   // Quem faz cada serviço, quem entra no painel e o que espera os sócios (Serviços/Equipe).
@@ -1611,6 +1657,47 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         customDomainStatus: shop.custom_domain_status,
       })
     : null;
+  // "Agendar cliente" só aparece quando o banco já tem a função (migration 20261016130000) e para
+  // quem atende (marca na própria agenda) ou vê a loja inteira (marca para qualquer profissional).
+  const canBookClients = !!(actor?.staff_id || powers.seeTeam);
+  useEffect(() => {
+    if (demo) {
+      setBookingReady(true);
+      return;
+    }
+    if (!shop?.id || !canBookClients) {
+      setBookingReady(false);
+      return;
+    }
+    let cancelled = false;
+    let retry: number | undefined;
+    let tries = 0;
+    const shopId = shop.id;
+    const probe = () => {
+      void supabase
+        .rpc("find_shop_client", { p_shop_id: shopId, p_whatsapp: "0" })
+        .then(({ error: probeError, status }) => {
+          if (cancelled) return;
+          // Com a função, "0" é recusado como WhatsApp inválido (22023); sem ela, PGRST202.
+          if (probeError?.code === "22023") {
+            setBookingReady(true);
+            return;
+          }
+          setBookingReady(false);
+          if (isMissingRpcError(probeError, status)) return;
+          // Falha de rede ou do servidor: tenta de novo, sem esconder o botão até recarregar.
+          tries += 1;
+          if (tries < 6)
+            retry = window.setTimeout(probe, Math.min(60_000, 5_000 * 2 ** (tries - 1)));
+        });
+    };
+    probe();
+    return () => {
+      cancelled = true;
+      if (retry) window.clearTimeout(retry);
+    };
+  }, [demo, shop?.id, canBookClients]);
+
   // Escopo, filtros, números do dia e linha do tempo da Agenda ficam em AgendaTab.
   const agendaToday = shopDateKey(demo?.now ?? new Date(), shopTimeZone);
   // Equipe sempre mostra o dia de HOJE de cada profissional. Quando a Agenda está aberta em
@@ -1837,8 +1924,9 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       )}
       <TermsUpdateGate disabled={Boolean(demo)} withDpa={powers.ownerLike} />
       <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur-xl px-4 py-3">
-        {/* Cabeçalho com largura fixa no computador: não muda de posição ao trocar de aba
-            e não aperta o nome da loja nem o selo do papel nas abas estreitas. */}
+        {/* Sem a coluna lateral, o cabeçalho fica numa faixa fixa de 70rem; com ela (≥ 1024 px),
+            o styles.css tira o limite e o nome fica sobre a coluna. Nos dois casos ele não muda de
+            posição ao trocar de aba nem aperta o nome da loja e o selo do papel. */}
         <div className="mx-auto flex w-full max-w-[70rem] items-center justify-between gap-2">
           <div className="min-w-0 flex-1">
             {/* Onde estou e com que papel: nome da loja (troca de loja) + selo do papel. */}
@@ -1919,6 +2007,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
 
       {/* A Agenda usa a largura do computador em duas colunas; as outras abas seguem estreitas. */}
       <main
+        ref={mainRef}
         className={`mx-auto max-w-3xl space-y-6 p-4 pb-8 ${tab === "agenda" || tab === "horarios" ? "shop-agenda-wide" : ""}`}
       >
         <ApprovalNoteContext.Provider value={approvalNote}>
@@ -2033,6 +2122,16 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 today={agendaToday}
                 onDayChange={setAgendaDay}
                 focusStaffId={agendaFocusStaff}
+                publicOrigin={catalogLinkOrigin}
+                shopName={settings?.display_name || shop.name}
+                onBookClient={
+                  bookingReady && canBookClients
+                    ? (request) => {
+                        setBookRequest(request);
+                        setBookOpen(true);
+                      }
+                    : undefined
+                }
                 loading={loading}
                 error={error}
                 refreshing={refreshingAgenda}
@@ -2106,6 +2205,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                               bookingSlug={actor.staff?.booking_slug}
                               customDomain={shop.custom_domain}
                               customDomainStatus={shop.custom_domain_status}
+                              shopName={settings?.display_name || shop.name}
                             />
                           ),
                         },
@@ -2146,13 +2246,51 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                                 scope="shop"
                                 title={t("shop.clients.title")}
                                 openOnHash="agenda-extra-clients"
+                                publicOrigin={catalogLinkOrigin}
+                                shopName={settings?.display_name || shop.name}
                               />
                             </div>
+                          ),
+                          // Na janela do celular (já com título e X): só a lista, sem cartão
+                          // dentro de cartão nem título repetido.
+                          windowContent: (
+                            <ClientDirectory
+                              shopId={shop.id}
+                              staffId={actor.staff_id}
+                              scope="shop"
+                              title={t("shop.clients.title")}
+                              embedded
+                              publicOrigin={catalogLinkOrigin}
+                              shopName={settings?.display_name || shop.name}
+                            />
                           ),
                         },
                       ]
                     : []),
                 ]}
+              />
+            )}
+
+            {tab === "agenda" && shop && !opening && bookingReady && canBookClients && (
+              <BookClientDialog
+                open={bookOpen}
+                onOpenChange={setBookOpen}
+                shopId={shop.id}
+                shopName={settings?.display_name || shop.name}
+                publicOrigin={catalogLinkOrigin}
+                timeZone={shopTimeZone}
+                today={agendaToday}
+                staff={staff}
+                services={services}
+                businessHours={businessHours}
+                ownStaffId={actor?.staff_id ?? null}
+                canBookForOthers={powers.seeTeam}
+                horizonDays={settings?.booking_horizon_days ?? 14}
+                request={bookRequest}
+                onBooked={({ day }) => {
+                  if (day !== agendaDay) setAgendaDay(day);
+                  else if (!demo) setAgendaRefresh((value) => value + 1);
+                }}
               />
             )}
 
@@ -2175,16 +2313,9 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 prepSupported={prepSupported}
                 shopPrep={validPrepMinutes(settings?.prep_minutes)}
                 awaiting={catalogExtras.awaiting}
-                slotNotice={
-                  services.length > 0 ? (
-                    <SlotModeNotice
-                      settings={settings}
-                      services={services}
-                      hours={businessHours}
-                      onOpenSettings={canManageShopSettings ? openSlotModeSettings : undefined}
-                    />
-                  ) : null
-                }
+                // "Assim seus clientes veem os horários" fica em Horários e em Ajustes → Agendamento:
+                // repetido em Serviços, só alongava a lista (simplificação de 16/10/2026).
+                slotNotice={null}
                 actions={{
                   save: saveService,
                   toggle: toggleService,
@@ -2297,6 +2428,11 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   sections={settingsSections}
                   section={settingsSection}
                   onSectionChange={setSettingsSection}
+                  onBack={
+                    settingsSection === "agendamento" && bookingItem
+                      ? () => setBookingItem(null)
+                      : undefined
+                  }
                   setupGuideShopId={!demo && powers.ownerLike ? shop.id : undefined}
                   onSetupGuideShown={() => {
                     setSettingsSection(null);
@@ -2397,62 +2533,89 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       );
                     }
                     if (section === "agendamento") {
+                      // Lista enxuta: cada ajuste abre sozinho (antes, os oito cartões abertos
+                      // passavam de 5 mil px no celular). Simplificação de 16/10/2026.
+                      if (!bookingItem) {
+                        return (
+                          <BookingOverview
+                            settings={settings}
+                            timeZone={shopTimeZone}
+                            onOpen={setBookingItem}
+                          />
+                        );
+                      }
+                      const show = (id: string) => bookingItem === id;
+                      const rulesItem = [
+                        BOOKING_CARD_IDS.horizon,
+                        BOOKING_CARD_IDS.staff,
+                        BOOKING_CARD_IDS.instructions,
+                        BOOKING_CARD_IDS.surveys,
+                      ].find(show);
                       return (
                         <>
-                          <BookingOverview settings={settings} timeZone={shopTimeZone} />
-                          <SlotModeSettings
-                            settings={settings}
-                            services={services}
-                            hours={businessHours}
-                            onSave={saveSlotMode}
-                          />
+                          {show(BOOKING_CARD_IDS.slots) && (
+                            <SlotModeSettings
+                              settings={settings}
+                              services={services}
+                              hours={businessHours}
+                              onSave={saveSlotMode}
+                            />
+                          )}
                           {/* Antes da migration 20261013150000 a coluna não vem do banco. */}
-                          {"min_lead_minutes" in settings && (
+                          {show(BOOKING_CARD_IDS.lead) && "min_lead_minutes" in settings && (
                             <MinLeadSettings
                               settings={settings}
                               timeZone={shopTimeZone}
+                              hours={businessHours}
                               onSave={saveMinLead}
                             />
                           )}
-                          <BookingRulesSettings
-                            settings={settings}
-                            timeZone={shopTimeZone}
-                            staffNames={staff
-                              .filter((member) => member.active)
-                              .map((member) => member.display_name)
-                              .slice(0, 2)}
-                            onSave={saveBookingRules}
-                          />
-                          <WaitingSettings
-                            id={BOOKING_CARD_IDS.waiting}
-                            settings={settings}
-                            onSaved={(patch) =>
-                              setSettings((current) =>
-                                current ? { ...current, ...patch } : current,
-                              )
-                            }
-                            onSaveRequest={
-                              !demo && actor
-                                ? async (enabled, cutoff) => {
-                                    const applied = await submitProtectedChange(
-                                      "settings.operational",
-                                      {
-                                        waiting_enabled: enabled,
-                                        waiting_cutoff_minutes: cutoff,
-                                      },
-                                    );
-                                    if (applied) await loadCatalog();
-                                    return applied ? "applied" : "pending";
-                                  }
-                                : undefined
-                            }
-                          />
-                          <ShopTimezoneCard
-                            id={BOOKING_CARD_IDS.timezone}
-                            shopId={shop?.id}
-                            timeZone={shop?.timezone}
-                            canEdit={!demo && canManageShopChannels}
-                          />
+                          {rulesItem && (
+                            <BookingRulesSettings
+                              settings={settings}
+                              timeZone={shopTimeZone}
+                              staffNames={staff
+                                .filter((member) => member.active)
+                                .map((member) => member.display_name)
+                                .slice(0, 2)}
+                              onSave={saveBookingRules}
+                              only={rulesItem}
+                            />
+                          )}
+                          {show(BOOKING_CARD_IDS.waiting) && (
+                            <WaitingSettings
+                              id={BOOKING_CARD_IDS.waiting}
+                              settings={settings}
+                              onSaved={(patch) =>
+                                setSettings((current) =>
+                                  current ? { ...current, ...patch } : current,
+                                )
+                              }
+                              onSaveRequest={
+                                !demo && actor
+                                  ? async (enabled, cutoff) => {
+                                      const applied = await submitProtectedChange(
+                                        "settings.operational",
+                                        {
+                                          waiting_enabled: enabled,
+                                          waiting_cutoff_minutes: cutoff,
+                                        },
+                                      );
+                                      if (applied) await loadCatalog();
+                                      return applied ? "applied" : "pending";
+                                    }
+                                  : undefined
+                              }
+                            />
+                          )}
+                          {show(BOOKING_CARD_IDS.timezone) && (
+                            <ShopTimezoneCard
+                              id={BOOKING_CARD_IDS.timezone}
+                              shopId={shop?.id}
+                              timeZone={shop?.timezone}
+                              canEdit={!demo && canManageShopChannels}
+                            />
+                          )}
                         </>
                       );
                     }

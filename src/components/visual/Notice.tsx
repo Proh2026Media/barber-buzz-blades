@@ -3,6 +3,7 @@ import { forwardRef, useEffect, useRef, useState, type ReactNode } from "react";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { announce } from "./announce";
+import { visibleBottomLimit } from "./helpers";
 import { ACTION_STATE, type ActionState } from "./status";
 import { TONE_CLASS, TONE_ICON, TONE_SOFT, TONE_TEXT, toneIconMotion, type Tone } from "./tones";
 
@@ -138,8 +139,7 @@ export function ActionResult({
     if (!el) return;
     const rect = el.getBoundingClientRect();
     // A barra de navegação flutuante cobre o pé da tela: o que fica atrás dela não está à vista.
-    const nav = document.querySelector(".app-mobile-nav");
-    const bottomLimit = nav ? nav.getBoundingClientRect().top : window.innerHeight;
+    const bottomLimit = visibleBottomLimit();
     if (rect.top >= 0 && rect.bottom <= bottomLimit) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     el.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });

@@ -17,7 +17,23 @@ export type DayAppointment = Tables<"appointments"> & {
   customer: Pick<Tables<"profiles">, "full_name"> | null;
   /** `busy`: horário de outro profissional, sem dados do cliente (privacidade). */
   visibility?: "full" | "busy";
+  /**
+   * Migration 20261016130000 (ausentes antes dela): apelido que a equipe usa; se o cliente tem
+   * conta no app (`false` = cliente do balcão); se foi marcado pela equipe; ritmo da série e se o
+   * cliente tem horário recorrente ativo na barbearia.
+   */
+  customer_nickname?: string | null;
+  has_account?: boolean | null;
+  booked_by_team?: boolean | null;
+  series_kind?: "weekday" | "interval_days" | null;
+  series_interval_days?: number | null;
+  customer_recurring?: boolean | null;
 };
+
+/** Nome que a equipe vê: o apelido, quando houver; senão o nome do cadastro. */
+export function agendaClientName(row: DayAppointment, fallback: string): string {
+  return row.customer_nickname?.trim() || row.customer?.full_name?.trim() || fallback;
+}
 
 export type AgendaBlock = Tables<"availability_blocks"> & {
   staff: Pick<Tables<"staff">, "display_name"> | null;

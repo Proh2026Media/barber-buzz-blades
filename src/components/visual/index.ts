@@ -13,7 +13,13 @@ export {
   type StatusMeta,
 } from "./status";
 export { announce } from "./announce";
-export { focusFirstInvalid, personColor, personInitials, readableLink } from "./helpers";
+export {
+  focusFirstInvalid,
+  personColor,
+  personInitials,
+  readableLink,
+  visibleBottomLimit,
+} from "./helpers";
 
 export {
   AppointmentStatusBadge,

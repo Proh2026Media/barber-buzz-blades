@@ -2,7 +2,11 @@ import type { DemoState } from "../demo/model";
 import { t } from "../../lib/i18n/index.ts";
 import { blocksSlot, canHold, type SlotWait, type WaitAction, type WaitingEvent } from "./model.ts";
 
-export type DemoWait = SlotWait & { customer_id: string | null; original_customer_id: string };
+export type DemoWait = SlotWait & {
+  customer_id: string | null;
+  /** Nulo: atendimento de cliente do balcão (sem conta). */
+  original_customer_id: string | null;
+};
 function event(state: DemoState, w: DemoWait, kind: string): WaitingEvent[] {
   if (!w.customer_id) return state.waitingEvents;
   const id = `${w.id}:${w.customer_id}:${kind}`;

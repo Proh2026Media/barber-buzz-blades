@@ -168,7 +168,7 @@ export function NextVisitCard({
       intlLocale,
     );
     body = (
-      <div className="space-y-4">
+      <div className="@container space-y-4">
         <div className="flex items-center gap-4">
           {/* Bloco de data: rótulo relativo em cima (HOJE, AMANHÃ, QUA), dia e mês. */}
           <div
@@ -227,7 +227,9 @@ export function NextVisitCard({
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2">
+        {/* Lado a lado só quando o cartão comporta os dois rótulos (no computador de 1024 px ele
+            é estreito e "Ver detalhes" quebrava em duas linhas). */}
+        <div className="grid grid-cols-1 gap-2 @min-[18rem]:grid-cols-2">
           <FooterButton icon={ChevronRight} trailing onClick={onDetails}>
             {t("home.details")}
           </FooterButton>

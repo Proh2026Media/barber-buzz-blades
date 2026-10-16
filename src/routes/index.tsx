@@ -8,6 +8,7 @@ import {
   resolveShopFromCurrentHost,
 } from "@/lib/shop/host";
 import { isStandalone } from "@/lib/standalone";
+import { readPendingRelay } from "@/lib/auth/google-relay";
 import { PlatformLanding } from "@/features/marketing/PlatformLanding";
 import { ShopLanding } from "@/features/marketing/ShopLanding";
 import { SignedInBar } from "@/features/marketing/SignedInBar";
@@ -38,6 +39,14 @@ export const Route = createFileRoute("/")({
         // Falha ao ler o perfil: mostra a landing em vez de quebrar a página.
       }
       if (home !== "/auth") throw redirect({ to: home as PanelHome });
+      // App instalado reaberto no meio do login com Google: volta para a tela que espera a janela.
+      const pending = isStandalone() ? readPendingRelay() : null;
+      if (pending) {
+        throw redirect({
+          to: "/auth",
+          search: { next: pending.next ?? "", ...(pending.shop ? { shop: pending.shop } : {}) },
+        });
+      }
     }
     if (onShopHost) return { shopHost: currentHostname() };
   },
@@ -56,7 +65,21 @@ function IndexPage() {
     let active = true;
     void resolvePostAuthPath()
       .then((home) => {
-        if (active && home !== "/auth") void navigate({ to: home as PanelHome, replace: true });
+        if (!active) return;
+        if (home !== "/auth") {
+          void navigate({ to: home as PanelHome, replace: true });
+          return;
+        }
+        // App instalado reaberto no meio do login com Google (abertura a frio, sem o beforeLoad):
+        // volta para a tela que espera a janela.
+        const pending = isStandalone() ? readPendingRelay() : null;
+        if (pending) {
+          void navigate({
+            to: "/auth",
+            search: { next: pending.next ?? "", ...(pending.shop ? { shop: pending.shop } : {}) },
+            replace: true,
+          });
+        }
       })
       .catch(() => {
         /* sem sessão legível: continua na landing */

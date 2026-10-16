@@ -177,14 +177,19 @@ export function ShopsPanel({
     />
   ) : null;
 
-  const newShopButton = (
+  // No título, abaixo de 359 px, fica só o "+" (o nome segue para o leitor de tela): com o
+  // nome, o botão encostava no título. No estado vazio, sempre com o nome.
+  const newShopButton = (compact = false) => (
     <button
       type="button"
       onClick={onNewShop}
-      className="flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+      className={cn(
+        "flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground",
+        compact && "max-[359px]:w-11 max-[359px]:justify-center max-[359px]:px-0",
+      )}
     >
       <Plus className="size-4" aria-hidden />
-      {t("plat.newShop.title")}
+      <span className={compact ? "max-[359px]:sr-only" : undefined}>{t("plat.newShop.title")}</span>
     </button>
   );
 
@@ -193,8 +198,9 @@ export function ShopsPanel({
       {/* Título de página no padrão do app (ícone dourado solto + h2), com a ação ao lado. */}
       <div className="app-section-title flex-wrap">
         <Store aria-hidden />
-        <h2 className="min-w-0 flex-1">{t("plat.shops.title")}</h2>
-        {shops.length > 0 && newShopButton}
+        {/* Sem min-w-0: com fonte grande, o botão desce para a linha de baixo em vez de cobrir. */}
+        <h2 className="flex-1">{t("plat.shops.title")}</h2>
+        {shops.length > 0 && newShopButton(true)}
       </div>
 
       {loading ? (
@@ -222,7 +228,7 @@ export function ShopsPanel({
           tone="store"
           title={t("plat.dash.emptyTitle")}
           description={t("plat.dash.emptyBody")}
-          action={newShopButton}
+          action={newShopButton()}
         />
       ) : (
         <>

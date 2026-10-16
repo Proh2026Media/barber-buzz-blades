@@ -6,6 +6,7 @@ import {
   buildDaySlots,
   buildSlotsForWindow,
   dateFromLocalKey,
+  filterReservations,
   localDateKey,
   minLeadParts,
   minutesLabel,
@@ -424,4 +425,21 @@ test("staff terms decide duration, price and who does the service", () => {
   assert.equal(termsFor(terms, "b", service), null);
   assert.equal(termsFor([], "a", service), null);
   assert.deepEqual(termsFor(null, "b", service), { duration_minutes: 30, price_cents: 5000 });
+});
+
+test("reserva em andamento fica em Próximos até o término", () => {
+  const row = {
+    starts_at: at(9).toISOString(),
+    ends_at: at(9, 30).toISOString(),
+    status: "confirmed" as const,
+  };
+  for (const now of [at(9), at(9, 29)]) {
+    assert.deepEqual(filterReservations([row], "upcoming", now.getTime()), [row]);
+    assert.deepEqual(filterReservations([row], "history", now.getTime()), []);
+  }
+  assert.deepEqual(filterReservations([row], "upcoming", at(9, 30).getTime()), []);
+  assert.deepEqual(filterReservations([row], "history", at(9, 30).getTime()), [row]);
+  // Sem o término (reservas de outra loja no seletor), vale o início, como antes.
+  const startOnly = { starts_at: row.starts_at, status: row.status };
+  assert.deepEqual(filterReservations([startOnly], "history", at(9).getTime()), [startOnly]);
 });

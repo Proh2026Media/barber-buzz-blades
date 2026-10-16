@@ -48,6 +48,7 @@ export function PartnerOverview({
   bookingSlug,
   customDomain,
   customDomainStatus,
+  shopName = "",
 }: {
   shopId: string;
   staffId: string;
@@ -55,6 +56,8 @@ export function PartnerOverview({
   bookingSlug: string | null | undefined;
   customDomain?: string | null;
   customDomainStatus?: string | null;
+  /** Nome da barbearia no convite para o app (cliente do balcão). */
+  shopName?: string;
 }) {
   const { t, intlLocale } = useI18n();
   const demo = useDemo();
@@ -126,6 +129,7 @@ export function PartnerOverview({
       // dia da semana e hora preferidos, espelhando a RPC real.
       const byCustomer = new Map<string, string[]>();
       for (const row of mine) {
+        if (!row.customer_id) continue;
         const dates = byCustomer.get(row.customer_id) ?? [];
         dates.push(row.starts_at);
         byCustomer.set(row.customer_id, dates);
@@ -313,6 +317,16 @@ export function PartnerOverview({
             staffId={staffId}
             scope="own"
             title={t("team.partner.yourClients")}
+            shopName={shopName}
+            publicOrigin={
+              shopSlug
+                ? shopPublicOrigin({
+                    slug: shopSlug,
+                    customDomain: resolvedDomain.domain,
+                    customDomainStatus: resolvedDomain.status,
+                  })
+                : null
+            }
           />
         </section>
 

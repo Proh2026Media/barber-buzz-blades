@@ -54,6 +54,28 @@ export function demoLifetimePoints(state: Pick<DemoState, "points" | "redemption
   );
 }
 
+/**
+ * Ficha da equipe (migration 20261016130000): cliente do balcão (sem conta, com nome e WhatsApp
+ * informados pelo barbeiro) ou só o apelido de um cliente com conta (`profile_id`).
+ */
+export type DemoShopClient = {
+  id: string;
+  profile_id: string | null;
+  full_name: string | null;
+  whatsapp_e164: string | null;
+  nickname: string | null;
+  notify_whatsapp: boolean;
+};
+
+/** Horário recorrente ativo (só para os selos da agenda e da ficha). */
+export type DemoSeries = {
+  id: string;
+  customer_id: string;
+  kind: "weekday" | "interval_days";
+  interval_days: number | null;
+  active: boolean;
+};
+
 export type DemoState = {
   waits: DemoWait[];
   waitingEvents: WaitingEvent[];
@@ -66,8 +88,11 @@ export type DemoState = {
   lastSurveyAt: string | null;
   privacyRequests: PrivacyRequest[];
   now: Date;
-  customers: { id: string; name: string }[];
+  /** Clientes com conta (fictícios). O WhatsApp serve para a busca do "Agendar cliente". */
+  customers: { id: string; name: string; whatsapp: string | null }[];
   customerId: string;
+  shopClients: DemoShopClient[];
+  series: DemoSeries[];
   shop: Tables<"barbershops">;
   services: Tables<"services">[];
   staff: Tables<"staff">[];
@@ -123,6 +148,127 @@ function openHoursFor(rows: Tables<"business_hours">[], weekday: number) {
 
 function range(from: number, to: number) {
   return Array.from({ length: Math.max(0, to - from) }, (_, index) => from + index);
+}
+
+/**
+ * Exemplos da equipe na demonstração: apelidos (um deles no cliente nº 3, para testar a busca pelo
+ * WhatsApp (11) 95550-0003), clientes com horário recorrente na agenda de hoje e um cliente do
+ * balcão marcado pelo barbeiro no primeiro horário livre.
+ */
+function seedTeamClients(state: DemoState, stamp: string) {
+  const owner = state.staff[0];
+  const sameDay = (iso: string) => new Date(iso).toDateString() === state.now.toDateString();
+  const todays = state.appointments
+    .filter(
+      (row) =>
+        row.status === "confirmed" &&
+        sameDay(row.starts_at) &&
+        !!row.customer_id &&
+        row.customer_id !== DEMO_CUSTOMER_ID,
+    )
+    .sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+  const ownerToday = todays.filter((row) => row.staff_id === owner?.id);
+  const otherToday = todays.filter((row) => row.staff_id !== owner?.id);
+
+  const nickname = (customerId: string | null | undefined, value: string) => {
+    if (!customerId || state.shopClients.some((row) => row.profile_id === customerId)) return;
+    state.shopClients.push({
+      id: `demo-client-nick-${customerId}`,
+      profile_id: customerId,
+      full_name: null,
+      whatsapp_e164: null,
+      nickname: value,
+      notify_whatsapp: true,
+    });
+  };
+  nickname(state.customers[3]?.id, "Alemão");
+  nickname(ownerToday[2]?.customer_id, "Magrão");
+  nickname(otherToday[1]?.customer_id, "Professor");
+
+  const series = (
+    row: Tables<"appointments"> | undefined,
+    kind: DemoSeries["kind"],
+    interval: number | null,
+  ) => {
+    if (!row?.customer_id) return;
+    const id = `demo-series-${row.id}`;
+    state.series.push({
+      id,
+      customer_id: row.customer_id,
+      kind,
+      interval_days: interval,
+      active: true,
+    });
+    row.series_id = id;
+  };
+  series(ownerToday[1], "weekday", null);
+  series(ownerToday[3], "interval_days", 15);
+  series(otherToday[0], "weekday", null);
+
+  // Cliente do balcão: o barbeiro marcou pelo painel; não tem conta nem horário recorrente.
+  const service = state.services[0];
+  if (owner && service) {
+    const start = firstFreeStart(state, owner.id, service.duration_minutes);
+    if (start) {
+      state.shopClients.push({
+        id: "demo-client-walkin",
+        profile_id: null,
+        full_name: "Zé da Padaria",
+        whatsapp_e164: "+5511955599999",
+        nickname: "Zé",
+        notify_whatsapp: true,
+      });
+      state.appointments.push({
+        id: "demo-walkin-today",
+        barbershop_id: state.shop.id,
+        customer_id: null,
+        shop_client_id: "demo-client-walkin",
+        booked_by: "demo-admin",
+        service_id: service.id,
+        staff_id: owner.id,
+        starts_at: start.toISOString(),
+        ends_at: new Date(start.getTime() + service.duration_minutes * 60000).toISOString(),
+        status: "confirmed",
+        booked_price_cents: service.price_cents,
+        public_token: "demo-token-walkin",
+        series_id: null,
+        created_at: stamp,
+        updated_at: stamp,
+      });
+    }
+  }
+}
+
+/**
+ * Primeiro início livre (de meia em meia hora) para o profissional: hoje depois da hora atual, ou
+ * no próximo dia aberto, sempre dentro do expediente da loja (domingo fechado continua fechado).
+ */
+function firstFreeStart(state: DemoState, staffId: string, minutes: number): Date | null {
+  for (let offset = 0; offset < 7; offset++) {
+    const day = new Date(state.now);
+    day.setDate(day.getDate() + offset);
+    const hours = openHoursFor(state.businessHours, day.getDay());
+    if (!hours.length) continue;
+    const closing = (hours.at(-1) ?? 0) + 1;
+    for (const hour of hours) {
+      for (const minute of [0, 30]) {
+        const start = new Date(day);
+        start.setHours(hour, minute, 0, 0);
+        if (start.getTime() <= state.now.getTime()) continue;
+        const end = new Date(start.getTime() + minutes * 60000);
+        if (end.getHours() + end.getMinutes() / 60 > closing) continue;
+        const busy = state.appointments.some(
+          (row) =>
+            row.staff_id === staffId &&
+            row.status !== "cancelled" &&
+            Date.parse(row.starts_at) < end.getTime() &&
+            Date.parse(row.ends_at) > start.getTime(),
+        );
+        if (!busy) return start;
+      }
+    }
+  }
+  return null;
 }
 
 export function createDemoState(date = new Date(), preset?: DemoShopPreset): DemoState {
@@ -188,6 +334,7 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
             ? "demo-other-customer"
             : `demo-customer-${index}`,
       name: `${firstNames[variant % 20]} ${surnames[Math.floor(variant / 20)]} (demo)`,
+      whatsapp: `+55119555${String(index).padStart(5, "0")}`,
     };
   });
   const state: DemoState = {
@@ -238,6 +385,8 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
     now,
     customers,
     customerId: DEMO_CUSTOMER_ID,
+    shopClients: [],
+    series: [],
     shop: {
       id: shopId,
       name: "Arena Barber · Demo",
@@ -311,7 +460,8 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
         starts_at: time(10),
         ends_at: time(10, 30),
         status: "confirmed",
-        booked_price_cents: 5000,
+        // O preço gravado é o do serviço (o mesmo que Agendar mostra).
+        booked_price_cents: 4500,
         public_token: "demo-token-1",
         series_id: null,
         created_at: stamp,
@@ -394,12 +544,17 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
     }
     const firstService = state.services[0]!;
     const firstStaff = state.staff[0]!;
-    state.appointments = state.appointments.map((row, index) => ({
-      ...row,
-      barbershop_id: shopId,
-      service_id: state.services[index % state.services.length]?.id ?? firstService.id,
-      staff_id: state.staff[index % state.staff.length]?.id ?? firstStaff.id,
-    }));
+    state.appointments = state.appointments.map((row, index) => {
+      const service = state.services[index % state.services.length] ?? firstService;
+      return {
+        ...row,
+        barbershop_id: shopId,
+        service_id: service.id,
+        staff_id: state.staff[index % state.staff.length]?.id ?? firstStaff.id,
+        // O preço gravado acompanha o serviço copiado da loja.
+        booked_price_cents: service.price_cents,
+      };
+    });
   }
   // Personagens próprios do Parceiro e do Contratado (plano de ambientes, onda 5): cada papel da
   // demonstração tem o próprio cartão, a própria agenda e o próprio link, com ids fictícios.
@@ -545,6 +700,7 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
       });
     }
   });
+  seedTeamClients(state, stamp);
   state.prices = Object.fromEntries(
     state.appointments.map((row) => [
       row.id,
@@ -606,7 +762,22 @@ export type DemoAction =
   | { type: "clock.advance"; milliseconds: number }
   | { type: "loyalty.redeem"; rewardId: string }
   | { type: "loyalty.cancel"; id: string }
-  | { type: "waiting.action"; id: string; action: WaitAction; serviceId?: string };
+  | { type: "waiting.action"; id: string; action: WaitAction; serviceId?: string }
+  /** Agendar pelo painel (barbeiro): o atendimento e, se for o caso, a ficha nova ou atualizada. */
+  | { type: "client.book"; appointment: Tables<"appointments">; client?: DemoShopClient }
+  | {
+      type: "client.nickname";
+      customerId: string | null;
+      shopClientId: string | null;
+      nickname: string | null;
+    }
+  | {
+      type: "client.update";
+      id: string;
+      full_name?: string;
+      whatsapp_e164?: string;
+      notify_whatsapp?: boolean;
+    };
 
 export function demoReducer(state: DemoState, action: DemoAction): DemoState {
   state = advanceWaits(state);
@@ -649,6 +820,85 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
         ),
       };
     }
+    case "client.book": {
+      const appointment = action.appointment;
+      const clash = state.appointments.some(
+        (row) =>
+          row.staff_id === appointment.staff_id &&
+          (row.status === "pending" || row.status === "confirmed") &&
+          row.starts_at < appointment.ends_at &&
+          row.ends_at > appointment.starts_at,
+      );
+      const held = state.waits.some(
+        (w) =>
+          blocksSlot(w, state.now) &&
+          w.staff_id === appointment.staff_id &&
+          w.starts_at < appointment.ends_at &&
+          w.ends_at > appointment.starts_at,
+      );
+      if (clash || held) return state;
+      const client = action.client;
+      return {
+        ...state,
+        shopClients: client
+          ? [...state.shopClients.filter((row) => row.id !== client.id), client]
+          : state.shopClients,
+        prices: {
+          ...state.prices,
+          [appointment.id]:
+            state.services.find((row) => row.id === appointment.service_id)?.price_cents ?? 0,
+        },
+        appointments: [...state.appointments, { ...appointment, status: "confirmed" }],
+      };
+    }
+    case "client.nickname": {
+      const existing = state.shopClients.find((row) =>
+        action.shopClientId
+          ? row.id === action.shopClientId
+          : !!action.customerId && row.profile_id === action.customerId,
+      );
+      if (existing) {
+        return {
+          ...state,
+          shopClients: state.shopClients.map((row) =>
+            row.id === existing.id ? { ...row, nickname: action.nickname } : row,
+          ),
+        };
+      }
+      if (!action.customerId) return state;
+      return {
+        ...state,
+        shopClients: [
+          ...state.shopClients,
+          {
+            id: `demo-client-${action.customerId}`,
+            profile_id: action.customerId,
+            full_name: null,
+            whatsapp_e164: null,
+            nickname: action.nickname,
+            notify_whatsapp: true,
+          },
+        ],
+      };
+    }
+    case "client.update":
+      return {
+        ...state,
+        shopClients: state.shopClients.map((row) =>
+          row.id === action.id
+            ? {
+                ...row,
+                ...(action.full_name !== undefined ? { full_name: action.full_name } : {}),
+                ...(action.whatsapp_e164 !== undefined
+                  ? { whatsapp_e164: action.whatsapp_e164 }
+                  : {}),
+                ...(action.notify_whatsapp !== undefined
+                  ? { notify_whatsapp: action.notify_whatsapp }
+                  : {}),
+              }
+            : row,
+        ),
+      };
     case "survey.record":
       return state.privacy.surveys
         ? {

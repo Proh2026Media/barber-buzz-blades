@@ -1079,6 +1079,22 @@ body [data-sonner-toaster] [data-sonner-toast] [data-description] {
 .brand-preview .text-gold {
   color: var(--brand-accent-readable, var(--gold));
 }
+/* Dourado em texto fora dos cartões off-white (ex.: a linha "Agora · 09:00" da agenda): tinta
+   calculada contra o fundo da página, que é mais escuro que o cartão; no tema escuro, contra o
+   carvão. Dentro dos cartões continua a do off-white (4,5:1 nos três casos; revisão de 16/10). */
+.arena-workspace > main .text-gold:not(:is(.bg-card, .app-action-card, .booking-section) *) {
+  color: var(--brand-accent-readable-page, var(--brand-accent-readable, var(--gold)));
+}
+.dark .arena-workspace > main .text-gold:not(:is(.bg-card, .app-action-card, .booking-section) *) {
+  color: var(--brand-accent-readable-dark, #c6a16a);
+}
+/* O ícone do título da aba acompanha o mesmo dourado legível (lado a lado com os de baixo). */
+.arena-workspace > main .app-section-title > svg {
+  color: var(--brand-accent-readable-page, var(--gold));
+}
+.dark .arena-workspace > main .app-section-title > svg {
+  color: var(--brand-accent-readable-dark, #c6a16a);
+}
 .arena-workspace .bg-primary,
 .brand-preview .bg-primary {
   color: var(--brand-primary-foreground, var(--primary-foreground));
@@ -1300,15 +1316,26 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   color: #f1ede6;
   box-shadow: inset 0 0 0 1px #6f7064;
 }
+/* A primeira linha do título fica sempre no mesmo lugar, no meio de uma faixa de 44 px: com ou
+   sem botão ao lado e mesmo quando o título quebra em duas linhas (não pula ao trocar de aba). */
 .app-section-title {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  min-height: 2.75rem;
   gap: 0.7rem;
   font-size: 1.35rem;
   font-weight: 650;
   letter-spacing: -0.02em;
 }
+.app-section-title > :is(h1, h2) {
+  margin-top: 0.36rem;
+  margin-top: calc((2.75rem - 1lh) / 2);
+}
+.app-section-title > :not(h1, h2, svg) {
+  align-self: center;
+}
 .app-section-title > svg {
+  margin-top: 0.75rem;
   width: 1.25rem;
   height: 1.25rem;
   flex-shrink: 0;
@@ -1348,7 +1375,9 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   padding: 0.45rem !important;
   border: 1px solid color-mix(in oklab, var(--border) 55%, transparent) !important;
   border-radius: var(--panel-radius) !important;
-  background: color-mix(in oklab, var(--card) 82%, transparent) !important;
+  /* Quase opaca: com o cartão escuro do clube passando por trás, os rótulos inativos caíam para
+     ~3,9:1 (revisão de 16/10); a 96% ficam acima de 4,9:1, como no tema escuro. */
+  background: color-mix(in oklab, var(--card) 96%, transparent) !important;
   box-shadow:
     0 18px 40px color-mix(in oklab, #1c1d19 16%, transparent),
     inset 0 1px 0 color-mix(in oklab, #fff 55%, transparent) !important;
@@ -1460,6 +1489,87 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
     width var(--duration-med) var(--ease-out),
     opacity var(--duration-fast) var(--ease-soft);
   will-change: transform;
+}
+/* Computador e tablet deitado (≥ 1024 px): a barra de baixo vira uma coluna lateral fixa, como
+   num aplicativo de computador (16/10/2026, pedido do dono: "não deve parecer uma adaptação").
+   A área de trabalho vira uma grade: cabeçalho em cima, navegação à esquerda e o conteúdo, que
+   continua rolando sozinho, à direita. Nada mais flutua sobre o conteúdo. Os itens mostram ícone e
+   nome lado a lado; o ativo ganha o fundo da marca (a pílula deslizante é só do celular). */
+@media (min-width: 1024px) {
+  .arena-workspace:has(> .app-mobile-nav) {
+    --app-rail-width: 14.5rem;
+    display: grid;
+    grid-template-columns:
+      calc(var(--app-rail-width) + max(1rem, env(safe-area-inset-left)))
+      minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .arena-workspace:has(> .app-mobile-nav) > header {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+  .arena-workspace:has(> .app-mobile-nav) > main {
+    grid-column: 2;
+    grid-row: 2;
+    padding-bottom: 2.5rem !important;
+    --app-sticky-bottom: 0.75rem;
+  }
+  body:has(.app-mobile-nav) {
+    --app-banner-bottom: var(--app-floating-bottom);
+    --app-sticky-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+  .arena-workspace > .app-mobile-nav,
+  .arena-workspace.brand-chrome-floating > .app-mobile-nav {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: start;
+    position: static !important;
+    inset: auto !important;
+    display: flex !important;
+    flex-direction: column;
+    gap: 0.25rem;
+    width: auto !important;
+    max-width: none !important;
+    margin: 1.25rem 0 1rem max(1rem, env(safe-area-inset-left)) !important;
+    padding: 0.5rem !important;
+  }
+  .arena-workspace > .app-mobile-nav > .app-mobile-nav-indicator {
+    display: none;
+  }
+  .arena-workspace > .app-mobile-nav > button {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 0.75rem;
+    width: 100%;
+    min-height: 48px;
+    padding: 0.625rem 0.875rem !important;
+    text-align: start;
+  }
+  .arena-workspace > .app-mobile-nav > button:hover:not([aria-pressed="true"]) {
+    background: color-mix(in oklab, var(--muted) 70%, transparent);
+  }
+  .arena-workspace > .app-mobile-nav > button > :first-child {
+    margin-bottom: 0 !important;
+  }
+  .arena-workspace > .app-mobile-nav > button span {
+    font-size: 0.9rem !important;
+    letter-spacing: 0 !important;
+    text-align: start !important;
+    white-space: nowrap;
+  }
+  .arena-workspace > .app-mobile-nav > button[aria-pressed="true"] {
+    background: var(--primary) !important;
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--primary-foreground) 22%, transparent);
+  }
+  .arena-workspace > .app-mobile-nav > button[aria-pressed="true"],
+  .arena-workspace > .app-mobile-nav > button[aria-pressed="true"] svg,
+  .arena-workspace > .app-mobile-nav > button[aria-pressed="true"] span {
+    color: var(--primary-foreground) !important;
+  }
+  .arena-workspace > .app-mobile-nav > button[aria-pressed="true"] svg {
+    transform: none;
+  }
 }
 .app-action-card {
   border: 1px solid color-mix(in oklab, var(--border) 75%, transparent);
@@ -1958,6 +2068,52 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
   /* Agenda da barbearia no computador: duas colunas (dia à esquerda, linha do tempo à direita). */
   .arena-workspace > main.shop-agenda-wide {
     padding-inline: max(1.5rem, calc((100% - 70rem) / 2));
+  }
+  /* Com a coluna lateral, o conteúdo encosta nela: a borda esquerda é a mesma em todas as abas e
+     a largura de leitura de cada aba (abaixo) só limita a direita. Centralizada, cada largura
+     punha o título num lugar e ele pulava ao trocar de aba. Fica depois das regras acima. */
+  .arena-workspace:has(> .app-mobile-nav) > main {
+    --app-read-width: 46rem;
+    padding-inline: 1.5rem
+      max(1rem, env(safe-area-inset-right), calc(100% - 1.5rem - var(--app-read-width)));
+  }
+  .arena-workspace:has(> .app-mobile-nav) > main.max-w-xl {
+    --app-read-width: 34rem;
+  }
+  .arena-workspace:has(> .app-mobile-nav) > main.customer-main-wide {
+    --app-read-width: 64rem;
+  }
+  .arena-workspace:has(> .app-mobile-nav) > main.shop-agenda-wide {
+    --app-read-width: 70rem;
+  }
+  /* Plataforma: listas e tabelas de barbearias e acessos pedem a largura das telas largas. */
+  .platform-workspace:has(> .app-mobile-nav) > main {
+    --app-read-width: 64rem;
+  }
+  /* Cabeçalho da barbearia de ponta a ponta, como o do cliente e o da plataforma: o nome fica
+     sobre a coluna lateral e as ações no canto direito, sem a faixa centralizada de 70rem. Vale
+     também sem a coluna (troca de loja, escolha de loja): o nome não pula de lugar. */
+  .arena-workspace > header > .max-w-\[70rem\] {
+    max-width: none;
+  }
+}
+/* Monitor largo (≥ 1536 px): as colunas de leitura crescem um pouco, para a tela não parecer um
+   celular no meio do monitor; a borda esquerda continua a mesma em todas as abas. */
+@media (min-width: 1536px) {
+  .arena-workspace:has(> .app-mobile-nav) > main {
+    --app-read-width: 56rem;
+  }
+  .arena-workspace:has(> .app-mobile-nav) > main.max-w-xl {
+    --app-read-width: 40rem;
+  }
+  .arena-workspace:has(> .app-mobile-nav) > main.customer-main-wide {
+    --app-read-width: 76rem;
+  }
+  .arena-workspace:has(> .app-mobile-nav) > main.shop-agenda-wide {
+    --app-read-width: 84rem;
+  }
+  .platform-workspace:has(> .app-mobile-nav) > main {
+    --app-read-width: 76rem;
   }
 }
 

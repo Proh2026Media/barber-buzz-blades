@@ -28,7 +28,7 @@ import {
 } from "@/components/visual";
 import { ServiceIcon } from "@/components/ui/service-icon";
 import { useI18n } from "@/lib/i18n";
-import { CatalogFilters, type CatalogStatus } from "../CatalogFilters";
+import { CATALOG_SHORT_LIST, CatalogFilters, type CatalogStatus } from "../CatalogFilters";
 import {
   readCatalogViewPreference,
   writeCatalogViewPreference,
@@ -116,9 +116,12 @@ export function ServicesTab({
   const { duration, money } = useCatalogLabels();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<CatalogStatus>("all");
-  const [view, setView] = useState<CatalogViewMode>(() =>
+  const [savedView, setView] = useState<CatalogViewMode>(() =>
     readCatalogViewPreference(shopId, "services", "grid"),
   );
+  // Lista curta não mostra a troca grade/lista: vale o padrão (a escolha salva volta quando a
+  // lista crescer). Sem isso, quem salvou "lista" ficava preso nela.
+  const view: CatalogViewMode = services.length > CATALOG_SHORT_LIST ? savedView : "grid";
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<ServiceRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ServiceRow | null>(null);
@@ -376,9 +379,11 @@ export function ServicesTab({
               (own.price_cents !== service.price_cents ||
                 own.duration_minutes !== service.duration_minutes);
             const doers = doersByService.get(service.id) ?? [];
+            // Ligado, no cartão grande, o próprio interruptor já diz "Aparece para clientes": o
+            // selo só aparece quando diz algo a mais (pausado, esperando aprovação, lista).
             const statusBadge = waiting ? (
               <StatusBadge {...STATE.waiting} size="sm" label={t("catalog.awaiting")} />
-            ) : service.active ? (
+            ) : service.active && view === "grid" && !ownCatalog ? null : service.active ? (
               <StatusBadge
                 {...STATE.active}
                 size="sm"

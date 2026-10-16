@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { Lock, Moon, Timer } from "lucide-react";
+import { Lock, Moon, Repeat, Timer } from "lucide-react";
 import { ServiceIcon } from "@/components/ui/service-icon";
 import { PersonAvatar, STATE, StatusBadge, TONE_CLASS, personColor } from "@/components/visual";
 import type { Tables } from "@/integrations/supabase/types";
@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { BLOCK_HATCH, BLOCK_HATCH_SOFT, boardState, useBlockInfo } from "./board";
 import { placeInLanes } from "./model";
 import { useShopTime } from "./summary";
-import { AGENDA_STATE, type AgendaBlock, type DayAppointment } from "./types";
+import { AGENDA_STATE, agendaClientName, type AgendaBlock, type DayAppointment } from "./types";
 
 const MINUTE = 60_000;
 /** Altura de uma hora no quadro (px). Meia hora = 48 px: cabe horário, nome e serviço. */
@@ -391,7 +391,8 @@ export function TeamDayBoard({
                       const state = boardState(row, clock);
                       const meta = AGENDA_STATE[state];
                       const label = t(meta.labelKey);
-                      const customer = row.customer?.full_name ?? t("shop.customerFallback");
+                      const customer = agendaClientName(row, t("shop.customerFallback"));
+                      const recurring = !!row.series_id || !!row.customer_recurring;
                       const service = row.service?.name ?? t("shop.serviceFallback");
                       const isNext = nextId === row.id;
                       return (
@@ -427,6 +428,12 @@ export function TeamDayBoard({
                               <span className="min-w-0 truncate text-xs font-bold text-foreground">
                                 {customer}
                               </span>
+                              {recurring && (
+                                <Repeat
+                                  className="tone-highlight size-3.5 shrink-0 text-[color:var(--tone-ink)]"
+                                  aria-label={t("agenda.recurring.client")}
+                                />
+                              )}
                               {waitIds.has(row.id) && (
                                 <Timer
                                   className="tone-pending size-3.5 shrink-0 text-[color:var(--tone-ink)]"

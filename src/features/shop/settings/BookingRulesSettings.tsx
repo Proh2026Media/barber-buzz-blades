@@ -39,6 +39,7 @@ import {
   validMinLeadMinutes,
 } from "@/lib/shop/appointments";
 import { cn } from "@/lib/utils";
+import { useDemo } from "@/features/demo/context";
 import { clockInTimeZone } from "@/features/register-owner/timezones";
 import { useMinLeadLabel } from "./MinLeadSettings";
 import { useTimeZoneName } from "@/features/register-owner/TimeZonePicker";
@@ -80,8 +81,10 @@ function horizonLabelKey(days: number) {
 /** Último dia que o cliente consegue marcar, no fuso da barbearia ("ter., 19 de out."). */
 function useLastBookableDay(days: number, timeZone: string) {
   const { intlLocale } = useI18n();
+  // Na demonstração, conta a partir do dia do relógio dela (o mesmo da Agenda).
+  const demoNow = useDemo()?.now;
   return useMemo(() => {
-    const keys = buildBookingDateKeys(new Date(), days, timeZone);
+    const keys = buildBookingDateKeys(demoNow ?? new Date(), days, timeZone);
     const last = keys.at(-1);
     if (!last) return "";
     return formatShopDate(
@@ -90,7 +93,7 @@ function useLastBookableDay(days: number, timeZone: string) {
       { weekday: "short", day: "numeric", month: "short" },
       intlLocale,
     );
-  }, [days, timeZone, intlLocale]);
+  }, [days, timeZone, intlLocale, demoNow]);
 }
 
 function scrollToCard(id: string) {
@@ -108,17 +111,22 @@ function scrollToCard(id: string) {
 export function BookingOverview({
   settings,
   timeZone,
+  onOpen,
 }: {
   settings: Tables<"barbershop_settings">;
   timeZone: string;
+  /** Abre o ajuste sozinho (lista enxuta). Sem valor, rola até o cartão na mesma página. */
+  onOpen?: (id: string) => void;
 }) {
   const { t } = useI18n();
   const nameOf = useTimeZoneName();
-  const [now, setNow] = useState(() => new Date());
+  const [clock, setClock] = useState(() => new Date());
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 30_000);
+    const timer = window.setInterval(() => setClock(new Date()), 30_000);
     return () => window.clearInterval(timer);
   }, []);
+  // Na demonstração, o relógio dela (o mesmo da Agenda), não o do aparelho.
+  const now = useDemo()?.now ?? clock;
   const rule = slotRuleFromSettings(settings);
   const leadLabel = useMinLeadLabel();
   const lastDay = useLastBookableDay(settings.booking_horizon_days, timeZone);
@@ -239,7 +247,7 @@ export function BookingOverview({
             <li key={row.id}>
               <button
                 type="button"
-                onClick={() => scrollToCard(row.id)}
+                onClick={() => (onOpen ? onOpen(row.id) : scrollToCard(row.id))}
                 className="flex min-h-12 w-full items-center gap-3 rounded-xl px-1 py-1.5 text-left transition hover:bg-muted/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
               >
                 <Icon
@@ -299,12 +307,15 @@ export function BookingRulesSettings({
   timeZone,
   staffNames,
   onSave,
+  only,
 }: {
   settings: Tables<"barbershop_settings">;
   timeZone: string;
   /** Primeiros nomes da equipe, para os exemplos da escolha do profissional. */
   staffNames: string[];
   onSave: (draft: BookingRulesDraft) => Promise<"applied" | "pending">;
+  /** Mostra só um dos cartões (ajuste aberto sozinho em Ajustes → Agendamento). */
+  only?: string;
 }) {
   const { t } = useI18n();
   const groupId = useId();
@@ -408,201 +419,211 @@ export function BookingRulesSettings({
 
   return (
     <div className="space-y-6">
-      <section
-        id={BOOKING_CARD_IDS.horizon}
-        tabIndex={-1}
-        className={cardClass}
-        aria-labelledby={`${groupId}-horizon`}
-      >
-        <SectionHeader
-          icon={CalendarRange}
-          id={`${groupId}-horizon`}
-          title={t("bookingRules.horizon.title")}
-          description={t("bookingRules.horizon.text")}
-        />
-        <ChoiceChips
-          label={t("bookingRules.horizon.title")}
-          hideLabel
-          options={HORIZON_OPTIONS.map((days) => ({
-            value: days,
-            label: t(horizonLabelKey(days)),
-            note: t("bookingRules.horizon.days", { days }),
-          }))}
-          value={draft.booking_horizon_days}
-          disabled={saving}
-          onChange={(days) => update({ booking_horizon_days: days })}
-        />
-        <div className="space-y-2">
-          <div aria-hidden className="flex gap-0.5">
-            {Array.from({ length: 30 }, (_, index) => (
-              <span
-                key={index}
-                className={cn(
-                  "h-3 min-w-0 flex-1 rounded-sm",
-                  index < draft.booking_horizon_days ? "bg-primary" : "bg-muted",
-                  index === 0 && "bg-gold",
-                )}
-              />
-            ))}
-          </div>
-          <p className="flex items-start gap-2 text-sm" aria-live="polite">
-            <CalendarCheck className="mt-0.5 size-4 shrink-0 text-gold" aria-hidden />
-            <span className="font-semibold">
-              {t("bookingRules.horizon.result", { date: lastDay })}
-            </span>
-          </p>
-        </div>
-      </section>
-
-      <section
-        id={BOOKING_CARD_IDS.staff}
-        tabIndex={-1}
-        className={cardClass}
-        aria-labelledby={`${groupId}-staff`}
-      >
-        <SectionHeader
-          icon={UsersRound}
-          id={`${groupId}-staff`}
-          title={t("bookingRules.staff.title")}
-          description={t("bookingRules.staff.text")}
-        />
-        <ChoiceCards
-          legend={t("bookingRules.staff.title")}
-          name={`${groupId}-staff-mode`}
-          columns={3}
-          value={draft.staff_assignment_mode}
-          disabled={saving}
-          onChange={(mode) => update({ staff_assignment_mode: mode })}
-          options={STAFF_MODES.map((mode) => ({
-            value: mode,
-            icon: staffIcon[mode],
-            title: t(`bookingRules.staff.${mode}.title` as const),
-            description: t(`bookingRules.staff.${mode}.text` as const),
-            content: staffExample[mode],
-          }))}
-        />
-        <IconList items={[{ icon: UserCheck, text: t("bookingRules.staff.always") }]} />
-      </section>
-
-      <section
-        id={BOOKING_CARD_IDS.instructions}
-        tabIndex={-1}
-        className={cardClass}
-        aria-labelledby={`${groupId}-instructions`}
-      >
-        <SectionHeader
-          icon={MessageSquareText}
-          id={`${groupId}-instructions`}
-          title={t("bookingRules.instructions.title")}
-          description={t("bookingRules.instructions.text")}
-        />
-        <div className="space-y-2">
-          <label htmlFor={`${groupId}-instructions-field`} className="sr-only">
-            {t("bookingRules.instructions.title")}
-          </label>
-          <textarea
-            id={`${groupId}-instructions-field`}
-            maxLength={INSTRUCTIONS_MAX}
-            rows={3}
-            value={instructions}
-            disabled={saving}
-            onChange={(event) => update({ booking_instructions: event.target.value })}
-            placeholder={t("shop.settings.instructionsPlaceholder")}
-            aria-describedby={`${groupId}-instructions-count`}
-            className="w-full resize-none rounded-xl border border-border bg-background px-3 py-3 text-base sm:text-sm"
-          />
-          <div className="flex items-center gap-2">
-            <span
-              aria-hidden
-              className="relative h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-muted"
-            >
-              <span
-                className={cn(
-                  "absolute inset-y-0 left-0 rounded-full",
-                  usedTone ? `tone-${usedTone} bg-[color:var(--tone-line)]` : "bg-primary/60",
-                )}
-                style={{ width: `${Math.min(100, (used / INSTRUCTIONS_MAX) * 100)}%` }}
-              />
-            </span>
-            <span
-              id={`${groupId}-instructions-count`}
-              className="shrink-0 text-xs tabular-nums text-muted-foreground"
-            >
-              {t("bookingRules.instructions.count", { used, max: INSTRUCTIONS_MAX })}
-            </span>
-          </div>
-        </div>
-        <PreviewPanel
-          icon={Store}
-          title={t("bookingRules.instructions.preview")}
-          badge={t("bookingRules.preview")}
+      {(!only || only === BOOKING_CARD_IDS.horizon) && (
+        <section
+          id={BOOKING_CARD_IDS.horizon}
+          tabIndex={-1}
+          className={cardClass}
+          aria-labelledby={`${groupId}-horizon`}
         >
-          {instructions.trim() ? (
-            <p className="flex items-start gap-2 rounded-xl border border-border bg-background/60 p-3 text-sm">
-              <Store className="mt-0.5 size-4 shrink-0 text-gold" aria-hidden />
-              <span className="min-w-0 break-words">{instructions.trim()}</span>
-            </p>
-          ) : (
-            <p className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Info className="size-4 shrink-0" aria-hidden />
-              {t("bookingRules.instructions.empty")}
-            </p>
-          )}
-        </PreviewPanel>
-      </section>
-
-      <section
-        id={BOOKING_CARD_IDS.surveys}
-        tabIndex={-1}
-        className={cardClass}
-        aria-labelledby={`${groupId}-surveys`}
-      >
-        <SectionHeader
-          icon={Star}
-          id={`${groupId}-surveys`}
-          title={t("bookingRules.surveys.title")}
-          description={t("bookingRules.surveys.text")}
-          aside={
-            <StatusBadge
-              tone={savedDraft.survey_program_enabled ? "success" : "neutral"}
-              label={t(savedDraft.survey_program_enabled ? "bookingRules.on" : "bookingRules.off")}
-              size="sm"
-            />
-          }
-        />
-        <ChoiceChips
-          label={t("bookingRules.surveys.choice")}
-          options={[
-            { value: "on", label: t("bookingRules.surveys.on") },
-            { value: "off", label: t("bookingRules.surveys.off") },
-          ]}
-          value={draft.survey_program_enabled ? "on" : "off"}
-          disabled={saving}
-          onChange={(value) => update({ survey_program_enabled: value === "on" })}
-        />
-        {draft.survey_program_enabled && (
-          <PreviewPanel
-            icon={MessageSquareText}
-            title={t("bookingRules.surveys.preview")}
-            badge={t("bookingRules.example")}
-          >
-            <div className="space-y-2 rounded-xl border border-border bg-background/60 p-3">
-              <p className="text-sm font-semibold">{t("bookingRules.surveys.sampleQuestion")}</p>
-              <p className="flex gap-1 text-gold" aria-hidden>
-                {Array.from({ length: 5 }, (_, index) => (
-                  <Star key={index} className="size-5" fill="currentColor" />
-                ))}
-              </p>
+          <SectionHeader
+            icon={CalendarRange}
+            id={`${groupId}-horizon`}
+            title={t("bookingRules.horizon.title")}
+            description={t("bookingRules.horizon.text")}
+          />
+          <ChoiceChips
+            label={t("bookingRules.horizon.title")}
+            hideLabel
+            options={HORIZON_OPTIONS.map((days) => ({
+              value: days,
+              label: t(horizonLabelKey(days)),
+              note: t("bookingRules.horizon.days", { days }),
+            }))}
+            value={draft.booking_horizon_days}
+            disabled={saving}
+            onChange={(days) => update({ booking_horizon_days: days })}
+          />
+          <div className="space-y-2">
+            <div aria-hidden className="flex gap-0.5">
+              {Array.from({ length: 30 }, (_, index) => (
+                <span
+                  key={index}
+                  className={cn(
+                    "h-3 min-w-0 flex-1 rounded-sm",
+                    index < draft.booking_horizon_days ? "bg-primary" : "bg-muted",
+                    index === 0 && "bg-gold",
+                  )}
+                />
+              ))}
             </div>
+            <p className="flex items-start gap-2 text-sm" aria-live="polite">
+              <CalendarCheck className="mt-0.5 size-4 shrink-0 text-gold" aria-hidden />
+              <span className="font-semibold">
+                {t("bookingRules.horizon.result", { date: lastDay })}
+              </span>
+            </p>
+          </div>
+        </section>
+      )}
+
+      {(!only || only === BOOKING_CARD_IDS.staff) && (
+        <section
+          id={BOOKING_CARD_IDS.staff}
+          tabIndex={-1}
+          className={cardClass}
+          aria-labelledby={`${groupId}-staff`}
+        >
+          <SectionHeader
+            icon={UsersRound}
+            id={`${groupId}-staff`}
+            title={t("bookingRules.staff.title")}
+            description={t("bookingRules.staff.text")}
+          />
+          <ChoiceCards
+            legend={t("bookingRules.staff.title")}
+            name={`${groupId}-staff-mode`}
+            columns={3}
+            value={draft.staff_assignment_mode}
+            disabled={saving}
+            onChange={(mode) => update({ staff_assignment_mode: mode })}
+            options={STAFF_MODES.map((mode) => ({
+              value: mode,
+              icon: staffIcon[mode],
+              title: t(`bookingRules.staff.${mode}.title` as const),
+              description: t(`bookingRules.staff.${mode}.text` as const),
+              content: staffExample[mode],
+            }))}
+          />
+          <IconList items={[{ icon: UserCheck, text: t("bookingRules.staff.always") }]} />
+        </section>
+      )}
+
+      {(!only || only === BOOKING_CARD_IDS.instructions) && (
+        <section
+          id={BOOKING_CARD_IDS.instructions}
+          tabIndex={-1}
+          className={cardClass}
+          aria-labelledby={`${groupId}-instructions`}
+        >
+          <SectionHeader
+            icon={MessageSquareText}
+            id={`${groupId}-instructions`}
+            title={t("bookingRules.instructions.title")}
+            description={t("bookingRules.instructions.text")}
+          />
+          <div className="space-y-2">
+            <label htmlFor={`${groupId}-instructions-field`} className="sr-only">
+              {t("bookingRules.instructions.title")}
+            </label>
+            <textarea
+              id={`${groupId}-instructions-field`}
+              maxLength={INSTRUCTIONS_MAX}
+              rows={3}
+              value={instructions}
+              disabled={saving}
+              onChange={(event) => update({ booking_instructions: event.target.value })}
+              placeholder={t("shop.settings.instructionsPlaceholder")}
+              aria-describedby={`${groupId}-instructions-count`}
+              className="w-full resize-none rounded-xl border border-border bg-background px-3 py-3 text-base sm:text-sm"
+            />
+            <div className="flex items-center gap-2">
+              <span
+                aria-hidden
+                className="relative h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-muted"
+              >
+                <span
+                  className={cn(
+                    "absolute inset-y-0 left-0 rounded-full",
+                    usedTone ? `tone-${usedTone} bg-[color:var(--tone-line)]` : "bg-primary/60",
+                  )}
+                  style={{ width: `${Math.min(100, (used / INSTRUCTIONS_MAX) * 100)}%` }}
+                />
+              </span>
+              <span
+                id={`${groupId}-instructions-count`}
+                className="shrink-0 text-xs tabular-nums text-muted-foreground"
+              >
+                {t("bookingRules.instructions.count", { used, max: INSTRUCTIONS_MAX })}
+              </span>
+            </div>
+          </div>
+          <PreviewPanel
+            icon={Store}
+            title={t("bookingRules.instructions.preview")}
+            badge={t("bookingRules.preview")}
+          >
+            {instructions.trim() ? (
+              <p className="flex items-start gap-2 rounded-xl border border-border bg-background/60 p-3 text-sm">
+                <Store className="mt-0.5 size-4 shrink-0 text-gold" aria-hidden />
+                <span className="min-w-0 break-words">{instructions.trim()}</span>
+              </p>
+            ) : (
+              <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Info className="size-4 shrink-0" aria-hidden />
+                {t("bookingRules.instructions.empty")}
+              </p>
+            )}
           </PreviewPanel>
-        )}
-        <IconList
-          items={[
-            { icon: Clock3, text: t("bookingRules.surveys.hintPace") },
-            { icon: UserCheck, text: t("bookingRules.surveys.hintSkip") },
-          ]}
-        />
-      </section>
+        </section>
+      )}
+
+      {(!only || only === BOOKING_CARD_IDS.surveys) && (
+        <section
+          id={BOOKING_CARD_IDS.surveys}
+          tabIndex={-1}
+          className={cardClass}
+          aria-labelledby={`${groupId}-surveys`}
+        >
+          <SectionHeader
+            icon={Star}
+            id={`${groupId}-surveys`}
+            title={t("bookingRules.surveys.title")}
+            description={t("bookingRules.surveys.text")}
+            aside={
+              <StatusBadge
+                tone={savedDraft.survey_program_enabled ? "success" : "neutral"}
+                label={t(
+                  savedDraft.survey_program_enabled ? "bookingRules.on" : "bookingRules.off",
+                )}
+                size="sm"
+              />
+            }
+          />
+          <ChoiceChips
+            label={t("bookingRules.surveys.choice")}
+            options={[
+              { value: "on", label: t("bookingRules.surveys.on") },
+              { value: "off", label: t("bookingRules.surveys.off") },
+            ]}
+            value={draft.survey_program_enabled ? "on" : "off"}
+            disabled={saving}
+            onChange={(value) => update({ survey_program_enabled: value === "on" })}
+          />
+          {draft.survey_program_enabled && (
+            <PreviewPanel
+              icon={MessageSquareText}
+              title={t("bookingRules.surveys.preview")}
+              badge={t("bookingRules.example")}
+            >
+              <div className="space-y-2 rounded-xl border border-border bg-background/60 p-3">
+                <p className="text-sm font-semibold">{t("bookingRules.surveys.sampleQuestion")}</p>
+                <p className="flex gap-1 text-gold" aria-hidden>
+                  {Array.from({ length: 5 }, (_, index) => (
+                    <Star key={index} className="size-5" fill="currentColor" />
+                  ))}
+                </p>
+              </div>
+            </PreviewPanel>
+          )}
+          <IconList
+            items={[
+              { icon: Clock3, text: t("bookingRules.surveys.hintPace") },
+              { icon: UserCheck, text: t("bookingRules.surveys.hintSkip") },
+            ]}
+          />
+        </section>
+      )}
 
       <UnsavedBar
         dirty={dirty}

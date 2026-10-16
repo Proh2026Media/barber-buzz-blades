@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react";
+import { Scissors, type LucideIcon } from "lucide-react";
 import {
   APPOINTMENT_DERIVED,
   APPOINTMENT_STATUS,
@@ -11,7 +11,7 @@ import { daysFromToday } from "../when";
 
 /* Formatos compartilhados de Agendar e Reservas (situação, horário curto e grupos da lista). */
 
-type StatusView = { tone: Tone; icon: LucideIcon; label: string };
+type StatusView = { tone: Tone; icon: LucideIcon; label: string; live?: boolean };
 
 /** Rótulos da visão do cliente: "Aguardando a barbearia" em vez de "Em revisão". */
 const CUSTOMER_LABEL: Partial<Record<AppointmentStatus, MessageKey>> = {
@@ -20,9 +20,11 @@ const CUSTOMER_LABEL: Partial<Record<AppointmentStatus, MessageKey>> = {
 };
 
 /**
- * Situação da reserva para o cliente. Confirmado ou aguardando com início no passado vira
- * "Já passou" (cinza, relógio): só exibição, nenhum dado muda. Com `actionable` (o cartão ainda
- * oferece Remarcar/Cancelar), mantém a situação real para o selo não contradizer as ações.
+ * Situação da reserva para o cliente. Confirmado ou aguardando entre o início e o término vira
+ * "Agora" (dourado, ponto ao vivo), como na agenda da loja; depois do término vira "Já passou"
+ * (cinza, relógio): só exibição, nenhum dado muda. Sem o término (link público), vale o início.
+ * Com `actionable` (o cartão ainda oferece Remarcar/Cancelar), mantém a situação real para o
+ * selo não contradizer as ações.
  */
 export function useReservationStatus() {
   const { t } = useI18n();
@@ -31,10 +33,14 @@ export function useReservationStatus() {
     startsAt: string,
     now: Date,
     actionable = false,
+    endsAt?: string | null,
   ): StatusView => {
-    const past = new Date(startsAt).getTime() <= now.getTime();
-    if (past && !actionable && status !== "completed" && status !== "cancelled") {
+    const open = !actionable && status !== "completed" && status !== "cancelled";
+    if (open && new Date(endsAt || startsAt).getTime() <= now.getTime()) {
       return { ...APPOINTMENT_DERIVED.unresolved, label: t("bookings.status.past") };
+    }
+    if (open && new Date(startsAt).getTime() <= now.getTime()) {
+      return { tone: "highlight", icon: Scissors, label: t("agenda.state.inProgress"), live: true };
     }
     const meta = APPOINTMENT_STATUS[status] ?? APPOINTMENT_STATUS.pending;
     return { tone: meta.tone, icon: meta.icon, label: t(CUSTOMER_LABEL[status] ?? meta.labelKey) };

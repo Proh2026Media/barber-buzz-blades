@@ -1044,8 +1044,8 @@ export function BookingSummaryBar({
         <CalendarCheck className="size-4 text-gold" aria-hidden />
         {t("booking.yourBooking")}
       </p>
-      {/* No celular, duas linhas sem rolagem: o "quando" inteiro em cima, serviço e profissional
-          lado a lado embaixo. No computador, uma coluna na ordem dos passos. */}
+      {/* No celular, só o "quando" (serviço e profissional já aparecem nos passos logo acima, e a
+          barra fixa ocupava três linhas da tela). No computador, o resumo inteiro na coluna. */}
       <ul className="grid grid-cols-2 gap-1.5 lg:flex lg:flex-col lg:gap-2">
         {pills.map((pill) => {
           const Icon = pill.icon;
@@ -1064,7 +1064,10 @@ export function BookingSummaryBar({
           return (
             <li
               key={pill.key}
-              className={cn("min-w-0", pill.lead && "order-first col-span-2 lg:order-none")}
+              className={cn(
+                "min-w-0",
+                pill.lead ? "order-first col-span-2 lg:order-none" : "max-lg:hidden",
+              )}
             >
               {pill.onClick ? (
                 <button type="button" onClick={pill.onClick} className={cls}>

@@ -11,6 +11,10 @@ export type { CatalogViewMode };
  * quando há busca ou filtro com algum resultado, junto do "Limpar" — sem filtro, as pílulas já
  * dizem os números; sem resultado, quem limpa é o estado vazio da lista.
  */
+/** Até quantos itens a lista é "curta" (sem busca nem troca de visualização). */
+/** Até quantos itens a lista é curta: sem busca e sem troca grade/lista. */
+export const CATALOG_SHORT_LIST = 6;
+
 export function CatalogFilters({
   query,
   onQuery,
@@ -45,44 +49,54 @@ export function CatalogFilters({
 }) {
   const { t } = useI18n();
   const filtering = Boolean(query.trim()) || status !== "all";
-  const chips =
-    total > 0 ? (
-      <ChoiceChips
-        label={t("brand.catalog.filterAria")}
-        hideLabel
-        value={status}
-        onChange={onStatus}
-        options={[
-          { value: "all", label: t("brand.catalog.all"), count: total },
-          { value: "active", label: activeLabel ?? t("brand.catalog.active"), count: active },
-          {
-            value: "paused",
-            label: pausedLabel ?? t("brand.catalog.paused"),
-            count: total - active,
-          },
-        ]}
-      />
-    ) : null;
+  // Lista curta não precisa de busca nem de troca de visualização; sem nada pausado, as pílulas de
+  // estado repetiriam o total. Cada recurso aparece quando passa a ajudar (ou quando está em uso).
+  const showSearch = total > CATALOG_SHORT_LIST || Boolean(query.trim());
+  const showChips = total > 0 && (active < total || status !== "all");
+  const showView = !!onViewMode && total > CATALOG_SHORT_LIST;
+  const chips = showChips ? (
+    <ChoiceChips
+      label={t("brand.catalog.filterAria")}
+      hideLabel
+      value={status}
+      onChange={onStatus}
+      options={[
+        { value: "all", label: t("brand.catalog.all"), count: total },
+        { value: "active", label: activeLabel ?? t("brand.catalog.active"), count: active },
+        {
+          value: "paused",
+          label: pausedLabel ?? t("brand.catalog.paused"),
+          count: total - active,
+        },
+      ]}
+    />
+  ) : null;
   return (
     <div className="catalog-filters space-y-3">
       {statusFirst && chips}
-      <div className="flex flex-wrap items-center gap-2">
-        <label className="relative min-w-[10rem] flex-1">
-          <span className="sr-only">{label}</span>
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden
-          />
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => onQuery(event.target.value)}
-            placeholder={label}
-            className="min-h-11 w-full rounded-xl border border-border bg-card py-3 pl-10 pr-3 text-ellipsis text-sm"
-          />
-        </label>
-        {onViewMode && <CatalogViewToggle viewMode={viewMode} onViewMode={onViewMode} />}
-      </div>
+      {(showSearch || showView) && (
+        <div className="flex flex-wrap items-center gap-2">
+          {showSearch && (
+            <label className="relative min-w-[10rem] flex-1">
+              <span className="sr-only">{label}</span>
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden
+              />
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => onQuery(event.target.value)}
+                placeholder={label}
+                className="min-h-11 w-full rounded-xl border border-border bg-card py-3 pl-10 pr-3 text-ellipsis text-sm"
+              />
+            </label>
+          )}
+          {showView && onViewMode && (
+            <CatalogViewToggle viewMode={viewMode} onViewMode={onViewMode} />
+          )}
+        </div>
+      )}
       {!statusFirst && chips}
       {/* Sem resultado, o estado vazio logo abaixo já oferece "Limpar busca" (um botão só). */}
       {filtering && visible > 0 && (

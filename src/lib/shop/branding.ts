@@ -340,6 +340,9 @@ export function brandVariables(
   const accentReadable = readableBrandColor(normalizedAccent);
   // #222320 é o --card/--popover do tema escuro; legível nele também passa sobre #171816.
   const accentReadableDark = readableBrandColor(normalizedAccent, "#222320");
+  // Fundo da página no tema claro (fora dos cartões off-white), no ponto mais escuro dos brilhos
+  // de fundo (#D8D0C6, perto do cabeçalho): legível ali, legível na página toda.
+  const accentReadablePage = readableBrandColor(normalizedAccent, "#D8D0C6");
   const corners = BRAND_CORNER_OPTIONS.find(
     (option) => option.value === normalizeCornerStyle(cornerStyle),
   )!;
@@ -356,6 +359,7 @@ export function brandVariables(
     "--brand-primary-readable": primaryReadable,
     "--brand-accent-readable": accentReadable,
     "--brand-accent-readable-dark": accentReadableDark,
+    "--brand-accent-readable-page": accentReadablePage,
     "--primary": normalizedPrimary,
     "--primary-foreground": foreground,
     "--gold": normalizedAccent,

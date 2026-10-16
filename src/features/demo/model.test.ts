@@ -302,6 +302,27 @@ test("demo can copy one selected shop while keeping fictional customers and appo
   assert.ok(state.appointments.every((appointment) => appointment.barbershop_id === "demo-shop"));
 });
 
+test("reservas da demonstração gravam o preço do próprio serviço (o mesmo de Agendar)", () => {
+  const samePrice = (state: ReturnType<typeof createDemoState>) => {
+    for (const row of state.appointments) {
+      const service = state.services.find((item) => item.id === row.service_id);
+      assert.equal(row.booked_price_cents, service?.price_cents, row.id);
+    }
+  };
+  const base = createDemoState(new Date("2026-09-16T12:00:00"));
+  samePrice(base);
+  // Loja copiada com outros preços: as reservas iniciais seguem o catálogo copiado.
+  samePrice(
+    createDemoState(new Date("2026-09-16T12:00:00"), {
+      shop: base.shop,
+      settings: base.settings,
+      services: base.services.map((row) => ({ ...row, price_cents: row.price_cents + 1234 })),
+      staff: base.staff.slice(0, 1),
+      businessHours: base.businessHours,
+    }),
+  );
+});
+
 test("demo copied from a real shop never carries real ids", () => {
   const base = createDemoState(new Date("2026-09-16T12:00:00"));
   const realShop = "3f1c2b9a-0000-4000-8000-00000000abcd";

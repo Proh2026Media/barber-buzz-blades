@@ -244,7 +244,8 @@ export function BlocksCard({
       />
 
       {/* Próximos dias em blocos de data: o desenho do dia só aparece onde há bloqueio. */}
-      <div className="space-y-2">
+      {/* 7 colunas só quando o cartão comporta 44 px por dia (no tablet deitado ele é a metade). */}
+      <div className="@container space-y-2">
         <p className="flex flex-wrap items-baseline gap-x-2 text-xs">
           <span className="font-bold text-muted-foreground">{t("hours.blocks.next")}</span>
           <span className="inline-flex items-center gap-1 text-muted-foreground">
@@ -252,7 +253,7 @@ export function BlocksCard({
             {t("hours.blocks.tapDay")}
           </span>
         </p>
-        <ol className="grid grid-cols-4 gap-1.5 sm:grid-cols-7">
+        <ol className="grid grid-cols-4 gap-1.5 @min-[21.5rem]:grid-cols-7">
           {days.map((dayKey) => {
             const hoursRow = byDay.get(weekdayOfKey(dayKey));
             const open = !!hoursRow?.is_open;

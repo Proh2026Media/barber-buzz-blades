@@ -27,6 +27,7 @@ import { guardedFetch } from "@/lib/demo-guard";
 import { useDemo } from "@/features/demo/context";
 import { t as tNow, useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { isAppleTouchDevice, isStandalone } from "@/lib/standalone";
 import {
   Dialog,
   DialogContent,
@@ -440,6 +441,17 @@ export function GoogleConnectionCard({
     void refresh();
   }, [refresh]);
 
+  // App instalado: o Google abre numa janela por cima do app e a conexão é gravada no servidor.
+  // Ao fechar a janela e voltar ao app, confere de novo.
+  useEffect(() => {
+    if (isDemo || !isStandalone()) return;
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [isDemo, refresh]);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const google = params.get("google");
@@ -483,11 +495,22 @@ export function GoogleConnectionCard({
     try {
       const payload = await callGoogle({
         action: "start",
-        return_path: returnPath,
+        // No app instalado do iPhone/iPad a volta acontece numa janela por cima do app: a página
+        // de volta pede para fechar a janela em vez de abrir o painel lá dentro (sem a sessão do
+        // app). No computador e no Android a volta cai no próprio app: segue normal.
+        return_path:
+          isStandalone() && isAppleTouchDevice()
+            ? `${returnPath}${returnPath.includes("?") ? "&" : "?"}instalado=1`
+            : returnPath,
         return_origin: typeof window !== "undefined" ? window.location.origin : undefined,
       });
       if (!payload.url) throw new Error(t("integr.google.errNoUrl"));
       window.location.assign(payload.url);
+      if (isStandalone()) {
+        // No app instalado a página fica por baixo da janela do Google: ao voltar, nada aberto.
+        setConsentOpen(false);
+        setBusy(false);
+      }
     } catch (err) {
       setAccountResult({
         state: "error",

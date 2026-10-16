@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } 
 import { toast } from "sonner";
 import {
   Calendar,
+  CalendarPlus,
   CheckCircle2,
   Clock3,
   Hourglass,
@@ -25,6 +26,7 @@ import {
   PersonAvatar,
   StatusBadge,
   type AttentionItem,
+  visibleBottomLimit,
 } from "@/components/visual";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useDemo } from "@/features/demo/context";
@@ -64,6 +66,7 @@ import { useDesktop } from "./board";
 import { TeamDayBoard } from "./TeamDayBoard";
 import {
   AGENDA_STATE,
+  agendaClientName,
   type AgendaBlock,
   type CancellationDetail,
   type CardFeedback,
@@ -87,6 +90,11 @@ export type AgendaExtra = {
   label: string;
   content: ReactNode;
   /**
+   * Versão da seção para a janela do celular, que já tem título e X (ex.: a lista de clientes
+   * sem o próprio cartão e cabeçalho). Sem valor, a janela mostra `content`.
+   */
+  windowContent?: ReactNode;
+  /**
    * Pendências da seção: aparece como bolha no atalho do topo. Com 0 o atalho some (a seção
    * continua montada, para a contagem se atualizar); sem valor, o atalho aparece sempre.
    */
@@ -105,6 +113,9 @@ export type AgendaExtra = {
  * que têm `count` (mesmo indefinido) ficam montadas escondidas, para a bolha se atualizar.
  */
 
+/** Pedido para abrir "Agendar cliente" já com o dia, o horário livre e o profissional. */
+export type BookRequest = { day: string; startsAt?: string; staffId?: string | null };
+
 export type AgendaActions = {
   /** Grava a nova situação; falha lança erro (o cartão mostra o problema). */
   setStatus: (row: DayAppointment, status: Tables<"appointments">["status"]) => Promise<void>;
@@ -118,9 +129,11 @@ function normalize(value: string) {
 
 /**
  * No computador, a coluna da esquerda (troca de dia, atenção, "Seu dia") acompanha a rolagem
- * só quando cabe inteira entre o cabeçalho fixo e a barra de navegação flutuante. Se não couber
- * (tela baixa, "Mais números" aberto), rola junto com a página: nada fica escondido nem atrás
- * da barra, e não há rolagem dentro da coluna. Devolve o `top` em px, ou `null` sem fixar.
+ * só quando cabe inteira na área que rola (o `main`, abaixo do cabeçalho) e acima de qualquer
+ * barra flutuante. Se não couber (tela baixa, "Mais números" aberto), rola junto com a página:
+ * nada fica escondido nem atrás da barra, e não há rolagem dentro da coluna. Devolve o `top` em
+ * px, ou `null` sem fixar. O `top` conta a partir do topo do `main`, que é quem rola: somar a
+ * altura do cabeçalho empurrava a coluna para baixo em repouso (corrigido em 16/10/2026).
  */
 function useStickyWhenFits(ref: RefObject<HTMLElement | null>) {
   const [top, setTop] = useState<number | null>(null);
@@ -131,12 +144,14 @@ function useStickyWhenFits(ref: RefObject<HTMLElement | null>) {
     const GAP = 16;
     const measure = () => {
       if (!desktop.matches) return setTop(null);
-      const header = element.closest("main")?.parentElement?.querySelector(":scope > header");
-      const headerBottom = header ? header.getBoundingClientRect().height : 0;
-      const nav = document.querySelector(".app-mobile-nav");
-      const navTop = nav ? nav.getBoundingClientRect().top : window.innerHeight;
-      const room = navTop - headerBottom - GAP * 2;
-      setTop(element.offsetHeight <= room ? Math.round(headerBottom + GAP) : null);
+      const scroller = element.closest("main")?.getBoundingClientRect();
+      const viewTop = scroller ? scroller.top : 0;
+      const viewBottom = Math.min(
+        scroller ? scroller.bottom : window.innerHeight,
+        visibleBottomLimit(),
+      );
+      const room = viewBottom - viewTop - GAP * 2;
+      setTop(element.offsetHeight <= room ? GAP : null);
     };
     measure();
     const observer = new ResizeObserver(measure);
@@ -186,6 +201,9 @@ export function AgendaTab({
   setup,
   extras = [],
   focusStaffId,
+  onBookClient,
+  publicOrigin = null,
+  shopName = "",
 }: {
   shopId: string;
   timeZone: string;
@@ -219,6 +237,14 @@ export function AgendaTab({
   extras?: AgendaExtra[];
   /** Abre já filtrada por um profissional ("Ver agenda dele", em Equipe). */
   focusStaffId?: string | null;
+  /**
+   * Agendar pelo painel (barbeiro marca para o cliente). Sem valor, o botão não aparece (banco
+   * ainda sem a função, ou quem vê a agenda não atende).
+   */
+  onBookClient?: (request: BookRequest) => void;
+  /** Endereço público e nome da barbearia (convite de cadastro na ficha do cliente do balcão). */
+  publicOrigin?: string | null;
+  shopName?: string;
 }) {
   const { t, intlLocale } = useI18n();
   const demo = useDemo();
@@ -282,7 +308,9 @@ export function AgendaTab({
     : scoped;
   const base = query
     ? daySet.filter((row) =>
-        normalize(`${row.customer?.full_name ?? ""} ${row.service?.name ?? ""}`).includes(query),
+        normalize(
+          `${row.customer?.full_name ?? ""} ${row.customer_nickname ?? ""} ${row.service?.name ?? ""}`,
+        ).includes(query),
       )
     : daySet;
   const counts = countGroups(daySet, now);
@@ -431,7 +459,7 @@ export function AgendaTab({
     setSearchOpen(false);
   }
 
-  const nameOf = (row: DayAppointment) => row.customer?.full_name ?? t("shop.customerFallback");
+  const nameOf = (row: DayAppointment) => agendaClientName(row, t("shop.customerFallback"));
 
   async function runStatus(row: DayAppointment, action: CardFeedback["action"]) {
     setFeedback((value) => ({ ...value, [row.id]: { action, state: "saving" } }));
@@ -612,7 +640,21 @@ export function AgendaTab({
               className={cn("size-3.5", refreshing && "motion-safe:animate-spin")}
               aria-hidden
             />
-            {refreshing ? t("shop.agenda.refreshing") : t("shop.agenda.refresh")}
+            <span className={onBookClient ? "max-sm:sr-only" : undefined}>
+              {refreshing ? t("shop.agenda.refreshing") : t("shop.agenda.refresh")}
+            </span>
+          </button>
+        )}
+        {onBookClient && (
+          // Mesmo botão de ação do topo de Serviços e Equipe (fundo escuro, texto azul) nos dois
+          // temas: o bg-primary virava um botão claro no tema escuro.
+          <button
+            type="button"
+            onClick={() => onBookClient({ day, staffId: singleProfessional || null })}
+            className={cn("action-button action-confirm", !onRefresh && "ml-auto")}
+          >
+            <CalendarPlus className="size-4" aria-hidden />
+            {t("agenda.book.button")}
           </button>
         )}
       </div>
@@ -707,10 +749,13 @@ export function AgendaTab({
                       staffId={actor.staff_id}
                       role={actor.role}
                       listCustomers={
+                        // Cada cliente uma vez: a conta ou, sem conta, a ficha do balcão (a
+                        // mesma regra dos números do banco; conta excluída não entra).
                         new Set(
                           daySet
                             .filter((row) => row.visibility !== "busy")
-                            .map((row) => row.customer_id),
+                            .map((row) => row.customer_id ?? row.shop_client_id)
+                            .filter(Boolean),
                         ).size
                       }
                     />
@@ -835,10 +880,12 @@ export function AgendaTab({
                     <ListChecks className="size-5 shrink-0 text-gold" aria-hidden />
                     {t("agenda.list.title")}
                     <span role="status" className="text-sm font-semibold text-muted-foreground">
-                      {t(base.length === 1 ? "shop.agenda.countOne" : "shop.agenda.countMany", {
-                        shown: visible.length,
-                        total: base.length,
-                      })}
+                      {visible.length === base.length
+                        ? `· ${base.length}`
+                        : t(base.length === 1 ? "shop.agenda.countOne" : "shop.agenda.countMany", {
+                            shown: visible.length,
+                            total: base.length,
+                          })}
                     </span>
                   </h3>
                   <button
@@ -986,29 +1033,61 @@ export function AgendaTab({
                       }
                       if (entry.kind === "gap") {
                         const minutes = Math.round((entry.end - entry.at) / MINUTE);
+                        const length =
+                          minutes >= 60
+                            ? t("agenda.hours", {
+                                hours: Math.floor(minutes / 60),
+                                minutes: String(minutes % 60).padStart(2, "0"),
+                              })
+                            : t("agenda.minutes", { minutes });
+                        const gapBody = (
+                          <>
+                            <CheckCircle2 className="size-4 shrink-0" aria-hidden />
+                            <span className="min-w-0 flex-1">{t("agenda.gap")}</span>
+                            <span className="tabular-nums">
+                              {time(entry.at)}–{time(entry.end)}
+                            </span>
+                            <span className="text-xs font-semibold opacity-80">{length}</span>
+                          </>
+                        );
                         return (
                           // Fundo do cartão por baixo: no tema escuro a faixa segue off-white.
                           <li key={entry.key} className="rounded-2xl bg-card">
-                            <div
-                              className={cn(
-                                TIMELINE_LOOK.free,
-                                "flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-semibold",
-                              )}
-                            >
-                              <CheckCircle2 className="size-4 shrink-0" aria-hidden />
-                              <span className="min-w-0 flex-1">{t("agenda.gap")}</span>
-                              <span className="tabular-nums">
-                                {time(entry.at)}–{time(entry.end)}
-                              </span>
-                              <span className="text-xs font-semibold opacity-80">
-                                {minutes >= 60
-                                  ? t("agenda.hours", {
-                                      hours: Math.floor(minutes / 60),
-                                      minutes: String(minutes % 60).padStart(2, "0"),
-                                    })
-                                  : t("agenda.minutes", { minutes })}
-                              </span>
-                            </div>
+                            {onBookClient && singleProfessional ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  onBookClient({
+                                    day,
+                                    startsAt: new Date(entry.at).toISOString(),
+                                    staffId: singleProfessional,
+                                  })
+                                }
+                                aria-label={t("agenda.book.hereAria", {
+                                  from: time(entry.at),
+                                  to: time(entry.end),
+                                })}
+                                className={cn(
+                                  TIMELINE_LOOK.free,
+                                  "flex min-h-11 w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl px-3 py-2 text-left text-sm font-semibold transition hover:brightness-[0.97]",
+                                )}
+                              >
+                                {gapBody}
+                                <span className="inline-flex items-center gap-1 rounded-lg border border-[color:var(--tone-line)] bg-card/70 px-2 py-0.5 text-xs font-bold">
+                                  <CalendarPlus className="size-3.5" aria-hidden />
+                                  {t("agenda.book.here")}
+                                </span>
+                              </button>
+                            ) : (
+                              <div
+                                className={cn(
+                                  TIMELINE_LOOK.free,
+                                  "flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-semibold",
+                                )}
+                              >
+                                {gapBody}
+                              </div>
+                            )}
                           </li>
                         );
                       }
@@ -1160,11 +1239,16 @@ export function AgendaTab({
                   key={extra.id}
                   aria-describedby={undefined}
                   onOpenAutoFocus={(event) => {
-                    // Reforço: a janela sempre abre do topo (título e X à vista).
+                    // Reforço: a janela sempre abre do topo (título e X à vista). O foco vai para
+                    // a própria janela (o leitor de tela lê o título), não para o primeiro campo:
+                    // na lista de clientes ele é a busca, e o teclado do celular cobria a lista.
+                    event.preventDefault();
                     const content = event.currentTarget as HTMLElement | null;
-                    if (content) content.scrollTop = 0;
+                    if (!content) return;
+                    content.scrollTop = 0;
+                    content.focus({ preventScroll: true });
                   }}
-                  className="flex max-h-[90dvh] w-[calc(100vw-1.5rem)] max-w-lg flex-col gap-0 overflow-hidden rounded-3xl border-border bg-card p-0"
+                  className="flex max-h-[90dvh] w-[calc(100vw-1.5rem)] max-w-lg flex-col gap-0 overflow-hidden rounded-3xl border-border bg-card p-0 outline-none"
                 >
                   <div className="flex min-h-14 items-center gap-2.5 border-b border-border px-4 py-3 pr-14">
                     <Icon className="size-5 shrink-0 text-gold" aria-hidden />
@@ -1176,7 +1260,7 @@ export function AgendaTab({
                       rolava a janela até a seção e escondia título e X em telas baixas. O hash
                       continua mudando e a lista de clientes abre pelo hashchange. */}
                   <section className="dialog-scroll-area flex-1 overflow-y-auto p-3">
-                    {extra.content}
+                    {extra.windowContent ?? extra.content}
                   </section>
                 </DialogContent>
               );
@@ -1227,12 +1311,16 @@ export function AgendaTab({
         )}
       </Dialog>
 
-      {profileTarget && profileTarget.customer_id && (
+      {profileTarget && (profileTarget.customer_id || profileTarget.shop_client_id) && (
         <ClientProfileModal
           shopId={shopId}
-          customerId={profileTarget.customer_id}
+          customerId={profileTarget.customer_id ?? null}
+          shopClientId={profileTarget.customer_id ? null : (profileTarget.shop_client_id ?? null)}
           customerName={profileTarget.customer?.full_name ?? null}
+          publicOrigin={publicOrigin}
+          shopName={shopName}
           onClose={() => setProfileTarget(null)}
+          onChanged={() => onRefresh?.()}
         />
       )}
 
@@ -1293,8 +1381,17 @@ export function AgendaTab({
         onConfirm={() => void confirmCancel()}
       />
       <StaffSurveyDialog
-        appointment={surveyTarget}
-        open={!!surveyTarget}
+        // A pesquisa é sobre a conta do cliente: cliente do balcão (sem conta) não tem.
+        appointment={
+          surveyTarget?.customer_id
+            ? {
+                id: surveyTarget.id,
+                customer_id: surveyTarget.customer_id,
+                starts_at: surveyTarget.starts_at,
+              }
+            : null
+        }
+        open={!!surveyTarget?.customer_id}
         subtitle={
           surveyTarget ? `${nameOf(surveyTarget)} · ${time(surveyTarget.starts_at)}` : undefined
         }

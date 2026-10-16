@@ -3,7 +3,8 @@ import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
 import { useWaiting } from "@/features/waiting/useWaiting";
 import { WaitingCards } from "@/features/waiting/WaitingUI";
-import { blocksSlot, mayOpenStarts, waitOpportunities } from "@/features/waiting/model";
+import { mayOpenStarts, waitOpportunities } from "@/features/waiting/model";
+import { demoStaffSlots } from "@/features/demo/slots";
 import { showSportsTab, sportsMatches } from "./sports";
 import { CancellationDialog } from "@/features/insights/CancellationDialog";
 import { cancellationReasonLabel, type CancellationReason } from "@/features/insights/cancellation";
@@ -148,9 +149,6 @@ import {
 import {
   filterReservations,
   type ReservationFilter,
-  buildSlotsForWindow,
-  slotRuleFromSettings,
-  validPrepMinutes,
   buildBookingDateKeys,
   dateFromLocalKey,
   formatShopDate as formatShopDateIn,
@@ -203,44 +201,11 @@ function shortestServiceIndex(
  * "Qualquer profissional" junta a grade de cada um, como `get_available_slots` com
  * `p_staff_id` nulo na loja real.
  */
-function demoStaffSlots(
-  demo: DemoState,
-  staffId: string,
-  day: string,
-  durationMinutes: number,
-  serviceId: string,
-  timeZone: string,
-) {
-  const occupied = demo.appointments.filter(
-    (row) =>
-      row.staff_id === staffId &&
-      row.status !== "cancelled" &&
-      row.status !== "reschedule_requested",
-  );
-  const blocks = demo.availabilityBlocks.filter(
-    (row) => row.staff_id === null || row.staff_id === staffId,
-  );
-  // O dia da semana vem da data escolhida, não do fuso do aparelho.
-  const weekday = weekdayForDateKey(day);
-  const hours = demo.businessHours.find((row) => row.weekday === weekday) ?? null;
-  // Preparo depois de cada serviço: o do serviço, senão o da barbearia.
-  const prepFor = (id: string | null) =>
-    validPrepMinutes(
-      demo.services.find((row) => row.id === id)?.prep_minutes ?? demo.settings.prep_minutes,
-    );
-  return buildSlotsForWindow(
-    day,
-    durationMinutes,
-    [
-      ...occupied.map((row) => ({ ...row, prep_minutes: prepFor(row.service_id) })),
-      ...demo.waits.filter((w) => blocksSlot(w, demo.now) && w.staff_id === staffId),
-    ],
-    hours,
-    demo.now,
-    timeZone,
-    { ...slotRuleFromSettings(demo.settings), prepMinutes: prepFor(serviceId), blocks },
-  );
-}
+/**
+ * Lista curta (até 6): sem a troca grade/lista, que só ajuda com muitas opções; vale o jeito
+ * padrão (serviços em lista, profissionais em grade). Simplificação de 16/10/2026.
+ */
+const SHORT_CHOICE_LIST = 6;
 
 /** Motivo da recusa (lib/auth/guards) → tom e frases do aviso. */
 const REFUSAL_TONE: Record<AccessNotice, "info" | "pending" | "neutral"> = {
@@ -310,6 +275,12 @@ function ArenaApp({
   const [whatsappFocus, setWhatsappFocus] = useState(focusWhatsapp);
   useEffect(() => {
     if (tab !== "perfil") setWhatsappFocus(false);
+  }, [tab]);
+  // Cada aba abre do topo: quem rola é o <main>, que guardava a rolagem da aba anterior.
+  // Atalhos que rolam até uma reserva rodam depois (setTimeout) e continuam valendo.
+  const mainRef = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    mainRef.current?.scrollTo({ top: 0 });
   }, [tab]);
   const [points, setPoints] = useState(0);
   const [lifetimePoints, setLifetimePoints] = useState(0);
@@ -1815,6 +1786,7 @@ function ArenaApp({
     staffId: row.staff_id,
     staffPhoto: staffPhotoOf(row.staff_id),
     priceCents: row.booked_price_cents,
+    finished: row.status === "completed" || row.status === "cancelled",
   });
   const rescheduleRow = rescheduleId
     ? (shopAppointments.find((row) => row.id === rescheduleId) ?? null)
@@ -1979,6 +1951,8 @@ function ArenaApp({
       ? "weekday"
       : (String(repeatInterval) as RepeatChoice);
   const canRepeat = !rescheduleId && !directLinkActive;
+  // O resultado da remarcação ("Horário remarcado") continua sob o título "Remarcar reserva".
+  const rescheduleTitle = Boolean(rescheduleId) || Boolean(bookingDone?.rescheduled);
   const chosenSlot = selectedSlot ? slotLabel(selectedSlot) : null;
   const bookingButton = !selectedSlot
     ? { label: t("booking.chooseTime"), icon: Clock3 }
@@ -2085,8 +2059,15 @@ function ArenaApp({
     if (step > 0) return t("booking.repeatCreatedDays", { days: step });
     return t("bookings.recurring");
   };
+  // Datas que "Parar repetição" cancela: as futuras ainda abertas, a mesma regra de
+  // stop_booking_series (a data em andamento e a com remarcação pedida ficam).
+  const seriesStoppable = (row: CustomerAppointment) =>
+    (row.status === "pending" || row.status === "confirmed") &&
+    Date.parse(row.starts_at) > reservationNowMs();
   const stopSeriesDates = stopSeriesTarget
-    ? seriesUpcoming(stopSeriesTarget).map((row) => row.starts_at)
+    ? seriesUpcoming(stopSeriesTarget)
+        .filter(seriesStoppable)
+        .map((row) => row.starts_at)
     : [];
   /** Em Próximos, cada repetição vira um só ticket (a data em foco) com as outras em pílulas. */
   const displayedReservations = (rows: CustomerAppointment[]) =>
@@ -2107,6 +2088,9 @@ function ArenaApp({
     const series = upcomingView && row.series_id ? seriesUpcoming(row.series_id) : [];
     const cancelled = row.status === "cancelled" ? cancellationDetails[row.id] : undefined;
     const seriesId = row.series_id;
+    // A data em foco já começou (selo "Agora"): sem Remarcar/Cancelar, mas a repetição continua
+    // podendo parar enquanto houver datas futuras.
+    const canStopSeries = upcomingView && !!seriesId && series.some(seriesStoppable);
     return (
       <AppointmentTicket
         key={row.id}
@@ -2118,6 +2102,7 @@ function ArenaApp({
           <ReservationStatusBadge
             status={row.status}
             startsAt={row.starts_at}
+            endsAt={row.ends_at}
             now={bookingNow}
             size="sm"
             actionable={canManage}
@@ -2239,6 +2224,16 @@ function ArenaApp({
                 </button>
               ) : null}
             </div>
+          ) : canStopSeries && seriesId ? (
+            <button
+              type="button"
+              disabled={appointmentBusy !== null}
+              onClick={() => setStopSeriesTarget(seriesId)}
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold disabled:opacity-50"
+            >
+              <Repeat2 className="size-4 text-gold" aria-hidden />
+              {t("bookings.stopRepeat")}
+            </button>
           ) : row.status === "completed" && row.service && row.staff ? (
             <button
               type="button"
@@ -2311,11 +2306,12 @@ function ArenaApp({
     reservationFilter,
     reservationNow,
   );
+  // Em andamento conta até o término (a mesma regra de Meus agendamentos → Próximos).
   const upcomingAppointments = shopAppointments
     .filter(
       (row) =>
         (row.status === "pending" || row.status === "confirmed") &&
-        new Date(row.starts_at).getTime() > (demo?.now.getTime() ?? Date.now()),
+        new Date(row.ends_at || row.starts_at).getTime() > (demo?.now.getTime() ?? Date.now()),
     )
     .sort((a, b) => a.starts_at.localeCompare(b.starts_at));
   const nextAppointment = upcomingAppointments[0];
@@ -2657,9 +2653,15 @@ function ArenaApp({
     const measure = () => {
       const items = [...buttons()];
       if (!items.length) return;
+      const navStyle = getComputedStyle(nav);
+      // Computador (≥ 1024 px): a barra vira coluna lateral (styles.css) e cada item tem a linha
+      // inteira, então o nome longo sempre cabe e não há pílula para medir.
+      if (navStyle.display === "flex") {
+        if (navLevel !== 0) setNavLevel(0);
+        return;
+      }
       // Nível pela largura natural dos rótulos (réguas invisíveis), não pelo transbordo da barra:
       // assim a posição antiga da pílula, um giro de tela ou o texto ampliado não enganam a conta.
-      const navStyle = getComputedStyle(nav);
       const available =
         nav.clientWidth - parseFloat(navStyle.paddingLeft) - parseFloat(navStyle.paddingRight);
       const gap = parseFloat(navStyle.columnGap) || 0;
@@ -2974,6 +2976,7 @@ function ArenaApp({
 
       {/* Main Viewport */}
       <main
+        ref={mainRef}
         className={`p-4 max-w-xl mx-auto ${tab === "dashboard" || tab === "agenda" || tab === "perfil" || tab === "esportes" ? "customer-main-wide" : ""}`}
       >
         <div key={tab} className="mb-panel">
@@ -3110,7 +3113,10 @@ function ArenaApp({
                     }
                     onMore={openBookings}
                     onReschedule={
-                      nextAppointment ? () => beginReschedule(nextAppointment) : undefined
+                      // Já começou: não oferece remarcar.
+                      nextAppointment && Date.parse(nextAppointment.starts_at) > +homeNow
+                        ? () => beginReschedule(nextAppointment)
+                        : undefined
                     }
                     onBook={() => setTab("agenda")}
                     repeat={
@@ -3152,8 +3158,8 @@ function ArenaApp({
             // direita no computador).
             <div className="space-y-5">
               <div className="app-section-title">
-                {rescheduleId ? <CalendarClock /> : <Calendar />}
-                <h2>{rescheduleId ? t("booking.titleReschedule") : t("booking.title")}</h2>
+                {rescheduleTitle ? <CalendarClock /> : <Calendar />}
+                <h2>{rescheduleTitle ? t("booking.titleReschedule") : t("booking.title")}</h2>
               </div>
               {noShop ? (
                 // Sem barbearia: o link da loja é o único caminho (sem busca de lojas).
@@ -3237,7 +3243,7 @@ function ArenaApp({
                             disabled={bookingBusy}
                             onClick={() => setServiceOpen(true)}
                           />
-                        ) : services.length > 1 ? (
+                        ) : services.length > SHORT_CHOICE_LIST ? (
                           <CatalogViewToggle
                             viewMode={serviceView}
                             onViewMode={changeServiceView}
@@ -3302,7 +3308,7 @@ function ArenaApp({
                         <ServiceChoices
                           services={services}
                           selectedIndex={serviceIdx}
-                          view={serviceView}
+                          view={services.length > SHORT_CHOICE_LIST ? serviceView : "list"}
                           termsFor={(service) =>
                             (pickedStaff && termsFor(serviceTerms, pickedStaff.id, service)) ||
                             service
@@ -3327,7 +3333,7 @@ function ArenaApp({
                             disabled={bookingBusy}
                             onClick={() => setStaffOpen(true)}
                           />
-                        ) : staffChoices.length > 1 ? (
+                        ) : staffChoices.length > SHORT_CHOICE_LIST ? (
                           <CatalogViewToggle
                             viewMode={staffView}
                             onViewMode={changeStaffView}
@@ -3390,7 +3396,7 @@ function ArenaApp({
                               ? staff.find((member) => member.id === favoriteStaffId)?.display_name
                               : null
                           }
-                          view={staffView}
+                          view={staffChoices.length > SHORT_CHOICE_LIST ? staffView : "grid"}
                           suggested={!staffChosen}
                           disabled={bookingBusy}
                           onPick={pickStaff}

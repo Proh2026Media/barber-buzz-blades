@@ -1,4 +1,4 @@
-import { Check, KeyRound, MessageCircle, Minus } from "lucide-react";
+import { Check, ChevronDown, KeyRound, MessageCircle, Minus } from "lucide-react";
 import { IconList, SectionHeader, type IconListItem } from "@/components/visual";
 import type { ShopCapabilities } from "@/lib/auth/capabilities";
 import { useI18n, type MessageKey } from "@/lib/i18n";
@@ -25,12 +25,20 @@ const ROWS: { key: string; label: MessageKey; allowed: (c: ShopCapabilities) => 
 ];
 
 /** Linhas de "Seu acesso" (✓ pode / — não pode), na ordem do cartão. */
-function myAccessRows(capabilities: ShopCapabilities) {
-  return ROWS.map((row) => ({
+function myAccessRows(role: string, capabilities: ShopCapabilities, hideApply: boolean) {
+  const rows = ROWS.map((row) => ({
     key: row.key,
     label: row.label,
     allowed: row.allowed(capabilities),
   }));
+  if (isOwnerRole(role) && !hideApply) {
+    rows.push({
+      key: "apply",
+      label: "eq.mine.applyNow",
+      allowed: capabilities.canApplyOperations,
+    });
+  }
+  return rows;
 }
 
 /** Lista ✓ / — do que o papel pode fazer (cartão em Ajustes e resumo do selo no topo). */
@@ -56,10 +64,9 @@ export function MyAccessList({
       </>
     ),
   });
-  const items = myAccessRows(capabilities).map((row) => line(row.key, row.allowed, row.label));
-  if (isOwnerRole(role) && !hideApply) {
-    items.push(line("apply", capabilities.canApplyOperations, "eq.mine.applyNow"));
-  }
+  const items = myAccessRows(role, capabilities, hideApply).map((row) =>
+    line(row.key, row.allowed, row.label),
+  );
   return (
     <>
       <IconList size="md" items={items} label={t("eq.mine.title")} />
@@ -75,7 +82,9 @@ export function MyAccessList({
 
 /**
  * "Seu acesso nesta barbearia": o papel de quem está vendo e o que ele pode ou não fazer,
- * com ✓ e —. Mostra por que algumas abas não aparecem, sem precisar perguntar.
+ * com ✓ e —. Mostra por que algumas abas não aparecem, sem precisar perguntar. A lista fica
+ * recolhida atrás de um resumo de uma linha (simplificação de 16/10/2026); o selo do papel no
+ * topo do painel abre a mesma lista.
  */
 export function MyAccessCard({
   role,
@@ -89,6 +98,8 @@ export function MyAccessCard({
 }) {
   const { t } = useI18n();
   if (!capabilities) return null;
+  const rows = myAccessRows(role, capabilities, false);
+  const allowed = rows.filter((row) => row.allowed).length;
   return (
     <section
       id="team-mine"
@@ -101,7 +112,27 @@ export function MyAccessCard({
         title={t("eq.mine.title")}
         aside={<RoleBadge role={role} percent={percent} size="md" />}
       />
-      <MyAccessList role={role} capabilities={capabilities} />
+      <details className="group">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-xl text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold [&::-webkit-details-marker]:hidden">
+          <span className="min-w-0 flex-1">
+            {allowed === rows.length
+              ? t("eq.mine.summaryAll")
+              : allowed === 0
+                ? t("eq.mine.summaryNone")
+                : t("eq.mine.summarySome", { allowed, total: rows.length })}
+          </span>
+          <span className="shrink-0 text-xs font-semibold text-muted-foreground group-open:hidden">
+            {t("eq.mine.showList")}
+          </span>
+          <ChevronDown
+            className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180 motion-reduce:transition-none"
+            aria-hidden
+          />
+        </summary>
+        <div className="mt-2 space-y-3">
+          <MyAccessList role={role} capabilities={capabilities} />
+        </div>
+      </details>
     </section>
   );
 }

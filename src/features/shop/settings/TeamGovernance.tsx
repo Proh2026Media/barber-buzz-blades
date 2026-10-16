@@ -29,6 +29,7 @@ import {
   Steps,
   TONE_CLASS,
   type Tone,
+  visibleBottomLimit,
 } from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -68,8 +69,7 @@ function SettledResult({ done, detail }: { done: Settled; detail: string }) {
     const el = ref.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const nav = document.querySelector(".app-mobile-nav");
-    const bottomLimit = nav ? nav.getBoundingClientRect().top : window.innerHeight;
+    const bottomLimit = visibleBottomLimit();
     if (rect.top >= 0 && rect.bottom <= bottomLimit) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     el.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });

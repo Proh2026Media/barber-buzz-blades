@@ -6,6 +6,7 @@ import {
   CircleCheck,
   ClipboardPen,
   Clock3,
+  ContactRound,
   Loader2,
   Lock,
   MessageSquarePlus,
@@ -40,11 +41,13 @@ import {
   occurrenceRules,
   useAttendance,
 } from "./attendance";
+import { clientDisplay, recurringBadge } from "../clients/model";
 import { momentOf } from "./model";
 import { useShopTime } from "./summary";
 import {
   AGENDA_STATE,
   ON_HOLD_STATE,
+  agendaClientName,
   type CancellationDetail,
   type CardFeedback,
   type CardState,
@@ -71,6 +74,27 @@ export type CardHandlers = {
 };
 
 /**
+ * Seta da ficha presa à última letra do nome: a seta nunca fica sozinha na linha de baixo, e
+ * palavra longa (sobrenome em maiúsculas) ainda pode quebrar sem vazar do cartão.
+ */
+function withArrow(text: string) {
+  const chars = Array.from(text);
+  const last = chars.pop() ?? "";
+  return (
+    <>
+      {chars.join("")}
+      <span className="whitespace-nowrap">
+        {last}
+        <ChevronRight
+          className="ms-1.5 inline size-4 align-middle text-muted-foreground"
+          aria-hidden
+        />
+      </span>
+    </>
+  );
+}
+
+/**
  * Nome do cliente: com a ficha disponível vira botão (seta discreta e área de toque de 44 px);
  * sem ela, só o texto.
  */
@@ -86,22 +110,42 @@ function CustomerName({
   className?: string;
 }) {
   const { t } = useI18n();
-  if (!onOpen || !row.customer_id || row.visibility === "busy") {
-    return <span className={className}>{name}</span>;
+  // Apelido na frente (é como a equipe chama) e o nome do cadastro menor, ao lado.
+  const shown = clientDisplay(row.customer?.full_name ?? name, row.customer_nickname);
+  const primary = shown.primary ?? name;
+  const label = shown.secondary ? `${primary} (${shown.secondary})` : primary;
+  // A seta (só no botão) vai dentro do último texto, presa à última palavra.
+  const content = (arrow: boolean) => (
+    <>
+      <span className="min-w-0 break-words">
+        {arrow && !shown.secondary ? withArrow(primary) : primary}
+      </span>
+      {shown.secondary && (
+        <span className="min-w-0 break-words text-xs font-medium text-muted-foreground">
+          {arrow ? withArrow(shown.secondary) : shown.secondary}
+        </span>
+      )}
+    </>
+  );
+  if (!onOpen || !(row.customer_id || row.shop_client_id) || row.visibility === "busy") {
+    return (
+      <span className={cn("inline-flex flex-wrap items-baseline gap-x-1.5", className)}>
+        {content(false)}
+      </span>
+    );
   }
   return (
     <button
       type="button"
       onClick={() => onOpen(row)}
-      title={t("agenda.client.open", { name })}
-      aria-label={t("agenda.client.open", { name })}
+      title={t("agenda.client.open", { name: label })}
+      aria-label={t("agenda.client.open", { name: label })}
       className={cn(
-        "relative inline-flex max-w-full items-center gap-0.5 rounded-md text-start underline decoration-muted-foreground/50 decoration-dotted underline-offset-4 transition hover:decoration-gold after:absolute after:-inset-x-1 after:-inset-y-3 after:content-['']",
+        "relative inline-flex max-w-full flex-wrap items-baseline gap-x-1.5 rounded-md text-start underline decoration-muted-foreground/50 decoration-dotted underline-offset-4 transition hover:decoration-gold after:absolute after:-inset-x-1 after:-inset-y-3 after:content-['']",
         className,
       )}
     >
-      <span className="min-w-0 break-words">{name}</span>
-      <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+      {content(true)}
     </button>
   );
 }
@@ -245,13 +289,21 @@ function FullCard({
   const { facts } = attendance;
   const moment = momentOf(row, now);
   const rules = occurrenceRules(row, facts, demo?.now ?? new Date(now));
-  const customer = row.customer?.full_name ?? t("shop.customerFallback");
+  const customer = agendaClientName(row, t("shop.customerFallback"));
   const service = row.service?.name ?? t("shop.serviceFallback");
   const start = time(row.starts_at);
   const end = time(row.ends_at);
   const duration = minutesBetween(row.starts_at, row.ends_at);
   const open = row.status === "pending" || row.status === "confirmed";
   const saving = feedback?.state === "saving";
+  const recurring = recurringBadge(
+    !!row.series_id,
+    { kind: row.series_kind, intervalDays: row.series_interval_days },
+    row.customer_recurring,
+  );
+  // Sem conta no app (cliente do balcão ou conta excluída): ele não remarca pelo app nem
+  // responde pesquisa ligada à conta.
+  const withAccount = !!row.customer_id;
 
   const state: CardState =
     row.status === "cancelled"
@@ -383,7 +435,7 @@ function FullCard({
       disabled: locked,
     });
   }
-  if (row.status === "confirmed") {
+  if (row.status === "confirmed" && withAccount) {
     actions.push({
       id: "withdraw",
       icon: CalendarClock,
@@ -403,7 +455,7 @@ function FullCard({
       disabled: !attendance.loaded,
     });
   }
-  if (row.status === "completed" && survey) {
+  if (row.status === "completed" && survey && withAccount) {
     actions.push({
       id: "survey",
       icon: MessageSquarePlus,
@@ -491,11 +543,19 @@ function FullCard({
               className="size-4 shrink-0 text-gold"
               imageClassName="size-5 shrink-0 rounded-md"
             />
-            {/* Serviço e duração no mesmo texto: quebra entre palavras (nunca "Premiu/m"). */}
-            <span className="min-w-0 break-words">
-              {service}{" "}
-              <span className="whitespace-nowrap">
-                · {t("agenda.minutes", { minutes: duration })}
+            {/* Serviço e duração em texto corrido: quebra entre palavras (nunca "Premiu/m") e a
+                duração desce inteira, sem linha a mais. Quando ela começa a linha, o "·" fica na
+                faixa recortada à esquerda (margem negativa + overflow-hidden; o recuo do nome se
+                repete em cada linha com box-decoration-clone): nenhuma linha começa por ele. */}
+            <span className="min-w-0 overflow-hidden">
+              <span className="-ms-3 block break-words">
+                <span className="box-decoration-clone ps-3">{service}</span>{" "}
+                <span className="whitespace-nowrap">
+                  <span className="inline-block w-3 text-center" aria-hidden>
+                    ·
+                  </span>
+                  {t("agenda.minutes", { minutes: duration })}
+                </span>
               </span>
             </span>
           </p>
@@ -510,14 +570,19 @@ function FullCard({
               <span className="min-w-0 break-words">{row.staff.display_name}</span>
             </p>
           )}
-          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-            <StatusBadge
-              tone={meta.tone}
-              icon={meta.icon}
-              label={t(meta.labelKey)}
-              live={state === "inProgress"}
-              size="sm"
-            />
+          <div className="flex flex-wrap items-center gap-1.5 pt-0.5 empty:hidden">
+            {/* "Confirmado" é o normal do dia (a loja confirma sozinha): o selo só aparece quando
+                diz algo diferente (agora, a confirmar, passou do horário, concluído…). O estado
+                continua no nome acessível do cartão. */}
+            {state !== "confirmed" && (
+              <StatusBadge
+                tone={meta.tone}
+                icon={meta.icon}
+                label={t(meta.labelKey)}
+                live={state === "inProgress"}
+                size="sm"
+              />
+            )}
             {nextMinutes !== undefined && (
               <StatusBadge
                 tone="highlight"
@@ -530,7 +595,23 @@ function FullCard({
                 size="sm"
               />
             )}
-            {row.series_id && <Tag icon={Repeat}>{t("shop.agenda.recurring")}</Tag>}
+            {recurring && (
+              <StatusBadge
+                tone="highlight"
+                icon={Repeat}
+                size="sm"
+                label={
+                  recurring.key === "agenda.recurring.everyDays"
+                    ? t(recurring.key, { days: recurring.days })
+                    : t(recurring.key)
+                }
+              />
+            )}
+            {row.has_account === false && (
+              <span title={t("agenda.client.walkInHint")}>
+                <Tag icon={ContactRound}>{t("agenda.client.walkIn")}</Tag>
+              </span>
+            )}
             <OccurrenceTags facts={facts} />
           </div>
         </div>

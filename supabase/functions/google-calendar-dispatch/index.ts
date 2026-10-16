@@ -14,16 +14,46 @@ type Push = {
 
 type Appointment = {
   id: string;
+  barbershop_id: string;
   starts_at: string;
   ends_at: string;
   status: string;
-  customer_id: string;
+  /** Nulo para cliente do balcão (sem conta) ou conta excluída. */
+  customer_id: string | null;
   service: { name: string | null } | null;
   staff: { display_name: string | null } | null;
   barbershop: { name: string | null; timezone: string | null } | null;
 };
 
 const CALENDAR_API = "https://www.googleapis.com/calendar/v3/calendars";
+
+/**
+ * Cliente do balcão (sem conta) e apelido da equipe (migration 20261016130000). Banco sem a
+ * tabela nova devolve erro nas consultas: segue sem eles, como antes.
+ */
+async function shopClientOf(
+  admin: ReturnType<typeof createClient>,
+  row: Appointment,
+): Promise<{ fullName: string | null; nickname: string | null } | null> {
+  const { data: extra, error } = await admin
+    .from("appointments")
+    .select("shop_client_id")
+    .eq("id", row.id)
+    .maybeSingle();
+  if (error) return null;
+  const shopClientId = (extra as { shop_client_id?: string | null } | null)?.shop_client_id ?? null;
+  const base = admin.from("shop_clients").select("full_name, nickname");
+  const query = shopClientId
+    ? base.eq("id", shopClientId)
+    : row.customer_id
+      ? base.eq("barbershop_id", row.barbershop_id).eq("profile_id", row.customer_id)
+      : null;
+  if (!query) return null;
+  const { data: client, error: clientError } = await query.maybeSingle();
+  if (clientError || !client) return null;
+  const value = client as { full_name: string | null; nickname: string | null };
+  return { fullName: value.full_name?.trim() || null, nickname: value.nickname?.trim() || null };
+}
 
 /** Id estável por agendamento + pessoa: repetir o envio nunca duplica o evento. */
 async function eventIdFor(appointmentId: string, userId: string): Promise<string> {
@@ -143,7 +173,7 @@ Deno.serve(async (req) => {
       const { data: appt, error: apptError } = await admin
         .from("appointments")
         .select(
-          "id, starts_at, ends_at, status, customer_id, service:services(name), staff:staff(display_name), barbershop:barbershops(name, timezone)",
+          "id, barbershop_id, starts_at, ends_at, status, customer_id, service:services(name), staff:staff(display_name), barbershop:barbershops(name, timezone)",
         )
         .eq("id", push.appointment_id)
         .maybeSingle();
@@ -152,14 +182,19 @@ Deno.serve(async (req) => {
         continue;
       }
       const row = appt as unknown as Appointment;
-      const { data: customer } = await admin
-        .from("profiles")
-        .select("full_name")
-        .eq("id", row.customer_id)
-        .maybeSingle();
+      const { data: customer } = row.customer_id
+        ? await admin.from("profiles").select("full_name").eq("id", row.customer_id).maybeSingle()
+        : { data: null };
+      const client = await shopClientOf(admin, row);
 
       const serviceName = row.service?.name?.trim() || "Atendimento";
-      const customerName = (customer?.full_name as string | null)?.trim() || "Cliente";
+      const baseName =
+        (customer?.full_name as string | null)?.trim() || client?.fullName || "Cliente";
+      // Apelido da equipe na frente (a agenda é do profissional); o nome cadastrado entre parênteses.
+      const customerName =
+        client?.nickname && client.nickname.toLowerCase() !== baseName.toLowerCase()
+          ? `${client.nickname} (${baseName})`
+          : baseName;
       const staffName = row.staff?.display_name?.trim() || "";
       const shopName = row.barbershop?.name?.trim() || "Barba & Cabelo";
       const timeZone = row.barbershop?.timezone || "America/Sao_Paulo";

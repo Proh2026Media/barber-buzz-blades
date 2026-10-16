@@ -26,11 +26,14 @@ export type TicketData = {
   /** "Qualquer profissional": ícone de grupo no lugar das iniciais (não é uma pessoa). */
   anyStaff?: boolean;
   priceCents?: number | null;
+  /** Concluído ou cancelado: o destaque do bloco de data não se estende até o término. */
+  finished?: boolean;
 };
 
 export function ReservationStatusBadge({
   status,
   startsAt,
+  endsAt,
   now,
   size,
   actionable,
@@ -38,18 +41,21 @@ export function ReservationStatusBadge({
 }: {
   status: AppointmentStatus;
   startsAt: string;
+  /** Término: entre o início e ele, o selo diz "Agora" (em andamento) em vez de "Já passou". */
+  endsAt?: string | null;
   now: Date;
   size?: "sm" | "md" | "lg";
   /** O cartão ainda tem Remarcar/Cancelar: não mostra "Já passou". */
   actionable?: boolean;
   className?: string;
 }) {
-  const view = useReservationStatus()(status, startsAt, now, actionable);
+  const view = useReservationStatus()(status, startsAt, now, actionable, endsAt);
   return (
     <StatusBadge
       tone={view.tone}
       icon={view.icon}
       label={view.label}
+      live={view.live}
       size={size}
       className={className}
     />
@@ -59,12 +65,14 @@ export function ReservationStatusBadge({
 /** Bloco de data: rótulo relativo (HOJE, AMANHÃ, QUA), dia e mês. */
 export function DateBlock({
   date,
+  endsAt,
   now,
   timeZone,
   size = "md",
   muted = false,
 }: {
   date: string;
+  endsAt?: string | null;
   now: Date;
   timeZone: string;
   size?: "sm" | "md";
@@ -72,8 +80,9 @@ export function DateBlock({
 }) {
   const { intlLocale } = useI18n();
   const days = daysFromToday(date, now, timeZone);
-  // Destaque escuro só para o que ainda vai acontecer hoje ou amanhã (não para o que já passou).
-  const upcoming = new Date(date).getTime() > now.getTime();
+  // Destaque escuro só para o que ainda vai acontecer (ou está em andamento) hoje ou amanhã,
+  // não para o que já terminou.
+  const upcoming = new Date(endsAt || date).getTime() > now.getTime();
   const soon = !muted && upcoming && days >= 0 && days <= 1;
   return (
     <div
@@ -179,6 +188,7 @@ export function AppointmentTicket({
     <div className="flex items-start gap-3">
       <DateBlock
         date={data.startsAt}
+        endsAt={data.finished ? null : data.endsAt}
         now={now}
         timeZone={timeZone}
         size={mini ? "sm" : "md"}

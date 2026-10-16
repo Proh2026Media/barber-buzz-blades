@@ -926,34 +926,26 @@ export function WhatsAppChannelCard({ shopId }: { shopId: string }) {
         </section>
       )}
 
-      {live || channel?.status === "open" ? (
-        <div
-          ref={editorBlockRef as RefObject<HTMLDivElement>}
-          className="scroll-mt-24 space-y-3 border-t border-border/60 pt-4"
+      {/* Textos das mensagens: recolhidos sempre (são editados raramente). O lápis de cada aviso
+          acima abre direto no texto dele (editTemplate). Simplificação de 16/10/2026. */}
+      {connection !== "checking" && (
+        <details
+          ref={editorBlockRef as RefObject<HTMLDetailsElement>}
+          className="group scroll-mt-24 rounded-2xl border border-border"
         >
-          <div>
-            <h4 className="text-sm font-bold">{t("integr.wa.textsTitle")}</h4>
+          <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 px-3 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+            <Pencil className="size-4 text-gold" aria-hidden />
+            <span className="flex-1">{t("integr.wa.textsTitle")}</span>
+            <MoreVertical
+              className="size-4 text-muted-foreground transition group-open:rotate-90"
+              aria-hidden
+            />
+          </summary>
+          <div className="space-y-3 border-t border-border/60 p-3">
             <p className="text-xs text-muted-foreground">{t("integr.wa.textsHint")}</p>
+            {editor}
           </div>
-          {editor}
-        </div>
-      ) : (
-        connection !== "checking" && (
-          <details
-            ref={editorBlockRef as RefObject<HTMLDetailsElement>}
-            className="group scroll-mt-24 rounded-2xl border border-border"
-          >
-            <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 px-3 text-sm font-semibold [&::-webkit-details-marker]:hidden">
-              <Pencil className="size-4 text-gold" aria-hidden />
-              <span className="flex-1">{t("integr.wa.textsTitle")}</span>
-              <MoreVertical
-                className="size-4 text-muted-foreground transition group-open:rotate-90"
-                aria-hidden
-              />
-            </summary>
-            <div className="space-y-3 border-t border-border/60 p-3">{editor}</div>
-          </details>
-        )
+        </details>
       )}
 
       <Dialog open={qrOpen} onOpenChange={setQrOpen}>

@@ -16,9 +16,11 @@ export function DemoRoleSelector() {
 
   return (
     <>
-      {/* PC: mesma família visual dos ícones do cabeçalho, em linha, com rótulos. */}
+      {/* PC (a partir de 1280 px): mesma família visual dos ícones do cabeçalho, em linha, com
+          rótulos. As sete visões ocupam uns 730 px: abaixo disso espremiam o nome da barbearia
+          no cabeçalho do cliente ("Ar…" a 1024 px). */}
       <div
-        className="app-demo-slot-desktop app-demo-switcher hidden lg:flex"
+        className="app-demo-slot-desktop app-demo-switcher hidden xl:flex"
         role="group"
         aria-label={t("demo.switcher.aria")}
       >
@@ -44,7 +46,7 @@ export function DemoRoleSelector() {
       {/* Celular e tablet: um ícone igual aos do cabeçalho que abre a lista de perfis (alvos de 44px).
           Abaixo de 360 px o ícone sai e o "Ver como" passa para o menu de conta, para o nome da
           barbearia continuar legível no cabeçalho. */}
-      <div className="app-demo-slot-mobile max-[359px]:hidden lg:hidden">
+      <div className="app-demo-slot-mobile max-[359px]:hidden xl:hidden">
         <Popover>
           <PopoverTrigger asChild>
             <button

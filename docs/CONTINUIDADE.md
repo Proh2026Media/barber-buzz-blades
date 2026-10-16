@@ -1,8 +1,10 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+**16/10/2026 (madrugada) — entrega do Claude Code:** agendamento pelo barbeiro no painel, apelido e cliente do balcão, selo de cliente recorrente, login Google no app instalado e simplificação visual (entrada logo abaixo da Diretriz). Falta aplicar no banco as migrations nº 95 e 96 (P-73, pacote [implantacao-agendamento-painel-2026-10-16.md](implantacao-agendamento-painel-2026-10-16.md)).
+
 **15/10/2026 (noite) — passagem concluída no Claude Code:** ver a entrada "Passagem de 15/10" logo abaixo da Diretriz. Comece por [LEIA-PRIMEIRO.md](LEIA-PRIMEIRO.md). A função `register-shop` da P-38 foi publicada às 22:54; faltam os pacotes do Google (P-69 e P-28, em [pacotes/](pacotes/)).
 
-Atualizado em **15/10/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
+Atualizado em **16/10/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
 ## Comece aqui
 
@@ -102,6 +104,84 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - Esportes sempre visível;
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
+
+## Entrega — agendamento pelo painel, cliente do balcão, recorrente, login Google no app instalado e simplificação visual (16/10, madrugada, Claude Code) — **migrations pendentes na VPS**
+
+- **O que:**
+  - **Barbeiro marca para o cliente pelo painel:** botão **Agendar** no topo da Agenda e **Agendar aqui** em cada horário livre. Pede WhatsApp e nome; se o número (confirmado por código) for de um cliente da barbearia com conta, o nome do cadastro entra sozinho com o aviso "Nome atualizado para o do cadastro" e o horário vai para a conta dele. Senão vira **cliente do balcão** (sem conta), com interruptor de avisos pelo WhatsApp. Avisos iguais aos do app (confirmação, remarcação, cancelamento, lembrete). Cliente do balcão não tem horário recorrente: a tela avisa e oferece **convite para o app** (WhatsApp com mensagem pronta e link de cadastro com o número preenchido, `/auth?cadastro=1&whatsapp=`). Quando ele se cadastra e confirma o WhatsApp, a ficha e os horários passam para a conta; o nome usado pela equipe vira apelido.
+  - **Apelido:** a equipe dá um apelido ao cliente (o cliente não vê); a agenda, o quadro da equipe, a ficha e a lista de clientes mostram o apelido na frente e o nome do cadastro ao lado. Ficha própria do cliente do balcão (WhatsApp, avisos, histórico, convite).
+  - **Selo de cliente recorrente** na agenda: "Recorrente · toda semana", "a cada 15 dias" (o atendimento faz parte de uma série) ou "Cliente recorrente" (tem série ativa); ícone no quadro da equipe e selo na ficha. Antes existia só uma etiqueta cinza "Recorrente" no cartão.
+  - **Login com Google no app instalado (iPhone):** corrigido o laço (a janela do Google ficava presa por cima do app e, ao fechar, a tela de entrar voltava). A janela agora entrega um código de uso único ao app pelo banco e pede para fechá-la; o app entra sozinho ao voltar. Também: "Conectar Google Agenda" pelo app instalado pede para fechar a janela no fim (antes abria o painel dentro dela, sem sessão) e o cartão confere a conexão ao voltar.
+  - **Visual (celular e computador):** no computador e no tablet deitado, a navegação virou coluna lateral (antes a barra de baixo flutuava sobre a agenda); Ajustes → Agendamento um item por vez (5.001 → 954 px no celular); editor de mensagens do WhatsApp recolhido; Serviços e Equipe sem busca, filtros e troca grade/lista em lista curta e sem selos repetidos; selo "Confirmado" só quando diz algo novo; Equipe com "+ Adicionar"; barra fixa do Agendar do cliente mais baixa; manifesto sem trava de tela em pé. Relatório com medidas e o que fica para decidir: [analise-visual-2026-10-16.md](analise-visual-2026-10-16.md).
+  - **Bugs achados e corrigidos:** pesquisa pós-atendimento e "Pedir para remarcar" oferecidas a atendimentos sem conta (conta excluída; agora também o balcão); tipo `customer_id` como obrigatório quando o banco aceita vazio (conta excluída); barra flutuante cobrindo a agenda no computador; janela do Google Agenda presa no app instalado.
+  - **Revisão de código da própria entrega (02:00–02:45), 19 achados, todos tratados antes de publicar:**
+    - **Banco (migrations nº 95 e 96, ainda não aplicadas, corrigidas nelas mesmas):**
+      - cliente com apelido não conseguia excluir a conta (`shop_clients.profile_id` passou a `on delete cascade`; apelido vazio não cria linha);
+      - qualquer visitante podia lotar a ponte do Google com códigos inventados e travar o login de todos (só entra código emitido pelo Auth nos últimos 10 min, conferido em `auth.flow_state`; conferido na VPS, só lendo, que a tabela existe e o `postgres` lê);
+      - o "Agendar cliente" escondia do barbeiro os horários dentro da antecedência mínima do cliente (nova `get_team_slots`, sem a antecedência; quem não vê a loja inteira continua no prazo da agenda) e mostrava dias fora do prazo sempre vazios;
+      - profissional restrito via apelido e recorrência de qualquer cliente pelo número e podia renomear cliente de outro (agora só o nome; P-77);
+      - atendimento de conta excluída aparecia como "Sem cadastro";
+      - conta já confirmada que entra na barbearia pelo app agora leva a ficha do balcão com o mesmo número (gatilho em `memberships`);
+      - o roteiro de volta passou a devolver também as permissões exatas.
+    - **Tela:**
+      - login com Google no app instalado do **computador** terminava numa tela sem saída (a volta cai na própria janela; agora a sessão abre ali mesmo);
+      - "Conectar Google Agenda" no app instalado do computador também ficava sem saída (o "feche a janela" agora é só no iPhone/iPad, com "Voltar" de reserva);
+      - número trocado na busca podia marcar para o cliente anterior e levar o apelido dele (busca zera na hora e o envio espera a busca);
+      - conta sem nome travava o agendamento;
+      - contexto da loja perdido ao retomar o login pela ponte, e reabertura a frio do app sem voltar à tela de espera;
+      - aviso de espera junto com erro;
+      - janela de consentimento do Google aberta ao voltar;
+      - "Pronto, você entrou!" antes de o app entrar (virou "Tudo certo com o Google");
+      - convite com nome da loja vazio na tela do parceiro, e com "horário marcado" quando enviado da ficha;
+      - troca grade/lista escondida mas a escolha salva valendo;
+      - falha momentânea escondendo o botão "Agendar" até recarregar;
+      - "Voltar" do celular com dois toques depois de fechar um ajuste ou uma seção pela seta (o defeito das seções era anterior).
+  - **Também:** coluna da esquerda da Agenda no computador descia 40 px em repouso (defeito anterior, achado pelo caçador de bugs); "Seu acesso nesta barbearia" em uma linha de resumo; `scripts/banco-local.sh` documentado ([scripts/README.md](../scripts/README.md)).
+  - **Teste de interface completo (03:00–04:20):** um agente percorreu a demonstração inteira (399 fotos, 320 a 1920 px, claro e escuro) e achou 15 defeitos visíveis; cinco agentes corrigiram por grupo de arquivos e cinco revisores tentaram derrubar cada correção. Tabela do que mudou em [analise-visual-2026-10-16.md](analise-visual-2026-10-16.md), seção 2. Os de maior efeito:
+    - Ajustes no celular abria a seção pela metade com a lista rolada: lista e subtela dividiam a mesma chave de rolagem do TanStack Router (`section.ts` copiava o `history.state`); agora cada tela tem a sua.
+    - Atendimento em andamento ia para "Anteriores" como "Já passou" (`filterReservations` em `src/lib/shop/appointments.ts` usa o término, com teste).
+    - No computador, o conteúdo agora encosta na coluna lateral com a mesma borda em todas as abas (regra registrada em [mb-interface.md](mb-interface.md)).
+    - A prévia da antecedência mínima não oferece mais horário com a loja fechada.
+    - Textos de senha cortados a 320 px em pt-PT e en-US.
+  - **Revisão final independente (04:20–05:55):** quatro revisores (SQL, correções de tela, integrações, varredura visual), cada achado conferido por um verificador; 25 achados confirmados e corrigidos:
+    - **Banco (nas migrations nº 95 e 96, ainda não aplicadas):**
+      - as colunas novas `appointments.shop_client_id` e `booked_by` estavam graváveis direto pela API: um profissional apontava o próprio atendimento para a ficha de outro e passava a ler e mudar essa ficha (gatilho `appointments_guard_client_columns`: só as funções do banco gravam);
+      - um atendimento podia apontar para a ficha de outra barbearia (chave composta `(barbershop_id, shop_client_id)`);
+      - a correção do WhatsApp de uma ficha aceitava o número de uma conta da loja;
+      - indicadores (`get_partner_rhythm`, `get_business_insights`, `get_professional_insights`) juntavam todos os clientes do balcão num só ou não os contavam;
+      - a tela de saída da equipe e a carteira do profissional mostravam o cliente do balcão sem nome;
+      - um código de login válido podia ocupar vários ids da ponte.
+    - **Tela:**
+      - o dia vindo da Agenda passava do prazo da agenda;
+      - erro ou cancelamento no Google pelo app instalado no computador terminava sem saída (agora volta para entrar com o aviso);
+      - corrigir o número religava os avisos desligados;
+      - conta sem nome deixava avisos vazios;
+      - o convite da ficha usava o nome interno da loja;
+      - Equipe com "+N" sem ícones;
+      - a demonstração não simulava o cliente "limited";
+      - "Parar repetição" prometia cancelar a data em andamento;
+      - o cartão da série perdia "Parar repetição" durante o atendimento;
+      - o Início dizia "Nenhum horário marcado" durante um atendimento;
+      - sair da aba Ajustes com uma seção aberta deixava entradas mortas no Voltar;
+      - trocar de aba mantinha a rolagem da anterior;
+      - "Tu clave" em vez de "contraseña".
+    - **Visual:**
+      - linha "Agora" com 3,2:1 no escuro e 4,3:1 no claro (agora 5,4 e 4,8);
+      - título da aba pulando 6 px;
+      - rótulos da barra do cliente abaixo de 4,5:1;
+      - dias de Bloqueios e botões do próximo horário estreitos a 1024 px;
+      - a faixa de 7 dias da Agenda ficou registrada como exceção em [mb-interface.md](mb-interface.md).
+  - **Confirmação (06:00–07:10):** três conferentes reproduziram de novo cada achado de tela com os roteiros dos verificadores; 21 de 23 resolvidos de primeira. O resto foi fechado e conferido de novo:
+    - com um ajuste de Ajustes aberto, a aba nova herdava a rolagem da lista;
+    - **trocar de barbearia com uma seção de Ajustes aberta tirava a pessoa do painel**: duas voltas no histórico ao mesmo tempo, defeito criado pela própria correção e pego aqui. Agora é uma volta por vez (`backPending` em `section.ts`), e nada troca o endereço enquanto ela não chega, porque o TanStack intercepta `pushState`/`replaceState`;
+    - dourado legível também no alto da página no tema claro (tinta calculada contra #D8D0C6, o ponto mais escuro do fundo);
+    - ícone do título com o mesmo dourado;
+    - primeira linha do título no mesmo lugar mesmo quando ele quebra;
+    - escolha de avisos à mão preservada depois de passar por um cliente de outro profissional;
+    - textos do cliente sem nome e do nome travado.
+- **Onde:** migrations `20261016120000_retorno_google_app_instalado.sql` e `20261016130000_agendamento_pelo_painel.sql` (+ testes `supabase/tests/retorno_google_app_instalado.sql` e `agendamento_pelo_painel.sql`; volta sem restaurar o banco: `supabase/manutencao/2026-10-16_desfazer_agendamento_painel.sql`); `src/lib/auth/google-relay*.ts`, `src/routes/auth_.retorno.tsx`, `auth.tsx`, `index.tsx`, `auth_.google-apps.tsx`; `src/features/shop/agenda/BookClientDialog.tsx`, `AgendaTab.tsx`, `AppointmentCard.tsx`, `TeamDayBoard.tsx`, `DaySummary.tsx`, `types.ts`; `src/features/shop/clients/` (regras com teste, apelido, convite); `ClientProfileModal.tsx`, `ClientDirectory.tsx`, `ShopShell.tsx`; demonstração (`src/features/demo/model.ts`, `clients.ts`, `slots.ts`); `styles.css` (coluna lateral), `CatalogFilters.tsx`, `ServicesTab.tsx`, `TeamTab.tsx`, `settings/section.ts`, `SettingsHub.tsx`, `BookingRulesSettings.tsx`, `WhatsAppChannelCard.tsx`, `BookingParts.tsx`; função `google-calendar-dispatch` (nome do cliente do balcão na Agenda Google); depois da revisão: `src/lib/standalone.ts`, `PartnerOverview.tsx`, `settings/MyAccessCard.tsx`, `clients/InviteCard.tsx`, `catalog/ServicesTab.tsx` e `TeamTab.tsx`; `scripts/banco-local.sh` (cópia local do banco); dicionários nos 4 idiomas.
+- **Como foi verificado:** cópia local do banco no Docker (`scripts/banco-local.sh subir 20261014120000`, igual à produção, 94 migrations): testes novos 12 + 62 PASS, bateria inteira (42 arquivos) 1.099 PASS e 0 FAIL com as duas migrations; o roteiro do passo 4 do pacote rodado aqui, com os mesmos 12 números; reaplicação dupla sem erro; o roteiro de volta devolve o banco exatamente ao de antes (retrato de 638 itens: definição e permissões de todas as funções de `public`, gatilhos, colunas, tabelas e políticas). `scripts/verificar.sh` (tipos, testes, eslint, prettier, montagem). Fotos na demonstração a 320, 390 e 1280 px, claro e escuro: agenda, janela "Agendar cliente" (busca do cliente com conta e do balcão, agendamento completo, convite), ficha, Ajustes → Agendamento item a item, Serviços, Equipe, Avisos, Agendar do cliente, coluna lateral nos três painéis, `/auth/retorno` e o convite de cadastro.
+- **Pendente:** aplicar as migrations nº 95 e 96 e, opcional, a função (P-73, pacote [implantacao-agendamento-painel-2026-10-16.md](implantacao-agendamento-painel-2026-10-16.md)); conferir no iPhone físico o login Google no app instalado (P-43); decisões do admin global e dos pontos do cliente do balcão (P-74, P-76); próximas simplificações (P-75). Não testado com login real nem em aparelho físico.
 
 ## Entrega — passagem de 15/10: "Qualquer profissional" na lista de espera, aba "Meus agendamentos" e avisos no cadastro (15/10, noite, Claude Code) — **aplicado no servidor e publicado**
 

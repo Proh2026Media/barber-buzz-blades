@@ -24,6 +24,7 @@ import { Route as BarberSlugRouteImport } from './routes/$barberSlug'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShopPontosRouteImport } from './routes/shop_.pontos'
 import { Route as BShopSlugRouteImport } from './routes/b.$shopSlug'
+import { Route as AuthRetornoRouteImport } from './routes/auth_.retorno'
 import { Route as AuthGoogleAppsRouteImport } from './routes/auth_.google-apps'
 
 const TermosRoute = TermosRouteImport.update({
@@ -101,6 +102,11 @@ const BShopSlugRoute = BShopSlugRouteImport.update({
   path: '/b/$shopSlug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthRetornoRoute = AuthRetornoRouteImport.update({
+  id: '/auth_/retorno',
+  path: '/auth/retorno',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthGoogleAppsRoute = AuthGoogleAppsRouteImport.update({
   id: '/auth_/google-apps',
   path: '/auth/google-apps',
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/shop': typeof ShopRoute
   '/termos': typeof TermosRoute
   '/auth/google-apps': typeof AuthGoogleAppsRoute
+  '/auth/retorno': typeof AuthRetornoRoute
   '/b/$shopSlug': typeof BShopSlugRoute
   '/shop/pontos': typeof ShopPontosRoute
 }
@@ -140,6 +147,7 @@ export interface FileRoutesByTo {
   '/shop': typeof ShopRoute
   '/termos': typeof TermosRoute
   '/auth/google-apps': typeof AuthGoogleAppsRoute
+  '/auth/retorno': typeof AuthRetornoRoute
   '/b/$shopSlug': typeof BShopSlugRoute
   '/shop/pontos': typeof ShopPontosRoute
 }
@@ -159,6 +167,7 @@ export interface FileRoutesById {
   '/shop': typeof ShopRoute
   '/termos': typeof TermosRoute
   '/auth_/google-apps': typeof AuthGoogleAppsRoute
+  '/auth_/retorno': typeof AuthRetornoRoute
   '/b/$shopSlug': typeof BShopSlugRoute
   '/shop_/pontos': typeof ShopPontosRoute
 }
@@ -179,6 +188,7 @@ export interface FileRouteTypes {
     | '/shop'
     | '/termos'
     | '/auth/google-apps'
+    | '/auth/retorno'
     | '/b/$shopSlug'
     | '/shop/pontos'
   fileRoutesByTo: FileRoutesByTo
@@ -197,6 +207,7 @@ export interface FileRouteTypes {
     | '/shop'
     | '/termos'
     | '/auth/google-apps'
+    | '/auth/retorno'
     | '/b/$shopSlug'
     | '/shop/pontos'
   id:
@@ -215,6 +226,7 @@ export interface FileRouteTypes {
     | '/shop'
     | '/termos'
     | '/auth_/google-apps'
+    | '/auth_/retorno'
     | '/b/$shopSlug'
     | '/shop_/pontos'
   fileRoutesById: FileRoutesById
@@ -234,6 +246,7 @@ export interface RootRouteChildren {
   ShopRoute: typeof ShopRoute
   TermosRoute: typeof TermosRoute
   AuthGoogleAppsRoute: typeof AuthGoogleAppsRoute
+  AuthRetornoRoute: typeof AuthRetornoRoute
   BShopSlugRoute: typeof BShopSlugRoute
   ShopPontosRoute: typeof ShopPontosRoute
 }
@@ -345,6 +358,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BShopSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth_/retorno': {
+      id: '/auth_/retorno'
+      path: '/auth/retorno'
+      fullPath: '/auth/retorno'
+      preLoaderRoute: typeof AuthRetornoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth_/google-apps': {
       id: '/auth_/google-apps'
       path: '/auth/google-apps'
@@ -370,6 +390,7 @@ const rootRouteChildren: RootRouteChildren = {
   ShopRoute: ShopRoute,
   TermosRoute: TermosRoute,
   AuthGoogleAppsRoute: AuthGoogleAppsRoute,
+  AuthRetornoRoute: AuthRetornoRoute,
   BShopSlugRoute: BShopSlugRoute,
   ShopPontosRoute: ShopPontosRoute,
 }

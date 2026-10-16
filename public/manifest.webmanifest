@@ -7,7 +7,7 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "background_color": "#e9e5de",
   "theme_color": "#20211f",
   "categories": ["lifestyle", "business"],

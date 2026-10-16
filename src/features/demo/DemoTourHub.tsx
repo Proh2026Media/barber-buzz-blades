@@ -49,23 +49,38 @@ function Group({
   labelKey,
   children,
   className,
+  cell = false,
 }: {
   labelKey: MessageKey;
   children: ReactNode;
   className?: string;
+  /**
+   * Coluna da fileira de cima: os rótulos dividem uma linha (colados ao botão, mesmo quando um
+   * quebra em duas linhas e o outro não) e os botões dividem a outra, todos com a mesma altura.
+   */
+  cell?: boolean;
 }) {
   const { t } = useI18n();
   return (
     <div
-      className={cn("flex min-w-0 flex-col gap-1.5", className)}
+      className={cn(
+        "min-w-0 gap-1.5",
+        cell ? "row-span-2 grid grid-rows-subgrid" : "flex flex-col",
+        className,
+      )}
       role="group"
       aria-label={t(labelKey)}
     >
       {/* Rótulo quebra de linha em vez de cortar; os botões ficam alinhados embaixo. */}
-      <p className="break-words px-0.5 text-xs font-semibold leading-tight text-muted-foreground">
+      <p
+        className={cn(
+          "break-words px-0.5 text-xs font-semibold leading-tight text-muted-foreground",
+          cell && "self-end",
+        )}
+      >
         {t(labelKey)}
       </p>
-      <div className="mt-auto">{children}</div>
+      <div className={cell ? undefined : "mt-auto"}>{children}</div>
     </div>
   );
 }
@@ -166,26 +181,29 @@ export function DemoTourHub({
         </Hint>
       ) : (
         <div className="space-y-3">
-          <div className="grid grid-cols-3 gap-2">
-            <Group labelKey="demo.hub.groupClient">{roleTile(byId("customer"))}</Group>
-            <Group labelKey="demo.hub.groupPlatform">{roleTile(byId("platform"))}</Group>
-            <Group labelKey="demo.hub.groupBefore">
+          <div className="grid grid-cols-3 gap-x-2 gap-y-1.5">
+            <Group cell labelKey="demo.hub.groupClient">
+              {roleTile(byId("customer"))}
+            </Group>
+            <Group cell labelKey="demo.hub.groupPlatform">
+              {roleTile(byId("platform"))}
+            </Group>
+            <Group cell labelKey="demo.hub.groupBefore">
+              {/* Sem aria-pressed, a regra geral de botões do app (13 px) valeria aqui: o texto
+                  fica no tamanho dos outros blocos. "Prévia" vai embaixo do nome, como o modo
+                  da sociedade nos blocos de dono, e não por cima do ícone. */}
               <button
                 type="button"
                 disabled={!onPreviewLogin}
                 onClick={onPreviewLogin}
                 title={t("demo.scene.loginHint")}
-                className={cn(TILE, TILE_OFF, "relative")}
+                className={cn(TILE, TILE_OFF, "text-xs! leading-tight!")}
               >
                 <TileIcon icon={LogIn} />
                 <span className="break-words">{t("demo.hub.login")}</span>
-                <StatusBadge
-                  tone="neutral"
-                  icon={null}
-                  label={t("demo.hub.preview")}
-                  size="sm"
-                  className="absolute -top-2 end-1"
-                />
+                <span className="break-words text-[0.6875rem] font-semibold leading-tight text-muted-foreground">
+                  {t("demo.hub.preview")}
+                </span>
               </button>
             </Group>
           </div>

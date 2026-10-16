@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, ChevronRight, Clock3, RefreshCw, Search, Users, X } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Clock3,
+  ContactRound,
+  RefreshCw,
+  Search,
+  Users,
+  X,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
 import {
@@ -13,16 +22,26 @@ import {
 } from "@/components/visual";
 import { ClientProfileModal } from "./ClientProfileModal";
 import { ClientNoticeBell } from "./ClientNoticeBell";
+import { clientDisplay } from "./clients/model";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 type ClientRow = {
-  customer_id: string;
+  /** Nulo: cliente do balcão (sem conta) ou conta excluída. */
+  customer_id: string | null;
   customer_name: string | null;
   visits: number;
   total_spent_cents: number;
   last_visit: string;
+  /** Migration 20261016130000 (ausentes antes dela): ficha do balcão, apelido e se tem conta. */
+  shop_client_id?: string | null;
+  nickname?: string | null;
+  has_account?: boolean;
 };
+
+/** Chave estável da linha: a conta ou a ficha do balcão. */
+const rowKey = (row: ClientRow) =>
+  row.customer_id ?? (row.shop_client_id ? `sc:${row.shop_client_id}` : "sem-conta");
 
 type SortMode = "recent" | "visits" | "away";
 
@@ -42,7 +61,8 @@ const normalize = (value: string) =>
 /**
  * Clientes da barbearia (ou só os do parceiro): busca por nome, ordem em pílulas (recentes, mais
  * visitas, há mais tempo sem vir) e, em cada linha, avatar, visitas, total e "há N dias".
- * Abre recolhido; o atalho do topo da Agenda (`openOnHash`) abre direto.
+ * Abre recolhido; o atalho do topo da Agenda (`openOnHash`) abre direto. Com `embedded` (janela
+ * que já tem título e X), é só a lista, sempre aberta.
  */
 export function ClientDirectory({
   shopId,
@@ -51,14 +71,25 @@ export function ClientDirectory({
   title,
   openOnHash,
   defaultOpen = false,
+  embedded = false,
+  publicOrigin = null,
+  shopName = "",
 }: {
   shopId: string;
   staffId?: string | null;
   scope: "own" | "shop";
   title: string;
+  /** Endereço público e nome da barbearia (convite de cadastro do cliente do balcão). */
+  publicOrigin?: string | null;
+  shopName?: string;
   /** Abre sozinho quando a página vai para esta âncora (ex.: "agenda-extra-clients"). */
   openOnHash?: string;
   defaultOpen?: boolean;
+  /**
+   * Dentro de uma janela com título próprio (atalho da Agenda no celular): sem o cabeçalho de
+   * recolher (título repetido) e sempre aberta; a contagem fica logo acima da lista.
+   */
+  embedded?: boolean;
 }) {
   const { t, intlLocale } = useI18n();
   const demo = useDemo();
@@ -67,6 +98,7 @@ export function ClientDirectory({
   const [error, setError] = useState(false);
   const [selected, setSelected] = useState<ClientRow | null>(null);
   const [open, setOpen] = useState(defaultOpen);
+  const expanded = embedded || open;
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [reloadKey, setReloadKey] = useState(0);
   const [query, setQuery] = useState("");
@@ -96,6 +128,8 @@ export function ClientDirectory({
       );
       const byCustomer = new Map<string, { visits: number; spent: number; last: string }>();
       for (const row of completed) {
+        // Sem conta (cliente do balcão) fica fora da lista de contas da demonstração.
+        if (!row.customer_id) continue;
         const prev = byCustomer.get(row.customer_id) ?? { visits: 0, spent: 0, last: "" };
         byCustomer.set(row.customer_id, {
           visits: prev.visits + 1,
@@ -110,6 +144,8 @@ export function ClientDirectory({
           visits: value.visits,
           total_spent_cents: value.spent,
           last_visit: value.last,
+          nickname: demo.shopClients.find((c) => c.profile_id === customer_id)?.nickname ?? null,
+          has_account: true,
         })),
       );
       setLoading(false);
@@ -137,7 +173,9 @@ export function ClientDirectory({
   const shown = useMemo(() => {
     const term = normalize(query);
     const filtered = term
-      ? clients.filter((row) => normalize(row.customer_name ?? "").includes(term))
+      ? clients.filter((row) =>
+          normalize(`${row.customer_name ?? ""} ${row.nickname ?? ""}`).includes(term),
+        )
       : clients;
     const sorted = [...filtered];
     if (sort === "recent") sorted.sort((a, b) => b.last_visit.localeCompare(a.last_visit));
@@ -153,7 +191,7 @@ export function ClientDirectory({
 
   // Carregamento por rolagem: quando o sentinela aparece, libera mais 25.
   useEffect(() => {
-    if (!open || visible >= shown.length) return;
+    if (!expanded || visible >= shown.length) return;
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
     const observer = new IntersectionObserver(
@@ -166,7 +204,7 @@ export function ClientDirectory({
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [open, visible, shown.length]);
+  }, [expanded, visible, shown.length]);
 
   const relative = useMemo(
     () => new Intl.RelativeTimeFormat(intlLocale, { numeric: "auto" }),
@@ -193,36 +231,41 @@ export function ClientDirectory({
 
   return (
     <div className="space-y-3">
-      <button
-        type="button"
-        onClick={() => {
-          setOpen((value) => !value);
-          if (!open) window.setTimeout(() => searchRef.current?.focus({ preventScroll: true }), 50);
-        }}
-        aria-expanded={open}
-        className="flex min-h-12 w-full items-center gap-3 rounded-xl text-left"
-      >
-        <IconTile icon={Users} />
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-bold">{title}</span>
-          {countLabel && <span className="block text-xs text-muted-foreground">{countLabel}</span>}
-        </span>
-        {!open && (
-          <span className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground">
-            <Search className="size-3.5" aria-hidden />
-            {t("team.clients.search")}
+      {!embedded && (
+        <button
+          type="button"
+          onClick={() => {
+            setOpen((value) => !value);
+            if (!open)
+              window.setTimeout(() => searchRef.current?.focus({ preventScroll: true }), 50);
+          }}
+          aria-expanded={open}
+          className="flex min-h-12 w-full items-center gap-3 rounded-xl text-left"
+        >
+          <IconTile icon={Users} />
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-bold">{title}</span>
+            {countLabel && (
+              <span className="block text-xs text-muted-foreground">{countLabel}</span>
+            )}
           </span>
-        )}
-        <ChevronDown
-          className={cn(
-            "size-4 shrink-0 text-muted-foreground transition-transform",
-            open && "rotate-180",
+          {!open && (
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground">
+              <Search className="size-3.5" aria-hidden />
+              {t("team.clients.search")}
+            </span>
           )}
-          aria-hidden
-        />
-      </button>
+          <ChevronDown
+            className={cn(
+              "size-4 shrink-0 text-muted-foreground transition-transform",
+              open && "rotate-180",
+            )}
+            aria-hidden
+          />
+        </button>
+      )}
 
-      {open && (
+      {expanded && (
         <>
           {loading ? (
             <LoadingState label={t("team.clients.loading")} variant="list" count={4} />
@@ -256,7 +299,8 @@ export function ClientDirectory({
                   type="search"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder={t("team.clients.searchLabel")}
+                  // Curto para caber inteiro a 320 px; o leitor de tela lê o rótulo completo.
+                  placeholder={t("team.clients.searchShort")}
                   className="min-h-11 w-full rounded-xl border border-border bg-background py-2 pl-10 pr-3 text-sm"
                 />
               </label>
@@ -271,7 +315,7 @@ export function ClientDirectory({
                   { value: "away", label: t("team.clients.sortAway") },
                 ]}
               />
-              {query.trim() && (
+              {query.trim() ? (
                 <p role="status" className="flex items-center gap-2 text-sm font-semibold">
                   {t("brand.catalog.results", { visible: shown.length, total: clients.length })}
                   <button
@@ -282,6 +326,12 @@ export function ClientDirectory({
                     <X className="size-4" aria-hidden /> {t("brand.catalog.clear")}
                   </button>
                 </p>
+              ) : (
+                // Sem o cabeçalho, a contagem ("200 clientes") fica no lugar do resultado da busca.
+                embedded &&
+                countLabel && (
+                  <p className="text-xs font-semibold text-muted-foreground">{countLabel}</p>
+                )
               )}
               {shown.length === 0 ? (
                 <EmptyState
@@ -302,11 +352,13 @@ export function ClientDirectory({
               ) : (
                 <ul className="space-y-2">
                   {visibleClients.map((client) => {
-                    const name = client.customer_name ?? t("team.partner.clientFallback");
+                    const shownName = clientDisplay(client.customer_name, client.nickname);
+                    const name = shownName.primary ?? t("team.partner.clientFallback");
                     const ago = since(client.last_visit);
+                    const walkIn = !client.customer_id && !!client.shop_client_id;
                     return (
                       <li
-                        key={client.customer_id}
+                        key={rowKey(client)}
                         className="flex items-center gap-2 rounded-2xl border border-border bg-card p-2"
                       >
                         <button
@@ -319,13 +371,19 @@ export function ClientDirectory({
                         >
                           <PersonAvatar
                             name={name.replace(/\([^)]*\)/g, "").trim() || name}
-                            seed={client.customer_id}
+                            seed={rowKey(client)}
                             size="sm"
                           />
                           <span className="min-w-0 flex-1 space-y-1">
                             <span className="line-clamp-2 block break-words text-sm font-semibold">
                               {name}
+                              {shownName.secondary && (
+                                <span className="ms-1.5 text-xs font-medium text-muted-foreground">
+                                  {shownName.secondary}
+                                </span>
+                              )}
                             </span>
+                            {walkIn && <Tag icon={ContactRound}>{t("agenda.client.walkIn")}</Tag>}
                             <span className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                               <span>
                                 {scope === "own"
@@ -351,11 +409,13 @@ export function ClientDirectory({
                             aria-hidden
                           />
                         </button>
-                        <ClientNoticeBell
-                          shopId={shopId}
-                          customerId={client.customer_id}
-                          customerName={client.customer_name}
-                        />
+                        {client.customer_id && (
+                          <ClientNoticeBell
+                            shopId={shopId}
+                            customerId={client.customer_id}
+                            customerName={client.customer_name}
+                          />
+                        )}
                       </li>
                     );
                   })}
@@ -377,13 +437,17 @@ export function ClientDirectory({
         </>
       )}
 
-      {selected && (
+      {selected && (selected.customer_id || selected.shop_client_id) && (
         <ClientProfileModal
           shopId={shopId}
           customerId={selected.customer_id}
+          shopClientId={selected.customer_id ? null : (selected.shop_client_id ?? null)}
           customerName={selected.customer_name}
           ownVisits={scope === "own" ? selected.visits : undefined}
+          publicOrigin={publicOrigin}
+          shopName={shopName}
           onClose={() => setSelected(null)}
+          onChanged={() => setReloadKey((key) => key + 1)}
         />
       )}
     </div>
