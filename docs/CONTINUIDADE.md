@@ -1,10 +1,10 @@
 # Transição para a próxima IA — Barba & Cabelo
 
-**16/10/2026 (madrugada) — entrega do Claude Code:** agendamento pelo barbeiro no painel, apelido e cliente do balcão, selo de cliente recorrente, login Google no app instalado e simplificação visual (entrada logo abaixo da Diretriz). Falta aplicar no banco as migrations nº 95 e 96 (P-73, pacote [implantacao-agendamento-painel-2026-10-16.md](implantacao-agendamento-painel-2026-10-16.md)).
+**20/10/2026 (noite) — aplicado no servidor:** as migrations nº 95 e 96 e a função `google-calendar-dispatch` da entrega de 16/10 (agendamento pelo barbeiro no painel, cliente do balcão, recorrente, login Google no app instalado), pelo TI, com o pacote [implantacao-agendamento-painel-2026-10-16.md](implantacao-agendamento-painel-2026-10-16.md). Última migration em produção: `20261016130000_agendamento_pelo_painel`. Falta só o teste do dono no celular (P-43).
 
 **15/10/2026 (noite) — passagem concluída no Claude Code:** ver a entrada "Passagem de 15/10" logo abaixo da Diretriz. Comece por [LEIA-PRIMEIRO.md](LEIA-PRIMEIRO.md). A função `register-shop` da P-38 foi publicada às 22:54; faltam os pacotes do Google (P-69 e P-28, em [pacotes/](pacotes/)).
 
-Atualizado em **16/10/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
+Atualizado em **20/10/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
 ## Comece aqui
 
@@ -105,7 +105,24 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
-## Entrega — agendamento pelo painel, cliente do balcão, recorrente, login Google no app instalado e simplificação visual (16/10, madrugada, Claude Code) — **migrations pendentes na VPS**
+## Aplicação no servidor das migrations nº 95 e 96 e da função `google-calendar-dispatch` (20/10, noite, TI; registrado pelo Claude Code) — **aplicado no servidor**
+
+- **O que:** o pacote [implantacao-agendamento-painel-2026-10-16.md](implantacao-agendamento-painel-2026-10-16.md) inteiro (partes A e B), pelo assistente operacional de TI, a pedido do dono, em 20/10/2026 entre 20:02 e 20:08 de Brasília (23:02–23:08 UTC). Rodou antes das 21h com autorização do dono (app sem uso). Nenhum "Como desfazer" foi usado.
+- **Como foi executado (diferente do pacote, sem efeito no resultado):** do computador do TI, por `ssh root@187.127.60.78` (host `srv1916847`, a mesma VPS do `vps-barba`), com os arquivos de um clone do GitHub no commit `40d6c98`; os seis hashes conferiram com o pacote.
+- **Resultado, conferido pelo relatório e depois pelo Claude Code (20/10, só leitura):**
+  - diagnóstico antes: nada aplicado (nº 94 presente, funções novas 0);
+  - backup do banco `/root/backup-barba-cabelo-20261020-230246.dump` (1,3 MB; `pg_restore -l` com 102 entradas de dados). O pacote esperava "dezenas de MB" por engano: o banco tem 22 MB e as cópias de 03/10 e 13/10 têm 1,1 a 1,3 MB;
+  - ensaio: as 12 linhas com 0 FAIL e `ROLLBACK`, com os números esperados (12, 62, 43, 30, 8, 13, 25, 27, 29, 14, 36 e 52);
+  - aplicação: as duas migrations a partir de 20:04:48 (23:04:48 UTC);
+  - conferência no banco: funções novas 14, permissões `true false true false false false`, clientes do balcão 0. Conferido de novo pelo Claude Code: os dois gatilhos (`memberships_link_shop_clients`, `appointments_guard_client_columns`), a chave composta `appointments_shop_client_fkey`, as colunas novas de `appointments` e as tabelas `shop_clients` e `oauth_code_relay`;
+  - API pública (feita pelo Claude Code do Mac, porque depende da chave do `.env`): `oauth_relay_take` com id aleatório → `null`, HTTP 200; `find_shop_client` sem login → recusado (42501), ou seja, a função existe para a API;
+  - parte B: `google-calendar-dispatch` trocada da versão `f8640f20…` para `9813ec59…f678a5`, cópia da antiga em `/root/functions-backup-google-calendar-dispatch-20261020-230531`; reiniciado só o container das funções às 20:05:39 (23:05:39 UTC), `healthy`, sem erros depois (conferido também 30 min depois: 0 linhas de erro).
+- **Defeito do pacote (registrado para os próximos):** no passo 5, o `docker exec -i … -c "notify pgrst…"` dentro do bloco `ssh … 'bash -s' <<'EOF'` leu o resto do script como entrada; o notify foi rodado de novo, sozinho, às 20:05:05. Regra nova em [guia/banco-e-implantacao.md](guia/banco-e-implantacao.md), seção 5: comando com `-c` vai sem `-i`.
+- **Fica uma cópia do backup fora da VPS**, no computador do TI (`/workspace/barba-20261016/backup/`, mesmo hash). Ela tem dados pessoais de clientes: guardar com o mesmo cuidado da VPS ou apagar quando não for mais necessária (decisão do dono).
+- **P-31** (lista de espera "Qualquer profissional"): não entrou no envio `40d6c98` (que só mexeu no tipo da demonstração da espera); foi publicada em 15/10 (`dab56a7`, `d7f938a`) e nunca foi conferida em celular físico (P-43).
+- **Pendente:** teste do dono no celular (P-43): no painel, o botão "Agendar" e o "Agendar aqui"; no iPhone com o app instalado, "Continuar com Google".
+
+## Entrega — agendamento pelo painel, cliente do balcão, recorrente, login Google no app instalado e simplificação visual (16/10, madrugada, Claude Code) — **aplicado no servidor em 20/10**
 
 - **O que:**
   - **Barbeiro marca para o cliente pelo painel:** botão **Agendar** no topo da Agenda e **Agendar aqui** em cada horário livre. Pede WhatsApp e nome; se o número (confirmado por código) for de um cliente da barbearia com conta, o nome do cadastro entra sozinho com o aviso "Nome atualizado para o do cadastro" e o horário vai para a conta dele. Senão vira **cliente do balcão** (sem conta), com interruptor de avisos pelo WhatsApp. Avisos iguais aos do app (confirmação, remarcação, cancelamento, lembrete). Cliente do balcão não tem horário recorrente: a tela avisa e oferece **convite para o app** (WhatsApp com mensagem pronta e link de cadastro com o número preenchido, `/auth?cadastro=1&whatsapp=`). Quando ele se cadastra e confirma o WhatsApp, a ficha e os horários passam para a conta; o nome usado pela equipe vira apelido.
