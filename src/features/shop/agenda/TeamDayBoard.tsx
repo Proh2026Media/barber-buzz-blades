@@ -1,4 +1,4 @@
-import { useRef, type CSSProperties } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 import { Lock, Moon, Repeat, Timer } from "lucide-react";
 import { ServiceIcon } from "@/components/ui/service-icon";
 import { PersonAvatar, STATE, StatusBadge, TONE_CLASS, personColor } from "@/components/visual";
@@ -19,7 +19,7 @@ const MIN_BLOCK_PX = 24;
 const LABEL_LINE_PX = 22;
 
 /**
- * Agenda da equipe no computador: uma coluna por profissional (foto, nome e cor dele no topo),
+ * Agenda da equipe no tablet e no computador: uma coluna por profissional (foto, nome e cor no topo),
  * atendimentos como blocos na altura do horário e na cor da situação, bloqueios em vermelho
  * listrado, horário fechado em cinza e a linha dourada do "agora". Tocar num atendimento abre o
  * cartão completo, com as mesmas ações da lista.
@@ -62,6 +62,9 @@ export function TeamDayBoard({
   // O cabeçalho (foto e nome de cada profissional) fica fora da área que rola de lado, para
   // poder grudar no topo enquanto a página desce; ele acompanha a rolagem lateral do corpo.
   const headRef = useRef<HTMLDivElement>(null);
+  // Ao abrir o quadro (ou trocar de dia), a linha do "agora" vem para o meio da tela: quem abre
+  // a Equipe quer ver o que está acontecendo, não as 8h da manhã (P-79). Só na vertical.
+  const nowRef = useRef<HTMLSpanElement>(null);
   const minuteOf = (value: number) => (value - dayStart) / MINUTE;
   // Idiomas de 12 h ("01:00 PM") pedem uma régua mais larga.
   const hour12 = !!new Intl.DateTimeFormat(intlLocale, {
@@ -103,6 +106,10 @@ export function TeamDayBoard({
   const hours = Array.from({ length: (last - first) / 60 + 1 }, (_, index) => first + index * 60);
   const nowMinute = now !== null ? minuteOf(now) : null;
   const showNow = nowMinute !== null && nowMinute >= first && nowMinute <= last;
+  useEffect(() => {
+    if (!showNow) return;
+    nowRef.current?.scrollIntoView({ block: "center", inline: "nearest" });
+  }, [dayStart, showNow]);
 
   const closedSpans: Array<[number, number]> = open
     ? (
@@ -139,8 +146,9 @@ export function TeamDayBoard({
     height,
     backgroundImage: `repeating-linear-gradient(to bottom, var(--border) 0 1px, transparent 1px ${HOUR_PX}px)`,
   };
-  // Largura mínima de cada coluna: 10rem; de 1024 a 1535 px o CSS da área baixa para 8.5rem
-  // (--agenda-board-col em src/styles/agenda.css), para quatro profissionais caberem.
+  // Largura mínima de cada coluna: 10rem; em telas menores o CSS da área baixa a variável
+  // --agenda-board-col (src/styles/agenda.css: 7.5rem no tablet em pé, 7rem de 1024 a 1279,
+  // 8.5rem de 1280 a 1535), para quatro profissionais caberem sem rolar de lado.
   const gridStyle: CSSProperties = {
     gridTemplateColumns: `${hour12 ? "4.5rem" : "3.25rem"} repeat(${columns.length}, minmax(var(--agenda-board-col, 10rem), 1fr))`,
   };
@@ -235,6 +243,7 @@ export function TeamDayBoard({
                 ))}
                 {showNow && nowMinute !== null && (
                   <span
+                    ref={nowRef}
                     className="absolute end-1 z-10 -translate-y-1/2 rounded-md bg-gold px-1 text-[11px] font-extrabold tabular-nums text-primary-foreground"
                     style={{ top: y(nowMinute) }}
                   >

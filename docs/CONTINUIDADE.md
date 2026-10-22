@@ -107,6 +107,13 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## 22/10/2026 (manhã) — P-79: quadro da equipe no tablet em pé (Claude Code, aplicativo) — **publicada em 22/10/2026**
+
+- **O que:** a visão Equipe da Agenda mostra o quadro por profissional desde o tablet em pé (768 px), não só a partir de 1024. Em 768 as colunas têm 7.5rem e quatro profissionais cabem ao lado da régua sem rolar (equipes maiores rolam de lado, com a régua e o cabeçalho fixos). Entre 1024 e 1279, com o quadro à vista, a coluna do dia recolhe de 22rem para 20rem (o calendário do mês continua inteiro) e as colunas ficam em 7rem: quatro profissionais cabem sem rolar. Ao abrir o quadro, ou ao voltar para hoje, a linha dourada do "agora" vem para o meio da tela. No celular nada muda (a lista continua).
+- **Onde:** `useBoardWidth` em [board.ts](../../src/features/shop/agenda/board.ts) e `boardMode` no [AgendaTab.tsx](../../src/features/shop/agenda/AgendaTab.tsx); rolagem até "agora" no [TeamDayBoard.tsx](../../src/features/shop/agenda/TeamDayBoard.tsx); faixas e larguras em `src/styles/agenda.css` (regras do quadro na faixa ≥ 768; `--agenda-board-col` 7.5rem / 7rem / 8.5rem / 10rem por faixa; `.agenda-layout:has(.agenda-board)` em 1024–1279).
+- **Como foi verificado:** fotos em 390 (lista, como antes), 768, 1024 e 1280 pela visão Equipe; medidas de largura do quadro × largura da grade (iguais em 768 e 1024, sem rolagem lateral) e da posição da linha "agora" (centro da área visível); revisor independente no código e no navegador; `scripts/verificar.sh` completo antes do envio.
+- **Pendente:** o teste do dono no iPad (P-43). Os outros itens da seção 9 das pendências seguem como estavam.
+
 ## 22/10/2026 — Interface por dispositivo (Claude Code, aplicativo) — **publicada em 22/10/2026**
 
 Começou em 21/10 à noite e terminou em 22/10 de madrugada. Plano, diagnóstico e decisões: [dispositivos-2026-10-21.md](dispositivos-2026-10-21.md) (a seção 9 registra o que foi feito). Só interface: não mudou banco, migrations, funções nem permissões.

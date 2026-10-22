@@ -63,7 +63,7 @@ import {
   type Interval,
 } from "./model";
 import { AppointmentSummary, useShopTime } from "./summary";
-import { useDesktop } from "./board";
+import { useBoardWidth, useDesktop } from "./board";
 import { TeamDayBoard } from "./TeamDayBoard";
 import {
   AGENDA_STATE,
@@ -232,6 +232,8 @@ export function AgendaTab({
   const [boardTarget, setBoardTarget] = useState<string | null>(null);
   const [openExtra, setOpenExtra] = useState<string | null>(null);
   const desktop = useDesktop();
+  // Tablet em pé e acima: a visão Equipe vira o quadro por profissional (P-79).
+  const boardWide = useBoardWidth();
   // Celular: busca atrás da lupa e pílulas com rolagem lateral. Tablet e computador: busca
   // sempre aberta e pílulas quebrando em linhas (rolar de lado com o mouse é ruim).
   const phone = useDevice() === "celular";
@@ -364,12 +366,12 @@ export function AgendaTab({
       }
     : null;
   const daySpan = { start: range.start.getTime(), end: range.end.getTime() };
-  // Computador, visão da equipe toda: uma coluna por profissional (no celular, a lista).
+  // Tablet e computador, visão da equipe toda: uma coluna por profissional (no celular, a lista).
   const boardStaff = staff.filter(
     (member) => member.active || daySet.some((row) => row.staff_id === member.id),
   );
   const boardMode =
-    desktop &&
+    boardWide &&
     showStaff &&
     !activeStaffFilter &&
     boardStaff.length > 1 &&

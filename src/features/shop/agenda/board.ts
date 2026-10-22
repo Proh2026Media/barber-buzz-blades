@@ -5,15 +5,24 @@
 import type { CSSProperties } from "react";
 import { Ban, type LucideIcon } from "lucide-react";
 import { BLOCK_REASONS } from "@/features/shop/hours/reasons";
-import { useViewportAtLeast } from "@/lib/device";
+import { DEVICE_MIN, useViewportAtLeast } from "@/lib/device";
 import { useI18n } from "@/lib/i18n";
 import { momentOf } from "./model";
 import { useShopTime } from "./summary";
 import type { AgendaBlock, CardState, DayAppointment } from "./types";
 
-/** Computador compacto (a partir de 1024 px): onde o quadro por profissional cabe. */
+/** Computador compacto (a partir de 1024 px): coluna do dia ao lado da lista, mês à vista. */
 export function useDesktop() {
   return useViewportAtLeast(1024);
+}
+
+/**
+ * Onde o quadro por profissional cabe: do tablet em pé (768 px) em diante, com colunas mais
+ * estreitas (--agenda-board-col em src/styles/agenda.css) e rolagem lateral quando a equipe é
+ * grande. No celular fica a lista (P-79, 22/10/2026).
+ */
+export function useBoardWidth() {
+  return useViewportAtLeast(DEVICE_MIN.tablet);
 }
 
 /** Situação do bloco no quadro: a mesma do selo do cartão (sem os fatos de falta). */
