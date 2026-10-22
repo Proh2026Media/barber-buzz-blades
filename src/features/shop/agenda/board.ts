@@ -2,25 +2,18 @@
  * Regras e ganchos da Agenda que não desenham nada: modo computador, situação do bloco no quadro,
  * divisão em faixas quando atendimentos se sobrepõem e como mostrar um bloqueio.
  */
-import { useEffect, useState, type CSSProperties } from "react";
+import type { CSSProperties } from "react";
 import { Ban, type LucideIcon } from "lucide-react";
 import { BLOCK_REASONS } from "@/features/shop/hours/reasons";
+import { useViewportAtLeast } from "@/lib/device";
 import { useI18n } from "@/lib/i18n";
 import { momentOf } from "./model";
 import { useShopTime } from "./summary";
 import type { AgendaBlock, CardState, DayAppointment } from "./types";
 
-/** Computador (a partir de 1024 px): onde o quadro por profissional cabe. */
+/** Computador compacto (a partir de 1024 px): onde o quadro por profissional cabe. */
 export function useDesktop() {
-  const [desktop, setDesktop] = useState(false);
-  useEffect(() => {
-    const query = window.matchMedia("(min-width: 1024px)");
-    const update = () => setDesktop(query.matches);
-    update();
-    query.addEventListener("change", update);
-    return () => query.removeEventListener("change", update);
-  }, []);
-  return desktop;
+  return useViewportAtLeast(1024);
 }
 
 /** Situação do bloco no quadro: a mesma do selo do cartão (sem os fatos de falta). */

@@ -17,7 +17,16 @@ import {
   XCircle,
   type LucideIcon,
 } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogActions,
+  DialogAside,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   ActionResult,
   ConfirmDialog,
@@ -36,6 +45,7 @@ import {
 } from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
 import { guardedFetch } from "@/lib/demo-guard";
+import { useDevice } from "@/lib/device";
 import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
 import { friendlyIntegrationError } from "@/lib/integrations/friendly-error";
 
@@ -262,6 +272,94 @@ export const PlatformWhatsAppCard = forwardRef<
 
   const meta = STATUS_META[status];
   const canShowQr = Boolean(qrcode) && (status === "qr" || status === "connecting");
+  // Janela do código: no celular, uma coluna (como sempre); a partir de 768 px, janela larga
+  // com as instruções à esquerda e o código fixo à direita.
+  const phone = useDevice() === "celular";
+
+  const qrSteps = (
+    // Instruções, não progresso: os três passos com o mesmo peso, na ordem.
+    <ol className="space-y-2" aria-label={t("plat.wa.qrTitle")}>
+      {QR_STEPS.map(({ key, icon: Icon, labelKey }, index) => (
+        <li key={key} className="flex items-center gap-3">
+          <span
+            aria-hidden
+            className="grid size-8 shrink-0 place-items-center rounded-full bg-primary text-xs font-bold tabular-nums text-primary-foreground"
+          >
+            {index + 1}
+          </span>
+          <Icon className="size-4 shrink-0 text-gold" aria-hidden />
+          <span className="min-w-0 text-sm font-semibold leading-snug">{t(labelKey)}</span>
+        </li>
+      ))}
+    </ol>
+  );
+  const qrCode = qrcode ? (
+    <>
+      <img
+        src={qrcode}
+        alt={t("integr.platformWa.qrAlt")}
+        className="mx-auto size-56 rounded-2xl border border-border bg-white p-2"
+      />
+      {/* "Esperando a leitura…" só quando há um código para ler. */}
+      <div className="flex justify-center">
+        <StatusBadge {...STATE.waiting} label={t("plat.wa.waiting")} live />
+      </div>
+    </>
+  ) : (
+    <Notice
+      tone="warning"
+      role="none"
+      title={t("plat.wa.noCode")}
+      action={{
+        label: busy === "connect" ? t("integr.wa.status.connecting") : t("plat.wa.newCode"),
+        onClick: () => {
+          if (busy === null) void connect();
+        },
+        icon: RefreshCw,
+      }}
+    />
+  );
+  const qrNotes = (
+    <>
+      {scanNote && status !== "open" && (
+        <Notice
+          tone="pending"
+          icon={STATE.waiting.icon}
+          title={t("plat.wa.notYet")}
+          onDismiss={() => setScanNote(false)}
+        />
+      )}
+      {error && (
+        <Notice
+          tone="danger"
+          title={error.text}
+          action={{ label: t("visual.retry"), onClick: error.retry, icon: RefreshCw }}
+        />
+      )}
+      <Hint icon={Info}>{t("plat.wa.whichNumber")}</Hint>
+    </>
+  );
+  const qrScanned = (
+    <button
+      type="button"
+      disabled={busy !== null}
+      onClick={() => void checkScanned()}
+      className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-background text-sm font-semibold disabled:opacity-60 tablet:w-auto tablet:px-4"
+    >
+      {busy === "status" ? (
+        <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />
+      ) : (
+        <CheckCircle2 className="size-4" aria-hidden />
+      )}
+      {t("plat.wa.scanned")}
+    </button>
+  );
+  const qrConnected = (
+    <div className="flex flex-col items-center gap-3 py-6 text-center" role="status">
+      <IconTile icon={CheckCircle2} tone="success" size="lg" />
+      <p className="text-base font-bold">{t("integr.platformWa.connected")}</p>
+    </div>
+  );
 
   return (
     <section
@@ -428,94 +526,51 @@ export const PlatformWhatsAppCard = forwardRef<
           }
         }}
       >
-        <DialogContent className="max-h-[92dvh] max-w-sm rounded-3xl border-border bg-card p-5">
-          <DialogTitle className="min-h-11 pr-12 pt-2 text-lg font-bold leading-snug">
-            {t("plat.wa.qrTitle")}
-          </DialogTitle>
-          <DialogDescription className="sr-only">{t("plat.wa.qrDescription")}</DialogDescription>
-          {justConnected ? (
-            <div className="flex flex-col items-center gap-3 py-6 text-center" role="status">
-              <IconTile icon={CheckCircle2} tone="success" size="lg" />
-              <p className="text-base font-bold">{t("integr.platformWa.connected")}</p>
-            </div>
-          ) : (
-            <>
-              {/* Instruções, não progresso: os três passos com o mesmo peso, na ordem. */}
-              <ol className="space-y-2" aria-label={t("plat.wa.qrTitle")}>
-                {QR_STEPS.map(({ key, icon: Icon, labelKey }, index) => (
-                  <li key={key} className="flex items-center gap-3">
-                    <span
-                      aria-hidden
-                      className="grid size-8 shrink-0 place-items-center rounded-full bg-primary text-xs font-bold tabular-nums text-primary-foreground"
-                    >
-                      {index + 1}
-                    </span>
-                    <Icon className="size-4 shrink-0 text-gold" aria-hidden />
-                    <span className="min-w-0 text-sm font-semibold leading-snug">
-                      {t(labelKey)}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-              {qrcode ? (
-                <>
-                  <img
-                    src={qrcode}
-                    alt={t("integr.platformWa.qrAlt")}
-                    className="mx-auto size-56 rounded-2xl border border-border bg-white p-2"
-                  />
-                  {/* "Esperando a leitura…" só quando há um código para ler. */}
-                  <div className="flex justify-center">
-                    <StatusBadge {...STATE.waiting} label={t("plat.wa.waiting")} live />
+        {phone ? (
+          <DialogContent className="max-h-[92dvh] max-w-sm rounded-3xl border-border bg-card p-5">
+            <DialogTitle className="min-h-11 pr-12 pt-2 text-lg font-bold leading-snug">
+              {t("plat.wa.qrTitle")}
+            </DialogTitle>
+            <DialogDescription className="sr-only">{t("plat.wa.qrDescription")}</DialogDescription>
+            {justConnected ? (
+              qrConnected
+            ) : (
+              <>
+                {qrSteps}
+                {qrCode}
+                {qrNotes}
+                {qrScanned}
+              </>
+            )}
+          </DialogContent>
+        ) : (
+          <DialogContent size="lg" className="bg-card">
+            <DialogHeader>
+              <DialogTitle className="min-h-11 pr-12 text-lg font-bold leading-snug">
+                {t("plat.wa.qrTitle")}
+              </DialogTitle>
+              <DialogDescription className="sr-only">
+                {t("plat.wa.qrDescription")}
+              </DialogDescription>
+            </DialogHeader>
+            {justConnected ? (
+              <DialogBody>{qrConnected}</DialogBody>
+            ) : (
+              <>
+                <DialogBody layout="split" className="pb-2">
+                  <div className="space-y-4">
+                    {qrSteps}
+                    {qrNotes}
                   </div>
-                </>
-              ) : (
-                <Notice
-                  tone="warning"
-                  role="none"
-                  title={t("plat.wa.noCode")}
-                  action={{
-                    label:
-                      busy === "connect" ? t("integr.wa.status.connecting") : t("plat.wa.newCode"),
-                    onClick: () => {
-                      if (busy === null) void connect();
-                    },
-                    icon: RefreshCw,
-                  }}
-                />
-              )}
-              {scanNote && status !== "open" && (
-                <Notice
-                  tone="pending"
-                  icon={STATE.waiting.icon}
-                  title={t("plat.wa.notYet")}
-                  onDismiss={() => setScanNote(false)}
-                />
-              )}
-              {error && (
-                <Notice
-                  tone="danger"
-                  title={error.text}
-                  action={{ label: t("visual.retry"), onClick: error.retry, icon: RefreshCw }}
-                />
-              )}
-              <Hint icon={Info}>{t("plat.wa.whichNumber")}</Hint>
-              <button
-                type="button"
-                disabled={busy !== null}
-                onClick={() => void checkScanned()}
-                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-background text-sm font-semibold disabled:opacity-60"
-              >
-                {busy === "status" ? (
-                  <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />
-                ) : (
-                  <CheckCircle2 className="size-4" aria-hidden />
-                )}
-                {t("plat.wa.scanned")}
-              </button>
-            </>
-          )}
-        </DialogContent>
+                  <DialogAside className="space-y-3 rounded-2xl border border-border bg-background p-4">
+                    {qrCode}
+                  </DialogAside>
+                </DialogBody>
+                <DialogActions>{qrScanned}</DialogActions>
+              </>
+            )}
+          </DialogContent>
+        )}
       </Dialog>
     </section>
   );

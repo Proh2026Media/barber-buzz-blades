@@ -1,0 +1,252 @@
+/* Plataforma (onda 8): CSS de tablet e computador do painel da plataforma (Início, Barbearias,
+   Acessos, Relatórios e janelas). Carregado depois de src/styles.css por src/dispositivos.css.
+   Regra de ouro: abaixo de 768 px nada muda; tudo aqui fica atrás de @media (min-width: 768px)
+   ou maior (docs/dispositivos-2026-10-21.md, seções 6 e 7). */
+
+/* ---------- Barbearias: título, busca e filtros ---------- */
+/* 768–1535: linha 1 = título e "Nova barbearia"; linha 2 = busca e filtros lado a lado.
+   A partir de 1536 tudo numa linha: ícone · título · busca · filtros · botão (a 1280 a
+   coluna da lista não comporta busca e três filtros ao lado do título). */
+@media (min-width: 768px) {
+  .plat-shops-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "title"
+      "tools";
+    gap: 0.75rem 1rem;
+    align-items: center;
+  }
+  .plat-shops-head > .plat-shops-title {
+    grid-area: title;
+  }
+  .plat-shops-head > .plat-shops-tools {
+    grid-area: tools;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .plat-shops-head .plat-shops-search {
+    flex: 1 1 12rem;
+    max-width: 20rem;
+  }
+}
+@media (min-width: 1536px) {
+  .plat-shops-head {
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    grid-template-areas: "icon heading tools button";
+  }
+  .plat-shops-head > .plat-shops-title {
+    display: contents;
+  }
+  .plat-shops-head > .plat-shops-title > svg {
+    grid-area: icon;
+    margin-top: 0;
+  }
+  .plat-shops-head > .plat-shops-title > h2 {
+    grid-area: heading;
+    margin-top: 0;
+    white-space: nowrap;
+  }
+  .plat-shops-head > .plat-shops-title > button {
+    grid-area: button;
+  }
+  .plat-shops-head > .plat-shops-tools {
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+  }
+  .plat-shops-head .plat-shops-search {
+    flex: 0 1 18rem;
+    min-width: 10rem;
+  }
+}
+
+/* ---------- Barbearias: tabela (≥ 1280) com a linha aberta realçada ---------- */
+@media (min-width: 1280px) {
+  .plat-shops-table table {
+    table-layout: fixed;
+  }
+  /* Entre 1280 e 1535 a lista divide a largura com a ficha: sem a coluna "Criada em" (data que
+     a ficha já mostra), o nome da barbearia não quebra. A DataList marca col, th e td com
+     data-col (src/components/visual/DataList.tsx); a partir de 1536 a coluna volta. */
+  @media (max-width: 1535.98px) {
+    .plat-shops-table :is(th, td)[data-col="created"] {
+      display: none;
+    }
+    .plat-shops-table col[data-col="created"] {
+      width: 0 !important;
+      visibility: collapse;
+    }
+  }
+  .plat-shops-table tr:has([data-selected="true"]) td {
+    background: color-mix(in oklab, var(--primary) 8%, var(--card));
+  }
+  .plat-shops-table tr:has([data-selected="true"]) td:first-child {
+    box-shadow: inset 3px 0 0 var(--primary);
+  }
+}
+
+/* ---------- Ficha da barbearia: blocos lado a lado quando há largura ---------- */
+/* A ficha mede a própria largura (ao lado da lista ou dentro da janela): com 34rem ou mais,
+   números, módulos e atalhos ficam à esquerda e as pessoas à direita; suspender/reativar no
+   fim, sempre à vista. */
+.plat-shop-aside {
+  container-type: inline-size;
+}
+/* Ao lado da lista, a ficha fica fixa só quando cabe na altura (useStickyWhenFits em
+   src/features/platform/ShopsPanel.tsx); se não cabe, rola com a página, sem rolagem interna. */
+@media (min-width: 768px) {
+  @container (min-width: 34rem) {
+    .plat-shop-detail {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-areas:
+        "head head"
+        "link link"
+        "stats people"
+        "customize people"
+        "modules people"
+        "shortcuts people"
+        "status status";
+      gap: 1rem 1.5rem;
+      align-items: start;
+    }
+    .plat-shop-detail > * {
+      margin-block: 0 !important;
+    }
+    .plat-shop-detail > .plat-shop-head {
+      grid-area: head;
+    }
+    .plat-shop-detail > .plat-shop-link {
+      grid-area: link;
+    }
+    .plat-shop-detail > .plat-shop-stats {
+      grid-area: stats;
+    }
+    .plat-shop-detail > .plat-shop-customize {
+      grid-area: customize;
+    }
+    .plat-shop-detail > .plat-shop-modules {
+      grid-area: modules;
+    }
+    .plat-shop-detail > .plat-shop-people {
+      grid-area: people;
+    }
+    .plat-shop-detail > .plat-shop-shortcuts {
+      grid-area: shortcuts;
+    }
+    .plat-shop-detail > .plat-shop-status {
+      grid-area: status;
+    }
+  }
+}
+
+/* ---------- Início: números em 4 e blocos lado a lado ---------- */
+@media (min-width: 768px) {
+  .plat-dash-blocks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "segment ranking"
+      "growth ranking";
+    align-items: start;
+  }
+  .plat-dash-segment {
+    grid-area: segment;
+  }
+  .plat-dash-ranking {
+    grid-area: ranking;
+  }
+  .plat-dash-growth {
+    grid-area: growth;
+  }
+}
+@media (min-width: 1280px) {
+  .plat-dash-blocks {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1fr);
+    grid-template-areas: "segment ranking growth";
+    align-items: stretch;
+  }
+}
+/* WhatsApp da plataforma como widget de 20rem ao lado do "Testar como…". */
+@media (min-width: 1024px) {
+  .plat-overview-extras {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 20rem;
+    gap: 1.5rem;
+    align-items: start;
+  }
+  .plat-overview-extras > * {
+    margin-block: 0 !important;
+  }
+  .plat-overview-extras > .plat-wa-card {
+    order: 2;
+    position: sticky;
+    top: 1rem;
+  }
+  /* Sem o cartão do WhatsApp (demonstração), o "Testar como…" usa a largura toda: a coluna
+     de 20rem não fica vazia à direita. */
+  .plat-overview-extras:not(:has(> .plat-wa-card)) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------- Acessos: seletor na linha do título; explicação ao lado da matriz ---------- */
+@media (min-width: 768px) {
+  .plat-perm {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "title selector"
+      "tiers tiers"
+      "matrix matrix";
+    gap: 1.25rem 1.5rem;
+    align-items: center;
+  }
+  .plat-perm > .plat-perm-body {
+    display: contents;
+  }
+  .plat-perm > *,
+  .plat-perm > .plat-perm-body > * {
+    margin-block: 0 !important;
+  }
+  .plat-perm .plat-perm-title {
+    grid-area: title;
+  }
+  .plat-perm .plat-perm-selector {
+    grid-area: selector;
+    justify-self: stretch;
+    justify-content: flex-end;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    padding: 0;
+  }
+  .plat-perm .plat-perm-selector > select {
+    width: auto;
+    min-width: 16rem;
+  }
+  .plat-perm .plat-perm-tiers {
+    grid-area: tiers;
+  }
+  .plat-perm .plat-perm-matrix {
+    grid-area: matrix;
+  }
+}
+@media (min-width: 1024px) {
+  .plat-perm {
+    grid-template-columns: 20rem minmax(0, 1fr);
+    grid-template-areas:
+      "title selector"
+      "tiers matrix";
+    align-items: start;
+  }
+  .plat-perm .plat-perm-selector {
+    justify-content: flex-start;
+    align-self: center;
+  }
+  .plat-perm .plat-perm-tiers {
+    position: sticky;
+    top: 1rem;
+  }
+}

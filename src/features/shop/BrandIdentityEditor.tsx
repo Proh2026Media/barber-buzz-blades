@@ -30,7 +30,7 @@ import {
   UnsavedBar,
   focusFirstInvalid,
 } from "@/components/visual";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useDevice } from "@/lib/device";
 import type { Tables } from "@/integrations/supabase/types";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import {
@@ -213,7 +213,7 @@ export function BrandIdentityEditor({
   const nameId = useId();
   const taglineId = useId();
   const formRef = useRef<HTMLFormElement>(null);
-  const isMobile = useIsMobile();
+  const isMobile = useDevice() === "celular";
   const fileInput = useRef<HTMLInputElement>(null);
   const loginPhotoInput = useRef<HTMLInputElement>(null);
   const fontInput = useRef<HTMLInputElement>(null);
@@ -646,7 +646,11 @@ export function BrandIdentityEditor({
     >
       <BrandFontFace url={previewFontUrl} faces={previewFontFaces} />
       {/* Prévia ao vivo, com o selo de não salva / igual ao app. */}
-      <section ref={bigPreviewRef} aria-label={t("brand.preview.aria")} className="space-y-2">
+      <section
+        ref={bigPreviewRef}
+        aria-label={t("brand.preview.aria")}
+        className="brand-editor-preview space-y-2"
+      >
         {/* Com mudança, o ponto na etapa e a barra de salvar já avisam: aqui só o "igual ao app". */}
         <div className="flex min-h-7 justify-end">
           {!dirty && <StatusBadge {...STATE.active} size="sm" label={t("brand.preview.same")} />}
@@ -718,641 +722,658 @@ export function BrandIdentityEditor({
         </div>
       </section>
 
-      <div className="sticky -top-5 z-10 -mx-1 space-y-2 bg-card/95 px-1 pb-2 pt-3 backdrop-blur sm:-top-6">
-        <div
-          aria-hidden="true"
-          hidden={bigPreviewVisible}
-          className={`brand-preview me-10 flex items-center gap-3 overflow-hidden rounded-[var(--panel-radius)] border border-border bg-card px-3 py-2 ${brandFontScopeClass(draft.font_scope)} ${brandCornerClass(draft.corner_style)}`}
-          style={previewStyle}
-        >
-          <span
-            className="brand-preview-logo flex size-9 shrink-0 items-center justify-center overflow-hidden"
-            style={{ backgroundColor: draft.logo_background_color || "#ffffff" }}
-          >
-            {previewLogo ? (
-              <img src={previewLogo} alt="" className="size-full object-contain p-[12.5%]" />
-            ) : (
-              <Scissors className="size-4 text-primary" />
-            )}
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="brand-header-title block truncate text-sm font-extrabold leading-tight">
-              {previewName}
-            </span>
-            <span className="block truncate text-[11px] font-medium text-primary">
-              {draft.tagline.trim() || t("brand.preview.taglinePlaceholder")}
-            </span>
-          </span>
-        </div>
-        {/* Trilho de etapas: rola para o lado no celular; ponto âmbar = etapa alterada. */}
-        <div
-          role="tablist"
-          aria-label={t("brand.step.aria")}
-          className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none]"
-        >
-          {BRAND_STEPS.map((id) => {
-            const selected = step === id;
-            const Icon = STEP_ICONS[id];
-            return (
-              <button
-                key={id}
-                id={`${nameId}-tab-${id}`}
-                type="button"
-                role="tab"
-                aria-selected={selected}
-                aria-controls={`${nameId}-panel-${id}`}
-                tabIndex={selected ? 0 : -1}
-                onClick={() => setStep(id)}
-                onKeyDown={(event) => {
-                  // Padrão de abas: setas, Home e End trocam de etapa; Tab sai do trilho.
-                  const last = BRAND_STEPS.length - 1;
-                  const index = BRAND_STEPS.indexOf(id);
-                  const target =
-                    event.key === "ArrowRight"
-                      ? (index + 1) % BRAND_STEPS.length
-                      : event.key === "ArrowLeft"
-                        ? (index - 1 + BRAND_STEPS.length) % BRAND_STEPS.length
-                        : event.key === "Home"
-                          ? 0
-                          : event.key === "End"
-                            ? last
-                            : null;
-                  if (target === null) return;
-                  event.preventDefault();
-                  const nextId = BRAND_STEPS[target]!;
-                  setStep(nextId);
-                  document.getElementById(`${nameId}-tab-${nextId}`)?.focus();
-                }}
-                className={`relative flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border px-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                  selected
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-background text-foreground hover:border-primary/40"
-                }`}
-              >
-                <Icon className="size-4" aria-hidden="true" />
-                {t(`brand.stepName.${id}` as const)}
-                {stepChanged[id] && (
-                  <>
-                    <span
-                      aria-hidden
-                      className="tone-pending size-2 rounded-full bg-[color:var(--tone-line)] ring-2 ring-card"
-                    />
-                    <span className="sr-only">{t("visual.unsaved.badge")}</span>
-                  </>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Tela de entrada */}
-      <section
-        id={`${nameId}-panel-entrada`}
-        role="tabpanel"
-        aria-labelledby={`${nameId}-tab-entrada`}
-        className="space-y-4"
-        hidden={step !== "entrada"}
-      >
-        <CompactChoiceTiles
-          legend={t("brand.login.modelAria")}
-          value={draft.login_layout}
-          onChange={(value) => update({ login_layout: value })}
-          options={BRAND_LOGIN_LAYOUT_OPTIONS.map((option) => ({
-            value: option.value,
-            label: t(option.labelKey),
-            description: t(option.hintKey),
-            media: (
-              <LoginLayoutPreview
-                compact
-                layout={option.value}
-                imageUrl={previewLoginImage}
-                logoUrl={previewLogo}
-                logoBackgroundColor={draft.logo_background_color}
-                shopName={previewName}
-              />
-            ),
-          }))}
-        />
-
-        <div className="space-y-2">
-          {/* No celular, a prévia é a tela de celular (igual ao "Celular" da tela cheia),
-              reduzida para caber inteira: sem rolagem dentro da janela que já rola. */}
-          {isMobile ? (
-            <PhoneFitFrame className="login-preview-phone mx-auto w-full max-w-[17.5rem] rounded-[1.5rem] border border-border/40 shadow-lg">
-              {loginScreen}
-            </PhoneFitFrame>
-          ) : (
-            <DesktopFitFrame className="rounded-[var(--panel-radius)]">
-              {loginScreen}
-            </DesktopFitFrame>
-          )}
-          <button
-            type="button"
-            onClick={() => setLoginPreviewOpen(true)}
-            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-semibold transition hover:border-primary/40"
-          >
-            <Maximize2 className="size-4" aria-hidden="true" />
-            {t("brand.login.fullscreen")}
-          </button>
-        </div>
-
-        {/* Foto: a atual em miniatura, Trocar e Voltar à padrão (neutro, não apaga nada). */}
-        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-background/60 p-3">
-          <img
-            src={previewLoginImage}
-            alt={t("brand.login.photoName")}
-            className="h-16 w-16 shrink-0 rounded-xl object-cover"
-          />
-          <span className="min-w-0 flex-1 basis-32">
-            <span className="block text-sm font-bold">{t("brand.login.photoName")}</span>
-            {(draft.login_image_url || loginImageFile) && (
-              <span className="block text-sm text-muted-foreground">
-                {t("brand.login.photoCustom")}
-              </span>
-            )}
-          </span>
-          <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-            <input
-              ref={loginPhotoInput}
-              type="file"
-              accept={LOGO_ACCEPT}
-              className="sr-only"
-              tabIndex={-1}
-              onChange={(event) => {
-                chooseLoginImage(event.target.files?.[0]);
-                event.target.value = "";
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => loginPhotoInput.current?.click()}
-              className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-semibold transition hover:border-primary/40 sm:flex-none"
-            >
-              <ImagePlus className="size-4" aria-hidden="true" />
-              {draft.login_image_url || loginImageFile
-                ? t("brand.login.changePhoto")
-                : t("brand.login.uploadPhoto")}
-            </button>
-            {(draft.login_image_url || loginImageFile) && (
-              <button
-                type="button"
-                onClick={removeLoginImage}
-                className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-semibold transition hover:border-primary/40 sm:flex-none"
-              >
-                <RotateCcw className="size-4" aria-hidden="true" /> {t("brand.login.backToDefault")}
-              </button>
-            )}
-          </div>
-        </div>
-        {fileNotice("login")}
-      </section>
-
-      {/* Logo e nome */}
-      <section
-        id={`${nameId}-panel-logo`}
-        role="tabpanel"
-        aria-labelledby={`${nameId}-tab-logo`}
-        className="space-y-5"
-        hidden={step !== "logo"}
-      >
-        <div className="grid gap-4 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-start">
+      {/* Etapas e campos: no celular logo abaixo da prévia; na janela quase cheia (Ajustes →
+          Aparência, a partir de 768 px) à esquerda, com a prévia fixa à direita
+          (src/styles/ajustes.css). */}
+      <div className="brand-editor-form space-y-5">
+        <div className="sticky -top-5 z-10 -mx-1 space-y-2 bg-card/95 px-1 pb-2 pt-3 backdrop-blur sm:-top-6">
           <div
-            onDragOver={(event) => {
-              event.preventDefault();
-              setDragging(true);
-            }}
-            onDragLeave={() => setDragging(false)}
-            onDrop={onDrop}
-            className={`flex flex-col items-center gap-2 rounded-2xl border-2 border-dashed p-3 text-center transition ${
-              dragging ? "border-primary bg-primary/5" : "border-border bg-background/60"
-            }`}
+            aria-hidden="true"
+            hidden={bigPreviewVisible}
+            className={`brand-preview me-10 flex items-center gap-3 overflow-hidden rounded-[var(--panel-radius)] border border-border bg-card px-3 py-2 ${brandFontScopeClass(draft.font_scope)} ${brandCornerClass(draft.corner_style)}`}
+            style={previewStyle}
           >
-            {/* O quadro inteiro é o botão; o rótulo fica sempre à vista (também no toque). */}
-            <button
-              type="button"
-              onClick={() => fileInput.current?.click()}
-              aria-label={previewLogo ? t("brand.logo.changeAria") : t("brand.logo.chooseAria")}
-              className="flex flex-col items-center gap-2 rounded-2xl p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            <span
+              className="brand-preview-logo flex size-9 shrink-0 items-center justify-center overflow-hidden"
+              style={{ backgroundColor: draft.logo_background_color || "#ffffff" }}
             >
-              <span
-                className="flex size-28 items-center justify-center overflow-hidden rounded-2xl border border-border shadow-sm"
-                style={{ backgroundColor: draft.logo_background_color || "#ffffff" }}
-              >
-                {previewLogo ? (
-                  <img
-                    src={previewLogo}
-                    alt={t("brand.logo.currentAlt")}
-                    className="size-full object-contain p-2"
-                  />
-                ) : (
-                  <ImagePlus className="size-8 text-muted-foreground" aria-hidden="true" />
-                )}
-              </span>
-              <span className="flex items-center gap-1.5 text-sm font-semibold">
-                <ImagePlus className="size-4 text-gold" aria-hidden="true" />
-                {previewLogo ? t("brand.logo.tapChange") : t("brand.logo.tapChoose")}
-              </span>
-            </button>
-            <input
-              ref={fileInput}
-              type="file"
-              accept={LOGO_ACCEPT}
-              className="sr-only"
-              tabIndex={-1}
-              onChange={(event) => {
-                acceptFile(event.target.files?.[0]);
-                event.target.value = "";
-              }}
-            />
-            {previewLogo && (
-              <button
-                type="button"
-                onClick={removeLogo}
-                className="flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold text-destructive transition hover:bg-destructive/10"
-              >
-                <Trash2 className="size-4" aria-hidden="true" />
-                {t("brand.common.remove")}
-              </button>
-            )}
-            <p className="max-w-[12rem] text-sm text-muted-foreground">
-              {t("brand.logo.hintShort")}
-            </p>
-          </div>
-          {fileError?.field === "logo" && (
-            <div className="sm:col-span-2 sm:row-start-2">{fileNotice("logo")}</div>
-          )}
-
-          <div className="min-w-0 space-y-4">
-            <Field id={nameId} label={t("brand.name.label")}>
-              {(props) => (
-                <input
-                  {...props}
-                  maxLength={80}
-                  value={draft.display_name}
-                  onChange={(event) => update({ display_name: event.target.value })}
-                  placeholder={shopName}
-                  className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                />
+              {previewLogo ? (
+                <img src={previewLogo} alt="" className="size-full object-contain p-[12.5%]" />
+              ) : (
+                <Scissors className="size-4 text-primary" />
               )}
-            </Field>
-            <Field
-              id={taglineId}
-              required
-              label={
-                <>
-                  {t("brand.tagline.label")}
-                  <span className="text-xs font-semibold text-muted-foreground">
-                    {t("brand.tagline.required")}
-                  </span>
-                </>
-              }
-              hint={draft.tagline.length >= 48 ? `${draft.tagline.length}/60` : undefined}
-              error={showErrors && taglineInvalid ? t("brand.validate.tagline") : undefined}
-            >
-              {(props) => (
-                <input
-                  {...props}
-                  maxLength={60}
-                  value={draft.tagline}
-                  onChange={(event) => update({ tagline: event.target.value })}
-                  placeholder={t("brand.tagline.placeholder")}
-                  className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                />
-              )}
-            </Field>
-          </div>
-        </div>
-
-        {/* Fundo da logo: escolhas rápidas com amostra; "Outra cor" abre o seletor completo. */}
-        <div className="space-y-3">
-          <ChoiceChips
-            label={t("brand.logoBg.title")}
-            value={logoBgChoice}
-            onChange={(choice) => {
-              if (choice === "custom") {
-                setLogoBgCustom(true);
-                return;
-              }
-              setLogoBgCustom(false);
-              update({
-                logo_background_color:
-                  choice === "none"
-                    ? null
-                    : choice === "white"
-                      ? "#FFFFFF"
-                      : choice === "black"
-                        ? "#000000"
-                        : draft.primary_color.toUpperCase(),
-              });
-            }}
-            options={[
-              { value: "none", label: t("brand.color.noBackground"), media: <Swatch empty /> },
-              { value: "white", label: t("brand.logoBg.white"), media: <Swatch color="#FFFFFF" /> },
-              {
-                value: "primary",
-                label: t("brand.colors.primary"),
-                media: <Swatch color={draft.primary_color} />,
-              },
-              { value: "black", label: t("brand.logoBg.black"), media: <Swatch color="#000000" /> },
-              { value: "custom", label: t("brand.color.other"), icon: Pipette },
-            ]}
-          />
-          {logoBgChoice === "custom" && (
-            <BrandColorPicker
-              label={t("brand.logoBg.title")}
-              value={draft.logo_background_color ?? ""}
-              defaultValue=""
-              allowEmpty
-              sampleText={t("brand.logoBg.sample")}
-              onChange={(value) => update({ logo_background_color: value || null })}
-            />
-          )}
-        </div>
-      </section>
-
-      {/* Fonte: biblioteca primeiro (a escolha mais comum), cada uma com o nome da barbearia. */}
-      <section
-        id={`${nameId}-panel-fonte`}
-        role="tabpanel"
-        aria-labelledby={`${nameId}-tab-fonte`}
-        className="space-y-5"
-        hidden={step !== "fonte"}
-      >
-        <CompactChoiceTiles
-          legend={t("brand.font.libraryAria")}
-          showLegend
-          columns={2}
-          value={fontLibraryValue}
-          onChange={(value) => selectLibraryFont(value)}
-          options={BRAND_FONT_OPTIONS.map((font) => ({
-            value: font.value,
-            label: font.label,
-            description: t(font.hintKey),
-            media: (
-              <span
-                className="block truncate rounded-lg bg-background px-2 py-2 text-lg font-extrabold leading-tight text-foreground"
-                style={{ fontFamily: font.stack }}
-              >
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="brand-header-title block truncate text-sm font-extrabold leading-tight">
                 {previewName}
               </span>
-            ),
-          }))}
-        />
+              <span className="block truncate text-[11px] font-medium text-primary">
+                {draft.tagline.trim() || t("brand.preview.taglinePlaceholder")}
+              </span>
+            </span>
+          </div>
+          {/* Trilho de etapas: rola para o lado no celular; ponto âmbar = etapa alterada. */}
+          <div
+            role="tablist"
+            aria-label={t("brand.step.aria")}
+            className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none]"
+          >
+            {BRAND_STEPS.map((id) => {
+              const selected = step === id;
+              const Icon = STEP_ICONS[id];
+              return (
+                <button
+                  key={id}
+                  id={`${nameId}-tab-${id}`}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  aria-controls={`${nameId}-panel-${id}`}
+                  tabIndex={selected ? 0 : -1}
+                  onClick={() => setStep(id)}
+                  onKeyDown={(event) => {
+                    // Padrão de abas: setas, Home e End trocam de etapa; Tab sai do trilho.
+                    const last = BRAND_STEPS.length - 1;
+                    const index = BRAND_STEPS.indexOf(id);
+                    const target =
+                      event.key === "ArrowRight"
+                        ? (index + 1) % BRAND_STEPS.length
+                        : event.key === "ArrowLeft"
+                          ? (index - 1 + BRAND_STEPS.length) % BRAND_STEPS.length
+                          : event.key === "Home"
+                            ? 0
+                            : event.key === "End"
+                              ? last
+                              : null;
+                    if (target === null) return;
+                    event.preventDefault();
+                    const nextId = BRAND_STEPS[target]!;
+                    setStep(nextId);
+                    document.getElementById(`${nameId}-tab-${nextId}`)?.focus();
+                  }}
+                  className={`relative flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border px-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                    selected
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background text-foreground hover:border-primary/40"
+                  }`}
+                >
+                  <Icon className="size-4" aria-hidden="true" />
+                  {t(`brand.stepName.${id}` as const)}
+                  {stepChanged[id] && (
+                    <>
+                      <span
+                        aria-hidden
+                        className="tone-pending size-2 rounded-full bg-[color:var(--tone-line)] ring-2 ring-card"
+                      />
+                      <span className="sr-only">{t("visual.unsaved.badge")}</span>
+                    </>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-        <CompactChoiceTiles
-          legend={t("brand.font.whereLabel")}
-          showLegend
-          columns={2}
-          value={draft.font_scope}
-          onChange={(value) => update({ font_scope: value })}
-          options={BRAND_FONT_SCOPE_OPTIONS.map((scope) => ({
-            value: scope.value,
-            label: t(scope.labelKey),
-            description: t(scope.hintKey),
-            media: <FontScopeSketch scope={scope.value} />,
-          }))}
-        />
+        {/* Tela de entrada */}
+        <section
+          id={`${nameId}-panel-entrada`}
+          role="tabpanel"
+          aria-labelledby={`${nameId}-tab-entrada`}
+          className="space-y-4"
+          hidden={step !== "entrada"}
+        >
+          <CompactChoiceTiles
+            legend={t("brand.login.modelAria")}
+            value={draft.login_layout}
+            onChange={(value) => update({ login_layout: value })}
+            options={BRAND_LOGIN_LAYOUT_OPTIONS.map((option) => ({
+              value: option.value,
+              label: t(option.labelKey),
+              description: t(option.hintKey),
+              media: (
+                <LoginLayoutPreview
+                  compact
+                  layout={option.value}
+                  imageUrl={previewLoginImage}
+                  logoUrl={previewLogo}
+                  logoBackgroundColor={draft.logo_background_color}
+                  shopName={previewName}
+                />
+              ),
+            }))}
+          />
 
-        <div style={previewStyle}>
-          <ChoiceChips
-            label={t("brand.font.weightTitle")}
-            value={`${draft.header_font_weight}-${draft.header_font_style}`}
-            onChange={(value) => {
-              const [weight, style] = value.split("-");
-              update({
-                header_font_weight: Number(weight),
-                header_font_style: style === "italic" ? "italic" : "normal",
-              });
-            }}
-            options={headerFaceOptions.map((face) => ({
-              value: `${face.weight}-${face.style}`,
-              label: weightLabel(face, t),
+          <div className="space-y-2">
+            {/* No celular, a prévia é a tela de celular (igual ao "Celular" da tela cheia),
+              reduzida para caber inteira: sem rolagem dentro da janela que já rola. */}
+            {isMobile ? (
+              <PhoneFitFrame className="login-preview-phone mx-auto w-full max-w-[17.5rem] rounded-[1.5rem] border border-border/40 shadow-lg">
+                {loginScreen}
+              </PhoneFitFrame>
+            ) : (
+              <DesktopFitFrame className="rounded-[var(--panel-radius)]">
+                {loginScreen}
+              </DesktopFitFrame>
+            )}
+            <button
+              type="button"
+              onClick={() => setLoginPreviewOpen(true)}
+              className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-semibold transition hover:border-primary/40"
+            >
+              <Maximize2 className="size-4" aria-hidden="true" />
+              {t("brand.login.fullscreen")}
+            </button>
+          </div>
+
+          {/* Foto: a atual em miniatura, Trocar e Voltar à padrão (neutro, não apaga nada). */}
+          <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-background/60 p-3">
+            <img
+              src={previewLoginImage}
+              alt={t("brand.login.photoName")}
+              className="h-16 w-16 shrink-0 rounded-xl object-cover"
+            />
+            <span className="min-w-0 flex-1 basis-32">
+              <span className="block text-sm font-bold">{t("brand.login.photoName")}</span>
+              {(draft.login_image_url || loginImageFile) && (
+                <span className="block text-sm text-muted-foreground">
+                  {t("brand.login.photoCustom")}
+                </span>
+              )}
+            </span>
+            <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+              <input
+                ref={loginPhotoInput}
+                type="file"
+                accept={LOGO_ACCEPT}
+                className="sr-only"
+                tabIndex={-1}
+                onChange={(event) => {
+                  chooseLoginImage(event.target.files?.[0]);
+                  event.target.value = "";
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => loginPhotoInput.current?.click()}
+                className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-semibold transition hover:border-primary/40 sm:flex-none"
+              >
+                <ImagePlus className="size-4" aria-hidden="true" />
+                {draft.login_image_url || loginImageFile
+                  ? t("brand.login.changePhoto")
+                  : t("brand.login.uploadPhoto")}
+              </button>
+              {(draft.login_image_url || loginImageFile) && (
+                <button
+                  type="button"
+                  onClick={removeLoginImage}
+                  className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-semibold transition hover:border-primary/40 sm:flex-none"
+                >
+                  <RotateCcw className="size-4" aria-hidden="true" />{" "}
+                  {t("brand.login.backToDefault")}
+                </button>
+              )}
+            </div>
+          </div>
+          {fileNotice("login")}
+        </section>
+
+        {/* Logo e nome */}
+        <section
+          id={`${nameId}-panel-logo`}
+          role="tabpanel"
+          aria-labelledby={`${nameId}-tab-logo`}
+          className="space-y-5"
+          hidden={step !== "logo"}
+        >
+          {/* brand-logo-grid: na janela quase cheia (coluna de 26rem) o quadro da logo fica
+              acima dos campos (src/styles/ajustes.css). */}
+          <div className="brand-logo-grid grid gap-4 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-start">
+            <div
+              onDragOver={(event) => {
+                event.preventDefault();
+                setDragging(true);
+              }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={onDrop}
+              className={`flex flex-col items-center gap-2 rounded-2xl border-2 border-dashed p-3 text-center transition ${
+                dragging ? "border-primary bg-primary/5" : "border-border bg-background/60"
+              }`}
+            >
+              {/* O quadro inteiro é o botão; o rótulo fica sempre à vista (também no toque). */}
+              <button
+                type="button"
+                onClick={() => fileInput.current?.click()}
+                aria-label={previewLogo ? t("brand.logo.changeAria") : t("brand.logo.chooseAria")}
+                className="flex flex-col items-center gap-2 rounded-2xl p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <span
+                  className="flex size-28 items-center justify-center overflow-hidden rounded-2xl border border-border shadow-sm"
+                  style={{ backgroundColor: draft.logo_background_color || "#ffffff" }}
+                >
+                  {previewLogo ? (
+                    <img
+                      src={previewLogo}
+                      alt={t("brand.logo.currentAlt")}
+                      className="size-full object-contain p-2"
+                    />
+                  ) : (
+                    <ImagePlus className="size-8 text-muted-foreground" aria-hidden="true" />
+                  )}
+                </span>
+                <span className="flex items-center gap-1.5 text-sm font-semibold">
+                  <ImagePlus className="size-4 text-gold" aria-hidden="true" />
+                  {previewLogo ? t("brand.logo.tapChange") : t("brand.logo.tapChoose")}
+                </span>
+              </button>
+              <input
+                ref={fileInput}
+                type="file"
+                accept={LOGO_ACCEPT}
+                className="sr-only"
+                tabIndex={-1}
+                onChange={(event) => {
+                  acceptFile(event.target.files?.[0]);
+                  event.target.value = "";
+                }}
+              />
+              {previewLogo && (
+                <button
+                  type="button"
+                  onClick={removeLogo}
+                  className="flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold text-destructive transition hover:bg-destructive/10"
+                >
+                  <Trash2 className="size-4" aria-hidden="true" />
+                  {t("brand.common.remove")}
+                </button>
+              )}
+              <p className="max-w-[12rem] text-sm text-muted-foreground">
+                {t("brand.logo.hintShort")}
+              </p>
+            </div>
+            {fileError?.field === "logo" && (
+              <div className="sm:col-span-2 sm:row-start-2">{fileNotice("logo")}</div>
+            )}
+
+            <div className="min-w-0 space-y-4">
+              <Field id={nameId} label={t("brand.name.label")}>
+                {(props) => (
+                  <input
+                    {...props}
+                    maxLength={80}
+                    value={draft.display_name}
+                    onChange={(event) => update({ display_name: event.target.value })}
+                    placeholder={shopName}
+                    className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                )}
+              </Field>
+              <Field
+                id={taglineId}
+                required
+                label={
+                  <>
+                    {t("brand.tagline.label")}
+                    <span className="text-xs font-semibold text-muted-foreground">
+                      {t("brand.tagline.required")}
+                    </span>
+                  </>
+                }
+                hint={draft.tagline.length >= 48 ? `${draft.tagline.length}/60` : undefined}
+                error={showErrors && taglineInvalid ? t("brand.validate.tagline") : undefined}
+              >
+                {(props) => (
+                  <input
+                    {...props}
+                    maxLength={60}
+                    value={draft.tagline}
+                    onChange={(event) => update({ tagline: event.target.value })}
+                    placeholder={t("brand.tagline.placeholder")}
+                    className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                )}
+              </Field>
+            </div>
+          </div>
+
+          {/* Fundo da logo: escolhas rápidas com amostra; "Outra cor" abre o seletor completo. */}
+          <div className="space-y-3">
+            <ChoiceChips
+              label={t("brand.logoBg.title")}
+              value={logoBgChoice}
+              onChange={(choice) => {
+                if (choice === "custom") {
+                  setLogoBgCustom(true);
+                  return;
+                }
+                setLogoBgCustom(false);
+                update({
+                  logo_background_color:
+                    choice === "none"
+                      ? null
+                      : choice === "white"
+                        ? "#FFFFFF"
+                        : choice === "black"
+                          ? "#000000"
+                          : draft.primary_color.toUpperCase(),
+                });
+              }}
+              options={[
+                { value: "none", label: t("brand.color.noBackground"), media: <Swatch empty /> },
+                {
+                  value: "white",
+                  label: t("brand.logoBg.white"),
+                  media: <Swatch color="#FFFFFF" />,
+                },
+                {
+                  value: "primary",
+                  label: t("brand.colors.primary"),
+                  media: <Swatch color={draft.primary_color} />,
+                },
+                {
+                  value: "black",
+                  label: t("brand.logoBg.black"),
+                  media: <Swatch color="#000000" />,
+                },
+                { value: "custom", label: t("brand.color.other"), icon: Pipette },
+              ]}
+            />
+            {logoBgChoice === "custom" && (
+              <BrandColorPicker
+                label={t("brand.logoBg.title")}
+                value={draft.logo_background_color ?? ""}
+                defaultValue=""
+                allowEmpty
+                sampleText={t("brand.logoBg.sample")}
+                onChange={(value) => update({ logo_background_color: value || null })}
+              />
+            )}
+          </div>
+        </section>
+
+        {/* Fonte: biblioteca primeiro (a escolha mais comum), cada uma com o nome da barbearia. */}
+        <section
+          id={`${nameId}-panel-fonte`}
+          role="tabpanel"
+          aria-labelledby={`${nameId}-tab-fonte`}
+          className="space-y-5"
+          hidden={step !== "fonte"}
+        >
+          <CompactChoiceTiles
+            legend={t("brand.font.libraryAria")}
+            showLegend
+            columns={2}
+            value={fontLibraryValue}
+            onChange={(value) => selectLibraryFont(value)}
+            options={BRAND_FONT_OPTIONS.map((font) => ({
+              value: font.value,
+              label: font.label,
+              description: t(font.hintKey),
               media: (
                 <span
-                  aria-hidden="true"
-                  className="text-base leading-none"
-                  style={{
-                    fontFamily: "var(--brand-font)",
-                    fontWeight: face.weight,
-                    fontStyle: face.style,
-                  }}
+                  className="block truncate rounded-lg bg-background px-2 py-2 text-lg font-extrabold leading-tight text-foreground"
+                  style={{ fontFamily: font.stack }}
                 >
-                  Aa
+                  {previewName}
                 </span>
               ),
             }))}
           />
-        </div>
 
-        {/* Fonte própria: opção avançada, recolhida. */}
-        <MoreDetails
-          summary={t("brand.font.own")}
-          icon={Upload}
-          defaultOpen={Boolean(previewFontUrl)}
+          <CompactChoiceTiles
+            legend={t("brand.font.whereLabel")}
+            showLegend
+            columns={2}
+            value={draft.font_scope}
+            onChange={(value) => update({ font_scope: value })}
+            options={BRAND_FONT_SCOPE_OPTIONS.map((scope) => ({
+              value: scope.value,
+              label: t(scope.labelKey),
+              description: t(scope.hintKey),
+              media: <FontScopeSketch scope={scope.value} />,
+            }))}
+          />
+
+          <div style={previewStyle}>
+            <ChoiceChips
+              label={t("brand.font.weightTitle")}
+              value={`${draft.header_font_weight}-${draft.header_font_style}`}
+              onChange={(value) => {
+                const [weight, style] = value.split("-");
+                update({
+                  header_font_weight: Number(weight),
+                  header_font_style: style === "italic" ? "italic" : "normal",
+                });
+              }}
+              options={headerFaceOptions.map((face) => ({
+                value: `${face.weight}-${face.style}`,
+                label: weightLabel(face, t),
+                media: (
+                  <span
+                    aria-hidden="true"
+                    className="text-base leading-none"
+                    style={{
+                      fontFamily: "var(--brand-font)",
+                      fontWeight: face.weight,
+                      fontStyle: face.style,
+                    }}
+                  >
+                    Aa
+                  </span>
+                ),
+              }))}
+            />
+          </div>
+
+          {/* Fonte própria: opção avançada, recolhida. */}
+          <MoreDetails
+            summary={t("brand.font.own")}
+            icon={Upload}
+            defaultOpen={Boolean(previewFontUrl)}
+          >
+            <div className="space-y-3" style={previewStyle}>
+              <button
+                type="button"
+                onClick={() => fontInput.current?.click()}
+                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-semibold transition hover:border-primary/40 sm:w-auto"
+              >
+                <Upload className="size-4" aria-hidden="true" />
+                {previewFontUrl ? t("brand.font.changeFiles") : t("brand.font.chooseFiles")}
+              </button>
+              <input
+                ref={fontInput}
+                type="file"
+                accept={CUSTOM_FONT_ACCEPT}
+                multiple
+                className="sr-only"
+                tabIndex={-1}
+                onChange={(event) => {
+                  acceptFonts(Array.from(event.target.files ?? []));
+                  event.target.value = "";
+                }}
+              />
+              {fileNotice("font")}
+              {previewFontUrl && (
+                <div className="space-y-2 rounded-xl border border-border bg-background/60 p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <StatusBadge
+                      {...STATE.active}
+                      label={
+                        !hasVariableFont && previewFontFaces.length <= 1
+                          ? t("brand.font.loadedOne")
+                          : t("brand.font.loadedMany", {
+                              count: hasVariableFont ? 9 : previewFontFaces.length,
+                            })
+                      }
+                    />
+                    <button
+                      type="button"
+                      onClick={removeCustomFont}
+                      className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold text-destructive transition hover:bg-destructive/10"
+                    >
+                      <Trash2 className="size-4" aria-hidden="true" />
+                      {t("brand.common.remove")}
+                    </button>
+                  </div>
+                  <p
+                    className="truncate text-lg font-bold"
+                    style={{ fontFamily: "var(--brand-font)" }}
+                    title={draft.custom_font_name || t("brand.font.customFallback")}
+                  >
+                    {previewName}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {draft.custom_font_name || t("brand.font.customFallback")}
+                    {recognizedFontKind === "family" ? "" : ` · ${t("brand.font.single")}`}
+                  </p>
+                </div>
+              )}
+            </div>
+          </MoreDetails>
+        </section>
+
+        {/* Cores: combinações prontas primeiro; depois, cada cor. */}
+        <section
+          id={`${nameId}-panel-cores`}
+          role="tabpanel"
+          aria-labelledby={`${nameId}-tab-cores`}
+          className="space-y-5"
+          hidden={step !== "cores"}
         >
-          <div className="space-y-3" style={previewStyle}>
+          <CompactChoiceTiles
+            legend={t("brand.combo.title")}
+            showLegend
+            value={comboValue}
+            onChange={(id) => {
+              const combo = COLOR_COMBOS.find((item) => item.id === id);
+              if (combo) update({ primary_color: combo.primary, accent_color: combo.accent });
+            }}
+            options={COLOR_COMBOS.map((combo) => ({
+              value: combo.id,
+              label: t(combo.label),
+              media: (
+                <ComboSketch
+                  primary={combo.primary}
+                  accent={combo.accent}
+                  book={t("brand.preview.book")}
+                />
+              ),
+            }))}
+          />
+
+          <div className="space-y-3">
+            <p className="text-sm font-bold">{t("brand.colors.custom")}</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <BrandColorPicker
+                label={t("brand.colors.primary")}
+                description={t("brand.colors.primaryShort")}
+                value={draft.primary_color}
+                defaultValue={DEFAULT_PRIMARY_COLOR}
+                onChange={(value) => update({ primary_color: value })}
+              />
+              <BrandColorPicker
+                label={t("brand.colors.accent")}
+                description={t("brand.colors.accentShort")}
+                value={draft.accent_color}
+                defaultValue={DEFAULT_ACCENT_COLOR}
+                sampleText={t("brand.colors.vipSample")}
+                onChange={(value) => update({ accent_color: value })}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <StatusBadge tone="success" icon={ShieldCheck} label={t("brand.colors.readingSafe")} />
+            <MoreDetails>
+              <p className="text-sm text-muted-foreground">{t("brand.colors.contrast")}</p>
+            </MoreDetails>
+          </div>
+        </section>
+
+        {/* Formato: cantos e barras, em cartões ilustrados. */}
+        <section
+          id={`${nameId}-panel-formato`}
+          role="tabpanel"
+          aria-labelledby={`${nameId}-tab-formato`}
+          className="space-y-5"
+          hidden={step !== "formato"}
+        >
+          <CompactChoiceTiles
+            legend={t("brand.corners.title")}
+            showLegend
+            value={draft.corner_style}
+            onChange={(value) => update({ corner_style: value })}
+            options={BRAND_CORNER_OPTIONS.map((option) => ({
+              value: option.value,
+              label: t(option.labelKey),
+              note:
+                option.value === DEFAULT_CORNER_STYLE ? t("brand.corner.defaultNote") : undefined,
+              description: t(option.hintKey),
+              media: (
+                <span
+                  className="flex flex-col gap-1.5 border border-border bg-background p-2"
+                  style={{ borderRadius: option.panelRadius }}
+                >
+                  <span
+                    className="h-5 border border-primary/50 bg-primary/10"
+                    style={{ borderRadius: option.controlRadius }}
+                  />
+                  <span
+                    className="h-5 w-2/3 bg-primary"
+                    style={{ borderRadius: option.buttonRadius }}
+                  />
+                </span>
+              ),
+            }))}
+          />
+          <CompactChoiceTiles
+            legend={t("brand.chrome.title")}
+            showLegend
+            columns={2}
+            value={draft.floating_chrome ? "floating" : "attached"}
+            onChange={(value) => update({ floating_chrome: value === "floating" })}
+            options={[
+              {
+                value: "attached",
+                label: t("brand.chrome.attached"),
+                note: t("brand.corner.defaultNote"),
+                media: <ChromeSketch floating={false} />,
+              },
+              {
+                value: "floating",
+                label: t("brand.chrome.floatingTile"),
+                description: t("brand.chrome.floatingAria"),
+                media: <ChromeSketch floating />,
+              },
+            ]}
+          />
+        </section>
+
+        {error && validationError && <Notice tone="danger" title={error} />}
+
+        {nextStep && (
+          <div className="flex justify-end">
             <button
               type="button"
-              onClick={() => fontInput.current?.click()}
-              className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-semibold transition hover:border-primary/40 sm:w-auto"
+              onClick={() => setStep(nextStep)}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold text-muted-foreground transition hover:text-foreground"
             >
-              <Upload className="size-4" aria-hidden="true" />
-              {previewFontUrl ? t("brand.font.changeFiles") : t("brand.font.chooseFiles")}
+              {t("brand.step.next", { step: t(`brand.stepName.${nextStep}` as const) })}
+              <ChevronRight className="size-4" aria-hidden="true" />
             </button>
-            <input
-              ref={fontInput}
-              type="file"
-              accept={CUSTOM_FONT_ACCEPT}
-              multiple
-              className="sr-only"
-              tabIndex={-1}
-              onChange={(event) => {
-                acceptFonts(Array.from(event.target.files ?? []));
-                event.target.value = "";
-              }}
-            />
-            {fileNotice("font")}
-            {previewFontUrl && (
-              <div className="space-y-2 rounded-xl border border-border bg-background/60 p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <StatusBadge
-                    {...STATE.active}
-                    label={
-                      !hasVariableFont && previewFontFaces.length <= 1
-                        ? t("brand.font.loadedOne")
-                        : t("brand.font.loadedMany", {
-                            count: hasVariableFont ? 9 : previewFontFaces.length,
-                          })
-                    }
-                  />
-                  <button
-                    type="button"
-                    onClick={removeCustomFont}
-                    className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold text-destructive transition hover:bg-destructive/10"
-                  >
-                    <Trash2 className="size-4" aria-hidden="true" />
-                    {t("brand.common.remove")}
-                  </button>
-                </div>
-                <p
-                  className="truncate text-lg font-bold"
-                  style={{ fontFamily: "var(--brand-font)" }}
-                  title={draft.custom_font_name || t("brand.font.customFallback")}
-                >
-                  {previewName}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {draft.custom_font_name || t("brand.font.customFallback")}
-                  {recognizedFontKind === "family" ? "" : ` · ${t("brand.font.single")}`}
-                </p>
-              </div>
-            )}
           </div>
-        </MoreDetails>
-      </section>
+        )}
 
-      {/* Cores: combinações prontas primeiro; depois, cada cor. */}
-      <section
-        id={`${nameId}-panel-cores`}
-        role="tabpanel"
-        aria-labelledby={`${nameId}-tab-cores`}
-        className="space-y-5"
-        hidden={step !== "cores"}
-      >
-        <CompactChoiceTiles
-          legend={t("brand.combo.title")}
-          showLegend
-          value={comboValue}
-          onChange={(id) => {
-            const combo = COLOR_COMBOS.find((item) => item.id === id);
-            if (combo) update({ primary_color: combo.primary, accent_color: combo.accent });
-          }}
-          options={COLOR_COMBOS.map((combo) => ({
-            value: combo.id,
-            label: t(combo.label),
-            media: (
-              <ComboSketch
-                primary={combo.primary}
-                accent={combo.accent}
-                book={t("brand.preview.book")}
-              />
-            ),
-          }))}
+        {/* Salvar: barra fixa só quando há mudança, com o resultado embutido. */}
+        <UnsavedBar
+          dirty={dirty}
+          saving={busy}
+          state={busy ? "saving" : saved ? "saved" : error && !validationError ? "error" : null}
+          stateText={saved ? t("brand.save.saved") : (error ?? undefined)}
+          onSave={() => void persist()}
+          onDiscard={discard}
+          saveLabel={t("brand.save.submit")}
         />
-
-        <div className="space-y-3">
-          <p className="text-sm font-bold">{t("brand.colors.custom")}</p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <BrandColorPicker
-              label={t("brand.colors.primary")}
-              description={t("brand.colors.primaryShort")}
-              value={draft.primary_color}
-              defaultValue={DEFAULT_PRIMARY_COLOR}
-              onChange={(value) => update({ primary_color: value })}
-            />
-            <BrandColorPicker
-              label={t("brand.colors.accent")}
-              description={t("brand.colors.accentShort")}
-              value={draft.accent_color}
-              defaultValue={DEFAULT_ACCENT_COLOR}
-              sampleText={t("brand.colors.vipSample")}
-              onChange={(value) => update({ accent_color: value })}
-            />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <StatusBadge tone="success" icon={ShieldCheck} label={t("brand.colors.readingSafe")} />
-          <MoreDetails>
-            <p className="text-sm text-muted-foreground">{t("brand.colors.contrast")}</p>
-          </MoreDetails>
-        </div>
-      </section>
-
-      {/* Formato: cantos e barras, em cartões ilustrados. */}
-      <section
-        id={`${nameId}-panel-formato`}
-        role="tabpanel"
-        aria-labelledby={`${nameId}-tab-formato`}
-        className="space-y-5"
-        hidden={step !== "formato"}
-      >
-        <CompactChoiceTiles
-          legend={t("brand.corners.title")}
-          showLegend
-          value={draft.corner_style}
-          onChange={(value) => update({ corner_style: value })}
-          options={BRAND_CORNER_OPTIONS.map((option) => ({
-            value: option.value,
-            label: t(option.labelKey),
-            note: option.value === DEFAULT_CORNER_STYLE ? t("brand.corner.defaultNote") : undefined,
-            description: t(option.hintKey),
-            media: (
-              <span
-                className="flex flex-col gap-1.5 border border-border bg-background p-2"
-                style={{ borderRadius: option.panelRadius }}
-              >
-                <span
-                  className="h-5 border border-primary/50 bg-primary/10"
-                  style={{ borderRadius: option.controlRadius }}
-                />
-                <span
-                  className="h-5 w-2/3 bg-primary"
-                  style={{ borderRadius: option.buttonRadius }}
-                />
-              </span>
-            ),
-          }))}
-        />
-        <CompactChoiceTiles
-          legend={t("brand.chrome.title")}
-          showLegend
-          columns={2}
-          value={draft.floating_chrome ? "floating" : "attached"}
-          onChange={(value) => update({ floating_chrome: value === "floating" })}
-          options={[
-            {
-              value: "attached",
-              label: t("brand.chrome.attached"),
-              note: t("brand.corner.defaultNote"),
-              media: <ChromeSketch floating={false} />,
-            },
-            {
-              value: "floating",
-              label: t("brand.chrome.floatingTile"),
-              description: t("brand.chrome.floatingAria"),
-              media: <ChromeSketch floating />,
-            },
-          ]}
-        />
-      </section>
-
-      {error && validationError && <Notice tone="danger" title={error} />}
-
-      {nextStep && (
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={() => setStep(nextStep)}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold text-muted-foreground transition hover:text-foreground"
-          >
-            {t("brand.step.next", { step: t(`brand.stepName.${nextStep}` as const) })}
-            <ChevronRight className="size-4" aria-hidden="true" />
-          </button>
-        </div>
-      )}
-
-      {/* Salvar: barra fixa só quando há mudança, com o resultado embutido. */}
-      <UnsavedBar
-        dirty={dirty}
-        saving={busy}
-        state={busy ? "saving" : saved ? "saved" : error && !validationError ? "error" : null}
-        stateText={saved ? t("brand.save.saved") : (error ?? undefined)}
-        onSave={() => void persist()}
-        onDiscard={discard}
-        saveLabel={t("brand.save.submit")}
-      />
+      </div>
       <ServiceImageCropDialog
         file={loginCropSource}
         title={t("brand.loginCrop.titleEntry")}

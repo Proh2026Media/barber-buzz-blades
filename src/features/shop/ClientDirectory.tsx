@@ -13,16 +13,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
 import {
   ChoiceChips,
+  DataList,
   EmptyState,
   IconTile,
   LoadingState,
   Notice,
   PersonAvatar,
   Tag,
+  type DataListColumn,
 } from "@/components/visual";
 import { ClientProfileModal } from "./ClientProfileModal";
 import { ClientNoticeBell } from "./ClientNoticeBell";
 import { clientDisplay } from "./clients/model";
+import { useViewportAtLeast } from "@/lib/device";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -98,7 +101,13 @@ export function ClientDirectory({
   const [error, setError] = useState(false);
   const [selected, setSelected] = useState<ClientRow | null>(null);
   const [open, setOpen] = useState(defaultOpen);
-  const expanded = embedded || open;
+  // A partir de 1024 px (computador compacto e computador) a lista da barbearia é uma tabela
+  // sempre aberta, com busca e ordem na mesma linha; abaixo disso, o cartão recolhido com a
+  // lista de cartões. A carteira do parceiro (scope "own") fica numa coluna de meia largura, onde
+  // a tabela não cabe: continua com os cartões e o cartão recolhido.
+  const wide = useViewportAtLeast(1024);
+  const table = wide && scope === "shop";
+  const expanded = embedded || open || table;
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [reloadKey, setReloadKey] = useState(0);
   const [query, setQuery] = useState("");
@@ -229,9 +238,110 @@ export function ClientDirectory({
         ? t("team.clients.countOne")
         : t("team.clients.countMany", { count: clients.length });
 
+  const nameOf = (client: ClientRow) =>
+    clientDisplay(client.customer_name, client.nickname).primary ??
+    t("team.partner.clientFallback");
+  const columns: DataListColumn<ClientRow>[] = [
+    {
+      key: "client",
+      header: t("bk.client"),
+      cell: (client) => {
+        const shownName = clientDisplay(client.customer_name, client.nickname);
+        const name = nameOf(client);
+        return (
+          <span className="flex min-w-0 items-center gap-3">
+            <PersonAvatar
+              name={name.replace(/\([^)]*\)/g, "").trim() || name}
+              seed={rowKey(client)}
+              size="sm"
+            />
+            <span className="min-w-0">
+              <span className="block break-words font-semibold">
+                {name}
+                {shownName.secondary && (
+                  <span className="ms-1.5 text-xs font-medium text-muted-foreground">
+                    {shownName.secondary}
+                  </span>
+                )}
+              </span>
+              {!client.customer_id && !!client.shop_client_id && (
+                <Tag icon={ContactRound}>{t("agenda.client.walkIn")}</Tag>
+              )}
+            </span>
+          </span>
+        );
+      },
+    },
+    {
+      key: "visits",
+      header: t("team.clients.colVisits"),
+      width: "7rem",
+      align: "end",
+      cell: (client) => <span className="tabular-nums">{client.visits}</span>,
+    },
+    {
+      key: "total",
+      header: t("booking.total"),
+      width: "8rem",
+      align: "end",
+      cell: (client) => (
+        <span className="tabular-nums">{formatBRL(client.total_spent_cents, intlLocale)}</span>
+      ),
+    },
+    {
+      key: "last",
+      header: t("team.clients.colLast"),
+      width: "10rem",
+      // "há 9 dias" não quebra em duas linhas quando a tabela fica numa coluna estreita
+      // (carteira do parceiro, ao lado do link de agendamento).
+      cell: (client) => (
+        <span className="whitespace-nowrap">{since(client.last_visit) ?? "—"}</span>
+      ),
+    },
+    {
+      key: "bell",
+      header: "",
+      width: "3.5rem",
+      align: "end",
+      cell: (client) =>
+        client.customer_id ? (
+          // O sino tem a própria ação: o toque nele não abre a ficha.
+          <span
+            className="inline-flex"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+          >
+            <ClientNoticeBell
+              shopId={shopId}
+              customerId={client.customer_id}
+              customerName={client.customer_name}
+            />
+          </span>
+        ) : null,
+    },
+    {
+      key: "open",
+      header: <span className="sr-only">{t("visual.open")}</span>,
+      width: "2.5rem",
+      align: "end",
+      cell: () => <ChevronRight className="inline size-4 text-muted-foreground" aria-hidden />,
+    },
+  ];
+
   return (
     <div className="space-y-3">
-      {!embedded && (
+      {!embedded && table && (
+        <div className="flex min-h-12 items-center gap-3">
+          <IconTile icon={Users} />
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-bold">{title}</span>
+            {countLabel && (
+              <span className="block text-xs text-muted-foreground">{countLabel}</span>
+            )}
+          </span>
+        </div>
+      )}
+      {!embedded && !table && (
         <button
           type="button"
           onClick={() => {
@@ -288,33 +398,35 @@ export function ClientDirectory({
             />
           ) : (
             <>
-              <label className="relative block">
-                <span className="sr-only">{t("team.clients.searchLabel")}</span>
-                <Search
-                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                  aria-hidden
+              <div className="agenda-clients-tools space-y-3">
+                <label className="relative block">
+                  <span className="sr-only">{t("team.clients.searchLabel")}</span>
+                  <Search
+                    className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                    aria-hidden
+                  />
+                  <input
+                    ref={searchRef}
+                    type="search"
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    // Curto para caber inteiro a 320 px; o leitor de tela lê o rótulo completo.
+                    placeholder={t("team.clients.searchShort")}
+                    className="min-h-11 w-full rounded-xl border border-border bg-background py-2 pl-10 pr-3 text-sm"
+                  />
+                </label>
+                <ChoiceChips
+                  label={t("team.clients.sortLabel")}
+                  hideLabel
+                  value={sort}
+                  onChange={setSort}
+                  options={[
+                    { value: "recent", label: t("team.clients.sortRecent") },
+                    { value: "visits", label: t("team.clients.sortVisits") },
+                    { value: "away", label: t("team.clients.sortAway") },
+                  ]}
                 />
-                <input
-                  ref={searchRef}
-                  type="search"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  // Curto para caber inteiro a 320 px; o leitor de tela lê o rótulo completo.
-                  placeholder={t("team.clients.searchShort")}
-                  className="min-h-11 w-full rounded-xl border border-border bg-background py-2 pl-10 pr-3 text-sm"
-                />
-              </label>
-              <ChoiceChips
-                label={t("team.clients.sortLabel")}
-                hideLabel
-                value={sort}
-                onChange={setSort}
-                options={[
-                  { value: "recent", label: t("team.clients.sortRecent") },
-                  { value: "visits", label: t("team.clients.sortVisits") },
-                  { value: "away", label: t("team.clients.sortAway") },
-                ]}
-              />
+              </div>
               {query.trim() ? (
                 <p role="status" className="flex items-center gap-2 text-sm font-semibold">
                   {t("brand.catalog.results", { visible: shown.length, total: clients.length })}
@@ -348,6 +460,18 @@ export function ClientDirectory({
                       {t("catalog.clearSearch")}
                     </button>
                   }
+                />
+              ) : table ? (
+                <DataList
+                  columns={columns}
+                  rows={visibleClients}
+                  rowKey={rowKey}
+                  rowLabel={(client) =>
+                    t("team.clients.openProfile", {
+                      name: client.customer_name ?? t("team.clients.clientLower"),
+                    })
+                  }
+                  onRowClick={setSelected}
                 />
               ) : (
                 <ul className="space-y-2">

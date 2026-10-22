@@ -188,10 +188,6 @@ export function PlatformDashboard({
 
   const suspendedMeta = SHOP_STATUS.suspended;
   const activeMeta = SHOP_STATUS.active;
-  // Sem crescimento para mostrar, o cartão do mês é só uma linha: o ranking ocupa a largura
-  // toda (em duas colunas no computador) e o mês desce, sem deixar um vazio ao lado.
-  const growthEmpty = stats.history < 1 || stats.months.every((item) => item.count === 0);
-  const wideRanking = !loading && growthEmpty;
 
   return (
     <section className="space-y-4" aria-label={t("plat.dash.aria")}>
@@ -244,34 +240,36 @@ export function PlatformDashboard({
         />
       </div>
 
-      {!loading && (
-        <div className="app-action-card p-4">
-          <SegmentBar
-            summary={t("plat.dash.split", { active: stats.active, suspended: stats.suspended })}
-            showSummary
-            legend
-            segments={[
-              {
-                key: "active",
-                label: t("plat.dash.active"),
-                value: stats.active,
-                tone: activeMeta.tone,
-                icon: activeMeta.icon,
-              },
-              {
-                key: "suspended",
-                label: t("plat.dash.suspended"),
-                value: stats.suspended,
-                tone: suspendedMeta.tone,
-                icon: suspendedMeta.icon,
-              },
-            ]}
-          />
-        </div>
-      )}
+      {/* Divisão, ranking e crescimento: coluna no celular; a partir de 768 px lado a lado
+          (src/styles/plataforma.css). */}
+      <div className="plat-dash-blocks grid gap-4">
+        {!loading && (
+          <div className="plat-dash-segment app-action-card p-4">
+            <SegmentBar
+              summary={t("plat.dash.split", { active: stats.active, suspended: stats.suspended })}
+              showSummary
+              legend
+              segments={[
+                {
+                  key: "active",
+                  label: t("plat.dash.active"),
+                  value: stats.active,
+                  tone: activeMeta.tone,
+                  icon: activeMeta.icon,
+                },
+                {
+                  key: "suspended",
+                  label: t("plat.dash.suspended"),
+                  value: stats.suspended,
+                  tone: suspendedMeta.tone,
+                  icon: suspendedMeta.icon,
+                },
+              ]}
+            />
+          </div>
+        )}
 
-      <div className={`grid gap-4 ${wideRanking ? "" : "lg:grid-cols-2 lg:items-start"}`}>
-        <article className="space-y-3 rounded-3xl border border-border bg-card p-4 sm:p-5">
+        <article className="plat-dash-ranking space-y-3 rounded-3xl border border-border bg-card p-4 sm:p-5">
           <SectionHeader
             icon={Trophy}
             title={t("plat.dash.topTitle")}
@@ -280,7 +278,7 @@ export function PlatformDashboard({
           {loading ? (
             <LoadingState variant="list" count={3} hideLabel />
           ) : (
-            <ol className={`space-y-1 ${wideRanking ? "lg:columns-2 lg:gap-x-6" : ""}`}>
+            <ol className="space-y-1">
               {stats.ranking.map((row, index) => {
                 const width = Math.round((row.customers / stats.topCustomers) * 100);
                 const suspended = row.shop.status === "suspended";
@@ -350,7 +348,7 @@ export function PlatformDashboard({
           )}
         </article>
 
-        <article className="space-y-3 rounded-3xl border border-border bg-card p-4 sm:p-5">
+        <article className="plat-dash-growth space-y-3 rounded-3xl border border-border bg-card p-4 sm:p-5">
           <SectionHeader icon={CalendarClock} title={t("plat.dash.growthTitle")} />
           {loading ? (
             <LoadingState variant="stats" count={1} hideLabel />

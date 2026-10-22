@@ -1,0 +1,191 @@
+/* Páginas públicas e entrada (onda 9): CSS de tablet e computador do início do site, da página
+   da barbearia, dos documentos legais, do cadastro do dono e da entrada. Carregado depois de
+   src/styles.css por src/dispositivos.css. Regra de ouro: abaixo de 768 px nada muda; tudo aqui
+   fica atrás de @media (min-width: 768px) ou maior (docs/dispositivos-2026-10-21.md). */
+
+/* ---------- Início do site (/): os dois cartões de escolha lado a lado ---------- */
+@media (min-width: 768px) {
+  .platform-landing-wide {
+    max-width: 56rem;
+  }
+  .platform-landing-actions-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+  }
+}
+/* Entre 1024 e 1535 os cartões ficam na coluna esquerda (já estreita): empilhados. */
+@media (min-width: 1024px) {
+  .platform-landing-wide {
+    max-width: 72rem;
+  }
+  .platform-landing-actions-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .platform-landing-grid {
+    align-items: start;
+  }
+}
+@media (min-width: 1536px) {
+  .platform-landing-wide {
+    max-width: 80rem;
+  }
+  .platform-landing-actions-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ---------- Página da barbearia: horários da semana compactos ---------- */
+/* Só na página de verdade (.brand-page, src/features/marketing/ShopLanding.tsx): a prévia do
+   editor de Ajustes também é .shop-landing.public-page, mas imita o celular e fica como está. */
+@media (min-width: 768px) {
+  .shop-landing.brand-page .public-week > li {
+    min-height: 2.5rem;
+    padding-block: 0.375rem;
+    font-size: 0.8125rem;
+  }
+}
+
+/* ---------- Documentos legais: índice lateral desde o tablet deitado; leitura de ~65 caracteres ---------- */
+@media (min-width: 768px) {
+  .legal-main {
+    max-width: 42rem;
+  }
+  .legal-doc {
+    font-size: 1rem;
+  }
+}
+@media (min-width: 768px) and (orientation: landscape) {
+  .legal-layout {
+    display: grid;
+    grid-template-columns: 14rem minmax(0, 1fr);
+    gap: 2.5rem;
+  }
+  .legal-toc-aside {
+    display: block;
+  }
+  .legal-toc-details {
+    display: none;
+  }
+  .legal-main {
+    grid-column: 2;
+    margin-inline: 0;
+  }
+}
+@media (min-width: 1024px) {
+  /* Índice + texto (61rem) centrados no contêiner de 72rem, em vez de encostados à esquerda. */
+  .legal-layout {
+    grid-template-columns: 16rem minmax(0, 1fr);
+    gap: 3rem;
+    width: fit-content;
+    max-width: 72rem;
+  }
+}
+
+/* ---------- Cadastro do dono (/cadastrar): resumo ao lado desde 768 ---------- */
+@media (min-width: 768px) {
+  .platform-register:has(.entry-cad-layout) {
+    overflow: clip;
+  }
+  .platform-register-stage:has(.entry-cad-layout) {
+    max-width: 54rem;
+  }
+  /* O painel mantém os 28rem do celular (os campos e os cartões já cabem nele); o resumo fica
+     com o que sobra à esquerda. */
+  .entry-cad-layout {
+    display: grid;
+    grid-template-columns: minmax(12rem, 1fr) 28rem;
+    gap: 1.5rem;
+    align-items: start;
+  }
+  .entry-cad-aside {
+    position: sticky;
+    top: 1.5rem;
+    display: grid;
+    gap: 1rem;
+    padding-top: 1rem;
+  }
+  .entry-cad-aside > p:first-child {
+    font-size: 1.25rem;
+  }
+}
+@media (min-width: 1024px) {
+  .platform-register-stage:has(.entry-cad-layout) {
+    max-width: 64rem;
+  }
+  .entry-cad-layout {
+    grid-template-columns: minmax(0, 1fr) 30rem;
+    gap: 3rem;
+  }
+  .entry-cad-aside {
+    gap: 1.25rem;
+  }
+  .entry-cad-aside > p:first-child {
+    font-size: 1.875rem;
+  }
+}
+
+/* ---------- Entrada (/auth): tablet em pé usa o modelo "cartão" ---------- */
+/* Entre 768 e 1023 px o modelo dividido espremia a foto a 320 px ao lado do formulário. Aqui
+   ele vira o cartão centrado sobre a foto desfocada (as mesmas regras de .auth-layout-card em
+   src/styles.css); o dividido volta a partir de 1024. As regras de 761 px que ficaram em
+   src/styles.css são de outra área. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .auth-page.auth-layout-split {
+    grid-template-columns: minmax(0, 1fr);
+    place-items: center;
+    padding: clamp(1rem, 4vw, 3rem);
+    padding-block: clamp(1rem, 3dvh, 3rem);
+    background: #171714;
+  }
+  .auth-page.auth-layout-split::after {
+    content: none;
+  }
+  .auth-page.auth-layout-split .auth-photo-layer {
+    position: fixed;
+    inset: 0;
+    grid-column: auto;
+    grid-row: auto;
+    height: auto;
+    min-height: 0;
+    align-self: auto;
+  }
+  .auth-page.auth-layout-split .auth-photo-layer > span {
+    background:
+      radial-gradient(80% 70% at 50% 45%, rgb(13 14 12 / 0.28), rgb(13 14 12 / 0.62)),
+      rgb(13 14 12 / 0.5);
+    backdrop-filter: blur(3px);
+  }
+  .auth-page.auth-layout-split .auth-photo-copy {
+    display: none;
+  }
+  .auth-page.auth-layout-split .auth-brand-panel {
+    --auth-pad-x: 2rem;
+    --auth-head-top: 2rem;
+    --auth-body-bottom: 2rem;
+    grid-column: auto;
+    grid-row: auto;
+    width: min(32rem, 100%);
+    max-width: 32rem;
+    padding: 0;
+    border: 1px solid color-mix(in oklab, var(--border) 80%, white);
+    background: var(--card);
+    box-shadow:
+      0 34px 90px rgb(0 0 0 / 0.42),
+      0 3px 10px rgb(0 0 0 / 0.14),
+      inset 0 1px 0 rgb(255 255 255 / 0.9);
+  }
+  .auth-page.auth-layout-split .auth-brand-identity {
+    display: block;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid color-mix(in oklab, var(--border) 72%, transparent);
+  }
+  .auth-page.auth-layout-split .auth-form-body {
+    padding-top: 1.75rem;
+  }
+  /* Idioma e tema sobre a foto, como no cartão. */
+  .auth-page.auth-layout-split .auth-theme-toggle .app-icon-button {
+    border: 1px solid color-mix(in oklab, white 28%, transparent);
+    background: color-mix(in oklab, var(--card) 82%, transparent);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.22);
+  }
+}

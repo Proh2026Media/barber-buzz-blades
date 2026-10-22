@@ -26,10 +26,10 @@ import {
   PersonAvatar,
   StatusBadge,
   type AttentionItem,
-  visibleBottomLimit,
 } from "@/components/visual";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useDemo } from "@/features/demo/context";
+import { useStickyWhenFits } from "@/lib/use-sticky-when-fits";
 import { BusinessInsights } from "@/features/insights/BusinessInsights";
 import { CancellationDialog } from "@/features/insights/CancellationDialog";
 import type { CancellationReason } from "@/features/insights/cancellation";
@@ -38,6 +38,7 @@ import { ClientProfileModal } from "@/features/shop/ClientProfileModal";
 import { canHold } from "@/features/waiting/model";
 import type { WaitingController } from "@/features/waiting/useWaiting";
 import type { Tables } from "@/integrations/supabase/types";
+import { useDevice, useViewportAtLeast } from "@/lib/device";
 import { useI18n } from "@/lib/i18n";
 import { shopDateTime, shopDayRange } from "@/lib/shop/appointments";
 import { cn } from "@/lib/utils";
@@ -125,46 +126,6 @@ export type AgendaActions = {
 
 function normalize(value: string) {
   return value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLocaleLowerCase("pt-BR").trim();
-}
-
-/**
- * No computador, a coluna da esquerda (troca de dia, atenção, "Seu dia") acompanha a rolagem
- * só quando cabe inteira na área que rola (o `main`, abaixo do cabeçalho) e acima de qualquer
- * barra flutuante. Se não couber (tela baixa, "Mais números" aberto), rola junto com a página:
- * nada fica escondido nem atrás da barra, e não há rolagem dentro da coluna. Devolve o `top` em
- * px, ou `null` sem fixar. O `top` conta a partir do topo do `main`, que é quem rola: somar a
- * altura do cabeçalho empurrava a coluna para baixo em repouso (corrigido em 16/10/2026).
- */
-function useStickyWhenFits(ref: RefObject<HTMLElement | null>) {
-  const [top, setTop] = useState<number | null>(null);
-  useEffect(() => {
-    const element = ref.current;
-    if (!element || typeof ResizeObserver === "undefined") return;
-    const desktop = window.matchMedia("(min-width: 1024px)");
-    const GAP = 16;
-    const measure = () => {
-      if (!desktop.matches) return setTop(null);
-      const scroller = element.closest("main")?.getBoundingClientRect();
-      const viewTop = scroller ? scroller.top : 0;
-      const viewBottom = Math.min(
-        scroller ? scroller.bottom : window.innerHeight,
-        visibleBottomLimit(),
-      );
-      const room = viewBottom - viewTop - GAP * 2;
-      setTop(element.offsetHeight <= room ? GAP : null);
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(element);
-    window.addEventListener("resize", measure);
-    desktop.addEventListener("change", measure);
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", measure);
-      desktop.removeEventListener("change", measure);
-    };
-  }, [ref]);
-  return top;
 }
 
 /**
@@ -271,6 +232,9 @@ export function AgendaTab({
   const [boardTarget, setBoardTarget] = useState<string | null>(null);
   const [openExtra, setOpenExtra] = useState<string | null>(null);
   const desktop = useDesktop();
+  // Celular: busca atrás da lupa e pílulas com rolagem lateral. Tablet e computador: busca
+  // sempre aberta e pílulas quebrando em linhas (rolar de lado com o mouse é ruim).
+  const phone = useDevice() === "celular";
   const [clock, setClock] = useState(() => Date.now());
   useEffect(() => {
     const id = window.setInterval(() => setClock(Date.now()), 30_000);
@@ -624,6 +588,27 @@ export function AgendaTab({
     !!settings &&
     canHold(row.starts_at, waiting.now, settings.waiting_enabled, settings.waiting_cutoff_minutes);
 
+  // Campo de busca: no celular aparece ao tocar na lupa (e recebe o foco); fora dele fica sempre
+  // aberto na barra da lista.
+  const searchField = (
+    <label id="agenda-search" className="agenda-search relative block">
+      <span className="sr-only">{t("shop.agenda.searchLabel")}</span>
+      <Search
+        className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+        aria-hidden
+      />
+      <input
+        type="search"
+        // A busca abre por pedido da pessoa: o foco vai direto ao campo.
+        autoFocus={phone && searchOpen && !search}
+        value={search}
+        onChange={(event) => setSearch(event.target.value)}
+        placeholder={t("shop.agenda.searchPlaceholder")}
+        className="min-h-11 w-full rounded-xl border border-border bg-card py-2 pl-10 pr-3 text-sm"
+      />
+    </label>
+  );
+
   return (
     <section className="mb-stagger space-y-4">
       <div className="app-section-title">
@@ -661,10 +646,12 @@ export function AgendaTab({
 
       {setup}
 
-      <div className="space-y-4 lg:grid lg:grid-cols-[minmax(0,24.5rem)_minmax(0,1fr)] lg:items-start lg:gap-6 lg:space-y-0">
+      {/* Celular e tablet em pé: uma coluna. A partir de 1024 px: coluna do dia (22rem) e a lista
+          ao lado (CSS em src/styles/agenda.css). */}
+      <div className="agenda-layout space-y-4">
         <div
           ref={sideRef}
-          className="space-y-4 lg:p-1"
+          className="agenda-side space-y-4 lg:p-1"
           style={sideTop !== null ? { position: "sticky", top: sideTop } : undefined}
         >
           <div className="agenda-toolbar app-action-card p-3 sm:p-4">
@@ -693,6 +680,7 @@ export function AgendaTab({
               today={today}
               onChange={onDayChange}
               closedWeekdays={closedWeekdays}
+              monthInline={desktop}
             />
           </div>
 
@@ -803,9 +791,7 @@ export function AgendaTab({
           )}
         </div>
 
-        {/* Coluna da direita: a lista do dia e, logo abaixo, as seções extras (sugestões,
-            clientes), na mesma largura da lista. A carteira do parceiro (larga) vem depois das
-            duas colunas. */}
+        {/* Coluna da direita: a lista do dia (ou o quadro da equipe). */}
         <div className="min-w-0 space-y-6">
           <div id="agenda-list" className="scroll-mt-24 space-y-3">
             {error && !loadFailed && (
@@ -875,7 +861,9 @@ export function AgendaTab({
               />
             ) : (
               <>
-                <div className="flex flex-wrap items-center gap-2">
+                {/* Tablet e computador: título, busca aberta, profissionais e filtros ativos
+                    numa barra que quebra em linhas (agenda-list-head em agenda.css). */}
+                <div className="agenda-list-head flex flex-wrap items-center gap-2">
                   <h3 className="flex min-w-0 flex-1 items-center gap-2 text-base font-bold">
                     <ListChecks className="size-5 shrink-0 text-gold" aria-hidden />
                     {t("agenda.list.title")}
@@ -888,42 +876,33 @@ export function AgendaTab({
                           })}
                     </span>
                   </h3>
-                  <button
-                    type="button"
-                    aria-expanded={searchOpen || !!search}
-                    aria-controls="agenda-search"
-                    aria-label={t("shop.agenda.searchLabel")}
-                    title={t("shop.agenda.searchLabel")}
-                    onClick={() => setSearchOpen((value) => !value)}
-                    className={cn("app-icon-button", (searchOpen || search) && "ring-2 ring-gold")}
-                  >
-                    <Search className="size-5" aria-hidden />
-                  </button>
+                  {phone ? (
+                    <button
+                      type="button"
+                      aria-expanded={searchOpen || !!search}
+                      aria-controls="agenda-search"
+                      aria-label={t("shop.agenda.searchLabel")}
+                      title={t("shop.agenda.searchLabel")}
+                      onClick={() => setSearchOpen((value) => !value)}
+                      className={cn(
+                        "app-icon-button",
+                        (searchOpen || search) && "ring-2 ring-gold",
+                      )}
+                    >
+                      <Search className="size-5" aria-hidden />
+                    </button>
+                  ) : (
+                    searchField
+                  )}
                 </div>
-                {(searchOpen || search) && (
-                  <label id="agenda-search" className="relative block">
-                    <span className="sr-only">{t("shop.agenda.searchLabel")}</span>
-                    <Search
-                      className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                      aria-hidden
-                    />
-                    <input
-                      type="search"
-                      // A busca abre por pedido da pessoa: o foco vai direto ao campo.
-                      autoFocus={searchOpen && !search}
-                      value={search}
-                      onChange={(event) => setSearch(event.target.value)}
-                      placeholder={t("shop.agenda.searchPlaceholder")}
-                      className="min-h-11 w-full rounded-xl border border-border bg-card py-2 pl-10 pr-3 text-sm"
-                    />
-                  </label>
-                )}
+                {phone && (searchOpen || search) && searchField}
                 {showStaffFilter && (
                   <ChoiceChips
                     label={t("shop.staffFallback")}
                     icon={Users}
                     hideLabel
-                    scroll
+                    scroll={phone}
+                    className="agenda-staff-chips"
                     value={staffFilter}
                     onChange={setStaffFilter}
                     options={[
@@ -944,7 +923,7 @@ export function AgendaTab({
                   />
                 )}
                 {filtered && (
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="agenda-active-filters flex flex-wrap items-center gap-2">
                     {statusFilter && (
                       <StatusBadge
                         tone={AGENDA_STATE[statusFilter].tone}
@@ -1016,13 +995,16 @@ export function AgendaTab({
                     onOpen={(row) => setBoardTarget(row.id)}
                   />
                 ) : (
-                  <ol className="space-y-2.5" aria-label={t("shop.agenda.listAria")}>
+                  <ol
+                    className="agenda-timeline space-y-2.5"
+                    aria-label={t("shop.agenda.listAria")}
+                  >
                     {timeline.map((entry) => {
                       if (entry.kind === "now") {
                         return (
                           <li
                             key="now"
-                            className="flex items-center gap-2 py-0.5 text-xs font-extrabold text-gold"
+                            className="agenda-now flex items-center gap-2 py-0.5 text-xs font-extrabold text-gold"
                           >
                             <span className="tabular-nums">
                               {t("agenda.now", { time: time(entry.at) })}
@@ -1052,7 +1034,7 @@ export function AgendaTab({
                         );
                         return (
                           // Fundo do cartão por baixo: no tema escuro a faixa segue off-white.
-                          <li key={entry.key} className="rounded-2xl bg-card">
+                          <li key={entry.key} className="agenda-gap rounded-2xl bg-card">
                             {onBookClient && singleProfessional ? (
                               <button
                                 type="button"
@@ -1181,22 +1163,14 @@ export function AgendaTab({
               </>
             )}
           </div>
-
-          {desktop &&
-            extras
-              .filter((extra) => !extra.wide)
-              .map((extra) => (
-                <section key={extra.id} id={`agenda-extra-${extra.id}`} className="scroll-mt-24">
-                  {extra.content}
-                </section>
-              ))}
         </div>
       </div>
 
+      {/* Computador: as seções extras (clientes em tabela, sugestões, carteira) vêm abaixo das
+          duas colunas, na largura toda; as estreitas primeiro. */}
       {desktop &&
-        extras
-          .filter((extra) => extra.wide)
-          .map((extra) => (
+        [...extras.filter((extra) => !extra.wide), ...extras.filter((extra) => extra.wide)].map(
+          (extra) => (
             <section
               key={extra.id}
               id={`agenda-extra-${extra.id}`}
@@ -1204,7 +1178,8 @@ export function AgendaTab({
             >
               {extra.content}
             </section>
-          ))}
+          ),
+        )}
 
       {/* Celular: seções com contagem ficam montadas escondidas enquanto a janela está fechada. */}
       {!desktop &&

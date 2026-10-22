@@ -21,10 +21,16 @@ export function ReservationFilters({
   value,
   counts,
   onChange,
+  compact = false,
 }: {
   value: ReservationFilter;
   counts: Record<ReservationFilter, number>;
   onChange: (value: ReservationFilter) => void;
+  /**
+   * Tablet e computador: controle na largura do texto, na linha do título, com as pílulas de
+   * Anteriores ao lado (sem rolagem). No celular continua em largura total, acima da lista.
+   */
+  compact?: boolean;
 }) {
   const { t } = useI18n();
   const past = value !== "upcoming";
@@ -38,11 +44,14 @@ export function ReservationFilters({
     { id: "history" as const, label: t("bookings.past"), icon: History, count: counts.history },
   ];
   return (
-    <div className="space-y-2">
+    <div className={compact ? "flex flex-wrap items-center gap-2" : "space-y-2"}>
       <div
         role="group"
         aria-label={t("bookings.filterAria")}
-        className="grid grid-cols-2 gap-1 rounded-2xl border border-border bg-card p-1"
+        className={cn(
+          "grid grid-cols-2 gap-1 rounded-2xl border border-border bg-card p-1",
+          compact && "w-fit",
+        )}
       >
         {segments.map((segment) => {
           const active = segment.id === "upcoming" ? !past : past;
@@ -55,6 +64,7 @@ export function ReservationFilters({
               onClick={() => onChange(segment.id)}
               className={cn(
                 "flex min-h-11 items-center justify-center gap-2 rounded-xl px-2 text-sm font-semibold transition",
+                compact && "px-3",
                 active
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground",
@@ -79,7 +89,7 @@ export function ReservationFilters({
         <ChoiceChips
           label={t("bookings.pastFilterAria")}
           hideLabel
-          scroll
+          scroll={!compact}
           value={value}
           onChange={onChange}
           options={[

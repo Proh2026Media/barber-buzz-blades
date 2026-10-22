@@ -5,6 +5,7 @@ import {
   IconList,
   PreviewPanel,
   SectionHeader,
+  SplitLayout,
   Timeline,
   UnsavedBar,
   type ActionState,
@@ -16,7 +17,6 @@ import {
   DEFAULT_MIN_LEAD_MINUTES,
   MIN_LEAD_OPTIONS,
   formatShopDate,
-  minLeadParts,
   shiftDateKey,
   shopDateKey,
   shopDateTime,
@@ -26,6 +26,7 @@ import { useDemo } from "@/features/demo/context";
 import { clockInTimeZone } from "@/features/register-owner/timezones";
 import { liveStatus, toMinutes, weekdayOfKey, type HoursRow } from "@/features/shop/hours/model";
 import { BOOKING_CARD_IDS } from "./booking-cards";
+import { useMinLeadLabel } from "./min-lead-label";
 
 type SaveResult = Exclude<ActionState, "saving">;
 const SAVE_TEXT: Record<SaveResult, MessageKey> = {
@@ -33,18 +34,6 @@ const SAVE_TEXT: Record<SaveResult, MessageKey> = {
   pending: "slots.status.pending",
   error: "slots.status.error",
 };
-
-/** "Sem mínimo", "30 min" ou "2 h". */
-export function useMinLeadLabel() {
-  const { t } = useI18n();
-  return (minutes: number) => {
-    if (minutes === 0) return t("lead.none");
-    const parts = minLeadParts(minutes);
-    return "hours" in parts
-      ? t("lead.chip.hours", { hours: parts.hours })
-      : t("lead.chip.minutes", { minutes: parts.minutes });
-  };
-}
 
 /**
  * Primeiro instante com a loja aberta a partir de `from`, pelo expediente da semana no fuso da
@@ -160,7 +149,7 @@ export function MinLeadSettings({
     <section
       id={BOOKING_CARD_IDS.lead}
       tabIndex={-1}
-      className="app-action-card scroll-mt-24 space-y-5 p-5 outline-none"
+      className="ajustes-item app-action-card scroll-mt-24 space-y-5 p-5 outline-none"
       aria-labelledby={`${groupId}-title`}
     >
       <SectionHeader
@@ -170,25 +159,31 @@ export function MinLeadSettings({
         description={t("lead.intro")}
       />
 
-      <ChoiceChips
-        label={t("lead.title")}
-        hideLabel
-        options={MIN_LEAD_OPTIONS.map((minutes) => ({
-          value: minutes,
-          label: leadLabel(minutes),
-          note: minutes === DEFAULT_MIN_LEAD_MINUTES ? t("slots.default") : undefined,
-        }))}
-        value={lead}
-        disabled={busy}
-        onChange={(value) => {
-          setLead(value);
-          setStatus(null);
-        }}
-      />
-
-      <PreviewPanel icon={CalendarCheck} title={t("lead.preview.title")} live>
-        <Timeline rows={timeline} />
-      </PreviewPanel>
+      <SplitLayout
+        gap="1.25rem"
+        asideWidth="20rem"
+        aside={
+          <PreviewPanel icon={CalendarCheck} title={t("lead.preview.title")} live>
+            <Timeline rows={timeline} />
+          </PreviewPanel>
+        }
+      >
+        <ChoiceChips
+          label={t("lead.title")}
+          hideLabel
+          options={MIN_LEAD_OPTIONS.map((minutes) => ({
+            value: minutes,
+            label: leadLabel(minutes),
+            note: minutes === DEFAULT_MIN_LEAD_MINUTES ? t("slots.default") : undefined,
+          }))}
+          value={lead}
+          disabled={busy}
+          onChange={(value) => {
+            setLead(value);
+            setStatus(null);
+          }}
+        />
+      </SplitLayout>
 
       <IconList
         items={[

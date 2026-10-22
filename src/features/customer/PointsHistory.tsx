@@ -9,7 +9,8 @@ import {
   Sparkles,
   type LucideIcon,
 } from "lucide-react";
-import { EmptyState, IconTile, LoadingState } from "@/components/visual";
+import { DataList, EmptyState, IconTile, LoadingState, SplitLayout } from "@/components/visual";
+import { useViewportAtLeast } from "@/lib/device";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { useDemo } from "@/features/demo/context";
@@ -90,6 +91,8 @@ export function PointsHistory({
 }) {
   const demo = useDemo();
   const { t, intlLocale } = useI18n();
+  // Computador (≥ 1024): cartão de membro fixo à esquerda; prêmios e extrato em tabela à direita.
+  const wide = useViewportAtLeast(1024);
   const [rows, setRows] = useState<Tables<"loyalty_ledger">[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -232,17 +235,137 @@ export function PointsHistory({
     group.rows.push(row);
   }
 
-  return (
-    <section className="mb-stagger space-y-5" aria-labelledby="points-history-title">
-      <CustomerPageHeader
-        icon={ReceiptText}
-        title={t("points.title")}
-        titleId="points-history-title"
-        onBack={onBack}
-      />
+  type LedgerRow = Tables<"loyalty_ledger">;
+  const detailOf = (row: LedgerRow) => {
+    const context =
+      row.reason === "appointment_completed" && row.appointment_id
+        ? appointments[row.appointment_id]
+        : null;
+    return context
+      ? `${context.service} · ${context.staff}`
+      : (row.reason === "reward_redeemed" || row.reason === "reward_refunded") && row.note
+        ? row.note
+        : null;
+  };
+  const dateOf = (row: LedgerRow) => {
+    const date = new Date(row.created_at);
+    return (yearOf(date) === year ? dayFormat : dayYearFormat).format(date);
+  };
+  const pointsOf = (row: LedgerRow) => {
+    const credit = row.delta >= 0;
+    return (
+      <span
+        className={cn(
+          // Gastar pontos num prêmio é escolha, não erro: cinza, não vermelho.
+          credit ? "tone-success" : "tone-neutral",
+          "whitespace-nowrap font-black tabular-nums text-[color:var(--tone-ink)]",
+        )}
+      >
+        {credit ? "+" : "−"}
+        {Math.abs(row.delta)}
+        <span className="ms-1 text-[11px] font-bold text-muted-foreground">
+          {t("points.short")}
+        </span>
+      </span>
+    );
+  };
+  /* Extrato: lista de cartões no celular e no tablet; tabela (Data · Motivo · Pontos) por mês a
+     partir de 1024 px, com as mesmas linhas. */
+  const ledger = (
+    <section className="space-y-3" aria-labelledby="points-movements-title">
+      <h3 id="points-movements-title" className="text-base font-extrabold">
+        {t("points.movements")}
+      </h3>
+      {groups.map((group) => (
+        <div key={group.key} className="space-y-1.5">
+          <h4 className="px-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            {group.label}
+          </h4>
+          {wide ? (
+            <DataList
+              className="points-ledger-table"
+              rows={group.rows}
+              rowKey={(row) => row.id}
+              columns={[
+                {
+                  key: "date",
+                  header: t("booking.date"),
+                  width: "10rem",
+                  cell: (row) => <span className="text-muted-foreground">{dateOf(row)}</span>,
+                },
+                {
+                  key: "reason",
+                  header: t("points.movements"),
+                  cell: (row) => {
+                    const detail = detailOf(row);
+                    return (
+                      <span className="flex items-center gap-3">
+                        <IconTile
+                          icon={ledgerReasonIcon(row.reason)}
+                          tone={row.delta >= 0 ? "success" : "neutral"}
+                          size="sm"
+                        />
+                        <span className="min-w-0">
+                          <span className="block font-bold">{t(ledgerReasonKey(row.reason))}</span>
+                          {detail && (
+                            <span className="block text-xs text-muted-foreground">{detail}</span>
+                          )}
+                        </span>
+                      </span>
+                    );
+                  },
+                },
+                {
+                  key: "points",
+                  header: t("points.short"),
+                  width: "6rem",
+                  align: "end",
+                  cell: pointsOf,
+                },
+              ]}
+            />
+          ) : (
+            <ul className="app-action-card divide-y divide-border/70 p-1">
+              {group.rows.map((row) => {
+                const credit = row.delta >= 0;
+                const detail = detailOf(row);
+                return (
+                  <li key={row.id} className="flex items-center gap-3 px-2.5 py-3">
+                    <IconTile
+                      icon={ledgerReasonIcon(row.reason)}
+                      tone={credit ? "success" : "neutral"}
+                      size="sm"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-bold">{t(ledgerReasonKey(row.reason))}</p>
+                      {detail && <p className="truncate text-xs text-muted-foreground">{detail}</p>}
+                      <p className="text-[11px] text-muted-foreground">{dateOf(row)}</p>
+                    </div>
+                    <span className="shrink-0 text-right text-base">{pointsOf(row)}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      ))}
+      {rows.length > limit && (
+        <button
+          type="button"
+          disabled={loading}
+          aria-busy={loading || undefined}
+          onClick={() => setLimit((n) => n + 20)}
+          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-bold hover:bg-muted disabled:opacity-70"
+        >
+          {loading && <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />}
+          {loading ? t("points.loading") : t("common.loadMore")}
+        </button>
+      )}
+    </section>
+  );
 
-      {summary}
-
+  const body = (
+    <>
       {children}
 
       {error ? (
@@ -269,79 +392,37 @@ export function PointsHistory({
           description={t("points.emptyText")}
         />
       ) : (
-        <section className="space-y-3" aria-labelledby="points-movements-title">
-          <h3 id="points-movements-title" className="text-base font-extrabold">
-            {t("points.movements")}
-          </h3>
-          {groups.map((group) => (
-            <div key={group.key} className="space-y-1.5">
-              <h4 className="px-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                {group.label}
-              </h4>
-              <ul className="app-action-card divide-y divide-border/70 p-1">
-                {group.rows.map((row) => {
-                  const credit = row.delta >= 0;
-                  const date = new Date(row.created_at);
-                  const context =
-                    row.reason === "appointment_completed" && row.appointment_id
-                      ? appointments[row.appointment_id]
-                      : null;
-                  const detail = context
-                    ? `${context.service} · ${context.staff}`
-                    : (row.reason === "reward_redeemed" || row.reason === "reward_refunded") &&
-                        row.note
-                      ? row.note
-                      : null;
-                  return (
-                    <li key={row.id} className="flex items-center gap-3 px-2.5 py-3">
-                      <IconTile
-                        icon={ledgerReasonIcon(row.reason)}
-                        tone={credit ? "success" : "neutral"}
-                        size="sm"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-bold">
-                          {t(ledgerReasonKey(row.reason))}
-                        </p>
-                        {detail && (
-                          <p className="truncate text-xs text-muted-foreground">{detail}</p>
-                        )}
-                        <p className="text-[11px] text-muted-foreground">
-                          {(yearOf(date) === year ? dayFormat : dayYearFormat).format(date)}
-                        </p>
-                      </div>
-                      <span
-                        className={cn(
-                          // Gastar pontos num prêmio é escolha, não erro: cinza, não vermelho.
-                          credit ? "tone-success" : "tone-neutral",
-                          "shrink-0 text-right text-base font-black tabular-nums text-[color:var(--tone-ink)]",
-                        )}
-                      >
-                        {credit ? "+" : "−"}
-                        {Math.abs(row.delta)}
-                        <span className="ms-1 text-[11px] font-bold text-muted-foreground">
-                          {t("points.short")}
-                        </span>
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))}
-          {rows.length > limit && (
-            <button
-              type="button"
-              disabled={loading}
-              aria-busy={loading || undefined}
-              onClick={() => setLimit((n) => n + 20)}
-              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-bold hover:bg-muted disabled:opacity-70"
-            >
-              {loading && <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />}
-              {loading ? t("points.loading") : t("common.loadMore")}
-            </button>
-          )}
-        </section>
+        ledger
+      )}
+    </>
+  );
+
+  return (
+    <section className="mb-stagger space-y-5" aria-labelledby="points-history-title">
+      <CustomerPageHeader
+        icon={ReceiptText}
+        title={t("points.title")}
+        titleId="points-history-title"
+        onBack={onBack}
+      />
+      {/* Celular: cartão de membro, prêmios e extrato empilhados (como sempre). Tablet em pé
+          (768–1023): cartão | prêmios lado a lado e o extrato na largura toda embaixo
+          (src/styles/cliente.css). A partir de 1024 px o cartão fica fixo à esquerda e o resto
+          usa a coluna da direita. */}
+      {summary ? (
+        <SplitLayout
+          className="customer-points-split"
+          aside={summary}
+          asidePosition="start"
+          asideFirstOnPhone
+          asideWidth="22rem"
+          stickyTop="1rem"
+          gap="1.25rem"
+        >
+          <div className="space-y-5">{body}</div>
+        </SplitLayout>
+      ) : (
+        <div className="space-y-5">{body}</div>
       )}
     </section>
   );

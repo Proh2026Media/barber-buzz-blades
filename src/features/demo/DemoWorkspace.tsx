@@ -299,7 +299,9 @@ function ConfiguredDemoWorkspace({
           qualquer sobra aqui encurta a tela e deixa a navegação flutuante fora
           da superfície do app (parecia cortada embaixo). */}
       <div className="demo-layout bg-background text-foreground">
-        <div className="border-b border-primary/20 bg-primary/10 px-4 py-2 text-center text-xs font-semibold text-foreground">
+        {/* Aviso "dados fictícios": faixa de ponta a ponta no celular; a partir de 768 px vira uma
+            pílula centrada (app-demo-banner, styles.css), para não atravessar a tela por uma linha. */}
+        <div className="app-demo-banner border-b border-primary/20 bg-primary/10 px-4 py-2 text-center text-xs font-semibold text-foreground">
           {t("demo.ws.bannerShort")}{" "}
           <button
             type="button"

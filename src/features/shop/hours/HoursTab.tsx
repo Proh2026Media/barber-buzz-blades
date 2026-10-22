@@ -287,8 +287,11 @@ function HoursTabContent({
       />
     );
 
+  // As quatro partes são filhas diretas da grade (classes hours-* em src/styles/horarios.css):
+  // no celular e no tablet em pé empilham nesta ordem; a partir de 1024 px a semana fica à
+  // esquerda ocupando a altura e Bloqueios, Pausa fixa e "Assim seus clientes veem" à direita.
   const week = (
-    <div className="space-y-6">
+    <div className="hours-week">
       <WeekCard
         saved={hours}
         draft={draft}
@@ -301,12 +304,16 @@ function HoursTabContent({
         onSave={tracked(onSaveHours)}
         onOpenApprovals={onOpenApprovals}
       />
-      {/* Logo abaixo da semana: o efeito do funcionamento nos horários que o cliente vê. */}
+    </div>
+  );
+  // Logo abaixo da semana: o efeito do funcionamento nos horários que o cliente vê.
+  const notice = (
+    <div className="hours-notice">
       <SlotModeNotice {...slotNotice} hours={draft} preview={!sameWeek(draft, hours)} />
     </div>
   );
   const blocksCard = (
-    <div className="space-y-6">
+    <div className="hours-blocks">
       <BlocksCard
         blocks={placed}
         staff={staffOptions}
@@ -322,21 +329,24 @@ function HoursTabContent({
         onRequestHandled={onBlockRequestHandled}
         onOpenApprovals={onOpenApprovals}
       />
-      {weeklyBreaks && (
-        <WeeklyBreaksCard
-          shopId={shopId}
-          staff={staffOptions}
-          ownStaff={ownStaff}
-          canManageShop={weeklyBreaks.canManageShop}
-          onChanged={weeklyBreaks.onChanged}
-        />
-      )}
     </div>
   );
+  const breaks = weeklyBreaks ? (
+    <div className="hours-breaks">
+      <WeeklyBreaksCard
+        shopId={shopId}
+        staff={staffOptions}
+        ownStaff={ownStaff}
+        canManageShop={weeklyBreaks.canManageShop}
+        onChanged={weeklyBreaks.onChanged}
+      />
+    </div>
+  ) : null;
 
   return (
     <section className="space-y-5">
-      <div className="space-y-3">
+      {/* A partir de 768 px o selo "aberta agora" fica na linha do título. */}
+      <div className="hours-head space-y-3">
         <div className="app-section-title">
           <Clock3 />
           <h2>{t("shop.nav.hours")}</h2>
@@ -351,16 +361,20 @@ function HoursTabContent({
         )}
       </div>
       {/* Quem só bloqueia a própria agenda vê os bloqueios primeiro (a única ação dele). */}
-      <div className="grid items-start gap-6 lg:grid-cols-2">
+      <div className="hours-grid grid items-start gap-6">
         {ownStaffId ? (
           <>
             {blocksCard}
+            {breaks}
             {week}
+            {notice}
           </>
         ) : (
           <>
             {week}
+            {notice}
             {blocksCard}
+            {breaks}
           </>
         )}
       </div>

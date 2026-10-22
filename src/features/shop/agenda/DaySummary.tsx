@@ -92,18 +92,22 @@ export function DaySummary({
   ];
 
   return (
-    <section className="app-action-card space-y-4 p-4" aria-label={title}>
-      <SectionHeader
-        icon={CalendarDays}
-        title={title}
-        as="h3"
-        aside={
-          person ? (
-            <PersonAvatar name={person.name} src={person.photo} seed={person.id} size="sm" />
-          ) : undefined
-        }
-      />
-      <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
+    // As classes agenda-summary-* só servem ao CSS do tablet e do computador
+    // (src/styles/agenda.css): no celular é o cartão empilhado de sempre.
+    <section className="agenda-summary app-action-card space-y-4 p-4" aria-label={title}>
+      <div className="agenda-summary-head">
+        <SectionHeader
+          icon={CalendarDays}
+          title={title}
+          as="h3"
+          aside={
+            person ? (
+              <PersonAvatar name={person.name} src={person.photo} seed={person.id} size="sm" />
+            ) : undefined
+          }
+        />
+      </div>
+      <div className="agenda-summary-figure flex flex-wrap items-end gap-x-3 gap-y-1">
         <p className="text-4xl font-extrabold leading-none tracking-tight tabular-nums">
           {showBooked ? active : counts.completed}
         </p>
@@ -115,11 +119,13 @@ export function DaySummary({
       </div>
 
       {!future && active > 0 && (
-        <SegmentBar segments={progress} total={active} summary={progressSummary} legend={false} />
+        <div className="agenda-summary-bar">
+          <SegmentBar segments={progress} total={active} summary={progressSummary} legend={false} />
+        </div>
       )}
 
       {moments.length > 0 && (
-        <div className="grid gap-2">
+        <div className="agenda-summary-moments grid gap-2">
           {moments.map(({ moment, now }) => (
             <button
               key={`${now ? "now" : "next"}-${moment.id}`}
@@ -172,7 +178,11 @@ export function DaySummary({
       )}
 
       {(filter !== "" || AGENDA_GROUPS.filter((group) => counts[group] > 0).length > 1) && (
-        <div role="group" aria-label={t("agenda.filter.aria")} className="flex flex-wrap gap-1.5">
+        <div
+          role="group"
+          aria-label={t("agenda.filter.aria")}
+          className="agenda-summary-filters flex flex-wrap gap-1.5"
+        >
           <button
             type="button"
             aria-pressed={filter === ""}
@@ -218,7 +228,7 @@ export function DaySummary({
       )}
 
       {money && (
-        <div className="flex items-center gap-4 rounded-xl bg-muted/50 px-3 py-2.5 text-sm">
+        <div className="agenda-summary-money flex items-center gap-4 rounded-xl bg-muted/50 px-3 py-2.5 text-sm">
           <Wallet className="size-4 shrink-0 text-gold" aria-hidden />
           {/* Os dois valores quebram entre si, alinhados ao texto (não embaixo do ícone). */}
           <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1">
@@ -237,7 +247,11 @@ export function DaySummary({
       )}
 
       {(details || money) && (
-        <MoreDetails summary={t("agenda.summary.more")} icon={BarChart3}>
+        <MoreDetails
+          summary={t("agenda.summary.more")}
+          icon={BarChart3}
+          className="agenda-summary-more"
+        >
           {money && <Hint icon={Info}>{t("shop.money.estimate")}</Hint>}
           {details}
         </MoreDetails>

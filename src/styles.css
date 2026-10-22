@@ -9,8 +9,16 @@
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
+/* Ponteiro: alvos de 40 px onde há mouse; o toque continua com 44 px (docs/dispositivos-2026-10-21.md). */
+@custom-variant pointer-fine (@media (pointer: fine));
+@custom-variant pointer-coarse (@media (pointer: coarse));
 
 @theme inline {
+  /* Faixas por dispositivo (mesmos números de DEVICE_MIN em src/lib/device.ts): `tablet:` a
+     partir de 768 px e `pc:` a partir de 1280 px; `lg:` (1024) continua para o computador
+     compacto dentro da faixa do tablet. */
+  --breakpoint-tablet: 48rem;
+  --breakpoint-pc: 80rem;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -391,8 +399,10 @@
     background-color var(--duration-fast) var(--ease-soft),
     transform var(--duration-fast) var(--ease-out);
 }
-.schedule-field:hover {
-  border-color: var(--gold);
+@media (hover: hover) {
+  .schedule-field:hover {
+    border-color: var(--gold);
+  }
 }
 .schedule-field:focus-visible {
   outline: 2px solid var(--gold);
@@ -442,9 +452,11 @@
 .action-success {
   color: #85dfad;
 }
-.action-button:hover {
-  background: #383932;
-  box-shadow: 0 8px 20px color-mix(in oklab, #292925 22%, transparent);
+@media (hover: hover) {
+  .action-button:hover {
+    background: #383932;
+    box-shadow: 0 8px 20px color-mix(in oklab, #292925 22%, transparent);
+  }
 }
 .action-button:active {
   transform: scale(0.97);
@@ -987,7 +999,10 @@ body:has(.arena-workspace) {
   backdrop-filter: blur(18px);
 }
 .arena-workspace > main {
-  padding-top: 1.25rem;
+  /* Variável para quem precisa descontar este recuo (cabeçalho sticky do quadro da equipe,
+     src/styles/agenda.css). */
+  --app-main-pad-top: 1.25rem;
+  padding-top: var(--app-main-pad-top);
 }
 /* Folga padrão na camada base: assim o scroll-mt-* de cada seção (que desconta o cabeçalho fixo)
    vence; fora da camada, esta regra anulava os utilitários e o cabeçalho cobria o topo do cartão. */
@@ -1237,22 +1252,36 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
     box-shadow var(--duration-fast) var(--ease-soft),
     border-color var(--duration-fast) var(--ease-soft);
 }
-.app-icon-button:hover {
-  color: var(--foreground);
-  box-shadow: 0 8px 18px color-mix(in oklab, #000 12%, transparent);
+@media (hover: hover) {
+  .app-icon-button:hover {
+    color: var(--foreground);
+    box-shadow: 0 8px 18px color-mix(in oklab, #000 12%, transparent);
+  }
 }
 .app-icon-button:active {
   transform: scale(0.94);
 }
 /* Posição do seletor de demo dentro do grupo de ícones do cabeçalho.
-   Celular e tablet: primeiro da esquerda para a direita. PC: primeiro da direita
-   para a esquerda, ou seja, o último do grupo. */
+   Celular e tablet: primeiro da esquerda para a direita. Computador (≥ 1280 px, faixa `pc:`):
+   primeiro da direita para a esquerda, ou seja, o último do grupo. */
 .app-demo-slot-mobile {
   order: -1;
 }
-@media (min-width: 1024px) {
+@media (min-width: 1280px) {
   .app-demo-slot-desktop {
     order: 99;
+  }
+}
+/* Aviso "Demonstração · dados fictícios" (DemoWorkspace): no celular é uma faixa de ponta a
+   ponta; no tablet e no computador vira uma pílula centrada, só do tamanho do texto. */
+@media (min-width: 768px) {
+  .app-demo-banner {
+    width: fit-content;
+    max-width: calc(100% - 2rem);
+    margin: 0.5rem auto 0.25rem;
+    padding: 0.3rem 0.9rem;
+    border: 1px solid color-mix(in oklab, var(--primary) 25%, transparent);
+    border-radius: 999px;
   }
 }
 /* Seletor do modo demonstração: mesma superfície dos ícones do cabeçalho. */
@@ -1490,18 +1519,22 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
     opacity var(--duration-fast) var(--ease-soft);
   will-change: transform;
 }
-/* Computador e tablet deitado (≥ 1024 px): a barra de baixo vira uma coluna lateral fixa, como
-   num aplicativo de computador (16/10/2026, pedido do dono: "não deve parecer uma adaptação").
-   A área de trabalho vira uma grade: cabeçalho em cima, navegação à esquerda e o conteúdo, que
-   continua rolando sozinho, à direita. Nada mais flutua sobre o conteúdo. Os itens mostram ícone e
-   nome lado a lado; o ativo ganha o fundo da marca (a pílula deslizante é só do celular). */
-@media (min-width: 1024px) {
+/* Tablet e computador (≥ 768 px): a barra de baixo vira uma coluna lateral fixa, como num
+   aplicativo de computador (16/10/2026, pedido do dono: "não deve parecer uma adaptação"; faixas
+   por dispositivo em docs/dispositivos-2026-10-21.md, 21/10/2026). A área de trabalho vira uma
+   grade: cabeçalho em cima, navegação à esquerda e o conteúdo, que continua rolando sozinho, à
+   direita. Nada mais flutua sobre o conteúdo. São duas faixas:
+   - tablet (768–1279): COLUNA ESTREITA de 6rem, ícone sobre o nome (o plano dizia 5.5rem, mas
+     "Agendamentos"/"Appointments" a 11px precisam de ~78 px e quebravam com hífen);
+   - computador (≥ 1280): coluna completa de 14.5rem, ícone e nome lado a lado.
+   Nas duas, o item ativo ganha o fundo da marca (a pílula deslizante é só do celular). */
+@media (min-width: 768px) {
   .arena-workspace:has(> .app-mobile-nav) {
-    --app-rail-width: 14.5rem;
+    --app-rail-width: 6rem;
+    /* Mesmo recuo do cabeçalho: a borda da coluna alinha com o nome da loja acima dela. */
+    --app-rail-inset: max(1rem, env(safe-area-inset-left));
     display: grid;
-    grid-template-columns:
-      calc(var(--app-rail-width) + max(1rem, env(safe-area-inset-left)))
-      minmax(0, 1fr);
+    grid-template-columns: calc(var(--app-rail-width) + var(--app-rail-inset)) minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
   }
   .arena-workspace:has(> .app-mobile-nav) > header {
@@ -1518,6 +1551,7 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
     --app-banner-bottom: var(--app-floating-bottom);
     --app-sticky-bottom: max(0.75rem, env(safe-area-inset-bottom));
   }
+  /* A coluna é estática na grade (também com o cabeçalho flutuante da marca). */
   .arena-workspace > .app-mobile-nav,
   .arena-workspace.brand-chrome-floating > .app-mobile-nav {
     grid-column: 1;
@@ -1530,33 +1564,48 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
     gap: 0.25rem;
     width: auto !important;
     max-width: none !important;
-    margin: 1.25rem 0 1rem max(1rem, env(safe-area-inset-left)) !important;
-    padding: 0.5rem !important;
+    margin: 1.25rem 0 1rem var(--app-rail-inset) !important;
+    /* Recuo mínimo: sobra o máximo para o rótulo (12 letras precisam de ~78 px). */
+    padding: 0.25rem !important;
+    /* O `overflow-hidden` da barra é para a pílula deslizante do celular; na coluna ele cortava
+       1 px do anel de foco (2 px + 3 px de folga) de cada lado. */
+    overflow: visible;
   }
   .arena-workspace > .app-mobile-nav > .app-mobile-nav-indicator {
     display: none;
   }
+  /* Coluna estreita: ícone em cima, nome embaixo, largura toda da coluna. */
   .arena-workspace > .app-mobile-nav > button {
-    flex-direction: row !important;
+    flex-direction: column !important;
     align-items: center !important;
-    justify-content: flex-start !important;
-    gap: 0.75rem;
+    justify-content: center !important;
+    gap: 0.25rem;
     width: 100%;
-    min-height: 48px;
-    padding: 0.625rem 0.875rem !important;
-    text-align: start;
+    min-height: 64px;
+    padding: 0.5rem 0.125rem !important;
+    text-align: center;
   }
-  .arena-workspace > .app-mobile-nav > button:hover:not([aria-pressed="true"]) {
-    background: color-mix(in oklab, var(--muted) 70%, transparent);
+  @media (hover: hover) {
+    .arena-workspace > .app-mobile-nav > button:hover:not([aria-pressed="true"]) {
+      background: color-mix(in oklab, var(--muted) 70%, transparent);
+    }
   }
   .arena-workspace > .app-mobile-nav > button > :first-child {
     margin-bottom: 0 !important;
   }
-  .arena-workspace > .app-mobile-nav > button span {
-    font-size: 0.9rem !important;
-    letter-spacing: 0 !important;
-    text-align: start !important;
-    white-space: nowrap;
+  .arena-workspace > .app-mobile-nav > button span:not(.app-nav-measure) {
+    max-width: 100%;
+    overflow: visible;
+    text-overflow: clip;
+    font-size: 11px !important;
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -0.01em !important;
+    text-align: center !important;
+    white-space: normal;
+    /* Nome maior que a coluna ("Meus agendamentos"): quebra com hífen em vez de cortar. */
+    overflow-wrap: anywhere;
+    hyphens: auto;
   }
   .arena-workspace > .app-mobile-nav > button[aria-pressed="true"] {
     background: var(--primary) !important;
@@ -1571,6 +1620,31 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
     transform: none;
   }
 }
+/* Computador (≥ 1280 px): coluna completa, ícone e nome lado a lado. */
+@media (min-width: 1280px) {
+  .arena-workspace:has(> .app-mobile-nav) {
+    --app-rail-width: 14.5rem;
+    --app-rail-inset: max(1rem, env(safe-area-inset-left));
+  }
+  .arena-workspace > .app-mobile-nav,
+  .arena-workspace.brand-chrome-floating > .app-mobile-nav {
+    padding: 0.5rem !important;
+  }
+  .arena-workspace > .app-mobile-nav > button {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 0.75rem;
+    min-height: 48px;
+    padding: 0.625rem 0.875rem !important;
+    text-align: start;
+  }
+  .arena-workspace > .app-mobile-nav > button span:not(.app-nav-measure) {
+    font-size: 0.9rem !important;
+    text-align: start !important;
+    white-space: nowrap;
+  }
+}
 .app-action-card {
   border: 1px solid color-mix(in oklab, var(--border) 75%, transparent);
   border-radius: var(--panel-radius);
@@ -1581,8 +1655,10 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
     box-shadow var(--duration-med) var(--ease-out),
     border-color var(--duration-fast) var(--ease-soft);
 }
-.app-action-card:hover {
-  box-shadow: 0 18px 36px color-mix(in oklab, #1c1d19 9%, transparent);
+@media (hover: hover) {
+  .app-action-card:hover {
+    box-shadow: 0 18px 36px color-mix(in oklab, #1c1d19 9%, transparent);
+  }
 }
 
 /* Agenda: controles e linhas seguem a mesma grade para leitura rápida. */
@@ -1897,6 +1973,13 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
      dele: -1rem deixa o resumo a ~8 px acima da barra (ou do fim da tela, sem barra). */
   bottom: -1rem;
 }
+/* Tablet em pé (768–1023): sem barra no pé, o `main` reserva só 2.5rem; o resumo encosta no fim
+   da tela com a mesma folga das outras barras fixas (--app-sticky-bottom), sem ficar cortado. */
+@media (min-width: 768px) {
+  .booking-summary-bar {
+    bottom: var(--app-sticky-bottom);
+  }
+}
 @media (min-width: 1024px) {
   .booking-summary-bar {
     top: 1rem;
@@ -2059,36 +2142,14 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
 .customer-home .mb-empty-art {
   animation: none;
 }
-/* Início do cliente no computador: duas colunas (o que acontece | cartão de membro) numa
-   largura maior que a coluna de leitura das outras telas. */
-@media (min-width: 1024px) {
-  .arena-workspace > main.customer-main-wide {
-    padding-inline: max(1rem, calc((100% - 64rem) / 2));
-  }
-  /* Agenda da barbearia no computador: duas colunas (dia à esquerda, linha do tempo à direita). */
-  .arena-workspace > main.shop-agenda-wide {
-    padding-inline: max(1.5rem, calc((100% - 70rem) / 2));
-  }
-  /* Com a coluna lateral, o conteúdo encosta nela: a borda esquerda é a mesma em todas as abas e
-     a largura de leitura de cada aba (abaixo) só limita a direita. Centralizada, cada largura
-     punha o título num lugar e ele pulava ao trocar de aba. Fica depois das regras acima. */
+/* Larguras de leitura por faixa (docs/dispositivos-2026-10-21.md, seção 3).
+   Tablet (768–1279): o conteúdo encosta na coluna estreita com 1.5rem de recuo e usa a largura
+   toda, sem limite de leitura. */
+@media (min-width: 768px) {
+  .arena-workspace > main.customer-main-wide,
+  .arena-workspace > main.shop-agenda-wide,
   .arena-workspace:has(> .app-mobile-nav) > main {
-    --app-read-width: 46rem;
-    padding-inline: 1.5rem
-      max(1rem, env(safe-area-inset-right), calc(100% - 1.5rem - var(--app-read-width)));
-  }
-  .arena-workspace:has(> .app-mobile-nav) > main.max-w-xl {
-    --app-read-width: 34rem;
-  }
-  .arena-workspace:has(> .app-mobile-nav) > main.customer-main-wide {
-    --app-read-width: 64rem;
-  }
-  .arena-workspace:has(> .app-mobile-nav) > main.shop-agenda-wide {
-    --app-read-width: 70rem;
-  }
-  /* Plataforma: listas e tabelas de barbearias e acessos pedem a largura das telas largas. */
-  .platform-workspace:has(> .app-mobile-nav) > main {
-    --app-read-width: 64rem;
+    padding-inline: 1.5rem max(1rem, env(safe-area-inset-right));
   }
   /* Cabeçalho da barbearia de ponta a ponta, como o do cliente e o da plataforma: o nome fica
      sobre a coluna lateral e as ações no canto direito, sem a faixa centralizada de 70rem. Vale
@@ -2097,23 +2158,41 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
     max-width: none;
   }
 }
-/* Monitor largo (≥ 1536 px): as colunas de leitura crescem um pouco, para a tela não parecer um
-   celular no meio do monitor; a borda esquerda continua a mesma em todas as abas. */
-@media (min-width: 1536px) {
+/* Computador (≥ 1280 px): com a coluna lateral, o conteúdo encosta nela: a borda esquerda é a
+   mesma em todas as abas e a largura de leitura de cada aba (`--app-read-width`) só limita a
+   direita. Centralizada, cada largura punha o título num lugar e ele pulava ao trocar de aba.
+   Leitura 60rem; telas estreitas (main.max-w-xl) 40rem; Agenda, Serviços, Equipe, Horários,
+   Ajustes (main.shop-wide), Início do cliente e plataforma 80rem. */
+@media (min-width: 1280px) {
   .arena-workspace:has(> .app-mobile-nav) > main {
-    --app-read-width: 56rem;
+    --app-read-width: 60rem;
+    padding-inline: 1.5rem
+      max(1rem, env(safe-area-inset-right), calc(100% - 1.5rem - var(--app-read-width)));
   }
   .arena-workspace:has(> .app-mobile-nav) > main.max-w-xl {
     --app-read-width: 40rem;
   }
-  .arena-workspace:has(> .app-mobile-nav) > main.customer-main-wide {
-    --app-read-width: 76rem;
-  }
-  .arena-workspace:has(> .app-mobile-nav) > main.shop-agenda-wide {
-    --app-read-width: 84rem;
-  }
+  .arena-workspace:has(> .app-mobile-nav) > main.customer-main-wide,
+  .arena-workspace:has(> .app-mobile-nav) > main.shop-agenda-wide,
+  .arena-workspace:has(> .app-mobile-nav) > main.shop-wide,
   .platform-workspace:has(> .app-mobile-nav) > main {
-    --app-read-width: 76rem;
+    --app-read-width: 80rem;
+  }
+}
+/* Monitor largo (≥ 1536 px): as colunas de leitura crescem um pouco, para a tela não parecer um
+   celular no meio do monitor; a borda esquerda continua a mesma em todas as abas. */
+@media (min-width: 1536px) {
+  .arena-workspace:has(> .app-mobile-nav) > main {
+    --app-read-width: 64rem;
+  }
+  .arena-workspace:has(> .app-mobile-nav) > main.max-w-xl {
+    --app-read-width: 44rem;
+  }
+  .arena-workspace:has(> .app-mobile-nav) > main.customer-main-wide,
+  .arena-workspace:has(> .app-mobile-nav) > main.shop-agenda-wide,
+  .arena-workspace:has(> .app-mobile-nav) > main.shop-wide,
+  .platform-workspace:has(> .app-mobile-nav) > main {
+    --app-read-width: 90rem;
   }
 }
 
@@ -2283,8 +2362,10 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
     transform var(--duration-fast) var(--ease-out),
     box-shadow var(--duration-fast) var(--ease-soft);
 }
-.waiting-cutoff-pill:hover {
-  box-shadow: 0 8px 18px color-mix(in oklab, var(--primary) 18%, transparent);
+@media (hover: hover) {
+  .waiting-cutoff-pill:hover {
+    box-shadow: 0 8px 18px color-mix(in oklab, var(--primary) 18%, transparent);
+  }
 }
 .waiting-cutoff-pill:active {
   transform: scale(0.98);
@@ -3001,7 +3082,7 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
 .auth-page:is(.auth-layout-cover, .auth-layout-card) .auth-photo-layer {
   position: fixed;
 }
-@media (min-width: 761px) {
+@media (min-width: 768px) {
   /* Dividido: a foto ocupa a altura da tela e acompanha a rolagem; o texto fica sempre dentro dela. */
   .auth-page.auth-layout-split .auth-photo-layer {
     position: sticky;
@@ -3043,7 +3124,7 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   }
 }
 /* Até 1180px de largura, o painel do modelo dividido reserva o topo para idioma e tema. */
-@media (min-width: 761px) and (max-width: 1180px) {
+@media (min-width: 768px) and (max-width: 1180px) {
   .auth-page.auth-layout-split .auth-brand-panel {
     padding-top: 4.5rem;
   }
@@ -3061,7 +3142,7 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
     padding-bottom: 1rem;
   }
 }
-@media (min-width: 761px) and (max-height: 760px) {
+@media (min-width: 768px) and (max-height: 760px) {
   .auth-page.auth-layout-cover {
     padding-bottom: 0.75rem;
   }
@@ -3069,7 +3150,7 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
     padding-block: 0.75rem;
   }
 }
-@media (min-width: 761px) and (max-height: 640px) {
+@media (min-width: 768px) and (max-height: 640px) {
   .auth-page .auth-photo-copy-logo,
   .auth-page .auth-photo-copy > p:last-child {
     display: none;
@@ -3286,7 +3367,7 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   margin: 0;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 767px) {
   .auth-workspace {
     min-height: 100dvh;
   }

@@ -426,7 +426,7 @@ export function LandingEditor({
       <div
         // Celular: as abas ficam presas no topo da janela, então "Prévia" está sempre a um toque
         // (com espaço à direita para o X de fechar).
-        className="sticky -top-5 z-10 -mx-1 grid grid-cols-2 gap-2 bg-card/95 pe-11 ps-1 pb-2 pt-3 backdrop-blur sm:-top-6 lg:hidden"
+        className="sticky -top-5 z-10 -mx-1 grid grid-cols-2 gap-2 bg-card/95 pe-11 ps-1 pb-2 pt-3 backdrop-blur sm:-top-6 tablet:hidden"
         role="tablist"
         aria-label={t("landingEditor.viewLabel")}
       >
@@ -477,7 +477,10 @@ export function LandingEditor({
         ))}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      {/* Tablet: formulário (pelo menos 22rem, para "Foto da capa" e os modelos não quebrarem)
+          e prévia lado a lado; computador: formulário em 26rem e a prévia com o resto da janela
+          quase cheia. Celular: abas Editar | Prévia. */}
+      <div className="grid gap-4 tablet:grid-cols-[minmax(22rem,3fr)_minmax(0,2fr)] tablet:gap-6 lg:grid-cols-[26rem_minmax(0,1fr)]">
         <form
           ref={formRef}
           id={`${tabsId}-panel-editar`}
@@ -485,7 +488,7 @@ export function LandingEditor({
           aria-labelledby={`${tabsId}-tab-editar`}
           onSubmit={save}
           noValidate
-          className={`min-w-0 space-y-4 ${view === "editar" ? "" : "hidden lg:block"}`}
+          className={`min-w-0 space-y-4 ${view === "editar" ? "" : "hidden tablet:block"}`}
         >
           {/* Como a página aparece: escolha com o desenho do resultado. */}
           <section className="space-y-3 rounded-2xl border border-border bg-card p-4">
@@ -754,7 +757,7 @@ export function LandingEditor({
           </fieldset>
 
           {/* O link fica sobre a prévia; no celular, também no fim da aba Editar. */}
-          {linkStrip("rounded-2xl border border-border bg-card p-4 lg:hidden")}
+          {linkStrip("rounded-2xl border border-border bg-card p-4 tablet:hidden")}
 
           {/* Com mudanças pendentes, o erro aparece só na barra de salvar (com "Tentar de novo"). */}
           {error && !dirty && <Notice tone="danger" title={error} />}
@@ -783,7 +786,7 @@ export function LandingEditor({
           id={`${tabsId}-panel-previa`}
           role="tabpanel"
           aria-labelledby={`${tabsId}-tab-previa`}
-          className={`${view === "previa" ? "" : "hidden lg:block"} space-y-3 lg:sticky lg:top-0 lg:self-start`}
+          className={`${view === "previa" ? "" : "hidden tablet:block"} space-y-3 tablet:sticky tablet:top-0 tablet:self-start`}
         >
           {linkStrip("")}
           <p className="text-xs font-semibold text-muted-foreground">
@@ -791,7 +794,7 @@ export function LandingEditor({
           </p>
           <div
             ref={previewBoxRef}
-            className="relative max-h-[70dvh] overflow-y-auto rounded-2xl border border-border shadow-sm"
+            className="relative max-h-[70dvh] overflow-y-auto rounded-2xl border border-border shadow-sm tablet:max-h-[calc(100dvh-14rem)]"
           >
             {previewData ? (
               <ShopLandingView data={previewData} preview />

@@ -480,8 +480,9 @@ export function ShopLandingView({
         <div
           className={cn(
             "mx-auto max-w-3xl px-4 pb-6 pt-8",
+            // A partir de 768 px (tablet) a capa fica em duas colunas: texto | cartão "Hoje".
             wide &&
-              "lg:grid lg:max-w-6xl lg:grid-cols-[minmax(0,1fr)_25rem] lg:items-end lg:gap-10 lg:pb-10",
+              "tablet:grid tablet:grid-cols-[minmax(0,1fr)_22rem] tablet:items-end tablet:gap-8 tablet:pb-10 lg:max-w-6xl lg:grid-cols-[minmax(0,1fr)_25rem] lg:gap-10",
           )}
         >
           <div className="min-w-0 space-y-4">
@@ -530,7 +531,7 @@ export function ShopLandingView({
             dayState={anyOnline ? dayState : null}
             nextDayLabel={nextDayLabel}
             ctaRef={ctaRef}
-            className={cn("mt-6", wide && "lg:mt-0")}
+            className={cn("mt-6", wide && "tablet:mt-0")}
           />
         </div>
       </header>
@@ -538,6 +539,9 @@ export function ShopLandingView({
       <div
         className={cn(
           "mx-auto max-w-3xl px-4 py-8",
+          // Corpo em duas colunas a partir de 1024 px: conteúdo | horários e agendar (fixos ao
+          // rolar). No tablet em pé (768–1023) fica em coluna única, com equipe e serviços em
+          // duas colunas: a lateral de 22rem ficava só com o horário e 1.500 px vazios.
           wide &&
             "pb-[calc(6rem+env(safe-area-inset-bottom))] lg:grid lg:max-w-6xl lg:grid-cols-[minmax(0,1fr)_25rem] lg:items-start lg:gap-10 lg:pb-12",
         )}
@@ -576,6 +580,8 @@ export function ShopLandingView({
                   {t("shopLanding.offlineText")}
                 </Notice>
               )}
+              {/* Equipe: 2 colunas de 640 px em diante; no tablet em pé (coluna estreita ao lado do
+                  painel) volta a 1; de 1024 em diante, 2. */}
               <ul className="grid gap-3 sm:grid-cols-2">
                 {staff.map((member) => {
                   const day = memberDay(member);
@@ -650,7 +656,13 @@ export function ShopLandingView({
                 <Scissors className={`size-5 ${accentIconClass}`} aria-hidden />
                 {t("shopLanding.servicesTitle")}
               </h2>
-              <ul className={cn("grid gap-2", wide && "lg:grid-cols-2 lg:gap-3")}>
+              <ul
+                className={cn(
+                  "grid gap-2",
+                  wide &&
+                    "tablet:grid-cols-2 tablet:gap-3 lg:grid-cols-1 lg:gap-2 pc:grid-cols-2 pc:gap-3",
+                )}
+              >
                 {data.services.map((service) => (
                   <ServiceRow
                     key={service.name}

@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import { FlaskConical, Loader2, Percent, User, UserPlus, Users } from "lucide-react";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogBody, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   ActionResult,
   ChoiceCards,
@@ -17,6 +17,7 @@ import { ROLE_ICON } from "@/features/demo/roles";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
+import { useDevice } from "@/lib/device";
 import { useI18n } from "@/lib/i18n";
 import { TempPasswordClose } from "./TempPasswordClose";
 import { useTempPasswordClose } from "./use-temp-password-close";
@@ -79,6 +80,9 @@ export function InviteMemberDialog({
     password?: string | null;
   } | null>(null);
   const hasPassword = Boolean(result?.password);
+  // Celular: a janela de sempre. A partir de 768 px: janela larga (44rem) com o corpo rolando
+  // por dentro e e-mail | nome lado a lado.
+  const phone = useDevice() === "celular";
   const guard = useTempPasswordClose(hasPassword, () => onOpenChange(false));
 
   // Começa na barbearia pedida ou na primeira ATIVA (a suspensa não aparece na lista).
@@ -164,6 +168,191 @@ export function InviteMemberDialog({
   const rest = Math.round((100 - share) * 100) / 100;
   const pct = (value: number) => value.toLocaleString(intlLocale, { maximumFractionDigits: 2 });
 
+  const form = (
+    <form onSubmit={submit} className="space-y-4">
+      <Field label={t("plat.common.shop")} id={shopId}>
+        {(props) => (
+          <select
+            {...props}
+            required
+            value={shop}
+            onChange={(event) => setShop(event.target.value)}
+            className="min-h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground"
+          >
+            {activeShops.length === 0 && <option value="">{t("plat.invite.selectShop")}</option>}
+            {activeShops.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        )}
+      </Field>
+
+      <ChoiceCards
+        legend={t("plat.invite.roleAria")}
+        showLegend
+        value={role}
+        onChange={setRole}
+        columns={3}
+        options={[
+          {
+            value: "employee",
+            title: t("plat.invite.cardEmployee"),
+            description: t("plat.invite.cardEmployeeHint"),
+            icon: ROLE_ICON.employee,
+          },
+          {
+            value: "associate",
+            title: t("plat.invite.cardAssociate"),
+            description: t("plat.invite.cardAssociateHint"),
+            icon: ROLE_ICON.associate,
+          },
+          {
+            value: "owner",
+            title: t("plat.invite.cardOwner"),
+            description: t("plat.invite.cardOwnerHint"),
+            icon: ROLE_ICON.owner,
+          },
+        ]}
+      />
+
+      {soleOwner && (
+        <Hint icon={User} tone="success">
+          {t("plat.invite.firstOwnerHint")}
+        </Hint>
+      )}
+      {role === "owner" && !soleOwner && (
+        <div className="space-y-3 rounded-2xl border border-border bg-background p-3">
+          <ChoiceChips
+            label={t("plat.invite.share")}
+            icon={Percent}
+            value={share}
+            onChange={setShare}
+            options={QUICK_SHARES.map((value) => ({ value, label: `${value}%` }))}
+            other={{ min: 0.01, max: 99.99, step: 0.01, unit: "%" }}
+          />
+          <SegmentBar
+            summary={t("plat.invite.shareSummary", { share: pct(share), rest: pct(rest) })}
+            legend={false}
+            total={100}
+            segments={[
+              {
+                key: "new",
+                label: t("plat.invite.shareNew", { share: pct(share) }),
+                value: share,
+                tone: "highlight",
+              },
+              {
+                key: "rest",
+                label: t("plat.invite.shareRest", { rest: pct(rest) }),
+                value: rest,
+                tone: "neutral",
+              },
+            ]}
+          />
+          <ul className="flex flex-wrap gap-1.5" aria-hidden>
+            <li>
+              <StatusBadge
+                tone="highlight"
+                variant="dot"
+                size="sm"
+                label={t("plat.invite.shareNew", { share: pct(share) })}
+              />
+            </li>
+            <li>
+              <StatusBadge
+                tone="neutral"
+                variant="dot"
+                size="sm"
+                label={t("plat.invite.shareRest", { rest: pct(rest) })}
+              />
+            </li>
+          </ul>
+          {/* Verde = vale na hora (mais da metade); âmbar de espera = precisa do OK do dono. */}
+          <StatusBadge
+            tone={decidesAlone ? "success" : "pending"}
+            icon={decidesAlone ? User : Users}
+            label={decidesAlone ? t("plat.invite.decidesAlone") : t("plat.invite.decidesTogether")}
+          />
+          <Hint>{t("plat.invite.shareHint")}</Hint>
+        </div>
+      )}
+
+      {/* E-mail e nome lado a lado a partir de 768 px. */}
+      <div className="grid gap-4 tablet:grid-cols-2">
+        <Field label={t("plat.invite.email")} id={emailId}>
+          {(props) => (
+            <input
+              {...props}
+              required
+              type="email"
+              autoComplete="off"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder={t("plat.invite.emailPlaceholder")}
+              className="min-h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground"
+            />
+          )}
+        </Field>
+        <Field label={t("plat.invite.nameLabel")} optional id={nameId}>
+          {(props) => (
+            <input
+              {...props}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              className="min-h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground"
+            />
+          )}
+        </Field>
+      </div>
+
+      {error && <Notice tone="danger" title={error} />}
+      {demoNote && (
+        <Notice
+          tone="info"
+          icon={FlaskConical}
+          title={t("plat.demo.notSaved")}
+          onDismiss={() => setDemoNote(null)}
+        >
+          {demoNote}
+        </Notice>
+      )}
+      <ActionResult
+        state={result?.state}
+        text={result?.text}
+        onDismiss={hasPassword ? undefined : () => setResult(null)}
+        detail={
+          result?.password ? (
+            <CopyField
+              value={result.password}
+              label={t("plat.mgr.tempPassword")}
+              secret
+              mono
+              className="mt-2"
+            />
+          ) : undefined
+        }
+      />
+      {hasPassword ? (
+        <TempPasswordClose warned={guard.warned} onClose={guard.closeNow} />
+      ) : (
+        <button
+          type="submit"
+          disabled={busy || !shop}
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+        >
+          {busy ? (
+            <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />
+          ) : (
+            <UserPlus className="size-4" aria-hidden />
+          )}
+          {busy ? t("plat.invite.busy") : t("plat.invite.submit")}
+        </button>
+      )}
+    </form>
+  );
+
   return (
     <Dialog
       open={open}
@@ -175,196 +364,19 @@ export function InviteMemberDialog({
       }}
     >
       <DialogContent
+        size={phone ? "md" : "lg"}
         aria-describedby={undefined}
-        className="max-h-[92dvh] max-w-lg overflow-y-auto rounded-3xl border-border bg-card p-5"
+        className={
+          phone
+            ? "max-h-[92dvh] max-w-lg overflow-y-auto rounded-3xl border-border bg-card p-5"
+            : "bg-card"
+        }
       >
         <DialogTitle className="flex min-h-11 items-center gap-2 pr-12 text-lg font-bold">
           <UserPlus className="size-5 text-gold" aria-hidden />
           {t("plat.invite.heading")}
         </DialogTitle>
-        <form onSubmit={submit} className="space-y-4">
-          <Field label={t("plat.common.shop")} id={shopId}>
-            {(props) => (
-              <select
-                {...props}
-                required
-                value={shop}
-                onChange={(event) => setShop(event.target.value)}
-                className="min-h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground"
-              >
-                {activeShops.length === 0 && (
-                  <option value="">{t("plat.invite.selectShop")}</option>
-                )}
-                {activeShops.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            )}
-          </Field>
-
-          <ChoiceCards
-            legend={t("plat.invite.roleAria")}
-            showLegend
-            value={role}
-            onChange={setRole}
-            columns={3}
-            options={[
-              {
-                value: "employee",
-                title: t("plat.invite.cardEmployee"),
-                description: t("plat.invite.cardEmployeeHint"),
-                icon: ROLE_ICON.employee,
-              },
-              {
-                value: "associate",
-                title: t("plat.invite.cardAssociate"),
-                description: t("plat.invite.cardAssociateHint"),
-                icon: ROLE_ICON.associate,
-              },
-              {
-                value: "owner",
-                title: t("plat.invite.cardOwner"),
-                description: t("plat.invite.cardOwnerHint"),
-                icon: ROLE_ICON.owner,
-              },
-            ]}
-          />
-
-          {soleOwner && (
-            <Hint icon={User} tone="success">
-              {t("plat.invite.firstOwnerHint")}
-            </Hint>
-          )}
-          {role === "owner" && !soleOwner && (
-            <div className="space-y-3 rounded-2xl border border-border bg-background p-3">
-              <ChoiceChips
-                label={t("plat.invite.share")}
-                icon={Percent}
-                value={share}
-                onChange={setShare}
-                options={QUICK_SHARES.map((value) => ({ value, label: `${value}%` }))}
-                other={{ min: 0.01, max: 99.99, step: 0.01, unit: "%" }}
-              />
-              <SegmentBar
-                summary={t("plat.invite.shareSummary", { share: pct(share), rest: pct(rest) })}
-                legend={false}
-                total={100}
-                segments={[
-                  {
-                    key: "new",
-                    label: t("plat.invite.shareNew", { share: pct(share) }),
-                    value: share,
-                    tone: "highlight",
-                  },
-                  {
-                    key: "rest",
-                    label: t("plat.invite.shareRest", { rest: pct(rest) }),
-                    value: rest,
-                    tone: "neutral",
-                  },
-                ]}
-              />
-              <ul className="flex flex-wrap gap-1.5" aria-hidden>
-                <li>
-                  <StatusBadge
-                    tone="highlight"
-                    variant="dot"
-                    size="sm"
-                    label={t("plat.invite.shareNew", { share: pct(share) })}
-                  />
-                </li>
-                <li>
-                  <StatusBadge
-                    tone="neutral"
-                    variant="dot"
-                    size="sm"
-                    label={t("plat.invite.shareRest", { rest: pct(rest) })}
-                  />
-                </li>
-              </ul>
-              {/* Verde = vale na hora (mais da metade); âmbar de espera = precisa do OK do dono. */}
-              <StatusBadge
-                tone={decidesAlone ? "success" : "pending"}
-                icon={decidesAlone ? User : Users}
-                label={
-                  decidesAlone ? t("plat.invite.decidesAlone") : t("plat.invite.decidesTogether")
-                }
-              />
-              <Hint>{t("plat.invite.shareHint")}</Hint>
-            </div>
-          )}
-
-          <Field label={t("plat.invite.email")} id={emailId}>
-            {(props) => (
-              <input
-                {...props}
-                required
-                type="email"
-                autoComplete="off"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder={t("plat.invite.emailPlaceholder")}
-                className="min-h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground"
-              />
-            )}
-          </Field>
-          <Field label={t("plat.invite.nameLabel")} optional id={nameId}>
-            {(props) => (
-              <input
-                {...props}
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                className="min-h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground"
-              />
-            )}
-          </Field>
-
-          {error && <Notice tone="danger" title={error} />}
-          {demoNote && (
-            <Notice
-              tone="info"
-              icon={FlaskConical}
-              title={t("plat.demo.notSaved")}
-              onDismiss={() => setDemoNote(null)}
-            >
-              {demoNote}
-            </Notice>
-          )}
-          <ActionResult
-            state={result?.state}
-            text={result?.text}
-            onDismiss={hasPassword ? undefined : () => setResult(null)}
-            detail={
-              result?.password ? (
-                <CopyField
-                  value={result.password}
-                  label={t("plat.mgr.tempPassword")}
-                  secret
-                  mono
-                  className="mt-2"
-                />
-              ) : undefined
-            }
-          />
-          {hasPassword ? (
-            <TempPasswordClose warned={guard.warned} onClose={guard.closeNow} />
-          ) : (
-            <button
-              type="submit"
-              disabled={busy || !shop}
-              className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-60"
-            >
-              {busy ? (
-                <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />
-              ) : (
-                <UserPlus className="size-4" aria-hidden />
-              )}
-              {busy ? t("plat.invite.busy") : t("plat.invite.submit")}
-            </button>
-          )}
-        </form>
+        {phone ? form : <DialogBody className="pb-1">{form}</DialogBody>}
       </DialogContent>
     </Dialog>
   );

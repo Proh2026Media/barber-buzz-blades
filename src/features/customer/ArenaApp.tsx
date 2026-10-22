@@ -13,6 +13,7 @@ import {
   BookingDone,
   BookingSummaryBar,
   ChangeButton,
+  DayCalendar,
   DayStrip,
   RepeatPicker,
   RescheduleFromTo,
@@ -31,8 +32,10 @@ import { useGroupReservations, useShortSlot } from "./booking/format";
 import { ReservationFilters, StopRepeatDialog } from "./booking/ReservationsParts";
 import { useClosedWeekdays } from "./booking/useClosedWeekdays";
 import {
+  CardGrid,
   LoadingState as BookingLoading,
   PersonAvatar as BookingAvatar,
+  SplitLayout,
   StatusBadge as BookingBadge,
 } from "@/components/visual";
 import {
@@ -138,6 +141,7 @@ import {
   type OtherShopBookings,
 } from "./shop-choice";
 import { useDemo } from "@/features/demo/context";
+import { useDevice, useViewportAtLeast } from "@/lib/device";
 import { useDemoChrome } from "@/features/demo/chrome";
 import { DemoAccountMenu, DemoRoleSelector } from "@/features/demo/DemoAccountMenu";
 import {
@@ -206,6 +210,47 @@ function shortestServiceIndex(
  * padrão (serviços em lista, profissionais em grade). Simplificação de 16/10/2026.
  */
 const SHORT_CHOICE_LIST = 6;
+
+/**
+ * Início: coluna única sem cartão de membro (clube desligado ou sem barbearia); com ele, duas
+ * colunas a partir de 768 px (SplitLayout; larguras por faixa em src/styles/cliente.css) com o
+ * cartão fixo à direita. No celular, o mesmo empilhado de sempre.
+ */
+function HomeLayout({ aside, children }: { aside: ReactNode; children: ReactNode }) {
+  if (!aside) return <div className="customer-home relative z-10">{children}</div>;
+  return (
+    <SplitLayout
+      aside={aside}
+      asideWidth="24rem"
+      stickyTop="1rem"
+      gap="1rem"
+      className="customer-home relative z-10"
+    >
+      {children}
+    </SplitLayout>
+  );
+}
+
+/**
+ * Meus agendamentos: o que pede ação e "Minha fila" antes da lista (celular e tablet) e na
+ * coluna da direita a partir de 1024 px. Quando não há nada ali, a coluna some (CSS em
+ * src/styles/cliente.css, pelo `:empty`).
+ */
+function ReservationsLayout({ aside, children }: { aside: ReactNode; children: ReactNode }) {
+  return (
+    <SplitLayout
+      aside={aside}
+      asideWidth="22rem"
+      asideFirstOnPhone
+      stickyTop="1rem"
+      gap="1.25rem"
+      className="customer-reservas-split"
+      asideClassName="space-y-5"
+    >
+      <div className="space-y-5">{children}</div>
+    </SplitLayout>
+  );
+}
 
 /** Motivo da recusa (lib/auth/guards) → tom e frases do aviso. */
 const REFUSAL_TONE: Record<AccessNotice, "info" | "pending" | "neutral"> = {
@@ -2193,12 +2238,13 @@ function ArenaApp({
         }
         actions={
           canManage ? (
-            <div className="grid grid-cols-2 gap-2">
+            // Celular: duas colunas iguais. A partir de 768 px: botões na largura do texto, à direita.
+            <div className="grid grid-cols-2 gap-2 tablet:flex tablet:flex-wrap tablet:justify-end">
               <button
                 type="button"
                 disabled={appointmentBusy !== null}
                 onClick={() => beginReschedule(row)}
-                className="action-button action-edit min-h-11 w-full"
+                className="action-button action-edit min-h-11 w-full tablet:w-auto"
               >
                 <CalendarClock aria-hidden />
                 {t("bookings.reschedule")}
@@ -2207,7 +2253,7 @@ function ArenaApp({
                 type="button"
                 disabled={appointmentBusy !== null}
                 onClick={() => setCancelTarget(row)}
-                className="action-button action-danger min-h-11 w-full"
+                className="action-button action-danger min-h-11 w-full tablet:w-auto"
               >
                 <X aria-hidden />
                 {appointmentBusy === row.id ? t("bookings.cancelling") : t("bookings.cancel")}
@@ -2217,7 +2263,7 @@ function ArenaApp({
                   type="button"
                   disabled={appointmentBusy !== null}
                   onClick={() => setStopSeriesTarget(seriesId)}
-                  className="col-span-2 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold disabled:opacity-50"
+                  className="col-span-2 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold disabled:opacity-50 tablet:w-auto"
                 >
                   <Repeat2 className="size-4 text-gold" aria-hidden />
                   {t("bookings.stopRepeat")}
@@ -2229,7 +2275,7 @@ function ArenaApp({
               type="button"
               disabled={appointmentBusy !== null}
               onClick={() => setStopSeriesTarget(seriesId)}
-              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold disabled:opacity-50"
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold disabled:opacity-50 tablet:ms-auto tablet:flex tablet:w-auto"
             >
               <Repeat2 className="size-4 text-gold" aria-hidden />
               {t("bookings.stopRepeat")}
@@ -2238,7 +2284,7 @@ function ArenaApp({
             <button
               type="button"
               onClick={() => bookAgain(row)}
-              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold transition hover:border-primary/40"
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold transition hover:border-primary/40 tablet:ms-auto tablet:flex tablet:w-auto"
             >
               <RotateCcw className="size-4 text-gold" aria-hidden />
               {t("bookings.bookAgain")}
@@ -2584,6 +2630,12 @@ function ArenaApp({
   // Meus pontos é uma tela filha do Início (o caminho para ela sai do cartão de membro).
   // Avisos não pertence a nenhum item da barra: o destaque fica no sininho do cabeçalho.
   const navTabFor = (current: string) => (current === "pontos" ? "dashboard" : current);
+  // Faixa do aparelho (celular, tablet, computador): decide se a barra de baixo mede os rótulos.
+  const device = useDevice();
+  // Computador (≥ 1024): Serviço e Profissional lado a lado sempre abertos, calendário do mês no
+  // lugar da faixa de dias e o "Conferir" dentro do painel de resumo (docs/dispositivos-2026-10-21.md).
+  const wideBooking = useViewportAtLeast(1024);
+  const isPhone = device === "celular";
   // Função, não componente: um componente declarado aqui dentro seria outro a cada render e
   // recriaria os botões da barra (e a medida da pílula ficaria presa aos botões antigos).
   const renderNavItem = ({ id, icon: Icon, label, ariaLabel, measure }: NavItemProps) => {
@@ -2604,11 +2656,14 @@ function ArenaApp({
           className={`mb-1.5 h-5 w-5 transition-transform duration-300 ease-out ${pressed ? "scale-110" : ""}`}
         />
         <span className="text-xs font-semibold">{label}</span>
-        {/* Réguas invisíveis: a largura natural dos rótulos, com a mesma fonte da barra. */}
-        <span aria-hidden data-measure="short" className="app-nav-measure text-xs font-semibold">
-          {measure?.short ?? label}
-        </span>
-        {measure?.long && (
+        {/* Réguas invisíveis: a largura natural dos rótulos, com a mesma fonte da barra. Só no
+            celular, onde a barra mede; na coluna lateral não há o que medir. */}
+        {isPhone && (
+          <span aria-hidden data-measure="short" className="app-nav-measure text-xs font-semibold">
+            {measure?.short ?? label}
+          </span>
+        )}
+        {isPhone && measure?.long && (
           <span aria-hidden data-measure="long" className="app-nav-measure text-xs font-semibold">
             {measure.long}
           </span>
@@ -2625,12 +2680,16 @@ function ArenaApp({
   // medida vale a conta de colunas iguais, sem animar). A conta fica no topo (menu da conta ou
   // ícone "Minha conta"), fora da barra (dono, 15/10).
   // Nível 0: nome longo; 1: nome curto; 2: curto em colunas iguais, com reticências.
+  // Fora do celular a barra vira coluna lateral (styles.css, faixas de docs/dispositivos-2026-10-21.md)
+  // e a medição não roda: na coluna estreita do tablet (6rem) vale o nome curto; na coluna
+  // completa do computador, o nome inteiro.
   const navRef = useRef<HTMLElement>(null);
   const [navPill, setNavPill] = useState<{ x: number; width: number } | null>(null);
   const [navPillAnimated, setNavPillAnimated] = useState(false);
   const [navLevel, setNavLevel] = useState<0 | 1 | 2>(0);
   const navLastActive = useRef(-1);
-  const bookingsLabel = navLevel === 0 ? t("nav.bookings") : t("nav.bookingsShort");
+  const navLabelLevel: 0 | 1 | 2 = isPhone ? navLevel : device === "tablet" ? 1 : 0;
+  const bookingsLabel = navLabelLevel === 0 ? t("nav.bookings") : t("nav.bookingsShort");
   const navItems: NavItemProps[] = [
     { id: "dashboard", icon: Compass, label: t("nav.home") },
     { id: "agenda", icon: Calendar, label: t("nav.book") },
@@ -2647,19 +2706,14 @@ function ArenaApp({
   const activeNavIndex = navItems.findIndex((item) => item.id === navTabFor(tab));
   useLayoutEffect(() => {
     const nav = navRef.current;
-    if (!nav || typeof ResizeObserver === "undefined") return;
+    // Tablet e computador: coluna lateral sem pílula, rótulo decidido pela faixa (navLabelLevel).
+    if (!isPhone || !nav || typeof ResizeObserver === "undefined") return;
     const buttons = () => nav.querySelectorAll<HTMLElement>(":scope > button");
     let frame = 0;
     const measure = () => {
       const items = [...buttons()];
       if (!items.length) return;
       const navStyle = getComputedStyle(nav);
-      // Computador (≥ 1024 px): a barra vira coluna lateral (styles.css) e cada item tem a linha
-      // inteira, então o nome longo sempre cabe e não há pílula para medir.
-      if (navStyle.display === "flex") {
-        if (navLevel !== 0) setNavLevel(0);
-        return;
-      }
       // Nível pela largura natural dos rótulos (réguas invisíveis), não pelo transbordo da barra:
       // assim a posição antiga da pílula, um giro de tela ou o texto ampliado não enganam a conta.
       const available =
@@ -2716,7 +2770,7 @@ function ArenaApp({
       cancelAnimationFrame(frame);
     };
     // O modo de cantos (raio da pílula) pode chegar depois da primeira medida, sem mudar tamanho.
-  }, [activeNavIndex, navItems.length, navLevel, shopSettings.corner_style]);
+  }, [activeNavIndex, navItems.length, navLevel, isPhone, shopSettings.corner_style]);
   const brandStyle = brandVariables(
     shopSettings.primary_color,
     shopSettings.accent_color,
@@ -2729,6 +2783,147 @@ function ArenaApp({
 
   // Sem barbearia aberta, o slogan padrão ("Club & Lounge") não é de ninguém: some.
   const showTagline = Boolean(shopSettings.tagline) && !noShop;
+
+  // Peças do passo 3 e do "Conferir" usadas em dois lugares (celular: nos cartões dos passos;
+  // computador: calendário ao lado dos horários e o Conferir dentro do painel de resumo).
+  // "quarta-feira, 21 de outubro" com a inicial maiúscula (título do dia no computador).
+  const selectedDayHeading = (() => {
+    const text = formatShopDate(shopDateTime(selectedDay, "12:00:00", shopTimeZone), shopTimeZone, {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    });
+    return text.charAt(0).toLocaleUpperCase(intlLocale) + text.slice(1);
+  })();
+  const timeGrid = (
+    <TimeGrid
+      state={gridState}
+      error={slotsError}
+      onRetry={() => setAvailabilityVersion((v) => v + 1)}
+      slots={availableSlots}
+      selectedIso={selectedSlot ? selectedSlotAt : null}
+      onSelect={(iso) => {
+        setSelectedSlotAt(iso);
+        setPickedSlotLost(null);
+        setBookingError(null);
+        setBookingUncertain(false);
+        // Escolher o horário aceita o serviço e o profissional sugeridos: os
+        // dois passos recolhem com ✓ (o resumo mantém o selo "Sugerido").
+        if (selectedService) setServiceOpen(false);
+        if (staffHasValue) setStaffOpen(false);
+      }}
+      timeZone={shopTimeZone}
+      currentIso={
+        rescheduleRow &&
+        shopDateKey(new Date(rescheduleRow.starts_at), shopTimeZone) === selectedDay
+          ? new Date(rescheduleRow.starts_at).toISOString()
+          : null
+      }
+      mayOpen={mayOpenStarts(mayOpenWaits).map(({ iso, waitId }) => ({
+        iso,
+        onClick: () => scrollToStep(`wait-${waitId}`),
+      }))}
+      disabled={bookingBusy}
+      empty={{
+        closed: closedWeekdays?.has(weekdayForDateKey(selectedDay)) ?? false,
+        nextDay: nextOpenDay
+          ? {
+              label: dayChipLabel(nextOpenDay),
+              onClick: () => pickDay(nextOpenDay),
+            }
+          : null,
+        onChangeStaff:
+          !anyAvailable && !directLinkActive && staffChoices.length > 1
+            ? () => {
+                setStaffOpen(true);
+                scrollToStep("booking-step-staff");
+              }
+            : null,
+      }}
+      notice={
+        slotGone && selectedSlotAt ? (
+          <Notice
+            tone="warning"
+            title={
+              selectedStaff && !anyAvailable
+                ? t("booking.slotGone", {
+                    time: slotLabel(selectedSlotAt).time,
+                    name: selectedStaff.display_name,
+                  })
+                : t("booking.slotGoneAny", {
+                    time: slotLabel(selectedSlotAt).time,
+                  })
+            }
+          />
+        ) : pickedSlotLost ? (
+          <Notice
+            tone="warning"
+            title={t(
+              pickedSlotLost === "past" ? "booking.pickedSlotPast" : "booking.pickedSlotFar",
+            )}
+          />
+        ) : null
+      }
+    />
+  );
+  const repeatPicker = selectedSlot && canRepeat && chosenSlot && (
+    <RepeatPicker
+      value={repeatChoice}
+      onChange={(value) => {
+        if (value === "once") {
+          setRepeatEnabled(false);
+          return;
+        }
+        setRepeatEnabled(true);
+        if (value === "weekday") setRepeatKind("weekday");
+        else {
+          setRepeatKind("interval_days");
+          setRepeatInterval(value === "15" ? 15 : 21);
+        }
+      }}
+      startKey={selectedDay}
+      horizonDays={shopSettings.booking_horizon_days}
+      timeLabel={chosenSlot.time}
+      timeZone={shopTimeZone}
+      disabled={bookingBusy}
+    />
+  );
+  // Meus agendamentos: o que pede ação e a fila (coluna da direita no computador; antes da lista
+  // no celular e no tablet) e os filtros (na linha do título fora do celular).
+  const reservationsAside = (
+    <>
+      <AttentionList
+        title={t("home.attention.title")}
+        items={attentionItems.filter((item) => !item.id.startsWith("offer-"))}
+        headingLevel="h3"
+      />
+      <OtherShopNotices groups={otherShopGroups} onOpen={openOtherShop} />
+      <WaitingCards
+        controller={waiting}
+        mode="mine"
+        staff={staff}
+        timeZone={shopTimeZone}
+        onChanged={() => setAppointmentVersion((v) => v + 1)}
+      />
+    </>
+  );
+  const reservationFilters = (
+    <ReservationFilters
+      value={reservationFilter}
+      counts={reservationCounts}
+      onChange={setReservationFilter}
+      compact={!isPhone}
+    />
+  );
+  const shopNote = shopSettings.booking_instructions && (
+    <p className="flex items-start gap-2 rounded-xl border border-border bg-background/60 p-3 text-sm">
+      <StoreIcon className="mt-0.5 size-4 shrink-0 text-gold" aria-hidden />
+      <span className="min-w-0">
+        <span className="sr-only">{t("booking.shopNoteAria")}: </span>
+        {shopSettings.booking_instructions}
+      </span>
+    </p>
+  );
 
   return (
     <div
@@ -2977,7 +3172,18 @@ function ArenaApp({
       {/* Main Viewport */}
       <main
         ref={mainRef}
-        className={`p-4 max-w-xl mx-auto ${tab === "dashboard" || tab === "agenda" || tab === "perfil" || tab === "esportes" ? "customer-main-wide" : ""}`}
+        className={`p-4 max-w-xl mx-auto ${
+          // Abas que usam a largura larga de leitura no computador (styles.css, --app-read-width).
+          tab === "dashboard" ||
+          tab === "agenda" ||
+          tab === "perfil" ||
+          tab === "esportes" ||
+          tab === "pontos" ||
+          tab === "reservas" ||
+          tab === "notifications"
+            ? "customer-main-wide"
+            : ""
+        }`}
       >
         <div key={tab} className="mb-panel">
           {/* Veio de uma recusa do painel ou da plataforma: diz o motivo, uma vez. */}
@@ -3061,8 +3267,25 @@ function ArenaApp({
             ))}
           {tab === "dashboard" && (
             // Início em faixas: (1) o que pede ação, (2) o próximo horário, (3) o cartão de
-            // membro. No computador, duas colunas: o que acontece à esquerda, pontos à direita.
-            <div className="customer-home relative z-10 grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:gap-6">
+            // membro. A partir de 768 px, duas colunas de verdade (SplitLayout; a largura das
+            // colunas por faixa está em src/styles/cliente.css): o que acontece à esquerda e o
+            // cartão de membro fixo à direita. Sem clube ou sem barbearia, uma coluna só.
+            <HomeLayout
+              aside={
+                loyaltyOn && !noShop ? (
+                  <MemberCard
+                    name={customerName || t("cust.customerFallback")}
+                    program={loyaltyProgram}
+                    points={points}
+                    lifetimePoints={lifetimePoints}
+                    pending={pendingRedemptions}
+                    onOpenRewards={openRewards}
+                    onOpenHistory={() => setTab("pontos")}
+                    onOpenClub={() => setShowVipInfo(true)}
+                  />
+                ) : null
+              }
+            >
               <div className="mb-stagger min-w-0 space-y-4">
                 <ProfileSetup disabled={Boolean(demoShopId)} onNameSaved={setCustomerName} />
                 <OtherShopNotices groups={otherShopGroups} onOpen={openOtherShop} />
@@ -3136,20 +3359,7 @@ function ArenaApp({
                   timeZone={shopTimeZone}
                 />
               </div>
-              {loyaltyOn && !noShop && (
-                <MemberCard
-                  className="lg:sticky lg:top-4"
-                  name={customerName || t("cust.customerFallback")}
-                  program={loyaltyProgram}
-                  points={points}
-                  lifetimePoints={lifetimePoints}
-                  pending={pendingRedemptions}
-                  onOpenRewards={openRewards}
-                  onOpenHistory={() => setTab("pontos")}
-                  onOpenClub={() => setShowVipInfo(true)}
-                />
-              )}
-            </div>
+            </HomeLayout>
           )}
 
           {tab === "agenda" && (
@@ -3195,7 +3405,7 @@ function ArenaApp({
                   />
                 </div>
               ) : (
-                <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-6">
+                <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-6 pc:grid-cols-[minmax(0,1fr)_22rem]">
                   <div className="min-w-0 space-y-4">
                     {rescheduleRow && (
                       <RescheduleFromTo
@@ -3231,179 +3441,197 @@ function ArenaApp({
                       />
                     )}
 
-                    <StepCard
-                      id="booking-step-service"
-                      index={1}
-                      title={t("booking.service")}
-                      state={serviceStep}
-                      aside={
-                        !serviceOpen && selectedService ? (
-                          <ChangeButton
-                            label={`${t("booking.change")} · ${t("booking.service")}`}
-                            disabled={bookingBusy}
-                            onClick={() => setServiceOpen(true)}
-                          />
-                        ) : services.length > SHORT_CHOICE_LIST ? (
-                          <CatalogViewToggle
-                            viewMode={serviceView}
-                            onViewMode={changeServiceView}
-                            className="booking-view-toggle"
-                          />
-                        ) : null
-                      }
-                    >
-                      {!catalogLoading &&
-                        !catalogError &&
-                        services.length === 0 &&
-                        (joinDeclined && !shopId ? (
-                          // Recusou entrar na barbearia do link e não tem outra: mostra como entrar.
-                          <EmptyState
-                            variant="plain"
-                            tone="store"
-                            title={t("conta.join.notYet", {
-                              shop: joinDeclined.name || t("cust.thisShop"),
-                            })}
-                            action={
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setJoinShopRef(joinDeclined.ref);
-                                  setJoinShopName(joinDeclined.name);
-                                  setJoinError(null);
-                                  setJoinOpen(true);
-                                }}
-                                className="action-button action-confirm"
-                              >
-                                <Plus aria-hidden />
-                                {t("conta.join.enter")}
-                              </button>
+                    {/* Computador: Serviço e Profissional com a lista inteira sempre à vista (o
+                        escolhido fica marcado; nada recolhe num resumo); lado a lado só a partir de
+                        1280 px, porque na coluna estreita de 1024–1279 os nomes quebravam. */}
+                    <div className="space-y-4 pc:grid pc:grid-cols-2 pc:items-start pc:gap-4 pc:space-y-0">
+                      <StepCard
+                        id="booking-step-service"
+                        index={1}
+                        title={t("booking.service")}
+                        state={serviceStep}
+                        aside={
+                          wideBooking ? null : !serviceOpen && selectedService ? (
+                            <ChangeButton
+                              label={`${t("booking.change")} · ${t("booking.service")}`}
+                              disabled={bookingBusy}
+                              onClick={() => setServiceOpen(true)}
+                            />
+                          ) : services.length > SHORT_CHOICE_LIST ? (
+                            <CatalogViewToggle
+                              viewMode={serviceView}
+                              onViewMode={changeServiceView}
+                              className="booking-view-toggle"
+                            />
+                          ) : null
+                        }
+                      >
+                        {!catalogLoading &&
+                          !catalogError &&
+                          services.length === 0 &&
+                          (joinDeclined && !shopId ? (
+                            // Recusou entrar na barbearia do link e não tem outra: mostra como entrar.
+                            <EmptyState
+                              variant="plain"
+                              tone="store"
+                              title={t("conta.join.notYet", {
+                                shop: joinDeclined.name || t("cust.thisShop"),
+                              })}
+                              action={
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setJoinShopRef(joinDeclined.ref);
+                                    setJoinShopName(joinDeclined.name);
+                                    setJoinError(null);
+                                    setJoinOpen(true);
+                                  }}
+                                  className="action-button action-confirm"
+                                >
+                                  <Plus aria-hidden />
+                                  {t("conta.join.enter")}
+                                </button>
+                              }
+                            />
+                          ) : (
+                            <EmptyState
+                              variant="plain"
+                              tone="scissors"
+                              title={t("booking.noServices")}
+                            />
+                          ))}
+                        {againMissing?.service !== undefined && (
+                          <Notice
+                            tone="warning"
+                            role="none"
+                            title={
+                              againMissing.service
+                                ? t("booking.againServiceGone", { name: againMissing.service })
+                                : t("booking.againServiceGoneAny")
                             }
                           />
+                        )}
+                        {!wideBooking && !serviceOpen && selectedService && bookingService ? (
+                          <ServiceSummary
+                            service={selectedService}
+                            terms={bookingService}
+                            formatMoney={formatMoney}
+                            suggested={!serviceChosen}
+                          />
                         ) : (
-                          <EmptyState
-                            variant="plain"
-                            tone="scissors"
-                            title={t("booking.noServices")}
-                          />
-                        ))}
-                      {againMissing?.service !== undefined && (
-                        <Notice
-                          tone="warning"
-                          role="none"
-                          title={
-                            againMissing.service
-                              ? t("booking.againServiceGone", { name: againMissing.service })
-                              : t("booking.againServiceGoneAny")
-                          }
-                        />
-                      )}
-                      {!serviceOpen && selectedService && bookingService ? (
-                        <ServiceSummary
-                          service={selectedService}
-                          terms={bookingService}
-                          formatMoney={formatMoney}
-                          suggested={!serviceChosen}
-                        />
-                      ) : (
-                        <ServiceChoices
-                          services={services}
-                          selectedIndex={serviceIdx}
-                          view={services.length > SHORT_CHOICE_LIST ? serviceView : "list"}
-                          termsFor={(service) =>
-                            (pickedStaff && termsFor(serviceTerms, pickedStaff.id, service)) ||
-                            service
-                          }
-                          formatMoney={formatMoney}
-                          suggested={!serviceChosen}
-                          disabled={bookingBusy}
-                          onPick={pickService}
-                        />
-                      )}
-                    </StepCard>
-
-                    <StepCard
-                      id="booking-step-staff"
-                      index={2}
-                      title={t("booking.staff")}
-                      state={staffStep}
-                      aside={
-                        directLinkActive ? null : !staffOpen && staffHasValue ? (
-                          <ChangeButton
-                            label={t("booking.changeStaff")}
+                          <ServiceChoices
+                            services={services}
+                            selectedIndex={serviceIdx}
+                            view={
+                              wideBooking || services.length <= SHORT_CHOICE_LIST
+                                ? "list"
+                                : serviceView
+                            }
+                            termsFor={(service) =>
+                              (pickedStaff && termsFor(serviceTerms, pickedStaff.id, service)) ||
+                              service
+                            }
+                            formatMoney={formatMoney}
+                            suggested={!serviceChosen}
                             disabled={bookingBusy}
-                            onClick={() => setStaffOpen(true)}
+                            onPick={pickService}
                           />
-                        ) : staffChoices.length > SHORT_CHOICE_LIST ? (
-                          <CatalogViewToggle
-                            viewMode={staffView}
-                            onViewMode={changeStaffView}
-                            className="booking-view-toggle"
+                        )}
+                      </StepCard>
+
+                      <StepCard
+                        id="booking-step-staff"
+                        index={2}
+                        title={t("booking.staff")}
+                        state={staffStep}
+                        aside={
+                          directLinkActive || wideBooking ? null : !staffOpen && staffHasValue ? (
+                            <ChangeButton
+                              label={t("booking.changeStaff")}
+                              disabled={bookingBusy}
+                              onClick={() => setStaffOpen(true)}
+                            />
+                          ) : staffChoices.length > SHORT_CHOICE_LIST ? (
+                            <CatalogViewToggle
+                              viewMode={staffView}
+                              onViewMode={changeStaffView}
+                              className="booking-view-toggle"
+                            />
+                          ) : null
+                        }
+                      >
+                        {!catalogLoading && !catalogError && staffChoices.length === 0 && (
+                          <EmptyState variant="plain" tone="people" title={t("booking.noStaff")} />
+                        )}
+                        {staffNotForService && pickedStaff && !directLinkActive && (
+                          <Notice
+                            tone="warning"
+                            role="none"
+                            title={t("booking.staffNotForService", {
+                              name: pickedStaff.display_name,
+                            })}
                           />
-                        ) : null
-                      }
-                    >
-                      {!catalogLoading && !catalogError && staffChoices.length === 0 && (
-                        <EmptyState variant="plain" tone="people" title={t("booking.noStaff")} />
-                      )}
-                      {staffNotForService && pickedStaff && !directLinkActive && (
-                        <Notice
-                          tone="warning"
-                          role="none"
-                          title={t("booking.staffNotForService", {
-                            name: pickedStaff.display_name,
-                          })}
-                        />
-                      )}
-                      {againMissing?.staff !== undefined && (
-                        <Notice
-                          tone="warning"
-                          role="none"
-                          title={
-                            againMissing.staff
-                              ? t("booking.againStaffGone", { name: againMissing.staff })
-                              : t("booking.againStaffGoneAny")
-                          }
-                        />
-                      )}
-                      {favoriteSaved && (
-                        <Notice
-                          tone="success"
-                          icon={StarIcon}
-                          title={t("booking.favoriteSaved", { name: favoriteSaved })}
-                        />
-                      )}
-                      {directLinkActive && selectedStaff ? (
-                        <StaffSummary member={selectedStaff} locked />
-                      ) : !staffOpen && staffHasValue ? (
-                        <StaffSummary
-                          member={anyAvailable ? null : selectedStaff}
-                          any={anyAvailable}
-                          favorite={Boolean(selectedStaff && selectedStaff.id === favoriteStaffId)}
-                          suggested={!staffChosen}
-                        />
-                      ) : (
-                        <StaffChoices
-                          choices={staffChoices.map(({ m, i }) => ({ member: m, index: i }))}
-                          selectedIndex={anyAvailable ? null : staffIdx}
-                          anyOption={
-                            staffAssignmentMode === "random_available" ||
-                            staffAssignmentMode === "favorite_then_pick"
-                          }
-                          anyActive={anyAvailable}
-                          favoriteId={favoriteStaffId}
-                          favoriteName={
-                            staffAssignmentMode === "favorite_then_pick"
-                              ? staff.find((member) => member.id === favoriteStaffId)?.display_name
-                              : null
-                          }
-                          view={staffChoices.length > SHORT_CHOICE_LIST ? staffView : "grid"}
-                          suggested={!staffChosen}
-                          disabled={bookingBusy}
-                          onPick={pickStaff}
-                          onAny={pickAnyStaff}
-                        />
-                      )}
-                    </StepCard>
+                        )}
+                        {againMissing?.staff !== undefined && (
+                          <Notice
+                            tone="warning"
+                            role="none"
+                            title={
+                              againMissing.staff
+                                ? t("booking.againStaffGone", { name: againMissing.staff })
+                                : t("booking.againStaffGoneAny")
+                            }
+                          />
+                        )}
+                        {favoriteSaved && (
+                          <Notice
+                            tone="success"
+                            icon={StarIcon}
+                            title={t("booking.favoriteSaved", { name: favoriteSaved })}
+                          />
+                        )}
+                        {directLinkActive && selectedStaff ? (
+                          <StaffSummary member={selectedStaff} locked />
+                        ) : !wideBooking && !staffOpen && staffHasValue ? (
+                          <StaffSummary
+                            member={anyAvailable ? null : selectedStaff}
+                            any={anyAvailable}
+                            favorite={Boolean(
+                              selectedStaff && selectedStaff.id === favoriteStaffId,
+                            )}
+                            suggested={!staffChosen}
+                          />
+                        ) : (
+                          <StaffChoices
+                            choices={staffChoices.map(({ m, i }) => ({ member: m, index: i }))}
+                            selectedIndex={anyAvailable ? null : staffIdx}
+                            anyOption={
+                              staffAssignmentMode === "random_available" ||
+                              staffAssignmentMode === "favorite_then_pick"
+                            }
+                            anyActive={anyAvailable}
+                            favoriteId={favoriteStaffId}
+                            favoriteName={
+                              staffAssignmentMode === "favorite_then_pick"
+                                ? staff.find((member) => member.id === favoriteStaffId)
+                                    ?.display_name
+                                : null
+                            }
+                            view={
+                              wideBooking
+                                ? "list"
+                                : staffChoices.length > SHORT_CHOICE_LIST
+                                  ? staffView
+                                  : "grid"
+                            }
+                            suggested={!staffChosen}
+                            disabled={bookingBusy}
+                            onPick={pickStaff}
+                            onAny={pickAnyStaff}
+                          />
+                        )}
+                      </StepCard>
+                    </div>
 
                     <StepCard
                       id="booking-step-when"
@@ -3411,107 +3639,61 @@ function ArenaApp({
                       title={t("booking.step.when")}
                       state={whenStep}
                     >
-                      <DayStrip
-                        keys={bookingDayKeys}
-                        selected={selectedDay}
-                        timeZone={shopTimeZone}
-                        closedWeekdays={closedWeekdays}
-                        disabled={bookingBusy}
-                        onSelect={pickDay}
-                        calendar={
-                          <DatePicker
-                            compact
+                      {wideBooking ? (
+                        // Computador: calendário do mês à esquerda e os horários do dia à direita
+                        // (lado a lado quando o passo tem 32rem ou mais; senão, empilhados).
+                        <div className="@container">
+                          <div className="grid gap-5 @min-[32rem]:grid-cols-[auto_minmax(0,1fr)] @min-[32rem]:gap-6">
+                            <DayCalendar
+                              keys={bookingDayKeys}
+                              selected={selectedDay}
+                              closedWeekdays={closedWeekdays}
+                              disabled={bookingBusy}
+                              onSelect={pickDay}
+                            />
+                            <div className="min-w-0 space-y-3">
+                              <p className="flex items-center gap-2 text-sm font-bold">
+                                <CalendarDaysIcon className="size-4 text-gold" aria-hidden />
+                                {selectedDayHeading}
+                              </p>
+                              {timeGrid}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <DayStrip
+                            keys={bookingDayKeys}
+                            selected={selectedDay}
+                            timeZone={shopTimeZone}
+                            closedWeekdays={closedWeekdays}
                             disabled={bookingBusy}
-                            label={t("booking.pickCalendar")}
-                            displayValue={t("booking.moreDates")}
-                            value={selectedDay}
-                            onChange={pickDay}
-                            min={dateFromLocalKey(bookingDayKeys[0])}
-                            max={dateFromLocalKey(bookingDayKeys[bookingDayKeys.length - 1])}
-                            // Como a faixa de dias: o 1º dia é "Hoje"; fechados com lua.
-                            todayKey={bookingDayKeys[0]}
-                            todayLabel={t("booking.today")}
-                            closedDays={
-                              closedWeekdays
-                                ? (date) => closedWeekdays.has(date.getDay())
-                                : undefined
-                            }
-                            closedLabel={t("booking.closed")}
-                          />
-                        }
-                      />
-                      <TimeGrid
-                        state={gridState}
-                        error={slotsError}
-                        onRetry={() => setAvailabilityVersion((v) => v + 1)}
-                        slots={availableSlots}
-                        selectedIso={selectedSlot ? selectedSlotAt : null}
-                        onSelect={(iso) => {
-                          setSelectedSlotAt(iso);
-                          setPickedSlotLost(null);
-                          setBookingError(null);
-                          setBookingUncertain(false);
-                          // Escolher o horário aceita o serviço e o profissional sugeridos: os
-                          // dois passos recolhem com ✓ (o resumo mantém o selo "Sugerido").
-                          if (selectedService) setServiceOpen(false);
-                          if (staffHasValue) setStaffOpen(false);
-                        }}
-                        timeZone={shopTimeZone}
-                        currentIso={
-                          rescheduleRow &&
-                          shopDateKey(new Date(rescheduleRow.starts_at), shopTimeZone) ===
-                            selectedDay
-                            ? new Date(rescheduleRow.starts_at).toISOString()
-                            : null
-                        }
-                        mayOpen={mayOpenStarts(mayOpenWaits).map(({ iso, waitId }) => ({
-                          iso,
-                          onClick: () => scrollToStep(`wait-${waitId}`),
-                        }))}
-                        disabled={bookingBusy}
-                        empty={{
-                          closed: closedWeekdays?.has(weekdayForDateKey(selectedDay)) ?? false,
-                          nextDay: nextOpenDay
-                            ? {
-                                label: dayChipLabel(nextOpenDay),
-                                onClick: () => pickDay(nextOpenDay),
-                              }
-                            : null,
-                          onChangeStaff:
-                            !anyAvailable && !directLinkActive && staffChoices.length > 1
-                              ? () => {
-                                  setStaffOpen(true);
-                                  scrollToStep("booking-step-staff");
+                            onSelect={pickDay}
+                            calendar={
+                              <DatePicker
+                                compact
+                                disabled={bookingBusy}
+                                label={t("booking.pickCalendar")}
+                                displayValue={t("booking.moreDates")}
+                                value={selectedDay}
+                                onChange={pickDay}
+                                min={dateFromLocalKey(bookingDayKeys[0])}
+                                max={dateFromLocalKey(bookingDayKeys[bookingDayKeys.length - 1])}
+                                // Como a faixa de dias: o 1º dia é "Hoje"; fechados com lua.
+                                todayKey={bookingDayKeys[0]}
+                                todayLabel={t("booking.today")}
+                                closedDays={
+                                  closedWeekdays
+                                    ? (date) => closedWeekdays.has(date.getDay())
+                                    : undefined
                                 }
-                              : null,
-                        }}
-                        notice={
-                          slotGone && selectedSlotAt ? (
-                            <Notice
-                              tone="warning"
-                              title={
-                                selectedStaff && !anyAvailable
-                                  ? t("booking.slotGone", {
-                                      time: slotLabel(selectedSlotAt).time,
-                                      name: selectedStaff.display_name,
-                                    })
-                                  : t("booking.slotGoneAny", {
-                                      time: slotLabel(selectedSlotAt).time,
-                                    })
-                              }
-                            />
-                          ) : pickedSlotLost ? (
-                            <Notice
-                              tone="warning"
-                              title={t(
-                                pickedSlotLost === "past"
-                                  ? "booking.pickedSlotPast"
-                                  : "booking.pickedSlotFar",
-                              )}
-                            />
-                          ) : null
-                        }
-                      />
+                                closedLabel={t("booking.closed")}
+                              />
+                            }
+                          />
+                          {timeGrid}
+                        </>
+                      )}
                       <WaitingCards
                         controller={{ ...waiting, waits: mayOpenWaits }}
                         mode="opportunities"
@@ -3523,81 +3705,75 @@ function ArenaApp({
                       />
                     </StepCard>
 
-                    <StepCard
-                      id="booking-step-review"
-                      index={4}
-                      title={
-                        rescheduleId ? t("booking.step.reviewReschedule") : t("booking.step.review")
-                      }
-                      state={reviewStep}
-                    >
-                      {selectedSlot && bookingService ? (
-                        <div className="space-y-2 rounded-2xl border border-border bg-background/60 p-3">
-                          <AppointmentTicket
-                            variant="mini"
-                            data={{
-                              startsAt: selectedSlot.toISOString(),
-                              endsAt: selectedEnd?.toISOString(),
-                              serviceName: bookingService.name,
-                              serviceIcon: bookingService.icon,
-                              staffName: anyAvailable
-                                ? t("booking.anyStaff")
-                                : (selectedStaff?.display_name ?? t("booking.staff")),
-                              staffId: selectedStaff?.id,
-                              staffPhoto: anyAvailable ? null : selectedStaff?.avatar_url,
-                              anyStaff: anyAvailable,
-                            }}
-                            now={bookingNow}
-                            timeZone={shopTimeZone}
-                          />
-                          <p className="flex items-center justify-between border-t border-border pt-2 text-sm">
-                            <span className="text-muted-foreground">{t("booking.total")}</span>
-                            <span className="font-bold tabular-nums">
-                              {formatMoney(reviewPriceCents ?? bookingService.price_cents)}
-                            </span>
+                    {!wideBooking && (
+                      <StepCard
+                        id="booking-step-review"
+                        index={4}
+                        title={
+                          rescheduleId
+                            ? t("booking.step.reviewReschedule")
+                            : t("booking.step.review")
+                        }
+                        state={reviewStep}
+                      >
+                        {selectedSlot && bookingService ? (
+                          <div className="space-y-2 rounded-2xl border border-border bg-background/60 p-3">
+                            <AppointmentTicket
+                              variant="mini"
+                              data={{
+                                startsAt: selectedSlot.toISOString(),
+                                endsAt: selectedEnd?.toISOString(),
+                                serviceName: bookingService.name,
+                                serviceIcon: bookingService.icon,
+                                staffName: anyAvailable
+                                  ? t("booking.anyStaff")
+                                  : (selectedStaff?.display_name ?? t("booking.staff")),
+                                staffId: selectedStaff?.id,
+                                staffPhoto: anyAvailable ? null : selectedStaff?.avatar_url,
+                                anyStaff: anyAvailable,
+                              }}
+                              now={bookingNow}
+                              timeZone={shopTimeZone}
+                            />
+                            <p className="flex items-center justify-between border-t border-border pt-2 text-sm">
+                              <span className="text-muted-foreground">{t("booking.total")}</span>
+                              <span className="font-bold tabular-nums">
+                                {formatMoney(reviewPriceCents ?? bookingService.price_cents)}
+                              </span>
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Clock3 className="size-4 shrink-0" aria-hidden />
+                            {t("booking.chooseTime")}
                           </p>
-                        </div>
-                      ) : (
-                        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Clock3 className="size-4 shrink-0" aria-hidden />
-                          {t("booking.chooseTime")}
-                        </p>
-                      )}
-                      {selectedSlot && canRepeat && chosenSlot && (
-                        <RepeatPicker
-                          value={repeatChoice}
-                          onChange={(value) => {
-                            if (value === "once") {
-                              setRepeatEnabled(false);
-                              return;
-                            }
-                            setRepeatEnabled(true);
-                            if (value === "weekday") setRepeatKind("weekday");
-                            else {
-                              setRepeatKind("interval_days");
-                              setRepeatInterval(value === "15" ? 15 : 21);
-                            }
-                          }}
-                          startKey={selectedDay}
-                          horizonDays={shopSettings.booking_horizon_days}
-                          timeLabel={chosenSlot.time}
-                          timeZone={shopTimeZone}
-                          disabled={bookingBusy}
-                        />
-                      )}
-                      {shopSettings.booking_instructions && (
-                        <p className="flex items-start gap-2 rounded-xl border border-border bg-background/60 p-3 text-sm">
-                          <StoreIcon className="mt-0.5 size-4 shrink-0 text-gold" aria-hidden />
-                          <span className="min-w-0">
-                            <span className="sr-only">{t("booking.shopNoteAria")}: </span>
-                            {shopSettings.booking_instructions}
-                          </span>
-                        </p>
-                      )}
-                    </StepCard>
+                        )}
+                        {repeatPicker}
+                        {shopNote}
+                      </StepCard>
+                    )}
                   </div>
                   <BookingSummaryBar
                     pills={summaryPills}
+                    step={
+                      wideBooking
+                        ? {
+                            index: 4,
+                            state: reviewStep,
+                            title: rescheduleId
+                              ? t("booking.step.reviewReschedule")
+                              : t("booking.step.review"),
+                          }
+                        : null
+                    }
+                    details={
+                      wideBooking && (repeatPicker || shopNote) ? (
+                        <>
+                          {repeatPicker}
+                          {shopNote}
+                        </>
+                      ) : null
+                    }
                     buttonLabel={bookingButton.label}
                     buttonIcon={bookingButton.icon}
                     ready={Boolean(selectedSlot && selectedService && staffHasValue)}
@@ -3644,13 +3820,18 @@ function ArenaApp({
 
           {tab === "reservas" && (
             // Reservas: título → o que pede ação (Precisa de você, lista de espera) → filtros →
-            // tickets agrupados por quando acontecem.
-            <div className="space-y-5">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <div className="app-section-title min-w-0 flex-1">
+            // tickets agrupados por quando acontecem. No tablet e no computador os filtros ficam
+            // na linha do título; a partir de 1024 px o que pede ação e "Minha fila" vão para a
+            // coluna da direita e os tickets ocupam a largura em grade (ver src/styles/cliente.css).
+            <div className="customer-reservas space-y-5">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                {/* Fora do celular os filtros dividem a linha com o título: o título não encolhe abaixo de
+                    16rem (os filtros descem para a linha de baixo quando não cabem). */}
+                <div className="app-section-title min-w-0 flex-1 tablet:min-w-[16rem]">
                   <Clock3 />
                   <h2>{t("bookings.title")}</h2>
                 </div>
+                {!isPhone && reservationFilters}
                 {!demo && (
                   <div className="flex items-center gap-2">
                     {appointmentsUpdatedAt && (
@@ -3681,127 +3862,117 @@ function ArenaApp({
                   </div>
                 )}
               </div>
-              <AttentionList
-                title={t("home.attention.title")}
-                items={attentionItems.filter((item) => !item.id.startsWith("offer-"))}
-                headingLevel="h3"
-              />
-              <OtherShopNotices groups={otherShopGroups} onOpen={openOtherShop} />
-              <WaitingCards
-                controller={waiting}
-                mode="mine"
-                staff={staff}
-                timeZone={shopTimeZone}
-                onChanged={() => setAppointmentVersion((v) => v + 1)}
-              />
-              <ReservationFilters
-                value={reservationFilter}
-                counts={reservationCounts}
-                onChange={setReservationFilter}
-              />
-              {appointmentsError && !cancelTarget && (
-                <Notice
-                  tone="danger"
-                  title={appointmentsError}
-                  action={{
-                    label: t("visual.retry"),
-                    icon: RotateCcw,
-                    onClick: () => setAppointmentVersion((version) => version + 1),
-                  }}
-                />
-              )}
-              {appointmentsNotice && !appointmentsError && (
-                <Notice
-                  tone={rescheduleBlockedNotice ? "info" : "success"}
-                  title={appointmentsNotice}
-                  onDismiss={() => {
-                    setAppointmentsNotice(null);
-                    setNoticeShowsCancelled(false);
-                  }}
-                  action={
-                    noticeShowsCancelled && reservationFilter !== "cancelled"
-                      ? {
-                          label: t("bookings.seeCancelled"),
-                          icon: XCircle,
-                          onClick: () => setReservationFilter("cancelled"),
-                        }
-                      : undefined
-                  }
-                />
-              )}
-              {focusMissing && (
-                <Notice
-                  tone="neutral"
-                  icon={BellRing}
-                  title={t("bookings.noticeMissing")}
-                  onDismiss={() => setFocusMissing(false)}
-                />
-              )}
-              {appointmentsLoading ? (
-                <BookingLoading variant="cards" count={2} label={t("bookings.loading")} />
-              ) : visibleReservations.length === 0 &&
-                appointmentsError ? null : visibleReservations.length === 0 ? (
-                <EmptyState
-                  tone={reservationFilter === "upcoming" ? "calendar" : "search"}
-                  title={
-                    reservationFilter === "upcoming"
-                      ? t("bookings.emptyUpcoming")
-                      : t("bookings.emptyFilter")
-                  }
-                  description={
-                    reservationFilter === "upcoming"
-                      ? t("bookings.emptyUpcomingHint")
-                      : t("bookings.emptyFilterHint")
-                  }
-                  action={
-                    reservationFilter === "upcoming" || reservationFilter === "history" ? (
-                      <button
-                        type="button"
-                        onClick={() => setTab("agenda")}
-                        className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+              <ReservationsLayout aside={reservationsAside}>
+                {isPhone && reservationFilters}
+                {appointmentsError && !cancelTarget && (
+                  <Notice
+                    tone="danger"
+                    title={appointmentsError}
+                    action={{
+                      label: t("visual.retry"),
+                      icon: RotateCcw,
+                      onClick: () => setAppointmentVersion((version) => version + 1),
+                    }}
+                  />
+                )}
+                {appointmentsNotice && !appointmentsError && (
+                  <Notice
+                    tone={rescheduleBlockedNotice ? "info" : "success"}
+                    title={appointmentsNotice}
+                    onDismiss={() => {
+                      setAppointmentsNotice(null);
+                      setNoticeShowsCancelled(false);
+                    }}
+                    action={
+                      noticeShowsCancelled && reservationFilter !== "cancelled"
+                        ? {
+                            label: t("bookings.seeCancelled"),
+                            icon: XCircle,
+                            onClick: () => setReservationFilter("cancelled"),
+                          }
+                        : undefined
+                    }
+                  />
+                )}
+                {focusMissing && (
+                  <Notice
+                    tone="neutral"
+                    icon={BellRing}
+                    title={t("bookings.noticeMissing")}
+                    onDismiss={() => setFocusMissing(false)}
+                  />
+                )}
+                {appointmentsLoading ? (
+                  <BookingLoading variant="cards" count={2} label={t("bookings.loading")} />
+                ) : visibleReservations.length === 0 &&
+                  appointmentsError ? null : visibleReservations.length === 0 ? (
+                  <EmptyState
+                    tone={reservationFilter === "upcoming" ? "calendar" : "search"}
+                    title={
+                      reservationFilter === "upcoming"
+                        ? t("bookings.emptyUpcoming")
+                        : t("bookings.emptyFilter")
+                    }
+                    description={
+                      reservationFilter === "upcoming"
+                        ? t("bookings.emptyUpcomingHint")
+                        : t("bookings.emptyFilterHint")
+                    }
+                    action={
+                      reservationFilter === "upcoming" || reservationFilter === "history" ? (
+                        <button
+                          type="button"
+                          onClick={() => setTab("agenda")}
+                          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+                        >
+                          <CalendarPlus className="size-4" aria-hidden />
+                          {t("bookings.bookNow")}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setReservationFilter("history")}
+                          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border px-4 text-sm font-semibold"
+                        >
+                          {t("bookings.seeAll")}
+                        </button>
+                      )
+                    }
+                  />
+                ) : (
+                  <div className="space-y-5">
+                    {groupReservations(
+                      displayedReservations(visibleReservations),
+                      reservationFilter === "upcoming",
+                      bookingNow,
+                      shopTimeZone,
+                    ).map((group) => (
+                      <section
+                        key={group.key}
+                        aria-labelledby={`reservas-${group.key}`}
+                        className="space-y-3"
                       >
-                        <CalendarPlus className="size-4" aria-hidden />
-                        {t("bookings.bookNow")}
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setReservationFilter("history")}
-                        className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border px-4 text-sm font-semibold"
-                      >
-                        {t("bookings.seeAll")}
-                      </button>
-                    )
-                  }
-                />
-              ) : (
-                <div className="space-y-5">
-                  {groupReservations(
-                    displayedReservations(visibleReservations),
-                    reservationFilter === "upcoming",
-                    bookingNow,
-                    shopTimeZone,
-                  ).map((group) => (
-                    <section
-                      key={group.key}
-                      aria-labelledby={`reservas-${group.key}`}
-                      className="space-y-3"
-                    >
-                      <h3
-                        id={`reservas-${group.key}`}
-                        className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-muted-foreground"
-                      >
-                        {group.label}
-                        <span className="grid h-5 min-w-5 place-items-center rounded-full bg-muted px-1.5 text-[11px] tabular-nums text-foreground">
-                          <span className="sr-only">: </span>
-                          {group.rows.length}
-                        </span>
-                      </h3>
-                      {group.rows.map((row) => renderReservation(row))}
-                    </section>
-                  ))}
-                </div>
-              )}
+                        <h3
+                          id={`reservas-${group.key}`}
+                          className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-muted-foreground"
+                        >
+                          {group.label}
+                          <span className="grid h-5 min-w-5 place-items-center rounded-full bg-muted px-1.5 text-[11px] tabular-nums text-foreground">
+                            <span className="sr-only">: </span>
+                            {group.rows.length}
+                          </span>
+                        </h3>
+                        {/* Celular: um ticket por linha (gap de 0.75rem, como antes). A partir de
+                          768 px: quantos tickets de 24rem couberem na largura (com 20rem a 1280
+                          eram 3 colunas de 322 px e "Combo Premium / R$ 90,00" quebrava). */}
+                        <CardGrid min="24rem" gap="0.75rem" className="tablet:items-start">
+                          {group.rows.map((row) => renderReservation(row))}
+                        </CardGrid>
+                      </section>
+                    ))}
+                  </div>
+                )}
+              </ReservationsLayout>
             </div>
           )}
 
@@ -3810,7 +3981,8 @@ function ArenaApp({
           )}
 
           {tab === "notifications" && (
-            <div className="space-y-5">
+            // Lista de leitura: até 60rem no computador (a aba usa a largura larga da casca).
+            <div className="space-y-5 tablet:max-w-[60rem]">
               <CustomerPageHeader
                 icon={Bell}
                 title={t("nav.notices")}
@@ -3863,11 +4035,11 @@ function ArenaApp({
       <nav
         ref={navRef}
         className={`app-mobile-nav app-mobile-nav-floating app-mobile-nav-fit ${
-          navLevel === 2 ? "app-mobile-nav-compact " : ""
+          navLabelLevel === 2 ? "app-mobile-nav-compact " : ""
         }fixed left-4 right-4 z-40 mx-auto grid max-w-[34rem] overflow-hidden`}
         style={{
           gridTemplateColumns: `repeat(${navItems.length}, ${
-            navLevel === 2 ? "minmax(0, 1fr)" : "minmax(min-content, 1fr)"
+            navLabelLevel === 2 ? "minmax(0, 1fr)" : "minmax(min-content, 1fr)"
           })`,
         }}
         aria-label={t("nav.main")}

@@ -17,6 +17,7 @@ import {
   IconList,
   PreviewPanel,
   SectionHeader,
+  SplitLayout,
   StatusBadge,
   Timeline,
   UnsavedBar,
@@ -187,7 +188,9 @@ export function WaitingSettings({
     <section
       id={id}
       tabIndex={-1}
-      className="app-action-card scroll-mt-24 space-y-5 p-5 outline-none"
+      // ajustes-item: o cartão mede a própria largura e põe campo | prévia lado a lado quando
+      // cabe (container query em src/styles/ajustes.css), como o de antecedência mínima.
+      className="ajustes-item app-action-card scroll-mt-24 space-y-5 p-5 outline-none"
       aria-labelledby={titleId}
     >
       <SectionHeader
@@ -227,39 +230,46 @@ export function WaitingSettings({
 
       {enabled ? (
         <>
-          <ChoiceChips
-            icon={Timer}
-            label={t("wait.settings.until")}
-            hint={t("wait.settings.cutoffHint")}
-            options={CUTOFF_OPTIONS.map((minutes) => ({
-              value: minutes,
-              label: durationLabel(minutes),
-            }))}
-            value={cutoff}
-            disabled={busy}
-            onChange={(value) => {
-              setCutoff(value);
-              setState(null);
-            }}
-            other={{
-              min: 0,
-              max: CUTOFF_MAX,
-              step: 5,
-              unit: "min",
-              inputLabel: t("wait.settings.cutoffOther"),
-            }}
-          />
-
-          {valid && (
-            <PreviewPanel
-              icon={Hourglass}
-              title={t("wait.settings.example", { time: before(0) })}
-              badge={t("bookingRules.example")}
-              live
-            >
-              <Timeline rows={timeline} label={t("wait.settings.exampleAria")} />
-            </PreviewPanel>
-          )}
+          {/* Limite à esquerda e a mini agenda do exemplo ao lado (empilhados no celular). */}
+          <SplitLayout
+            gap="1.25rem"
+            asideWidth="20rem"
+            aside={
+              valid ? (
+                <PreviewPanel
+                  icon={Hourglass}
+                  title={t("wait.settings.example", { time: before(0) })}
+                  badge={t("bookingRules.example")}
+                  live
+                >
+                  <Timeline rows={timeline} label={t("wait.settings.exampleAria")} />
+                </PreviewPanel>
+              ) : null
+            }
+          >
+            <ChoiceChips
+              icon={Timer}
+              label={t("wait.settings.until")}
+              hint={t("wait.settings.cutoffHint")}
+              options={CUTOFF_OPTIONS.map((minutes) => ({
+                value: minutes,
+                label: durationLabel(minutes),
+              }))}
+              value={cutoff}
+              disabled={busy}
+              onChange={(value) => {
+                setCutoff(value);
+                setState(null);
+              }}
+              other={{
+                min: 0,
+                max: CUTOFF_MAX,
+                step: 5,
+                unit: "min",
+                inputLabel: t("wait.settings.cutoffOther"),
+              }}
+            />
+          </SplitLayout>
 
           <IconList
             items={[

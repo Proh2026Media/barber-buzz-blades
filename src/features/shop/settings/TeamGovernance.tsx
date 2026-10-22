@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
   Check,
   CheckCircle2,
@@ -598,7 +598,15 @@ export function TeamGovernance({
           </span>
         </h4>
         {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
-        <ul className="space-y-3">{rows.map(renderRequest)}</ul>
+        {/* Mesma grade do CardGrid (src/styles/leiaute.css), num <ul>: uma coluna no celular e
+            quantos pedidos de 22rem couberem no tablet e no computador. */}
+        <ul
+          className="app-card-grid"
+          data-phone-columns="1"
+          style={{ "--card-min": "22rem", "--card-gap": "0.75rem" } as CSSProperties}
+        >
+          {rows.map(renderRequest)}
+        </ul>
       </section>
     );
 

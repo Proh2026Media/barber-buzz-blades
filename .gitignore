@@ -54,3 +54,4 @@ supabase/tests/waiting_concurrency.py
 
 # Fotos de tela geradas por scripts/foto.mjs
 .fotos/
+.claude/launch.json

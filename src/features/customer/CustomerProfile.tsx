@@ -5,10 +5,12 @@ import { LanguageSettingsCard } from "@/components/LanguageSettingsCard";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import {
   ChevronDown,
+  FolderLock,
   Languages,
   Loader2,
   LockKeyhole,
   LogOut,
+  MessageCircle,
   Pencil,
   Repeat,
   Save,
@@ -16,6 +18,7 @@ import {
   Store,
   UserRound,
   X,
+  type LucideIcon,
 } from "lucide-react";
 import {
   ActionResult,
@@ -245,6 +248,61 @@ export function CustomerProfile({
   const chipClass =
     "inline-flex min-h-11 items-center rounded-xl transition hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold";
   const otherShops = shops.filter((shop) => shop.id !== currentShopId);
+  // Índice das seções (tablet e computador): cada linha leva à seção, com o estado ao lado.
+  const sectionIndex: {
+    id: string;
+    icon: LucideIcon;
+    label: string;
+    badge?: ReactNode;
+    onClick?: () => void;
+  }[] = [
+    {
+      id: SECTION.whatsapp,
+      icon: MessageCircle,
+      label: "WhatsApp",
+      badge: whatsBadge ? <StatusBadge {...whatsBadge} size="sm" /> : undefined,
+    },
+    ...(children ? [{ id: SECTION.rhythm, icon: Repeat, label: t("rhythm.title") }] : []),
+    ...(otherShops.length > 0
+      ? [
+          {
+            id: SECTION.shops,
+            icon: Store,
+            label: t("conta.shops.title"),
+            badge: (
+              <StatusBadge tone="neutral" icon={null} size="sm" label={String(shops.length)} />
+            ),
+          },
+        ]
+      : []),
+    {
+      id: SECTION.language,
+      icon: Languages,
+      label: t("language.title"),
+      badge: (
+        <StatusBadge tone="neutral" icon={null} size="sm" label={LOCALE_NATIVE_NAMES[locale]} />
+      ),
+      onClick: () => {
+        setLanguageOpen(true);
+        window.setTimeout(() => jumpTo(SECTION.language), 50);
+      },
+    },
+    {
+      id: SECTION.privacy,
+      icon: ShieldCheck,
+      label: t("conta.privacy.title"),
+      badge: privacyCount ? (
+        <StatusBadge
+          tone="neutral"
+          icon={null}
+          size="sm"
+          label={`${privacyCount.on}/${privacyCount.total}`}
+        />
+      ) : undefined,
+    },
+    { id: SECTION.data, icon: FolderLock, label: t("conta.data.title") },
+    { id: SECTION.security, icon: LockKeyhole, label: t("conta.security") },
+  ];
 
   const signOutButton = (
     <button
@@ -261,10 +319,13 @@ export function CustomerProfile({
   return (
     <section
       aria-labelledby={`${uid}-title`}
-      className="space-y-5 lg:grid lg:grid-cols-[minmax(0,23rem)_minmax(0,1fr)] lg:items-start lg:gap-6 lg:space-y-0"
+      // Tablet (768+): identidade e índice das seções numa coluna de 15rem à esquerda, fixa ao
+      // rolar (a da direita fica com a largura do celular); computador (1024+): 20rem. Celular:
+      // tudo empilhado, como sempre.
+      className="customer-profile space-y-5 tablet:grid tablet:grid-cols-[15rem_minmax(0,1fr)] tablet:items-start tablet:gap-5 tablet:space-y-0 lg:grid-cols-[20rem_minmax(0,1fr)] lg:gap-6"
     >
       {/* Coluna da identidade: quem é, o que está em ordem e o que pede atenção. */}
-      <div className="space-y-4 lg:sticky lg:top-6">
+      <div className="space-y-4 tablet:sticky tablet:top-4">
         {/* Título de página no padrão do app: ícone dourado solto + h2. */}
         <div className="app-section-title">
           <UserRound aria-hidden />
@@ -284,7 +345,9 @@ export function CustomerProfile({
           </div>
         ) : (
           <div className="app-action-card space-y-4 p-4 sm:p-5">
-            <div className="flex items-start gap-3">
+            {/* Tablet em pé (768–1023): a coluna tem 15rem e o avatar fica acima do nome, senão
+                o e-mail quebra no meio; no celular e a partir de 1024 px, lado a lado. */}
+            <div className="flex items-start gap-3 tablet:flex-col lg:flex-row">
               {/* Iniciais só do nome (sem o "(demo)" da demonstração). */}
               <PersonAvatar
                 name={(name || email || "?").replace(/\s*\([^)]*\)\s*/g, " ").trim() || "?"}
@@ -444,6 +507,30 @@ export function CustomerProfile({
               />
             )}
           </div>
+        )}
+
+        {/* Índice das seções (só tablet e computador): mostra onde cada coisa está e o estado. */}
+        {!loading && !error && (
+          <nav aria-label={t("conta.summary")} className="hidden tablet:block">
+            <ul className="app-action-card divide-y divide-border/70 p-1">
+              {sectionIndex.map((item) => (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    onClick={item.onClick ?? (() => jumpTo(item.id))}
+                    className="flex min-h-11 w-full items-center gap-3 rounded-xl px-2 py-1.5 text-left text-sm font-semibold transition hover:bg-muted/60"
+                  >
+                    <IconTile icon={item.icon} size="sm" />
+                    <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                    {/* O selo de estado só cabe na coluna de 20rem do computador. */}
+                    {item.badge && (
+                      <span className="hidden shrink-0 lg:inline-flex">{item.badge}</span>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </nav>
         )}
       </div>
 

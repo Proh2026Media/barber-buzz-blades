@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useDevice } from "@/lib/device";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -78,7 +78,7 @@ export function MoreActions({
   className?: string;
 }) {
   const { t } = useI18n();
-  const mobile = useIsMobile();
+  const mobile = useDevice() === "celular";
   const [open, setOpen] = useState(false);
   const regular = actions.filter((action) => action.tone !== "danger");
   const danger = actions.filter((action) => action.tone === "danger");

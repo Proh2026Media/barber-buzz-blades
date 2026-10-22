@@ -120,7 +120,9 @@ export function SportsBoard({
     rows.length > 0 && (
       <section className="space-y-2" aria-label={title}>
         <h3 className="text-sm font-bold">{title}</h3>
-        <ul className="grid gap-3 lg:grid-cols-2">{rows.map(card)}</ul>
+        <ul className="grid gap-3 tablet:grid-cols-2 lg:grid-cols-[repeat(auto-fill,minmax(16rem,1fr))]">
+          {rows.map(card)}
+        </ul>
       </section>
     );
 

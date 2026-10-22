@@ -11,13 +11,14 @@ import {
   Shapes,
   Sparkles,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   ActionResult,
   ApprovalNote,
   Field,
   FieldMessage,
   ChoiceChips,
+  FormGrid,
   PreviewPanel,
   StatusBadge,
   Timeline,
@@ -28,11 +29,16 @@ import {
 } from "@/components/visual";
 import {
   Dialog,
+  DialogActions,
+  DialogAside,
+  DialogBody,
   DialogContent,
   DialogDescription,
+  DialogHeader,
   DialogScrollArea,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   ServiceIcon,
   SERVICE_ICON_GROUPS,
@@ -46,6 +52,7 @@ import {
   validateServiceImage,
 } from "@/lib/shop/service-image";
 import { PREP_OPTIONS } from "@/lib/shop/appointments";
+import { useDevice } from "@/lib/device";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { ServiceImageCropDialog } from "../ServiceImageCropDialog";
@@ -75,9 +82,11 @@ const STARTERS = [
 type Errors = Partial<Record<"name" | "price" | "duration", string>>;
 
 /**
- * Janela de criar/editar serviço. Começa pela prévia "Assim o cliente vê" (tocar no ícone troca
- * a imagem), depois o essencial (nome, preço, duração em pílulas) e, recolhido, descrição e folga.
- * O botão principal fica sempre à vista no pé da janela; erros aparecem junto do campo.
+ * Janela de criar/editar serviço. No celular começa pela prévia "Assim o cliente vê" (tocar no
+ * ícone troca a imagem), depois o essencial (nome, preço, duração em pílulas) e, recolhido,
+ * descrição e folga; o botão principal fica sempre à vista no pé. A partir de 768 px a janela é
+ * `lg` em duas colunas: campos à esquerda (FormGrid) e a prévia fixa à direita, com o seletor de
+ * ícones num popover (uma rolagem só). Erros aparecem junto do campo nas duas versões.
  */
 export function ServiceForm({
   open,
@@ -120,6 +129,8 @@ export function ServiceForm({
 }) {
   const { t } = useI18n();
   const { duration: durationLabel, money, currency, priceExample } = useCatalogLabels();
+  // Tablet e computador: janela larga em duas colunas; o celular mantém a janela de uma coluna.
+  const wide = useDevice() !== "celular";
   const formRef = useRef<HTMLFormElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
@@ -245,6 +256,605 @@ export function ServiceForm({
   const safeDuration = validDuration(duration) ? duration : 30;
   const endTime = addMinutes(startTime, safeDuration);
 
+  /* ---- Pedaços comuns às duas versões (celular e larga) ---- */
+
+  const startersBlock =
+    starters && !editing ? (
+      <div className="space-y-2">
+        <p className="text-sm font-bold">{t("catalog.starter.title")}</p>
+        <div className="flex flex-wrap gap-2">
+          {STARTERS.map((starter) => (
+            <button
+              key={starter.key}
+              type="button"
+              onClick={() => {
+                setName(t(starter.key));
+                setDuration(starter.minutes);
+                setIcon(starter.icon);
+                setErrors((current) => ({ ...current, name: undefined }));
+              }}
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-3 text-sm font-semibold transition hover:border-primary/40"
+            >
+              <ServiceIcon icon={starter.icon} className="size-4 text-gold" />
+              {t(starter.key)}
+            </button>
+          ))}
+        </div>
+      </div>
+    ) : null;
+
+  /** Busca + grupos de ícones. No celular rola por dentro (288 px); no popover, uma rolagem só. */
+  const pickerBody = (
+    <>
+      <label className="relative block">
+        <span className="sr-only">{t("shop.serviceForm.iconSearch")}</span>
+        <Search
+          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+          aria-hidden
+        />
+        <input
+          type="search"
+          value={iconQuery}
+          onChange={(event) => setIconQuery(event.target.value)}
+          placeholder={t("shop.serviceForm.iconSearch")}
+          className="min-h-11 w-full rounded-xl border border-border bg-background py-2 pl-9 pr-3 text-sm"
+        />
+      </label>
+      <div
+        className={cn(
+          "space-y-3 overflow-y-auto overscroll-contain pr-1",
+          wide ? "catalog-icon-groups" : "max-h-72",
+        )}
+      >
+        {iconGroups.length === 0 && (
+          <p className="py-4 text-center text-xs text-muted-foreground">
+            {t("shop.serviceForm.noIcons")}
+          </p>
+        )}
+        {iconGroups.map((group) => (
+          <div key={group.id} className="space-y-2">
+            <p className="text-xs font-bold text-muted-foreground">
+              {serviceIconGroupLabel(group.id)}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {group.icons.map((preset) => {
+                const selected = icon === preset.id;
+                return (
+                  <button
+                    key={`${group.id}-${preset.id}`}
+                    type="button"
+                    onClick={() => {
+                      setIcon(preset.id);
+                      setPickerOpen(false);
+                    }}
+                    title={preset.label}
+                    aria-label={preset.label}
+                    aria-pressed={selected}
+                    className={cn(
+                      "relative flex size-11 items-center justify-center rounded-xl border transition-colors",
+                      selected
+                        ? "border-primary bg-primary/10 text-primary ring-2 ring-primary"
+                        : "border-border bg-background text-muted-foreground hover:bg-muted",
+                    )}
+                  >
+                    <ServiceIcon icon={preset.id} className="size-5" />
+                    {selected && (
+                      <span className="absolute -right-1 -top-1 grid size-4 place-items-center rounded-full bg-primary text-primary-foreground">
+                        <Check className="size-3" aria-hidden />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+
+  const previewCard = (
+    <div className="flex items-start gap-3 rounded-2xl border border-border bg-card p-3">
+      <button
+        type="button"
+        onClick={() => setPickerOpen((value) => !value)}
+        aria-label={t("catalog.service.changeImage")}
+        aria-expanded={pickerOpen}
+        className="relative grid size-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-muted text-gold ring-offset-2 transition hover:ring-2 hover:ring-primary/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+      >
+        <ServiceIcon
+          icon={icon}
+          className="size-6"
+          imageClassName="size-14 object-cover !rounded-none !p-0"
+        />
+      </button>
+      <span className="min-w-0 flex-1 space-y-1.5">
+        <span
+          className={cn(
+            "brand-content-title block break-words text-sm font-bold hyphens-auto",
+            !name.trim() && "text-muted-foreground",
+          )}
+        >
+          {shownName}
+        </span>
+        {description.trim() ? (
+          <span className="line-clamp-2 block text-xs text-muted-foreground">
+            {description.trim()}
+          </span>
+        ) : null}
+        <span className="flex flex-wrap items-center gap-1.5">
+          <Tag icon={Clock3}>{durationLabel(safeDuration)}</Tag>
+          <span className="text-sm font-bold tabular-nums">
+            {priceCents === null ? `${currency} —` : money(priceCents)}
+          </span>
+        </span>
+      </span>
+    </div>
+  );
+
+  const photoButton = (
+    <button
+      type="button"
+      disabled={uploading}
+      onClick={() => fileRef.current?.click()}
+      className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-semibold transition hover:border-primary/40 disabled:opacity-60"
+    >
+      {uploading ? (
+        <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />
+      ) : (
+        <Camera className="size-4 text-gold" aria-hidden />
+      )}
+      {hasImage ? t("catalog.image.changePhoto") : t("catalog.image.usePhoto")}
+    </button>
+  );
+  const removePhotoButton = (
+    <button
+      type="button"
+      onClick={() => setIcon("Scissors")}
+      className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-semibold transition hover:border-primary/40"
+    >
+      <ImageOff className="size-4 text-gold" aria-hidden />
+      {t("catalog.image.removePhoto")}
+    </button>
+  );
+  const chooseIconButton = (
+    <button
+      type="button"
+      onClick={() => setPickerOpen((value) => !value)}
+      aria-expanded={pickerOpen}
+      className={cn(
+        "inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border px-3 text-sm font-semibold transition",
+        pickerOpen
+          ? "border-primary bg-primary text-primary-foreground"
+          : "border-border bg-card hover:border-primary/40",
+      )}
+    >
+      <Shapes className={cn("size-4", !pickerOpen && "text-gold")} aria-hidden />
+      {t("catalog.image.chooseIcon")}
+    </button>
+  );
+  const fileInput = (
+    <input
+      ref={fileRef}
+      type="file"
+      accept={SERVICE_IMAGE_ACCEPT}
+      className="sr-only"
+      tabIndex={-1}
+      aria-hidden
+      onChange={pickFile}
+    />
+  );
+  const imageHint = imageError ? (
+    <FieldMessage tone="error">{imageError}</FieldMessage>
+  ) : (
+    <p className="text-xs text-muted-foreground">
+      {hasImage
+        ? t("catalog.image.photoChosen")
+        : t("catalog.image.current", { name: serviceIconLabel(icon) })}
+      {" · "}
+      {t("catalog.image.photoHint")}
+    </p>
+  );
+
+  const nameField = (
+    <Field label={t("shop.serviceForm.name")} required error={errors.name}>
+      {(props) => (
+        <input
+          {...props}
+          value={name}
+          maxLength={80}
+          onChange={(event) => {
+            setName(event.target.value);
+            if (errors.name) setErrors((current) => ({ ...current, name: undefined }));
+          }}
+          placeholder={t("catalog.service.namePlaceholder")}
+          className="min-h-11 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
+        />
+      )}
+    </Field>
+  );
+
+  const priceField = (className?: string) => (
+    <Field
+      label={t("catalog.service.price")}
+      required
+      error={errors.price}
+      className={className}
+      hint={
+        ownCatalog && shopTerms
+          ? t("catalog.service.shopPrice", {
+              price: money(shopTerms.price_cents),
+              duration: durationLabel(shopTerms.duration_minutes),
+            })
+          : undefined
+      }
+    >
+      {(props) => (
+        <div className="relative">
+          <span
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground"
+            aria-hidden
+          >
+            {currency}
+          </span>
+          <input
+            {...props}
+            value={price}
+            inputMode="decimal"
+            autoComplete="off"
+            onChange={(event) => {
+              setPrice(event.target.value);
+              if (errors.price) setErrors((current) => ({ ...current, price: undefined }));
+            }}
+            placeholder={priceExample}
+            className="min-h-11 w-full rounded-xl border border-border bg-background py-2 pl-10 pr-3 text-sm font-semibold tabular-nums"
+          />
+        </div>
+      )}
+    </Field>
+  );
+
+  const durationField = (className?: string) => (
+    <div className={cn("space-y-1.5", className)}>
+      <ChoiceChips
+        label={t("shop.serviceForm.duration")}
+        icon={Clock3}
+        value={duration}
+        onChange={(value) => {
+          setDuration(value);
+          if (errors.duration) setErrors((current) => ({ ...current, duration: undefined }));
+        }}
+        options={DURATION_CHOICES.map((minutes) => ({
+          value: minutes,
+          label: durationLabel(minutes),
+        }))}
+        other={{
+          min: DURATION_MIN,
+          max: DURATION_MAX,
+          step: 5,
+          unit: t("catalog.duration.unit"),
+          label: t("catalog.service.otherDuration"),
+          inputLabel: t("shop.serviceForm.customDuration"),
+        }}
+      />
+      {errors.duration && <FieldMessage tone="error">{errors.duration}</FieldMessage>}
+    </div>
+  );
+
+  const suggestField = canSuggest ? (
+    <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-2xl border border-border bg-background/60 p-3 text-sm">
+      <input
+        type="checkbox"
+        checked={suggest}
+        onChange={(event) => setSuggest(event.target.checked)}
+        className="mt-0.5 size-5 shrink-0 accent-[color:var(--primary)]"
+      />
+      <span className="min-w-0">
+        <span className="block font-semibold">{t("catalog.service.suggest")}</span>
+        <span className="block text-xs text-muted-foreground">
+          {t("catalog.service.suggestHint")}
+        </span>
+      </span>
+    </label>
+  ) : null;
+
+  const detailsBlock = (openByDefault: boolean) => (
+    <details
+      className="group rounded-2xl border border-border bg-background/60 px-3"
+      open={
+        openByDefault || Boolean(editing?.description) || (editing?.prep_minutes ?? null) !== null
+      }
+    >
+      <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+        <Plus
+          className="size-4 shrink-0 text-gold transition-transform group-open:rotate-45"
+          aria-hidden
+        />
+        <span className="flex-1">{t("catalog.service.moreDetails")}</span>
+        {prepMinutes > 0 && canChangeGlobal && prepSupported ? (
+          <Tag icon={Sparkles}>{t("catalog.service.prepTag", { minutes: prepMinutes })}</Tag>
+        ) : null}
+      </summary>
+      <div className="space-y-5 pb-4 pt-1">
+        <Field label={t("shop.serviceForm.details")} optional>
+          {(props) => (
+            <>
+              <textarea
+                {...props}
+                value={description}
+                onChange={(event) => setDescription(event.target.value.slice(0, DESCRIPTION_MAX))}
+                placeholder={t("catalog.service.descriptionPlaceholder")}
+                rows={3}
+                maxLength={DESCRIPTION_MAX}
+                className="w-full resize-y rounded-xl border border-border bg-background px-3 py-2 text-sm"
+              />
+              {showCounter(description.length, DESCRIPTION_MAX) && (
+                <span className="block text-right text-xs text-muted-foreground tabular-nums">
+                  {description.length}/{DESCRIPTION_MAX}
+                </span>
+              )}
+            </>
+          )}
+        </Field>
+
+        {canChangeGlobal && prepSupported && (
+          <div className="space-y-3">
+            <ChoiceChips
+              label={t("shop.serviceForm.prep")}
+              icon={Sparkles}
+              value={prep}
+              onChange={setPrep}
+              options={[
+                {
+                  value: PREP_SHOP,
+                  label: t("catalog.prep.shop"),
+                  note: t("catalog.duration.min", { minutes: shopPrep }),
+                },
+                ...PREP_OPTIONS.map((minutes) => ({
+                  value: minutes as number,
+                  label:
+                    minutes === 0 ? t("slots.prep.none") : t("catalog.duration.min", { minutes }),
+                })),
+              ]}
+            />
+            <Timeline
+              label={t("catalog.prep.exampleAria")}
+              rows={
+                [
+                  {
+                    kind: "booked",
+                    time: startTime,
+                    label: `${shownName} · ${durationLabel(safeDuration)}`,
+                    minutes: Math.min(safeDuration, 45),
+                  },
+                  ...(prepMinutes > 0
+                    ? [
+                        {
+                          kind: "prep" as const,
+                          time: endTime,
+                          label: t("catalog.prep.block", { minutes: prepMinutes }),
+                          minutes: prepMinutes,
+                        },
+                      ]
+                    : []),
+                  {
+                    kind: "free",
+                    time: addMinutes(endTime, prepMinutes),
+                    label: t("catalog.prep.next"),
+                  },
+                ] satisfies TimelineRow[]
+              }
+            />
+          </div>
+        )}
+      </div>
+    </details>
+  );
+
+  const dangerBlock =
+    editing && onDelete && canChangeGlobal ? (
+      <DangerZone
+        hint={t("catalog.service.deleteHint")}
+        pauseLabel={t("catalog.service.pause")}
+        onPause={editing.active ? onPause : undefined}
+        deleteLabel={t("shop.deleteService.confirm")}
+        onDelete={onDelete}
+        disabled={saving}
+      />
+    ) : null;
+
+  const footerMessages = (
+    <>
+      {errorCount > 0 && (
+        <FieldMessage tone="error">
+          {errorCount === 1
+            ? t("catalog.form.fixOne")
+            : t("catalog.form.fixMany", { count: errorCount })}
+        </FieldMessage>
+      )}
+      <ActionResult
+        state={state === "error" ? "error" : null}
+        text={submitError ?? t("catalog.service.saveError")}
+        onRetry={() => formRef.current?.requestSubmit()}
+        reveal={false}
+      />
+      {/* Dono em sociedade: a mudança vai para aprovação; avisado antes de salvar. */}
+      <ApprovalNote />
+    </>
+  );
+  const backButton = (
+    <button
+      type="button"
+      disabled={saving}
+      onClick={() => onOpenChange(false)}
+      className="min-h-11 rounded-xl border border-border bg-background px-4 text-sm font-semibold"
+    >
+      {t("common.back")}
+    </button>
+  );
+  const submitButton = (className: string) => (
+    <button
+      type="submit"
+      form="service-form"
+      disabled={saving || uploading}
+      className={cn("action-button action-confirm", className)}
+    >
+      {saving ? (
+        <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />
+      ) : editing ? (
+        <Save className="size-4" aria-hidden />
+      ) : (
+        <Plus className="size-4" aria-hidden />
+      )}
+      {saving
+        ? t("common.saving")
+        : editing
+          ? t("shop.serviceForm.save")
+          : t("shop.serviceForm.create")}
+    </button>
+  );
+  const titleText = editing ? t("shop.serviceForm.editTitle") : t("shop.serviceForm.newTitle");
+  const dialogGuards = {
+    onEscapeKeyDown: (event: KeyboardEvent) => {
+      if (saving) event.preventDefault();
+    },
+    onPointerDownOutside: (event: Event) => {
+      if (saving) event.preventDefault();
+    },
+  };
+
+  let content: ReactNode;
+  if (!wide) {
+    content = (
+      <DialogContent
+        className="flex max-h-[88dvh] w-[calc(100%-2rem)] flex-col overflow-hidden rounded-3xl p-0 sm:max-w-lg sm:rounded-3xl"
+        {...dialogGuards}
+      >
+        {/* Título fixo: o "×" da janela não cobre o conteúdo que rola. */}
+        <div className="space-y-2 border-b border-border px-5 pb-3 pr-14 pt-5 sm:px-6">
+          <DialogTitle>{titleText}</DialogTitle>
+          <DialogDescription className="sr-only">{t("catalog.service.formAria")}</DialogDescription>
+          {ownCatalog && (
+            <StatusBadge tone="highlight" icon={Sparkles} label={t("catalog.service.ownCatalog")} />
+          )}
+        </div>
+        <DialogScrollArea className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5 sm:p-6">
+          <form id="service-form" ref={formRef} noValidate onSubmit={submit} className="space-y-5">
+            {startersBlock}
+
+            {/* Prévia: como a linha do serviço aparece no app do cliente. */}
+            <PreviewPanel
+              title={t("catalog.preview.title")}
+              icon={Eye}
+              badge={t("catalog.preview.badge")}
+            >
+              {previewCard}
+              <div className="flex flex-wrap gap-2">
+                {photoButton}
+                {hasImage ? removePhotoButton : chooseIconButton}
+                {fileInput}
+              </div>
+              {imageHint}
+              {pickerOpen && (
+                <div className="space-y-3 rounded-xl border border-border bg-card p-3">
+                  {pickerBody}
+                </div>
+              )}
+            </PreviewPanel>
+
+            {nameField}
+            {priceField()}
+            {durationField()}
+            {suggestField}
+            {detailsBlock(false)}
+            {dangerBlock}
+          </form>
+        </DialogScrollArea>
+
+        {/* Pé fixo: o botão principal fica sempre à vista. */}
+        <div className="space-y-2 border-t border-border bg-card p-4">
+          {footerMessages}
+          <div className="flex gap-2">
+            {backButton}
+            {submitButton("flex-1")}
+          </div>
+        </div>
+      </DialogContent>
+    );
+  } else {
+    content = (
+      <DialogContent size="lg" className="catalog-form-dialog" {...dialogGuards}>
+        <DialogHeader className="pr-10 text-left">
+          <DialogTitle>{titleText}</DialogTitle>
+          <DialogDescription className="sr-only">{t("catalog.service.formAria")}</DialogDescription>
+          {ownCatalog && (
+            <span>
+              <StatusBadge
+                tone="highlight"
+                icon={Sparkles}
+                label={t("catalog.service.ownCatalog")}
+              />
+            </span>
+          )}
+        </DialogHeader>
+        {/* `contents`: o formulário envolve o corpo sem quebrar a grade cabeçalho | corpo | rodapé. */}
+        <form id="service-form" ref={formRef} noValidate onSubmit={submit} className="contents">
+          <DialogBody layout="split" className="catalog-form-body">
+            <div className="space-y-5">
+              {startersBlock}
+              <FormGrid columns={2} className="catalog-form-grid">
+                {nameField}
+                {priceField("catalog-form-price")}
+                {durationField("col-span-full")}
+                {suggestField ? <div className="col-span-full">{suggestField}</div> : null}
+                <div className="col-span-full">{detailsBlock(true)}</div>
+              </FormGrid>
+              {dangerBlock}
+            </div>
+            <DialogAside>
+              {/* Prévia fixa: como a linha do serviço aparece no app do cliente. */}
+              <PreviewPanel
+                title={t("catalog.preview.title")}
+                icon={Eye}
+                badge={t("catalog.preview.badge")}
+              >
+                {previewCard}
+                <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+                  <PopoverAnchor asChild>
+                    <div className="catalog-form-media flex flex-wrap gap-2">
+                      {photoButton}
+                      {hasImage ? (
+                        removePhotoButton
+                      ) : (
+                        <PopoverTrigger asChild>{chooseIconButton}</PopoverTrigger>
+                      )}
+                      {fileInput}
+                    </div>
+                  </PopoverAnchor>
+                  <PopoverContent
+                    align="end"
+                    collisionPadding={16}
+                    className="catalog-icon-popover space-y-3 rounded-2xl p-3"
+                  >
+                    {pickerBody}
+                  </PopoverContent>
+                </Popover>
+                {imageHint}
+              </PreviewPanel>
+            </DialogAside>
+          </DialogBody>
+        </form>
+        <DialogActions className="catalog-form-actions">
+          <div className="min-w-0 flex-1 space-y-2">{footerMessages}</div>
+          <div className="flex gap-2">
+            {backButton}
+            {submitButton("")}
+          </div>
+        </DialogActions>
+      </DialogContent>
+    );
+  }
+
   return (
     <>
       <Dialog
@@ -254,483 +864,7 @@ export function ServiceForm({
           onOpenChange(next);
         }}
       >
-        <DialogContent
-          className="flex max-h-[88dvh] w-[calc(100%-2rem)] flex-col overflow-hidden rounded-3xl p-0 sm:max-w-lg sm:rounded-3xl"
-          onEscapeKeyDown={(event) => {
-            if (saving) event.preventDefault();
-          }}
-          onPointerDownOutside={(event) => {
-            if (saving) event.preventDefault();
-          }}
-        >
-          {/* Título fixo: o "×" da janela não cobre o conteúdo que rola. */}
-          <div className="space-y-2 border-b border-border px-5 pb-3 pr-14 pt-5 sm:px-6">
-            <DialogTitle>
-              {editing ? t("shop.serviceForm.editTitle") : t("shop.serviceForm.newTitle")}
-            </DialogTitle>
-            <DialogDescription className="sr-only">
-              {t("catalog.service.formAria")}
-            </DialogDescription>
-            {ownCatalog && (
-              <StatusBadge
-                tone="highlight"
-                icon={Sparkles}
-                label={t("catalog.service.ownCatalog")}
-              />
-            )}
-          </div>
-          <DialogScrollArea className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5 sm:p-6">
-            <form
-              id="service-form"
-              ref={formRef}
-              noValidate
-              onSubmit={submit}
-              className="space-y-5"
-            >
-              {starters && !editing && (
-                <div className="space-y-2">
-                  <p className="text-sm font-bold">{t("catalog.starter.title")}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {STARTERS.map((starter) => (
-                      <button
-                        key={starter.key}
-                        type="button"
-                        onClick={() => {
-                          setName(t(starter.key));
-                          setDuration(starter.minutes);
-                          setIcon(starter.icon);
-                          setErrors((current) => ({ ...current, name: undefined }));
-                        }}
-                        className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-3 text-sm font-semibold transition hover:border-primary/40"
-                      >
-                        <ServiceIcon icon={starter.icon} className="size-4 text-gold" />
-                        {t(starter.key)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Prévia: como a linha do serviço aparece no app do cliente. */}
-              <PreviewPanel
-                title={t("catalog.preview.title")}
-                icon={Eye}
-                badge={t("catalog.preview.badge")}
-              >
-                <div className="flex items-start gap-3 rounded-2xl border border-border bg-card p-3">
-                  <button
-                    type="button"
-                    onClick={() => setPickerOpen((value) => !value)}
-                    aria-label={t("catalog.service.changeImage")}
-                    aria-expanded={pickerOpen}
-                    className="relative grid size-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-muted text-gold ring-offset-2 transition hover:ring-2 hover:ring-primary/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
-                  >
-                    <ServiceIcon
-                      icon={icon}
-                      className="size-6"
-                      imageClassName="size-14 object-cover !rounded-none !p-0"
-                    />
-                  </button>
-                  <span className="min-w-0 flex-1 space-y-1.5">
-                    <span
-                      className={cn(
-                        "brand-content-title block break-words text-sm font-bold hyphens-auto",
-                        !name.trim() && "text-muted-foreground",
-                      )}
-                    >
-                      {shownName}
-                    </span>
-                    {description.trim() ? (
-                      <span className="line-clamp-2 block text-xs text-muted-foreground">
-                        {description.trim()}
-                      </span>
-                    ) : null}
-                    <span className="flex flex-wrap items-center gap-1.5">
-                      <Tag icon={Clock3}>{durationLabel(safeDuration)}</Tag>
-                      <span className="text-sm font-bold tabular-nums">
-                        {priceCents === null ? `${currency} —` : money(priceCents)}
-                      </span>
-                    </span>
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    disabled={uploading}
-                    onClick={() => fileRef.current?.click()}
-                    className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-semibold transition hover:border-primary/40 disabled:opacity-60"
-                  >
-                    {uploading ? (
-                      <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />
-                    ) : (
-                      <Camera className="size-4 text-gold" aria-hidden />
-                    )}
-                    {hasImage ? t("catalog.image.changePhoto") : t("catalog.image.usePhoto")}
-                  </button>
-                  {hasImage ? (
-                    <button
-                      type="button"
-                      onClick={() => setIcon("Scissors")}
-                      className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-semibold transition hover:border-primary/40"
-                    >
-                      <ImageOff className="size-4 text-gold" aria-hidden />
-                      {t("catalog.image.removePhoto")}
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setPickerOpen((value) => !value)}
-                      aria-expanded={pickerOpen}
-                      className={cn(
-                        "inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border px-3 text-sm font-semibold transition",
-                        pickerOpen
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border bg-card hover:border-primary/40",
-                      )}
-                    >
-                      <Shapes className={cn("size-4", !pickerOpen && "text-gold")} aria-hidden />
-                      {t("catalog.image.chooseIcon")}
-                    </button>
-                  )}
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    accept={SERVICE_IMAGE_ACCEPT}
-                    className="sr-only"
-                    tabIndex={-1}
-                    aria-hidden
-                    onChange={pickFile}
-                  />
-                </div>
-                {imageError ? (
-                  <FieldMessage tone="error">{imageError}</FieldMessage>
-                ) : (
-                  <p className="text-xs text-muted-foreground">
-                    {hasImage
-                      ? t("catalog.image.photoChosen")
-                      : t("catalog.image.current", { name: serviceIconLabel(icon) })}
-                    {" · "}
-                    {t("catalog.image.photoHint")}
-                  </p>
-                )}
-                {pickerOpen && (
-                  <div className="space-y-3 rounded-xl border border-border bg-card p-3">
-                    <label className="relative block">
-                      <span className="sr-only">{t("shop.serviceForm.iconSearch")}</span>
-                      <Search
-                        className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                        aria-hidden
-                      />
-                      <input
-                        type="search"
-                        value={iconQuery}
-                        onChange={(event) => setIconQuery(event.target.value)}
-                        placeholder={t("shop.serviceForm.iconSearch")}
-                        className="min-h-11 w-full rounded-xl border border-border bg-background py-2 pl-9 pr-3 text-sm"
-                      />
-                    </label>
-                    <div className="max-h-72 space-y-3 overflow-y-auto overscroll-contain pr-1">
-                      {iconGroups.length === 0 && (
-                        <p className="py-4 text-center text-xs text-muted-foreground">
-                          {t("shop.serviceForm.noIcons")}
-                        </p>
-                      )}
-                      {iconGroups.map((group) => (
-                        <div key={group.id} className="space-y-2">
-                          <p className="text-xs font-bold text-muted-foreground">
-                            {serviceIconGroupLabel(group.id)}
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            {group.icons.map((preset) => {
-                              const selected = icon === preset.id;
-                              return (
-                                <button
-                                  key={`${group.id}-${preset.id}`}
-                                  type="button"
-                                  onClick={() => {
-                                    setIcon(preset.id);
-                                    setPickerOpen(false);
-                                  }}
-                                  title={preset.label}
-                                  aria-label={preset.label}
-                                  aria-pressed={selected}
-                                  className={cn(
-                                    "relative flex size-11 items-center justify-center rounded-xl border transition-colors",
-                                    selected
-                                      ? "border-primary bg-primary/10 text-primary ring-2 ring-primary"
-                                      : "border-border bg-background text-muted-foreground hover:bg-muted",
-                                  )}
-                                >
-                                  <ServiceIcon icon={preset.id} className="size-5" />
-                                  {selected && (
-                                    <span className="absolute -right-1 -top-1 grid size-4 place-items-center rounded-full bg-primary text-primary-foreground">
-                                      <Check className="size-3" aria-hidden />
-                                    </span>
-                                  )}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </PreviewPanel>
-
-              <Field label={t("shop.serviceForm.name")} required error={errors.name}>
-                {(props) => (
-                  <input
-                    {...props}
-                    value={name}
-                    maxLength={80}
-                    onChange={(event) => {
-                      setName(event.target.value);
-                      if (errors.name) setErrors((current) => ({ ...current, name: undefined }));
-                    }}
-                    placeholder={t("catalog.service.namePlaceholder")}
-                    className="min-h-11 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
-                  />
-                )}
-              </Field>
-
-              <Field
-                label={t("catalog.service.price")}
-                required
-                error={errors.price}
-                hint={
-                  ownCatalog && shopTerms
-                    ? t("catalog.service.shopPrice", {
-                        price: money(shopTerms.price_cents),
-                        duration: durationLabel(shopTerms.duration_minutes),
-                      })
-                    : undefined
-                }
-              >
-                {(props) => (
-                  <div className="relative">
-                    <span
-                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground"
-                      aria-hidden
-                    >
-                      {currency}
-                    </span>
-                    <input
-                      {...props}
-                      value={price}
-                      inputMode="decimal"
-                      autoComplete="off"
-                      onChange={(event) => {
-                        setPrice(event.target.value);
-                        if (errors.price)
-                          setErrors((current) => ({ ...current, price: undefined }));
-                      }}
-                      placeholder={priceExample}
-                      className="min-h-11 w-full rounded-xl border border-border bg-background py-2 pl-10 pr-3 text-sm font-semibold tabular-nums"
-                    />
-                  </div>
-                )}
-              </Field>
-
-              <div className="space-y-1.5">
-                <ChoiceChips
-                  label={t("shop.serviceForm.duration")}
-                  icon={Clock3}
-                  value={duration}
-                  onChange={(value) => {
-                    setDuration(value);
-                    if (errors.duration)
-                      setErrors((current) => ({ ...current, duration: undefined }));
-                  }}
-                  options={DURATION_CHOICES.map((minutes) => ({
-                    value: minutes,
-                    label: durationLabel(minutes),
-                  }))}
-                  other={{
-                    min: DURATION_MIN,
-                    max: DURATION_MAX,
-                    step: 5,
-                    unit: t("catalog.duration.unit"),
-                    label: t("catalog.service.otherDuration"),
-                    inputLabel: t("shop.serviceForm.customDuration"),
-                  }}
-                />
-                {errors.duration && <FieldMessage tone="error">{errors.duration}</FieldMessage>}
-              </div>
-
-              {canSuggest && (
-                <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-2xl border border-border bg-background/60 p-3 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={suggest}
-                    onChange={(event) => setSuggest(event.target.checked)}
-                    className="mt-0.5 size-5 shrink-0 accent-[color:var(--primary)]"
-                  />
-                  <span className="min-w-0">
-                    <span className="block font-semibold">{t("catalog.service.suggest")}</span>
-                    <span className="block text-xs text-muted-foreground">
-                      {t("catalog.service.suggestHint")}
-                    </span>
-                  </span>
-                </label>
-              )}
-
-              <details
-                className="group rounded-2xl border border-border bg-background/60 px-3"
-                open={Boolean(editing?.description) || (editing?.prep_minutes ?? null) !== null}
-              >
-                <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 text-sm font-semibold [&::-webkit-details-marker]:hidden">
-                  <Plus
-                    className="size-4 shrink-0 text-gold transition-transform group-open:rotate-45"
-                    aria-hidden
-                  />
-                  <span className="flex-1">{t("catalog.service.moreDetails")}</span>
-                  {prepMinutes > 0 && canChangeGlobal && prepSupported ? (
-                    <Tag icon={Sparkles}>
-                      {t("catalog.service.prepTag", { minutes: prepMinutes })}
-                    </Tag>
-                  ) : null}
-                </summary>
-                <div className="space-y-5 pb-4 pt-1">
-                  <Field label={t("shop.serviceForm.details")} optional>
-                    {(props) => (
-                      <>
-                        <textarea
-                          {...props}
-                          value={description}
-                          onChange={(event) =>
-                            setDescription(event.target.value.slice(0, DESCRIPTION_MAX))
-                          }
-                          placeholder={t("catalog.service.descriptionPlaceholder")}
-                          rows={3}
-                          maxLength={DESCRIPTION_MAX}
-                          className="w-full resize-y rounded-xl border border-border bg-background px-3 py-2 text-sm"
-                        />
-                        {showCounter(description.length, DESCRIPTION_MAX) && (
-                          <span className="block text-right text-xs text-muted-foreground tabular-nums">
-                            {description.length}/{DESCRIPTION_MAX}
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </Field>
-
-                  {canChangeGlobal && prepSupported && (
-                    <div className="space-y-3">
-                      <ChoiceChips
-                        label={t("shop.serviceForm.prep")}
-                        icon={Sparkles}
-                        value={prep}
-                        onChange={setPrep}
-                        options={[
-                          {
-                            value: PREP_SHOP,
-                            label: t("catalog.prep.shop"),
-                            note: t("catalog.duration.min", { minutes: shopPrep }),
-                          },
-                          ...PREP_OPTIONS.map((minutes) => ({
-                            value: minutes as number,
-                            label:
-                              minutes === 0
-                                ? t("slots.prep.none")
-                                : t("catalog.duration.min", { minutes }),
-                          })),
-                        ]}
-                      />
-                      <Timeline
-                        label={t("catalog.prep.exampleAria")}
-                        rows={
-                          [
-                            {
-                              kind: "booked",
-                              time: startTime,
-                              label: `${shownName} · ${durationLabel(safeDuration)}`,
-                              minutes: Math.min(safeDuration, 45),
-                            },
-                            ...(prepMinutes > 0
-                              ? [
-                                  {
-                                    kind: "prep" as const,
-                                    time: endTime,
-                                    label: t("catalog.prep.block", { minutes: prepMinutes }),
-                                    minutes: prepMinutes,
-                                  },
-                                ]
-                              : []),
-                            {
-                              kind: "free",
-                              time: addMinutes(endTime, prepMinutes),
-                              label: t("catalog.prep.next"),
-                            },
-                          ] satisfies TimelineRow[]
-                        }
-                      />
-                    </div>
-                  )}
-                </div>
-              </details>
-
-              {editing && onDelete && canChangeGlobal && (
-                <DangerZone
-                  hint={t("catalog.service.deleteHint")}
-                  pauseLabel={t("catalog.service.pause")}
-                  onPause={editing.active ? onPause : undefined}
-                  deleteLabel={t("shop.deleteService.confirm")}
-                  onDelete={onDelete}
-                  disabled={saving}
-                />
-              )}
-            </form>
-          </DialogScrollArea>
-
-          {/* Pé fixo: o botão principal fica sempre à vista. */}
-          <div className="space-y-2 border-t border-border bg-card p-4">
-            {errorCount > 0 && (
-              <FieldMessage tone="error">
-                {errorCount === 1
-                  ? t("catalog.form.fixOne")
-                  : t("catalog.form.fixMany", { count: errorCount })}
-              </FieldMessage>
-            )}
-            <ActionResult
-              state={state === "error" ? "error" : null}
-              text={submitError ?? t("catalog.service.saveError")}
-              onRetry={() => formRef.current?.requestSubmit()}
-              reveal={false}
-            />
-            {/* Dono em sociedade: a mudança vai para aprovação; avisado antes de salvar. */}
-            <ApprovalNote />
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={saving}
-                onClick={() => onOpenChange(false)}
-                className="min-h-11 rounded-xl border border-border bg-background px-4 text-sm font-semibold"
-              >
-                {t("common.back")}
-              </button>
-              <button
-                type="submit"
-                form="service-form"
-                disabled={saving || uploading}
-                className="action-button action-confirm flex-1"
-              >
-                {saving ? (
-                  <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />
-                ) : editing ? (
-                  <Save className="size-4" aria-hidden />
-                ) : (
-                  <Plus className="size-4" aria-hidden />
-                )}
-                {saving
-                  ? t("common.saving")
-                  : editing
-                    ? t("shop.serviceForm.save")
-                    : t("shop.serviceForm.create")}
-              </button>
-            </div>
-          </div>
-        </DialogContent>
+        {content}
       </Dialog>
       <ServiceImageCropDialog
         file={imageToCrop}

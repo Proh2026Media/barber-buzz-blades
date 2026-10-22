@@ -1,6 +1,6 @@
 import { Palette, PencilLine, Type } from "lucide-react";
 import type { ReactNode } from "react";
-import { SectionHeader, Tag } from "@/components/visual";
+import { CardGrid, SectionHeader, Tag } from "@/components/visual";
 import type { Tables } from "@/integrations/supabase/types";
 import { useI18n } from "@/lib/i18n";
 import {
@@ -77,7 +77,11 @@ export function BrandSummaryCard({
         {font && <Tag icon={Type}>{font}</Tag>}
         {corner && <Tag>{t(corner.labelKey)}</Tag>}
       </div>
-      <button type="button" onClick={onEdit} className="action-button action-edit mt-auto w-full">
+      <button
+        type="button"
+        onClick={onEdit}
+        className="action-button action-edit mt-auto w-full tablet:w-auto tablet:self-start"
+      >
         <PencilLine aria-hidden />
         {t("appearance.editBrand")}
       </button>
@@ -85,12 +89,16 @@ export function BrandSummaryCard({
   );
 }
 
-/** Aparência: marca e página lado a lado no computador, empilhadas no celular. */
+/**
+ * Aparência: marca e página lado a lado quando os dois cabem com 20rem (computador; no tablet,
+ * em pé ou com a lista de assuntos ao lado, empilham — com menos de 20rem a prévia da marca
+ * cortava o nome da barbearia), uma coluna no celular.
+ */
 export function AppearanceOverview({ brand, page }: { brand: ReactNode; page: ReactNode }) {
   return (
-    <div className="grid items-stretch gap-4 lg:grid-cols-2">
+    <CardGrid min="20rem" className="items-stretch">
       {brand}
       {page}
-    </div>
+    </CardGrid>
   );
 }

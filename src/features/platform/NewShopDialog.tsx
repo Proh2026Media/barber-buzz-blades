@@ -128,28 +128,31 @@ export function NewShopDialog({
                   {t("plat.shop.addOwner")}
                 </button>
               )}
-              {created.shop && (
+              {/* A partir de 768 px as duas ações secundárias ficam lado a lado. */}
+              <div className="grid gap-2 tablet:grid-cols-2">
+                {created.shop && (
+                  <button
+                    type="button"
+                    onClick={() => created.shop && onCustomize(created.shop)}
+                    className={
+                      onAddPerson
+                        ? "flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-semibold"
+                        : "flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+                    }
+                  >
+                    <Palette className={onAddPerson ? "size-4 text-gold" : "size-4"} aria-hidden />
+                    {t("plat.newShop.customizeNow")}
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => created.shop && onCustomize(created.shop)}
-                  className={
-                    onAddPerson
-                      ? "flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-semibold"
-                      : "flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
-                  }
+                  onClick={() => onShow(created.shop)}
+                  className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-semibold"
                 >
-                  <Palette className={onAddPerson ? "size-4 text-gold" : "size-4"} aria-hidden />
-                  {t("plat.newShop.customizeNow")}
+                  <ListChecks className="size-4 text-gold" aria-hidden />
+                  {t("plat.newShop.showInList")}
                 </button>
-              )}
-              <button
-                type="button"
-                onClick={() => onShow(created.shop)}
-                className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-semibold"
-              >
-                <ListChecks className="size-4 text-gold" aria-hidden />
-                {t("plat.newShop.showInList")}
-              </button>
+              </div>
             </div>
           </div>
         ) : (

@@ -1,6 +1,6 @@
 # Pendências — lista única e priorizada
 
-Situação detalhada item a item em **13/10/2026**, atualizada em **20/10/2026** (P-73 aplicada no servidor pelo TI) e em **16/10/2026 (madrugada, Claude Code)** com a entrega de 16/10 (agendamento pelo painel, login Google no app instalado, simplificação visual; novos P-73 a P-76; depois da revisão de código da mesma madrugada, P-77 e P-78) e, antes, em **15/10/2026 (noite, Claude Code)** com a passagem de 15/10: decisões P-26, P-33, P-34, P-35, P-37, P-50 e P-70; feitos P-27, P-31, P-32 e P-38 (função publicada no servidor às 22:54); P-67 aplicado; novos P-71 e P-72. Porta de entrada: [LEIA-PRIMEIRO.md](../LEIA-PRIMEIRO.md). O registro detalhado de cada entrega continua em [CONTINUIDADE.md](../CONTINUIDADE.md), do mais novo para o mais antigo.
+Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (madrugada, Claude Code)** com a entrega "interface por dispositivo" (novos P-79 a P-95 na seção 9; P-75 com o que avançou), em **20/10/2026** (P-73 aplicada no servidor pelo TI) e em **16/10/2026 (madrugada, Claude Code)** com a entrega de 16/10 (agendamento pelo painel, login Google no app instalado, simplificação visual; novos P-73 a P-76; depois da revisão de código da mesma madrugada, P-77 e P-78) e, antes, em **15/10/2026 (noite, Claude Code)** com a passagem de 15/10: decisões P-26, P-33, P-34, P-35, P-37, P-50 e P-70; feitos P-27, P-31, P-32 e P-38 (função publicada no servidor às 22:54); P-67 aplicado; novos P-71 e P-72. Porta de entrada: [LEIA-PRIMEIRO.md](../LEIA-PRIMEIRO.md). O registro detalhado de cada entrega continua em [CONTINUIDADE.md](../CONTINUIDADE.md), do mais novo para o mais antigo.
 
 **Como usar**
 
@@ -8,7 +8,7 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **20/10/2026**
 - Situação: **pendente**, **feito — falta aplicar no banco**, **a decidir** (depende do dono), **não confirmado** (não deu para conferir daqui).
 - Cada item foi conferido no código e nas migrations em 12/10/2026. As linhas citadas são dessa data.
 - **Papéis da equipe no banco × nomes na tela:** `owner` e `partner` = **Dono** (sócio; `partner` é o nome antigo e aparece igual), `associate` = **Parceiro**, `employee` = **Contratado** ([roles.tsx](../../src/features/shop/roles.tsx), linhas 16-27; rótulos em `pt-BR.ts`, linhas 718-721). `shop_admin` é o papel antigo de `memberships`, que pode existir sem vínculo de equipe (CONTINUIDADE, onda 1 de 09/10).
-- Último id usado: **P-78**.
+- Último id usado: **P-95**.
 
 **Índice**
 
@@ -20,20 +20,23 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **20/10/2026**
 6. [Testes manuais com contas reais](#6-testes-manuais-com-contas-reais) (P-40 a P-43)
 7. [Dívida técnica](#7-dívida-técnica) (P-44 a P-48, P-51, P-52, P-55, P-63 a P-65, P-72, P-75 e P-78)
 8. [Ideias futuras](#8-ideias-futuras) (P-49, P-50 e P-54)
+9. [Interface por dispositivo: o que ficou](#9-interface-por-dispositivo-o-que-ficou) (P-79 a P-95)
 
 ---
 
 ## 1. As 5 recomendadas para a próxima rodada
 
-Atualizada em 15/10/2026 (noite), depois da passagem de 15/10. Do quadro de 13/10, o item 1 (P-67 e P-27) foi feito em 15/10 e a P-38 foi publicada no servidor às 22:54; os outros seguem abaixo.
+Atualizada em 22/10/2026 (madrugada), depois da entrega "interface por dispositivo" (CONTINUIDADE, entrada de 22/10). Os pacotes do Google e os testes reais continuam no topo; o teste do tablet e do computador entrou na P-43.
 
-| Ordem | Itens      | O quê                                                             | Por quê                                                                                                                                                          |
-| ----- | ---------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1     | P-69       | Tirar o retorno `supabase-teste` do cliente OAuth no Google Cloud | Só o dono (ou quem tiver acesso) entra no console. Pacote pronto: [2026-10-15-google-retorno-antigo-p69.md](../pacotes/2026-10-15-google-retorno-antigo-p69.md). |
-| 2     | P-28       | Gravar o vídeo e reenviar a verificação do Google                 | Depois da P-69. Pacote pronto: [2026-10-15-google-reenviar-verificacao-p28.md](../pacotes/2026-10-15-google-reenviar-verificacao-p28.md).                        |
-| 3     | P-42, P-43 | Testes com login real (WhatsApp, Google) e em aparelho físico     | Dependem do dono; a Loja Teste não cobre código real nem aparelho.                                                                                               |
-| 4     | P-71       | Decidir "reserva" × "agendamento" no resto do app                 | A aba e a página já dizem "Meus agendamentos" (P-32); o fluxo de agendar e alguns avisos ainda dizem "reserva".                                                  |
-| 5     | P-14, P-45 | Opcionais: "última área" no perfil e dividir o pacote do site     | Sem pressa; não dependem de terceiros.                                                                                                                           |
+| Ordem | Itens      | O quê                                                                    | Por quê                                                                                                                                                                                                   |
+| ----- | ---------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | P-69       | Tirar o retorno `supabase-teste` do cliente OAuth no Google Cloud        | Só o dono (ou quem tiver acesso) entra no console. Pacote pronto: [2026-10-15-google-retorno-antigo-p69.md](../pacotes/2026-10-15-google-retorno-antigo-p69.md).                                          |
+| 2     | P-28       | Gravar o vídeo e reenviar a verificação do Google                        | Depois da P-69. Pacote pronto: [2026-10-15-google-reenviar-verificacao-p28.md](../pacotes/2026-10-15-google-reenviar-verificacao-p28.md).                                                                 |
+| 3     | P-42, P-43 | Testes com login real (WhatsApp, Google), em aparelho físico e no tablet | Dependem do dono. Desde 22/10, a P-43 inclui o tablet (iPad em pé e deitado) e o computador: a interface por dispositivo só foi vista em navegador emulado (roteiro na entrada de 22/10 do CONTINUIDADE). |
+| 4     | P-79, P-90 | Tablet em pé: quadro da equipe e Agendar do cliente                      | As duas telas que ainda parecem celular esticado entre 768 e 1023 px; o resto da faixa já foi refeito.                                                                                                    |
+| 5     | P-71       | Decidir "reserva" × "agendamento" no resto do app                        | A aba e a página já dizem "Meus agendamentos" (P-32); o fluxo de agendar e alguns avisos ainda dizem "reserva".                                                                                           |
+
+Sem pressa e sem depender de terceiros: P-14, P-45 (opcionais de antes) e P-88 (restos do shadcn e hooks antigos).
 
 ---
 
@@ -357,7 +360,7 @@ Fontes: CONTINUIDADE, linhas 229, 252, 281, 367, 369 e 393 (as linhas 367 e 369,
 
 ### P-43 — Aparelho físico · pendente
 
-Teclado virtual aberto e safe-area do iOS, leitor de tela real, rede lenta, app instalado (PWA). Desde 16/10/2026, incluir: no iPhone com o app instalado, "Continuar com Google" (a janela do Google pede para fechar e o app entra sozinho, depois da P-73) e "Conectar Google Agenda" no painel (a janela pede para fechar; o cartão confere a conexão ao voltar). Nunca feito ([mb-revisao.md](../mb-revisao.md), linha "Validação em aparelho real"; CONTINUIDADE, linhas 214 e 384).
+Teclado virtual aberto e safe-area do iOS, leitor de tela real, rede lenta, app instalado (PWA). Desde 22/10/2026, incluir também o **tablet (iPad em pé e deitado) e o computador**: a interface por dispositivo foi vista só em navegador emulado (roteiro do que olhar na entrada de 22/10 do [CONTINUIDADE](../CONTINUIDADE.md), "O que o dono precisa testar"). Desde 16/10/2026, incluir: no iPhone com o app instalado, "Continuar com Google" (a janela do Google pede para fechar e o app entra sozinho, depois da P-73) e "Conectar Google Agenda" no painel (a janela pede para fechar; o cartão confere a conexão ao voltar). Nunca feito ([mb-revisao.md](../mb-revisao.md), linha "Validação em aparelho real"; CONTINUIDADE, linhas 214 e 384).
 
 ---
 
@@ -439,9 +442,13 @@ Achado ao escrever P-59/P-60: `apply_add_shop_member` e `apply_update_shop_membe
 
 Na página pública, sem horário livre no resto do dia por causa da antecedência ou do fechamento, o selo dizia "Lotado hoje", o que dá a entender que a agenda encheu. Trocado por "Sem horário livre hoje" (pt-BR e pt-PT), "No times left today" (en) e "Sin horarios libres hoy" (es).
 
-### P-75 — Próximas simplificações visuais · pendente
+### P-75 — Próximas simplificações visuais · pendente (avançou em 22/10/2026)
 
-Feitas em 16/10/2026: Ajustes → Agendamento um item por vez, editor de mensagens recolhido, Serviços e Equipe sem ferramentas de lista longa em lista curta, selos repetidos fora, barra lateral no computador ([analise-visual-2026-10-16.md](../analise-visual-2026-10-16.md), seção 2). Próximas, sem tirar função (seções 3 e 4 do mesmo documento): "Seu dia" mais curto e modo compacto da lista na Agenda; Equipe em uma linha por pessoa; Google Agenda com as opções recolhidas depois de escolher a agenda; Ajustes → Equipe e sociedade e Endereços um item por vez (em 16/10, "Seu acesso nesta barbearia" já virou uma linha de resumo com a lista a um toque).
+Feitas em 16/10/2026: Ajustes → Agendamento um item por vez, editor de mensagens recolhido, Serviços e Equipe sem ferramentas de lista longa em lista curta, selos repetidos fora, barra lateral no computador ([analise-visual-2026-10-16.md](../analise-visual-2026-10-16.md), seção 2).
+
+**Feitas em 22/10/2026, só no tablet e no computador** (entrega "interface por dispositivo"; o celular não mudou): "Seu dia" mais curto (faixa de números no tablet em pé, compacto na coluna do dia a partir de 1024) e a lista da Agenda em modo compacto (cartão em linha a partir de 768, linha única a partir de ~1536; `src/styles/agenda.css`); Equipe em uma linha por pessoa no modo lista a partir de 1024 (tabela `DataList` em `src/features/shop/catalog/TeamTab.tsx`) e pessoas de "Equipe e sociedade" em tabela (`ShopTeamAccessCard.tsx`).
+
+Ainda ficam, sem tirar função (seções 3 e 4 do mesmo documento): o mesmo no celular, se o dono quiser; Google Agenda com as opções recolhidas depois de escolher a agenda; Ajustes → Equipe e sociedade e Endereços um item por vez (em 16/10, "Seu acesso nesta barbearia" já virou uma linha de resumo com a lista a um toque).
 
 ### P-78 — Login Google no iPhone: desistência no Google · pendente (baixa)
 
@@ -476,3 +483,118 @@ Fonte das perguntas: transcrição de uma conversa de 08/10, fora do repositóri
 - **Ao aplicar, todas as lojas passam a exigir 30 minutos.** Aplicação autorizada para a noite de 13/10: [implantacao-noite-2026-10-13.md](../implantacao-noite-2026-10-13.md).
 
 Outras ideias já registradas, sem id até virarem pedido: modo de suporte do admin com registro e prazo (decisão 4 do plano de ambientes); limite de tentativas por IP nas funções (ficou de fora em 03/10, CONTINUIDADE, linha 316).
+
+---
+
+## 9. Interface por dispositivo: o que ficou
+
+Entrega de 22/10/2026 (CONTINUIDADE, entrada "Interface por dispositivo"; plano em [dispositivos-2026-10-21.md](../dispositivos-2026-10-21.md)). Tudo aqui vale só para tablet (768–1279 px) e computador (≥ 1280 px): **abaixo de 768 px nada muda sem pedido do dono**. Regras para quem for mexer: seção 7 do plano e [arquitetura.md](arquitetura.md), seção 8 ("Dispositivos") e 16.
+
+### P-79 — Quadro da equipe no tablet · pendente
+
+- **Por quê:** no tablet em pé (768–1023 px) a visão Equipe da Agenda continua a lista de cartões do celular (41 cartões, ~7.100 px de altura na demonstração); o quadro por profissional só aparece a partir de 1024 px. Em 1024–1279, com 4 profissionais ou mais, o quadro rola de lado (colunas de 8.5rem × 4 + régua ≈ 596 px para ~500 px disponíveis ao lado da coluna do dia de 22rem); cabeçalho e régua fixos ajudam, mas não cabe inteiro. O plano pedia o quadro desde 768.
+- **Onde:** [TeamDayBoard.tsx](../../src/features/shop/agenda/TeamDayBoard.tsx) e `useDesktop` em [board.ts](../../src/features/shop/agenda/board.ts) (hoje `useViewportAtLeast(1024)`); grade `.agenda-layout` e variável `--agenda-board-col` em `src/styles/agenda.css`. Rolagem automática até a linha "agora" ao abrir o quadro também não foi feita.
+- **Pronto quando:** no iPad em pé a Equipe mostra o quadro (colunas mais estreitas ou com rolagem lateral explícita); em 1024–1279 a coluna do dia pode recolher para o quadro caber; abrir o quadro rola até "agora".
+
+### P-80 — Ordenar pelo cabeçalho e buscar por WhatsApp nas tabelas · pendente
+
+- **Por quê:** o `DataList` ainda não ordena por coluna: "Clientes da barbearia", o modo lista de Serviços e Equipe, as pessoas de Equipe e sociedade e as barbearias da plataforma mantêm as pílulas de ordem ou a ordem fixa. A busca de clientes não acha por número de WhatsApp. A coluna "pontos" na tabela de clientes depende de `get_partner_clients` devolver pontos (não devolve).
+- **Onde:** [DataList.tsx](../../src/components/visual/DataList.tsx) (prop nova de ordenação, cabeçalho como botão com `aria-sort`) e `src/styles/leiaute.css`; chamadores em [ClientDirectory.tsx](../../src/features/shop/ClientDirectory.tsx), `catalog/ServicesTab.tsx`, `catalog/TeamTab.tsx`, `ShopTeamAccessCard.tsx`, `platform/ShopsPanel.tsx`. Pontos: migration nova em `get_partner_clients`.
+- **Pronto quando:** clicar no cabeçalho ordena e inverte, com o estado lido por leitor de tela; a busca aceita número; a coluna de pontos aparece quando o banco devolver.
+
+### P-81 — "Mais números do dia" como tiles no computador · pendente
+
+- **Por quê:** na Agenda, a partir de 1024 px, "Mais números do dia" continua um `<details>` recolhido dentro da coluna do dia (22rem), onde cabem só 2 tiles; o conteúdo vem de `AgendaInsights`/`BusinessInsights` (`src/features/insights/`). No tablet em pé já abre na largura toda.
+- **Onde:** [DaySummary.tsx](../../src/features/shop/agenda/DaySummary.tsx), `src/styles/agenda.css` (área `more` da grade do "Seu dia"), `src/features/insights/`.
+- **Pronto quando:** no computador os números do dia aparecem como tiles numa linha (abaixo das duas colunas ou no lugar do recolher), sem repetir o que "Seu dia" já mostra.
+
+### P-82 — Prévias por aparelho nos editores · pendente
+
+- **Por quê:** Editar marca e Editar página (janela `page`, formulário à esquerda e prévia à direita) mostram a prévia numa moldura só; o dono não vê como fica no celular, no tablet e no computador. Registrado no plano, seção 8.
+- **Onde:** [BrandIdentityEditor.tsx](../../src/features/shop/BrandIdentityEditor.tsx), [LandingEditor.tsx](../../src/features/shop/settings/LandingEditor.tsx), [LoginPreviewDialog.tsx](../../src/features/shop/LoginPreviewDialog.tsx); CSS em `src/styles/ajustes.css` (`.ajustes-editor-page`).
+- **Pronto quando:** a prévia tem um alternador celular/tablet/computador (moldura e largura de cada um) e a escolha não muda nada do que é salvo.
+
+### P-83 — Cabeçalho em três zonas no computador · pendente
+
+- **Por quê:** no computador o cabeçalho da casca continua o do celular esticado (nome da loja à esquerda, conta à direita); o título da aba e a ação principal (Agendar, Novo serviço, Adicionar) ficam no corpo, e cada aba os posiciona por conta própria. Plano, seção 8.
+- **Onde:** [ShopShell.tsx](../../src/features/shop/ShopShell.tsx), [ArenaApp.tsx](../../src/features/customer/ArenaApp.tsx), [PlatformShell.tsx](../../src/features/platform/PlatformShell.tsx) (o `<header>` de cada casca) e a grade da casca em `src/styles.css` (faixa `@media (min-width: 1280px)`).
+- **Pronto quando:** a partir de 1280 px o cabeçalho tem nome da loja | título da aba | ação principal e conta, igual nas três cascas; no tablet e no celular nada muda.
+
+### P-84 — Painel lateral para o detalhe do atendimento · pendente
+
+- **Por quê:** no computador, abrir um atendimento (ficha, cancelar, remarcar) ainda abre janela centrada por cima da agenda; um painel que desliza pela direita deixaria a agenda à vista. Plano, seção 8.
+- **Onde:** [AppointmentCard.tsx](../../src/features/shop/agenda/AppointmentCard.tsx), [AgendaTab.tsx](../../src/features/shop/agenda/AgendaTab.tsx); o `src/components/ui/sheet.tsx` do shadcn existe sem uso e pode servir de base (ou ser apagado pela P-88).
+- **Pronto quando:** a partir de 1280 px o detalhe abre num painel à direita com foco, Esc e rodapé fixo; no tablet e no celular continuam as janelas de hoje.
+
+### P-85 — Clube de pontos dentro da casca do painel · pendente
+
+- **Por quê:** `/shop/pontos` ([shop\_.pontos.tsx](../../src/routes/shop_.pontos.tsx) → `LoyaltyAdminPage`) é uma página própria, fora do `ShopShell`: no tablet e no computador abre sem a coluna lateral e sem o cabeçalho da loja, diferente de todas as outras telas do painel. Plano, seção 8.
+- **Onde:** [LoyaltyAdminPage.tsx](../../src/features/loyalty/LoyaltyAdminPage.tsx), [ShopShell.tsx](../../src/features/shop/ShopShell.tsx) (abas em `tabs`), a rota.
+- **Pronto quando:** o clube abre como aba ou seção do painel, com a coluna lateral, o cabeçalho e a largura de leitura das outras abas; o endereço `/shop/pontos` continua funcionando (redireciona).
+
+### P-86 — Matriz de Acessos editável completa · pendente
+
+- **Por quê:** em Acessos (plataforma) e em Equipe e sociedade, a edição de permissões continua "um papel por vez" com pílulas; a tabela papéis × permissões só existe para leitura ("Comparar papéis", a partir de 640 px) e é o molde. A entrega de 22/10 só reorganizou o entorno (seletor na linha do título, explicação em coluna fixa, colunas de papel mais largas).
+- **Onde:** [ShopPermissionsMatrix.tsx](../../src/features/shop/ShopPermissionsMatrix.tsx) e [PlatformPermissionsEditor.tsx](../../src/features/platform/PlatformPermissionsEditor.tsx); regras de quem pode editar o quê em [papeis-e-permissoes.md](papeis-e-permissoes.md).
+- **Pronto quando:** a partir de 1024 px a matriz inteira é editável na mesma tabela (uma caixa por papel × permissão, travadas as que o banco não deixa mudar), com a mesma confirmação de salvar de hoje; no celular continua um papel por vez.
+
+### P-87 — Pausa fixa no mesmo invólucro do bloqueio · pendente
+
+- **Por quê:** o cartão "Pausa fixa" de Horários ([WeeklyBreaksCard.tsx](../../src/features/shop/hours/WeeklyBreaksCard.tsx)) continua o formulário inline do celular em todas as larguras, enquanto "Bloquear um horário" ganhou janela `lg` com o resumo ao lado. Não aparece na demonstração, então não foi fotografado; o CSS de Horários já reserva a linha dele na coluna da direita (`hours-breaks` em `src/styles/horarios.css`).
+- **Onde:** `WeeklyBreaksCard.tsx`; modelo em [BlockDialog.tsx](../../src/features/shop/hours/BlockDialog.tsx).
+- **Pronto quando:** no tablet e no computador a pausa fixa usa o mesmo invólucro do bloqueio (janela `lg` com campos à esquerda e resumo à direita) ou o formulário em 2 colunas; no celular igual a hoje.
+
+### P-88 — Restos do shadcn e hooks antigos de largura · pendente (baixa)
+
+- **Por quê:** sobraram componentes sem uso e atalhos redundantes depois da entrega: `src/components/ui/drawer.tsx` e `sheet.tsx` (nenhum `import` em `src`; `sidebar.tsx` já foi apagado em 22/10), `DurationPicker` em `src/components/ui/schedule-picker.tsx` (conferir uso), menus do shadcn sem uso; `useDesktop` ([board.ts](../../src/features/shop/agenda/board.ts)) e `useWideLayout` ([ShopsPanel.tsx](../../src/features/platform/ShopsPanel.tsx)) hoje só embrulham `useViewportAtLeast(1024)`; `ClientProfileModal` e `BookClientDialog` ainda passam `max-w-lg`/`flex` no `className` por cima do `size` (o tailwind-merge resolve, mas é ruído); `ui/button` e `.action-button` continuam dois sistemas de botão (plano, seção 8).
+- **Onde:** os arquivos citados; antes de apagar, `git grep` do nome.
+- **Pronto quando:** nenhum componente de `src/components/ui/` sem importação; um só hook de largura (`useViewportAtLeast`) nos dois lugares; `className` das janelas sem largura própria; decisão sobre `ui/button` registrada.
+
+### P-89 — `CatalogFilters` com modo linha e tabela do catálogo · pendente
+
+- **Por quê:** a barra de ferramentas de Serviços e Equipe em uma linha (≥ 1024 px) foi feita por CSS em cima da marcação de [CatalogFilters.tsx](../../src/features/shop/CatalogFilters.tsx) (`.catalog-toolbar > .catalog-filters > div > label { flex: 0 0 16rem }` em `src/styles/catalogo.css`): se a estrutura do componente mudar, a regra quebra. Entre 768 e 1023 o modo lista continua a linha compacta antiga, sem colunas alinhadas. Na tabela (≥ 1024) só o nome abre a edição (a linha inteira não é clicável, para não pôr botão dentro de botão). Nada disso aparece na demonstração (3 serviços e 4 profissionais, abaixo de `CATALOG_SHORT_LIST = 6`).
+- **Onde:** `CatalogFilters.tsx` (prop de modo "linha"), `src/features/shop/catalog/{ServicesTab,TeamTab}.tsx`, `src/styles/catalogo.css`.
+- **Pronto quando:** o componente aceita o modo linha sem CSS por cima; o modo lista tem colunas desde 768; a linha da tabela abre a edição pelo `interactiveRow` do `DataList` sem conflito com o interruptor e o `⋯`; conferido numa loja com 7+ itens.
+
+### P-90 — Agendar do cliente no tablet em pé · pendente
+
+- **Por quê:** entre 768 e 1023 px o Agendar ainda é o do celular com mais largura: os passos Serviço e Profissional recolhem num resumo com "Trocar" mesmo com ~600 px, a faixa de dias corta o último chip na borda do cartão (achado 23 do QA de 22/10, não aplicado) e o calendário do mês só entra a partir de 1024. O resumo como cartão estático abaixo do passo 4 (achado 12) e as listas em 2 colunas já foram feitos.
+- **Onde:** [ArenaApp.tsx](../../src/features/customer/ArenaApp.tsx) (`wideBooking = useViewportAtLeast(1024)`), [BookingParts.tsx](../../src/features/customer/booking/BookingParts.tsx) (`DayStrip`, `DayCalendar`), `src/styles/cliente.css`.
+- **Pronto quando:** no iPad em pé os passos ficam abertos, o dia usa o calendário do mês (ou a faixa fecha no chip inteiro, com `scroll-snap`) e nada muda abaixo de 768.
+
+### P-91 — Telas novas que a demonstração não mostra · não confirmado
+
+- **Por quê:** algumas telas refeitas só existem com dados reais e foram conferidas por tipos, eslint e foto do estado vazio: a tabela de pedidos de privacidade do admin (a demonstração nunca cria pedido `requested`; a exclusão do cliente demo usa `privacy.erase`), a tabela de pessoas de Equipe e sociedade (`ShopTeamAccessCard` não é montado na demo), a janela do QR do WhatsApp em `lg` (na demo o WhatsApp já está conectado), o modo lista e a barra em uma linha do catálogo (demo com menos de 7 itens; as fotos foram tiradas forçando o modo no código) e a Pausa fixa (P-87).
+- **Onde:** [DataRights.tsx](../../src/features/insights/DataRights.tsx), [ShopTeamAccessCard.tsx](../../src/features/shop/ShopTeamAccessCard.tsx), [WhatsAppChannelCard.tsx](../../src/features/shop/settings/WhatsAppChannelCard.tsx), `catalog/*`. Alternativa: dar à demonstração um pedido de privacidade, uma equipe com acesso e 7+ serviços (como a P-72 propõe para serviços por profissional).
+- **Pronto quando:** cada uma foi vista com dados reais (Loja Teste, roteiro da P-41) em 768, 1024 e 1280, ou a demonstração passou a mostrá-las.
+
+### P-92 — Lado a lado só a partir de 1536 em Ajustes e Relatórios · a decidir
+
+- **Por quê:** dentro do mestre-detalhe de Ajustes (lista de 18rem) e do trilho de Agendamento (12.5rem), o cartão do ajuste só ganha "campo | prévia" quando tem 38rem (`.ajustes-item`, container query em `src/styles/ajustes.css`), o que em 1024 e 1280 não acontece: Avisos e integrações (WhatsApp e Google lado a lado só com 24rem cada), o modo dos horários, a antecedência mínima e a fila de espera ficam empilhados até 1536. O cartão do Google tem grades `sm:` (3 agendas) que ficariam espremidas com 20rem. Nos Relatórios da plataforma, os quatro blocos comparáveis (nota, melhorias, motivos, interesse) usam `lg:grid-cols-[repeat(auto-fill,minmax(18rem,1fr))]`; conferir se ficam em 2 colunas em 1280 agora que a pilha ocupa a largura toda.
+- **Onde:** `src/styles/ajustes.css` (38rem e 24rem), [GoogleConnectionCard.tsx](../../src/features/shop/settings/GoogleConnectionCard.tsx), [BusinessInsights.tsx](../../src/features/insights/BusinessInsights.tsx).
+- **Pronto quando:** o dono decide se vale baixar os mínimos (container query no cartão do Google; 16rem nos blocos dos Relatórios) para o lado a lado valer em 1280, ou se o empilhado em 1024–1535 fica.
+
+### P-93 — `foto.mjs` com fixture da página pública (`--landing`) · pendente (ferramenta)
+
+- **Por quê:** a página pública da barbearia (`/b/<loja>` e domínio da loja) não renderiza com o `scripts/foto.mjs` puro: a RPC `get_public_shop_landing` volta vazia na sessão falsa. Nas ondas de 22/10 as fotos dela saíram de uma cópia do script no scratchpad (apagado entre sessões) que respondia a RPC com um JSON de exemplo.
+- **Onde:** [scripts/foto.mjs](../../scripts/foto.mjs) (a resposta falsa das chamadas `/rest/v1`), documentação em [scripts/README.md](../../scripts/README.md).
+- **Pronto quando:** `node scripts/foto.mjs /b/demo --sem-login --landing <arquivo.json>` responde a RPC com o conteúdo do arquivo e um exemplo versionado (ex.: `scripts/fixtures/landing.json`) mostra a página com capa, equipe, serviços e horários.
+
+### P-94 — Restos visuais pequenos da entrega por dispositivo · pendente (baixa)
+
+Cosméticos, cada um com a causa conhecida; nenhum aparece no celular.
+
+- Editar profissional (janela `lg`): a zona de perigo (Pausar/Excluir) continua o bloco escuro com botões empilhados do celular; a coluna do formulário tem ~26rem e os dois botões não cabem lado a lado (achado 17 do QA, não aplicado). [StaffForm.tsx](../../src/features/shop/catalog/StaffForm.tsx).
+- Conta → "Seu ritmo" em 1024: os três tiles ficam 2 + 1 (coluna de ~400 px, abaixo dos 36rem da container query); 3 colunas a partir de ~34rem resolveria (achado 24, não aplicado). [RhythmDashboard.tsx](../../src/features/insights/RhythmDashboard.tsx).
+- Plataforma → Barbearias em 1280: o cabeçalho "Administradores" (coluna de 7.25rem) encosta na borda direita da tabela. [ShopsPanel.tsx](../../src/features/platform/ShopsPanel.tsx).
+- Serviços em 1024 (3 colunas de ~274 px): o título do cartão quebra em 2 linhas por causa do espaço reservado ao interruptor e ao `⋯`. `src/styles/catalogo.css`.
+- Estados vazio e carregando de Serviços e Equipe (`LoadingState variant="cards"`) ficam em coluna única dentro da grade de 3.
+- Agenda: ao cruzar 1023 ↔ 1024 a "Clientes da barbearia" troca de instância (janela × seção) e a busca digitada se perde (já era assim com `useDesktop`); em 1280×800 a coluna do dia (calendário + "Seu dia" ≈ 700 px) raramente cabe na altura, então `useStickyWhenFits` a deixa rolar com a página.
+- Container query dos tiles do ritmo (36rem) não coincide com o antigo `sm:` (640 px): as 3 colunas passam a valer a partir de ~648 px, diferença de ~8 px só na faixa 640–767.
+- Entre 768 e 1023 a ficha do cliente (janela de 44rem) mostra o histórico em cartões empilhados; a tabela só a partir de 1024.
+
+### P-95 — Folha inferior padronizada no celular · a decidir (dono)
+
+- **Por quê:** no celular as tarefas longas (editar serviço, profissional, bloqueio, horário do dia) abrem em janela centrada; uma folha que sobe do pé é o padrão de celular e deixaria o polegar perto dos botões. É mudança de celular, por isso ficou fora do pedido de 21/10 (plano, seção 8).
+- **Onde:** [dialog.tsx](../../src/components/ui/dialog.tsx) (um `size` ou variante de celular), `src/components/ui/drawer.tsx` (shadcn, sem uso; ver P-88).
+- **Pronto quando:** o dono pedir; então um só componente de folha para todas as janelas longas do celular, com foco, Esc e rodapé fixo, e fotos de 390 antes e depois.

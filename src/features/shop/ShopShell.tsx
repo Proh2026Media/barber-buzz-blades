@@ -62,7 +62,6 @@ import {
   type SettingsSection,
 } from "@/features/shop/settings/section";
 import { useScrollIndicators } from "@/lib/use-scroll-indicators";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { HoursTab, type HoursAppointment } from "./hours/HoursTab";
 import type { BlockDraft } from "./hours/BlockDialog";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -1924,9 +1923,10 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       )}
       <TermsUpdateGate disabled={Boolean(demo)} withDpa={powers.ownerLike} />
       <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur-xl px-4 py-3">
-        {/* Sem a coluna lateral, o cabeçalho fica numa faixa fixa de 70rem; com ela (≥ 1024 px),
-            o styles.css tira o limite e o nome fica sobre a coluna. Nos dois casos ele não muda de
-            posição ao trocar de aba nem aperta o nome da loja e o selo do papel. */}
+        {/* No celular o cabeçalho fica numa faixa fixa de 70rem; a partir de 768 px (coluna
+            estreita no tablet, completa no computador) o styles.css tira o limite e o nome fica
+            sobre a coluna, com as ações à direita. Nos dois casos ele não muda de posição ao
+            trocar de aba nem aperta o nome da loja e o selo do papel. */}
         <div className="mx-auto flex w-full max-w-[70rem] items-center justify-between gap-2">
           <div className="min-w-0 flex-1">
             {/* Onde estou e com que papel: nome da loja (troca de loja) + selo do papel. */}
@@ -2005,10 +2005,20 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         </div>
       </header>
 
-      {/* A Agenda usa a largura do computador em duas colunas; as outras abas seguem estreitas. */}
+      {/* Largura de leitura por aba no computador (styles.css, --app-read-width): a Agenda tem a
+          própria classe (duas colunas); Serviços, Equipe, Horários e Ajustes usam a larga. */}
       <main
         ref={mainRef}
-        className={`mx-auto max-w-3xl space-y-6 p-4 pb-8 ${tab === "agenda" || tab === "horarios" ? "shop-agenda-wide" : ""}`}
+        className={`mx-auto max-w-3xl space-y-6 p-4 pb-8 ${
+          tab === "agenda"
+            ? "shop-agenda-wide"
+            : tab === "servicos" ||
+                tab === "equipe" ||
+                tab === "horarios" ||
+                tab === "configuracoes"
+              ? "shop-wide"
+              : ""
+        }`}
       >
         <ApprovalNoteContext.Provider value={approvalNote}>
           <div key={tab} className="mb-panel space-y-6">
@@ -2460,6 +2470,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     }),
                     customDomain: shop.custom_domain,
                     customDomainStatus: shop.custom_domain_status,
+                    timeZone: shopTimeZone,
                     ...settingsSignals,
                     pendingDecisions,
                     ownProfile: ownStaffRow
@@ -2755,8 +2766,10 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
           {shopNavItems.map(({ id, icon: Icon, label }) => (
             <button
               key={id}
+              type="button"
               onClick={() => setTab(id)}
               aria-pressed={tab === id}
+              aria-current={tab === id ? "page" : undefined}
               className={`relative z-10 flex min-w-0 flex-col items-center justify-center p-2.5 ${
                 tab === id ? "app-nav-current" : "text-muted-foreground hover:text-foreground"
               }`}

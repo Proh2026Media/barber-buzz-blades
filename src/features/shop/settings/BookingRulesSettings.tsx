@@ -23,6 +23,7 @@ import {
   IconList,
   PreviewPanel,
   SectionHeader,
+  SplitLayout,
   StatusBadge,
   Tag,
   UnsavedBar,
@@ -41,7 +42,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useDemo } from "@/features/demo/context";
 import { clockInTimeZone } from "@/features/register-owner/timezones";
-import { useMinLeadLabel } from "./MinLeadSettings";
+import { useMinLeadLabel } from "./min-lead-label";
 import { useTimeZoneName } from "@/features/register-owner/TimeZonePicker";
 import { BOOKING_CARD_IDS } from "./booking-cards";
 
@@ -104,20 +105,22 @@ function scrollToCard(id: string) {
   target.focus({ preventScroll: true });
 }
 
+type BookingOverviewRow = {
+  id: string;
+  icon: LucideIcon;
+  label: string;
+  value: ReactNode;
+};
+
 /**
- * "Como seu cliente agenda hoje": o que já está valendo, em uma lista curta com ícone e valor.
- * Cada linha leva ao cartão que muda aquele ponto.
+ * As linhas de "Como seu cliente agenda hoje" (rótulo, ícone e o valor que vale agora). Sem
+ * `timeZone` (o trilho do computador, que não recebe o fuso), o prazo vira "N dias" e o fuso
+ * fica só com o rótulo.
  */
-export function BookingOverview({
-  settings,
-  timeZone,
-  onOpen,
-}: {
-  settings: Tables<"barbershop_settings">;
-  timeZone: string;
-  /** Abre o ajuste sozinho (lista enxuta). Sem valor, rola até o cartão na mesma página. */
-  onOpen?: (id: string) => void;
-}) {
+function useBookingOverviewRows(
+  settings: Tables<"barbershop_settings">,
+  timeZone: string | undefined,
+): BookingOverviewRow[] {
   const { t } = useI18n();
   const nameOf = useTimeZoneName();
   const [clock, setClock] = useState(() => new Date());
@@ -129,16 +132,11 @@ export function BookingOverview({
   const now = useDemo()?.now ?? clock;
   const rule = slotRuleFromSettings(settings);
   const leadLabel = useMinLeadLabel();
-  const lastDay = useLastBookableDay(settings.booking_horizon_days, timeZone);
+  const lastDay = useLastBookableDay(settings.booking_horizon_days, timeZone ?? "UTC");
   const mode = staffModeOf(settings);
   const instructions = settings.booking_instructions?.trim();
 
-  const rows: {
-    id: string;
-    icon: LucideIcon;
-    label: string;
-    value: ReactNode;
-  }[] = [
+  return [
     {
       id: BOOKING_CARD_IDS.slots,
       icon: Clock3,
@@ -174,7 +172,9 @@ export function BookingOverview({
       label: t("bookingRules.overview.horizon"),
       value: (
         <Tag className="whitespace-nowrap">
-          {t("bookingRules.horizon.until", { date: lastDay })}
+          {timeZone
+            ? t("bookingRules.horizon.until", { date: lastDay })
+            : t("bookingRules.horizon.days", { days: settings.booking_horizon_days })}
         </Tag>
       ),
     },
@@ -222,15 +222,33 @@ export function BookingOverview({
       id: BOOKING_CARD_IDS.timezone,
       icon: Globe2,
       label: t("bookingRules.overview.timezone"),
-      value: (
+      value: timeZone ? (
         // Nome e relógio em blocos inteiros: se faltar espaço, quebram entre si, não no meio.
         <Tag className="flex-wrap">
           <span className="whitespace-nowrap">{nameOf(timeZone)}</span>
           <span className="whitespace-nowrap tabular-nums">· {clockInTimeZone(timeZone, now)}</span>
         </Tag>
-      ),
+      ) : null,
     },
   ];
+}
+
+/**
+ * "Como seu cliente agenda hoje": o que já está valendo, em uma lista curta com ícone e valor.
+ * Cada linha leva ao cartão que muda aquele ponto.
+ */
+export function BookingOverview({
+  settings,
+  timeZone,
+  onOpen,
+}: {
+  settings: Tables<"barbershop_settings">;
+  timeZone: string;
+  /** Abre o ajuste sozinho (lista enxuta). Sem valor, rola até o cartão na mesma página. */
+  onOpen?: (id: string) => void;
+}) {
+  const { t } = useI18n();
+  const rows = useBookingOverviewRows(settings, timeZone);
 
   return (
     <section className="app-action-card space-y-3 p-5" aria-labelledby="booking-overview-title">
@@ -269,6 +287,61 @@ export function BookingOverview({
         })}
       </ul>
     </section>
+  );
+}
+
+/**
+ * Trilho do Agendamento no computador (a partir de 1280 px): as mesmas oito linhas, em coluna
+ * estreita à esquerda do ajuste aberto, com o rótulo em cima e o valor embaixo (como no
+ * celular) e `aria-current` na escolhida. Só o SettingsHub o monta; o CSS está em
+ * src/styles/ajustes.css.
+ */
+export function BookingRail({
+  settings,
+  timeZone,
+  active,
+  onOpen,
+}: {
+  settings: Tables<"barbershop_settings">;
+  timeZone?: string;
+  active: string | null;
+  onOpen: (id: string) => void;
+}) {
+  const { t } = useI18n();
+  const rows = useBookingOverviewRows(settings, timeZone);
+  return (
+    <nav className="ajustes-trilho app-action-card" aria-label={t("bookingRules.overview.title")}>
+      <p className="ajustes-trilho-titulo">
+        <CalendarCheck className="size-3.5 shrink-0" aria-hidden />
+        {t("bookingRules.overview.title")}
+      </p>
+      <ul data-ajustes-trilho>
+        {rows.map((row) => {
+          const Icon = row.icon;
+          const current = row.id === active;
+          return (
+            <li key={row.id}>
+              <button
+                type="button"
+                aria-current={current ? "page" : undefined}
+                onClick={() => onOpen(row.id)}
+                className="ajustes-trilho-item"
+              >
+                <Icon className="size-4 shrink-0 text-gold" aria-hidden />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold">{row.label}</span>
+                  {row.value && (
+                    <span className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5">
+                      {row.value}
+                    </span>
+                  )}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
   );
 }
 
@@ -415,7 +488,9 @@ export function BookingRulesSettings({
   const usedTone =
     used >= INSTRUCTIONS_MAX ? "danger" : used >= INSTRUCTIONS_MAX * 0.85 ? "warning" : null;
 
-  const cardClass = "app-action-card scroll-mt-24 space-y-4 p-5 outline-none";
+  // `ajustes-item`: a partir de 1024 px, campo e prévia ficam lado a lado quando o cartão tem
+  // largura para isso (container query em src/styles/ajustes.css).
+  const cardClass = "ajustes-item app-action-card scroll-mt-24 space-y-4 p-5 outline-none";
 
   return (
     <div className="space-y-6">
@@ -432,38 +507,45 @@ export function BookingRulesSettings({
             title={t("bookingRules.horizon.title")}
             description={t("bookingRules.horizon.text")}
           />
-          <ChoiceChips
-            label={t("bookingRules.horizon.title")}
-            hideLabel
-            options={HORIZON_OPTIONS.map((days) => ({
-              value: days,
-              label: t(horizonLabelKey(days)),
-              note: t("bookingRules.horizon.days", { days }),
-            }))}
-            value={draft.booking_horizon_days}
-            disabled={saving}
-            onChange={(days) => update({ booking_horizon_days: days })}
-          />
-          <div className="space-y-2">
-            <div aria-hidden className="flex gap-0.5">
-              {Array.from({ length: 30 }, (_, index) => (
-                <span
-                  key={index}
-                  className={cn(
-                    "h-3 min-w-0 flex-1 rounded-sm",
-                    index < draft.booking_horizon_days ? "bg-primary" : "bg-muted",
-                    index === 0 && "bg-gold",
-                  )}
-                />
-              ))}
-            </div>
-            <p className="flex items-start gap-2 text-sm" aria-live="polite">
-              <CalendarCheck className="mt-0.5 size-4 shrink-0 text-gold" aria-hidden />
-              <span className="font-semibold">
-                {t("bookingRules.horizon.result", { date: lastDay })}
-              </span>
-            </p>
-          </div>
+          <SplitLayout
+            gap="1rem"
+            asideWidth="20rem"
+            aside={
+              <div className="space-y-2">
+                <div aria-hidden className="flex gap-0.5">
+                  {Array.from({ length: 30 }, (_, index) => (
+                    <span
+                      key={index}
+                      className={cn(
+                        "h-3 min-w-0 flex-1 rounded-sm",
+                        index < draft.booking_horizon_days ? "bg-primary" : "bg-muted",
+                        index === 0 && "bg-gold",
+                      )}
+                    />
+                  ))}
+                </div>
+                <p className="flex items-start gap-2 text-sm" aria-live="polite">
+                  <CalendarCheck className="mt-0.5 size-4 shrink-0 text-gold" aria-hidden />
+                  <span className="font-semibold">
+                    {t("bookingRules.horizon.result", { date: lastDay })}
+                  </span>
+                </p>
+              </div>
+            }
+          >
+            <ChoiceChips
+              label={t("bookingRules.horizon.title")}
+              hideLabel
+              options={HORIZON_OPTIONS.map((days) => ({
+                value: days,
+                label: t(horizonLabelKey(days)),
+                note: t("bookingRules.horizon.days", { days }),
+              }))}
+              value={draft.booking_horizon_days}
+              disabled={saving}
+              onChange={(days) => update({ booking_horizon_days: days })}
+            />
+          </SplitLayout>
         </section>
       )}
 
@@ -512,59 +594,66 @@ export function BookingRulesSettings({
             title={t("bookingRules.instructions.title")}
             description={t("bookingRules.instructions.text")}
           />
-          <div className="space-y-2">
-            <label htmlFor={`${groupId}-instructions-field`} className="sr-only">
-              {t("bookingRules.instructions.title")}
-            </label>
-            <textarea
-              id={`${groupId}-instructions-field`}
-              maxLength={INSTRUCTIONS_MAX}
-              rows={3}
-              value={instructions}
-              disabled={saving}
-              onChange={(event) => update({ booking_instructions: event.target.value })}
-              placeholder={t("shop.settings.instructionsPlaceholder")}
-              aria-describedby={`${groupId}-instructions-count`}
-              className="w-full resize-none rounded-xl border border-border bg-background px-3 py-3 text-base sm:text-sm"
-            />
-            <div className="flex items-center gap-2">
-              <span
-                aria-hidden
-                className="relative h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-muted"
+          <SplitLayout
+            gap="1rem"
+            asideWidth="20rem"
+            aside={
+              <PreviewPanel
+                icon={Store}
+                title={t("bookingRules.instructions.preview")}
+                badge={t("bookingRules.preview")}
               >
-                <span
-                  className={cn(
-                    "absolute inset-y-0 left-0 rounded-full",
-                    usedTone ? `tone-${usedTone} bg-[color:var(--tone-line)]` : "bg-primary/60",
-                  )}
-                  style={{ width: `${Math.min(100, (used / INSTRUCTIONS_MAX) * 100)}%` }}
-                />
-              </span>
-              <span
-                id={`${groupId}-instructions-count`}
-                className="shrink-0 text-xs tabular-nums text-muted-foreground"
-              >
-                {t("bookingRules.instructions.count", { used, max: INSTRUCTIONS_MAX })}
-              </span>
-            </div>
-          </div>
-          <PreviewPanel
-            icon={Store}
-            title={t("bookingRules.instructions.preview")}
-            badge={t("bookingRules.preview")}
+                {instructions.trim() ? (
+                  <p className="flex items-start gap-2 rounded-xl border border-border bg-background/60 p-3 text-sm">
+                    <Store className="mt-0.5 size-4 shrink-0 text-gold" aria-hidden />
+                    <span className="min-w-0 break-words">{instructions.trim()}</span>
+                  </p>
+                ) : (
+                  <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Info className="size-4 shrink-0" aria-hidden />
+                    {t("bookingRules.instructions.empty")}
+                  </p>
+                )}
+              </PreviewPanel>
+            }
           >
-            {instructions.trim() ? (
-              <p className="flex items-start gap-2 rounded-xl border border-border bg-background/60 p-3 text-sm">
-                <Store className="mt-0.5 size-4 shrink-0 text-gold" aria-hidden />
-                <span className="min-w-0 break-words">{instructions.trim()}</span>
-              </p>
-            ) : (
-              <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Info className="size-4 shrink-0" aria-hidden />
-                {t("bookingRules.instructions.empty")}
-              </p>
-            )}
-          </PreviewPanel>
+            <div className="space-y-2">
+              <label htmlFor={`${groupId}-instructions-field`} className="sr-only">
+                {t("bookingRules.instructions.title")}
+              </label>
+              <textarea
+                id={`${groupId}-instructions-field`}
+                maxLength={INSTRUCTIONS_MAX}
+                rows={3}
+                value={instructions}
+                disabled={saving}
+                onChange={(event) => update({ booking_instructions: event.target.value })}
+                placeholder={t("shop.settings.instructionsPlaceholder")}
+                aria-describedby={`${groupId}-instructions-count`}
+                className="w-full resize-none rounded-xl border border-border bg-background px-3 py-3 text-base sm:text-sm"
+              />
+              <div className="flex items-center gap-2">
+                <span
+                  aria-hidden
+                  className="relative h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-muted"
+                >
+                  <span
+                    className={cn(
+                      "absolute inset-y-0 left-0 rounded-full",
+                      usedTone ? `tone-${usedTone} bg-[color:var(--tone-line)]` : "bg-primary/60",
+                    )}
+                    style={{ width: `${Math.min(100, (used / INSTRUCTIONS_MAX) * 100)}%` }}
+                  />
+                </span>
+                <span
+                  id={`${groupId}-instructions-count`}
+                  className="shrink-0 text-xs tabular-nums text-muted-foreground"
+                >
+                  {t("bookingRules.instructions.count", { used, max: INSTRUCTIONS_MAX })}
+                </span>
+              </div>
+            </div>
+          </SplitLayout>
         </section>
       )}
 
@@ -590,32 +679,47 @@ export function BookingRulesSettings({
               />
             }
           />
-          <ChoiceChips
-            label={t("bookingRules.surveys.choice")}
-            options={[
-              { value: "on", label: t("bookingRules.surveys.on") },
-              { value: "off", label: t("bookingRules.surveys.off") },
-            ]}
-            value={draft.survey_program_enabled ? "on" : "off"}
-            disabled={saving}
-            onChange={(value) => update({ survey_program_enabled: value === "on" })}
-          />
-          {draft.survey_program_enabled && (
-            <PreviewPanel
-              icon={MessageSquareText}
-              title={t("bookingRules.surveys.preview")}
-              badge={t("bookingRules.example")}
-            >
-              <div className="space-y-2 rounded-xl border border-border bg-background/60 p-3">
-                <p className="text-sm font-semibold">{t("bookingRules.surveys.sampleQuestion")}</p>
-                <p className="flex gap-1 text-gold" aria-hidden>
-                  {Array.from({ length: 5 }, (_, index) => (
-                    <Star key={index} className="size-5" fill="currentColor" />
-                  ))}
-                </p>
-              </div>
-            </PreviewPanel>
-          )}
+          {(() => {
+            const chips = (
+              <ChoiceChips
+                label={t("bookingRules.surveys.choice")}
+                options={[
+                  { value: "on", label: t("bookingRules.surveys.on") },
+                  { value: "off", label: t("bookingRules.surveys.off") },
+                ]}
+                value={draft.survey_program_enabled ? "on" : "off"}
+                disabled={saving}
+                onChange={(value) => update({ survey_program_enabled: value === "on" })}
+              />
+            );
+            if (!draft.survey_program_enabled) return chips;
+            return (
+              <SplitLayout
+                gap="1rem"
+                asideWidth="20rem"
+                aside={
+                  <PreviewPanel
+                    icon={MessageSquareText}
+                    title={t("bookingRules.surveys.preview")}
+                    badge={t("bookingRules.example")}
+                  >
+                    <div className="space-y-2 rounded-xl border border-border bg-background/60 p-3">
+                      <p className="text-sm font-semibold">
+                        {t("bookingRules.surveys.sampleQuestion")}
+                      </p>
+                      <p className="flex gap-1 text-gold" aria-hidden>
+                        {Array.from({ length: 5 }, (_, index) => (
+                          <Star key={index} className="size-5" fill="currentColor" />
+                        ))}
+                      </p>
+                    </div>
+                  </PreviewPanel>
+                }
+              >
+                {chips}
+              </SplitLayout>
+            );
+          })()}
           <IconList
             items={[
               { icon: Clock3, text: t("bookingRules.surveys.hintPace") },

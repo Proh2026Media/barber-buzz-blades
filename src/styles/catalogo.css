@@ -1,0 +1,144 @@
+/* Serviços e Equipe (onda 4): CSS de tablet e computador desta área (docs/dispositivos-2026-10-21.md,
+   seção 6). Regra de ouro: abaixo de 768 px nada muda; toda regra fica atrás de @media.
+   Marcação: src/features/shop/catalog/{CatalogCard,ServicesTab,TeamTab}.tsx. */
+
+/* Grade de cartões: entre 640 e 767 px continua com 2 colunas, como era com `sm:grid-cols-2`
+   (o CardGrid sozinho daria 1 coluna nessa faixa). */
+@media (min-width: 640px) and (max-width: 767.98px) {
+  .catalog-grid.app-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Cartão compacto a partir de 768 px: o "⋯" fica no canto superior direito e o nome deixa
+   espaço para ele; o rodapé continua (sem a linha divisória e mais baixo) com o selo e o
+   interruptor COM o rótulo visível ("Aparece para clientes"), como no celular — um botão preto
+   sem explicação ao lado do nome não dizia o que liga. O lápis aparece ao passar o mouse ou ao
+   focar o cartão, no espaço reservado ao lado do "⋯", sem mexer no leiaute. */
+@media (min-width: 768px) {
+  .catalog-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0.625rem;
+    align-items: start;
+  }
+  .catalog-card > .catalog-card-head {
+    display: contents;
+  }
+  .catalog-card .catalog-card-main {
+    grid-column: 1;
+    grid-row: 1;
+    gap: 0.625rem;
+  }
+  .catalog-card .catalog-card-main .brand-content-title {
+    padding-right: 5.5rem;
+  }
+  .catalog-card .catalog-card-main > svg {
+    display: none;
+    position: absolute;
+    top: 1.5rem;
+    right: calc(0.75rem + 2.75rem + 0.5rem);
+    margin-top: 0;
+  }
+  .catalog-card .catalog-card-main:focus-visible > svg {
+    display: block;
+  }
+  @media (hover: hover) {
+    .catalog-card .catalog-card-main:hover > svg {
+      display: block;
+    }
+  }
+  .catalog-card .catalog-card-menu {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+  }
+  /* Cartão sem "⋯" (perfil que não edita nem muda o global): o nome usa a largura toda. */
+  .catalog-card:not(:has(.catalog-card-menu)) .catalog-card-main .brand-content-title {
+    padding-right: 0;
+  }
+  .catalog-card > .catalog-card-extra {
+    grid-column: 1;
+  }
+  .catalog-card > .catalog-card-foot {
+    grid-column: 1;
+    border-top: 0;
+    padding-top: 0;
+  }
+  .catalog-card .catalog-card-toggle,
+  .catalog-card .catalog-card-toggle > label {
+    min-height: 2.25rem;
+  }
+}
+
+/* Computador compacto (≥ 1024 px): título, filtros, busca e botão principal numa linha; a
+   "lista" é uma tabela (DataList). */
+@media (min-width: 1024px) {
+  .catalog-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1rem;
+  }
+  .catalog-toolbar > .app-section-title {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+  /* CatalogFilters (src/features/shop/CatalogFilters.tsx, fora desta área): vira uma linha. */
+  .catalog-toolbar > .catalog-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+  }
+  .catalog-toolbar > .catalog-filters > * {
+    margin-block: 0;
+  }
+  .catalog-toolbar > .catalog-filters > div > label {
+    flex: 0 0 16rem;
+    min-width: 0;
+  }
+  .catalog-table .catalog-table-item {
+    max-width: 100%;
+  }
+  .catalog-table td {
+    padding-block: 0.25rem;
+  }
+}
+
+/* Computador (≥ 1280 px): o atalho "Acesso ao painel" é um cartão ao lado da grade. */
+@media (min-width: 1280px) {
+  .catalog-split {
+    --split-aside: 18rem;
+  }
+}
+
+/* Janelas de serviço e profissional (size="lg", duas colunas) a partir de 768 px. */
+@media (min-width: 768px) {
+  .catalog-form-dialog .catalog-form-body[data-layout="split"] {
+    grid-template-columns: minmax(0, 1fr) minmax(15rem, 17rem);
+  }
+  /* Nome | preço na mesma linha: o preço é curto e não divide a largura ao meio. */
+  .catalog-form-dialog .catalog-form-grid[data-columns="2"] {
+    grid-template-columns: minmax(0, 1fr) 9rem;
+  }
+  .catalog-form-dialog .catalog-form-price {
+    max-width: none;
+  }
+  .catalog-form-actions > .flex {
+    flex-shrink: 0;
+  }
+  /* Seletor de ícones em popover: uma rolagem só (a do popover), 8 ícones por linha. */
+  .catalog-icon-popover {
+    width: min(32rem, calc(100vw - 2rem));
+  }
+  .catalog-icon-groups {
+    max-height: min(calc(var(--radix-popover-content-available-height, 60vh) - 5.5rem), 32rem);
+  }
+  /* Na coluna estreita da prévia, "Usar foto" e "Escolher ícone" um embaixo do outro. */
+  .catalog-form-media > button {
+    flex: 1 1 100%;
+  }
+}

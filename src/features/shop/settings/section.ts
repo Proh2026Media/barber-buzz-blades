@@ -179,10 +179,27 @@ export function useSettingsSection(active: boolean) {
   return [section, setSection] as const;
 }
 
-function readItemFromUrl(): string | null {
+export function readItemFromUrl(): string | null {
   if (typeof window === "undefined") return null;
   const value = new URLSearchParams(window.location.search).get("item");
   return value && /^[a-z0-9-]{1,40}$/.test(value) ? value : null;
+}
+
+/**
+ * Quem escuta o `?item=` mudar por fora do próprio `useSettingsItem` (o trilho do Agendamento no
+ * computador, montado pelo SettingsHub, troca o ajuste aberto sem ter o `setItem` do ShopShell).
+ */
+const itemListeners = new Set<() => void>();
+
+/**
+ * Abre (ou troca) o ajuste aberto dentro de uma subtela a partir de fora do hook: grava `?item=`
+ * e avisa cada `useSettingsItem` ativo para reler o endereço. `replace` não cria entrada no
+ * histórico (trocar de ajuste no trilho lado a lado não deve acumular Voltar).
+ */
+export function openSettingsItem(item: string | null, mode: "push" | "replace" = "replace") {
+  if (typeof window === "undefined" || backPending) return;
+  writeItemToUrl(item, mode);
+  itemListeners.forEach((listener) => listener());
 }
 
 function writeItemToUrl(item: string | null, mode: "push" | "replace") {
@@ -221,7 +238,11 @@ export function useSettingsItem(section: SettingsSection | null, owner: Settings
     setItemState(readItemFromUrl());
     const onPop = () => setItemState(readItemFromUrl());
     window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
+    itemListeners.add(onPop);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      itemListeners.delete(onPop);
+    };
   }, [active]);
 
   const setItem = useCallback(

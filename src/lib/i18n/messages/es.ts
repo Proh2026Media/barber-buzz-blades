@@ -1670,6 +1670,7 @@ export const es: Record<MessageKey, string> = {
   "plat.shops.loading": "Cargando barberías…",
   "plat.shops.showAll": "Mostrar todas",
   "plat.shops.pickOne": "Toca una barbería para ver la ficha",
+  "plat.shops.pickOnePointer": "Elige una barbería para ver la ficha",
   "plat.shops.sheetTitle": "Ficha de la barbería",
   "plat.shop.link": "Enlace de la página",
   "plat.shop.sports": "Deportes",
@@ -2819,6 +2820,11 @@ export const es: Record<MessageKey, string> = {
   "ins.rights.empty":
     "Sin solicitudes pendientes · los clientes eliminan su cuenta desde su perfil",
   "ins.rights.refresh": "Actualizar solicitudes",
+  "ins.rights.colProtocol": "Protocolo",
+  "ins.rights.colAccount": "Cuenta",
+  "ins.rights.colDate": "Fecha",
+  "ins.rights.colStatus": "Estado",
+  "ins.rights.colAction": "Acción",
   "integr.google.errInvalidResponse": "Respuesta no válida de Google Connect.",
   "integr.google.errUnavailable":
     "Fallo en la integración de Google ({status}). La edge function puede estar caída.",
@@ -4435,6 +4441,9 @@ export const es: Record<MessageKey, string> = {
   "plat.team.loadError": "No se pudo cargar el equipo.",
   "plat.header.titleDemo": "Plataforma · demostración",
   "plat.testAs.title": "Probar {name} como…",
+  "plat.shops.colStatus": "Estado",
+  "plat.shops.colCreated": "Creada el",
+  "plat.mgr.colPerson": "Persona",
   "relay.title": "Entrar con Google",
   "relay.working": "Terminando el inicio de sesión…",
   "relay.doneTitle": "Todo listo con Google",
@@ -4530,6 +4539,7 @@ export const es: Record<MessageKey, string> = {
   "client.nicknameError": "No se pudo guardar el apodo.",
   "client.walkIn.openChat": "abrir chat",
   "catalog.staff.add": "Agregar",
+  "catalog.table.doers": "Quién lo hace",
   "shop.settings.backToList": "Volver a la lista",
   "relay.unavailableTitle": "En la app instalada, usa correo y contraseña",
   "relay.unavailableLine":
@@ -4544,6 +4554,8 @@ export const es: Record<MessageKey, string> = {
     "¡Hola, {name}! Regístrate en la app de {shop} para agendar, reagendar y repetir tus horarios tú mismo: {link}",
   "bk.invite.shopFallback": "la barbería",
   "team.clients.searchShort": "Buscar cliente",
+  "team.clients.colVisits": "Visitas",
+  "team.clients.colLast": "Última visita",
   "bk.found.accountNoName": "La cita entra en su app.",
   "bk.found.manualHintKept": "Usamos el nombre que la barbería ya tenía.",
 };

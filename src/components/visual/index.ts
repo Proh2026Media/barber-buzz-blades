@@ -52,3 +52,10 @@ export { UnsavedBar } from "./UnsavedBar";
 export { ApprovalNote } from "./ApprovalNote";
 export { ApprovalNoteContext, useApprovalNote } from "./approval-note";
 export { EmptyState, type EmptyTone } from "@/components/ui/empty-state";
+
+/* Leiaute por dispositivo (docs/dispositivos-2026-10-21.md, seção 5). */
+export { CardGrid } from "./CardGrid";
+export { SplitLayout } from "./SplitLayout";
+export { MasterDetail } from "./MasterDetail";
+export { FormGrid } from "./FormGrid";
+export { DataList, type DataListColumn } from "./DataList";

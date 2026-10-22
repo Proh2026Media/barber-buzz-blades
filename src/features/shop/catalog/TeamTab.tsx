@@ -25,18 +25,28 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import {
   ConfirmDialog,
+  DataList,
   EmptyState,
   LoadingState,
   MoreActions,
   Notice,
   PersonAvatar,
+  SplitLayout,
   STATE,
   StatusBadge,
   Tag,
   announce,
+  type DataListColumn,
   type MoreAction,
 } from "@/components/visual";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ServiceIcon } from "@/components/ui/service-icon";
+import { useDevice, useViewportAtLeast } from "@/lib/device";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { CATALOG_SHORT_LIST, CatalogFilters, type CatalogStatus } from "../CatalogFilters";
@@ -49,6 +59,7 @@ import {
 import { CatalogCard, ItemToggle } from "./CatalogCard";
 import { staffDay } from "./format";
 import { InfoDialog } from "./InfoDialog";
+import { CatalogItems } from "./ServicesTab";
 import { StaffForm } from "./StaffForm";
 import {
   HasBookingsError,
@@ -77,9 +88,9 @@ export type StaffActions = {
  * Duas formas de pôr alguém na equipe, lado a lado: só na agenda (cadastro do profissional) ou
  * com acesso ao painel (convite por e-mail). O ícone e a linha curta mostram a diferença.
  */
-function AddStaffChoices({ onAgenda, onPanel }: { onAgenda: () => void; onPanel: () => void }) {
+function useAddStaffChoices(onAgenda: () => void, onPanel: () => void) {
   const { t } = useI18n();
-  const choices = [
+  return [
     {
       key: "agenda",
       icon: CalendarPlus,
@@ -97,6 +108,11 @@ function AddStaffChoices({ onAgenda, onPanel }: { onAgenda: () => void; onPanel:
       tone: "action-edit",
     },
   ];
+}
+
+function AddStaffChoices({ onAgenda, onPanel }: { onAgenda: () => void; onPanel: () => void }) {
+  const { t } = useI18n();
+  const choices = useAddStaffChoices(onAgenda, onPanel);
   return (
     <div
       role="group"
@@ -123,6 +139,60 @@ function AddStaffChoices({ onAgenda, onPanel }: { onAgenda: () => void; onPanel:
         </button>
       ))}
     </div>
+  );
+}
+
+/**
+ * Tablet e computador: as duas formas de adicionar num menu junto do botão "Adicionar", em vez
+ * da faixa que empurra a lista (que continua no celular).
+ */
+function AddStaffMenu({
+  onAgenda,
+  onPanel,
+  className,
+}: {
+  onAgenda: () => void;
+  onPanel: () => void;
+  className?: string;
+}) {
+  const { t } = useI18n();
+  const choices = useAddStaffChoices(onAgenda, onPanel);
+  return (
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger asChild>
+        <button type="button" className={cn("action-button action-confirm", className)}>
+          <Plus className="size-4" aria-hidden />
+          {t("catalog.staff.add")}
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-72 rounded-2xl p-1.5">
+        {choices.map((choice) => (
+          <DropdownMenuItem
+            key={choice.key}
+            onSelect={() => choice.onClick()}
+            className="min-h-12 cursor-pointer gap-3 rounded-xl px-2 py-1.5"
+          >
+            <choice.icon className="size-5 shrink-0 text-gold" aria-hidden />
+            <span className="min-w-0">
+              <span className="block text-sm font-bold leading-tight">{choice.title}</span>
+              <span className="mt-0.5 block text-xs leading-tight text-muted-foreground">
+                {choice.hint}
+              </span>
+            </span>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+/** Computador: a grade com o cartão de acesso fixo ao lado; nas outras faixas, só a grade. */
+function MaybeSplit({ aside, children }: { aside: ReactNode; children: ReactNode }) {
+  if (!aside) return <>{children}</>;
+  return (
+    <SplitLayout aside={aside} asideWidth="18rem" className="catalog-split">
+      {children}
+    </SplitLayout>
   );
 }
 
@@ -183,6 +253,11 @@ export function TeamTab({
   onOpenApprovals?: () => void;
 }) {
   const { t, intlLocale } = useI18n();
+  // Tablet e computador: "Adicionar" vira menu; ≥ 1024 a barra de ferramentas numa linha e a
+  // "lista" vira tabela; no computador o atalho de acesso fica ao lado da grade.
+  const device = useDevice();
+  const phone = device === "celular";
+  const wide = useViewportAtLeast(1024);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<CatalogStatus>("all");
   const [savedView, setView] = useState<CatalogViewMode>(() =>
@@ -400,38 +475,326 @@ export function TeamTab({
     setFormOpen(true);
   }
 
+  const addButton =
+    staff.length === 0 ? null : canInvite ? (
+      phone ? (
+        // Com convites liberados: um botão só; as duas formas aparecem ao tocar.
+        <button
+          type="button"
+          aria-expanded={addOpen}
+          aria-controls="team-add-choices"
+          className="action-button action-confirm ml-auto"
+          onClick={() => setAddOpen((value) => !value)}
+        >
+          <Plus className="size-4" aria-hidden />
+          {t("catalog.staff.add")}
+        </button>
+      ) : (
+        <AddStaffMenu
+          className={wide ? undefined : "ml-auto"}
+          onAgenda={() => openForm(null)}
+          onPanel={() => openInvite()}
+        />
+      )
+    ) : (
+      <button
+        type="button"
+        className={cn("action-button action-confirm", !wide && "ml-auto")}
+        onClick={() => openForm(null)}
+      >
+        <Plus className="size-4" aria-hidden />
+        {t("catalog.staff.new")}
+      </button>
+    );
+  const title = (
+    <div className="app-section-title">
+      <Users />
+      <h2>{t("shop.nav.team")}</h2>
+      {!wide && addButton}
+    </div>
+  );
+  const filters = (
+    <CatalogFilters
+      query={query}
+      onQuery={setQuery}
+      status={status}
+      onStatus={setStatus}
+      total={staff.length}
+      active={activeCount}
+      visible={visible.length}
+      label={t("shop.staff.search")}
+      activeLabel={t("catalog.staff.filterActive")}
+      pausedLabel={t("brand.catalog.paused")}
+      statusFirst
+      viewMode={view}
+      onViewMode={(next) => {
+        setView(next);
+        writeCatalogViewPreference(shopId, "staff", next);
+      }}
+    />
+  );
+
+  /** Os serviços que a pessoa faz (ícones quando não faz todos) — cartão e tabela. */
+  function servicesLine(member: StaffRow) {
+    const does = servicesOf(member);
+    if (does.length === 0) return null;
+    return (
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="sr-only">
+          {t("catalog.staff.doesAria", {
+            list: does.map((row) => row.service.name).join(", "),
+          })}
+        </span>
+        {does.length < activeServices.length &&
+          does.slice(0, 5).map(({ service }) => (
+            <span
+              key={service.id}
+              title={service.name}
+              aria-hidden
+              className="grid size-8 place-items-center overflow-hidden rounded-lg bg-muted text-gold"
+            >
+              <ServiceIcon
+                icon={service.icon}
+                className="size-4"
+                imageClassName="size-8 object-cover !rounded-none !p-0"
+              />
+            </span>
+          ))}
+        <span className="text-xs font-semibold text-muted-foreground" aria-hidden>
+          {/* "+N" só quando os ícones aparecem (quem faz todos fica sem eles). */}
+          {does.length < activeServices.length && does.length > 5 ? `+${does.length - 5} · ` : ""}
+          {does.length === activeServices.length
+            ? t("catalog.staff.doesAll")
+            : t("catalog.staff.doesCount", { count: does.length })}
+        </span>
+        {does.some((row) => row.ownPrice) && <Tag>{t("catalog.service.ownPrices")}</Tag>}
+      </div>
+    );
+  }
+
+  function menuOf(member: StaffRow): MoreAction[] {
+    const link = linkOrigin && member.booking_slug ? `${linkOrigin}/${member.booking_slug}` : null;
+    const hasAccess = !access || accessByStaff.has(member.id);
+    return [
+      {
+        id: "edit",
+        label: t("catalog.staff.edit"),
+        icon: Pencil,
+        onSelect: () => openForm(member),
+      },
+      ...(onOpenAgenda
+        ? [
+            {
+              id: "agenda",
+              label: t("catalog.staff.seeAgenda"),
+              icon: CalendarDays,
+              onSelect: () => onOpenAgenda(member.id),
+            },
+          ]
+        : []),
+      ...(link
+        ? [
+            {
+              id: "link",
+              label: t("catalog.staff.copyLink"),
+              icon: Link2,
+              onSelect: () => {
+                void navigator.clipboard
+                  ?.writeText(link)
+                  .then(() =>
+                    toast.success(t("visual.copied"), { description: member.display_name }),
+                  )
+                  .catch(() => toast.error(t("catalog.staff.copyFailed")));
+              },
+            },
+          ]
+        : []),
+      ...(onBlockTime
+        ? [
+            {
+              id: "block",
+              label: t("catalog.staff.blockTime"),
+              icon: CalendarX2,
+              onSelect: () => onBlockTime(member.id),
+            },
+          ]
+        : []),
+      ...(canInvite && !hasAccess
+        ? [
+            {
+              id: "invite",
+              label: t("catalog.staff.giveAccess"),
+              icon: UserPlus,
+              onSelect: () => openInvite(member.display_name, member.id),
+            },
+          ]
+        : []),
+      {
+        id: "delete",
+        label: t("shop.deleteStaff.confirm"),
+        icon: Trash2,
+        tone: "danger",
+        onSelect: () => setDeleteTarget(member),
+      },
+    ];
+  }
+
+  function statusBadgeOf(member: StaffRow, where: CatalogViewMode) {
+    if (awaiting[member.id])
+      return <StatusBadge {...STATE.waiting} size="sm" label={t("catalog.awaiting")} />;
+    if (member.active && where === "grid") return null;
+    return member.active ? (
+      <StatusBadge {...STATE.active} size="sm" label={t("catalog.staff.receiving")} />
+    ) : (
+      <StatusBadge
+        {...STATE.paused}
+        icon={EyeOff}
+        size="sm"
+        label={t("catalog.staff.notReceiving")}
+      />
+    );
+  }
+
+  function toggleOf(member: StaffRow, showLabel: boolean) {
+    return (
+      <ItemToggle
+        checked={member.active}
+        label={t("catalog.staff.toggle")}
+        ariaLabel={t("catalog.staff.toggleAria", { name: member.display_name })}
+        showLabel={showLabel}
+        onChange={() => toggle(member)}
+      />
+    );
+  }
+
+  // Tabela (modo "lista" a partir de 1024 px): uma pessoa por linha, com o dia e os serviços.
+  const tableColumns: DataListColumn<StaffRow>[] = [
+    {
+      key: "person",
+      header: t("booking.staff"),
+      cell: (member) => (
+        <button
+          type="button"
+          onClick={() => openForm(member)}
+          aria-label={t("shop.editAria", { name: member.display_name })}
+          className="catalog-table-item flex min-w-0 items-center gap-3 rounded-xl text-left transition hover:bg-muted/30"
+        >
+          <PersonAvatar
+            name={member.display_name}
+            src={member.avatar_url}
+            seed={member.id}
+            size="sm"
+            className={cn(!member.active && "opacity-55 grayscale")}
+          />
+          <span className="min-w-0">
+            <span className="brand-content-title block truncate text-sm font-bold">
+              {member.display_name}
+            </span>
+            {roleBadge(member)}
+          </span>
+        </button>
+      ),
+    },
+    {
+      key: "today",
+      header: t("shop.agenda.today"),
+      width: "16rem",
+      cell: (member) => dayLine(member),
+    },
+    {
+      key: "services",
+      header: t("shop.nav.services"),
+      width: "16rem",
+      cell: (member) => servicesLine(member),
+    },
+    {
+      key: "receiving",
+      header: t("catalog.staff.toggle"),
+      width: "11rem",
+      align: "center",
+      cell: (member) => (
+        <span className="inline-flex flex-wrap items-center justify-center gap-2">
+          {/* Na tabela o interruptor (ligado ou desligado) já diz o estado: o selo só quando
+              aguarda aprovação (o de "pausado" quebrava em 3 linhas na coluna). */}
+          {awaiting[member.id] ? statusBadgeOf(member, "grid") : null}
+          {toggleOf(member, false)}
+        </span>
+      ),
+    },
+    {
+      key: "menu",
+      header: <span className="sr-only">{t("visual.moreActions")}</span>,
+      width: "4rem",
+      align: "end",
+      cell: (member) => (
+        <MoreActions
+          label={t("catalog.moreAria", { name: member.display_name })}
+          title={member.display_name}
+          actions={menuOf(member)}
+        />
+      ),
+    },
+  ];
+
+  const accessSummary = access
+    ? accessCount === 1
+      ? t("catalog.access.countOne")
+      : t("catalog.access.countMany", { count: accessCount })
+    : t("catalog.access.hint");
+  // Celular e tablet: linha no fim da lista. Computador: cartão fixo ao lado da grade.
+  const accessRow = onOpenAccess ? (
+    <button
+      type="button"
+      onClick={onOpenAccess}
+      className="flex min-h-14 w-full items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-left transition hover:border-primary/40"
+    >
+      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+        <KeyRound className="size-5" aria-hidden />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-bold">{t("catalog.access.title")}</span>
+        <span className="block text-xs text-muted-foreground">{accessSummary}</span>
+      </span>
+      <span className="text-xs font-semibold text-muted-foreground">
+        {t("catalog.access.manage")}
+      </span>
+      <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+    </button>
+  ) : null;
+  const accessCard = onOpenAccess ? (
+    <div className="catalog-access-card space-y-3 rounded-2xl border border-border bg-card p-4">
+      <span className="grid size-10 place-items-center rounded-xl bg-primary/10 text-primary">
+        <KeyRound className="size-5" aria-hidden />
+      </span>
+      <div className="space-y-1">
+        <p className="text-sm font-bold">{t("catalog.access.title")}</p>
+        <p className="text-xs text-muted-foreground">{accessSummary}</p>
+      </div>
+      <button type="button" onClick={onOpenAccess} className="action-button action-edit w-full">
+        {t("catalog.access.manage")}
+        <ChevronRight className="size-4" aria-hidden />
+      </button>
+    </div>
+  ) : null;
+  // Só quando a grade de cartões é montada: na tabela (lista ≥ 1024) e na busca sem resultado
+  // o atalho volta a ser a linha no fim, senão sumia das duas posições.
+  const gridShown = staff.length > 0 && visible.length > 0 && !(view === "list" && wide);
+  const sideBySide = device === "computador" && Boolean(accessCard) && gridShown;
+
   return (
     <section className="space-y-4">
-      <div className="app-section-title">
-        <Users />
-        <h2>{t("shop.nav.team")}</h2>
-        {/* Com convites liberados: um botão só; as duas formas aparecem ao tocar. */}
-        {staff.length > 0 && canInvite && (
-          <button
-            type="button"
-            aria-expanded={addOpen}
-            aria-controls="team-add-choices"
-            className="action-button action-confirm ml-auto"
-            onClick={() => setAddOpen((value) => !value)}
-          >
-            <Plus className="size-4" aria-hidden />
-            {t("catalog.staff.add")}
-          </button>
-        )}
-        {staff.length > 0 && !canInvite && (
-          <button
-            type="button"
-            className="action-button action-confirm ml-auto"
-            onClick={() => openForm(null)}
-          >
-            <Plus className="size-4" aria-hidden />
-            {t("catalog.staff.new")}
-          </button>
-        )}
-      </div>
+      {wide ? (
+        <div className="catalog-toolbar">
+          {title}
+          {filters}
+          {addButton}
+        </div>
+      ) : (
+        title
+      )}
 
-      {/* "Só na agenda" ou "Com acesso ao painel", depois de tocar em "Adicionar". */}
-      {staff.length > 0 && canInvite && addOpen && (
+      {/* "Só na agenda" ou "Com acesso ao painel", depois de tocar em "Adicionar" (celular). */}
+      {phone && staff.length > 0 && canInvite && addOpen && (
         <div id="team-add-choices">
           <AddStaffChoices
             onAgenda={() => {
@@ -454,24 +817,7 @@ export function TeamTab({
         />
       )}
 
-      <CatalogFilters
-        query={query}
-        onQuery={setQuery}
-        status={status}
-        onStatus={setStatus}
-        total={staff.length}
-        active={activeCount}
-        visible={visible.length}
-        label={t("shop.staff.search")}
-        activeLabel={t("catalog.staff.filterActive")}
-        pausedLabel={t("brand.catalog.paused")}
-        statusFirst
-        viewMode={view}
-        onViewMode={(next) => {
-          setView(next);
-          writeCatalogViewPreference(shopId, "staff", next);
-        }}
-      />
+      {!wide && filters}
 
       {loading && staff.length === 0 ? (
         <LoadingState label={t("catalog.staff.loading")} variant="cards" count={2} />
@@ -526,77 +872,17 @@ export function TeamTab({
             </button>
           }
         />
+      ) : view === "list" && wide ? (
+        <DataList
+          className="catalog-table"
+          columns={tableColumns}
+          rows={visible}
+          rowKey={(member) => member.id}
+        />
       ) : (
-        <div className={view === "grid" ? "grid gap-3 sm:grid-cols-2" : "flex flex-col gap-2"}>
-          {visible.map((member) => {
-            const waiting = awaiting[member.id];
-            const link =
-              linkOrigin && member.booking_slug ? `${linkOrigin}/${member.booking_slug}` : null;
-            const does = servicesOf(member);
-            const hasAccess = !access || accessByStaff.has(member.id);
-            const menu: MoreAction[] = [
-              {
-                id: "edit",
-                label: t("catalog.staff.edit"),
-                icon: Pencil,
-                onSelect: () => openForm(member),
-              },
-              ...(onOpenAgenda
-                ? [
-                    {
-                      id: "agenda",
-                      label: t("catalog.staff.seeAgenda"),
-                      icon: CalendarDays,
-                      onSelect: () => onOpenAgenda(member.id),
-                    },
-                  ]
-                : []),
-              ...(link
-                ? [
-                    {
-                      id: "link",
-                      label: t("catalog.staff.copyLink"),
-                      icon: Link2,
-                      onSelect: () => {
-                        void navigator.clipboard
-                          ?.writeText(link)
-                          .then(() =>
-                            toast.success(t("visual.copied"), { description: member.display_name }),
-                          )
-                          .catch(() => toast.error(t("catalog.staff.copyFailed")));
-                      },
-                    },
-                  ]
-                : []),
-              ...(onBlockTime
-                ? [
-                    {
-                      id: "block",
-                      label: t("catalog.staff.blockTime"),
-                      icon: CalendarX2,
-                      onSelect: () => onBlockTime(member.id),
-                    },
-                  ]
-                : []),
-              ...(canInvite && !hasAccess
-                ? [
-                    {
-                      id: "invite",
-                      label: t("catalog.staff.giveAccess"),
-                      icon: UserPlus,
-                      onSelect: () => openInvite(member.display_name, member.id),
-                    },
-                  ]
-                : []),
-              {
-                id: "delete",
-                label: t("shop.deleteStaff.confirm"),
-                icon: Trash2,
-                tone: "danger",
-                onSelect: () => setDeleteTarget(member),
-              },
-            ];
-            return (
+        <MaybeSplit aside={sideBySide ? accessCard : null}>
+          <CatalogItems view={view}>
+            {visible.map((member) => (
               <CatalogCard
                 key={member.id}
                 id={`staff-${member.id}`}
@@ -621,107 +907,28 @@ export function TeamTab({
                   view === "grid" ? (
                     <div className="space-y-2.5">
                       {dayLine(member)}
-                      {does.length > 0 && (
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="sr-only">
-                            {t("catalog.staff.doesAria", {
-                              list: does.map((row) => row.service.name).join(", "),
-                            })}
-                          </span>
-                          {does.length < activeServices.length &&
-                            does.slice(0, 5).map(({ service }) => (
-                              <span
-                                key={service.id}
-                                title={service.name}
-                                aria-hidden
-                                className="grid size-8 place-items-center overflow-hidden rounded-lg bg-muted text-gold"
-                              >
-                                <ServiceIcon
-                                  icon={service.icon}
-                                  className="size-4"
-                                  imageClassName="size-8 object-cover !rounded-none !p-0"
-                                />
-                              </span>
-                            ))}
-                          <span className="text-xs font-semibold text-muted-foreground" aria-hidden>
-                            {/* "+N" só quando os ícones aparecem (quem faz todos fica sem eles). */}
-                            {does.length < activeServices.length && does.length > 5
-                              ? `+${does.length - 5} · `
-                              : ""}
-                            {does.length === activeServices.length
-                              ? t("catalog.staff.doesAll")
-                              : t("catalog.staff.doesCount", { count: does.length })}
-                          </span>
-                          {does.some((row) => row.ownPrice) && (
-                            <Tag>{t("catalog.service.ownPrices")}</Tag>
-                          )}
-                        </div>
-                      )}
+                      {servicesLine(member)}
                       {/* "Copiar link" e "Ver agenda" ficam no menu ⋯ do cartão. */}
                     </div>
                   ) : null
                 }
-                status={
-                  waiting ? (
-                    <StatusBadge {...STATE.waiting} size="sm" label={t("catalog.awaiting")} />
-                  ) : member.active && view === "grid" ? null : member.active ? (
-                    <StatusBadge {...STATE.active} size="sm" label={t("catalog.staff.receiving")} />
-                  ) : (
-                    <StatusBadge
-                      {...STATE.paused}
-                      icon={EyeOff}
-                      size="sm"
-                      label={t("catalog.staff.notReceiving")}
-                    />
-                  )
-                }
-                toggle={
-                  <ItemToggle
-                    checked={member.active}
-                    label={t("catalog.staff.toggle")}
-                    ariaLabel={t("catalog.staff.toggleAria", { name: member.display_name })}
-                    showLabel={view === "grid"}
-                    onChange={() => toggle(member)}
-                  />
-                }
+                status={statusBadgeOf(member, view)}
+                toggle={toggleOf(member, view === "grid")}
                 menu={
                   <MoreActions
+                    className="catalog-card-menu"
                     label={t("catalog.moreAria", { name: member.display_name })}
                     title={member.display_name}
-                    actions={menu}
+                    actions={menuOf(member)}
                   />
                 }
               />
-            );
-          })}
-        </div>
+            ))}
+          </CatalogItems>
+        </MaybeSplit>
       )}
 
-      {onOpenAccess && (
-        <button
-          type="button"
-          onClick={onOpenAccess}
-          className="flex min-h-14 w-full items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-left transition hover:border-primary/40"
-        >
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-            <KeyRound className="size-5" aria-hidden />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-bold">{t("catalog.access.title")}</span>
-            <span className="block text-xs text-muted-foreground">
-              {access
-                ? accessCount === 1
-                  ? t("catalog.access.countOne")
-                  : t("catalog.access.countMany", { count: accessCount })
-                : t("catalog.access.hint")}
-            </span>
-          </span>
-          <span className="text-xs font-semibold text-muted-foreground">
-            {t("catalog.access.manage")}
-          </span>
-          <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-        </button>
-      )}
+      {!sideBySide && accessRow}
 
       <StaffForm
         open={formOpen}

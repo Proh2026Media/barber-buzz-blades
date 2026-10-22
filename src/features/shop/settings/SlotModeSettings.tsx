@@ -20,6 +20,7 @@ import {
   StatusBadge,
   PreviewPanel,
   SectionHeader,
+  SplitLayout,
   Tag,
   TimeChips,
   Timeline,
@@ -219,7 +220,7 @@ export function SlotModeSettings({
     <section
       id="forma-dos-horarios"
       tabIndex={-1}
-      className="app-action-card scroll-mt-24 space-y-5 p-5 outline-none"
+      className="ajustes-item app-action-card scroll-mt-24 space-y-5 p-5 outline-none"
       aria-labelledby={`${groupName}-title`}
     >
       <SectionHeader
@@ -229,69 +230,79 @@ export function SlotModeSettings({
         description={t("slots.intro")}
       />
 
-      <ChoiceCards
-        legend={t("slots.title")}
-        name={groupName}
-        value={choice}
-        disabled={busy}
-        onChange={(option) => {
-          setChoice(option);
-          setStatus(null);
-        }}
-        options={SLOT_CHOICES.map((option) => ({
-          value: option,
-          title: t(`slots.mode.${option}.title`),
-          description: t(`slots.mode.${option}.text`),
-          icon: option === "literal" ? Rows3 : LayoutGrid,
-          content: (
-            <TimeChips
-              times={exampleFor(example, modeFor(option, step), step, prep).list}
-              label={t("slots.preview.listAria")}
-              more
+      {/* A partir de 1024 px, com largura: escolhas à esquerda e "assim o cliente vê" fixa à
+          direita (src/styles/ajustes.css); no celular, empilhadas como antes. */}
+      <SplitLayout
+        gap="1.25rem"
+        asideWidth="20rem"
+        aside={
+          <PreviewPanel icon={Hourglass} title={t("slots.preview.title")} live>
+            <Timeline rows={timeline} />
+          </PreviewPanel>
+        }
+      >
+        <div className="space-y-5">
+          <ChoiceCards
+            legend={t("slots.title")}
+            name={groupName}
+            value={choice}
+            disabled={busy}
+            onChange={(option) => {
+              setChoice(option);
+              setStatus(null);
+            }}
+            options={SLOT_CHOICES.map((option) => ({
+              value: option,
+              title: t(`slots.mode.${option}.title`),
+              description: t(`slots.mode.${option}.text`),
+              icon: option === "literal" ? Rows3 : LayoutGrid,
+              content: (
+                <TimeChips
+                  times={exampleFor(example, modeFor(option, step), step, prep).list}
+                  label={t("slots.preview.listAria")}
+                  more
+                />
+              ),
+            }))}
+          />
+
+          {choice === "interval" && (
+            <ChoiceChips
+              icon={Clock3}
+              label={t("slots.step.label")}
+              options={SLOT_STEP_OPTIONS.map((minutes) => ({
+                value: minutes,
+                label: t("slots.chip.minutes", { minutes }),
+                note: minutes === SLOT_STEP_MINUTES ? t("slots.default") : undefined,
+              }))}
+              value={step}
+              disabled={busy}
+              onChange={(value) => {
+                setStep(value);
+                setStatus(null);
+              }}
             />
-          ),
-        }))}
-      />
+          )}
 
-      {choice === "interval" && (
-        <ChoiceChips
-          icon={Clock3}
-          label={t("slots.step.label")}
-          options={SLOT_STEP_OPTIONS.map((minutes) => ({
-            value: minutes,
-            label: t("slots.chip.minutes", { minutes }),
-            note: minutes === SLOT_STEP_MINUTES ? t("slots.default") : undefined,
-          }))}
-          value={step}
-          disabled={busy}
-          onChange={(value) => {
-            setStep(value);
-            setStatus(null);
-          }}
-        />
-      )}
-
-      {prepSupported && (
-        <ChoiceChips
-          icon={Sparkles}
-          label={t("slots.prep.label")}
-          hint={t("slots.prep.hint")}
-          options={PREP_OPTIONS.map((minutes) => ({
-            value: minutes,
-            label: minutes === 0 ? t("slots.prep.none") : t("slots.chip.minutes", { minutes }),
-          }))}
-          value={prep}
-          disabled={busy}
-          onChange={(value) => {
-            setPrep(value);
-            setStatus(null);
-          }}
-        />
-      )}
-
-      <PreviewPanel icon={Hourglass} title={t("slots.preview.title")} live>
-        <Timeline rows={timeline} />
-      </PreviewPanel>
+          {prepSupported && (
+            <ChoiceChips
+              icon={Sparkles}
+              label={t("slots.prep.label")}
+              hint={t("slots.prep.hint")}
+              options={PREP_OPTIONS.map((minutes) => ({
+                value: minutes,
+                label: minutes === 0 ? t("slots.prep.none") : t("slots.chip.minutes", { minutes }),
+              }))}
+              value={prep}
+              disabled={busy}
+              onChange={(value) => {
+                setPrep(value);
+                setStatus(null);
+              }}
+            />
+          )}
+        </div>
+      </SplitLayout>
 
       <IconList
         items={[

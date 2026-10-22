@@ -1,9 +1,10 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
   ArrowUpRight,
   BellRing,
+  ChevronRight,
   CalendarClock,
   Clock3,
   Gift,
@@ -26,6 +27,7 @@ import {
 import {
   AttentionList,
   IconTile,
+  MasterDetail,
   PersonAvatar,
   STATE,
   SettingRow,
@@ -34,6 +36,7 @@ import {
   readableLink,
   type AttentionItem,
 } from "@/components/visual";
+import { useViewportAtLeast } from "@/lib/device";
 import { parseLandingConfig } from "@/features/marketing/shop-landing";
 import type { Tables } from "@/integrations/supabase/types";
 import { LOCALE_NATIVE_NAMES, useI18n, type MessageKey } from "@/lib/i18n";
@@ -51,9 +54,11 @@ import {
   useShopSetupProgress,
   type SetupTarget,
 } from "../ShopSetupChecklist";
+import { BOOKING_CARD_IDS } from "./booking-cards";
+import { BookingRail } from "./BookingRulesSettings";
 import { ColorDots, LogoChip, PageStatusBadge } from "./brand-bits";
 import { DOMAIN_BADGE, type DomainStatus } from "./domain-status";
-import type { SettingsSection } from "./section";
+import { openSettingsItem, readItemFromUrl, type SettingsSection } from "./section";
 import type { SettingsSignals } from "./useSettingsSignals";
 import { CONNECTION_META, connectionOf } from "./whatsapp-connection";
 
@@ -100,6 +105,11 @@ export type SettingsOverview = {
   avisosHint?: string;
   /** "Meu perfil e link": como o cliente vê quem está usando o painel. */
   ownProfile?: { id: string; name: string; avatarUrl: string | null; link: string | null };
+  /**
+   * Fuso da barbearia, para o trilho do Agendamento no computador mostrar "até ter., 3 de nov."
+   * e o relógio do fuso. Sem ele, o trilho mostra "30 dias" e o fuso só com o rótulo.
+   */
+  timeZone?: string;
 } & SettingsSignals;
 
 /** Linha de atalho que leva a outra página do painel (mesmo desenho do `SettingRow`). */
@@ -132,6 +142,50 @@ function LinkRow({
         </span>
         <ArrowUpRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
       </a>
+    </div>
+  );
+}
+
+/**
+ * Linha de assunto da lista-mestre: o mesmo desenho do `SettingRow` com seta, mais
+ * `aria-current` quando a seção está aberta ao lado (a partir de 1024 px o CSS a destaca).
+ */
+function HubRow({
+  icon,
+  title,
+  description,
+  summary,
+  attention,
+  current,
+  onClick,
+}: {
+  icon: LucideIcon;
+  title: string;
+  description?: string;
+  summary?: ReactNode;
+  attention?: ReactNode;
+  current: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <div className="py-1">
+      <button
+        type="button"
+        onClick={onClick}
+        aria-current={current ? "page" : undefined}
+        className="ajustes-assunto flex min-h-14 w-full items-center gap-3 rounded-2xl px-2 py-1.5 text-left transition hover:bg-muted/50"
+      >
+        <IconTile icon={icon} size="sm" />
+        <span className="min-w-0 flex-1 text-left">
+          <span className="block text-sm font-semibold">{title}</span>
+          {description && (
+            <span className="block text-xs text-muted-foreground">{description}</span>
+          )}
+          {summary && <span className="mt-1.5 flex flex-wrap items-center gap-1.5">{summary}</span>}
+        </span>
+        {attention}
+        <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+      </button>
     </div>
   );
 }
@@ -177,6 +231,22 @@ export function SettingsHub({
   const { t, locale } = useI18n();
   const themePreference = useThemePreference();
   const current = section && sections.includes(section) ? section : null;
+  // A partir de 1024 px a lista de assuntos fica ao lado da seção aberta (mestre-detalhe) e,
+  // sem seção no endereço, a primeira já aparece à direita. A partir de 1280 px o segundo nível
+  // do Agendamento (um ajuste por vez) também fica lado a lado, num trilho à esquerda.
+  const wide = useViewportAtLeast(1024);
+  const rail = useViewportAtLeast(1280);
+  // A seção mostrada sem `?secao=` nunca é Agendamento: a lista de ajustes dela abre cada um
+  // pelo `useSettingsItem` do ShopShell, que só está ativo com a seção de fato aberta (sem isso
+  // o ajuste abria sem seta de voltar e sem o Voltar do navegador).
+  const firstShown = sections.find((id) => id !== "agendamento") ?? null;
+  const shown = current ?? (wide ? firstShown : null);
+  const railOn = rail && current === "agendamento";
+  const bookingItem = railOn ? readItemFromUrl() : null;
+  useLayoutEffect(() => {
+    // Com o trilho à vista e nenhum ajuste aberto, abre o primeiro (sem entrada no histórico).
+    if (railOn && !readItemFromUrl()) openSettingsItem(BOOKING_CARD_IDS.slots, "replace");
+  }, [railOn]);
   const [guideHidden, setGuideHidden] = useState(false);
   const setupSettings = overview?.settings ?? null;
   const setup = useShopSetupProgress(
@@ -203,27 +273,45 @@ export function SettingsHub({
     onSetupGuideShown?.();
   }
 
-  if (current) {
-    const Icon = SECTION_ICONS[current];
-    // Uma linha: seta de voltar (44 px) + nome da tela. O título "Ajustes" já está logo acima.
+  /** A seção aberta: seta de voltar (44 px) + nome. O título "Ajustes" já está logo acima. */
+  function renderDetail(id: SettingsSection) {
+    const Icon = SECTION_ICONS[id];
+    // Com a lista ao lado, a seta só serve para fechar um ajuste aberto dentro da subtela; com
+    // o trilho do Agendamento à vista nem isso (os ajustes ficam lado a lado).
+    const backShown = !wide || (Boolean(onBack) && !railOn);
+    const body = renderSection(id);
     return (
-      <div className="space-y-5">
+      <div className="ajustes-detalhe space-y-5" data-secao={id}>
         <div className="flex min-h-11 items-center gap-2">
-          <button
-            type="button"
-            onClick={() => (onBack ? onBack() : onSectionChange(null))}
-            aria-label={onBack ? t("shop.settings.backToList") : t("shop.settings.back")}
-            title={onBack ? t("shop.settings.backToList") : t("shop.settings.back")}
-            className="-ms-1 grid size-11 shrink-0 place-items-center rounded-xl border border-border bg-card text-foreground transition hover:border-primary/40"
-          >
-            <ArrowLeft className="size-5" aria-hidden />
-          </button>
+          {backShown && (
+            <button
+              type="button"
+              onClick={() => (onBack ? onBack() : onSectionChange(null))}
+              aria-label={onBack ? t("shop.settings.backToList") : t("shop.settings.back")}
+              title={onBack ? t("shop.settings.backToList") : t("shop.settings.back")}
+              className="-ms-1 grid size-11 shrink-0 place-items-center rounded-xl border border-border bg-card text-foreground transition hover:border-primary/40"
+            >
+              <ArrowLeft className="size-5" aria-hidden />
+            </button>
+          )}
           <h3 className="flex min-w-0 items-center gap-2 text-lg font-extrabold tracking-tight">
             <Icon className="size-5 shrink-0 text-gold" aria-hidden />
-            <span className="min-w-0">{t(`settingsHub.section.${current}` as const)}</span>
+            <span className="min-w-0">{t(`settingsHub.section.${id}` as const)}</span>
           </h3>
         </div>
-        <div className="space-y-6">{renderSection(current)}</div>
+        {/* O invólucro e a posição do conteúdo não mudam com o trilho: cruzar 1280 px com um
+            ajuste sendo editado não remonta o cartão (o rascunho ficaria perdido). */}
+        <div className={railOn ? "ajustes-trilho-grade" : undefined}>
+          {railOn && overview?.settings ? (
+            <BookingRail
+              settings={overview.settings}
+              timeZone={overview.timeZone}
+              active={bookingItem}
+              onOpen={(item) => openSettingsItem(item, "replace")}
+            />
+          ) : null}
+          <div className="ajustes-conteudo">{body}</div>
+        </div>
       </div>
     );
   }
@@ -488,18 +576,18 @@ export function SettingsHub({
     items: group.sections.filter((id) => sections.includes(id)),
   })).filter((group) => group.items.length > 0);
 
-  return (
-    <div className="space-y-4">
+  const list = (
+    <div className="ajustes-lista space-y-4">
       <AttentionList items={attention} headingLevel="h3" />
-      {/* minmax(0,1fr): um link longo (truncado) não alarga a coluna a 320 px. No computador,
-          duas colunas independentes: cada grupo se empilha logo abaixo do anterior, sem o buraco
-          que a grade deixava ao lado de um grupo curto. */}
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 md:block md:columns-2 md:gap-4">
+      {/* minmax(0,1fr): um link longo (truncado) não alarga a coluna a 320 px. No tablet em pé,
+          dois grupos por linha em mosaico (columns, sem buracos de altura igual); com a lista ao
+          lado da seção (1024 px ou mais), um só. */}
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 tablet:block tablet:columns-2 lg:grid lg:grid-cols-1">
         {groups.map((group) => (
           <section
             key={group.id}
             aria-labelledby={`ajustes-grupo-${group.id}`}
-            className="app-action-card min-w-0 break-inside-avoid px-2 py-2 md:mb-4"
+            className="app-action-card min-w-0 px-2 py-2 tablet:mb-4 tablet:break-inside-avoid lg:mb-0"
           >
             <h3
               id={`ajustes-grupo-${group.id}`}
@@ -535,12 +623,13 @@ export function SettingsHub({
                   id === "enderecos" &&
                   (domainStatus === "pending_dns" || domainStatus === "error");
                 return (
-                  <SettingRow
+                  <HubRow
                     key={id}
                     icon={SECTION_ICONS[id]}
                     title={title}
                     description={description}
                     summary={summary}
+                    current={wide && shown === id}
                     attention={
                       marked ? (
                         <span
@@ -585,5 +674,18 @@ export function SettingsHub({
         </div>
       )}
     </div>
+  );
+
+  // Abaixo de 1024 px: lista OU seção (o MasterDetail esconde a outra). A partir de 1024 px:
+  // as duas lado a lado, e sem seção no endereço a primeira já aparece à direita.
+  return (
+    <MasterDetail
+      className="ajustes-mestre"
+      open={Boolean(current)}
+      listWidth="18rem"
+      listWidthWide="18rem"
+      list={list}
+      detail={shown ? renderDetail(shown) : null}
+    />
   );
 }

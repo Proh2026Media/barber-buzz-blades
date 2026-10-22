@@ -169,8 +169,9 @@ export function ShopDetail({
   }
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-start gap-3">
+    // As classes plat-shop-* só agem com largura (src/styles/plataforma.css): blocos lado a lado.
+    <div className="plat-shop-detail space-y-5">
+      <div className="plat-shop-head flex items-start gap-3">
         <ShopLogo name={shop.name} seed={shop.id} logo={logo} size="md" />
         <div className="min-w-0 flex-1">
           <h3 id={headingId} className="break-words text-lg font-bold leading-tight">
@@ -189,9 +190,15 @@ export function ShopDetail({
         </div>
       </div>
 
-      <CopyField value={url} display={readableLink(url)} label={t("plat.shop.link")} href={url} />
+      <CopyField
+        value={url}
+        display={readableLink(url)}
+        label={t("plat.shop.link")}
+        href={url}
+        className="plat-shop-link"
+      />
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="plat-shop-stats grid grid-cols-2 gap-2">
         <StatTile icon={Users} label={t("plat.dash.customers")} value={counts.customers} />
         <StatTile
           icon={ShieldCheck}
@@ -205,13 +212,13 @@ export function ShopDetail({
       <button
         type="button"
         onClick={onCustomize}
-        className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+        className="plat-shop-customize flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
       >
         <Palette className="size-4" aria-hidden />
         {t("plat.shops.customize")}
       </button>
 
-      <section className="space-y-2">
+      <section className="plat-shop-modules space-y-2">
         <SectionHeader as="h4" icon={LayoutGrid} title={t("plat.shop.modules")} />
         <div className="divide-y divide-border rounded-2xl border border-border bg-background px-3">
           {moduleRow(
@@ -226,7 +233,7 @@ export function ShopDetail({
         </div>
       </section>
 
-      <section className="space-y-3">
+      <section className="plat-shop-people space-y-3">
         <SectionHeader
           as="h4"
           icon={Users}
@@ -256,7 +263,7 @@ export function ShopDetail({
         {!demoMode && <AccountManagersPanel shops={shops} shopId={shop.id} disabled={!active} />}
       </section>
 
-      <section className="divide-y divide-border rounded-2xl border border-border bg-background px-1">
+      <section className="plat-shop-shortcuts divide-y divide-border rounded-2xl border border-border bg-background px-1">
         <SettingRow
           icon={KeyRound}
           title={t("plat.shop.permissions")}
@@ -271,7 +278,7 @@ export function ShopDetail({
         />
       </section>
 
-      <div className="border-t border-border pt-4">
+      <div className="plat-shop-status border-t border-border pt-4">
         <button
           type="button"
           onClick={() => setConfirmStatus(true)}

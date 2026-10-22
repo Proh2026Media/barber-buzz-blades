@@ -275,7 +275,8 @@ function NoticeItem({
     <li
       className={cn(
         TONE_CLASS[entry.tone],
-        "app-action-card flex flex-wrap items-start gap-3 p-3.5",
+        // A partir de 768 px: uma linha só, com a ação à direita do texto.
+        "app-action-card flex flex-wrap items-start gap-3 p-3.5 tablet:flex-nowrap tablet:items-center",
       )}
       // Faixa lateral só no que pede ação (estilo em linha: `.app-action-card` manda na borda).
       style={
@@ -304,7 +305,7 @@ function NoticeItem({
         {entry.detail && <p className="mt-0.5 text-xs text-muted-foreground">{entry.detail}</p>}
       </div>
       {(entry.aside || entry.action) && (
-        <div className="flex w-full flex-wrap items-center justify-end gap-2 ps-12">
+        <div className="flex w-full flex-wrap items-center justify-end gap-2 ps-12 tablet:w-auto tablet:shrink-0 tablet:ps-0">
           {entry.aside && <div className="me-auto">{entry.aside}</div>}
           {entry.action && (
             <button

@@ -632,7 +632,7 @@ export function ShopPermissionsMatrix({
                     <span className="sr-only">{t("team.perm.permission")}</span>
                   </th>
                   {roles.map((item) => (
-                    <th key={item.id} scope="col" className="w-12 py-2 text-center sm:w-24">
+                    <th key={item.id} scope="col" className="w-12 py-2 text-center sm:w-24 lg:w-32">
                       <item.icon className="mx-auto size-4 text-gold" aria-hidden />
                       <span className="mt-0.5 block truncate text-[10px] font-bold sm:text-xs">
                         {t(item.label)}

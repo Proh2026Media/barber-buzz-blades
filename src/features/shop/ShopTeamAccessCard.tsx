@@ -25,6 +25,7 @@ import {
   ChoiceChips,
   ConfirmDialog,
   CopyField,
+  DataList,
   EmptyState,
   Field,
   FieldMessage,
@@ -40,6 +41,7 @@ import {
 } from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
 import { guardedFetch } from "@/lib/demo-guard";
+import { useViewportAtLeast } from "@/lib/device";
 import type { Tables } from "@/integrations/supabase/types";
 import { ShopPermissionsMatrix } from "@/features/shop/ShopPermissionsMatrix";
 import { t as tNow, useI18n } from "@/lib/i18n";
@@ -311,6 +313,8 @@ export function ShopTeamAccessCard({
 }: ShopTeamAccessCardProps) {
   const { t } = useI18n();
   const roleOptions = useRoleOptions();
+  // Tablet deitado e computador: pessoas em tabela (nome, papel, situação, ações).
+  const table = useViewportAtLeast(1024);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -634,6 +638,101 @@ export function ShopTeamAccessCard({
         />
       ) : members.length === 0 ? (
         <EmptyState variant="plain" tone="people" title={t("team.access.empty")} />
+      ) : table ? (
+        <div className="space-y-2">
+          <DataList
+            rows={members}
+            rowKey={(member) => member.id}
+            rowLabel={(member) => member.display_name}
+            columns={[
+              {
+                key: "pessoa",
+                header: t("eq.people.title"),
+                cell: (member) => {
+                  const you = member.user_id === currentUserId;
+                  return (
+                    <span className="flex min-w-0 items-center gap-3">
+                      <PersonAvatar
+                        name={member.display_name}
+                        src={photoOf(member)}
+                        seed={member.user_id}
+                        size="sm"
+                        className={cn(!member.active && "opacity-60 grayscale")}
+                      />
+                      <span className="min-w-0">
+                        <span className="flex flex-wrap items-center gap-x-2 text-sm font-bold">
+                          <span className="break-words">{member.display_name}</span>
+                          {you && (
+                            <span className="rounded-full bg-muted px-2 text-[11px] font-bold text-muted-foreground">
+                              {t("eq.people.you")}
+                            </span>
+                          )}
+                        </span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {member.email || t("team.access.noEmail")}
+                        </span>
+                      </span>
+                    </span>
+                  );
+                },
+              },
+              {
+                key: "papel",
+                header: t("eq.member.role"),
+                width: "13rem",
+                cell: (member) => (
+                  <span className="flex flex-wrap items-center gap-1.5">
+                    <RoleBadge role={member.role} percent={member.ownership_percent} />
+                    {member.is_founder && (
+                      <StatusBadge
+                        tone={FOUNDER_META.tone}
+                        icon={FOUNDER_META.icon}
+                        size="sm"
+                        label={t("eq.role.founder")}
+                      />
+                    )}
+                  </span>
+                ),
+              },
+              {
+                key: "situacao",
+                header: t("eq.diff.status"),
+                width: "9rem",
+                cell: (member) =>
+                  member.active ? (
+                    <StatusBadge {...STATE.active} variant="dot" label={t("eq.people.active")} />
+                  ) : (
+                    <StatusBadge {...STATE.paused} size="sm" label={t("eq.people.paused")} />
+                  ),
+              },
+              ...(canEditSociety
+                ? [
+                    {
+                      key: "acoes",
+                      header: <span className="sr-only">{t("eq.member.manage")}</span>,
+                      width: "9rem",
+                      align: "end" as const,
+                      cell: (member: TeamMember) => (
+                        <button
+                          type="button"
+                          onClick={() => openManage(member)}
+                          aria-label={t("eq.member.manageOf", { name: member.display_name })}
+                          title={t("eq.member.manageOf", { name: member.display_name })}
+                          className="action-button min-h-10 justify-center px-3"
+                        >
+                          <Settings2 className="size-4" aria-hidden />
+                          {t("eq.member.manage")}
+                        </button>
+                      ),
+                    },
+                  ]
+                : []),
+            ]}
+          />
+          {members.map((member) => (
+            <div key={member.id}>{resultFor(member.id)}</div>
+          ))}
+        </div>
       ) : (
         <ul className="space-y-2" aria-label={t("eq.people.title")}>
           {members.map((member) => {

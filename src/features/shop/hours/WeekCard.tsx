@@ -3,8 +3,11 @@ import { CalendarDays, Check, Copy, Hourglass, Lock, Moon, Pencil, Store } from 
 import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
+  DialogActions,
+  DialogBody,
   DialogContent,
   DialogDescription,
+  DialogHeader,
   DialogScrollArea,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -22,6 +25,7 @@ import {
   focusFirstInvalid,
   type ActionState,
 } from "@/components/visual";
+import { useDevice } from "@/lib/device";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { SaveOutcome } from "../catalog/types";
@@ -56,6 +60,8 @@ const WEEKDAY_KEYS = [
  * "Sua semana": uma linha por dia com a faixa aberta numa régua comum, o resumo que junta dias
  * iguais ("Seg–Sáb 09:00–19:00 · Dom fechado") e a barra de mudanças não salvas. Tocar no dia
  * abre a faixa (abre/fecha) com "usar também em"; a gravação continua pelo mesmo salvar.
+ * A partir de 1024 px as 7 linhas viram uma tabela compacta (dia · horário · barra · aberto),
+ * via as classes `hours-*` em src/styles/horarios.css; a edição continua pela janela do dia.
  */
 export function WeekCard<Row extends HoursRow>({
   saved,
@@ -216,13 +222,13 @@ export function WeekCard<Row extends HoursRow>({
             ))}
           </ul>
 
-          <div className="grid grid-cols-[3rem_minmax(0,1fr)_auto] gap-x-2">
+          <div className="hours-ruler grid grid-cols-[3rem_minmax(0,1fr)_auto] gap-x-2">
             <span />
-            <RulerTicks ruler={ruler} className="mx-3" />
+            <RulerTicks ruler={ruler} className="hours-ruler-ticks mx-3" />
             {canEdit && <span className="w-11" />}
           </div>
 
-          <ol className="-mt-2 space-y-1.5">
+          <ol className="hours-week-list -mt-2 space-y-1.5">
             {WEEK_ORDER.map((weekday) => {
               const row = byDay.get(weekday);
               if (!row) return null;
@@ -247,28 +253,30 @@ export function WeekCard<Row extends HoursRow>({
               const range = rangeLabel(row.opens_at, row.closes_at);
               const body = (
                 <>
-                  <span className="flex min-h-6 items-center gap-2">
-                    {row.is_open ? (
-                      <span className="whitespace-nowrap text-[15px] font-bold tabular-nums">
-                        {range}
-                      </span>
-                    ) : (
-                      <span className="tone-neutral inline-flex items-center gap-1.5 text-sm font-semibold text-[color:var(--tone-ink)]">
-                        <Moon className="size-4" aria-hidden />
-                        {t("shop.hours.closed")}
-                      </span>
-                    )}
-                    {changedSet.has(weekday) && canEdit && (
-                      <StatusBadge
-                        tone="pending"
-                        variant="dot"
-                        size="sm"
-                        label={t("hours.week.changed")}
-                      />
-                    )}
+                  <span className="hours-day-line flex min-h-6 items-center gap-2">
+                    <span className="hours-day-label inline-flex items-center gap-2">
+                      {row.is_open ? (
+                        <span className="whitespace-nowrap text-[15px] font-bold tabular-nums">
+                          {range}
+                        </span>
+                      ) : (
+                        <span className="tone-neutral inline-flex items-center gap-1.5 text-sm font-semibold text-[color:var(--tone-ink)]">
+                          <Moon className="size-4" aria-hidden />
+                          {t("shop.hours.closed")}
+                        </span>
+                      )}
+                      {changedSet.has(weekday) && canEdit && (
+                        <StatusBadge
+                          tone="pending"
+                          variant="dot"
+                          size="sm"
+                          label={t("hours.week.changed")}
+                        />
+                      )}
+                    </span>
                     {canEdit && (
                       <Pencil
-                        className="ml-auto size-4 shrink-0 text-muted-foreground"
+                        className="hours-day-pencil ml-auto size-4 shrink-0 text-muted-foreground"
                         aria-hidden
                       />
                     )}
@@ -277,10 +285,10 @@ export function WeekCard<Row extends HoursRow>({
                     ruler={ruler}
                     closed={!row.is_open && !wanted?.is_open}
                     segments={segments}
-                    className="mt-1.5"
+                    className="hours-day-track mt-1.5"
                   />
                   {wanted && (
-                    <span className="tone-pending mt-1 flex items-center gap-1 text-xs font-semibold text-[color:var(--tone-ink)]">
+                    <span className="hours-day-wanted tone-pending mt-1 flex items-center gap-1 text-xs font-semibold text-[color:var(--tone-ink)]">
                       <Hourglass className="size-3.5" aria-hidden />
                       {wanted.is_open
                         ? t("hours.week.requested", {
@@ -297,7 +305,7 @@ export function WeekCard<Row extends HoursRow>({
               return (
                 <li
                   key={weekday}
-                  className="grid grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-x-2"
+                  className="hours-day grid grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-x-2"
                 >
                   <span
                     className={cn(
@@ -327,7 +335,7 @@ export function WeekCard<Row extends HoursRow>({
                           .filter(Boolean)
                           .join(". ")}
                         className={cn(
-                          "block w-full rounded-xl border bg-background px-3 py-2 text-left transition-colors hover:border-primary/50",
+                          "hours-day-button block w-full rounded-xl border bg-background px-3 py-2 text-left transition-colors hover:border-primary/50",
                           invalid
                             ? "tone-danger border-[color:var(--tone-line)]"
                             : changedSet.has(weekday)
@@ -338,7 +346,11 @@ export function WeekCard<Row extends HoursRow>({
                         {body}
                       </button>
                     ) : (
-                      <div className="rounded-xl px-3 py-2" aria-label={ariaState} role="group">
+                      <div
+                        className="hours-day-button rounded-xl px-3 py-2"
+                        aria-label={ariaState}
+                        role="group"
+                      >
                         {body}
                       </div>
                     )}
@@ -453,96 +465,143 @@ function DayHoursDialog({
   ];
   const ruler = rulerRange(preview);
   const label = rangeLabelNoBreak(range.start, range.end);
+  // Tablet e computador: janela `lg` com abre e fecha lado a lado; o celular mantém a janela
+  // de uma coluna, um lado por vez.
+  const wide = useDevice() !== "celular";
+
+  const heading = (
+    <>
+      <IconTile icon={CalendarDays} />
+      <div className="min-w-0">
+        <DialogTitle>{t("hours.dialog.title", { day: dayName(row.weekday) })}</DialogTitle>
+        <DialogDescription className="text-sm text-muted-foreground">
+          {t("hours.dialog.description")}
+        </DialogDescription>
+      </div>
+    </>
+  );
+  const editor = (
+    <TimeRangeEditor
+      start={range.start}
+      end={range.end}
+      onChange={setRange}
+      startLabel={t("hours.opens")}
+      endLabel={t("hours.closes")}
+      context={dayName(row.weekday)}
+      error={invalid ? t("hours.week.closeBeforeOpen") : null}
+      layout={wide ? "columns" : "stack"}
+    />
+  );
+  const track = (
+    <div className="space-y-1.5" aria-hidden>
+      <RulerTicks ruler={ruler} />
+      <DayTrack
+        ruler={ruler}
+        size="md"
+        segments={
+          invalid
+            ? []
+            : [{ kind: "open", start: toMinutes(range.start), end: toMinutes(range.end) }]
+        }
+      />
+    </div>
+  );
+  const copy = (
+    <div className="space-y-2">
+      <ChoiceChips<number>
+        multiple
+        label={t("hours.dialog.copyTo")}
+        icon={Copy}
+        value={copyTo}
+        onChange={setCopyTo}
+        options={others.map((weekday) => {
+          const open = draft.find((r) => r.weekday === weekday)?.is_open;
+          return {
+            value: weekday,
+            label: shortName(weekday),
+            icon: open ? undefined : Moon,
+            ariaLabel: open
+              ? dayName(weekday)
+              : t("hours.dialog.copyClosedAria", { day: dayName(weekday) }),
+          };
+        })}
+      />
+      {openOthers.length > 0 && (
+        <button
+          type="button"
+          onClick={() =>
+            setCopyTo((current) =>
+              openOthers.every((weekday) => current.includes(weekday)) ? [] : openOthers,
+            )
+          }
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-dashed border-border px-3 text-sm font-semibold hover:border-primary/50"
+        >
+          <Copy className="size-4 text-gold" aria-hidden />
+          {openOthers.every((weekday) => copyTo.includes(weekday))
+            ? t("hours.dialog.copyNone")
+            : t("hours.dialog.copyAllOpen")}
+        </button>
+      )}
+    </div>
+  );
+  const backButton = (
+    <button
+      type="button"
+      onClick={onClose}
+      className="min-h-11 rounded-xl border border-border bg-background px-4 text-sm font-semibold"
+    >
+      {t("common.back")}
+    </button>
+  );
+  const applyButton = (className: string) => (
+    <button
+      type="button"
+      disabled={invalid}
+      onClick={() => onApply({ start: range.start, end: range.end, copyTo })}
+      className={cn("action-button action-confirm min-h-11 justify-center", className)}
+    >
+      <Check className="size-4" aria-hidden />
+      {copyTo.length
+        ? t("hours.dialog.applyMany", { range: label, count: copyTo.length + 1 })
+        : t("hours.dialog.apply", { range: label })}
+    </button>
+  );
+
+  if (wide) {
+    return (
+      <Dialog open onOpenChange={(open) => !open && onClose()}>
+        <DialogContent size="lg" className="hours-day-dialog">
+          <DialogHeader className="flex-row items-center gap-3 space-y-0 pr-10 text-left">
+            {heading}
+          </DialogHeader>
+          <DialogBody layout="stack" className="gap-5">
+            {editor}
+            {track}
+            {copy}
+          </DialogBody>
+          <DialogActions>
+            {backButton}
+            {applyButton("")}
+          </DialogActions>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="flex max-h-[88dvh] w-[calc(100%-2rem)] flex-col overflow-hidden rounded-3xl p-0 sm:max-w-md sm:rounded-3xl">
         <div className="flex items-center gap-3 border-b border-border px-5 pb-3 pr-14 pt-5">
-          <IconTile icon={CalendarDays} />
-          <div className="min-w-0">
-            <DialogTitle>{t("hours.dialog.title", { day: dayName(row.weekday) })}</DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground">
-              {t("hours.dialog.description")}
-            </DialogDescription>
-          </div>
+          {heading}
         </div>
         <DialogScrollArea className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
-          <TimeRangeEditor
-            start={range.start}
-            end={range.end}
-            onChange={setRange}
-            startLabel={t("hours.opens")}
-            endLabel={t("hours.closes")}
-            context={dayName(row.weekday)}
-            error={invalid ? t("hours.week.closeBeforeOpen") : null}
-          />
-          <div className="space-y-1.5" aria-hidden>
-            <RulerTicks ruler={ruler} />
-            <DayTrack
-              ruler={ruler}
-              size="md"
-              segments={
-                invalid
-                  ? []
-                  : [{ kind: "open", start: toMinutes(range.start), end: toMinutes(range.end) }]
-              }
-            />
-          </div>
-          <div className="space-y-2">
-            <ChoiceChips<number>
-              multiple
-              label={t("hours.dialog.copyTo")}
-              icon={Copy}
-              value={copyTo}
-              onChange={setCopyTo}
-              options={others.map((weekday) => {
-                const open = draft.find((r) => r.weekday === weekday)?.is_open;
-                return {
-                  value: weekday,
-                  label: shortName(weekday),
-                  icon: open ? undefined : Moon,
-                  ariaLabel: open
-                    ? dayName(weekday)
-                    : t("hours.dialog.copyClosedAria", { day: dayName(weekday) }),
-                };
-              })}
-            />
-            {openOthers.length > 0 && (
-              <button
-                type="button"
-                onClick={() =>
-                  setCopyTo((current) =>
-                    openOthers.every((weekday) => current.includes(weekday)) ? [] : openOthers,
-                  )
-                }
-                className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-dashed border-border px-3 text-sm font-semibold hover:border-primary/50"
-              >
-                <Copy className="size-4 text-gold" aria-hidden />
-                {openOthers.every((weekday) => copyTo.includes(weekday))
-                  ? t("hours.dialog.copyNone")
-                  : t("hours.dialog.copyAllOpen")}
-              </button>
-            )}
-          </div>
+          {editor}
+          {track}
+          {copy}
         </DialogScrollArea>
         <div className="flex gap-2 border-t border-border bg-card p-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="min-h-11 rounded-xl border border-border bg-background px-4 text-sm font-semibold"
-          >
-            {t("common.back")}
-          </button>
-          <button
-            type="button"
-            disabled={invalid}
-            onClick={() => onApply({ start: range.start, end: range.end, copyTo })}
-            className="action-button action-confirm min-h-11 flex-1 justify-center"
-          >
-            <Check className="size-4" aria-hidden />
-            {copyTo.length
-              ? t("hours.dialog.applyMany", { range: label, count: copyTo.length + 1 })
-              : t("hours.dialog.apply", { range: label })}
-          </button>
+          {backButton}
+          {applyButton("flex-1")}
         </div>
       </DialogContent>
     </Dialog>

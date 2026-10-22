@@ -106,7 +106,9 @@ export function RhythmDashboard({
   const weekdayIndex = rhythm.preferred_weekday;
 
   return (
-    <section aria-label={heading} className="space-y-3">
+    // @container: os tiles olham a largura do próprio painel (coluna estreita da Conta no tablet,
+    // ficha do cliente, carteira do sócio), não a da tela.
+    <section aria-label={heading} className="@container space-y-3">
       {!hideTitle && <h3 className="text-sm font-bold">{heading}</h3>}
 
       {/* Faixa do dia preferido */}
@@ -142,7 +144,9 @@ export function RhythmDashboard({
         )}
       </div>
 
-      <div className={`grid grid-cols-2 gap-3 ${hideInterval ? "sm:grid-cols-3" : ""}`}>
+      {/* Sem o intervalo são 3 tiles: três colunas só quando o painel tem 36rem (abaixo disso
+          "R$ 60,00" e o nome do serviço quebravam no meio). */}
+      <div className={`grid grid-cols-2 gap-3 ${hideInterval ? "@min-[36rem]:grid-cols-3" : ""}`}>
         {!hideInterval && (
           <StatTile
             icon={Repeat}
@@ -169,7 +173,7 @@ export function RhythmDashboard({
         />
         {!hideAvgSpend && (
           <StatTile
-            className={hideInterval ? "col-span-2 sm:col-span-1" : undefined}
+            className={hideInterval ? "col-span-2 @min-[36rem]:col-span-1" : undefined}
             icon={Wallet}
             label={t("rhythm.avgSpend")}
             value={

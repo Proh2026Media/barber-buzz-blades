@@ -10,8 +10,10 @@ import { useEffect, type ReactNode } from "react";
 import { NotFoundPage } from "../components/NotFoundPage";
 
 import appCss from "../styles.css?url";
+import deviceCss from "../dispositivos.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { themeBootstrapScript } from "../lib/theme";
+import { deviceBootstrapScript } from "../lib/device";
 import { localeBootstrapScript } from "../lib/i18n/locale";
 import { useI18n } from "../lib/i18n";
 import { PwaRegister } from "../lib/pwa";
@@ -84,10 +86,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:locale", content: "pt_BR" },
       { name: "twitter:card", content: "summary" },
     ],
-    // Applies the saved theme before the first paint; kept in sync with `useTheme`.
-    scripts: [{ children: themeBootstrapScript }, { children: localeBootstrapScript }],
+    // Aplica o tema salvo, o idioma e a faixa de dispositivo antes da primeira pintura
+    // (em sincronia com `useTheme`, `useI18n` e `useDevice`).
+    scripts: [
+      { children: themeBootstrapScript },
+      { children: localeBootstrapScript },
+      { children: deviceBootstrapScript },
+    ],
     links: [
       { rel: "stylesheet", href: appCss },
+      // CSS por dispositivo (src/dispositivos.css → src/styles/*.css) depois do styles.css:
+      // vence em igualdade de especificidade.
+      { rel: "stylesheet", href: deviceCss },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "icon", href: "/icons/icon-192.png", type: "image/png" },
       { rel: "apple-touch-icon", href: "/icons/icon-180.png" },

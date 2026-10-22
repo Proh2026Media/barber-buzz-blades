@@ -257,7 +257,7 @@ export function HourMinuteGrid({
       <div role="group" aria-label={`${label} · ${t("ui.time.minute")}`}>
         <p className="mb-1.5 text-xs font-semibold text-muted-foreground">{t("ui.time.minute")}</p>
         <div
-          className={`grid gap-1 rounded-xl bg-muted/50 p-1 ${otherOpen ? "grid-cols-6" : "grid-cols-5"}`}
+          className={`grid gap-1 rounded-xl bg-muted/50 p-1 ${otherOpen ? "grid-cols-6" : "grid-cols-5 tablet:grid-cols-[repeat(4,minmax(0,1fr))_auto]"}`}
         >
           {minutes.map((part) => (
             <button
@@ -273,7 +273,7 @@ export function HourMinuteGrid({
           {!otherOpen && (
             <button
               type="button"
-              className={`${cell} px-1 text-xs`}
+              className={`${cell} px-1 text-xs tablet:whitespace-nowrap tablet:px-2`}
               aria-expanded={false}
               onClick={() => setOtherOpen(true)}
             >

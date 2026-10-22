@@ -402,9 +402,11 @@ export function LegalPageShell({
         </div>
       </header>
 
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:grid lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-12">
+      {/* Índice lateral a partir do tablet deitado (768 px em paisagem) e largura de leitura
+          de ~65 caracteres: src/styles/publicas.css (classes legal-*). */}
+      <div className="legal-layout mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
         {items.length > 0 && (
-          <aside className="hidden lg:block">
+          <aside className="legal-toc-aside hidden">
             <nav aria-label={tocLabel} className="sticky top-24 space-y-2">
               <p className="flex items-center gap-2 px-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
                 <ListOrdered className="size-4" aria-hidden="true" />
@@ -417,7 +419,7 @@ export function LegalPageShell({
           </aside>
         )}
 
-        <main className="mx-auto w-full max-w-3xl space-y-6 lg:col-start-2 lg:mx-0">
+        <main className="legal-main mx-auto w-full max-w-3xl space-y-6">
           <LegalCourtesyNotice locale={locale} />
 
           <section className="public-card space-y-4 rounded-2xl border border-border p-5">
@@ -445,7 +447,7 @@ export function LegalPageShell({
           {items.length > 0 && (
             <details
               ref={tocRef}
-              className="public-card group rounded-2xl border border-border lg:hidden"
+              className="legal-toc-details public-card group rounded-2xl border border-border"
             >
               <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 px-4 py-2 font-semibold [&::-webkit-details-marker]:hidden">
                 <ListOrdered className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />

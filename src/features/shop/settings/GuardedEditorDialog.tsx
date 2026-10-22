@@ -6,6 +6,7 @@ import {
   DialogDescription,
   DialogScrollArea,
   DialogTitle,
+  type DialogSize,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -48,6 +49,7 @@ export function GuardedEditorDialog({
   description,
   descriptionHidden,
   className,
+  size = "page",
   children,
 }: {
   open: boolean;
@@ -56,8 +58,14 @@ export function GuardedEditorDialog({
   /** Linha de apoio do título (lida pelo leitor de tela mesmo quando escondida). */
   description: string;
   descriptionHidden?: boolean;
-  /** Largura máxima da janela (padrão `max-w-2xl`). */
+  /** Largura máxima da janela no celular (padrão `max-w-2xl`); do tablet em diante vale `size`. */
   className?: string;
+  /**
+   * Tamanho a partir de 768 px (docs/dispositivos-2026-10-21.md, seção 4). Padrão `page`:
+   * quase a tela toda, com etapas e campos à esquerda e a prévia à direita. No celular, todos
+   * os tamanhos viram a janela de antes (92dvh).
+   */
+  size?: DialogSize;
   children: (guard: EditorGuard) => ReactNode;
 }) {
   const { t } = useI18n();
@@ -137,12 +145,23 @@ export function GuardedEditorDialog({
         }}
       >
         <DialogContent
+          size={size}
           className={cn(
-            "max-h-[92dvh] w-[calc(100vw-1.5rem)] overflow-hidden rounded-3xl border-border bg-card p-0",
+            "ajustes-editor-page max-h-[92dvh] w-[calc(100vw-1.5rem)] overflow-hidden rounded-3xl border-border bg-card p-0",
             className ?? "max-w-2xl",
+            // Uma só linha na grade (a área de rolagem): sem as linhas vazias do tamanho
+            // largo, que somariam dois espaços no pé. Na janela quase cheia ela ocupa a altura toda.
+            "grid-rows-[minmax(0,1fr)]",
+            size === "page" && "tablet:max-h-[calc(100dvh-3rem)]",
           )}
         >
-          <DialogScrollArea className="grid max-h-[calc(92dvh-2px)] grid-cols-[minmax(0,1fr)] gap-4 overflow-y-auto p-5 sm:p-6">
+          <DialogScrollArea
+            className={cn(
+              "grid max-h-[calc(92dvh-2px)] grid-cols-[minmax(0,1fr)] gap-4 overflow-y-auto p-5 sm:p-6",
+              // Conteúdo alinhado ao topo: com a altura toda, as linhas da grade não se esticam.
+              size === "page" && "tablet:h-full tablet:max-h-none tablet:content-start",
+            )}
+          >
             <div className="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1 pr-10">
               <DialogTitle className="text-lg font-extrabold tracking-tight">{title}</DialogTitle>
               {dirty && (

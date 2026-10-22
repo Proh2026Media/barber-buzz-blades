@@ -185,7 +185,7 @@ export function BusyRow({ row, timeZone }: { row: DayAppointment; timeZone: stri
   const { t } = useI18n();
   const time = useShopTime(timeZone);
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-dashed border-border bg-muted/40 px-3 py-2.5 text-sm text-muted-foreground">
+    <div className="agenda-busy flex items-center gap-3 rounded-2xl border border-dashed border-border bg-muted/40 px-3 py-2.5 text-sm text-muted-foreground">
       <Lock className="size-4 shrink-0" aria-hidden />
       <span className="min-w-0 flex-1 break-words">
         <span className="font-semibold text-foreground">{t("agenda.busy.title")}</span>
@@ -324,7 +324,7 @@ function FullCard({
       <article
         id={anchorId ? `agenda-row-${row.id}` : undefined}
         tabIndex={-1}
-        className="app-action-card flex scroll-mt-28 flex-wrap items-center gap-x-3 gap-y-1.5 px-3 py-2.5 shadow-none"
+        className="agenda-card agenda-card-cancelled app-action-card flex scroll-mt-28 flex-wrap items-center gap-x-3 gap-y-1.5 px-3 py-2.5 shadow-none"
       >
         <span className="w-14 shrink-0 text-center text-sm font-bold tabular-nums text-muted-foreground line-through">
           {start}
@@ -510,8 +510,11 @@ function FullCard({
       id={anchorId ? `agenda-row-${row.id}` : undefined}
       tabIndex={-1}
       aria-label={`${start} · ${customer} · ${t(meta.labelKey)}`}
+      // As classes agenda-card-* só servem ao CSS do tablet e do computador
+      // (src/styles/agenda.css): cartão mais baixo com a ação à direita a partir de 768 px e
+      // linha compacta a partir de 1280 px. No celular é o cartão de sempre.
       className={cn(
-        "app-action-card scroll-mt-28 overflow-hidden",
+        "agenda-card app-action-card scroll-mt-28 overflow-hidden",
         row.status === "completed" && "shadow-none",
         nextMinutes !== undefined && "outline-2 -outline-offset-2 outline-gold",
         state === "unresolved" &&
@@ -519,25 +522,28 @@ function FullCard({
       )}
       style={stripe ? { borderLeft: `4px solid ${stripe}` } : undefined}
     >
-      <div className="flex gap-3 p-3 sm:p-4">
-        <div className="flex w-14 shrink-0 flex-col items-center text-center" aria-hidden>
+      <div className="agenda-card-body flex gap-3 p-3 sm:p-4">
+        <div
+          className="agenda-card-time flex w-14 shrink-0 flex-col items-center text-center"
+          aria-hidden
+        >
           <span className="text-base font-extrabold leading-none tabular-nums text-gold">
             {start}
           </span>
           <span
-            className="my-1.5 w-1 rounded-full bg-gold/35"
+            className="agenda-card-time-bar my-1.5 w-1 rounded-full bg-gold/35"
             style={{ height: `${Math.min(44, Math.max(12, duration * 0.5))}px` }}
           />
           <span className="text-xs font-semibold leading-none tabular-nums text-muted-foreground">
             {end}
           </span>
         </div>
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <p className="text-[15px] font-bold leading-snug break-words">
+        <div className="agenda-card-main min-w-0 flex-1 space-y-1.5">
+          <p className="agenda-card-name text-[15px] font-bold leading-snug break-words">
             <span className="sr-only">{`${start}–${end} · `}</span>
             <CustomerName row={row} name={customer} onOpen={handlers.onOpenClient} />
           </p>
-          <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <p className="agenda-card-service flex items-center gap-1.5 text-sm text-muted-foreground">
             <ServiceIcon
               icon={serviceIcon}
               className="size-4 shrink-0 text-gold"
@@ -560,7 +566,7 @@ function FullCard({
             </span>
           </p>
           {showStaff && row.staff?.display_name && (
-            <p className="flex items-center gap-1.5 text-xs font-semibold">
+            <p className="agenda-card-staff flex items-center gap-1.5 text-xs font-semibold">
               <PersonAvatar
                 name={row.staff.display_name}
                 src={staffPhoto}
@@ -570,7 +576,7 @@ function FullCard({
               <span className="min-w-0 break-words">{row.staff.display_name}</span>
             </p>
           )}
-          <div className="flex flex-wrap items-center gap-1.5 pt-0.5 empty:hidden">
+          <div className="agenda-card-badges flex flex-wrap items-center gap-1.5 pt-0.5 empty:hidden">
             {/* "Confirmado" é o normal do dia (a loja confirma sozinha): o selo só aparece quando
                 diz algo diferente (agora, a confirmar, passou do horário, concluído…). O estado
                 continua no nome acessível do cartão. */}
@@ -620,19 +626,19 @@ function FullCard({
             actions={actions}
             label={t("agenda.menu.label", { time: start, name: customer })}
             title={`${start} · ${customer}`}
-            className="-me-1 -mt-1 shrink-0"
+            className="agenda-card-more -me-1 -mt-1 shrink-0"
           />
         )}
       </div>
 
       {waits.map((wait) => (
-        <div key={wait.id} className="px-3 pb-3 sm:px-4">
+        <div key={wait.id} className="agenda-card-extra px-3 pb-3 sm:px-4">
           <WaitPanel wait={wait} now={waitNow} busy={waitBusy} onRestore={handlers.onRestoreWait} />
         </div>
       ))}
 
       {attendance.failed && (
-        <div className="px-3 pb-3 sm:px-4">
+        <div className="agenda-card-extra px-3 pb-3 sm:px-4">
           <Notice
             tone="warning"
             title={t("ins.att.loadError")}
@@ -642,7 +648,7 @@ function FullCard({
       )}
 
       {feedback?.state === "error" && (
-        <div className="px-3 pb-3 sm:px-4">
+        <div className="agenda-card-extra px-3 pb-3 sm:px-4">
           <Notice
             tone="danger"
             title={t("shop.error.changeAppointment")}
@@ -656,7 +662,7 @@ function FullCard({
       )}
 
       {primary.length > 0 && (
-        <div className="flex flex-wrap gap-2 border-t border-border/70 bg-muted/20 px-3 py-3 sm:px-4 [&>button]:flex-1 [&>button]:basis-44">
+        <div className="agenda-card-footer flex flex-wrap gap-2 border-t border-border/70 bg-muted/20 px-3 py-3 sm:px-4 [&>button]:flex-1 [&>button]:basis-44">
           {primary.map((kind) =>
             kind === "confirm"
               ? confirmButton

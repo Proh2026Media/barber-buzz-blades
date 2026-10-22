@@ -27,7 +27,8 @@ export function CustomerPageHeader({
         type="button"
         onClick={onBack}
         aria-label={t("nav.backHome")}
-        className="-ms-1 inline-flex min-h-11 items-center gap-1.5 rounded-[var(--button-radius)] px-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        // Com a coluna lateral (tablet e computador) o Início está sempre à vista: o botão some.
+        className="-ms-1 inline-flex min-h-11 items-center gap-1.5 rounded-[var(--button-radius)] px-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground tablet:hidden"
       >
         <ArrowLeft className="size-4" aria-hidden />
         {t("nav.home")}

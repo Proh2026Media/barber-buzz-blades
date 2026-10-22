@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Eye, Monitor, Smartphone, X } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { StatusBadge } from "@/components/visual";
+import { useDevice } from "@/lib/device";
 import { useI18n } from "@/lib/i18n";
 import { LoginScreenPreview, type LoginScreenPreviewProps } from "./LoginScreenPreview";
 
@@ -16,19 +17,11 @@ export function LoginPreviewDialog({ open, onOpenChange, preview }: LoginPreview
   const { t } = useI18n();
   // A tela de entrada muda com a largura real do aparelho: no celular só a versão de
   // celular é fiel, então a prévia começa (e fica) em "Celular" em telas pequenas.
-  const [wide, setWide] = useState(true);
+  const wide = useDevice() !== "celular";
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   useEffect(() => {
-    if (!open) return;
-    const media = window.matchMedia("(min-width: 768px)");
-    const sync = () => {
-      setWide(media.matches);
-      if (!media.matches) setDevice("mobile");
-    };
-    sync();
-    media.addEventListener("change", sync);
-    return () => media.removeEventListener("change", sync);
-  }, [open]);
+    if (open && !wide) setDevice("mobile");
+  }, [open, wide]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

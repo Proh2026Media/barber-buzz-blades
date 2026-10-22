@@ -16,6 +16,7 @@ import {
   ActionResult,
   ConfirmDialog,
   CopyField,
+  DataList,
   Field,
   Hint,
   IconList,
@@ -28,6 +29,7 @@ import {
   type ActionState,
 } from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
+import { useViewportAtLeast } from "@/lib/device";
 import { guardedFetch } from "@/lib/demo-guard";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import type { Tables } from "@/integrations/supabase/types";
@@ -241,6 +243,9 @@ export function AccountManagersPanel({
     setResult((current) => (current ? { ...current, password: null } : current));
   });
 
+  // Lista de todos os gerentes: cartões por pessoa até 1023 px; tabela a partir de 1024.
+  const asTable = useViewportAtLeast(1024);
+
   const removeName = removeTarget?.label ?? t("plat.mgr.noName");
   const removeShop = removeTarget?.shop_name ?? t("plat.mgr.shopFallback");
 
@@ -348,6 +353,58 @@ export function AccountManagersPanel({
             );
           })}
         </ul>
+      ) : asTable ? (
+        // Computador: uma linha por vínculo (pessoa · e-mail · barbearia · vê números · remover).
+        <DataList
+          rows={rows}
+          rowKey={(row) => `${row.user_id}-${row.barbershop_id}`}
+          columns={[
+            {
+              key: "person",
+              header: t("plat.mgr.colPerson"),
+              cell: (row) => {
+                const name = row.label ?? t("plat.mgr.noName");
+                return (
+                  <span className="flex min-w-0 items-center gap-2">
+                    <PersonAvatar name={name} size="xs" seed={row.user_id} />
+                    <span className="truncate font-semibold">{name}</span>
+                  </span>
+                );
+              },
+            },
+            {
+              key: "email",
+              header: t("auth.field.email"),
+              cell: (row) => (
+                <span className="block truncate text-muted-foreground">{row.email ?? "—"}</span>
+              ),
+            },
+            {
+              key: "shop",
+              header: t("plat.common.shop"),
+              cell: (row) => row.shop_name ?? t("plat.mgr.shopFallback"),
+            },
+            {
+              key: "numbers",
+              header: t("plat.mgr.seesNumbers"),
+              width: "9rem",
+              cell: (row) => (row.can_view_dashboard ? <SeesNumbers /> : "—"),
+            },
+            {
+              key: "remove",
+              header: <span className="sr-only">{t("plat.mgr.remove")}</span>,
+              width: "4rem",
+              align: "end",
+              cell: (row) => (
+                <RemoveButton
+                  row={row}
+                  name={row.label ?? t("plat.mgr.noName")}
+                  onRemove={setRemoveTarget}
+                />
+              ),
+            },
+          ]}
+        />
       ) : (
         // Lista de todos: uma pessoa por cartão, com as barbearias de que cuida logo abaixo.
         <ul className="grid gap-3 lg:grid-cols-2 lg:items-start">

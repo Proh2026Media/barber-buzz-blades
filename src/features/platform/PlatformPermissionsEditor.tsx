@@ -11,7 +11,9 @@ import type { Tables } from "@/integrations/supabase/types";
 import { SectionHeader, StatusBadge, type Tone } from "@/components/visual";
 import { ROLE_ICON } from "@/features/demo/roles";
 import { ShopPermissionsMatrix } from "@/features/shop/ShopPermissionsMatrix";
+import { useDevice } from "@/lib/device";
 import { useI18n, type MessageKey } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 import { SHOP_STATUS } from "./shopStats";
 
 type Tier = {
@@ -71,6 +73,7 @@ export function PlatformPermissionsEditor({
   onShopChange?: (shopId: string) => void;
 }) {
   const { t } = useI18n();
+  const phone = useDevice() === "celular";
   const [localShopId, setLocalShopId] = useState("");
   const shopId = controlledShopId || localShopId;
   const shopFieldId = useId();
@@ -88,71 +91,88 @@ export function PlatformPermissionsEditor({
   const status = selected ? SHOP_STATUS[selected.status] : null;
 
   return (
-    <div className="space-y-5">
-      <section className="space-y-3 rounded-3xl border border-border bg-card p-4 sm:p-5">
-        <SectionHeader as="h2" icon={KeyRound} title={t("plat.perm.heading")} />
-        <ol className="space-y-2" aria-label={t("plat.perm.heading")}>
-          {TIERS.map((tier) => (
-            <li
-              key={tier.key}
-              className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-background p-2.5"
-            >
-              <span className="flex flex-1 flex-wrap items-center gap-1.5">
-                {tier.roles.map(({ icon: Icon, labelKey }) => (
-                  <span
-                    key={labelKey}
-                    className="inline-flex min-h-8 items-center gap-1.5 whitespace-nowrap rounded-xl bg-muted px-2.5 text-xs font-semibold"
-                  >
-                    <Icon className="size-3.5 text-gold" aria-hidden />
-                    {t(labelKey)}
-                  </span>
-                ))}
-              </span>
-              {/* Seta e resultado andam juntos: se faltar espaço, descem de linha os dois. */}
-              <span className="flex items-center gap-2">
-                <ArrowRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                <StatusBadge tone={tier.tone} icon={tier.icon} label={t(tier.resultKey)} />
-              </span>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card p-3 sm:p-4">
-        <Store className="size-5 shrink-0 text-gold" aria-hidden />
-        <label htmlFor={shopFieldId} className="text-sm font-semibold">
-          {t("plat.common.shop")}
-        </label>
-        <select
-          id={shopFieldId}
-          value={shopId}
-          onChange={(event) => choose(event.target.value)}
-          disabled={shops.length === 0}
-          className="order-last min-h-11 w-full min-w-0 rounded-xl border border-input bg-background px-3 text-sm text-foreground sm:order-none sm:w-auto sm:min-w-72"
-        >
-          {shops.length === 0 && <option value="">{t("plat.perm.noShops")}</option>}
-          {shops.map((shop) => (
-            <option key={shop.id} value={shop.id}>
-              {shop.name}
-            </option>
-          ))}
-        </select>
-        {selected && status && (
-          <StatusBadge
-            tone={status.tone}
-            icon={status.icon}
-            label={
-              selected.status === "active" ? t("plat.shops.active") : t("plat.shops.suspended")
-            }
-          />
-        )}
+    // No celular: título, "quem pode o quê", seletor e matriz empilhados. A partir de 768 px o
+    // seletor entra na linha do título; a partir de 1024 a explicação fica ao lado da matriz
+    // (src/styles/plataforma.css).
+    <div className="plat-perm space-y-6">
+      <div className="plat-perm-title app-section-title">
+        <KeyRound aria-hidden />
+        <h2>{t("plat.tabs.permissions")}</h2>
       </div>
-
-      {shopId ? (
-        <section className="rounded-2xl border border-border bg-card p-4">
-          <ShopPermissionsMatrix shopId={shopId} canEdit demo={demoMode} />
+      <div className="plat-perm-body space-y-5">
+        <section className="plat-perm-tiers space-y-3 rounded-3xl border border-border bg-card p-4 sm:p-5">
+          <SectionHeader as="h3" icon={KeyRound} title={t("plat.perm.heading")} />
+          <ol className="space-y-2" aria-label={t("plat.perm.heading")}>
+            {TIERS.map((tier) => (
+              <li
+                key={tier.key}
+                className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-background p-2.5"
+              >
+                <span className="flex flex-1 flex-wrap items-center gap-1.5">
+                  {tier.roles.map(({ icon: Icon, labelKey }) => (
+                    <span
+                      key={labelKey}
+                      className="inline-flex min-h-8 items-center gap-1.5 whitespace-nowrap rounded-xl bg-muted px-2.5 text-xs font-semibold"
+                    >
+                      <Icon className="size-3.5 text-gold" aria-hidden />
+                      {t(labelKey)}
+                    </span>
+                  ))}
+                </span>
+                {/* Seta e resultado andam juntos: se faltar espaço, descem de linha os dois. */}
+                <span className="flex items-center gap-2">
+                  <ArrowRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                  <StatusBadge tone={tier.tone} icon={tier.icon} label={t(tier.resultKey)} />
+                </span>
+              </li>
+            ))}
+          </ol>
         </section>
-      ) : null}
+
+        {/* O cartão (bg-card) só no celular: a partir de 768 px o seletor fica solto na linha do
+            título, e a classe bg-card forçaria o texto escuro dos cartões off-white sobre o fundo
+            escuro do tema escuro. */}
+        <div
+          className={cn(
+            "plat-perm-selector flex flex-wrap items-center gap-3",
+            phone && "rounded-2xl border border-border bg-card p-3 sm:p-4",
+          )}
+        >
+          <Store className="size-5 shrink-0 text-gold" aria-hidden />
+          <label htmlFor={shopFieldId} className="text-sm font-semibold">
+            {t("plat.common.shop")}
+          </label>
+          <select
+            id={shopFieldId}
+            value={shopId}
+            onChange={(event) => choose(event.target.value)}
+            disabled={shops.length === 0}
+            className="order-last min-h-11 w-full min-w-0 rounded-xl border border-input bg-background px-3 text-sm text-foreground sm:order-none sm:w-auto sm:min-w-72"
+          >
+            {shops.length === 0 && <option value="">{t("plat.perm.noShops")}</option>}
+            {shops.map((shop) => (
+              <option key={shop.id} value={shop.id}>
+                {shop.name}
+              </option>
+            ))}
+          </select>
+          {selected && status && (
+            <StatusBadge
+              tone={status.tone}
+              icon={status.icon}
+              label={
+                selected.status === "active" ? t("plat.shops.active") : t("plat.shops.suspended")
+              }
+            />
+          )}
+        </div>
+
+        {shopId ? (
+          <section className="plat-perm-matrix rounded-2xl border border-border bg-card p-4">
+            <ShopPermissionsMatrix shopId={shopId} canEdit demo={demoMode} />
+          </section>
+        ) : null}
+      </div>
     </div>
   );
 }

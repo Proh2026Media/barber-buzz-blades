@@ -1,8 +1,10 @@
 # Leia primeiro — Barba & Cabelo
 
-Porta de entrada para o agente que vai continuar o projeto (Cursor, Claude Code, Codex e outros). Atualizado em **21/10/2026**.
+Porta de entrada para o agente que vai continuar o projeto (Cursor, Claude Code, Codex e outros). Atualizado em **22/10/2026**.
 
 **Passagem do dia (21/10/2026):** o dono passou a usar o Claude Code como programa (fora do Cursor). Leia antes [passagem-claude-code-app-2026-10-21.md](passagem-claude-code-app-2026-10-21.md).
+
+**Situação em 22/10:** entrega "interface por dispositivo" do Claude Code (começou em 21/10 à noite): celular intocado, tablet (768–1279 px) com coluna estreita e computador (≥ 1280 px) com coluna completa, e cada área (Agenda, Serviços/Equipe/Horários, Ajustes, cliente, plataforma, páginas públicas) refeita para a largura. **Entregue; publicada em 22/10/2026.** Plano e decisões em [dispositivos-2026-10-21.md](dispositivos-2026-10-21.md) (seção 9 diz o que foi feito); registro na entrada de 22/10 do [CONTINUIDADE.md](CONTINUIDADE.md); o que ficou em [guia/pendencias.md](guia/pendencias.md), seção 9 (P-79 a P-95). Regras novas para quem mexer em tela: [mb-interface.md](mb-interface.md), seção 3, e [guia/arquitetura.md](guia/arquitetura.md), seção 8 ("Dispositivos") e 16. **O dono precisa testar no tablet e no computador** (roteiro no CONTINUIDADE; P-43): só foi visto em navegador emulado.
 
 **Situação em 20/10:** entrega do Claude Code com agendamento pelo barbeiro no painel, apelido e cliente do balcão, selo de cliente recorrente, login Google no app instalado e simplificação visual (entrada de 16/10 no [CONTINUIDADE.md](CONTINUIDADE.md); análise em [analise-visual-2026-10-16.md](analise-visual-2026-10-16.md)). Antes da publicação, uma revisão de código (19 achados), um teste de interface completo (15) e uma revisão final independente (25) acharam e corrigiram defeitos (lista na mesma entrada). O site está no ar e, desde **20/10/2026**, as migrations nº 95 e 96 e a função `google-calendar-dispatch` estão aplicadas no servidor (P-73, pelo TI; entrada de 20/10 no CONTINUIDADE). Falta o teste do dono no celular (P-43). Novos registros: P-77 (decisão do dono) e P-78 (melhoria pequena). Depois, no topo de [guia/pendencias.md](guia/pendencias.md): os pacotes do Google (P-69 e P-28) e os testes reais do dono.
 

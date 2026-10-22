@@ -61,6 +61,7 @@ export function Field({
   required,
   optional,
   id: idProp,
+  width,
   children,
   className,
 }: {
@@ -74,6 +75,8 @@ export function Field({
   /** Mostra "opcional" ao lado do rótulo. */
   optional?: boolean;
   id?: string;
+  /** Campo curto (CEP, preço, duração): limita a largura a 8/14/22rem a partir de 640 px. */
+  width?: "sm" | "md" | "lg";
   children: (props: FieldControlProps) => ReactNode;
   className?: string;
 }) {
@@ -86,7 +89,7 @@ export function Field({
     [hint ? hintId : null, error || success ? messageId : null].filter(Boolean).join(" ") ||
     undefined;
   return (
-    <div className={cn("space-y-1.5", className)}>
+    <div className={cn("space-y-1.5", width && `app-field-${width}`, className)}>
       <label htmlFor={id} className="flex flex-wrap items-baseline gap-x-2 text-sm font-semibold">
         {label}
         {optional && (

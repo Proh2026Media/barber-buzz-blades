@@ -9,6 +9,7 @@ Ferramentas de linha de comando usadas por agentes (Cursor, Codex, Claude Code) 
 | [cursor-pretool-vez.sh](#cursor-pretool-vezsh)                               | Bloqueia ferramentas do Cursor sem a vez                           | Só o gancho `preToolUse` do Cursor                       |
 | [verificar.sh](#verificarsh)                                                 | Tipos, testes, eslint, prettier e montagem, com resumo             | Agentes antes de enviar                                  |
 | [foto.mjs](#fotomjs)                                                         | Foto de uma tela do app no servidor local, com relatório           | Agentes ao mexer em interface                            |
+| [comparar-png.mjs](#comparar-pngmjs)                                         | Compara duas fotos pixel a pixel (prova que o celular não mudou)   | Agentes ao mexer em tablet/computador                    |
 | [banco-local.sh](#banco-localsh)                                             | Cópia local do banco no Docker para testar migrations e testes SQL | Agentes antes de levar migration ao servidor             |
 | [copy-pwa.mjs](#copy-pwamjs)                                                 | Copia o service worker para a saída da montagem                    | `npm run build` (automático)                             |
 | [sync-shop-domains.sh](#sync-shop-domainssh)                                 | Lista os domínios próprios das barbearias                          | À mão, em operação                                       |
@@ -205,6 +206,35 @@ node scripts/foto.mjs "/demo?view=platform" "/demo?view=owner" "/demo?view=equal
 ```
 
 Para olhar a foto, abrir o PNG (agentes: ferramenta de leitura de imagem). A pasta `.fotos/` é ignorada pelo git; apagar ao terminar (`rm -rf .fotos`), principalmente com pouco disco.
+
+**Dicas aprendidas na entrega por dispositivo (22/10/2026).** Larguras de referência: 390×844 (celular), 768×1024 (tablet em pé), 1024×768 (tablet deitado), 1280×800 e 1536×900 (computador); as faixas estão em [docs/dispositivos-2026-10-21.md](../docs/dispositivos-2026-10-21.md).
+
+- **Trocar de aba fora do celular.** No tablet e no computador a barra vira coluna lateral, mas continua o mesmo `nav.app-mobile-nav`; `{"aba":"Serviços"}` procura nele, então costuma funcionar em todas as larguras. Se o rótulo não bater (texto curto ou quebrado na coluna estreita), use o seletor direto: `{"clicar":"nav.app-mobile-nav button:has-text('Serviços')"}`.
+- **`{"papel":["button","Equipe"]}` não é a aba.** Na Agenda existe o segmento "Equipe" (Minha agenda / Equipe), que também é um botão com esse nome: `papel` clica nele, não na aba Equipe. Para a aba, use `aba` ou o `clicar` acima.
+- **"Mais números do dia"** é um `<summary>`, não um botão: `{"clicar":"summary:has-text('Mais números do dia')"}`.
+- **Horário escolhido no Agendar do cliente:** `main button[aria-pressed]` pega um serviço; o horário é `#booking-step-when button[aria-pressed]`.
+- **Página pública da barbearia** (`/b/<loja>` e o domínio da loja): não renderiza com o `foto.mjs` puro, porque a RPC `get_public_shop_landing` volta vazia na sessão falsa. Em 22/10 as fotos saíram de uma cópia do script, fora do repositório, que respondia a RPC com um JSON de exemplo. Opção futura, registrada como P-93: `--landing <arquivo.json>` no próprio `foto.mjs`, com um exemplo versionado.
+- **Sticky não aparece em foto de página inteira.** Para conferir um cabeçalho ou coluna que gruda ao rolar, use `{"rolar": 500}` e uma foto da parte visível, ou `--avaliar` medindo `getBoundingClientRect().top`.
+- **Janela que fecha com Esc** também não aparece na foto (ela mostra a tela depois): o resultado válido é o `--avaliar` contando `[role=dialog]` antes e depois.
+- Dados da demonstração são sorteados a cada carga (nomes, horários, valores): duas fotos do mesmo código diferem nessas linhas. Para comparar leiaute, use o [comparar-png.mjs](#comparar-pngmjs) e olhe as faixas, não só o total.
+
+---
+
+## comparar-png.mjs
+
+**O que faz.** Compara dois PNG pixel a pixel, sem dependências (lê o PNG com o `zlib` do Node): imprime uma linha JSON com o tamanho das duas imagens, quantos pixels diferem (diferença maior que 8 em algum canal RGB), quantas linhas têm diferença e as primeiras 20 faixas de linhas (`"120-134"`) onde isso acontece. Compara só a área comum quando os tamanhos diferem.
+
+**Quando usar.** Para provar que o celular não mudou depois de uma alteração de tablet ou computador (regra de ouro: abaixo de 768 px nada muda): foto de 390 px em página inteira antes e depois, com `foto.mjs`, e o comparador entre as duas. `pixelsDiferentes: 0` é o ideal; faixas estreitas de 10–15 px em cima de texto costumam ser os dados aleatórios da demonstração (relógio, nomes, horários) — abra as duas fotos e confira. Faixa larga ou deslocamento de tudo o que vem depois de um ponto = mudança de leiaute. Criado em 22/10/2026 (veio do scratchpad da entrega por dispositivo).
+
+```bash
+node scripts/foto.mjs "/demo?view=owner" --pagina-inteira --saida .fotos/antes --nome servicos-390.png --passos '[{"aba":"Serviços"}]'
+# … edição …
+node scripts/foto.mjs "/demo?view=owner" --pagina-inteira --saida .fotos/depois --nome servicos-390.png --passos '[{"aba":"Serviços"}]'
+node scripts/comparar-png.mjs .fotos/antes/servicos-390.png .fotos/depois/servicos-390.png
+# {"a":"390x2210","b":"390x2210","pixelsDiferentes":0,"linhasDiferentes":0,"faixas":[]}
+```
+
+Só aceita PNG de 8 bits por canal (o que o `foto.mjs` gera); outro formato encerra com erro.
 
 ---
 

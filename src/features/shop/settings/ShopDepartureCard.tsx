@@ -414,7 +414,10 @@ export function ShopDepartureCard({
   if (!canRequestDeparture && !canApproveRelease && others.length === 0 && !decision) return null;
 
   return (
-    <section className="app-action-card space-y-4 p-4" aria-labelledby="departure-title">
+    <section
+      className="ajustes-saida app-action-card space-y-4 p-4"
+      aria-labelledby="departure-title"
+    >
       <SectionHeader
         icon={UserMinus}
         id="departure-title"

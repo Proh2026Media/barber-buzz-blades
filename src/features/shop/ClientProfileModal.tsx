@@ -18,6 +18,7 @@ import { useDemo } from "@/features/demo/context";
 import { RhythmDashboard, type RhythmPayload } from "@/features/insights/RhythmDashboard";
 import {
   APPOINTMENT_STATUS,
+  DataList,
   EmptyState,
   LoadingState,
   Notice,
@@ -31,6 +32,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Switch } from "@/components/ui/switch";
 import { InlineStatus, type ActionState } from "@/components/visual";
 import { formatSignupPhone } from "@/lib/auth/signup-phone";
+import { useViewportAtLeast } from "@/lib/device";
 import { ClientNoticeBell } from "./ClientNoticeBell";
 import { AGENDA_STATE } from "./agenda/types";
 import { InviteCard } from "./clients/InviteCard";
@@ -97,6 +99,128 @@ function isStatus(value: string): value is AppointmentStatus {
  */
 function agendaMeta(status: AppointmentStatus) {
   return AGENDA_STATE[status];
+}
+
+/**
+ * Histórico de agendamentos da ficha: cartões abaixo de 1024 px (como no celular) e tabela
+ * (dia · serviço · profissional · situação · valor) a partir de 1024 px, onde a janela é larga.
+ */
+function HistoryList({
+  rows,
+  dateTime,
+}: {
+  rows: ClientHistoryRow[];
+  dateTime: Intl.DateTimeFormat;
+}) {
+  const { t, intlLocale } = useI18n();
+  const table = useViewportAtLeast(1024);
+  if (rows.length === 0) {
+    return <EmptyState tone="calendar" variant="plain" title={t("team.profile.historyEmpty")} />;
+  }
+  const badge = (status: string, size: "sm" | "md", icon = false) => {
+    const meta = isStatus(status) ? agendaMeta(status) : null;
+    if (!meta) return null;
+    return (
+      <StatusBadge
+        tone={meta.tone}
+        icon={meta.icon}
+        label={t(meta.labelKey)}
+        variant={icon ? "icon" : undefined}
+        size={size}
+      />
+    );
+  };
+  const amount = (row: ClientHistoryRow) => (
+    <span
+      className={`text-xs font-bold tabular-nums ${row.status === "cancelled" ? "text-muted-foreground line-through" : ""}`}
+    >
+      {formatBRL(row.amount_cents, intlLocale)}
+    </span>
+  );
+  if (table) {
+    return (
+      <DataList
+        rows={rows}
+        rowKey={(row) => row.appointment_id}
+        columns={[
+          {
+            key: "when",
+            header: t("booking.date"),
+            width: "11rem",
+            cell: (row) => (
+              <span className="tabular-nums first-letter:uppercase">
+                {dateTime.format(new Date(row.starts_at))}
+              </span>
+            ),
+          },
+          {
+            key: "service",
+            header: t("bk.service"),
+            cell: (row) => (
+              <span className="font-semibold">
+                {row.service_name ?? t("team.partner.serviceFallback")}
+              </span>
+            ),
+          },
+          {
+            key: "staff",
+            header: t("bk.staff"),
+            cell: (row) => row.staff_name ?? "—",
+          },
+          {
+            key: "status",
+            header: t("plat.shops.colStatus"),
+            width: "9rem",
+            cell: (row) => badge(row.status, "sm"),
+          },
+          {
+            key: "amount",
+            header: t("domainCard.record.value"),
+            width: "6rem",
+            align: "end",
+            cell: amount,
+          },
+        ]}
+      />
+    );
+  }
+  return (
+    <ol className="space-y-1.5">
+      {rows.map((row) => {
+        const meta = isStatus(row.status) ? agendaMeta(row.status) : null;
+        return (
+          <li
+            key={row.appointment_id}
+            className="flex items-start gap-3 rounded-xl border border-border bg-card p-3"
+          >
+            {meta ? (
+              // O selo com texto (2ª linha) já diz a situação ao leitor de tela.
+              <span aria-hidden className="shrink-0">
+                {badge(row.status, "md", true)}
+              </span>
+            ) : (
+              <UserRound className="size-5 text-muted-foreground" aria-hidden />
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold">
+                {row.service_name ?? t("team.partner.serviceFallback")}
+              </p>
+              <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                <span>{dateTime.format(new Date(row.starts_at))}</span>
+                {badge(row.status, "sm")}
+              </p>
+              {row.staff_name && (
+                <p className="text-xs text-muted-foreground">
+                  {t("team.profile.with", { name: row.staff_name })}
+                </p>
+              )}
+            </div>
+            <span className="shrink-0">{amount(row)}</span>
+          </li>
+        );
+      })}
+    </ol>
+  );
 }
 
 /**
@@ -321,7 +445,10 @@ function AccountClientModal({
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="flex max-h-[90dvh] w-[calc(100vw-1.5rem)] max-w-lg flex-col gap-0 overflow-hidden rounded-3xl border-border bg-card p-0">
+      <DialogContent
+        size="lg"
+        className="agenda-client-modal flex max-h-[90dvh] w-[calc(100vw-1.5rem)] max-w-lg flex-col gap-0 overflow-hidden rounded-3xl border-border bg-card p-0 tablet:max-w-[44rem]"
+      >
         <div className="flex items-center gap-3 border-b border-border p-4 pr-14">
           <PersonAvatar
             name={name.replace(/\([^)]*\)/g, "").trim() || name}
@@ -350,7 +477,7 @@ function AccountClientModal({
           <ClientNoticeBell shopId={shopId} customerId={customerId} customerName={name} />
         </div>
 
-        <div className="dialog-scroll-area flex-1 space-y-5 overflow-y-auto p-4 sm:p-5">
+        <div className="agenda-client-body dialog-scroll-area flex-1 space-y-5 overflow-y-auto p-4 sm:p-5">
           {loading ? (
             <LoadingState label={t("team.profile.loading")} variant="stats" count={2} />
           ) : error || !profile ? (
@@ -365,184 +492,133 @@ function AccountClientModal({
             />
           ) : (
             <>
-              {nicknameReady && (
-                <NicknameEditor value={profile.nickname ?? null} onSave={saveNickname} />
-              )}
-              {upcoming && (
-                <section className="tone-info space-y-2 rounded-2xl border border-[color:var(--tone-border)] bg-[color:var(--tone-soft)] p-4">
-                  <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-[color:var(--tone-ink)]">
-                    <CalendarClock className="size-4" aria-hidden />
-                    {t("team.profile.next")}
-                  </p>
-                  <p className="text-lg font-extrabold text-foreground first-letter:uppercase">
-                    {dateTime.format(new Date(upcoming.starts_at))}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-1.5 text-sm text-foreground">
-                    <span className="font-semibold">
-                      {upcoming.service_name ?? t("team.partner.serviceFallback")}
-                    </span>
-                    {upcoming.staff_name && (
-                      <span className="text-muted-foreground">
-                        · {t("team.profile.with", { name: upcoming.staff_name })}
+              {/* Os dois blocos (resumo | histórico) ficam lado a lado a partir de 1024 px
+                  (src/styles/agenda.css); antes disso, a mesma pilha de sempre. */}
+              <div className="agenda-client-aside space-y-5">
+                {nicknameReady && (
+                  <NicknameEditor value={profile.nickname ?? null} onSave={saveNickname} />
+                )}
+                {upcoming && (
+                  <section className="tone-info space-y-2 rounded-2xl border border-[color:var(--tone-border)] bg-[color:var(--tone-soft)] p-4">
+                    <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-[color:var(--tone-ink)]">
+                      <CalendarClock className="size-4" aria-hidden />
+                      {t("team.profile.next")}
+                    </p>
+                    <p className="text-lg font-extrabold text-foreground first-letter:uppercase">
+                      {dateTime.format(new Date(upcoming.starts_at))}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-1.5 text-sm text-foreground">
+                      <span className="font-semibold">
+                        {upcoming.service_name ?? t("team.partner.serviceFallback")}
                       </span>
-                    )}
-                    {isStatus(upcoming.status) && (
-                      <StatusBadge
-                        tone={agendaMeta(upcoming.status).tone}
-                        icon={agendaMeta(upcoming.status).icon}
-                        label={t(agendaMeta(upcoming.status).labelKey)}
-                        size="sm"
-                      />
-                    )}
-                  </div>
-                </section>
-              )}
+                      {upcoming.staff_name && (
+                        <span className="text-muted-foreground">
+                          · {t("team.profile.with", { name: upcoming.staff_name })}
+                        </span>
+                      )}
+                      {isStatus(upcoming.status) && (
+                        <StatusBadge
+                          tone={agendaMeta(upcoming.status).tone}
+                          icon={agendaMeta(upcoming.status).icon}
+                          label={t(agendaMeta(upcoming.status).labelKey)}
+                          size="sm"
+                        />
+                      )}
+                    </div>
+                  </section>
+                )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <StatTile
-                  icon={Repeat}
-                  label={
-                    profile.visits === 1
-                      ? t("team.profile.visitsShopOne")
-                      : t("team.profile.visitsShopMany")
-                  }
-                  value={profile.visits}
-                  hint={
-                    ownVisits != null
-                      ? t(
-                          ownVisits === 1 ? "team.clients.withYouOne" : "team.clients.withYouMany",
-                          { count: ownVisits },
-                        )
-                      : t("team.profile.sinceStart")
-                  }
-                />
-                <StatTile
-                  icon={Wallet}
-                  label={t("team.profile.totalSpent")}
-                  value={formatBRL(profile.total_spent_cents, intlLocale)}
-                  hint={t("team.profile.sinceStart")}
+                <div className="grid grid-cols-2 gap-3">
+                  <StatTile
+                    icon={Repeat}
+                    label={
+                      profile.visits === 1
+                        ? t("team.profile.visitsShopOne")
+                        : t("team.profile.visitsShopMany")
+                    }
+                    value={profile.visits}
+                    hint={
+                      ownVisits != null
+                        ? t(
+                            ownVisits === 1
+                              ? "team.clients.withYouOne"
+                              : "team.clients.withYouMany",
+                            { count: ownVisits },
+                          )
+                        : t("team.profile.sinceStart")
+                    }
+                  />
+                  <StatTile
+                    icon={Wallet}
+                    label={t("team.profile.totalSpent")}
+                    value={formatBRL(profile.total_spent_cents, intlLocale)}
+                    hint={t("team.profile.sinceStart")}
+                  />
+                </div>
+
+                {(profile.first_visit || profile.last_visit || upcoming) && (
+                  <ol
+                    className="flex flex-wrap items-center gap-1.5 text-xs"
+                    aria-label={t("team.profile.trail")}
+                  >
+                    {profile.first_visit && (
+                      <li className="flex items-center gap-1.5">
+                        <Tag icon={Flag}>
+                          {t("team.profile.firstShort", {
+                            date: dateOnly.format(new Date(profile.first_visit)),
+                          })}
+                        </Tag>
+                      </li>
+                    )}
+                    {profile.last_visit && profile.last_visit !== profile.first_visit && (
+                      <li className="flex items-center gap-1.5">
+                        <ArrowRight className="size-3.5 text-muted-foreground" aria-hidden />
+                        <Tag icon={History}>
+                          {t("team.profile.lastShort", {
+                            date: dateOnly.format(new Date(profile.last_visit)),
+                          })}
+                        </Tag>
+                      </li>
+                    )}
+                    {upcoming && (
+                      <li className="flex items-center gap-1.5">
+                        <ArrowRight className="size-3.5 text-muted-foreground" aria-hidden />
+                        <StatusBadge
+                          tone="info"
+                          icon={CalendarClock}
+                          size="sm"
+                          label={t("team.profile.nextShort", {
+                            date: dateOnly.format(new Date(upcoming.starts_at)),
+                          })}
+                        />
+                      </li>
+                    )}
+                  </ol>
+                )}
+
+                <RhythmDashboard
+                  rhythm={profile.rhythm}
+                  title={t("team.profile.rhythmTitle")}
+                  dayLabel={t("team.profile.rhythmDay")}
+                  subject="client"
                 />
               </div>
 
-              {(profile.first_visit || profile.last_visit || upcoming) && (
-                <ol
-                  className="flex flex-wrap items-center gap-1.5 text-xs"
-                  aria-label={t("team.profile.trail")}
-                >
-                  {profile.first_visit && (
-                    <li className="flex items-center gap-1.5">
-                      <Tag icon={Flag}>
-                        {t("team.profile.firstShort", {
-                          date: dateOnly.format(new Date(profile.first_visit)),
-                        })}
-                      </Tag>
-                    </li>
-                  )}
-                  {profile.last_visit && profile.last_visit !== profile.first_visit && (
-                    <li className="flex items-center gap-1.5">
-                      <ArrowRight className="size-3.5 text-muted-foreground" aria-hidden />
-                      <Tag icon={History}>
-                        {t("team.profile.lastShort", {
-                          date: dateOnly.format(new Date(profile.last_visit)),
-                        })}
-                      </Tag>
-                    </li>
-                  )}
-                  {upcoming && (
-                    <li className="flex items-center gap-1.5">
-                      <ArrowRight className="size-3.5 text-muted-foreground" aria-hidden />
-                      <StatusBadge
-                        tone="info"
-                        icon={CalendarClock}
-                        size="sm"
-                        label={t("team.profile.nextShort", {
-                          date: dateOnly.format(new Date(upcoming.starts_at)),
-                        })}
-                      />
-                    </li>
-                  )}
-                </ol>
-              )}
-
-              <RhythmDashboard
-                rhythm={profile.rhythm}
-                title={t("team.profile.rhythmTitle")}
-                dayLabel={t("team.profile.rhythmDay")}
-                subject="client"
-              />
-
-              <section className="space-y-2">
-                <h3 className="flex items-center gap-2 text-sm font-bold">
-                  <History className="size-4 text-gold" aria-hidden />
-                  {t("team.profile.history")}
-                </h3>
-                {past.length === 0 ? (
-                  <EmptyState
-                    tone="calendar"
-                    variant="plain"
-                    title={t("team.profile.historyEmpty")}
-                  />
-                ) : (
-                  <ol className="space-y-1.5">
-                    {past.map((row) => {
-                      const meta = isStatus(row.status) ? agendaMeta(row.status) : null;
-                      return (
-                        <li
-                          key={row.appointment_id}
-                          className="flex items-start gap-3 rounded-xl border border-border bg-card p-3"
-                        >
-                          {meta ? (
-                            // O selo com texto (2ª linha) já diz a situação ao leitor de tela.
-                            <span aria-hidden className="shrink-0">
-                              <StatusBadge
-                                tone={meta.tone}
-                                icon={meta.icon}
-                                label={t(meta.labelKey)}
-                                variant="icon"
-                                size="md"
-                              />
-                            </span>
-                          ) : (
-                            <UserRound className="size-5 text-muted-foreground" aria-hidden />
-                          )}
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold">
-                              {row.service_name ?? t("team.partner.serviceFallback")}
-                            </p>
-                            <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                              <span>{dateTime.format(new Date(row.starts_at))}</span>
-                              {meta && (
-                                <StatusBadge
-                                  tone={meta.tone}
-                                  icon={meta.icon}
-                                  label={t(meta.labelKey)}
-                                  size="sm"
-                                />
-                              )}
-                            </p>
-                            {row.staff_name && (
-                              <p className="text-xs text-muted-foreground">
-                                {t("team.profile.with", { name: row.staff_name })}
-                              </p>
-                            )}
-                          </div>
-                          <span
-                            className={`shrink-0 text-xs font-bold tabular-nums ${row.status === "cancelled" ? "text-muted-foreground line-through" : ""}`}
-                          >
-                            {formatBRL(row.amount_cents, intlLocale)}
-                          </span>
-                        </li>
-                      );
-                    })}
-                  </ol>
+              <div className="agenda-client-main space-y-5">
+                <section className="space-y-2">
+                  <h3 className="flex items-center gap-2 text-sm font-bold">
+                    <History className="size-4 text-gold" aria-hidden />
+                    {t("team.profile.history")}
+                  </h3>
+                  <HistoryList rows={past} dateTime={dateTime} />
+                </section>
+                {ownVisits != null && (
+                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Store className="size-3.5" aria-hidden />
+                    {t("team.profile.shopWide")}
+                  </p>
                 )}
-              </section>
-              {ownVisits != null && (
-                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Store className="size-3.5" aria-hidden />
-                  {t("team.profile.shopWide")}
-                </p>
-              )}
+              </div>
             </>
           )}
         </div>
@@ -704,7 +780,10 @@ function WalkInClientModal({
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="flex max-h-[90dvh] w-[calc(100vw-1.5rem)] max-w-lg flex-col gap-0 overflow-hidden rounded-3xl border-border bg-card p-0">
+      <DialogContent
+        size="lg"
+        className="agenda-client-modal flex max-h-[90dvh] w-[calc(100vw-1.5rem)] max-w-lg flex-col gap-0 overflow-hidden rounded-3xl border-border bg-card p-0 tablet:max-w-[44rem]"
+      >
         <div className="flex items-center gap-3 border-b border-border p-4 pr-14">
           <PersonAvatar name={title} seed={shopClientId} size="md" />
           <div className="min-w-0 flex-1">
@@ -723,7 +802,7 @@ function WalkInClientModal({
           </div>
         </div>
 
-        <div className="dialog-scroll-area flex-1 space-y-5 overflow-y-auto p-4 sm:p-5">
+        <div className="agenda-client-body dialog-scroll-area flex-1 space-y-5 overflow-y-auto p-4 sm:p-5">
           {loading ? (
             <LoadingState label={t("team.profile.loading")} variant="stats" count={2} />
           ) : error || !client ? (
@@ -738,132 +817,78 @@ function WalkInClientModal({
             />
           ) : (
             <>
-              <NicknameEditor value={client.nickname} onSave={saveNickname} />
+              <div className="agenda-client-aside space-y-5">
+                <NicknameEditor value={client.nickname} onSave={saveNickname} />
 
-              {phone && client.whatsapp && (
-                <div className="space-y-3 rounded-2xl border border-border bg-background/60 p-3">
-                  <a
-                    href={whatsappLink(client.whatsapp, "")}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex min-h-11 items-center gap-2 text-sm font-semibold"
-                  >
-                    <MessageCircle className="size-4 shrink-0 text-gold" aria-hidden />
-                    <span className="tabular-nums">{phone}</span>
-                    <span className="text-xs font-medium text-muted-foreground">
-                      · {t("client.walkIn.openChat")}
-                    </span>
-                  </a>
-                  <label className="flex min-h-11 items-center gap-3">
-                    <BellRing className="size-4 shrink-0 text-gold" aria-hidden />
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-semibold">{t("bk.notify")}</span>
-                      <span className="block text-xs text-muted-foreground">
-                        {t("bk.notifyHint")}
+                {phone && client.whatsapp && (
+                  <div className="space-y-3 rounded-2xl border border-border bg-background/60 p-3">
+                    <a
+                      href={whatsappLink(client.whatsapp, "")}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex min-h-11 items-center gap-2 text-sm font-semibold"
+                    >
+                      <MessageCircle className="size-4 shrink-0 text-gold" aria-hidden />
+                      <span className="tabular-nums">{phone}</span>
+                      <span className="text-xs font-medium text-muted-foreground">
+                        · {t("client.walkIn.openChat")}
                       </span>
-                    </span>
-                    <Switch
-                      checked={client.notify_whatsapp}
-                      onCheckedChange={(value) => void toggleNotify(value)}
-                      aria-label={t("bk.notify")}
-                    />
-                  </label>
-                  <InlineStatus state={notifyState} onRetry={() => setNotifyState(null)} />
-                </div>
-              )}
+                    </a>
+                    <label className="flex min-h-11 items-center gap-3">
+                      <BellRing className="size-4 shrink-0 text-gold" aria-hidden />
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-semibold">{t("bk.notify")}</span>
+                        <span className="block text-xs text-muted-foreground">
+                          {t("bk.notifyHint")}
+                        </span>
+                      </span>
+                      <Switch
+                        checked={client.notify_whatsapp}
+                        onCheckedChange={(value) => void toggleNotify(value)}
+                        aria-label={t("bk.notify")}
+                      />
+                    </label>
+                    <InlineStatus state={notifyState} onRetry={() => setNotifyState(null)} />
+                  </div>
+                )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <StatTile
-                  icon={Repeat}
-                  label={
-                    client.visits === 1
-                      ? t("team.profile.visitsShopOne")
-                      : t("team.profile.visitsShopMany")
-                  }
-                  value={client.visits}
-                  hint={t("team.profile.sinceStart")}
-                />
-                <StatTile
-                  icon={Wallet}
-                  label={t("team.profile.totalSpent")}
-                  value={formatBRL(client.total_spent_cents, intlLocale)}
-                  hint={t("team.profile.sinceStart")}
+                <div className="grid grid-cols-2 gap-3">
+                  <StatTile
+                    icon={Repeat}
+                    label={
+                      client.visits === 1
+                        ? t("team.profile.visitsShopOne")
+                        : t("team.profile.visitsShopMany")
+                    }
+                    value={client.visits}
+                    hint={t("team.profile.sinceStart")}
+                  />
+                  <StatTile
+                    icon={Wallet}
+                    label={t("team.profile.totalSpent")}
+                    value={formatBRL(client.total_spent_cents, intlLocale)}
+                    hint={t("team.profile.sinceStart")}
+                  />
+                </div>
+
+                <InviteCard
+                  whatsappE164={client.whatsapp}
+                  clientName={client.name}
+                  shopName={shopName}
+                  publicOrigin={publicOrigin}
+                  context="profile"
                 />
               </div>
 
-              <InviteCard
-                whatsappE164={client.whatsapp}
-                clientName={client.name}
-                shopName={shopName}
-                publicOrigin={publicOrigin}
-                context="profile"
-              />
-
-              <section className="space-y-2">
-                <h3 className="flex items-center gap-2 text-sm font-bold">
-                  <History className="size-4 text-gold" aria-hidden />
-                  {t("team.profile.history")}
-                </h3>
-                {client.history.length === 0 ? (
-                  <EmptyState
-                    tone="calendar"
-                    variant="plain"
-                    title={t("team.profile.historyEmpty")}
-                  />
-                ) : (
-                  <ol className="space-y-1.5">
-                    {client.history.map((row) => {
-                      const meta = isStatus(row.status) ? agendaMeta(row.status) : null;
-                      return (
-                        <li
-                          key={row.appointment_id}
-                          className="flex items-start gap-3 rounded-xl border border-border bg-card p-3"
-                        >
-                          {meta ? (
-                            <span aria-hidden className="shrink-0">
-                              <StatusBadge
-                                tone={meta.tone}
-                                icon={meta.icon}
-                                label={t(meta.labelKey)}
-                                variant="icon"
-                                size="md"
-                              />
-                            </span>
-                          ) : (
-                            <UserRound className="size-5 text-muted-foreground" aria-hidden />
-                          )}
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold">
-                              {row.service_name ?? t("team.partner.serviceFallback")}
-                            </p>
-                            <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                              <span>{dateTime.format(new Date(row.starts_at))}</span>
-                              {meta && (
-                                <StatusBadge
-                                  tone={meta.tone}
-                                  icon={meta.icon}
-                                  label={t(meta.labelKey)}
-                                  size="sm"
-                                />
-                              )}
-                            </p>
-                            {row.staff_name && (
-                              <p className="text-xs text-muted-foreground">
-                                {t("team.profile.with", { name: row.staff_name })}
-                              </p>
-                            )}
-                          </div>
-                          <span
-                            className={`shrink-0 text-xs font-bold tabular-nums ${row.status === "cancelled" ? "text-muted-foreground line-through" : ""}`}
-                          >
-                            {formatBRL(row.amount_cents, intlLocale)}
-                          </span>
-                        </li>
-                      );
-                    })}
-                  </ol>
-                )}
-              </section>
+              <div className="agenda-client-main">
+                <section className="space-y-2">
+                  <h3 className="flex items-center gap-2 text-sm font-bold">
+                    <History className="size-4 text-gold" aria-hidden />
+                    {t("team.profile.history")}
+                  </h3>
+                  <HistoryList rows={client.history} dateTime={dateTime} />
+                </section>
+              </div>
             </>
           )}
         </div>

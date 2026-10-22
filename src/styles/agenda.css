@@ -1,0 +1,444 @@
+/* Agenda do painel (onda 3): CSS de tablet e computador desta área
+   (docs/dispositivos-2026-10-21.md, seção 6, item 3). Regra de ouro: abaixo de 768 px nada
+   muda, então toda regra fica atrás de @media (min-width: 768px) ou maior. Carregado depois de
+   src/styles.css (via src/dispositivos.css), vence os utilitários do Tailwind, que ficam em
+   camada. As classes agenda-* saem de src/features/shop/agenda/* e src/features/shop/Client*.
+
+   Faixas: tablet em pé 768–1023 (uma coluna, resumo em faixa, cartão mais baixo);
+   computador compacto 1024–1279 (coluna do dia de 22rem com o mês à vista + lista/quadro);
+   computador 1280+ (o mesmo, alvos menores com mouse e ⋯ ao passar o mouse). O formato do
+   cartão de atendimento segue a largura da lista (container query), não a da janela. */
+
+/* ===== Tablet em pé (768–1023): uma coluna, escopo e dia numa linha, resumo em faixa ===== */
+@media (min-width: 768px) and (max-width: 1023.98px) {
+  /* Escopo (Minha agenda/Equipe) à esquerda, setas + data à direita, semana embaixo. */
+  .agenda-toolbar {
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: center;
+    column-gap: 0.75rem;
+  }
+  .agenda-scope {
+    grid-template-columns: repeat(2, max-content);
+  }
+  .agenda-scope button {
+    padding-inline: 0.5rem;
+  }
+  /* A data por extenso pode quebrar em duas linhas em vez de ganhar reticências. */
+  .agenda-toolbar .agenda-date-current .schedule-field span span {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    white-space: normal;
+    line-height: 1.2;
+  }
+  .agenda-toolbar > .agenda-daynav {
+    display: contents;
+  }
+  .agenda-daynav > .agenda-daterow {
+    grid-column: 2;
+    margin-block: 0;
+  }
+  .agenda-toolbar:not(:has(.agenda-scope)) .agenda-daterow {
+    grid-column: 1 / -1;
+  }
+  .agenda-daynav > .agenda-week {
+    grid-column: 1 / -1;
+    margin-block: 0;
+  }
+
+  /* "Seu dia" vira uma faixa: número grande | barra | valores numa linha; Agora e Próximo lado
+     a lado na seguinte; pílulas de situação e "Mais números" na última. */
+  .agenda-summary {
+    display: grid;
+    grid-template-columns: max-content minmax(6rem, 1fr) auto;
+    grid-template-areas:
+      "head head head"
+      "figure bar money"
+      "moments moments moments"
+      "filters filters filters"
+      "more more more";
+    column-gap: 1rem;
+    row-gap: 0.75rem;
+    align-items: center;
+  }
+  .agenda-summary > :not(:last-child) {
+    margin-block: 0;
+  }
+  .agenda-summary-head {
+    grid-area: head;
+  }
+  .agenda-summary-figure {
+    grid-area: figure;
+  }
+  .agenda-summary-bar {
+    grid-area: bar;
+  }
+  .agenda-summary-moments {
+    grid-area: moments;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  }
+  .agenda-summary-money {
+    grid-area: money;
+  }
+  .agenda-summary-filters {
+    grid-area: filters;
+    align-self: center;
+  }
+  /* "Mais números" numa linha só sua: o resumo fica à direita e, aberto, o conteúdo ocupa a
+     largura toda (na mesma célula das pílulas ele ficava espremido na coluna da direita). */
+  .agenda-summary-more {
+    grid-area: more;
+  }
+  .agenda-summary-more > summary {
+    display: flex;
+    width: max-content;
+    max-width: 100%;
+    margin-inline-start: auto;
+  }
+}
+
+/* ===== Tablet e computador (768+): barra da lista e cartão mais baixo ===== */
+@media (min-width: 768px) {
+  /* Título, busca aberta e (abaixo) profissionais e filtros ativos, tudo quebrando em linhas. */
+  .agenda-list-head > h3 {
+    flex: 0 1 auto;
+  }
+  .agenda-list-head .agenda-search {
+    flex: 1 1 14rem;
+    max-width: 22rem;
+  }
+
+  /* Cartão de atendimento mais baixo: horário | cliente e serviço | ⋯ numa grade, com a ação
+     principal abaixo do texto em largura natural (não a largura toda). Esperas e avisos ocupam a
+     linha inteira. A lista (.agenda-timeline) é um contêiner: quando ela tem 36rem ou mais, a
+     ação vai para a direita, na mesma linha; com 52rem ou mais, vira uma linha só
+     (hora · cliente · serviço · profissional · selos · ação · ⋯). Assim o mesmo cartão serve à
+     coluna de 1024 px, à lista de 1280 px e ao monitor largo. */
+  .agenda-timeline {
+    container-type: inline-size;
+  }
+  .agenda-card:not(.agenda-card-cancelled) {
+    display: grid;
+    grid-template-columns: 3.5rem minmax(0, 1fr) max-content max-content;
+    column-gap: 0.75rem;
+    align-items: center;
+  }
+  .agenda-card-body {
+    display: contents;
+  }
+  .agenda-card-time {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: start;
+    padding: 0.75rem 0 0.75rem 1rem;
+  }
+  .agenda-card-main {
+    grid-column: 2 / 4;
+    grid-row: 1;
+    /* Nome alinhado ao horário de início (os dois começam no topo). */
+    align-self: start;
+    padding-block: 0.75rem;
+  }
+  .agenda-card-more {
+    grid-column: 4;
+    grid-row: 1;
+    align-self: start;
+    margin: 0.5rem 0.5rem 0.5rem 0;
+  }
+  .agenda-card-footer {
+    grid-column: 2 / -1;
+    grid-row: 2;
+    border-top: 0;
+    background: transparent;
+    padding: 0 1rem 0.75rem 0;
+    justify-content: flex-start;
+  }
+  .agenda-card-footer > button {
+    flex: 0 0 auto;
+  }
+  .agenda-card-extra {
+    grid-column: 1 / -1;
+  }
+}
+@container (min-width: 36rem) {
+  .agenda-card:not(.agenda-card-cancelled) {
+    grid-template-columns: 3.5rem minmax(0, 1fr) max-content max-content;
+  }
+  .agenda-card-main {
+    grid-column: 2;
+  }
+  .agenda-card-more {
+    align-self: center;
+  }
+  .agenda-card-footer {
+    grid-column: 3;
+    grid-row: 1;
+    padding: 0.5rem 0;
+    justify-content: flex-end;
+  }
+  /* Sem ação principal, o ⋯ fica onde ela estaria (sem coluna vazia). */
+  .agenda-card:not(:has(.agenda-card-footer)) .agenda-card-more {
+    grid-column: 3 / -1;
+  }
+}
+@container (min-width: 52rem) {
+  /* Uma linha por atendimento: hora · cliente · serviço · profissional · selos · ação · ⋯ */
+  .agenda-card:not(.agenda-card-cancelled) {
+    grid-template-columns:
+      6.75rem minmax(9rem, 1.2fr) minmax(8rem, 1fr) max-content minmax(0, max-content)
+      max-content max-content;
+  }
+  .agenda-card-main {
+    display: contents;
+  }
+  .agenda-card-time {
+    flex-direction: row;
+    align-items: baseline;
+    align-self: center;
+    justify-content: flex-start;
+    gap: 0.3rem;
+    width: auto;
+    padding-block: 0.625rem;
+  }
+  .agenda-card-time-bar {
+    display: none;
+  }
+  .agenda-card-time > span:last-child::before {
+    content: "–";
+    margin-inline-end: 0.1rem;
+  }
+  .agenda-card-name {
+    grid-column: 2;
+    grid-row: 1;
+    padding-block: 0.625rem;
+  }
+  .agenda-card-service {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .agenda-card-staff {
+    grid-column: 4;
+    grid-row: 1;
+  }
+  .agenda-card-badges {
+    grid-column: 5;
+    grid-row: 1;
+    padding-top: 0;
+    justify-content: flex-end;
+  }
+  .agenda-card-footer {
+    grid-column: 6;
+  }
+  .agenda-card-more {
+    grid-column: 7;
+  }
+  .agenda-card:not(:has(.agenda-card-footer)) .agenda-card-more {
+    grid-column: 6 / -1;
+  }
+}
+
+/* ===== Computador compacto (1024+): coluna do dia de 22rem + lista/quadro; tabela de clientes ===== */
+@media (min-width: 1024px) {
+  .agenda-layout {
+    display: grid;
+    grid-template-columns: 22rem minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+  }
+  .agenda-layout > :not(:last-child) {
+    margin-block: 0;
+  }
+
+  /* Calendário do mês à vista na coluna do dia: ocupa a largura do cartão. */
+  .agenda-month [data-slot="calendar"],
+  .agenda-month .rdp-root {
+    width: 100%;
+  }
+  .agenda-month table {
+    width: 100%;
+  }
+
+  /* Quadro da equipe: o cabeçalho com foto e nome de cada profissional gruda no topo da área
+     que rola (o main) e a régua das horas fica fixa à esquerda quando o quadro rola de lado. */
+  .agenda-board {
+    overflow: clip;
+  }
+  .agenda-board-head {
+    position: sticky;
+    /* O Chrome desconta o padding-top do <main> (quem rola) da área do sticky: sem o negativo
+       o cabeçalho parava 1.25rem abaixo do topo e uma faixa de conteúdo passava por cima. */
+    top: calc(-1 * var(--app-main-pad-top, 1.25rem));
+    z-index: 4;
+    background: var(--app-elevated);
+  }
+  .agenda-board-corner,
+  .agenda-board-ruler {
+    position: sticky;
+    left: 0;
+    z-index: 3;
+    background: var(--app-elevated);
+  }
+
+  /* Sugestões de outros parceiros (seção extra na largura toda): cartões em grade de 22rem,
+     vários lado a lado, em vez de um cartão de uma linha esticado por 1000 px. */
+  #agenda-extra-suggestions ul {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(22rem, 100%), 1fr));
+    gap: 0.75rem;
+  }
+  #agenda-extra-suggestions ul > li {
+    margin-block: 0;
+  }
+
+  /* Clientes da barbearia: busca e ordem na mesma linha, acima da tabela. */
+  .agenda-clients-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .agenda-clients-tools > :not(:last-child) {
+    margin-block: 0;
+  }
+  .agenda-clients-tools > label {
+    flex: 1 1 16rem;
+    max-width: 24rem;
+  }
+}
+/* Entre 1024 e 1535 px o quadro tem menos largura: colunas de 8.5rem (nomes em duas linhas). */
+@media (min-width: 1024px) and (max-width: 1535.98px) {
+  .agenda-board {
+    --agenda-board-col: 8.5rem;
+  }
+}
+
+/* ===== Computador (1280+): linhas finas e alvos de mouse ===== */
+@media (min-width: 1280px) {
+  /* Cancelado: a mesma linha fina. */
+  .agenda-card-cancelled {
+    padding-block: 0.375rem;
+  }
+  /* Folga "Livre · Agendar aqui" e o marcador "Agora": linhas finas. */
+  .agenda-gap > button,
+  .agenda-gap > div {
+    padding-block: 0.25rem;
+    border-radius: var(--control-radius);
+  }
+  .agenda-gap {
+    border-radius: var(--control-radius);
+  }
+  .agenda-now {
+    padding-block: 0;
+  }
+  .agenda-timeline > :not(:last-child) {
+    margin-block: 0 0.375rem;
+  }
+}
+
+/* Com mouse (ponteiro fino), os alvos podem ser mais baixos que os 44 px do toque. A
+   especificidade precisa vencer a regra geral de 44 px de src/styles.css. */
+@media (min-width: 1280px) and (pointer: fine) {
+  .arena-workspace
+    main
+    .agenda-card-footer
+    > button.action-button:not([aria-pressed]):not([role="switch"]),
+  .arena-workspace main .agenda-gap > button:not([aria-pressed]):not([role="switch"]) {
+    min-height: 36px;
+    padding-block: 0.3rem;
+  }
+  .arena-workspace main .agenda-card-more.app-icon-button:not([aria-pressed]):not([role="switch"]) {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+    min-height: 36px;
+  }
+}
+/* O ⋯ aparece ao passar o mouse ou ao navegar por teclado (sempre no DOM, sempre focável). */
+@media (min-width: 1280px) and (hover: hover) and (pointer: fine) {
+  .agenda-card-more {
+    opacity: 0;
+    transition: opacity var(--duration-fast, 150ms) var(--ease-soft, ease);
+  }
+  .agenda-card:hover .agenda-card-more,
+  .agenda-card:focus-within .agenda-card-more,
+  .agenda-card-more:focus-visible,
+  .agenda-card-more[aria-expanded="true"],
+  .agenda-card-more[data-state="open"] {
+    opacity: 1;
+  }
+}
+
+/* ===== Janela "Agendar cliente": resumo vivo à direita a partir de 1024 px ===== */
+/* No tablet em pé (768–1023) a janela tem 44rem e uma coluna só: os campos inteiros valem mais
+   que um resumo que ficava 70% vazio ao lado de campos cortados. */
+.agenda-book-aside {
+  display: none;
+}
+@media (min-width: 768px) and (max-width: 1023.98px) {
+  .agenda-book-body[data-layout="split"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (min-width: 1024px) {
+  .agenda-book-aside {
+    display: block;
+  }
+  /* Dia e horário lado a lado: o calendário do mês (AgendaMonth, largura natural) à esquerda
+     e a grade de horários à direita, em vez de uma parede de 20 pílulas de dia. */
+  .agenda-book-when {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    column-gap: 1.25rem;
+    align-items: start;
+  }
+  .agenda-book-when > * {
+    margin-block: 0;
+  }
+  .agenda-book-when .agenda-month [data-slot="calendar"],
+  .agenda-book-when .agenda-month table {
+    width: auto;
+  }
+  /* Profissionais em lista de linha inteira, um por linha (em flex-wrap cabia 1,5 por linha e
+     quebrava torto; em duas colunas o nome quebrava ao meio). */
+  .agenda-book-staff [role="radiogroup"] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .agenda-book-staff [role="radiogroup"] > button {
+    justify-content: flex-start;
+  }
+}
+
+/* ===== Ficha do cliente (ClientProfileModal): resumo | histórico a partir de 1024 px ===== */
+/* A janela cresce de 44rem para 60rem e o corpo vira duas colunas: apelido, próxima visita,
+   números e ritmo numa coluna de 22rem (fixa ao rolar) e o histórico, em tabela, já à vista na
+   coluna principal. Abaixo de 1024 px, a pilha de sempre. */
+@media (min-width: 1024px) {
+  .agenda-client-modal {
+    max-width: 60rem;
+  }
+  .agenda-client-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 22rem;
+    column-gap: 1.5rem;
+    align-items: start;
+  }
+  .agenda-client-body > * {
+    margin-block: 0;
+    min-width: 0;
+  }
+  .agenda-client-body > .agenda-client-aside {
+    grid-column: 2;
+    grid-row: 1;
+    position: sticky;
+    top: 0;
+  }
+  .agenda-client-body > .agenda-client-main {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  /* Carregando ou com erro, o aviso ocupa a largura toda. */
+  .agenda-client-body > :not(.agenda-client-aside, .agenda-client-main) {
+    grid-column: 1 / -1;
+  }
+}

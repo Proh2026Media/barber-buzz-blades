@@ -15,17 +15,21 @@ import {
 import {
   ActionResult,
   ConfirmDialog,
+  DataList,
   IconList,
   IconTile,
   LoadingState,
   Notice,
   SectionHeader,
+  StatusBadge,
   Tag,
   type ActionState,
+  type DataListColumn,
 } from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
+import { useViewportAtLeast } from "@/lib/device";
 import { t as tNow, useI18n } from "@/lib/i18n";
 
 export type PrivacyRequest = {
@@ -88,6 +92,9 @@ export function DataRights({
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [demoDeleted, setDemoDeleted] = useState(false);
   const confirmInputId = useId();
+  // Admin da plataforma a partir de 1024 px: os pedidos em tabela (DataList); abaixo, os
+  // cartões de sempre.
+  const table = useViewportAtLeast(1024);
 
   useEffect(() => {
     let cancelled = false;
@@ -222,10 +229,12 @@ export function DataRights({
       <section
         id={id}
         aria-labelledby={titleId}
-        className="app-action-card scroll-mt-24 space-y-4 p-4 sm:p-5"
+        // @container: os dois blocos olham a largura do cartão (na coluna estreita da Conta no
+        // tablet ficam um por linha; dois de ~160 px punham os botões em três linhas).
+        className="@container app-action-card scroll-mt-24 space-y-4 p-4 sm:p-5"
       >
         <SectionHeader icon={FolderLock} id={titleId} title={t("conta.data.title")} />
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 @min-[36rem]:grid-cols-2">
           {/* Baixar uma cópia: o que vem no arquivo, em pílulas. */}
           <div className="flex flex-col gap-3 rounded-2xl border border-border bg-background/60 p-4">
             <div className="flex items-center gap-3">
@@ -358,6 +367,63 @@ export function DataRights({
     );
   }
 
+  // Colunas da tabela (≥ 1024 px): protocolo, conta, data, situação e a ação de análise.
+  const requestColumns: DataListColumn<PrivacyRequest>[] = [
+    {
+      key: "protocol",
+      header: t("ins.rights.colProtocol"),
+      cell: (row) => <span className="break-all text-xs">{row.id}</span>,
+    },
+    {
+      key: "account",
+      header: t("ins.rights.colAccount"),
+      cell: (row) => <span className="break-all text-xs text-muted-foreground">{row.user_id}</span>,
+    },
+    {
+      key: "date",
+      header: t("ins.rights.colDate"),
+      width: "7.5rem",
+      cell: (row) => (
+        <span className="text-xs tabular-nums">
+          {new Date(row.created_at).toLocaleString(intlLocale, {
+            dateStyle: "short",
+            timeStyle: "short",
+          })}
+        </span>
+      ),
+    },
+    {
+      key: "status",
+      header: t("ins.rights.colStatus"),
+      width: "7rem",
+      cell: (row) => (
+        <StatusBadge
+          tone={row.status === "reviewing" ? "pending" : "neutral"}
+          label={row.status === "reviewing" ? t("ins.rights.reviewing") : t("ins.rights.requested")}
+          size="sm"
+        />
+      ),
+    },
+    {
+      key: "action",
+      header: <span className="sr-only">{t("ins.rights.colAction")}</span>,
+      width: "9rem",
+      align: "end",
+      cell: (row) =>
+        row.status === "requested" ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void adminUpdate("reviewing", row.id)}
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-3 text-sm font-semibold disabled:opacity-60"
+          >
+            <Search className="size-4" aria-hidden />
+            {t("ins.rights.startReview")}
+          </button>
+        ) : null,
+    },
+  ];
+
   return (
     <section
       aria-label={t("ins.rights.title")}
@@ -388,6 +454,26 @@ export function DataRights({
       {admin &&
         (loading ? (
           <LoadingState variant="list" count={1} label={t("ins.rights.loading")} />
+        ) : table ? (
+          <DataList
+            rows={rows}
+            rowKey={(row) => row.id}
+            columns={requestColumns}
+            empty={
+              !error && (
+                <IconList
+                  items={[
+                    {
+                      key: "empty",
+                      icon: CheckCircle2,
+                      tone: "success",
+                      text: t("ins.rights.empty"),
+                    },
+                  ]}
+                />
+              )
+            }
+          />
         ) : (
           <>
             {rows.map((row) => (

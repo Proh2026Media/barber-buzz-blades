@@ -16,7 +16,9 @@ import {
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import {
+  CardGrid,
   ConfirmDialog,
+  DataList,
   EmptyState,
   LoadingState,
   MoreActions,
@@ -25,9 +27,12 @@ import {
   STATE,
   StatusBadge,
   Tag,
+  type DataListColumn,
 } from "@/components/visual";
 import { ServiceIcon } from "@/components/ui/service-icon";
+import { useViewportAtLeast } from "@/lib/device";
 import { useI18n } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 import { CATALOG_SHORT_LIST, CatalogFilters, type CatalogStatus } from "../CatalogFilters";
 import {
   readCatalogViewPreference,
@@ -51,6 +56,21 @@ import {
 
 const normalize = (value: string) =>
   value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLocaleLowerCase("pt-BR").trim();
+
+/**
+ * Contêiner dos cartões: grade que se encaixa pela largura (2 colunas no tablet em pé, 3 a
+ * 1024 e 1280, 4 a 1536; mínimo de 17.5rem para caberem 3 em 1024; src/styles/catalogo.css mantém 2 colunas entre 640 e 767 px como antes)
+ * ou a lista compacta de uma coluna.
+ */
+export function CatalogItems({ view, children }: { view: CatalogViewMode; children: ReactNode }) {
+  return view === "grid" ? (
+    <CardGrid min="17.5rem" gap="0.75rem" className="catalog-grid">
+      {children}
+    </CardGrid>
+  ) : (
+    <div className="flex flex-col gap-2">{children}</div>
+  );
+}
 
 export type ServiceActions = {
   save: (draft: ServiceDraft, editing: ServiceRow | null) => Promise<ServiceSaveResult>;
@@ -114,6 +134,8 @@ export function ServicesTab({
 }) {
   const { t } = useI18n();
   const { duration, money } = useCatalogLabels();
+  // Computador compacto (≥ 1024 px): título, busca, filtros e botão numa linha; "lista" vira tabela.
+  const wide = useViewportAtLeast(1024);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<CatalogStatus>("all");
   const [savedView, setView] = useState<CatalogViewMode>(() =>
@@ -268,22 +290,270 @@ export function ServicesTab({
     setFlashName(draft.name);
   }
 
-  return (
-    <section className="space-y-4">
-      <div className="app-section-title">
-        <Scissors />
-        <h2>{t(ownCatalog ? "shop.nav.myServices" : "shop.nav.services")}</h2>
-        {canCreate && services.length > 0 && (
+  const newButton =
+    canCreate && services.length > 0 ? (
+      <button
+        type="button"
+        className={cn("action-button action-confirm", !wide && "ml-auto")}
+        onClick={() => openForm(null)}
+      >
+        <Plus className="size-4" aria-hidden />
+        {t("catalog.service.new")}
+      </button>
+    ) : null;
+  const title = (
+    <div className="app-section-title">
+      <Scissors />
+      <h2>{t(ownCatalog ? "shop.nav.myServices" : "shop.nav.services")}</h2>
+      {!wide && newButton}
+    </div>
+  );
+  const filters = (
+    <CatalogFilters
+      query={query}
+      onQuery={setQuery}
+      status={status}
+      onStatus={setStatus}
+      total={services.length}
+      active={activeCount}
+      visible={visible.length}
+      label={t("shop.services.search")}
+      activeLabel={t(ownCatalog ? "catalog.own.youServe" : "catalog.service.filterVisible")}
+      pausedLabel={t(ownCatalog ? "catalog.own.youDont" : "brand.catalog.paused")}
+      viewMode={view}
+      onViewMode={(next) => {
+        setView(next);
+        writeCatalogViewPreference(shopId, "services", next);
+      }}
+    />
+  );
+
+  /** Quem faz o serviço: avatares e a frase curta (cartão e tabela). */
+  function doersLine(service: ServiceRow) {
+    const doers = doersByService.get(service.id) ?? [];
+    if (ownCatalog || doers.length === 0) return null;
+    return (
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <span className="flex gap-0.5" aria-hidden>
+          {doers.slice(0, 4).map(({ member }) => (
+            <PersonAvatar
+              key={member.id}
+              name={member.display_name}
+              src={member.avatar_url}
+              seed={member.id}
+              size="xs"
+              className="rounded-full"
+            />
+          ))}
+        </span>
+        <span className="min-w-0">
+          {doers.length === staff.filter((member) => member.active).length && doers.length > 1
+            ? t("catalog.service.doneByAll")
+            : doers.length === 1
+              ? t("catalog.service.doneByOne", {
+                  name: doers[0]!.member.display_name,
+                })
+              : t("catalog.service.doneByMany", { count: doers.length })}
+          {doers.some((row) => row.ownPrice) ? ` · ${t("catalog.service.ownPrices")}` : ""}
+        </span>
+      </div>
+    );
+  }
+
+  function statusBadgeOf(service: ServiceRow, where: CatalogViewMode) {
+    const waiting = awaiting[service.id];
+    // Ligado, no cartão grande, o próprio interruptor já diz "Aparece para clientes": o
+    // selo só aparece quando diz algo a mais (pausado, esperando aprovação, lista).
+    if (waiting) return <StatusBadge {...STATE.waiting} size="sm" label={t("catalog.awaiting")} />;
+    if (service.active && where === "grid" && !ownCatalog) return null;
+    return service.active ? (
+      <StatusBadge
+        {...STATE.active}
+        size="sm"
+        label={t(ownCatalog ? "catalog.own.youServe" : "catalog.service.visible")}
+      />
+    ) : (
+      <StatusBadge
+        {...STATE.paused}
+        icon={EyeOff}
+        size="sm"
+        label={t(ownCatalog ? "catalog.own.youDont" : "catalog.service.hidden")}
+      />
+    );
+  }
+
+  function toggleOf(service: ServiceRow, showLabel: boolean) {
+    return (
+      <ItemToggle
+        checked={service.active}
+        label={t(ownCatalog ? "catalog.own.youServe" : "catalog.service.toggle")}
+        ariaLabel={t(ownCatalog ? "catalog.own.toggleAria" : "catalog.service.toggleAria", {
+          name: service.name,
+        })}
+        // Catálogo próprio: o estado ("Você atende / não atende") fica só no selo.
+        showLabel={showLabel && !ownCatalog}
+        disabled={!canEdit}
+        onChange={() => toggle(service)}
+      />
+    );
+  }
+
+  function menuOf(service: ServiceRow, className?: string) {
+    if (!canEdit && !canChangeGlobal) return undefined;
+    return (
+      <MoreActions
+        className={className}
+        label={t("catalog.moreAria", { name: service.name })}
+        title={service.name}
+        actions={[
+          ...(canEdit
+            ? [
+                {
+                  id: "edit",
+                  label: t("catalog.service.edit"),
+                  icon: Pencil,
+                  onSelect: () => openForm(service),
+                },
+              ]
+            : []),
+          ...(canChangeGlobal
+            ? [
+                {
+                  id: "delete",
+                  label: t("shop.deleteService.confirm"),
+                  icon: Trash2,
+                  tone: "danger" as const,
+                  onSelect: () => setDeleteTarget(service),
+                },
+              ]
+            : []),
+        ]}
+      />
+    );
+  }
+
+  // Tabela (modo "lista" a partir de 1024 px): as mesmas colunas para comparar entre serviços.
+  const tableColumns: DataListColumn<ServiceRow>[] = [
+    {
+      key: "service",
+      header: t("booking.service"),
+      cell: (service) => {
+        const inner = (
+          <>
+            <span
+              className={cn(
+                "grid size-10 shrink-0 place-items-center overflow-hidden rounded-xl bg-muted text-gold",
+                !service.active && "opacity-55 grayscale",
+              )}
+            >
+              <ServiceIcon
+                icon={service.icon}
+                className="size-5"
+                imageClassName="size-10 object-cover !rounded-none !p-0"
+              />
+            </span>
+            <span className="brand-content-title min-w-0 truncate text-sm font-bold">
+              {service.name}
+            </span>
+          </>
+        );
+        return canEdit ? (
           <button
             type="button"
-            className="action-button action-confirm ml-auto"
-            onClick={() => openForm(null)}
+            onClick={() => openForm(service)}
+            aria-label={t("shop.editAria", { name: service.name })}
+            className="catalog-table-item flex min-w-0 items-center gap-3 rounded-xl text-left transition hover:bg-muted/30"
           >
-            <Plus className="size-4" aria-hidden />
-            {t("catalog.service.new")}
+            {inner}
           </button>
-        )}
-      </div>
+        ) : (
+          <span className="flex min-w-0 items-center gap-3">{inner}</span>
+        );
+      },
+    },
+    {
+      key: "duration",
+      header: t("shop.serviceForm.duration"),
+      width: "7rem",
+      cell: (service) => (
+        <span className="inline-flex items-center gap-1.5 whitespace-nowrap tabular-nums">
+          <Clock3 className="size-4 text-gold" aria-hidden />
+          {duration(service.duration_minutes)}
+          {service.prep_minutes ? (
+            <Tag icon={Sparkles}>
+              {t("catalog.service.prepTag", { minutes: service.prep_minutes })}
+            </Tag>
+          ) : null}
+        </span>
+      ),
+    },
+    {
+      key: "price",
+      header: t("catalog.service.price"),
+      width: "7rem",
+      align: "end",
+      cell: (service) => {
+        const own = ownCatalog ? shopTerms[service.id] : undefined;
+        const differs =
+          own &&
+          (own.price_cents !== service.price_cents ||
+            own.duration_minutes !== service.duration_minutes);
+        return (
+          <span className="inline-flex flex-col items-end tabular-nums">
+            <span className="font-bold">{money(service.price_cents)}</span>
+            {differs && own ? (
+              <span className="text-xs text-muted-foreground">
+                {t("catalog.service.shopPriceShort", { price: money(own.price_cents) })}
+              </span>
+            ) : null}
+          </span>
+        );
+      },
+    },
+    ...(ownCatalog
+      ? []
+      : [
+          {
+            key: "doers",
+            header: t("catalog.table.doers"),
+            width: "17rem",
+            cell: (service: ServiceRow) => doersLine(service),
+          },
+        ]),
+    {
+      key: "visible",
+      header: t(ownCatalog ? "catalog.own.youServe" : "catalog.service.visible"),
+      width: "9rem",
+      align: "center",
+      cell: (service) => (
+        <span className="inline-flex flex-wrap items-center justify-center gap-2">
+          {/* Na tabela o interruptor (ligado ou desligado) já diz o estado: o selo só quando
+              aguarda aprovação ("Pausado · clientes não veem" quebrava em 3 linhas na coluna). */}
+          {awaiting[service.id] ? statusBadgeOf(service, "grid") : null}
+          {toggleOf(service, false)}
+        </span>
+      ),
+    },
+    {
+      key: "menu",
+      header: <span className="sr-only">{t("visual.moreActions")}</span>,
+      width: "4rem",
+      align: "end",
+      cell: (service) => menuOf(service),
+    },
+  ];
+
+  return (
+    <section className="space-y-4">
+      {wide ? (
+        <div className="catalog-toolbar">
+          {title}
+          {filters}
+          {newButton}
+        </div>
+      ) : (
+        title
+      )}
 
       {loadError && !loadFailedEmpty && (
         <Notice
@@ -300,23 +570,7 @@ export function ServicesTab({
 
       {slotNotice}
 
-      <CatalogFilters
-        query={query}
-        onQuery={setQuery}
-        status={status}
-        onStatus={setStatus}
-        total={services.length}
-        active={activeCount}
-        visible={visible.length}
-        label={t("shop.services.search")}
-        activeLabel={t(ownCatalog ? "catalog.own.youServe" : "catalog.service.filterVisible")}
-        pausedLabel={t(ownCatalog ? "catalog.own.youDont" : "brand.catalog.paused")}
-        viewMode={view}
-        onViewMode={(next) => {
-          setView(next);
-          writeCatalogViewPreference(shopId, "services", next);
-        }}
-      />
+      {!wide && filters}
 
       {loading && services.length === 0 ? (
         <LoadingState label={t("catalog.service.loading")} variant="cards" count={3} />
@@ -369,34 +623,21 @@ export function ServicesTab({
             </button>
           }
         />
+      ) : view === "list" && wide ? (
+        <DataList
+          className="catalog-table"
+          columns={tableColumns}
+          rows={visible}
+          rowKey={(service) => service.id}
+        />
       ) : (
-        <div className={view === "grid" ? "grid gap-3 sm:grid-cols-2" : "flex flex-col gap-2"}>
+        <CatalogItems view={view}>
           {visible.map((service) => {
-            const waiting = awaiting[service.id];
             const own = ownCatalog ? shopTerms[service.id] : undefined;
             const differs =
               own &&
               (own.price_cents !== service.price_cents ||
                 own.duration_minutes !== service.duration_minutes);
-            const doers = doersByService.get(service.id) ?? [];
-            // Ligado, no cartão grande, o próprio interruptor já diz "Aparece para clientes": o
-            // selo só aparece quando diz algo a mais (pausado, esperando aprovação, lista).
-            const statusBadge = waiting ? (
-              <StatusBadge {...STATE.waiting} size="sm" label={t("catalog.awaiting")} />
-            ) : service.active && view === "grid" && !ownCatalog ? null : service.active ? (
-              <StatusBadge
-                {...STATE.active}
-                size="sm"
-                label={t(ownCatalog ? "catalog.own.youServe" : "catalog.service.visible")}
-              />
-            ) : (
-              <StatusBadge
-                {...STATE.paused}
-                icon={EyeOff}
-                size="sm"
-                label={t(ownCatalog ? "catalog.own.youDont" : "catalog.service.hidden")}
-              />
-            );
             return (
               <CatalogCard
                 key={service.id}
@@ -437,87 +678,14 @@ export function ServicesTab({
                     ) : null}
                   </>
                 }
-                extra={
-                  view === "grid" && !ownCatalog && doers.length > 0 ? (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span className="flex gap-0.5" aria-hidden>
-                        {doers.slice(0, 4).map(({ member }) => (
-                          <PersonAvatar
-                            key={member.id}
-                            name={member.display_name}
-                            src={member.avatar_url}
-                            seed={member.id}
-                            size="xs"
-                            className="rounded-full"
-                          />
-                        ))}
-                      </span>
-                      <span className="min-w-0">
-                        {doers.length === staff.filter((member) => member.active).length &&
-                        doers.length > 1
-                          ? t("catalog.service.doneByAll")
-                          : doers.length === 1
-                            ? t("catalog.service.doneByOne", {
-                                name: doers[0]!.member.display_name,
-                              })
-                            : t("catalog.service.doneByMany", { count: doers.length })}
-                        {doers.some((row) => row.ownPrice)
-                          ? ` · ${t("catalog.service.ownPrices")}`
-                          : ""}
-                      </span>
-                    </div>
-                  ) : null
-                }
-                status={statusBadge}
-                toggle={
-                  <ItemToggle
-                    checked={service.active}
-                    label={t(ownCatalog ? "catalog.own.youServe" : "catalog.service.toggle")}
-                    ariaLabel={t(
-                      ownCatalog ? "catalog.own.toggleAria" : "catalog.service.toggleAria",
-                      { name: service.name },
-                    )}
-                    // Catálogo próprio: o estado ("Você atende / não atende") fica só no selo.
-                    showLabel={view === "grid" && !ownCatalog}
-                    disabled={!canEdit}
-                    onChange={() => toggle(service)}
-                  />
-                }
-                menu={
-                  canEdit || canChangeGlobal ? (
-                    <MoreActions
-                      label={t("catalog.moreAria", { name: service.name })}
-                      title={service.name}
-                      actions={[
-                        ...(canEdit
-                          ? [
-                              {
-                                id: "edit",
-                                label: t("catalog.service.edit"),
-                                icon: Pencil,
-                                onSelect: () => openForm(service),
-                              },
-                            ]
-                          : []),
-                        ...(canChangeGlobal
-                          ? [
-                              {
-                                id: "delete",
-                                label: t("shop.deleteService.confirm"),
-                                icon: Trash2,
-                                tone: "danger" as const,
-                                onSelect: () => setDeleteTarget(service),
-                              },
-                            ]
-                          : []),
-                      ]}
-                    />
-                  ) : undefined
-                }
+                extra={view === "grid" ? doersLine(service) : null}
+                status={statusBadgeOf(service, view)}
+                toggle={toggleOf(service, view === "grid")}
+                menu={menuOf(service, "catalog-card-menu")}
               />
             );
           })}
-        </div>
+        </CatalogItems>
       )}
 
       <ServiceForm

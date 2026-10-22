@@ -79,10 +79,11 @@ export function PwaInstallBanner() {
   }
 
   return (
-    <div className="pwa-install-banner pointer-events-none fixed inset-x-0 bottom-[var(--app-banner-bottom)] z-[80] flex justify-center p-3">
+    // Celular: centrado acima da barra. Computador (≥ 1024 px): ancorado no canto inferior direito.
+    <div className="pwa-install-banner pointer-events-none fixed inset-x-0 bottom-[var(--app-banner-bottom)] z-[80] flex justify-center p-3 lg:inset-x-auto lg:bottom-4 lg:right-4 lg:justify-end lg:p-0">
       <section
         aria-label={t("entry.pwa.title")}
-        className="entry-result-card pointer-events-auto w-full max-w-md p-3 shadow-2xl"
+        className="entry-result-card pointer-events-auto w-full max-w-md p-3 shadow-2xl lg:max-w-sm"
       >
         <div className="flex items-start gap-3">
           <img

@@ -29,7 +29,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
+import { enGB, enUS, es, pt, ptBR } from "date-fns/locale";
+import type { DayButtonProps } from "react-day-picker";
 import type { Tables } from "@/integrations/supabase/types";
+import { Calendar, CalendarDayButton } from "@/components/ui/calendar";
 import {
   ChoiceChips,
   EmptyState,
@@ -43,13 +46,15 @@ import {
 import { ServiceIcon } from "@/components/ui/service-icon";
 import type { CatalogViewMode } from "@/features/shop/CatalogViewToggle";
 import {
+  dateFromLocalKey,
   formatShopDate,
+  localDateKey,
   shiftDateKey,
   shopDateTime,
   shopHour,
   weekdayForDateKey,
 } from "@/lib/shop/appointments";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, type Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { AppointmentTicket, type TicketData } from "./ticket";
 
@@ -226,7 +231,11 @@ export function ServiceChoices({
   return (
     <div
       className={
-        view === "list" ? "flex flex-col gap-2" : "grid grid-cols-2 gap-2 max-[359px]:grid-cols-1"
+        // Tablet (768–1279): lista em 2 colunas e grade em 3; a partir de 1280 o passo divide a
+        // coluna com o do profissional, e a lista volta a 1 coluna.
+        view === "list"
+          ? "flex flex-col gap-2 tablet:grid tablet:grid-cols-2 pc:grid-cols-1"
+          : "grid grid-cols-2 gap-2 max-[359px]:grid-cols-1 tablet:grid-cols-3"
       }
     >
       {services.map((service, index) => {
@@ -362,7 +371,11 @@ export function StaffChoices({
   return (
     <div
       className={
-        view === "list" ? "flex flex-col gap-2" : "grid grid-cols-2 gap-2 max-[359px]:grid-cols-1"
+        // Tablet: quantos cartões couberem (mínimo 9.5rem); a lista em 2 colunas. A partir de
+        // 1280 o passo divide a coluna com o do serviço e usa a lista em 1 coluna.
+        view === "list"
+          ? "flex flex-col gap-2 tablet:grid tablet:grid-cols-2 pc:grid-cols-1"
+          : "grid grid-cols-2 gap-2 max-[359px]:grid-cols-1 tablet:grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))]"
       }
     >
       {anyOption && (
@@ -640,6 +653,98 @@ export function DayStrip({
   );
 }
 
+/** Mesmo mapa de idiomas do DatePicker (src/components/ui/schedule-picker.tsx). */
+const CALENDAR_LOCALE = {
+  "pt-BR": ptBR,
+  "pt-PT": pt,
+  "en-US": enUS,
+  "en-GB": enGB,
+  es,
+} satisfies Record<Locale, typeof ptBR>;
+
+/** Dia com a lua dos dias fechados (o mesmo sinal do "Mais datas" e da Agenda). */
+function ClosedMarkedDayButton({ children, modifiers, className, ...props }: DayButtonProps) {
+  // A lua fica sobreposta no canto da célula: empilhada abaixo do número ela deixava os
+  // domingos mais altos que o resto da linha.
+  return (
+    <CalendarDayButton modifiers={modifiers} {...props} className={cn("relative", className)}>
+      {children}
+      {modifiers.closed && (
+        <Moon aria-hidden className="absolute bottom-0.5 right-0.5 size-2.5 shrink-0" />
+      )}
+    </CalendarDayButton>
+  );
+}
+const CLOSED_DAY_COMPONENTS = { DayButton: ClosedMarkedDayButton };
+
+/**
+ * Calendário do mês em linha, no lugar da faixa de dias a partir de 1024 px (docs/dispositivos-
+ * 2026-10-21.md, seção 6.7): os mesmos dias abertos (`keys`), os fechados com lua e "Hoje" com
+ * anel dourado, como no "Mais datas". Escolher um dia chama o mesmo `onSelect` da faixa.
+ */
+export function DayCalendar({
+  keys,
+  selected,
+  closedWeekdays,
+  disabled,
+  onSelect,
+}: {
+  keys: string[];
+  selected: string;
+  closedWeekdays: Set<number> | null;
+  disabled?: boolean;
+  onSelect: (key: string) => void;
+}) {
+  const { t, locale } = useI18n();
+  const first = keys[0];
+  const last = keys[keys.length - 1];
+  if (!first || !last) return null;
+  const today = dateFromLocalKey(first);
+  return (
+    <div className="booking-day-calendar space-y-2" role="group" aria-label={t("booking.date")}>
+      <Calendar
+        // O mês é livre para folhear; quando o dia escolhido muda de mês (pílula, "Ver amanhã",
+        // link de reserva), o calendário remonta no mês certo.
+        key={selected.slice(0, 7)}
+        locale={CALENDAR_LOCALE[locale]}
+        mode="single"
+        selected={dateFromLocalKey(selected)}
+        defaultMonth={dateFromLocalKey(selected)}
+        today={today}
+        disabled={[{ before: today }, { after: dateFromLocalKey(last) }]}
+        onSelect={(date) => {
+          if (!date || disabled) return;
+          const key = localDateKey(date);
+          if (keys.includes(key)) onSelect(key);
+        }}
+        className="bg-transparent p-0 [--cell-size:2.5rem]"
+        components={closedWeekdays ? CLOSED_DAY_COMPONENTS : undefined}
+        modifiers={{
+          ...(closedWeekdays ? { closed: (date: Date) => closedWeekdays.has(date.getDay()) } : {}),
+          markedToday: today,
+        }}
+        modifiersClassNames={{
+          closed: "[&>button:not([data-selected-single=true])]:text-muted-foreground",
+          markedToday:
+            "[&>button:not([data-selected-single=true])]:ring-2 [&>button:not([data-selected-single=true])]:ring-inset [&>button:not([data-selected-single=true])]:ring-gold [&>button[data-selected-single=true]]:shadow-[inset_0_0_0_2px_var(--gold),inset_0_0_0_4px_var(--accent)]",
+        }}
+      />
+      <ul className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-semibold text-muted-foreground">
+        <li className="flex items-center gap-1">
+          <span aria-hidden className="size-3 rounded-sm ring-2 ring-inset ring-gold" />
+          {t("booking.today")}
+        </li>
+        {closedWeekdays && closedWeekdays.size > 0 && (
+          <li className="flex items-center gap-1">
+            <Moon aria-hidden className="size-3" />
+            {t("booking.closed")}
+          </li>
+        )}
+      </ul>
+    </div>
+  );
+}
+
 /* -------------------------------------------------------------------------------------------- */
 /* Horários                                                                                      */
 /* -------------------------------------------------------------------------------------------- */
@@ -650,6 +755,10 @@ type Period = { key: string; label: string; icon: LucideIcon; from: number; to: 
 
 const SLOT =
   "flex min-h-11 flex-col items-center justify-center rounded-xl border px-2 py-2 text-sm font-semibold tabular-nums transition";
+/* Colunas de horários: 3 (4 a partir de 400 px) no celular; a partir de 768 px, quantas couberem
+   com 5.5rem de mínimo (os botões param de esticar no tablet e no computador). */
+const TIME_COLUMNS =
+  "grid grid-cols-3 gap-2 min-[400px]:grid-cols-4 tablet:grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))]";
 
 export function TimeGrid({
   state,
@@ -701,7 +810,7 @@ export function TimeGrid({
           <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />
           {t("booking.loadingTimes")}
         </p>
-        <div className="grid grid-cols-3 gap-2 min-[400px]:grid-cols-4" aria-hidden>
+        <div className={TIME_COLUMNS} aria-hidden>
           {Array.from({ length: 8 }, (_, index) => (
             <span key={index} className="h-11 rounded-xl bg-muted motion-safe:animate-pulse" />
           ))}
@@ -820,7 +929,7 @@ export function TimeGrid({
                 {free === 1 ? t("booking.freeOne") : t("booking.freeCount", { count: free })}
               </span>
             </p>
-            <div className="grid grid-cols-3 gap-2 min-[400px]:grid-cols-4">
+            <div className={TIME_COLUMNS}>
               {inPeriod.map((item) => {
                 const time = label(item.date);
                 if (item.kind === "current") {
@@ -1021,6 +1130,8 @@ export function BookingSummaryBar({
   ready,
   busy,
   price,
+  step,
+  details,
   onConfirm,
   children,
 }: {
@@ -1030,6 +1141,13 @@ export function BookingSummaryBar({
   ready: boolean;
   busy: boolean;
   price?: string | null;
+  /**
+   * A partir de 1024 px o painel absorve o passo "Conferir": o selo numerado e o título do passo
+   * substituem "Sua reserva" (o passo deixa de existir na coluna dos passos).
+   */
+  step?: { index: number; state: StepState; title: string } | null;
+  /** Conteúdo do "Conferir" dentro do painel (Repetir, aviso da barbearia). Só no computador. */
+  details?: ReactNode;
   onConfirm: () => void;
   /** Resultado/erro do envio, logo acima do botão. */
   children?: ReactNode;
@@ -1038,15 +1156,25 @@ export function BookingSummaryBar({
   return (
     <aside
       aria-label={t("booking.summaryAria")}
-      className="booking-summary-bar app-action-card sticky z-20 min-w-0 space-y-2 p-2.5 shadow-lg lg:space-y-3 lg:p-4"
+      // Tablet em pé (768–1023): o painel deixa de ser fixo e vira um cartão logo abaixo do passo
+      // "Conferir" (que já mostra a data), só com o botão à direita — a barra fixa repetia a
+      // data e cobria o conteúdo com um botão de 600 px. No computador volta a ser a coluna fixa.
+      className="booking-summary-bar app-action-card sticky z-20 min-w-0 space-y-2 p-2.5 shadow-lg tablet:static tablet:grid tablet:justify-items-end tablet:shadow-none lg:sticky lg:block lg:space-y-3 lg:p-4 lg:shadow-lg"
     >
-      <p className="hidden items-center gap-2 text-sm font-bold lg:flex">
-        <CalendarCheck className="size-4 text-gold" aria-hidden />
-        {t("booking.yourBooking")}
-      </p>
+      {step ? (
+        <p className="hidden min-h-11 items-center gap-3 lg:flex">
+          <StepMarker index={step.index} state={step.state} />
+          <span className="booking-heading min-w-0 flex-1">{step.title}</span>
+        </p>
+      ) : (
+        <p className="hidden items-center gap-2 text-sm font-bold lg:flex">
+          <CalendarCheck className="size-4 text-gold" aria-hidden />
+          {t("booking.yourBooking")}
+        </p>
+      )}
       {/* No celular, só o "quando" (serviço e profissional já aparecem nos passos logo acima, e a
           barra fixa ocupava três linhas da tela). No computador, o resumo inteiro na coluna. */}
-      <ul className="grid grid-cols-2 gap-1.5 lg:flex lg:flex-col lg:gap-2">
+      <ul className="grid grid-cols-2 gap-1.5 tablet:hidden lg:flex lg:flex-col lg:gap-2">
         {pills.map((pill) => {
           const Icon = pill.icon;
           const content = (
@@ -1086,13 +1214,14 @@ export function BookingSummaryBar({
           <span className="font-bold tabular-nums">{price}</span>
         </p>
       )}
+      {details ? <div className="space-y-3 border-t border-border pt-3">{details}</div> : null}
       {children}
       <button
         type="button"
         onClick={onConfirm}
         disabled={!ready || busy}
         aria-busy={busy || undefined}
-        className="action-button action-confirm min-h-11 w-full lg:min-h-12"
+        className="action-button action-confirm min-h-11 w-full tablet:w-auto tablet:min-w-[18rem] lg:min-h-12 lg:w-full"
       >
         {busy ? (
           <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />

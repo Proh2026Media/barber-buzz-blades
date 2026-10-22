@@ -1,12 +1,18 @@
 import { AlertTriangle, CheckCircle2, Info, Loader2, XCircle } from "lucide-react";
 import { Toaster as Sonner } from "sonner";
 
+import { useDevice } from "@/lib/device";
 import { useTheme } from "@/lib/use-theme";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
-// Avisos no alto da tela: não disputam espaço com a barra inferior nem com o banner do PWA.
+// Celular: avisos no alto da tela, sem disputar espaço com a barra inferior nem com o banner
+// do PWA. Tablet e computador: canto inferior direito (docs/dispositivos-2026-10-21.md).
 const TOAST_TOP_OFFSET = { top: "max(1rem, env(safe-area-inset-top))" };
+const TOAST_CORNER_OFFSET = {
+  bottom: "max(1.25rem, env(safe-area-inset-bottom))",
+  right: "max(1.25rem, env(safe-area-inset-right))",
+};
 
 // Mesmos ícones dos tons do sistema (src/components/visual/tones.ts); a cor e a faixa lateral
 // de cada tipo vêm do bloco "Avisos rápidos" em styles.css.
@@ -20,12 +26,13 @@ const TOAST_ICONS = {
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme } = useTheme();
+  const phone = useDevice() === "celular";
 
   return (
     <Sonner
       theme={theme}
-      position="top-center"
-      offset={TOAST_TOP_OFFSET}
+      position={phone ? "top-center" : "bottom-right"}
+      offset={phone ? TOAST_TOP_OFFSET : TOAST_CORNER_OFFSET}
       mobileOffset={TOAST_TOP_OFFSET}
       icons={TOAST_ICONS}
       className="toaster group"

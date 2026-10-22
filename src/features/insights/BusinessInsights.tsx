@@ -223,7 +223,9 @@ export function BusinessInsights({
   return (
     <section
       className={
-        embedded ? "space-y-3" : "space-y-3 rounded-2xl border border-primary/20 bg-card p-4"
+        embedded
+          ? "space-y-3"
+          : "@container space-y-3 rounded-2xl border border-primary/20 bg-card p-4"
       }
       aria-label={t("ins.biz.aria")}
     >
@@ -267,7 +269,19 @@ export function BusinessInsights({
       ) : (
         summary && (
           <>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {/* Tiles: 2 colunas no celular e 3 a partir de 640 px. Dentro da Agenda (embedded),
+                a partir de 768 px quantas couberem com 10rem (coluna do dia). Fora dela são 6
+                tiles: 3 colunas fixas (2 linhas que fecham certo) e 6 numa linha só quando a
+                seção tem 72rem — com auto-fill o número "R$ 16.815,00" quebrava ao meio e o
+                sexto tile sobrava sozinho. */}
+            <div
+              className={cn(
+                "grid grid-cols-2 gap-2 sm:grid-cols-3",
+                embedded
+                  ? "tablet:grid-cols-[repeat(auto-fill,minmax(10rem,1fr))]"
+                  : "@min-[72rem]:grid-cols-6",
+              )}
+            >
               {/* Na Agenda, reservas, concluídos, cancelados e valor já estão em "Seu dia". */}
               {!embedded && (
                 <>
@@ -323,7 +337,11 @@ export function BusinessInsights({
               <DelayTile
                 delays={delays}
                 wide={!embedded}
-                className={embedded ? "col-span-2 sm:col-span-1" : "col-span-2 sm:col-span-3"}
+                className={
+                  embedded
+                    ? "col-span-2 sm:col-span-1"
+                    : "col-span-2 sm:col-span-3 tablet:col-span-full"
+                }
               />
             </div>
             <MoreDetails summary={t("ins.biz.howCalculated")}>
@@ -368,70 +386,76 @@ export function BusinessInsights({
             </MoreDetails>
             <MoreDetails summary={t("ins.biz.experience")} icon={Smile} defaultOpen={!day}>
               <div className="space-y-4 text-xs text-foreground">
-                <div>
-                  <p className="font-semibold">{t("ins.biz.rating")}</p>
-                  {summary.rating_sample >= 5 && summary.rating_average !== null ? (
-                    <>
-                      <p className="mt-1 flex flex-wrap items-center gap-2 text-2xl font-bold text-primary">
-                        <Stars value={Number(summary.rating_average)} />
-                        {Number(summary.rating_average).toLocaleString(intlLocale, {
-                          minimumFractionDigits: 1,
-                          maximumFractionDigits: 2,
-                        })}{" "}
-                        <span className="text-sm text-muted-foreground">{t("ins.biz.outOf5")}</span>
-                      </p>
+                {/* Nota, melhorias, motivos e interesse: comparáveis lado a lado a partir de
+                    1024 px (quantos couberem com 18rem); empilhados antes disso. */}
+                <div className="space-y-4 lg:grid lg:grid-cols-[repeat(auto-fill,minmax(18rem,1fr))] lg:gap-4 lg:space-y-0">
+                  <div>
+                    <p className="font-semibold">{t("ins.biz.rating")}</p>
+                    {summary.rating_sample >= 5 && summary.rating_average !== null ? (
+                      <>
+                        <p className="mt-1 flex flex-wrap items-center gap-2 text-2xl font-bold text-primary">
+                          <Stars value={Number(summary.rating_average)} />
+                          {Number(summary.rating_average).toLocaleString(intlLocale, {
+                            minimumFractionDigits: 1,
+                            maximumFractionDigits: 2,
+                          })}{" "}
+                          <span className="text-sm text-muted-foreground">
+                            {t("ins.biz.outOf5")}
+                          </span>
+                        </p>
+                        <MetricRows
+                          values={summary.rating_distribution}
+                          labels={{
+                            "1": t("ins.biz.star1"),
+                            "2": t("ins.biz.stars", { count: 2 }),
+                            "3": t("ins.biz.stars", { count: 3 }),
+                            "4": t("ins.biz.stars", { count: 4 }),
+                            "5": t("ins.biz.stars", { count: 5 }),
+                          }}
+                        />
+                      </>
+                    ) : (
+                      <InsufficientSample count={summary.rating_sample} />
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-semibold">{t("ins.biz.improvement")}</p>
+                    {summary.improvement_sample >= 5 ? (
                       <MetricRows
-                        values={summary.rating_distribution}
-                        labels={{
-                          "1": t("ins.biz.star1"),
-                          "2": t("ins.biz.stars", { count: 2 }),
-                          "3": t("ins.biz.stars", { count: 3 }),
-                          "4": t("ins.biz.stars", { count: 4 }),
-                          "5": t("ins.biz.stars", { count: 5 }),
-                        }}
+                        values={summary.improvement_counts}
+                        labels={questions.improvement.options}
                       />
-                    </>
-                  ) : (
-                    <InsufficientSample count={summary.rating_sample} />
-                  )}
-                </div>
-                <div>
-                  <p className="font-semibold">{t("ins.biz.improvement")}</p>
-                  {summary.improvement_sample >= 5 ? (
-                    <MetricRows
-                      values={summary.improvement_counts}
-                      labels={questions.improvement.options}
-                    />
-                  ) : (
-                    <InsufficientSample count={summary.improvement_sample} />
-                  )}
-                </div>
-                <div>
-                  <p className="font-semibold">{t("ins.biz.cancelReasons")}</p>
-                  {summary.cancellation_reason_sample >= 5 ? (
-                    <MetricRows
-                      values={summary.cancellation_reason_counts}
-                      labels={Object.fromEntries(
-                        Object.keys(summary.cancellation_reason_counts).map((key) => [
-                          key,
-                          cancellationReasonLabel(key as CancellationReason),
-                        ]),
-                      )}
-                    />
-                  ) : (
-                    <InsufficientSample count={summary.cancellation_reason_sample} />
-                  )}
-                </div>
-                <div>
-                  <p className="font-semibold">{t("ins.catalog.name.service_interest")}</p>
-                  {serviceInterest.sample >= 5 ? (
-                    <MetricRows
-                      values={serviceInterest.counts}
-                      labels={questions.service_interest.options}
-                    />
-                  ) : (
-                    <InsufficientSample count={serviceInterest.sample} />
-                  )}
+                    ) : (
+                      <InsufficientSample count={summary.improvement_sample} />
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-semibold">{t("ins.biz.cancelReasons")}</p>
+                    {summary.cancellation_reason_sample >= 5 ? (
+                      <MetricRows
+                        values={summary.cancellation_reason_counts}
+                        labels={Object.fromEntries(
+                          Object.keys(summary.cancellation_reason_counts).map((key) => [
+                            key,
+                            cancellationReasonLabel(key as CancellationReason),
+                          ]),
+                        )}
+                      />
+                    ) : (
+                      <InsufficientSample count={summary.cancellation_reason_sample} />
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-semibold">{t("ins.catalog.name.service_interest")}</p>
+                    {serviceInterest.sample >= 5 ? (
+                      <MetricRows
+                        values={serviceInterest.counts}
+                        labels={questions.service_interest.options}
+                      />
+                    ) : (
+                      <InsufficientSample count={serviceInterest.sample} />
+                    )}
+                  </div>
                 </div>
                 <p className="text-muted-foreground">{t("ins.biz.aggregateNote")}</p>
               </div>

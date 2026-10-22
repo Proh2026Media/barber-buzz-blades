@@ -1,0 +1,118 @@
+/* App do cliente (onda 7): CSS de tablet e computador desta área. Tudo atrás de
+   @media (min-width: 768px) e maiores (docs/dispositivos-2026-10-21.md, seção 6.7): abaixo de
+   768 px nada muda. Carregado depois de src/styles.css (via src/dispositivos.css). */
+
+/* ---------------------------------------------------------------------------------------------
+   Início: SplitLayout (.app-split) vira duas colunas já no tablet (a primitiva só divide a partir
+   de 1024 px). Tablet em pé: colunas proporcionais, para a esquerda não ficar mais estreita que o
+   celular; a partir de 1024 px: coluna da direita de 24rem (--split-aside), fixa ao rolar.
+   --------------------------------------------------------------------------------------------- */
+@media (min-width: 768px) {
+  .customer-home.app-split {
+    --split-gap: 1.5rem;
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 46%);
+  }
+  .customer-home.app-split > .app-split-main {
+    grid-row: 1;
+    grid-column: 1;
+  }
+  .customer-home.app-split > .app-split-aside {
+    grid-row: 1;
+    grid-column: 2;
+    order: 0;
+    position: sticky;
+    top: var(--split-top, 1rem);
+  }
+}
+@media (min-width: 1024px) {
+  .customer-home.app-split {
+    grid-template-columns: minmax(0, 1fr) var(--split-aside, 24rem);
+  }
+}
+/* Computador: a coluna principal para em 44rem. Com a largura toda, "Seu próximo horário" virava
+   um cartão de 845 px com conteúdo só nos 400 px da esquerda. */
+@media (min-width: 1280px) {
+  .customer-home.app-split {
+    grid-template-columns: minmax(0, 44rem) var(--split-aside, 24rem);
+  }
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Meus pontos no tablet em pé (768–1023): cartão de membro | prêmios (um por linha) lado a lado,
+   extrato na largura toda embaixo. Os dois invólucros do SplitLayout viram `display: contents`
+   para o extrato sair da coluna; a partir de 1024 px vale o SplitLayout normal.
+   --------------------------------------------------------------------------------------------- */
+@media (min-width: 768px) and (max-width: 1023.98px) {
+  .customer-points-split.app-split {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+  .customer-points-split > .app-split-aside {
+    grid-row: 1;
+    grid-column: 1;
+    order: 0;
+  }
+  .customer-points-split > .app-split-main,
+  .customer-points-split > .app-split-main > div {
+    display: contents;
+  }
+  .customer-points-split > .app-split-main > div > * {
+    margin-block: 0;
+    min-width: 0;
+    grid-column: 1 / -1;
+  }
+  .customer-points-split > .app-split-main > div > [aria-labelledby="rewards-title"] {
+    grid-row: 1;
+    grid-column: 2;
+  }
+  .customer-points-split [aria-labelledby="rewards-title"] ul {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Meus agendamentos: a coluna da direita (Precisa de você, avisos de outras lojas, Minha fila)
+   só existe quando tem conteúdo. Vazia, não ocupa lugar em largura nenhuma (sem isso, o grid
+   somaria o gap de uma linha vazia também no celular).
+   --------------------------------------------------------------------------------------------- */
+.customer-reservas-split > .app-split-aside:empty {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .customer-reservas-split:has(> .app-split-aside:empty) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* A aba Meus agendamentos entra na lista de abas largas da casca (customer-main-wide, ArenaApp). */
+
+/* ---------------------------------------------------------------------------------------------
+   Agendar no computador: calendário do mês em linha (no lugar da faixa de dias). Os dias usam o
+   mesmo tamanho de alvo dos horários (2.5rem; 2.25rem com mouse) e o mês não estica.
+   --------------------------------------------------------------------------------------------- */
+@media (min-width: 1024px) {
+  .booking-day-calendar [data-slot="calendar"] {
+    width: fit-content;
+  }
+  .booking-day-calendar td button {
+    min-height: 0;
+  }
+}
+@media (min-width: 1024px) and (pointer: fine) {
+  .booking-day-calendar [data-slot="calendar"] {
+    --cell-size: 2.25rem;
+  }
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Meus pontos no computador: extrato em tabela (DataList) com a coluna dos pontos alinhada à
+   direita e o motivo sem quebrar o nome do serviço no meio.
+   --------------------------------------------------------------------------------------------- */
+@media (min-width: 1024px) {
+  .points-ledger-table .app-data-list-table td {
+    vertical-align: top;
+  }
+}
+
+/* Conta no tablet em pé (768–1023): "Seu ritmo" (src/features/insights/RhythmDashboard.tsx) e
+   "Seus dados" (src/features/insights/DataRights.tsx) medem a própria largura (container query
+   nos componentes) e ficam em menos colunas na coluna estreita; não precisam de contorno aqui. */

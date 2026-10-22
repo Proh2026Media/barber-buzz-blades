@@ -69,6 +69,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import type { SessionProfile } from "@/lib/auth/session";
 import { useMyAreas, useRememberArea } from "@/features/account/useAreas";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
+import { useDevice } from "@/lib/device";
 import { t as tNow, useI18n } from "@/lib/i18n";
 import {
   brandCornerClass,
@@ -484,6 +485,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       )
     : null;
 
+  const device = useDevice();
   const navItems = [
     { id: "overview" as const, label: t("plat.tabs.home"), icon: LayoutDashboard },
     { id: "shops" as const, label: t("plat.tabs.shops"), icon: Store },
@@ -587,18 +589,19 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                 <BarChart3 aria-hidden />
                 <h2>{t("plat.insights.title")}</h2>
               </div>
-              <BusinessInsights />
-              <SurveyCatalog />
-              <DataRights admin />
+              {/* Pilha na largura toda em todas as faixas: a coluna lateral de 22rem ficava só com
+                  "Pedidos de privacidade" (3 linhas) e 90% vazia, enquanto os 6 tiles do
+                  acompanhamento se espremiam em 2 ou 3 colunas. */}
+              <div className="space-y-6">
+                <BusinessInsights />
+                <SurveyCatalog />
+                <DataRights admin />
+              </div>
             </div>
           )}
 
-          {platformTab === "permissions" && (
-            <div className="app-section-title">
-              <KeyRound aria-hidden />
-              <h2>{t("plat.tabs.permissions")}</h2>
-            </div>
-          )}
+          {/* O título fica dentro do editor: a partir de 768 px o seletor de barbearia entra
+              na mesma linha. */}
           {platformTab === "permissions" && (
             <PlatformPermissionsEditor
               shops={shops}
@@ -651,53 +654,60 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
         </div>
 
         {/* Fica montado nas outras abas (escondido) para a lista de atenção e o contador
-            da barra saberem o estado do WhatsApp em qualquer aba. */}
-        {!demoMode && (
-          <PlatformWhatsAppCard
-            ref={waRef}
-            onStatusChange={setWaStatus}
-            className={platformTab === "overview" ? undefined : "hidden"}
-          />
-        )}
-        {/* Sem barbearias por falha de carga, o "Testar como…" não tem com o que testar. */}
-        {platformTab === "overview" && !(loadError && shops.length === 0) && (
-          <div className="scroll-mt-4">
-            {demoMode ? (
-              <DemoTourHub
-                shopId={demoState?.shop.id ?? ""}
-                onSelectRole={demoChrome?.setRole}
-                activeRole={demoChrome?.role}
-                onPreviewLogin={() => void openLoginTour()}
+            da barra saberem o estado do WhatsApp em qualquer aba. No Início, a partir de
+            1024 px, é um widget de 20rem ao lado do "Testar como…" (plataforma.css). */}
+        {/* Na demonstração não há cartão do WhatsApp: fora do Início não renderiza nada (o
+            último filho do main é quem define a margem do space-y). */}
+        {(platformTab === "overview" || !demoMode) && (
+          <div className={platformTab === "overview" ? "plat-overview-extras space-y-6" : "hidden"}>
+            {!demoMode && (
+              <PlatformWhatsAppCard
+                ref={waRef}
+                onStatusChange={setWaStatus}
+                className={platformTab === "overview" ? "plat-wa-card" : "hidden"}
               />
-            ) : (
-              <DemoTourHub
-                shopId={demoShopId}
-                disabled={!demoShopId}
-                onPreviewLogin={() => void openLoginTour()}
-              >
-                {shops.length > 0 && (
-                  <label className="flex min-h-12 items-center gap-2 rounded-2xl border border-border bg-background ps-3">
-                    <PersonAvatar
-                      name={demoShop?.name ?? "?"}
-                      size="xs"
-                      seed={demoShopId || undefined}
-                    />
-                    <span className="sr-only">{t("demo.hub.shopLabel")}</span>
-                    <select
-                      value={demoShopId}
-                      onChange={(event) => setDemoShopId(event.target.value)}
-                      className="min-h-11 min-w-0 flex-1 rounded-2xl bg-transparent! pe-3 text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      {shops.map((shop) => (
-                        <option key={shop.id} value={shop.id}>
-                          {shop.name}
-                          {shop.status === "suspended" ? t("plat.shops.suspendedSuffix") : ""}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+            )}
+            {/* Sem barbearias por falha de carga, o "Testar como…" não tem com o que testar. */}
+            {platformTab === "overview" && !(loadError && shops.length === 0) && (
+              <div className="scroll-mt-4">
+                {demoMode ? (
+                  <DemoTourHub
+                    shopId={demoState?.shop.id ?? ""}
+                    onSelectRole={demoChrome?.setRole}
+                    activeRole={demoChrome?.role}
+                    onPreviewLogin={() => void openLoginTour()}
+                  />
+                ) : (
+                  <DemoTourHub
+                    shopId={demoShopId}
+                    disabled={!demoShopId}
+                    onPreviewLogin={() => void openLoginTour()}
+                  >
+                    {shops.length > 0 && (
+                      <label className="flex min-h-12 items-center gap-2 rounded-2xl border border-border bg-background ps-3">
+                        <PersonAvatar
+                          name={demoShop?.name ?? "?"}
+                          size="xs"
+                          seed={demoShopId || undefined}
+                        />
+                        <span className="sr-only">{t("demo.hub.shopLabel")}</span>
+                        <select
+                          value={demoShopId}
+                          onChange={(event) => setDemoShopId(event.target.value)}
+                          className="min-h-11 min-w-0 flex-1 rounded-2xl bg-transparent! pe-3 text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          {shops.map((shop) => (
+                            <option key={shop.id} value={shop.id}>
+                              {shop.name}
+                              {shop.status === "suspended" ? t("plat.shops.suspendedSuffix") : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
+                  </DemoTourHub>
                 )}
-              </DemoTourHub>
+              </div>
             )}
           </div>
         )}
@@ -835,8 +845,9 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
         }}
       >
         <DialogContent
+          size={device === "celular" ? "md" : "lg"}
           aria-describedby={undefined}
-          className="flex max-h-[92dvh] w-[calc(100vw-1.5rem)] max-w-2xl flex-col gap-0 overflow-hidden rounded-3xl border-border bg-card p-0"
+          className="flex max-h-[92dvh] w-[calc(100vw-1.5rem)] max-w-2xl flex-col gap-0 overflow-hidden rounded-3xl border-border bg-card p-0 tablet:grid tablet:max-w-[44rem]"
         >
           {/* Cabeçalho fixo fora da rolagem: o X não cobre a prévia, que gruda logo abaixo. */}
           <div className="flex min-h-14 shrink-0 items-center border-b border-border px-5 pr-14 sm:px-6">

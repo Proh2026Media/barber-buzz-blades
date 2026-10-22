@@ -1,0 +1,126 @@
+/* Horários (onda 5): CSS de tablet e computador desta área (docs/dispositivos-2026-10-21.md,
+   seção 6). Regra de ouro: abaixo de 768 px nada muda; toda regra fica atrás de @media.
+   Marcação: src/features/shop/hours/{HoursTab,WeekCard,BlocksCard,BlockDialog}.tsx. */
+
+@media (min-width: 768px) {
+  /* Selo "aberta agora" (e fuso) na linha do título. */
+  .hours-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+  }
+  .hours-head > * {
+    margin-block: 0;
+  }
+  .hours-head > .app-section-title {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+  /* Faixa dos 7 dias de Bloqueios: numa linha só a partir de 19rem de cartão (o utilitário do
+     componente pedia 21.5rem e quebrava em 4+3 na coluna do tablet deitado). */
+  @container (min-width: 19rem) {
+    .hours-days {
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 0.25rem;
+    }
+    .hours-days > li > button {
+      padding-inline: 0.125rem;
+    }
+  }
+  /* Janela do dia: abre e fecha lado a lado (TimeRangeEditor layout="columns"). */
+  .hours-day-dialog .hours-range-columns {
+    gap: 1.25rem;
+  }
+  /* Janela de bloqueio: escolhas à esquerda, resumo fixo à direita. */
+  .hours-block-dialog .hours-block-body[data-layout="split"] {
+    grid-template-columns: minmax(0, 1fr) minmax(16rem, 19rem);
+  }
+  .hours-block-actions > .flex {
+    flex-shrink: 0;
+  }
+}
+
+/* Computador compacto e computador (≥ 1024 px): a semana à esquerda ocupando a altura;
+   Bloqueios, Pausa fixa e "Assim seus clientes veem" empilhados à direita, sem buracos. */
+@media (min-width: 1024px) {
+  .hours-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr;
+  }
+  .hours-grid > .hours-week {
+    grid-column: 1;
+    grid-row: 1 / -1;
+  }
+  .hours-grid > .hours-blocks {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .hours-grid > .hours-breaks {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .hours-grid > .hours-notice {
+    grid-column: 2;
+    grid-row: 3;
+  }
+  .hours-grid:not(:has(> .hours-breaks)) > .hours-notice {
+    grid-row: 2;
+  }
+}
+
+/* Computador (≥ 1280 px): "Sua semana" como tabela compacta. Entre 1024 e 1279 a coluna da
+   semana tem ~420 px e a barra do dia ficava com ~105 px (régua "9h 12h 15h 18h" espremida):
+   nessa faixa vale o formato do tablet (horário em cima, barra embaixo). */
+@media (min-width: 1280px) {
+  /* "Sua semana" como tabela compacta: dia · horário · barra · lápis · aberto, numa linha de
+     ~48 px por dia; editar continua abrindo a janela do dia. */
+  .hours-week-list .hours-day-button {
+    display: grid;
+    grid-template-columns: 7.5rem minmax(0, 1fr) auto;
+    column-gap: 0.75rem;
+    align-items: center;
+    padding-block: 0.375rem;
+  }
+  .hours-week-list .hours-day-line {
+    display: contents;
+  }
+  .hours-week-list .hours-day-label {
+    grid-column: 1;
+    flex-wrap: wrap;
+    row-gap: 0.125rem;
+  }
+  .hours-week-list .hours-day-track {
+    grid-column: 2;
+    margin-top: 0;
+  }
+  .hours-week-list .hours-day-pencil {
+    grid-column: 3;
+    margin-left: 0;
+  }
+  .hours-week-list .hours-day-wanted {
+    grid-column: 1 / -1;
+  }
+  /* A régua acompanha a barra: pula a coluna do horário e o lápis. */
+  .hours-ruler .hours-ruler-ticks {
+    margin-left: calc(0.75rem + 7.5rem + 0.75rem);
+    margin-right: calc(0.75rem + 1rem + 0.75rem);
+  }
+  /* Semana só de leitura (parceiro/contratado: a linha é um div, sem lápis): a barra termina
+     1rem mais à direita, e a régua acompanha. */
+  .hours-ruler:has(+ .hours-week-list .hours-day-button:not(button)) .hours-ruler-ticks {
+    margin-right: calc(0.75rem + 0.75rem);
+  }
+}
+
+/* Computador (≥ 1280 px): os dias com bloqueio em duas colunas. */
+@media (min-width: 1280px) {
+  .hours-busy-days {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    gap: 1rem;
+  }
+  .hours-busy-days > li {
+    margin-block: 0;
+  }
+}

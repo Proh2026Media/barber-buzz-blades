@@ -1,0 +1,235 @@
+/* Ajustes (onda 6): CSS de tablet e computador desta área (docs/dispositivos-2026-10-21.md,
+   seção 6). Regra de ouro: abaixo de 768 px nada muda; o que é de tablet/computador fica atrás
+   de @media (min-width: 768px / 1024px / 1280px). A estrutura vem de
+   src/features/shop/settings/SettingsHub.tsx (mestre-detalhe) e dos cartões de Agendamento. */
+
+/* Conteúdo da seção aberta: o mesmo espaçamento do `space-y-6` de antes, como grade, para os
+   pares de cartões ficarem lado a lado nas seções que têm largura para isso. */
+.ajustes-conteudo {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+.ajustes-conteudo > * {
+  min-width: 0;
+}
+
+/* ───────── Tablet (768 px ou mais) ───────── */
+@media (min-width: 768px) {
+  /* Idioma e tema: os dois cartões lado a lado quando os dois cabem com 18rem (tablet em pé e
+     computador). No tablet deitado, com a lista de assuntos ao lado, a seção tem menos de 36rem
+     e eles empilham: em duas colunas forçadas (o `lg:grid-cols-2` do invólucro do ShopShell) as
+     três opções de tema quebravam palavra no meio. */
+  .ajustes-detalhe[data-secao="idioma"] .ajustes-conteudo > .grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(18rem, 100%), 1fr));
+  }
+  /* Com a lista de assuntos ao lado (1280+), o cartão Tema só fica ao lado do Idioma quando o
+     detalhe tem 44rem; antes disso as três miniaturas de tema ficavam com 60 px. */
+  @media (min-width: 1280px) {
+    .ajustes-detalhe[data-secao="idioma"] .ajustes-conteudo > .grid {
+      grid-template-columns: repeat(auto-fill, minmax(min(21rem, 100%), 1fr));
+    }
+  }
+  /* Senha e acesso: dois campos de senha não esticam na largura toda. */
+  .ajustes-detalhe[data-secao="conta"] .ajustes-conteudo > * {
+    max-width: 30rem;
+  }
+  /* Equipe e sociedade: decisões e pessoas na largura toda; "Seu acesso" e "Saída" lado a lado. */
+  .ajustes-detalhe[data-secao="equipe"] .ajustes-conteudo {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+  .ajustes-detalhe[data-secao="equipe"] .ajustes-conteudo > :not(#team-mine, .ajustes-saida) {
+    grid-column: 1 / -1;
+  }
+
+  /* Campo | prévia dentro de um cartão de Agendamento (SplitLayout): só quando o cartão tem
+     largura para as duas colunas (container query), porque no mestre-detalhe a largura depende
+     de quantas colunas há ao lado, não da tela. Abaixo disso, empilhado como no celular. */
+  .ajustes-item {
+    container-type: inline-size;
+  }
+  .ajustes-item .app-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ajustes-item .app-split > .app-split-main,
+  .ajustes-item .app-split > .app-split-aside {
+    grid-column: 1;
+    grid-row: auto;
+    position: static;
+  }
+  @container (min-width: 38rem) {
+    .ajustes-item .app-split {
+      grid-template-columns: minmax(0, 1fr) var(--split-aside, 20rem);
+      column-gap: 1.5rem;
+    }
+    .ajustes-item .app-split > .app-split-main {
+      grid-row: 1;
+      grid-column: 1;
+    }
+    .ajustes-item .app-split > .app-split-aside {
+      grid-row: 1;
+      grid-column: 2;
+      position: sticky;
+      top: var(--split-top, 1rem);
+    }
+    .ajustes-item .app-split:not([data-sticky]) > .app-split-aside {
+      position: static;
+    }
+    /* Lateral à esquerda (prévia de "Meu perfil e link"). */
+    .ajustes-item .app-split[data-aside="start"] {
+      grid-template-columns: var(--split-aside, 20rem) minmax(0, 1fr);
+    }
+    .ajustes-item .app-split[data-aside="start"] > .app-split-main {
+      grid-column: 2;
+    }
+    .ajustes-item .app-split[data-aside="start"] > .app-split-aside {
+      grid-column: 1;
+    }
+    /* Com a prévia ao lado, a coluna dos controles é estreita: os cartões de escolha
+       (ChoiceCards) ficam um por linha, como no celular, em vez de dois espremidos. */
+    .ajustes-item .app-split > .app-split-main fieldset.grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  @container (min-width: 60rem) {
+    .ajustes-item .app-split > .app-split-main fieldset.grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+}
+
+/* ───────── Tablet deitado e computador (1024 px ou mais): mestre-detalhe ───────── */
+@media (min-width: 1024px) {
+  /* A lista rola por dentro (MasterDetail): folga para a sombra dos cartões não ser cortada. */
+  .ajustes-mestre > .app-master-detail-list {
+    margin: -0.25rem -0.5rem 0;
+    padding: 0.25rem 0.5rem 1.5rem;
+  }
+  /* Assunto aberto ao lado: fundo suave e seta na cor da marca. */
+  .ajustes-assunto[aria-current="page"] {
+    background: color-mix(in oklab, var(--primary) 10%, transparent);
+  }
+  .ajustes-assunto[aria-current="page"] > svg:last-child {
+    color: var(--primary);
+  }
+  .dark .ajustes-assunto[aria-current="page"] {
+    background: color-mix(in oklab, var(--primary) 18%, transparent);
+  }
+
+  /* Avisos e integrações: WhatsApp e Google lado a lado quando os dois cabem com 24rem. */
+  .ajustes-detalhe[data-secao="avisos"] .ajustes-conteudo {
+    grid-template-columns: repeat(auto-fill, minmax(min(24rem, 100%), 1fr));
+    align-items: start;
+  }
+}
+
+/* ───────── Computador (1280 px ou mais): trilho do Agendamento ───────── */
+@media (min-width: 1280px) {
+  .ajustes-trilho-grade {
+    display: grid;
+    grid-template-columns: 12.5rem minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+  }
+  /* O trilho é um cartão (app-action-card no JSX): off-white nos dois temas, como os demais. */
+  .ajustes-trilho {
+    position: sticky;
+    top: 0;
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.5rem;
+  }
+  .ajustes-trilho-titulo {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0.5rem 0.25rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+  .ajustes-trilho ul {
+    display: grid;
+    gap: 0.125rem;
+  }
+  .ajustes-trilho-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem;
+    border-radius: var(--control-radius);
+    text-align: start;
+    transition: background-color var(--duration-fast, 150ms) var(--ease-soft, ease);
+  }
+  .ajustes-trilho-item > svg {
+    margin-top: 0.125rem;
+  }
+  .ajustes-trilho-item[aria-current="page"] {
+    background: color-mix(in oklab, var(--primary) 10%, transparent);
+  }
+  .dark .ajustes-trilho-item[aria-current="page"] {
+    background: color-mix(in oklab, var(--primary) 18%, transparent);
+  }
+  @media (hover: hover) {
+    .ajustes-trilho-item:not([aria-current="page"]):hover {
+      background: color-mix(in oklab, var(--muted) 55%, transparent);
+    }
+  }
+  /* Valores do trilho em pílulas menores, para caberem na coluna estreita. */
+  .ajustes-trilho-item .mt-1 > * {
+    font-size: 0.6875rem;
+  }
+}
+
+/* ───────── Editores longos em janela quase cheia (GuardedEditorDialog size="page") ───────── */
+@media (min-width: 768px) {
+  /* Identidade visual: etapas e campos à esquerda, prévia grande fixa à direita (metade cada no
+     tablet em pé; 26rem | resto a partir de 1024 px). */
+  .ajustes-editor-page .brand-editor {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+  }
+  .ajustes-editor-page .brand-editor > * {
+    margin-block: 0;
+  }
+  .ajustes-editor-page .brand-editor > .brand-editor-preview {
+    order: 2;
+    position: sticky;
+    top: 0;
+  }
+  .ajustes-editor-page .brand-editor > .brand-editor-form {
+    order: 1;
+    min-width: 0;
+  }
+  /* Coluna estreita: o quadro da logo em cima e os campos de nome embaixo, na largura toda. */
+  .ajustes-editor-page .brand-logo-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ajustes-editor-page .brand-logo-grid > * {
+    grid-column: auto;
+    grid-row: auto;
+  }
+  /* Trilho de etapas: quebra em linhas em vez de rolar para o lado. */
+  .ajustes-editor-page .brand-editor [role="tablist"] {
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+}
+@media (min-width: 1024px) {
+  /* 30rem: as cinco etapas do trilho cabem numa linha (com 26rem quebravam em duas). */
+  .ajustes-editor-page .brand-editor {
+    grid-template-columns: 30rem minmax(0, 1fr);
+  }
+  /* Prévia maior no computador, centrada na coluna da direita. */
+  .ajustes-editor-page .brand-editor > .brand-editor-preview {
+    max-width: 36rem;
+    margin-inline: auto;
+    width: 100%;
+  }
+}

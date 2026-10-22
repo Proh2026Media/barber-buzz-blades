@@ -29,7 +29,16 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogActions,
+  DialogAside,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   ActionResult,
   ConfirmDialog,
@@ -948,49 +957,73 @@ export function WhatsAppChannelCard({ shopId }: { shopId: string }) {
         </details>
       )}
 
+      {/* QR: no celular, passos, código e botões empilhados (como antes); do tablet em diante,
+          janela larga com os passos à esquerda e o código grande à direita. */}
       <Dialog open={qrOpen} onOpenChange={setQrOpen}>
-        <DialogContent className="max-w-sm rounded-3xl border-border bg-card p-5">
-          <DialogTitle className="text-base font-extrabold">{t("integr.wa.qrTitle")}</DialogTitle>
-          <DialogDescription className="sr-only">{t("integr.wa.qrSteps")}</DialogDescription>
-          <Steps
-            orientation="vertical"
-            label={t("integr.wa.qrSteps")}
-            steps={[
-              { label: t("integr.wa.qrStep1"), icon: Smartphone, status: "done" },
-              { label: t("integr.wa.qrStep2"), icon: Laptop, status: "done" },
-              { label: t("integr.wa.qrStep3"), icon: ScanLine, status: "current" },
-            ]}
-          />
-          {qrcode ? (
-            <img
-              src={qrcode}
-              alt={t("integr.wa.qrAlt")}
-              className="mx-auto mt-1 size-56 rounded-2xl bg-white p-2"
-            />
-          ) : (
-            <Notice tone="warning" title={t("integr.wa.qrUnavailable")} role="status" />
-          )}
-          <div className="flex justify-center">
-            {channel?.status === "open" ? (
-              <StatusBadge
-                tone="success"
-                icon={CheckCircle2}
-                label={t("integr.wa.status.open")}
-                live
+        <DialogContent
+          size="lg"
+          className="gap-4 rounded-3xl border-border bg-card p-5 tablet:max-w-[40rem]"
+        >
+          <DialogHeader className="text-left">
+            <DialogTitle className="text-base font-extrabold">{t("integr.wa.qrTitle")}</DialogTitle>
+            <DialogDescription className="sr-only">{t("integr.wa.qrSteps")}</DialogDescription>
+          </DialogHeader>
+          <DialogBody
+            layout="split"
+            className="-mx-5 gap-4 px-5 tablet:grid-cols-[minmax(0,1fr)_minmax(16rem,18rem)] tablet:gap-6"
+          >
+            <div className="space-y-4">
+              <Steps
+                orientation="vertical"
+                label={t("integr.wa.qrSteps")}
+                steps={[
+                  { label: t("integr.wa.qrStep1"), icon: Smartphone, status: "done" },
+                  { label: t("integr.wa.qrStep2"), icon: Laptop, status: "done" },
+                  { label: t("integr.wa.qrStep3"), icon: ScanLine, status: "current" },
+                ]}
               />
-            ) : (
-              <StatusBadge tone="pending" icon={Hourglass} label={t("integr.wa.qrWaiting")} live />
-            )}
-          </div>
-          <Hint tone="warning" icon={Laptop}>
-            {t("integr.wa.qrOtherDevice")}
-          </Hint>
-          <div className="flex flex-col gap-2">
+              <Hint tone="warning" icon={Laptop} className="hidden tablet:flex">
+                {t("integr.wa.qrOtherDevice")}
+              </Hint>
+            </div>
+            <DialogAside className="space-y-4">
+              {qrcode ? (
+                <img
+                  src={qrcode}
+                  alt={t("integr.wa.qrAlt")}
+                  className="mx-auto mt-1 size-56 rounded-2xl bg-white p-2 tablet:mt-0 tablet:size-64"
+                />
+              ) : (
+                <Notice tone="warning" title={t("integr.wa.qrUnavailable")} role="status" />
+              )}
+              <div className="flex justify-center">
+                {channel?.status === "open" ? (
+                  <StatusBadge
+                    tone="success"
+                    icon={CheckCircle2}
+                    label={t("integr.wa.status.open")}
+                    live
+                  />
+                ) : (
+                  <StatusBadge
+                    tone="pending"
+                    icon={Hourglass}
+                    label={t("integr.wa.qrWaiting")}
+                    live
+                  />
+                )}
+              </div>
+              <Hint tone="warning" icon={Laptop} className="tablet:hidden">
+                {t("integr.wa.qrOtherDevice")}
+              </Hint>
+            </DialogAside>
+          </DialogBody>
+          <DialogActions className="-mx-5 -mb-5 border-0 px-5 pb-5 pt-0 tablet:flex-row-reverse tablet:justify-start">
             <button
               type="button"
               disabled={busy}
               onClick={() => void refresh()}
-              className="min-h-11 w-full rounded-xl border border-border text-sm font-semibold"
+              className="min-h-11 w-full rounded-xl border border-border text-sm font-semibold tablet:w-auto tablet:px-4"
             >
               {t("integr.wa.scannedButton")}
             </button>
@@ -998,12 +1031,12 @@ export function WhatsAppChannelCard({ shopId }: { shopId: string }) {
               type="button"
               disabled={busy}
               onClick={() => void connect()}
-              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground"
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground tablet:w-auto tablet:px-3"
             >
               <RotateCcw className="size-4" aria-hidden />
               {t("integr.wa.newCode")}
             </button>
-          </div>
+          </DialogActions>
         </DialogContent>
       </Dialog>
 

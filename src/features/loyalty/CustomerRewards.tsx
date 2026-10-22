@@ -164,7 +164,7 @@ export function CustomerRewards({
       {atLimit && <Hint tone="warning">{t("rewards.limit")}</Hint>}
 
       {rewards.length > 0 && (
-        <ul className="grid gap-2 sm:grid-cols-2">
+        <ul className="grid gap-2 sm:grid-cols-2 tablet:grid-cols-[repeat(auto-fill,minmax(14rem,1fr))]">
           {rewards.map((reward) => (
             <RewardCard
               key={reward.id}

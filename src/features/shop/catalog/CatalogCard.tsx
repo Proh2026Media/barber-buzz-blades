@@ -10,6 +10,10 @@ import type { SaveOutcome } from "./types";
  * Cartão de item do catálogo (serviço ou profissional). O conteúdo é o foco: tocar nele abre a
  * edição; o estado (selo) e o interruptor com rótulo ficam juntos no pé; ações raras no "⋯".
  * Em "lista" vira uma linha compacta com os mesmos elementos.
+ *
+ * A partir de 768 px o cartão de grade fica mais baixo (src/styles/catalogo.css): o interruptor
+ * sobe para a linha do título (rótulo só em `title`/aria) e o rodapé some; o selo, quando existe,
+ * fica sob o conteúdo. As classes `catalog-card-*` só servem a esse CSS.
  */
 export function CatalogCard({
   view,
@@ -92,12 +96,12 @@ export function CatalogCard({
       onClick={onOpen}
       aria-label={openLabel}
       aria-describedby={openLabel ? describedBy : undefined}
-      className="flex min-h-11 min-w-0 flex-1 items-start gap-3 rounded-xl text-left transition hover:bg-muted/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+      className="catalog-card-main flex min-h-11 min-w-0 flex-1 items-start gap-3 rounded-xl text-left transition hover:bg-muted/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
     >
       {body}
     </button>
   ) : (
-    <div className="flex min-w-0 flex-1 items-start gap-3">{body}</div>
+    <div className="catalog-card-main flex min-w-0 flex-1 items-start gap-3">{body}</div>
   );
 
   if (view === "list") {
@@ -120,17 +124,17 @@ export function CatalogCard({
     <article
       id={id}
       className={cn(
-        "flex scroll-mt-28 flex-col gap-3 rounded-2xl border bg-card p-3 transition-shadow",
+        "catalog-card flex scroll-mt-28 flex-col gap-3 rounded-2xl border bg-card p-3 transition-shadow",
         highlight ? "border-primary ring-2 ring-primary/30" : "border-border",
       )}
     >
-      <div className="flex items-start gap-1">
+      <div className="catalog-card-head flex items-start gap-1">
         {main}
         {menu}
       </div>
-      {extra}
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-border pt-2">
-        {status}
+      {extra ? <div className="catalog-card-extra">{extra}</div> : null}
+      <div className="catalog-card-foot flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-border pt-2">
+        {status ? <span className="catalog-card-status">{status}</span> : null}
         {toggle}
       </div>
     </article>
@@ -177,7 +181,7 @@ export function ItemToggle({
   }
 
   return (
-    <span className="ml-auto inline-flex min-h-11 flex-wrap items-center justify-end gap-x-2 gap-y-1">
+    <span className="catalog-card-toggle ml-auto inline-flex min-h-11 flex-wrap items-center justify-end gap-x-2 gap-y-1">
       {state && (
         <InlineStatus
           state={state}
@@ -185,8 +189,11 @@ export function ItemToggle({
           onRetry={state === "error" ? () => void change(!checked) : undefined}
         />
       )}
-      <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 text-xs font-semibold">
-        {showLabel && <span>{label}</span>}
+      <label
+        className="inline-flex min-h-11 cursor-pointer items-center gap-2 text-xs font-semibold"
+        title={showLabel ? label : undefined}
+      >
+        {showLabel && <span className="catalog-card-toggle-label">{label}</span>}
         <Switch
           checked={shown}
           disabled={disabled || state === "saving"}

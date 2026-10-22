@@ -21,6 +21,7 @@ import {
 import { StatusBadge, Steps, Tag, type Tone } from "@/components/visual";
 import { ServiceIcon } from "@/components/ui/service-icon";
 import { StaffPhoto } from "@/components/ui/staff-photo";
+import { useDevice } from "@/lib/device";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import {
@@ -191,6 +192,8 @@ export function TodayCard({
   className?: string;
 }) {
   const { t, intlLocale } = useI18n();
+  // "Toque para escolher" só onde se toca; no tablet e no computador, "Escolha um horário".
+  const pickHint = t(useDevice() === "celular" ? "shopLanding.tapToPick" : "booking.chooseTime");
   const noneToday = showToday && !next;
   return (
     <section
@@ -266,7 +269,7 @@ export function TodayCard({
               <span className="mt-0.5 flex items-center gap-1 text-xs font-medium text-muted-foreground">
                 <Pointer className="size-3.5 shrink-0" aria-hidden />
                 {day
-                  ? t("shopLanding.tapToPick")
+                  ? pickHint
                   : t("shopLanding.seeAgendaOf", { name: next.member.name.split(" ")[0] })}
               </span>
             )}
@@ -312,6 +315,8 @@ export function SlotPills({
   day?: string;
 }) {
   const { t, intlLocale } = useI18n();
+  // "Toque para escolher" só onde se toca; no tablet e no computador, "Escolha um horário".
+  const pickHint = t(useDevice() === "celular" ? "shopLanding.tapToPick" : "booking.chooseTime");
   const [expanded, setExpanded] = useState(false);
   const listRef = useRef<HTMLUListElement>(null);
   const focusAfterExpand = useRef(false);
@@ -338,7 +343,7 @@ export function SlotPills({
         {!preview && (
           <span className="ml-auto inline-flex items-center gap-1 font-medium">
             <Pointer className="size-3.5" aria-hidden />
-            {day ? t("shopLanding.tapToPick") : t("shopLanding.tapToOpen")}
+            {day ? pickHint : t("shopLanding.tapToOpen")}
           </span>
         )}
       </p>
@@ -443,7 +448,9 @@ export function WeekHours({
 }) {
   const { t, intlLocale } = useI18n();
   return (
-    <ul className="public-card overflow-hidden rounded-[var(--panel-radius)] border border-border">
+    // public-week: linhas mais baixas a partir de 768 px na página de verdade (.brand-page), não
+    // na prévia do editor (src/styles/publicas.css).
+    <ul className="public-week public-card overflow-hidden rounded-[var(--panel-radius)] border border-border">
       {groups.map((group) => {
         const isToday = group.days.includes(todayWeekday);
         const first = group.days[0];
