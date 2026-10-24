@@ -97,13 +97,6 @@
   }
 }
 
-/* Computador (≥ 1280 px): o atalho "Acesso ao painel" é um cartão ao lado da grade. */
-@media (min-width: 1280px) {
-  .catalog-split {
-    --split-aside: 18rem;
-  }
-}
-
 /* Janelas de serviço e profissional (size="lg", duas colunas) a partir de 768 px. */
 @media (min-width: 768px) {
   .catalog-form-dialog .catalog-form-body[data-layout="split"] {

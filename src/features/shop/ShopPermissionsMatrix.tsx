@@ -488,7 +488,7 @@ export function ShopPermissionsMatrix({
   ];
 
   const comparisonTable = (
-    <table className="w-full table-fixed text-left text-xs text-foreground">
+    <table className="permissions-table w-full table-fixed text-left text-xs text-foreground">
       <thead>
         <tr className="border-b border-border/60">
           <th scope="col" className="py-2 pe-2 font-semibold">
@@ -579,7 +579,7 @@ export function ShopPermissionsMatrix({
   );
 
   return (
-    <div className="space-y-4">
+    <div className="permissions-editor space-y-4">
       <SectionHeader as="h3" icon={ShieldCheck} title={title} description={description} />
       {!canEdit && (
         <Hint icon={Lock} tone="muted">

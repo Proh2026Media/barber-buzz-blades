@@ -87,15 +87,11 @@
 
 /* ---------------------------------------------------------------------------------------------
    Agendar no tablet e computador: calendário do mês em linha (no lugar da faixa de dias).
-   No tablet em pé, dias de 44 px para toque; a partir de 1024 px, tamanhos já usados no painel.
+   No tablet e em telas de toque, dias de 44 px; no computador com mouse, 36 px.
    --------------------------------------------------------------------------------------------- */
 @media (min-width: 768px) {
   .booking-day-calendar [data-slot="calendar"] {
     width: fit-content;
-  }
-}
-@media (min-width: 768px) and (max-width: 1023.98px) {
-  .booking-day-calendar [data-slot="calendar"] {
     --cell-size: 2.75rem;
   }
 }
@@ -104,7 +100,7 @@
     min-height: 0;
   }
 }
-@media (min-width: 1024px) and (pointer: fine) {
+@media (min-width: 1280px) and (pointer: fine) {
   .booking-day-calendar [data-slot="calendar"] {
     --cell-size: 2.25rem;
   }
@@ -123,3 +119,11 @@
 /* Conta no tablet em pé (768–1023): "Seu ritmo" (src/features/insights/RhythmDashboard.tsx) e
    "Seus dados" (src/features/insights/DataRights.tsx) medem a própria largura (container query
    nos componentes) e ficam em menos colunas na coluna estreita; não precisam de contorno aqui. */
+
+/* As escolhas dividem a tela do tablet; dentro de cada etapa, uma opção por linha.
+   O resumo só ocupa uma coluna no computador, deixando calendário e horários juntos no tablet. */
+@media (min-width: 1024px) {
+  .customer-profile {
+    grid-template-columns: 18rem minmax(0, 1fr);
+  }
+}

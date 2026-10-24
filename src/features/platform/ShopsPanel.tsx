@@ -384,7 +384,7 @@ export function ShopsPanel({
         <>
           <div
             className={cn(
-              "grid gap-4 lg:items-start",
+              "plat-shops-layout grid gap-4 lg:items-start",
               table
                 ? "plat-shops-split pc:grid-cols-[minmax(0,1fr)_minmax(20rem,0.6fr)]"
                 : "lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]",
@@ -493,7 +493,7 @@ export function ShopsPanel({
               </ul>
             )}
 
-            {wide && (
+            {wide && selected && (
               <aside
                 ref={asideRef}
                 aria-labelledby={selected ? headingId : undefined}

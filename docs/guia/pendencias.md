@@ -10,7 +10,7 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 - Situação: **pendente**, **feito — falta aplicar no banco**, **a decidir** (depende do dono), **não confirmado** (não deu para conferir daqui).
 - Cada item foi conferido no código e nas migrations em 12/10/2026. As linhas citadas são dessa data.
 - **Papéis da equipe no banco × nomes na tela:** `owner` e `partner` = **Dono** (sócio; `partner` é o nome antigo e aparece igual), `associate` = **Parceiro**, `employee` = **Contratado** ([roles.tsx](../../src/features/shop/roles.tsx), linhas 16-27; rótulos em `pt-BR.ts`, linhas 718-721). `shop_admin` é o papel antigo de `memberships`, que pode existir sem vínculo de equipe (CONTINUIDADE, onda 1 de 09/10).
-- Último id usado: **P-95**.
+- Último id usado: **P-96**.
 
 **Índice**
 
@@ -22,20 +22,20 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 6. [Testes manuais com contas reais](#6-testes-manuais-com-contas-reais) (P-40 a P-43)
 7. [Dívida técnica](#7-dívida-técnica) (P-44 a P-48, P-51, P-52, P-55, P-63 a P-65, P-72, P-75 e P-78)
 8. [Ideias futuras](#8-ideias-futuras) (P-49, P-50 e P-54)
-9. [Interface por dispositivo: o que ficou](#9-interface-por-dispositivo-o-que-ficou) (P-79 a P-95)
+9. [Interface por dispositivo: o que ficou](#9-interface-por-dispositivo-o-que-ficou) (P-79 a P-96)
 
 ---
 
 ## 1. As 5 recomendadas para a próxima rodada
 
-Atualizada em 24/10/2026, depois da continuação de interface P-84 a P-94. Os pacotes do Google, testes reais e escolhas de direção visual continuam no topo.
+Atualizada em 24/10/2026 após a revisão geral por dispositivo (P-96/P-92). Pacotes do Google, testes reais e decisões fora do escopo continuam no topo.
 
 | Ordem | Itens      | O quê                                                                    | Por quê                                                                                                                                                                                                   |
 | ----- | ---------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1     | P-69       | Tirar o retorno `supabase-teste` do cliente OAuth no Google Cloud        | Só o dono (ou quem tiver acesso) entra no console. Pacote pronto: [2026-10-15-google-retorno-antigo-p69.md](../pacotes/2026-10-15-google-retorno-antigo-p69.md).                                          |
 | 2     | P-28       | Gravar o vídeo e reenviar a verificação do Google                        | Depois da P-69. Pacote pronto: [2026-10-15-google-reenviar-verificacao-p28.md](../pacotes/2026-10-15-google-reenviar-verificacao-p28.md).                                                                 |
 | 3     | P-42, P-43 | Testes com login real (WhatsApp, Google), em aparelho físico e no tablet | Dependem do dono. Desde 22/10, a P-43 inclui o tablet (iPad em pé e deitado) e o computador: a interface por dispositivo só foi vista em navegador emulado (roteiro na entrada de 22/10 do CONTINUIDADE). |
-| 4     | P-92, P-95 | Decidir densidade dos ajustes e folha inferior no celular                | P-84 a P-89, P-91, P-93 e P-94 feitas. As duas mudanças de direção visual aguardam escolha; manter o comportamento atual até ela chegar.                                                                  |
+| 4     | P-95       | Decidir folha inferior no celular                                        | P-92 concluída na revisão geral P-96. A folha inferior altera a experiência móvel e continua aguardando escolha.                                                                                          |
 | 5     | P-71       | Decidir "reserva" × "agendamento" no resto do app                        | A aba e a página já dizem "Meus agendamentos" (P-32); o fluxo de agendar e alguns avisos ainda dizem "reserva".                                                                                           |
 
 Sem pressa e sem depender de terceiros: P-14, P-45 (opcionais de antes).
@@ -574,13 +574,12 @@ Entrega de 22/10/2026 (CONTINUIDADE, entrada "Interface por dispositivo"; plano 
 - **Limites explícitos:** pessoas da sociedade aparecem para consulta na demo; a matriz usa dados fictícios e salva localmente. O QR exibido é uma ilustração identificada como fictícia, sem conectar celular nem fazer consultas de status. Pausas de exemplo ficam na tela e não geram bloqueios reais. A trava de rede da demo foi preservada.
 - **Verificação:** cenários exercitados no navegador local com fixtures; aparelhos físicos e integrações reais continuam na P-43.
 
-### P-92 — Lado a lado só a partir de 1536 em Ajustes e Relatórios · a decidir
+### P-92 — Composição de Ajustes e Relatórios pela largura útil · feito em 24/10/2026 (ChatGPT/Codex)
 
-Escolha consultada ao dono em 24/10; sem resposta nesta rodada, mantidos os mínimos existentes.
-
-- **Por quê:** dentro do mestre-detalhe de Ajustes (lista de 18rem) e do trilho de Agendamento (12.5rem), o cartão do ajuste só ganha "campo | prévia" quando tem 38rem (`.ajustes-item`, container query em `src/styles/ajustes.css`), o que em 1024 e 1280 não acontece: Avisos e integrações (WhatsApp e Google lado a lado só com 24rem cada), o modo dos horários, a antecedência mínima e a fila de espera ficam empilhados até 1536. O cartão do Google tem grades `sm:` (3 agendas) que ficariam espremidas com 20rem. Nos Relatórios da plataforma, os quatro blocos comparáveis (nota, melhorias, motivos, interesse) usam `lg:grid-cols-[repeat(auto-fill,minmax(18rem,1fr))]`; conferir se ficam em 2 colunas em 1280 agora que a pilha ocupa a largura toda.
-- **Onde:** `src/styles/ajustes.css` (38rem e 24rem), [GoogleConnectionCard.tsx](../../src/features/shop/settings/GoogleConnectionCard.tsx), [BusinessInsights.tsx](../../src/features/insights/BusinessInsights.tsx).
-- **Pronto quando:** o dono decide se vale baixar os mínimos (container query no cartão do Google; 16rem nos blocos dos Relatórios) para o lado a lado valer em 1280, ou se o empilhado em 1024–1535 fica.
+- **Autorização:** o novo pedido do dono para revisar todo o tablet/computador inclui esta composição; não precisa repetir a escolha anterior.
+- **Feito:** índice de assuntos com 13rem desde 1024; índice interno de Agendamento acima dos campos em 1024–1535 e lateral em 1536+. Campo/prévia dividem o cartão com pelo menos 35rem, reservando 45% (mínimo 16rem) à prévia. Integrações usam mínimo de 21rem; campos e escolhas do Google medem a própria coluna. Relatórios comparáveis usam cartões de mínimo 17rem desde 768.
+- **Preservado:** uma edição por vez, URLs/Voltar, rascunhos, alertas de atenção, dados e permissões. Abaixo de 768 mantém o leiaute anterior.
+- **Conferência:** capturas de tablet, computador e larguras intermediárias; rascunho em 768 → 1280 → 1536 → 1024 preservado e descarte funcionando. Detalhes na P-96.
 
 ### P-93 — `foto.mjs` com fixture da página pública (`--landing`) · feito em 24/10/2026 (ChatGPT/Codex)
 
@@ -600,3 +599,10 @@ Escolha consultada ao dono em 24/10; sem resposta nesta rodada, mantidas as jane
 - **Por quê:** no celular as tarefas longas (editar serviço, profissional, bloqueio, horário do dia) abrem em janela centrada; uma folha que sobe do pé é o padrão de celular e deixaria o polegar perto dos botões. É mudança de celular, por isso ficou fora do pedido de 21/10 (plano, seção 8).
 - **Onde:** [dialog.tsx](../../src/components/ui/dialog.tsx) (um `size` ou variante de celular), o drawer legado foi removido na P-88; usar a primitiva comum, sem recriar um segundo sistema de janelas.
 - **Pronto quando:** o dono pedir; então um só componente de folha para todas as janelas longas do celular, com foco, Esc e rodapé fixo, e fotos de 390 antes e depois.
+
+### P-96 — Revisão geral da composição em tablet e computador · feito em 24/10/2026 (ChatGPT/Codex)
+
+- **Pedido:** organização própria para cada dispositivo em todo o sistema, preservando mobile, identidade, funções e permissões. Não refazer as entregas aplicadas.
+- **Entregue:** P-92, colunas independentes em Horários, janela de Pausa fixa desde 768, Equipe em largura útil completa, serviço/profissional lado a lado desde 768 e resumo lateral só desde 1280, calendário de toque com 44 px, Clube com regras/níveis lado a lado quando cabem, perfil do cliente com índice proporcional, matriz da plataforma sem explicação lateral comprimindo os controles e lista de barbearias sem coluna vazia antes de selecionar uma ficha.
+- **Revisão:** navegação das três áreas, agenda, catálogo, ajustes, clube, cliente, plataforma, páginas públicas, autenticação, formulários e janelas. Mantidas as composições anteriores que já atendiam aos dispositivos. Inventário e evidências na seção 10 de [dispositivos-2026-10-21.md](../dispositivos-2026-10-21.md).
+- **Limites:** navegador local com dados fictícios; não é teste físico nem de integrações. P-42/P-43 seguem abertas. P-95 não incluída. Sem banco ou tarefa nova para a VPS.

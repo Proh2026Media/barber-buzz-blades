@@ -11,6 +11,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { SectionHeader, StatusBadge, type Tone } from "@/components/visual";
 import { ROLE_ICON } from "@/features/demo/roles";
 import { ShopPermissionsMatrix } from "@/features/shop/ShopPermissionsMatrix";
+import { WorkspaceHeading } from "@/components/visual/WorkspaceHeader";
 import { useDevice } from "@/lib/device";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -96,8 +97,10 @@ export function PlatformPermissionsEditor({
     // (src/styles/plataforma.css).
     <div className="plat-perm space-y-6">
       <div className="plat-perm-title app-section-title">
-        <KeyRound aria-hidden />
-        <h2>{t("plat.tabs.permissions")}</h2>
+        <WorkspaceHeading>
+          <KeyRound aria-hidden />
+          <h2>{t("plat.tabs.permissions")}</h2>
+        </WorkspaceHeading>
       </div>
       <div className="plat-perm-body space-y-5">
         <section className="plat-perm-tiers space-y-3 rounded-3xl border border-border bg-card p-4 sm:p-5">

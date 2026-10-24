@@ -231,10 +231,9 @@ export function ServiceChoices({
   return (
     <div
       className={
-        // Tablet (768–1279): lista em 2 colunas e grade em 3; a partir de 1280 o passo divide a
-        // coluna com o do profissional, e a lista volta a 1 coluna.
+        // Cada etapa divide o espaço com a outra desde o tablet: lista com uma opção por linha.
         view === "list"
-          ? "flex flex-col gap-2 tablet:grid tablet:grid-cols-2 pc:grid-cols-1"
+          ? "flex flex-col gap-2"
           : "grid grid-cols-2 gap-2 max-[359px]:grid-cols-1 tablet:grid-cols-3"
       }
     >
@@ -371,10 +370,9 @@ export function StaffChoices({
   return (
     <div
       className={
-        // Tablet: quantos cartões couberem (mínimo 9.5rem); a lista em 2 colunas. A partir de
-        // 1280 o passo divide a coluna com o do serviço e usa a lista em 1 coluna.
+        // Lista com uma opção por linha na coluna da etapa; grade respeita a largura disponível.
         view === "list"
-          ? "flex flex-col gap-2 tablet:grid tablet:grid-cols-2 pc:grid-cols-1"
+          ? "flex flex-col gap-2"
           : "grid grid-cols-2 gap-2 max-[359px]:grid-cols-1 tablet:grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))]"
       }
     >
@@ -1142,7 +1140,7 @@ export function BookingSummaryBar({
   busy: boolean;
   price?: string | null;
   /**
-   * A partir de 1024 px o painel absorve o passo "Conferir": o selo numerado e o título do passo
+   * A partir de 1280 px o painel absorve o passo "Conferir": o selo numerado e o título do passo
    * substituem "Sua reserva" (o passo deixa de existir na coluna dos passos).
    */
   step?: { index: number; state: StepState; title: string } | null;
@@ -1156,25 +1154,25 @@ export function BookingSummaryBar({
   return (
     <aside
       aria-label={t("booking.summaryAria")}
-      // Tablet em pé (768–1023): o painel deixa de ser fixo e vira um cartão logo abaixo do passo
+      // Tablet (768–1279): o painel deixa de ser fixo e vira um cartão logo abaixo do passo
       // "Conferir" (que já mostra a data), só com o botão à direita — a barra fixa repetia a
       // data e cobria o conteúdo com um botão de 600 px. No computador volta a ser a coluna fixa.
-      className="booking-summary-bar app-action-card sticky z-20 min-w-0 space-y-2 p-2.5 shadow-lg tablet:static tablet:grid tablet:justify-items-end tablet:shadow-none lg:sticky lg:block lg:space-y-3 lg:p-4 lg:shadow-lg"
+      className="booking-summary-bar app-action-card sticky z-20 min-w-0 space-y-2 p-2.5 shadow-lg tablet:static tablet:grid tablet:justify-items-end tablet:shadow-none pc:sticky pc:block pc:justify-items-stretch pc:space-y-3 pc:p-4 pc:shadow-lg"
     >
       {step ? (
-        <p className="hidden min-h-11 items-center gap-3 lg:flex">
+        <p className="hidden min-h-11 items-center gap-3 pc:flex">
           <StepMarker index={step.index} state={step.state} />
           <span className="booking-heading min-w-0 flex-1">{step.title}</span>
         </p>
       ) : (
-        <p className="hidden items-center gap-2 text-sm font-bold lg:flex">
+        <p className="hidden items-center gap-2 text-sm font-bold pc:flex">
           <CalendarCheck className="size-4 text-gold" aria-hidden />
           {t("booking.yourBooking")}
         </p>
       )}
       {/* No celular, só o "quando" (serviço e profissional já aparecem nos passos logo acima, e a
           barra fixa ocupava três linhas da tela). No computador, o resumo inteiro na coluna. */}
-      <ul className="grid grid-cols-2 gap-1.5 tablet:hidden lg:flex lg:flex-col lg:gap-2">
+      <ul className="grid grid-cols-2 gap-1.5 tablet:hidden pc:flex pc:flex-col pc:gap-2">
         {pills.map((pill) => {
           const Icon = pill.icon;
           const content = (
@@ -1184,7 +1182,7 @@ export function BookingSummaryBar({
             </>
           );
           const cls = cn(
-            "inline-flex min-h-10 w-full min-w-0 items-center gap-1.5 whitespace-nowrap rounded-[var(--button-radius)] border px-2.5 text-xs font-semibold lg:text-sm",
+            "inline-flex min-h-10 w-full min-w-0 items-center gap-1.5 whitespace-nowrap rounded-[var(--button-radius)] border px-2.5 text-xs font-semibold pc:text-sm",
             pill.pending
               ? "border-dashed border-muted-foreground/50 text-muted-foreground"
               : "border-border bg-background/70",
@@ -1194,7 +1192,7 @@ export function BookingSummaryBar({
               key={pill.key}
               className={cn(
                 "min-w-0",
-                pill.lead ? "order-first col-span-2 lg:order-none" : "max-lg:hidden",
+                pill.lead ? "order-first col-span-2 pc:order-none" : "max-pc:hidden",
               )}
             >
               {pill.onClick ? (
@@ -1209,7 +1207,7 @@ export function BookingSummaryBar({
         })}
       </ul>
       {price && (
-        <p className="hidden items-center justify-between border-t border-border pt-2 text-sm lg:flex">
+        <p className="hidden items-center justify-between border-t border-border pt-2 text-sm pc:flex">
           <span className="text-muted-foreground">{t("booking.total")}</span>
           <span className="font-bold tabular-nums">{price}</span>
         </p>
@@ -1221,7 +1219,7 @@ export function BookingSummaryBar({
         onClick={onConfirm}
         disabled={!ready || busy}
         aria-busy={busy || undefined}
-        className="action-button action-confirm min-h-11 w-full tablet:w-auto tablet:min-w-[18rem] lg:min-h-12 lg:w-full"
+        className="action-button action-confirm min-h-11 w-full tablet:w-auto tablet:min-w-[18rem] pc:min-h-12 pc:w-full"
       >
         {busy ? (
           <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />

@@ -41,31 +41,19 @@
   }
 }
 
-/* Computador compacto e computador (≥ 1024 px): a semana à esquerda ocupando a altura;
-   Bloqueios, Pausa fixa e "Assim seus clientes veem" empilhados à direita, sem buracos. */
+/* Cada coluna cresce independentemente, mantendo relacionados os blocos de trabalho. */
+.hours-stack {
+  display: contents;
+}
 @media (min-width: 1024px) {
   .hours-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-rows: auto auto 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .hours-grid > .hours-week {
-    grid-column: 1;
-    grid-row: 1 / -1;
-  }
-  .hours-grid > .hours-blocks {
-    grid-column: 2;
-    grid-row: 1;
-  }
-  .hours-grid > .hours-breaks {
-    grid-column: 2;
-    grid-row: 2;
-  }
-  .hours-grid > .hours-notice {
-    grid-column: 2;
-    grid-row: 3;
-  }
-  .hours-grid:not(:has(> .hours-breaks)) > .hours-notice {
-    grid-row: 2;
+  .hours-stack {
+    display: grid;
+    min-width: 0;
+    gap: 1.5rem;
+    align-items: start;
   }
 }
 
@@ -135,7 +123,23 @@
     margin-block: 0;
     min-width: 0;
   }
-  .weekly-break-form > :nth-last-child(-n + 2) {
+  .weekly-break-form > :last-child {
     grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 768px) {
+  .weekly-break-dialog .weekly-break-form {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .weekly-break-dialog .weekly-break-form > :nth-child(2) {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+  }
+  .weekly-break-dialog .weekly-break-form > :last-child {
+    grid-column: 1 / -1;
+  }
+  .weekly-break-dialog [data-layout] {
+    min-width: 0;
   }
 }

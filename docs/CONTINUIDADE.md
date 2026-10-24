@@ -107,6 +107,15 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## Entrega — revisão geral de tablet e computador, P-96/P-92 (24/10, ChatGPT/Codex)
+
+- **Pedido e contexto:** reorganizar todo o aplicativo para computador e tablet, preservando mobile e identidade. Passagem de 24/10, entrada, guias e MB lidos antes das alterações; `pull --ff-only` e vez exclusiva `chatgpt`. A autorização atual resolve a escolha da P-92; P-95 continua fora porque altera o celular.
+- **Entregue:** índices compactos e composição de campos/prévias em Ajustes; Google pela largura útil; Clube com regras/pontuação e níveis em colunas; Equipe sem lateral vazia; Horários em colunas independentes e Pausa fixa em janela ampla desde 768; cliente com serviço/profissional lado a lado no tablet e revisão lateral somente no computador; calendário de toque com 44 px; perfil proporcional; matriz de Acessos e listagem de lojas com melhor aproveitamento da largura; relatórios comparáveis em grade. Inventário de todas as áreas revisadas na seção 10 de `dispositivos-2026-10-21.md`.
+- **Preservado:** experiência móvel, cores, tipografia, superfícies, ícones, modos de canto, consultas, dados, permissões e regras de negócio. Nenhuma migration ou dependência nova. Nº 97 não reaplicada; `.env` local preservado.
+- **Validação visual e funcional:** matriz de 20 telas nas cinco larguras principais, páginas públicas/formulários/perfis em tablet e computador, larguras intermediárias e altura curta. Comparação móvel: 15/20 telas idênticas; cinco com diferenças mínimas (38–731 pixels), sem alteração de composição observada. Reserva fictícia concluída após redimensionamento; rascunhos de pausa/ajuste preservados; rodapé, foco, teclado, calendário de toque e seis combinações de tema/canto conferidos. Evidências e limites no documento de dispositivos; fixtures fora do repositório, sem dados reais.
+- **Verificação automatizada final:** `scripts/verificar.sh` completo aprovado: tipos, 292/292 testes, eslint dos 12 arquivos TypeScript alterados, prettier dos 24 arquivos e montagem de cliente/servidor/PWA. `git diff --check` sem problemas. Servidor local de testes encerrado.
+- **Continua pendente:** aparelhos físicos e integrações reais (P-42/P-43), pacotes Google existentes e decisões fora do escopo. Sem tarefa nova para TI/agente da VPS.
+
 ## Entrega — continuação de interface P-84 a P-94 (24/10, ChatGPT/Codex)
 
 - **Pedido:** continuar e executar as pendências técnicas, sem refazer P-80/P-81/P-82/P-83/P-90. Leitura prévia da passagem de 24/10, entrada e guias; vez exclusiva `chatgpt`. Não houve resposta à escolha sobre P-92/P-95 durante esta rodada: seus leiautes atuais foram mantidos.

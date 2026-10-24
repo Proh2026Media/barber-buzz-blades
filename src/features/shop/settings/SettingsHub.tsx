@@ -136,9 +136,15 @@ function LinkRow({
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-semibold">{title}</span>
           {description && (
-            <span className="block text-xs text-muted-foreground">{description}</span>
+            <span className="ajustes-assunto-descricao block text-xs text-muted-foreground">
+              {description}
+            </span>
           )}
-          {summary && <span className="mt-1.5 flex flex-wrap items-center gap-1.5">{summary}</span>}
+          {summary && (
+            <span className="ajustes-assunto-resumo mt-1.5 flex flex-wrap items-center gap-1.5">
+              {summary}
+            </span>
+          )}
         </span>
         <ArrowUpRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
       </a>
@@ -179,9 +185,15 @@ function HubRow({
         <span className="min-w-0 flex-1 text-left">
           <span className="block text-sm font-semibold">{title}</span>
           {description && (
-            <span className="block text-xs text-muted-foreground">{description}</span>
+            <span className="ajustes-assunto-descricao block text-xs text-muted-foreground">
+              {description}
+            </span>
           )}
-          {summary && <span className="mt-1.5 flex flex-wrap items-center gap-1.5">{summary}</span>}
+          {summary && (
+            <span className="ajustes-assunto-resumo mt-1.5 flex flex-wrap items-center gap-1.5">
+              {summary}
+            </span>
+          )}
         </span>
         {attention}
         <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -232,10 +244,10 @@ export function SettingsHub({
   const themePreference = useThemePreference();
   const current = section && sections.includes(section) ? section : null;
   // A partir de 1024 px a lista de assuntos fica ao lado da seção aberta (mestre-detalhe) e,
-  // sem seção no endereço, a primeira já aparece à direita. A partir de 1280 px o segundo nível
-  // do Agendamento (um ajuste por vez) também fica lado a lado, num trilho à esquerda.
+  // sem seção no endereço, a primeira já aparece à direita. A partir de 1024 px o segundo nível
+  // do Agendamento (um ajuste por vez) ganha um índice compacto, acima do formulário até 1535 px.
   const wide = useViewportAtLeast(1024);
-  const rail = useViewportAtLeast(1280);
+  const rail = useViewportAtLeast(1024);
   // A seção mostrada sem `?secao=` nunca é Agendamento: a lista de ajustes dela abre cada um
   // pelo `useSettingsItem` do ShopShell, que só está ativo com a seção de fato aberta (sem isso
   // o ajuste abria sem seta de voltar e sem o Voltar do navegador).
@@ -299,7 +311,7 @@ export function SettingsHub({
             <span className="min-w-0">{t(`settingsHub.section.${id}` as const)}</span>
           </h3>
         </div>
-        {/* O invólucro e a posição do conteúdo não mudam com o trilho: cruzar 1280 px com um
+        {/* O invólucro e a posição do conteúdo não mudam com o trilho: cruzar 1024 px com um
             ajuste sendo editado não remonta o cartão (o rascunho ficaria perdido). */}
         <div className={railOn ? "ajustes-trilho-grade" : undefined}>
           {railOn && overview?.settings ? (
@@ -682,8 +694,8 @@ export function SettingsHub({
     <MasterDetail
       className="ajustes-mestre"
       open={Boolean(current)}
-      listWidth="18rem"
-      listWidthWide="18rem"
+      listWidth="13rem"
+      listWidthWide="13rem"
       list={list}
       detail={shown ? renderDetail(shown) : null}
     />

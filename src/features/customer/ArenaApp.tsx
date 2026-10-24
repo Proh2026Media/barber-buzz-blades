@@ -2633,10 +2633,10 @@ function ArenaApp({
   const navTabFor = (current: string) => (current === "pontos" ? "dashboard" : current);
   // Faixa do aparelho (celular, tablet, computador): decide se a barra de baixo mede os rótulos.
   const device = useDevice();
-  // A partir de 1024 px, o "Conferir" fica dentro do painel lateral de resumo.
-  const wideBooking = useViewportAtLeast(1024);
+  // A partir de 1280 px, o "Conferir" fica dentro do painel lateral de resumo.
+  const wideBooking = useViewportAtLeast(1280);
   const isPhone = device === "celular";
-  // Tablet e computador: escolhas abertas e calendário mensal. No tablet em pé, a revisão
+  // Tablet e computador: escolhas abertas e calendário mensal. No tablet, a revisão
   // continua abaixo dos passos, pois ainda não há espaço para o painel lateral (P-90).
   const expandedBooking = !isPhone;
   // Função, não componente: um componente declarado aqui dentro seria outro a cada render e
@@ -3434,7 +3434,7 @@ function ArenaApp({
                   />
                 </div>
               ) : (
-                <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-6 pc:grid-cols-[minmax(0,1fr)_22rem]">
+                <div className="customer-booking-layout grid grid-cols-[minmax(0,1fr)] items-start gap-4 tablet:gap-6 pc:grid-cols-[minmax(0,1fr)_20rem]">
                   <div className="min-w-0 space-y-4">
                     {rescheduleRow && (
                       <RescheduleFromTo
@@ -3473,7 +3473,7 @@ function ArenaApp({
                     {/* Tablet e computador: Serviço e Profissional com a lista inteira à vista (o
                         escolhido fica marcado; nada recolhe num resumo); lado a lado só a partir de
                         1280 px, porque na coluna estreita de 1024–1279 os nomes quebravam. */}
-                    <div className="space-y-4 pc:grid pc:grid-cols-2 pc:items-start pc:gap-4 pc:space-y-0">
+                    <div className="customer-booking-choices space-y-4 tablet:grid tablet:grid-cols-2 tablet:items-start tablet:gap-4 tablet:space-y-0">
                       <StepCard
                         id="booking-step-service"
                         index={1}

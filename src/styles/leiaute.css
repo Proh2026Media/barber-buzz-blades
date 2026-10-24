@@ -255,3 +255,18 @@
     padding-block: 0.375rem;
   }
 }
+
+/* A matriz pode aparecer dentro de Ajustes ou na plataforma: mede o próprio espaço. */
+@media (min-width: 768px) {
+  .permissions-editor {
+    container-type: inline-size;
+  }
+  @container (max-width: 44rem) {
+    .permissions-table th[scope="col"]:not(:first-child) {
+      width: 6rem;
+    }
+  }
+  .permissions-table th[scope="row"] {
+    overflow-wrap: break-word;
+  }
+}

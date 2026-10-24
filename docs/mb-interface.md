@@ -228,6 +228,7 @@ Antes de alterar uma regra de negócio que gere confusão, registrar a regra atu
 - Identificar o local atual com texto e estado visual. Preservar nomes entre menu, página, ajuda e mensagens.
 - Priorizar ações recorrentes em regiões de alcance confortável, sem cobrir conteúdo ou exigir posições fixas impossíveis em todos os aparelhos.
 - Permitir que nomes, preços, datas e rótulos aumentem sem corte silencioso. Não usar reticências como solução padrão para instruções essenciais.
+- **Composição por tarefa (revisão de 24/10/2026):** medir a largura que sobra depois dos índices de navegação. Compactar o índice secundário e colocar subíndices acima do formulário quando uma terceira coluna comprimir campos/prévias. Colunas de conteúdo devem crescer independentemente; não reservar painéis vazios. No tablet, priorizar toque e manter escolhas relacionadas lado a lado quando couberem; resumo lateral só quando o conteúdo principal continuar legível. Preservar rascunhos ao girar/redimensionar.
 - Adaptar pelo espaço disponível e pelo conteúdo; usar pontos de quebra do projeto. Não inferir “celular” apenas pelo tipo de dispositivo.
 
 ### Critérios de escolha dos controles

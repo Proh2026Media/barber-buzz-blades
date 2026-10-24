@@ -288,9 +288,8 @@ function HoursTabContent({
       />
     );
 
-  // As quatro partes são filhas diretas da grade (classes hours-* em src/styles/horarios.css):
-  // no celular e no tablet em pé empilham nesta ordem; a partir de 1024 px a semana fica à
-  // esquerda ocupando a altura e Bloqueios, Pausa fixa e "Assim seus clientes veem" à direita.
+  // Semana e prévia formam um grupo; bloqueios e pausas, outro. No celular os grupos
+  // usam display: contents para preservar a ordem e os espaçamentos existentes.
   const week = (
     <div className="hours-week">
       <WeekCard
@@ -367,17 +366,25 @@ function HoursTabContent({
       <div className="hours-grid grid items-start gap-6">
         {ownStaffId ? (
           <>
-            {blocksCard}
-            {breaks}
-            {week}
-            {notice}
+            <div className="hours-stack">
+              {blocksCard}
+              {breaks}
+            </div>
+            <div className="hours-stack">
+              {week}
+              {notice}
+            </div>
           </>
         ) : (
           <>
-            {week}
-            {notice}
-            {blocksCard}
-            {breaks}
+            <div className="hours-stack">
+              {week}
+              {notice}
+            </div>
+            <div className="hours-stack">
+              {blocksCard}
+              {breaks}
+            </div>
           </>
         )}
       </div>

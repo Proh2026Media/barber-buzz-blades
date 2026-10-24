@@ -58,9 +58,9 @@
     grid-row: auto;
     position: static;
   }
-  @container (min-width: 38rem) {
+  @container (min-width: 35rem) {
     .ajustes-item .app-split {
-      grid-template-columns: minmax(0, 1fr) var(--split-aside, 20rem);
+      grid-template-columns: minmax(0, 1fr) minmax(16rem, 45%);
       column-gap: 1.5rem;
     }
     .ajustes-item .app-split > .app-split-main {
@@ -78,7 +78,7 @@
     }
     /* Lateral à esquerda (prévia de "Meu perfil e link"). */
     .ajustes-item .app-split[data-aside="start"] {
-      grid-template-columns: var(--split-aside, 20rem) minmax(0, 1fr);
+      grid-template-columns: minmax(16rem, 45%) minmax(0, 1fr);
     }
     .ajustes-item .app-split[data-aside="start"] > .app-split-main {
       grid-column: 2;
@@ -117,24 +117,24 @@
     background: color-mix(in oklab, var(--primary) 18%, transparent);
   }
 
-  /* Avisos e integrações: WhatsApp e Google lado a lado quando os dois cabem com 24rem. */
+  /* Avisos e integrações: WhatsApp e Google lado a lado quando os dois cabem com 21rem. */
   .ajustes-detalhe[data-secao="avisos"] .ajustes-conteudo {
-    grid-template-columns: repeat(auto-fill, minmax(min(24rem, 100%), 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(21rem, 100%), 1fr));
     align-items: start;
   }
 }
 
-/* ───────── Computador (1280 px ou mais): trilho do Agendamento ───────── */
-@media (min-width: 1280px) {
+/* Índice do Agendamento: acima dos campos no tablet deitado; lateral no monitor largo. */
+@media (min-width: 1024px) {
   .ajustes-trilho-grade {
     display: grid;
-    grid-template-columns: 12.5rem minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     gap: 1rem;
     align-items: start;
   }
   /* O trilho é um cartão (app-action-card no JSX): off-white nos dois temas, como os demais. */
   .ajustes-trilho {
-    position: sticky;
+    position: static;
     top: 0;
     display: grid;
     gap: 0.25rem;
@@ -153,6 +153,7 @@
   }
   .ajustes-trilho ul {
     display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 0.125rem;
   }
   .ajustes-trilho-item {
@@ -231,5 +232,96 @@
     max-width: 36rem;
     margin-inline: auto;
     width: 100%;
+  }
+}
+
+/* O índice é navegação; o resumo completo permanece no assunto aberto. */
+@media (min-width: 1024px) {
+  .ajustes-mestre .ajustes-assunto {
+    gap: 0.5rem;
+  }
+  .ajustes-mestre .ajustes-assunto-resumo,
+  .ajustes-mestre .ajustes-assunto-descricao,
+  .ajustes-mestre .ajustes-assunto > svg:last-child {
+    display: none;
+  }
+  .ajustes-mestre .ajustes-lista > .grid {
+    gap: 0.75rem;
+  }
+  .ajustes-trilho-item {
+    height: 100%;
+  }
+  .ajustes-trilho-item .mt-1 {
+    display: none;
+  }
+}
+@media (min-width: 1536px) {
+  .ajustes-trilho-grade {
+    grid-template-columns: 12.5rem minmax(0, 1fr);
+  }
+  .ajustes-trilho {
+    position: sticky;
+  }
+  .ajustes-trilho ul {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ajustes-trilho-item .mt-1 {
+    display: flex;
+  }
+}
+
+@media (min-width: 768px) {
+  .google-connection {
+    container-type: inline-size;
+  }
+  .google-fields {
+    grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
+  }
+}
+
+@media (min-width: 768px) {
+  .loyalty-admin-content {
+    container-type: inline-size;
+  }
+  @container (min-width: 42rem) {
+    .loyalty-rules {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+      align-items: start;
+    }
+    .loyalty-rules > * {
+      margin-block: 0;
+      min-width: 0;
+      grid-column: 1 / -1;
+    }
+    .loyalty-rule-options {
+      display: grid;
+      gap: 1rem;
+      grid-column: 1;
+      grid-row: 1;
+    }
+    .loyalty-rule-options > * {
+      margin-block: 0;
+      min-width: 0;
+    }
+    .loyalty-rules > .loyalty-ladder {
+      grid-column: 2;
+      grid-row: 1;
+    }
+    .loyalty-rule-options fieldset {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .loyalty-rules > button[type="submit"] {
+      justify-self: end;
+    }
+  }
+}
+
+@media (min-width: 768px) {
+  @container (max-width: 34rem) {
+    .google-connection fieldset.grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
   }
 }

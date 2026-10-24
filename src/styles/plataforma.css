@@ -233,9 +233,9 @@
     grid-area: matrix;
   }
 }
-@media (min-width: 1024px) {
+@media (min-width: 1536px) {
   .plat-perm {
-    grid-template-columns: 20rem minmax(0, 1fr);
+    grid-template-columns: 18rem minmax(0, 1fr);
     grid-template-areas:
       "title selector"
       "tiers matrix";
@@ -248,5 +248,63 @@
   .plat-perm .plat-perm-tiers {
     position: sticky;
     top: 1rem;
+  }
+}
+
+/* Até o monitor largo, a explicação vira uma faixa e deixa a matriz usar toda a largura. */
+@media (min-width: 768px) and (max-width: 1535.98px) {
+  .plat-perm-tiers > ol {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+  .plat-perm-tiers > ol > li {
+    margin-block: 0;
+    align-content: start;
+  }
+  .plat-perm .plat-perm-selector {
+    flex-wrap: wrap;
+  }
+}
+@media (min-width: 768px) {
+  .plat-perm > *,
+  .plat-perm-matrix {
+    min-width: 0;
+  }
+}
+
+@media (min-width: 768px) {
+  .business-insights-comparison {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(17rem, 100%), 1fr));
+    gap: 1.25rem;
+  }
+  .business-insights-comparison > * {
+    min-width: 0;
+    margin-block: 0;
+  }
+}
+
+/* A ficha só reserva espaço depois da escolha de uma barbearia. */
+@media (min-width: 1024px) {
+  .plat-shops-layout:not(:has(> .plat-shop-aside)) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (min-width: 1280px) {
+  .plat-shops-layout:not(:has(> .plat-shop-aside)) :is(th, td)[data-col="created"] {
+    display: table-cell;
+  }
+  .plat-shops-layout:not(:has(> .plat-shop-aside)) col[data-col="created"] {
+    visibility: visible;
+    width: 6.5rem !important;
+  }
+  .plat-perm:has(.plat-perm-title:empty) {
+    grid-template-areas: "selector selector" "tiers tiers" "matrix matrix";
+  }
+}
+@media (min-width: 1536px) {
+  .plat-perm:has(.plat-perm-title:empty) {
+    grid-template-areas: "selector selector" "tiers matrix";
   }
 }

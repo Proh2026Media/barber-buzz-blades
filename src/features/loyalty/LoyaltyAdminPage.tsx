@@ -289,7 +289,11 @@ export function LoyaltyAdminPage({
         </header>
       )}
 
-      <main className={embedded ? "space-y-5" : "mx-auto max-w-3xl space-y-5 p-4 pb-10"}>
+      <main
+        className={
+          embedded ? "loyalty-admin-content space-y-5" : "mx-auto max-w-3xl space-y-5 p-4 pb-10"
+        }
+      >
         {!shop ? (
           <EmptyState tone="bell" title={t("loyalty.admin.noShop")} />
         ) : loading ? (
@@ -577,75 +581,77 @@ function RulesPart({
   }
 
   return (
-    <form onSubmit={save} className="space-y-4">
-      <section className="app-action-card space-y-4 p-5" aria-labelledby="loyalty-mode-title">
-        <SectionHeader
-          icon={Trophy}
-          id="loyalty-mode-title"
-          title={t("loyalty.admin.modeTitle")}
-          description={t("loyalty.admin.modeIntro")}
-        />
-        <ChoiceCards
-          legend={t("loyalty.admin.modeTitle")}
-          name="loyalty-mode"
-          value={mode}
-          disabled={saving}
-          onChange={(option) => {
-            setMode(option);
-            setResult(null);
-            if (option === "default") setTiers(DEFAULT_TIERS);
-          }}
-          options={(["default", "custom"] as const).map((option) => ({
-            value: option,
-            icon: option === "default" ? Sparkles : Pencil,
-            title: t(
-              option === "default" ? "loyalty.admin.modeDefault" : "loyalty.admin.modeCustom",
-            ),
-            description: t(
-              option === "default"
-                ? "loyalty.admin.modeDefaultHint"
-                : "loyalty.admin.modeCustomHint",
-            ),
-          }))}
-        />
-      </section>
-
-      {/* Pontos: cartões de número; na regra padrão ficam só para leitura. */}
-      {custom ? (
-        <div className="grid gap-3 rounded-2xl border border-border bg-card p-4 sm:grid-cols-2">
-          {stepper(
-            t("loyalty.admin.perVisit"),
-            t("loyalty.admin.perVisitHint"),
-            perVisit,
-            setPerVisit,
-            1,
-            5,
-          )}
-          {stepper(
-            t("loyalty.admin.welcome"),
-            t("loyalty.admin.welcomeHint"),
-            welcome,
-            setWelcome,
-            0,
-            10,
-          )}
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-2">
-          <StatTile
-            icon={Star}
-            label={t("loyalty.admin.perVisit")}
-            value={t("loyalty.admin.stat.points", { n: FALLBACK_PROGRAM.points_per_visit })}
+    <form onSubmit={save} className="loyalty-rules space-y-4">
+      <div className="loyalty-rule-options space-y-4">
+        <section className="app-action-card space-y-4 p-5" aria-labelledby="loyalty-mode-title">
+          <SectionHeader
+            icon={Trophy}
+            id="loyalty-mode-title"
+            title={t("loyalty.admin.modeTitle")}
+            description={t("loyalty.admin.modeIntro")}
           />
-          <StatTile
-            icon={Gift}
-            label={t("loyalty.admin.welcome")}
-            value={t("loyalty.admin.stat.points", { n: FALLBACK_PROGRAM.welcome_bonus })}
+          <ChoiceCards
+            legend={t("loyalty.admin.modeTitle")}
+            name="loyalty-mode"
+            value={mode}
+            disabled={saving}
+            onChange={(option) => {
+              setMode(option);
+              setResult(null);
+              if (option === "default") setTiers(DEFAULT_TIERS);
+            }}
+            options={(["default", "custom"] as const).map((option) => ({
+              value: option,
+              icon: option === "default" ? Sparkles : Pencil,
+              title: t(
+                option === "default" ? "loyalty.admin.modeDefault" : "loyalty.admin.modeCustom",
+              ),
+              description: t(
+                option === "default"
+                  ? "loyalty.admin.modeDefaultHint"
+                  : "loyalty.admin.modeCustomHint",
+              ),
+            }))}
           />
-        </div>
-      )}
+        </section>
 
-      <section className="space-y-3 rounded-2xl border border-border bg-card p-4">
+        {/* Pontos: cartões de número; na regra padrão ficam só para leitura. */}
+        {custom ? (
+          <div className="grid gap-3 rounded-2xl border border-border bg-card p-4 sm:grid-cols-2">
+            {stepper(
+              t("loyalty.admin.perVisit"),
+              t("loyalty.admin.perVisitHint"),
+              perVisit,
+              setPerVisit,
+              1,
+              5,
+            )}
+            {stepper(
+              t("loyalty.admin.welcome"),
+              t("loyalty.admin.welcomeHint"),
+              welcome,
+              setWelcome,
+              0,
+              10,
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            <StatTile
+              icon={Star}
+              label={t("loyalty.admin.perVisit")}
+              value={t("loyalty.admin.stat.points", { n: FALLBACK_PROGRAM.points_per_visit })}
+            />
+            <StatTile
+              icon={Gift}
+              label={t("loyalty.admin.welcome")}
+              value={t("loyalty.admin.stat.points", { n: FALLBACK_PROGRAM.welcome_bonus })}
+            />
+          </div>
+        )}
+      </div>
+
+      <section className="loyalty-ladder space-y-3 rounded-2xl border border-border bg-card p-4">
         <div className="flex flex-wrap items-start gap-2">
           <div className="min-w-0 flex-1 basis-40">
             <h2 className="text-sm font-bold">{t("loyalty.admin.tiersTitle")}</h2>

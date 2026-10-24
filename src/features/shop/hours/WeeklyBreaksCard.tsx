@@ -1,3 +1,13 @@
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogActions,
+} from "@/components/ui/dialog";
+import { useViewportAtLeast } from "@/lib/device";
 import { useDemo } from "@/features/demo/context";
 import { useCallback, useEffect, useState } from "react";
 import { CalendarDays, Clock3, Repeat, Store, Tag as TagIcon, Trash2, Users } from "lucide-react";
@@ -54,6 +64,7 @@ export function WeeklyBreaksCard({
 }) {
   const { t } = useI18n();
   const demo = useDemo();
+  const wide = useViewportAtLeast(768);
   const demoMode = !!demo;
   const labels = useDayLabels();
   const [rules, setRules] = useState<WeeklyRule[] | null>(null);
@@ -168,6 +179,100 @@ export function WeeklyBreaksCard({
     onChanged();
   }
 
+  const formFields = (
+    <>
+      <ChoiceChips<number>
+        multiple
+        label={t("hours.weekly.days")}
+        icon={CalendarDays}
+        value={days}
+        onChange={setDays}
+        options={WEEK_ORDER.map((day) => ({
+          value: day,
+          label: labels.weekdayShort(day),
+        }))}
+      />
+      <div className="space-y-2">
+        <p className="flex items-center gap-2 text-sm font-bold">
+          <Clock3 className="size-4 text-gold" aria-hidden />
+          {t("hours.block.time")}
+        </p>
+        <TimeRangeEditor
+          start={range.start}
+          end={range.end}
+          onChange={setRange}
+          startLabel={t("hours.block.starts")}
+          endLabel={t("hours.block.ends")}
+          context={t("hours.weekly.title")}
+          error={range.end <= range.start ? t("hours.block.endAfterStart") : null}
+        />
+      </div>
+      {!ownStaff && (
+        <ChoiceChips<string>
+          label={t("hours.block.who")}
+          icon={Users}
+          value={staffId}
+          onChange={setStaffId}
+          options={[
+            { value: "", label: t("shop.block.wholeShop"), icon: Store },
+            ...staff.map((member) => ({
+              value: member.id,
+              label: member.display_name,
+              media: (
+                <PersonAvatar
+                  name={member.display_name}
+                  src={member.avatar_url}
+                  seed={member.id}
+                  size="xs"
+                />
+              ),
+            })),
+          ]}
+        />
+      )}
+      <ChoiceChips<ReasonId>
+        label={t("hours.block.reason")}
+        icon={TagIcon}
+        value={reasonId}
+        onChange={setReasonId}
+        options={REASONS.map((item) => ({
+          value: item.id,
+          label: t(item.key),
+          icon: item.icon,
+        }))}
+      />
+      <Hint icon={Repeat} tone="info">
+        {days.length
+          ? t("hours.weekly.preview", {
+              days: daysLabel(days),
+              time: rangeLabel(range.start, range.end),
+            })
+          : t("hours.weekly.pickDay")}
+      </Hint>
+    </>
+  );
+  const formActions = (
+    <div className="flex gap-2">
+      <button
+        type="button"
+        disabled={saving}
+        onClick={() => setFormOpen(false)}
+        className="min-h-11 rounded-xl border border-border bg-background px-4 text-sm font-semibold"
+      >
+        {t("common.back")}
+      </button>
+      <button
+        type="button"
+        disabled={!!problem || saving}
+        onClick={() => void create()}
+        className="action-button action-confirm flex-1"
+      >
+        <Repeat aria-hidden />
+        {saving ? t("hours.weekly.saving") : t("hours.weekly.save")}
+      </button>
+    </div>
+  );
+
   return (
     <section
       aria-labelledby="hours-weekly-title"
@@ -230,7 +335,7 @@ export function WeeklyBreaksCard({
         </ul>
       )}
 
-      {canCreate && !formOpen && (
+      {canCreate && (!formOpen || wide) && (
         <button
           type="button"
           onClick={() => {
@@ -244,96 +349,32 @@ export function WeeklyBreaksCard({
         </button>
       )}
 
-      {formOpen && (
+      {formOpen && !wide && (
         <div className="weekly-break-form space-y-4 rounded-xl border border-border bg-background p-3">
-          <ChoiceChips<number>
-            multiple
-            label={t("hours.weekly.days")}
-            icon={CalendarDays}
-            value={days}
-            onChange={setDays}
-            options={WEEK_ORDER.map((day) => ({
-              value: day,
-              label: labels.weekdayShort(day),
-            }))}
-          />
-          <div className="space-y-2">
-            <p className="flex items-center gap-2 text-sm font-bold">
-              <Clock3 className="size-4 text-gold" aria-hidden />
-              {t("hours.block.time")}
-            </p>
-            <TimeRangeEditor
-              start={range.start}
-              end={range.end}
-              onChange={setRange}
-              startLabel={t("hours.block.starts")}
-              endLabel={t("hours.block.ends")}
-              context={t("hours.weekly.title")}
-              error={range.end <= range.start ? t("hours.block.endAfterStart") : null}
-            />
-          </div>
-          {!ownStaff && (
-            <ChoiceChips<string>
-              label={t("hours.block.who")}
-              icon={Users}
-              value={staffId}
-              onChange={setStaffId}
-              options={[
-                { value: "", label: t("shop.block.wholeShop"), icon: Store },
-                ...staff.map((member) => ({
-                  value: member.id,
-                  label: member.display_name,
-                  media: (
-                    <PersonAvatar
-                      name={member.display_name}
-                      src={member.avatar_url}
-                      seed={member.id}
-                      size="xs"
-                    />
-                  ),
-                })),
-              ]}
-            />
-          )}
-          <ChoiceChips<ReasonId>
-            label={t("hours.block.reason")}
-            icon={TagIcon}
-            value={reasonId}
-            onChange={setReasonId}
-            options={REASONS.map((item) => ({
-              value: item.id,
-              label: t(item.key),
-              icon: item.icon,
-            }))}
-          />
-          <Hint icon={Repeat} tone="info">
-            {days.length
-              ? t("hours.weekly.preview", {
-                  days: daysLabel(days),
-                  time: rangeLabel(range.start, range.end),
-                })
-              : t("hours.weekly.pickDay")}
-          </Hint>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => setFormOpen(false)}
-              className="min-h-11 rounded-xl border border-border bg-background px-4 text-sm font-semibold"
-            >
-              {t("common.back")}
-            </button>
-            <button
-              type="button"
-              disabled={!!problem || saving}
-              onClick={() => void create()}
-              className="action-button action-confirm flex-1"
-            >
-              <Repeat aria-hidden />
-              {saving ? t("hours.weekly.saving") : t("hours.weekly.save")}
-            </button>
-          </div>
+          {formFields}
+          {formActions}
         </div>
+      )}
+
+      {wide && (
+        <Dialog open={formOpen} onOpenChange={(open) => !saving && setFormOpen(open)}>
+          <DialogContent
+            size="xl"
+            className="weekly-break-dialog bg-card"
+            onEscapeKeyDown={(event) => saving && event.preventDefault()}
+            onInteractOutside={(event) => event.preventDefault()}
+          >
+            <DialogHeader className="pr-10 text-left">
+              <DialogTitle>{t("hours.weekly.add")}</DialogTitle>
+              <DialogDescription>{t("hours.weekly.description")}</DialogDescription>
+            </DialogHeader>
+            <DialogBody>
+              <div className="weekly-break-form space-y-4">{formFields}</div>
+              {result?.state === "error" && <ActionResult state="error" text={result.text} />}
+            </DialogBody>
+            <DialogActions>{formActions}</DialogActions>
+          </DialogContent>
+        </Dialog>
       )}
 
       <ActionResult

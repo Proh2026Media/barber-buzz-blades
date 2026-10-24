@@ -388,7 +388,7 @@ export function BusinessInsights({
               <div className="space-y-4 text-xs text-foreground">
                 {/* Nota, melhorias, motivos e interesse: comparáveis lado a lado a partir de
                     1024 px (quantos couberem com 18rem); empilhados antes disso. */}
-                <div className="space-y-4 lg:grid lg:grid-cols-[repeat(auto-fill,minmax(18rem,1fr))] lg:gap-4 lg:space-y-0">
+                <div className="business-insights-comparison space-y-4">
                   <div>
                     <p className="font-semibold">{t("ins.biz.rating")}</p>
                     {summary.rating_sample >= 5 && summary.rating_average !== null ? (

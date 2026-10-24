@@ -20,6 +20,8 @@ Porta de entrada para o agente que vai continuar o projeto (Cursor, Claude Code,
 
 **Atualização de 24/10 — continuação P-84 a P-94:** concluídas P-84, P-85, P-86, P-87, P-88, P-89, P-91, P-93 e P-94: painel lateral da agenda, clube dentro de Ajustes, matriz editável, pausa em duas colunas, limpeza de componentes, catálogo em tabela desde 768, cenários da demonstração, fixture pública e correções visuais. Sem migration ou tarefa nova na VPS. P-92/P-95 aguardam escolha; testes físicos e integrações reais seguem em P-42/P-43. P-14/P-45 permanecem opcionais, fora deste bloco de interface.
 
+**Atualização de 24/10 — revisão geral de tablet e computador (P-96, incluindo P-92):** atendido o novo pedido do dono de reorganizar todo o sistema preservando o celular e a identidade. Ajustes com navegação secundária compacta e campos/prévias pela largura útil; Horários com colunas independentes e Pausa fixa em janela ampla; Equipe sem lateral vazia; agendamento do cliente com escolhas lado a lado no tablet e revisão lateral só no computador; matriz de Acessos, lista de barbearias, relatórios e Clube redistribuídos. Inventário e validação na seção 10 de [dispositivos-2026-10-21.md](dispositivos-2026-10-21.md). P-92 concluída pela autorização deste pedido; P-95 continua fora do escopo porque altera o celular. P-42/P-43 continuam pendentes para aparelhos e integrações reais. Sem migration.
+
 ## O que é o projeto
 
 App de agendamento e fidelidade **multiloja** para barbearias e salões, com uso principal no celular. Front em TanStack Start (React + Vite), Supabase auto-hospedado no Coolify e site publicado no Hostinger. Nasceu como protótipo do Lovable e foi reconstruído a partir de 14/09/2026. Resumo da trajetória: [guia/historico.md](guia/historico.md), seção 1.

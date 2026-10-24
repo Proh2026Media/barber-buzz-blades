@@ -790,7 +790,7 @@ export function GoogleConnectionCard({
 
   return (
     <section
-      className="app-action-card space-y-4 p-5"
+      className="google-connection app-action-card space-y-4 p-5"
       aria-labelledby="google-integrations-title"
       aria-busy={state === "checking" || undefined}
     >
@@ -1146,7 +1146,7 @@ export function GoogleConnectionCard({
                   ),
                 })}
               </p>
-              <div className="grid gap-2 sm:grid-cols-3">
+              <div className="google-fields grid gap-2 sm:grid-cols-3">
                 <label className="block text-xs font-semibold">
                   <span className="mb-1 block">{t("integr.google.name")}</span>
                   <input

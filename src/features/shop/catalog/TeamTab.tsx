@@ -22,7 +22,7 @@ import {
   X,
   XCircle,
 } from "lucide-react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   ConfirmDialog,
@@ -32,7 +32,6 @@ import {
   MoreActions,
   Notice,
   PersonAvatar,
-  SplitLayout,
   STATE,
   StatusBadge,
   Tag,
@@ -184,16 +183,6 @@ function AddStaffMenu({
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
-  );
-}
-
-/** Computador: a grade com o cartão de acesso fixo ao lado; nas outras faixas, só a grade. */
-function MaybeSplit({ aside, children }: { aside: ReactNode; children: ReactNode }) {
-  if (!aside) return <>{children}</>;
-  return (
-    <SplitLayout aside={aside} asideWidth="18rem" className="catalog-split">
-      {children}
-    </SplitLayout>
   );
 }
 
@@ -760,7 +749,7 @@ export function TeamTab({
       ? t("catalog.access.countOne")
       : t("catalog.access.countMany", { count: accessCount })
     : t("catalog.access.hint");
-  // Celular e tablet: linha no fim da lista. Computador: cartão fixo ao lado da grade.
+  // Atalho compacto no fim da lista: a equipe aproveita toda a largura em cada dispositivo.
   const accessRow = onOpenAccess ? (
     <button
       type="button"
@@ -780,25 +769,6 @@ export function TeamTab({
       <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
     </button>
   ) : null;
-  const accessCard = onOpenAccess ? (
-    <div className="catalog-access-card space-y-3 rounded-2xl border border-border bg-card p-4">
-      <span className="grid size-10 place-items-center rounded-xl bg-primary/10 text-primary">
-        <KeyRound className="size-5" aria-hidden />
-      </span>
-      <div className="space-y-1">
-        <p className="text-sm font-bold">{t("catalog.access.title")}</p>
-        <p className="text-xs text-muted-foreground">{accessSummary}</p>
-      </div>
-      <button type="button" onClick={onOpenAccess} className="action-button action-edit w-full">
-        {t("catalog.access.manage")}
-        <ChevronRight className="size-4" aria-hidden />
-      </button>
-    </div>
-  ) : null;
-  // Só quando a grade de cartões é montada: na tabela (lista ≥ 1024) e na busca sem resultado
-  // o atalho volta a ser a linha no fim, senão sumia das duas posições.
-  const gridShown = staff.length > 0 && visible.length > 0 && !(view === "list" && wide);
-  const sideBySide = device === "computador" && Boolean(accessCard) && gridShown;
 
   return (
     <section className="space-y-4">
@@ -907,55 +877,53 @@ export function TeamTab({
           rowKey={(member) => member.id}
         />
       ) : (
-        <MaybeSplit aside={sideBySide ? accessCard : null}>
-          <CatalogItems view={view}>
-            {visible.map((member) => (
-              <CatalogCard
-                key={member.id}
-                id={`staff-${member.id}`}
-                view={view}
-                paused={!member.active}
-                highlight={flashId === member.id}
-                onOpen={() => openForm(member)}
-                openLabel={t("shop.editAria", { name: member.display_name })}
-                media={
-                  <PersonAvatar
-                    name={member.display_name}
-                    src={member.avatar_url}
-                    seed={member.id}
-                    size={view === "grid" ? "md" : "sm"}
-                  />
-                }
-                title={member.display_name}
-                // A apresentação (bio) é da página pública e do formulário: na lista, só alongava.
-                subtitle={undefined}
-                facts={roleBadge(member)}
-                extra={
-                  view === "grid" ? (
-                    <div className="space-y-2.5">
-                      {dayLine(member)}
-                      {servicesLine(member)}
-                      {/* "Copiar link" e "Ver agenda" ficam no menu ⋯ do cartão. */}
-                    </div>
-                  ) : null
-                }
-                status={statusBadgeOf(member, view)}
-                toggle={toggleOf(member, view === "grid")}
-                menu={
-                  <MoreActions
-                    className="catalog-card-menu"
-                    label={t("catalog.moreAria", { name: member.display_name })}
-                    title={member.display_name}
-                    actions={menuOf(member)}
-                  />
-                }
-              />
-            ))}
-          </CatalogItems>
-        </MaybeSplit>
+        <CatalogItems view={view}>
+          {visible.map((member) => (
+            <CatalogCard
+              key={member.id}
+              id={`staff-${member.id}`}
+              view={view}
+              paused={!member.active}
+              highlight={flashId === member.id}
+              onOpen={() => openForm(member)}
+              openLabel={t("shop.editAria", { name: member.display_name })}
+              media={
+                <PersonAvatar
+                  name={member.display_name}
+                  src={member.avatar_url}
+                  seed={member.id}
+                  size={view === "grid" ? "md" : "sm"}
+                />
+              }
+              title={member.display_name}
+              // A apresentação (bio) é da página pública e do formulário: na lista, só alongava.
+              subtitle={undefined}
+              facts={roleBadge(member)}
+              extra={
+                view === "grid" ? (
+                  <div className="space-y-2.5">
+                    {dayLine(member)}
+                    {servicesLine(member)}
+                    {/* "Copiar link" e "Ver agenda" ficam no menu ⋯ do cartão. */}
+                  </div>
+                ) : null
+              }
+              status={statusBadgeOf(member, view)}
+              toggle={toggleOf(member, view === "grid")}
+              menu={
+                <MoreActions
+                  className="catalog-card-menu"
+                  label={t("catalog.moreAria", { name: member.display_name })}
+                  title={member.display_name}
+                  actions={menuOf(member)}
+                />
+              }
+            />
+          ))}
+        </CatalogItems>
       )}
 
-      {!sideBySide && accessRow}
+      {accessRow}
 
       <StaffForm
         open={formOpen}
