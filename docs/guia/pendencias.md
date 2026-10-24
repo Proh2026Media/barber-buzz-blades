@@ -2,6 +2,8 @@
 
 Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (madrugada, Claude Code)** com a entrega "interface por dispositivo" (novos P-79 a P-95 na seção 9; P-75 com o que avançou), em **20/10/2026** (P-73 aplicada no servidor pelo TI) e em **16/10/2026 (madrugada, Claude Code)** com a entrega de 16/10 (agendamento pelo painel, login Google no app instalado, simplificação visual; novos P-73 a P-76; depois da revisão de código da mesma madrugada, P-77 e P-78) e, antes, em **15/10/2026 (noite, Claude Code)** com a passagem de 15/10: decisões P-26, P-33, P-34, P-35, P-37, P-50 e P-70; feitos P-27, P-31, P-32 e P-38 (função publicada no servidor às 22:54); P-67 aplicado; novos P-71 e P-72. Porta de entrada: [LEIA-PRIMEIRO.md](../LEIA-PRIMEIRO.md). O registro detalhado de cada entrega continua em [CONTINUIDADE.md](../CONTINUIDADE.md), do mais novo para o mais antigo.
 
+**Atualização de 24/10/2026 (ChatGPT/Codex):** P-90 feita; o dono confirmou que ainda não realizou os testes da P-43 no iPad e no computador.
+
 **Como usar**
 
 - Cada item tem um id fixo (`P-01`, `P-02`…). Cite o id em commits, pedidos e no CONTINUIDADE. Não renumere: item resolvido fica marcado como **feito** com a data, e item novo recebe o próximo número livre.
@@ -33,7 +35,7 @@ Atualizada em 22/10/2026 (madrugada), depois da entrega "interface por dispositi
 | 1     | P-69       | Tirar o retorno `supabase-teste` do cliente OAuth no Google Cloud        | Só o dono (ou quem tiver acesso) entra no console. Pacote pronto: [2026-10-15-google-retorno-antigo-p69.md](../pacotes/2026-10-15-google-retorno-antigo-p69.md).                                          |
 | 2     | P-28       | Gravar o vídeo e reenviar a verificação do Google                        | Depois da P-69. Pacote pronto: [2026-10-15-google-reenviar-verificacao-p28.md](../pacotes/2026-10-15-google-reenviar-verificacao-p28.md).                                                                 |
 | 3     | P-42, P-43 | Testes com login real (WhatsApp, Google), em aparelho físico e no tablet | Dependem do dono. Desde 22/10, a P-43 inclui o tablet (iPad em pé e deitado) e o computador: a interface por dispositivo só foi vista em navegador emulado (roteiro na entrada de 22/10 do CONTINUIDADE). |
-| 4     | P-90       | Tablet em pé: Agendar do cliente                                         | A última tela que ainda parece celular esticado entre 768 e 1023 px (a P-79, o quadro da equipe, foi feita em 22/10 de manhã); o resto da faixa já foi refeito.                                           |
+| 4     | P-90       | Tablet em pé: Agendar do cliente — **feito em 24/10/2026**               | Escolhas abertas e calendário mensal desde 768 px; celular idêntico em comparação pixel a pixel. Teste físico continua na P-43.                                                                           |
 | 5     | P-71       | Decidir "reserva" × "agendamento" no resto do app                        | A aba e a página já dizem "Meus agendamentos" (P-32); o fluxo de agendar e alguns avisos ainda dizem "reserva".                                                                                           |
 
 Sem pressa e sem depender de terceiros: P-14, P-45 (opcionais de antes) e P-88 (restos do shadcn e hooks antigos).
@@ -360,6 +362,8 @@ Fontes: CONTINUIDADE, linhas 229, 252, 281, 367, 369 e 393 (as linhas 367 e 369,
 
 ### P-43 — Aparelho físico · pendente
 
+**24/10/2026:** o dono confirmou que ainda não testou no iPad nem no computador. P-90 conferida em navegador emulado; teste nos aparelhos continua pendente.
+
 Teclado virtual aberto e safe-area do iOS, leitor de tela real, rede lenta, app instalado (PWA). Desde 22/10/2026, incluir também o **tablet (iPad em pé e deitado) e o computador**: a interface por dispositivo foi vista só em navegador emulado (roteiro do que olhar na entrada de 22/10 do [CONTINUIDADE](../CONTINUIDADE.md), "O que o dono precisa testar"). Desde 16/10/2026, incluir: no iPhone com o app instalado, "Continuar com Google" (a janela do Google pede para fechar e o app entra sozinho, depois da P-73) e "Conectar Google Agenda" no painel (a janela pede para fechar; o cartão confere a conexão ao voltar). Nunca feito ([mb-revisao.md](../mb-revisao.md), linha "Validação em aparelho real"; CONTINUIDADE, linhas 214 e 384).
 
 ---
@@ -558,11 +562,11 @@ Entrega de 22/10/2026 (CONTINUIDADE, entrada "Interface por dispositivo"; plano 
 - **Onde:** `CatalogFilters.tsx` (prop de modo "linha"), `src/features/shop/catalog/{ServicesTab,TeamTab}.tsx`, `src/styles/catalogo.css`.
 - **Pronto quando:** o componente aceita o modo linha sem CSS por cima; o modo lista tem colunas desde 768; a linha da tabela abre a edição pelo `interactiveRow` do `DataList` sem conflito com o interruptor e o `⋯`; conferido numa loja com 7+ itens.
 
-### P-90 — Agendar do cliente no tablet em pé · pendente
+### P-90 — Agendar do cliente no tablet em pé · feito em 24/10/2026 (ChatGPT/Codex)
 
-- **Por quê:** entre 768 e 1023 px o Agendar ainda é o do celular com mais largura: os passos Serviço e Profissional recolhem num resumo com "Trocar" mesmo com ~600 px, a faixa de dias corta o último chip na borda do cartão (achado 23 do QA de 22/10, não aplicado) e o calendário do mês só entra a partir de 1024. O resumo como cartão estático abaixo do passo 4 (achado 12) e as listas em 2 colunas já foram feitos.
-- **Onde:** [ArenaApp.tsx](../../src/features/customer/ArenaApp.tsx) (`wideBooking = useViewportAtLeast(1024)`), [BookingParts.tsx](../../src/features/customer/booking/BookingParts.tsx) (`DayStrip`, `DayCalendar`), `src/styles/cliente.css`.
-- **Pronto quando:** no iPad em pé os passos ficam abertos, o dia usa o calendário do mês (ou a faixa fecha no chip inteiro, com `scroll-snap`) e nada muda abaixo de 768.
+- **Feito:** Serviço e Profissional ficam abertos a partir de 768 px, com a escolha marcada. Calendário mensal com dias de 44 × 44 px no tablet em pé; horários ao lado quando cabem. O passo 4 e o botão continuam abaixo do formulário entre 768 e 1023 px; o resumo lateral continua a partir de 1024 px.
+- **Onde:** [ArenaApp.tsx](../../src/features/customer/ArenaApp.tsx) (`expandedBooking` para escolhas/calendário; `wideBooking` para revisão lateral), [BookingParts.tsx](../../src/features/customer/booking/BookingParts.tsx) (`DayCalendar`) e `src/styles/cliente.css`.
+- **Verificado:** tipos, 285 testes, eslint, prettier, montagem e fotos em 390/768/1024. Celular de 390 px com relógio e sorteio fixos: 0 pixels diferentes. Agendamento fictício concluído depois de redimensionar 768 → 390 → 1024 → 768; escolhas preservadas. Teste físico permanece na P-43.
 
 ### P-91 — Telas novas que a demonstração não mostra · não confirmado
 

@@ -8,6 +8,8 @@ Porta de entrada para o agente que vai continuar o projeto (Cursor, Claude Code,
 
 **Situação em 20/10:** entrega do Claude Code com agendamento pelo barbeiro no painel, apelido e cliente do balcão, selo de cliente recorrente, login Google no app instalado e simplificação visual (entrada de 16/10 no [CONTINUIDADE.md](CONTINUIDADE.md); análise em [analise-visual-2026-10-16.md](analise-visual-2026-10-16.md)). Antes da publicação, uma revisão de código (19 achados), um teste de interface completo (15) e uma revisão final independente (25) acharam e corrigiram defeitos (lista na mesma entrada). O site está no ar e, desde **20/10/2026**, as migrations nº 95 e 96 e a função `google-calendar-dispatch` estão aplicadas no servidor (P-73, pelo TI; entrada de 20/10 no CONTINUIDADE). Falta o teste do dono no celular (P-43). Novos registros: P-77 (decisão do dono) e P-78 (melhoria pequena). Depois, no topo de [guia/pendencias.md](guia/pendencias.md): os pacotes do Google (P-69 e P-28) e os testes reais do dono.
 
+**Atualização de 24/10 — P-90 feita:** agendamento do cliente com escolhas abertas e calendário mensal desde 768 px; celular preservado (0 pixels diferentes em 390 px). Registro no [CONTINUIDADE.md](CONTINUIDADE.md). O dono ainda não testou no iPad nem no computador (P-43). A passagem do dia continua como histórico; não refazer a P-90.
+
 ## O que é o projeto
 
 App de agendamento e fidelidade **multiloja** para barbearias e salões, com uso principal no celular. Front em TanStack Start (React + Vite), Supabase auto-hospedado no Coolify e site publicado no Hostinger. Nasceu como protótipo do Lovable e foi reconstruído a partir de 14/09/2026. Resumo da trajetória: [guia/historico.md](guia/historico.md), seção 1.

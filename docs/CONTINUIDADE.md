@@ -6,7 +6,7 @@
 
 **15/10/2026 (noite) — passagem concluída no Claude Code:** ver a entrada "Passagem de 15/10" logo abaixo da Diretriz. Comece por [LEIA-PRIMEIRO.md](LEIA-PRIMEIRO.md). A função `register-shop` da P-38 foi publicada às 22:54; faltam os pacotes do Google (P-69 e P-28, em [pacotes/](pacotes/)).
 
-Atualizado em **22/10/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
+Atualizado em **24/10/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
 ## Comece aqui
 
@@ -106,6 +106,14 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - Esportes sempre visível;
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
+
+## Entrega — P-90: agendamento do cliente no tablet em pé (24/10, ChatGPT/Codex)
+
+- **O que:** entre 768 e 1023 px, Serviço e Profissional mantêm as opções abertas após a escolha. O calendário mensal substitui a faixa de dias cortada; seus dias têm 44 × 44 px. Calendário e horários ficam lado a lado quando o cartão comporta 32rem, e empilhados abaixo disso. O passo 4 e o botão continuam abaixo do formulário; a revisão lateral só entra a partir de 1024 px. Links de profissional continuam respeitando a escolha travada.
+- **Onde:** `src/features/customer/ArenaApp.tsx`, `src/features/customer/booking/BookingParts.tsx` e `src/styles/cliente.css`. Sem mudança de banco, textos ou regras de agendamento.
+- **Como foi verificado:** `scripts/verificar.sh` completo (tipos, 285 testes, eslint, prettier e montagem); fotos da demonstração em 320, 390, 768, 1024 e 1280 px, com claro/escuro conferidos no tablet. Três modos de canto conferidos no calendário de 768 px (retos 0 px, semi 14,4 px, arredondados 19,2 px), mantendo alvos de 44 px. Comparação de 390 px entre o código anterior e o novo com relógio e sorteio fixos: **0 pixels diferentes**. Escolha de serviço, profissional, dia e horário, passagem 768 → 390 → 1024 → 768 e confirmação fictícia concluídas com as escolhas preservadas. Estados de dia sem vaga e revisão conferidos. Capturas temporárias fora do repositório; nenhuma operação em dados reais.
+- **Observação da conferência:** capturas pontuais no servidor de desenvolvimento emitiram um aviso React de atualização antes da montagem; não ocorreu na captura final de 768 px nem na conclusão fictícia. Sem causa isolada nesta entrega; não se afirma ausência universal de avisos no console.
+- **Pendente:** P-43. O dono informou em 24/10 que ainda não testou no iPad nem no computador e autorizou seguir com a P-90. Testes em aparelho físico e leitor de tela real continuam pendentes.
 
 ## 22/10/2026 (manhã) — P-79: quadro da equipe no tablet em pé (Claude Code, aplicativo) — **publicada em 22/10/2026**
 

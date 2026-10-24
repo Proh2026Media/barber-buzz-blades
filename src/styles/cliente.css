@@ -86,13 +86,20 @@
 /* A aba Meus agendamentos entra na lista de abas largas da casca (customer-main-wide, ArenaApp). */
 
 /* ---------------------------------------------------------------------------------------------
-   Agendar no computador: calendário do mês em linha (no lugar da faixa de dias). Os dias usam o
-   mesmo tamanho de alvo dos horários (2.5rem; 2.25rem com mouse) e o mês não estica.
+   Agendar no tablet e computador: calendário do mês em linha (no lugar da faixa de dias).
+   No tablet em pé, dias de 44 px para toque; a partir de 1024 px, tamanhos já usados no painel.
    --------------------------------------------------------------------------------------------- */
-@media (min-width: 1024px) {
+@media (min-width: 768px) {
   .booking-day-calendar [data-slot="calendar"] {
     width: fit-content;
   }
+}
+@media (min-width: 768px) and (max-width: 1023.98px) {
+  .booking-day-calendar [data-slot="calendar"] {
+    --cell-size: 2.75rem;
+  }
+}
+@media (min-width: 1024px) {
   .booking-day-calendar td button {
     min-height: 0;
   }

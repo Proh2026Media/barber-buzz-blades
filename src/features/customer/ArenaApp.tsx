@@ -2632,10 +2632,12 @@ function ArenaApp({
   const navTabFor = (current: string) => (current === "pontos" ? "dashboard" : current);
   // Faixa do aparelho (celular, tablet, computador): decide se a barra de baixo mede os rótulos.
   const device = useDevice();
-  // Computador (≥ 1024): Serviço e Profissional lado a lado sempre abertos, calendário do mês no
-  // lugar da faixa de dias e o "Conferir" dentro do painel de resumo (docs/dispositivos-2026-10-21.md).
+  // A partir de 1024 px, o "Conferir" fica dentro do painel lateral de resumo.
   const wideBooking = useViewportAtLeast(1024);
   const isPhone = device === "celular";
+  // Tablet e computador: escolhas abertas e calendário mensal. No tablet em pé, a revisão
+  // continua abaixo dos passos, pois ainda não há espaço para o painel lateral (P-90).
+  const expandedBooking = !isPhone;
   // Função, não componente: um componente declarado aqui dentro seria outro a cada render e
   // recriaria os botões da barra (e a medida da pílula ficaria presa aos botões antigos).
   const renderNavItem = ({ id, icon: Icon, label, ariaLabel, measure }: NavItemProps) => {
@@ -3441,7 +3443,7 @@ function ArenaApp({
                       />
                     )}
 
-                    {/* Computador: Serviço e Profissional com a lista inteira sempre à vista (o
+                    {/* Tablet e computador: Serviço e Profissional com a lista inteira à vista (o
                         escolhido fica marcado; nada recolhe num resumo); lado a lado só a partir de
                         1280 px, porque na coluna estreita de 1024–1279 os nomes quebravam. */}
                     <div className="space-y-4 pc:grid pc:grid-cols-2 pc:items-start pc:gap-4 pc:space-y-0">
@@ -3451,7 +3453,7 @@ function ArenaApp({
                         title={t("booking.service")}
                         state={serviceStep}
                         aside={
-                          wideBooking ? null : !serviceOpen && selectedService ? (
+                          expandedBooking ? null : !serviceOpen && selectedService ? (
                             <ChangeButton
                               label={`${t("booking.change")} · ${t("booking.service")}`}
                               disabled={bookingBusy}
@@ -3511,7 +3513,7 @@ function ArenaApp({
                             }
                           />
                         )}
-                        {!wideBooking && !serviceOpen && selectedService && bookingService ? (
+                        {!expandedBooking && !serviceOpen && selectedService && bookingService ? (
                           <ServiceSummary
                             service={selectedService}
                             terms={bookingService}
@@ -3523,7 +3525,7 @@ function ArenaApp({
                             services={services}
                             selectedIndex={serviceIdx}
                             view={
-                              wideBooking || services.length <= SHORT_CHOICE_LIST
+                              expandedBooking || services.length <= SHORT_CHOICE_LIST
                                 ? "list"
                                 : serviceView
                             }
@@ -3545,7 +3547,8 @@ function ArenaApp({
                         title={t("booking.staff")}
                         state={staffStep}
                         aside={
-                          directLinkActive || wideBooking ? null : !staffOpen && staffHasValue ? (
+                          directLinkActive || expandedBooking ? null : !staffOpen &&
+                            staffHasValue ? (
                             <ChangeButton
                               label={t("booking.changeStaff")}
                               disabled={bookingBusy}
@@ -3592,7 +3595,7 @@ function ArenaApp({
                         )}
                         {directLinkActive && selectedStaff ? (
                           <StaffSummary member={selectedStaff} locked />
-                        ) : !wideBooking && !staffOpen && staffHasValue ? (
+                        ) : !expandedBooking && !staffOpen && staffHasValue ? (
                           <StaffSummary
                             member={anyAvailable ? null : selectedStaff}
                             any={anyAvailable}
@@ -3618,7 +3621,7 @@ function ArenaApp({
                                 : null
                             }
                             view={
-                              wideBooking
+                              expandedBooking
                                 ? "list"
                                 : staffChoices.length > SHORT_CHOICE_LIST
                                   ? staffView
@@ -3639,8 +3642,8 @@ function ArenaApp({
                       title={t("booking.step.when")}
                       state={whenStep}
                     >
-                      {wideBooking ? (
-                        // Computador: calendário do mês à esquerda e os horários do dia à direita
+                      {expandedBooking ? (
+                        // Tablet e computador: calendário à esquerda e horários do dia à direita
                         // (lado a lado quando o passo tem 32rem ou mais; senão, empilhados).
                         <div className="@container">
                           <div className="grid gap-5 @min-[32rem]:grid-cols-[auto_minmax(0,1fr)] @min-[32rem]:gap-6">

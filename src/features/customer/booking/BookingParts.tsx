@@ -678,8 +678,8 @@ function ClosedMarkedDayButton({ children, modifiers, className, ...props }: Day
 const CLOSED_DAY_COMPONENTS = { DayButton: ClosedMarkedDayButton };
 
 /**
- * Calendário do mês em linha, no lugar da faixa de dias a partir de 1024 px (docs/dispositivos-
- * 2026-10-21.md, seção 6.7): os mesmos dias abertos (`keys`), os fechados com lua e "Hoje" com
+ * Calendário do mês em linha, no lugar da faixa de dias a partir de 768 px (P-90):
+ * os mesmos dias abertos (`keys`), os fechados com lua e "Hoje" com
  * anel dourado, como no "Mais datas". Escolher um dia chama o mesmo `onSelect` da faixa.
  */
 export function DayCalendar({

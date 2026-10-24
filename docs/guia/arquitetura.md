@@ -252,6 +252,8 @@ Três faixas, com os mesmos números no CSS e no JavaScript (decisões em [dispo
 - **Primitivas de leiaute** ([src/components/visual/](../../src/components/visual/), CSS em [leiaute.css](../../src/styles/leiaute.css)): `CardGrid` (`repeat(auto-fill, minmax(min, 1fr))` a partir de 768; 1 coluna no celular, ou 2 com `phoneColumns`), `SplitLayout` (conteúdo + `aside` sticky a partir de 1024), `MasterDetail` (lista 20rem/22rem à esquerda e detalhe à direita a partir de 1024; abaixo, lista ou detalhe pela URL, os dois montados), `FormGrid` (2–3 colunas a partir de 640; `Field width="sm|md|lg"`), `DataList` (colunas definidas uma vez: cartões rotulados abaixo de 1024, tabela com cabeçalho fixo e linha clicável `interactiveRow` a partir de 1024; a linha continua `<tr>` sem `role`). [use-sticky-when-fits.ts](../../src/lib/use-sticky-when-fits.ts) deixa uma coluna sticky só quando ela cabe na altura.
 - **Fotos e comparação:** `node scripts/foto.mjs … --largura 768|1024|1280|1536` e `node scripts/comparar-png.mjs antes.png depois.png` para provar que o celular não mudou ([scripts/README.md](../../scripts/README.md)).
 
+- **Agendamento do cliente (P-90, 24/10/2026):** `expandedBooking` em `ArenaApp.tsx` mantém escolhas abertas e calendário mensal desde 768 px; `wideBooking` continua em 1024 px somente para levar a revisão ao painel lateral. No tablet em pé, os dias do calendário têm 44 × 44 px e o passo 4 permanece abaixo do formulário.
+
 ## 9. PWA
 
 - Manifesto único: [public/manifest.webmanifest](../../public/manifest.webmanifest) (ligado em `__root.tsx`; `manifest: false` no plugin para não duplicar).
