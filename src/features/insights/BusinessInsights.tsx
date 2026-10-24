@@ -276,7 +276,7 @@ export function BusinessInsights({
                 sexto tile sobrava sozinho. */}
             <div
               className={cn(
-                "grid grid-cols-2 gap-2 sm:grid-cols-3",
+                "business-insights-tiles grid grid-cols-2 gap-2 sm:grid-cols-3",
                 embedded
                   ? "tablet:grid-cols-[repeat(auto-fill,minmax(10rem,1fr))]"
                   : "@min-[72rem]:grid-cols-6",

@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { toast } from "sonner";
 import {
+  BarChart3,
   Calendar,
   CalendarPlus,
   CheckCircle2,
   Clock3,
   Hourglass,
+  Info,
   ListChecks,
   RefreshCw,
   RotateCcw,
@@ -21,9 +23,11 @@ import {
   CountBadge,
   Countdown,
   EmptyState,
+  Hint,
   LoadingState,
   Notice,
   PersonAvatar,
+  SectionHeader,
   StatusBadge,
   type AttentionItem,
 } from "@/components/visual";
@@ -590,6 +594,30 @@ export function AgendaTab({
     !!settings &&
     canHold(row.starts_at, waiting.now, settings.waiting_enabled, settings.waiting_cutoff_minutes);
 
+  // Mesmos dados e permissões em todas as larguras; só muda o lugar em que aparecem.
+  const dayInsights = actor ? (
+    <AgendaInsights
+      shopId={shopId}
+      day={day}
+      revision={revision}
+      timeZone={timeZone}
+      staffId={actor.staff_id}
+      role={actor.role}
+      listCustomers={
+        // Cada cliente uma vez: a conta ou, sem conta, a ficha do balcão (a
+        // mesma regra dos números do banco; conta excluída não entra).
+        new Set(
+          daySet
+            .filter((row) => row.visibility !== "busy")
+            .map((row) => row.customer_id ?? row.shop_client_id)
+            .filter(Boolean),
+        ).size
+      }
+    />
+  ) : (
+    <BusinessInsights shopId={shopId} day={day} revision={revision} timeZone={timeZone} embedded />
+  );
+
   // Campo de busca: no celular aparece ao tocar na lupa (e recebe o foco); fora dele fica sempre
   // aberto na barra da lista.
   const searchField = (
@@ -729,36 +757,8 @@ export function AgendaTab({
                 onJump={jumpTo}
                 money={money}
                 formatMoney={formatMoney}
-                details={
-                  actor ? (
-                    <AgendaInsights
-                      shopId={shopId}
-                      day={day}
-                      revision={revision}
-                      timeZone={timeZone}
-                      staffId={actor.staff_id}
-                      role={actor.role}
-                      listCustomers={
-                        // Cada cliente uma vez: a conta ou, sem conta, a ficha do balcão (a
-                        // mesma regra dos números do banco; conta excluída não entra).
-                        new Set(
-                          daySet
-                            .filter((row) => row.visibility !== "busy")
-                            .map((row) => row.customer_id ?? row.shop_client_id)
-                            .filter(Boolean),
-                        ).size
-                      }
-                    />
-                  ) : (
-                    <BusinessInsights
-                      shopId={shopId}
-                      day={day}
-                      revision={revision}
-                      timeZone={timeZone}
-                      embedded
-                    />
-                  )
-                }
+                showDetails={!desktop}
+                details={desktop ? undefined : dayInsights}
               />
             )
           )}
@@ -1167,6 +1167,24 @@ export function AgendaTab({
           </div>
         </div>
       </div>
+
+      {/* A partir de 1024 px, os números complementares saem da coluna estreita e ficam
+          abertos abaixo das duas colunas. Celular/tablet em pé mantêm o recolher em Seu dia. */}
+      {desktop && !emptyDay && !loadFailed && (!loading || scoped.length > 0) && (
+        <section
+          className="agenda-day-insights app-action-card space-y-4 p-4"
+          aria-labelledby="agenda-day-insights-title"
+        >
+          <SectionHeader
+            id="agenda-day-insights-title"
+            icon={BarChart3}
+            title={t("agenda.summary.more")}
+            description={summaryTitle}
+          />
+          {dayInsights}
+          {money && <Hint icon={Info}>{t("shop.money.estimate")}</Hint>}
+        </section>
+      )}
 
       {/* Computador: as seções extras (clientes em tabela, sugestões, carteira) vêm abaixo das
           duas colunas, na largura toda; as estreitas primeiro. */}

@@ -42,6 +42,7 @@ export function DaySummary({
   money,
   formatMoney,
   details,
+  showDetails = true,
 }: {
   title: string;
   /** Profissional escolhido no filtro: o resumo passa a ser o dia dele, com a foto. */
@@ -64,6 +65,8 @@ export function DaySummary({
   money: { done: number; expected: number } | null;
   formatMoney: (cents: number) => string;
   details?: ReactNode;
+  /** Falso quando os números complementares aparecem fora deste cartão, no computador. */
+  showDetails?: boolean;
 }) {
   const { t } = useI18n();
   const total = AGENDA_GROUPS.reduce((sum, group) => sum + counts[group], 0);
@@ -246,7 +249,7 @@ export function DaySummary({
         </div>
       )}
 
-      {(details || money) && (
+      {showDetails && (details || money) && (
         <MoreDetails
           summary={t("agenda.summary.more")}
           icon={BarChart3}

@@ -22,7 +22,8 @@ type Result = {
 
 /**
  * Números do dia que a lista não mostra (clientes diferentes e a comparação anônima do
- * parceiro). Fica dentro de "Mais números do dia": contagens e valores vêm da própria lista da
+ * parceiro). No computador fica aberto abaixo da Agenda; nas telas menores, dentro de
+ * "Mais números do dia". Contagens e valores vêm da própria lista da
  * Agenda, e nada aqui repete o número grande de "Seu dia". O recorte segue o fuso da barbearia.
  */
 export function AgendaInsights({
@@ -150,15 +151,19 @@ export function AgendaInsights({
   // não mostra (clientes diferentes), contado da própria lista; atendimentos, concluídos e
   // cancelados já estão no número grande e nas pílulas, no escopo certo.
   return (
-    <div className="space-y-3 text-foreground">
-      {!shopScope && <Hint icon={User}>{t("agenda.insights.scopeOwn")}</Hint>}
+    <div className="agenda-insights space-y-3 text-foreground">
+      {!shopScope && (
+        <Hint className="agenda-insights-scope" icon={User}>
+          {t("agenda.insights.scopeOwn")}
+        </Hint>
+      )}
       <StatTile
         icon={Users}
         label={t("agenda.insights.customers")}
         value={shopScope ? listCustomers : data.own.customers}
       />
       {global && (
-        <section className="space-y-3 rounded-2xl border border-border bg-background/60 p-3">
+        <section className="agenda-insights-comparison space-y-3 rounded-2xl border border-border bg-background/60 p-3">
           <h4 className="text-sm font-bold">{t("agenda.insights.compareTitle")}</h4>
           {[
             { key: "you", label: t("agenda.insights.you"), metrics: data.own },

@@ -276,6 +276,27 @@
     margin-block: 0;
   }
 
+  /* P-81: números complementares abertos na largura das duas colunas. O cartão do cliente
+     e a comparação anônima ficam lado a lado; sem comparação, o tile mantém largura legível. */
+  .agenda-day-insights .agenda-insights {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    gap: 1rem;
+    align-items: start;
+  }
+  .agenda-day-insights .agenda-insights:not(:has(.agenda-insights-comparison)) {
+    grid-template-columns: minmax(0, 20rem);
+  }
+  .agenda-day-insights .agenda-insights > * {
+    margin-block: 0;
+  }
+  .agenda-day-insights .agenda-insights-scope {
+    grid-column: 1 / -1;
+  }
+  .agenda-day-insights .business-insights-tiles {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   /* Calendário do mês à vista na coluna do dia: ocupa a largura do cartão. */
   .agenda-month [data-slot="calendar"],
   .agenda-month .rdp-root {

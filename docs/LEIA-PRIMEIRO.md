@@ -10,7 +10,9 @@ Porta de entrada para o agente que vai continuar o projeto (Cursor, Claude Code,
 
 **Atualização de 24/10 — P-90 feita:** agendamento do cliente com escolhas abertas e calendário mensal desde 768 px; celular preservado (0 pixels diferentes em 390 px). Registro no [CONTINUIDADE.md](CONTINUIDADE.md). O dono ainda não testou no iPad nem no computador (P-43). A passagem do dia continua como histórico; não refazer a P-90.
 
-**Atualização de 24/10 — P-80 feita, banco pendente:** cabeçalhos das tabelas ordenam no computador; diretório preparado para buscar WhatsApp e mostrar pontos da própria loja. Falta o TI aplicar **somente a migration nº 97**, seguindo [implantacao-diretorio-contatos-pontos-2026-10-24.md](implantacao-diretorio-contatos-pontos-2026-10-24.md). Produção continua registrada na nº 96. Não refazer P-80 nem aplicar as anteriores. P-43 e os pacotes Google continuam pendentes.
+**Atualização de 24/10 — P-80 aplicada:** cabeçalhos das tabelas ordenam no computador; diretório busca WhatsApp e mostra pontos conforme as permissões. Migration nº 97 aplicada pelo agente Claude na VPS em **24/10, 16:57:15 (Brasília)**, segundo o relatório entregue pelo dono, com backup, ensaio de 22 PASS e assinatura/privilégios corretos. Não reaplicar. Roteiro e registro em [implantacao-diretorio-contatos-pontos-2026-10-24.md](implantacao-diretorio-contatos-pontos-2026-10-24.md) e no CONTINUIDADE. Teste da interface em produção ainda pendente na P-43; pacotes Google também pendentes.
+
+**Atualização de 24/10 — P-81 feita:** "Mais números do dia" fica aberto abaixo das duas colunas da Agenda desde 1024 px, com os mesmos dados e permissões. Celular preservado (comparação de 390 px sem diferenças); tablet em pé mantém o recolher. Sem atualização de banco. Próxima melhoria de interface: P-82 (prévias por aparelho nos editores); os testes reais seguem na P-43.
 
 ## O que é o projeto
 

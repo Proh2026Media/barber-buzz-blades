@@ -1,6 +1,8 @@
 # Implantação — WhatsApp e pontos no diretório (P-80, 24/10/2026)
 
-**Preparado e testado localmente; ainda não aplicado em produção.** Entregar ao TI. A última migration registrada em produção é a nº 96, `20261016130000_agendamento_pelo_painel`, aplicada em 20/10. Não reaplicar as anteriores.
+**Aplicado em produção em 24/10/2026, às 16:57:15 (Brasília), pelo agente Claude na VPS**, segundo o relatório entregue pelo dono. Não reaplicar. Os passos abaixo ficam como roteiro histórico e de recuperação; teste da interface em produção continua pendente (P-43).
+
+**Registro da execução:** commit `47b797503b9a6a3a9a02b5117bc1831a7fb8f01c`; três SHA-256 iguais aos deste pacote; container saudável; backup `/root/backup-barba-cabelo-20261024-195652.dump` (1,3 MB, catálogo legível; SHA-256 `e96bb196f70463912095fd673c89f6a0145448caa90311ebe0f264ae679f0d8a`); ensaio 22 PASS, 0 FAIL/ERROR/FATAL e ROLLBACK; assinatura final `382a1151bba2aea114651e3b2746f0d4`; privilégios `f|t|t`. Sem Restart/Redeploy, alteração de dados ou uso do roteiro de volta. Fonte: `relatorio-claude-2026-10-24.md`, enviado pelo dono; este registro não representa nova inspeção da VPS.
 
 ## O que muda
 
@@ -117,4 +119,4 @@ A conferência do passo 1 deve voltar à assinatura antiga e a `f|t`. Este rotei
 
 ## Relatório para devolver
 
-Data e hora de Brasília; commit usado; hashes conferidos; container; assinatura anterior; caminho/tamanho do backup; resultado do ensaio (22 PASS, ROLLBACK); aplicação e assinatura final; privilégios; resultado do teste da interface; eventual volta. Sem senhas, tokens ou dados de clientes. Não fazer commit/push pela VPS. Depois do relato, registrar a aplicação no CONTINUIDADE e nos guias; até lá, P-80 fica **feito — falta aplicar no banco**.
+Data e hora de Brasília; commit usado; hashes conferidos; container; assinatura anterior; caminho/tamanho do backup; resultado do ensaio (22 PASS, ROLLBACK); aplicação e assinatura final; privilégios; resultado do teste da interface; eventual volta. Sem senhas, tokens ou dados de clientes. Não fazer commit/push pela VPS. Relato recebido e aplicação registrada no CONTINUIDADE e nos guias em 24/10; P-80 está **feito — aplicado em produção**, com teste da interface pendente na P-43.
