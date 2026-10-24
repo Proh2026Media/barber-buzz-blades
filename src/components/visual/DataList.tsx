@@ -1,5 +1,13 @@
-import type { KeyboardEvent, ReactNode } from "react";
+import { useState, type KeyboardEvent, type ReactNode } from "react";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { useViewportAtLeast } from "@/lib/device";
+import { useI18n } from "@/lib/i18n";
+import {
+  nextDataListSort,
+  sortDataRows,
+  type DataListSort,
+  type SortValue,
+} from "@/lib/data-list-sort";
 import { cn } from "@/lib/utils";
 
 export type DataListColumn<Row> = {
@@ -11,6 +19,8 @@ export type DataListColumn<Row> = {
   align?: "start" | "center" | "end";
   /** Fica de fora dos cartões do celular (a coluna só aparece na tabela). */
   hideOnPhone?: boolean;
+  /** Valor real para ordenar (preço em centavos, data em milissegundos, nome etc.). */
+  sortValue?: (row: Row) => SortValue;
 };
 
 /**
@@ -36,7 +46,8 @@ export type DataListColumn<Row> = {
  * Cada `<col>`, `<th>` e `<td>` leva `data-col` com a chave da coluna, para o CSS de uma área
  * esconder ou ajustar uma coluna numa faixa (ex.: "Criada em" em src/styles/plataforma.css).
  *
- * TODO: ordenação por coluna (clicar no cabeçalho) fica para quando uma tela precisar.
+ * `sortValue` habilita a ordenação no cabeçalho. Para paginar, ordenar todas as linhas antes
+ * de recortá-las e controlar `sort`/`onSortChange`. Os cartões preservam a ordem recebida.
  */
 export function DataList<Row>({
   columns,
@@ -46,6 +57,8 @@ export function DataList<Row>({
   empty,
   className,
   rowLabel,
+  sort: controlledSort,
+  onSortChange,
 }: {
   columns: DataListColumn<Row>[];
   rows: Row[];
@@ -56,8 +69,19 @@ export function DataList<Row>({
   className?: string;
   /** Nome acessível de cada cartão/linha clicável (ex.: o nome do cliente). */
   rowLabel?: (row: Row) => string;
+  sort?: DataListSort | null;
+  onSortChange?: (sort: DataListSort) => void;
 }) {
   const table = useViewportAtLeast(1024);
+  const { t, intlLocale } = useI18n();
+  const [localSort, setLocalSort] = useState<DataListSort | null>(null);
+  const sort = controlledSort === undefined ? localSort : controlledSort;
+  const sortedRows = table ? sortDataRows(rows, columns, sort, intlLocale) : rows;
+  const changeSort = (key: string) => {
+    const next = nextDataListSort(sort, key);
+    if (controlledSort === undefined) setLocalSort(next);
+    onSortChange?.(next);
+  };
 
   if (!rows.length) return empty ? <>{empty}</> : null;
 
@@ -134,14 +158,48 @@ export function DataList<Row>({
                 scope="col"
                 data-col={column.key}
                 data-align={column.align ?? "start"}
+                aria-sort={
+                  column.sortValue
+                    ? sort?.key === column.key
+                      ? sort.direction
+                      : "none"
+                    : undefined
+                }
               >
-                {column.header}
+                {column.sortValue ? (
+                  <button
+                    type="button"
+                    className="app-data-list-sort"
+                    onClick={() => changeSort(column.key)}
+                    aria-label={
+                      typeof column.header === "string"
+                        ? t(
+                            sort?.key === column.key && sort.direction === "ascending"
+                              ? "visual.sortDescending"
+                              : "visual.sortAscending",
+                            { column: column.header },
+                          )
+                        : undefined
+                    }
+                  >
+                    <span>{column.header}</span>
+                    {sort?.key !== column.key ? (
+                      <ArrowUpDown aria-hidden />
+                    ) : sort.direction === "ascending" ? (
+                      <ArrowUp aria-hidden />
+                    ) : (
+                      <ArrowDown aria-hidden />
+                    )}
+                  </button>
+                ) : (
+                  column.header
+                )}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
+          {sortedRows.map((row) => (
             <tr key={rowKey(row)} data-clickable={clickable || undefined} {...interactiveRow(row)}>
               {columns.map((column) => (
                 <td key={column.key} data-col={column.key} data-align={column.align ?? "start"}>

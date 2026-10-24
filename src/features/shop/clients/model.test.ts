@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   cleanNickname,
   clientDisplay,
+  clientMatchesQuery,
   demoFindClient,
   parseFoundClient,
   recurringBadge,
@@ -166,4 +167,16 @@ test("demo lookup hides another professional's client like the database (limited
   // Quem vê a loja inteira vê tudo.
   const owner = demoFindClient(source, "+5511955599999", { staffId: "leo", full: true });
   assert.deepEqual([owner.limited, owner.nickname], [false, "Zé"]);
+});
+
+test("diretório busca nome, apelido e WhatsApp com ou sem formatação", () => {
+  const client = { customer_name: "João Silva", nickname: "Alemão", whatsapp: "+5511998765432" };
+  for (const query of ["joao", "ALEMAO", "+55 (11) 99876-5432", "(11) 99876-5432", "99876", ""]) {
+    assert.equal(clientMatchesQuery(client, query), true, query);
+  }
+  for (const query of ["Maria", "1234567", "telefone 99876", "---"]) {
+    assert.equal(clientMatchesQuery(client, query), false, query);
+  }
+  assert.equal(clientMatchesQuery({ customer_name: "Ana" }, "99876"), false);
+  assert.equal(clientMatchesQuery({ customer_name: null, whatsapp: null }, "Ana"), false);
 });

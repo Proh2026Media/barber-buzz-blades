@@ -259,6 +259,7 @@ export function ShopsPanel({
   const tableColumns: DataListColumn<ShopRow>[] = [
     {
       key: "name",
+      sortValue: (row) => row.shop.name,
       header: t("plat.common.shop"),
       cell: (row) => (
         <span
@@ -279,6 +280,8 @@ export function ShopsPanel({
     },
     {
       key: "status",
+      sortValue: (row) =>
+        t(row.shop.status === "active" ? "plat.shops.active" : "plat.shops.suspended"),
       header: t("plat.shops.colStatus"),
       width: "7rem",
       cell: (row) => {
@@ -297,6 +300,7 @@ export function ShopsPanel({
     },
     {
       key: "customers",
+      sortValue: (row) => row.customers,
       header: t("plat.dash.customers"),
       width: "5.5rem",
       align: "end",
@@ -306,6 +310,7 @@ export function ShopsPanel({
     },
     {
       key: "admins",
+      sortValue: (row) => row.admins,
       header: t("plat.dash.admins"),
       width: "7.25rem",
       cell: (row) =>
@@ -329,6 +334,7 @@ export function ShopsPanel({
     },
     {
       key: "created",
+      sortValue: (row) => Date.parse(row.shop.created_at),
       header: t("plat.shops.colCreated"),
       width: "6.5rem",
       cell: (row) => <span className="tabular-nums">{dateOf(row.shop.created_at)}</span>,

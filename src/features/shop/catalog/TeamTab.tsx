@@ -671,6 +671,7 @@ export function TeamTab({
   const tableColumns: DataListColumn<StaffRow>[] = [
     {
       key: "person",
+      sortValue: (member) => member.display_name,
       header: t("booking.staff"),
       cell: (member) => (
         <button
@@ -697,18 +698,32 @@ export function TeamTab({
     },
     {
       key: "today",
+      sortValue: (member) => {
+        if (!today || !member.active) return null;
+        const day = staffDay(
+          member.id,
+          today.appointments,
+          today.blocks,
+          today.dayStart,
+          today.dayEnd,
+          today.now,
+        );
+        return day.allDayBlocked ? null : day.count;
+      },
       header: t("shop.agenda.today"),
       width: "16rem",
       cell: (member) => dayLine(member),
     },
     {
       key: "services",
+      sortValue: (member) => servicesOf(member).length,
       header: t("shop.nav.services"),
       width: "16rem",
       cell: (member) => servicesLine(member),
     },
     {
       key: "receiving",
+      sortValue: (member) => member.active,
       header: t("catalog.staff.toggle"),
       width: "11rem",
       align: "center",

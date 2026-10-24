@@ -2,7 +2,7 @@
 
 Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (madrugada, Claude Code)** com a entrega "interface por dispositivo" (novos P-79 a P-95 na seção 9; P-75 com o que avançou), em **20/10/2026** (P-73 aplicada no servidor pelo TI) e em **16/10/2026 (madrugada, Claude Code)** com a entrega de 16/10 (agendamento pelo painel, login Google no app instalado, simplificação visual; novos P-73 a P-76; depois da revisão de código da mesma madrugada, P-77 e P-78) e, antes, em **15/10/2026 (noite, Claude Code)** com a passagem de 15/10: decisões P-26, P-33, P-34, P-35, P-37, P-50 e P-70; feitos P-27, P-31, P-32 e P-38 (função publicada no servidor às 22:54); P-67 aplicado; novos P-71 e P-72. Porta de entrada: [LEIA-PRIMEIRO.md](../LEIA-PRIMEIRO.md). O registro detalhado de cada entrega continua em [CONTINUIDADE.md](../CONTINUIDADE.md), do mais novo para o mais antigo.
 
-**Atualização de 24/10/2026 (ChatGPT/Codex):** P-90 feita; o dono confirmou que ainda não realizou os testes da P-43 no iPad e no computador.
+**Atualização de 24/10/2026 (ChatGPT/Codex):** P-90 feita e P-80 feita — falta aplicar no banco (migration nº 97 e roteiro para o TI); o dono confirmou que ainda não realizou os testes da P-43 no iPad e no computador.
 
 **Como usar**
 
@@ -35,7 +35,7 @@ Atualizada em 22/10/2026 (madrugada), depois da entrega "interface por dispositi
 | 1     | P-69       | Tirar o retorno `supabase-teste` do cliente OAuth no Google Cloud        | Só o dono (ou quem tiver acesso) entra no console. Pacote pronto: [2026-10-15-google-retorno-antigo-p69.md](../pacotes/2026-10-15-google-retorno-antigo-p69.md).                                          |
 | 2     | P-28       | Gravar o vídeo e reenviar a verificação do Google                        | Depois da P-69. Pacote pronto: [2026-10-15-google-reenviar-verificacao-p28.md](../pacotes/2026-10-15-google-reenviar-verificacao-p28.md).                                                                 |
 | 3     | P-42, P-43 | Testes com login real (WhatsApp, Google), em aparelho físico e no tablet | Dependem do dono. Desde 22/10, a P-43 inclui o tablet (iPad em pé e deitado) e o computador: a interface por dispositivo só foi vista em navegador emulado (roteiro na entrada de 22/10 do CONTINUIDADE). |
-| 4     | P-90       | Tablet em pé: Agendar do cliente — **feito em 24/10/2026**               | Escolhas abertas e calendário mensal desde 768 px; celular idêntico em comparação pixel a pixel. Teste físico continua na P-43.                                                                           |
+| 4     | P-80       | Aplicar WhatsApp e pontos no diretório — código pronto em 24/10          | TI: aplicar somente a migration nº 97 pelo [pacote](../implantacao-diretorio-contatos-pontos-2026-10-24.md). Ordenação já pronta; produção ainda registrada na nº 96.                                     |
 | 5     | P-71       | Decidir "reserva" × "agendamento" no resto do app                        | A aba e a página já dizem "Meus agendamentos" (P-32); o fluxo de agendar e alguns avisos ainda dizem "reserva".                                                                                           |
 
 Sem pressa e sem depender de terceiros: P-14, P-45 (opcionais de antes) e P-88 (restos do shadcn e hooks antigos).
@@ -502,11 +502,11 @@ Entrega de 22/10/2026 (CONTINUIDADE, entrada "Interface por dispositivo"; plano 
 - **Onde:** [TeamDayBoard.tsx](../../src/features/shop/agenda/TeamDayBoard.tsx) e `useDesktop` em [board.ts](../../src/features/shop/agenda/board.ts) (hoje `useViewportAtLeast(1024)`); grade `.agenda-layout` e variável `--agenda-board-col` em `src/styles/agenda.css`. Rolagem automática até a linha "agora" ao abrir o quadro também não foi feita.
 - **Pronto quando:** no iPad em pé a Equipe mostra o quadro (colunas mais estreitas ou com rolagem lateral explícita); em 1024–1279 a coluna do dia pode recolher para o quadro caber; abrir o quadro rola até "agora".
 
-### P-80 — Ordenar pelo cabeçalho e buscar por WhatsApp nas tabelas · pendente
+### P-80 — Ordenar pelo cabeçalho e buscar por WhatsApp nas tabelas · feito — falta aplicar no banco (24/10/2026, ChatGPT/Codex)
 
-- **Por quê:** o `DataList` ainda não ordena por coluna: "Clientes da barbearia", o modo lista de Serviços e Equipe, as pessoas de Equipe e sociedade e as barbearias da plataforma mantêm as pílulas de ordem ou a ordem fixa. A busca de clientes não acha por número de WhatsApp. A coluna "pontos" na tabela de clientes depende de `get_partner_clients` devolver pontos (não devolve).
-- **Onde:** [DataList.tsx](../../src/components/visual/DataList.tsx) (prop nova de ordenação, cabeçalho como botão com `aria-sort`) e `src/styles/leiaute.css`; chamadores em [ClientDirectory.tsx](../../src/features/shop/ClientDirectory.tsx), `catalog/ServicesTab.tsx`, `catalog/TeamTab.tsx`, `ShopTeamAccessCard.tsx`, `platform/ShopsPanel.tsx`. Pontos: migration nova em `get_partner_clients`.
-- **Pronto quando:** clicar no cabeçalho ordena e inverte, com o estado lido por leitor de tela; a busca aceita número; a coluna de pontos aparece quando o banco devolver.
+- **Feito:** `DataList` com cabeçalhos clicáveis, ordem crescente/decrescente e `aria-sort`, desde 1024 px. Aplicado a Clientes da barbearia, Serviços/Equipe no modo lista, Equipe e sociedade e barbearias da plataforma. Clientes são ordenados antes da paginação; nome e apelido sem diferença de acentos, busca por WhatsApp com ou sem pontuação e pontos da própria loja quando disponíveis. Celular conserva os cartões e as pílulas existentes.
+- **Banco pendente:** nº 97, `20261024170000_diretorio_contatos_pontos.sql`, só substitui `get_partner_clients`. Não amplia a carteira do profissional nem a permissão de pontos. Enquanto não aplicada, o banco anterior segue funcionando sem WhatsApp/pontos no diretório. [Pacote do TI](../implantacao-diretorio-contatos-pontos-2026-10-24.md): backup, ensaio, aplicação, conferência e volta.
+- **Conferido:** 292 testes do app; 1.121 PASS no banco local (22 no teste novo), nenhuma falha; idempotência e volta; interação e fotos no navegador emulado. Serviços no celular a 390 px: 0 pixels diferentes. Teste em aparelho físico continua na P-43.
 
 ### P-81 — "Mais números do dia" como tiles no computador · pendente
 

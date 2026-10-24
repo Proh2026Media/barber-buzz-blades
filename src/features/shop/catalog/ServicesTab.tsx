@@ -436,6 +436,7 @@ export function ServicesTab({
   const tableColumns: DataListColumn<ServiceRow>[] = [
     {
       key: "service",
+      sortValue: (service) => service.name,
       header: t("booking.service"),
       cell: (service) => {
         const inner = (
@@ -473,6 +474,7 @@ export function ServicesTab({
     },
     {
       key: "duration",
+      sortValue: (service) => service.duration_minutes,
       header: t("shop.serviceForm.duration"),
       width: "7rem",
       cell: (service) => (
@@ -489,6 +491,7 @@ export function ServicesTab({
     },
     {
       key: "price",
+      sortValue: (service) => service.price_cents,
       header: t("catalog.service.price"),
       width: "7rem",
       align: "end",
@@ -515,6 +518,7 @@ export function ServicesTab({
       : [
           {
             key: "doers",
+            sortValue: (service: ServiceRow) => doersByService.get(service.id)?.length ?? 0,
             header: t("catalog.table.doers"),
             width: "17rem",
             cell: (service: ServiceRow) => doersLine(service),
@@ -522,6 +526,7 @@ export function ServicesTab({
         ]),
     {
       key: "visible",
+      sortValue: (service) => service.active,
       header: t(ownCatalog ? "catalog.own.youServe" : "catalog.service.visible"),
       width: "9rem",
       align: "center",

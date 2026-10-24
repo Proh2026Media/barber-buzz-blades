@@ -12,7 +12,7 @@ Situações usadas: **feito**, **feito — falta aplicar no banco**, **pendente*
 
 1. [Visão da infraestrutura](#1-visão-da-infraestrutura)
 2. [Como o site é publicado](#2-como-o-site-é-publicado)
-3. [Inventário das 96 migrations](#3-inventário-das-96-migrations)
+3. [Inventário das 97 migrations](#3-inventário-das-97-migrations)
 4. [Como escrever uma migration nova](#4-como-escrever-uma-migration-nova)
 5. [Como as migrations são aplicadas](#5-como-as-migrations-são-aplicadas)
 6. [Testes SQL](#6-testes-sql)
@@ -68,7 +68,7 @@ git push origin main            (Proh2026Media/barber-buzz-blades — fonte da v
 - O comando de compilação configurado na Hostinger é **não confirmado** (o projeto define `npm run build` = `vite build && node scripts/copy-pwa.mjs` em `package.json`).
 - **Publicar o site não aplica nada no banco nem nas funções.** Migrations e Edge functions vão à VPS por outro caminho (seções 5 e 7). Por isso a tela nova precisa funcionar com o banco antigo (ver seção 4).
 
-## 3. Inventário das 96 migrations
+## 3. Inventário das 97 migrations
 
 Pasta: [supabase/migrations/](../../supabase/migrations/). A situação vem destas fontes:
 
@@ -177,6 +177,7 @@ Pasta: [supabase/migrations/](../../supabase/migrations/). A situação vem dest
 | 94  | `20261014120000_registro_login_ip`                           | IP de cada login guardado 180 dias (`login_access_log`, gatilho em `auth.sessions`; P-29)                              | aplicada em 13/10/2026 (18:59:50) [K]                      |
 | 95  | `20261016120000_retorno_google_app_instalado`                | Login Google no app instalado: a janela do Google entrega o código ao app (`oauth_code_relay`, `oauth_relay_put/take`) | aplicada em 20/10/2026 (20:04, Brasília) [L]               |
 | 96  | `20261016130000_agendamento_pelo_painel`                     | Barbeiro marca pelo painel, cliente do balcão, apelido, recorrência na agenda (`shop_clients`, `book_for_client`…)     | aplicada em 20/10/2026 (20:04, Brasília) [L]               |
+| 97  | `20261024170000_diretorio_contatos_pontos`                   | WhatsApp e saldo da própria loja no diretório; mantém escopo e permissões                                              | feita — falta aplicar no banco (P-80, 24/10/2026)          |
 
 Nota da nº 34: no banco remoto ela falhava em `text = uuid`, e por isso a coluna `icon` e o bucket não existiam. A nº 41 (`20260920010000_service_images_storage`) cria o mesmo efeito e foi aplicada; o arquivo da nº 34 também recebeu o cast correto (`barbershop_id::text`) para instalações novas. Fonte: CONTINUIDADE "Slider da espera e imagens de serviço" (20/09/2026).
 
@@ -351,7 +352,9 @@ Fontes: [beauty-saas-infra.md](../beauty-saas-infra.md), [mb-operacao.md](../mb-
 
 ## 12. O que falta aplicar no servidor
 
-**Aplicado em 20/10/2026 (P-73), nada pendente das migrations escritas.** Última migration aplicada em produção: **`20261016130000_agendamento_pelo_painel`** (20:04, Brasília; antes dela a `20261016120000_retorno_google_app_instalado`), pelo TI, do computador dele (`ssh root@187.127.60.78`, arquivos de um clone do GitHub); backup `/root/backup-barba-cabelo-20261020-230246.dump` (1,3 MB). Função `google-calendar-dispatch` em `9813ec59…f678a5` desde 20:05 (cópia da anterior em `/root/functions-backup-google-calendar-dispatch-20261020-230531`). Registro: CONTINUIDADE, entrada de 20/10. Texto de antes, como histórico: as migrations **95** (`20261016120000_retorno_google_app_instalado`) e **96** (`20261016130000_agendamento_pelo_painel`) e, opcional, a função **`google-calendar-dispatch`** (nome e apelido do cliente do balcão na Agenda Google). Pacote completo, com backup, ensaio de 12 testes (12, 62, 43, 30, 8, 13, 25, 27, 29, 14, 36 e 52 PASS), aplicação, conferência e como desfazer: [implantacao-agendamento-painel-2026-10-16.md](../implantacao-agendamento-painel-2026-10-16.md). O site já funciona sem elas.
+**24/10/2026 — pendente:** migration nº 97 (`20261024170000_diretorio_contatos_pontos`). Só recria `get_partner_clients`; nenhuma Edge function. [Pacote do TI](../implantacao-diretorio-contatos-pontos-2026-10-24.md), testado localmente (1.121 PASS, sem falhas, idempotência e volta). Produção permanece na nº 96 até confirmação do TI.
+
+**Histórico — aplicado em 20/10/2026 (P-73), sem pendências naquela data.** Última migration aplicada em produção: **`20261016130000_agendamento_pelo_painel`** (20:04, Brasília; antes dela a `20261016120000_retorno_google_app_instalado`), pelo TI, do computador dele (`ssh root@187.127.60.78`, arquivos de um clone do GitHub); backup `/root/backup-barba-cabelo-20261020-230246.dump` (1,3 MB). Função `google-calendar-dispatch` em `9813ec59…f678a5` desde 20:05 (cópia da anterior em `/root/functions-backup-google-calendar-dispatch-20261020-230531`). Registro: CONTINUIDADE, entrada de 20/10. Texto de antes, como histórico: as migrations **95** (`20261016120000_retorno_google_app_instalado`) e **96** (`20261016130000_agendamento_pelo_painel`) e, opcional, a função **`google-calendar-dispatch`** (nome e apelido do cliente do balcão na Agenda Google). Pacote completo, com backup, ensaio de 12 testes (12, 62, 43, 30, 8, 13, 25, 27, 29, 14, 36 e 52 PASS), aplicação, conferência e como desfazer: [implantacao-agendamento-painel-2026-10-16.md](../implantacao-agendamento-painel-2026-10-16.md). O site já funciona sem elas.
 
 **Até 15/10/2026, nada pendente das migrations escritas.** Última migration aplicada em produção até então: **`20261014120000_registro_login_ip`** (13/10/2026, 18:59:50; backup `/root/backup-barba-cabelo-20261013-215948.dump`). Antes: `20261013230000_guia_loja_e_emails` (18:08) e `20261013220000_pausa_semanal` (18:01). Antes delas: **`20261013210000_convite_boas_vindas_papeis`** (13/10/2026, 17:50:22 horário de Brasília; backup `/root/backup-barba-cabelo-20261013-205006.dump`; funções `invite-shop-admin` e `shop-invite` publicadas às 17:50 e 17:53; guia [implantacao-convite-papeis-2026-10-13.md](../implantacao-convite-papeis-2026-10-13.md)). Antes dela, `20261013200000_saida_aguarde_dono` (17:06:09; backup `/root/backup-barba-cabelo-20261013-2006.dump`; seção 8 do guia [implantacao-equipe-saida-2026-10-13.md](../implantacao-equipe-saida-2026-10-13.md)). Antes dela, `20261013190000_saida_equipe_reservas` (16:42:55; backup `/root/backup-barba-cabelo-20261013-1942.dump`), `20261013180000_papeis_atuais_e_fuso` (16:42:50) e **`20261013150000_antecedencia_minima`** (15:12:54). As cinco abaixo foram aplicadas nessa data pelo guia único [implantacao-noite-2026-10-13.md](../implantacao-noite-2026-10-13.md), a partir do Mac do dono pelo acesso `ssh vps-barba`: backup `/root/backup-barba-cabelo-20261013-1811.dump` (1,2 MB), ensaio de 144 PASS desfeito, aplicação 15:12:47–15:12:55, conferências iguais às esperadas e as funções `google-connect`, `whatsapp-dispatch`, `register-shop` e `invite-shop-admin` publicadas às 15:13 (cópia das antigas em `/root/functions-backup-20261013-1811`). Detalhes no CONTINUIDADE (entrega de 13/10, "Aplicação da noite"). Os itens ficam como histórico.
 

@@ -24,7 +24,9 @@ import {
 } from "@/components/visual";
 import { ClientProfileModal } from "./ClientProfileModal";
 import { ClientNoticeBell } from "./ClientNoticeBell";
-import { clientDisplay } from "./clients/model";
+import { clientDisplay, clientMatchesQuery } from "./clients/model";
+import { sortDataRows, type DataListSort } from "@/lib/data-list-sort";
+import { DEMO_CUSTOMER_ID } from "@/features/demo/model";
 import { useViewportAtLeast } from "@/lib/device";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -40,6 +42,9 @@ type ClientRow = {
   shop_client_id?: string | null;
   nickname?: string | null;
   has_account?: boolean;
+  /** Opcionais até a migration da P-80; saldo só quando a conta pode consultar pontos. */
+  whatsapp?: string | null;
+  points?: number | null;
 };
 
 /** Chave estável da linha: a conta ou a ficha do balcão. */
@@ -58,12 +63,21 @@ function formatBRL(cents: number, intlLocale: string) {
   });
 }
 
-const normalize = (value: string) =>
-  value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLocaleLowerCase("pt-BR").trim();
+const clientSortValues = {
+  client: (row: ClientRow) => clientDisplay(row.customer_name, row.nickname).primary,
+  visits: (row: ClientRow) => row.visits,
+  total: (row: ClientRow) => row.total_spent_cents,
+  last: (row: ClientRow) => Date.parse(row.last_visit),
+  points: (row: ClientRow) => row.points,
+};
+const clientSortColumns = Object.entries(clientSortValues).map(([key, sortValue]) => ({
+  key,
+  sortValue,
+}));
 
 /**
- * Clientes da barbearia (ou só os do parceiro): busca por nome, ordem em pílulas (recentes, mais
- * visitas, há mais tempo sem vir) e, em cada linha, avatar, visitas, total e "há N dias".
+ * Clientes da barbearia (ou só os do parceiro): busca por nome, apelido e WhatsApp disponível.
+ * No computador, cabeçalhos ordenam antes da paginação; os cartões mantêm as pílulas de ordem.
  * Abre recolhido; o atalho do topo da Agenda (`openOnHash`) abre direto. Com `embedded` (janela
  * que já tem título e X), é só a lista, sempre aberta.
  */
@@ -112,6 +126,10 @@ export function ClientDirectory({
   const [reloadKey, setReloadKey] = useState(0);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortMode>("recent");
+  const [tableSort, setTableSort] = useState<DataListSort>({
+    key: "last",
+    direction: "descending",
+  });
   const sentinelRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const reference = demo?.now.getTime() ?? Date.now();
@@ -155,6 +173,9 @@ export function ClientDirectory({
           last_visit: value.last,
           nickname: demo.shopClients.find((c) => c.profile_id === customer_id)?.nickname ?? null,
           has_account: true,
+          whatsapp: demo.customers.find((c) => c.id === customer_id)?.whatsapp ?? null,
+          // Só o saldo do cliente principal existe na demonstração; os demais não são inventados.
+          points: customer_id === DEMO_CUSTOMER_ID ? demo.points : null,
         })),
       );
       setLoading(false);
@@ -180,23 +201,20 @@ export function ClientDirectory({
   }, [demo, shopId, staffId, scope, reloadKey]);
 
   const shown = useMemo(() => {
-    const term = normalize(query);
-    const filtered = term
-      ? clients.filter((row) =>
-          normalize(`${row.customer_name ?? ""} ${row.nickname ?? ""}`).includes(term),
-        )
-      : clients;
+    const filtered = clients.filter((row) => clientMatchesQuery(row, query));
+    // A ordenação precisa acontecer antes da paginação, inclusive após busca e recarga.
+    if (table) return sortDataRows(filtered, clientSortColumns, tableSort, intlLocale);
     const sorted = [...filtered];
     if (sort === "recent") sorted.sort((a, b) => b.last_visit.localeCompare(a.last_visit));
     if (sort === "away") sorted.sort((a, b) => a.last_visit.localeCompare(b.last_visit));
     if (sort === "visits")
       sorted.sort((a, b) => b.visits - a.visits || b.last_visit.localeCompare(a.last_visit));
     return sorted;
-  }, [clients, query, sort]);
+  }, [clients, query, sort, table, tableSort, intlLocale]);
 
   useEffect(() => {
     setVisible(PAGE_SIZE);
-  }, [query, sort]);
+  }, [query, sort, tableSort]);
 
   // Carregamento por rolagem: quando o sentinela aparece, libera mais 25.
   useEffect(() => {
@@ -244,6 +262,7 @@ export function ClientDirectory({
   const columns: DataListColumn<ClientRow>[] = [
     {
       key: "client",
+      sortValue: clientSortValues.client,
       header: t("bk.client"),
       cell: (client) => {
         const shownName = clientDisplay(client.customer_name, client.nickname);
@@ -274,6 +293,7 @@ export function ClientDirectory({
     },
     {
       key: "visits",
+      sortValue: clientSortValues.visits,
       header: t("team.clients.colVisits"),
       width: "7rem",
       align: "end",
@@ -281,6 +301,7 @@ export function ClientDirectory({
     },
     {
       key: "total",
+      sortValue: clientSortValues.total,
       header: t("booking.total"),
       width: "8rem",
       align: "end",
@@ -290,6 +311,7 @@ export function ClientDirectory({
     },
     {
       key: "last",
+      sortValue: clientSortValues.last,
       header: t("team.clients.colLast"),
       width: "10rem",
       // "há 9 dias" não quebra em duas linhas quando a tabela fica numa coluna estreita
@@ -298,6 +320,22 @@ export function ClientDirectory({
         <span className="whitespace-nowrap">{since(client.last_visit) ?? "—"}</span>
       ),
     },
+    ...(clients.some((client) => client.points !== undefined)
+      ? [
+          {
+            key: "points",
+            header: t("team.clients.colPoints"),
+            width: "6rem",
+            align: "end" as const,
+            sortValue: clientSortValues.points,
+            cell: (client: ClientRow) => (
+              <span className="tabular-nums">
+                {client.points?.toLocaleString(intlLocale) ?? "—"}
+              </span>
+            ),
+          },
+        ]
+      : []),
     {
       key: "bell",
       header: "",
@@ -400,7 +438,13 @@ export function ClientDirectory({
             <>
               <div className="agenda-clients-tools space-y-3">
                 <label className="relative block">
-                  <span className="sr-only">{t("team.clients.searchLabel")}</span>
+                  <span className="sr-only">
+                    {t(
+                      clients.some((client) => client.whatsapp !== undefined)
+                        ? "team.clients.searchPhone"
+                        : "team.clients.searchLabel",
+                    )}
+                  </span>
                   <Search
                     className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
                     aria-hidden
@@ -411,21 +455,27 @@ export function ClientDirectory({
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
                     // Curto para caber inteiro a 320 px; o leitor de tela lê o rótulo completo.
-                    placeholder={t("team.clients.searchShort")}
+                    placeholder={t(
+                      table && clients.some((client) => client.whatsapp !== undefined)
+                        ? "team.clients.searchPhoneShort"
+                        : "team.clients.searchShort",
+                    )}
                     className="min-h-11 w-full rounded-xl border border-border bg-background py-2 pl-10 pr-3 text-sm"
                   />
                 </label>
-                <ChoiceChips
-                  label={t("team.clients.sortLabel")}
-                  hideLabel
-                  value={sort}
-                  onChange={setSort}
-                  options={[
-                    { value: "recent", label: t("team.clients.sortRecent") },
-                    { value: "visits", label: t("team.clients.sortVisits") },
-                    { value: "away", label: t("team.clients.sortAway") },
-                  ]}
-                />
+                {!table && (
+                  <ChoiceChips
+                    label={t("team.clients.sortLabel")}
+                    hideLabel
+                    value={sort}
+                    onChange={setSort}
+                    options={[
+                      { value: "recent", label: t("team.clients.sortRecent") },
+                      { value: "visits", label: t("team.clients.sortVisits") },
+                      { value: "away", label: t("team.clients.sortAway") },
+                    ]}
+                  />
+                )}
               </div>
               {query.trim() ? (
                 <p role="status" className="flex items-center gap-2 text-sm font-semibold">
@@ -465,6 +515,8 @@ export function ClientDirectory({
                 <DataList
                   columns={columns}
                   rows={visibleClients}
+                  sort={tableSort}
+                  onSortChange={setTableSort}
                   rowKey={rowKey}
                   rowLabel={(client) =>
                     t("team.clients.openProfile", {

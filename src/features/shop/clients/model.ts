@@ -67,6 +67,29 @@ export function clientDisplay(
   return { primary: nick, secondary: cleanName };
 }
 
+/** Busca local no diretório: nome/apelido sem acentos ou dígitos do WhatsApp disponível. */
+export function clientMatchesQuery(
+  client: { customer_name: string | null; nickname?: string | null; whatsapp?: string | null },
+  query: string,
+) {
+  const normalize = (value: string) =>
+    value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLocaleLowerCase("pt-BR")
+      .trim();
+  const term = normalize(query);
+  if (!term) return true;
+  if (normalize(`${client.customer_name ?? ""} ${client.nickname ?? ""}`).includes(term))
+    return true;
+  const digits = query.replace(/\D/g, "");
+  return Boolean(
+    digits &&
+    /^[+\d\s().-]+$/.test(query) &&
+    (client.whatsapp ?? "").replace(/\D/g, "").includes(digits),
+  );
+}
+
 export type SeriesInfo = {
   kind: "weekday" | "interval_days" | null | undefined;
   intervalDays: number | null | undefined;

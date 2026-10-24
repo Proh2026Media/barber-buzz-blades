@@ -48,7 +48,7 @@ import { t as tNow, useI18n } from "@/lib/i18n";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { DepartureBookings } from "./settings/DepartureBookings";
 import { cn } from "@/lib/utils";
-import { FOUNDER_META, RoleBadge, formatPercent, isOwnerRole } from "./roles";
+import { FOUNDER_META, RoleBadge, formatPercent, isOwnerRole, roleMeta } from "./roles";
 import { TeamInviteContext } from "./team-invite";
 import {
   GovernanceModeBadge,
@@ -647,6 +647,7 @@ export function ShopTeamAccessCard({
             columns={[
               {
                 key: "pessoa",
+                sortValue: (member) => member.display_name,
                 header: t("eq.people.title"),
                 cell: (member) => {
                   const you = member.user_id === currentUserId;
@@ -678,6 +679,7 @@ export function ShopTeamAccessCard({
               },
               {
                 key: "papel",
+                sortValue: (member) => t(roleMeta(member.role).label),
                 header: t("eq.member.role"),
                 width: "13rem",
                 cell: (member) => (
@@ -696,6 +698,7 @@ export function ShopTeamAccessCard({
               },
               {
                 key: "situacao",
+                sortValue: (member) => t(member.active ? "eq.people.active" : "eq.people.paused"),
                 header: t("eq.diff.status"),
                 width: "9rem",
                 cell: (member) =>
