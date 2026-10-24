@@ -43,11 +43,6 @@ import {
 } from "./shopStats";
 import type { ShopFilter } from "./tabs";
 
-/** Ficha ao lado da lista a partir de 1024 px; abaixo disso, numa janela. */
-function useWideLayout() {
-  return useViewportAtLeast(1024);
-}
-
 type ShopRow = {
   shop: Tables<"barbershops">;
   customers: number;
@@ -116,7 +111,7 @@ export function ShopsPanel({
   teamRevision = 0,
 }: ShopsPanelProps) {
   const { t, intlLocale } = useI18n();
-  const wide = useWideLayout();
+  const wide = useViewportAtLeast(1024);
   // No computador (≥ 1280) a lista vira tabela (DataList); no tablet deitado continua a lista
   // de cartões ao lado da ficha; no tablet em pé e no celular, lista e ficha em janela.
   const device = useDevice();
@@ -313,7 +308,7 @@ export function ShopsPanel({
       key: "admins",
       sortValue: (row) => row.admins,
       header: t("plat.dash.admins"),
-      width: "7.25rem",
+      width: "9rem",
       cell: (row) =>
         // Sem administrador: número em alerta (o nome completo vai para o leitor de tela; a
         // ficha e o filtro "Sem administrador" mostram o aviso por extenso).

@@ -123,7 +123,15 @@ function clampInt(value: string, min: number, max: number) {
   return Math.max(min, Math.min(max, parsed));
 }
 
-export function LoyaltyAdminPage({ profile }: { profile: SessionProfile }) {
+export function LoyaltyAdminPage({
+  profile,
+  embedded = false,
+  selectedActorId,
+}: {
+  profile: SessionProfile;
+  embedded?: boolean;
+  selectedActorId?: string | null;
+}) {
   const { t, intlLocale } = useI18n();
   // Mesma regra do painel (lib/auth/shop-acting): a loja escolhida no aparelho por esta conta,
   // ou o shop_admin antigo; nunca uma loja vinda de vínculo de cliente.
@@ -132,9 +140,10 @@ export function LoyaltyAdminPage({ profile }: { profile: SessionProfile }) {
       resolveShopActing({
         actors: profile.shopActors,
         memberships: profile.memberships,
-        selectedActorId: readSavedShopActor(profile.user.id),
+        selectedActorId:
+          selectedActorId === undefined ? readSavedShopActor(profile.user.id) : selectedActorId,
       }),
-    [profile],
+    [profile, selectedActorId],
   );
   const actor = acting.actor;
   const shop = acting.shop;
@@ -255,30 +264,32 @@ export function LoyaltyAdminPage({ profile }: { profile: SessionProfile }) {
 
   return (
     <div
-      className={`arena-workspace min-h-dvh bg-background text-foreground ${brandFontScopeClass(settings?.font_scope)} ${brandCornerClass(settings?.corner_style)}`}
+      className={`${embedded ? "" : "arena-workspace min-h-dvh bg-background"} text-foreground ${brandFontScopeClass(settings?.font_scope)} ${brandCornerClass(settings?.corner_style)}`}
       style={brandStyle ? (brandStyle as CSSProperties) : undefined}
     >
       <BrandRootVariables vars={brandStyle} />
       {settings && (
         <BrandFontFace url={settings.custom_font_url} faces={settings.custom_font_faces} />
       )}
-      <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-background/90 px-4 py-4 backdrop-blur-xl">
-        <a
-          href="/shop?secao=pontos"
-          className="app-icon-button shrink-0"
-          aria-label={t("loyalty.admin.back")}
-        >
-          <ArrowLeft className="size-5" aria-hidden />
-        </a>
-        <div className="min-w-0">
-          <p className="truncate text-xs font-bold text-gold">{shop?.name ?? ""}</p>
-          <h1 className="truncate text-lg font-extrabold tracking-tight">
-            {t("loyalty.admin.title")}
-          </h1>
-        </div>
-      </header>
+      {!embedded && (
+        <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-background/90 px-4 py-4 backdrop-blur-xl">
+          <a
+            href="/shop?secao=pontos"
+            className="app-icon-button shrink-0"
+            aria-label={t("loyalty.admin.back")}
+          >
+            <ArrowLeft className="size-5" aria-hidden />
+          </a>
+          <div className="min-w-0">
+            <p className="truncate text-xs font-bold text-gold">{shop?.name ?? ""}</p>
+            <h1 className="truncate text-lg font-extrabold tracking-tight">
+              {t("loyalty.admin.title")}
+            </h1>
+          </div>
+        </header>
+      )}
 
-      <main className="mx-auto max-w-3xl space-y-5 p-4 pb-10">
+      <main className={embedded ? "space-y-5" : "mx-auto max-w-3xl space-y-5 p-4 pb-10"}>
         {!shop ? (
           <EmptyState tone="bell" title={t("loyalty.admin.noShop")} />
         ) : loading ? (

@@ -29,7 +29,9 @@ export function CatalogFilters({
   viewMode = "grid",
   onViewMode,
   statusFirst = false,
+  layout = "stack",
 }: {
+  layout?: "stack" | "row";
   query: string;
   onQuery: (value: string) => void;
   status: CatalogStatus;
@@ -72,12 +74,12 @@ export function CatalogFilters({
     />
   ) : null;
   return (
-    <div className="catalog-filters space-y-3">
+    <div className="catalog-filters space-y-3" data-layout={layout}>
       {statusFirst && chips}
       {(showSearch || showView) && (
         <div className="flex flex-wrap items-center gap-2">
           {showSearch && (
-            <label className="relative min-w-[10rem] flex-1">
+            <label className="catalog-filter-search relative min-w-[10rem] flex-1">
               <span className="sr-only">{label}</span>
               <Search
                 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"

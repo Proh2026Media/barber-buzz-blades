@@ -258,7 +258,7 @@ export function TeamTab({
   // "lista" vira tabela; no computador o atalho de acesso fica ao lado da grade.
   const device = useDevice();
   const phone = device === "celular";
-  const wide = useViewportAtLeast(1024);
+  const wide = useViewportAtLeast(768);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<CatalogStatus>("all");
   const [savedView, setView] = useState<CatalogViewMode>(() =>
@@ -518,6 +518,7 @@ export function TeamTab({
   );
   const filters = (
     <CatalogFilters
+      layout="row"
       query={query}
       onQuery={setQuery}
       status={status}
@@ -714,21 +715,21 @@ export function TeamTab({
         return day.allDayBlocked ? null : day.count;
       },
       header: t("shop.agenda.today"),
-      width: "16rem",
+      width: wide ? "25%" : "16rem",
       cell: (member) => dayLine(member),
     },
     {
       key: "services",
       sortValue: (member) => servicesOf(member).length,
       header: t("shop.nav.services"),
-      width: "16rem",
+      width: wide ? "25%" : "16rem",
       cell: (member) => servicesLine(member),
     },
     {
       key: "receiving",
       sortValue: (member) => member.active,
       header: t("catalog.staff.toggle"),
-      width: "11rem",
+      width: "8rem",
       align: "center",
       cell: (member) => (
         <span className="inline-flex flex-wrap items-center justify-center gap-2">
@@ -838,7 +839,12 @@ export function TeamTab({
       {!wide && filters}
 
       {loading && staff.length === 0 ? (
-        <LoadingState label={t("catalog.staff.loading")} variant="cards" count={2} />
+        <LoadingState
+          className="catalog-loading"
+          label={t("catalog.staff.loading")}
+          variant="cards"
+          count={2}
+        />
       ) : loadFailedEmpty ? (
         <EmptyState
           status="danger"
@@ -892,6 +898,9 @@ export function TeamTab({
         />
       ) : view === "list" && wide ? (
         <DataList
+          tableFrom={768}
+          onRowClick={openForm}
+          rowLabel={(member) => t("shop.editAria", { name: member.display_name })}
           className="catalog-table"
           columns={tableColumns}
           rows={visible}

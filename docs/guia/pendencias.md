@@ -28,17 +28,17 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 
 ## 1. As 5 recomendadas para a próxima rodada
 
-Atualizada em 22/10/2026 (madrugada), depois da entrega "interface por dispositivo" (CONTINUIDADE, entrada de 22/10). Os pacotes do Google e os testes reais continuam no topo; o teste do tablet e do computador entrou na P-43.
+Atualizada em 24/10/2026, depois da continuação de interface P-84 a P-94. Os pacotes do Google, testes reais e escolhas de direção visual continuam no topo.
 
 | Ordem | Itens      | O quê                                                                    | Por quê                                                                                                                                                                                                   |
 | ----- | ---------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1     | P-69       | Tirar o retorno `supabase-teste` do cliente OAuth no Google Cloud        | Só o dono (ou quem tiver acesso) entra no console. Pacote pronto: [2026-10-15-google-retorno-antigo-p69.md](../pacotes/2026-10-15-google-retorno-antigo-p69.md).                                          |
 | 2     | P-28       | Gravar o vídeo e reenviar a verificação do Google                        | Depois da P-69. Pacote pronto: [2026-10-15-google-reenviar-verificacao-p28.md](../pacotes/2026-10-15-google-reenviar-verificacao-p28.md).                                                                 |
 | 3     | P-42, P-43 | Testes com login real (WhatsApp, Google), em aparelho físico e no tablet | Dependem do dono. Desde 22/10, a P-43 inclui o tablet (iPad em pé e deitado) e o computador: a interface por dispositivo só foi vista em navegador emulado (roteiro na entrada de 22/10 do CONTINUIDADE). |
-| 4     | P-84       | Detalhe do atendimento em painel lateral no computador                   | Próxima melhoria de interface; P-80 aplicada e P-81 a P-83 feitas. Testes reais permanecem na P-43.                                                                                                       |
+| 4     | P-92, P-95 | Decidir densidade dos ajustes e folha inferior no celular                | P-84 a P-89, P-91, P-93 e P-94 feitas. As duas mudanças de direção visual aguardam escolha; manter o comportamento atual até ela chegar.                                                                  |
 | 5     | P-71       | Decidir "reserva" × "agendamento" no resto do app                        | A aba e a página já dizem "Meus agendamentos" (P-32); o fluxo de agendar e alguns avisos ainda dizem "reserva".                                                                                           |
 
-Sem pressa e sem depender de terceiros: P-14, P-45 (opcionais de antes) e P-88 (restos do shadcn e hooks antigos).
+Sem pressa e sem depender de terceiros: P-14, P-45 (opcionais de antes).
 
 ---
 
@@ -530,41 +530,37 @@ Entrega de 22/10/2026 (CONTINUIDADE, entrada "Interface por dispositivo"; plano 
 - **Preservado:** abaixo de 1280 px, ações e títulos continuam no corpo. Não muda consulta, permissão, formulário ou persistência; sem migration. Contexto sem destino mantém o comportamento original das seções.
 - **Conferido:** 292 testes, tipos, análise estática e montagem; três áreas em 390/768/1280, parceiro em 1536/1024/1280 escuro, abertura das ações pelo cabeçalho e teclado. Detalhes da comparação visual no CONTINUIDADE. Testes em aparelhos reais continuam na P-43.
 
-### P-84 — Painel lateral para o detalhe do atendimento · pendente
+### P-84 — Painel lateral para o detalhe do atendimento · feito em 24/10/2026 (ChatGPT/Codex)
 
-- **Por quê:** no computador, abrir um atendimento (ficha, cancelar, remarcar) ainda abre janela centrada por cima da agenda; um painel que desliza pela direita deixaria a agenda à vista. Plano, seção 8.
-- **Onde:** [AppointmentCard.tsx](../../src/features/shop/agenda/AppointmentCard.tsx), [AgendaTab.tsx](../../src/features/shop/agenda/AgendaTab.tsx); o `src/components/ui/sheet.tsx` do shadcn existe sem uso e pode servir de base (ou ser apagado pela P-88).
-- **Pronto quando:** a partir de 1280 px o detalhe abre num painel à direita com foco, Esc e rodapé fixo; no tablet e no celular continuam as janelas de hoje.
+- **Feito:** detalhe do quadro, ficha do cliente, cancelamento, pedido de remarcação e confirmações da Agenda usam painel à direita desde 1280 px. A agenda fica visível ao fundo; foco e Esc continuam no Radix. Confirmações têm corpo rolável e rodapé fixo, inclusive em 1280 × 600. A ficha empilha resumo e histórico dentro da largura do painel.
+- **Onde:** `DialogContent`/`AlertDialogContent` com `desktopSide`, `ConfirmDialog`, `CancellationDialog`, `AgendaTab`, `ClientProfileModal` e CSS. `MoreActions` espera o menu devolver o foco ao botão antes de abrir outra janela.
+- **Preservado:** abaixo de 1280 px, janelas centradas; nenhuma mudança na ação de cancelar/remarcar nem no banco.
 
-### P-85 — Clube de pontos dentro da casca do painel · pendente
+### P-85 — Clube de pontos dentro da casca do painel · feito em 24/10/2026 (ChatGPT/Codex)
 
-- **Por quê:** `/shop/pontos` ([shop\_.pontos.tsx](../../src/routes/shop_.pontos.tsx) → `LoyaltyAdminPage`) é uma página própria, fora do `ShopShell`: no tablet e no computador abre sem a coluna lateral e sem o cabeçalho da loja, diferente de todas as outras telas do painel. Plano, seção 8.
-- **Onde:** [LoyaltyAdminPage.tsx](../../src/features/loyalty/LoyaltyAdminPage.tsx), [ShopShell.tsx](../../src/features/shop/ShopShell.tsx) (abas em `tabs`), a rota.
-- **Pronto quando:** o clube abre como aba ou seção do painel, com a coluna lateral, o cabeçalho e a largura de leitura das outras abas; o endereço `/shop/pontos` continua funcionando (redireciona).
+- **Feito:** desde 768 px, Ajustes → Clube de pontos mostra `LoyaltyAdminPage` embutida no `ShopShell`, com navegação, cabeçalho e a loja selecionada. `/shop/pontos` redireciona na entrada para `/shop?secao=pontos`, preservando `parte` e demais parâmetros. Quem chega por esse endereço mantém as permissões anteriores do clube, inclusive quando não administra as regras.
+- **Preservado:** no celular, a página própria e seus caminhos continuam. O redirecionamento é decidido na entrada, para não descartar uma edição iniciada no celular durante um redimensionamento. Sem migration.
 
-### P-86 — Matriz de Acessos editável completa · pendente
+### P-86 — Matriz de Acessos editável completa · feito em 24/10/2026 (ChatGPT/Codex)
 
-- **Por quê:** em Acessos (plataforma) e em Equipe e sociedade, a edição de permissões continua "um papel por vez" com pílulas; a tabela papéis × permissões só existe para leitura ("Comparar papéis", a partir de 640 px) e é o molde. A entrega de 22/10 só reorganizou o entorno (seletor na linha do título, explicação em coluna fixa, colunas de papel mais largas).
-- **Onde:** [ShopPermissionsMatrix.tsx](../../src/features/shop/ShopPermissionsMatrix.tsx) e [PlatformPermissionsEditor.tsx](../../src/features/platform/PlatformPermissionsEditor.tsx); regras de quem pode editar o quê em [papeis-e-permissoes.md](papeis-e-permissoes.md).
-- **Pronto quando:** a partir de 1024 px a matriz inteira é editável na mesma tabela (uma caixa por papel × permissão, travadas as que o banco não deixa mudar), com a mesma confirmação de salvar de hoje; no celular continua um papel por vez.
+- **Feito:** a partir de 1024 px, uma tabela permite editar todos os papéis. Cada permissão tem interruptor; Serviços mantém os níveis Só ver / Os próprios / Todos para preservar a combinação das duas permissões do banco. As travas do Contratado continuam, inclusive no manipulador da alteração e na opção Todos.
+- **Preservado:** mesma RPC, confirmação/retorno de salvamento e descarte. Abaixo de 1024, edição de um papel por vez e comparação existentes. Os rascunhos sobrevivem à mudança de largura. Vale para plataforma e equipe porque ambas usam `ShopPermissionsMatrix`.
 
-### P-87 — Pausa fixa no mesmo invólucro do bloqueio · pendente
+### P-87 — Pausa fixa no mesmo invólucro do bloqueio · feito em 24/10/2026 (ChatGPT/Codex)
 
-- **Por quê:** o cartão "Pausa fixa" de Horários ([WeeklyBreaksCard.tsx](../../src/features/shop/hours/WeeklyBreaksCard.tsx)) continua o formulário inline do celular em todas as larguras, enquanto "Bloquear um horário" ganhou janela `lg` com o resumo ao lado. Não aparece na demonstração, então não foi fotografado; o CSS de Horários já reserva a linha dele na coluna da direita (`hours-breaks` em `src/styles/horarios.css`).
-- **Onde:** `WeeklyBreaksCard.tsx`; modelo em [BlockDialog.tsx](../../src/features/shop/hours/BlockDialog.tsx).
-- **Pronto quando:** no tablet e no computador a pausa fixa usa o mesmo invólucro do bloqueio (janela `lg` com campos à esquerda e resumo à direita) ou o formulário em 2 colunas; no celular igual a hoje.
+- **Feito:** formulário de pausa fixa em duas colunas desde 768 px; resumo e ações ocupam a linha inteira. Abaixo disso, a pilha anterior. A demonstração agora mostra uma pausa e permite criar/remover exemplos locais; a confirmação distingue a simulação da agenda real.
+- **Onde:** `WeeklyBreaksCard`, `ShopShell` e `styles/horarios.css`. A criação real continua na mesma tabela e com as mesmas verificações; nenhuma migration.
 
-### P-88 — Restos do shadcn e hooks antigos de largura · pendente (baixa)
+### P-88 — Restos do shadcn e hooks antigos de largura · feito em 24/10/2026 (ChatGPT/Codex)
 
-- **Por quê:** sobraram componentes sem uso e atalhos redundantes depois da entrega: `src/components/ui/drawer.tsx` e `sheet.tsx` (nenhum `import` em `src`; `sidebar.tsx` já foi apagado em 22/10), `DurationPicker` em `src/components/ui/schedule-picker.tsx` (conferir uso), menus do shadcn sem uso; `useDesktop` ([board.ts](../../src/features/shop/agenda/board.ts)) e `useWideLayout` ([ShopsPanel.tsx](../../src/features/platform/ShopsPanel.tsx)) hoje só embrulham `useViewportAtLeast(1024)`; `ClientProfileModal` e `BookClientDialog` ainda passam `max-w-lg`/`flex` no `className` por cima do `size` (o tailwind-merge resolve, mas é ruído); `ui/button` e `.action-button` continuam dois sistemas de botão (plano, seção 8).
-- **Onde:** os arquivos citados; antes de apagar, `git grep` do nome.
-- **Pronto quando:** nenhum componente de `src/components/ui/` sem importação; um só hook de largura (`useViewportAtLeast`) nos dois lugares; `className` das janelas sem largura própria; decisão sobre `ui/button` registrada.
+- **Feito:** removidos 35 módulos sem importação de `components/ui` (incluindo drawer/sheet e menus órfãos), conferidos por referências e `git grep`, mais `DurationPicker` e sua roda privada sem uso. `sonner` foi preservado: a rota raiz o importa por caminho relativo. Dependências de pacote não foram alteradas.
+- **Larguras:** Agenda e Barbearias chamam `useViewportAtLeast` diretamente; `useDesktop` e `useWideLayout` saíram. Ficha usa o tamanho `lg`; Agendar cliente usa `booking` para centralizar as larguras anteriores (44rem no tablet e 60rem desde 1024) sem classes próprias de largura. O `flex` necessário ao corpo e rodapé foi mantido.
+- **Decisão de botões:** `ui/button` permanece como base dos componentes que ainda o usam (calendário e primitivas). Ações do produto continuam em `.action-button`. Não trocar os botões de calendário por ações de formulário; nenhuma migração visual global nesta limpeza.
 
-### P-89 — `CatalogFilters` com modo linha e tabela do catálogo · pendente
+### P-89 — `CatalogFilters` com modo linha e tabela do catálogo · feito em 24/10/2026 (ChatGPT/Codex)
 
-- **Por quê:** a barra de ferramentas de Serviços e Equipe em uma linha (≥ 1024 px) foi feita por CSS em cima da marcação de [CatalogFilters.tsx](../../src/features/shop/CatalogFilters.tsx) (`.catalog-toolbar > .catalog-filters > div > label { flex: 0 0 16rem }` em `src/styles/catalogo.css`): se a estrutura do componente mudar, a regra quebra. Entre 768 e 1023 o modo lista continua a linha compacta antiga, sem colunas alinhadas. Na tabela (≥ 1024) só o nome abre a edição (a linha inteira não é clicável, para não pôr botão dentro de botão). Nada disso aparece na demonstração (3 serviços e 4 profissionais, abaixo de `CATALOG_SHORT_LIST = 6`).
-- **Onde:** `CatalogFilters.tsx` (prop de modo "linha"), `src/features/shop/catalog/{ServicesTab,TeamTab}.tsx`, `src/styles/catalogo.css`.
-- **Pronto quando:** o componente aceita o modo linha sem CSS por cima; o modo lista tem colunas desde 768; a linha da tabela abre a edição pelo `interactiveRow` do `DataList` sem conflito com o interruptor e o `⋯`; conferido numa loja com 7+ itens.
+- **Feito:** `CatalogFilters` oferece `layout="row"`, com classe própria para a busca; o CSS não depende mais da sequência de elementos internos. Catálogo em lista usa `DataList` desde 768 px, com linha acessível por clique, Enter/Espaço e nome da ação. Interruptores, links e menus internos não acionam também a linha.
+- **Tablet em pé:** colunas complementares Quem faz / Hoje ficam disponíveis na ficha; nome, valores e ações cabem na tabela. A demonstração tem sete serviços e sete profissionais para conferir filtro, lista e grade sem forçar código. `DataList.tableFrom` mantém 1024 como padrão para os outros usos.
 
 ### P-90 — Agendar do cliente no tablet em pé · feito em 24/10/2026 (ChatGPT/Codex)
 
@@ -572,39 +568,35 @@ Entrega de 22/10/2026 (CONTINUIDADE, entrada "Interface por dispositivo"; plano 
 - **Onde:** [ArenaApp.tsx](../../src/features/customer/ArenaApp.tsx) (`expandedBooking` para escolhas/calendário; `wideBooking` para revisão lateral), [BookingParts.tsx](../../src/features/customer/booking/BookingParts.tsx) (`DayCalendar`) e `src/styles/cliente.css`.
 - **Verificado:** tipos, 285 testes, eslint, prettier, montagem e fotos em 390/768/1024. Celular de 390 px com relógio e sorteio fixos: 0 pixels diferentes. Agendamento fictício concluído depois de redimensionar 768 → 390 → 1024 → 768; escolhas preservadas. Teste físico permanece na P-43.
 
-### P-91 — Telas novas que a demonstração não mostra · não confirmado
+### P-91 — Telas novas que a demonstração não mostra · feito em 24/10/2026 (ChatGPT/Codex)
 
-- **Por quê:** algumas telas refeitas só existem com dados reais e foram conferidas por tipos, eslint e foto do estado vazio: a tabela de pedidos de privacidade do admin (a demonstração nunca cria pedido `requested`; a exclusão do cliente demo usa `privacy.erase`), a tabela de pessoas de Equipe e sociedade (`ShopTeamAccessCard` não é montado na demo), a janela do QR do WhatsApp em `lg` (na demo o WhatsApp já está conectado), o modo lista e a barra em uma linha do catálogo (demo com menos de 7 itens; as fotos foram tiradas forçando o modo no código) e a Pausa fixa (P-87).
-- **Onde:** [DataRights.tsx](../../src/features/insights/DataRights.tsx), [ShopTeamAccessCard.tsx](../../src/features/shop/ShopTeamAccessCard.tsx), [WhatsAppChannelCard.tsx](../../src/features/shop/settings/WhatsAppChannelCard.tsx), `catalog/*`. Alternativa: dar à demonstração um pedido de privacidade, uma equipe com acesso e 7+ serviços (como a P-72 propõe para serviços por profissional).
-- **Pronto quando:** cada uma foi vista com dados reais (Loja Teste, roteiro da P-41) em 768, 1024 e 1280, ou a demonstração passou a mostrá-las.
+- **Feito:** demonstração expõe pedido de privacidade solicitado (Plataforma → Relatórios), equipe com acesso em `ShopTeamAccessCard`, sete serviços/profissionais, pausa fixa e a janela de conexão do WhatsApp (Mais opções → Gerar novo código QR).
+- **Limites explícitos:** pessoas da sociedade aparecem para consulta na demo; a matriz usa dados fictícios e salva localmente. O QR exibido é uma ilustração identificada como fictícia, sem conectar celular nem fazer consultas de status. Pausas de exemplo ficam na tela e não geram bloqueios reais. A trava de rede da demo foi preservada.
+- **Verificação:** cenários exercitados no navegador local com fixtures; aparelhos físicos e integrações reais continuam na P-43.
 
 ### P-92 — Lado a lado só a partir de 1536 em Ajustes e Relatórios · a decidir
+
+Escolha consultada ao dono em 24/10; sem resposta nesta rodada, mantidos os mínimos existentes.
 
 - **Por quê:** dentro do mestre-detalhe de Ajustes (lista de 18rem) e do trilho de Agendamento (12.5rem), o cartão do ajuste só ganha "campo | prévia" quando tem 38rem (`.ajustes-item`, container query em `src/styles/ajustes.css`), o que em 1024 e 1280 não acontece: Avisos e integrações (WhatsApp e Google lado a lado só com 24rem cada), o modo dos horários, a antecedência mínima e a fila de espera ficam empilhados até 1536. O cartão do Google tem grades `sm:` (3 agendas) que ficariam espremidas com 20rem. Nos Relatórios da plataforma, os quatro blocos comparáveis (nota, melhorias, motivos, interesse) usam `lg:grid-cols-[repeat(auto-fill,minmax(18rem,1fr))]`; conferir se ficam em 2 colunas em 1280 agora que a pilha ocupa a largura toda.
 - **Onde:** `src/styles/ajustes.css` (38rem e 24rem), [GoogleConnectionCard.tsx](../../src/features/shop/settings/GoogleConnectionCard.tsx), [BusinessInsights.tsx](../../src/features/insights/BusinessInsights.tsx).
 - **Pronto quando:** o dono decide se vale baixar os mínimos (container query no cartão do Google; 16rem nos blocos dos Relatórios) para o lado a lado valer em 1280, ou se o empilhado em 1024–1535 fica.
 
-### P-93 — `foto.mjs` com fixture da página pública (`--landing`) · pendente (ferramenta)
+### P-93 — `foto.mjs` com fixture da página pública (`--landing`) · feito em 24/10/2026 (ChatGPT/Codex)
 
-- **Por quê:** a página pública da barbearia (`/b/<loja>` e domínio da loja) não renderiza com o `scripts/foto.mjs` puro: a RPC `get_public_shop_landing` volta vazia na sessão falsa. Nas ondas de 22/10 as fotos dela saíram de uma cópia do script no scratchpad (apagado entre sessões) que respondia a RPC com um JSON de exemplo.
-- **Onde:** [scripts/foto.mjs](../../scripts/foto.mjs) (a resposta falsa das chamadas `/rest/v1`), documentação em [scripts/README.md](../../scripts/README.md).
-- **Pronto quando:** `node scripts/foto.mjs /b/demo --sem-login --landing <arquivo.json>` responde a RPC com o conteúdo do arquivo e um exemplo versionado (ex.: `scripts/fixtures/landing.json`) mostra a página com capa, equipe, serviços e horários.
+- **Feito:** `node scripts/foto.mjs /b/demo --sem-login --landing scripts/fixtures/landing.json` responde somente à RPC `get_public_shop_landing` com o arquivo informado. Exemplo versionado com capa local, equipe, serviços, funcionamento e horários fictícios; documentação em `scripts/README.md`.
+- **Verificado:** página em 1280 px com capa carregada e serviços visíveis, sem erro de console/rolagem lateral. Arquivo ausente encerra com código 1 antes de abrir navegador. JSON inválido ou estrutura mínima ausente também são recusados. Não libera rede para dados reais.
 
-### P-94 — Restos visuais pequenos da entrega por dispositivo · pendente (baixa)
+### P-94 — Restos visuais pequenos da entrega por dispositivo · feito em 24/10/2026 (ChatGPT/Codex)
 
-Cosméticos, cada um com a causa conhecida; nenhum aparece no celular.
-
-- Editar profissional (janela `lg`): a zona de perigo (Pausar/Excluir) continua o bloco escuro com botões empilhados do celular; a coluna do formulário tem ~26rem e os dois botões não cabem lado a lado (achado 17 do QA, não aplicado). [StaffForm.tsx](../../src/features/shop/catalog/StaffForm.tsx).
-- Conta → "Seu ritmo" em 1024: os três tiles ficam 2 + 1 (coluna de ~400 px, abaixo dos 36rem da container query); 3 colunas a partir de ~34rem resolveria (achado 24, não aplicado). [RhythmDashboard.tsx](../../src/features/insights/RhythmDashboard.tsx).
-- Plataforma → Barbearias em 1280: o cabeçalho "Administradores" (coluna de 7.25rem) encosta na borda direita da tabela. [ShopsPanel.tsx](../../src/features/platform/ShopsPanel.tsx).
-- Serviços em 1024 (3 colunas de ~274 px): o título do cartão quebra em 2 linhas por causa do espaço reservado ao interruptor e ao `⋯`. `src/styles/catalogo.css`.
-- Estados vazio e carregando de Serviços e Equipe (`LoadingState variant="cards"`) ficam em coluna única dentro da grade de 3.
-- Agenda: ao cruzar 1023 ↔ 1024 a "Clientes da barbearia" troca de instância (janela × seção) e a busca digitada se perde (já era assim com `useDesktop`); em 1280×800 a coluna do dia (calendário + "Seu dia" ≈ 700 px) raramente cabe na altura, então `useStickyWhenFits` a deixa rolar com a página.
-- Container query dos tiles do ritmo (36rem) não coincide com o antigo `sm:` (640 px): as 3 colunas passam a valer a partir de ~648 px, diferença de ~8 px só na faixa 640–767.
-- Entre 768 e 1023 a ficha do cliente (janela de 44rem) mostra o histórico em cartões empilhados; a tabela só a partir de 1024.
+- **Feito:** Pausar/Excluir em duas colunas no formulário de profissional; indicadores de ritmo em três colunas quando o cartão tem 24rem e restauração da faixa móvel de 640–767; coluna Administradores com 9rem; menos espaço reservado ao menu no título do catálogo; esqueletos de carregamento acompanham duas/três colunas. Estados vazios continuam ocupando o bloco de conteúdo.
+- **Busca preservada:** o texto do diretório pertence ao `ShopShell` e sobrevive à troca janela/seção em 1023 ↔ 1024. Histórico da ficha usa tabela desde 768 nas janelas largas; no novo painel lateral, cartões para caberem em 32rem.
+- **Comportamento mantido de propósito:** `useStickyWhenFits` continua soltando a coluna do dia quando ela não cabe na altura. Fixá-la em 1280 × 800 esconderia controles; isso não é falha de rolagem.
 
 ### P-95 — Folha inferior padronizada no celular · a decidir (dono)
 
+Escolha consultada ao dono em 24/10; sem resposta nesta rodada, mantidas as janelas longas atuais do celular.
+
 - **Por quê:** no celular as tarefas longas (editar serviço, profissional, bloqueio, horário do dia) abrem em janela centrada; uma folha que sobe do pé é o padrão de celular e deixaria o polegar perto dos botões. É mudança de celular, por isso ficou fora do pedido de 21/10 (plano, seção 8).
-- **Onde:** [dialog.tsx](../../src/components/ui/dialog.tsx) (um `size` ou variante de celular), `src/components/ui/drawer.tsx` (shadcn, sem uso; ver P-88).
+- **Onde:** [dialog.tsx](../../src/components/ui/dialog.tsx) (um `size` ou variante de celular), o drawer legado foi removido na P-88; usar a primitiva comum, sem recriar um segundo sistema de janelas.
 - **Pronto quando:** o dono pedir; então um só componente de folha para todas as janelas longas do celular, com foco, Esc e rodapé fixo, e fotos de 390 antes e depois.

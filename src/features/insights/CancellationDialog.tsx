@@ -18,6 +18,7 @@ import {
 
 export function CancellationDialog({
   open,
+  desktopSide = false,
   busy,
   reason,
   onReason,
@@ -31,6 +32,7 @@ export function CancellationDialog({
   confirmLabel,
 }: {
   open: boolean;
+  desktopSide?: boolean;
   busy: boolean;
   reason: CancellationReason | "";
   onReason: (value: CancellationReason | "") => void;
@@ -62,7 +64,10 @@ export function CancellationDialog({
         if (!value && !busy) onCancel();
       }}
     >
-      <AlertDialogContent className="max-h-[90dvh] gap-4 overflow-y-auto rounded-3xl border-border bg-card">
+      <AlertDialogContent
+        desktopSide={desktopSide}
+        className="max-h-[90dvh] gap-4 overflow-y-auto rounded-3xl border-border bg-card"
+      >
         <AlertDialogHeader className="text-left sm:text-left">
           <div className="flex items-start gap-3">
             <IconTile icon={XCircle} tone="danger" />

@@ -144,9 +144,8 @@ export function RhythmDashboard({
         )}
       </div>
 
-      {/* Sem o intervalo são 3 tiles: três colunas só quando o painel tem 36rem (abaixo disso
-          "R$ 60,00" e o nome do serviço quebravam no meio). */}
-      <div className={`grid grid-cols-2 gap-3 ${hideInterval ? "@min-[36rem]:grid-cols-3" : ""}`}>
+      {/* Três indicadores no painel com pelo menos 24rem; a faixa 640–767 mantém três colunas. */}
+      <div className={`grid grid-cols-2 gap-3 ${hideInterval ? "rhythm-three" : ""}`}>
         {!hideInterval && (
           <StatTile
             icon={Repeat}
@@ -173,7 +172,7 @@ export function RhythmDashboard({
         />
         {!hideAvgSpend && (
           <StatTile
-            className={hideInterval ? "col-span-2 @min-[36rem]:col-span-1" : undefined}
+            className={hideInterval ? "rhythm-last col-span-2" : undefined}
             icon={Wallet}
             label={t("rhythm.avgSpend")}
             value={

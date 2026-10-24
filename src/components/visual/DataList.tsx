@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent, type ReactNode } from "react";
+import { useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { useViewportAtLeast } from "@/lib/device";
 import { useI18n } from "@/lib/i18n";
@@ -59,7 +59,9 @@ export function DataList<Row>({
   rowLabel,
   sort: controlledSort,
   onSortChange,
+  tableFrom = 1024,
 }: {
+  tableFrom?: number;
   columns: DataListColumn<Row>[];
   rows: Row[];
   rowKey: (row: Row) => string | number;
@@ -72,7 +74,7 @@ export function DataList<Row>({
   sort?: DataListSort | null;
   onSortChange?: (sort: DataListSort) => void;
 }) {
-  const table = useViewportAtLeast(1024);
+  const table = useViewportAtLeast(tableFrom);
   const { t, intlLocale } = useI18n();
   const [localSort, setLocalSort] = useState<DataListSort | null>(null);
   const sort = controlledSort === undefined ? localSort : controlledSort;
@@ -87,7 +89,7 @@ export function DataList<Row>({
 
   const clickable = Boolean(onRowClick);
   const onKey = (row: Row) => (event: KeyboardEvent<HTMLElement>) => {
-    if (!onRowClick) return;
+    if (!onRowClick || event.target !== event.currentTarget) return;
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       onRowClick(row);
@@ -100,7 +102,15 @@ export function DataList<Row>({
           role: "button" as const,
           tabIndex: 0,
           "aria-label": rowLabel?.(row),
-          onClick: () => onRowClick?.(row),
+          onClick: (event: MouseEvent<HTMLElement>) => {
+            const target = event.target as HTMLElement;
+            if (!event.currentTarget.contains(target)) return;
+            const control = target.closest(
+              "button, a, input, select, textarea, label, [role=button], [role=switch], [role=menuitem]",
+            );
+            if (control && control !== event.currentTarget) return;
+            onRowClick?.(row);
+          },
           onKeyDown: onKey(row),
         }
       : {};
@@ -110,7 +120,15 @@ export function DataList<Row>({
       ? {
           tabIndex: 0,
           "aria-label": rowLabel?.(row),
-          onClick: () => onRowClick?.(row),
+          onClick: (event: MouseEvent<HTMLElement>) => {
+            const target = event.target as HTMLElement;
+            if (!event.currentTarget.contains(target)) return;
+            const control = target.closest(
+              "button, a, input, select, textarea, label, [role=button], [role=switch], [role=menuitem]",
+            );
+            if (control && control !== event.currentTarget) return;
+            onRowClick?.(row);
+          },
           onKeyDown: onKey(row),
         }
       : {};

@@ -63,6 +63,7 @@ import {
 type EditableRole = "employee" | "associate" | "owner";
 
 type ShopTeamAccessCardProps = {
+  demoMembers?: TeamMember[];
   shopId: string;
   canApplyProtected: boolean;
   canEditSociety: boolean;
@@ -302,6 +303,7 @@ function InviteShareCard({ done }: { done: InviteDone }) {
 }
 
 export function ShopTeamAccessCard({
+  demoMembers,
   shopId,
   canApplyProtected,
   canEditSociety,
@@ -374,7 +376,7 @@ export function ShopTeamAccessCard({
   const load = useCallback(async (): Promise<TeamMember[] | null> => {
     setLoadError(null);
     try {
-      const fresh = await loadTeamMembers(shopId);
+      const fresh = demoMembers ?? (await loadTeamMembers(shopId));
       setMembers(fresh);
       return fresh;
     } catch (err) {
@@ -383,7 +385,7 @@ export function ShopTeamAccessCard({
     } finally {
       setLoaded(true);
     }
-  }, [shopId]);
+  }, [shopId, demoMembers]);
 
   useEffect(() => {
     void load();
@@ -827,6 +829,7 @@ export function ShopTeamAccessCard({
       {/* O que cada papel pode fazer: logo abaixo das pessoas que têm esses papéis. */}
       <div className="border-t border-border/60 pt-4">
         <ShopPermissionsMatrix
+          demo={!!demoMembers}
           shopId={shopId}
           canEdit={canApplyProtected}
           showLegacy={showLegacy}

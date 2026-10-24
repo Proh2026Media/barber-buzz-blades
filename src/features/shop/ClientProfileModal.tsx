@@ -102,18 +102,22 @@ function agendaMeta(status: AppointmentStatus) {
 }
 
 /**
- * Histórico de agendamentos da ficha: cartões abaixo de 1024 px (como no celular) e tabela
- * (dia · serviço · profissional · situação · valor) a partir de 1024 px, onde a janela é larga.
+ * Histórico da ficha: tabela a partir de 768 px nas janelas largas; cartões no celular
+ * e no painel lateral de 32rem, onde a tabela não cabe.
  */
 function HistoryList({
+  desktopSide = false,
   rows,
   dateTime,
 }: {
+  desktopSide?: boolean;
   rows: ClientHistoryRow[];
   dateTime: Intl.DateTimeFormat;
 }) {
   const { t, intlLocale } = useI18n();
-  const table = useViewportAtLeast(1024);
+  const tablet = useViewportAtLeast(768);
+  const computer = useViewportAtLeast(1280);
+  const table = tablet && !(desktopSide && computer);
   if (rows.length === 0) {
     return <EmptyState tone="calendar" variant="plain" title={t("team.profile.historyEmpty")} />;
   }
@@ -140,6 +144,7 @@ function HistoryList({
   if (table) {
     return (
       <DataList
+        tableFrom={768}
         rows={rows}
         rowKey={(row) => row.appointment_id}
         columns={[
@@ -234,6 +239,7 @@ export function ClientProfileModal({
   shopClientId = null,
   customerName,
   ownVisits,
+  desktopSide = false,
   publicOrigin = null,
   shopName = "",
   onClose,
@@ -247,6 +253,7 @@ export function ClientProfileModal({
   customerName: string | null;
   /** Visitas com o parceiro que abriu (a lista dele conta só as próprias). */
   ownVisits?: number;
+  desktopSide?: boolean;
   /** Endereço público da barbearia, para o convite de cadastro do cliente do balcão. */
   publicOrigin?: string | null;
   shopName?: string;
@@ -257,6 +264,7 @@ export function ClientProfileModal({
   if (!customerId && shopClientId) {
     return (
       <WalkInClientModal
+        desktopSide={desktopSide}
         shopId={shopId}
         shopClientId={shopClientId}
         customerName={customerName}
@@ -270,6 +278,7 @@ export function ClientProfileModal({
   if (!customerId) return null;
   return (
     <AccountClientModal
+      desktopSide={desktopSide}
       shopId={shopId}
       customerId={customerId}
       customerName={customerName}
@@ -285,6 +294,7 @@ function AccountClientModal({
   customerId,
   customerName,
   ownVisits,
+  desktopSide = false,
   onClose,
   onChanged,
 }: {
@@ -292,6 +302,7 @@ function AccountClientModal({
   customerId: string;
   customerName: string | null;
   ownVisits?: number;
+  desktopSide?: boolean;
   onClose: () => void;
   onChanged?: () => void;
 }) {
@@ -446,8 +457,9 @@ function AccountClientModal({
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent
+        desktopSide={desktopSide}
         size="lg"
-        className="agenda-client-modal flex max-h-[90dvh] w-[calc(100vw-1.5rem)] max-w-lg flex-col gap-0 overflow-hidden rounded-3xl border-border bg-card p-0 tablet:max-w-[44rem]"
+        className="agenda-client-modal flex max-h-[90dvh] flex-col gap-0 overflow-hidden rounded-3xl border-border bg-card p-0"
       >
         <div className="flex items-center gap-3 border-b border-border p-4 pr-14">
           <PersonAvatar
@@ -610,7 +622,7 @@ function AccountClientModal({
                     <History className="size-4 text-gold" aria-hidden />
                     {t("team.profile.history")}
                   </h3>
-                  <HistoryList rows={past} dateTime={dateTime} />
+                  <HistoryList desktopSide={desktopSide} rows={past} dateTime={dateTime} />
                 </section>
                 {ownVisits != null && (
                   <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -632,6 +644,7 @@ function AccountClientModal({
  * barbeiro, avisos, visitas e o convite para se cadastrar (sem conta não há horário recorrente).
  */
 function WalkInClientModal({
+  desktopSide = false,
   shopId,
   shopClientId,
   customerName,
@@ -643,6 +656,7 @@ function WalkInClientModal({
   shopId: string;
   shopClientId: string;
   customerName: string | null;
+  desktopSide?: boolean;
   publicOrigin: string | null;
   shopName: string;
   onClose: () => void;
@@ -781,8 +795,9 @@ function WalkInClientModal({
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent
+        desktopSide={desktopSide}
         size="lg"
-        className="agenda-client-modal flex max-h-[90dvh] w-[calc(100vw-1.5rem)] max-w-lg flex-col gap-0 overflow-hidden rounded-3xl border-border bg-card p-0 tablet:max-w-[44rem]"
+        className="agenda-client-modal flex max-h-[90dvh] flex-col gap-0 overflow-hidden rounded-3xl border-border bg-card p-0"
       >
         <div className="flex items-center gap-3 border-b border-border p-4 pr-14">
           <PersonAvatar name={title} seed={shopClientId} size="md" />
@@ -886,7 +901,11 @@ function WalkInClientModal({
                     <History className="size-4 text-gold" aria-hidden />
                     {t("team.profile.history")}
                   </h3>
-                  <HistoryList rows={client.history} dateTime={dateTime} />
+                  <HistoryList
+                    desktopSide={desktopSide}
+                    rows={client.history}
+                    dateTime={dateTime}
+                  />
                 </section>
               </div>
             </>

@@ -16,7 +16,9 @@ Porta de entrada para o agente que vai continuar o projeto (Cursor, Claude Code,
 
 **Atualização de 24/10 — P-82 feita:** editores de marca, página pública e tela de entrada têm prévias de celular, tablet e computador a partir de 768 px. A escolha é temporária e mantém o rascunho; as molduras usam larguras próprias para reproduzir o leiaute. Celular preservado. Sem migration ou tarefa para a VPS. Testes em aparelhos reais continuam na P-43.
 
-**Atualização de 24/10 — P-83 feita:** cabeçalho em três zonas desde 1280 px nas áreas da loja, cliente e plataforma: identidade | seção atual | ação principal e conta. Os controles existentes de agendar, criar serviço, adicionar profissional e criar barbearia passam ao topo; cliente ganha acesso ao agendamento no cabeçalho. A demonstração usa o menu de perfis existente para caber nas três zonas. Celular e tablet mantidos; sem migration. Próxima melhoria independente: P-84 (detalhe do atendimento em painel lateral no computador).
+**Atualização de 24/10 — P-83 feita:** cabeçalho em três zonas desde 1280 px nas áreas da loja, cliente e plataforma: identidade | seção atual | ação principal e conta. Os controles existentes de agendar, criar serviço, adicionar profissional e criar barbearia passam ao topo; cliente ganha acesso ao agendamento no cabeçalho. A demonstração usa o menu de perfis existente para caber nas três zonas. Celular e tablet mantidos; sem migration. Continuação concluída no bloco abaixo.
+
+**Atualização de 24/10 — continuação P-84 a P-94:** concluídas P-84, P-85, P-86, P-87, P-88, P-89, P-91, P-93 e P-94: painel lateral da agenda, clube dentro de Ajustes, matriz editável, pausa em duas colunas, limpeza de componentes, catálogo em tabela desde 768, cenários da demonstração, fixture pública e correções visuais. Sem migration ou tarefa nova na VPS. P-92/P-95 aguardam escolha; testes físicos e integrações reais seguem em P-42/P-43. P-14/P-45 permanecem opcionais, fora deste bloco de interface.
 
 ## O que é o projeto
 

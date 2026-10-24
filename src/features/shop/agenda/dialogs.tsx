@@ -56,6 +56,7 @@ export function WithdrawDialog({
       ];
   return (
     <ConfirmDialog
+      desktopSide
       open={!!row}
       onOpenChange={(open) => {
         if (!open) onClose();
@@ -95,6 +96,7 @@ export function StopSeriesDialog({
   const { t } = useI18n();
   return (
     <ConfirmDialog
+      desktopSide
       open={!!row}
       onOpenChange={(open) => {
         if (!open) onClose();
@@ -133,6 +135,7 @@ export function CompleteEarlyDialog({
   const time = useShopTime(timeZone);
   return (
     <ConfirmDialog
+      desktopSide
       open={!!row}
       onOpenChange={(open) => {
         if (!open) onClose();

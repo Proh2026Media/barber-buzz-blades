@@ -28,24 +28,45 @@ AlertDialogOverlay.displayName = AlertDialogPrimitive.Overlay.displayName;
 
 const AlertDialogContent = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content>
->(({ className, onOpenAutoFocus, onCloseAutoFocus, ...props }, ref) => {
-  const focus = useDialogFocus({ onOpenAutoFocus, onCloseAutoFocus }, { moveIn: true });
-  return (
-    <AlertDialogPortal>
-      <AlertDialogOverlay />
-      <AlertDialogPrimitive.Content
-        ref={ref}
-        className={cn(
-          "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-lg",
-          className,
-        )}
-        {...props}
-        {...focus}
-      />
-    </AlertDialogPortal>
-  );
-});
+  React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content> & { desktopSide?: boolean }
+>(
+  (
+    { className, desktopSide = false, children, onOpenAutoFocus, onCloseAutoFocus, ...props },
+    ref,
+  ) => {
+    const focus = useDialogFocus({ onOpenAutoFocus, onCloseAutoFocus }, { moveIn: true });
+    return (
+      <AlertDialogPortal>
+        <AlertDialogOverlay className={desktopSide ? "desktop-side-overlay" : undefined} />
+        <AlertDialogPrimitive.Content
+          ref={ref}
+          data-desktop-side={desktopSide || undefined}
+          className={cn(
+            "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-lg",
+            className,
+          )}
+          {...props}
+          {...focus}
+        >
+          {desktopSide ? (
+            <>
+              <div className="desktop-side-body">
+                {React.Children.toArray(children).filter(
+                  (child) => !React.isValidElement(child) || child.type !== AlertDialogFooter,
+                )}
+              </div>
+              {React.Children.toArray(children).filter(
+                (child) => React.isValidElement(child) && child.type === AlertDialogFooter,
+              )}
+            </>
+          ) : (
+            children
+          )}
+        </AlertDialogPrimitive.Content>
+      </AlertDialogPortal>
+    );
+  },
+);
 AlertDialogContent.displayName = AlertDialogPrimitive.Content.displayName;
 
 const AlertDialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
@@ -55,7 +76,10 @@ AlertDialogHeader.displayName = "AlertDialogHeader";
 
 const AlertDialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
-    className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2", className)}
+    className={cn(
+      "dialog-footer flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2",
+      className,
+    )}
     {...props}
   />
 );

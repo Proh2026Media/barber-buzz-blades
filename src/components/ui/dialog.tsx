@@ -43,7 +43,7 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
  * Abaixo de 768 px, lg/xl/page têm a largura de md. Em lg/xl/page a caixa não rola: é uma grade
  * cabeçalho | corpo | rodapé e quem rola é o `DialogBody`.
  */
-type DialogSize = "sm" | "md" | "lg" | "xl" | "page";
+type DialogSize = "sm" | "md" | "lg" | "xl" | "booking" | "page";
 
 const DIALOG_BOX_BASE =
   "fixed left-[50%] top-[50%] z-50 grid w-[calc(100vw-1.5rem)] max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-lg";
@@ -58,11 +58,13 @@ const DIALOG_SIZE_CLASS: Record<DialogSize, string> = {
   md: DIALOG_BOX_SCROLL,
   lg: `${DIALOG_BOX_GRID} tablet:max-w-[44rem]`,
   xl: `${DIALOG_BOX_GRID} tablet:max-w-[60rem]`,
+  booking: `${DIALOG_BOX_GRID} w-[calc(100vw-1rem)] tablet:max-w-[44rem] lg:max-w-[60rem]`,
   page: `${DIALOG_BOX_GRID} tablet:h-[calc(100dvh-3rem)] tablet:w-[calc(100vw-3rem)] tablet:max-w-[96rem]`,
 };
 
 type DialogContentProps = React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
   size?: DialogSize;
+  desktopSide?: boolean;
 };
 
 /**
@@ -87,27 +89,41 @@ type DialogContentProps = React.ComponentPropsWithoutRef<typeof DialogPrimitive.
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
->(({ className, children, size = "md", onOpenAutoFocus, onCloseAutoFocus, ...props }, ref) => {
-  const focus = useDialogFocus({ onOpenAutoFocus, onCloseAutoFocus });
-  return (
-    <DialogPortal>
-      <DialogOverlay />
-      <DialogPrimitive.Content
-        ref={ref}
-        data-size={size}
-        className={cn(DIALOG_BOX_BASE, DIALOG_SIZE_CLASS[size], className)}
-        {...props}
-        {...focus}
-      >
-        {children}
-        <DialogPrimitive.Close className="absolute right-1.5 top-1.5 z-20 inline-flex size-11 items-center justify-center rounded-[var(--button-radius)] bg-card/90 text-muted-foreground backdrop-blur-sm ring-offset-background cursor-pointer transition-colors hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
-          <X className="h-4 w-4" />
-          <CloseLabel />
-        </DialogPrimitive.Close>
-      </DialogPrimitive.Content>
-    </DialogPortal>
-  );
-});
+>(
+  (
+    {
+      className,
+      children,
+      size = "md",
+      desktopSide = false,
+      onOpenAutoFocus,
+      onCloseAutoFocus,
+      ...props
+    },
+    ref,
+  ) => {
+    const focus = useDialogFocus({ onOpenAutoFocus, onCloseAutoFocus });
+    return (
+      <DialogPortal>
+        <DialogOverlay className={desktopSide ? "desktop-side-overlay" : undefined} />
+        <DialogPrimitive.Content
+          ref={ref}
+          data-size={size}
+          data-desktop-side={desktopSide || undefined}
+          className={cn(DIALOG_BOX_BASE, DIALOG_SIZE_CLASS[size], className)}
+          {...props}
+          {...focus}
+        >
+          {children}
+          <DialogPrimitive.Close className="absolute right-1.5 top-1.5 z-20 inline-flex size-11 items-center justify-center rounded-[var(--button-radius)] bg-card/90 text-muted-foreground backdrop-blur-sm ring-offset-background cursor-pointer transition-colors hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
+            <X className="h-4 w-4" />
+            <CloseLabel />
+          </DialogPrimitive.Close>
+        </DialogPrimitive.Content>
+      </DialogPortal>
+    );
+  },
+);
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 const DialogScrollArea = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(

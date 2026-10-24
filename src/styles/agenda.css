@@ -488,3 +488,20 @@
     grid-column: 1 / -1;
   }
 }
+
+@media (min-width: 768px) {
+  .agenda-client-main .app-data-list {
+    overflow-x: auto;
+  }
+}
+@media (min-width: 1280px) {
+  .agenda-client-modal[data-desktop-side="true"] .agenda-client-body {
+    display: block;
+  }
+  .agenda-client-modal[data-desktop-side="true"] .agenda-client-body > .agenda-client-aside {
+    position: static;
+  }
+  .agenda-client-modal[data-desktop-side="true"] .agenda-client-main {
+    margin-top: 1.25rem;
+  }
+}

@@ -600,12 +600,12 @@ export function BookClientDialog({
       <DialogContent
         // Celular: folha quase de tela cheia. Tablet e computador: janela de 60rem com os campos à
         // esquerda e o resumo vivo à direita (DialogBody split; CSS em src/styles/agenda.css).
-        size="xl"
+        size="booking"
         onOpenAutoFocus={(event) => {
           event.preventDefault();
           phoneRef.current?.focus();
         }}
-        className="agenda-book flex max-h-[92dvh] w-[calc(100vw-1rem)] max-w-lg flex-col gap-0 overflow-hidden rounded-3xl border-border bg-card p-0 tablet:max-w-[44rem] lg:max-w-[60rem]"
+        className="agenda-book flex max-h-[92dvh] flex-col gap-0 overflow-hidden rounded-3xl border-border bg-card p-0"
       >
         <div className="flex min-h-14 items-center gap-2.5 border-b border-border px-4 py-3 pr-14">
           <CalendarPlus className="size-5 shrink-0 text-gold" aria-hidden />

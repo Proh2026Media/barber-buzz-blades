@@ -54,6 +54,7 @@ const AJUDA = `Uso: node scripts/foto.mjs <caminho> [mais caminhos...] [opções
   --pagina-inteira       foto da página inteira, inclusive a rolagem interna dos painéis
                          (até ${ALTURA_MAXIMA} px)
   --sem-login            não simula conta (páginas públicas e /auth)
+  --landing <json>      resposta fictícia de get_public_shop_landing
   --passos '<json>'      lista de passos, em ordem:
                            {"esperar": 1200}
                            {"aba": "Agenda"}              item da barra inferior com esse rótulo
@@ -99,6 +100,7 @@ function lerOpcoes(argv) {
     idioma: null,
     paginaInteira: false,
     semLogin: false,
+    landing: null,
     passos: [],
     avaliar: null,
     saida: join(RAIZ, ".fotos"),
@@ -143,6 +145,22 @@ function lerOpcoes(argv) {
       case "--pagina-inteira":
         op.paginaInteira = true;
         break;
+      case "--landing": {
+        const arquivo = valor(++i, a);
+        try {
+          op.landing = JSON.parse(readFileSync(resolve(arquivo), "utf8"));
+          if (
+            !op.landing?.shop?.id ||
+            !Array.isArray(op.landing.services) ||
+            !Array.isArray(op.landing.staff) ||
+            !Array.isArray(op.landing.hours)
+          )
+            throw new Error("esperado objeto com shop.id, services, staff e hours");
+        } catch (e) {
+          falhar(`--landing inválido: ${e.message}`);
+        }
+        break;
+      }
       case "--sem-login":
         op.semLogin = true;
         break;
@@ -470,7 +488,7 @@ function cabecalhosCors(req) {
 }
 
 /** Resposta falsa para uma chamada ao Supabase. */
-function respostaSupabase(req, caminho, comLogin) {
+function respostaSupabase(req, caminho, comLogin, landing) {
   const metodo = req.method();
   const cors = cabecalhosCors(req);
   const json = (corpo, status = 200, extra = {}) => ({
@@ -518,6 +536,7 @@ function respostaSupabase(req, caminho, comLogin) {
     const objeto = (req.headers()["accept"] ?? "").includes("vnd.pgrst.object");
     const vazio = { "content-range": "*/0" };
     if (metodo === "HEAD") return { status: 200, headers: { ...cors, ...vazio }, body: "" };
+    if (recurso === "rpc/get_public_shop_landing" && landing) return json(landing);
     if (recurso.startsWith("rpc/")) return json([]);
     let linhas = [];
     if (comLogin && metodo === "GET") {
@@ -619,7 +638,7 @@ async function abrirContexto(browser, op) {
       return route.abort("blockedbyclient");
     }
     if (PREFIXOS_SUPABASE.some((p) => url.pathname.startsWith(p))) {
-      return route.fulfill(respostaSupabase(req, url.pathname, comLogin));
+      return route.fulfill(respostaSupabase(req, url.pathname, comLogin, op.landing));
     }
     if (url.origin === baseUrl.origin || HOSTS_LIBERADOS.has(url.hostname)) {
       return route.continue();

@@ -136,7 +136,7 @@ export function ServicesTab({
   const { t } = useI18n();
   const { duration, money } = useCatalogLabels();
   // Computador compacto (≥ 1024 px): título, busca, filtros e botão numa linha; "lista" vira tabela.
-  const wide = useViewportAtLeast(1024);
+  const wide = useViewportAtLeast(768);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<CatalogStatus>("all");
   const [savedView, setView] = useState<CatalogViewMode>(() =>
@@ -313,6 +313,7 @@ export function ServicesTab({
   );
   const filters = (
     <CatalogFilters
+      layout="row"
       query={query}
       onQuery={setQuery}
       status={status}
@@ -581,7 +582,12 @@ export function ServicesTab({
       {!wide && filters}
 
       {loading && services.length === 0 ? (
-        <LoadingState label={t("catalog.service.loading")} variant="cards" count={3} />
+        <LoadingState
+          className="catalog-loading"
+          label={t("catalog.service.loading")}
+          variant="cards"
+          count={3}
+        />
       ) : loadFailedEmpty ? (
         <EmptyState
           status="danger"
@@ -633,6 +639,9 @@ export function ServicesTab({
         />
       ) : view === "list" && wide ? (
         <DataList
+          tableFrom={768}
+          onRowClick={canEdit ? openForm : undefined}
+          rowLabel={(service) => t("shop.editAria", { name: service.name })}
           className="catalog-table"
           columns={tableColumns}
           rows={visible}

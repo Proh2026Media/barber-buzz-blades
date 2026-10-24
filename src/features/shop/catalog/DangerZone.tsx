@@ -43,7 +43,7 @@ export function DangerZone({
   }
 
   return (
-    <div className="space-y-2 rounded-2xl border border-dashed border-border p-3">
+    <div className="catalog-danger space-y-2 rounded-2xl border border-dashed border-border p-3">
       {onPause && hint && <p className="text-xs text-muted-foreground">{hint}</p>}
       <div className="flex flex-wrap items-center justify-end gap-2">
         {onPause && (

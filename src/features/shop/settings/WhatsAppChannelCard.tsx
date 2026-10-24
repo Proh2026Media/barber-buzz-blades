@@ -310,7 +310,7 @@ export function WhatsAppChannelCard({ shopId }: { shopId: string }) {
 
   // Com o QR aberto, confere a cada 4 s se o celular já leu o código.
   useEffect(() => {
-    if (!qrOpen || channel?.status === "open") return;
+    if (demo || !qrOpen || channel?.status === "open") return;
     const timer = window.setInterval(() => {
       void (async () => {
         try {
@@ -327,11 +327,13 @@ export function WhatsAppChannelCard({ shopId }: { shopId: string }) {
       })();
     }, 4000);
     return () => window.clearInterval(timer);
-  }, [qrOpen, channel?.status, shopId]);
+  }, [demo, qrOpen, channel?.status, shopId]);
 
   async function connect() {
     if (demo) {
-      setConnectResult({ state: "saved", text: t("integr.wa.demoConnected") });
+      setChannel((current) => (current ? { ...current, status: "connecting" } : current));
+      setQrOpen(true);
+      setConnectResult({ state: "pending", text: t("integr.wa.demoQr") });
       return;
     }
     setBusy(true);
@@ -355,6 +357,8 @@ export function WhatsAppChannelCard({ shopId }: { shopId: string }) {
 
   async function disconnect() {
     if (demo) {
+      setChannel((current) => (current ? { ...current, status: "disconnected" } : current));
+      setQrcode(null);
       setConnectResult({ state: "saved", text: t("integr.wa.demoDisconnect") });
       return;
     }
@@ -987,7 +991,12 @@ export function WhatsAppChannelCard({ shopId }: { shopId: string }) {
               </Hint>
             </div>
             <DialogAside className="space-y-4">
-              {qrcode ? (
+              {demo ? (
+                <div className="flex flex-col items-center gap-4 p-4">
+                  <QrCode className="size-48" aria-hidden />
+                  <p className="text-center text-sm">{t("integr.wa.demoQr")}</p>
+                </div>
+              ) : qrcode ? (
                 <img
                   src={qrcode}
                   alt={t("integr.wa.qrAlt")}

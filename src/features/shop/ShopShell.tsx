@@ -1,3 +1,4 @@
+import { useDevice } from "@/lib/device";
 import { WorkspaceFrame, WorkspaceHeading } from "@/components/visual/WorkspaceHeader";
 import { useWaiting } from "@/features/waiting/useWaiting";
 import { WaitingSettings } from "@/features/waiting/WaitingSettings";
@@ -7,6 +8,7 @@ import {
   type BookingRulesDraft,
 } from "@/features/shop/settings/BookingRulesSettings";
 import { BOOKING_CARD_IDS } from "@/features/shop/settings/booking-cards";
+import { LoyaltyAdminPage } from "@/features/loyalty/LoyaltyAdminPage";
 import { LoyaltySettingsSummary } from "@/features/loyalty/LoyaltySettingsSummary";
 import { ServicesTab } from "./catalog/ServicesTab";
 import { TeamTab } from "./catalog/TeamTab";
@@ -255,6 +257,7 @@ function clearRequestedShop() {
 }
 
 export function ShopShell({ profile, headerActions }: ShopShellProps) {
+  const device = useDevice();
   useScrollIndicators();
   const { t } = useI18n();
   const demo = useDemo();
@@ -422,6 +425,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   const [tab, setTab] = useState<"agenda" | "servicos" | "equipe" | "horarios" | "configuracoes">(
     () => (readSectionFromUrl() ? "configuracoes" : "agenda"),
   );
+  const [clientsQuery, setClientsQuery] = useState("");
   const [agendaRefresh, setAgendaRefresh] = useState(0);
   const [refreshingAgenda, setRefreshingAgenda] = useState(false);
   const [agendaDay, setAgendaDay] = useState(() =>
@@ -1761,7 +1765,9 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   const settingsSections: SettingsSection[] = [
     ...(canManageBranding ? (["aparencia"] as const) : []),
     ...(canManageShopSettings ? (["agendamento"] as const) : []),
-    ...(!demo && canManageShopSettings ? (["pontos"] as const) : []),
+    ...(!demo && (canManageShopSettings || (device !== "celular" && settingsSection === "pontos"))
+      ? (["pontos"] as const)
+      : []),
     ...(canManageShopChannels || powers.googleOwn ? (["avisos"] as const) : []),
     ...(!demo && canManageShopSettings ? (["enderecos"] as const) : []),
     // Meu perfil e link: todo profissional (foto, nome, "sobre" e o link para divulgar).
@@ -2266,6 +2272,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                           content: (
                             <div className="rounded-2xl border border-border bg-card p-4">
                               <ClientDirectory
+                                query={clientsQuery}
+                                onQuery={setClientsQuery}
                                 shopId={shop.id}
                                 staffId={actor.staff_id}
                                 scope="shop"
@@ -2280,6 +2288,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                           // dentro de cartão nem título repetido.
                           windowContent: (
                             <ClientDirectory
+                              query={clientsQuery}
+                              onQuery={setClientsQuery}
                               shopId={shop.id}
                               staffId={actor.staff_id}
                               scope="shop"
@@ -2427,14 +2437,12 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 blockRequest={hoursBlockRequest}
                 onBlockRequestHandled={() => setHoursBlockRequest(null)}
                 onOpenApprovals={openApprovals}
-                weeklyBreaks={
-                  demo
-                    ? undefined
-                    : {
-                        canManageShop: !ownBlocksOnly && powers.writeMode === "direct",
-                        onChanged: () => void loadBlocks(),
-                      }
-                }
+                weeklyBreaks={{
+                  canManageShop: !ownBlocksOnly && (!!demo || powers.writeMode === "direct"),
+                  onChanged: () => {
+                    if (!demo) void loadBlocks();
+                  },
+                }}
               />
             )}
 
@@ -2648,7 +2656,16 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       );
                     }
                     if (section === "pontos") {
-                      return <LoyaltySettingsSummary enabled={settings.loyalty_enabled} />;
+                      return device !== "celular" ? (
+                        <LoyaltyAdminPage
+                          key={shop.id}
+                          profile={effectiveProfile}
+                          selectedActorId={actor?.id ?? null}
+                          embedded
+                        />
+                      ) : (
+                        <LoyaltySettingsSummary enabled={settings.loyalty_enabled} />
+                      );
                     }
                     if (section === "avisos") {
                       return (
@@ -2710,13 +2727,14 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                               void loadCatalog();
                             }}
                           />
-                          {powers.society && !demo && (
+                          {powers.society && (
                             <div id="team-access" className="scroll-mt-28">
                               <TeamInviteContext.Provider value={teamInviteContext}>
                                 <ShopTeamAccessCard
+                                  demoMembers={demo ? (team ?? []) : undefined}
                                   shopId={shop.id}
                                   canApplyProtected={!!capabilities?.canApplyOperations}
-                                  canEditSociety={powers.society}
+                                  canEditSociety={powers.society && !demo}
                                   staff={staff}
                                   currentUserId={profile.user.id}
                                   onOpenDecisions={openApprovals}

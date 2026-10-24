@@ -1,5 +1,5 @@
 import { MoreHorizontal, type LucideIcon } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -80,6 +80,8 @@ export function MoreActions({
   const { t } = useI18n();
   const mobile = useDevice() === "celular";
   const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const pendingAction = useRef<(() => void) | null>(null);
   const regular = actions.filter((action) => action.tone !== "danger");
   const danger = actions.filter((action) => action.tone === "danger");
   const triggerLabel = label ?? t("visual.moreActions");
@@ -92,6 +94,7 @@ export function MoreActions({
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <button
+            ref={triggerRef}
             type="button"
             aria-label={triggerLabel}
             title={triggerLabel}
@@ -100,7 +103,19 @@ export function MoreActions({
             <MoreHorizontal className="size-5" aria-hidden />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-72 rounded-2xl p-1.5">
+        <DropdownMenuContent
+          align="end"
+          className="w-72 rounded-2xl p-1.5"
+          onCloseAutoFocus={(event) => {
+            const action = pendingAction.current;
+            pendingAction.current = null;
+            if (!action) return;
+            // A nova janela guarda o botão ⋯ como origem, não o item de menu que acabou de sair.
+            event.preventDefault();
+            triggerRef.current?.focus({ preventScroll: true });
+            action();
+          }}
+        >
           {[regular, danger].map((group, groupIndex) =>
             group.length === 0 ? null : (
               <div key={groupIndex}>
@@ -109,7 +124,9 @@ export function MoreActions({
                   <DropdownMenuItem
                     key={action.id}
                     disabled={action.disabled}
-                    onSelect={() => action.onSelect()}
+                    onSelect={() => {
+                      pendingAction.current = action.onSelect;
+                    }}
                     className="min-h-12 cursor-pointer gap-3 rounded-xl px-2 py-1.5"
                   >
                     <ActionBody action={action} />

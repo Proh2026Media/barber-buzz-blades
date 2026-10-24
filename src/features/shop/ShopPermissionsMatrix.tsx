@@ -35,6 +35,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { permissionLockedForRole } from "@/lib/auth/capabilities";
 import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
+import { useViewportAtLeast } from "@/lib/device";
 import { cn } from "@/lib/utils";
 import { ROLE_META } from "./roles";
 
@@ -248,9 +249,13 @@ export function ShopPermissionsMatrix({
   showLegacy = false,
 }: ShopPermissionsMatrixProps) {
   const { t } = useI18n();
+  const wide = useViewportAtLeast(1024);
   const title = titleProp ?? t("eq.perm.title");
   const description =
-    descriptionProp ?? (canEdit ? t("eq.perm.description") : t("eq.perm.descriptionReadOnly"));
+    descriptionProp ??
+    (canEdit
+      ? t(wide ? "eq.perm.matrixDescription" : "eq.perm.description")
+      : t("eq.perm.descriptionReadOnly"));
   const [catalog, setCatalog] = useState<PermissionMeta[]>([]);
   const [saved, setSaved] = useState<Matrix>({});
   const [matrix, setMatrix] = useState<Matrix>({});
@@ -312,23 +317,23 @@ export function ShopPermissionsMatrix({
   const roles = ROLES.filter((item) => item.id !== "partner" || showLegacy);
   const changes = countChanges(saved, matrix);
 
-  const togglePermission = (permission: string, value: boolean) => {
-    if (!canEdit) return;
+  const togglePermission = (permission: string, value: boolean, targetRole = role) => {
+    if (!canEdit || permissionLockedForRole(targetRole, permission)) return;
     setMatrix((current) => ({
       ...current,
-      [role]: { ...(current[role] ?? {}), [permission]: value },
+      [targetRole]: { ...(current[targetRole] ?? {}), [permission]: value },
     }));
     setState(null);
   };
 
-  const setServiceLevel = (level: ServiceLevel) => {
+  const setServiceLevel = (level: ServiceLevel, targetRole = role) => {
     if (!canEdit) return;
     // "Todos" não vale para o Contratado (não muda o catálogo da loja).
-    if (level === "all" && permissionLockedForRole(role, SERVICES.manageAll)) return;
+    if (level === "all" && permissionLockedForRole(targetRole, SERVICES.manageAll)) return;
     setMatrix((current) => ({
       ...current,
-      [role]: {
-        ...(current[role] ?? {}),
+      [targetRole]: {
+        ...(current[targetRole] ?? {}),
         [SERVICES.manageAll]: level === "all",
         [SERVICES.manageOwn]: level === "own" || level === "all",
       },
@@ -482,6 +487,97 @@ export function ShopPermissionsMatrix({
     ...extras.map((entry) => entry.permission),
   ];
 
+  const comparisonTable = (
+    <table className="w-full table-fixed text-left text-xs text-foreground">
+      <thead>
+        <tr className="border-b border-border/60">
+          <th scope="col" className="py-2 pe-2 font-semibold">
+            <span className="sr-only">{t("team.perm.permission")}</span>
+          </th>
+          {roles.map((item) => (
+            <th key={item.id} scope="col" className="w-12 py-2 text-center sm:w-24 lg:w-32">
+              <item.icon className="mx-auto size-4 text-gold" aria-hidden />
+              <span className="mt-0.5 block truncate text-[10px] font-bold sm:text-xs">
+                {t(item.label)}
+              </span>
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {compareRows.map((permission) => {
+          const text = permission === "services" ? textOf(SERVICES.manageAll) : textOf(permission);
+          return (
+            <tr key={permission} className="border-b border-border/40 last:border-0">
+              <th scope="row" className="py-2 pe-2 font-semibold">
+                {text.label}
+              </th>
+              {roles.map((item) => {
+                if (permission === "services") {
+                  const level = serviceLevelFor(matrix, item.id);
+                  return (
+                    <td key={item.id} className="py-2 text-center text-[11px] font-bold">
+                      {wide && canEdit ? (
+                        <select
+                          aria-label={`${text.label} · ${t(item.label)}`}
+                          className="min-h-11 w-full rounded-xl border border-input bg-background px-1 text-xs"
+                          value={level}
+                          disabled={state === "saving"}
+                          onChange={(event) =>
+                            setServiceLevel(event.target.value as ServiceLevel, item.id)
+                          }
+                        >
+                          {(["view", "own", "all"] as const).map((value) => (
+                            <option
+                              key={value}
+                              value={value}
+                              disabled={
+                                value === "all" &&
+                                permissionLockedForRole(item.id, SERVICES.manageAll)
+                              }
+                            >
+                              {levelLabel(value)}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        levelLabel(level)
+                      )}
+                    </td>
+                  );
+                }
+                const on = matrix[item.id]?.[permission] ?? false;
+                return (
+                  <td key={item.id} className="py-2 text-center">
+                    <span className="inline-flex justify-center">
+                      {wide && canEdit ? (
+                        <Switch
+                          aria-label={`${text.label} · ${t(item.label)}`}
+                          checked={on}
+                          disabled={
+                            state === "saving" || permissionLockedForRole(item.id, permission)
+                          }
+                          onCheckedChange={(value) => togglePermission(permission, value, item.id)}
+                        />
+                      ) : (
+                        <YesNo
+                          on={on}
+                          label={t(on ? "eq.perm.canRole" : "eq.perm.cannotRole", {
+                            role: t(item.label),
+                          })}
+                        />
+                      )}
+                    </span>
+                  </td>
+                );
+              })}
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+
   return (
     <div className="space-y-4">
       <SectionHeader as="h3" icon={ShieldCheck} title={title} description={description} />
@@ -514,171 +610,130 @@ export function ShopPermissionsMatrix({
         <EmptyState variant="plain" tone="people" title={t("team.perm.empty")} />
       ) : (
         <>
-          <ChoiceChips
-            label={t("eq.perm.chooseRole")}
-            options={roles.map((item) => ({
-              value: item.id,
-              label: t(item.label),
-              icon: item.icon,
-            }))}
-            value={role}
-            onChange={setRole}
-          />
+          {wide ? (
+            comparisonTable
+          ) : (
+            <>
+              <ChoiceChips
+                label={t("eq.perm.chooseRole")}
+                options={roles.map((item) => ({
+                  value: item.id,
+                  label: t(item.label),
+                  icon: item.icon,
+                }))}
+                value={role}
+                onChange={setRole}
+              />
 
-          <div className="space-y-4">
-            {GROUPS.map((group) => {
-              const rows = group.rows.map(renderRow).filter(Boolean);
-              if (!rows.length) return null;
-              return (
-                <section
-                  key={group.id}
-                  aria-labelledby={`perm-group-${group.id}`}
-                  className="rounded-2xl border border-border bg-background/70 px-3"
-                >
-                  <h4
-                    id={`perm-group-${group.id}`}
-                    className="flex items-center gap-2 border-b border-border/60 py-2.5 text-xs font-bold uppercase tracking-wide text-muted-foreground"
-                  >
-                    <group.icon className="size-4" aria-hidden />
-                    {t(group.title)}
-                  </h4>
-                  <ul className="divide-y divide-border/60">{rows}</ul>
-                </section>
-              );
-            })}
-            {extras.length > 0 && (
-              <section className="rounded-2xl border border-border bg-background/70 px-3">
-                <h4 className="flex items-center gap-2 border-b border-border/60 py-2.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                  <SlidersHorizontal className="size-4" aria-hidden />
-                  {t("eq.perm.group.other")}
-                </h4>
-                <ul className="divide-y divide-border/60">
-                  {extras.map((entry) => renderRow(entry.permission))}
-                </ul>
-              </section>
-            )}
-          </div>
-
-          {/* Comparar papéis: no celular, um bloco por papel com cada permissão em pílula ✓ / —;
-              do tablet para cima, a tabela lado a lado. */}
-          <MoreDetails summary={t("eq.perm.compare")}>
-            <ul className="space-y-3 sm:hidden">
-              {roles.map((item) => {
-                const allows = (permission: string) =>
-                  permission === "services"
-                    ? serviceLevelFor(matrix, item.id) !== "view"
-                    : (matrix[item.id]?.[permission] ?? false);
-                const allowed = compareRows.filter(allows).length;
-                // O que o papel pode fazer vem primeiro; o que não pode, depois.
-                const ordered = [
-                  ...compareRows.filter(allows),
-                  ...compareRows.filter((permission) => !allows(permission)),
-                ];
-                return (
-                  <li
-                    key={item.id}
-                    className="space-y-2.5 rounded-2xl border border-border bg-background/70 p-3"
-                  >
-                    <p className="flex items-center gap-2 text-sm font-bold text-foreground">
-                      <item.icon className="size-5 shrink-0 text-gold" aria-hidden />
-                      <span className="min-w-0 flex-1">{t(item.label)}</span>
-                      <span className="shrink-0 text-xs font-semibold text-muted-foreground">
-                        {t("eq.perm.compareCount", { count: allowed, total: compareRows.length })}
-                      </span>
-                    </p>
-                    <ul className="flex flex-wrap gap-1.5">
-                      {ordered.map((permission) => {
-                        if (permission === "services") {
-                          const level = serviceLevelFor(matrix, item.id);
-                          const text = textOf(SERVICES.manageAll);
-                          return (
-                            <li key={permission} className="max-w-full">
-                              <StatusBadge
-                                tone={level === "view" ? "neutral" : "success"}
-                                icon={level === "view" ? Minus : Check}
-                                size="sm"
-                                label={`${text.label}: ${levelLabel(level)}`}
-                              />
-                            </li>
-                          );
-                        }
-                        const on = matrix[item.id]?.[permission] ?? false;
-                        const text = textOf(permission);
-                        return (
-                          <li key={permission} className="max-w-full">
-                            <span aria-hidden>
-                              <StatusBadge
-                                tone={on ? "success" : "neutral"}
-                                icon={on ? Check : Minus}
-                                size="sm"
-                                label={text.label}
-                              />
-                            </span>
-                            <span className="sr-only">
-                              {t(on ? "eq.perm.can" : "eq.perm.cannot", { permission: text.label })}
-                            </span>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </li>
-                );
-              })}
-            </ul>
-            <table className="hidden w-full table-fixed text-left text-xs text-foreground sm:table">
-              <thead>
-                <tr className="border-b border-border/60">
-                  <th scope="col" className="py-2 pe-2 font-semibold">
-                    <span className="sr-only">{t("team.perm.permission")}</span>
-                  </th>
-                  {roles.map((item) => (
-                    <th key={item.id} scope="col" className="w-12 py-2 text-center sm:w-24 lg:w-32">
-                      <item.icon className="mx-auto size-4 text-gold" aria-hidden />
-                      <span className="mt-0.5 block truncate text-[10px] font-bold sm:text-xs">
-                        {t(item.label)}
-                      </span>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {compareRows.map((permission) => {
-                  const text =
-                    permission === "services" ? textOf(SERVICES.manageAll) : textOf(permission);
+              <div className="space-y-4">
+                {GROUPS.map((group) => {
+                  const rows = group.rows.map(renderRow).filter(Boolean);
+                  if (!rows.length) return null;
                   return (
-                    <tr key={permission} className="border-b border-border/40 last:border-0">
-                      <th scope="row" className="py-2 pe-2 font-semibold">
-                        {text.label}
-                      </th>
-                      {roles.map((item) => {
-                        if (permission === "services") {
-                          const level = serviceLevelFor(matrix, item.id);
-                          return (
-                            <td key={item.id} className="py-2 text-center text-[11px] font-bold">
-                              {levelLabel(level)}
-                            </td>
-                          );
-                        }
-                        const on = matrix[item.id]?.[permission] ?? false;
-                        return (
-                          <td key={item.id} className="py-2 text-center">
-                            <span className="inline-flex justify-center">
-                              <YesNo
-                                on={on}
-                                label={t(on ? "eq.perm.canRole" : "eq.perm.cannotRole", {
-                                  role: t(item.label),
-                                })}
-                              />
-                            </span>
-                          </td>
-                        );
-                      })}
-                    </tr>
+                    <section
+                      key={group.id}
+                      aria-labelledby={`perm-group-${group.id}`}
+                      className="rounded-2xl border border-border bg-background/70 px-3"
+                    >
+                      <h4
+                        id={`perm-group-${group.id}`}
+                        className="flex items-center gap-2 border-b border-border/60 py-2.5 text-xs font-bold uppercase tracking-wide text-muted-foreground"
+                      >
+                        <group.icon className="size-4" aria-hidden />
+                        {t(group.title)}
+                      </h4>
+                      <ul className="divide-y divide-border/60">{rows}</ul>
+                    </section>
                   );
                 })}
-              </tbody>
-            </table>
-          </MoreDetails>
+                {extras.length > 0 && (
+                  <section className="rounded-2xl border border-border bg-background/70 px-3">
+                    <h4 className="flex items-center gap-2 border-b border-border/60 py-2.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                      <SlidersHorizontal className="size-4" aria-hidden />
+                      {t("eq.perm.group.other")}
+                    </h4>
+                    <ul className="divide-y divide-border/60">
+                      {extras.map((entry) => renderRow(entry.permission))}
+                    </ul>
+                  </section>
+                )}
+              </div>
+
+              {/* Comparar papéis: no celular, um bloco por papel com cada permissão em pílula ✓ / —;
+              do tablet para cima, a tabela lado a lado. */}
+              <MoreDetails summary={t("eq.perm.compare")}>
+                <ul className="space-y-3 sm:hidden">
+                  {roles.map((item) => {
+                    const allows = (permission: string) =>
+                      permission === "services"
+                        ? serviceLevelFor(matrix, item.id) !== "view"
+                        : (matrix[item.id]?.[permission] ?? false);
+                    const allowed = compareRows.filter(allows).length;
+                    // O que o papel pode fazer vem primeiro; o que não pode, depois.
+                    const ordered = [
+                      ...compareRows.filter(allows),
+                      ...compareRows.filter((permission) => !allows(permission)),
+                    ];
+                    return (
+                      <li
+                        key={item.id}
+                        className="space-y-2.5 rounded-2xl border border-border bg-background/70 p-3"
+                      >
+                        <p className="flex items-center gap-2 text-sm font-bold text-foreground">
+                          <item.icon className="size-5 shrink-0 text-gold" aria-hidden />
+                          <span className="min-w-0 flex-1">{t(item.label)}</span>
+                          <span className="shrink-0 text-xs font-semibold text-muted-foreground">
+                            {t("eq.perm.compareCount", {
+                              count: allowed,
+                              total: compareRows.length,
+                            })}
+                          </span>
+                        </p>
+                        <ul className="flex flex-wrap gap-1.5">
+                          {ordered.map((permission) => {
+                            if (permission === "services") {
+                              const level = serviceLevelFor(matrix, item.id);
+                              const text = textOf(SERVICES.manageAll);
+                              return (
+                                <li key={permission} className="max-w-full">
+                                  <StatusBadge
+                                    tone={level === "view" ? "neutral" : "success"}
+                                    icon={level === "view" ? Minus : Check}
+                                    size="sm"
+                                    label={`${text.label}: ${levelLabel(level)}`}
+                                  />
+                                </li>
+                              );
+                            }
+                            const on = matrix[item.id]?.[permission] ?? false;
+                            const text = textOf(permission);
+                            return (
+                              <li key={permission} className="max-w-full">
+                                <span aria-hidden>
+                                  <StatusBadge
+                                    tone={on ? "success" : "neutral"}
+                                    icon={on ? Check : Minus}
+                                    size="sm"
+                                    label={text.label}
+                                  />
+                                </span>
+                                <span className="sr-only">
+                                  {t(on ? "eq.perm.can" : "eq.perm.cannot", {
+                                    permission: text.label,
+                                  })}
+                                </span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <div className="hidden sm:block">{comparisonTable}</div>
+              </MoreDetails>
+            </>
+          )}
 
           {canEdit && (
             <UnsavedBar
@@ -704,7 +759,7 @@ export function ShopPermissionsMatrix({
         </>
       )}
       <p className={cn("sr-only")} aria-live="polite">
-        {t("eq.perm.showing", { role: roleLabel(role) })}
+        {!wide && t("eq.perm.showing", { role: roleLabel(role) })}
       </p>
     </div>
   );

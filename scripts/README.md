@@ -341,3 +341,7 @@ scripts/cert-loja-rotina.sh desligar
 | [vps/cert-lojas-sync.sh](vps/cert-lojas-sync.sh)             | `/usr/local/sbin/barba-cert-lojas-sync.sh`     | o script que o serviço roda (o mesmo do [cert-loja.sh](#cert-lojash))                                                                                                                            |
 
 **Quando usar.** Mudou um dos três arquivos? Rodar `scripts/cert-loja-rotina.sh instalar`; senão a VPS continua com a versão antiga. Registro: `journalctl -t barba-cert-lojas` (na VPS) ou `scripts/cert-loja-rotina.sh status` (do Mac).
+
+### Página pública com dados fictícios
+
+Com o servidor local ligado: `node scripts/foto.mjs /b/demo --sem-login --landing scripts/fixtures/landing.json --largura 1280`. O JSON responde exclusivamente à RPC `get_public_shop_landing`, sem liberar acesso ao banco. O exemplo inclui capa local, equipe, serviços e horários; data e horários são fixos para revisão visual. Arquivo ausente, JSON inválido ou estrutura sem `shop.id`, `services`, `staff` e `hours` encerra com erro antes de abrir o navegador.

@@ -13,8 +13,8 @@
 /* Cartão compacto a partir de 768 px: o "⋯" fica no canto superior direito e o nome deixa
    espaço para ele; o rodapé continua (sem a linha divisória e mais baixo) com o selo e o
    interruptor COM o rótulo visível ("Aparece para clientes"), como no celular — um botão preto
-   sem explicação ao lado do nome não dizia o que liga. O lápis aparece ao passar o mouse ou ao
-   focar o cartão, no espaço reservado ao lado do "⋯", sem mexer no leiaute. */
+   sem explicação ao lado do nome não dizia o que liga. O menu oferece Editar sem reservar
+   um segundo espaço para o lápis nem sobrepor ícones ao título. */
 @media (min-width: 768px) {
   .catalog-card {
     position: relative;
@@ -32,22 +32,11 @@
     gap: 0.625rem;
   }
   .catalog-card .catalog-card-main .brand-content-title {
-    padding-right: 5.5rem;
+    padding-right: 3rem;
   }
+  /* O menu já oferece Editar: não sobrepor um segundo ícone ao título no foco/hover. */
   .catalog-card .catalog-card-main > svg {
     display: none;
-    position: absolute;
-    top: 1.5rem;
-    right: calc(0.75rem + 2.75rem + 0.5rem);
-    margin-top: 0;
-  }
-  .catalog-card .catalog-card-main:focus-visible > svg {
-    display: block;
-  }
-  @media (hover: hover) {
-    .catalog-card .catalog-card-main:hover > svg {
-      display: block;
-    }
   }
   .catalog-card .catalog-card-menu {
     position: absolute;
@@ -86,17 +75,17 @@
     min-width: 0;
   }
   /* CatalogFilters (src/features/shop/CatalogFilters.tsx, fora desta área): vira uma linha. */
-  .catalog-toolbar > .catalog-filters {
+  .catalog-filters[data-layout="row"] {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem;
     margin-left: auto;
   }
-  .catalog-toolbar > .catalog-filters > * {
+  .catalog-filters[data-layout="row"] > * {
     margin-block: 0;
   }
-  .catalog-toolbar > .catalog-filters > div > label {
+  .catalog-filters[data-layout="row"] .catalog-filter-search {
     flex: 0 0 16rem;
     min-width: 0;
   }
@@ -140,5 +129,69 @@
   /* Na coluna estreita da prévia, "Usar foto" e "Escolher ícone" um embaixo do outro. */
   .catalog-form-media > button {
     flex: 1 1 100%;
+  }
+}
+
+@media (min-width: 768px) {
+  .catalog-danger > .flex {
+    display: grid;
+    align-items: stretch;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .catalog-danger .action-button {
+    min-width: 0;
+    padding-inline: 0.5rem;
+    white-space: normal;
+  }
+  .catalog-grid > [role="status"],
+  .catalog-grid > .app-empty-state {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 768px) {
+  .catalog-loading > .space-y-3 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+  .catalog-loading > .space-y-3 > * {
+    margin-block: 0;
+  }
+}
+@media (min-width: 1024px) {
+  .catalog-loading > .space-y-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* No tablet em pé, colunas complementares ficam na ficha; ações continuam à vista. */
+@media (min-width: 768px) and (max-width: 1023.98px) {
+  .catalog-table {
+    overflow-x: auto;
+  }
+  .catalog-table table {
+    table-layout: fixed;
+  }
+  .catalog-table :is(col, th, td):is([data-col="doers"], [data-col="today"]) {
+    display: none;
+  }
+  .catalog-table col[data-col="duration"] {
+    width: 6rem !important;
+  }
+  .catalog-table col[data-col="price"] {
+    width: 6rem !important;
+  }
+  .catalog-table col:is([data-col="visible"], [data-col="receiving"]) {
+    width: 5.5rem !important;
+  }
+  .catalog-table col[data-col="menu"] {
+    width: 3.5rem !important;
+  }
+  .catalog-table :is(th, td) {
+    padding-inline: 0.5rem;
+  }
+  .catalog-table .catalog-table-item {
+    max-width: 100%;
   }
 }

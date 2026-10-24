@@ -35,6 +35,7 @@ const CONFIRM_CLASS: Record<ConfirmTone, string> = {
  */
 export function ConfirmDialog({
   open,
+  desktopSide = false,
   onOpenChange,
   tone = "danger",
   icon,
@@ -54,6 +55,7 @@ export function ConfirmDialog({
   confirmDisabled,
 }: {
   open: boolean;
+  desktopSide?: boolean;
   onOpenChange: (open: boolean) => void;
   tone?: ConfirmTone;
   /** Ícone do cabeçalho; padrão: o ícone do tom. */
@@ -152,6 +154,7 @@ export function ConfirmDialog({
       }}
     >
       <AlertDialogContent
+        desktopSide={desktopSide}
         className="gap-4 rounded-3xl border-border bg-card"
         onEscapeKeyDown={(event) => {
           if (busy) event.preventDefault();

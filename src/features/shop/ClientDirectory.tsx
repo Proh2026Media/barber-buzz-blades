@@ -91,7 +91,11 @@ export function ClientDirectory({
   embedded = false,
   publicOrigin = null,
   shopName = "",
+  query: controlledQuery,
+  onQuery,
 }: {
+  query?: string;
+  onQuery?: (value: string) => void;
   shopId: string;
   staffId?: string | null;
   scope: "own" | "shop";
@@ -124,7 +128,9 @@ export function ClientDirectory({
   const expanded = embedded || open || table;
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [reloadKey, setReloadKey] = useState(0);
-  const [query, setQuery] = useState("");
+  const [localQuery, setLocalQuery] = useState("");
+  const query = controlledQuery ?? localQuery;
+  const setQuery = onQuery ?? setLocalQuery;
   const [sort, setSort] = useState<SortMode>("recent");
   const [tableSort, setTableSort] = useState<DataListSort>({
     key: "last",

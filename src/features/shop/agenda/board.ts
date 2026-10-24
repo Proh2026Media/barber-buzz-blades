@@ -11,11 +11,6 @@ import { momentOf } from "./model";
 import { useShopTime } from "./summary";
 import type { AgendaBlock, CardState, DayAppointment } from "./types";
 
-/** Computador compacto (a partir de 1024 px): coluna do dia ao lado da lista, mês à vista. */
-export function useDesktop() {
-  return useViewportAtLeast(1024);
-}
-
 /**
  * Onde o quadro por profissional cabe: do tablet em pé (768 px) em diante, com colunas mais
  * estreitas (--agenda-board-col em src/styles/agenda.css) e rolagem lateral quando a equipe é

@@ -68,7 +68,7 @@ import {
   type Interval,
 } from "./model";
 import { AppointmentSummary, useShopTime } from "./summary";
-import { useBoardWidth, useDesktop } from "./board";
+import { useBoardWidth } from "./board";
 import { TeamDayBoard } from "./TeamDayBoard";
 import {
   AGENDA_STATE,
@@ -236,7 +236,7 @@ export function AgendaTab({
   const [profileTarget, setProfileTarget] = useState<DayAppointment | null>(null);
   const [boardTarget, setBoardTarget] = useState<string | null>(null);
   const [openExtra, setOpenExtra] = useState<string | null>(null);
-  const desktop = useDesktop();
+  const desktop = useViewportAtLeast(1024);
   // Tablet em pé e acima: a visão Equipe vira o quadro por profissional (P-79).
   const boardWide = useBoardWidth();
   // Celular: busca atrás da lupa e pílulas com rolagem lateral. Tablet e computador: busca
@@ -1271,6 +1271,7 @@ export function AgendaTab({
       <Dialog open={!!boardRow} onOpenChange={(value) => !value && setBoardTarget(null)}>
         {boardRow && (
           <DialogContent
+            desktopSide
             aria-describedby={undefined}
             className="w-[calc(100vw-1.5rem)] max-w-md gap-3 rounded-3xl border-border bg-background p-3 pt-2"
           >
@@ -1313,6 +1314,7 @@ export function AgendaTab({
 
       {profileTarget && (profileTarget.customer_id || profileTarget.shop_client_id) && (
         <ClientProfileModal
+          desktopSide
           shopId={shopId}
           customerId={profileTarget.customer_id ?? null}
           shopClientId={profileTarget.customer_id ? null : (profileTarget.shop_client_id ?? null)}
@@ -1360,6 +1362,7 @@ export function AgendaTab({
         }}
       />
       <CancellationDialog
+        desktopSide
         open={!!cancelTarget}
         busy={cancelBusy}
         reason={cancelReason}

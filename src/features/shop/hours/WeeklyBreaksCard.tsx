@@ -1,3 +1,4 @@
+import { useDemo } from "@/features/demo/context";
 import { useCallback, useEffect, useState } from "react";
 import { CalendarDays, Clock3, Repeat, Store, Tag as TagIcon, Trash2, Users } from "lucide-react";
 import {
@@ -52,6 +53,8 @@ export function WeeklyBreaksCard({
   onChanged: () => void;
 }) {
   const { t } = useI18n();
+  const demo = useDemo();
+  const demoMode = !!demo;
   const labels = useDayLabels();
   const [rules, setRules] = useState<WeeklyRule[] | null>(null);
   const [supported, setSupported] = useState(true);
@@ -66,6 +69,24 @@ export function WeeklyBreaksCard({
   const [confirming, setConfirming] = useState<WeeklyRule | null>(null);
 
   const load = useCallback(async () => {
+    if (demoMode) {
+      setRules(
+        (current) =>
+          current ?? [
+            {
+              id: "demo-weekly-break",
+              barbershop_id: shopId,
+              staff_id: null,
+              weekdays: [1, 2, 3, 4, 5, 6],
+              start_time: "12:00",
+              end_time: "13:00",
+              reason: t("shop.block.reasonBreak"),
+              created_at: new Date().toISOString(),
+            } as WeeklyRule,
+          ],
+      );
+      return;
+    }
     const { data, error, status } = await supabase
       .from("availability_block_rules")
       .select("*")
@@ -81,7 +102,7 @@ export function WeeklyBreaksCard({
     }
     setLoadError(null);
     setRules(data ?? []);
-  }, [shopId, t]);
+  }, [shopId, t, demoMode]);
 
   useEffect(() => {
     void load();
@@ -117,14 +138,25 @@ export function WeeklyBreaksCard({
     setSaving(true);
     setResult(null);
     const reasonKey = REASONS.find((item) => item.id === reasonId)?.key ?? "shop.block.reasonBreak";
-    const { error } = await supabase.from("availability_block_rules").insert({
+    const draft = {
       barbershop_id: shopId,
       staff_id: ownStaff ? ownStaff.id : staffId || null,
       weekdays: [...days].sort((a, b) => a - b),
       start_time: range.start,
       end_time: range.end,
       reason: t(reasonKey),
-    });
+    };
+    if (demoMode) {
+      setRules((current) => [
+        ...(current ?? []),
+        { ...draft, id: crypto.randomUUID(), created_at: new Date().toISOString() } as WeeklyRule,
+      ]);
+      setSaving(false);
+      setFormOpen(false);
+      setResult({ state: "saved", text: t("hours.weekly.demoSaved") });
+      return;
+    }
+    const { error } = await supabase.from("availability_block_rules").insert(draft);
     setSaving(false);
     if (error) {
       setResult({ state: "error", text: friendlyAuthError(error, t("hours.weekly.saveError")) });
@@ -213,7 +245,7 @@ export function WeeklyBreaksCard({
       )}
 
       {formOpen && (
-        <div className="space-y-4 rounded-xl border border-border bg-background p-3">
+        <div className="weekly-break-form space-y-4 rounded-xl border border-border bg-background p-3">
           <ChoiceChips<number>
             multiple
             label={t("hours.weekly.days")}
@@ -343,6 +375,11 @@ export function WeeklyBreaksCard({
         cancelLabel={t("hours.weekly.keep")}
         onConfirm={async () => {
           if (!confirming) return;
+          if (demoMode) {
+            setRules((current) => (current ?? []).filter((rule) => rule.id !== confirming.id));
+            setResult({ state: "saved", text: t("hours.weekly.deleted") });
+            return;
+          }
           const { error } = await supabase
             .from("availability_block_rules")
             .delete()

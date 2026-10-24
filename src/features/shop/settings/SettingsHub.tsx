@@ -606,7 +606,7 @@ export function SettingsHub({
                     : id === "avisos" && overview?.avisosHint
                       ? overview.avisosHint
                       : t(`settingsHub.hint.${id}` as const);
-                const href = SECTION_LINKS[id];
+                const href = wide ? undefined : SECTION_LINKS[id];
                 if (href) {
                   return (
                     <LinkRow

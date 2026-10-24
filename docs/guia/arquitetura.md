@@ -261,6 +261,11 @@ Três faixas, com os mesmos números no CSS e no JavaScript (decisões em [dispo
 
 - **Agendamento do cliente (P-90, 24/10/2026):** `expandedBooking` em `ArenaApp.tsx` mantém escolhas abertas e calendário mensal desde 768 px; `wideBooking` continua em 1024 px somente para levar a revisão ao painel lateral. No tablet em pé, os dias do calendário têm 44 × 44 px e o passo 4 permanece abaixo do formulário.
 
+- **Continuação por dispositivo (24/10):** `desktopSide` em Dialog/AlertDialog reposiciona detalhes da Agenda somente desde 1280; confirmações têm corpo rolável e rodapé separado. Ficha lateral usa cartões no histórico. `DataList.tableFrom` permite tabela desde 768 no catálogo, mantendo 1024 nos demais usos; controles internos não propagam a abertura da linha. `CatalogFilters.layout="row"` é o contrato da barra horizontal.
+- **Clube:** `LoyaltyAdminPage` aceita `embedded` e o vínculo selecionado. Desde 768, `/shop/pontos` redireciona na entrada para a seção pontos de Ajustes, preservando parâmetros; celular mantém página própria. Autorização e RPCs continuam as anteriores.
+- **Primitivas:** 35 componentes sem importação e `DurationPicker` removidos. `ui/button` fica nas primitivas existentes; `.action-button` é o padrão das ações do produto. `DialogContent size="booking"` conserva as larguras do agendamento sem duplicá-las no chamador.
+- **Demonstração:** sete serviços e sete profissionais, pedido de privacidade, pessoas da equipe para consulta, pausa fixa local e ilustração de QR claramente fictícia. Nenhuma conexão externa ou migration foi acrescentada. `foto.mjs --landing scripts/fixtures/landing.json` fornece a página pública sem banco real.
+
 ## 9. PWA
 
 - Manifesto único: [public/manifest.webmanifest](../../public/manifest.webmanifest) (ligado em `__root.tsx`; `manifest: false` no plugin para não duplicar).

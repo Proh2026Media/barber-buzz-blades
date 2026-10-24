@@ -4290,3 +4290,87 @@ body:has(.arena-workspace) .entry-code input:not(#entry-code-x):focus {
     display: none;
   }
 }
+
+/* Detalhes da agenda: a mesma janela e o mesmo foco, encostados à direita no computador. */
+.desktop-side-body {
+  display: contents;
+}
+@media (min-width: 1280px) {
+  .desktop-side-overlay {
+    background: rgb(0 0 0 / 28%);
+  }
+  [data-desktop-side="true"] {
+    inset: 0 0 0 auto;
+    width: min(32rem, 45vw);
+    max-width: none;
+    height: 100dvh;
+    max-height: 100dvh;
+    --tw-translate-x: 0;
+    --tw-translate-y: 0;
+    translate: 0 0 !important;
+    transform: none;
+    border-radius: var(--panel-radius) 0 0 var(--panel-radius);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: none;
+  }
+  [data-desktop-side="true"] > * {
+    flex-shrink: 0;
+  }
+  [data-desktop-side="true"] > .desktop-side-body {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+    gap: 1rem;
+    overflow-y: auto;
+  }
+  [data-desktop-side="true"] > .dialog-footer {
+    margin-top: auto;
+  }
+  [data-desktop-side="true"] > .agenda-card {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  [data-desktop-side="true"] .agenda-card-footer {
+    position: sticky;
+    bottom: 0;
+    background: var(--card);
+    z-index: 1;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 767.98px) {
+  .rhythm-three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .rhythm-last {
+    grid-column: auto;
+  }
+}
+@media (min-width: 768px) {
+  @container (min-width: 24rem) {
+    .rhythm-three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .rhythm-last {
+      grid-column: auto;
+    }
+  }
+}
+
+@media (min-width: 1280px) and (prefers-reduced-motion: no-preference) {
+  [data-desktop-side="true"][data-state="open"] {
+    animation: agenda-side-in 180ms ease-out;
+  }
+  @keyframes agenda-side-in {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+}
