@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import {
   ChoiceChips,
+  DevicePreview,
   Field,
   MoreDetails,
   Notice,
@@ -72,7 +73,7 @@ import { ServiceImageCropDialog } from "./ServiceImageCropDialog";
 import { LoginLayoutPreview } from "./LoginLayoutPreview";
 import { LoginScreenPreview } from "./LoginScreenPreview";
 import { LoginPreviewDialog } from "./LoginPreviewDialog";
-import { DesktopFitFrame, PhoneFitFrame } from "./PhoneFitFrame";
+import { PhoneFitFrame } from "./PhoneFitFrame";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 
 type BrandIdentityEditorProps = {
@@ -359,10 +360,10 @@ export function BrandIdentityEditor({
     previewFontFaces.find((face) => face.weight === 400)?.url ??
     previewFontFaces[0]?.url ??
     draft.custom_font_url;
-  // Prévia da tela de entrada (passo "Tela de entrada"): computador em 16:10, celular reduzido.
+  // No celular, mantém a amostra reduzida; em telas maiores usa o viewport escolhido.
   const loginScreen = (
     <LoginScreenPreview
-      framed
+      framed={isMobile}
       layout={draft.login_layout}
       shopName={previewName}
       logoUrl={previewLogo}
@@ -655,71 +656,76 @@ export function BrandIdentityEditor({
         <div className="flex min-h-7 justify-end">
           {!dirty && <StatusBadge {...STATE.active} size="sm" label={t("brand.preview.same")} />}
         </div>
-        <div
-          className={`brand-preview overflow-hidden rounded-[var(--panel-radius)] border border-border bg-card shadow-md ${brandFontScopeClass(draft.font_scope)} ${brandCornerClass(draft.corner_style)} ${draft.floating_chrome ? "brand-chrome-floating" : ""}`}
-          style={previewStyle}
-        >
-          <div className="brand-preview-header flex items-center gap-3 border-b border-border/60 py-3 pr-4">
-            <span
-              className="brand-preview-logo flex size-12 shrink-0 items-center justify-center overflow-hidden"
-              style={{
-                backgroundColor: draft.logo_background_color || "#ffffff",
-              }}
-            >
-              {previewLogo ? (
-                <img src={previewLogo} alt="" className="size-full object-contain p-[12.5%]" />
-              ) : (
-                <Scissors className="size-5 text-primary" />
-              )}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="brand-header-title truncate text-sm font-extrabold leading-tight">
-                {previewName}
-              </p>
-              <p className="truncate text-[11px] font-medium text-primary">
-                {draft.tagline.trim() || t("brand.preview.taglinePlaceholder")}
-              </p>
-            </div>
-            <span className="flex size-9 items-center justify-center rounded-full bg-muted text-muted-foreground">
-              <Bell className="size-4" />
-            </span>
-          </div>
-          <div className="space-y-3 px-4 py-4">
-            <div className="flex items-center justify-between gap-3 rounded-[var(--panel-radius)] border border-gold/40 bg-gold/10 px-3 py-2.5">
-              <span className="flex items-center gap-2 text-xs font-bold text-gold">
-                <Star className="size-4" />
-                {t("brand.preview.vip")}
-              </span>
-              <Sparkles className="size-4 text-gold" />
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="brand-content-title text-sm font-bold">
-                  {t("brand.preview.nextSlot")}
-                </p>
-                <p className="text-xs text-muted-foreground">{t("brand.preview.nextSlotDetail")}</p>
-              </div>
-              <span className="flex min-h-10 shrink-0 items-center rounded-[var(--control-radius)] bg-primary px-4 text-xs font-bold text-primary-foreground">
-                {t("brand.preview.book")}
-              </span>
-            </div>
-          </div>
-          <div className="brand-preview-footer grid grid-cols-3 border-t border-border/60 bg-background/60 px-2 py-1.5 text-[10px] font-semibold">
-            {[
-              { label: t("brand.preview.navHome"), icon: Home, active: true },
-              { label: t("brand.preview.navSchedule"), icon: Calendar, active: false },
-              { label: t("brand.preview.navPoints"), icon: Star, active: false },
-            ].map(({ label, icon: Icon, active }) => (
+        <DevicePreview initialDevice="mobile" height={360}>
+          {!isMobile && <BrandFontFace url={previewFontUrl} faces={previewFontFaces} />}
+          <div
+            className={`brand-preview overflow-hidden rounded-[var(--panel-radius)] border border-border bg-card shadow-md ${brandFontScopeClass(draft.font_scope)} ${brandCornerClass(draft.corner_style)} ${draft.floating_chrome ? "brand-chrome-floating" : ""}`}
+            style={previewStyle}
+          >
+            <div className="brand-preview-header flex items-center gap-3 border-b border-border/60 py-3 pr-4">
               <span
-                key={label}
-                className={`flex flex-col items-center gap-0.5 rounded-[var(--control-radius)] py-1.5 ${active ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+                className="brand-preview-logo flex size-12 shrink-0 items-center justify-center overflow-hidden"
+                style={{
+                  backgroundColor: draft.logo_background_color || "#ffffff",
+                }}
               >
-                <Icon className="size-4" />
-                {label}
+                {previewLogo ? (
+                  <img src={previewLogo} alt="" className="size-full object-contain p-[12.5%]" />
+                ) : (
+                  <Scissors className="size-5 text-primary" />
+                )}
               </span>
-            ))}
+              <div className="min-w-0 flex-1">
+                <p className="brand-header-title truncate text-sm font-extrabold leading-tight">
+                  {previewName}
+                </p>
+                <p className="truncate text-[11px] font-medium text-primary">
+                  {draft.tagline.trim() || t("brand.preview.taglinePlaceholder")}
+                </p>
+              </div>
+              <span className="flex size-9 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                <Bell className="size-4" />
+              </span>
+            </div>
+            <div className="space-y-3 px-4 py-4">
+              <div className="flex items-center justify-between gap-3 rounded-[var(--panel-radius)] border border-gold/40 bg-gold/10 px-3 py-2.5">
+                <span className="flex items-center gap-2 text-xs font-bold text-gold">
+                  <Star className="size-4" />
+                  {t("brand.preview.vip")}
+                </span>
+                <Sparkles className="size-4 text-gold" />
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="brand-content-title text-sm font-bold">
+                    {t("brand.preview.nextSlot")}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {t("brand.preview.nextSlotDetail")}
+                  </p>
+                </div>
+                <span className="flex min-h-10 shrink-0 items-center rounded-[var(--control-radius)] bg-primary px-4 text-xs font-bold text-primary-foreground">
+                  {t("brand.preview.book")}
+                </span>
+              </div>
+            </div>
+            <div className="brand-preview-footer grid grid-cols-3 border-t border-border/60 bg-background/60 px-2 py-1.5 text-[10px] font-semibold">
+              {[
+                { label: t("brand.preview.navHome"), icon: Home, active: true },
+                { label: t("brand.preview.navSchedule"), icon: Calendar, active: false },
+                { label: t("brand.preview.navPoints"), icon: Star, active: false },
+              ].map(({ label, icon: Icon, active }) => (
+                <span
+                  key={label}
+                  className={`flex flex-col items-center gap-0.5 rounded-[var(--control-radius)] py-1.5 ${active ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+                >
+                  <Icon className="size-4" />
+                  {label}
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
+        </DevicePreview>
       </section>
 
       {/* Etapas e campos: no celular logo abaixo da prévia; na janela quase cheia (Ajustes →
@@ -851,9 +857,10 @@ export function BrandIdentityEditor({
                 {loginScreen}
               </PhoneFitFrame>
             ) : (
-              <DesktopFitFrame className="rounded-[var(--panel-radius)]">
+              <DevicePreview>
+                <BrandFontFace url={previewFontUrl} faces={previewFontFaces} />
                 {loginScreen}
-              </DesktopFitFrame>
+              </DevicePreview>
             )}
             <button
               type="button"
@@ -1385,6 +1392,7 @@ export function BrandIdentityEditor({
       />
       <LoginPreviewDialog
         open={loginPreviewOpen}
+        fontFaces={previewFontFaces}
         onOpenChange={setLoginPreviewOpen}
         preview={{
           layout: draft.login_layout,

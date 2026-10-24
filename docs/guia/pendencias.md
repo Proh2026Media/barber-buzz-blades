@@ -35,7 +35,7 @@ Atualizada em 22/10/2026 (madrugada), depois da entrega "interface por dispositi
 | 1     | P-69       | Tirar o retorno `supabase-teste` do cliente OAuth no Google Cloud        | Só o dono (ou quem tiver acesso) entra no console. Pacote pronto: [2026-10-15-google-retorno-antigo-p69.md](../pacotes/2026-10-15-google-retorno-antigo-p69.md).                                          |
 | 2     | P-28       | Gravar o vídeo e reenviar a verificação do Google                        | Depois da P-69. Pacote pronto: [2026-10-15-google-reenviar-verificacao-p28.md](../pacotes/2026-10-15-google-reenviar-verificacao-p28.md).                                                                 |
 | 3     | P-42, P-43 | Testes com login real (WhatsApp, Google), em aparelho físico e no tablet | Dependem do dono. Desde 22/10, a P-43 inclui o tablet (iPad em pé e deitado) e o computador: a interface por dispositivo só foi vista em navegador emulado (roteiro na entrada de 22/10 do CONTINUIDADE). |
-| 4     | P-82       | Prévias de celular, tablet e computador nos editores                     | Próxima melhoria de interface; P-80 aplicada e P-81 feita. Testes reais permanecem na P-43.                                                                                                               |
+| 4     | P-83       | Cabeçalho em três zonas no computador                                    | Próxima melhoria de interface; P-80 aplicada, P-81 e P-82 feitas. Testes reais permanecem na P-43.                                                                                                        |
 | 5     | P-71       | Decidir "reserva" × "agendamento" no resto do app                        | A aba e a página já dizem "Meus agendamentos" (P-32); o fluxo de agendar e alguns avisos ainda dizem "reserva".                                                                                           |
 
 Sem pressa e sem depender de terceiros: P-14, P-45 (opcionais de antes) e P-88 (restos do shadcn e hooks antigos).
@@ -516,11 +516,12 @@ Entrega de 22/10/2026 (CONTINUIDADE, entrada "Interface por dispositivo"; plano 
 - **Onde:** `agenda/AgendaTab.tsx`, `DaySummary.tsx`, `AgendaInsights.tsx`, `insights/BusinessInsights.tsx` e `src/styles/agenda.css`. Só uma instância dos indicadores por largura; dias vazios ou falha ao carregar a agenda não exibem o painel.
 - **Conferido:** dono, parceiro e contratado em 1024 px; parceiro em 1280 escuro; tablet em pé em 768; modos de canto em 1536; troca própria/equipe, tablet/computador e dia sem atendimentos. Celular em 390 px com detalhes abertos: **0 pixels diferentes** antes/depois. Sem migration. Teste físico continua na P-43.
 
-### P-82 — Prévias por aparelho nos editores · pendente
+### P-82 — Prévias por aparelho nos editores · feito em 24/10/2026 (ChatGPT/Codex)
 
-- **Por quê:** Editar marca e Editar página (janela `page`, formulário à esquerda e prévia à direita) mostram a prévia numa moldura só; o dono não vê como fica no celular, no tablet e no computador. Registrado no plano, seção 8.
-- **Onde:** [BrandIdentityEditor.tsx](../../src/features/shop/BrandIdentityEditor.tsx), [LandingEditor.tsx](../../src/features/shop/settings/LandingEditor.tsx), [LoginPreviewDialog.tsx](../../src/features/shop/LoginPreviewDialog.tsx); CSS em `src/styles/ajustes.css` (`.ajustes-editor-page`).
-- **Pronto quando:** a prévia tem um alternador celular/tablet/computador (moldura e largura de cada um) e a escolha não muda nada do que é salvo.
+- **Feito:** desde 768 px, os editores de marca, página pública e tela de entrada (inclusive tela cheia) oferecem Celular, Tablet e Computador. A moldura usa viewport próprio de 390, 768 ou 1280 px: as media queries da página respondem ao aparelho escolhido. A amostra de marca continua ilustrativa; a página e a entrada usam seus componentes visuais existentes.
+- **Preservado:** seleção temporária, fora do rascunho e da persistência; trocar aparelho não salva, descarta ou cria mudanças pendentes. Abaixo de 768 px permanece a interface anterior. Sem migration ou execução na VPS.
+- **Onde:** `components/visual/DevicePreview.tsx`, `BrandIdentityEditor.tsx`, `settings/LandingEditor.tsx`, `LoginPreviewDialog.tsx`, `BrandFontFace.tsx` e `marketing/ShopLanding.tsx`; textos no dicionário dos idiomas.
+- **Verificação:** 292 testes, tipos, análise estática e montagem; troca de aparelhos mantendo o rascunho, teclado, Esc e tela cheia. Marca e página em 390 px com **0 pixels diferentes** antes/depois; tablet escuro em 768 e redimensionamento para 1024/1536. Teste físico continua na P-43; próximo item de interface é P-83.
 
 ### P-83 — Cabeçalho em três zonas no computador · pendente
 

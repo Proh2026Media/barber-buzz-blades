@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
-import { Eye, Monitor, Smartphone, X } from "lucide-react";
+import { Eye, X } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { StatusBadge } from "@/components/visual";
+import { BrandFontFace } from "./BrandFontFace";
+import { DevicePreview, StatusBadge } from "@/components/visual";
 import { useDevice } from "@/lib/device";
 import { useI18n } from "@/lib/i18n";
 import { LoginScreenPreview, type LoginScreenPreviewProps } from "./LoginScreenPreview";
@@ -9,19 +9,21 @@ import { LoginScreenPreview, type LoginScreenPreviewProps } from "./LoginScreenP
 type LoginPreviewDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  fontFaces?: unknown;
   preview: Omit<LoginScreenPreviewProps, "framed" | "className">;
 };
 
-/** Prévia em tela cheia: desktop ou celular, como o cliente verá no /auth. */
-export function LoginPreviewDialog({ open, onOpenChange, preview }: LoginPreviewDialogProps) {
+/** Prévia em tela cheia: celular, tablet ou computador, como o cliente verá no /auth. */
+export function LoginPreviewDialog({
+  open,
+  onOpenChange,
+  preview,
+  fontFaces,
+}: LoginPreviewDialogProps) {
   const { t } = useI18n();
   // A tela de entrada muda com a largura real do aparelho: no celular só a versão de
   // celular é fiel, então a prévia começa (e fica) em "Celular" em telas pequenas.
   const wide = useDevice() !== "celular";
-  const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
-  useEffect(() => {
-    if (open && !wide) setDevice("mobile");
-  }, [open, wide]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -43,38 +45,6 @@ export function LoginPreviewDialog({ open, onOpenChange, preview }: LoginPreview
             </DialogDescription>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <div
-              role="group"
-              aria-label={t("brand.loginPreview.sizeAria")}
-              className={wide ? "flex rounded-xl border border-border bg-muted/60 p-1" : "hidden"}
-            >
-              <button
-                type="button"
-                aria-pressed={device === "desktop"}
-                onClick={() => setDevice("desktop")}
-                className={`flex min-h-10 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold transition ${
-                  device === "desktop"
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Monitor className="size-4" aria-hidden="true" />
-                {t("brand.loginPreview.computer")}
-              </button>
-              <button
-                type="button"
-                aria-pressed={device === "mobile"}
-                onClick={() => setDevice("mobile")}
-                className={`flex min-h-10 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold transition ${
-                  device === "mobile"
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Smartphone className="size-4" aria-hidden="true" />
-                {t("brand.loginPreview.mobile")}
-              </button>
-            </div>
             <button
               type="button"
               onClick={() => onOpenChange(false)}
@@ -87,19 +57,18 @@ export function LoginPreviewDialog({ open, onOpenChange, preview }: LoginPreview
         </div>
 
         <div
-          className={`min-h-0 flex-1 overflow-auto bg-[#141412] ${
-            device === "mobile" ? "flex justify-center p-4 sm:p-6" : ""
-          }`}
+          className={`min-h-0 flex-1 overflow-auto bg-[#141412] ${wide ? "p-4" : "flex justify-center p-4 sm:p-6"}`}
         >
-          <div
-            className={
-              device === "mobile"
-                ? "login-preview-phone w-full max-w-[390px] overflow-hidden rounded-[1.75rem] border border-border/40 shadow-2xl"
-                : "h-full min-h-[calc(100dvh-4.5rem)] w-full"
-            }
-          >
-            <LoginScreenPreview {...preview} framed={device === "mobile"} />
-          </div>
+          {wide ? (
+            <DevicePreview>
+              <BrandFontFace url={preview.customFontUrl} faces={fontFaces} />
+              <LoginScreenPreview {...preview} framed={false} />
+            </DevicePreview>
+          ) : (
+            <div className="login-preview-phone w-full max-w-[390px] overflow-hidden rounded-[1.75rem] border border-border/40 shadow-2xl">
+              <LoginScreenPreview {...preview} framed />
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

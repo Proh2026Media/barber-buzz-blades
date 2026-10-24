@@ -246,11 +246,14 @@ export function ShopLanding({
 export function ShopLandingView({
   data,
   preview = false,
+  viewportPreview = false,
   freshness,
   topBar,
 }: {
   data: LandingData;
   preview?: boolean;
+  /** A moldura do editor tem viewport próprio para as media queries. */
+  viewportPreview?: boolean;
   freshness?: LandingFreshness;
   topBar?: ReactNode;
 }) {
@@ -258,8 +261,8 @@ export function ShopLandingView({
   const { shop, landing, today } = data;
   const name = shop.display_name || shop.name;
   const headline = landing.headline || shop.tagline || t("shopLanding.defaultHeadline");
-  // Na prévia do editor o espaço é estreito: fica sempre em uma coluna.
-  const wide = !preview;
+  // A moldura responsiva usa o mesmo leiaute público, mantendo as ações desativadas.
+  const wide = !preview || viewportPreview;
   const [nowHHMM, setNowHHMM] = useState(() => nowInZone(shop.timezone));
   useEffect(() => {
     const timer = window.setInterval(() => setNowHHMM(nowInZone(shop.timezone)), 30_000);

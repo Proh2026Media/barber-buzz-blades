@@ -3465,6 +3465,8 @@ export const ptPT: Record<MessageKey, string> = {
   "brand.color.done": "Concluído",
   "brand.color.sample": "Marcar horário",
   "brand.loginPreview.sizeAria": "Tamanho da pré-visualização",
+  "brand.loginPreview.tablet": "Tablet",
+  "brand.loginPreview.frame": "Pré-visualização em {device}",
   "brand.loginPreview.mobile": "Telemóvel",
   "brand.loginPreview.close": "Fechar pré-visualização",
   "brand.crop.title": "Enquadrar foto",

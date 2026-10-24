@@ -3453,6 +3453,8 @@ export const ptBR = {
   "brand.color.done": "Pronto",
   "brand.color.sample": "Agendar horário",
   "brand.loginPreview.sizeAria": "Tamanho da prévia",
+  "brand.loginPreview.tablet": "Tablet",
+  "brand.loginPreview.frame": "Prévia em {device}",
   "brand.loginPreview.mobile": "Celular",
   "brand.loginPreview.close": "Fechar prévia",
   "brand.crop.title": "Enquadrar foto",

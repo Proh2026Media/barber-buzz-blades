@@ -1,3 +1,4 @@
+import { usePreviewDocument } from "@/components/visual/preview-document";
 import { useEffect } from "react";
 import { customBrandFontFamily } from "@/lib/shop/branding";
 import { normalizeFontFaces, type BrandFontFaceRecord } from "@/lib/shop/font-files";
@@ -11,10 +12,12 @@ export function BrandFontFace({
   url: string | null | undefined;
   faces?: BrandFontFaceRecord[] | unknown;
 }) {
+  const previewDocument = usePreviewDocument();
   const normalized = normalizeFontFaces(faces);
   const key = JSON.stringify(normalized);
   useEffect(() => {
     if (!url || typeof document === "undefined" || !("fonts" in document)) return;
+    const targetDocument = previewDocument ?? document;
     const family = customBrandFontFamily(url);
     if (!family) return;
 
@@ -36,7 +39,7 @@ export function BrandFontFace({
       void face
         .load()
         .then((loaded) => {
-          if (active) document.fonts.add(loaded);
+          if (active) targetDocument.fonts.add(loaded);
         })
         .catch(() => {
           // A interface mantém a fonte curada como fallback se um peso falhar.
@@ -45,11 +48,11 @@ export function BrandFontFace({
 
     return () => {
       active = false;
-      for (const face of loadedFaces) document.fonts.delete(face);
+      for (const face of loadedFaces) targetDocument.fonts.delete(face);
     };
     // `key` torna o array estável para o efeito sem depender da referência recebida.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [url, key]);
+  }, [url, key, previewDocument]);
 
   return null;
 }

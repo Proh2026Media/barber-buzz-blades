@@ -3475,6 +3475,8 @@ export const es: Record<MessageKey, string> = {
   "brand.color.done": "Listo",
   "brand.color.sample": "Reservar hora",
   "brand.loginPreview.sizeAria": "Tamaño de la vista previa",
+  "brand.loginPreview.tablet": "Tableta",
+  "brand.loginPreview.frame": "Vista previa en {device}",
   "brand.loginPreview.mobile": "Móvil",
   "brand.loginPreview.close": "Cerrar vista previa",
   "brand.crop.title": "Encuadrar foto",

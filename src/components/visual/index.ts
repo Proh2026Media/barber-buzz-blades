@@ -59,3 +59,5 @@ export { SplitLayout } from "./SplitLayout";
 export { MasterDetail } from "./MasterDetail";
 export { FormGrid } from "./FormGrid";
 export { DataList, type DataListColumn } from "./DataList";
+
+export { DevicePreview } from "./DevicePreview";

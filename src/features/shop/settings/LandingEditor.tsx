@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import {
   CopyField,
+  DevicePreview,
   EmptyState,
   Field,
   Hint,
@@ -31,6 +32,7 @@ import {
   focusFirstInvalid,
   type ActionState,
 } from "@/components/visual";
+import { useViewportAtLeast } from "@/lib/device";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
@@ -132,6 +134,7 @@ export function LandingEditor({
   onOpenDomain?: () => void;
 }) {
   const { t } = useI18n();
+  const viewportPreview = useViewportAtLeast(768);
   const demo = useDemo();
   const formRef = useRef<HTMLFormElement>(null);
   const saved = useMemo(() => parseLandingConfig(settings.landing), [settings.landing]);
@@ -792,37 +795,43 @@ export function LandingEditor({
           <p className="text-xs font-semibold text-muted-foreground">
             {t(demo ? "landingEditor.previewHintDemo" : "landingEditor.previewHint")}
           </p>
-          <div
-            ref={previewBoxRef}
-            className="relative max-h-[70dvh] overflow-y-auto rounded-2xl border border-border shadow-sm tablet:max-h-[calc(100dvh-14rem)]"
-          >
-            {previewData ? (
-              <ShopLandingView data={previewData} preview />
-            ) : previewFailed ? (
-              <EmptyState
-                variant="plain"
-                status="danger"
-                title={t("fix.ajustes-marca.landingPreviewError")}
-                action={
-                  <button
-                    type="button"
-                    className="action-button"
-                    onClick={() => setPreviewAttempt((current) => current + 1)}
-                  >
-                    <RefreshCw aria-hidden />
-                    {t("visual.retry")}
-                  </button>
-                }
-              />
-            ) : (
-              <LoadingState
-                variant="cards"
-                count={2}
-                label={t("landingEditor.previewLoading")}
-                className="p-4"
-              />
-            )}
-          </div>
+          {viewportPreview && previewData ? (
+            <DevicePreview>
+              <ShopLandingView data={previewData} preview viewportPreview />
+            </DevicePreview>
+          ) : (
+            <div
+              ref={previewBoxRef}
+              className="relative max-h-[70dvh] overflow-y-auto rounded-2xl border border-border shadow-sm tablet:max-h-[calc(100dvh-14rem)]"
+            >
+              {previewData ? (
+                <ShopLandingView data={previewData} preview />
+              ) : previewFailed ? (
+                <EmptyState
+                  variant="plain"
+                  status="danger"
+                  title={t("fix.ajustes-marca.landingPreviewError")}
+                  action={
+                    <button
+                      type="button"
+                      className="action-button"
+                      onClick={() => setPreviewAttempt((current) => current + 1)}
+                    >
+                      <RefreshCw aria-hidden />
+                      {t("visual.retry")}
+                    </button>
+                  }
+                />
+              ) : (
+                <LoadingState
+                  variant="cards"
+                  count={2}
+                  label={t("landingEditor.previewLoading")}
+                  className="p-4"
+                />
+              )}
+            </div>
+          )}
         </section>
       </div>
     </div>

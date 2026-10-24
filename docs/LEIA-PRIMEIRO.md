@@ -12,7 +12,9 @@ Porta de entrada para o agente que vai continuar o projeto (Cursor, Claude Code,
 
 **Atualização de 24/10 — P-80 aplicada:** cabeçalhos das tabelas ordenam no computador; diretório busca WhatsApp e mostra pontos conforme as permissões. Migration nº 97 aplicada pelo agente Claude na VPS em **24/10, 16:57:15 (Brasília)**, segundo o relatório entregue pelo dono, com backup, ensaio de 22 PASS e assinatura/privilégios corretos. Não reaplicar. Roteiro e registro em [implantacao-diretorio-contatos-pontos-2026-10-24.md](implantacao-diretorio-contatos-pontos-2026-10-24.md) e no CONTINUIDADE. Teste da interface em produção ainda pendente na P-43; pacotes Google também pendentes.
 
-**Atualização de 24/10 — P-81 feita:** "Mais números do dia" fica aberto abaixo das duas colunas da Agenda desde 1024 px, com os mesmos dados e permissões. Celular preservado (comparação de 390 px sem diferenças); tablet em pé mantém o recolher. Sem atualização de banco. Próxima melhoria de interface: P-82 (prévias por aparelho nos editores); os testes reais seguem na P-43.
+**Atualização de 24/10 — P-81 feita:** "Mais números do dia" fica aberto abaixo das duas colunas da Agenda desde 1024 px, com os mesmos dados e permissões. Celular preservado (comparação de 390 px sem diferenças); tablet em pé mantém o recolher. Sem atualização de banco. Os testes reais seguem na P-43.
+
+**Atualização de 24/10 — P-82 feita:** editores de marca, página pública e tela de entrada têm prévias de celular, tablet e computador a partir de 768 px. A escolha é temporária e mantém o rascunho; as molduras usam larguras próprias para reproduzir o leiaute. Celular preservado. Sem migration ou tarefa para a VPS. Próxima melhoria independente: P-83; testes em aparelhos reais continuam na P-43.
 
 ## O que é o projeto
 

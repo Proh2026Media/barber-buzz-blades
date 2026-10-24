@@ -3455,6 +3455,8 @@ export const enUS: Record<MessageKey, string> = {
   "brand.color.done": "Done",
   "brand.color.sample": "Book a time",
   "brand.loginPreview.sizeAria": "Preview size",
+  "brand.loginPreview.tablet": "Tablet",
+  "brand.loginPreview.frame": "Preview on {device}",
   "brand.loginPreview.mobile": "Phone",
   "brand.loginPreview.close": "Close preview",
   "brand.crop.title": "Frame photo",
