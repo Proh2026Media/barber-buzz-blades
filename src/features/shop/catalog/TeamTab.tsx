@@ -1,3 +1,4 @@
+import { WorkspaceHeaderAction, WorkspaceHeading } from "@/components/visual/WorkspaceHeader";
 import {
   Ban,
   CalendarDays,
@@ -507,10 +508,12 @@ export function TeamTab({
       </button>
     );
   const title = (
-    <div className="app-section-title">
-      <Users />
-      <h2>{t("shop.nav.team")}</h2>
-      {!wide && addButton}
+    <div className="workspace-section-title app-section-title">
+      <WorkspaceHeading>
+        <Users />
+        <h2>{t("shop.nav.team")}</h2>
+      </WorkspaceHeading>
+      {!wide && <WorkspaceHeaderAction>{addButton}</WorkspaceHeaderAction>}
     </div>
   );
   const filters = (
@@ -802,7 +805,7 @@ export function TeamTab({
         <div className="catalog-toolbar">
           {title}
           {filters}
-          {addButton}
+          <WorkspaceHeaderAction>{addButton}</WorkspaceHeaderAction>
         </div>
       ) : (
         title

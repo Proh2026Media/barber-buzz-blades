@@ -1,3 +1,4 @@
+import { WorkspaceHeading } from "@/components/visual/WorkspaceHeader";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Clock3, Globe2, Store } from "lucide-react";
 import { STATE, StatusBadge, Tag } from "@/components/visual";
@@ -347,9 +348,11 @@ function HoursTabContent({
     <section className="space-y-5">
       {/* A partir de 768 px o selo "aberta agora" fica na linha do título. */}
       <div className="hours-head space-y-3">
-        <div className="app-section-title">
-          <Clock3 />
-          <h2>{t("shop.nav.hours")}</h2>
+        <div className="workspace-section-title app-section-title">
+          <WorkspaceHeading>
+            <Clock3 />
+            <h2>{t("shop.nav.hours")}</h2>
+          </WorkspaceHeading>
         </div>
         {hours.length > 0 && (
           <div className="flex flex-wrap items-center gap-2">

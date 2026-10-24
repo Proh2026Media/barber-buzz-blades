@@ -61,3 +61,5 @@ export { FormGrid } from "./FormGrid";
 export { DataList, type DataListColumn } from "./DataList";
 
 export { DevicePreview } from "./DevicePreview";
+
+export { WorkspaceFrame, WorkspaceHeaderAction, WorkspaceHeading } from "./WorkspaceHeader";

@@ -1,3 +1,4 @@
+import { WorkspaceHeaderAction, WorkspaceHeading } from "@/components/visual/WorkspaceHeader";
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { toast } from "sonner";
 import {
@@ -641,9 +642,11 @@ export function AgendaTab({
 
   return (
     <section className="mb-stagger space-y-4">
-      <div className="app-section-title">
-        <Calendar />
-        <h2>{t("shop.nav.agenda")}</h2>
+      <div className="workspace-section-title app-section-title">
+        <WorkspaceHeading>
+          <Calendar />
+          <h2>{t("shop.nav.agenda")}</h2>
+        </WorkspaceHeading>
         {onRefresh && (
           <button
             type="button"
@@ -663,14 +666,16 @@ export function AgendaTab({
         {onBookClient && (
           // Mesmo botão de ação do topo de Serviços e Equipe (fundo escuro, texto azul) nos dois
           // temas: o bg-primary virava um botão claro no tema escuro.
-          <button
-            type="button"
-            onClick={() => onBookClient({ day, staffId: singleProfessional || null })}
-            className={cn("action-button action-confirm", !onRefresh && "ml-auto")}
-          >
-            <CalendarPlus className="size-4" aria-hidden />
-            {t("agenda.book.button")}
-          </button>
+          <WorkspaceHeaderAction>
+            <button
+              type="button"
+              onClick={() => onBookClient({ day, staffId: singleProfessional || null })}
+              className={cn("action-button action-confirm", !onRefresh && "ml-auto")}
+            >
+              <CalendarPlus className="size-4" aria-hidden />
+              {t("agenda.book.button")}
+            </button>
+          </WorkspaceHeaderAction>
         )}
       </div>
 

@@ -1,3 +1,4 @@
+import { WorkspaceHeaderAction, WorkspaceHeading } from "@/components/visual/WorkspaceHeader";
 import {
   CheckCircle2,
   Clock3,
@@ -302,10 +303,12 @@ export function ServicesTab({
       </button>
     ) : null;
   const title = (
-    <div className="app-section-title">
-      <Scissors />
-      <h2>{t(ownCatalog ? "shop.nav.myServices" : "shop.nav.services")}</h2>
-      {!wide && newButton}
+    <div className="workspace-section-title app-section-title">
+      <WorkspaceHeading>
+        <Scissors />
+        <h2>{t(ownCatalog ? "shop.nav.myServices" : "shop.nav.services")}</h2>
+      </WorkspaceHeading>
+      {!wide && <WorkspaceHeaderAction>{newButton}</WorkspaceHeaderAction>}
     </div>
   );
   const filters = (
@@ -554,7 +557,7 @@ export function ServicesTab({
         <div className="catalog-toolbar">
           {title}
           {filters}
-          {newButton}
+          <WorkspaceHeaderAction>{newButton}</WorkspaceHeaderAction>
         </div>
       ) : (
         title

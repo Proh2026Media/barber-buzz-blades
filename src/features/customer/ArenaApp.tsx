@@ -1,3 +1,4 @@
+import { WorkspaceFrame, WorkspaceHeading } from "@/components/visual/WorkspaceHeader";
 import { SurveyCard } from "@/features/insights/SurveyCard";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
@@ -2705,6 +2706,7 @@ function ArenaApp({
     },
     ...(sportsTab ? [{ id: "esportes" as const, icon: Trophy, label: t("nav.sports") }] : []),
   ];
+  const [headerActionTarget, setHeaderActionTarget] = useState<HTMLDivElement | null>(null);
   const activeNavIndex = navItems.findIndex((item) => item.id === navTabFor(tab));
   useLayoutEffect(() => {
     const nav = navRef.current;
@@ -2928,7 +2930,8 @@ function ArenaApp({
   );
 
   return (
-    <div
+    <WorkspaceFrame
+      actionTarget={headerActionTarget}
       className={`arena-workspace customer-workspace bg-background text-foreground font-sans selection:bg-primary/20 transition-colors duration-300 ${brandFontScopeClass(shopSettings.font_scope)} ${brandCornerClass(shopSettings.corner_style)} ${shopSettings.floating_chrome ? "brand-chrome-floating" : ""}`}
       style={brandStyle as React.CSSProperties}
     >
@@ -3043,7 +3046,7 @@ function ArenaApp({
         </defs>
       </svg>
       {/* Header */}
-      <header className="brand-header sticky top-0 z-30 bg-background/90 backdrop-blur-xl border-b border-border/50 p-4 flex items-center justify-between gap-2 max-[359px]:gap-1 max-[359px]:px-3">
+      <header className="workspace-header-grid brand-header sticky top-0 z-30 bg-background/90 backdrop-blur-xl border-b border-border/50 p-4 flex items-center justify-between gap-2 max-[359px]:gap-1 max-[359px]:px-3">
         <div className="flex min-w-0 flex-1 items-center pl-[4.5rem]">
           {shopSettings.logo_url ? (
             <span
@@ -3116,7 +3119,29 @@ function ArenaApp({
             )}
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-1 max-[359px]:gap-0.5 sm:gap-2">
+        <h2 className="workspace-header-title hidden pc:block">
+          {tab === "perfil"
+            ? t("nav.myAccount")
+            : tab === "notifications"
+              ? t("nav.notices")
+              : tab === "pontos"
+                ? t("points.title")
+                : tab === "agenda" && rescheduleTitle
+                  ? t("booking.titleReschedule")
+                  : navItems.find((item) => item.id === tab)?.label}
+        </h2>
+        <div className="workspace-header-actions flex shrink-0 items-center gap-1 max-[359px]:gap-0.5 sm:gap-2">
+          <div ref={setHeaderActionTarget} className="workspace-header-primary hidden pc:flex" />
+          {device === "computador" && tab !== "agenda" && !noShop && (
+            <button
+              type="button"
+              className="action-button action-confirm"
+              onClick={() => setTab("agenda")}
+            >
+              <Calendar size={18} aria-hidden />
+              {t("nav.book")}
+            </button>
+          )}
           {/* Abaixo de 260 px (zoom alto) não cabem todos os botões: o da conta, única entrada
               para a conta, fica; o do tema sai (o app segue o tema do aparelho). */}
           <ThemeToggle className="max-[259px]:hidden" />
@@ -3369,9 +3394,11 @@ function ArenaApp({
             // 4 Conferir. O resumo com o botão fica sempre à vista (fixo no celular, coluna da
             // direita no computador).
             <div className="space-y-5">
-              <div className="app-section-title">
-                {rescheduleTitle ? <CalendarClock /> : <Calendar />}
-                <h2>{rescheduleTitle ? t("booking.titleReschedule") : t("booking.title")}</h2>
+              <div className="workspace-section-title app-section-title">
+                <WorkspaceHeading>
+                  {rescheduleTitle ? <CalendarClock /> : <Calendar />}
+                  <h2>{rescheduleTitle ? t("booking.titleReschedule") : t("booking.title")}</h2>
+                </WorkspaceHeading>
               </div>
               {noShop ? (
                 // Sem barbearia: o link da loja é o único caminho (sem busca de lojas).
@@ -3830,9 +3857,11 @@ function ArenaApp({
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                 {/* Fora do celular os filtros dividem a linha com o título: o título não encolhe abaixo de
                     16rem (os filtros descem para a linha de baixo quando não cabem). */}
-                <div className="app-section-title min-w-0 flex-1 tablet:min-w-[16rem]">
-                  <Clock3 />
-                  <h2>{t("bookings.title")}</h2>
+                <div className="workspace-section-title app-section-title min-w-0 flex-1 tablet:min-w-[16rem]">
+                  <WorkspaceHeading>
+                    <Clock3 />
+                    <h2>{t("bookings.title")}</h2>
+                  </WorkspaceHeading>
                 </div>
                 {!isPhone && reservationFilters}
                 {!demo && (
@@ -4076,7 +4105,7 @@ function ArenaApp({
         onClose={() => setShowVipInfo(false)}
         onOpenRewards={openRewards}
       />
-    </div>
+    </WorkspaceFrame>
   );
 }
 

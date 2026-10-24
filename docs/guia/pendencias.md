@@ -35,7 +35,7 @@ Atualizada em 22/10/2026 (madrugada), depois da entrega "interface por dispositi
 | 1     | P-69       | Tirar o retorno `supabase-teste` do cliente OAuth no Google Cloud        | Só o dono (ou quem tiver acesso) entra no console. Pacote pronto: [2026-10-15-google-retorno-antigo-p69.md](../pacotes/2026-10-15-google-retorno-antigo-p69.md).                                          |
 | 2     | P-28       | Gravar o vídeo e reenviar a verificação do Google                        | Depois da P-69. Pacote pronto: [2026-10-15-google-reenviar-verificacao-p28.md](../pacotes/2026-10-15-google-reenviar-verificacao-p28.md).                                                                 |
 | 3     | P-42, P-43 | Testes com login real (WhatsApp, Google), em aparelho físico e no tablet | Dependem do dono. Desde 22/10, a P-43 inclui o tablet (iPad em pé e deitado) e o computador: a interface por dispositivo só foi vista em navegador emulado (roteiro na entrada de 22/10 do CONTINUIDADE). |
-| 4     | P-83       | Cabeçalho em três zonas no computador                                    | Próxima melhoria de interface; P-80 aplicada, P-81 e P-82 feitas. Testes reais permanecem na P-43.                                                                                                        |
+| 4     | P-84       | Detalhe do atendimento em painel lateral no computador                   | Próxima melhoria de interface; P-80 aplicada e P-81 a P-83 feitas. Testes reais permanecem na P-43.                                                                                                       |
 | 5     | P-71       | Decidir "reserva" × "agendamento" no resto do app                        | A aba e a página já dizem "Meus agendamentos" (P-32); o fluxo de agendar e alguns avisos ainda dizem "reserva".                                                                                           |
 
 Sem pressa e sem depender de terceiros: P-14, P-45 (opcionais de antes) e P-88 (restos do shadcn e hooks antigos).
@@ -521,13 +521,14 @@ Entrega de 22/10/2026 (CONTINUIDADE, entrada "Interface por dispositivo"; plano 
 - **Feito:** desde 768 px, os editores de marca, página pública e tela de entrada (inclusive tela cheia) oferecem Celular, Tablet e Computador. A moldura usa viewport próprio de 390, 768 ou 1280 px: as media queries da página respondem ao aparelho escolhido. A amostra de marca continua ilustrativa; a página e a entrada usam seus componentes visuais existentes.
 - **Preservado:** seleção temporária, fora do rascunho e da persistência; trocar aparelho não salva, descarta ou cria mudanças pendentes. Abaixo de 768 px permanece a interface anterior. Sem migration ou execução na VPS.
 - **Onde:** `components/visual/DevicePreview.tsx`, `BrandIdentityEditor.tsx`, `settings/LandingEditor.tsx`, `LoginPreviewDialog.tsx`, `BrandFontFace.tsx` e `marketing/ShopLanding.tsx`; textos no dicionário dos idiomas.
-- **Verificação:** 292 testes, tipos, análise estática e montagem; troca de aparelhos mantendo o rascunho, teclado, Esc e tela cheia. Marca e página em 390 px com **0 pixels diferentes** antes/depois; tablet escuro em 768 e redimensionamento para 1024/1536. Teste físico continua na P-43; próximo item de interface é P-83.
+- **Verificação:** 292 testes, tipos, análise estática e montagem; troca de aparelhos mantendo o rascunho, teclado, Esc e tela cheia. Marca e página em 390 px com **0 pixels diferentes** antes/depois; tablet escuro em 768 e redimensionamento para 1024/1536. Teste físico continua na P-43.
 
-### P-83 — Cabeçalho em três zonas no computador · pendente
+### P-83 — Cabeçalho em três zonas no computador · feito em 24/10/2026 (ChatGPT/Codex)
 
-- **Por quê:** no computador o cabeçalho da casca continua o do celular esticado (nome da loja à esquerda, conta à direita); o título da aba e a ação principal (Agendar, Novo serviço, Adicionar) ficam no corpo, e cada aba os posiciona por conta própria. Plano, seção 8.
-- **Onde:** [ShopShell.tsx](../../src/features/shop/ShopShell.tsx), [ArenaApp.tsx](../../src/features/customer/ArenaApp.tsx), [PlatformShell.tsx](../../src/features/platform/PlatformShell.tsx) (o `<header>` de cada casca) e a grade da casca em `src/styles.css` (faixa `@media (min-width: 1280px)`).
-- **Pronto quando:** a partir de 1280 px o cabeçalho tem nome da loja | título da aba | ação principal e conta, igual nas três cascas; no tablet e no celular nada muda.
+- **Feito:** desde 1280 px, loja, cliente e plataforma usam identidade | seção | ação e conta. Título acompanha a aba, incluindo catálogo próprio, remarcação, pontos, avisos e conta. Agendar cliente, Novo serviço, Adicionar profissional e Nova barbearia usam os controles e permissões existentes; o cliente tem Agendar no topo fora da própria tela de agendamento. Áreas sem ação principal ficam com os controles da conta.
+- **Onde:** `components/visual/WorkspaceHeader.tsx` e `workspace-header-context.ts`, as três cascas, títulos e ações de Agenda/Serviços/Equipe/Horários e Barbearias; regras exclusivas de computador em `styles.css`. O menu existente de perfis substitui a faixa extensa da demonstração nesse cabeçalho.
+- **Preservado:** abaixo de 1280 px, ações e títulos continuam no corpo. Não muda consulta, permissão, formulário ou persistência; sem migration. Contexto sem destino mantém o comportamento original das seções.
+- **Conferido:** 292 testes, tipos, análise estática e montagem; três áreas em 390/768/1280, parceiro em 1536/1024/1280 escuro, abertura das ações pelo cabeçalho e teclado. Detalhes da comparação visual no CONTINUIDADE. Testes em aparelhos reais continuam na P-43.
 
 ### P-84 — Painel lateral para o detalhe do atendimento · pendente
 

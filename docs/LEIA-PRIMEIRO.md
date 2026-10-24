@@ -14,7 +14,9 @@ Porta de entrada para o agente que vai continuar o projeto (Cursor, Claude Code,
 
 **Atualização de 24/10 — P-81 feita:** "Mais números do dia" fica aberto abaixo das duas colunas da Agenda desde 1024 px, com os mesmos dados e permissões. Celular preservado (comparação de 390 px sem diferenças); tablet em pé mantém o recolher. Sem atualização de banco. Os testes reais seguem na P-43.
 
-**Atualização de 24/10 — P-82 feita:** editores de marca, página pública e tela de entrada têm prévias de celular, tablet e computador a partir de 768 px. A escolha é temporária e mantém o rascunho; as molduras usam larguras próprias para reproduzir o leiaute. Celular preservado. Sem migration ou tarefa para a VPS. Próxima melhoria independente: P-83; testes em aparelhos reais continuam na P-43.
+**Atualização de 24/10 — P-82 feita:** editores de marca, página pública e tela de entrada têm prévias de celular, tablet e computador a partir de 768 px. A escolha é temporária e mantém o rascunho; as molduras usam larguras próprias para reproduzir o leiaute. Celular preservado. Sem migration ou tarefa para a VPS. Testes em aparelhos reais continuam na P-43.
+
+**Atualização de 24/10 — P-83 feita:** cabeçalho em três zonas desde 1280 px nas áreas da loja, cliente e plataforma: identidade | seção atual | ação principal e conta. Os controles existentes de agendar, criar serviço, adicionar profissional e criar barbearia passam ao topo; cliente ganha acesso ao agendamento no cabeçalho. A demonstração usa o menu de perfis existente para caber nas três zonas. Celular e tablet mantidos; sem migration. Próxima melhoria independente: P-84 (detalhe do atendimento em painel lateral no computador).
 
 ## O que é o projeto
 

@@ -1,3 +1,4 @@
+import { WorkspaceFrame, WorkspaceHeading } from "@/components/visual/WorkspaceHeader";
 import { useWaiting } from "@/features/waiting/useWaiting";
 import { WaitingSettings } from "@/features/waiting/WaitingSettings";
 import {
@@ -1887,6 +1888,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     if (id === "configuracoes") return canOpenSettings;
     return true;
   });
+  const [headerActionTarget, setHeaderActionTarget] = useState<HTMLDivElement | null>(null);
   const activeNavIndex = shopNavItems.findIndex((item) => item.id === tab);
 
   const brandStyle = settings
@@ -1902,7 +1904,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     : null;
 
   return (
-    <div
+    <WorkspaceFrame
+      actionTarget={headerActionTarget}
       className={`arena-workspace min-h-screen bg-background text-foreground ${brandFontScopeClass(settings?.font_scope)} ${brandCornerClass(settings?.corner_style)} ${settings?.floating_chrome ? "brand-chrome-floating" : ""}`}
       style={brandStyle ? (brandStyle as CSSProperties) : undefined}
     >
@@ -1927,7 +1930,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
             estreita no tablet, completa no computador) o styles.css tira o limite e o nome fica
             sobre a coluna, com as ações à direita. Nos dois casos ele não muda de posição ao
             trocar de aba nem aperta o nome da loja e o selo do papel. */}
-        <div className="mx-auto flex w-full max-w-[70rem] items-center justify-between gap-2">
+        <div className="workspace-header-grid mx-auto flex w-full max-w-[70rem] items-center justify-between gap-2">
           <div className="min-w-0 flex-1">
             {/* Onde estou e com que papel: nome da loja (troca de loja) + selo do papel. */}
             {pendingEntry ? (
@@ -1981,7 +1984,15 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
               </>
             )}
           </div>
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <h2 className="workspace-header-title hidden pc:block">
+            {!pendingEntry && acting.kind !== "none"
+              ? tab === "servicos" && powers.ownCatalog
+                ? t("shop.nav.myServices")
+                : shopNavItems.find((item) => item.id === tab)?.label
+              : null}
+          </h2>
+          <div className="workspace-header-actions flex shrink-0 items-center gap-1.5 sm:gap-2">
+            <div ref={setHeaderActionTarget} className="workspace-header-primary hidden pc:flex" />
             <ThemeToggle />
             {headerActions}
             {/* Na demonstração a visão Plataforma e a saída ficam no frasco e no menu da conta. */}
@@ -2105,7 +2116,11 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 title={governanceMessage}
                 action={
                   governanceMessage !== t("shop.governance.applied") && openApprovals
-                    ? { label: t("eq.common.seeRequest"), icon: Hourglass, onClick: openApprovals }
+                    ? {
+                        label: t("eq.common.seeRequest"),
+                        icon: Hourglass,
+                        onClick: openApprovals,
+                      }
                     : undefined
                 }
                 onDismiss={() => setGovernanceMessage(null)}
@@ -2426,9 +2441,11 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
             {tab === "configuracoes" && shop && !opening && settings && (
               <section className="space-y-6">
                 <div>
-                  <div className="app-section-title">
-                    <Settings2 />
-                    <h2>{t("shop.nav.settings")}</h2>
+                  <div className="workspace-section-title app-section-title">
+                    <WorkspaceHeading>
+                      <Settings2 />
+                      <h2>{t("shop.nav.settings")}</h2>
+                    </WorkspaceHeading>
                   </div>
                 </div>
                 {powers.ownerLike && (
@@ -2874,6 +2891,6 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
           )
         }
       </GuardedEditorDialog>
-    </div>
+    </WorkspaceFrame>
   );
 }

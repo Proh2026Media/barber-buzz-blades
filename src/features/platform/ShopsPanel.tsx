@@ -1,3 +1,4 @@
+import { WorkspaceHeaderAction, WorkspaceHeading } from "@/components/visual/WorkspaceHeader";
 import { useId, useMemo, useRef, useState } from "react";
 import {
   ChevronRight,
@@ -346,11 +347,13 @@ export function ShopsPanel({
       {/* Título de página no padrão do app (ícone dourado solto + h2), com a ação ao lado. A
           partir de 768 px a busca e os filtros entram na mesma linha (CSS em plataforma.css). */}
       <div className="plat-shops-head grid gap-4">
-        <div className="plat-shops-title app-section-title flex-wrap">
-          <Store aria-hidden />
-          {/* Sem min-w-0: com fonte grande, o botão desce para a linha de baixo em vez de cobrir. */}
-          <h2 className="flex-1">{t("plat.shops.title")}</h2>
-          {shops.length > 0 && newShopButton(true)}
+        <div className="workspace-section-title plat-shops-title app-section-title flex-wrap">
+          <WorkspaceHeading>
+            <Store aria-hidden />
+            {/* Sem min-w-0: com fonte grande, o botão desce para a linha de baixo em vez de cobrir. */}
+            <h2 className="flex-1">{t("plat.shops.title")}</h2>
+          </WorkspaceHeading>
+          {shops.length > 0 && <WorkspaceHeaderAction>{newShopButton(true)}</WorkspaceHeaderAction>}
         </div>
         {tools}
       </div>

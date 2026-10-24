@@ -1,3 +1,4 @@
+import { WorkspaceFrame, WorkspaceHeading } from "@/components/visual/WorkspaceHeader";
 import { DataRights } from "@/features/insights/DataRights";
 import { SurveyCatalog } from "@/features/insights/SurveyCatalog";
 import { BusinessInsights } from "@/features/insights/BusinessInsights";
@@ -492,11 +493,13 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
     { id: "permissions" as const, label: t("plat.tabs.permissions"), icon: KeyRound },
     { id: "insights" as const, label: t("plat.tabs.insights"), icon: BarChart3 },
   ];
+  const [headerActionTarget, setHeaderActionTarget] = useState<HTMLDivElement | null>(null);
   const activeNavIndex = navItems.findIndex((item) => item.id === platformTab);
   const accountName = profile.profile?.full_name || profile.user.email || t("plat.account.role");
 
   return (
-    <div
+    <WorkspaceFrame
+      actionTarget={headerActionTarget}
       className={`arena-workspace platform-workspace min-h-screen bg-background text-foreground ${brandFontScopeClass(demoBrandSettings?.font_scope)} ${brandCornerClass(demoBrandSettings?.corner_style)} ${demoBrandSettings?.floating_chrome ? "brand-chrome-floating" : ""}`}
       style={brandStyle ? (brandStyle as CSSProperties) : undefined}
     >
@@ -509,14 +512,18 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
           faces={demoBrandSettings.custom_font_faces}
         />
       )}
-      <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur-xl px-4 py-3 flex items-center justify-between gap-3">
+      <header className="workspace-header-grid sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur-xl px-4 py-3 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-bold text-gold">{t("plat.header.eyebrow")}</p>
           <h1 className="break-words text-lg font-extrabold leading-tight tracking-tight max-[379px]:text-base">
             {demoMode || demoChrome ? t("plat.header.titleDemo") : t("plat.header.title")}
           </h1>
         </div>
-        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+        <h2 className="workspace-header-title hidden pc:block">
+          {navItems.find((item) => item.id === platformTab)?.label}
+        </h2>
+        <div className="workspace-header-actions flex shrink-0 items-center gap-2 sm:gap-3">
+          <div ref={setHeaderActionTarget} className="workspace-header-primary hidden pc:flex" />
           <ThemeToggle />
           {headerActions}
           {demoMode || demoChrome ? (
@@ -554,9 +561,11 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
         <div key={platformTab} className="mb-panel space-y-6">
           {platformTab === "overview" && (
             <>
-              <div className="app-section-title">
-                <LayoutDashboard aria-hidden />
-                <h2>{t("plat.tabs.overview")}</h2>
+              <div className="workspace-section-title app-section-title">
+                <WorkspaceHeading>
+                  <LayoutDashboard aria-hidden />
+                  <h2>{t("plat.tabs.overview")}</h2>
+                </WorkspaceHeading>
               </div>
               {/* "Tudo em ordem" só com os dados carregados e o WhatsApp conectado (fora da demo). */}
               <AttentionList
@@ -585,9 +594,11 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
 
           {platformTab === "insights" && (
             <div className="space-y-6">
-              <div className="app-section-title">
-                <BarChart3 aria-hidden />
-                <h2>{t("plat.insights.title")}</h2>
+              <div className="workspace-section-title app-section-title">
+                <WorkspaceHeading>
+                  <BarChart3 aria-hidden />
+                  <h2>{t("plat.insights.title")}</h2>
+                </WorkspaceHeading>
               </div>
               {/* Pilha na largura toda em todas as faixas: a coluna lateral de 22rem ficava só com
                   "Pedidos de privacidade" (3 linhas) e 90% vazia, enquanto os 6 tiles do
@@ -912,6 +923,6 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
           }}
         />
       )}
-    </div>
+    </WorkspaceFrame>
   );
 }
