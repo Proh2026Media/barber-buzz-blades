@@ -10,7 +10,7 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 - Situação: **pendente**, **feito — falta aplicar no banco**, **a decidir** (depende do dono), **não confirmado** (não deu para conferir daqui).
 - Cada item foi conferido no código e nas migrations em 12/10/2026. As linhas citadas são dessa data.
 - **Papéis da equipe no banco × nomes na tela:** `owner` e `partner` = **Dono** (sócio; `partner` é o nome antigo e aparece igual), `associate` = **Parceiro**, `employee` = **Contratado** ([roles.tsx](../../src/features/shop/roles.tsx), linhas 16-27; rótulos em `pt-BR.ts`, linhas 718-721). `shop_admin` é o papel antigo de `memberships`, que pode existir sem vínculo de equipe (CONTINUIDADE, onda 1 de 09/10).
-- Último id usado: **P-96**.
+- Último id usado: **P-97**.
 
 **Índice**
 
@@ -22,7 +22,7 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 6. [Testes manuais com contas reais](#6-testes-manuais-com-contas-reais) (P-40 a P-43)
 7. [Dívida técnica](#7-dívida-técnica) (P-44 a P-48, P-51, P-52, P-55, P-63 a P-65, P-72, P-75 e P-78)
 8. [Ideias futuras](#8-ideias-futuras) (P-49, P-50 e P-54)
-9. [Interface por dispositivo: o que ficou](#9-interface-por-dispositivo-o-que-ficou) (P-79 a P-96)
+9. [Interface por dispositivo: o que ficou](#9-interface-por-dispositivo-o-que-ficou) (P-79 a P-97)
 
 ---
 
@@ -600,9 +600,16 @@ Escolha consultada ao dono em 24/10; sem resposta nesta rodada, mantidas as jane
 - **Onde:** [dialog.tsx](../../src/components/ui/dialog.tsx) (um `size` ou variante de celular), o drawer legado foi removido na P-88; usar a primitiva comum, sem recriar um segundo sistema de janelas.
 - **Pronto quando:** o dono pedir; então um só componente de folha para todas as janelas longas do celular, com foco, Esc e rodapé fixo, e fotos de 390 antes e depois.
 
-### P-96 — Revisão geral da composição em tablet e computador · feito em 24/10/2026 (ChatGPT/Codex)
+### P-96 — Revisão geral da composição em tablet e computador · aplicada em 24/10/2026; complementada pela P-97
 
 - **Pedido:** organização própria para cada dispositivo em todo o sistema, preservando mobile, identidade, funções e permissões. Não refazer as entregas aplicadas.
 - **Entregue:** P-92, colunas independentes em Horários, janela de Pausa fixa desde 768, Equipe em largura útil completa, serviço/profissional lado a lado desde 768 e resumo lateral só desde 1280, calendário de toque com 44 px, Clube com regras/níveis lado a lado quando cabem, perfil do cliente com índice proporcional, matriz da plataforma sem explicação lateral comprimindo os controles e lista de barbearias sem coluna vazia antes de selecionar uma ficha.
 - **Revisão:** navegação das três áreas, agenda, catálogo, ajustes, clube, cliente, plataforma, páginas públicas, autenticação, formulários e janelas. Mantidas as composições anteriores que já atendiam aos dispositivos. Inventário e evidências na seção 10 de [dispositivos-2026-10-21.md](../dispositivos-2026-10-21.md).
 - **Limites:** navegador local com dados fictícios; não é teste físico nem de integrações. P-42/P-43 seguem abertas. P-95 não incluída. Sem banco ou tarefa nova para a VPS.
+
+### P-97 — Recomposição após retorno de melhorias pouco perceptíveis · feito em 24/10/2026 (ChatGPT/Codex)
+
+- **Retorno:** o dono não percebeu melhorias significativas na P-96. A revisão anterior foi técnica demais e manteve a estrutura principal de tarefas frequentes.
+- **Feito:** Agenda em largura completa, com data/semana/escopo e resumo em faixas, atalhos junto da busca; categorias de Ajustes no topo desde 768 e subíndice interno ao lado desde 1024; agendamento com escolhas limitadas à altura de um painel rolável e calendário/horários já na primeira região da tela desde 1024, resumo abaixo deles. Páginas móveis mantidas.
+- **Verificação:** comparação visual das três tarefas, seções de Ajustes em 768/1280, quadro da equipe em 768/1024/1280/1536, reserva fictícia completa, rascunho do ajuste, mudança de dia e calendário por teclado. Registro detalhado em [dispositivos-2026-10-21.md](../dispositivos-2026-10-21.md), seção 11.
+- **Limite:** a implementação e os testes técnicos não substituem a avaliação do dono. Testes físicos e integrações reais continuam em P-42/P-43. Sem migration ou tarefa para TI.

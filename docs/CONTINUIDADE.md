@@ -107,6 +107,14 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## Entrega — P-97: recomposição após retorno do dono (24/10, ChatGPT/Codex)
+
+- **Retorno:** o dono não percebeu melhorias significativas na P-96. Reconhecida a insuficiência da primeira abordagem; esta entrega muda a composição das tarefas principais, sem refazer entregas de banco nem alterar o celular.
+- **Mudou:** Agenda com dia/semana/escopo e resumo em faixas, atendimentos/quadro na largura completa e atalhos junto da busca; categorias de Ajustes horizontais desde 768, índice interno lateral desde 1024; agendamento com escolhas roláveis à esquerda e calendário/horários à direita desde 1024, revisão abaixo do calendário. Em tablet em pé, escolhas lado a lado com altura limitada. Estados e regras permanecem nos componentes existentes.
+- **Conferência:** capturas das três tarefas em 390/768/1024/1280, oito seções de Ajustes em 768/1280, quadro da equipe também em 1536; reserva fictícia concluída após redimensionamento, rascunho de Ajustes conservado, calendário por teclado e troca de dia. Comparações visuais e limites na seção 11 de `dispositivos-2026-10-21.md`; evidências em `/tmp/barba-dispositivos/retorno-*`.
+- **Verificação final:** `scripts/verificar.sh` completo aprovado: tipos, 292/292 testes, eslint dos quatro arquivos TypeScript, prettier dos 12 arquivos e montagem de cliente/servidor/PWA. Dia do calendário com alvo de toque de 44 × 44 px. Servidor local de testes encerrado.
+- **Limites e continuidade:** nenhuma migration, alteração de permissões ou integração real; `.env` preservado. P-42/P-43 continuam abertas. A percepção do dono ainda precisa ser avaliada; testes técnicos não equivalem à aprovação da experiência.
+
 ## Entrega — revisão geral de tablet e computador, P-96/P-92 (24/10, ChatGPT/Codex)
 
 - **Pedido e contexto:** reorganizar todo o aplicativo para computador e tablet, preservando mobile e identidade. Passagem de 24/10, entrada, guias e MB lidos antes das alterações; `pull --ff-only` e vez exclusiva `chatgpt`. A autorização atual resolve a escolha da P-92; P-95 continua fora porque altera o celular.

@@ -4,13 +4,12 @@
    src/styles.css (via src/dispositivos.css), vence os utilitários do Tailwind, que ficam em
    camada. As classes agenda-* saem de src/features/shop/agenda/* e src/features/shop/Client*.
 
-   Faixas: tablet em pé 768–1023 (uma coluna, resumo em faixa, cartão mais baixo);
-   computador compacto 1024–1279 (coluna do dia de 22rem com o mês à vista + lista/quadro);
-   computador 1280+ (o mesmo, alvos menores com mouse e ⋯ ao passar o mouse). O formato do
+   Tablet e computador: navegação do dia e resumo em faixas acima da lista/quadro.
+   Computador 1280+: alvos menores com mouse e ⋯ ao passar o mouse. O formato do
    cartão de atendimento segue a largura da lista (container query), não a da janela. */
 
-/* ===== Tablet em pé (768–1023): uma coluna, escopo e dia numa linha, resumo em faixa ===== */
-@media (min-width: 768px) and (max-width: 1023.98px) {
+/* ===== Tablet e computador: navegação e resumo em faixas ===== */
+@media (min-width: 768px) {
   /* Quadro da equipe na coluna única do tablet em pé: colunas de 7.5rem (quatro profissionais
      cabem ao lado da régua em 768 px; com mais gente o quadro rola de lado, régua fixa). */
   .agenda-board {
@@ -264,11 +263,11 @@
   }
 }
 
-/* ===== Computador compacto (1024+): coluna do dia de 22rem + lista/quadro; tabela de clientes ===== */
+/* ===== Computador compacto (1024+): indicadores complementares e tabela de clientes ===== */
 @media (min-width: 1024px) {
   .agenda-layout {
     display: grid;
-    grid-template-columns: 22rem minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     gap: 1.5rem;
     align-items: start;
   }
@@ -332,32 +331,6 @@
     max-width: 24rem;
   }
 }
-/* Computador compacto (1024–1279) com o quadro à vista: a coluna do dia recolhe de 22rem para
-   20rem (o calendário do mês ainda cabe) e as colunas do quadro ficam em 7rem, para quatro
-   profissionais caberem ao lado da régua sem rolar (P-79). Com mais gente, rola de lado. */
-@media (min-width: 1024px) and (max-width: 1279.98px) {
-  .agenda-layout:has(.agenda-board) {
-    grid-template-columns: 20rem minmax(0, 1fr);
-    gap: 1.25rem;
-  }
-  /* O mês tem 7 células de 44 px (alvo de toque mínimo: min-height global + aspect-square), ou
-     seja 308 px, e o cartão de 20rem só tem 278 px úteis: o calendário avança 1rem sobre o recuo
-     de cada lado e fica inteiro e centrado, a 5 px da borda (sem isso a coluna "sáb" passava da
-     borda do cartão). */
-  .agenda-layout:has(.agenda-board) .agenda-month {
-    margin-inline: -1rem;
-  }
-  .agenda-board {
-    --agenda-board-col: 7rem;
-  }
-}
-/* Entre 1280 e 1535 px o quadro tem menos largura: colunas de 8.5rem (nomes em duas linhas). */
-@media (min-width: 1280px) and (max-width: 1535.98px) {
-  .agenda-board {
-    --agenda-board-col: 8.5rem;
-  }
-}
-
 /* ===== Computador (1280+): linhas finas e alvos de mouse ===== */
 @media (min-width: 1280px) {
   /* Cancelado: a mesma linha fina. */
@@ -503,5 +476,64 @@
   }
   .agenda-client-modal[data-desktop-side="true"] .agenda-client-main {
     margin-top: 1.25rem;
+  }
+}
+
+/* Dia e escopo no topo; a lista e o quadro aproveitam a largura da área de trabalho. */
+@media (min-width: 768px) {
+  .agenda-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+  .agenda-side {
+    display: contents;
+  }
+  .agenda-layout > *,
+  .agenda-side > * {
+    min-width: 0;
+    margin-block: 0;
+  }
+  .agenda-board {
+    --agenda-board-col: 8.5rem;
+  }
+}
+@media (min-width: 1024px) {
+  .agenda-toolbar {
+    grid-template-columns: minmax(10rem, max-content) minmax(18rem, 0.9fr) minmax(21rem, 1.5fr);
+    gap: 1rem;
+  }
+  .agenda-toolbar .agenda-scope {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .agenda-toolbar .agenda-week {
+    grid-column: 3;
+  }
+  .agenda-toolbar:not(:has(.agenda-scope)) {
+    grid-template-columns: minmax(18rem, 0.9fr) minmax(21rem, 1.5fr);
+  }
+  .agenda-toolbar:not(:has(.agenda-scope)) .agenda-daterow {
+    grid-column: 1;
+  }
+  .agenda-toolbar:not(:has(.agenda-scope)) .agenda-week {
+    grid-column: 2;
+  }
+  .agenda-summary {
+    grid-template-columns: minmax(10rem, 1fr) max-content minmax(8rem, 1fr) auto;
+    grid-template-areas:
+      "head figure bar money"
+      "moments moments filters filters";
+  }
+  .agenda-summary-moments {
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  }
+  .agenda-summary-filters {
+    justify-content: end;
+  }
+}
+
+@media (min-width: 1024px) {
+  .agenda-summary:not(:has(.agenda-summary-filters)) .agenda-summary-moments {
+    grid-column: 1 / -1;
   }
 }

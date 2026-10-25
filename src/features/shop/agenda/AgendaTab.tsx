@@ -34,7 +34,6 @@ import {
 } from "@/components/visual";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useDemo } from "@/features/demo/context";
-import { useStickyWhenFits } from "@/lib/use-sticky-when-fits";
 import { BusinessInsights } from "@/features/insights/BusinessInsights";
 import { CancellationDialog } from "@/features/insights/CancellationDialog";
 import type { CancellationReason } from "@/features/insights/cancellation";
@@ -248,8 +247,6 @@ export function AgendaTab({
     return () => window.clearInterval(id);
   }, []);
   const now = demo?.now ? demo.now.getTime() : clock;
-  const sideRef = useRef<HTMLDivElement>(null);
-  const sideTop = useStickyWhenFits(sideRef);
 
   // "Minha agenda" só existe para quem atende clientes; sem perfil de profissional a lista já
   // é a da barbearia inteira.
@@ -619,6 +616,33 @@ export function AgendaTab({
     <BusinessInsights shopId={shopId} day={day} revision={revision} timeZone={timeZone} embedded />
   );
 
+  const extraShortcuts = extras.some((extra) => extra.count !== 0) && (
+    <div role="group" aria-label={t("agenda.extras.aria")} className="flex flex-wrap gap-2">
+      {extras
+        .filter((extra) => extra.count !== 0)
+        .map((extra) => {
+          const Icon = extra.icon;
+          return (
+            <a
+              key={extra.id}
+              href={`#agenda-extra-${extra.id}`}
+              // No celular abre a janela da seção; a âncora continua valendo (a lista de
+              // clientes abre sozinha por ela).
+              onClick={() => {
+                if (!desktop) setOpenExtra(extra.id);
+              }}
+              aria-haspopup={desktop ? undefined : "dialog"}
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-semibold transition hover:border-primary/40"
+            >
+              <Icon className="size-4 shrink-0 text-gold" aria-hidden />
+              {extra.label}
+              {extra.count ? <CountBadge count={extra.count} label={extra.countLabel} /> : null}
+            </a>
+          );
+        })}
+    </div>
+  );
+
   // Campo de busca: no celular aparece ao tocar na lupa (e recebe o foco); fora dele fica sempre
   // aberto na barra da lista.
   const searchField = (
@@ -681,14 +705,10 @@ export function AgendaTab({
 
       {setup}
 
-      {/* Celular e tablet em pé: uma coluna. A partir de 1024 px: coluna do dia (22rem) e a lista
-          ao lado (CSS em src/styles/agenda.css). */}
+      {/* No tablet e computador, navegação e resumo formam faixas acima da agenda inteira.
+          A ordem original do celular é preservada pelo CSS da área. */}
       <div className="agenda-layout space-y-4">
-        <div
-          ref={sideRef}
-          className="agenda-side space-y-4 lg:p-1"
-          style={sideTop !== null ? { position: "sticky", top: sideTop } : undefined}
-        >
+        <div className="agenda-side space-y-4">
           <div className="agenda-toolbar app-action-card p-3 sm:p-4">
             {canSeeTeam && hasOwnAgenda && (
               <div className="agenda-scope" role="group" aria-label={t("shop.agenda.scopeAria")}>
@@ -715,7 +735,6 @@ export function AgendaTab({
               today={today}
               onChange={onDayChange}
               closedWeekdays={closedWeekdays}
-              monthInline={desktop}
             />
           </div>
 
@@ -768,37 +787,10 @@ export function AgendaTab({
             )
           )}
 
-          {extras.some((extra) => extra.count !== 0) && (
-            <div role="group" aria-label={t("agenda.extras.aria")} className="flex flex-wrap gap-2">
-              {extras
-                .filter((extra) => extra.count !== 0)
-                .map((extra) => {
-                  const Icon = extra.icon;
-                  return (
-                    <a
-                      key={extra.id}
-                      href={`#agenda-extra-${extra.id}`}
-                      // No celular abre a janela da seção; a âncora continua valendo (a lista de
-                      // clientes abre sozinha por ela).
-                      onClick={() => {
-                        if (!desktop) setOpenExtra(extra.id);
-                      }}
-                      aria-haspopup={desktop ? undefined : "dialog"}
-                      className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-semibold transition hover:border-primary/40"
-                    >
-                      <Icon className="size-4 shrink-0 text-gold" aria-hidden />
-                      {extra.label}
-                      {extra.count ? (
-                        <CountBadge count={extra.count} label={extra.countLabel} />
-                      ) : null}
-                    </a>
-                  );
-                })}
-            </div>
-          )}
+          {(phone || emptyDay || loadFailed || (loading && !scoped.length)) && extraShortcuts}
         </div>
 
-        {/* Coluna da direita: a lista do dia (ou o quadro da equipe). */}
+        {/* Área principal: lista do dia ou quadro da equipe na largura disponível. */}
         <div className="min-w-0 space-y-6">
           <div id="agenda-list" className="scroll-mt-24 space-y-3">
             {error && !loadFailed && (
@@ -901,6 +893,7 @@ export function AgendaTab({
                   ) : (
                     searchField
                   )}
+                  {!phone && extraShortcuts}
                 </div>
                 {phone && (searchOpen || search) && searchField}
                 {showStaffFilter && (

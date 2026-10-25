@@ -233,7 +233,7 @@ export function ServiceChoices({
       className={
         // Cada etapa divide o espaço com a outra desde o tablet: lista com uma opção por linha.
         view === "list"
-          ? "flex flex-col gap-2"
+          ? "booking-choice-list flex flex-col gap-2"
           : "grid grid-cols-2 gap-2 max-[359px]:grid-cols-1 tablet:grid-cols-3"
       }
     >
@@ -372,7 +372,7 @@ export function StaffChoices({
       className={
         // Lista com uma opção por linha na coluna da etapa; grade respeita a largura disponível.
         view === "list"
-          ? "flex flex-col gap-2"
+          ? "booking-choice-list flex flex-col gap-2"
           : "grid grid-cols-2 gap-2 max-[359px]:grid-cols-1 tablet:grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))]"
       }
     >
@@ -754,9 +754,9 @@ type Period = { key: string; label: string; icon: LucideIcon; from: number; to: 
 const SLOT =
   "flex min-h-11 flex-col items-center justify-center rounded-xl border px-2 py-2 text-sm font-semibold tabular-nums transition";
 /* Colunas de horários: 3 (4 a partir de 400 px) no celular; a partir de 768 px, quantas couberem
-   com 5.5rem de mínimo (os botões param de esticar no tablet e no computador). */
+   com 5rem de mínimo (os botões param de esticar no tablet e no computador). */
 const TIME_COLUMNS =
-  "grid grid-cols-3 gap-2 min-[400px]:grid-cols-4 tablet:grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))]";
+  "grid grid-cols-3 gap-2 min-[400px]:grid-cols-4 tablet:grid-cols-[repeat(auto-fill,minmax(5rem,1fr))]";
 
 export function TimeGrid({
   state,
@@ -1140,7 +1140,7 @@ export function BookingSummaryBar({
   busy: boolean;
   price?: string | null;
   /**
-   * A partir de 1280 px o painel absorve o passo "Conferir": o selo numerado e o título do passo
+   * A partir de 1024 px o painel absorve o passo "Conferir": o selo numerado e o título do passo
    * substituem "Sua reserva" (o passo deixa de existir na coluna dos passos).
    */
   step?: { index: number; state: StepState; title: string } | null;
@@ -1154,25 +1154,24 @@ export function BookingSummaryBar({
   return (
     <aside
       aria-label={t("booking.summaryAria")}
-      // Tablet (768–1279): o painel deixa de ser fixo e vira um cartão logo abaixo do passo
-      // "Conferir" (que já mostra a data), só com o botão à direita — a barra fixa repetia a
-      // data e cobria o conteúdo com um botão de 600 px. No computador volta a ser a coluna fixa.
-      className="booking-summary-bar app-action-card sticky z-20 min-w-0 space-y-2 p-2.5 shadow-lg tablet:static tablet:grid tablet:justify-items-end tablet:shadow-none pc:sticky pc:block pc:justify-items-stretch pc:space-y-3 pc:p-4 pc:shadow-lg"
+      // Tablet em pé: ação abaixo da revisão. Desde 1024 px, resumo abaixo do calendário,
+      // ao lado das escolhas. No celular, permanece a barra original.
+      className="booking-summary-bar app-action-card sticky z-20 min-w-0 space-y-2 p-2.5 shadow-lg tablet:static tablet:grid tablet:justify-items-end tablet:shadow-none lg:sticky lg:block lg:justify-items-stretch lg:space-y-3 lg:p-4 lg:shadow-lg"
     >
       {step ? (
-        <p className="hidden min-h-11 items-center gap-3 pc:flex">
+        <p className="hidden min-h-11 items-center gap-3 lg:flex">
           <StepMarker index={step.index} state={step.state} />
           <span className="booking-heading min-w-0 flex-1">{step.title}</span>
         </p>
       ) : (
-        <p className="hidden items-center gap-2 text-sm font-bold pc:flex">
+        <p className="hidden items-center gap-2 text-sm font-bold lg:flex">
           <CalendarCheck className="size-4 text-gold" aria-hidden />
           {t("booking.yourBooking")}
         </p>
       )}
       {/* No celular, só o "quando" (serviço e profissional já aparecem nos passos logo acima, e a
           barra fixa ocupava três linhas da tela). No computador, o resumo inteiro na coluna. */}
-      <ul className="grid grid-cols-2 gap-1.5 tablet:hidden pc:flex pc:flex-col pc:gap-2">
+      <ul className="grid grid-cols-2 gap-1.5 tablet:hidden lg:flex lg:flex-col lg:gap-2">
         {pills.map((pill) => {
           const Icon = pill.icon;
           const content = (
@@ -1182,7 +1181,7 @@ export function BookingSummaryBar({
             </>
           );
           const cls = cn(
-            "inline-flex min-h-10 w-full min-w-0 items-center gap-1.5 whitespace-nowrap rounded-[var(--button-radius)] border px-2.5 text-xs font-semibold pc:text-sm",
+            "inline-flex min-h-10 w-full min-w-0 items-center gap-1.5 whitespace-nowrap rounded-[var(--button-radius)] border px-2.5 text-xs font-semibold lg:text-sm",
             pill.pending
               ? "border-dashed border-muted-foreground/50 text-muted-foreground"
               : "border-border bg-background/70",
@@ -1192,7 +1191,7 @@ export function BookingSummaryBar({
               key={pill.key}
               className={cn(
                 "min-w-0",
-                pill.lead ? "order-first col-span-2 pc:order-none" : "max-pc:hidden",
+                pill.lead ? "order-first col-span-2 lg:order-none" : "max-lg:hidden",
               )}
             >
               {pill.onClick ? (
@@ -1207,7 +1206,7 @@ export function BookingSummaryBar({
         })}
       </ul>
       {price && (
-        <p className="hidden items-center justify-between border-t border-border pt-2 text-sm pc:flex">
+        <p className="hidden items-center justify-between border-t border-border pt-2 text-sm lg:flex">
           <span className="text-muted-foreground">{t("booking.total")}</span>
           <span className="font-bold tabular-nums">{price}</span>
         </p>
@@ -1219,7 +1218,7 @@ export function BookingSummaryBar({
         onClick={onConfirm}
         disabled={!ready || busy}
         aria-busy={busy || undefined}
-        className="action-button action-confirm min-h-11 w-full tablet:w-auto tablet:min-w-[18rem] pc:min-h-12 pc:w-full"
+        className="action-button action-confirm min-h-11 w-full tablet:w-auto tablet:min-w-[18rem] lg:min-h-12 lg:w-full"
       >
         {busy ? (
           <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden />

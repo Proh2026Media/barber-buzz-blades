@@ -2633,11 +2633,11 @@ function ArenaApp({
   const navTabFor = (current: string) => (current === "pontos" ? "dashboard" : current);
   // Faixa do aparelho (celular, tablet, computador): decide se a barra de baixo mede os rótulos.
   const device = useDevice();
-  // A partir de 1280 px, o "Conferir" fica dentro do painel lateral de resumo.
-  const wideBooking = useViewportAtLeast(1280);
+  // Desde 1024 px, o resumo fica sob o calendário na coluna de trabalho.
+  const wideBooking = useViewportAtLeast(1024);
   const isPhone = device === "celular";
-  // Tablet e computador: escolhas abertas e calendário mensal. No tablet, a revisão
-  // continua abaixo dos passos, pois ainda não há espaço para o painel lateral (P-90).
+  // Tablet e computador: escolhas abertas e calendário mensal. Em pé, as etapas empilham;
+  // desde 1024 px, escolhas à esquerda e calendário/resumo à direita.
   const expandedBooking = !isPhone;
   // Função, não componente: um componente declarado aqui dentro seria outro a cada render e
   // recriaria os botões da barra (e a medida da pílula ficaria presa aos botões antigos).
@@ -3435,7 +3435,7 @@ function ArenaApp({
                 </div>
               ) : (
                 <div className="customer-booking-layout grid grid-cols-[minmax(0,1fr)] items-start gap-4 tablet:gap-6 pc:grid-cols-[minmax(0,1fr)_20rem]">
-                  <div className="min-w-0 space-y-4">
+                  <div className="booking-workspace-content min-w-0 space-y-4">
                     {rescheduleRow && (
                       <RescheduleFromTo
                         original={ticketFor(rescheduleRow)}
@@ -3470,9 +3470,8 @@ function ArenaApp({
                       />
                     )}
 
-                    {/* Tablet e computador: Serviço e Profissional com a lista inteira à vista (o
-                        escolhido fica marcado; nada recolhe num resumo); lado a lado só a partir de
-                        1280 px, porque na coluna estreita de 1024–1279 os nomes quebravam. */}
+                    {/* Escolhas abertas: no tablet em pé, duas etapas lado a lado; desde 1024,
+                        uma coluna própria com listas roláveis junto ao calendário. */}
                     <div className="customer-booking-choices space-y-4 tablet:grid tablet:grid-cols-2 tablet:items-start tablet:gap-4 tablet:space-y-0">
                       <StepCard
                         id="booking-step-service"

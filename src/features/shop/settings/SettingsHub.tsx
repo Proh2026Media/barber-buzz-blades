@@ -243,11 +243,10 @@ export function SettingsHub({
   const { t, locale } = useI18n();
   const themePreference = useThemePreference();
   const current = section && sections.includes(section) ? section : null;
-  // A partir de 1024 px a lista de assuntos fica ao lado da seção aberta (mestre-detalhe) e,
-  // sem seção no endereço, a primeira já aparece à direita. A partir de 1024 px o segundo nível
-  // do Agendamento (um ajuste por vez) ganha um índice compacto, acima do formulário até 1535 px.
-  const wide = useViewportAtLeast(1024);
-  const rail = useViewportAtLeast(1024);
+  // Tablet e computador: categorias no topo e seção aberta abaixo. O índice de Agendamento
+  // fica ao lado do formulário quando há largura, sem acumular outra coluna de categorias.
+  const wide = useViewportAtLeast(768);
+  const rail = useViewportAtLeast(768);
   // A seção mostrada sem `?secao=` nunca é Agendamento: a lista de ajustes dela abre cada um
   // pelo `useSettingsItem` do ShopShell, que só está ativo com a seção de fato aberta (sem isso
   // o ajuste abria sem seta de voltar e sem o Voltar do navegador).
@@ -311,7 +310,7 @@ export function SettingsHub({
             <span className="min-w-0">{t(`settingsHub.section.${id}` as const)}</span>
           </h3>
         </div>
-        {/* O invólucro e a posição do conteúdo não mudam com o trilho: cruzar 1024 px com um
+        {/* O invólucro e a posição do conteúdo não mudam com o trilho: cruzar 768 px com um
             ajuste sendo editado não remonta o cartão (o rascunho ficaria perdido). */}
         <div className={railOn ? "ajustes-trilho-grade" : undefined}>
           {railOn && overview?.settings ? (
@@ -688,8 +687,8 @@ export function SettingsHub({
     </div>
   );
 
-  // Abaixo de 1024 px: lista OU seção (o MasterDetail esconde a outra). A partir de 1024 px:
-  // as duas lado a lado, e sem seção no endereço a primeira já aparece à direita.
+  // Celular: lista OU seção. Tablet e computador: lista de categorias acima do conteúdo;
+  // o mesmo invólucro mantém a edição montada ao mudar a largura.
   return (
     <MasterDetail
       className="ajustes-mestre"
