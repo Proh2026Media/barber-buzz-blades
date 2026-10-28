@@ -47,13 +47,13 @@ import {
 } from "@/lib/shop/branding";
 import { SLOT_STEP_MINUTES, slotRuleFromSettings } from "@/lib/shop/appointments";
 import { useThemePreference } from "@/lib/use-theme-preference";
+import { ProgressRing } from "../ShopSetupChecklist";
 import {
-  ProgressRing,
   isShopSetupGuideHidden,
   showShopSetupGuide,
   useShopSetupProgress,
   type SetupTarget,
-} from "../ShopSetupChecklist";
+} from "../setup-model";
 import { BOOKING_CARD_IDS } from "./booking-cards";
 import { BookingRail } from "./BookingRulesSettings";
 import { ColorDots, LogoChip, PageStatusBadge } from "./brand-bits";

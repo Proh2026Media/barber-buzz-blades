@@ -1,6 +1,6 @@
 import { Headset, Smartphone, type LucideIcon } from "lucide-react";
 import type { MessageKey } from "@/lib/i18n";
-import { PLATFORM_META, ROLE_META } from "@/features/shop/roles";
+import { PLATFORM_META, ROLE_META } from "@/features/shop/roles-model";
 import type { DemoRole } from "./chrome";
 
 /**

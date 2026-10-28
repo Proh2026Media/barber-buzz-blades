@@ -410,3 +410,82 @@ test("Minhas áreas: equipe na A + shop_admin antigo na B mostra só a loja que 
   });
   assert.equal(showsAreas(noShop), false);
 });
+
+/* Guarda real do painel, isolada das consultas e dos efeitos do roteador. */
+import { professionalRefusalFrom, requireProfessionalWith } from "./professional-access.ts";
+
+test("recusa profissional prioriza convite, depois saída, e tolera consultas indisponíveis", async () => {
+  for (const [invites, removed, expected] of [
+    [true, true, "aguardando"],
+    [false, true, "removido"],
+    [false, false, "sem-acesso"],
+  ] as const) {
+    assert.equal(
+      await professionalRefusalFrom({ invites: async () => invites, removed: async () => removed }),
+      expected,
+    );
+  }
+  const failure = async (): Promise<boolean> => {
+    throw new Error("sem rede");
+  };
+  assert.equal(
+    await professionalRefusalFrom({ invites: failure, removed: async () => true }),
+    "removido",
+  );
+  assert.equal(await professionalRefusalFrom({ invites: failure, removed: failure }), "sem-acesso");
+});
+
+test("guarda mantém destino do login, permite equipe e recusa cliente com o motivo correto", async () => {
+  type Profile = Parameters<typeof requireProfessionalWith>[1] extends {
+    session: (path: string) => Promise<infer P>;
+  }
+    ? P
+    : never;
+  const blocked = {
+    primaryRole: "customer",
+    shopActors: [],
+    memberships: [],
+  } as unknown as Profile;
+  for (const role of ["owner", "partner", "associate", "employee"] as const) {
+    const profile = { ...blocked, shopActors: [{ role }] } as unknown as Profile;
+    assert.equal(
+      await requireProfessionalWith("/shop", {
+        session: async (path) => {
+          assert.equal(path, "/shop");
+          return profile;
+        },
+        refusal: async () => {
+          throw new Error("não deve consultar recusa");
+        },
+        refuse: () => {
+          throw new Error("não deve recusar equipe");
+        },
+      }),
+      profile,
+    );
+  }
+  for (const notice of ["aguardando", "removido", "sem-acesso"] as const) {
+    await assert.rejects(
+      requireProfessionalWith("/shop/pontos", {
+        session: async () => blocked,
+        refusal: async () => notice,
+        refuse: (_profile, reason) => {
+          throw new Error(`/app?aviso=${reason}`);
+        },
+      }),
+      { message: `/app?aviso=${notice}` },
+    );
+  }
+  await assert.rejects(
+    requireProfessionalWith("/shop/pontos", {
+      session: async (next) => {
+        throw new Error(`/auth?next=${next}`);
+      },
+      refusal: async () => "sem-acesso",
+      refuse: () => {
+        throw new Error("não deve chegar");
+      },
+    }),
+    { message: "/auth?next=/shop/pontos" },
+  );
+});

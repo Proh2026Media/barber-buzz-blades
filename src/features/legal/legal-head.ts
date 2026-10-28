@@ -1,6 +1,5 @@
-import { DEFAULT_LOCALE } from "@/lib/i18n/locale";
+import { DEFAULT_LOCALE, localeFromTag } from "@/lib/i18n/locale";
 import { translate, type MessageKey } from "@/lib/i18n/translate";
-import { localeFromTag } from "./legal-locale";
 
 /**
  * `<head>` das páginas legais no idioma pedido por `?lang=`.

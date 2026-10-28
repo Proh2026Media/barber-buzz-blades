@@ -1,33 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
-import { INTL_LOCALE, LOCALE_EVENT, parseLocale, readLocale, type Locale } from "@/lib/i18n/locale";
-import { translate, type MessageKey, type TranslationVars } from "@/lib/i18n/translate";
+import {
+  INTL_LOCALE,
+  LOCALE_EVENT,
+  localeFromTag,
+  localeFromLanguages,
+  readLocale,
+  type Locale,
+} from "@/lib/i18n/locale";
+import { loadLocale, translate, type MessageKey, type TranslationVars } from "@/lib/i18n/translate";
 import { useI18n } from "@/lib/i18n/use-i18n";
-
-/**
- * Converte uma etiqueta de idioma (`en`, `en-GB`, `pt_PT`, `es-MX`…) num idioma suportado.
- * Inglês sem região vira en-US; português sem região vira pt-BR; qualquer espanhol vira es.
- */
-export function localeFromTag(tag: unknown): Locale | null {
-  if (typeof tag !== "string") return null;
-  const raw = tag.trim();
-  if (!raw) return null;
-  const exact = parseLocale(raw);
-  if (exact) return exact;
-  const [language, region = ""] = raw.toLowerCase().replace("_", "-").split("-");
-  if (language === "en") return region === "gb" || region === "uk" ? "en-GB" : "en-US";
-  if (language === "pt") return region === "pt" ? "pt-PT" : "pt-BR";
-  if (language === "es") return "es";
-  return null;
-}
-
-/** Primeiro idioma suportado da lista do navegador (`navigator.languages`). */
-export function localeFromLanguages(tags: readonly unknown[]): Locale | null {
-  for (const tag of tags) {
-    const locale = localeFromTag(tag);
-    if (locale) return locale;
-  }
-  return null;
-}
 
 function browserLanguages(): readonly string[] {
   if (typeof navigator === "undefined") return [];
@@ -65,7 +46,17 @@ export function useLegalI18n(urlLang?: string) {
     }
     // Quem já escolheu um idioma no app continua com ele.
     if (saved) return;
-    setBrowserLocale(localeFromLanguages(browserLanguages()));
+    let active = true;
+    const detected = localeFromLanguages(browserLanguages());
+    if (detected)
+      void loadLocale(detected)
+        .then(() => {
+          if (active) setBrowserLocale(detected);
+        })
+        .catch(() => {});
+    return () => {
+      active = false;
+    };
   }, []);
 
   const urlLocale = localeFromTag(urlLang);

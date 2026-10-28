@@ -48,17 +48,17 @@ import { t as tNow, useI18n } from "@/lib/i18n";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { DepartureBookings } from "./settings/DepartureBookings";
 import { cn } from "@/lib/utils";
-import { FOUNDER_META, RoleBadge, formatPercent, isOwnerRole, roleMeta } from "./roles";
+import { RoleBadge } from "./roles";
+import { FOUNDER_META, formatPercent, isOwnerRole, roleMeta } from "./roles-model";
 import { TeamInviteContext } from "./team-invite";
+import { GovernanceModeBadge, OwnershipBar } from "./team";
 import {
-  GovernanceModeBadge,
-  OwnershipBar,
   activeOwners,
   firstName,
   governanceModeOf,
   loadTeamMembers,
   type TeamMember,
-} from "./team";
+} from "./team-model";
 
 type EditableRole = "employee" | "associate" | "owner";
 

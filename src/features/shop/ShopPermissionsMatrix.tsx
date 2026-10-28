@@ -37,7 +37,7 @@ import { permissionLockedForRole } from "@/lib/auth/capabilities";
 import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
 import { useViewportAtLeast } from "@/lib/device";
 import { cn } from "@/lib/utils";
-import { ROLE_META } from "./roles";
+import { ROLE_META } from "./roles-model";
 
 type PermissionMeta = {
   permission: string;

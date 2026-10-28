@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { toast } from "sonner";
 import { Check, Languages } from "lucide-react";
 import {
   DropdownMenu,
@@ -34,6 +36,7 @@ export function LanguageSwitcher({
   showCode = false,
 }: LanguageSwitcherProps) {
   const app = useI18n();
+  const [loading, setLoading] = useState(false);
   const { setLocale } = app;
   const locale = shownLocale ?? app.locale;
   const t = (key: "language.button" | "language.title", vars?: Record<string, string>) =>
@@ -45,6 +48,8 @@ export function LanguageSwitcher({
         <DropdownMenuTrigger asChild>
           <button
             type="button"
+            disabled={loading}
+            aria-busy={loading}
             aria-label={t("language.button", { language: current })}
             title={current}
             className={buttonClassName}
@@ -70,7 +75,12 @@ export function LanguageSwitcher({
               <DropdownMenuItem
                 key={option}
                 lang={option}
-                onSelect={() => setLocale(option)}
+                onSelect={async () => {
+                  setLoading(true);
+                  const changed = await setLocale(option);
+                  setLoading(false);
+                  if (!changed) toast.error(app.t("language.loadError"));
+                }}
                 aria-current={selected ? "true" : undefined}
                 className="min-h-11 justify-between gap-3"
               >

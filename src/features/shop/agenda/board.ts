@@ -8,7 +8,7 @@ import { BLOCK_REASONS } from "@/features/shop/hours/reasons";
 import { DEVICE_MIN, useViewportAtLeast } from "@/lib/device";
 import { useI18n } from "@/lib/i18n";
 import { momentOf } from "./model";
-import { useShopTime } from "./summary";
+import { useShopTime } from "./summary-model";
 import type { AgendaBlock, CardState, DayAppointment } from "./types";
 
 /**

@@ -43,7 +43,7 @@ import { cn } from "@/lib/utils";
 import { useDemo } from "@/features/demo/context";
 import { clockInTimeZone } from "@/features/register-owner/timezones";
 import { useMinLeadLabel } from "./min-lead-label";
-import { useTimeZoneName } from "@/features/register-owner/TimeZonePicker";
+import { useTimeZoneName } from "@/features/register-owner/timezone-name";
 import { BOOKING_CARD_IDS } from "./booking-cards";
 
 export type StaffAssignmentMode = "client_pick" | "favorite_then_pick" | "random_available";

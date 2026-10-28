@@ -26,9 +26,9 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 
 ---
 
-## 1. As 5 recomendadas para a próxima rodada
+## 1. Próximas ações externas e decisões
 
-Atualizada em 24/10/2026 após a revisão geral por dispositivo (P-96/P-92). Pacotes do Google, testes reais e decisões fora do escopo continuam no topo.
+Atualizada em 28/10/2026: código executável de P-44, P-45, P-48 e P-75 concluído; P-78 preparada, falta aplicar a migration nº 98 pelo agente da VPS. Pacote: [implantacao-falha-login-google-2026-10-28.md](../implantacao-falha-login-google-2026-10-28.md). Os itens abaixo dependem de acesso externo, aparelhos ou decisão de produto.
 
 | Ordem | Itens      | O quê                                                                    | Por quê                                                                                                                                                                                                   |
 | ----- | ---------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -38,7 +38,7 @@ Atualizada em 24/10/2026 após a revisão geral por dispositivo (P-96/P-92). Pac
 | 4     | P-95       | Decidir folha inferior no celular                                        | P-92 concluída na revisão geral P-96. A folha inferior altera a experiência móvel e continua aguardando escolha.                                                                                          |
 | 5     | P-71       | Decidir "reserva" × "agendamento" no resto do app                        | A aba e a página já dizem "Meus agendamentos" (P-32); o fluxo de agendar e alguns avisos ainda dizem "reserva".                                                                                           |
 
-Sem pressa e sem depender de terceiros: P-14, P-45 (opcionais de antes).
+P-14 continua opcional e depende de uma rodada com login real nos três domínios. P-45 foi concluída em 28/10. P-95 não foi implementada: conflita com a orientação vigente de preservar o celular. Decisões da seção 5 e revisão jurídica P-39 não foram presumidas pelo pedido de concluir o desenvolvimento.
 
 ---
 
@@ -374,7 +374,9 @@ Teclado virtual aberto e safe-area do iOS, leitor de tela real, rede lenta, app 
 
 Medido em 12/10/2026 com `npx eslint .` e com o build de 12/10/2026, 14:16 (pasta `.output`). Para rodar tudo de uma vez: `scripts/verificar.sh` ([scripts/README.md](../../scripts/README.md)).
 
-### P-44 — Avisos e erros do eslint · feito em parte (13/10/2026)
+### P-44 — Avisos e erros do eslint · feito em 28/10/2026
+
+Regras, dados e funções sem JSX separados em oito módulos `.ts` ao lado dos componentes; importações atualizadas. Conferência final de `src` e `supabase/functions` sem erros ou avisos. Sem desligar regras novas. Registros abaixo são históricos.
 
 - **Mais em 13/10/2026 (noite):** a regra de recarga rápida ficou desligada só nos componentes base de `src/components/ui/` (padrão da biblioteca, que exporta as variantes junto do componente); prettier em `src/routes/auth.tsx` (27 erros antigos, só formatação). `eslint src supabase/functions`: 0 erros e 26 avisos, todos `react-refresh/only-export-components` em 10 arquivos de `src/features` (mais em `roles.tsx`: 8; `team.tsx`: 5). Os avisos só afetam a recarga rápida no desenvolvimento; mover os exports mexe em dezenas de importações e ficou para quando esses arquivos forem mexidos.
 
@@ -384,7 +386,9 @@ Medido em 12/10/2026 com `npx eslint .` e com o build de 12/10/2026, 14:16 (past
 - **Erros de prettier** em 4 funções do servidor: `whatsapp-channel/index.ts` (17), `platform-whatsapp/index.ts` (5), `_shared/domain-manager.ts` (3), `_shared/evolution.ts` (1).
 - A pasta `scratch/` é ignorada pelo git, mas não pelo eslint: gera mais 52 erros só na máquina local. Saída: incluir `scratch/` nos ignores do `eslint.config.js`.
 
-### P-45 — Tamanho do pacote · pendente (medido em 13/10/2026)
+### P-45 — Tamanho do pacote · feito em 28/10/2026
+
+Somente pt-BR no pacote inicial; demais dicionários carregados por demanda, com deduplicação, estado de carregamento e mensagem de falha. Idioma salvo carregado antes da hidratação; páginas legais aguardam `?lang=` no servidor e no navegador. Cinco idiomas e 20 combinações de páginas legais conferidos. Maior pacote inicial: 1.823.215 → 1.069.740 bytes (−41,3%); detalhes no CONTINUIDADE. Histórico da investigação abaixo; a indicação antiga de “não feito” foi superada.
 
 - **Medido em 13/10/2026 (noite):** `index-*.js` com 1.788.103 bytes (519.699 comprimido com gzip); `ShopShell-*.js` 470.525 (129.013). Os 5 dicionários de `src/lib/i18n/messages/` somam 1.046.738 bytes de código-fonte e entram inteiros no `index` (os textos de en-US, es e pt-PT foram achados nele): todo visitante baixa os 5 idiomas.
 - **Maior ganho:** carregar só pt-BR e buscar os outros idiomas sob demanda (`import()` em `translate.ts`; `getLocale` passa ao idioma salvo só depois de carregado). **Não feito de propósito:** as páginas legais saem do servidor já traduzidas por `?lang=` (`legal-head.ts`, `legal-locale.ts`), usadas pela verificação do Google, e a tela de idioma mostra uma frase em cada idioma (`LanguageSettingsCard.tsx`). Precisa carregar todos no servidor, esperar o idioma antes de hidratar a página legal e testar as 5 línguas no navegador; numa rodada própria.
@@ -405,7 +409,9 @@ Continua em `package.json` (linha 24) e em `bunfig.toml` (linha 6) desde que o M
 - `fix.fidelidade-insights.policyFooter` continua no `pt-BR.ts` (linha 3931) e **está em uso** ([politica.tsx](../../src/routes/politica.tsx), linha 278). Não apagar.
 - Uma busca simples em 12/10 (3.960 chaves, descontando prefixos montados com `${…}`) achou só uma suspeita: `catalog.access.close`, que nenhum arquivo de `src` usa. Ela existe em 4 dicionários: `pt-BR`, `pt-PT`, `en-US` e `es` (o `en-GB` herda do `en-US` com `...enUS`). Conferir e tirar dos quatro; o teste `translate.test.ts` exige paridade.
 
-### P-48 — Pequenos restos · pendente
+### P-48 — Pequenos restos · código concluído em 28/10/2026; teste real em P-42
+
+Guarda do painel e prioridade dos motivos de recusa cobertas por testes automáticos. `privacy_requests.sql` passou como `postgres`; removida a exceção `supabase_admin` do executor local. Cadastro em 360 px conferido: placeholder atual “Crie a sua” e selo “6+ caracteres”, sem corte ou rolagem lateral; não exigiu alteração de UI. Desconexão Google já foi corrigida em 13/10, mas segue sem confirmação com conta real (P-42). `.env` local preservado e excluído da entrega. Os relatos abaixo são históricos, não tarefas novas.
 
 - `supabase/tests/privacy_requests.sql` só passa como `supabase_admin` na cópia local (CONTINUIDADE, linha 238).
 - **Feito em 13/10/2026 (noite):** `google-connect` (desconectar) apaga da fila os envios `pending` e `failed` da pessoa; publicada às 18:10 (cópia `/root/functions-backup-google-connect-20261013-181002`), reiniciando só o container das funções; responde normalmente (401 sem login). Com conta Google real **não testado**.
@@ -448,15 +454,19 @@ Achado ao escrever P-59/P-60: `apply_add_shop_member` e `apply_update_shop_membe
 
 Na página pública, sem horário livre no resto do dia por causa da antecedência ou do fechamento, o selo dizia "Lotado hoje", o que dá a entender que a agenda encheu. Trocado por "Sem horário livre hoje" (pt-BR e pt-PT), "No times left today" (en) e "Sin horarios libres hoy" (es).
 
-### P-75 — Próximas simplificações visuais · pendente (avançou em 22/10/2026)
+### P-75 — Simplificações visuais · concluídas no tablet e computador em 28/10/2026
+
+Desde 768 px, Equipe e sociedade e Endereços abrem um assunto por vez, com formulários mantidos montados e navegação por teclado. Google Agenda resume a agenda selecionada e recolhe as opções de cada direção da sincronização. O celular conserva a composição anterior. Equipe comparada pixel a pixel em 390 px: nenhuma diferença. Redução adicional no celular depende de escolha, fora da autorização de preservar o mobile.
 
 Feitas em 16/10/2026: Ajustes → Agendamento um item por vez, editor de mensagens recolhido, Serviços e Equipe sem ferramentas de lista longa em lista curta, selos repetidos fora, barra lateral no computador ([analise-visual-2026-10-16.md](../analise-visual-2026-10-16.md), seção 2).
 
 **Feitas em 22/10/2026, só no tablet e no computador** (entrega "interface por dispositivo"; o celular não mudou): "Seu dia" mais curto (faixa de números no tablet em pé, compacto na coluna do dia a partir de 1024) e a lista da Agenda em modo compacto (cartão em linha a partir de 768, linha única a partir de ~1536; `src/styles/agenda.css`); Equipe em uma linha por pessoa no modo lista a partir de 1024 (tabela `DataList` em `src/features/shop/catalog/TeamTab.tsx`) e pessoas de "Equipe e sociedade" em tabela (`ShopTeamAccessCard.tsx`).
 
-Ainda ficam, sem tirar função (seções 3 e 4 do mesmo documento): o mesmo no celular, se o dono quiser; Google Agenda com as opções recolhidas depois de escolher a agenda; Ajustes → Equipe e sociedade e Endereços um item por vez (em 16/10, "Seu acesso nesta barbearia" já virou uma linha de resumo com a lista a um toque).
+Os itens de Google Agenda, Equipe e sociedade e Endereços foram concluídos em 28/10 para tablet e computador. A sugestão equivalente no celular continua opcional, sem implementação.
 
-### P-78 — Login Google no iPhone: desistência no Google · pendente (baixa)
+### P-78 — Login Google no iPhone: desistência no Google · código pronto; falta aplicar nº 98
+
+Em 28/10, cliente e canal de falha separados da ponte PKCE, com consumo único, validade de dez minutos e teto próprio de 500 marcadores. Compatível com banco antigo e indisponibilidade de rede. Teste SQL novo com 18 PASS; bateria completa 1.139 PASS. Aplicação na VPS e teste no iPhone ainda pendentes. Pacote com backup, ensaio e reversão: [implantacao-falha-login-google-2026-10-28.md](../implantacao-falha-login-google-2026-10-28.md). Diagnóstico original abaixo.
 
 Quando a pessoa cancela ou o Google recusa o login, a janela por cima do app mostra "Não deu para concluir o login", mas o app instalado continua em "Termine o login na janela do Google" até a pessoa tocar **Cancelar** ou passarem 10 minutos (não há como a janela avisar o app de uma falha: a ponte só aceita código de login de verdade, conferido em `auth.flow_state`). Para avisar na hora: guardar um marcador de falha por id, com limite próprio contra enchimento. Levantado na revisão de código de 16/10/2026.
 

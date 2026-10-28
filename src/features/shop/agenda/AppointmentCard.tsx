@@ -34,16 +34,11 @@ import { useDemo } from "@/features/demo/context";
 import type { SlotWait } from "@/features/waiting/model";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-import {
-  NoShowDialog,
-  OccurrenceDialog,
-  OccurrenceTags,
-  occurrenceRules,
-  useAttendance,
-} from "./attendance";
+import { NoShowDialog, OccurrenceDialog, OccurrenceTags } from "./attendance";
+import { occurrenceRules, useAttendance } from "./attendance-model";
 import { clientDisplay, recurringBadge } from "../clients/model";
 import { momentOf } from "./model";
-import { useShopTime } from "./summary";
+import { useShopTime } from "./summary-model";
 import {
   AGENDA_STATE,
   ON_HOLD_STATE,

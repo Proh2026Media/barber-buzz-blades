@@ -7,7 +7,7 @@ import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { BLOCK_HATCH, BLOCK_HATCH_SOFT, boardState, useBlockInfo } from "./board";
 import { placeInLanes } from "./model";
-import { useShopTime } from "./summary";
+import { useShopTime } from "./summary-model";
 import { AGENDA_STATE, agendaClientName, type AgendaBlock, type DayAppointment } from "./types";
 
 const MINUTE = 60_000;

@@ -7,7 +7,13 @@ import {
   writeLocale,
   type Locale,
 } from "./locale.ts";
-import { translate, type MessageKey, type TranslationVars } from "./translate.ts";
+import {
+  isLocaleLoaded,
+  loadLocale,
+  translate,
+  type MessageKey,
+  type TranslationVars,
+} from "./translate.ts";
 
 // Reserva quando o armazenamento do navegador está bloqueado: a escolha vale para esta página.
 let memoryLocale: Locale | null = null;
@@ -23,11 +29,16 @@ function storage() {
 }
 
 /** Idioma atual fora do React (mensagens de erro, formatação). No servidor, sempre pt-BR. */
-export function getLocale(): Locale {
+function requestedLocale(): Locale {
   if (typeof window === "undefined") return DEFAULT_LOCALE;
   const store = storage();
   if (store && !storageBlocked) return readLocale(store) ?? DEFAULT_LOCALE;
   return memoryLocale ?? DEFAULT_LOCALE;
+}
+
+export function getLocale(): Locale {
+  const locale = requestedLocale();
+  return isLocaleLoaded(locale) ? locale : DEFAULT_LOCALE;
 }
 
 /** Tradução fora do React, com o idioma atual. */
@@ -35,20 +46,46 @@ export function t(key: MessageKey, vars?: TranslationVars): string {
   return translate(getLocale(), key, vars);
 }
 
-export function setLocale(locale: Locale) {
+let choiceVersion = 0;
+export async function setLocale(locale: Locale): Promise<boolean> {
+  const version = ++choiceVersion;
+  try {
+    await loadLocale(locale);
+  } catch {
+    return false;
+  }
+  if (version !== choiceVersion) return false;
   memoryLocale = locale;
   const store = storage();
   storageBlocked = !store || !writeLocale(store, locale);
   if (typeof document !== "undefined") document.documentElement.lang = locale;
   window.dispatchEvent(new Event(LOCALE_EVENT));
+  return true;
 }
 
 function subscribe(callback: () => void) {
+  let active = true;
+  const synchronize = () => {
+    const locale = requestedLocale();
+    if (isLocaleLoaded(locale)) callback();
+    else
+      void loadLocale(locale)
+        .then(() => {
+          if (active) callback();
+        })
+        .catch(() => {});
+  };
+  const onStorage = () => {
+    choiceVersion++;
+    synchronize();
+  };
   window.addEventListener(LOCALE_EVENT, callback);
-  window.addEventListener("storage", callback);
+  window.addEventListener("storage", onStorage);
+  synchronize();
   return () => {
+    active = false;
     window.removeEventListener(LOCALE_EVENT, callback);
-    window.removeEventListener("storage", callback);
+    window.removeEventListener("storage", onStorage);
   };
 }
 

@@ -4,7 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { PersonAvatar, StatusBadge } from "@/components/visual";
 import { MyAreasSection } from "@/features/account/MyAreas";
 import { useAreaSwitch } from "@/features/account/useAreas";
-import { CUSTOMER_META } from "@/features/shop/roles";
+import { CUSTOMER_META } from "@/features/shop/roles-model";
 import type { AreaItem } from "@/lib/auth/areas";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";

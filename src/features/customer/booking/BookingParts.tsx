@@ -44,7 +44,7 @@ import {
   Tag,
 } from "@/components/visual";
 import { ServiceIcon } from "@/components/ui/service-icon";
-import type { CatalogViewMode } from "@/features/shop/CatalogViewToggle";
+import type { CatalogViewMode } from "@/features/shop/catalog-view-model";
 import {
   dateFromLocalKey,
   formatShopDate,

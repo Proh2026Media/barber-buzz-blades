@@ -1,3 +1,4 @@
+import { SettingsPanel, SettingsPanels } from "./settings/SettingsPanels";
 import { useDevice } from "@/lib/device";
 import { WorkspaceFrame, WorkspaceHeading } from "@/components/visual/WorkspaceHeader";
 import { useWaiting } from "@/features/waiting/useWaiting";
@@ -30,7 +31,8 @@ import { countDecisionsForMe } from "@/features/shop/settings/decision-queue";
 import { PartnerCatalogSuggestions } from "./PartnerCatalogSuggestions";
 import { ShopTeamAccessCard } from "./ShopTeamAccessCard";
 import { TeamInviteContext, type TeamInviteRequest } from "./team-invite";
-import { ShopSetupChecklist, type SetupTarget } from "./ShopSetupChecklist";
+import { ShopSetupChecklist } from "./ShopSetupChecklist";
+import { type SetupTarget } from "./setup-model";
 import { BrandIdentityEditor } from "@/features/shop/BrandIdentityEditor";
 import { WhatsAppChannelCard } from "@/features/shop/settings/WhatsAppChannelCard";
 import { SlugRedirectsCard } from "@/features/shop/settings/SlugRedirectsCard";
@@ -79,9 +81,9 @@ import {
 } from "react";
 import { ShopAccountMenu, ShopList, ShopSwitcher } from "./ShopAccountMenu";
 import { useMyAreas, useRememberArea } from "@/features/account/useAreas";
-import { PLATFORM_META, isOwnerRole } from "./roles";
+import { PLATFORM_META, isOwnerRole } from "./roles-model";
 import { RoleAccessButton } from "./RoleAccessButton";
-import { approversOf, governanceModeOf, loadTeamMembers, type TeamMember } from "./team";
+import { approversOf, governanceModeOf, loadTeamMembers, type TeamMember } from "./team-model";
 import { MyAccessCard } from "./settings/MyAccessCard";
 import { MyProfileCard } from "./settings/MyProfileCard";
 import { Link } from "@tanstack/react-router";
@@ -1809,7 +1811,10 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     () => ({ request: teamInvite, clear: () => setTeamInvite(null) }),
     [teamInvite],
   );
+  const [teamPanel, setTeamPanel] = useState("decisions");
+  const [addressPanel, setAddressPanel] = useState("link");
   function openTeamSection(anchor: string) {
+    setTeamPanel(anchor === "team-access" ? "people" : "decisions");
     setTab("configuracoes");
     setSettingsSection("equipe");
     window.setTimeout(
@@ -2683,15 +2688,27 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     }
                     if (section === "enderecos") {
                       return (
-                        <>
-                          {shopLink(false)}
-                          {canManageShopChannels && <ShopDomainCard shopId={shop.id} />}
-                          <SlugRedirectsCard
-                            shopId={shop.id}
-                            currentShopSlug={shop.slug}
-                            canManageShopRedirects={canManageShopChannels}
-                          />
-                        </>
+                        <SettingsPanels
+                          label={t("settingsHub.section.enderecos")}
+                          value={addressPanel}
+                          onChange={setAddressPanel}
+                        >
+                          <SettingsPanel id="link" label={t("shopLink.title")}>
+                            {shopLink(false)}
+                          </SettingsPanel>
+                          {canManageShopChannels && (
+                            <SettingsPanel id="domain" label={t("domainCard.title")}>
+                              <ShopDomainCard shopId={shop.id} />
+                            </SettingsPanel>
+                          )}
+                          <SettingsPanel id="redirects" label={t("redirects.title")}>
+                            <SlugRedirectsCard
+                              shopId={shop.id}
+                              currentShopSlug={shop.slug}
+                              canManageShopRedirects={canManageShopChannels}
+                            />
+                          </SettingsPanel>
+                        </SettingsPanels>
                       );
                     }
                     if (section === "perfil" && ownStaffRow) {
@@ -2709,60 +2726,72 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     }
                     if (section === "equipe" && actor) {
                       return (
-                        <>
+                        <SettingsPanels
+                          label={t("settingsHub.section.equipe")}
+                          value={teamPanel}
+                          onChange={setTeamPanel}
+                        >
                           {/* Sociedade num lugar só: decisões pendentes (com modo e %), pessoas e
                             papéis com convites e permissões, o próprio acesso e a saída. */}
-                          <TeamGovernance
-                            revision={governanceRevision}
-                            shopId={shop.id}
-                            profile={effectiveProfile}
-                            services={services}
-                            staff={staff}
-                            businessHours={businessHours}
-                            blocks={blocks}
-                            settings={settings}
-                            timeZone={shopTimeZone}
-                            onChanged={() => {
-                              setGovernanceRevision((value) => value + 1);
-                              void loadCatalog();
-                            }}
-                          />
+                          <SettingsPanel id="decisions" label={t("eq.gov.title")}>
+                            <TeamGovernance
+                              revision={governanceRevision}
+                              shopId={shop.id}
+                              profile={effectiveProfile}
+                              services={services}
+                              staff={staff}
+                              businessHours={businessHours}
+                              blocks={blocks}
+                              settings={settings}
+                              timeZone={shopTimeZone}
+                              onChanged={() => {
+                                setGovernanceRevision((value) => value + 1);
+                                void loadCatalog();
+                              }}
+                            />
+                          </SettingsPanel>
                           {powers.society && (
-                            <div id="team-access" className="scroll-mt-28">
-                              <TeamInviteContext.Provider value={teamInviteContext}>
-                                <ShopTeamAccessCard
-                                  demoMembers={demo ? (team ?? []) : undefined}
-                                  shopId={shop.id}
-                                  canApplyProtected={!!capabilities?.canApplyOperations}
-                                  canEditSociety={powers.society && !demo}
-                                  staff={staff}
-                                  currentUserId={profile.user.id}
-                                  onOpenDecisions={openApprovals}
-                                  timeZone={shopTimeZone}
-                                  onChanged={() => {
-                                    setGovernanceRevision((value) => value + 1);
-                                    void loadCatalog();
-                                  }}
-                                />
-                              </TeamInviteContext.Provider>
-                            </div>
+                            <SettingsPanel id="people" label={t("eq.people.title")}>
+                              <div id="team-access" className="scroll-mt-28">
+                                <TeamInviteContext.Provider value={teamInviteContext}>
+                                  <ShopTeamAccessCard
+                                    demoMembers={demo ? (team ?? []) : undefined}
+                                    shopId={shop.id}
+                                    canApplyProtected={!!capabilities?.canApplyOperations}
+                                    canEditSociety={powers.society && !demo}
+                                    staff={staff}
+                                    currentUserId={profile.user.id}
+                                    onOpenDecisions={openApprovals}
+                                    timeZone={shopTimeZone}
+                                    onChanged={() => {
+                                      setGovernanceRevision((value) => value + 1);
+                                      void loadCatalog();
+                                    }}
+                                  />
+                                </TeamInviteContext.Provider>
+                              </div>
+                            </SettingsPanel>
                           )}
-                          <MyAccessCard
-                            role={actor.role}
-                            percent={actor.ownership_percent}
-                            capabilities={accessCapabilities}
-                          />
-                          <ShopDepartureCard
-                            shopId={shop.id}
-                            viewerId={viewerId}
-                            role={actor.role}
-                            onOpenPeople={openPeople}
-                            canApproveRelease={powers.society}
-                            canRequestDeparture={powers.leaveShop}
-                            canTakeClients={powers.takeClients}
-                            timeZone={shopTimeZone}
-                          />
-                        </>
+                          <SettingsPanel id="access" label={t("eq.mine.title")}>
+                            <MyAccessCard
+                              role={actor.role}
+                              percent={actor.ownership_percent}
+                              capabilities={accessCapabilities}
+                            />
+                          </SettingsPanel>
+                          <SettingsPanel id="leave" label={t("eq.leave.cardTitle")}>
+                            <ShopDepartureCard
+                              shopId={shop.id}
+                              viewerId={viewerId}
+                              role={actor.role}
+                              onOpenPeople={openPeople}
+                              canApproveRelease={powers.society}
+                              canRequestDeparture={powers.leaveShop}
+                              canTakeClients={powers.takeClients}
+                              timeZone={shopTimeZone}
+                            />
+                          </SettingsPanel>
+                        </SettingsPanels>
                       );
                     }
                     if (section === "idioma") {

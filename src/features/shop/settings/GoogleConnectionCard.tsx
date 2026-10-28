@@ -1,3 +1,4 @@
+import { useViewportAtLeast } from "@/lib/device";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   ArrowDownToLine,
@@ -6,6 +7,7 @@ import {
   CalendarDays,
   CalendarX2,
   CheckCircle2,
+  ChevronDown,
   Eye,
   Link2,
   Loader2,
@@ -57,7 +59,7 @@ import {
   friendlyIntegrationError,
   integrationErrorKind,
 } from "@/lib/integrations/friendly-error";
-import { useTimeZoneName } from "@/features/register-owner/TimeZonePicker";
+import { useTimeZoneName } from "@/features/register-owner/timezone-name";
 import { CONNECTION_STATE } from "./connection-state";
 
 type GoogleConnectionStatus = {
@@ -277,24 +279,42 @@ function DirectionBlock({
   text,
   aside,
   children,
+  collapsible = false,
 }: {
   icon: typeof ArrowDownToLine;
   title: string;
   text: string;
   aside?: ReactNode;
   children: ReactNode;
+  collapsible?: boolean;
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const heading = (
+    <>
+      <IconTile icon={icon} size="sm" />
+      <div className="min-w-0 flex-1 basis-40">
+        <h4 className="text-sm font-bold">{title}</h4>
+        <p className="text-xs text-muted-foreground">{text}</p>
+      </div>
+      {aside}
+    </>
+  );
   return (
     <section className="space-y-3 rounded-2xl border border-border bg-background/60 p-4">
-      <div className="flex flex-wrap items-start gap-3">
-        <IconTile icon={icon} size="sm" />
-        <div className="min-w-0 flex-1 basis-40">
-          <h4 className="text-sm font-bold">{title}</h4>
-          <p className="text-xs text-muted-foreground">{text}</p>
-        </div>
-        {aside}
-      </div>
-      {children}
+      {collapsible ? (
+        <button
+          type="button"
+          className="flex min-h-11 w-full flex-wrap items-start gap-3 text-left"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((value) => !value)}
+        >
+          {heading}
+          <ChevronDown aria-hidden className={cn("size-4 shrink-0", expanded && "rotate-180")} />
+        </button>
+      ) : (
+        <div className="flex flex-wrap items-start gap-3">{heading}</div>
+      )}
+      {(!collapsible || expanded) && children}
     </section>
   );
 }
@@ -688,6 +708,8 @@ export function GoogleConnectionCard({
 
   const selectedCalendarId = connection.selected_calendar_id || "";
   const hasChosenCalendar = Boolean(selectedCalendarId);
+  const wide = useViewportAtLeast(768);
+  const [calendarExpanded, setCalendarExpanded] = useState(false);
   // Eventos de uma agenda anterior saem do banco na próxima sincronização; até lá, não aparecem.
   const visibleEvents = importedEvents.events.filter(
     (event) => event.calendar_id === selectedCalendarId,
@@ -910,63 +932,91 @@ export function GoogleConnectionCard({
           aria-disabled={needsReconnect || undefined}
         >
           <div className="space-y-2">
-            <p className="text-sm font-bold">{t("integr.google.whichCalendar")}</p>
-            {loadingCalendars ? (
-              <LoadingState variant="list" count={2} label={t("integr.google.loadingCalendars")} />
-            ) : calendars.length === 0 ? (
+            {wide && hasChosenCalendar && (
               <button
                 type="button"
-                className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-semibold disabled:opacity-50"
-                disabled={busy}
-                onClick={() => void loadCalendars()}
+                className="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2 text-left text-sm font-semibold"
+                aria-expanded={calendarExpanded}
+                aria-controls="google-calendar-options"
+                onClick={() => setCalendarExpanded((value) => !value)}
               >
-                <RefreshCw className="size-4" aria-hidden />
-                {t("integr.google.reloadCalendars")}
+                <span>
+                  {t("integr.google.calendarSelected", {
+                    name: connection.selected_calendar_name || selectedCalendarId,
+                  })}
+                </span>
+                <span>{t("integr.google.changeCalendar")}</span>
               </button>
-            ) : calendars.length <= CALENDAR_CARDS_MAX ? (
-              <ChoiceCards
-                legend={t("integr.google.selectAria")}
-                name="google-calendar-choice"
-                value={selectedCalendarId || null}
-                disabled={busy || needsReconnect}
-                onChange={(id) => void chooseCalendar(id)}
-                options={calendars.map((calendar) => ({
-                  value: calendar.id,
-                  title: calendar.name,
-                  icon: calendar.primary ? Star : CalendarDays,
-                  // "Principal" só quando o nome não diz isso ("Agenda principal").
-                  description:
-                    calendar.primary &&
-                    !calendar.name
-                      .toLocaleLowerCase()
-                      .includes(t("integr.google.primaryBadge").toLocaleLowerCase())
-                      ? t("integr.google.primaryBadge")
-                      : undefined,
-                }))}
-              />
-            ) : (
-              <select
-                id="google-calendar-choice"
-                className="h-11 w-full rounded-xl border border-border bg-background px-3 text-base sm:text-sm"
-                value={selectedCalendarId}
-                disabled={busy || needsReconnect}
-                onChange={(event) => void chooseCalendar(event.target.value)}
-                aria-label={t("integr.google.selectAria")}
-              >
-                <option value="" disabled={Boolean(selectedCalendarId)}>
-                  {t("integr.google.selectPlaceholder")}
-                </option>
-                {calendars.map((calendar) => (
-                  <option key={calendar.id} value={calendar.id}>
-                    {calendar.name}
-                    {calendar.primary ? ` · ${t("integr.google.primaryBadge")}` : ""}
+            )}
+            <div
+              id="google-calendar-options"
+              style={{
+                display: wide && hasChosenCalendar && !calendarExpanded ? "none" : undefined,
+              }}
+              className="space-y-2"
+            >
+              <p className="text-sm font-bold">{t("integr.google.whichCalendar")}</p>
+              {loadingCalendars ? (
+                <LoadingState
+                  variant="list"
+                  count={2}
+                  label={t("integr.google.loadingCalendars")}
+                />
+              ) : calendars.length === 0 ? (
+                <button
+                  type="button"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-semibold disabled:opacity-50"
+                  disabled={busy}
+                  onClick={() => void loadCalendars()}
+                >
+                  <RefreshCw className="size-4" aria-hidden />
+                  {t("integr.google.reloadCalendars")}
+                </button>
+              ) : calendars.length <= CALENDAR_CARDS_MAX ? (
+                <ChoiceCards
+                  legend={t("integr.google.selectAria")}
+                  name="google-calendar-choice"
+                  value={selectedCalendarId || null}
+                  disabled={busy || needsReconnect}
+                  onChange={(id) => void chooseCalendar(id)}
+                  options={calendars.map((calendar) => ({
+                    value: calendar.id,
+                    title: calendar.name,
+                    icon: calendar.primary ? Star : CalendarDays,
+                    // "Principal" só quando o nome não diz isso ("Agenda principal").
+                    description:
+                      calendar.primary &&
+                      !calendar.name
+                        .toLocaleLowerCase()
+                        .includes(t("integr.google.primaryBadge").toLocaleLowerCase())
+                        ? t("integr.google.primaryBadge")
+                        : undefined,
+                  }))}
+                />
+              ) : (
+                <select
+                  id="google-calendar-choice"
+                  className="h-11 w-full rounded-xl border border-border bg-background px-3 text-base sm:text-sm"
+                  value={selectedCalendarId}
+                  disabled={busy || needsReconnect}
+                  onChange={(event) => void chooseCalendar(event.target.value)}
+                  aria-label={t("integr.google.selectAria")}
+                >
+                  <option value="" disabled={Boolean(selectedCalendarId)}>
+                    {t("integr.google.selectPlaceholder")}
                   </option>
-                ))}
-              </select>
-            )}
-            {!hasChosenCalendar && calendars.length > 0 && (
-              <Notice tone="info" title={t("integr.google.chooseNow")} role="none" />
-            )}
+                  {calendars.map((calendar) => (
+                    <option key={calendar.id} value={calendar.id}>
+                      {calendar.name}
+                      {calendar.primary ? ` · ${t("integr.google.primaryBadge")}` : ""}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {!hasChosenCalendar && calendars.length > 0 && (
+                <Notice tone="info" title={t("integr.google.chooseNow")} role="none" />
+              )}
+            </div>
             <ActionResult
               state={calendarResult?.state === "saving" ? null : calendarResult?.state}
               text={calendarResult?.text}
@@ -975,6 +1025,7 @@ export function GoogleConnectionCard({
           </div>
 
           <DirectionBlock
+            collapsible={wide && hasChosenCalendar}
             icon={ArrowDownToLine}
             title={t("integr.google.importTitle")}
             text={t("integr.google.importText")}
@@ -1073,6 +1124,7 @@ export function GoogleConnectionCard({
           </DirectionBlock>
 
           <DirectionBlock
+            collapsible={wide && hasChosenCalendar}
             icon={ArrowUpFromLine}
             title={t("integr.push.title")}
             text={t("integr.push.intro")}

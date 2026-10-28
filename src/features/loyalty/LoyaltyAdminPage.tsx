@@ -50,7 +50,8 @@ import {
   type ActionState,
 } from "@/components/visual";
 import { toast } from "sonner";
-import { TierBadge, TierMedal, useTierBenefit } from "./TierBadge";
+import { TierBadge, TierMedal } from "./TierBadge";
+import { useTierBenefit } from "./tier-model";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";

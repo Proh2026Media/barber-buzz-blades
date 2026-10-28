@@ -224,6 +224,7 @@ Pasta [src/lib/i18n/](../../src/lib/i18n/). Idiomas: `pt-BR` (padrão), `pt-PT`,
 
 - **Dicionários** em `messages/`: [pt-BR.ts](../../src/lib/i18n/messages/pt-BR.ts) é a fonte — `MessageKey = keyof typeof ptBR`. `pt-PT`, `en-US` e `es` são dicionários completos (`Record<MessageKey, string>`).
 - **en-GB herda do en-US**: [en-GB.ts](../../src/lib/i18n/messages/en-GB.ts) faz `...enUS` e sobrescreve só ~90 chaves com grafia britânica (90 em 12/10/2026; ≈130 linhas, contra ≈4,2 mil dos outros). Chave nova: não precisa tocar no en-GB, salvo se a grafia britânica mudar.
+- **Carregamento (28/10/2026, P-45):** somente pt-BR é estático. `loadLocale` carrega e deduplica os outros dicionários. `setLocale` é assíncrona e só salva/anuncia a escolha depois do carregamento. `getRouter` aguarda idioma salvo e `?lang=` antes da hidratação; `beforeLoad` da raiz aguarda `?lang=` no servidor. Frases de exemplo do seletor ficam em `locale.ts`, sem importar todos os textos.
 - **Tradução**: [translate.ts](../../src/lib/i18n/translate.ts) — `translate(locale, key, vars)`; se faltar, cai para pt-BR; `{nome}` é trocado por `vars.nome`.
 - **Uso**: na tela, `const { t, locale, intlLocale } = useI18n()` ([use-i18n.ts](../../src/lib/i18n/use-i18n.ts)); fora do React, `t()` e `getLocale()` de `@/lib/i18n`. Escolha salva em `localStorage` (`arena:locale`); no servidor sempre pt-BR; script `localeBootstrapScript` ajusta `<html lang>` antes da pintura.
 - **Teste de paridade**: [translate.test.ts](../../src/lib/i18n/translate.test.ts) exige as **mesmas chaves** e os **mesmos `{marcadores}`** em todos os idiomas e nenhum texto vazio.
@@ -415,3 +416,5 @@ Nomes de variáveis de ambiente das funções aparecem nos arquivos; **valores f
 - Como a Hostinger inicia o servidor Node (comando e versão do Node no servidor).
 - Se o Realtime continua ligado hoje: não confirmado (último registro: religado em 02/10/2026, ~18h; um "Redeploy" no Coolify o desliga — seção 11).
 - Arquivos de servidor do modelo Lovable: `src/lib/api/example.functions.ts`, `src/integrations/supabase/client.server.ts` e `auth-middleware.ts` não têm nenhum uso no código (`src/lib/config.server.ts` só é usado pelo exemplo). `auth-attacher.ts` só é registrado em `start.ts`, como `functionMiddleware`, e não tem efeito enquanto nenhuma `createServerFn` for chamada. Remover: a decidir.
+
+**Separação para recarga rápida (28/10/2026, P-44):** helpers antes exportados com componentes agora ficam em `roles-model.ts`, `team-model.ts`, `tier-model.ts`, `agenda/attendance-model.ts`, `agenda/summary-model.ts`, `catalog-view-model.ts`, `setup-model.ts` e `register-owner/timezone-name.ts`. Importar regras desses módulos; reservar os `.tsx` correspondentes aos componentes.

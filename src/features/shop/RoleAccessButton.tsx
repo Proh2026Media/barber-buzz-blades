@@ -4,9 +4,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { IconList } from "@/components/visual";
 import type { ShopCapabilities } from "@/lib/auth/capabilities";
 import { useI18n } from "@/lib/i18n";
-import { RoleBadge, isOwnerRole } from "./roles";
+import { RoleBadge } from "./roles";
+import { isOwnerRole } from "./roles-model";
 import { MyAccessList } from "./settings/MyAccessCard";
-import { GovernanceModeBadge, type GovernanceMode } from "./team";
+import { GovernanceModeBadge } from "./team";
+import { type GovernanceMode } from "./team-model";
 
 /**
  * Selo de papel do topo do painel, tocável: "Dono · 50%" + o modo da sociedade (selo curto) e,

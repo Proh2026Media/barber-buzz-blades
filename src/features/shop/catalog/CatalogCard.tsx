@@ -3,7 +3,7 @@ import { useId, useState, type ReactNode } from "react";
 import { InlineStatus, type ActionState } from "@/components/visual";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import type { CatalogViewMode } from "../CatalogViewToggle";
+import type { CatalogViewMode } from "../catalog-view-model";
 import type { SaveOutcome } from "./types";
 
 /**

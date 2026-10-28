@@ -2827,6 +2827,7 @@ export const ptBR = {
   "integr.google.disconnectedDemo": "Google desconectado (demo).",
   "integr.google.disconnected": "Google desconectado.",
   "integr.google.errDisconnect": "Falha ao desconectar",
+  "integr.google.changeCalendar": "Trocar agenda",
   "integr.google.calendarSelected": "Agenda selecionada: {name}",
   "integr.google.errChoose": "Falha ao escolher a agenda",
   "integr.google.chooseFirst": "Escolha qual agenda Google usar antes de sincronizar.",
@@ -3577,6 +3578,8 @@ export const ptBR = {
   "theme.choice.light": "Claro",
   "theme.choice.dark": "Escuro",
   "theme.choice.system": "Igual ao aparelho",
+  "language.loadError":
+    "Não foi possível carregar o idioma. Confira sua conexão e recarregue a página.",
   "language.sample": "Agendar horário",
   "appearance.editBrand": "Editar marca",
   "shopLink.title": "Sua página",

@@ -57,3 +57,38 @@ export function writeLocale(storage: LocaleStorage | null | undefined, locale: L
  * e tradutores do navegador. Espelha `parseLocale` e precisa ficar em sincronia com ele.
  */
 export const localeBootstrapScript = `(function(){try{var l=localStorage.getItem(${JSON.stringify(LOCALE_STORAGE_KEY)});var ok=${JSON.stringify(LOCALES)};document.documentElement.lang=ok.indexOf(l)>=0?l:${JSON.stringify(DEFAULT_LOCALE)};}catch(e){}})();`;
+
+/**
+ * Converte uma etiqueta de idioma (`en`, `en-GB`, `pt_PT`, `es-MX`…) num idioma suportado.
+ * Inglês sem região vira en-US; português sem região vira pt-BR; qualquer espanhol vira es.
+ */
+export function localeFromTag(tag: unknown): Locale | null {
+  if (typeof tag !== "string") return null;
+  const raw = tag.trim();
+  if (!raw) return null;
+  const exact = parseLocale(raw);
+  if (exact) return exact;
+  const [language, region = ""] = raw.toLowerCase().replace("_", "-").split("-");
+  if (language === "en") return region === "gb" || region === "uk" ? "en-GB" : "en-US";
+  if (language === "pt") return region === "pt" ? "pt-PT" : "pt-BR";
+  if (language === "es") return "es";
+  return null;
+}
+
+/** Primeiro idioma suportado da lista do navegador (`navigator.languages`). */
+export function localeFromLanguages(tags: readonly unknown[]): Locale | null {
+  for (const tag of tags) {
+    const locale = localeFromTag(tag);
+    if (locale) return locale;
+  }
+  return null;
+}
+
+/** Frases curtas do seletor, sem baixar todos os dicionários para exibir cinco exemplos. */
+export const LANGUAGE_SAMPLES: Record<Locale, string> = {
+  "pt-BR": "Agendar horário",
+  "pt-PT": "Marcar horário",
+  "en-US": "Book a time",
+  es: "Reservar cita",
+  "en-GB": "Book a time",
+};

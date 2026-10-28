@@ -60,7 +60,8 @@ import {
   slugifyShopName,
 } from "@/features/register-owner/owner-signup";
 import { clockInTimeZone, detectDeviceTimeZone } from "@/features/register-owner/timezones";
-import { TimeZoneSelect, useTimeZoneName } from "@/features/register-owner/TimeZonePicker";
+import { TimeZoneSelect } from "@/features/register-owner/TimeZonePicker";
+import { useTimeZoneName } from "@/features/register-owner/timezone-name";
 
 /** Barbearia → Seu acesso → Código no WhatsApp → Pronto (o código só é pedido no fim). */
 type Step = "loja" | "acesso" | "otp" | "conta";

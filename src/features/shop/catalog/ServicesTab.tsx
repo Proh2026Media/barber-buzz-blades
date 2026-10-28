@@ -39,7 +39,7 @@ import {
   readCatalogViewPreference,
   writeCatalogViewPreference,
   type CatalogViewMode,
-} from "../CatalogViewToggle";
+} from "../catalog-view-model";
 import { CatalogCard, ItemToggle } from "./CatalogCard";
 import { InfoDialog } from "./InfoDialog";
 import { useCatalogLabels } from "./labels";

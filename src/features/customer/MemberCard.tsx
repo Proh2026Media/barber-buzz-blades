@@ -10,12 +10,8 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { CountBadge } from "@/components/visual";
-import {
-  LevelProgress,
-  TIER_STYLES,
-  TierBadge,
-  useTierPosition,
-} from "@/features/loyalty/TierBadge";
+import { LevelProgress, TierBadge } from "@/features/loyalty/TierBadge";
+import { TIER_STYLES, useTierPosition } from "@/features/loyalty/tier-model";
 import type { PendingRedemption } from "@/features/loyalty/usePendingRedemptions";
 import type { LoyaltyProgram } from "@/features/loyalty/program";
 import { useI18n } from "@/lib/i18n";

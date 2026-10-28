@@ -66,7 +66,8 @@ import {
   type AgendaGroup,
   type Interval,
 } from "./model";
-import { AppointmentSummary, useShopTime } from "./summary";
+import { AppointmentSummary } from "./summary";
+import { useShopTime } from "./summary-model";
 import { useBoardWidth } from "./board";
 import { TeamDayBoard } from "./TeamDayBoard";
 import {

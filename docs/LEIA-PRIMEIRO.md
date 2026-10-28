@@ -28,6 +28,8 @@ Porta de entrada para o agente que vai continuar o projeto (Cursor, Claude Code,
 
 **Continuação de 28/10 — P-72:** demonstração com serviços, preços e durações por profissional; condições compartilhadas por escolha do cliente, grade, painel e lista de espera. Bruno: corte de 45 min/R$ 55; Rafa: barba de 30 min/R$ 65; Dani sem barba. Reservas e remarcações conservam os valores correspondentes. Sem migration ou tarefa para o TI. P-42/P-43 continuam dependendo de aparelhos/integrações reais; P-95 permanece fora por alterar o celular.
 
+**Continuação de 28/10 — fechamento das pendências executáveis:** P-44 (recarga de componentes sem avisos), P-45 (idiomas sob demanda), P-48 (testes da guarda e banco local) e P-75 (painéis de assuntos e Google compacto em tablet/computador). P-78 pronta no código, **nº 98 ainda não aplicada**: [pacote do agente da VPS](implantacao-falha-login-google-2026-10-28.md). Celular preservado; P-95 não autorizada por conflitar com essa orientação. Próximos passos são a nº 98, Google Cloud/verificação (P-69/P-28), testes reais (P-42/P-43) e decisões de produto/jurídicas. Detalhes e limites no topo de [guia/pendencias.md](guia/pendencias.md) e no CONTINUIDADE. Não reaplicar a nº 97.
+
 ## O que é o projeto
 
 App de agendamento e fidelidade **multiloja** para barbearias e salões, com uso principal no celular. Front em TanStack Start (React + Vite), Supabase auto-hospedado no Coolify e site publicado no Hostinger. Nasceu como protótipo do Lovable e foi reconstruído a partir de 14/09/2026. Resumo da trajetória: [guia/historico.md](guia/historico.md), seção 1.

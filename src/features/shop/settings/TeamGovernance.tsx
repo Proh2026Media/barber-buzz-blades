@@ -38,16 +38,15 @@ import { useDemo } from "@/features/demo/context";
 import { useI18n } from "@/lib/i18n";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { cn } from "@/lib/utils";
-import { MANAGER_META } from "../roles";
+import { MANAGER_META } from "../roles-model";
+import { GovernanceModeBadge, OwnershipBar } from "../team";
 import {
-  GovernanceModeBadge,
   approversOf,
-  OwnershipBar,
   activeOwners,
   firstName,
   loadTeamMembers,
   type TeamMember,
-} from "../team";
+} from "../team-model";
 import {
   describeChange,
   type ChangeView,

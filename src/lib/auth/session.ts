@@ -1,3 +1,5 @@
+import { professionalRefusalFrom } from "./professional-access";
+export { hasProfessionalAccess } from "./professional-access";
 import type { Session, User } from "@supabase/supabase-js";
 import type { Tables, Enums } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -180,35 +182,21 @@ export async function resolvePostAuthPath(preferredNext?: string): Promise<strin
  * função dos convites no banco, segue para os outros motivos.
  */
 export async function professionalRefusal(profile: SessionProfile): Promise<AccessNotice> {
-  try {
-    const rpc = supabase.rpc.bind(supabase) as unknown as (
-      fn: string,
-    ) => PromiseLike<{ data: unknown; error: unknown }>;
-    const { data, error } = await rpc("get_my_pending_shop_invites");
-    if (!error && Array.isArray(data) && data.length > 0) return "aguardando";
-  } catch {
-    // Função ainda não aplicada: segue.
-  }
-  try {
-    const { data, error } = await supabase
-      .from("shop_members")
-      .select("id")
-      .eq("user_id", profile.user.id)
-      .eq("active", false)
-      .limit(1);
-    if (!error && data && data.length > 0) return "removido";
-  } catch {
-    // Sem resposta: mostra o motivo geral.
-  }
-  return "sem-acesso";
-}
-
-export function hasProfessionalAccess(profile: SessionProfile): boolean {
-  return (
-    profile.primaryRole === "platform_admin" ||
-    profile.shopActors.length > 0 ||
-    hasAnyRole(profile.memberships, ["shop_admin"])
-  );
+  return professionalRefusalFrom({
+    invites: async () => {
+      const { data, error } = await supabase.rpc("get_my_pending_shop_invites");
+      return !error && Array.isArray(data) && data.length > 0;
+    },
+    removed: async () => {
+      const { data, error } = await supabase
+        .from("shop_members")
+        .select("id")
+        .eq("user_id", profile.user.id)
+        .eq("active", false)
+        .limit(1);
+      return !error && !!data?.length;
+    },
+  });
 }
 
 export function hasAnyRole(memberships: Membership[], roles: AppRole[]): boolean {

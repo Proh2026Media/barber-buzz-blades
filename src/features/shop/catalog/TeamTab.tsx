@@ -50,12 +50,12 @@ import { useDevice, useViewportAtLeast } from "@/lib/device";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { CATALOG_SHORT_LIST, CatalogFilters, type CatalogStatus } from "../CatalogFilters";
-import { ROLE_META } from "../roles";
+import { ROLE_META } from "../roles-model";
 import {
   readCatalogViewPreference,
   writeCatalogViewPreference,
   type CatalogViewMode,
-} from "../CatalogViewToggle";
+} from "../catalog-view-model";
 import { CatalogCard, ItemToggle } from "./CatalogCard";
 import { staffDay } from "./format";
 import { InfoDialog } from "./InfoDialog";

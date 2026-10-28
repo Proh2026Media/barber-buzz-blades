@@ -130,7 +130,7 @@ testes() {
     [[ "$nome" == "auto_confirmation_modules" ]] && arquivos=("$base" supabase/tests/optional_occurrences.sql)
     arquivos+=("$t")
     local usuario=postgres
-    [[ "$nome" == "privacy_requests" ]] && usuario=supabase_admin
+    # O bootstrap já cria auth.users.phone; privacidade também roda como postgres.
     local out
     if [[ "$nome" == "slug_redirects_departure" ]]; then
       # Abre e fecha a própria transação: as migrations extras não entram (seriam gravadas).

@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { friendlyAuthError, isKnownErrorCode, ServerError, serverError } from "./friendly-error.ts";
+import { loadLocale } from "../i18n/translate.ts";
 import { LOCALE_STORAGE_KEY } from "../i18n/locale.ts";
 import {
   friendlyChannelLastError,
@@ -73,7 +74,8 @@ test("permission and duplicate database errors become everyday Portuguese", () =
   );
 });
 
-test("in English, screen messages pass through and only database jargon falls back", () => {
+test("in English, screen messages pass through and only database jargon falls back", async () => {
+  await loadLocale("en-US");
   const store = new Map([[LOCALE_STORAGE_KEY, "en-US"]]);
   const g = globalThis as { window?: unknown };
   g.window = { localStorage: { getItem: (key: string) => store.get(key) ?? null } };

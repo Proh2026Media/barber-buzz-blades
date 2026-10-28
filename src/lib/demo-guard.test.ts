@@ -99,7 +99,7 @@ const OUTSIDE_DEMO = new Map<string, string>([
   ["features/shop/settings/ShopDomainCard.tsx", "Ajustes → Endereços: só fora da demonstração"],
   ["features/shop/settings/SlugRedirectsCard.tsx", "Ajustes → Endereços: só fora da demonstração"],
   ["features/shop/settings/decision-queue.ts", "contagem de decisões: só fora da demonstração"],
-  ["features/shop/team.tsx", "loadTeamMembers: quem chama já confere a demonstração"],
+  ["features/shop/team-model.ts", "loadTeamMembers: quem chama já confere a demonstração"],
 ]);
 
 function walk(dir: string): string[] {

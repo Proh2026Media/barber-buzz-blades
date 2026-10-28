@@ -1,7 +1,9 @@
 import { useId, useState } from "react";
-import { Check, Info, Languages, Smartphone } from "lucide-react";
+import { toast } from "sonner";
+import { Check, Info, Languages, Smartphone, Loader2 } from "lucide-react";
 import { Hint, SectionHeader, StatusBadge } from "@/components/visual";
 import { DEFAULT_LOCALE, LOCALES, LOCALE_NATIVE_NAMES, translate, useI18n } from "@/lib/i18n";
+import { LANGUAGE_SAMPLES, type Locale } from "@/lib/i18n/locale";
 import { cn } from "@/lib/utils";
 
 /** Cartão "Idioma" dos ajustes de cliente, barbearia e plataforma. */
@@ -14,6 +16,7 @@ export function LanguageSettingsCard({
   hideHeading?: boolean;
 }) {
   const { locale, t, setLocale } = useI18n();
+  const [loading, setLoading] = useState<Locale | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const titleId = useId();
   const group = useId();
@@ -31,7 +34,7 @@ export function LanguageSettingsCard({
   // frase de exemplo, ✓ à direita), sempre em uma coluna — nomes longos nunca ficam
   // espremidos nem encobertos, e as 5 opções cabem sem empurrar o cartão Tema para longe.
   const choices = (
-    <fieldset className="grid gap-2">
+    <fieldset className="grid gap-2" disabled={loading !== null} aria-busy={loading !== null}>
       <legend className="sr-only">{t("language.title")}</legend>
       {LOCALES.map((option) => {
         const selected = option === locale;
@@ -54,12 +57,17 @@ export function LanguageSettingsCard({
               checked={selected}
               aria-labelledby={optionTitleId}
               aria-describedby={sampleId}
-              onChange={() => {
-                setLocale(option);
+              onChange={async () => {
+                setLoading(option);
+                const changed = await setLocale(option);
+                setLoading(null);
+                if (!changed) toast.error(t("language.loadError"));
                 setAnnouncement(
-                  translate(option, "language.changed", {
-                    language: LOCALE_NATIVE_NAMES[option],
-                  }),
+                  changed
+                    ? translate(option, "language.changed", {
+                        language: LOCALE_NATIVE_NAMES[option],
+                      })
+                    : t("language.loadError"),
                 );
               }}
               className="sr-only"
@@ -83,7 +91,7 @@ export function LanguageSettingsCard({
                 lang={option}
                 className="block break-words text-xs text-muted-foreground"
               >
-                “{translate(option, "language.sample")}”
+                “{LANGUAGE_SAMPLES[option]}”
               </span>
             </span>
             <span
@@ -95,7 +103,11 @@ export function LanguageSettingsCard({
                   : "border-muted-foreground/40",
               )}
             >
-              {selected && <Check className="size-3.5" />}
+              {loading === option ? (
+                <Loader2 className="size-3.5 motion-safe:animate-spin" />
+              ) : (
+                selected && <Check className="size-3.5" />
+              )}
             </span>
           </label>
         );

@@ -40,8 +40,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
 import { t as tNow, useI18n } from "@/lib/i18n";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
-import { isOwnerRole, type ShopRole } from "../roles";
-import { activeOwners, firstName, loadTeamMembers, type TeamMember } from "../team";
+import { isOwnerRole, type ShopRole } from "../roles-model";
+import { activeOwners, firstName, loadTeamMembers, type TeamMember } from "../team-model";
 import { DepartureBookings } from "./DepartureBookings";
 
 type DepartureRequest = {

@@ -8,14 +8,15 @@ import {
   DEMO_OWNER_USER_ID,
   demoTeam,
 } from "@/features/demo/team";
-import { RoleBadge, isOwnerRole } from "@/features/shop/roles";
+import { RoleBadge } from "@/features/shop/roles";
+import { isOwnerRole } from "@/features/shop/roles-model";
+import { GovernanceModeBadge } from "@/features/shop/team";
 import {
-  GovernanceModeBadge,
   activeOwners,
   governanceModeOf,
   loadTeamMembers,
   type TeamMember,
-} from "@/features/shop/team";
+} from "@/features/shop/team-model";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { useI18n } from "@/lib/i18n";
 

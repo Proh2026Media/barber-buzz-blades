@@ -12,7 +12,8 @@ import {
 import { ConfirmDialog, Notice, Steps } from "@/components/visual";
 import { CLAIM_MINUTES, HOLD_MINUTES } from "@/features/waiting/model";
 import { useI18n } from "@/lib/i18n";
-import { AppointmentSummary, useShopTime } from "./summary";
+import { AppointmentSummary } from "./summary";
+import { useShopTime } from "./summary-model";
 import type { DayAppointment } from "./types";
 
 type BaseProps = {

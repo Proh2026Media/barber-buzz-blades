@@ -2845,6 +2845,7 @@ export const es: Record<MessageKey, string> = {
   "integr.google.disconnectedDemo": "Google desconectado (demo).",
   "integr.google.disconnected": "Google desconectado.",
   "integr.google.errDisconnect": "No se pudo desconectar",
+  "integr.google.changeCalendar": "Cambiar calendario",
   "integr.google.calendarSelected": "Calendario seleccionado: {name}",
   "integr.google.errChoose": "No se pudo elegir el calendario",
   "integr.google.chooseFirst": "Elige qué calendario de Google usar antes de sincronizar.",
@@ -3602,6 +3603,8 @@ export const es: Record<MessageKey, string> = {
   "theme.choice.light": "Claro",
   "theme.choice.dark": "Oscuro",
   "theme.choice.system": "Igual que el dispositivo",
+  "language.loadError":
+    "No se pudo cargar el idioma. Revisa tu conexión y vuelve a cargar la página.",
   "language.sample": "Reservar cita",
   "appearance.editBrand": "Editar marca",
   "shopLink.title": "Tu página",

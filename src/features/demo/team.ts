@@ -1,4 +1,4 @@
-import type { TeamMember } from "@/features/shop/team";
+import type { TeamMember } from "@/features/shop/team-model";
 
 /**
  * Equipe fictícia de cada visão da demonstração (plano de ambientes, onda 5). Cada papel tem o

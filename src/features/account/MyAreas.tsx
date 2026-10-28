@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Check, Store } from "lucide-react";
 import { StatusBadge } from "@/components/visual";
-import { CUSTOMER_META, PLATFORM_META, RoleBadge } from "@/features/shop/roles";
+import { RoleBadge } from "@/features/shop/roles";
+import { CUSTOMER_META, PLATFORM_META } from "@/features/shop/roles-model";
 import { isCurrentArea, type AreaItem, type CurrentArea } from "@/lib/auth/areas";
 import { isPlatformApexHost } from "@/lib/shop/host";
 import { useI18n } from "@/lib/i18n";

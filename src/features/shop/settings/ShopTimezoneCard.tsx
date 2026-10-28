@@ -30,7 +30,8 @@ import {
   detectDeviceTimeZone,
   normalizeTimeZone,
 } from "@/features/register-owner/timezones";
-import { TimeZoneSelect, useTimeZoneName } from "@/features/register-owner/TimeZonePicker";
+import { TimeZoneSelect } from "@/features/register-owner/TimeZonePicker";
+import { useTimeZoneName } from "@/features/register-owner/timezone-name";
 
 type Availability = "checking" | "ready" | "missing";
 

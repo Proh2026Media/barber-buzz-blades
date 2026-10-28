@@ -103,7 +103,18 @@ export async function checkGoogleRelay(pending: PendingRelay): Promise<RelayChec
   }
   const { data: code, error } = await supabase.rpc("oauth_relay_take", { p_id: pending.id });
   if (error) return "waiting";
-  if (!isRelayCode(code)) return "waiting";
+  if (!isRelayCode(code)) {
+    if (failureRelayMissing) return "waiting";
+    const { data: failed, error: failureError } = await supabase.rpc("oauth_relay_failure_take", {
+      p_id: pending.id,
+    });
+    if (isMissingFunctionError(failureError)) failureRelayMissing = true;
+    if (!failureError && failed === true) {
+      clearPendingRelay();
+      return "failed";
+    }
+    return "waiting";
+  }
   const { data: exchanged, error: exchangeError } =
     await supabase.auth.exchangeCodeForSession(code);
   clearPendingRelay();
@@ -115,4 +126,14 @@ export async function checkGoogleRelay(pending: PendingRelay): Promise<RelayChec
 export async function deliverGoogleRelayCode(relayId: string, code: string): Promise<boolean> {
   const { data, error } = await supabase.rpc("oauth_relay_put", { p_id: relayId, p_code: code });
   return !error && data === true;
+}
+
+// Compatibilidade com o banco anterior: o login continua sem o aviso antecipado de falha.
+let failureRelayMissing = false;
+export async function deliverGoogleRelayFailure(relayId: string): Promise<void> {
+  try {
+    await supabase.rpc("oauth_relay_failure_put", { p_id: relayId });
+  } catch {
+    /* A janela continua mostrando o erro, mesmo sem rede ou migration. */
+  }
 }

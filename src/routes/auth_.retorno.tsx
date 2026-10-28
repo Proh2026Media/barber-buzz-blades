@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   clearPendingRelay,
   deliverGoogleRelayCode,
+  deliverGoogleRelayFailure,
   readPendingRelay,
 } from "@/lib/auth/google-relay";
 import { isStandalone } from "@/lib/standalone";
@@ -66,6 +67,7 @@ function GoogleRelayReturn() {
       };
       if (failed || !relay) {
         fail();
+        if (relay && failed && !sameApp) await deliverGoogleRelayFailure(relay);
         return;
       }
       if (pending && sameApp) {

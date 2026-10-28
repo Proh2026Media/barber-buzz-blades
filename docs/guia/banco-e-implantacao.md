@@ -12,7 +12,7 @@ Situações usadas: **feito**, **feito — falta aplicar no banco**, **pendente*
 
 1. [Visão da infraestrutura](#1-visão-da-infraestrutura)
 2. [Como o site é publicado](#2-como-o-site-é-publicado)
-3. [Inventário das 97 migrations](#3-inventário-das-97-migrations)
+3. [Inventário das 98 migrations](#3-inventário-das-98-migrations)
 4. [Como escrever uma migration nova](#4-como-escrever-uma-migration-nova)
 5. [Como as migrations são aplicadas](#5-como-as-migrations-são-aplicadas)
 6. [Testes SQL](#6-testes-sql)
@@ -68,7 +68,7 @@ git push origin main            (Proh2026Media/barber-buzz-blades — fonte da v
 - O comando de compilação configurado na Hostinger é **não confirmado** (o projeto define `npm run build` = `vite build && node scripts/copy-pwa.mjs` em `package.json`).
 - **Publicar o site não aplica nada no banco nem nas funções.** Migrations e Edge functions vão à VPS por outro caminho (seções 5 e 7). Por isso a tela nova precisa funcionar com o banco antigo (ver seção 4).
 
-## 3. Inventário das 97 migrations
+## 3. Inventário das 98 migrations
 
 Pasta: [supabase/migrations/](../../supabase/migrations/). A situação vem destas fontes:
 
@@ -178,6 +178,7 @@ Pasta: [supabase/migrations/](../../supabase/migrations/). A situação vem dest
 | 95  | `20261016120000_retorno_google_app_instalado`                | Login Google no app instalado: a janela do Google entrega o código ao app (`oauth_code_relay`, `oauth_relay_put/take`) | aplicada em 20/10/2026 (20:04, Brasília) [L]               |
 | 96  | `20261016130000_agendamento_pelo_painel`                     | Barbeiro marca pelo painel, cliente do balcão, apelido, recorrência na agenda (`shop_clients`, `book_for_client`…)     | aplicada em 20/10/2026 (20:04, Brasília) [L]               |
 | 97  | `20261024170000_diretorio_contatos_pontos`                   | WhatsApp e saldo da própria loja no diretório; mantém escopo e permissões                                              | aplicada em 24/10/2026 (16:57:15, Brasília) [M]            |
+| 98  | `20261028190000_falha_login_google`                          | Marcador temporário de falha do login Google, separado da ponte PKCE (P-78)                                            | preparada; não aplicada                                    |
 
 Nota da nº 34: no banco remoto ela falhava em `text = uuid`, e por isso a coluna `icon` e o bucket não existiam. A nº 41 (`20260920010000_service_images_storage`) cria o mesmo efeito e foi aplicada; o arquivo da nº 34 também recebeu o cast correto (`barbershop_id::text`) para instalações novas. Fonte: CONTINUIDADE "Slider da espera e imagens de serviço" (20/09/2026).
 
@@ -353,6 +354,8 @@ Fontes: [beauty-saas-infra.md](../beauty-saas-infra.md), [mb-operacao.md](../mb-
 | Google (login, Agenda, Contatos) | Cliente OAuth do projeto Google Cloud `proh-media-drive`; a verificação do Google vale para ele. Calendar API e People API ativadas                                                                                                          | CONTINUIDADE "Google — projeto real do app" (03/10/2026); [google-verificacao.md](../google-verificacao.md) (reenvio da verificação, tarefa do dono) |
 
 ## 12. O que falta aplicar no servidor
+
+**28/10/2026: falta somente a nº 98 desta entrega**, P-78. Cliente compatível com o banco anterior. Pacote com hashes, backup, 18 testes, aplicação e reversão: [implantacao-falha-login-google-2026-10-28.md](../implantacao-falha-login-google-2026-10-28.md). Nenhuma Edge function ou reinício necessário. Nº 97 já aplicada; não repetir.
 
 **24/10/2026 — aplicado:** migration nº 97 (`20261024170000_diretorio_contatos_pontos`), às 16:57:15 de Brasília, segundo o relatório do agente Claude entregue pelo dono. Nenhuma migration escrita pendente de aplicação. Última de produção registrada: **nº 97**. [Pacote e registro](../implantacao-diretorio-contatos-pontos-2026-10-24.md). Falta conferir a interface em produção (P-43); não reaplicar.
 

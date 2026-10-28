@@ -1727,6 +1727,14 @@ export type Database = {
         Args: Record<string, never>;
         Returns: Json;
       };
+      oauth_relay_failure_put: {
+        Args: { p_id: string };
+        Returns: boolean;
+      };
+      oauth_relay_failure_take: {
+        Args: { p_id: string };
+        Returns: boolean;
+      };
       oauth_relay_put: {
         Args: { p_id: string; p_code: string };
         Returns: boolean;

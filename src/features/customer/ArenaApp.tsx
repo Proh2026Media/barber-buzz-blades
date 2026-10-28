@@ -81,12 +81,12 @@ import { SpinningLoader } from "./SpinningLoader";
 import { toast } from "sonner";
 import { TermsUpdateGate } from "@/features/legal/TermsUpdateGate";
 import { PasswordChangeGate } from "@/features/auth/PasswordChangeGate";
+import { CatalogViewToggle } from "@/features/shop/CatalogViewToggle";
 import {
-  CatalogViewToggle,
   readCatalogViewPreference,
   writeCatalogViewPreference,
   type CatalogViewMode,
-} from "@/features/shop/CatalogViewToggle";
+} from "@/features/shop/catalog-view-model";
 import { useScrollIndicators } from "@/lib/use-scroll-indicators";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTheme } from "@/lib/use-theme";
@@ -129,7 +129,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { getSessionProfile, type SessionProfile } from "@/lib/auth/session";
 import type { AccessNotice } from "@/lib/auth/destination";
 import { useAreaSwitch, useMyAreas, useRememberArea } from "@/features/account/useAreas";
-import { CUSTOMER_META } from "@/features/shop/roles";
+import { CUSTOMER_META } from "@/features/shop/roles-model";
 import { CustomerAccountMenu } from "./CustomerAccountMenu";
 import { AskShopLink } from "./AskShopLink";
 import { CustomerShopSwitcher, OtherShopNotices } from "./CustomerShops";

@@ -11,12 +11,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  LevelProgress,
-  TierBadge,
-  TierLadder,
-  useTierPosition,
-} from "@/features/loyalty/TierBadge";
+import { LevelProgress, TierBadge, TierLadder } from "@/features/loyalty/TierBadge";
+import { useTierPosition } from "@/features/loyalty/tier-model";
 import type { LoyaltyProgram } from "@/features/loyalty/program";
 import { useDevice } from "@/lib/device";
 import { useI18n } from "@/lib/i18n";

@@ -3,18 +3,7 @@ import { DetailList } from "@/components/visual";
 import { useI18n } from "@/lib/i18n";
 import { formatShopDate } from "@/lib/shop/appointments";
 import type { DayAppointment } from "./types";
-
-/** Hora local da loja ("09:00"). */
-export function useShopTime(timeZone: string) {
-  const { intlLocale } = useI18n();
-  return (value: string | number | Date) =>
-    formatShopDate(
-      typeof value === "number" ? new Date(value) : value,
-      timeZone,
-      { hour: "2-digit", minute: "2-digit" },
-      intlLocale,
-    );
-}
+import { useShopTime } from "./summary-model";
 
 /**
  * "De qual atendimento se trata": cliente, serviço, dia e horário (e o profissional, na visão

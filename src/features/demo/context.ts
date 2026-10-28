@@ -1,5 +1,5 @@
 import { createContext, useContext, type Dispatch } from "react";
-import type { TeamMember } from "@/features/shop/team";
+import type { TeamMember } from "@/features/shop/team-model";
 import type { DemoAction, DemoState } from "./model";
 
 export type DemoValue = DemoState & {

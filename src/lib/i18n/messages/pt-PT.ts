@@ -2840,6 +2840,7 @@ export const ptPT: Record<MessageKey, string> = {
   "integr.google.disconnectedDemo": "Google desligado (demo).",
   "integr.google.disconnected": "Google desligado.",
   "integr.google.errDisconnect": "Falha ao desligar",
+  "integr.google.changeCalendar": "Mudar calendário",
   "integr.google.calendarSelected": "Calendário selecionado: {name}",
   "integr.google.errChoose": "Falha ao escolher o calendário",
   "integr.google.chooseFirst": "Escolha que calendário Google usar antes de sincronizar.",
@@ -3590,6 +3591,8 @@ export const ptPT: Record<MessageKey, string> = {
   "theme.choice.light": "Claro",
   "theme.choice.dark": "Escuro",
   "theme.choice.system": "Igual ao dispositivo",
+  "language.loadError":
+    "Não foi possível carregar o idioma. Verifique a ligação e recarregue a página.",
   "language.sample": "Marcar horário",
   "appearance.editBrand": "Editar marca",
   "shopLink.title": "A sua página",

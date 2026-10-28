@@ -14,11 +14,13 @@ import deviceCss from "../dispositivos.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { themeBootstrapScript } from "../lib/theme";
 import { deviceBootstrapScript } from "../lib/device";
-import { localeBootstrapScript } from "../lib/i18n/locale";
+import { DEFAULT_LOCALE, localeFromTag, localeBootstrapScript } from "../lib/i18n/locale";
 import { useI18n } from "../lib/i18n";
 import { PwaRegister } from "../lib/pwa";
 import { PwaInstallBanner } from "../components/pwa-install-banner";
 import { Toaster } from "../components/ui/sonner";
+
+import { loadLocale } from "../lib/i18n/translate";
 
 const APP_NAME = "Barba & Cabelo";
 const APP_DESCRIPTION =
@@ -65,6 +67,10 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  beforeLoad: async ({ location }) => {
+    const lang = new URLSearchParams(location.searchStr).get("lang");
+    await loadLocale(localeFromTag(lang) ?? DEFAULT_LOCALE);
+  },
   head: () => ({
     meta: [
       { charSet: "utf-8" },

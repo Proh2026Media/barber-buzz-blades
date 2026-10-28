@@ -1,7 +1,8 @@
 import { Search, X } from "lucide-react";
 import { ChoiceChips } from "@/components/visual";
 import { useI18n } from "@/lib/i18n";
-import { CatalogViewToggle, type CatalogViewMode } from "./CatalogViewToggle";
+import { CatalogViewToggle } from "./CatalogViewToggle";
+import { type CatalogViewMode } from "./catalog-view-model";
 
 export type CatalogStatus = "all" | "active" | "paused";
 export type { CatalogViewMode };

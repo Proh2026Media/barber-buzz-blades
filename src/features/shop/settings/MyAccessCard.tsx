@@ -2,7 +2,8 @@ import { Check, ChevronDown, KeyRound, MessageCircle, Minus } from "lucide-react
 import { IconList, SectionHeader, type IconListItem } from "@/components/visual";
 import type { ShopCapabilities } from "@/lib/auth/capabilities";
 import { useI18n, type MessageKey } from "@/lib/i18n";
-import { RoleBadge, isOwnerRole } from "../roles";
+import { RoleBadge } from "../roles";
+import { isOwnerRole } from "../roles-model";
 
 /** Cada linha lê uma capacidade com nome (a mesma regra que abre ou esconde a tela). */
 const ROWS: { key: string; label: MessageKey; allowed: (c: ShopCapabilities) => boolean }[] = [
