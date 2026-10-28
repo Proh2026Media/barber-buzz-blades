@@ -2,15 +2,13 @@
 
 **Preparado e testado localmente; ainda não aplicado na VPS.** A migration nº 98 acrescenta somente um canal temporário para a janela do Google avisar o app instalado quando o login for cancelado ou recusado. O site permanece compatível com as 97 migrations anteriores: sem a nº 98, conserva a espera atual até expirar. Não há Edge function, Restart/Redeploy ou alteração de conta, agendamento e regra de acesso.
 
-## Atenção: confirmar também a publicação na Hostinger (P-99)
+## Publicação na Hostinger confirmada (P-99)
 
-O código desta entrega está no commit `34310f54800c21fe1cd6a4767f764ed5e24a0026`. `origin/main` e `hostinger/main` foram conferidos nesse SHA. Fluxos concluídos com sucesso: [aviso ao hub](https://github.com/Proh2026Media/barber-buzz-blades/actions/runs/40775651947) e [espelho](https://github.com/PROH-Media/hub-control/actions/runs/40775661283).
+**Confirmada em 28/10/2026, 18:57:47 de Brasília:** a página pública `https://beauty.contheiner.digital/auth` passou a entregar `/assets/index-BP2IQdEN.js` (1.124.849 bytes), com a mensagem nova e os idiomas separados. O arquivo anterior tinha 1.878.319 bytes; redução de aproximadamente 40,1% nessa comparação pública. O nome/tamanho diferem da montagem local conforme ambiente.
 
-Apesar disso, em **28/10/2026, 18:56:36 de Brasília**, a consulta HTTP pública a `https://beauty.contheiner.digital/auth`, com parâmetro variável, ainda servia `/assets/index-BTymmIdv.js` (1.878.319 bytes), sem a mensagem nova de falha ao carregar idioma. A montagem local verificada gera um pacote inicial de 1.069.740 bytes, com dicionários separados. O hash pode variar conforme ambiente; confirmar o conteúdo novo, não apenas o nome.
+Código no commit `34310f54800c21fe1cd6a4767f764ed5e24a0026`, confirmado no origin e no espelho. Fluxos concluídos: [aviso ao hub](https://github.com/Proh2026Media/barber-buzz-blades/actions/runs/40775651947) e [espelho](https://github.com/PROH-Media/hub-control/actions/runs/40775661283). Às 18:56 o site ainda servia o pacote anterior; nova consulta confirmou a atualização às 18:57. P-99 encerrada, sem mudança de configuração ou publicação manual.
 
-**Ação para quem acessa a Hostinger:** conferir qual commit foi implantado e os logs da compilação de `beauty.contheiner.digital`; publicar a versão atual de `main` pelo fluxo já configurado e conferir o HTML e os arquivos efetivamente servidos. Se a compilação falhou, devolver o erro sem credenciais; não trocar variáveis, versão do runtime, preset, DNS ou serviços por tentativa. Não enviar diretamente ao espelho. Esta verificação é da hospedagem Node do site, não um Redeploy do Supabase/Coolify.
-
-O agente desta sessão não acessou o painel: o conector de navegador estava indisponível e a ferramenta negou o acesso ao Chrome. Não há evidência para atribuir o atraso a cache ou erro específico da Hostinger. Registrar a publicação como pendente até confirmar o site novo. A migration abaixo continua independente dessa etapa.
+**Não há ação adicional de Hostinger neste pacote.** A aplicação da migration nº 98 na VPS e os testes físicos abaixo continuam pendentes. A conferência foi por HTTP público; o painel da hospedagem não foi acessado.
 
 ## Arquivos e resultado local
 

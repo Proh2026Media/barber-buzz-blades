@@ -30,7 +30,7 @@ Porta de entrada para o agente que vai continuar o projeto (Cursor, Claude Code,
 
 **Continuação de 28/10 — fechamento das pendências executáveis:** P-44 (recarga de componentes sem avisos), P-45 (idiomas sob demanda), P-48 (testes da guarda e banco local) e P-75 (painéis de assuntos e Google compacto em tablet/computador). P-78 pronta no código, **nº 98 ainda não aplicada**: [pacote do agente da VPS](implantacao-falha-login-google-2026-10-28.md). Celular preservado; P-95 não autorizada por conflitar com essa orientação. Próximos passos são a nº 98, Google Cloud/verificação (P-69/P-28), testes reais (P-42/P-43) e decisões de produto/jurídicas. Detalhes e limites no topo de [guia/pendencias.md](guia/pendencias.md) e no CONTINUIDADE. Não reaplicar a nº 97.
 
-**Publicação a confirmar — P-99 (28/10, 18:56 Brasília):** `34310f5` está no origin e no espelho, mas o site público ainda servia o pacote anterior. Não afirmar que esta entrega já está visível. Agente com acesso à Hostinger deve conferir commit/logs e concluir a publicação: [diagnóstico no pacote](implantacao-falha-login-google-2026-10-28.md#atenção-confirmar-também-a-publicação-na-hostinger-p-99).
+**Publicação confirmada — P-99 (28/10, 18:57:47 Brasília):** o site público passou a servir a entrega `34310f5`, após origin e espelho atualizados. Conferido por HTTP, pacote principal 1.124.849 bytes com idiomas separados. Não há ação adicional de Hostinger; falta a nº 98 na VPS e os testes reais. [Registro](implantacao-falha-login-google-2026-10-28.md#publicação-na-hostinger-confirmada-p-99).
 
 ## O que é o projeto
 

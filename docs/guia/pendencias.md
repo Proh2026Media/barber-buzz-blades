@@ -28,7 +28,7 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 
 ## 1. Próximas ações externas e decisões
 
-**Primeiro: P-99 — confirmar publicação na Hostinger.** Código e espelho atualizados, mas consulta pública em 28/10 às 18:56 ainda mostrou pacote anterior. Diagnóstico e ação do agente no [pacote de implantação](../implantacao-falha-login-google-2026-10-28.md#atenção-confirmar-também-a-publicação-na-hostinger-p-99). Não tratar o envio ao GitHub como confirmação de que a interface já apareceu no site.
+**P-99 concluída:** publicação na Hostinger confirmada por HTTP público em 28/10 às 18:57:47, após o espelhamento. A próxima ação de implantação é somente a migration nº 98 na VPS.
 
 Atualizada em 28/10/2026: código executável de P-44, P-45, P-48 e P-75 concluído; P-78 preparada, falta aplicar a migration nº 98 pelo agente da VPS. Pacote: [implantacao-falha-login-google-2026-10-28.md](../implantacao-falha-login-google-2026-10-28.md). Os itens abaixo dependem de acesso externo, aparelhos ou decisão de produto.
 
@@ -263,9 +263,9 @@ Situação dos três: **feito — aplicado em 13/10/2026 (15:12, horário de Bra
 
 - **P-73 — Agendamento pelo painel e login Google no app instalado · feito — aplicado no servidor em 20/10/2026** (TI, 20:02–20:08 de Brasília; migrations nº 95 e 96 e função `google-calendar-dispatch`; registro no CONTINUIDADE, entrada de 20/10). Falta só o teste do dono no celular (P-43). Migrations `20261016120000_retorno_google_app_instalado` (nº 95) e `20261016130000_agendamento_pelo_painel` (nº 96) e, opcional, a função `google-calendar-dispatch`. Pacote: [implantacao-agendamento-painel-2026-10-16.md](../implantacao-agendamento-painel-2026-10-16.md) (backup, ensaio com 12 testes, aplicação, conferência, como desfazer). Testes na cópia local: 12 + 62 PASS novos; bateria inteira 1.099 PASS. Antes de publicar, duas revisões independentes corrigiram nelas mesmas: exclusão de conta de cliente com apelido, ponte do Google aceitando código inventado, horários da equipe, colunas novas graváveis direto pela API, ficha de outra barbearia num atendimento e indicadores contando o balcão (ver CONTINUIDADE). O site já está no ar e funciona antes delas. Depois de aplicar: conferir no painel o botão "Agendar" e, no iPhone com o app instalado, o login com Google (P-43).
 
-### P-99 — Publicação na Hostinger divergente do espelho · confirmação pendente
+### P-99 — Confirmar publicação na Hostinger · feito em 28/10/2026
 
-Em 28/10, entrega `34310f5` chegou ao origin e ao espelho, com os dois fluxos de sincronização aprovados. O site público ainda servia o pacote anterior às 18:56:36. Montagem local aprovada; causa na hospedagem não confirmada. Acesso ao painel indisponível nesta sessão. Quem tem acesso deve conferir commit/logs e concluir a implantação existente, sem alterar variáveis ou serviços por tentativa. Evidências no [pacote de implantação](../implantacao-falha-login-google-2026-10-28.md#atenção-confirmar-também-a-publicação-na-hostinger-p-99).
+Às 18:56, o site ainda mostrava pacote anterior apesar do espelho atualizado; às **18:57:47**, nova consulta HTTP confirmou `/assets/index-BP2IQdEN.js`, 1.124.849 bytes, com o texto novo e idiomas separados. Nenhuma configuração alterada. Código `34310f5`; aviso ao hub e espelho aprovados. Registro no [pacote](../implantacao-falha-login-google-2026-10-28.md#publicação-na-hostinger-confirmada-p-99). Nº 98 continua pendente no banco, separadamente.
 
 ### Operação do servidor (sem migration)
 
