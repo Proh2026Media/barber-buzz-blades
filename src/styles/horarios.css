@@ -143,3 +143,81 @@
     min-width: 0;
   }
 }
+
+/* Gestão da loja: semana em faixa, prévia em seguida, bloqueios e pausas lado a lado.
+   O profissional que só bloqueia a própria agenda conserva a prioridade dos bloqueios. */
+@media (min-width: 1024px) {
+  .hours-grid[data-week-first] > .hours-stack {
+    display: contents;
+  }
+  .hours-grid[data-week-first] .hours-week,
+  .hours-grid[data-week-first] .hours-notice {
+    grid-column: 1 / -1;
+  }
+  .hours-grid[data-week-first] .hours-notice > aside {
+    display: grid;
+    grid-template-columns: minmax(16rem, 0.8fr) minmax(0, 1.2fr);
+    align-items: center;
+    gap: 1.5rem;
+  }
+  .hours-grid[data-week-first] .hours-notice > aside > * {
+    margin-block: 0;
+  }
+  .hours-grid[data-week-first] .hours-ruler {
+    display: none;
+  }
+  .hours-grid[data-week-first] .hours-week-list {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-top: 0;
+  }
+  .hours-grid[data-week-first] .hours-day {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.5rem;
+    align-content: start;
+    margin-block: 0;
+  }
+  .hours-grid[data-week-first] .hours-day > span {
+    align-items: start;
+    padding-inline: 0.75rem;
+  }
+  .hours-grid[data-week-first] .hours-day > div {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .hours-grid[data-week-first] .hours-day > button[role="switch"] {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .hours-grid[data-week-first] .hours-day-button {
+    display: block;
+    padding: 0.75rem 0.5rem;
+  }
+  .hours-grid[data-week-first] .hours-day-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+  .hours-grid[data-week-first] .hours-day-pencil {
+    margin-left: auto;
+  }
+  .hours-grid[data-week-first] .hours-day-ruler {
+    display: block;
+    margin-top: 0.75rem;
+  }
+  .hours-grid[data-week-first] .hours-day-track {
+    margin-top: 0.25rem;
+  }
+}
+@media (min-width: 1280px) {
+  .hours-grid[data-week-first] .hours-week-list {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .hours-grid[data-week-first] .hours-day-label {
+    flex: 1 1 100%;
+  }
+}

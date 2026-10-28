@@ -107,6 +107,14 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## Entrega — P-98: catálogos, semana, agendamentos e ficha da loja (28/10, ChatGPT/Codex)
+
+- **Pedido:** continuar pelas áreas restantes após a recomposição P-97, preservando celular, identidade, funções e permissões.
+- **Entregue:** tabelas como abertura padrão de Serviços/Equipe desde 768, com preferência explícita conservada; semana da loja em quatro/sete colunas desde 1024/1280 e prévia em faixa; Meus agendamentos em linhas conforme a largura útil, ações laterais quando cabem; ficha da barbearia ampla com índice compacto, retorno e foco. Início/pontos do cliente e Início/Relatórios/Acessos da plataforma conferidos e mantidos. Inventário na seção 12 de `dispositivos-2026-10-21.md`.
+- **Conferência:** capturas nas cinco larguras principais e intermediárias; busca/ordenação, escolha de visualização, formulário por teclado, rascunho e salvamento fictício de serviço, rascunho da semana, bloqueio, histórico e retorno à tabela. Composição móvel preservada; comparação apresenta diferenças pequenas de rasterização, não identidade exata dos pixels.
+- **Verificação final:** `scripts/verificar.sh` completo aprovado: tipos, 292/292 testes, eslint de oito arquivos TypeScript, prettier dos 17 arquivos e montagem cliente/servidor/PWA. A primeira montagem encontrou um `._manifest.webmanifest` temporário do macOS; repetida após encerrar o servidor de testes, passou. Sem alteração de código para contornar a falha.
+- **Limites:** dados fictícios e navegador local; nenhuma mudança de banco ou teste de integração real. P-42/P-43 seguem abertas e a percepção do dono não está aprovada. `.env` mantido fora da entrega.
+
 ## Entrega — P-97: recomposição após retorno do dono (24/10, ChatGPT/Codex)
 
 - **Retorno:** o dono não percebeu melhorias significativas na P-96. Reconhecida a insuficiência da primeira abordagem; esta entrega muda a composição das tarefas principais, sem refazer entregas de banco nem alterar o celular.

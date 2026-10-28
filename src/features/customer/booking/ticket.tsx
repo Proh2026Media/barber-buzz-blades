@@ -185,7 +185,7 @@ export function AppointmentTicket({
   const mini = variant === "mini";
 
   const body = (
-    <div className="flex items-start gap-3">
+    <div className="appointment-ticket-body flex items-start gap-3">
       <DateBlock
         date={data.startsAt}
         endsAt={data.finished ? null : data.endsAt}
@@ -194,9 +194,9 @@ export function AppointmentTicket({
         size={mini ? "sm" : "md"}
         muted={struck}
       />
-      <div className="min-w-0 flex-1 space-y-1">
+      <div className="appointment-ticket-details min-w-0 flex-1 space-y-1">
         <p className="sr-only">{fullDate}</p>
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <div className="appointment-ticket-time flex flex-wrap items-center gap-x-2 gap-y-1">
           <span
             className={cn(
               "font-bold leading-none tabular-nums tracking-tight",
@@ -216,7 +216,7 @@ export function AppointmentTicket({
           {until && <Tag icon={Clock3}>{until}</Tag>}
           {status && !mini ? <span className="ms-auto">{status}</span> : null}
         </div>
-        <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm font-bold">
+        <p className="appointment-ticket-service flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm font-bold">
           <span className="grid size-5 shrink-0 place-items-center text-gold">
             <ServiceIcon
               icon={data.serviceIcon}
@@ -229,7 +229,7 @@ export function AppointmentTicket({
             <span className="ms-auto shrink-0 text-sm font-bold tabular-nums">{price}</span>
           ) : null}
         </p>
-        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+        <p className="appointment-ticket-staff flex items-center gap-2 text-sm text-muted-foreground">
           {data.anyStaff ? (
             <span
               aria-hidden
@@ -274,7 +274,7 @@ export function AppointmentTicket({
       id={id}
       tabIndex={highlight ? -1 : undefined}
       className={cn(
-        "app-action-card relative space-y-3 p-4 transition-shadow",
+        "appointment-ticket app-action-card relative space-y-3 p-4 transition-shadow",
         highlight && "ring-2 ring-gold ring-offset-2 ring-offset-background",
         className,
       )}

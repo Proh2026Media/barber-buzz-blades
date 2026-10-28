@@ -2240,7 +2240,7 @@ function ArenaApp({
         actions={
           canManage ? (
             // Celular: duas colunas iguais. A partir de 768 px: botões na largura do texto, à direita.
-            <div className="grid grid-cols-2 gap-2 tablet:flex tablet:flex-wrap tablet:justify-end">
+            <div className="appointment-ticket-actions grid grid-cols-2 gap-2 tablet:flex tablet:flex-wrap tablet:justify-end">
               <button
                 type="button"
                 disabled={appointmentBusy !== null}
@@ -2276,7 +2276,7 @@ function ArenaApp({
               type="button"
               disabled={appointmentBusy !== null}
               onClick={() => setStopSeriesTarget(seriesId)}
-              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold disabled:opacity-50 tablet:ms-auto tablet:flex tablet:w-auto"
+              className="appointment-ticket-actions inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold disabled:opacity-50 tablet:ms-auto tablet:flex tablet:w-auto"
             >
               <Repeat2 className="size-4 text-gold" aria-hidden />
               {t("bookings.stopRepeat")}
@@ -2285,7 +2285,7 @@ function ArenaApp({
             <button
               type="button"
               onClick={() => bookAgain(row)}
-              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold transition hover:border-primary/40 tablet:ms-auto tablet:flex tablet:w-auto"
+              className="appointment-ticket-actions inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold transition hover:border-primary/40 tablet:ms-auto tablet:flex tablet:w-auto"
             >
               <RotateCcw className="size-4 text-gold" aria-hidden />
               {t("bookings.bookAgain")}
@@ -3981,7 +3981,7 @@ function ArenaApp({
                       <section
                         key={group.key}
                         aria-labelledby={`reservas-${group.key}`}
-                        className="space-y-3"
+                        className="customer-reservation-group space-y-3"
                       >
                         <h3
                           id={`reservas-${group.key}`}
@@ -3996,7 +3996,11 @@ function ArenaApp({
                         {/* Celular: um ticket por linha (gap de 0.75rem, como antes). A partir de
                           768 px: quantos tickets de 24rem couberem na largura (com 20rem a 1280
                           eram 3 colunas de 322 px e "Combo Premium / R$ 90,00" quebrava). */}
-                        <CardGrid min="24rem" gap="0.75rem" className="tablet:items-start">
+                        <CardGrid
+                          min="24rem"
+                          gap="0.75rem"
+                          className="customer-reservation-list tablet:items-start"
+                        >
                           {group.rows.map((row) => renderReservation(row))}
                         </CardGrid>
                       </section>

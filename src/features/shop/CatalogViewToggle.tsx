@@ -46,11 +46,11 @@ export function CatalogViewToggle({
   );
 }
 
-export function readCatalogViewPreference(
+export function readCatalogViewPreference<T extends CatalogViewMode | null>(
   shopId: string | null,
   kind: "services" | "staff",
-  fallback: CatalogViewMode,
-): CatalogViewMode {
+  fallback: T,
+): CatalogViewMode | T {
   if (!shopId || typeof window === "undefined") return fallback;
   try {
     const raw = window.localStorage.getItem(`catalogView:${kind}:${shopId}`);

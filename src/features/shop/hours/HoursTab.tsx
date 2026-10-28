@@ -363,7 +363,7 @@ function HoursTabContent({
         )}
       </div>
       {/* Quem só bloqueia a própria agenda vê os bloqueios primeiro (a única ação dele). */}
-      <div className="hours-grid grid items-start gap-6">
+      <div className="hours-grid grid items-start gap-6" data-week-first={!ownStaffId || undefined}>
         {ownStaffId ? (
           <>
             <div className="hours-stack">

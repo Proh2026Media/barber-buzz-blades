@@ -139,12 +139,18 @@ export function ServicesTab({
   const wide = useViewportAtLeast(768);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<CatalogStatus>("all");
-  const [savedView, setView] = useState<CatalogViewMode>(() =>
-    readCatalogViewPreference(shopId, "services", "grid"),
+  const [savedView, setView] = useState<CatalogViewMode | null>(() =>
+    readCatalogViewPreference(shopId, "services", null),
   );
-  // Lista curta não mostra a troca grade/lista: vale o padrão (a escolha salva volta quando a
-  // lista crescer). Sem isso, quem salvou "lista" ficava preso nela.
-  const view: CatalogViewMode = services.length > CATALOG_SHORT_LIST ? savedView : "grid";
+  // Nas telas maiores, a tabela facilita comparar itens. Uma escolha explícita continua
+  // valendo; listas curtas do celular mantêm os cartões originais.
+  const view: CatalogViewMode = wide
+    ? services.length > CATALOG_SHORT_LIST
+      ? (savedView ?? "list")
+      : "list"
+    : services.length > CATALOG_SHORT_LIST
+      ? (savedView ?? "grid")
+      : "grid";
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<ServiceRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ServiceRow | null>(null);

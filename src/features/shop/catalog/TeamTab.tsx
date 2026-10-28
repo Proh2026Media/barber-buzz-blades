@@ -250,12 +250,18 @@ export function TeamTab({
   const wide = useViewportAtLeast(768);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<CatalogStatus>("all");
-  const [savedView, setView] = useState<CatalogViewMode>(() =>
-    readCatalogViewPreference(shopId, "staff", "grid"),
+  const [savedView, setView] = useState<CatalogViewMode | null>(() =>
+    readCatalogViewPreference(shopId, "staff", null),
   );
-  // Lista curta não mostra a troca grade/lista: vale o padrão (a escolha salva volta quando a
-  // lista crescer). Sem isso, quem salvou "lista" ficava preso nela.
-  const view: CatalogViewMode = staff.length > CATALOG_SHORT_LIST ? savedView : "grid";
+  // Nas telas maiores, a tabela facilita comparar itens. Uma escolha explícita continua
+  // valendo; listas curtas do celular mantêm os cartões originais.
+  const view: CatalogViewMode = wide
+    ? staff.length > CATALOG_SHORT_LIST
+      ? (savedView ?? "list")
+      : "list"
+    : staff.length > CATALOG_SHORT_LIST
+      ? (savedView ?? "grid")
+      : "grid";
   const [formOpen, setFormOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<StaffRow | null>(null);

@@ -1,6 +1,7 @@
 import { WorkspaceHeaderAction, WorkspaceHeading } from "@/components/visual/WorkspaceHeader";
 import { useId, useMemo, useRef, useState } from "react";
 import {
+  ArrowLeft,
   ChevronRight,
   LayoutList,
   Plus,
@@ -112,10 +113,10 @@ export function ShopsPanel({
 }: ShopsPanelProps) {
   const { t, intlLocale } = useI18n();
   const wide = useViewportAtLeast(1024);
-  // No computador (≥ 1280) a lista vira tabela (DataList); no tablet deitado continua a lista
-  // de cartões ao lado da ficha; no tablet em pé e no celular, lista e ficha em janela.
+  // Desde 1024, tabela para comparar lojas; ao selecionar, índice compacto e ficha ampla.
+  // No tablet em pé e no celular, a ficha permanece em janela.
   const device = useDevice();
-  const table = device === "computador";
+  const table = wide;
   const headingId = useId();
   // A ficha ao lado da lista só fica fixa quando cabe inteira na altura; se não cabe, rola com
   // a página (antes rolava por dentro, sem barra visível no Mac, e escondia o fim da ficha).
@@ -500,6 +501,21 @@ export function ShopsPanel({
                 className="plat-shop-aside rounded-3xl border border-border bg-card p-5"
                 style={asideTop !== null ? { position: "sticky", top: asideTop } : undefined}
               >
+                <button
+                  type="button"
+                  className="mb-3 inline-flex min-h-11 items-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold"
+                  onClick={() => {
+                    const row =
+                      asideRef.current?.previousElementSibling?.querySelector<HTMLElement>(
+                        'tr:has([data-selected="true"])',
+                      );
+                    onSelect(null);
+                    requestAnimationFrame(() => row?.focus());
+                  }}
+                >
+                  <ArrowLeft className="size-4" aria-hidden />
+                  {t("common.back")}
+                </button>
                 {detail ?? (
                   <EmptyState
                     tone="store"

@@ -281,6 +281,7 @@ export function WeekCard<Row extends HoursRow>({
                       />
                     )}
                   </span>
+                  <RulerTicks ruler={ruler} className="hours-day-ruler hidden" />
                   <DayTrack
                     ruler={ruler}
                     closed={!row.is_open && !wanted?.is_open}

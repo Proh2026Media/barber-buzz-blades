@@ -308,3 +308,34 @@
     grid-template-areas: "selector selector" "tiers matrix";
   }
 }
+
+/* Com uma loja aberta, o índice fica estreito e a ficha recebe a área de trabalho. */
+@media (min-width: 1024px) {
+  .plat-shops-layout:has(> .plat-shop-aside) {
+    grid-template-columns: 18rem minmax(0, 1fr);
+  }
+  .plat-shops-layout > * {
+    min-width: 0;
+  }
+  .plat-shops-layout:has(> .plat-shop-aside) .plat-shops-table table {
+    table-layout: fixed;
+  }
+  .plat-shops-layout:has(> .plat-shop-aside)
+    :is(th, td):is([data-col="customers"], [data-col="admins"], [data-col="created"]) {
+    display: none;
+  }
+  .plat-shops-layout:has(> .plat-shop-aside)
+    col:is([data-col="customers"], [data-col="admins"], [data-col="created"]) {
+    width: 0 !important;
+    visibility: collapse;
+  }
+  .plat-shops-layout:has(> .plat-shop-aside) col[data-col="status"] {
+    width: 6rem !important;
+  }
+  .plat-shops-layout:has(> .plat-shop-aside) :is(th, td) {
+    padding-inline: 0.5rem;
+  }
+  .plat-shops-table tr:has([data-selected="true"]) td {
+    background: color-mix(in oklab, var(--primary) 8%, var(--card));
+  }
+}

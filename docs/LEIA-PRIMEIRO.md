@@ -1,6 +1,6 @@
 # Leia primeiro — Barba & Cabelo
 
-Porta de entrada para o agente que vai continuar o projeto (Cursor, Claude Code, Codex e outros). Atualizado em **24/10/2026**.
+Porta de entrada para o agente que vai continuar o projeto (Cursor, Claude Code, Codex e outros). Atualizado em **28/10/2026**.
 
 **Passagem do dia (24/10/2026):** o dono passa a continuar o projeto no ChatGPT. Leia antes [passagem-chatgpt-2026-10-24.md](passagem-chatgpt-2026-10-24.md). As passagens anteriores ([21/10, Claude Code aplicativo](passagem-claude-code-app-2026-10-21.md); [15/10](passagem-claude-2026-10-15.md)) ficam como histórico.
 
@@ -23,6 +23,8 @@ Porta de entrada para o agente que vai continuar o projeto (Cursor, Claude Code,
 **Atualização de 24/10 — revisão geral de tablet e computador (P-96, incluindo P-92):** primeira rodada de reorganização, preservando celular e identidade; depois o dono informou que não percebeu melhorias significativas (complemento P-97 abaixo). Ajustes com navegação secundária compacta e campos/prévias pela largura útil; Horários com colunas independentes e Pausa fixa em janela ampla; Equipe sem lateral vazia; agendamento do cliente com escolhas lado a lado no tablet e revisão lateral só no computador; matriz de Acessos, lista de barbearias, relatórios e Clube redistribuídos. Inventário e validação na seção 10 de [dispositivos-2026-10-21.md](dispositivos-2026-10-21.md). P-92 concluída pela autorização deste pedido; P-95 continua fora do escopo porque altera o celular. P-42/P-43 continuam pendentes para aparelhos e integrações reais. Sem migration.
 
 **Retorno do dono e complemento P-97 (24/10):** a primeira revisão foi considerada pouco perceptível. Recompostas as tarefas principais: Agenda com navegação/resumo em faixas e atendimentos na largura completa; Ajustes com categorias no topo desde 768, liberando largura para os formulários; Agendar com escolhas roláveis à esquerda e calendário/horários à direita desde 1024, revisão abaixo do calendário. Celular preservado. Registro e comparação na seção 11 de [dispositivos-2026-10-21.md](dispositivos-2026-10-21.md). Não tratar a aprovação técnica como aprovação da experiência pelo dono.
+
+**Continuação de 28/10 — P-98:** Serviços e Equipe abrem em tabela no tablet/computador; Horários da loja ganha semana visual, prévia em faixa e áreas de bloqueio/pausa; Meus agendamentos usa linhas pela largura disponível; ficha da barbearia na plataforma recebe mais espaço, com índice compacto e retorno à tabela. Início do cliente, pontos, Início da plataforma, Relatórios e Acessos mantêm as composições já adequadas. Validação e limites na seção 12 de [dispositivos-2026-10-21.md](dispositivos-2026-10-21.md). P-42/P-43 ainda dependem de integrações reais/aparelhos físicos; não há nova implantação de banco.
 
 ## O que é o projeto
 

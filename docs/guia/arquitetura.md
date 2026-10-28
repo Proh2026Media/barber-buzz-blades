@@ -270,6 +270,8 @@ Três faixas, com os mesmos números no CSS e no JavaScript (decisões em [dispo
 
 - **Agenda em largura completa (P-97):** `.agenda-side` usa `display: contents` desde 768; navegação de dia/semana/escopo e `DaySummary` viram faixas acima da lista/quadro. O mês continua acessível pelo `DatePicker`, sem ocupar coluna permanente. Atalhos extras ficam na barra da busca; em dia vazio/erro/carregamento continuam disponíveis fora dela. Ordem móvel, estado, escopo, permissões e ações são os anteriores.
 
+- **Continuação P-98 (28/10):** catálogo usa tabela por padrão desde 768, mantendo preferência explícita nas listas longas e cartões móveis. `readCatalogViewPreference` aceita fallback nulo para distinguir ausência de escolha. Horários da loja usa `data-week-first` para compor semana em quatro/sete colunas desde 1024/1280; os blocos seguem a ordem do DOM e a agenda própria conserva seus grupos. `customer-reservation-group` mede a largura real: tickets em linhas desde 40rem e ações laterais desde 52rem, sem mudar janelas/resumos. Plataforma usa tabela desde 1024; seleção reserva 18rem para o índice e entrega o restante à ficha. Voltar remove a seleção e devolve foco à linha.
+
 ## 9. PWA
 
 - Manifesto único: [public/manifest.webmanifest](../../public/manifest.webmanifest) (ligado em `__root.tsx`; `manifest: false` no plugin para não duplicar).
