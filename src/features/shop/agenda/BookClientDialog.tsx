@@ -35,6 +35,7 @@ import {
 } from "@/components/visual";
 import { useDemo } from "@/features/demo/context";
 import { demoStaffSlots } from "@/features/demo/slots";
+import { demoServiceTerms } from "@/features/demo/catalog";
 import { AgendaMonth } from "./AgendaDayNav";
 import { checkSignupPhone, nextMaskedPhone } from "@/lib/auth/signup-phone";
 import { useDevice, useViewportAtLeast } from "@/lib/device";
@@ -304,13 +305,33 @@ export function BookClientDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, e164, !!demo, shopId]);
 
-  const service = activeServices.find((row) => row.id === serviceId) ?? null;
+  const offeredServices = useMemo(() => {
+    if (!demo || !staffId) return activeServices;
+    return activeServices.flatMap((row) => {
+      const terms = demoServiceTerms(demo, staffId, row.id);
+      return terms ? [{ ...row, ...terms }] : [];
+    });
+  }, [demo, staffId, activeServices]);
+  const service = offeredServices.find((row) => row.id === serviceId) ?? null;
   const member = activeStaff.find((row) => row.id === staffId) ?? null;
+
+  useEffect(() => {
+    if (demo && open && !service && serviceId !== (offeredServices[0]?.id ?? null)) {
+      setServiceId(offeredServices[0]?.id ?? null);
+      setSlot(null);
+    }
+  }, [demo, open, service, serviceId, offeredServices]);
 
   // Horários livres do profissional no dia: a grade do app, sem a antecedência mínima do cliente
   // (o barbeiro encaixa quem acabou de chegar).
   useEffect(() => {
-    if (!open || !service || !staffId || booked) return;
+    if (!open || booked) return;
+    if (!service || !staffId) {
+      setSlots([]);
+      setSlot(null);
+      setSlotsState("idle");
+      return;
+    }
     let cancelled = false;
     // Na demonstração a conta é na hora: sem "Buscando…" piscando a cada tique do relógio.
     if (!demo) setSlotsState("loading");
@@ -319,7 +340,7 @@ export function BookClientDialog({
         let list: string[];
         if (demo) {
           list = dayAllowed(day)
-            ? demoStaffSlots(demo, staffId, day, service.duration_minutes, service.id, timeZone, {
+            ? demoStaffSlots(demo, staffId, day, service.id, timeZone, {
                 team: true,
               }).map((date) => date.toISOString())
             : [];
@@ -364,6 +385,9 @@ export function BookClientDialog({
     demo?.appointments,
     demo?.availabilityBlocks,
     demo?.waits,
+    demo?.staffServices,
+    demo?.services,
+    demo?.staff,
     booked,
     slotsVersion,
   ]);
@@ -443,15 +467,9 @@ export function BookClientDialog({
       if (demo) {
         // A mesma conferência do banco: dia dentro do prazo e horário ainda livre?
         if (!dayAllowed(day)) throw { message: "Esse dia ainda não está aberto para agendamento." };
-        const still = demoStaffSlots(
-          demo,
-          staffId,
-          day,
-          service.duration_minutes,
-          service.id,
-          timeZone,
-          { team: true },
-        ).some((date) => date.toISOString() === startsAt);
+        const still = demoStaffSlots(demo, staffId, day, service.id, timeZone, { team: true }).some(
+          (date) => date.toISOString() === startsAt,
+        );
         if (!still) throw { code: "23P01" };
         const appointmentId = crypto.randomUUID();
         const stamp = demo.now.toISOString();
@@ -847,7 +865,7 @@ export function BookClientDialog({
 
                 {/* 2 e 3. Serviço e profissional: lado a lado a partir de 1024 px. */}
                 <div className="space-y-5 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
-                  {activeServices.length > 0 ? (
+                  {offeredServices.length > 0 ? (
                     <ChoiceChips
                       label={t("bk.service")}
                       icon={Scissors}
@@ -856,7 +874,7 @@ export function BookClientDialog({
                         setServiceId(value);
                         setSlot(null);
                       }}
-                      options={activeServices.map((row) => ({
+                      options={offeredServices.map((row) => ({
                         value: row.id,
                         label: row.name,
                         note: `${row.duration_minutes} min · ${money(row.price_cents)}`,

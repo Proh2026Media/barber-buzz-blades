@@ -6,6 +6,7 @@ import { useWaiting } from "@/features/waiting/useWaiting";
 import { WaitingCards } from "@/features/waiting/WaitingUI";
 import { mayOpenStarts, waitOpportunities } from "@/features/waiting/model";
 import { demoStaffSlots } from "@/features/demo/slots";
+import { demoBookingTerms, demoServiceTerms } from "@/features/demo/catalog";
 import { showSportsTab, sportsMatches } from "./sports";
 import { CancellationDialog } from "@/features/insights/CancellationDialog";
 import { cancellationReasonLabel, type CancellationReason } from "@/features/insights/cancellation";
@@ -444,8 +445,12 @@ function ArenaApp({
   const [userId, setUserId] = useState<string | null>(null);
   const [services, setServices] = useState<Tables<"services">[]>([]);
   const [staff, setStaff] = useState<Tables<"staff">[]>([]);
-  // Quem faz cada serviço, com duração e preço próprios; null = todos fazem tudo (demonstração).
-  const [serviceTerms, setServiceTerms] = useState<ServiceTerms[] | null>(null);
+  // A demonstração resolve o catálogo local pela mesma regra de get_booking_terms.
+  const [loadedServiceTerms, setServiceTerms] = useState<ServiceTerms[] | null>(null);
+  const serviceTerms = useMemo(
+    () => (demo ? demoBookingTerms(demo) : loadedServiceTerms),
+    [demo, loadedServiceTerms],
+  );
   const staffPickedByUser = useRef(false);
 
   useEffect(() => {
@@ -873,8 +878,8 @@ function ArenaApp({
         directBarberSlug && fromPublicSlot.current
           ? shortestServiceIndex(
               demo.services.filter((row) => row.active),
-              null,
-              "",
+              demoBookingTerms(demo),
+              demoStaff.find((row) => row.booking_slug === directBarberSlug)?.id ?? "",
             )
           : 0,
       );
@@ -1318,7 +1323,6 @@ function ArenaApp({
               demo,
               id,
               selectedDay,
-              selectedServiceDuration,
               selectedServiceId,
               shopTimeZone,
             )) {
@@ -1398,7 +1402,8 @@ function ArenaApp({
     setBookingBusy(true);
     setBookingError(null);
     setBookingUncertain(false);
-    const endsAt = new Date(selectedSlot.getTime() + bookingService.duration_minutes * 60_000);
+    let endsAt = new Date(selectedSlot.getTime() + bookingService.duration_minutes * 60_000);
+    let bookedPrice = bookingService.price_cents;
     let staffId = selectedStaff?.id ?? null;
     let staffName = selectedStaff?.display_name ?? t("booking.staffFallback");
     const previousRow = rescheduleId
@@ -1442,7 +1447,7 @@ function ArenaApp({
             previousRow.staff_id === staffId &&
             typeof previousRow.booked_price_cents === "number"
               ? previousRow.booked_price_cents
-              : bookingService.price_cents,
+              : bookedPrice,
         },
         rescheduled: Boolean(rescheduleId),
         previous: previous ? `${previous.day} · ${previous.time}` : null,
@@ -1477,14 +1482,9 @@ function ArenaApp({
         const order = [...staff].sort((a, b) => Number(b.id === prefer) - Number(a.id === prefer));
         const iso = selectedSlot.toISOString();
         const free = order.find((row) =>
-          demoStaffSlots(
-            demo,
-            row.id,
-            selectedDay,
-            bookingService.duration_minutes,
-            bookingService.id,
-            shopTimeZone,
-          ).some((slot) => slot.toISOString() === iso),
+          demoStaffSlots(demo, row.id, selectedDay, bookingService.id, shopTimeZone).some(
+            (slot) => slot.toISOString() === iso,
+          ),
         );
         if (!free) throw new Error(t("cust.noStaffAtTime"));
         staffId = free.id;
@@ -1508,6 +1508,12 @@ function ArenaApp({
           staff.find((row) => row.id === staffId)?.display_name ?? t("booking.anyStaffFallback");
       }
       if (!staffId) throw new Error(t("cust.pickStaff"));
+      if (demo) {
+        const terms = demoServiceTerms(demo, staffId, bookingService.id);
+        if (!terms) throw new Error(t("cust.noStaffAtTime"));
+        endsAt = new Date(selectedSlot.getTime() + terms.duration_minutes * 60_000);
+        bookedPrice = terms.price_cents;
+      }
 
       const booking = {
         barbershop_id: shopId,
@@ -1517,7 +1523,7 @@ function ArenaApp({
         starts_at: selectedSlot.toISOString(),
         ends_at: endsAt.toISOString(),
         status: "confirmed" as const,
-        booked_price_cents: bookingService.price_cents,
+        booked_price_cents: bookedPrice,
       };
       let repeatApplied = false;
       if (demo) {
@@ -1949,7 +1955,7 @@ function ArenaApp({
   // Vagas da lista de espera que podem abrir neste dia (aparecem na grade como "pode vagar").
   // "Qualquer profissional" vê as de todos; cada vaga usa a duração do próprio profissional.
   // Quem não está na equipe carregada (desligado ou fora da lista) não oferece vaga, mesmo sem a
-  // lista de termos (demonstração ou falha ao carregar), em que `termsFor` aceitaria qualquer id.
+  // lista de termos (falha ao carregar), em que `termsFor` aceitaria qualquer id.
   const waitDurationFor = (staffId: string) =>
     selectedService && staff.some((member) => member.id === staffId)
       ? (termsFor(serviceTerms, staffId, selectedService)?.duration_minutes ?? null)

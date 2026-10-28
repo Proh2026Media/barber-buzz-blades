@@ -107,6 +107,15 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## Entrega — P-72: serviços por profissional na demonstração (28/10, ChatGPT/Codex)
+
+- **Continuação autorizada:** resolver a pendência de demonstração sem repetir as entregas responsivas P-96/P-97/P-98. A loja fictícia passa a representar profissionais com serviços, preços e durações próprios.
+- **Regra compartilhada:** `src/features/demo/catalog.ts` reproduz `shop_uses_staff_services`/`staff_service_terms`, incluindo equipe/serviços ativos, catálogo explícito mesmo com linhas pausadas e alternativa ao catálogo da loja quando não há vínculos. A escolha do cliente, grade de horários, painel da equipe, reservas/remarcações e espera usam essas condições.
+- **Cenários:** Bruno faz corte em 45 min por R$ 55; Rafa faz barba em 30 min por R$ 65; Dani não oferece barba. Reservas fictícias geradas usam condições válidas para o profissional. Remarcação com o mesmo serviço/profissional conserva o preço reservado; troca recalcula. A prévia copiada de loja real mantém os serviços copiados, sem inventar vínculos reais.
+- **Testes:** 298 testes automáticos aprovados, incluindo catálogo sem vínculos/com vínculos pausados, serviços não oferecidos, duração própria na grade, entrada/confirmação da espera, mudança de catálogo durante a espera, preços de reservas e remarcações. Fluxo do cliente concluído em 390/768/1024/1280 px com corte do Bruno das 18h15 às 19h por R$ 55; filtro da Dani e condições do Rafa conferidos. Sem erros de execução, rolagem lateral ou chaves de tradução expostas nessas telas. O painel também concluiu uma reserva do Bruno; o formulário manteve os dados ao alternar entre as quatro larguras e retirou barba ao escolher Dani. Evidências locais em `/tmp/barba-p72/`.
+- **Verificação final:** `scripts/verificar.sh` aprovado: tipos, 298/298 testes, eslint dos oito arquivos TypeScript, prettier dos 12 arquivos e montagem cliente/servidor/PWA. `git diff --check` sem problemas; servidor de testes encerrado.
+- **Limites:** dados fictícios e navegador local, sem teste em aparelho físico ou integração real. Nenhuma migration, alteração de permissões ou tarefa nova para o TI. P-42/P-43 continuam abertas; aprovação técnica não substitui a avaliação do dono sobre a experiência.
+
 ## Entrega — P-98: catálogos, semana, agendamentos e ficha da loja (28/10, ChatGPT/Codex)
 
 - **Pedido:** continuar pelas áreas restantes após a recomposição P-97, preservando celular, identidade, funções e permissões.

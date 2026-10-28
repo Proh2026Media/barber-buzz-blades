@@ -1,3 +1,6 @@
+import { demoBookingTerms, demoServiceTerms } from "./catalog.ts";
+import { demoStaffSlots } from "./slots.ts";
+import { waitingDemoAction, type DemoWait } from "../waiting/demo.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
@@ -8,6 +11,191 @@ import {
   demoViewer,
 } from "./team.ts";
 import { createDemoState, DEMO_REWARDS, demoLifetimePoints, demoReducer } from "./model.ts";
+
+test("catálogo da demonstração respeita vínculos, inativos e lojas sem catálogo próprio", () => {
+  const state = createDemoState();
+  assert.equal(demoServiceTerms(state, "demo-extra-staff-0", "demo-beard"), null);
+  assert.deepEqual(demoServiceTerms(state, "demo-bruno", "demo-cut"), {
+    staff_id: "demo-bruno",
+    service_id: "demo-cut",
+    duration_minutes: 45,
+    price_cents: 5500,
+  });
+  const legacy = { ...state, staffServices: [] };
+  assert.equal(demoServiceTerms(legacy, "demo-bruno", "demo-cut")?.duration_minutes, 30);
+  assert.equal(demoServiceTerms(legacy, "demo-extra-staff-0", "demo-beard")?.price_cents, 6000);
+  const paused = {
+    ...state,
+    staffServices: state.staffServices.map((row) => ({ ...row, active: false })),
+  };
+  assert.deepEqual(demoBookingTerms(paused), []);
+  const missing = {
+    ...state,
+    staffServices: state.staffServices.filter((row) => row.staff_id !== "demo-bruno"),
+  };
+  assert.equal(demoServiceTerms(missing, "demo-bruno", "demo-cut"), null);
+  const inactive = demoReducer(state, { type: "staff.toggle", id: "demo-bruno" });
+  assert.equal(demoServiceTerms(inactive, "demo-bruno", "demo-cut"), null);
+  assert.equal(
+    demoServiceTerms(
+      demoReducer(state, { type: "service.toggle", id: "demo-cut" }),
+      "demo-bruno",
+      "demo-cut",
+    ),
+    null,
+  );
+  assert.equal(
+    demoServiceTerms(
+      { ...state, shop: { ...state.shop, id: "outra-loja" } },
+      "demo-bruno",
+      "demo-cut",
+    ),
+    null,
+  );
+});
+
+test("grade usa a duração do profissional e exclui serviços não oferecidos", () => {
+  const state = { ...createDemoState(new Date(2026, 9, 28)), appointments: [], waits: [] };
+  state.settings.prep_minutes = 0;
+  state.settings.slot_mode = "flexible";
+  state.businessHours = state.businessHours.map((row) => ({
+    ...row,
+    is_open: true,
+    opens_at: "09:00",
+    closes_at: "10:00",
+  }));
+  const slots = (staff: string, service: string) =>
+    demoStaffSlots(state, staff, "2026-10-29", service, "America/Sao_Paulo");
+  const carlos = slots("demo-carlos", "demo-cut");
+  const bruno = slots("demo-bruno", "demo-cut");
+  assert.ok(carlos.length > bruno.length);
+  assert.equal(carlos.at(-1)?.toISOString(), "2026-10-29T12:30:00.000Z");
+  assert.equal(bruno.at(-1)?.toISOString(), "2026-10-29T12:15:00.000Z");
+  assert.deepEqual(slots("demo-extra-staff-0", "demo-beard"), []);
+});
+
+function esperaComCatalogo(staffId: string) {
+  const state = createDemoState(new Date(2026, 9, 28));
+  const start = new Date(state.now);
+  start.setHours(14, 0, 0, 0);
+  const wait: DemoWait = {
+    id: "espera-catalogo",
+    appointment_id: "retirado",
+    staff_id: staffId,
+    starts_at: start.toISOString(),
+    ends_at: new Date(+start + 30 * 60000).toISOString(),
+    hold_until: new Date(+state.now + 10 * 60000).toISOString(),
+    claim_until: new Date(+state.now + 15 * 60000).toISOString(),
+    state: "holding",
+    mine: false,
+    has_interest: false,
+    restorable: true,
+    service_id: null,
+    customer_id: null,
+    original_customer_id: "outro-cliente",
+  };
+  return { ...state, appointments: [], waits: [wait] };
+}
+
+test("espera admite duração própria menor e grava o preço próprio na confirmação", () => {
+  const state = esperaComCatalogo(DEMO_ASSOCIATE_STAFF_ID);
+  const joined = waitingDemoAction(state, "espera-catalogo", "join", "demo-beard");
+  const claimed = waitingDemoAction(
+    { ...joined, now: new Date(+state.now + 11 * 60000) },
+    "espera-catalogo",
+    "claim",
+  );
+  const appointment = claimed.appointments.at(-1)!;
+  assert.equal(Date.parse(appointment.ends_at) - Date.parse(appointment.starts_at), 30 * 60000);
+  assert.equal(appointment.booked_price_cents, 6500);
+  assert.equal(claimed.prices[appointment.id], 6500);
+});
+
+test("espera recusa serviço não oferecido e duração própria maior que a vaga", () => {
+  assert.throws(() =>
+    waitingDemoAction(
+      esperaComCatalogo("demo-extra-staff-0"),
+      "espera-catalogo",
+      "join",
+      "demo-beard",
+    ),
+  );
+  assert.throws(() =>
+    waitingDemoAction(esperaComCatalogo("demo-bruno"), "espera-catalogo", "join", "demo-cut"),
+  );
+});
+
+test("confirmação da espera revalida catálogo alterado depois do interesse", () => {
+  const initial = esperaComCatalogo(DEMO_ASSOCIATE_STAFF_ID);
+  const joined = waitingDemoAction(initial, "espera-catalogo", "join", "demo-beard");
+  const state = { ...joined, now: new Date(+initial.now + 11 * 60000) };
+  const own = state.staffServices.find(
+    (row) => row.staff_id === DEMO_ASSOCIATE_STAFF_ID && row.service_id === "demo-beard",
+  )!;
+  for (const change of [{ active: false }, { duration_minutes: 45 }]) {
+    const changed = demoReducer(state, { type: "staffService.save", row: { ...own, ...change } });
+    assert.throws(() => waitingDemoAction(changed, "espera-catalogo", "claim"));
+  }
+  const changed = demoReducer(state, {
+    type: "staffService.save",
+    row: { ...own, price_cents: 7000 },
+  });
+  assert.equal(
+    waitingDemoAction(changed, "espera-catalogo", "claim").appointments.at(-1)?.booked_price_cents,
+    7000,
+  );
+});
+
+test("reservas e remarcações conservam duração e preço do profissional", () => {
+  const state = { ...createDemoState(), appointments: [], waits: [] };
+  const original = createDemoState().appointments[0]!;
+  for (const type of ["book", "client.book"] as const) {
+    const booked = demoReducer(state, {
+      type,
+      appointment: { ...original, staff_id: "demo-bruno" },
+    });
+    const row = booked.appointments[0]!;
+    assert.equal(row.booked_price_cents, 5500);
+    assert.equal(booked.prices[row.id], 5500);
+    assert.equal(Date.parse(row.ends_at) - Date.parse(row.starts_at), 45 * 60000);
+    const own = booked.staffServices.find(
+      (item) => item.staff_id === row.staff_id && item.service_id === row.service_id,
+    )!;
+    const changed = demoReducer(booked, {
+      type: "staffService.save",
+      row: { ...own, price_cents: 6500 },
+    });
+    const moved = demoReducer(changed, {
+      type: "reschedule",
+      id: row.id,
+      service_id: row.service_id!,
+      staff_id: row.staff_id,
+      starts_at: row.starts_at,
+      ends_at: row.ends_at,
+    });
+    assert.equal(moved.appointments[0]?.booked_price_cents, 5500);
+    assert.equal(moved.prices[row.id], 5500);
+    const switched = demoReducer(moved, {
+      type: "reschedule",
+      id: row.id,
+      service_id: "demo-beard",
+      staff_id: DEMO_ASSOCIATE_STAFF_ID,
+      starts_at: row.starts_at,
+      ends_at: row.ends_at,
+    });
+    assert.equal(switched.appointments[0]?.booked_price_cents, 6500);
+    assert.equal(switched.prices[row.id], 6500);
+    assert.equal(
+      Date.parse(switched.appointments[0]!.ends_at) - Date.parse(row.starts_at),
+      30 * 60000,
+    );
+    const refused = demoReducer(state, {
+      type,
+      appointment: { ...original, staff_id: "demo-extra-staff-0", service_id: "demo-beard" },
+    });
+    assert.equal(refused, state);
+  }
+});
 
 test("demo starts during business hours even when opened late at night", () => {
   const state = createDemoState(new Date(2030, 0, 15, 23, 45));
@@ -76,6 +264,7 @@ test("rescheduling keeps the same appointment and automatically confirms it", ()
     expectAppointment({
       ...initial.appointments.find((row) => row.id === "demo-booking-1")!,
       service_id: "demo-combo",
+      booked_price_cents: 9000,
       staff_id: "demo-bruno",
       starts_at: "2030-01-16T15:00:00.000Z",
       ends_at: "2030-01-16T16:00:00.000Z",
@@ -302,11 +491,12 @@ test("demo can copy one selected shop while keeping fictional customers and appo
   assert.ok(state.appointments.every((appointment) => appointment.barbershop_id === "demo-shop"));
 });
 
-test("reservas da demonstração gravam o preço do próprio serviço (o mesmo de Agendar)", () => {
+test("reservas da demonstração gravam o preço do profissional no serviço", () => {
   const samePrice = (state: ReturnType<typeof createDemoState>) => {
     for (const row of state.appointments) {
-      const service = state.services.find((item) => item.id === row.service_id);
-      assert.equal(row.booked_price_cents, service?.price_cents, row.id);
+      const terms = demoServiceTerms(state, row.staff_id, row.service_id);
+      assert.equal(row.booked_price_cents, terms?.price_cents, row.id);
+      assert.equal(state.prices[row.id], row.booked_price_cents);
     }
   };
   const base = createDemoState(new Date("2026-09-16T12:00:00"));
@@ -385,8 +575,8 @@ test("demo partner keeps an own catalog and decides suggestions locally", () => 
   };
   let state = demoReducer(initial, { type: "staffService.save", row });
   state = demoReducer(state, { type: "staffService.save", row: { ...row, price_cents: 6000 } });
-  assert.equal(state.staffServices.length, 1);
-  assert.equal(state.staffServices[0]!.price_cents, 6000);
+  assert.equal(state.staffServices.length, initial.staffServices.length);
+  assert.equal(demoServiceTerms(state, staffId, service.id)?.price_cents, 6000);
   // O catálogo da loja não muda quando o Parceiro personaliza o dele.
   assert.equal(state.services[0]!.price_cents, service.price_cents);
   state = demoReducer(state, { type: "suggestion.decide", id: "demo-suggestion-1" });

@@ -26,6 +26,8 @@ Porta de entrada para o agente que vai continuar o projeto (Cursor, Claude Code,
 
 **Continuação de 28/10 — P-98:** Serviços e Equipe abrem em tabela no tablet/computador; Horários da loja ganha semana visual, prévia em faixa e áreas de bloqueio/pausa; Meus agendamentos usa linhas pela largura disponível; ficha da barbearia na plataforma recebe mais espaço, com índice compacto e retorno à tabela. Início do cliente, pontos, Início da plataforma, Relatórios e Acessos mantêm as composições já adequadas. Validação e limites na seção 12 de [dispositivos-2026-10-21.md](dispositivos-2026-10-21.md). P-42/P-43 ainda dependem de integrações reais/aparelhos físicos; não há nova implantação de banco.
 
+**Continuação de 28/10 — P-72:** demonstração com serviços, preços e durações por profissional; condições compartilhadas por escolha do cliente, grade, painel e lista de espera. Bruno: corte de 45 min/R$ 55; Rafa: barba de 30 min/R$ 65; Dani sem barba. Reservas e remarcações conservam os valores correspondentes. Sem migration ou tarefa para o TI. P-42/P-43 continuam dependendo de aparelhos/integrações reais; P-95 permanece fora por alterar o celular.
+
 ## O que é o projeto
 
 App de agendamento e fidelidade **multiloja** para barbearias e salões, com uso principal no celular. Front em TanStack Start (React + Vite), Supabase auto-hospedado no Coolify e site publicado no Hostinger. Nasceu como protótipo do Lovable e foi reconstruído a partir de 14/09/2026. Resumo da trajetória: [guia/historico.md](guia/historico.md), seção 1.

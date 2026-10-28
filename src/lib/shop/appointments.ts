@@ -225,7 +225,7 @@ export type ServiceTerms = {
 
 /**
  * Duração e preço do profissional no serviço (`get_booking_terms`); `null` quando ele não faz
- * o serviço. Sem lista (demonstração), todos fazem tudo com os valores do catálogo.
+ * o serviço. Sem lista carregada, usa os valores do catálogo como alternativa temporária.
  */
 export function termsFor(
   terms: ServiceTerms[] | null,

@@ -12,6 +12,7 @@ import {
 import { blocksSlot, type WaitAction, type WaitingEvent } from "../waiting/model.ts";
 import type { LoyaltyReward } from "../loyalty/program.ts";
 import { DEMO_ASSOCIATE_STAFF_ID, DEMO_EMPLOYEE_STAFF_ID } from "./team.ts";
+import { demoServiceTerms } from "./catalog.ts";
 
 export const DEMO_CUSTOMER_ID = "demo-customer";
 
@@ -634,7 +635,35 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
       avatar_url: null,
     },
   ];
-  // One-hour slots keep every service inside opening hours and avoid overlaps.
+  // A loja fictícia demonstra catálogo próprio. A prévia de uma loja real conserva o catálogo
+  // copiado, sem inventar vínculos com profissionais cujos ids foram anonimizados.
+  if (!preset) {
+    state.staffServices = state.staff.flatMap((member) =>
+      state.services.map((service) => ({
+        id: `demo-own-${member.id}-${service.id}`,
+        barbershop_id: state.shop.id,
+        staff_id: member.id,
+        service_id: service.id,
+        display_name: null,
+        icon: null,
+        active: !(member.id === "demo-extra-staff-0" && service.id === "demo-beard"),
+        duration_minutes:
+          member.id === "demo-bruno" && service.id === "demo-cut"
+            ? 45
+            : member.id === DEMO_ASSOCIATE_STAFF_ID && service.id === "demo-beard"
+              ? 30
+              : service.duration_minutes,
+        price_cents:
+          member.id === "demo-bruno" && service.id === "demo-cut"
+            ? 5500
+            : member.id === DEMO_ASSOCIATE_STAFF_ID && service.id === "demo-beard"
+              ? 6500
+              : service.price_cents,
+        created_at: stamp,
+        updated_at: stamp,
+      })),
+    );
+  }
   // A janela de 120 dias para trás garante visitas recorrentes suficientes para
   // o "ritmo" (frequência de retorno) ter dados na demonstração.
   // Cada horário tem 1 h: só sorteia serviços que cabem nele, para não invadir o seguinte.
@@ -651,7 +680,13 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
     1,
     ...slotServices.map((service) => Math.ceil(service.duration_minutes / 60)),
   );
-  const pickService = () => slotServices[Math.floor(Math.random() * slotServices.length)]!;
+  const pickService = (staffId: string) => {
+    const choices = slotServices.flatMap((service) => {
+      const terms = demoServiceTerms(state, staffId, service.id);
+      return terms && terms.duration_minutes <= slotHours * 60 ? [{ ...service, ...terms }] : [];
+    });
+    return choices[Math.floor(Math.random() * choices.length)];
+  };
   const slots: { start: Date; staffId: string }[] = [];
   for (let day = -120; day <= 13; day++) {
     const start = new Date(now);
@@ -715,7 +750,8 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
       if (date.getDay() === 0) date.setDate(date.getDate() + 1);
       const slot = claimSlotOn(date);
       if (!slot) continue;
-      const service = pickService();
+      const service = pickService(slot.staffId);
+      if (!service) continue;
       state.appointments.push({
         id: `demo-generated-${index}-${visit}`,
         barbershop_id: state.shop.id,
@@ -735,7 +771,8 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
     // Sem reaproveitar horário: quando acabam os livres, o cliente fica sem reserva futura.
     const future = futureCursor < futureSlots.length ? futureSlots[futureCursor++] : undefined;
     if (future) {
-      const service = pickService();
+      const service = pickService(future.staffId);
+      if (!service) return;
       state.appointments.push({
         id: `demo-generated-${index}-upcoming`,
         barbershop_id: state.shop.id,
@@ -757,7 +794,8 @@ export function createDemoState(date = new Date(), preset?: DemoShopPreset): Dem
   state.prices = Object.fromEntries(
     state.appointments.map((row) => [
       row.id,
-      state.services.find((service) => service.id === row.service_id)!.price_cents,
+      row.booked_price_cents ??
+        state.services.find((service) => service.id === row.service_id)!.price_cents,
     ]),
   );
   state.awarded = state.appointments
@@ -874,7 +912,19 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
       };
     }
     case "client.book": {
-      const appointment = action.appointment;
+      const terms = demoServiceTerms(
+        state,
+        action.appointment.staff_id,
+        action.appointment.service_id,
+      );
+      if (!terms) return state;
+      const appointment = {
+        ...action.appointment,
+        ends_at: new Date(
+          Date.parse(action.appointment.starts_at) + terms.duration_minutes * 60000,
+        ).toISOString(),
+        booked_price_cents: terms.price_cents,
+      };
       const clash = state.appointments.some(
         (row) =>
           row.staff_id === appointment.staff_id &&
@@ -898,8 +948,7 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
           : state.shopClients,
         prices: {
           ...state.prices,
-          [appointment.id]:
-            state.services.find((row) => row.id === appointment.service_id)?.price_cents ?? 0,
+          [appointment.id]: appointment.booked_price_cents,
         },
         appointments: [...state.appointments, { ...appointment, status: "confirmed" }],
       };
@@ -1113,14 +1162,27 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
           customer.id === state.customerId ? { ...customer, name: action.name } : customer,
         ),
       };
-    case "book":
+    case "book": {
+      const terms = demoServiceTerms(
+        state,
+        action.appointment.staff_id,
+        action.appointment.service_id,
+      );
+      if (!terms) return state;
+      const appointment = {
+        ...action.appointment,
+        ends_at: new Date(
+          Date.parse(action.appointment.starts_at) + terms.duration_minutes * 60000,
+        ).toISOString(),
+        booked_price_cents: terms.price_cents,
+      };
       if (
         state.waits.some(
           (w) =>
             blocksSlot(w, state.now) &&
-            w.staff_id === action.appointment.staff_id &&
-            w.starts_at < action.appointment.ends_at &&
-            w.ends_at > action.appointment.starts_at,
+            w.staff_id === appointment.staff_id &&
+            w.starts_at < appointment.ends_at &&
+            w.ends_at > appointment.starts_at,
         )
       )
         return state;
@@ -1128,25 +1190,35 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
         ...state,
         prices: {
           ...state.prices,
-          [action.appointment.id]:
-            state.services.find((row) => row.id === action.appointment.service_id)?.price_cents ??
-            0,
+          [appointment.id]: appointment.booked_price_cents,
         },
-        appointments: [...state.appointments, { ...action.appointment, status: "confirmed" }],
+        appointments: [...state.appointments, { ...appointment, status: "confirmed" }],
       };
-    case "reschedule":
+    }
+    case "reschedule": {
+      const previous = state.appointments.find((row) => row.id === action.id);
+      const terms = demoServiceTerms(state, action.staff_id, action.service_id);
+      if (!previous || !terms) return state;
+      const endsAt = new Date(
+        Date.parse(action.starts_at) + terms.duration_minutes * 60000,
+      ).toISOString();
+      const price =
+        previous.staff_id === action.staff_id && previous.service_id === action.service_id
+          ? (previous.booked_price_cents ?? terms.price_cents)
+          : terms.price_cents;
       if (
         state.waits.some(
           (w) =>
             blocksSlot(w, state.now) &&
             w.staff_id === action.staff_id &&
-            w.starts_at < action.ends_at &&
+            w.starts_at < endsAt &&
             w.ends_at > action.starts_at,
         )
       )
         return state;
       return {
         ...state,
+        prices: { ...state.prices, [action.id]: price },
         waits: state.waits.map((w) =>
           w.appointment_id === action.id ? { ...w, restorable: false } : w,
         ),
@@ -1155,7 +1227,8 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
             ? {
                 ...row,
                 starts_at: action.starts_at,
-                ends_at: action.ends_at,
+                ends_at: endsAt,
+                booked_price_cents: price,
                 service_id: action.service_id,
                 staff_id: action.staff_id,
                 status: "confirmed",
@@ -1163,6 +1236,7 @@ export function demoReducer(state: DemoState, action: DemoAction): DemoState {
             : row,
         ),
       };
+    }
     case "status": {
       const appointment = state.appointments.find((row) => row.id === action.id);
       if (!appointment) return state;

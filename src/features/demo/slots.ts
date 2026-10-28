@@ -3,8 +3,9 @@ import {
   slotRuleFromSettings,
   validPrepMinutes,
   weekdayForDateKey,
-} from "@/lib/shop/appointments";
-import { blocksSlot } from "@/features/waiting/model";
+} from "../../lib/shop/appointments.ts";
+import { blocksSlot } from "../waiting/model.ts";
+import { demoServiceTerms } from "./catalog.ts";
 import type { DemoState } from "./model";
 
 /**
@@ -17,11 +18,12 @@ export function demoStaffSlots(
   demo: DemoState,
   staffId: string,
   day: string,
-  durationMinutes: number,
   serviceId: string,
   timeZone: string,
   options: { team?: boolean } = {},
 ) {
+  const terms = demoServiceTerms(demo, staffId, serviceId);
+  if (!terms) return [];
   const occupied = demo.appointments.filter(
     (row) =>
       row.staff_id === staffId &&
@@ -41,7 +43,7 @@ export function demoStaffSlots(
     );
   return buildSlotsForWindow(
     day,
-    durationMinutes,
+    terms.duration_minutes,
     [
       ...occupied.map((row) => ({ ...row, prep_minutes: prepFor(row.service_id) })),
       ...demo.waits.filter((w) => blocksSlot(w, demo.now) && w.staff_id === staffId),

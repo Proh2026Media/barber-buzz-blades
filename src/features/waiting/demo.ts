@@ -1,4 +1,5 @@
 import type { DemoState } from "../demo/model";
+import { demoServiceTerms } from "../demo/catalog.ts";
 import { t } from "../../lib/i18n/index.ts";
 import { blocksSlot, canHold, type SlotWait, type WaitAction, type WaitingEvent } from "./model.ts";
 
@@ -111,24 +112,20 @@ export function waitingDemoAction(
     waitingEvents: kind ? event(state, w, kind) : state.waitingEvents,
   });
   if (action === "join") {
-    const s = state.services.find((row) => row.id === serviceId && row.active);
+    const s = demoServiceTerms(state, w.staff_id, serviceId ?? null);
     if (
       w.customer_id ||
       Date.parse(w.hold_until) <= +state.now ||
       w.original_customer_id === state.customerId
     )
       throw new Error(t("wait.err.joinUnavailable"));
-    if (
-      !s ||
-      s.duration_minutes * 60000 > Date.parse(w.ends_at) - Date.parse(w.starts_at) ||
-      !state.staff.some((row) => row.id === w.staff_id && row.active)
-    )
+    if (!s || s.duration_minutes * 60000 > Date.parse(w.ends_at) - Date.parse(w.starts_at))
       throw new Error(t("wait.err.serviceInterval"));
     return change({
       customer_id: state.customerId,
       mine: true,
       has_interest: true,
-      service_id: s.id,
+      service_id: s.service_id,
     });
   }
   if (action === "restore") {
@@ -158,12 +155,8 @@ export function waitingDemoAction(
     );
   if (Date.parse(w.hold_until) > +state.now || Date.parse(w.claim_until) <= +state.now)
     throw new Error(t("wait.err.notReleased"));
-  const s = state.services.find((row) => row.id === w.service_id && row.active);
-  if (
-    !s ||
-    s.duration_minutes * 60000 > Date.parse(w.ends_at) - Date.parse(w.starts_at) ||
-    !state.staff.some((row) => row.id === w.staff_id && row.active)
-  )
+  const s = demoServiceTerms(state, w.staff_id, w.service_id);
+  if (!s || s.duration_minutes * 60000 > Date.parse(w.ends_at) - Date.parse(w.starts_at))
     throw new Error(t("wait.err.serviceOrStaff"));
   const end = new Date(Date.parse(w.starts_at) + s.duration_minutes * 60000).toISOString();
   const hours = state.businessHours.find((row) => row.weekday === new Date(w.starts_at).getDay());
@@ -190,7 +183,7 @@ export function waitingDemoAction(
         id: appointmentId,
         barbershop_id: state.shop.id,
         customer_id: state.customerId,
-        service_id: s.id,
+        service_id: s.service_id,
         staff_id: w.staff_id,
         starts_at: w.starts_at,
         ends_at: end,

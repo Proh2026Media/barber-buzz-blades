@@ -460,9 +460,9 @@ Ainda ficam, sem tirar função (seções 3 e 4 do mesmo documento): o mesmo no 
 
 Quando a pessoa cancela ou o Google recusa o login, a janela por cima do app mostra "Não deu para concluir o login", mas o app instalado continua em "Termine o login na janela do Google" até a pessoa tocar **Cancelar** ou passarem 10 minutos (não há como a janela avisar o app de uma falha: a ponte só aceita código de login de verdade, conferido em `auth.flow_state`). Para avisar na hora: guardar um marcador de falha por id, com limite próprio contra enchimento. Levantado na revisão de código de 16/10/2026.
 
-### P-72 — Demonstração sem serviços por profissional · pendente (baixa)
+### P-72 — Demonstração com serviços por profissional · feito em 28/10/2026
 
-A demonstração não tem lista de quem faz o quê nem duração própria do profissional (`setServiceTerms(null)` em [ArenaApp.tsx](../../src/features/customer/ArenaApp.tsx); `staffServices` vazio em `src/features/demo/model.ts`). Por isso os casos "profissional que não faz o serviço" e "duração própria do profissional" da P-31 só estão cobertos pelo teste automático (`src/features/waiting/model.test.ts`), não na tela. Para mostrar na demonstração: montar a lista com a regra de `staff_service_terms`, dar linhas iniciais a `staffServices` e usar a mesma lista ao entrar na fila e confirmar a vaga (`src/features/waiting/demo.ts`). Levantamento de 15/10/2026.
+A demonstração usa a regra de `shop_uses_staff_services`/`staff_service_terms` em [catalog.ts](../../src/features/demo/catalog.ts): catálogo explícito por profissional, equipe/serviços ativos e valores próprios. Bruno oferece corte em 45 min por R$ 55; Rafa oferece barba em 30 min por R$ 65; Dani não oferece barba. Escolha do cliente, horários livres, agendamento pelo painel, entrada/confirmação da espera e preços das reservas usam essas condições. Remarcar o mesmo serviço com o mesmo profissional conserva o preço reservado. A prévia copiada de uma loja real continua sem vínculos inventados, usando o catálogo copiado. Casos automáticos em `src/features/demo/model.test.ts`; nenhum acesso ou alteração no banco de produção. Registro da entrega em `CONTINUIDADE.md`.
 
 ---
 
