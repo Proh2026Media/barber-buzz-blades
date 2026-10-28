@@ -109,6 +109,8 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
 
 ## Entrega — fechamento técnico e ajustes por dispositivo (28/10, ChatGPT/Codex)
 
+**Publicação:** commit `34310f54800c21fe1cd6a4767f764ed5e24a0026` confirmado no origin e no espelho; aviso ao hub e espelhamento aprovados. Porém às 18:56:36 de Brasília o site público ainda entregava `index-BTymmIdv.js` (1.878.319 bytes), sem o texto novo; não foi possível confirmar a implantação na Hostinger. Conector de navegador indisponível e acesso nativo ao Chrome negado pela ferramenta. P-99 registrada no topo das pendências; diagnóstico e ação do agente no pacote de implantação. Não houve alteração de configuração da hospedagem.
+
 Pedido: concluir as pendências executáveis, preservando celular e identidade. P-44, P-45, P-48 e a parte de tablet/computador da P-75 concluídas. P-78 pronta para implantação pelo agente da VPS, sem aplicar banco remoto nesta sessão.
 
 - **Interface (P-75):** Equipe e sociedade e Endereços com navegação por assunto desde 768 px. Formulários continuam montados ao trocar de assunto; atalhos de pessoas/aprovações abrem o painel correspondente. Google Agenda resume a agenda escolhida, permite trocá-la e recolhe as opções de cada direção de sincronização. Celular mantém a apresentação anterior. Cores, fontes, modos de canto e permissões preservados.
