@@ -3384,7 +3384,8 @@ body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-ins
   margin: 0;
 }
 
-@media (max-width: 767px) {
+/* A faixa inclui larguras fracionárias de janela/zoom, sem intervalo antes de 768 px. */
+@media (width < 768px) {
   .auth-workspace {
     min-height: 100dvh;
   }

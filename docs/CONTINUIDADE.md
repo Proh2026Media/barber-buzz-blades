@@ -107,6 +107,14 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## Entrega — P-104: responsividade do acesso (29/10, ChatGPT/Codex)
+
+- **Relato e reprodução:** o dono informou que a tela de acesso não estava responsiva. Nome longo encobria o título na foto do modelo dividido; fonte ampliada comprimindo as colunas do modelo imersivo colocava a apresentação atrás do formulário.
+- **Correção:** moldura no fluxo, foto acompanhando o conteúdo, colunas decididas também pela largura relativa à fonte; topo/abas/recuperação reorganizados em área estreita; lacuna de larguras fracionárias corrigida. Regras de acesso em `styles/acesso.css`, compartilhadas com a prévia completa.
+- **Preservação:** nenhuma mudança de autenticação, estados, componentes, textos, consultas, dados ou permissões. Mesmos temas, cores e cantos. Entrar em 390 × 900 px nos três modelos: zero pixels diferentes das referências anteriores.
+- **Verificação:** tipos, 301 testes, formatação e montagem aprovados; 45 estados da montagem final, mais 18 combinações de teclado/cantos. Matrizes de acesso de 320 a 1920 px, tela baixa, nome longo, fonte base em 200%, tema escuro, outros quatro idiomas, rascunhos ao redimensionar, rolagem, validações e prévias. Quatro imagens comparativas e detalhes na seção P-104 de [revisao-visual-integral-2026-10-29.md](revisao-visual-integral-2026-10-29.md).
+- **Limites:** navegador local com respostas fictícias; sem conta criada ou mensagens enviadas. P-42/P-43, teste físico/Safari e avaliação do dono continuam. Sem migration ou tarefa para TI; a correção do acesso não encerra a revisão de todo o sistema.
+
 ## Entrega — P-103: cadastro e janelas pela largura útil (29/10, ChatGPT/Codex)
 
 - **O que:** continuação visual no cadastro da barbearia e nas janelas de Serviço/Profissional. Resumo e cadastro ligados; campos de acesso em duas colunas quando cabem; janelas amplas no PC; Serviço com descrição/folga em faixa abaixo dos essenciais e da prévia. Container queries corrigem compressão e sobreposição observadas com fonte base em 200%. Convites conferidos em cinco estados e mantidos como painel curto.

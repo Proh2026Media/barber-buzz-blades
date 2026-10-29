@@ -10,7 +10,7 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 - Situação: **pendente**, **feito — falta aplicar no banco**, **a decidir** (depende do dono), **não confirmado** (não deu para conferir daqui).
 - Cada item foi conferido no código e nas migrations em 12/10/2026. As linhas citadas são dessa data.
 - **Papéis da equipe no banco × nomes na tela:** `owner` e `partner` = **Dono** (sócio; `partner` é o nome antigo e aparece igual), `associate` = **Parceiro**, `employee` = **Contratado** ([roles-model.ts](../../src/features/shop/roles-model.ts); rótulos em `pt-BR.ts`). `shop_admin` é o papel antigo de `memberships`, que pode existir sem vínculo de equipe (CONTINUIDADE, onda 1 de 09/10).
-- Último id usado: **P-103**.
+- Último id usado: **P-104**.
 
 **Índice**
 
@@ -22,7 +22,7 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 6. [Testes manuais com contas reais](#6-testes-manuais-com-contas-reais) (P-40 a P-43)
 7. [Dívida técnica](#7-dívida-técnica) (P-44 a P-48, P-51, P-52, P-55, P-63 a P-65, P-72, P-75 e P-78)
 8. [Ideias futuras](#8-ideias-futuras) (P-49, P-50 e P-54)
-9. [Interface por dispositivo: o que ficou](#9-interface-por-dispositivo-o-que-ficou) (P-79 a P-98 e P-100)
+9. [Interface por dispositivo: o que ficou](#9-interface-por-dispositivo-o-que-ficou) (P-79 a P-98 e P-100 a P-104)
 
 ---
 
@@ -666,3 +666,10 @@ Escolha consultada ao dono em 24/10; sem resposta nesta rodada, mantidas as jane
 - **Entregue:** cadastro com resumo conectado e dados de acesso distribuídos; Serviço e Profissional com janelas amplas no PC; detalhes de serviço em faixa; composição por container para tablet e fonte ampliada. Convites examinados e mantidos como painel curto.
 - **Evidências e validação:** seção P-103 de [revisao-visual-integral-2026-10-29.md](../revisao-visual-integral-2026-10-29.md), com seis imagens adicionais e testes de fluxo. Celular, permissões, regras e identidade preservados.
 - **Limites:** navegador com respostas fictícias. P-42/P-43 e avaliação estética do dono seguem em aberto. Sem migration ou tarefa para TI.
+
+### P-104 — Responsividade da tela de acesso · feito em 29/10/2026 (ChatGPT/Codex)
+
+- **Pedido:** corrigir o acesso após o dono relatar que não estava responsivo.
+- **Entregue:** foto cresce com nome longo; moldura e colunas se ajustam à largura útil e à fonte; topo/abas/recuperação reorganizados quando estreitos; limite fracionário entre celular e tablet corrigido. Mesmo CSS na prévia completa.
+- **Evidência e validação:** seção P-104 de [revisao-visual-integral-2026-10-29.md](../revisao-visual-integral-2026-10-29.md), com quatro imagens comparativas; três referências móveis de Entrar idênticas. Autenticação, dados, regras, identidade e cantos preservados.
+- **Limites:** verificação em Chrome isolado com respostas fictícias; aparelhos físicos/Safari e integrações reais seguem em P-42/P-43. Não presumir todos os bugs do sistema resolvidos. Sem migration ou tarefa para TI.

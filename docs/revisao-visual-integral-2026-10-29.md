@@ -1,4 +1,4 @@
-# Revisão visual integral — P-101 a P-103 (29/10/2026)
+# Revisão visual integral — P-101 a P-104 (29/10/2026)
 
 O dono considerou insuficientes as mudanças da P-100 e apontou páginas sem revisão. Esta entrega amplia a composição por tarefa e registra a cobertura por área. Implementação e verificação técnica não significam aprovação estética do dono.
 
@@ -108,3 +108,37 @@ Capturas em 1440 × 960 px, com os mesmos dados fictícios e estados. São seis 
 - Convites: quinze estados locais com token fictício, cobrindo as cinco situações em 390/1024/1440 px.
 
 Nenhuma regra de cadastro, aceite, sociedade, autenticação ou permissão mudou. Mesmos textos, identidade, campos e dados. Nenhuma migration ou tarefa para TI. Os cenários não enviaram códigos, mensagens ou convites reais. Testes físicos/integrações reais seguem em P-42/P-43; avaliação estética do dono não é presumida. Evidências extensas locais: `/tmp/barba-p103/`.
+
+## P-104 — responsividade da tela de acesso
+
+O dono apontou que a tela de acesso não estava responsiva. Foram reproduzidos dois defeitos: no modelo dividido, um nome de barbearia longo fazia o título da foto ficar encoberto pelo formulário; no modelo imersivo, fonte base em 200% mantinha duas colunas sem espaço e colocava a apresentação atrás do cartão. Esta rodada corrige o acesso, sem declarar encerrada a revisão visual de todo o sistema.
+
+| Situação                                           | Antes                                             | Depois                                              | Correção                                                                    |
+| -------------------------------------------------- | ------------------------------------------------- | --------------------------------------------------- | --------------------------------------------------------------------------- |
+| Nome longo, modelo dividido, 320 × 768 px          | [Antes](evidencias/p104/nome-longo-antes.png)     | [Depois](evidencias/p104/nome-longo-depois.png)     | A faixa cresce com o nome e mantém o título acima do formulário.            |
+| Modelo imersivo, 1024 × 768 px, fonte base em 200% | [Antes](evidencias/p104/texto-ampliado-antes.png) | [Depois](evidencias/p104/texto-ampliado-depois.png) | Apresentação e formulário passam para uma coluna quando falta largura útil. |
+
+As quatro imagens usam os mesmos dados fictícios e configurações em cada par. “Fonte base em 200%” significa ampliar a fonte raiz no navegador; não equivale a afirmar que foi testada toda configuração de zoom de cada sistema operacional.
+
+### Composição e preservação
+
+- **Foto e formulário:** a moldura passa a participar do leiaute também no celular. A foto acompanha a altura do conteúdo, em vez de deixar a apresentação absoluta sobre uma faixa fixa. No computador mantém a moldura em duas áreas quando cabe; no tablet e com texto ampliado, marca compacta acima da tarefa.
+- **Foto imersiva e Cartão sobre foto:** largura de leitura controlada; o modelo imersivo abandona as duas colunas quando a largura relativa à fonte é insuficiente. O cartão continua centralizado. Telas baixas usam espaçamento vertical menor, preservando os controles e a rolagem.
+- **Área estreita com texto ampliado:** idioma/tema ficam acima da marca; nome da loja pode quebrar linha; abas se empilham e recuperação de senha entra no fluxo quando necessário. O título promocional é omitido nessa condição extrema para priorizar marca e tarefa.
+- **Limite entre celular e tablet:** o intervalo móvel passou a usar `width < 768px`, evitando uma lacuna em larguras fracionárias entre 767 e 768 px.
+- **Prévia:** o acesso real e a prévia completa por dispositivo seguem o mesmo CSS. A miniatura móvel sem `.auth-entry-host` conserva o comportamento próprio.
+- **Código:** composição do acesso centralizada em `src/styles/acesso.css`, importado por `dispositivos.css`; retiradas as regras correspondentes de `styles/publicas.css`. Sem alteração de componentes, autenticação, consultas, validações, dados, permissões, textos ou dicionários. Identidade, temas e tokens dos cantos preservados.
+
+### Verificações e limites
+
+- Tipos, 301 testes, Prettier e montagem de produção aprovados por `scripts/verificar.sh`. ESLint dispensado pelo script porque nenhum arquivo TS/TSX mudou.
+- Montagem final aberta em 320/820/1366 px: 27 estados dos três modelos e etapas. Mais 18 estados com fonte base em 200% em 320/1024 px. Sem erros de página, rolagem lateral ou texto encoberto detectado.
+- Teclado e cantos na montagem final: 18 combinações (três modelos × três cantos × 390/1366 px), incluindo tema escuro nos cantos arredondados. Raio de cartão/moldura conservado; foco por Tab visível e alcançável sem sobreposição.
+- Três modelos × Entrar/Cadastrar/Recuperar; larguras de 320 a 1920 px, incluindo 480/640/767/768/820/1023/1024/1100/1366/1440; alturas de 600, 768, 844 e 900 px conforme o cenário.
+- Nome longo, tema escuro e fonte base em 200%, incluindo celular de 320/390 px e tablet/PC de 768/1024/1366 px. Inspeção visual e medição de texto encoberto, rolagem lateral e erros de página.
+- As três capturas de **Entrar em 390 × 900 px**, uma por modelo, permaneceram estritamente idênticas às referências anteriores (zero pixels diferentes). As correções móveis são para os casos que cortavam conteúdo.
+- Redimensionamento com e-mail/senha preenchidos entre PC, tablet, celular e tela baixa: valores preservados e ação alcançável por rolagem. Cadastro vazio e recuperação conferidos; nenhuma conta criada ou mensagem enviada.
+- Dezoito combinações com larguras fracionárias de 767 a 1024 px, sem lacuna na composição. Vinte e quatro estados de entrada em pt-PT, en-US, en-GB e espanhol; nenhum corte detectado.
+- Editor de marca: três modelos × três dispositivos, mantendo a seleção ao voltar, sem envio de dados. Abertura/fechamento dos editores de catálogo também conferidos.
+
+Cenários em Chrome local isolado, com respostas fictícias e rede externa bloqueada. Não foram testados Safari nem aparelhos físicos; P-42/P-43 continuam. Sem migration ou tarefa para TI. Evidências extensas locais: `/tmp/barba-p104/`.

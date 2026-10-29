@@ -1,6 +1,7 @@
 /* CSS por dispositivo (docs/dispositivos-2026-10-21.md). Carregado em src/routes/__root.tsx
    DEPOIS de src/styles.css, então vence em igualdade de especificidade. Cada área escreve o seu
-   arquivo em src/styles/; a regra de ouro vale para todos: abaixo de 768 px nada muda.
+   arquivo em src/styles/; abaixo de 768 px a composição é preservada. As correções de
+   conteúdo encoberto do acesso ficam em acesso.css, com a mesma faixa de foto e cartão.
    Fica na raiz de src (ao lado de styles.css) de propósito: no servidor de desenvolvimento, um
    CSS importado com "?url" de dentro de src/styles/ saía como "/styles/…" no HTML do SSR (404). */
 @import "./styles/leiaute.css";
@@ -11,3 +12,6 @@
 @import "./styles/cliente.css";
 @import "./styles/plataforma.css";
 @import "./styles/publicas.css";
+
+/* Acesso: composição compartilhada e correções de conteúdo encoberto em qualquer largura. */
+@import "./styles/acesso.css";

@@ -1,0 +1,347 @@
+/* Acesso real e prévia por dispositivo. A moldura participa do leiaute: a foto cresce com
+   a marca e as colunas cedem quando a largura útil ou a ampliação do texto pede isso. */
+.auth-entry-frame {
+  display: contents;
+}
+.auth-entry-host {
+  container: auth-entry / inline-size;
+  min-width: 0;
+  --auth-entry-head-top: 2.25rem;
+  --auth-entry-body-top: 1.5rem;
+  --auth-entry-body-bottom: 2rem;
+}
+.auth-entry-host > .auth-entry-frame,
+.auth-entry-host .auth-brand-panel,
+.auth-entry-host .auth-brand-header {
+  min-width: 0;
+}
+.auth-entry-host .auth-brand-header {
+  container: auth-heading / inline-size;
+}
+.auth-entry-host :is(.auth-brand-name, .auth-title) {
+  overflow-wrap: anywhere;
+}
+.auth-entry-host .auth-photo-copy h2 {
+  overflow-wrap: anywhere;
+}
+.auth-entry-host .auth-field-password .auth-forgot-password {
+  max-width: calc(100% - 5rem);
+}
+.auth-entry-host.auth-layout-split::after {
+  content: none;
+}
+
+/* No celular, a mesma faixa de foto e o mesmo cartão. A altura da faixa deixa de cortar
+   a apresentação quando o nome da barbearia ocupa mais linhas. */
+.auth-entry-host.auth-layout-split > .auth-entry-frame {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  width: 100%;
+}
+.auth-entry-host.auth-layout-split .auth-entry-frame > .auth-photo-layer {
+  position: relative;
+  inset: auto;
+  grid-column: 1;
+  grid-row: 1;
+  height: auto;
+  min-height: calc(9rem + env(safe-area-inset-top));
+  align-self: stretch;
+}
+.auth-entry-host.auth-layout-split .auth-photo-layer > img {
+  position: absolute;
+  inset: 0;
+}
+.auth-entry-host.auth-layout-split .auth-photo-copy {
+  position: relative;
+  inset: auto;
+  grid-column: 1;
+  grid-row: 1;
+  align-self: start;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}
+.auth-entry-host.auth-layout-split .auth-brand-panel {
+  grid-column: 1;
+  grid-row: 2;
+  justify-self: center;
+}
+.auth-entry-host:is(.auth-layout-cover, .auth-layout-card) > .auth-entry-frame {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: inherit;
+  width: 100%;
+}
+.auth-entry-host:is(.auth-layout-cover, .auth-layout-card) .auth-photo-layer {
+  position: fixed;
+  inset: 0;
+}
+
+/* Em uma área realmente estreita (inclusive texto ampliado), os controles ficam acima da
+   marca, sem reservar uma faixa lateral que reduza o nome da loja a poucas letras. */
+@media (width < 768px) {
+  @container auth-entry (max-width: 19rem) {
+    .auth-entry-host.auth-layout-split .auth-photo-copy {
+      padding-top: 4.25rem;
+      padding-right: 1.25rem;
+    }
+    .auth-entry-host.auth-layout-cover .auth-photo-copy {
+      padding: 4.25rem 0 0.5rem;
+    }
+    .auth-entry-host:is(.auth-layout-split, .auth-layout-cover) .auth-photo-copy h2 {
+      display: none;
+    }
+    .auth-entry-host .auth-brand-panel {
+      --auth-pad-x: clamp(0.5rem, 4cqi, 1rem);
+    }
+    .auth-entry-host .auth-brand-identity {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .auth-entry-host .auth-brand-identity .auth-brand-name {
+      flex: none;
+      width: 100%;
+      overflow: visible;
+      white-space: normal;
+      text-overflow: clip;
+    }
+    .auth-entry-host.auth-layout-split .auth-brand-panel {
+      width: calc(100% - 1.5rem);
+      margin-inline: 0.75rem;
+      padding-inline: 0;
+    }
+  }
+}
+
+@media (min-width: 768px) {
+  .auth-entry-host .auth-theme-toggle {
+    top: 1.25rem;
+    right: max(2rem, calc((100% - 76rem) / 2));
+  }
+  .auth-entry-host.auth-layout-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: center;
+    gap: 0;
+    padding: 5.5rem 2rem 2rem;
+    background: var(--background);
+  }
+  .auth-entry-host.auth-layout-split > .auth-entry-frame {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    grid-template-rows: auto;
+    width: min(76rem, 100%);
+    margin-inline: auto;
+    min-height: min(42rem, calc(100dvh - 7.5rem));
+    isolation: isolate;
+    overflow: clip;
+    border: 1px solid var(--border);
+    border-radius: var(--panel-radius);
+    background: var(--card);
+    box-shadow: 0 24px 60px color-mix(in oklab, #1c1d19 14%, transparent);
+  }
+  .auth-entry-host.auth-layout-split .auth-entry-frame > .auth-photo-layer {
+    min-height: 0;
+  }
+  .auth-entry-host.auth-layout-split .auth-photo-copy {
+    position: relative;
+    bottom: auto;
+    align-self: end;
+    padding: 2.25rem;
+  }
+  .auth-entry-host.auth-layout-split:has(.auth-form-fields.is-signup) .auth-photo-copy {
+    position: sticky;
+    top: 2rem;
+    align-self: start;
+  }
+  .auth-entry-host.auth-layout-split .auth-photo-copy h2 {
+    font-size: clamp(2.5rem, 3.75vw, 3.5rem);
+  }
+  .auth-entry-host.auth-layout-split .auth-brand-panel {
+    --auth-pad-x: clamp(1.5rem, 3vw, 3rem);
+    --auth-head-top: var(--auth-entry-head-top);
+    --auth-body-top: var(--auth-entry-body-top);
+    --auth-body-bottom: var(--auth-entry-body-bottom);
+    grid-column: 2;
+    grid-row: 1;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    align-self: stretch;
+    justify-self: stretch;
+    border: 0;
+    border-radius: 0 !important;
+    background: var(--card);
+    box-shadow: none;
+  }
+  .auth-entry-host.auth-layout-split .auth-brand-panel > :is(.auth-brand-header, .auth-form-body) {
+    width: 100%;
+    max-width: 36rem;
+    margin-inline: auto;
+  }
+  .auth-entry-host.auth-layout-split .auth-brand-header {
+    padding: var(--auth-head-top) var(--auth-pad-x) 0;
+  }
+  .auth-entry-host.auth-layout-split .auth-brand-header > .mt-6 {
+    margin-top: 0;
+  }
+  .auth-entry-host.auth-layout-split .auth-form-body {
+    padding: var(--auth-body-top) var(--auth-pad-x) var(--auth-body-bottom);
+  }
+
+  .auth-entry-host.auth-layout-cover {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .auth-entry-host.auth-layout-cover > .auth-entry-frame {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(22rem, 34rem);
+    align-items: center;
+    gap: clamp(2rem, 6vw, 7rem);
+    width: min(76rem, 100%);
+    margin-inline: auto;
+  }
+  .auth-entry-host.auth-layout-cover .auth-photo-copy {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+  }
+  .auth-entry-host.auth-layout-cover .auth-brand-panel {
+    grid-column: 2;
+    grid-row: 1;
+    width: 100%;
+    max-width: 34rem;
+  }
+  .auth-entry-host.auth-layout-card > .auth-entry-frame {
+    display: grid;
+    place-items: center;
+    width: min(32rem, 100%);
+    margin-inline: auto;
+  }
+  .auth-entry-host.auth-layout-card .auth-brand-panel {
+    width: 100%;
+    max-width: none;
+  }
+
+  /* O tamanho da fonte conta para a decisão; uma janela larga também pode pedir uma coluna. */
+  @container auth-entry (max-width: 58rem) {
+    .auth-entry-frame {
+      min-width: 0;
+    }
+    .auth-entry-host.auth-layout-split > .auth-entry-frame {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto auto;
+      width: min(36rem, 100%);
+      min-height: 0;
+    }
+    .auth-entry-host.auth-layout-split .auth-entry-frame > .auth-photo-layer {
+      grid-column: 1;
+      grid-row: 1;
+      min-height: 6rem;
+    }
+    .auth-entry-host.auth-layout-split .auth-photo-copy,
+    .auth-entry-host.auth-layout-split:has(.auth-form-fields.is-signup) .auth-photo-copy {
+      position: relative;
+      inset: auto;
+      align-self: start;
+      display: grid;
+      grid-template-columns: 3rem minmax(0, 1fr);
+      align-items: center;
+      gap: 0.25rem 1rem;
+      padding: 1.25rem;
+    }
+    .auth-entry-host.auth-layout-split .auth-photo-copy-logo {
+      display: grid;
+      grid-column: 1;
+      grid-row: 1 / span 2;
+      width: 3rem;
+      height: 3rem;
+      margin: 0;
+    }
+    .auth-entry-host.auth-layout-split .auth-photo-copy .auth-brand-name {
+      grid-column: 2;
+      grid-row: 1;
+    }
+    .auth-entry-host.auth-layout-split .auth-photo-copy h2 {
+      grid-column: 2;
+      grid-row: 2;
+      margin: 0;
+      font-size: 1.5rem;
+      line-height: 1.15;
+    }
+    .auth-entry-host.auth-layout-split .auth-photo-copy > p:last-child {
+      display: none;
+    }
+    .auth-entry-host.auth-layout-split .auth-brand-panel {
+      --auth-pad-x: clamp(1rem, 4cqi, 2rem);
+      grid-column: 1;
+      grid-row: 2;
+    }
+    .auth-entry-host.auth-layout-cover > .auth-entry-frame {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 1rem;
+      width: min(36rem, 100%);
+    }
+    .auth-entry-host.auth-layout-cover .auth-photo-copy {
+      position: relative;
+      inset: auto;
+      width: 100%;
+      max-width: none;
+      padding: 0;
+    }
+    .auth-entry-host.auth-layout-cover .auth-photo-copy-logo,
+    .auth-entry-host.auth-layout-cover .auth-photo-copy > p:last-child {
+      display: none;
+    }
+    .auth-entry-host.auth-layout-cover .auth-photo-copy h2 {
+      font-size: 1.75rem;
+    }
+    .auth-entry-host.auth-layout-cover .auth-brand-panel {
+      grid-column: 1;
+      grid-row: 2;
+      max-width: none;
+    }
+  }
+}
+@media (min-width: 1024px) {
+  .auth-entry-host.auth-layout-card > .auth-entry-frame {
+    width: min(36rem, 100%);
+  }
+}
+@media (min-width: 768px) and (max-height: 860px) {
+  .auth-entry-host {
+    --auth-entry-head-top: 1.5rem;
+    --auth-entry-body-top: 1rem;
+    --auth-entry-body-bottom: 1.5rem;
+  }
+  .auth-entry-host.auth-layout-split {
+    padding-block: 4.75rem 1.5rem;
+  }
+  .auth-entry-host.auth-layout-split > .auth-entry-frame {
+    min-height: min(42rem, calc(100dvh - 6.25rem));
+  }
+}
+
+/* Ampliar o texto não pode colocar o título ou a recuperação de senha sobre outro campo. */
+@container auth-heading (max-width: 12rem) {
+  .auth-title {
+    font-size: 1.5rem !important;
+  }
+}
+@container auth-form (max-width: 12rem) {
+  .auth-entry-host :is(.auth-mode-tabs, .entry-channel-tabs) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .auth-entry-host .auth-field-password:has(.auth-forgot-password) {
+    margin-top: 0;
+  }
+  .auth-entry-host .auth-field-password .auth-forgot-password {
+    position: static;
+    max-width: none;
+    margin-top: 0.25rem;
+  }
+}
