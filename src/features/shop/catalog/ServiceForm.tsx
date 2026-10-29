@@ -85,8 +85,9 @@ type Errors = Partial<Record<"name" | "price" | "duration", string>>;
  * Janela de criar/editar serviço. No celular começa pela prévia "Assim o cliente vê" (tocar no
  * ícone troca a imagem), depois o essencial (nome, preço, duração em pílulas) e, recolhido,
  * descrição e folga; o botão principal fica sempre à vista no pé. A partir de 768 px a janela é
- * `lg` em duas colunas: campos à esquerda (FormGrid) e a prévia fixa à direita, com o seletor de
- * ícones num popover (uma rolagem só). Erros aparecem junto do campo nas duas versões.
+ * `lg` em duas colunas: campos à esquerda (FormGrid) e a prévia fixa à direita; desde 1024 px,
+ * descrição e folga usam uma faixa abaixo das duas colunas. O seletor de
+ * ícones fica num popover (uma rolagem só). Erros aparecem junto do campo nas duas versões.
  */
 export function ServiceForm({
   open,
@@ -575,7 +576,12 @@ export function ServiceForm({
           <Tag icon={Sparkles}>{t("catalog.service.prepTag", { minutes: prepMinutes })}</Tag>
         ) : null}
       </summary>
-      <div className="space-y-5 pb-4 pt-1">
+      <div
+        className={cn(
+          "catalog-service-detail-fields space-y-5 pb-4 pt-1",
+          canChangeGlobal && prepSupported && "has-prep",
+        )}
+      >
         <Field label={t("shop.serviceForm.details")} optional>
           {(props) => (
             <>
@@ -799,19 +805,17 @@ export function ServiceForm({
         </DialogHeader>
         {/* `contents`: o formulário envolve o corpo sem quebrar a grade cabeçalho | corpo | rodapé. */}
         <form id="service-form" ref={formRef} noValidate onSubmit={submit} className="contents">
-          <DialogBody layout="split" className="catalog-form-body">
-            <div className="space-y-5">
+          <DialogBody layout="split" className="catalog-form-body catalog-service-body">
+            <div className="catalog-service-fields space-y-5">
               {startersBlock}
               <FormGrid columns={2} className="catalog-form-grid">
                 {nameField}
                 {priceField("catalog-form-price")}
                 {durationField("col-span-full")}
                 {suggestField ? <div className="col-span-full">{suggestField}</div> : null}
-                <div className="col-span-full">{detailsBlock(true)}</div>
               </FormGrid>
-              {dangerBlock}
             </div>
-            <DialogAside>
+            <DialogAside className="catalog-service-preview">
               {/* Prévia fixa: como a linha do serviço aparece no app do cliente. */}
               <PreviewPanel
                 title={t("catalog.preview.title")}
@@ -842,6 +846,10 @@ export function ServiceForm({
                 {imageHint}
               </PreviewPanel>
             </DialogAside>
+            <div className="catalog-service-details space-y-5">
+              {detailsBlock(true)}
+              {dangerBlock}
+            </div>
           </DialogBody>
         </form>
         <DialogActions className="catalog-form-actions">

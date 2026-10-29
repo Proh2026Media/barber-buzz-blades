@@ -149,3 +149,7 @@ O retorno do dono sobre a P-100 não foi uma aprovação visual. A revisão segu
 ## P-102 — entrada e consistência das tarefas (29/10/2026)
 
 Complemento solicitado pelo dono: seletor com decisões reunidas e exemplos conectados; login com marca e formulário proporcionais ao computador; prévia compartilhando a moldura; cabeçalhos de tarefa consistentes nos catálogos, Agenda e Horários. Mesmos tokens, cantos e fluxos; celular preservado por comparação. Antes/depois e verificações na seção P-102 de [revisao-visual-integral-2026-10-29.md](revisao-visual-integral-2026-10-29.md). Testes físicos/integrações reais e avaliação estética do dono continuam sem ser presumidos.
+
+## P-103 — cadastro e editores (29/10/2026)
+
+Cadastro da barbearia e janelas de Serviço/Profissional reorganizados pela largura útil. Descrição/folga em faixa, prévias proporcionais e container queries corrigindo a sobreposição observada com fonte ampliada. Celular preservado por comparação; convites curtos conferidos sem expansão artificial. Regras, identidade e permissões mantidas. Comparações e limites na seção P-103 de [revisao-visual-integral-2026-10-29.md](revisao-visual-integral-2026-10-29.md).

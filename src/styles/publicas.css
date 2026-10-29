@@ -60,7 +60,7 @@
   }
 }
 
-/* ---------- Cadastro do dono (/cadastrar): resumo ao lado desde 768 ---------- */
+/* ---------- Cadastro do dono (/cadastrar): larguras base; P-103 ajusta pela largura útil abaixo ---------- */
 @media (min-width: 768px) {
   .platform-register:has(.entry-cad-layout) {
     overflow: clip;
@@ -429,5 +429,85 @@
   }
   .platform-landing-benefit-list > .platform-landing-howto {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* P-103: resumo e cadastro compõem a mesma área; os dados de acesso usam a largura útil. */
+@media (min-width: 1024px) {
+  .platform-register-stage:has(.entry-cad-layout) {
+    max-width: 76rem;
+  }
+  .entry-cad-layout {
+    grid-template-columns: minmax(17rem, 0.6fr) minmax(0, 1.4fr);
+    align-items: stretch;
+    gap: 0;
+    overflow: clip;
+    border: 1px solid rgb(244 241 234 / 14%);
+    border-radius: var(--panel-radius);
+    background: rgb(23 23 20 / 40%);
+    box-shadow: 0 24px 60px rgb(0 0 0 / 28%);
+  }
+  .entry-cad-aside {
+    align-self: start;
+    padding: 2rem;
+    gap: 1.5rem;
+  }
+  .entry-cad-aside > p:first-child {
+    font-size: 1.75rem;
+  }
+  .entry-cad-layout > .platform-register-panel {
+    min-width: 0;
+    padding: 2rem;
+    border: 0;
+    border-left: 1px solid var(--border);
+    border-radius: 0 !important;
+    box-shadow: none;
+  }
+  .entry-cad-access-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    column-gap: 1rem;
+  }
+  .entry-cad-access-form > :not(.entry-cad-field) {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Tablet em pé e texto ampliado dão prioridade ao formulário, com o resumo logo depois. */
+@media (min-width: 768px) {
+  .platform-register-stage {
+    container: owner-registration / inline-size;
+  }
+  .entry-cad-access-form > :not(.entry-cad-field) {
+    grid-column: 1 / -1;
+  }
+  @container owner-registration (max-width: 54rem) {
+    .entry-cad-layout {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .entry-cad-layout > .platform-register-panel {
+      order: 1;
+      border-left: 0;
+    }
+    .entry-cad-aside {
+      order: 2;
+      position: static;
+      padding: 1.5rem;
+    }
+    .entry-cad-aside > p:first-child {
+      font-size: 1.25rem;
+    }
+  }
+  @container owner-registration (min-width: 40.001rem) {
+    .entry-cad-access-form {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: start;
+      column-gap: 1rem;
+    }
+  }
+  @container owner-registration (max-width: 40rem) {
+    .entry-cad-access-form {
+      grid-template-columns: minmax(0, 1fr);
+    }
   }
 }

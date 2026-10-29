@@ -254,3 +254,86 @@
     flex-basis: 100%;
   }
 }
+
+/* P-103: a edição ganha espaço próprio no computador; o tablet mantém a janela compacta. */
+@media (min-width: 1024px) {
+  .catalog-form-dialog[data-size="lg"] {
+    width: calc(100vw - 4rem);
+    max-width: 64rem;
+    gap: 1.25rem;
+  }
+  .catalog-form-dialog .catalog-form-body[data-layout="split"] {
+    grid-template-columns: minmax(0, 1fr) minmax(17rem, 20rem);
+    column-gap: 2rem;
+  }
+  .catalog-form-dialog .catalog-form-grid[data-columns="2"] {
+    grid-template-columns: minmax(0, 1fr) 10rem;
+  }
+  .catalog-form-dialog .catalog-form-media > button {
+    flex: 1 1 auto;
+  }
+}
+
+/* Campos e prévia no topo; detalhes abaixo usam a largura da tarefa em vez de alongar a lateral. */
+@media (min-width: 768px) {
+  .catalog-service-body > .catalog-service-fields,
+  .catalog-service-body > .catalog-service-details {
+    grid-column: 1;
+  }
+  .catalog-service-body > .catalog-service-preview {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+}
+@media (min-width: 1024px) {
+  .catalog-service-body > .catalog-service-preview {
+    grid-row: 1;
+  }
+  .catalog-service-body > .catalog-service-details {
+    grid-column: 1 / -1;
+  }
+  .catalog-service-detail-fields.has-prep {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 1.5rem;
+  }
+  .catalog-service-detail-fields > * {
+    margin-block: 0;
+  }
+}
+
+/* A fonte ampliada pode deixar pouco espaço mesmo num monitor: a largura do editor decide. */
+@media (min-width: 768px) {
+  .catalog-form-dialog {
+    container: catalog-editor / inline-size;
+  }
+  .catalog-form-dialog .catalog-form-body[data-layout="split"] {
+    grid-template-columns: minmax(0, 1fr) clamp(17rem, 32%, 20rem);
+  }
+  @container catalog-editor (max-width: 37rem) {
+    .catalog-form-body[data-layout="split"] {
+      grid-template-columns: minmax(0, 1fr) !important;
+    }
+    .catalog-service-body > .catalog-service-preview {
+      position: static;
+      grid-column: 1;
+      grid-row: auto;
+    }
+    .catalog-form-dialog .catalog-form-grid[data-columns="2"],
+    .catalog-service-detail-fields.has-prep {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+}
+
+@media (min-width: 768px) {
+  .catalog-service-fields {
+    container: service-fields / inline-size;
+  }
+  @container service-fields (max-width: 22rem) {
+    .catalog-form-grid[data-columns="2"] {
+      grid-template-columns: minmax(0, 1fr) !important;
+    }
+  }
+}

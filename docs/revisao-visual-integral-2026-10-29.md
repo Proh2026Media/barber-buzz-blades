@@ -1,4 +1,4 @@
-# Revisão visual integral — P-101 e P-102 (29/10/2026)
+# Revisão visual integral — P-101 a P-103 (29/10/2026)
 
 O dono considerou insuficientes as mudanças da P-100 e apontou páginas sem revisão. Esta entrega amplia a composição por tarefa e registra a cobertura por área. Implementação e verificação técnica não significam aprovação estética do dono.
 
@@ -76,3 +76,35 @@ As comparações usam 1440 × 960 px e os mesmos dados fictícios. As seis novas
 - Busca de Serviços, abertura/fechamento por teclado dos formulários de Serviço e Equipe; prévia do login nos três modelos e nos três dispositivos, conservando a escolha ao voltar ao editor.
 
 Cenários executados em navegador local isolado, com rede externa bloqueada e respostas fictícias. Não foi criado cliente real nem enviado código, e-mail ou solicitação de login Google. Testes físicos e integrações reais continuam em P-42/P-43. Evidências extensas locais: `/tmp/barba-p102/`. Sem tarefa nova para TI.
+
+## P-103 — cadastro da barbearia e janelas de edição
+
+Continuação da revisão solicitada pelo dono. O cadastro ainda mantinha o formulário estreito ao lado de uma área pouco utilizada. As janelas de Serviço e Profissional tinham a mesma largura no tablet e no computador, comprimindo campos apesar do espaço disponível.
+
+| Tela                  | Antes                                           | Depois                                            | Mudança                                                                          |
+| --------------------- | ----------------------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Cadastro — Seu acesso | [Antes](evidencias/p103/cadastro-antes.png)     | [Depois](evidencias/p103/cadastro-depois.png)     | Resumo e tarefa reunidos; nome/e-mail e senha/WhatsApp lado a lado quando cabem. |
+| Novo serviço          | [Antes](evidencias/p103/servico-antes.png)      | [Depois](evidencias/p103/servico-depois.png)      | Campos essenciais e prévia no topo; descrição e folga em faixa abaixo.           |
+| Novo profissional     | [Antes](evidencias/p103/profissional-antes.png) | [Depois](evidencias/p103/profissional-depois.png) | Mais espaço para nome, endereço e apresentação, com prévia ao lado.              |
+
+Capturas em 1440 × 960 px, com os mesmos dados fictícios e estados. São seis novas imagens permanentes no Git.
+
+### Organização por espaço disponível
+
+- **Computador:** cadastro em uma moldura com resumo lateral; os quatro campos de acesso formam duas linhas. Consentimentos, avisos e ações continuam pela largura da tarefa. As duas janelas de catálogo podem chegar a 64rem desde 1024 px; a prévia mantém largura de leitura própria.
+- **Tablet:** o cadastro prioriza o formulário, com o resumo logo depois e os campos distribuídos conforme a largura. As janelas mantêm dimensões compactas; prévia e campos ficam lado a lado enquanto couberem.
+- **Fonte ampliada:** a inspeção a 200% identificou compressão e sobreposição. Container queries passaram a decidir a composição pela largura útil em relação à fonte: campos, resumo e prévia se empilham quando necessário. O corpo da janela continua rolável e as ações permanecem no rodapé.
+- **Celular:** composição anterior preservada. Oito referências de 390 px idênticas pixel a pixel em comparação sem tolerância; a captura imediatamente após mudar para Acesso tinha apenas deslocamento vertical de 1 px, confirmado por comparação alinhada, sem outra diferença.
+- **Convite:** examinados os estados pronto, conta com senha, expirado, inválido e falha de carregamento. O painel curto foi mantido: identidade, papel, mensagem e ação já cabem com leitura confortável. Não foi criada uma coluna vazia para esse conteúdo.
+
+### Verificação
+
+- Tipos, 301 testes, ESLint, Prettier e montagem de produção.
+- Montagem final aberta em 320/768/1440 px: cadastro e formulários novos/existente; rolagem até detalhes e ações com fonte base em 200% em 1024/1440 px; cadastro em pt-PT, en-US, en-GB e es em 768/1024 px (oito estados).
+- Cadastro: sociedade, acesso vazio, erros, dados preenchidos, código e conclusão em 390, 768, 1024, 1100, 1440 e 1920 px. Todas as respostas de cadastro/verificação/criação foram locais e fictícias.
+- Serviço/Profissional, cadastro inicial e convite sem token nas mesmas seis larguras; conferência adicional de tema escuro e fonte base em 200% em 1024/1440 px. Três famílias de canto do diálogo verificadas nos temas claro e escuro.
+- Toque e teclado: validação de serviço vazio; rascunhos preservados ao alternar entre 390 px e computador; salvar Serviço e Profissional na demonstração em 390/768/1024/1440 px; Escape fecha o popover de ícones nas versões que o usam. O seletor móvel continua embutido.
+- Parceiro: edição e salvamento fictícios em 1024/1440 px, sem receber controles globais de folga. Os mesmos predicados de permissão continuam no formulário.
+- Convites: quinze estados locais com token fictício, cobrindo as cinco situações em 390/1024/1440 px.
+
+Nenhuma regra de cadastro, aceite, sociedade, autenticação ou permissão mudou. Mesmos textos, identidade, campos e dados. Nenhuma migration ou tarefa para TI. Os cenários não enviaram códigos, mensagens ou convites reais. Testes físicos/integrações reais seguem em P-42/P-43; avaliação estética do dono não é presumida. Evidências extensas locais: `/tmp/barba-p103/`.

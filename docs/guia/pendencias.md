@@ -10,7 +10,7 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 - Situação: **pendente**, **feito — falta aplicar no banco**, **a decidir** (depende do dono), **não confirmado** (não deu para conferir daqui).
 - Cada item foi conferido no código e nas migrations em 12/10/2026. As linhas citadas são dessa data.
 - **Papéis da equipe no banco × nomes na tela:** `owner` e `partner` = **Dono** (sócio; `partner` é o nome antigo e aparece igual), `associate` = **Parceiro**, `employee` = **Contratado** ([roles-model.ts](../../src/features/shop/roles-model.ts); rótulos em `pt-BR.ts`). `shop_admin` é o papel antigo de `memberships`, que pode existir sem vínculo de equipe (CONTINUIDADE, onda 1 de 09/10).
-- Último id usado: **P-102**.
+- Último id usado: **P-103**.
 
 **Índice**
 
@@ -659,3 +659,10 @@ Escolha consultada ao dono em 24/10; sem resposta nesta rodada, mantidas as jane
 - **Entregue:** escolhas de entrada reunidas, benefícios em faixa; moldura de foto/formulário no login, ajustes de largura nos três modelos e marca acompanhando o cadastro longo; prévia com composição compartilhada; título/ação separados da consulta em Serviços/Equipe e padrão comum com Agenda/Horários.
 - **Verificação:** [revisao-visual-integral-2026-10-29.md, seção P-102](../revisao-visual-integral-2026-10-29.md), com seis imagens comparativas adicionais. Celular, identidade, regras e autenticação preservados.
 - **Limites:** navegador com dados fictícios; testes físicos e integrações reais seguem em P-42/P-43. Sem migration ou tarefa para TI; avaliação estética do dono não é presumida.
+
+### P-103 — Cadastro e janelas de edição pela largura útil · feito em 29/10/2026 (ChatGPT/Codex)
+
+- **Pedido:** continuar a evolução visual após a P-102.
+- **Entregue:** cadastro com resumo conectado e dados de acesso distribuídos; Serviço e Profissional com janelas amplas no PC; detalhes de serviço em faixa; composição por container para tablet e fonte ampliada. Convites examinados e mantidos como painel curto.
+- **Evidências e validação:** seção P-103 de [revisao-visual-integral-2026-10-29.md](../revisao-visual-integral-2026-10-29.md), com seis imagens adicionais e testes de fluxo. Celular, permissões, regras e identidade preservados.
+- **Limites:** navegador com respostas fictícias. P-42/P-43 e avaliação estética do dono seguem em aberto. Sem migration ou tarefa para TI.

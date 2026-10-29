@@ -107,6 +107,13 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## Entrega — P-103: cadastro e janelas pela largura útil (29/10, ChatGPT/Codex)
+
+- **O que:** continuação visual no cadastro da barbearia e nas janelas de Serviço/Profissional. Resumo e cadastro ligados; campos de acesso em duas colunas quando cabem; janelas amplas no PC; Serviço com descrição/folga em faixa abaixo dos essenciais e da prévia. Container queries corrigem compressão e sobreposição observadas com fonte base em 200%. Convites conferidos em cinco estados e mantidos como painel curto.
+- **Onde:** `routes/cadastrar.tsx`, `catalog/ServiceForm.tsx`, `styles/catalogo.css` e `styles/publicas.css`. Antes/depois e verificações na seção P-103 de [revisao-visual-integral-2026-10-29.md](revisao-visual-integral-2026-10-29.md).
+- **Como foi verificado:** tipos, 301 testes, lint, formatação e montagem; matriz 390–1920 px, temas/cantos, fonte ampliada, rascunhos ao redimensionar, toque/teclado e salvamento fictício dos dois formulários. Parceiro conservando sua edição sem controles globais; convites com token fictício. Oito referências móveis estritamente idênticas; uma com apenas deslocamento vertical de 1 px na captura.
+- **Preservação e limites:** mesmo celular, estilo, regras e permissões; sem texto novo, migration ou tarefa para TI. Nenhuma criação de conta ou envio real. Aparelhos/integrações reais continuam em P-42/P-43; aprovação estética do dono não presumida.
+
 ## Entrega — P-102: consistência, login e seletor inicial (29/10, ChatGPT/Codex)
 
 - **Pedido:** evoluir a composição do sistema e incluir explicitamente o login e a página inicial externa.

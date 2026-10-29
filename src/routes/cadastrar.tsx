@@ -835,8 +835,12 @@ function CadastrarPage() {
             )}
 
             {step === "acesso" && (
-              <form onSubmit={sendCode} className="platform-register-form" noValidate>
-                <div className="grid gap-1.5">
+              <form
+                onSubmit={sendCode}
+                className="platform-register-form entry-cad-access-form"
+                noValidate
+              >
+                <div className="entry-cad-field grid gap-1.5">
                   <label className="platform-register-label" htmlFor="cad-fullName">
                     {t("register.fullName")}
                   </label>
@@ -855,7 +859,7 @@ function CadastrarPage() {
                   {fieldError("fullName")}
                 </div>
 
-                <div className="grid gap-1.5">
+                <div className="entry-cad-field grid gap-1.5">
                   <label className="platform-register-label" htmlFor="cad-email">
                     {t("register.email")}
                   </label>
@@ -895,7 +899,7 @@ function CadastrarPage() {
                   )}
                 </div>
 
-                <div className="grid gap-1.5">
+                <div className="entry-cad-field grid gap-1.5">
                   <label className="platform-register-label" htmlFor="cad-password">
                     {t("register.password")}
                   </label>
@@ -936,7 +940,7 @@ function CadastrarPage() {
                   />
                 </div>
 
-                <div className="grid gap-1.5">
+                <div className="entry-cad-field grid gap-1.5">
                   <label className="platform-register-label" htmlFor="cad-whatsapp">
                     {t("register.whatsapp")}
                   </label>
