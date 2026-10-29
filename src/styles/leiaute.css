@@ -270,3 +270,59 @@
     overflow-wrap: break-word;
   }
 }
+
+/* Superfícies contínuas do computador usam os mesmos tokens dos cartões de leitura.
+   O escopo por largura preserva as superfícies originais de celular e tablet. */
+@media (min-width: 1280px) {
+  .arena-workspace
+    :is(
+      #agenda-list,
+      .ajustes-detalhe,
+      .catalog-workspace > .catalog-toolbar,
+      .customer-booking-choices,
+      .plat-dash-metrics
+    ) {
+    --card: #f7f5f0;
+    --app-elevated: #f7f5f0;
+    --card-foreground: #242421;
+    --foreground: #242421;
+    --background: #eeebe4;
+    --primary: var(--brand-primary, #292925);
+    --primary-foreground: var(--brand-primary-foreground, #fafafa);
+    --gold: var(--brand-accent, #8a602f);
+    --gold-foreground: var(--brand-accent-foreground, #111111);
+    --muted: #e4e0d8;
+    --muted-foreground: #66635c;
+    --border: #d3cec3;
+    --input: #d3cec3;
+    --accent: #e4e0d8;
+    --accent-foreground: #242421;
+    --ring: #706b60;
+    --destructive: #b42318;
+    --destructive-foreground: oklch(0.98 0 0);
+    color: var(--card-foreground);
+    background-color: var(--card);
+  }
+  .arena-workspace
+    :is(
+      #agenda-list,
+      .ajustes-detalhe,
+      .catalog-workspace > .catalog-toolbar,
+      .customer-booking-choices,
+      .plat-dash-metrics
+    )
+    .text-gold {
+    color: var(--brand-accent-readable, var(--gold));
+  }
+  .arena-workspace
+    :is(
+      #agenda-list,
+      .ajustes-detalhe,
+      .catalog-workspace > .catalog-toolbar,
+      .customer-booking-choices,
+      .plat-dash-metrics
+    )
+    .text-primary {
+    color: var(--brand-primary-readable, var(--primary));
+  }
+}

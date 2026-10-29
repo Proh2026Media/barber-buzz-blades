@@ -107,6 +107,14 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## Entrega — P-100: composição própria para computador (29/10, ChatGPT/Codex)
+
+- **Pedido do dono:** a versão para PC ainda parecia uma adaptação quebrada do celular, com espaços vazios, proporções e alinhamentos ruins. Esta entrega recompõe o computador; não trata a aprovação das entregas anteriores como aprovação visual do dono.
+- **Organização:** navegação lateral contínua de 15rem, cabeçalho e conteúdo no mesmo alinhamento; agenda em uma superfície com atendimentos em linhas; busca e tabela reunidas em Serviços/Equipe; semana em linhas ao lado de bloqueios/pausas; índice de Ajustes à esquerda da edição, com o índice interno de Agendamento acima dos campos; serviço/profissional agrupados e calendário/revisão/ação juntos; Início do cliente com proporções equilibradas; indicadores da plataforma reunidos.
+- **Preservação:** novas regras de composição restritas a 1280 px ou mais. Mantidos celular, tablet, temas, cores, fontes, ícones, gradientes, modos de canto e opção de cabeçalho flutuante. Os componentes continuam montados ao redimensionar. Sem mudança de texto, consulta, dados, permissões, salvamento ou regra de negócio; sem migration ou tarefa para TI.
+- **Validação:** checagem de tipos, 301 testes, ESLint, Prettier e montagem. Capturas locais com dados fictícios, temas e cantos, comparação móvel, teclado, busca/ordenação, formulários, rascunhos ao redimensionar, quadro da equipe e fluxos de agendar/remarcar/cancelar. Matriz e limites na seção 13 de [dispositivos-2026-10-21.md](dispositivos-2026-10-21.md).
+- **Limite:** validação em navegador automatizado, sem aparelho físico e sem operações reais. P-42/P-43 continuam abertas. A avaliação do dono sobre a nova composição continua necessária; não foi presumida.
+
 ## Entrega — P-71: “agendamento” nas telas do cliente (29/10, ChatGPT/Codex)
 
 - **Decisão do dono:** resposta explícita “Usar ‘agendamento’ nas telas do cliente (recomendado)”. A P-71 deixou de aguardar decisão.

@@ -194,7 +194,7 @@ export function PlatformDashboard({
       {header}
 
       <div
-        className="grid grid-cols-2 gap-3 lg:grid-cols-4"
+        className="plat-dash-metrics grid grid-cols-2 gap-3 lg:grid-cols-4"
         role="group"
         aria-label={t("plat.dash.metricsAria")}
       >

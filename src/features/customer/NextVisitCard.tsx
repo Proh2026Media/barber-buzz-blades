@@ -168,7 +168,7 @@ export function NextVisitCard({
       intlLocale,
     );
     body = (
-      <div className="@container space-y-4">
+      <div className="next-visit-body @container space-y-4">
         <div className="flex items-center gap-4">
           {/* Bloco de data: rótulo relativo em cima (HOJE, AMANHÃ, QUA), dia e mês. */}
           <div
@@ -229,7 +229,7 @@ export function NextVisitCard({
         </div>
         {/* Lado a lado só quando o cartão comporta os dois rótulos (no computador de 1024 px ele
             é estreito e "Ver detalhes" quebrava em duas linhas). */}
-        <div className="grid grid-cols-1 gap-2 @min-[18rem]:grid-cols-2">
+        <div className="next-visit-actions grid grid-cols-1 gap-2 @min-[18rem]:grid-cols-2">
           <FooterButton icon={ChevronRight} trailing onClick={onDetails}>
             {t("home.details")}
           </FooterButton>
@@ -256,7 +256,7 @@ export function NextVisitCard({
   return (
     <section
       aria-labelledby="next-visit-title"
-      className={cn("app-action-card space-y-4 p-4 sm:p-5", className)}
+      className={cn("next-visit-card app-action-card space-y-4 p-4 sm:p-5", className)}
     >
       {header}
       {body}

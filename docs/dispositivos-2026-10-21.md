@@ -155,3 +155,26 @@ Comparações temporárias: `/tmp/barba-dispositivos/comparacao-agenda.png` e `c
 **Automação final:** tipos, 292 testes, eslint, prettier e montagem completa aprovados.
 
 Evidências temporárias em `/tmp/barba-2810` (podem ser apagadas pelo sistema). Testes físicos, leitor de tela real, integrações e percepção do dono permanecem pendentes na P-42/P-43. Sem migration, novo texto de interface ou tarefa para o agente da VPS.
+
+## 13. Recomposição desktop — P-100 (29/10/2026)
+
+O dono relatou novamente uma composição desproporcional no computador. A P-100 substitui a organização desktop correspondente das seções 11/12; não refaz as funcionalidades já entregues.
+
+- **Casca:** menu contínuo de 15rem, com rolagem própria se necessário, alinhado à marca e ao início da área de trabalho. O modo de cabeçalho flutuante conserva seus recuos.
+- **Agenda:** escopo em linha, navegação compacta, resumo mais baixo e atendimentos dentro de uma única superfície, com divisórias. O quadro da equipe continua com rolagem interna horizontal e cabeçalhos fixos.
+- **Serviços/Equipe:** barra de consulta e tabela formam uma área contínua. Busca, ordenação, escolha de visualização, menus e formulários mantidos.
+- **Horários:** semana em sete linhas com dia, faixa, régua e interruptor alinhados; prévia logo abaixo. Bloqueios e pausas na coluna ao lado. Permissões e prioridade dos bloqueios da agenda própria mantidas.
+- **Ajustes:** índice lateral e edição à direita. Subcategorias do agendamento acima dos campos, evitando outra coluna estreita. O índice tem contraste no tema escuro; as superfícies de edição continuam off-white.
+- **Cliente:** início com colunas proporcionais; escolhas de serviço/profissional numa área, calendário e revisão/ação numa segunda área contínua. O total fica junto da confirmação. Conteúdos e seleção não são desmontados ao mudar a largura.
+- **Plataforma:** navegação comum e indicadores em uma régua; fichas, relatórios e acessos conservam suas funcionalidades.
+
+### Verificação e limites
+
+- Tipos, 301 testes, ESLint, Prettier e montagem de produção.
+- Capturas de 15 estados em 1280, 1440 e 1920 px: agenda do dono e contratado, horários do parceiro, agendamento, ajustes, serviços, equipe, horários, início/agendamentos/pontos do cliente e quatro áreas da plataforma. O contratado não recebe a aba Horários, conforme a permissão existente; sua agenda é o caso válido.
+- As seis seções de Ajustes percorridas por teclado em 768, 1024, 1279, 1280 e 1440 px; campos e subcategorias inspecionados.
+- Agendar, confirmar, abrir remarcação, abrir cancelamento, manter por teclado e cancelar em 390, 1024, 1280, 1440 e 1920 px.
+- Busca/ordenação, grade/lista, formulário por teclado, salvar serviço fictício, foco no formulário da equipe, rascunho da semana durante redimensionamento, bloqueio e retorno/foco da ficha de loja. Ficha aberta também em 1536 px.
+- Tema escuro nas áreas alteradas e três modos de canto em claro/escuro; quadro da equipe rolado e cabeçalho flutuante em 1280/1440/1920.
+- Comparação de 14 telas móveis em 390 px: dez capturas idênticas pixel a pixel; quatro com diferenças localizadas em contadores temporais e efeitos animados do clube, sem recomposição. Não é uma alegação de igualdade pixel a pixel de todos os estados. Abaixo de 1280 não foram acrescentadas regras de leiaute.
+- Evidências locais desta rodada em `/tmp/barba-p100/` (capturas e relatórios JSON). Navegador automatizado com dados fictícios e requisições externas simuladas; nenhum dado real alterado. Não substitui aprovação estética do dono nem testes em iPad/celular físicos (P-42/P-43).

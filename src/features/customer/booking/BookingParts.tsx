@@ -200,7 +200,7 @@ export function ServiceFacts({
 }) {
   const { t } = useI18n();
   return (
-    <span className="flex flex-wrap items-center gap-1.5">
+    <span className="booking-service-facts flex flex-wrap items-center gap-1.5">
       <Tag icon={Clock3}>{t("booking.minutes", { minutes: terms.duration_minutes })}</Tag>
       <span className="text-sm font-bold tabular-nums">{formatMoney(terms.price_cents)}</span>
     </span>

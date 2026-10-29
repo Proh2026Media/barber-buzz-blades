@@ -559,7 +559,7 @@ export function ServicesTab({
   ];
 
   return (
-    <section className="space-y-4">
+    <section className="catalog-workspace space-y-4">
       {wide ? (
         <div className="catalog-toolbar">
           {title}

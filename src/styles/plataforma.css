@@ -3,6 +3,24 @@
    Regra de ouro: abaixo de 768 px nada muda; tudo aqui fica atrás de @media (min-width: 768px)
    ou maior (docs/dispositivos-2026-10-21.md, seções 6 e 7). */
 
+/* Indicadores em uma régua de consulta; distribuição e análises usam duas colunas abaixo. */
+@media (min-width: 1280px) {
+  .plat-dash-metrics {
+    gap: 0;
+    padding: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--panel-radius);
+    background: var(--app-elevated);
+  }
+  .plat-dash-metrics > * {
+    border: 0;
+    box-shadow: none;
+  }
+  .plat-dash-metrics > * + * {
+    border-left: 1px solid var(--border);
+  }
+}
+
 /* ---------- Barbearias: título, busca e filtros ---------- */
 /* 768–1535: linha 1 = título e "Nova barbearia"; linha 2 = busca e filtros lado a lado.
    A partir de 1536 tudo numa linha: ícone · título · busca · filtros · botão (a 1280 a

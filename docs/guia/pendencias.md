@@ -10,7 +10,7 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 - Situação: **pendente**, **feito — falta aplicar no banco**, **a decidir** (depende do dono), **não confirmado** (não deu para conferir daqui).
 - Cada item foi conferido no código e nas migrations em 12/10/2026. As linhas citadas são dessa data.
 - **Papéis da equipe no banco × nomes na tela:** `owner` e `partner` = **Dono** (sócio; `partner` é o nome antigo e aparece igual), `associate` = **Parceiro**, `employee` = **Contratado** ([roles-model.ts](../../src/features/shop/roles-model.ts); rótulos em `pt-BR.ts`). `shop_admin` é o papel antigo de `memberships`, que pode existir sem vínculo de equipe (CONTINUIDADE, onda 1 de 09/10).
-- Último id usado: **P-99**.
+- Último id usado: **P-100**.
 
 **Índice**
 
@@ -22,7 +22,7 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 6. [Testes manuais com contas reais](#6-testes-manuais-com-contas-reais) (P-40 a P-43)
 7. [Dívida técnica](#7-dívida-técnica) (P-44 a P-48, P-51, P-52, P-55, P-63 a P-65, P-72, P-75 e P-78)
 8. [Ideias futuras](#8-ideias-futuras) (P-49, P-50 e P-54)
-9. [Interface por dispositivo: o que ficou](#9-interface-por-dispositivo-o-que-ficou) (P-79 a P-98)
+9. [Interface por dispositivo: o que ficou](#9-interface-por-dispositivo-o-que-ficou) (P-79 a P-98 e P-100)
 
 ---
 
@@ -638,3 +638,10 @@ Escolha consultada ao dono em 24/10; sem resposta nesta rodada, mantidas as jane
 - **Cliente:** Meus agendamentos usa linhas pela largura útil da lista, com ações ao lado quando há espaço. Início e pontos mantêm a composição existente; não foi acrescentado conteúdo para preencher áreas vazias.
 - **Plataforma:** tabela de lojas desde 1024; ao selecionar, índice de 18rem e ficha ampla, com módulos e pessoas lado a lado quando cabem. Voltar restaura as colunas de comparação e o foco. Início, Relatórios e Acessos conferidos e mantidos.
 - **Validação:** capturas e fluxos locais com dados fictícios; rascunhos, busca/ordenação, escolha de visualização, teclado e histórico conferidos. Evidências e limitações na seção 12 de `dispositivos-2026-10-21.md`. Não equivale à aprovação do dono ou teste físico: P-42/P-43 permanecem abertas. Sem migration nem tarefa para TI.
+
+### P-100 — Composição própria para computador · feito em 29/10/2026 (ChatGPT/Codex)
+
+- **Pedido:** corrigir a aparência de adaptação móvel no PC, preservando identidade e celular.
+- **Entregue:** navegação contínua; agenda e catálogos em superfícies de trabalho; semana/bloqueios lado a lado; índice lateral e edição em Ajustes; escolhas e confirmação agrupadas no agendamento; proporções do Início e indicadores da plataforma.
+- **Faixa:** alterações novas em 1280 px ou mais. Nenhuma mudança de regra, permissão, banco ou integração. A composição desktop aqui substitui os trechos correspondentes de P-97/P-98; as demais entregas continuam válidas.
+- **Verificações e limites:** [dispositivos-2026-10-21.md, seção 13](../dispositivos-2026-10-21.md). Implementação verificada em navegador; aprovação visual do dono e testes físicos não são presumidos (P-42/P-43).

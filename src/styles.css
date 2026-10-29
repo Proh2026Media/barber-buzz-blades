@@ -1623,12 +1623,28 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
 /* Computador (≥ 1280 px): coluna completa, ícone e nome lado a lado. */
 @media (min-width: 1280px) {
   .arena-workspace:has(> .app-mobile-nav) {
-    --app-rail-width: 14.5rem;
-    --app-rail-inset: max(1rem, env(safe-area-inset-left));
+    --app-rail-width: 15rem;
+    --app-rail-inset: 0rem;
   }
   .arena-workspace > .app-mobile-nav,
   .arena-workspace.brand-chrome-floating > .app-mobile-nav {
-    padding: 0.5rem !important;
+    align-self: stretch;
+    min-height: 0;
+    overflow-y: auto;
+    margin: 0 !important;
+    padding: 1.5rem 0.875rem !important;
+    border-width: 0 1px 0 0 !important;
+    border-radius: 0 0 var(--panel-radius) 0 !important;
+    box-shadow: none !important;
+  }
+  .arena-workspace.brand-chrome-floating > .app-mobile-nav {
+    margin: 1rem 0 1rem 1rem !important;
+    padding-inline: 0.5rem !important;
+    border-width: 1px !important;
+    border-radius: var(--panel-radius) !important;
+  }
+  .arena-workspace > .app-mobile-nav > button > svg {
+    flex-shrink: 0;
   }
   .arena-workspace > .app-mobile-nav > button {
     flex-direction: row !important;
@@ -2166,8 +2182,9 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
 @media (min-width: 1280px) {
   .arena-workspace:has(> .app-mobile-nav) > main {
     --app-read-width: 60rem;
-    padding-inline: 1.5rem
-      max(1rem, env(safe-area-inset-right), calc(100% - 1.5rem - var(--app-read-width)));
+    --app-main-pad-top: 1.5rem;
+    padding-inline: 2rem
+      max(2rem, env(safe-area-inset-right), calc(100% - 2rem - var(--app-read-width)));
   }
   .arena-workspace:has(> .app-mobile-nav) > main.max-w-xl {
     --app-read-width: 40rem;
@@ -4251,8 +4268,8 @@ body:has(.arena-workspace) .entry-code input:not(#entry-code-x):focus {
 @media (min-width: 1280px) {
   .arena-workspace .workspace-header-grid {
     display: grid;
-    grid-template-columns: 14.5rem minmax(8rem, 1fr) auto;
-    column-gap: 1.5rem;
+    grid-template-columns: 14rem minmax(8rem, 1fr) auto;
+    column-gap: 2rem;
     align-items: center;
   }
   .arena-workspace .workspace-header-title {
