@@ -157,3 +157,7 @@ Cadastro da barbearia e janelas de Serviço/Profissional reorganizados pela larg
 ## P-104 — responsividade do acesso (29/10/2026)
 
 Correção dos defeitos reproduzidos após relato do dono: nome longo encoberto no modelo dividido e colunas comprimidas com fonte ampliada no imersivo. Foto com altura pelo conteúdo, moldura no fluxo, composição pela largura relativa à fonte e controles em fluxo quando estreitos. Três referências móveis de Entrar idênticas; mesmos tokens e autenticação. Comparações e limites na seção P-104 de [revisao-visual-integral-2026-10-29.md](revisao-visual-integral-2026-10-29.md). A correção do acesso não representa aprovação visual ou encerramento da revisão geral.
+
+## P-105 — Acessos da administração (29/10/2026)
+
+Cartões de papéis sem sobreposição na lateral, seletor separado do título quando falta espaço, matriz e gerentes pela largura útil em rem, ações de gerentes visíveis e barra de salvar ajustada em área estreita. Mesmo estilo, três cantos e regras de permissão. Capturas iniciais móveis preservadas; fluxos com dados fictícios e componente compartilhado conferidos. Comparações e limites na seção P-105 de [revisao-visual-integral-2026-10-29.md](revisao-visual-integral-2026-10-29.md).

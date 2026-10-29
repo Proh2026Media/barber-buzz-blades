@@ -107,6 +107,13 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## Entrega — P-105: responsividade de Acessos no admin (29/10, ChatGPT/Codex)
+
+- **Defeitos reproduzidos:** cartões de papéis sobrepostos no monitor largo; seletor sobre o título com fonte ampliada; matriz comprimida; gerentes com nome longo alargando cartões e tabela cortando a ação de remover. Botões de salvar também ultrapassavam a área estreita com texto ampliado.
+- **Correção:** grade de papéis pelo espaço recebido, seletor em linha própria quando necessário, matriz e gerentes pela largura útil em rem; tabela de gerentes proporcional; ações e barra de salvar ajustadas. Medição compartilhada em `lib/use-container-width.ts`.
+- **Verificação:** tipos, 301 testes, ESLint, formatação e montagem aprovados. Cinco fluxos na montagem final, incluindo erros simulados e nova tentativa. Matriz de dispositivos, fonte ampliada, três cantos/escuro e rota administrativa com respostas fictícias; teclado, alterações preservadas ao redimensionar, salvamento simulado, troca de loja e confirmação de remoção fechada sem executar. Duas referências do início móvel idênticas. Compartilhamento com Ajustes da loja conferido; editor de entrada do admin inspecionado.
+- **Evidência e limites:** seção P-105 de [revisao-visual-integral-2026-10-29.md](revisao-visual-integral-2026-10-29.md), com quatro imagens. Nenhuma mudança de papel, permissão, texto, API, regra ou identidade. Sem migration/TI. Testes físicos e integrações reais continuam em P-42/P-43; a revisão geral não é declarada encerrada.
+
 ## Entrega — P-104: responsividade do acesso (29/10, ChatGPT/Codex)
 
 - **Relato e reprodução:** o dono informou que a tela de acesso não estava responsiva. Nome longo encobria o título na foto do modelo dividido; fonte ampliada comprimindo as colunas do modelo imersivo colocava a apresentação atrás do formulário.

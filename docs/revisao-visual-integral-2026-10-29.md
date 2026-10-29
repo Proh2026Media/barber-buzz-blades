@@ -1,4 +1,4 @@
-# Revisão visual integral — P-101 a P-104 (29/10/2026)
+# Revisão visual integral — P-101 a P-105 (29/10/2026)
 
 O dono considerou insuficientes as mudanças da P-100 e apontou páginas sem revisão. Esta entrega amplia a composição por tarefa e registra a cobertura por área. Implementação e verificação técnica não significam aprovação estética do dono.
 
@@ -142,3 +142,34 @@ As quatro imagens usam os mesmos dados fictícios e configurações em cada par.
 - Editor de marca: três modelos × três dispositivos, mantendo a seleção ao voltar, sem envio de dados. Abertura/fechamento dos editores de catálogo também conferidos.
 
 Cenários em Chrome local isolado, com respostas fictícias e rede externa bloqueada. Não foram testados Safari nem aparelhos físicos; P-42/P-43 continuam. Sem migration ou tarefa para TI. Evidências extensas locais: `/tmp/barba-p104/`.
+
+## P-105 — Acessos da administração
+
+O dono relatou partes quebradas e falta de responsividade na página de acesso do admin. A investigação desta rodada encontrou defeitos na aba **Acessos da plataforma**, distinta da tela de login corrigida na P-104: cartões de papéis sobrepostos na coluna lateral, seletor encobrindo o título com fonte ampliada, matriz comprimida e ações de gerentes cortadas na tabela.
+
+| Situação                                   | Antes                                       | Depois                                        | Correção                                                                                        |
+| ------------------------------------------ | ------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Acessos, 1920 × 800 px                     | [Antes](evidencias/p105/acessos-antes.png)  | [Depois](evidencias/p105/acessos-depois.png)  | A explicação lateral usa cartões inteiros, sem impor duas colunas dentro de uma faixa estreita. |
+| Acessos, 1024 × 768 px, fonte base em 200% | [Antes](evidencias/p105/ampliado-antes.png) | [Depois](evidencias/p105/ampliado-depois.png) | Título e seletor ganham linhas próprias; matriz usa edição por papel quando não cabe.           |
+
+Cada par usa os mesmos dados fictícios e configurações. A ampliação é da fonte raiz; não representa todos os modos de zoom dos sistemas operacionais.
+
+### Correções
+
+- **Papéis e barbearia:** grade de cartões pela largura disponível, tanto na faixa horizontal quanto na lateral do monitor. Rótulos podem quebrar linha; título e seletor se reorganizam pela largura relativa à fonte. Nome longo de loja não impõe largura ao campo.
+- **Matriz:** `ShopPermissionsMatrix` decide entre tabela e edição por papel pelo próprio espaço, considerando a fonte e a coluna do papel legado. A comparação recolhida segue o mesmo critério. Trocar a composição conserva a matriz e suas escolhas.
+- **Alterações não salvas:** botões em linhas próprias quando necessário; em área extremamente estreita, a barra participa da rolagem para não cobrir o conteúdo. Mesmos estados, ações e confirmação de salvamento.
+- **Gerentes de conta:** cartões com largura limitada ao espaço recebido e ações reposicionadas em áreas estreitas. A tabela passa a ter colunas proporcionais e só aparece com largura útil suficiente, evitando o botão de remover fora da área visível. Confirmação de remoção preservada.
+- **Implementação compartilhada:** `use-container-width.ts` mede largura em rem e acompanha redimensionamento, fonte e troca do elemento. Usado apenas na matriz e nos gerentes; não altera os pontos de quebra globais do sistema. CSS em `styles/plataforma.css` e `styles/leiaute.css`.
+
+### Validação e limites
+
+- `scripts/verificar.sh`: tipos, 301 testes, ESLint dos quatro arquivos TS/TSX alterados, Prettier e montagem de produção aprovados.
+- Montagem final: cinco cenários completos na rota administrativa em 320/1024/1920 px e em 768/1366 px com fonte base em 200%, com os três cantos e tema escuro. Erros de carregar e salvar simulados no computador, seguidos de nova tentativa; escolha preservada. Sem erro de página ou rolagem lateral nos fluxos finais.
+- Acessos em 320/390/768/1024/1366/1536/1920 px; fonte base em 200% em celular, tablet e computador. Sem rolagem horizontal nos cenários finais conferidos.
+- Início de Acessos em 320 e 390 × 800 px: duas capturas estritamente idênticas às referências anteriores. As correções móveis alcançam os casos de corte e os estados de edição.
+- Rota administrativa real `/platform?aba=acessos` com respostas locais fictícias: nomes longos de loja e gerente, dois vínculos, três modos de canto e tema escuro. Edição por teclado, rascunho preservado entre 390/1024/1920 px, salvar, trocar loja e abrir/fechar a confirmação de remoção. Nenhum vínculo real foi removido.
+- Texto ampliado: repetido o fluxo com escolhas não salvas, redimensionamento, botões de salvar/descartar e gerentes. Nenhuma permissão real foi gravada.
+- Matriz compartilhada em Ajustes → Equipe e sociedade → Pessoas e papéis conferida em celular e computador. Editor da tela de entrada aberto pelo admin também inspecionado em 390/768/1024/1366 px, sem alteração nesta rodada.
+
+Mesmas cores, fontes, superfícies, ícones e tokens dos três cantos; nenhum texto, papel, bloqueio de permissão, consulta ou regra de negócio foi alterado. Sem migration ou tarefa para TI. Navegador Chrome isolado com rede externa bloqueada; testes físicos/Safari e integrações reais continuam em P-42/P-43. Não representa encerramento da revisão de todo o sistema. Evidências extensas locais: `/tmp/barba-p105/`.

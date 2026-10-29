@@ -259,10 +259,29 @@
 }
 
 /* A matriz pode aparecer dentro de Ajustes ou na plataforma: mede o próprio espaço. */
-@media (min-width: 768px) {
-  .permissions-editor {
-    container-type: inline-size;
+.permissions-editor {
+  container: permissions / inline-size;
+}
+@container permissions (max-width: 12rem) {
+  .permissions-editor [role="radiogroup"] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
   }
+  .permissions-editor [role="radiogroup"] button {
+    min-width: 0;
+    white-space: normal;
+  }
+  .permissions-editor li > p {
+    flex-wrap: wrap;
+  }
+  .permissions-editor li > p > span:last-child {
+    flex-shrink: 1;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+@media (min-width: 768px) {
   @container (max-width: 44rem) {
     .permissions-table th[scope="col"]:not(:first-child) {
       width: 6rem;
@@ -354,5 +373,28 @@
   .workspace-task-header > .app-section-title {
     flex: 1;
     min-width: 0;
+  }
+}
+
+/* As ações de permissões precisam caber também após editar, com fonte ampliada. */
+@container permissions (max-width: 20rem) {
+  .permissions-unsaved-bar > div:has(> button) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    flex-basis: 100%;
+    min-width: 0;
+  }
+  .permissions-unsaved-bar button {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    padding-block: 0.5rem;
+  }
+}
+@container permissions (max-width: 12rem) {
+  .permissions-unsaved-bar {
+    position: static;
   }
 }

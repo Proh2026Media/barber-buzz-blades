@@ -93,7 +93,7 @@ export function PlatformPermissionsEditor({
 
   return (
     // No celular: título, "quem pode o quê", seletor e matriz empilhados. A partir de 768 px o
-    // seletor entra na linha do título; a partir de 1024 a explicação fica ao lado da matriz
+    // seletor entra na linha do título quando cabe; no monitor largo a explicação fica ao lado da matriz
     // (src/styles/plataforma.css).
     <div className="plat-perm space-y-6">
       <div className="plat-perm-title app-section-title">
@@ -109,21 +109,21 @@ export function PlatformPermissionsEditor({
             {TIERS.map((tier) => (
               <li
                 key={tier.key}
-                className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-background p-2.5"
+                className="plat-perm-tier flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-background p-2.5"
               >
-                <span className="flex flex-1 flex-wrap items-center gap-1.5">
+                <span className="plat-perm-roles flex flex-1 flex-wrap items-center gap-1.5">
                   {tier.roles.map(({ icon: Icon, labelKey }) => (
                     <span
                       key={labelKey}
-                      className="inline-flex min-h-8 items-center gap-1.5 whitespace-nowrap rounded-xl bg-muted px-2.5 text-xs font-semibold"
+                      className="plat-perm-role inline-flex min-h-8 items-center gap-1.5 whitespace-nowrap rounded-xl bg-muted px-2.5 text-xs font-semibold"
                     >
-                      <Icon className="size-3.5 text-gold" aria-hidden />
+                      <Icon className="size-3.5 shrink-0 text-gold" aria-hidden />
                       {t(labelKey)}
                     </span>
                   ))}
                 </span>
                 {/* Seta e resultado andam juntos: se faltar espaço, descem de linha os dois. */}
-                <span className="flex items-center gap-2">
+                <span className="plat-perm-tier-result flex items-center gap-2">
                   <ArrowRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
                   <StatusBadge tone={tier.tone} icon={tier.icon} label={t(tier.resultKey)} />
                 </span>

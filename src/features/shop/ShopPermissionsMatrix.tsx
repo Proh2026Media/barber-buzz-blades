@@ -35,8 +35,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { permissionLockedForRole } from "@/lib/auth/capabilities";
 import { t as tNow, useI18n, type MessageKey } from "@/lib/i18n";
-import { useViewportAtLeast } from "@/lib/device";
 import { cn } from "@/lib/utils";
+import { useContainerWidth } from "@/lib/use-container-width";
 import { ROLE_META } from "./roles-model";
 
 type PermissionMeta = {
@@ -249,7 +249,10 @@ export function ShopPermissionsMatrix({
   showLegacy = false,
 }: ShopPermissionsMatrixProps) {
   const { t } = useI18n();
-  const wide = useViewportAtLeast(1024);
+  const [editorRef, widthRem] = useContainerWidth<HTMLDivElement>();
+  // A troca de composição mantém a mesma matriz e as escolhas ainda não salvas.
+  const wide = widthRem >= (showLegacy ? 52 : 44);
+  const compareWide = widthRem >= (showLegacy ? 38 : 32);
   const title = titleProp ?? t("eq.perm.title");
   const description =
     descriptionProp ??
@@ -579,7 +582,7 @@ export function ShopPermissionsMatrix({
   );
 
   return (
-    <div className="permissions-editor space-y-4">
+    <div ref={editorRef} className="permissions-editor min-w-0 space-y-4">
       <SectionHeader as="h3" icon={ShieldCheck} title={title} description={description} />
       {!canEdit && (
         <Hint icon={Lock} tone="muted">
@@ -660,9 +663,9 @@ export function ShopPermissionsMatrix({
               </div>
 
               {/* Comparar papéis: no celular, um bloco por papel com cada permissão em pílula ✓ / —;
-              do tablet para cima, a tabela lado a lado. */}
+              quando há largura útil, a tabela lado a lado. */}
               <MoreDetails summary={t("eq.perm.compare")}>
-                <ul className="space-y-3 sm:hidden">
+                <ul className={cn("space-y-3", compareWide && "hidden")}>
                   {roles.map((item) => {
                     const allows = (permission: string) =>
                       permission === "services"
@@ -730,13 +733,14 @@ export function ShopPermissionsMatrix({
                     );
                   })}
                 </ul>
-                <div className="hidden sm:block">{comparisonTable}</div>
+                <div className={cn(!compareWide && "hidden")}>{comparisonTable}</div>
               </MoreDetails>
             </>
           )}
 
           {canEdit && (
             <UnsavedBar
+              className="permissions-unsaved-bar"
               dirty={changes > 0}
               count={changes}
               saving={state === "saving"}

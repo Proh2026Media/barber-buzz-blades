@@ -29,7 +29,7 @@ import {
   type ActionState,
 } from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
-import { useViewportAtLeast } from "@/lib/device";
+import { useContainerWidth } from "@/lib/use-container-width";
 import { guardedFetch } from "@/lib/demo-guard";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import type { Tables } from "@/integrations/supabase/types";
@@ -73,6 +73,7 @@ export function AccountManagersPanel({
   headingAs?: "h2" | "h3" | "h4";
 }) {
   const { t } = useI18n();
+  const [containerRef, widthRem] = useContainerWidth<HTMLElement>();
   const emailFieldId = useId();
   const shopFieldId = useId();
   const viewFieldId = useId();
@@ -243,8 +244,8 @@ export function AccountManagersPanel({
     setResult((current) => (current ? { ...current, password: null } : current));
   });
 
-  // Lista de todos os gerentes: cartões por pessoa até 1023 px; tabela a partir de 1024.
-  const asTable = useViewportAtLeast(1024);
+  // Tabela só quando há espaço para pessoa, e-mail, loja, estado e ação de remover.
+  const asTable = widthRem >= 54;
 
   const removeName = removeTarget?.label ?? t("plat.mgr.noName");
   const removeShop = removeTarget?.shop_name ?? t("plat.mgr.shopFallback");
@@ -253,7 +254,7 @@ export function AccountManagersPanel({
   if (!LINKING_ENABLED && loaded && !loadError && rows.length === 0) return null;
 
   return (
-    <section className="space-y-3">
+    <section ref={containerRef} className="account-managers min-w-0 space-y-3">
       <SectionHeader
         as={headingAs}
         icon={Briefcase}
@@ -356,6 +357,7 @@ export function AccountManagersPanel({
       ) : asTable ? (
         // Computador: uma linha por vínculo (pessoa · e-mail · barbearia · vê números · remover).
         <DataList
+          tableFrom={0}
           rows={rows}
           rowKey={(row) => `${row.user_id}-${row.barbershop_id}`}
           columns={[
@@ -407,12 +409,15 @@ export function AccountManagersPanel({
         />
       ) : (
         // Lista de todos: uma pessoa por cartão, com as barbearias de que cuida logo abaixo.
-        <ul className="grid gap-3 lg:grid-cols-2 lg:items-start">
+        <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:items-start">
           {groupByPerson(rows).map(({ userId, label, email, items }) => {
             const name = label ?? t("plat.mgr.noName");
             return (
-              <li key={userId} className="rounded-2xl border border-border bg-background p-3">
-                <div className="flex items-center gap-3">
+              <li
+                key={userId}
+                className="min-w-0 rounded-2xl border border-border bg-background p-3"
+              >
+                <div className="account-manager-person flex items-center gap-3">
                   <PersonAvatar name={name} size="sm" seed={userId} />
                   <span className="min-w-0 flex-1">
                     <span className="block break-words text-sm font-semibold">{name}</span>
@@ -430,7 +435,10 @@ export function AccountManagersPanel({
                   {items.map((row) => {
                     const shopLabel = row.shop_name ?? t("plat.mgr.shopFallback");
                     return (
-                      <li key={row.barbershop_id} className="flex items-center gap-2">
+                      <li
+                        key={row.barbershop_id}
+                        className="account-manager-assignment flex items-center gap-2"
+                      >
                         <PersonAvatar name={shopLabel} size="xs" seed={row.barbershop_id} />
                         <span className="min-w-0 flex-1">
                           <span className="block break-words text-sm">{shopLabel}</span>

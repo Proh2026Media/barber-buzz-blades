@@ -211,7 +211,10 @@
   }
 }
 
-/* ---------- Acessos: seletor na linha do título; explicação ao lado da matriz ---------- */
+/* ---------- Acessos: cada área responde à largura que recebe ---------- */
+.plat-perm {
+  container: platform-access / inline-size;
+}
 @media (min-width: 768px) {
   .plat-perm {
     display: grid;
@@ -228,6 +231,7 @@
   }
   .plat-perm > *,
   .plat-perm > .plat-perm-body > * {
+    min-width: 0;
     margin-block: 0 !important;
   }
   .plat-perm .plat-perm-title {
@@ -243,14 +247,40 @@
     padding: 0;
   }
   .plat-perm .plat-perm-selector > select {
-    width: auto;
-    min-width: 16rem;
+    flex: 1 1 16rem;
+    width: min(24rem, 100%);
+    min-width: 0;
+    max-width: 24rem;
   }
   .plat-perm .plat-perm-tiers {
     grid-area: tiers;
   }
   .plat-perm .plat-perm-matrix {
     grid-area: matrix;
+  }
+  .plat-perm-tiers > ol {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+    gap: 0.75rem;
+  }
+  .plat-perm-tiers > ol > li {
+    margin-block: 0;
+    align-content: start;
+  }
+  .plat-perm-tiers .plat-perm-tier {
+    min-width: 0;
+  }
+  .plat-perm-tiers .plat-perm-roles {
+    min-width: 0;
+    flex-basis: 12rem;
+  }
+  .plat-perm-tiers .plat-perm-role {
+    max-width: 100%;
+    white-space: normal;
+  }
+  .plat-perm-tier-result {
+    min-width: 0;
+    max-width: 100%;
   }
 }
 @media (min-width: 1536px) {
@@ -270,26 +300,31 @@
     top: 1rem;
   }
 }
-
-/* Até o monitor largo, a explicação vira uma faixa e deixa a matriz usar toda a largura. */
-@media (min-width: 768px) and (max-width: 1535.98px) {
-  .plat-perm-tiers > ol {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.75rem;
-  }
-  .plat-perm-tiers > ol > li {
-    margin-block: 0;
-    align-content: start;
-  }
-  .plat-perm .plat-perm-selector {
-    flex-wrap: wrap;
-  }
-}
+/* A fonte ampliada também reduz a largura útil. Título e escolha ganham linhas próprias. */
 @media (min-width: 768px) {
-  .plat-perm > *,
-  .plat-perm-matrix {
-    min-width: 0;
+  @container platform-access (max-width: 42rem) {
+    .plat-perm .plat-perm-title {
+      grid-area: auto;
+      grid-column: 1 / -1;
+      grid-row: 1;
+    }
+    .plat-perm .plat-perm-selector {
+      grid-area: auto;
+      grid-column: 1 / -1;
+      grid-row: 2;
+      justify-content: flex-start;
+    }
+    .plat-perm .plat-perm-tiers {
+      position: static;
+      grid-area: auto;
+      grid-column: 1 / -1;
+      grid-row: 3;
+    }
+    .plat-perm .plat-perm-matrix {
+      grid-area: auto;
+      grid-column: 1 / -1;
+      grid-row: 4;
+    }
   }
 }
 
@@ -318,14 +353,6 @@
   .plat-shops-layout:not(:has(> .plat-shop-aside)) col[data-col="created"] {
     visibility: visible;
     width: 6.5rem !important;
-  }
-  .plat-perm:has(.plat-perm-title:empty) {
-    grid-template-areas: "selector selector" "tiers tiers" "matrix matrix";
-  }
-}
-@media (min-width: 1536px) {
-  .plat-perm:has(.plat-perm-title:empty) {
-    grid-template-areas: "selector selector" "tiers matrix";
   }
 }
 
@@ -374,15 +401,6 @@
   .platform-reports-grid > .business-insights {
     grid-column: 1 / -1;
   }
-  .plat-perm-tiers ol {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.5rem;
-  }
-  .plat-perm-tiers ol > li {
-    margin: 0;
-    align-content: start;
-  }
 }
 
 @media (min-width: 1024px) {
@@ -395,4 +413,52 @@
   .platform-reports .business-insights-tiles > * {
     min-width: 0;
   }
+}
+
+/* Com texto ampliado no celular, rótulos e escolhas ocupam linhas próprias. */
+@media (width < 768px) {
+  @container platform-access (max-width: 17rem) {
+    .plat-perm .plat-perm-tier,
+    .plat-perm .plat-perm-roles,
+    .plat-perm .plat-perm-tier-result {
+      min-width: 0;
+      max-width: 100%;
+    }
+    .plat-perm .plat-perm-roles {
+      flex-basis: 100%;
+    }
+    .plat-perm .plat-perm-role {
+      max-width: 100%;
+      white-space: normal;
+    }
+  }
+}
+
+/* Gerentes: nomes e vínculos longos não podem impor a largura mínima do cartão. */
+.account-managers {
+  container: account-managers / inline-size;
+}
+@container account-managers (max-width: 18rem) {
+  .account-manager-person,
+  .account-manager-assignment {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+  }
+  .account-manager-person > :last-child,
+  .account-manager-assignment > button {
+    grid-column: 2;
+    justify-self: start;
+    max-width: 100%;
+  }
+  .account-manager-assignment > span {
+    overflow-wrap: anywhere;
+  }
+}
+
+.account-managers .app-data-list-table {
+  table-layout: fixed;
+}
+.account-managers .app-data-list-table td {
+  overflow-wrap: anywhere;
 }
