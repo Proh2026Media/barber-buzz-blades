@@ -107,6 +107,14 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## Entrega — P-102: consistência, login e seletor inicial (29/10, ChatGPT/Codex)
+
+- **Pedido:** evoluir a composição do sistema e incluir explicitamente o login e a página inicial externa.
+- **O que:** seletor com decisões reunidas e exemplos em faixa; login dividido com moldura central e marca acompanhando a rolagem do cadastro; larguras dos outros dois modelos ajustadas; `AuthFrame` compartilhado com a prévia e mesma composição de tablet; cabeçalhos de tarefa em Serviços, Equipe, Agenda e Horários, com consulta separada do título/ação.
+- **Preservação:** experiência móvel, identidade, três cantos, estados e regras de autenticação, dados e permissões. Sem migration ou tarefa para TI.
+- **Verificação e evidência:** tipos, 301 testes, lint, formatação e montagem; matriz de três modelos/estados do acesso em sete larguras, tema escuro, cantos e tela baixa; navegação por teclado, rascunhos ao redimensionar, validações, catálogos e prévias. Seis referências móveis idênticas na comparação final. Inventário e seis novas imagens comparativas na seção P-102 de [revisao-visual-integral-2026-10-29.md](revisao-visual-integral-2026-10-29.md).
+- **Limites:** cenários isolados com respostas fictícias, sem enviar e-mail/WhatsApp/Google ou criar conta real. P-42/P-43 e avaliação visual do dono permanecem abertas.
+
 ## Entrega — P-101: revisão integral após retorno do dono (29/10, ChatGPT/Codex)
 
 - **Retorno:** o dono não percebeu melhora significativa na P-100 e apontou páginas sem aplicação. A P-100 foi uma implementação técnica, não uma aprovação estética.

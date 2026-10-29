@@ -3,7 +3,7 @@
    src/styles.css por src/dispositivos.css. Regra de ouro: abaixo de 768 px nada muda; tudo aqui
    fica atrás de @media (min-width: 768px) ou maior (docs/dispositivos-2026-10-21.md). */
 
-/* ---------- Início do site (/): os dois cartões de escolha lado a lado ---------- */
+/* ---------- Início do site (/): decisões lado a lado no tablet em pé ---------- */
 @media (min-width: 768px) {
   .platform-landing-wide {
     max-width: 56rem;
@@ -13,27 +13,6 @@
     align-items: stretch;
   }
 }
-/* Entre 1024 e 1535 os cartões ficam na coluna esquerda (já estreita): empilhados. */
-@media (min-width: 1024px) {
-  .platform-landing-wide {
-    max-width: 72rem;
-  }
-  .platform-landing-actions-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .platform-landing-grid {
-    align-items: start;
-  }
-}
-@media (min-width: 1536px) {
-  .platform-landing-wide {
-    max-width: 80rem;
-  }
-  .platform-landing-actions-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 /* ---------- Página da barbearia: horários da semana compactos ---------- */
 /* Só na página de verdade (.brand-page, src/features/marketing/ShopLanding.tsx): a prévia do
    editor de Ajustes também é .shop-landing.public-page, mas imita o celular e fica como está. */
@@ -130,17 +109,17 @@
    src/styles.css); o dividido volta a partir de 1024. As regras de 761 px que ficaram em
    src/styles.css são de outra área. */
 @media (min-width: 768px) and (max-width: 1023px) {
-  .auth-page.auth-layout-split {
+  .auth-entry-host.auth-layout-split {
     grid-template-columns: minmax(0, 1fr);
     place-items: center;
     padding: clamp(1rem, 4vw, 3rem);
     padding-block: clamp(1rem, 3dvh, 3rem);
     background: #171714;
   }
-  .auth-page.auth-layout-split::after {
+  .auth-entry-host.auth-layout-split::after {
     content: none;
   }
-  .auth-page.auth-layout-split .auth-photo-layer {
+  .auth-entry-host.auth-layout-split .auth-photo-layer {
     position: fixed;
     inset: 0;
     grid-column: auto;
@@ -149,16 +128,16 @@
     min-height: 0;
     align-self: auto;
   }
-  .auth-page.auth-layout-split .auth-photo-layer > span {
+  .auth-entry-host.auth-layout-split .auth-photo-layer > span {
     background:
       radial-gradient(80% 70% at 50% 45%, rgb(13 14 12 / 0.28), rgb(13 14 12 / 0.62)),
       rgb(13 14 12 / 0.5);
     backdrop-filter: blur(3px);
   }
-  .auth-page.auth-layout-split .auth-photo-copy {
+  .auth-entry-host.auth-layout-split .auth-photo-copy {
     display: none;
   }
-  .auth-page.auth-layout-split .auth-brand-panel {
+  .auth-entry-host.auth-layout-split .auth-brand-panel {
     --auth-pad-x: 2rem;
     --auth-head-top: 2rem;
     --auth-body-bottom: 2rem;
@@ -174,16 +153,16 @@
       0 3px 10px rgb(0 0 0 / 0.14),
       inset 0 1px 0 rgb(255 255 255 / 0.9);
   }
-  .auth-page.auth-layout-split .auth-brand-identity {
+  .auth-entry-host.auth-layout-split .auth-brand-identity {
     display: block;
     padding-bottom: 1.25rem;
     border-bottom: 1px solid color-mix(in oklab, var(--border) 72%, transparent);
   }
-  .auth-page.auth-layout-split .auth-form-body {
+  .auth-entry-host.auth-layout-split .auth-form-body {
     padding-top: 1.75rem;
   }
   /* Idioma e tema sobre a foto, como no cartão. */
-  .auth-page.auth-layout-split .auth-theme-toggle .app-icon-button {
+  .auth-entry-host.auth-layout-split .auth-theme-toggle .app-icon-button {
     border: 1px solid color-mix(in oklab, white 28%, transparent);
     background: color-mix(in oklab, var(--card) 82%, transparent);
     box-shadow: 0 8px 24px rgb(0 0 0 / 0.22);
@@ -249,5 +228,206 @@
   }
   .shop-landing.brand-page .shop-public-body > aside:empty {
     display: none;
+  }
+}
+
+/* P-102: a entrada apresenta a marca e a decisão principal antes dos exemplos. */
+.auth-entry-frame {
+  display: contents;
+}
+@media (min-width: 1024px) {
+  .platform-landing-wide {
+    max-width: 76rem;
+  }
+  .platform-landing-grid {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    align-items: center;
+    gap: 2rem 3rem;
+  }
+  .platform-landing-intro-and-actions {
+    display: contents;
+  }
+  .platform-landing-intro {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .platform-landing-actions-grid {
+    grid-column: 2;
+    grid-row: 1;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    margin: 0;
+    overflow: hidden;
+    border-radius: var(--panel-radius);
+    box-shadow: 0 18px 44px rgb(0 0 0 / 28%);
+  }
+  .platform-landing-actions-grid > .platform-entry-choice {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1rem;
+    align-items: center;
+    padding: 1.5rem;
+    border-radius: 0 !important;
+    border: 0;
+    box-shadow: none;
+  }
+  .platform-landing-actions-grid > .platform-entry-choice + .platform-entry-choice {
+    border-top: 1px solid var(--border);
+  }
+  .platform-entry-choice > a {
+    width: auto;
+    min-width: 12rem;
+    padding-inline: 1rem;
+  }
+  .platform-entry-choice > div {
+    min-width: 0;
+  }
+  .platform-landing-benefits {
+    grid-column: 1 / -1;
+  }
+  .platform-landing-benefit-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+    align-items: stretch;
+    overflow: hidden;
+    border-radius: var(--panel-radius);
+    border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+  }
+  .platform-landing-benefit-list > .public-card {
+    padding: 1.25rem;
+    border: 0;
+    border-radius: 0 !important;
+    box-shadow: none;
+  }
+  .platform-landing-benefit-list > .public-card:nth-child(2),
+  .platform-landing-benefit-list > .public-card:nth-child(3) {
+    border-left: 1px solid var(--border);
+  }
+  .platform-landing-benefit-list > .platform-landing-howto {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 12rem minmax(0, 1fr);
+    gap: 1rem;
+    align-items: center;
+  }
+  .platform-landing-howto > p {
+    margin: 0;
+  }
+
+  /* O modelo dividido tem uma única moldura, compartilhada com a prévia do editor. */
+  .auth-entry-host.auth-layout-split {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: center;
+    gap: 0;
+    padding: 5.5rem 2rem 2rem;
+    background: var(--background);
+  }
+  .auth-entry-host.auth-layout-split::after {
+    content: none;
+  }
+  .auth-entry-host.auth-layout-split > .auth-entry-frame {
+    display: grid;
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    width: min(76rem, 100%);
+    margin-inline: auto;
+    min-height: min(42rem, calc(100dvh - 7.5rem));
+    position: relative;
+    isolation: isolate;
+    overflow: clip;
+    border: 1px solid var(--border);
+    border-radius: var(--panel-radius);
+    background: var(--card);
+    box-shadow: 0 24px 60px color-mix(in oklab, #1c1d19 14%, transparent);
+  }
+  .auth-entry-host.auth-layout-split .auth-entry-frame > .auth-photo-layer {
+    position: relative;
+    inset: auto;
+    grid-column: 1;
+    grid-row: 1;
+    height: auto;
+    min-height: 0;
+    align-self: stretch;
+  }
+  .auth-entry-host.auth-layout-split .auth-photo-layer > img {
+    position: absolute;
+    inset: 0;
+  }
+  .auth-entry-host.auth-layout-split .auth-photo-copy {
+    position: relative;
+    bottom: auto;
+    grid-column: 1;
+    grid-row: 1;
+    align-self: end;
+    width: 100%;
+    max-width: none;
+    padding: 2.25rem;
+  }
+  /* O cadastro é mais longo: a marca acompanha a rolagem ao lado dos campos. */
+  .auth-entry-host.auth-layout-split:has(.auth-form-fields.is-signup) .auth-photo-copy {
+    position: sticky;
+    top: 2rem;
+    align-self: start;
+  }
+  .auth-entry-host.auth-layout-split .auth-photo-copy h2 {
+    font-size: clamp(2.5rem, 3.75vw, 3.5rem);
+  }
+  .auth-entry-host.auth-layout-split .auth-brand-panel {
+    --auth-pad-x: clamp(1.5rem, 3vw, 3rem);
+    --auth-head-top: 2.25rem;
+    --auth-body-top: 1.5rem;
+    --auth-body-bottom: 2rem;
+    grid-column: 2;
+    grid-row: 1;
+    width: auto;
+    max-width: none;
+    align-self: stretch;
+    justify-self: stretch;
+    padding: 0;
+    border: 0;
+    border-radius: 0 !important;
+    background: var(--card);
+    box-shadow: none;
+  }
+  .auth-entry-host.auth-layout-split .auth-brand-header,
+  .auth-entry-host.auth-layout-split .auth-form-body {
+    width: 100%;
+    max-width: 36rem;
+    margin-inline: auto;
+  }
+  .auth-entry-host.auth-layout-split .auth-brand-header {
+    padding: var(--auth-head-top) var(--auth-pad-x) 0;
+  }
+  .auth-entry-host.auth-layout-split .auth-brand-header > .mt-6 {
+    margin-top: 0;
+  }
+  .auth-entry-host.auth-layout-split .auth-form-body {
+    padding: var(--auth-body-top) var(--auth-pad-x) var(--auth-body-bottom);
+  }
+  .auth-entry-host .auth-theme-toggle {
+    top: 1.25rem;
+    right: max(2rem, calc((100% - 76rem) / 2));
+  }
+  .auth-entry-host.auth-layout-cover {
+    grid-template-columns: minmax(0, 1fr) minmax(22rem, 34rem);
+  }
+  .auth-entry-host.auth-layout-cover .auth-brand-panel {
+    width: min(34rem, 100%);
+    max-width: 34rem;
+  }
+  .auth-entry-host.auth-layout-card .auth-brand-panel {
+    width: min(36rem, 100%);
+    max-width: 36rem;
+  }
+}
+@media (min-width: 1024px) and (max-width: 1199px) {
+  .platform-landing-actions-grid > .platform-entry-choice {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .platform-entry-choice > a {
+    width: 100%;
+  }
+  .platform-landing-benefit-list > .platform-landing-howto {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

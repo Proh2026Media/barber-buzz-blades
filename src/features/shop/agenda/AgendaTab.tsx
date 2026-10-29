@@ -667,7 +667,7 @@ export function AgendaTab({
 
   return (
     <section className="mb-stagger space-y-4">
-      <div className="workspace-section-title app-section-title">
+      <div className="workspace-task-header workspace-section-title app-section-title">
         <WorkspaceHeading>
           <Calendar />
           <h2>{t("shop.nav.agenda")}</h2>

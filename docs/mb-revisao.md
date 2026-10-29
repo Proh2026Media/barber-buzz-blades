@@ -145,3 +145,7 @@ Por decisão do dono, as telas do cliente em pt-BR passaram a usar “agendament
 ## P-101 — revisão integral de computador (29/10/2026)
 
 O retorno do dono sobre a P-100 não foi uma aprovação visual. A revisão seguinte inclui inventário por tela, mudanças de composição e antes/depois preservados no repositório: [revisao-visual-integral-2026-10-29.md](revisao-visual-integral-2026-10-29.md). O relatório distingue telas recompostas, composições adequadas mantidas, componentes isolados com dados fictícios e limites da validação. Preservados celular, identidade, temas e cantos. Testes físicos e avaliação estética do dono não são presumidos.
+
+## P-102 — entrada e consistência das tarefas (29/10/2026)
+
+Complemento solicitado pelo dono: seletor com decisões reunidas e exemplos conectados; login com marca e formulário proporcionais ao computador; prévia compartilhando a moldura; cabeçalhos de tarefa consistentes nos catálogos, Agenda e Horários. Mesmos tokens, cantos e fluxos; celular preservado por comparação. Antes/depois e verificações na seção P-102 de [revisao-visual-integral-2026-10-29.md](revisao-visual-integral-2026-10-29.md). Testes físicos/integrações reais e avaliação estética do dono continuam sem ser presumidos.

@@ -346,7 +346,7 @@ function HoursTabContent({
   return (
     <section className="space-y-5">
       {/* A partir de 768 px o selo "aberta agora" fica na linha do título. */}
-      <div className="hours-head space-y-3">
+      <div className="workspace-task-header hours-head space-y-3">
         <div className="workspace-section-title app-section-title">
           <WorkspaceHeading>
             <Clock3 />

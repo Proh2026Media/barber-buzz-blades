@@ -561,11 +561,13 @@ export function ServicesTab({
   return (
     <section className="catalog-workspace space-y-4">
       {wide ? (
-        <div className="catalog-toolbar">
-          {title}
-          {filters}
-          <WorkspaceHeaderAction>{newButton}</WorkspaceHeaderAction>
-        </div>
+        <>
+          <div className="workspace-task-header">
+            {title}
+            <WorkspaceHeaderAction>{newButton}</WorkspaceHeaderAction>
+          </div>
+          <div className="catalog-toolbar">{filters}</div>
+        </>
       ) : (
         title
       )}

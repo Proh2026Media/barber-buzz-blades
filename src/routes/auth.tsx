@@ -1,3 +1,4 @@
+import { AuthFrame } from "@/features/auth/AuthFrame";
 import {
   ArrowLeft,
   ArrowRight,
@@ -1799,7 +1800,7 @@ function AuthPage() {
 
   return (
     <main
-      className={`auth-workspace auth-page brand-page auth-layout-${brand.loginLayout} mb-page min-h-dvh text-foreground ${brandCornerClass(brand.cornerStyle)}`}
+      className={`auth-entry-host auth-workspace auth-page brand-page auth-layout-${brand.loginLayout} mb-page min-h-dvh text-foreground ${brandCornerClass(brand.cornerStyle)}`}
       style={
         brandVariables(
           brand.primaryColor,
@@ -1818,798 +1819,252 @@ function AuthPage() {
         <LanguageSwitcher />
         <ThemeToggle />
       </div>
-      <div className="auth-photo-layer" aria-hidden="true">
-        <img src={brand.loginImageUrl || DEFAULT_LOGIN_IMAGE} alt="" />
-        <span />
-      </div>
-      <section
-        className="auth-photo-copy"
-        aria-label={t("auth.welcomeRegion", { name: brand.displayName })}
-      >
-        <div
-          className="auth-photo-copy-logo"
-          style={{
-            backgroundColor: brand.logoBackgroundColor ?? "rgba(255,255,255,.92)",
-          }}
-        >
-          {brand.logoUrl ? (
-            <img src={brand.logoUrl} alt="" />
-          ) : (
-            <Scissors className="size-7" aria-hidden="true" />
-          )}
+      <AuthFrame>
+        <div className="auth-photo-layer" aria-hidden="true">
+          <img src={brand.loginImageUrl || DEFAULT_LOGIN_IMAGE} alt="" />
+          <span />
         </div>
-        <p className="auth-brand-name">{brand.displayName}</p>
-        <h2>{t("auth.hero.title")}</h2>
-        <p>{t("auth.hero.text")}</p>
-      </section>
-      <div className="auth-brand-panel mb-panel w-full max-w-md overflow-hidden border border-border/70 bg-card shadow-[0_24px_60px_color-mix(in_oklch,#1c1d19_14%,transparent)]">
-        <div className="auth-brand-header px-6 pt-8 sm:px-10 sm:pt-12">
-          <div className="auth-brand-identity flex items-center gap-3">
-            <div
-              className="auth-brand-logo flex size-11 shrink-0 items-center justify-center overflow-hidden"
-              style={{
-                backgroundColor:
-                  brand.logoBackgroundColor ??
-                  "color-mix(in oklab, var(--brand-primary) 8%, white)",
-              }}
-            >
-              {brand.logoUrl ? (
-                <img
-                  src={brand.logoUrl}
-                  alt={t("auth.logoAlt", { name: brand.displayName })}
-                  className="size-full object-contain p-2"
-                />
-              ) : (
-                <Scissors className="size-5 text-gold" aria-hidden="true" />
-              )}
+        <section
+          className="auth-photo-copy"
+          aria-label={t("auth.welcomeRegion", { name: brand.displayName })}
+        >
+          <div
+            className="auth-photo-copy-logo"
+            style={{
+              backgroundColor: brand.logoBackgroundColor ?? "rgba(255,255,255,.92)",
+            }}
+          >
+            {brand.logoUrl ? (
+              <img src={brand.logoUrl} alt="" />
+            ) : (
+              <Scissors className="size-7" aria-hidden="true" />
+            )}
+          </div>
+          <p className="auth-brand-name">{brand.displayName}</p>
+          <h2>{t("auth.hero.title")}</h2>
+          <p>{t("auth.hero.text")}</p>
+        </section>
+        <div className="auth-brand-panel mb-panel w-full max-w-md overflow-hidden border border-border/70 bg-card shadow-[0_24px_60px_color-mix(in_oklch,#1c1d19_14%,transparent)]">
+          <div className="auth-brand-header px-6 pt-8 sm:px-10 sm:pt-12">
+            <div className="auth-brand-identity flex items-center gap-3">
+              <div
+                className="auth-brand-logo flex size-11 shrink-0 items-center justify-center overflow-hidden"
+                style={{
+                  backgroundColor:
+                    brand.logoBackgroundColor ??
+                    "color-mix(in oklab, var(--brand-primary) 8%, white)",
+                }}
+              >
+                {brand.logoUrl ? (
+                  <img
+                    src={brand.logoUrl}
+                    alt={t("auth.logoAlt", { name: brand.displayName })}
+                    className="size-full object-contain p-2"
+                  />
+                ) : (
+                  <Scissors className="size-5 text-gold" aria-hidden="true" />
+                )}
+              </div>
+              <p
+                className="auth-brand-name min-w-0 flex-1 truncate text-sm font-bold"
+                aria-live="polite"
+                aria-busy={brandLoading}
+              >
+                {brand.displayName}
+              </p>
             </div>
-            <p
-              className="auth-brand-name min-w-0 flex-1 truncate text-sm font-bold"
-              aria-live="polite"
-              aria-busy={brandLoading}
-            >
-              {brand.displayName}
-            </p>
+
+            {!resultScreen && (
+              <div className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2">
+                <h1
+                  ref={titleRef}
+                  tabIndex={-1}
+                  className="auth-title text-[1.85rem] font-bold leading-[1.05] tracking-tight text-foreground outline-none sm:text-[2.2rem]"
+                >
+                  {title}
+                </h1>
+                {shopContext.demo && (
+                  <StatusBadge tone="highlight" size="sm" label={t("common.demo")} />
+                )}
+              </div>
+            )}
+            {!resultScreen && mode !== "forgot" && mode !== "recovery" && (
+              <PickedSlotChip next={preferredNext} who={who} />
+            )}
+            {!resultScreen && flowSteps && mode !== "signup" && (
+              <Steps
+                steps={flowSteps}
+                label={
+                  mode === "verifyPhone"
+                    ? t("entry.phone.stepsLabel")
+                    : t("entry.forgot.stepsLabel")
+                }
+                className="mt-5"
+              />
+            )}
           </div>
 
-          {!resultScreen && (
-            <div className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2">
-              <h1
-                ref={titleRef}
-                tabIndex={-1}
-                className="auth-title text-[1.85rem] font-bold leading-[1.05] tracking-tight text-foreground outline-none sm:text-[2.2rem]"
+          <div className="auth-form-body auth-form-stack px-6 pb-8 pt-8 sm:px-10 sm:pb-10">
+            {!resultScreen && (mode === "signin" || mode === "signup") && (
+              <div
+                className="auth-mode-tabs auth-brand-control grid grid-cols-2 gap-1 bg-muted/70 p-1"
+                role="tablist"
+                aria-label={t("auth.modeTabs")}
               >
-                {title}
-              </h1>
-              {shopContext.demo && (
-                <StatusBadge tone="highlight" size="sm" label={t("common.demo")} />
-              )}
-            </div>
-          )}
-          {!resultScreen && mode !== "forgot" && mode !== "recovery" && (
-            <PickedSlotChip next={preferredNext} who={who} />
-          )}
-          {!resultScreen && flowSteps && mode !== "signup" && (
-            <Steps
-              steps={flowSteps}
-              label={
-                mode === "verifyPhone" ? t("entry.phone.stepsLabel") : t("entry.forgot.stepsLabel")
-              }
-              className="mt-5"
-            />
-          )}
-        </div>
+                {(
+                  [
+                    ["signin", t("auth.tab.signin")],
+                    ["signup", t("auth.tab.signup")],
+                  ] as const
+                ).map(([id, label]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    role="tab"
+                    aria-selected={mode === id}
+                    onClick={() => switchMode(id)}
+                    className={`auth-brand-button min-h-11 px-3 py-2.5 text-sm font-semibold transition-[background-color,color,box-shadow] duration-300 ease-out ${
+                      mode === id
+                        ? "bg-card text-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
 
-        <div className="auth-form-body auth-form-stack px-6 pb-8 pt-8 sm:px-10 sm:pb-10">
-          {!resultScreen && (mode === "signin" || mode === "signup") && (
-            <div
-              className="auth-mode-tabs auth-brand-control grid grid-cols-2 gap-1 bg-muted/70 p-1"
-              role="tablist"
-              aria-label={t("auth.modeTabs")}
-            >
-              {(
-                [
-                  ["signin", t("auth.tab.signin")],
-                  ["signup", t("auth.tab.signup")],
-                ] as const
-              ).map(([id, label]) => (
-                <button
-                  key={id}
-                  type="button"
-                  role="tab"
-                  aria-selected={mode === id}
-                  onClick={() => switchMode(id)}
-                  className={`auth-brand-button min-h-11 px-3 py-2.5 text-sm font-semibold transition-[background-color,color,box-shadow] duration-300 ease-out ${
-                    mode === id
-                      ? "bg-card text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
+            {emailResult && (
+              <section className="grid gap-5" aria-labelledby="auth-result-title">
+                <ResultHero
+                  ref={titleRef}
+                  id="auth-result-title"
+                  tone="success"
+                  icon={MailCheck}
+                  title={
+                    emailResult.kind === "signup" ? t("entry.email.title") : t("entry.reset.title")
+                  }
                 >
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {emailResult && (
-            <section className="grid gap-5" aria-labelledby="auth-result-title">
-              <ResultHero
-                ref={titleRef}
-                id="auth-result-title"
-                tone="success"
-                icon={MailCheck}
-                title={
-                  emailResult.kind === "signup" ? t("entry.email.title") : t("entry.reset.title")
-                }
-              >
-                {emailResult.kind === "reset" && <p>{t("entry.reset.line")}</p>}
-                <p className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-xl border border-border bg-background px-3 py-1.5 text-sm font-semibold text-foreground [overflow-wrap:anywhere]">
-                  <Mail className="size-4 shrink-0 text-gold" aria-hidden="true" />
-                  {emailResult.email}
-                </p>
-              </ResultHero>
-              <Steps
-                orientation="vertical"
-                label={t("entry.email.stepsLabel")}
-                className="rounded-2xl border border-border bg-background/60 p-4"
-                steps={[
-                  {
-                    key: "open",
-                    label: t("entry.email.stepOpen"),
-                    icon: MailOpen,
-                    status: "upcoming",
-                  },
-                  {
-                    key: "tap",
-                    label: t("entry.email.stepTap"),
-                    icon: MousePointerClick,
-                    status: "upcoming",
-                  },
-                  ...(emailResult.kind === "reset"
-                    ? [
-                        {
-                          key: "new",
-                          label: t("entry.reset.stepNew"),
-                          icon: KeyRound,
-                          status: "upcoming" as const,
-                        },
-                      ]
-                    : emailResult.withWhatsapp
+                  {emailResult.kind === "reset" && <p>{t("entry.reset.line")}</p>}
+                  <p className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-xl border border-border bg-background px-3 py-1.5 text-sm font-semibold text-foreground [overflow-wrap:anywhere]">
+                    <Mail className="size-4 shrink-0 text-gold" aria-hidden="true" />
+                    {emailResult.email}
+                  </p>
+                </ResultHero>
+                <Steps
+                  orientation="vertical"
+                  label={t("entry.email.stepsLabel")}
+                  className="rounded-2xl border border-border bg-background/60 p-4"
+                  steps={[
+                    {
+                      key: "open",
+                      label: t("entry.email.stepOpen"),
+                      icon: MailOpen,
+                      status: "upcoming",
+                    },
+                    {
+                      key: "tap",
+                      label: t("entry.email.stepTap"),
+                      icon: MousePointerClick,
+                      status: "upcoming",
+                    },
+                    ...(emailResult.kind === "reset"
                       ? [
                           {
-                            key: "code",
-                            label: t("entry.email.stepCode"),
-                            icon: MessageCircle,
+                            key: "new",
+                            label: t("entry.reset.stepNew"),
+                            icon: KeyRound,
                             status: "upcoming" as const,
                           },
                         ]
-                      : []),
-                ]}
-              />
-              <Hint>{t("entry.email.spam")}</Hint>
-              {error && <Notice tone="danger" title={error} />}
-              <div className="grid gap-2">
+                      : emailResult.withWhatsapp
+                        ? [
+                            {
+                              key: "code",
+                              label: t("entry.email.stepCode"),
+                              icon: MessageCircle,
+                              status: "upcoming" as const,
+                            },
+                          ]
+                        : []),
+                  ]}
+                />
+                <Hint>{t("entry.email.spam")}</Hint>
+                {error && <Notice tone="danger" title={error} />}
+                <div className="grid gap-2">
+                  <button
+                    type="button"
+                    onClick={() => switchMode("signin")}
+                    className={primaryActionClass}
+                  >
+                    {emailResult.kind === "signup"
+                      ? t("entry.email.confirmed")
+                      : t("auth.backToSignin")}
+                    <ArrowRight className="size-4" aria-hidden="true" />
+                  </button>
+                  {emailResult.kind === "signup" ? (
+                    <button
+                      type="button"
+                      onClick={() => switchMode("signup")}
+                      className="entry-link-button"
+                    >
+                      {t("entry.email.other")}
+                    </button>
+                  ) : (
+                    <ResendButton
+                      className="justify-center"
+                      secondsLeft={resetResendIn}
+                      totalSeconds={PHONE_RESEND_SECONDS}
+                      busy={busy}
+                      onClick={() => void resendFromForgot("link")}
+                      label={t("entry.reset.resend")}
+                      waitLabel={t("entry.reset.resendIn", { seconds: resetResendIn })}
+                      busyLabel={t("entry.busy.sendLink")}
+                    />
+                  )}
+                </div>
+              </section>
+            )}
+
+            {mode === "verifyPhone" && phoneUnavailable && (
+              <section className="grid gap-5" aria-labelledby="auth-result-title">
+                <ResultHero
+                  ref={titleRef}
+                  id="auth-result-title"
+                  tone="success"
+                  title={t("entry.phone.step.created")}
+                >
+                  <StatusBadge
+                    tone="pending"
+                    icon={Hourglass}
+                    label={t("entry.phone.unavailableBadge")}
+                  />
+                  <p className="mt-2">{t("entry.phone.unavailableLine")}</p>
+                </ResultHero>
+                {error && <Notice tone="danger" title={error} />}
                 <button
                   type="button"
-                  onClick={() => switchMode("signin")}
+                  disabled={busy}
+                  onClick={() => void skipPhoneVerification()}
+                  aria-busy={busy ? true : undefined}
                   className={primaryActionClass}
                 >
-                  {emailResult.kind === "signup"
-                    ? t("entry.email.confirmed")
-                    : t("auth.backToSignin")}
-                  <ArrowRight className="size-4" aria-hidden="true" />
+                  {busy ? (
+                    <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden="true" />
+                  ) : null}
+                  {busy ? t("auth.info.signingIn") : t("entry.phone.enterApp")}
+                  {!busy && <ArrowRight className="size-4" aria-hidden="true" />}
                 </button>
-                {emailResult.kind === "signup" ? (
-                  <button
-                    type="button"
-                    onClick={() => switchMode("signup")}
-                    className="entry-link-button"
-                  >
-                    {t("entry.email.other")}
-                  </button>
-                ) : (
-                  <ResendButton
-                    className="justify-center"
-                    secondsLeft={resetResendIn}
-                    totalSeconds={PHONE_RESEND_SECONDS}
-                    busy={busy}
-                    onClick={() => void resendFromForgot("link")}
-                    label={t("entry.reset.resend")}
-                    waitLabel={t("entry.reset.resendIn", { seconds: resetResendIn })}
-                    busyLabel={t("entry.busy.sendLink")}
-                  />
-                )}
-              </div>
-            </section>
-          )}
+              </section>
+            )}
 
-          {mode === "verifyPhone" && phoneUnavailable && (
-            <section className="grid gap-5" aria-labelledby="auth-result-title">
-              <ResultHero
-                ref={titleRef}
-                id="auth-result-title"
-                tone="success"
-                title={t("entry.phone.step.created")}
-              >
-                <StatusBadge
-                  tone="pending"
-                  icon={Hourglass}
-                  label={t("entry.phone.unavailableBadge")}
-                />
-                <p className="mt-2">{t("entry.phone.unavailableLine")}</p>
-              </ResultHero>
-              {error && <Notice tone="danger" title={error} />}
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void skipPhoneVerification()}
-                aria-busy={busy ? true : undefined}
-                className={primaryActionClass}
-              >
-                {busy ? (
-                  <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden="true" />
-                ) : null}
-                {busy ? t("auth.info.signingIn") : t("entry.phone.enterApp")}
-                {!busy && <ArrowRight className="size-4" aria-hidden="true" />}
-              </button>
-            </section>
-          )}
-
-          {!resultScreen && mode === "signup" && (
-            <div className="grid gap-3">
-              {/* Um só aceite, antes dos dois caminhos ("Ao continuar…" cobre Google e e-mail). */}
-              <ConsentNote>
-                {t("auth.terms.before")} {docNames} {t("cad.cliente.terms.age")}
-              </ConsentNote>
-              <button
-                type="button"
-                onClick={() => void handleGoogle()}
-                disabled={busy}
-                className="auth-brand-button auth-google-action flex min-h-[3.25rem] w-full items-center justify-center gap-3 border border-border/70 px-3 text-[15px] font-semibold text-foreground transition-colors hover:border-foreground/25 hover:bg-muted/50 disabled:opacity-60"
-              >
-                {googleBusy ? (
-                  <Loader2 className="size-5 motion-safe:animate-spin" aria-hidden="true" />
-                ) : (
-                  <GoogleMark />
-                )}
-                {t("entry.signup.google")}
-              </button>
-              {googleInstalledWarning && !googleWaiting && (
-                <Notice tone="warning" role="none" title={t("relay.unavailableTitle")}>
-                  {t("relay.unavailableLine")}
-                </Notice>
-              )}
-              {googleWaiting && (
-                <Notice
-                  tone="progress"
-                  title={relayPending ? t("relay.waitTitle") : t("entry.google.waitTitle")}
-                  action={{
-                    label: relayPending ? t("relay.cancel") : t("entry.google.waitClosed"),
-                    onClick: stopWaitingGoogle,
-                  }}
-                >
-                  {relayPending ? t("relay.waitLine") : null}
-                </Notice>
-              )}
-              <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground">
-                <span className="h-px flex-1 bg-border" aria-hidden />
-                <span>{t("entry.signup.orEmail")}</span>
-                <span className="h-px flex-1 bg-border" aria-hidden />
-              </div>
-              {flowSteps && <Steps steps={flowSteps} label={t("entry.signup.stepsLabel")} />}
-            </div>
-          )}
-
-          {!resultScreen && (
-            <form
-              onSubmit={(e) => void handleSubmit(e)}
-              noValidate={mode === "signup"}
-              className={`auth-form-fields${mode === "signup" ? " is-signup" : ""}`}
-            >
-              {mode === "forgot" && linkExpired && (
-                <Notice
-                  tone="warning"
-                  title={t("entry.link.expiredTitle")}
-                  action={{
-                    label: t("entry.link.expiredAction"),
-                    onClick: () => {
-                      setRecoveryChannel("email");
-                      window.requestAnimationFrame(() => emailInputRef.current?.focus());
-                    },
-                  }}
-                >
-                  {t("entry.link.expiredDetail")}
-                </Notice>
-              )}
-              {mode === "forgot" && effectiveShopRef && (
-                <div
-                  className="entry-channel-tabs auth-brand-control grid grid-cols-2 gap-1 bg-muted p-1"
-                  role="tablist"
-                  aria-label={t("auth.recoveryChannel")}
-                >
-                  {(
-                    [
-                      { id: "email" as const, label: t("auth.channel.email"), icon: Mail },
-                      {
-                        id: "whatsapp" as const,
-                        label: t("auth.channel.whatsapp"),
-                        icon: MessageCircle,
-                      },
-                    ] as const
-                  ).map(({ id, label, icon: Icon }) => (
-                    <button
-                      key={id}
-                      type="button"
-                      role="tab"
-                      aria-selected={recoveryChannel === id}
-                      onClick={() => {
-                        setRecoveryChannel(id);
-                        setOtpSent(false);
-                        setOtpCode("");
-                        setRecoveryResendIn(0);
-                        setError(null);
-                        setInfo(null);
-                      }}
-                      className={`auth-brand-button flex min-h-11 items-center justify-center gap-2 text-sm font-semibold transition-colors ${
-                        recoveryChannel === id
-                          ? "bg-card text-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      <Icon className="size-4" aria-hidden="true" />
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {mode === "signup" && (
-                <div className="auth-field-name space-y-1.5">
-                  <label className={labelClass}>
-                    <span>{t("cad.cliente.nameLabel")}</span>
-                    <span className={fieldClass}>
-                      <UserRound
-                        className="ml-4 size-[18px] shrink-0 text-muted-foreground"
-                        aria-hidden="true"
-                      />
-                      <input
-                        ref={nameInputRef}
-                        type="text"
-                        // Sem validação nativa: o erro traduzido aparece ao lado do campo.
-                        aria-required="true"
-                        maxLength={NAME_MAX}
-                        autoComplete="name"
-                        autoCapitalize="words"
-                        placeholder={t("cad.cliente.namePlaceholder")}
-                        value={fullName}
-                        onChange={(e) => {
-                          setFullName(e.target.value);
-                          if (fieldErrors.name)
-                            setFieldErrors((prev) => ({ ...prev, name: undefined }));
-                        }}
-                        aria-invalid={fieldErrors.name ? true : undefined}
-                        aria-describedby={fieldErrors.name ? "signup-name-error" : undefined}
-                        className={inputClass}
-                      />
-                    </span>
-                  </label>
-                  {fieldErrors.name && (
-                    <FieldMessage id="signup-name-error" tone="error">
-                      <span role="alert">{fieldErrors.name}</span>
-                    </FieldMessage>
-                  )}
-                </div>
-              )}
-
-              {mode !== "recovery" &&
-                mode !== "verifyPhone" &&
-                !(mode === "forgot" && recoveryChannel === "whatsapp" && effectiveShopRef) && (
-                  <div className="auth-field-email space-y-1.5">
-                    <label className={labelClass}>
-                      <span>{t("auth.field.email")}</span>
-                      <span className={fieldClass}>
-                        <Mail
-                          className="ml-4 size-[18px] shrink-0 text-muted-foreground"
-                          aria-hidden="true"
-                        />
-                        <input
-                          ref={emailInputRef}
-                          type="email"
-                          required
-                          autoComplete="email"
-                          placeholder={t("auth.field.emailPlaceholder")}
-                          value={email}
-                          onChange={(e) => {
-                            setEmail(e.target.value);
-                            if (fieldErrors.email)
-                              setFieldErrors((prev) => ({ ...prev, email: undefined }));
-                          }}
-                          aria-invalid={mode === "signup" && fieldErrors.email ? true : undefined}
-                          aria-describedby={
-                            mode === "signup" && fieldErrors.email
-                              ? "signup-email-error"
-                              : undefined
-                          }
-                          className={inputClass}
-                        />
-                      </span>
-                    </label>
-                    {mode === "signup" && fieldErrors.email && (
-                      <FieldMessage id="signup-email-error" tone="error">
-                        <span role="alert">{fieldErrors.email}</span>
-                      </FieldMessage>
-                    )}
-                  </div>
-                )}
-
-              {mode === "forgot" && whatsappRecovery && !otpSent && (
-                <label className={labelClass}>
-                  <span>{t("auth.field.whatsapp")}</span>
-                  <span className={fieldClass}>
-                    <MessageCircle
-                      className="ml-4 size-[18px] shrink-0 text-muted-foreground"
-                      aria-hidden="true"
-                    />
-                    <input
-                      type="tel"
-                      required
-                      inputMode="tel"
-                      autoComplete="tel"
-                      placeholder="(11) 99999-0000"
-                      value={whatsapp}
-                      onChange={(e) => setWhatsapp(e.target.value)}
-                      className={inputClass}
-                    />
-                  </span>
-                </label>
-              )}
-
-              {mode === "forgot" && whatsappRecovery && otpSent && (
-                <div className="grid gap-3">
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl border border-border bg-background/60 p-3 text-sm">
-                    <MessageCircle className="size-4 shrink-0 text-gold" aria-hidden="true" />
-                    <span className="rounded-xl border border-border bg-card px-2 py-0.5 font-bold tabular-nums">
-                      {formatBrPhone(whatsapp)}
-                    </span>
-                    <button
-                      type="button"
-                      className="entry-link-button ms-auto"
-                      onClick={() => {
-                        setOtpSent(false);
-                        setOtpCode("");
-                        setError(null);
-                        setInfo(null);
-                      }}
-                    >
-                      {t("fix2.whats.changeNumber")}
-                    </button>
-                    {info && <p className="w-full text-xs text-muted-foreground">{info}</p>}
-                  </div>
-                  <label
-                    htmlFor="recovery-code"
-                    className="text-sm font-semibold text-foreground/85"
-                  >
-                    {t("auth.field.otp")}
-                  </label>
-                  <CodeInput
-                    id="recovery-code"
-                    value={otpCode}
-                    onChange={(value) => {
-                      setOtpCode(value);
-                      setError(null);
-                    }}
-                    autoFocus
-                    invalid={Boolean(error)}
-                    describedBy={error ? "auth-code-error" : undefined}
-                  />
-                  {error && <Notice id="auth-code-error" tone="danger" title={error} />}
-                  <ResendButton
-                    className="justify-self-start"
-                    secondsLeft={recoveryResendIn}
-                    totalSeconds={PHONE_RESEND_SECONDS}
-                    busy={busy}
-                    onClick={() => void resendFromForgot("code")}
-                    label={t("fix2.whats.resend")}
-                    waitLabel={t("fix2.whats.resendIn", { seconds: recoveryResendIn })}
-                    busyLabel={t("fix2.whats.sending")}
-                  />
-                </div>
-              )}
-
-              {mode === "verifyPhone" && !phoneUnavailable && (
-                <div className="grid gap-3">
-                  <CodeSentCard
-                    toLabel={t("entry.code.sentTo")}
-                    number={formatBrPhone(phoneNumber)}
-                    sender={brand.displayName}
-                    message={t("entry.code.example")}
-                    exampleLabel={t("entry.example")}
-                    hideExample={phoneCode.length > 0}
-                  />
-                  <label htmlFor="phone-code" className="text-sm font-semibold text-foreground/85">
-                    {t("fix2.whats.codeLabel")}
-                  </label>
-                  <CodeInput
-                    id="phone-code"
-                    value={phoneCode}
-                    onChange={(value) => {
-                      setPhoneCode(value);
-                      setError(null);
-                    }}
-                    autoFocus
-                    invalid={Boolean(error)}
-                    describedBy={error ? "auth-code-error" : "phone-code-hint"}
-                  />
-                  {error ? (
-                    <Notice id="auth-code-error" tone="danger" title={error} />
-                  ) : (
-                    <Hint icon={Hourglass} className="text-xs">
-                      <span id="phone-code-hint">{t("fix2.whats.codeHint")}</span>
-                    </Hint>
-                  )}
-                </div>
-              )}
-
-              {mode === "signup" && (
-                <div className="auth-whatsapp-group">
-                  <label className={labelClass}>
-                    <span>{t("auth.field.whatsappSignupShop")}</span>
-                    <span className={fieldClass}>
-                      <MessageCircle
-                        className="ml-4 size-[18px] shrink-0 text-muted-foreground"
-                        aria-hidden="true"
-                      />
-                      <input
-                        ref={signupPhoneRef}
-                        type="tel"
-                        aria-required="true"
-                        inputMode="tel"
-                        autoComplete="tel"
-                        placeholder={locale === "pt-PT" ? "+351 912 345 678" : "(11) 99999-0000"}
-                        value={whatsapp}
-                        onChange={(e) => {
-                          setWhatsapp(nextMaskedPhone(whatsapp, e.target.value, locale));
-                          if (fieldErrors.whatsapp)
-                            setFieldErrors((prev) => ({ ...prev, whatsapp: undefined }));
-                        }}
-                        aria-invalid={fieldErrors.whatsapp ? true : undefined}
-                        aria-describedby={
-                          fieldErrors.whatsapp
-                            ? "signup-whatsapp-error signup-whatsapp-hint"
-                            : "signup-whatsapp-hint"
-                        }
-                        className={inputClass}
-                      />
-                    </span>
-                  </label>
-                  {fieldErrors.whatsapp && (
-                    <FieldMessage
-                      id="signup-whatsapp-error"
-                      tone="error"
-                      className="auth-whatsapp-error"
-                    >
-                      <span role="alert">{fieldErrors.whatsapp}</span>
-                    </FieldMessage>
-                  )}
-                  <p id="signup-whatsapp-hint" className="sr-only">
-                    {t("cad.cliente.whatsappHint")}
-                  </p>
-                  <div className="auth-whatsapp-optin auth-brand-control grid gap-3 border border-border/70 bg-background/50 px-3.5 py-3">
-                    <label className="flex min-h-11 cursor-pointer items-center justify-between gap-3 text-sm font-semibold text-foreground">
-                      <span className="flex min-w-0 items-center gap-2">
-                        <Bell className="size-4 shrink-0 text-gold" aria-hidden="true" />
-                        {t("entry.reminders.title")}
-                      </span>
-                      <Switch
-                        checked={phoneOptIn}
-                        onCheckedChange={setPhoneOptIn}
-                        aria-label={t("cad.cliente.optInLabel")}
-                      />
-                    </label>
-                    {phoneOptIn && (
-                      <ExampleBubble
-                        sender={brand.displayName}
-                        message={t("entry.reminders.example")}
-                        exampleLabel={t("entry.example")}
-                      />
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {(mode === "signin" || mode === "signup" || mode === "recovery") && (
-                <div className="auth-field-password">
-                  <label className={labelClass}>
-                    <span>
-                      {mode === "recovery" ? t("auth.field.newPassword") : t("auth.field.password")}
-                    </span>
-                    <span className={fieldClass}>
-                      <LockKeyhole
-                        className="ml-4 size-[18px] shrink-0 text-muted-foreground"
-                        aria-hidden="true"
-                      />
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        required
-                        minLength={6}
-                        autoComplete={mode === "signin" ? "current-password" : "new-password"}
-                        placeholder={
-                          mode === "signin"
-                            ? t("entry.signin.passwordPlaceholder")
-                            : t("entry.newPasswordPlaceholder")
-                        }
-                        ref={passwordInputRef}
-                        value={password}
-                        onChange={(e) => {
-                          setPassword(e.target.value);
-                          if (fieldErrors.password)
-                            setFieldErrors((prev) => ({ ...prev, password: undefined }));
-                        }}
-                        aria-invalid={mode === "signup" && fieldErrors.password ? true : undefined}
-                        aria-describedby={
-                          mode === "signup"
-                            ? fieldErrors.password
-                              ? "signup-password-error auth-password-rules"
-                              : "auth-password-rules"
-                            : undefined
-                        }
-                        className={inputClass}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword((current) => !current)}
-                        className="auth-brand-button mr-1.5 flex size-11 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
-                        aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
-                        aria-pressed={showPassword}
-                      >
-                        {showPassword ? (
-                          <EyeOff className="size-[18px]" aria-hidden="true" />
-                        ) : (
-                          <Eye className="size-[18px]" aria-hidden="true" />
-                        )}
-                      </button>
-                    </span>
-                  </label>
-                  {mode === "signup" && fieldErrors.password && (
-                    <FieldMessage id="signup-password-error" tone="error" className="mt-1.5">
-                      <span role="alert">{fieldErrors.password}</span>
-                    </FieldMessage>
-                  )}
-                  {mode === "signup" && (
-                    <PasswordRules
-                      id="auth-password-rules"
-                      password={password}
-                      showErrors={Boolean(fieldErrors.password)}
-                      className="mt-2"
-                    />
-                  )}
-                  {mode === "signin" && (
-                    <div className="auth-forgot-password">
-                      <button
-                        type="button"
-                        onClick={() => switchMode("forgot")}
-                        className="inline-flex min-h-11 items-center px-1 text-xs font-semibold text-primary underline-offset-4 transition-colors hover:underline"
-                      >
-                        {t("auth.forgot")}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {mode === "recovery" && (
-                <label className={labelClass}>
-                  <span>{t("auth.field.confirmPassword")}</span>
-                  <span className={fieldClass}>
-                    <LockKeyhole
-                      className="ml-4 size-[18px] shrink-0 text-muted-foreground"
-                      aria-hidden="true"
-                    />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      required
-                      minLength={6}
-                      autoComplete="new-password"
-                      placeholder={t("auth.field.confirmPlaceholder")}
-                      value={passwordConfirm}
-                      onChange={(e) => setPasswordConfirm(e.target.value)}
-                      aria-describedby="auth-password-rules"
-                      className={inputClass}
-                    />
-                  </span>
-                </label>
-              )}
-              {mode === "recovery" && (
-                <PasswordRules
-                  id="auth-password-rules"
-                  password={password}
-                  confirm={passwordConfirm}
-                  className="-mt-1"
-                />
-              )}
-
-              {/* Resultado da ação logo acima do botão (no código, ele fica sob as caixas). */}
-              {error && !codeStep && <Notice tone="danger" title={error} />}
-              {notice && !(mode === "forgot" && whatsappRecovery && otpSent) && (
-                <Notice tone={notice.tone} title={notice.text} />
-              )}
-
-              <button
-                type="submit"
-                disabled={busy}
-                aria-busy={busy && !googleBusy ? true : undefined}
-                className={`${primaryActionClass} mt-1`}
-              >
-                {busy && !googleBusy && (
-                  <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden="true" />
-                )}
-                <span>{busy && !googleBusy ? submit.busy : submit.label}</span>
-                {!(busy && !googleBusy) && <SubmitIcon className="size-4" aria-hidden="true" />}
-              </button>
-              {mode === "verifyPhone" && !phoneUnavailable && (
-                <div className="grid justify-items-center gap-1">
-                  <ResendButton
-                    secondsLeft={phoneResendIn}
-                    totalSeconds={PHONE_RESEND_SECONDS}
-                    busy={busy}
-                    onClick={() => void resendPhoneCode()}
-                    label={t("fix2.whats.resend")}
-                    waitLabel={t("fix2.whats.resendIn", { seconds: phoneResendIn })}
-                    busyLabel={t("fix2.whats.sending")}
-                  />
-                  {/* "Confirmar depois" entra no app; "Número errado?" entra direto na Conta, com
-                      o cartão do WhatsApp em foco (a troca é feita lá, não aqui). */}
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => void skipPhoneVerification()}
-                    aria-describedby="phone-later-notes"
-                    className="entry-link-button text-muted-foreground"
-                  >
-                    {t("fix3.auth.phoneSkip")}
-                    <ArrowRight className="size-4" aria-hidden="true" />
-                  </button>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => void fixNumberInProfile()}
-                    className="entry-link-button text-muted-foreground"
-                  >
-                    <UserRound className="size-4" aria-hidden="true" />
-                    {t("entry.phone.wrongNumberLink")}
-                    <ArrowRight className="size-4" aria-hidden="true" />
-                  </button>
-                  <div id="phone-later-notes" className="grid gap-1">
-                    <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                      <LockKeyhole className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-                      {t("entry.phone.laterNote")}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </form>
-          )}
-
-          {!resultScreen && (mode === "forgot" || mode === "recovery") && (
-            <button
-              type="button"
-              onClick={() => switchMode("signin")}
-              className="entry-link-button w-full text-muted-foreground"
-            >
-              <ArrowLeft className="size-4" aria-hidden="true" />
-              {t("auth.backToSignin")}
-            </button>
-          )}
-
-          {!resultScreen && mode === "signin" && (
-            <>
-              <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground">
-                <span className="h-px flex-1 bg-border" aria-hidden />
-                <span>{t("auth.orContinue")}</span>
-                <span className="h-px flex-1 bg-border" aria-hidden />
-              </div>
-
+            {!resultScreen && mode === "signup" && (
               <div className="grid gap-3">
+                {/* Um só aceite, antes dos dois caminhos ("Ao continuar…" cobre Google e e-mail). */}
+                <ConsentNote>
+                  {t("auth.terms.before")} {docNames} {t("cad.cliente.terms.age")}
+                </ConsentNote>
                 <button
                   type="button"
                   onClick={() => void handleGoogle()}
@@ -2621,7 +2076,7 @@ function AuthPage() {
                   ) : (
                     <GoogleMark />
                   )}
-                  {t("auth.google")}
+                  {t("entry.signup.google")}
                 </button>
                 {googleInstalledWarning && !googleWaiting && (
                   <Notice tone="warning" role="none" title={t("relay.unavailableTitle")}>
@@ -2640,47 +2095,606 @@ function AuthPage() {
                     {relayPending ? t("relay.waitLine") : null}
                   </Notice>
                 )}
-                <ConsentNote>
-                  {t("auth.terms.before")} {docNames} {t("cad.cliente.terms.age")}
-                </ConsentNote>
+                <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground">
+                  <span className="h-px flex-1 bg-border" aria-hidden />
+                  <span>{t("entry.signup.orEmail")}</span>
+                  <span className="h-px flex-1 bg-border" aria-hidden />
+                </div>
+                {flowSteps && <Steps steps={flowSteps} label={t("entry.signup.stepsLabel")} />}
               </div>
-            </>
-          )}
+            )}
 
-          {!resultScreen && mode === "signup" && !effectiveShopRef && (
-            <p className="flex flex-wrap items-center justify-center gap-x-1 border-t border-border/70 pt-4 text-center text-sm text-muted-foreground">
-              {t("cad.cliente.ownerQuestion")}
-              <Link to="/cadastrar" className="entry-link-button font-semibold text-primary">
-                <Scissors className="size-4" aria-hidden="true" />
-                {t("cad.cliente.ownerLink")}
-              </Link>
-            </p>
-          )}
+            {!resultScreen && (
+              <form
+                onSubmit={(e) => void handleSubmit(e)}
+                noValidate={mode === "signup"}
+                className={`auth-form-fields${mode === "signup" ? " is-signup" : ""}`}
+              >
+                {mode === "forgot" && linkExpired && (
+                  <Notice
+                    tone="warning"
+                    title={t("entry.link.expiredTitle")}
+                    action={{
+                      label: t("entry.link.expiredAction"),
+                      onClick: () => {
+                        setRecoveryChannel("email");
+                        window.requestAnimationFrame(() => emailInputRef.current?.focus());
+                      },
+                    }}
+                  >
+                    {t("entry.link.expiredDetail")}
+                  </Notice>
+                )}
+                {mode === "forgot" && effectiveShopRef && (
+                  <div
+                    className="entry-channel-tabs auth-brand-control grid grid-cols-2 gap-1 bg-muted p-1"
+                    role="tablist"
+                    aria-label={t("auth.recoveryChannel")}
+                  >
+                    {(
+                      [
+                        { id: "email" as const, label: t("auth.channel.email"), icon: Mail },
+                        {
+                          id: "whatsapp" as const,
+                          label: t("auth.channel.whatsapp"),
+                          icon: MessageCircle,
+                        },
+                      ] as const
+                    ).map(({ id, label, icon: Icon }) => (
+                      <button
+                        key={id}
+                        type="button"
+                        role="tab"
+                        aria-selected={recoveryChannel === id}
+                        onClick={() => {
+                          setRecoveryChannel(id);
+                          setOtpSent(false);
+                          setOtpCode("");
+                          setRecoveryResendIn(0);
+                          setError(null);
+                          setInfo(null);
+                        }}
+                        className={`auth-brand-button flex min-h-11 items-center justify-center gap-2 text-sm font-semibold transition-colors ${
+                          recoveryChannel === id
+                            ? "bg-card text-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <Icon className="size-4" aria-hidden="true" />
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
-          {(mode === "forgot" || mode === "recovery") && !emailResult && (
-            <ConsentNote className="auth-panel-footer">
-              {t("auth.terms.before")} {docNames}.
-            </ConsentNote>
-          )}
-          {backTarget && (mode === "signin" || mode === "signup") && (
-            <a
-              href={backTarget.href}
-              className="entry-link-button auth-panel-footer self-center text-muted-foreground"
-            >
-              <ArrowLeft className="size-4" aria-hidden="true" />
-              {backTarget.label}
-            </a>
-          )}
-          {mode === "signup" && effectiveShopRef && (
-            <p className="auth-panel-footer flex flex-wrap items-center justify-center gap-x-1 text-center text-xs text-muted-foreground">
-              {t("cad.cliente.ownerQuestion")}
-              <Link to="/cadastrar" className="entry-link-button text-xs">
-                {t("cad.cliente.ownerLink")}
-              </Link>
-            </p>
-          )}
+                {mode === "signup" && (
+                  <div className="auth-field-name space-y-1.5">
+                    <label className={labelClass}>
+                      <span>{t("cad.cliente.nameLabel")}</span>
+                      <span className={fieldClass}>
+                        <UserRound
+                          className="ml-4 size-[18px] shrink-0 text-muted-foreground"
+                          aria-hidden="true"
+                        />
+                        <input
+                          ref={nameInputRef}
+                          type="text"
+                          // Sem validação nativa: o erro traduzido aparece ao lado do campo.
+                          aria-required="true"
+                          maxLength={NAME_MAX}
+                          autoComplete="name"
+                          autoCapitalize="words"
+                          placeholder={t("cad.cliente.namePlaceholder")}
+                          value={fullName}
+                          onChange={(e) => {
+                            setFullName(e.target.value);
+                            if (fieldErrors.name)
+                              setFieldErrors((prev) => ({ ...prev, name: undefined }));
+                          }}
+                          aria-invalid={fieldErrors.name ? true : undefined}
+                          aria-describedby={fieldErrors.name ? "signup-name-error" : undefined}
+                          className={inputClass}
+                        />
+                      </span>
+                    </label>
+                    {fieldErrors.name && (
+                      <FieldMessage id="signup-name-error" tone="error">
+                        <span role="alert">{fieldErrors.name}</span>
+                      </FieldMessage>
+                    )}
+                  </div>
+                )}
+
+                {mode !== "recovery" &&
+                  mode !== "verifyPhone" &&
+                  !(mode === "forgot" && recoveryChannel === "whatsapp" && effectiveShopRef) && (
+                    <div className="auth-field-email space-y-1.5">
+                      <label className={labelClass}>
+                        <span>{t("auth.field.email")}</span>
+                        <span className={fieldClass}>
+                          <Mail
+                            className="ml-4 size-[18px] shrink-0 text-muted-foreground"
+                            aria-hidden="true"
+                          />
+                          <input
+                            ref={emailInputRef}
+                            type="email"
+                            required
+                            autoComplete="email"
+                            placeholder={t("auth.field.emailPlaceholder")}
+                            value={email}
+                            onChange={(e) => {
+                              setEmail(e.target.value);
+                              if (fieldErrors.email)
+                                setFieldErrors((prev) => ({ ...prev, email: undefined }));
+                            }}
+                            aria-invalid={mode === "signup" && fieldErrors.email ? true : undefined}
+                            aria-describedby={
+                              mode === "signup" && fieldErrors.email
+                                ? "signup-email-error"
+                                : undefined
+                            }
+                            className={inputClass}
+                          />
+                        </span>
+                      </label>
+                      {mode === "signup" && fieldErrors.email && (
+                        <FieldMessage id="signup-email-error" tone="error">
+                          <span role="alert">{fieldErrors.email}</span>
+                        </FieldMessage>
+                      )}
+                    </div>
+                  )}
+
+                {mode === "forgot" && whatsappRecovery && !otpSent && (
+                  <label className={labelClass}>
+                    <span>{t("auth.field.whatsapp")}</span>
+                    <span className={fieldClass}>
+                      <MessageCircle
+                        className="ml-4 size-[18px] shrink-0 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                      <input
+                        type="tel"
+                        required
+                        inputMode="tel"
+                        autoComplete="tel"
+                        placeholder="(11) 99999-0000"
+                        value={whatsapp}
+                        onChange={(e) => setWhatsapp(e.target.value)}
+                        className={inputClass}
+                      />
+                    </span>
+                  </label>
+                )}
+
+                {mode === "forgot" && whatsappRecovery && otpSent && (
+                  <div className="grid gap-3">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl border border-border bg-background/60 p-3 text-sm">
+                      <MessageCircle className="size-4 shrink-0 text-gold" aria-hidden="true" />
+                      <span className="rounded-xl border border-border bg-card px-2 py-0.5 font-bold tabular-nums">
+                        {formatBrPhone(whatsapp)}
+                      </span>
+                      <button
+                        type="button"
+                        className="entry-link-button ms-auto"
+                        onClick={() => {
+                          setOtpSent(false);
+                          setOtpCode("");
+                          setError(null);
+                          setInfo(null);
+                        }}
+                      >
+                        {t("fix2.whats.changeNumber")}
+                      </button>
+                      {info && <p className="w-full text-xs text-muted-foreground">{info}</p>}
+                    </div>
+                    <label
+                      htmlFor="recovery-code"
+                      className="text-sm font-semibold text-foreground/85"
+                    >
+                      {t("auth.field.otp")}
+                    </label>
+                    <CodeInput
+                      id="recovery-code"
+                      value={otpCode}
+                      onChange={(value) => {
+                        setOtpCode(value);
+                        setError(null);
+                      }}
+                      autoFocus
+                      invalid={Boolean(error)}
+                      describedBy={error ? "auth-code-error" : undefined}
+                    />
+                    {error && <Notice id="auth-code-error" tone="danger" title={error} />}
+                    <ResendButton
+                      className="justify-self-start"
+                      secondsLeft={recoveryResendIn}
+                      totalSeconds={PHONE_RESEND_SECONDS}
+                      busy={busy}
+                      onClick={() => void resendFromForgot("code")}
+                      label={t("fix2.whats.resend")}
+                      waitLabel={t("fix2.whats.resendIn", { seconds: recoveryResendIn })}
+                      busyLabel={t("fix2.whats.sending")}
+                    />
+                  </div>
+                )}
+
+                {mode === "verifyPhone" && !phoneUnavailable && (
+                  <div className="grid gap-3">
+                    <CodeSentCard
+                      toLabel={t("entry.code.sentTo")}
+                      number={formatBrPhone(phoneNumber)}
+                      sender={brand.displayName}
+                      message={t("entry.code.example")}
+                      exampleLabel={t("entry.example")}
+                      hideExample={phoneCode.length > 0}
+                    />
+                    <label
+                      htmlFor="phone-code"
+                      className="text-sm font-semibold text-foreground/85"
+                    >
+                      {t("fix2.whats.codeLabel")}
+                    </label>
+                    <CodeInput
+                      id="phone-code"
+                      value={phoneCode}
+                      onChange={(value) => {
+                        setPhoneCode(value);
+                        setError(null);
+                      }}
+                      autoFocus
+                      invalid={Boolean(error)}
+                      describedBy={error ? "auth-code-error" : "phone-code-hint"}
+                    />
+                    {error ? (
+                      <Notice id="auth-code-error" tone="danger" title={error} />
+                    ) : (
+                      <Hint icon={Hourglass} className="text-xs">
+                        <span id="phone-code-hint">{t("fix2.whats.codeHint")}</span>
+                      </Hint>
+                    )}
+                  </div>
+                )}
+
+                {mode === "signup" && (
+                  <div className="auth-whatsapp-group">
+                    <label className={labelClass}>
+                      <span>{t("auth.field.whatsappSignupShop")}</span>
+                      <span className={fieldClass}>
+                        <MessageCircle
+                          className="ml-4 size-[18px] shrink-0 text-muted-foreground"
+                          aria-hidden="true"
+                        />
+                        <input
+                          ref={signupPhoneRef}
+                          type="tel"
+                          aria-required="true"
+                          inputMode="tel"
+                          autoComplete="tel"
+                          placeholder={locale === "pt-PT" ? "+351 912 345 678" : "(11) 99999-0000"}
+                          value={whatsapp}
+                          onChange={(e) => {
+                            setWhatsapp(nextMaskedPhone(whatsapp, e.target.value, locale));
+                            if (fieldErrors.whatsapp)
+                              setFieldErrors((prev) => ({ ...prev, whatsapp: undefined }));
+                          }}
+                          aria-invalid={fieldErrors.whatsapp ? true : undefined}
+                          aria-describedby={
+                            fieldErrors.whatsapp
+                              ? "signup-whatsapp-error signup-whatsapp-hint"
+                              : "signup-whatsapp-hint"
+                          }
+                          className={inputClass}
+                        />
+                      </span>
+                    </label>
+                    {fieldErrors.whatsapp && (
+                      <FieldMessage
+                        id="signup-whatsapp-error"
+                        tone="error"
+                        className="auth-whatsapp-error"
+                      >
+                        <span role="alert">{fieldErrors.whatsapp}</span>
+                      </FieldMessage>
+                    )}
+                    <p id="signup-whatsapp-hint" className="sr-only">
+                      {t("cad.cliente.whatsappHint")}
+                    </p>
+                    <div className="auth-whatsapp-optin auth-brand-control grid gap-3 border border-border/70 bg-background/50 px-3.5 py-3">
+                      <label className="flex min-h-11 cursor-pointer items-center justify-between gap-3 text-sm font-semibold text-foreground">
+                        <span className="flex min-w-0 items-center gap-2">
+                          <Bell className="size-4 shrink-0 text-gold" aria-hidden="true" />
+                          {t("entry.reminders.title")}
+                        </span>
+                        <Switch
+                          checked={phoneOptIn}
+                          onCheckedChange={setPhoneOptIn}
+                          aria-label={t("cad.cliente.optInLabel")}
+                        />
+                      </label>
+                      {phoneOptIn && (
+                        <ExampleBubble
+                          sender={brand.displayName}
+                          message={t("entry.reminders.example")}
+                          exampleLabel={t("entry.example")}
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {(mode === "signin" || mode === "signup" || mode === "recovery") && (
+                  <div className="auth-field-password">
+                    <label className={labelClass}>
+                      <span>
+                        {mode === "recovery"
+                          ? t("auth.field.newPassword")
+                          : t("auth.field.password")}
+                      </span>
+                      <span className={fieldClass}>
+                        <LockKeyhole
+                          className="ml-4 size-[18px] shrink-0 text-muted-foreground"
+                          aria-hidden="true"
+                        />
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          required
+                          minLength={6}
+                          autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                          placeholder={
+                            mode === "signin"
+                              ? t("entry.signin.passwordPlaceholder")
+                              : t("entry.newPasswordPlaceholder")
+                          }
+                          ref={passwordInputRef}
+                          value={password}
+                          onChange={(e) => {
+                            setPassword(e.target.value);
+                            if (fieldErrors.password)
+                              setFieldErrors((prev) => ({ ...prev, password: undefined }));
+                          }}
+                          aria-invalid={
+                            mode === "signup" && fieldErrors.password ? true : undefined
+                          }
+                          aria-describedby={
+                            mode === "signup"
+                              ? fieldErrors.password
+                                ? "signup-password-error auth-password-rules"
+                                : "auth-password-rules"
+                              : undefined
+                          }
+                          className={inputClass}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword((current) => !current)}
+                          className="auth-brand-button mr-1.5 flex size-11 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
+                          aria-label={
+                            showPassword ? t("auth.hidePassword") : t("auth.showPassword")
+                          }
+                          aria-pressed={showPassword}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="size-[18px]" aria-hidden="true" />
+                          ) : (
+                            <Eye className="size-[18px]" aria-hidden="true" />
+                          )}
+                        </button>
+                      </span>
+                    </label>
+                    {mode === "signup" && fieldErrors.password && (
+                      <FieldMessage id="signup-password-error" tone="error" className="mt-1.5">
+                        <span role="alert">{fieldErrors.password}</span>
+                      </FieldMessage>
+                    )}
+                    {mode === "signup" && (
+                      <PasswordRules
+                        id="auth-password-rules"
+                        password={password}
+                        showErrors={Boolean(fieldErrors.password)}
+                        className="mt-2"
+                      />
+                    )}
+                    {mode === "signin" && (
+                      <div className="auth-forgot-password">
+                        <button
+                          type="button"
+                          onClick={() => switchMode("forgot")}
+                          className="inline-flex min-h-11 items-center px-1 text-xs font-semibold text-primary underline-offset-4 transition-colors hover:underline"
+                        >
+                          {t("auth.forgot")}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {mode === "recovery" && (
+                  <label className={labelClass}>
+                    <span>{t("auth.field.confirmPassword")}</span>
+                    <span className={fieldClass}>
+                      <LockKeyhole
+                        className="ml-4 size-[18px] shrink-0 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        required
+                        minLength={6}
+                        autoComplete="new-password"
+                        placeholder={t("auth.field.confirmPlaceholder")}
+                        value={passwordConfirm}
+                        onChange={(e) => setPasswordConfirm(e.target.value)}
+                        aria-describedby="auth-password-rules"
+                        className={inputClass}
+                      />
+                    </span>
+                  </label>
+                )}
+                {mode === "recovery" && (
+                  <PasswordRules
+                    id="auth-password-rules"
+                    password={password}
+                    confirm={passwordConfirm}
+                    className="-mt-1"
+                  />
+                )}
+
+                {/* Resultado da ação logo acima do botão (no código, ele fica sob as caixas). */}
+                {error && !codeStep && <Notice tone="danger" title={error} />}
+                {notice && !(mode === "forgot" && whatsappRecovery && otpSent) && (
+                  <Notice tone={notice.tone} title={notice.text} />
+                )}
+
+                <button
+                  type="submit"
+                  disabled={busy}
+                  aria-busy={busy && !googleBusy ? true : undefined}
+                  className={`${primaryActionClass} mt-1`}
+                >
+                  {busy && !googleBusy && (
+                    <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden="true" />
+                  )}
+                  <span>{busy && !googleBusy ? submit.busy : submit.label}</span>
+                  {!(busy && !googleBusy) && <SubmitIcon className="size-4" aria-hidden="true" />}
+                </button>
+                {mode === "verifyPhone" && !phoneUnavailable && (
+                  <div className="grid justify-items-center gap-1">
+                    <ResendButton
+                      secondsLeft={phoneResendIn}
+                      totalSeconds={PHONE_RESEND_SECONDS}
+                      busy={busy}
+                      onClick={() => void resendPhoneCode()}
+                      label={t("fix2.whats.resend")}
+                      waitLabel={t("fix2.whats.resendIn", { seconds: phoneResendIn })}
+                      busyLabel={t("fix2.whats.sending")}
+                    />
+                    {/* "Confirmar depois" entra no app; "Número errado?" entra direto na Conta, com
+                      o cartão do WhatsApp em foco (a troca é feita lá, não aqui). */}
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void skipPhoneVerification()}
+                      aria-describedby="phone-later-notes"
+                      className="entry-link-button text-muted-foreground"
+                    >
+                      {t("fix3.auth.phoneSkip")}
+                      <ArrowRight className="size-4" aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void fixNumberInProfile()}
+                      className="entry-link-button text-muted-foreground"
+                    >
+                      <UserRound className="size-4" aria-hidden="true" />
+                      {t("entry.phone.wrongNumberLink")}
+                      <ArrowRight className="size-4" aria-hidden="true" />
+                    </button>
+                    <div id="phone-later-notes" className="grid gap-1">
+                      <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                        <LockKeyhole className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+                        {t("entry.phone.laterNote")}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </form>
+            )}
+
+            {!resultScreen && (mode === "forgot" || mode === "recovery") && (
+              <button
+                type="button"
+                onClick={() => switchMode("signin")}
+                className="entry-link-button w-full text-muted-foreground"
+              >
+                <ArrowLeft className="size-4" aria-hidden="true" />
+                {t("auth.backToSignin")}
+              </button>
+            )}
+
+            {!resultScreen && mode === "signin" && (
+              <>
+                <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground">
+                  <span className="h-px flex-1 bg-border" aria-hidden />
+                  <span>{t("auth.orContinue")}</span>
+                  <span className="h-px flex-1 bg-border" aria-hidden />
+                </div>
+
+                <div className="grid gap-3">
+                  <button
+                    type="button"
+                    onClick={() => void handleGoogle()}
+                    disabled={busy}
+                    className="auth-brand-button auth-google-action flex min-h-[3.25rem] w-full items-center justify-center gap-3 border border-border/70 px-3 text-[15px] font-semibold text-foreground transition-colors hover:border-foreground/25 hover:bg-muted/50 disabled:opacity-60"
+                  >
+                    {googleBusy ? (
+                      <Loader2 className="size-5 motion-safe:animate-spin" aria-hidden="true" />
+                    ) : (
+                      <GoogleMark />
+                    )}
+                    {t("auth.google")}
+                  </button>
+                  {googleInstalledWarning && !googleWaiting && (
+                    <Notice tone="warning" role="none" title={t("relay.unavailableTitle")}>
+                      {t("relay.unavailableLine")}
+                    </Notice>
+                  )}
+                  {googleWaiting && (
+                    <Notice
+                      tone="progress"
+                      title={relayPending ? t("relay.waitTitle") : t("entry.google.waitTitle")}
+                      action={{
+                        label: relayPending ? t("relay.cancel") : t("entry.google.waitClosed"),
+                        onClick: stopWaitingGoogle,
+                      }}
+                    >
+                      {relayPending ? t("relay.waitLine") : null}
+                    </Notice>
+                  )}
+                  <ConsentNote>
+                    {t("auth.terms.before")} {docNames} {t("cad.cliente.terms.age")}
+                  </ConsentNote>
+                </div>
+              </>
+            )}
+
+            {!resultScreen && mode === "signup" && !effectiveShopRef && (
+              <p className="flex flex-wrap items-center justify-center gap-x-1 border-t border-border/70 pt-4 text-center text-sm text-muted-foreground">
+                {t("cad.cliente.ownerQuestion")}
+                <Link to="/cadastrar" className="entry-link-button font-semibold text-primary">
+                  <Scissors className="size-4" aria-hidden="true" />
+                  {t("cad.cliente.ownerLink")}
+                </Link>
+              </p>
+            )}
+
+            {(mode === "forgot" || mode === "recovery") && !emailResult && (
+              <ConsentNote className="auth-panel-footer">
+                {t("auth.terms.before")} {docNames}.
+              </ConsentNote>
+            )}
+            {backTarget && (mode === "signin" || mode === "signup") && (
+              <a
+                href={backTarget.href}
+                className="entry-link-button auth-panel-footer self-center text-muted-foreground"
+              >
+                <ArrowLeft className="size-4" aria-hidden="true" />
+                {backTarget.label}
+              </a>
+            )}
+            {mode === "signup" && effectiveShopRef && (
+              <p className="auth-panel-footer flex flex-wrap items-center justify-center gap-x-1 text-center text-xs text-muted-foreground">
+                {t("cad.cliente.ownerQuestion")}
+                <Link to="/cadastrar" className="entry-link-button text-xs">
+                  {t("cad.cliente.ownerLink")}
+                </Link>
+              </p>
+            )}
+          </div>
         </div>
-      </div>
+      </AuthFrame>
     </main>
   );
 }

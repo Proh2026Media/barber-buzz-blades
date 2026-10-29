@@ -340,3 +340,19 @@
     color: var(--brand-primary-readable, var(--primary));
   }
 }
+
+/* Título e ação na mesma linha; busca e filtros pertencem à superfície de consulta abaixo. */
+@media (min-width: 768px) {
+  .workspace-task-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.5rem;
+    min-height: 2.75rem;
+  }
+  .workspace-task-header > .app-section-title {
+    flex: 1;
+    min-width: 0;
+  }
+}

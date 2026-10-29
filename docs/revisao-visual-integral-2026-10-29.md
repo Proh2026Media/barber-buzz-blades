@@ -1,4 +1,4 @@
-# Revisão visual integral — P-101 (29/10/2026)
+# Revisão visual integral — P-101 e P-102 (29/10/2026)
 
 O dono considerou insuficientes as mudanças da P-100 e apontou páginas sem revisão. Esta entrega amplia a composição por tarefa e registra a cobertura por área. Implementação e verificação técnica não significam aprovação estética do dono.
 
@@ -44,3 +44,35 @@ Capturas em 1440 × 960 px, com os mesmos dados fictícios. As imagens abaixo fi
 - Clube/domínio/senha: 18 estados dos componentes reais em 390, 1024 e 1440 px, com respostas locais simuladas. O cenário temporário foi removido antes da montagem.
 
 As evidências extensas da execução ficam localmente em `/tmp/barba-p101/`; as oito imagens comparativas acima foram preservadas no Git. Testes físicos em iPad/celular, integrações reais e avaliação estética do dono continuam fora desta verificação (P-42/P-43). Sem migration ou tarefa de implantação para TI.
+
+## P-102 — consistência das tarefas, login e seletor inicial
+
+O dono pediu uma evolução da composição, incluindo explicitamente as páginas externas. Esta rodada complementa a P-101; não refaz as funcionalidades ou o banco já entregues.
+
+| Tela            | Antes                                       | Depois                                        | Organização desta rodada                                                                                                             |
+| --------------- | ------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Seletor inicial | [Antes](evidencias/p102/seletor-antes.png)  | [Depois](evidencias/p102/seletor-depois.png)  | Apresentação à esquerda e dois caminhos de entrada reunidos à direita; exemplos em uma faixa e etapas horizontais abaixo.            |
+| Login           | [Antes](evidencias/p102/login-antes.png)    | [Depois](evidencias/p102/login-depois.png)    | Foto, marca e formulário em uma moldura central com proporções e largura controladas, desde 1024 px.                                 |
+| Serviços        | [Antes](evidencias/p102/servicos-antes.png) | [Depois](evidencias/p102/servicos-depois.png) | Título e ação principal na linha da tarefa; busca, visualização e resultados na superfície de consulta. Equipe segue o mesmo padrão. |
+
+As comparações usam 1440 × 960 px e os mesmos dados fictícios. As seis novas imagens ficam no Git junto das oito da P-101.
+
+### Composição e comportamento
+
+- **Entrada pública:** a decisão de cadastrar a barbearia ou acessar a conta aparece antes dos exemplos. Desde 1024 px, os benefícios formam três áreas conectadas; as etapas aproveitam a largura. Em 1024–1199 px, as ações ficam abaixo de cada descrição para conservar espaço de leitura e toque. O tablet em pé mantém duas escolhas lado a lado; o celular mantém a composição anterior.
+- **Login:** o modelo “Foto e formulário” ganha uma moldura única, sem esticar os campos até a borda da tela. No cadastro longo, a marca acompanha a rolagem. “Foto imersiva” e “Cartão sobre foto” conservam seus modelos, com largura de leitura ajustada no computador. Entrar, cadastrar e recuperar continuam usando os mesmos estados, dados, validações e autenticação.
+- **Editor de marca:** `AuthFrame` é compartilhado pelo acesso real e pela prévia. O modelo dividido no tablet em pé usa as mesmas regras nos dois lugares; a aba selecionada da prévia acompanha a cor do acesso real. As prévias continuam sem enviar dados e a troca de dispositivo/modelo conserva o rascunho.
+- **Tarefas internas:** `.workspace-task-header` padroniza título/ação em Serviços, Equipe, Agenda e Horários desde 768 px. Os catálogos deixam a busca e os controles de consulta junto da lista. Menus, formulários, ordenação e permissões continuam os existentes.
+- **Identidade:** tokens, tipografia, foto, cores de ação, cartões off-white e três modos de canto preservados. Não foram criados textos novos, fluxos de negócio ou migrations.
+
+### Verificações desta rodada
+
+- Tipos, 301 testes, ESLint, Prettier e montagem de produção.
+- Montagem final aberta localmente: seletor, login e catálogos em 390/1024/1440 px; fim do cadastro, resultado de link enviado e código de recuperação/erro em 390/768/1024/1440 px, com respostas simuladas e 720 px de altura.
+- Login: três modelos × entrar/cadastrar/recuperar em 320, 390, 768, 1024, 1100, 1440 e 1920 px; conferência adicional com 720 px de altura, tema escuro e cantos retos/arredondados. Semi arredondados usados na matriz principal.
+- Seletor e áreas internas afetadas em 390, 768, 1024, 1100, 1440 e 1920 px; tema escuro em 1024/1440 e entrada externa também em inglês/espanhol.
+- Comparação móvel de seis referências em 390 px: seletor, login, Serviços, Equipe, Agenda e Conta idênticos pixel a pixel na captura final correspondente.
+- Navegação das duas escolhas por teclado; campos de login preservados ao redimensionar; erros do cadastro vazio e validação do e-mail na recuperação; ação do cadastro alcançável por rolagem em 390, 768, 1024 e 1440 px.
+- Busca de Serviços, abertura/fechamento por teclado dos formulários de Serviço e Equipe; prévia do login nos três modelos e nos três dispositivos, conservando a escolha ao voltar ao editor.
+
+Cenários executados em navegador local isolado, com rede externa bloqueada e respostas fictícias. Não foi criado cliente real nem enviado código, e-mail ou solicitação de login Google. Testes físicos e integrações reais continuam em P-42/P-43. Evidências extensas locais: `/tmp/barba-p102/`. Sem tarefa nova para TI.

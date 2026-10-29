@@ -20,6 +20,7 @@ import { IconTile, PersonAvatar, Steps, Tag, TimeChips } from "@/components/visu
 import { TierBadge } from "@/features/loyalty/TierBadge";
 import { DEFAULT_TIERS, tierStyleKey } from "@/features/loyalty/program";
 import { useI18n } from "@/lib/i18n";
+import { useViewportAtLeast } from "@/lib/device";
 import { DEFAULT_LOGIN_IMAGE } from "@/lib/shop/branding";
 
 const heroButton = "app-icon-button hero-icon-button";
@@ -37,7 +38,7 @@ function ChoiceCard({
   children: ReactNode;
 }) {
   return (
-    <li className="public-card flex flex-col gap-3 rounded-2xl border border-border p-4 shadow-[0_18px_44px_rgb(0_0_0/0.28)]">
+    <li className="platform-entry-choice public-card flex flex-col gap-3 rounded-2xl border border-border p-4 shadow-[0_18px_44px_rgb(0_0_0/0.28)]">
       <div className="flex items-start gap-3">
         <IconTile icon={icon} size="lg" tone="muted" />
         <div className="min-w-0 space-y-0.5 pt-0.5">
@@ -80,6 +81,7 @@ function FeatureCard({
  */
 export function PlatformLanding() {
   const { t, intlLocale } = useI18n();
+  const desktop = useViewportAtLeast(1024);
   const samplePrice = (65).toLocaleString(intlLocale, {
     style: "currency",
     currency: "BRL",
@@ -122,8 +124,8 @@ export function PlatformLanding() {
         </header>
 
         <div className="platform-landing-grid">
-          <div className="space-y-6">
-            <section aria-labelledby="platform-landing-title">
+          <div className="platform-landing-intro-and-actions space-y-6">
+            <section className="platform-landing-intro" aria-labelledby="platform-landing-title">
               <h1 id="platform-landing-title" className="platform-landing-title">
                 Barba &amp; Cabelo
               </h1>
@@ -158,12 +160,12 @@ export function PlatformLanding() {
             </ul>
           </div>
 
-          <div className="space-y-4">
+          <div className="platform-landing-benefits space-y-4">
             <h2 className="text-sm font-bold uppercase tracking-wide text-[#f4f1ea]/80">
               {t("landing.featuresTitle")}
             </h2>
             {/* items-start: cada cartão na própria altura, sem miolo vazio ao lado de "Como começar". */}
-            <ul className="grid items-start gap-3 sm:grid-cols-2">
+            <ul className="platform-landing-benefit-list grid items-start gap-3 sm:grid-cols-2">
               <FeatureCard
                 icon={CalendarDays}
                 title={t("landing.featAgenda")}
@@ -214,11 +216,11 @@ export function PlatformLanding() {
                   </span>
                 </div>
               </FeatureCard>
-              <li className="public-card rounded-2xl border border-border p-4">
+              <li className="platform-landing-howto public-card rounded-2xl border border-border p-4">
                 <p className="mb-3 text-sm font-bold">{t("landing.stepsTitle")}</p>
                 <Steps
                   variant="static"
-                  orientation="vertical"
+                  orientation={desktop ? "horizontal" : "vertical"}
                   label={t("landing.stepsTitle")}
                   steps={[
                     { label: t("landing.step1"), description: t("landing.step1Note"), icon: Store },

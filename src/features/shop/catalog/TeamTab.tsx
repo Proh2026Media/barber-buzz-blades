@@ -779,11 +779,13 @@ export function TeamTab({
   return (
     <section className="catalog-workspace space-y-4">
       {wide ? (
-        <div className="catalog-toolbar">
-          {title}
-          {filters}
-          <WorkspaceHeaderAction>{addButton}</WorkspaceHeaderAction>
-        </div>
+        <>
+          <div className="workspace-task-header">
+            {title}
+            <WorkspaceHeaderAction>{addButton}</WorkspaceHeaderAction>
+          </div>
+          <div className="catalog-toolbar">{filters}</div>
+        </>
       ) : (
         title
       )}
