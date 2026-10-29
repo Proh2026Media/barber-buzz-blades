@@ -107,6 +107,10 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## Entrega — referências da lista de pendências (29/10, ChatGPT/Codex)
+
+Corrigidos o índice da seção de próximas ações, o último identificador usado (P-99) e o caminho do módulo de papéis, separado na P-44. Evita link quebrado e reutilização indevida de número. Código e decisões de produto preservados. P-71 segue aguardando escolha do dono; foram localizados os textos do fluxo do cliente para preparar a padronização, sem aplicá-la.
+
 ## Entrega — registro da P-78 aplicada em produção (29/10, ChatGPT/Codex)
 
 - **O que:** registrada a aplicação da migration nº 98 (`20261028190000_falha_login_google`) pelo agente Claude em **28/10/2026, 19:17:07–19:17:10 (Brasília)**. O app instalado pode receber o aviso de cancelamento/recusa do Google sem aguardar a expiração. Nenhuma migration escrita pendente; não reaplicar.

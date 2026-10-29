@@ -9,15 +9,15 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 - Cada item tem um id fixo (`P-01`, `P-02`…). Cite o id em commits, pedidos e no CONTINUIDADE. Não renumere: item resolvido fica marcado como **feito** com a data, e item novo recebe o próximo número livre.
 - Situação: **pendente**, **feito — falta aplicar no banco**, **a decidir** (depende do dono), **não confirmado** (não deu para conferir daqui).
 - Cada item foi conferido no código e nas migrations em 12/10/2026. As linhas citadas são dessa data.
-- **Papéis da equipe no banco × nomes na tela:** `owner` e `partner` = **Dono** (sócio; `partner` é o nome antigo e aparece igual), `associate` = **Parceiro**, `employee` = **Contratado** ([roles.tsx](../../src/features/shop/roles.tsx), linhas 16-27; rótulos em `pt-BR.ts`, linhas 718-721). `shop_admin` é o papel antigo de `memberships`, que pode existir sem vínculo de equipe (CONTINUIDADE, onda 1 de 09/10).
-- Último id usado: **P-98**.
+- **Papéis da equipe no banco × nomes na tela:** `owner` e `partner` = **Dono** (sócio; `partner` é o nome antigo e aparece igual), `associate` = **Parceiro**, `employee` = **Contratado** ([roles-model.ts](../../src/features/shop/roles-model.ts); rótulos em `pt-BR.ts`). `shop_admin` é o papel antigo de `memberships`, que pode existir sem vínculo de equipe (CONTINUIDADE, onda 1 de 09/10).
+- Último id usado: **P-99**.
 
 **Índice**
 
-1. [As 5 recomendadas para a próxima rodada](#1-as-5-recomendadas-para-a-próxima-rodada)
+1. [Próximas ações externas e decisões](#1-próximas-ações-externas-e-decisões)
 2. [Banco e servidor: precisa de migration](#2-banco-e-servidor-precisa-de-migration) (P-01 a P-14, P-56 a P-62 e P-66)
 3. [Onda 4 do plano de ambientes](#3-onda-4-do-plano-de-ambientes-convite-e-primeira-chegada) (P-15 a P-20)
-4. [Migrations escritas e não aplicadas; operação do servidor](#4-migrations-escritas-e-não-aplicadas-operação-do-servidor) (P-21 a P-29, P-67 a P-69 e P-73)
+4. [Migrations escritas e não aplicadas; operação do servidor](#4-migrations-escritas-e-não-aplicadas-operação-do-servidor) (P-21 a P-29, P-67 a P-69, P-73 e P-99)
 5. [Decisões do dono em aberto](#5-decisões-do-dono-em-aberto) (P-30 a P-39, P-53, P-71, P-74, P-76 e P-77)
 6. [Testes manuais com contas reais](#6-testes-manuais-com-contas-reais) (P-40 a P-43)
 7. [Dívida técnica](#7-dívida-técnica) (P-44 a P-48, P-51, P-52, P-55, P-63 a P-65, P-72, P-75 e P-78)
