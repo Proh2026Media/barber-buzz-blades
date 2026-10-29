@@ -107,6 +107,16 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## Entrega — P-71: “agendamento” nas telas do cliente (29/10, ChatGPT/Codex)
+
+- **Decisão do dono:** resposta explícita “Usar ‘agendamento’ nas telas do cliente (recomendado)”. A P-71 deixou de aguardar decisão.
+- **O que:** 26 textos em pt-BR agora dizem “Seu agendamento”, “Remarcar agendamento”, “Cancelar este agendamento?”, “Manter agendamento” e “Ver agendamento”. Inclui nomes acessíveis, avisos da espera, erro de remarcação indisponível, link de acesso com WhatsApp, contadores por loja e categoria da cópia de dados. Concordância ajustada para o masculino.
+- **Onde:** somente valores em `src/lib/i18n/messages/pt-BR.ts`. Mesmas chaves e marcadores. Demais idiomas preservados (pt-PT mantém “marcação”; inglês, “booking”; espanhol, “reserva”). Sem alteração de componentes, estilos, URLs antigas `?reserva=`, banco, permissões ou comportamento. Os verbos “reservar” e textos jurídicos/de privacidade, da equipe e de pontos reservados permanecem como estavam; auditoria do dicionário confirmou que só as 26 chaves previstas mudaram.
+- **Verificação visual:** fluxo fictício de agendar, abrir remarcação, abrir cancelamento, manter por teclado e cancelar em 320, 390, 768, 1024 e 1280 px. Sem rolagem lateral, erro de execução ou chave sem tradução. Telas de 320/390 inspecionadas visualmente. Navegador com chamadas externas simuladas e produção bloqueada; não foram criados agendamentos reais.
+- **Complemento visual:** mesma sequência em 320 × 568 px, com rolagem e ações da janela funcionando. Link de acesso fictício, válido e inválido, em 320/768/1280 px: “Seu agendamento”, “Agendamento não encontrado” e “Entrar e ver agendamento” conferidos, inclusive a etapa de código com resposta simulada (nenhum WhatsApp enviado).
+- **Checagem final:** `scripts/verificar.sh` aprovado: tipos, 301 testes, eslint, prettier e montagem cliente/servidor/PWA. `git diff --check` limpo.
+- **Pendente:** testes de integrações e aparelhos reais continuam em P-42/P-43. Nenhuma migration ou tarefa de implantação para a VPS.
+
 ## Entrega — referências da lista de pendências (29/10, ChatGPT/Codex)
 
 Corrigidos o índice da seção de próximas ações, o último identificador usado (P-99) e o caminho do módulo de papéis, separado na P-44. Evita link quebrado e reutilização indevida de número. Código e decisões de produto preservados. P-71 segue aguardando escolha do dono; foram localizados os textos do fluxo do cliente para preparar a padronização, sem aplicá-la.

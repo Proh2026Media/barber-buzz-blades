@@ -34,6 +34,8 @@ Porta de entrada para o agente que vai continuar o projeto (Cursor, Claude Code,
 
 **Registro de 29/10 — P-78 aplicada:** relatório do agente Claude confirma a nº 98 em produção desde **28/10/2026, 19:17:07–19:17:10 (Brasília)**, com backup, 18 PASS/ROLLBACK e permissões esperadas. Hashes do relatório conferem com o repositório; sem nova consulta à VPS nesta sessão. **Não reaplicar. Nenhuma migration escrita permanece pendente.** Testar cancelamento e conclusão do login Google no iPhone instalado e no Android/navegador (P-42/P-43). [Pacote atualizado](implantacao-falha-login-google-2026-10-28.md).
 
+**Continuação de 29/10 — P-71 feita:** dono escolheu “agendamento” nas telas do cliente. Padronizados 26 textos do dicionário pt-BR em remarcação, cancelamento, avisos, link de acesso, contadores por barbearia e categoria da cópia de dados. Termos jurídicos/de privacidade e pontos reservados preservados; sem mudança de layout, regra, URL ou migration. Outros idiomas e verbos como “reservar” mantidos. P-71 deixa de ser decisão pendente.
+
 ## O que é o projeto
 
 App de agendamento e fidelidade **multiloja** para barbearias e salões, com uso principal no celular. Front em TanStack Start (React + Vite), Supabase auto-hospedado no Coolify e site publicado no Hostinger. Nasceu como protótipo do Lovable e foi reconstruído a partir de 14/09/2026. Resumo da trajetória: [guia/historico.md](guia/historico.md), seção 1.

@@ -137,3 +137,7 @@ Regra que vale daqui em diante: **abaixo de 768 px nada muda sem pedido**; mudan
 ## Complemento de 28/10/2026 — P-75
 
 Equipe e sociedade e Endereços usam navegação por assunto a partir de 768 px, mantendo formulários montados. Google Agenda resume a agenda escolhida e permite expandir as opções de cada direção. Celular preservado. Teclado, redimensionamento e estados conferidos com dados fictícios; Equipe em seis larguras, de 390 a 1536 px, inclusive 767/768. Comparação visual em 390 px: nenhuma diferença. Produção local sem erro de execução, chave crua ou rolagem lateral. Integrações reais e iPad/iPhone continuam em P-42/P-43. Registro completo no CONTINUIDADE de 28/10.
+
+## Complemento de 29/10/2026 — P-71
+
+Por decisão do dono, as telas do cliente em pt-BR passaram a usar “agendamento” nos títulos e avisos: remarcação, cancelamento, resumo, link de acesso, espera e contadores. Atualizadas também as descrições acessíveis correspondentes. Mantidos identidade, componentes, verbos como “reservar”, textos jurídicos/de privacidade e pontos reservados. Registro e validação no CONTINUIDADE de 29/10.
