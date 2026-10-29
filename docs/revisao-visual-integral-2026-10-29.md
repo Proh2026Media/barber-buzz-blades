@@ -1,4 +1,4 @@
-# Revisão visual integral — P-101 a P-105 (29/10/2026)
+# Revisão visual integral — P-101 a P-106 (29/10/2026)
 
 O dono considerou insuficientes as mudanças da P-100 e apontou páginas sem revisão. Esta entrega amplia a composição por tarefa e registra a cobertura por área. Implementação e verificação técnica não significam aprovação estética do dono.
 
@@ -154,6 +154,8 @@ O dono relatou partes quebradas e falta de responsividade na página de acesso d
 
 Cada par usa os mesmos dados fictícios e configurações. A ampliação é da fonte raiz; não representa todos os modos de zoom dos sistemas operacionais.
 
+**Retorno do dono em 29/10:** confirmou “resolvido” para Acessos. Essa confirmação é desta aba, sem presumir encerrada a revisão do sistema.
+
 ### Correções
 
 - **Papéis e barbearia:** grade de cartões pela largura disponível, tanto na faixa horizontal quanto na lateral do monitor. Rótulos podem quebrar linha; título e seletor se reorganizam pela largura relativa à fonte. Nome longo de loja não impõe largura ao campo.
@@ -173,3 +175,33 @@ Cada par usa os mesmos dados fictícios e configurações. A ampliação é da f
 - Matriz compartilhada em Ajustes → Equipe e sociedade → Pessoas e papéis conferida em celular e computador. Editor da tela de entrada aberto pelo admin também inspecionado em 390/768/1024/1366 px, sem alteração nesta rodada.
 
 Mesmas cores, fontes, superfícies, ícones e tokens dos três cantos; nenhum texto, papel, bloqueio de permissão, consulta ou regra de negócio foi alterado. Sem migration ou tarefa para TI. Navegador Chrome isolado com rede externa bloqueada; testes físicos/Safari e integrações reais continuam em P-42/P-43. Não representa encerramento da revisão de todo o sistema. Evidências extensas locais: `/tmp/barba-p105/`.
+
+## P-106 — Barbearias, ficha e janelas do admin
+
+Após o dono confirmar Acessos como resolvido e autorizar a próxima etapa, a revisão seguiu para **Admin → Barbearias**. Foram reproduzidos: coluna do nome praticamente sem largura com texto ampliado, cabeçalho encoberto pelos controles, ficha comprimida ao lado da lista e ficha reaparecendo sobre o convite ao voltar do PC para o celular.
+
+| Situação                                      | Antes                                         | Depois                                          |
+| --------------------------------------------- | --------------------------------------------- | ----------------------------------------------- |
+| Barbearias, 1536 × 768 px, fonte base em 200% | [Antes](evidencias/p106/barbearias-antes.png) | [Depois](evidencias/p106/barbearias-depois.png) |
+
+Mesmo estado e dados fictícios em cada imagem. A fonte raiz foi ampliada; não é uma afirmação sobre todos os modos de zoom de cada sistema.
+
+### Organização e continuidade
+
+- **Lista:** `ShopsPanel` reutiliza `useContainerWidth`; a tabela continua desde 1024 px quando há pelo menos 48rem de largura própria. Abaixo disso, os cartões existentes mantêm os nomes e os indicadores legíveis. Título, busca, filtros e ação principal cedem para linhas próprias conforme a largura útil.
+- **Ficha:** permanece montada ao mudar a fonte dentro da faixa de computador; quando falta espaço para duas áreas, fica abaixo da lista. No celular/tablet em pé continua em janela. Corpo da ficha, indicadores e ações ajustados também para texto muito ampliado em área estreita.
+- **Uma tarefa por vez:** ao abrir convite, personalização ou outra tarefa da ficha no celular/tablet, a ficha deixa de disputar a camada de janela. A loja permanece selecionada; ao fechar a tarefa, a ficha volta. Isso evita que a ficha se monte por cima do convite quando a largura retorna ao celular.
+- **Foco e rascunhos:** a ficha não toma o foco da tarefa aberta. O retorno do índice considera tanto a linha da tabela quanto o cartão selecionado. Busca, loja selecionada e dados de nome/e-mail nos formulários são conservados nas transições conferidas.
+- **Código:** `ShopsPanel.tsx`, `ShopDetail.tsx`, coordenação de janelas em `PlatformShell.tsx` e CSS em `styles/plataforma.css`. Mesmos componentes de dados e formulários, textos, temas, cantos, cores, consultas, regras, contratos e permissões.
+
+### Verificações e limites
+
+- `scripts/verificar.sh`: tipos, 301 testes, ESLint dos três arquivos TSX alterados, Prettier e montagem de produção aprovados.
+- Montagem final: seis fluxos completos em 390/768/1024/1920 px, mais fonte base em 200% em 1024 e 320 px. Busca, filtros, ordenação quando há tabela, seleção, ficha, campos de convite/criação e retorno de foco aprovados. Nenhuma criação ou envio executado.
+- Lista/ficha em 390/1024/1920 px; fonte base em 200% em 320/1024/1536 px; fluxos adicionais em 768 px e três modos de canto, incluindo tema escuro.
+- Duas capturas móveis padrão em 390 × 800 px — lista e ficha — estritamente idênticas às anteriores. Os ajustes móveis alcançam cortes e a disputa entre janelas durante tarefas.
+- Busca, limpar busca, filtro de suspensas, ordenação por nome quando há tabela, seleção por teclado, rolagem até as ações e retorno à lista com respostas fictícias na rota administrativa real.
+- Convite e nova barbearia: campos preenchidos preservados ao alternar entre 390 e 1024 px e voltar; ação de criar alcançável por rolagem. Nenhuma criação ou envio foi executado. A ficha continuou selecionada; troca da fonte não desmontou seu conteúdo no computador.
+- Personalização aberta pela ficha em 390/768/1024 px com uma janela de tarefa ativa. Modelos e regras da edição permanecem os existentes.
+
+Validação em Chrome isolado, com rede externa bloqueada e dados fictícios. Sem migration ou tarefa para TI; nenhum convite, conta ou barbearia real criado. Testes físicos/Safari e integrações reais continuam em P-42/P-43. Não encerra a revisão de todo o sistema. Evidências extensas locais: `/tmp/barba-p106/`.

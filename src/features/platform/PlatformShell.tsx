@@ -638,6 +638,9 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
               filter={shopFilter}
               onFilterChange={setShopFilter}
               selectedId={selectedShopId}
+              detailTaskOpen={
+                newShopOpen || inviteOpen || !!brandShop || !!testAsShopId || loginTourOpen
+              }
               onSelect={setSelectedShopId}
               highlightId={highlightId}
               onNewShop={openNewShop}

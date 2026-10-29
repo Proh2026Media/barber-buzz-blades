@@ -10,7 +10,7 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 - Situação: **pendente**, **feito — falta aplicar no banco**, **a decidir** (depende do dono), **não confirmado** (não deu para conferir daqui).
 - Cada item foi conferido no código e nas migrations em 12/10/2026. As linhas citadas são dessa data.
 - **Papéis da equipe no banco × nomes na tela:** `owner` e `partner` = **Dono** (sócio; `partner` é o nome antigo e aparece igual), `associate` = **Parceiro**, `employee` = **Contratado** ([roles-model.ts](../../src/features/shop/roles-model.ts); rótulos em `pt-BR.ts`). `shop_admin` é o papel antigo de `memberships`, que pode existir sem vínculo de equipe (CONTINUIDADE, onda 1 de 09/10).
-- Último id usado: **P-105**.
+- Último id usado: **P-106**.
 
 **Índice**
 
@@ -22,7 +22,7 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 6. [Testes manuais com contas reais](#6-testes-manuais-com-contas-reais) (P-40 a P-43)
 7. [Dívida técnica](#7-dívida-técnica) (P-44 a P-48, P-51, P-52, P-55, P-63 a P-65, P-72, P-75 e P-78)
 8. [Ideias futuras](#8-ideias-futuras) (P-49, P-50 e P-54)
-9. [Interface por dispositivo: o que ficou](#9-interface-por-dispositivo-o-que-ficou) (P-79 a P-98 e P-100 a P-105)
+9. [Interface por dispositivo: o que ficou](#9-interface-por-dispositivo-o-que-ficou) (P-79 a P-98 e P-100 a P-106)
 
 ---
 
@@ -679,4 +679,11 @@ Escolha consultada ao dono em 24/10; sem resposta nesta rodada, mantidas as jane
 - **Relato:** partes quebradas ou não responsivas no acesso do admin.
 - **Corrigido:** cartões sobrepostos na lateral, título/seletor com texto ampliado, matriz por largura útil, lista/tabela de gerentes e botões de alterações não salvas. Mesmas permissões, estados e identidade.
 - **Evidência:** quatro imagens e verificações na seção P-105 de [revisao-visual-integral-2026-10-29.md](../revisao-visual-integral-2026-10-29.md). Início móvel em 320/390 px idêntico; fluxos administrativos com dados fictícios e componente compartilhado conferidos.
-- **Limites:** Chrome isolado; nenhuma alteração real de vínculo ou permissão. P-42/P-43 e avaliação do dono continuam. Sem migration ou tarefa para TI; não encerra a revisão de todo o sistema.
+- **Limites:** Chrome isolado; nenhuma alteração real de vínculo ou permissão. Resolução de Acessos confirmada pelo dono em 29/10; os testes físicos e integrações de P-42/P-43 continuam. Sem migration ou tarefa para TI; não encerra a revisão de todo o sistema.
+
+### P-106 — Barbearias e ficha do admin pela largura útil · feito em 29/10/2026 (ChatGPT/Codex)
+
+- **Continuação:** dono confirmou a resolução de Acessos da P-105 e autorizou avançar.
+- **Entregue:** lista/tabela e cabeçalho ajustados pela largura em rem; ficha sem compressão; cortes com fonte ampliada corrigidos; uma tarefa por vez conserva seleção e campos ao redimensionar.
+- **Evidência e validação:** seção P-106 de [revisao-visual-integral-2026-10-29.md](../revisao-visual-integral-2026-10-29.md), com duas imagens comparativas, referências móveis, filtros/ordenação e formulários com respostas fictícias.
+- **Limites:** nenhuma criação ou convite real. P-42/P-43 seguem; não declara encerrada a revisão geral. Mesma identidade, regras e permissões; sem migration ou tarefa para TI.

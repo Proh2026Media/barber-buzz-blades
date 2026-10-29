@@ -161,3 +161,7 @@ Correção dos defeitos reproduzidos após relato do dono: nome longo encoberto 
 ## P-105 — Acessos da administração (29/10/2026)
 
 Cartões de papéis sem sobreposição na lateral, seletor separado do título quando falta espaço, matriz e gerentes pela largura útil em rem, ações de gerentes visíveis e barra de salvar ajustada em área estreita. Mesmo estilo, três cantos e regras de permissão. Capturas iniciais móveis preservadas; fluxos com dados fictícios e componente compartilhado conferidos. Comparações e limites na seção P-105 de [revisao-visual-integral-2026-10-29.md](revisao-visual-integral-2026-10-29.md).
+
+## P-106 — Barbearias e ficha do admin (29/10/2026)
+
+Após a confirmação do dono de que Acessos foi resolvido: lista e ficha de Barbearias pela largura útil, nome/cabeçalho legíveis com texto ampliado, ações sem corte e uma tarefa de janela por vez, mantendo seleção e campos. Identidade e regras preservadas. Duas capturas móveis padrão idênticas; comparações e limites na seção P-106 de [revisao-visual-integral-2026-10-29.md](revisao-visual-integral-2026-10-29.md).

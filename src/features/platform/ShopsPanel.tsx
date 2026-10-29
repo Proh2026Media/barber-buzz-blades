@@ -1,5 +1,5 @@
 import { WorkspaceHeaderAction, WorkspaceHeading } from "@/components/visual/WorkspaceHeader";
-import { useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ChevronRight,
@@ -30,6 +30,7 @@ import {
 import type { Tables } from "@/integrations/supabase/types";
 import { useDevice, useViewportAtLeast } from "@/lib/device";
 import { useStickyWhenFits } from "@/lib/use-sticky-when-fits";
+import { useContainerWidth } from "@/lib/use-container-width";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { ShopDetail, type ShopModule } from "./ShopDetail";
@@ -68,6 +69,8 @@ type ShopsPanelProps = {
   filter: ShopFilter;
   onFilterChange: (filter: ShopFilter) => void;
   selectedId: string | null;
+  /** Evita reabrir a ficha sobre uma tarefa iniciada nela ao redimensionar. */
+  detailTaskOpen?: boolean;
   onSelect: (shopId: string | null) => void;
   /** Barbearia recém-criada: fica realçada por alguns segundos. */
   highlightId?: string | null;
@@ -100,6 +103,7 @@ export function ShopsPanel({
   filter,
   onFilterChange,
   selectedId,
+  detailTaskOpen = false,
   onSelect,
   highlightId,
   onNewShop,
@@ -113,10 +117,34 @@ export function ShopsPanel({
 }: ShopsPanelProps) {
   const { t, intlLocale } = useI18n();
   const wide = useViewportAtLeast(1024);
-  // Desde 1024, tabela para comparar lojas; ao selecionar, índice compacto e ficha ampla.
+  const [measurePanel, widthRem] = useContainerWidth<HTMLDivElement>();
+  const workspaceRef = useRef<HTMLDivElement>(null);
+  const selectedForFocus = useRef<string | null>(null);
+  const panelRef = useCallback(
+    (element: HTMLDivElement | null) => {
+      workspaceRef.current = element;
+      measurePanel(element);
+    },
+    [measurePanel],
+  );
+  useEffect(() => {
+    if (selectedId) selectedForFocus.current = selectedId;
+  }, [selectedId]);
+  const focusSelectedShop = () => {
+    const marker = workspaceRef.current?.querySelector<HTMLElement>(
+      `[data-shop-id="${selectedForFocus.current}"]`,
+    );
+    const target = marker?.closest<HTMLElement>("tr, button");
+    target?.focus();
+    return Boolean(target);
+  };
+  // Desde 1024, tabela quando há largura útil; ao selecionar, índice compacto e ficha ampla.
   // No tablet em pé e no celular, a ficha permanece em janela.
   const device = useDevice();
-  const table = wide;
+  const table = wide && widthRem >= 48;
+  const preserveTaskFocus = (event: Event) => {
+    if (detailTaskOpen || focusSelectedShop()) event.preventDefault();
+  };
   const headingId = useId();
   // A ficha ao lado da lista só fica fixa quando cabe inteira na altura; se não cabe, rola com
   // a página (antes rolava por dentro, sem barra visível no Mac, e escondia o fim da ficha).
@@ -261,6 +289,7 @@ export function ShopsPanel({
       cell: (row) => (
         <span
           className="flex min-w-0 items-center gap-3"
+          data-shop-id={row.shop.id}
           data-selected={selectedId === row.shop.id ? "true" : undefined}
         >
           <ShopLogo name={row.shop.name} seed={row.shop.id} logo={logos[row.shop.id]} />
@@ -339,7 +368,7 @@ export function ShopsPanel({
   ];
 
   return (
-    <div className="space-y-4">
+    <div ref={panelRef} className="plat-shops-workspace space-y-4">
       {/* Título de página no padrão do app (ícone dourado solto + h2), com a ação ao lado. A
           partir de 768 px a busca e os filtros entram na mesma linha (CSS em plataforma.css). */}
       <div className="plat-shops-head grid gap-4">
@@ -413,6 +442,7 @@ export function ShopsPanel({
             ) : table ? (
               <DataList
                 className="plat-shops-table"
+                tableFrom={0}
                 rows={tableRows}
                 rowKey={(row) => row.shop.id}
                 columns={tableColumns}
@@ -431,15 +461,16 @@ export function ShopsPanel({
                       <button
                         type="button"
                         onClick={() => onSelect(shop.id)}
+                        data-shop-id={shop.id}
                         aria-current={isSelected ? "true" : undefined}
                         className={cn(
-                          "flex min-h-16 w-full items-center gap-3 rounded-2xl border bg-card px-3 py-3 text-left transition hover:border-primary/40",
+                          "plat-shop-card flex min-h-16 w-full items-center gap-3 rounded-2xl border bg-card px-3 py-3 text-left transition hover:border-primary/40",
                           isSelected ? "border-primary ring-2 ring-primary/20" : "border-border",
                           highlightId === shop.id && "ring-4 ring-[color:var(--tone-success-line)]",
                         )}
                       >
                         <ShopLogo name={shop.name} seed={shop.id} logo={logos[shop.id]} />
-                        <span className="min-w-0 flex-1 space-y-1">
+                        <span className="plat-shop-summary min-w-0 flex-1 space-y-1">
                           <span className="block break-words text-sm font-bold leading-snug">
                             {shop.name}
                           </span>
@@ -505,12 +536,8 @@ export function ShopsPanel({
                   type="button"
                   className="mb-3 inline-flex min-h-11 items-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold"
                   onClick={() => {
-                    const row =
-                      asideRef.current?.previousElementSibling?.querySelector<HTMLElement>(
-                        'tr:has([data-selected="true"])',
-                      );
                     onSelect(null);
-                    requestAnimationFrame(() => row?.focus());
+                    requestAnimationFrame(focusSelectedShop);
                   }}
                 >
                   <ArrowLeft className="size-4" aria-hidden />
@@ -531,23 +558,32 @@ export function ShopsPanel({
       )}
 
       {!wide && (
-        <Dialog open={Boolean(selected)} onOpenChange={(open) => !open && onSelect(null)}>
+        <Dialog
+          open={Boolean(selected) && !detailTaskOpen}
+          onOpenChange={(open) => !open && !detailTaskOpen && onSelect(null)}
+        >
           {device === "celular" ? (
             <DialogContent
               aria-describedby={undefined}
-              className="bottom-0 top-auto max-h-[92dvh] w-full max-w-lg translate-y-0 gap-0 overflow-hidden rounded-t-3xl rounded-b-none border-border bg-card p-0 data-[state=closed]:slide-out-to-bottom-4 data-[state=open]:slide-in-from-bottom-4 sm:bottom-auto sm:top-[50%] sm:translate-y-[-50%] sm:rounded-3xl"
+              onCloseAutoFocus={preserveTaskFocus}
+              className="plat-shop-dialog bottom-0 top-auto max-h-[92dvh] w-full max-w-lg translate-y-0 gap-0 overflow-hidden rounded-t-3xl rounded-b-none border-border bg-card p-0 data-[state=closed]:slide-out-to-bottom-4 data-[state=open]:slide-in-from-bottom-4 sm:bottom-auto sm:top-[50%] sm:translate-y-[-50%] sm:rounded-3xl"
             >
               <DialogTitle className="flex min-h-14 items-center gap-2 border-b border-border px-5 pr-14 text-base font-bold">
                 <Store className="size-4 shrink-0 text-gold" aria-hidden />
                 <span className="truncate">{t("plat.shops.sheetTitle")}</span>
               </DialogTitle>
-              <div className="max-h-[calc(92dvh-3.5rem)] overflow-y-auto overscroll-contain p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+              <div className="plat-shop-aside max-h-[calc(92dvh-3.5rem)] overflow-y-auto overscroll-contain p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
                 {detail}
               </div>
             </DialogContent>
           ) : (
             // Tablet em pé (768–1023): janela centrada, larga, com a ficha em blocos.
-            <DialogContent size="lg" aria-describedby={undefined} className="bg-card">
+            <DialogContent
+              size="lg"
+              aria-describedby={undefined}
+              onCloseAutoFocus={preserveTaskFocus}
+              className="plat-shop-dialog bg-card"
+            >
               <DialogHeader>
                 <DialogTitle className="flex min-h-11 items-center gap-2 pr-12 text-lg font-bold">
                   <Store className="size-5 shrink-0 text-gold" aria-hidden />

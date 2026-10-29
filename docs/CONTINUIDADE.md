@@ -107,6 +107,13 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## Entrega — P-106: Barbearias e ficha pela largura útil (29/10, ChatGPT/Codex)
+
+- **Continuação autorizada:** dono confirmou Acessos como resolvido e pediu a próxima etapa. A revisão seguiu para a lista/ficha de Barbearias, sem refazer a P-105.
+- **Corrigido:** tabela sem largura para o nome com fonte ampliada; título encoberto; ficha comprimida; cortes em área estreita; ficha reabrindo sobre o convite ao voltar do PC para o celular. `ShopsPanel` reutiliza a largura em rem; ficha fica abaixo do índice quando não cabe ao lado; tarefas abertas controlam a janela da ficha sem limpar a seleção.
+- **Preservado:** mesma identidade, cantos, textos, dados, regras e permissões. Busca/seleção e campos das janelas continuam nas transições verificadas. Duas capturas padrão de celular idênticas.
+- **Verificação e limites:** tipos, 301 testes, ESLint, formatação e montagem aprovados; seis fluxos completos no pacote compilado. Matrizes, filtros/ordenação, rolagem, campos ao redimensionar e personalização na seção P-106 de [revisao-visual-integral-2026-10-29.md](revisao-visual-integral-2026-10-29.md), com duas imagens comparativas. Chrome isolado, sem criação ou convite real. Sem migration/TI; aparelhos físicos e integrações reais continuam em P-42/P-43.
+
 ## Entrega — P-105: responsividade de Acessos no admin (29/10, ChatGPT/Codex)
 
 - **Defeitos reproduzidos:** cartões de papéis sobrepostos no monitor largo; seletor sobre o título com fonte ampliada; matriz comprimida; gerentes com nome longo alargando cartões e tabela cortando a ação de remover. Botões de salvar também ultrapassavam a área estreita com texto ampliado.

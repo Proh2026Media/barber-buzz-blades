@@ -238,6 +238,7 @@ export function ShopDetail({
           as="h4"
           icon={Users}
           title={t("plat.shop.people")}
+          className="plat-shop-people-heading"
           aside={
             <button
               type="button"

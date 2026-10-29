@@ -2,8 +2,8 @@
    celular abaixo de 768 px preservado. Regras históricas abaixo são refinadas pelas composições da área. */
 /* Plataforma (onda 8): CSS de tablet e computador do painel da plataforma (Início, Barbearias,
    Acessos, Relatórios e janelas). Carregado depois de src/styles.css por src/dispositivos.css.
-   Regra de ouro: abaixo de 768 px nada muda; tudo aqui fica atrás de @media (min-width: 768px)
-   ou maior (docs/dispositivos-2026-10-21.md, seções 6 e 7). */
+   A composição móvel é preservada; as exceções em área estreita corrigem conteúdo cortado
+   (docs/dispositivos-2026-10-21.md, seções 6 e 7). */
 
 /* Indicadores em uma régua de consulta; distribuição e análises usam duas colunas abaixo. */
 @media (min-width: 1024px) {
@@ -112,7 +112,7 @@
    números, módulos e atalhos ficam à esquerda e as pessoas à direita; suspender/reativar no
    fim, sempre à vista. */
 .plat-shop-aside {
-  container-type: inline-size;
+  container: shop-detail / inline-size;
 }
 /* Ao lado da lista, a ficha fica fixa só quando cabe na altura (useStickyWhenFits em
    src/features/platform/ShopsPanel.tsx); se não cabe, rola com a página, sem rolagem interna. */
@@ -461,4 +461,100 @@
 }
 .account-managers .app-data-list-table td {
   overflow-wrap: anywhere;
+}
+
+/* Barbearias: colunas e cabeçalho consideram a fonte e a largura da área de trabalho. */
+.plat-shops-workspace {
+  container: platform-shops / inline-size;
+  min-width: 0;
+}
+@media (min-width: 768px) {
+  @container platform-shops (max-width: 48rem) {
+    .plat-shops-head {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas: "title" "tools";
+    }
+    .plat-shops-head > .plat-shops-title {
+      display: flex;
+      grid-area: title;
+    }
+    .plat-shops-head > .plat-shops-title > h2 {
+      min-width: 0;
+      white-space: normal;
+    }
+    .plat-shops-head > .plat-shops-tools {
+      flex-wrap: wrap;
+      justify-content: flex-start;
+    }
+    .plat-shops-head .plat-shops-search {
+      flex: 1 1 12rem;
+      min-width: 0;
+      max-width: min(20rem, 100%);
+    }
+    .plat-shops-layout:has(> .plat-shop-aside) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+}
+/* Uma fonte muito ampliada no celular pede uma linha por controle, mantendo os rótulos. */
+@container platform-shops (max-width: 14rem) {
+  .plat-shops-title {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .plat-shops-title > h2 {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .plat-shops-title > button {
+    grid-column: 1 / -1;
+    min-width: 0;
+    white-space: normal;
+  }
+  .plat-shops-tools [role="radiogroup"] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .plat-shops-tools [role="radiogroup"] button,
+  .plat-shops-tools [role="radiogroup"] button > span {
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+
+.plat-shops-layout > ul,
+.plat-shop-dialog > *,
+.plat-shop-dialog .plat-shop-detail {
+  min-width: 0;
+}
+@container platform-shops (max-width: 14rem) {
+  .plat-shop-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+  .plat-shop-card > .plat-shop-summary {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .plat-shop-summary span {
+    overflow-wrap: anywhere;
+  }
+}
+
+@container shop-detail (max-width: 16rem) {
+  .plat-shop-stats {
+    grid-template-columns: minmax(0, 1fr);
+    overflow-wrap: anywhere;
+  }
+  .plat-shop-people-heading > :last-child {
+    max-width: 100%;
+  }
+  .plat-shop-detail button {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
 }
