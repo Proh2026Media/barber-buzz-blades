@@ -1,6 +1,6 @@
 # Leia primeiro — Barba & Cabelo
 
-Porta de entrada para o agente que vai continuar o projeto (Cursor, Claude Code, Codex e outros). Atualizado em **28/10/2026**.
+Porta de entrada para o agente que vai continuar o projeto (Cursor, Claude Code, Codex e outros). Atualizado em **29/10/2026**.
 
 **Passagem do dia (24/10/2026):** o dono passa a continuar o projeto no ChatGPT. Leia antes [passagem-chatgpt-2026-10-24.md](passagem-chatgpt-2026-10-24.md). As passagens anteriores ([21/10, Claude Code aplicativo](passagem-claude-code-app-2026-10-21.md); [15/10](passagem-claude-2026-10-15.md)) ficam como histórico.
 
@@ -28,9 +28,11 @@ Porta de entrada para o agente que vai continuar o projeto (Cursor, Claude Code,
 
 **Continuação de 28/10 — P-72:** demonstração com serviços, preços e durações por profissional; condições compartilhadas por escolha do cliente, grade, painel e lista de espera. Bruno: corte de 45 min/R$ 55; Rafa: barba de 30 min/R$ 65; Dani sem barba. Reservas e remarcações conservam os valores correspondentes. Sem migration ou tarefa para o TI. P-42/P-43 continuam dependendo de aparelhos/integrações reais; P-95 permanece fora por alterar o celular.
 
-**Continuação de 28/10 — fechamento das pendências executáveis:** P-44 (recarga de componentes sem avisos), P-45 (idiomas sob demanda), P-48 (testes da guarda e banco local) e P-75 (painéis de assuntos e Google compacto em tablet/computador). P-78 pronta no código, **nº 98 ainda não aplicada**: [pacote do agente da VPS](implantacao-falha-login-google-2026-10-28.md). Celular preservado; P-95 não autorizada por conflitar com essa orientação. Próximos passos são a nº 98, Google Cloud/verificação (P-69/P-28), testes reais (P-42/P-43) e decisões de produto/jurídicas. Detalhes e limites no topo de [guia/pendencias.md](guia/pendencias.md) e no CONTINUIDADE. Não reaplicar a nº 97.
+**Continuação de 28/10 — fechamento das pendências executáveis:** P-44 (recarga de componentes sem avisos), P-45 (idiomas sob demanda), P-48 (testes da guarda e banco local) e P-75 (painéis de assuntos e Google compacto em tablet/computador). P-78 com código e **nº 98 aplicada em 28/10, 19:17 (Brasília)**, conforme relatório recebido em 29/10: [pacote do agente da VPS](implantacao-falha-login-google-2026-10-28.md). Celular preservado; P-95 não autorizada por conflitar com essa orientação. Próximos passos são Google Cloud/verificação (P-69/P-28), testes reais (P-42/P-43) e decisões de produto/jurídicas. Detalhes e limites no topo de [guia/pendencias.md](guia/pendencias.md) e no CONTINUIDADE. Não reaplicar a nº 97.
 
-**Publicação confirmada — P-99 (28/10, 18:57:47 Brasília):** o site público passou a servir a entrega `34310f5`, após origin e espelho atualizados. Conferido por HTTP, pacote principal 1.124.849 bytes com idiomas separados. Não há ação adicional de Hostinger; falta a nº 98 na VPS e os testes reais. [Registro](implantacao-falha-login-google-2026-10-28.md#publicação-na-hostinger-confirmada-p-99).
+**Publicação confirmada — P-99 (28/10, 18:57:47 Brasília):** o site público passou a servir a entrega `34310f5`, após origin e espelho atualizados. Conferido por HTTP, pacote principal 1.124.849 bytes com idiomas separados. Não há ação adicional de Hostinger; a nº 98 também foi aplicada às 19:17; faltam os testes reais. [Registro](implantacao-falha-login-google-2026-10-28.md#publicação-na-hostinger-confirmada-p-99).
+
+**Registro de 29/10 — P-78 aplicada:** relatório do agente Claude confirma a nº 98 em produção desde **28/10/2026, 19:17:07–19:17:10 (Brasília)**, com backup, 18 PASS/ROLLBACK e permissões esperadas. Hashes do relatório conferem com o repositório; sem nova consulta à VPS nesta sessão. **Não reaplicar. Nenhuma migration escrita permanece pendente.** Testar cancelamento e conclusão do login Google no iPhone instalado e no Android/navegador (P-42/P-43). [Pacote atualizado](implantacao-falha-login-google-2026-10-28.md).
 
 ## O que é o projeto
 

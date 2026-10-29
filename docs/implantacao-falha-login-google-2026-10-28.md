@@ -1,6 +1,10 @@
 # Implantação — aviso de falha no login Google (P-78, 28/10/2026)
 
-**Preparado e testado localmente; ainda não aplicado na VPS.** A migration nº 98 acrescenta somente um canal temporário para a janela do Google avisar o app instalado quando o login for cancelado ou recusado. O site permanece compatível com as 97 migrations anteriores: sem a nº 98, conserva a espera atual até expirar. Não há Edge function, Restart/Redeploy ou alteração de conta, agendamento e regra de acesso.
+**Aplicado em produção em 28/10/2026, 19:17:07–19:17:10 (Brasília), pelo agente Claude na VPS**, segundo `relatorio-claude-2026-10-28.md` entregue pelo dono em 29/10. **Não reaplicar.** Este roteiro fica como histórico e recuperação; testes físicos continuam pendentes.
+
+**Registro da execução:** commit `09f65f5d15c3010a339bc92144b6ecb11c7d0786`; três SHA-256 iguais aos listados abaixo (reconferidos nos arquivos locais em 29/10); container saudável; backup `/root/backup-barba-p78-20261028-221625.dump`, 1,3 MB, catálogo legível, SHA-256 `b17e05cb0a5fd60f25f29cb142c4c5f8511a635c47d9179204358c8830d32c63`; cópia no ambiente do executor em `/workspace/barba-20261028/backup/backup-barba-p78-20261028-221625.dump`, com o mesmo hash. Ensaio com **18 PASS**, ROLLBACK e nenhum FAIL/ERROR/FATAL; tabela continuou ausente após o ensaio. Aplicação transacional sem erro; conferências finais `t`, `f|f`, `t|t`, `f|f`. Sem Restart/Redeploy, mudança de configuração, alteração de dados de clientes ou uso da reversão. A ponte PKCE permaneceu intacta. Este registro se baseia no relatório, não em nova consulta à VPS.
+
+A migration nº 98 acrescenta somente um canal temporário para a janela do Google avisar o app instalado quando o login for cancelado ou recusado. O site permanece compatível com as 97 migrations anteriores: sem a nº 98, conserva a espera atual até expirar. Não há Edge function, Restart/Redeploy ou alteração de conta, agendamento e regra de acesso.
 
 ## Publicação na Hostinger confirmada (P-99)
 
@@ -8,7 +12,7 @@
 
 Código no commit `34310f54800c21fe1cd6a4767f764ed5e24a0026`, confirmado no origin e no espelho. Fluxos concluídos: [aviso ao hub](https://github.com/Proh2026Media/barber-buzz-blades/actions/runs/40775651947) e [espelho](https://github.com/PROH-Media/hub-control/actions/runs/40775661283). Às 18:56 o site ainda servia o pacote anterior; nova consulta confirmou a atualização às 18:57. P-99 encerrada, sem mudança de configuração ou publicação manual.
 
-**Não há ação adicional de Hostinger neste pacote.** A aplicação da migration nº 98 na VPS e os testes físicos abaixo continuam pendentes. A conferência foi por HTTP público; o painel da hospedagem não foi acessado.
+**Não há ação adicional de Hostinger neste pacote.** A migration nº 98 foi aplicada às 19:17, conforme o registro acima; somente os testes físicos abaixo continuam pendentes. A conferência foi por HTTP público; o painel da hospedagem não foi acessado.
 
 ## Arquivos e resultado local
 

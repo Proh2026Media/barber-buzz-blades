@@ -6,7 +6,7 @@
 
 **15/10/2026 (noite) — passagem concluída no Claude Code:** ver a entrada "Passagem de 15/10" logo abaixo da Diretriz. Comece por [LEIA-PRIMEIRO.md](LEIA-PRIMEIRO.md). A função `register-shop` da P-38 foi publicada às 22:54; faltam os pacotes do Google (P-69 e P-28, em [pacotes/](pacotes/)).
 
-Atualizado em **24/10/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
+Atualizado em **29/10/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
 ## Comece aqui
 
@@ -107,16 +107,25 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## Entrega — registro da P-78 aplicada em produção (29/10, ChatGPT/Codex)
+
+- **O que:** registrada a aplicação da migration nº 98 (`20261028190000_falha_login_google`) pelo agente Claude em **28/10/2026, 19:17:07–19:17:10 (Brasília)**. O app instalado pode receber o aviso de cancelamento/recusa do Google sem aguardar a expiração. Nenhuma migration escrita pendente; não reaplicar.
+- **Fonte:** `relatorio-claude-2026-10-28.md`, entregue pelo dono em 29/10. Não foram executadas as instruções do anexo nem feita nova consulta à VPS; a execução remota é a relatada pelo agente. Conferidos localmente os três SHA-256, todos iguais ao relatório e ao pacote.
+- **Execução relatada:** clone do origin no commit `09f65f5d15c3010a339bc92144b6ecb11c7d0786`, container saudável, pré-checagens corretas. Backup `/root/backup-barba-p78-20261028-221625.dump`, 1,3 MB, catálogo legível; cópia no ambiente do executor, ambas com hash `b17e05cb0a5fd60f25f29cb142c4c5f8511a635c47d9179204358c8830d32c63`.
+- **Ensaio e aplicação relatados:** 18 PASS, ROLLBACK, nenhum FAIL/ERROR/FATAL e tabela ainda ausente após o ensaio. Aplicação com `psql -1` sem erro. RLS ativa, sem SELECT direto por anon/authenticated, funções acessíveis ao visitante e argumentos nulos recusados: `t`, `f|f`, `t|t`, `f|f`. NOTIFY enviado ao PostgREST; ponte PKCE preservada. Sem Restart/Redeploy, mudança de `.env`/Coolify ou alteração de dados de clientes. Reversão não utilizada.
+- **Onde:** atualizados LEIA-PRIMEIRO, pendências, inventário do banco e [pacote de implantação](implantacao-falha-login-google-2026-10-28.md). Só documentação; código e SQL permanecem iguais.
+- **Pendente:** testar cancelar e concluir o login Google no iPhone instalado, Android instalado e navegador comum (P-42/P-43). Implantação concluída não equivale a teste físico aprovado. Pacotes do Google Cloud (P-69/P-28) e decisões do dono permanecem separados.
+
 ## Entrega — fechamento técnico e ajustes por dispositivo (28/10, ChatGPT/Codex)
 
-**Publicação confirmada:** código `34310f54800c21fe1cd6a4767f764ed5e24a0026` no origin e espelho; aviso ao hub e espelhamento aprovados. Consulta pública às **18:57:47 de Brasília** confirmou `index-BP2IQdEN.js` (1.124.849 bytes), com a mensagem nova e idiomas separados. Antes, às 18:56, ainda servia `index-BTymmIdv.js` (1.878.319 bytes); foi registrado um diagnóstico provisório (P-99), encerrado após a nova consulta. Redução pública aproximada: 40,1%. Nenhuma configuração da hospedagem alterada; painel não acessado. **Somente a nº 98 permanece pendente de implantação desta entrega.**
+**Publicação confirmada:** código `34310f54800c21fe1cd6a4767f764ed5e24a0026` no origin e espelho; aviso ao hub e espelhamento aprovados. Consulta pública às **18:57:47 de Brasília** confirmou `index-BP2IQdEN.js` (1.124.849 bytes), com a mensagem nova e idiomas separados. Antes, às 18:56, ainda servia `index-BTymmIdv.js` (1.878.319 bytes); foi registrado um diagnóstico provisório (P-99), encerrado após a nova consulta. Redução pública aproximada: 40,1%. Nenhuma configuração da hospedagem alterada; painel não acessado. **Situação naquele momento:** nº 98 ainda pendente; aplicada às 19:17, conforme o registro de 29/10 acima.
 
 Pedido: concluir as pendências executáveis, preservando celular e identidade. P-44, P-45, P-48 e a parte de tablet/computador da P-75 concluídas. P-78 pronta para implantação pelo agente da VPS, sem aplicar banco remoto nesta sessão.
 
 - **Interface (P-75):** Equipe e sociedade e Endereços com navegação por assunto desde 768 px. Formulários continuam montados ao trocar de assunto; atalhos de pessoas/aprovações abrem o painel correspondente. Google Agenda resume a agenda escolhida, permite trocá-la e recolhe as opções de cada direção de sincronização. Celular mantém a apresentação anterior. Cores, fontes, modos de canto e permissões preservados.
 - **Idiomas (P-45):** pt-BR no pacote inicial, outros idiomas sob demanda. Escolha só é salva depois do carregamento; falha mantém idioma anterior e orienta recarregar. Router aguarda os dicionários antes da hidratação e servidor traduz páginas legais por `?lang=`. Exemplos do seletor não importam os cinco dicionários.
 - **Manutenção (P-44/P-48):** oito módulos de dados/regras separados dos componentes para recarga rápida sem avisos. Guarda profissional isolada das consultas para testar equipe, cliente, ausência de sessão e motivos de recusa. Teste SQL de privacidade passou como `postgres`, dispensando exceção no executor. Campo de senha de cadastro conferido em 360 px: sem corte, nenhuma alteração necessária.
-- **Login Google (P-78):** marcador temporário de falha em canal separado da ponte PKCE, dez minutos, consumo único e limite de 500. Cliente mantém compatibilidade com banco antigo e falha de rede. Migration nº 98, teste e reversão no [pacote do agente da VPS](implantacao-falha-login-google-2026-10-28.md). **Ainda não aplicada em produção.**
+- **Login Google (P-78):** marcador temporário de falha em canal separado da ponte PKCE, dez minutos, consumo único e limite de 500. Cliente mantém compatibilidade com banco antigo e falha de rede. Migration nº 98, teste e reversão no [pacote do agente da VPS](implantacao-falha-login-google-2026-10-28.md). **Naquela entrega ainda não aplicada; aplicada às 19:17 de 28/10, conforme registro de 29/10 acima.**
 
 **Verificações:** 301 testes Node aprovados. PostgreSQL local com as 97 migrations anteriores mais a nº 98 em transações desfeitas: **1.139 PASS, 0 FAIL/ERROR**, dos quais 18 novos. Aplicação repetida e reversão verificadas. Navegador com respostas fictícias e tráfego de produção bloqueado: painéis em 390/768/1280, troca por teclado e redimensionamento, Google com agenda selecionada; comparação de Equipe em 390 px antes/depois com **zero pixels diferentes**. Cadastro 360 px sem rolagem lateral, erro de console ou chave crua. Páginas legais nos cinco idiomas (20 combinações), troca de idioma e falha no download conferidas. Endereços usa o mesmo componente de painéis; domínio e redirecionamento reais não foram alterados/testados na VPS.
 
@@ -124,7 +133,7 @@ Pedido: concluir as pendências executáveis, preservando celular e identidade. 
 
 **Montagem e qualidade:** `scripts/verificar.sh` passou em tipos, 301 testes, eslint, prettier e montagem de produção. `eslint src supabase/functions` separadamente: **0 erros, 0 avisos**. Maior `index-*.js` passou de **1.823.215 para 1.069.740 bytes (−41,3%)**; gzip medido de 527.860 para 317.770 bytes. ShopShell: 539.569 → 542.045 bytes, pequeno aumento pelos controles novos. A montagem ainda avisa sobre chunks acima de 500 kB; este trabalho retirou os idiomas do download inicial, sem alegar que toda otimização possível foi concluída.
 
-**Limites restantes:** nº 98 pelo agente da VPS; P-69/P-28 no Google Cloud e vídeo de verificação; P-42/P-43 com contas reais e aparelhos físicos, incluindo PWA no iPhone. P-14 segue opcional e depende de teste de login nos três domínios. P-95 e simplificações adicionais no celular continuam fora por conflitarem com a preservação do mobile. Decisões do dono e revisão jurídica da seção 5 de pendencias.md não foram presumidas. `.env` local não alterado nem incluído na entrega. Nenhuma cobrança, permissão ou regra de negócio nova.
+**Limites registrados naquela entrega (nº 98 aplicada posteriormente às 19:17):** P-69/P-28 no Google Cloud e vídeo de verificação; P-42/P-43 com contas reais e aparelhos físicos, incluindo PWA no iPhone. P-14 segue opcional e depende de teste de login nos três domínios. P-95 e simplificações adicionais no celular continuam fora por conflitarem com a preservação do mobile. Decisões do dono e revisão jurídica da seção 5 de pendencias.md não foram presumidas. `.env` local não alterado nem incluído na entrega. Nenhuma cobrança, permissão ou regra de negócio nova.
 
 ## Entrega — P-72: serviços por profissional na demonstração (28/10, ChatGPT/Codex)
 

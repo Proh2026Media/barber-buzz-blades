@@ -28,9 +28,9 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 
 ## 1. Próximas ações externas e decisões
 
-**P-99 concluída:** publicação na Hostinger confirmada por HTTP público em 28/10 às 18:57:47, após o espelhamento. A próxima ação de implantação é somente a migration nº 98 na VPS.
+**P-99 concluída:** publicação na Hostinger confirmada por HTTP público em 28/10 às 18:57:47, após o espelhamento. A nº 98 também foi aplicada em 28/10 às 19:17, conforme relatório recebido em 29/10; não há migration escrita pendente.
 
-Atualizada em 28/10/2026: código executável de P-44, P-45, P-48 e P-75 concluído; P-78 preparada, falta aplicar a migration nº 98 pelo agente da VPS. Pacote: [implantacao-falha-login-google-2026-10-28.md](../implantacao-falha-login-google-2026-10-28.md). Os itens abaixo dependem de acesso externo, aparelhos ou decisão de produto.
+Atualizada em 29/10/2026: código executável de P-44, P-45, P-48 e P-75 concluído; P-78 aplicada na VPS em 28/10, 19:17 (Brasília), segundo relatório do agente Claude. Pacote: [implantacao-falha-login-google-2026-10-28.md](../implantacao-falha-login-google-2026-10-28.md). Os itens abaixo dependem de acesso externo, aparelhos ou decisão de produto.
 
 | Ordem | Itens      | O quê                                                                    | Por quê                                                                                                                                                                                                   |
 | ----- | ---------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -265,7 +265,7 @@ Situação dos três: **feito — aplicado em 13/10/2026 (15:12, horário de Bra
 
 ### P-99 — Confirmar publicação na Hostinger · feito em 28/10/2026
 
-Às 18:56, o site ainda mostrava pacote anterior apesar do espelho atualizado; às **18:57:47**, nova consulta HTTP confirmou `/assets/index-BP2IQdEN.js`, 1.124.849 bytes, com o texto novo e idiomas separados. Nenhuma configuração alterada. Código `34310f5`; aviso ao hub e espelho aprovados. Registro no [pacote](../implantacao-falha-login-google-2026-10-28.md#publicação-na-hostinger-confirmada-p-99). Nº 98 continua pendente no banco, separadamente.
+Às 18:56, o site ainda mostrava pacote anterior apesar do espelho atualizado; às **18:57:47**, nova consulta HTTP confirmou `/assets/index-BP2IQdEN.js`, 1.124.849 bytes, com o texto novo e idiomas separados. Nenhuma configuração alterada. Código `34310f5`; aviso ao hub e espelho aprovados. Registro no [pacote](../implantacao-falha-login-google-2026-10-28.md#publicação-na-hostinger-confirmada-p-99). Nº 98 aplicada depois, às 19:17, conforme relatório recebido em 29/10.
 
 ### Operação do servidor (sem migration)
 
@@ -470,9 +470,9 @@ Feitas em 16/10/2026: Ajustes → Agendamento um item por vez, editor de mensage
 
 Os itens de Google Agenda, Equipe e sociedade e Endereços foram concluídos em 28/10 para tablet e computador. A sugestão equivalente no celular continua opcional, sem implementação.
 
-### P-78 — Login Google no iPhone: desistência no Google · código pronto; falta aplicar nº 98
+### P-78 — Login Google no iPhone: desistência no Google · feito — aplicado em 28/10/2026 (19:17, Brasília)
 
-Em 28/10, cliente e canal de falha separados da ponte PKCE, com consumo único, validade de dez minutos e teto próprio de 500 marcadores. Compatível com banco antigo e indisponibilidade de rede. Teste SQL novo com 18 PASS; bateria completa 1.139 PASS. Aplicação na VPS e teste no iPhone ainda pendentes. Pacote com backup, ensaio e reversão: [implantacao-falha-login-google-2026-10-28.md](../implantacao-falha-login-google-2026-10-28.md). Diagnóstico original abaixo.
+Em 28/10, cliente e canal de falha separados da ponte PKCE, com consumo único, validade de dez minutos e teto próprio de 500 marcadores. Compatível com banco antigo e indisponibilidade de rede. Teste SQL novo com 18 PASS; bateria completa 1.139 PASS. Aplicação na VPS concluída em 28/10, 19:17:07–19:17:10, conforme relatório recebido em 29/10: backup, 18 PASS/ROLLBACK, hashes e privilégios esperados. Não reaplicar. Testes físicos de cancelamento e conclusão no iPhone e Android/navegador continuam pendentes (P-42/P-43). Pacote com backup, ensaio e reversão: [implantacao-falha-login-google-2026-10-28.md](../implantacao-falha-login-google-2026-10-28.md). Diagnóstico original abaixo.
 
 Quando a pessoa cancela ou o Google recusa o login, a janela por cima do app mostra "Não deu para concluir o login", mas o app instalado continua em "Termine o login na janela do Google" até a pessoa tocar **Cancelar** ou passarem 10 minutos (não há como a janela avisar o app de uma falha: a ponte só aceita código de login de verdade, conferido em `auth.flow_state`). Para avisar na hora: guardar um marcador de falha por id, com limite próprio contra enchimento. Levantado na revisão de código de 16/10/2026.
 
