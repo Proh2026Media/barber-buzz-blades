@@ -174,7 +174,7 @@ function HubRow({
   onClick: () => void;
 }) {
   return (
-    <div className="py-1">
+    <div className="ajustes-assunto-item py-1">
       <button
         type="button"
         onClick={onClick}

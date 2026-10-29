@@ -1,31 +1,16 @@
-import { useContext, type ReactNode, type HTMLAttributes } from "react";
-import { createPortal } from "react-dom";
-import { useViewportAtLeast } from "@/lib/device";
-import { WorkspaceHeaderContext } from "./workspace-header-context";
+import { type ReactNode, type HTMLAttributes } from "react";
 
-/** Casca sem elementos extras: mantém o div original e fornece o destino da ação. */
-export function WorkspaceFrame({
-  actionTarget,
-  children,
-  ...props
-}: HTMLAttributes<HTMLDivElement> & { actionTarget: HTMLDivElement | null }) {
-  return (
-    <WorkspaceHeaderContext.Provider value={actionTarget}>
-      <div {...props}>{children}</div>
-    </WorkspaceHeaderContext.Provider>
-  );
+/** Mantém uma única casca e o estado das seções ao redimensionar. */
+export function WorkspaceFrame({ children, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return <div {...props}>{children}</div>;
 }
 
-/** O mesmo controle e suas permissões: no computador, a ação passa para o cabeçalho. */
+/** A ação permanece junto ao título e aos controles da tarefa em todas as larguras. */
 export function WorkspaceHeaderAction({ children }: { children: ReactNode }) {
-  const target = useContext(WorkspaceHeaderContext);
-  const desktop = useViewportAtLeast(1280);
-  return desktop && target ? createPortal(children, target) : children;
+  return children;
 }
 
-/** O título da seção passa a ser mostrado pela casca apenas no computador. */
+/** O título pertence ao conteúdo da tarefa; o cabeçalho global identifica a loja. */
 export function WorkspaceHeading({ children }: { children: ReactNode }) {
-  const target = useContext(WorkspaceHeaderContext);
-  const desktop = useViewportAtLeast(1280);
-  return desktop && target ? null : children;
+  return children;
 }

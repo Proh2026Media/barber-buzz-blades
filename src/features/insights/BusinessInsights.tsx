@@ -224,8 +224,8 @@ export function BusinessInsights({
     <section
       className={
         embedded
-          ? "space-y-3"
-          : "@container space-y-3 rounded-2xl border border-primary/20 bg-card p-4"
+          ? "business-insights space-y-3"
+          : "business-insights @container space-y-3 rounded-2xl border border-primary/20 bg-card p-4"
       }
       aria-label={t("ins.biz.aria")}
     >

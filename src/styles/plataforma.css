@@ -1,10 +1,12 @@
+/* P-101 (29/10/2026): composições de computador compacto desde 1024 px;
+   celular abaixo de 768 px preservado. Regras históricas abaixo são refinadas pelas composições da área. */
 /* Plataforma (onda 8): CSS de tablet e computador do painel da plataforma (Início, Barbearias,
    Acessos, Relatórios e janelas). Carregado depois de src/styles.css por src/dispositivos.css.
    Regra de ouro: abaixo de 768 px nada muda; tudo aqui fica atrás de @media (min-width: 768px)
    ou maior (docs/dispositivos-2026-10-21.md, seções 6 e 7). */
 
 /* Indicadores em uma régua de consulta; distribuição e análises usam duas colunas abaixo. */
-@media (min-width: 1280px) {
+@media (min-width: 1024px) {
   .plat-dash-metrics {
     gap: 0;
     padding: 0.5rem;
@@ -81,7 +83,7 @@
 }
 
 /* ---------- Barbearias: tabela (≥ 1280) com a linha aberta realçada ---------- */
-@media (min-width: 1280px) {
+@media (min-width: 1024px) {
   .plat-shops-table table {
     table-layout: fixed;
   }
@@ -179,7 +181,7 @@
     grid-area: growth;
   }
 }
-@media (min-width: 1280px) {
+@media (min-width: 1024px) {
   .plat-dash-blocks {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1fr);
     grid-template-areas: "segment ranking growth";
@@ -309,7 +311,7 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
-@media (min-width: 1280px) {
+@media (min-width: 1024px) {
   .plat-shops-layout:not(:has(> .plat-shop-aside)) :is(th, td)[data-col="created"] {
     display: table-cell;
   }
@@ -355,5 +357,42 @@
   }
   .plat-shops-table tr:has([data-selected="true"]) td {
     background: color-mix(in oklab, var(--primary) 8%, var(--card));
+  }
+}
+
+@media (min-width: 1024px) {
+  .platform-reports-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(18rem, 0.7fr);
+    gap: 1.5rem;
+    align-items: start;
+  }
+  .platform-reports-grid > * {
+    margin: 0;
+    min-width: 0;
+  }
+  .platform-reports-grid > .business-insights {
+    grid-column: 1 / -1;
+  }
+  .plat-perm-tiers ol {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+  .plat-perm-tiers ol > li {
+    margin: 0;
+    align-content: start;
+  }
+}
+
+@media (min-width: 1024px) {
+  .platform-reports .business-insights-tiles {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+  .platform-reports .business-insights-tiles > :first-child {
+    grid-column: span 2;
+  }
+  .platform-reports .business-insights-tiles > * {
+    min-width: 0;
   }
 }

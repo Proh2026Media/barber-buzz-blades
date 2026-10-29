@@ -107,6 +107,14 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## Entrega — P-101: revisão integral após retorno do dono (29/10, ChatGPT/Codex)
+
+- **Retorno:** o dono não percebeu melhora significativa na P-100 e apontou páginas sem aplicação. A P-100 foi uma implementação técnica, não uma aprovação estética.
+- **O que:** composições das áreas desde 1024 px, ação/título junto da tarefa e retirada do portal do cabeçalho; Conta com seção selecionada e formulários montados; Pontos com faixa de membro e áreas de prêmios/extrato; Esportes em duas listas; Avisos compactos; Agenda com acompanhamento lateral; Ajustes como navegação ligada à edição; Clube com menu próprio; relatórios e página pública recompostos.
+- **Cobertura e prova visual:** [revisao-visual-integral-2026-10-29.md](revisao-visual-integral-2026-10-29.md), com inventário, oito imagens de antes/depois, matrizes, fluxos e limites. Acesso/cadastro/documentos foram inspecionados e mantidos onde já tinham composição adequada. Não equivale a mudar todo arquivo ou testar todas as combinações de dados reais.
+- **Preservação:** textos, identidade, temas, cantos, regras, dados e permissões mantidos. Celular conserva a composição anterior; Conta mostra todos os painéis nessa faixa. Nenhuma migration. Nenhuma tarefa para TI.
+- **Verificações:** tipos, 301 testes, lint, formatação e montagem; 70 estados de PC, matrizes móvel/tablet/escuro/amplo e componentes de Clube/domínio/senha isolados. Seleção, foco, rascunho e fluxo de agendar/remarcar/cancelar com dados fictícios. P-42/P-43 e aprovação visual do dono permanecem abertas.
+
 ## Entrega — P-100: composição própria para computador (29/10, ChatGPT/Codex)
 
 - **Pedido do dono:** a versão para PC ainda parecia uma adaptação quebrada do celular, com espaços vazios, proporções e alinhamentos ruins. Esta entrega recompõe o computador; não trata a aprovação das entregas anteriores como aprovação visual do dono.

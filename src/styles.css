@@ -4264,22 +4264,13 @@ body:has(.arena-workspace) .entry-code input:not(#entry-code-x):focus {
   }
 }
 
-/* P-83: loja | seção | ação e conta; celular e tablet mantêm o cabeçalho anterior. */
+/* Computador: identidade e utilidades globais; título e ação ficam junto da tarefa. */
 @media (min-width: 1280px) {
   .arena-workspace .workspace-header-grid {
     display: grid;
-    grid-template-columns: 14rem minmax(8rem, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     column-gap: 2rem;
     align-items: center;
-  }
-  .arena-workspace .workspace-header-title {
-    margin: 0;
-    min-width: 0;
-    font-size: 1.25rem;
-    font-weight: 700;
-    line-height: 1.25;
-    overflow-wrap: anywhere;
-    color: inherit;
   }
   /* O seletor da demo já oferece os mesmos perfis em menu: cabe junto à ação e à conta. */
   .workspace-header-actions .app-demo-slot-desktop {
@@ -4291,17 +4282,6 @@ body:has(.arena-workspace) .entry-code input:not(#entry-code-x):focus {
   }
   .workspace-header-actions {
     min-width: 0;
-  }
-  .workspace-header-primary {
-    flex-shrink: 0;
-    min-width: 0;
-    max-width: 22rem;
-  }
-  .workspace-header-primary:empty {
-    display: none;
-  }
-  .workspace-header-primary > button {
-    margin-inline: 0;
   }
   .workspace-section-title:empty {
     display: none;

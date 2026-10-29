@@ -1,9 +1,11 @@
+/* P-101 (29/10/2026): composições de computador compacto desde 1024 px;
+   celular abaixo de 768 px preservado. Regras históricas abaixo são refinadas pelas composições da área. */
 /* Serviços e Equipe (onda 4): CSS de tablet e computador desta área (docs/dispositivos-2026-10-21.md,
    seção 6). Regra de ouro: abaixo de 768 px nada muda; toda regra fica atrás de @media.
    Marcação: src/features/shop/catalog/{CatalogCard,ServicesTab,TeamTab}.tsx. */
 
 /* Busca, modo de exibição e resultados pertencem à mesma área de consulta no computador. */
-@media (min-width: 1280px) {
+@media (min-width: 1024px) {
   .catalog-workspace:has(> .catalog-table) > .catalog-toolbar {
     margin-block-end: 0;
     padding: 1rem;

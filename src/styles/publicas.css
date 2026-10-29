@@ -189,3 +189,65 @@
     box-shadow: 0 8px 24px rgb(0 0 0 / 0.22);
   }
 }
+
+/* Equipe e serviços podem ser comparados; funcionamento não reserva uma coluna vazia. */
+@media (min-width: 1024px) {
+  .shop-landing.brand-page .shop-public-body {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2rem;
+  }
+  .shop-landing.brand-page .shop-public-body > main {
+    display: contents;
+  }
+  .shop-landing.brand-page .shop-public-body > main > section {
+    margin: 0;
+    min-width: 0;
+  }
+  .shop-landing.brand-page .shop-public-body > main > section > ul {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .shop-landing.brand-page .shop-public-body > aside {
+    grid-column: 1 / -1;
+    position: static;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+  }
+  .shop-landing.brand-page .shop-public-body > aside > .public-card {
+    display: none;
+  }
+  .shop-landing.brand-page .public-sticky-bar {
+    display: block;
+    inset: auto 1.5rem 1.5rem auto;
+    width: min(25rem, calc(100vw - 3rem));
+    border: 1px solid var(--border);
+    border-radius: var(--panel-radius);
+    box-shadow: 0 12px 32px rgb(0 0 0 / 18%);
+  }
+  .shop-landing.brand-page .public-week {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    gap: 0.5rem;
+  }
+}
+@media (min-width: 1440px) {
+  .shop-landing.brand-page .shop-public-body > main > section:first-child > ul {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .shop-landing.brand-page .shop-public-body > main > section[aria-labelledby="landing-about"] {
+    grid-row: 3;
+    grid-column: 1 / -1;
+  }
+  .shop-landing.brand-page .shop-public-body > main > footer {
+    grid-row: 4;
+    grid-column: 1 / -1;
+  }
+  .shop-landing.brand-page .shop-public-body > aside {
+    grid-row: 2;
+  }
+  .shop-landing.brand-page .shop-public-body > aside:empty {
+    display: none;
+  }
+}

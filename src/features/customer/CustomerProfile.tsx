@@ -2,7 +2,7 @@ import { PrivacyCenter } from "@/features/insights/PrivacyCenter";
 import { DataRights } from "@/features/insights/DataRights";
 import { ChangePasswordCard } from "@/features/auth/ChangePasswordCard";
 import { LanguageSettingsCard } from "@/components/LanguageSettingsCard";
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import {
   ChevronDown,
   FolderLock,
@@ -38,6 +38,7 @@ import { useDemo } from "@/features/demo/context";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { LOCALE_NATIVE_NAMES, t as tNow, useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { useViewportAtLeast } from "@/lib/device";
 
 import { customerShopHref, type CustomerShop } from "./shop-choice";
 
@@ -112,6 +113,16 @@ export function CustomerProfile({
   const [whats, setWhats] = useState<WhatsappStatus | null>(null);
   const [privacyCount, setPrivacyCount] = useState<{ on: number; total: number } | null>(null);
   const [languageOpen, setLanguageOpen] = useState(false);
+  const desktop = useViewportAtLeast(1024);
+  const [activeSection, setActiveSection] = useState<string>(SECTION.whatsapp);
+  const openSection = useCallback(
+    (id: string) => {
+      setActiveSection(id);
+      if (desktop) window.requestAnimationFrame(() => jumpTo(id));
+      else jumpTo(id);
+    },
+    [desktop],
+  );
   const editNameRef = useRef<HTMLButtonElement>(null);
   const returnNameFocus = useRef(false);
 
@@ -126,8 +137,8 @@ export function CustomerProfile({
   useEffect(() => {
     if (!focusWhatsapp || loading || error || whatsappFocused.current) return;
     whatsappFocused.current = true;
-    window.setTimeout(() => jumpTo(SECTION.whatsapp), 50);
-  }, [focusWhatsapp, loading, error]);
+    window.setTimeout(() => openSection(SECTION.whatsapp), 50);
+  }, [focusWhatsapp, loading, error, openSection]);
 
   // Só foca depois que o botão voltou à tela e saiu do "ocupado" (botão desativado não recebe foco).
   useEffect(() => {
@@ -284,7 +295,7 @@ export function CustomerProfile({
       ),
       onClick: () => {
         setLanguageOpen(true);
-        window.setTimeout(() => jumpTo(SECTION.language), 50);
+        window.setTimeout(() => openSection(SECTION.language), 50);
       },
     },
     {
@@ -319,6 +330,7 @@ export function CustomerProfile({
   return (
     <section
       aria-labelledby={`${uid}-title`}
+      data-profile-section={activeSection}
       // Tablet (768+): identidade e índice das seções numa coluna de 15rem à esquerda, fixa ao
       // rolar (a da direita fica com a largura do celular); computador (1024+): 20rem. Celular:
       // tudo empilhado, como sempre.
@@ -347,7 +359,7 @@ export function CustomerProfile({
           <div className="app-action-card space-y-4 p-4 sm:p-5">
             {/* Tablet em pé (768–1023): a coluna tem 15rem e o avatar fica acima do nome, senão
                 o e-mail quebra no meio; no celular e a partir de 1024 px, lado a lado. */}
-            <div className="flex items-start gap-3 tablet:flex-col lg:flex-row">
+            <div className="customer-profile-identity flex items-start gap-3 tablet:flex-col lg:flex-row">
               {/* Iniciais só do nome (sem o "(demo)" da demonstração). */}
               <PersonAvatar
                 name={(name || email || "?").replace(/\s*\([^)]*\)\s*/g, " ").trim() || "?"}
@@ -456,7 +468,7 @@ export function CustomerProfile({
                   <button
                     type="button"
                     className={chipClass}
-                    onClick={() => jumpTo(SECTION.whatsapp)}
+                    onClick={() => openSection(SECTION.whatsapp)}
                   >
                     <StatusBadge {...whatsBadge} />
                   </button>
@@ -468,7 +480,7 @@ export function CustomerProfile({
                   className={chipClass}
                   onClick={() => {
                     setLanguageOpen(true);
-                    window.setTimeout(() => jumpTo(SECTION.language), 50);
+                    window.setTimeout(() => openSection(SECTION.language), 50);
                   }}
                 >
                   <StatusBadge
@@ -483,7 +495,7 @@ export function CustomerProfile({
                   <button
                     type="button"
                     className={chipClass}
-                    onClick={() => jumpTo(SECTION.privacy)}
+                    onClick={() => openSection(SECTION.privacy)}
                   >
                     <StatusBadge
                       tone="neutral"
@@ -502,7 +514,7 @@ export function CustomerProfile({
                 title={t("conta.whats.consequence")}
                 action={{
                   label: t("conta.attention.confirmWhats"),
-                  onClick: () => jumpTo(SECTION.whatsapp),
+                  onClick: () => openSection(SECTION.whatsapp),
                 }}
               />
             )}
@@ -517,7 +529,9 @@ export function CustomerProfile({
                 <li key={item.id}>
                   <button
                     type="button"
-                    onClick={item.onClick ?? (() => jumpTo(item.id))}
+                    onClick={item.onClick ?? (() => openSection(item.id))}
+                    aria-current={desktop && activeSection === item.id ? "page" : undefined}
+                    aria-controls={item.id}
                     className="flex min-h-11 w-full items-center gap-3 rounded-xl px-2 py-1.5 text-left text-sm font-semibold transition hover:bg-muted/60"
                   >
                     <IconTile icon={item.icon} size="sm" />
@@ -534,8 +548,8 @@ export function CustomerProfile({
         )}
       </div>
 
-      {/* Coluna das seções: o que se usa mais primeiro; o raro (senha, sair) por último. */}
-      <div className="space-y-5">
+      {/* Mesmos painéis montados: no computador, o índice escolhe a seção visível. */}
+      <div className="customer-profile-panels space-y-5">
         {/* Reserva o lugar do WhatsApp enquanto carrega (a página não pula). */}
         {loading && <LoadingState variant="cards" count={1} hideLabel />}
         {!loading && !error && (

@@ -493,13 +493,11 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
     { id: "permissions" as const, label: t("plat.tabs.permissions"), icon: KeyRound },
     { id: "insights" as const, label: t("plat.tabs.insights"), icon: BarChart3 },
   ];
-  const [headerActionTarget, setHeaderActionTarget] = useState<HTMLDivElement | null>(null);
   const activeNavIndex = navItems.findIndex((item) => item.id === platformTab);
   const accountName = profile.profile?.full_name || profile.user.email || t("plat.account.role");
 
   return (
     <WorkspaceFrame
-      actionTarget={headerActionTarget}
       className={`arena-workspace platform-workspace min-h-screen bg-background text-foreground ${brandFontScopeClass(demoBrandSettings?.font_scope)} ${brandCornerClass(demoBrandSettings?.corner_style)} ${demoBrandSettings?.floating_chrome ? "brand-chrome-floating" : ""}`}
       style={brandStyle ? (brandStyle as CSSProperties) : undefined}
     >
@@ -519,11 +517,8 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
             {demoMode || demoChrome ? t("plat.header.titleDemo") : t("plat.header.title")}
           </h1>
         </div>
-        <h2 className="workspace-header-title hidden pc:block">
-          {navItems.find((item) => item.id === platformTab)?.label}
-        </h2>
+
         <div className="workspace-header-actions flex shrink-0 items-center gap-2 sm:gap-3">
-          <div ref={setHeaderActionTarget} className="workspace-header-primary hidden pc:flex" />
           <ThemeToggle />
           {headerActions}
           {demoMode || demoChrome ? (
@@ -593,7 +588,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
           )}
 
           {platformTab === "insights" && (
-            <div className="space-y-6">
+            <div className="platform-reports space-y-6">
               <div className="workspace-section-title app-section-title">
                 <WorkspaceHeading>
                   <BarChart3 aria-hidden />
@@ -603,7 +598,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
               {/* Pilha na largura toda em todas as faixas: a coluna lateral de 22rem ficava só com
                   "Pedidos de privacidade" (3 linhas) e 90% vazia, enquanto os 6 tiles do
                   acompanhamento se espremiam em 2 ou 3 colunas. */}
-              <div className="space-y-6">
+              <div className="platform-reports-grid space-y-6">
                 <BusinessInsights />
                 <SurveyCatalog />
                 <DataRights admin />

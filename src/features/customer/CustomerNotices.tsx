@@ -235,7 +235,7 @@ export function CustomerNotices({
     .map(({ entry }) => entry);
 
   return (
-    <div className="space-y-3">
+    <div className="customer-notices space-y-3">
       {waiting.error && <Notice tone="danger" title={waiting.error} />}
       {sorted.length === 0 ? (
         <EmptyState

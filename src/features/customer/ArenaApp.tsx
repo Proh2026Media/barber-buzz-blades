@@ -2712,7 +2712,6 @@ function ArenaApp({
     },
     ...(sportsTab ? [{ id: "esportes" as const, icon: Trophy, label: t("nav.sports") }] : []),
   ];
-  const [headerActionTarget, setHeaderActionTarget] = useState<HTMLDivElement | null>(null);
   const activeNavIndex = navItems.findIndex((item) => item.id === navTabFor(tab));
   useLayoutEffect(() => {
     const nav = navRef.current;
@@ -2937,7 +2936,6 @@ function ArenaApp({
 
   return (
     <WorkspaceFrame
-      actionTarget={headerActionTarget}
       className={`arena-workspace customer-workspace bg-background text-foreground font-sans selection:bg-primary/20 transition-colors duration-300 ${brandFontScopeClass(shopSettings.font_scope)} ${brandCornerClass(shopSettings.corner_style)} ${shopSettings.floating_chrome ? "brand-chrome-floating" : ""}`}
       style={brandStyle as React.CSSProperties}
     >
@@ -3125,19 +3123,8 @@ function ArenaApp({
             )}
           </div>
         </div>
-        <h2 className="workspace-header-title hidden pc:block">
-          {tab === "perfil"
-            ? t("nav.myAccount")
-            : tab === "notifications"
-              ? t("nav.notices")
-              : tab === "pontos"
-                ? t("points.title")
-                : tab === "agenda" && rescheduleTitle
-                  ? t("booking.titleReschedule")
-                  : navItems.find((item) => item.id === tab)?.label}
-        </h2>
+
         <div className="workspace-header-actions flex shrink-0 items-center gap-1 max-[359px]:gap-0.5 sm:gap-2">
-          <div ref={setHeaderActionTarget} className="workspace-header-primary hidden pc:flex" />
           {device === "computador" && tab !== "agenda" && !noShop && (
             <button
               type="button"
@@ -4023,7 +4010,7 @@ function ArenaApp({
 
           {tab === "notifications" && (
             // Lista de leitura: até 60rem no computador (a aba usa a largura larga da casca).
-            <div className="space-y-5 tablet:max-w-[60rem]">
+            <div className="customer-notices-page space-y-5 tablet:max-w-[60rem]">
               <CustomerPageHeader
                 icon={Bell}
                 title={t("nav.notices")}

@@ -141,3 +141,7 @@ Equipe e sociedade e Endereços usam navegação por assunto a partir de 768 px,
 ## Complemento de 29/10/2026 — P-71
 
 Por decisão do dono, as telas do cliente em pt-BR passaram a usar “agendamento” nos títulos e avisos: remarcação, cancelamento, resumo, link de acesso, espera e contadores. Atualizadas também as descrições acessíveis correspondentes. Mantidos identidade, componentes, verbos como “reservar”, textos jurídicos/de privacidade e pontos reservados. Registro e validação no CONTINUIDADE de 29/10.
+
+## P-101 — revisão integral de computador (29/10/2026)
+
+O retorno do dono sobre a P-100 não foi uma aprovação visual. A revisão seguinte inclui inventário por tela, mudanças de composição e antes/depois preservados no repositório: [revisao-visual-integral-2026-10-29.md](revisao-visual-integral-2026-10-29.md). O relatório distingue telas recompostas, composições adequadas mantidas, componentes isolados com dados fictícios e limites da validação. Preservados celular, identidade, temas e cantos. Testes físicos e avaliação estética do dono não são presumidos.

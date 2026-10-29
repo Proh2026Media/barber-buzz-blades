@@ -541,7 +541,7 @@ export function ShopLandingView({
 
       <div
         className={cn(
-          "mx-auto max-w-3xl px-4 py-8",
+          "shop-public-body mx-auto max-w-3xl px-4 py-8",
           // Corpo em duas colunas a partir de 1024 px: conteúdo | horários e agendar (fixos ao
           // rolar). No tablet em pé (768–1023) fica em coluna única, com equipe e serviços em
           // duas colunas: a lateral de 22rem ficava só com o horário e 1.500 px vazios.

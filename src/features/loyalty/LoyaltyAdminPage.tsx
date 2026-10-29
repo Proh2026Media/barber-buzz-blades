@@ -292,7 +292,9 @@ export function LoyaltyAdminPage({
 
       <main
         className={
-          embedded ? "loyalty-admin-content space-y-5" : "mx-auto max-w-3xl space-y-5 p-4 pb-10"
+          embedded
+            ? "loyalty-admin-content space-y-5"
+            : "loyalty-admin-content mx-auto max-w-3xl space-y-5 p-4 pb-10"
         }
       >
         {!shop ? (
@@ -333,7 +335,7 @@ export function LoyaltyAdminPage({
         ) : program ? (
           <>
             {/* Resumo do clube: o essencial à vista, e o que pede ação (resgates) leva direto à aba. */}
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="loyalty-admin-stats grid grid-cols-2 gap-2 sm:grid-cols-4">
               <StatTile
                 icon={Star}
                 label={t("loyalty.admin.stat.perVisit")}
@@ -363,7 +365,7 @@ export function LoyaltyAdminPage({
               />
             </div>
             <nav
-              className="grid grid-cols-2 gap-1 rounded-2xl border border-border bg-card p-1 sm:grid-cols-4"
+              className="loyalty-admin-nav grid grid-cols-2 gap-1 rounded-2xl border border-border bg-card p-1 sm:grid-cols-4"
               aria-label={t("loyalty.admin.partsLabel")}
             >
               {parts.map(({ id, label, icon: Icon }) => (

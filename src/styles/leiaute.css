@@ -1,3 +1,5 @@
+/* P-101 (29/10/2026): composições de computador compacto desde 1024 px;
+   celular abaixo de 768 px preservado. Regras históricas abaixo são refinadas pelas composições da área. */
 /* Primitivas de leiaute por dispositivo (src/components/visual/CardGrid, SplitLayout,
    MasterDetail, FormGrid e DataList). Carregado depois de src/styles.css por
    src/dispositivos.css (na raiz de src). Regra de ouro: abaixo de 768 px nada muda em relação ao celular;
@@ -93,7 +95,7 @@
     overscroll-behavior: contain;
   }
 }
-@media (min-width: 1280px) {
+@media (min-width: 1024px) {
   .app-master-detail {
     grid-template-columns: var(--md-list-wide, 22rem) minmax(0, 1fr);
   }
@@ -273,14 +275,18 @@
 
 /* Superfícies contínuas do computador usam os mesmos tokens dos cartões de leitura.
    O escopo por largura preserva as superfícies originais de celular e tablet. */
-@media (min-width: 1280px) {
+@media (min-width: 1024px) {
   .arena-workspace
     :is(
       #agenda-list,
       .ajustes-detalhe,
+      .ajustes-lista,
       .catalog-workspace > .catalog-toolbar,
       .customer-booking-choices,
-      .plat-dash-metrics
+      .plat-dash-metrics,
+      .sports-groups > section,
+      .customer-reservation-group,
+      .customer-notices > ul
     ) {
     --card: #f7f5f0;
     --app-elevated: #f7f5f0;
@@ -307,9 +313,13 @@
     :is(
       #agenda-list,
       .ajustes-detalhe,
+      .ajustes-lista,
       .catalog-workspace > .catalog-toolbar,
       .customer-booking-choices,
-      .plat-dash-metrics
+      .plat-dash-metrics,
+      .sports-groups > section,
+      .customer-reservation-group,
+      .customer-notices > ul
     )
     .text-gold {
     color: var(--brand-accent-readable, var(--gold));
@@ -318,9 +328,13 @@
     :is(
       #agenda-list,
       .ajustes-detalhe,
+      .ajustes-lista,
       .catalog-workspace > .catalog-toolbar,
       .customer-booking-choices,
-      .plat-dash-metrics
+      .plat-dash-metrics,
+      .sports-groups > section,
+      .customer-reservation-group,
+      .customer-notices > ul
     )
     .text-primary {
     color: var(--brand-primary-readable, var(--primary));

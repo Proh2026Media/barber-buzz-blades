@@ -127,7 +127,7 @@ export function SportsBoard({
     );
 
   return (
-    <div className="space-y-5">
+    <div className="customer-sports space-y-5">
       <div className="app-section-title flex-wrap">
         <Trophy aria-hidden />
         <h2 className="min-w-0 flex-1">{t("conta.sports.title")}</h2>
@@ -166,8 +166,10 @@ export function SportsBoard({
               { value: "nba", label: "NBA", count: counts.nba },
             ]}
           />
-          {group(t("conta.sports.liveNow"), live)}
-          {group(t("conta.sports.ended"), ended)}
+          <div className="sports-groups space-y-5">
+            {group(t("conta.sports.liveNow"), live)}
+            {group(t("conta.sports.ended"), ended)}
+          </div>
         </>
       )}
     </div>

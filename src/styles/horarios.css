@@ -1,3 +1,5 @@
+/* P-101 (29/10/2026): composições de computador compacto desde 1024 px;
+   celular abaixo de 768 px preservado. Regras históricas abaixo são refinadas pelas composições da área. */
 /* Horários (onda 5): CSS de tablet e computador desta área (docs/dispositivos-2026-10-21.md,
    seção 6). Regra de ouro: abaixo de 768 px nada muda; toda regra fica atrás de @media.
    Marcação: src/features/shop/hours/{HoursTab,WeekCard,BlocksCard,BlockDialog}.tsx. */
@@ -60,7 +62,7 @@
 /* Computador (≥ 1280 px): "Sua semana" como tabela compacta. Entre 1024 e 1279 a coluna da
    semana tem ~420 px e a barra do dia ficava com ~105 px (régua "9h 12h 15h 18h" espremida):
    nessa faixa vale o formato do tablet (horário em cima, barra embaixo). */
-@media (min-width: 1280px) {
+@media (min-width: 1024px) {
   /* "Sua semana" como tabela compacta: dia · horário · barra · lápis · aberto, numa linha de
      ~48 px por dia; editar continua abrindo a janela do dia. */
   .hours-week-list .hours-day-button {
@@ -102,7 +104,7 @@
 }
 
 /* Computador (≥ 1280 px): os dias com bloqueio em duas colunas. */
-@media (min-width: 1280px) {
+@media (min-width: 1024px) {
   .hours-busy-days {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
@@ -210,7 +212,7 @@
     margin-top: 0.25rem;
   }
 }
-@media (min-width: 1280px) {
+@media (min-width: 1024px) {
   .hours-grid[data-week-first] {
     grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
   }

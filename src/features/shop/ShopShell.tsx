@@ -1899,7 +1899,6 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     if (id === "configuracoes") return canOpenSettings;
     return true;
   });
-  const [headerActionTarget, setHeaderActionTarget] = useState<HTMLDivElement | null>(null);
   const activeNavIndex = shopNavItems.findIndex((item) => item.id === tab);
 
   const brandStyle = settings
@@ -1916,7 +1915,6 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
 
   return (
     <WorkspaceFrame
-      actionTarget={headerActionTarget}
       className={`arena-workspace min-h-screen bg-background text-foreground ${brandFontScopeClass(settings?.font_scope)} ${brandCornerClass(settings?.corner_style)} ${settings?.floating_chrome ? "brand-chrome-floating" : ""}`}
       style={brandStyle ? (brandStyle as CSSProperties) : undefined}
     >
@@ -1995,15 +1993,8 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
               </>
             )}
           </div>
-          <h2 className="workspace-header-title hidden pc:block">
-            {!pendingEntry && acting.kind !== "none"
-              ? tab === "servicos" && powers.ownCatalog
-                ? t("shop.nav.myServices")
-                : shopNavItems.find((item) => item.id === tab)?.label
-              : null}
-          </h2>
+
           <div className="workspace-header-actions flex shrink-0 items-center gap-1.5 sm:gap-2">
-            <div ref={setHeaderActionTarget} className="workspace-header-primary hidden pc:flex" />
             <ThemeToggle />
             {headerActions}
             {/* Na demonstração a visão Plataforma e a saída ficam no frasco e no menu da conta. */}
