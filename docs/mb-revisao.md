@@ -173,3 +173,7 @@ Indicadores, lista/prévia dos questionários e painel de privacidade pela largu
 ## P-108 — Início da administração e WhatsApp (31/10/2026)
 
 Ranking com espaço de leitura e cartões de resumo/crescimento com altura própria. Indicadores, atalhos e janela do WhatsApp consideram a largura em rem; instruções não ficam encobertas, títulos, avisos e confirmação de desconexão se ajustam em área extrema e imagem mantém proporção. Mesma identidade, três cantos e regras; celular preservado. Filtros, teclado, recuperação e sequência do código exercitados com respostas locais fictícias. Comparações e limites na seção P-108 de [revisao-visual-integral-2026-10-29.md](revisao-visual-integral-2026-10-29.md).
+
+## P-109 — Agenda da loja e atendimento (31/10/2026)
+
+Agenda, formulário de agendar cliente e diretório pela largura útil em rem. Corrigidos navegação cortada, resumo comprimindo a lista, campos sobrepostos e ações sem espaço; título e avisos reorganizados em área extrema. Rascunho/horário mantidos, contratado sem seletor de outra agenda e duas referências móveis idênticas. Mesmas regras, dados e identidade. Comparações e limites na seção P-109 de [revisao-visual-integral-2026-10-29.md](revisao-visual-integral-2026-10-29.md).

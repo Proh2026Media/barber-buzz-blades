@@ -10,7 +10,7 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 - Situação: **pendente**, **feito — falta aplicar no banco**, **a decidir** (depende do dono), **não confirmado** (não deu para conferir daqui).
 - Cada item foi conferido no código e nas migrations em 12/10/2026. As linhas citadas são dessa data.
 - **Papéis da equipe no banco × nomes na tela:** `owner` e `partner` = **Dono** (sócio; `partner` é o nome antigo e aparece igual), `associate` = **Parceiro**, `employee` = **Contratado** ([roles-model.ts](../../src/features/shop/roles-model.ts); rótulos em `pt-BR.ts`). `shop_admin` é o papel antigo de `memberships`, que pode existir sem vínculo de equipe (CONTINUIDADE, onda 1 de 09/10).
-- Último id usado: **P-108**.
+- Último id usado: **P-109**.
 
 **Índice**
 
@@ -22,11 +22,13 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 6. [Testes manuais com contas reais](#6-testes-manuais-com-contas-reais) (P-40 a P-43)
 7. [Dívida técnica](#7-dívida-técnica) (P-44 a P-48, P-51, P-52, P-55, P-63 a P-65, P-72, P-75 e P-78)
 8. [Ideias futuras](#8-ideias-futuras) (P-49, P-50 e P-54)
-9. [Interface por dispositivo: o que ficou](#9-interface-por-dispositivo-o-que-ficou) (P-79 a P-98 e P-100 a P-108)
+9. [Interface por dispositivo: o que ficou](#9-interface-por-dispositivo-o-que-ficou) (P-79 a P-98 e P-100 a P-109)
 
 ---
 
 ## 1. Próximas ações externas e decisões
+
+**31/10/2026 — retomada:** dono confirmou que o agente de TI tem acesso ao Google Cloud. P-69 permanece pendente até o relatório de execução do pacote; não houve acesso ao console nesta sessão. A P-28 continua posterior à P-69. P-109 corrige a Agenda e os fluxos locais, sem encerrar testes físicos ou decisões de produto.
 
 **P-99 concluída:** publicação na Hostinger confirmada por HTTP público em 28/10 às 18:57:47, após o espelhamento. A nº 98 também foi aplicada em 28/10 às 19:17, conforme relatório recebido em 29/10; não há migration escrita pendente.
 
@@ -699,3 +701,9 @@ Escolha consultada ao dono em 24/10; sem resposta nesta rodada, mantidas as jane
 - **Entregue:** ranking ampliado, resumo/crescimento com altura própria, indicadores e atalhos pela largura útil; janela do WhatsApp com instruções, imagem proporcional e ações acessíveis com fonte ampliada. Aviso de atualização e confirmação de desconexão sem corte.
 - **Evidência e validação:** seção P-108 de [revisao-visual-integral-2026-10-29.md](../revisao-visual-integral-2026-10-29.md), com seis imagens, comparação móvel, filtros, recuperação e sequência de janelas em cenários fictícios.
 - **Limites:** nenhuma integração real ou criação executada. Mesmos números, textos, identidade, permissões e regras. Sem migration/TI; P-42/P-43 e revisão geral continuam. Não presume aprovação estética do dono.
+
+### P-109 — Agenda, agendamento pelo profissional e clientes pela largura útil · feito em 31/10/2026 (ChatGPT/Codex)
+
+- **Entregue:** navegação/resumo/atendimentos sem compressão, campos sem sobreposição e diretório em tabela ou cartões pela largura útil. Título, avisos e ações ajustados em área extrema; rascunho e horário preservados.
+- **Evidência e validação:** seção P-109 de [revisao-visual-integral-2026-10-29.md](../revisao-visual-integral-2026-10-29.md), quatro imagens, referências móveis idênticas e fluxos fictícios de dono/contratado.
+- **Limites:** nenhum dado real ou aviso enviado; mesmas regras, permissões e identidade. Sem migration. P-69 com acesso do agente confirmado pelo dono, mas execução/relatório pendentes; P-28, P-42/P-43 e decisões P-74/P-95 continuam.

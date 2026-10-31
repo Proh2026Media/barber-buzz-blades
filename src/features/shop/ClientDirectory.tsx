@@ -28,6 +28,7 @@ import { clientDisplay, clientMatchesQuery } from "./clients/model";
 import { sortDataRows, type DataListSort } from "@/lib/data-list-sort";
 import { DEMO_CUSTOMER_ID } from "@/features/demo/model";
 import { useViewportAtLeast } from "@/lib/device";
+import { useContainerWidth } from "@/lib/use-container-width";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -119,13 +120,13 @@ export function ClientDirectory({
   const [error, setError] = useState(false);
   const [selected, setSelected] = useState<ClientRow | null>(null);
   const [open, setOpen] = useState(defaultOpen);
-  // A partir de 1024 px (computador compacto e computador) a lista da barbearia é uma tabela
-  // sempre aberta, com busca e ordem na mesma linha; abaixo disso, o cartão recolhido com a
-  // lista de cartões. A carteira do parceiro (scope "own") fica numa coluna de meia largura, onde
-  // a tabela não cabe: continua com os cartões e o cartão recolhido.
+  // No computador, a lista da barbearia fica aberta: tabela quando recebe 52rem e cartões
+  // quando o espaço relativo à fonte é menor. A carteira própria conserva o recolher.
   const wide = useViewportAtLeast(1024);
-  const table = wide && scope === "shop";
-  const expanded = embedded || open || table;
+  const [directoryRef, widthRem] = useContainerWidth<HTMLDivElement>();
+  const alwaysOpen = wide && scope === "shop";
+  const table = alwaysOpen && widthRem >= 52;
+  const expanded = embedded || open || alwaysOpen;
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [reloadKey, setReloadKey] = useState(0);
   const [localQuery, setLocalQuery] = useState("");
@@ -345,7 +346,7 @@ export function ClientDirectory({
     {
       key: "bell",
       header: "",
-      width: "3.5rem",
+      width: "9rem",
       align: "end",
       cell: (client) =>
         client.customer_id ? (
@@ -366,15 +367,15 @@ export function ClientDirectory({
     {
       key: "open",
       header: <span className="sr-only">{t("visual.open")}</span>,
-      width: "2.5rem",
+      width: "3.5rem",
       align: "end",
       cell: () => <ChevronRight className="inline size-4 text-muted-foreground" aria-hidden />,
     },
   ];
 
   return (
-    <div className="space-y-3">
-      {!embedded && table && (
+    <div ref={directoryRef} className="agenda-client-directory space-y-3">
+      {!embedded && alwaysOpen && (
         <div className="flex min-h-12 items-center gap-3">
           <IconTile icon={Users} />
           <span className="min-w-0 flex-1">
@@ -385,7 +386,7 @@ export function ClientDirectory({
           </span>
         </div>
       )}
-      {!embedded && !table && (
+      {!embedded && !alwaysOpen && (
         <button
           type="button"
           onClick={() => {
@@ -519,6 +520,8 @@ export function ClientDirectory({
                 />
               ) : table ? (
                 <DataList
+                  tableFrom={0}
+                  className="agenda-clients-table"
                   columns={columns}
                   rows={visibleClients}
                   sort={tableSort}

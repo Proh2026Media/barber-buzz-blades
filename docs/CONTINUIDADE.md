@@ -107,6 +107,14 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## Entrega — P-109: Agenda e agendamento pelo profissional (31/10, ChatGPT/Codex)
+
+- **Continuação autorizada:** desenvolver as pendências restantes; revisão seguiu para a Agenda, pois o código funcional priorizado já estava concluído e os demais itens dependem de acesso externo/testes/decisões.
+- **Corrigido:** resumo comprimindo atendimentos, navegação cortada, campos sobrepostos, cabeçalho/controle de avisos em área extrema e ações do diretório sem espaço. Containers da tarefa e dos campos; tabela de clientes exige largura própria e mantém cartões abertos no computador quando necessário.
+- **Preservado:** duas referências de celular idênticas, identidade, três cantos, dados, consultas, permissões e disponibilidade/preço/duração. Rascunho e horário mantidos ao redimensionar; agendamento fictício completo e visão do contratado conferidos.
+- **Verificação:** tipos, 301 testes, ESLint, formatação e montagem; oito fluxos aprovados no pacote compilado e comparações na seção P-109 de [revisao-visual-integral-2026-10-29.md](revisao-visual-integral-2026-10-29.md). Chrome isolado, sem registro ou envio real; sem migration/VPS. P-42/P-43 continuam.
+- **Google:** dono confirmou acesso do agente de TI ao projeto Google Cloud. Encaminhamento pelo pacote da P-69 já existente; ainda sem relatório de execução. P-28 vem depois; P-74/P-95 não foram presumidas.
+
 ## Entrega — P-108: Início do admin e janela do WhatsApp (31/10, ChatGPT/Codex)
 
 - **Continuação autorizada:** revisão de Admin → Início após Relatórios, sem refazer as entregas anteriores.

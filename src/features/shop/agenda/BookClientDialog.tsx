@@ -625,7 +625,7 @@ export function BookClientDialog({
         }}
         className="agenda-book flex max-h-[92dvh] flex-col gap-0 overflow-hidden rounded-3xl border-border bg-card p-0"
       >
-        <div className="flex min-h-14 items-center gap-2.5 border-b border-border px-4 py-3 pr-14">
+        <div className="agenda-book-header flex min-h-14 items-center gap-2.5 border-b border-border px-4 py-3 pr-14">
           <CalendarPlus className="size-5 shrink-0 text-gold" aria-hidden />
           <DialogTitle className="min-w-0 break-words text-base font-bold">
             {booked ? t("bk.done.title") : t("bk.title")}
@@ -710,7 +710,7 @@ export function BookClientDialog({
               <div className="agenda-book-fields space-y-5">
                 {/* 1. Cliente: WhatsApp e nome lado a lado a partir de 1024 px (no tablet em pé, um por
                     linha: em meia coluna o número ficava cortado). */}
-                <fieldset className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-x-4 lg:gap-y-3 lg:space-y-0">
+                <fieldset className="agenda-book-customer space-y-3 lg:grid lg:grid-cols-2 lg:gap-x-4 lg:gap-y-3 lg:space-y-0">
                   <legend className="mb-1 flex items-center gap-2 text-sm font-bold">
                     <UserRound className="size-4 text-gold" aria-hidden />
                     {t("bk.client")}
@@ -864,7 +864,7 @@ export function BookClientDialog({
                 </fieldset>
 
                 {/* 2 e 3. Serviço e profissional: lado a lado a partir de 1024 px. */}
-                <div className="space-y-5 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
+                <div className="agenda-book-services space-y-5 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
                   {offeredServices.length > 0 ? (
                     <ChoiceChips
                       label={t("bk.service")}
@@ -1002,7 +1002,7 @@ export function BookClientDialog({
 
                 {/* 5. Avisos */}
                 {isManual ? (
-                  <label className="flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-background/60 p-3">
+                  <label className="agenda-book-notify flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-background/60 p-3">
                     <BellRing className="size-4 shrink-0 text-gold" aria-hidden />
                     <span className="min-w-0 flex-1">
                       <span className="block text-sm font-semibold">{t("bk.notify")}</span>

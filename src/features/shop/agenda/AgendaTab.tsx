@@ -666,7 +666,7 @@ export function AgendaTab({
   );
 
   return (
-    <section className="mb-stagger space-y-4">
+    <section className="agenda-workspace mb-stagger space-y-4">
       <div className="workspace-task-header workspace-section-title app-section-title">
         <WorkspaceHeading>
           <Calendar />

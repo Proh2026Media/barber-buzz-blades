@@ -658,7 +658,7 @@
     order: 2;
   }
   #agenda-list .agenda-timeline .agenda-card:not(.agenda-card-cancelled) {
-    grid-template-columns: 4.5rem minmax(8rem, 1fr) max-content 2rem;
+    grid-template-columns: 4.5rem minmax(8rem, 1fr) max-content max-content;
     gap: 0.25rem 0.75rem;
     align-items: center;
   }
@@ -717,5 +717,323 @@
   #agenda-list .agenda-timeline .agenda-card:not(:has(.agenda-card-footer)) .agenda-card-badges {
     grid-row: 1 / span 3;
     padding-block: 0.75rem;
+  }
+}
+
+/* P-109: a largura da tarefa, relativa à fonte, decide quantas áreas cabem. */
+.agenda-workspace {
+  container: agenda-workspace / inline-size;
+}
+.agenda-timeline {
+  container: agenda-timeline / inline-size;
+}
+.agenda-book {
+  container: agenda-book / inline-size;
+}
+.agenda-book-fields {
+  container: agenda-book-fields / inline-size;
+}
+
+@media (min-width: 768px) {
+  @container agenda-workspace (max-width: 60rem) {
+    .agenda-toolbar,
+    .agenda-toolbar:not(:has(.agenda-scope)) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .agenda-toolbar .agenda-scope {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-column: 1;
+    }
+    .agenda-toolbar .agenda-daterow,
+    .agenda-toolbar .agenda-week,
+    .agenda-toolbar:not(:has(.agenda-scope)) :is(.agenda-daterow, .agenda-week) {
+      grid-column: 1;
+    }
+  }
+  @container agenda-workspace (min-width: 34rem) and (max-width: 60rem) {
+    .agenda-toolbar:has(.agenda-scope) {
+      grid-template-columns: max-content minmax(0, 1fr);
+    }
+    .agenda-toolbar:has(.agenda-scope) .agenda-daterow {
+      grid-column: 2;
+    }
+    .agenda-toolbar:has(.agenda-scope) .agenda-week {
+      grid-column: 1 / -1;
+    }
+  }
+}
+@media (min-width: 1024px) {
+  @container agenda-workspace (max-width: 52rem) {
+    .agenda-layout {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas: "toolbar" "alerts" "summary" "list";
+    }
+    .agenda-side > .agenda-summary {
+      position: static;
+    }
+    .agenda-day-insights .agenda-insights,
+    .agenda-day-insights .agenda-insights:not(:has(.agenda-insights-comparison)) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  @container agenda-timeline (max-width: 36rem) {
+    #agenda-list .agenda-timeline .agenda-card:not(.agenda-card-cancelled) {
+      grid-template-columns: 4rem minmax(0, 1fr) max-content;
+    }
+    #agenda-list .agenda-timeline .agenda-card-time {
+      grid-column: 1;
+      grid-row: 1;
+      padding: 0.75rem 0;
+      align-self: start;
+    }
+    #agenda-list .agenda-timeline .agenda-card-main {
+      display: flex;
+      flex-direction: column;
+      gap: 0.375rem;
+      grid-column: 2;
+      grid-row: 1;
+      padding-block: 0.75rem;
+    }
+    #agenda-list .agenda-timeline .agenda-card-main > * {
+      grid-column: auto;
+      grid-row: auto;
+      margin: 0;
+      padding: 0;
+    }
+    #agenda-list .agenda-timeline .agenda-card-footer {
+      grid-column: 2 / -1;
+      grid-row: 2;
+      justify-content: start;
+      padding: 0 0 0.75rem;
+    }
+    #agenda-list .agenda-timeline .agenda-card-more,
+    #agenda-list .agenda-timeline .agenda-card:not(:has(.agenda-card-footer)) .agenda-card-more {
+      grid-column: 3;
+      grid-row: 1;
+      align-self: start;
+    }
+    #agenda-list .agenda-timeline .agenda-card-badges {
+      justify-content: start;
+    }
+  }
+}
+@container agenda-workspace (max-width: 18rem) {
+  .agenda-workspace > *,
+  .agenda-side > * {
+    overflow-wrap: anywhere;
+  }
+  .agenda-workspace .workspace-task-header {
+    flex-wrap: wrap;
+  }
+  .agenda-workspace button,
+  .agenda-side [role="alert"] > :last-child {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+  }
+  .agenda-workspace .agenda-daterow {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .agenda-workspace .agenda-date-current > :first-child {
+    flex-wrap: wrap;
+  }
+}
+@container agenda-timeline (max-width: 18rem) {
+  .agenda-timeline > * {
+    overflow-wrap: anywhere;
+  }
+  .agenda-timeline :is(.agenda-card-service, .agenda-card-staff) {
+    flex-wrap: wrap;
+  }
+}
+@container agenda-timeline (max-width: 12rem) {
+  .agenda-card-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .agenda-card-time {
+    grid-column: 1;
+    grid-row: 1;
+    width: auto;
+    flex-direction: row;
+    justify-content: start;
+    gap: 0.25rem;
+  }
+  .agenda-card-time-bar {
+    display: none;
+  }
+  .agenda-card-main {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .agenda-card-more {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .agenda-card-footer > button {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+  }
+}
+
+/* Agendar cliente: campos e resumo seguem a largura real da janela. */
+@container agenda-book (max-width: 48rem) {
+  .agenda-book-body[data-layout="split"] {
+    display: flex;
+    flex-direction: column;
+  }
+  .agenda-book-body > * {
+    min-width: 0;
+    width: 100%;
+  }
+  .agenda-book-aside {
+    position: static;
+  }
+}
+@media (min-width: 1024px) {
+  @container agenda-book-fields (max-width: 34rem) {
+    .agenda-book-customer,
+    .agenda-book-services {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.75rem;
+    }
+    .agenda-book-customer > *,
+    .agenda-book-services > * {
+      grid-column: auto;
+      grid-row: auto;
+      min-width: 0;
+    }
+  }
+}
+@container agenda-book-fields (max-width: 44rem) {
+  .agenda-book-when {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@container agenda-book (max-width: 18rem) {
+  .agenda-book > *,
+  .agenda-book-fields > * {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .agenda-book button {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+  }
+  .agenda-book [role="alert"] > :last-child {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+@container agenda-workspace (max-width: 12rem) {
+  .agenda-workspace .agenda-scope {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.agenda-clients-table table {
+  table-layout: fixed;
+}
+@container agenda-workspace (max-width: 52rem) {
+  .agenda-list-head > h3 {
+    flex-basis: 100%;
+  }
+}
+@container agenda-workspace (max-width: 18rem) {
+  .agenda-list-head > h3 {
+    flex-wrap: wrap;
+  }
+}
+@media (min-width: 768px) {
+  @container agenda-timeline (max-width: 36rem) {
+    .agenda-gap > :is(button, div) > .flex-1 {
+      flex-basis: 5rem;
+      min-width: min(5rem, 100%);
+    }
+  }
+}
+@container agenda-timeline (max-width: 18rem) {
+  .agenda-gap > :is(button, div) > .flex-1 {
+    flex-basis: 5rem;
+    min-width: min(5rem, 100%);
+  }
+}
+
+@container agenda-workspace (max-width: 18rem) {
+  .agenda-summary-moments > button {
+    flex-wrap: wrap;
+  }
+  .agenda-summary-moments > button > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .agenda-summary-moments > button > .flex-1 {
+    flex-basis: 100%;
+  }
+}
+@container agenda-workspace (max-width: 12rem) {
+  .agenda-workspace .agenda-daterow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .agenda-workspace .agenda-daterow > :first-child {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .agenda-workspace .agenda-daterow > :last-child {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+  .agenda-workspace .agenda-date-current {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .agenda-workspace .agenda-date-current .schedule-field span span {
+    display: block;
+    overflow: visible;
+    white-space: normal;
+    -webkit-line-clamp: unset;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (min-width: 768px) {
+  .agenda-timeline .agenda-card-time {
+    width: auto;
+    padding-inline: 0.25rem;
+  }
+}
+@container agenda-book (max-width: 12rem) {
+  .agenda-book-header {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    flex-shrink: 0;
+    padding: 2.75rem 1rem 0.75rem;
+  }
+}
+
+@container agenda-book (max-width: 12rem) {
+  .agenda-book-notify {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .agenda-book-notify > .flex-1 {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .agenda-book-notify > [role="switch"] {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+  .agenda-book .action-button {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 }

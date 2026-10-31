@@ -1,4 +1,4 @@
-# Revisão visual integral — P-101 a P-108 (29 a 31/10/2026)
+# Revisão visual integral — P-101 a P-109 (29 a 31/10/2026)
 
 O dono considerou insuficientes as mudanças da P-100 e apontou páginas sem revisão. Esta entrega amplia a composição por tarefa e registra a cobertura por área. Implementação e verificação técnica não significam aprovação estética do dono.
 
@@ -266,3 +266,37 @@ Mesmos dados fictícios e dimensões em cada par. A imagem quadriculada é uma i
 - Capturas dos quatro estados do painel e janela em sete cenários; conferência adicional do Início em 320/640/800/1100/1280/1536 px. Medição de textos e controles, desconsiderando apenas o recorte decorativo da barra dividida e a margem prevista do alvo de fechar avisos.
 
 Chrome isolado com chamadas externas bloqueadas e respostas fictícias. Não foi conectado, desconectado ou enviado WhatsApp real; nenhuma barbearia, conta ou convite foi criado. Testes físicos/Safari e integrações reais continuam em P-42/P-43. Sem tarefa nova para TI; esta rodada não encerra a revisão geral nem presume aprovação estética do dono. Evidências extensas locais: `/tmp/barba-p108/`.
+
+## P-109 — Agenda, agendamento pelo profissional e clientes (31/10/2026)
+
+Retomada do desenvolvimento e das pendências após a revisão da administração. A lista funcional executável já estava concluída; a revisão de interface continuou na **Agenda da loja**. Reproduzidos: navegação cortada, coluna de resumo comprimindo os atendimentos, campos sobrepostos em “Agendar cliente” e tabela de clientes sem espaço para ações, principalmente com fonte ampliada.
+
+| Situação                                           | Antes                                      | Depois                                       |
+| -------------------------------------------------- | ------------------------------------------ | -------------------------------------------- |
+| Agenda, 1024 × 768 px, fonte base em 200%          | [Antes](evidencias/p109/agenda-antes.png)  | [Depois](evidencias/p109/agenda-depois.png)  |
+| Agendar cliente, 1024 × 768 px, fonte base em 200% | [Antes](evidencias/p109/agendar-antes.png) | [Depois](evidencias/p109/agendar-depois.png) |
+
+Mesmos dados fictícios e dimensões em cada par. A fonte raiz foi ampliada; isso não representa todos os modos de zoom dos sistemas operacionais.
+
+### Organização e continuidade
+
+- **Agenda:** `agenda-workspace` organiza a navegação do dia conforme a largura em rem. Resumo e lista deixam de disputar duas colunas quando a área útil é insuficiente; títulos, horários, faixas livres e ações mantêm espaço de leitura. A composição ampla da P-101 permanece onde cabe.
+- **Atendimentos:** `agenda-timeline` usa a própria largura para agrupar nome, serviço, situação e ação. A coluna do menu considera sua largura real, inclusive com toque. Em área extrema, horário/menu e detalhes passam a linhas próprias. A rolagem prevista do quadro da equipe e dos seletores móveis continua disponível.
+- **Agendar cliente:** janela e campos têm containers próprios; WhatsApp/nome e serviço/profissional se empilham quando necessário. Calendário/horários cedem para linhas próprias. Título, controle de avisos e ação se reorganizam em área extrema; resumo e campos permanecem alcançáveis por rolagem. Campos e horário selecionado são conservados ao redimensionar.
+- **Clientes:** `ClientDirectory` reutiliza `useContainerWidth`: tabela desde 1024 px se houver 52rem de largura própria, com espaço para “Avisar” e abrir a ficha. Fora disso usa cartões e mantém a lista da barbearia aberta no computador. Carteira própria conserva o recolher; busca, ordenação existente, dados e permissões não foram alterados.
+- **Preservado:** referências de Agenda e formulário em 390 × 768 px estritamente idênticas às anteriores, sem tolerância. Mesma identidade, três cantos, cores, textos, disponibilidade, duração/preço por profissional e regras de atendimento. Alterados apenas composição e critérios de apresentação.
+
+### Verificações e limites
+
+- Tipos, 301 testes, ESLint dos três arquivos TSX, formatação e montagem de produção.
+- Montagem final: oito fluxos aprovados; dono em 390/768/1024/1440/1920 px e fonte em 200% em 320/1024 px; contratado em 1024 px. Três cantos e tema escuro incluídos.
+- Trocar dia e voltar, alternar Minha agenda/Equipe, buscar cliente, resultado vazio e limpar busca. No celular a equipe conserva a lista; no tablet/computador, o quadro.
+- Busca de cliente fictício pelo WhatsApp, nome preenchido automaticamente, troca para cliente do balcão e agendamento completo na demonstração. Nome, WhatsApp e horário mantidos ao alternar 390/1024/1440 px e voltar. Contratado continua sem seletor para outra agenda.
+- Diretório: busca mantida ao ampliar e restaurar a fonte, com troca entre tabela/cartões. Capturas adicionais em 768/1100/1920 px; celular comparado pixel a pixel após os ajustes finais.
+- Medições de texto/controles e inspeção visual. Rolagens horizontais previstas, alvos de toque ampliados e edição horizontal nativa dos campos foram tratados conforme sua função.
+
+Chrome isolado com rede externa bloqueada. Agendamentos e clientes criados apenas no estado local da demonstração, sem registro em produção nem envio de avisos. Sem migration ou tarefa nova para VPS. P-42/P-43 continuam dependendo de integrações reais/aparelhos físicos; esta etapa não encerra a revisão geral.
+
+### Pendências externas retomadas
+
+O dono confirmou em 31/10 que **o agente de TI tem acesso ao Google Cloud**. A P-69 continua aguardando execução e relatório do [pacote existente](pacotes/2026-10-15-google-retorno-antigo-p69.md); não houve acesso ao console nesta sessão. A P-28 depende dessa conferência. P-74/P-95 continuam decisões em aberto; nenhuma mudança de escopo da administração ou da composição móvel foi presumida.
