@@ -1,6 +1,6 @@
 # Google: conferir `proh.media` antes da P-28 — 31/10/2026
 
-**Situação após o levantamento de ~17:40:** URLs, escopo `drive.file`, persistência no banco e contagens atendidos pelo TI. Codex conferiu por leitura código fonte, inventário de projetos Google, acesso da conta pessoal à propriedade e DNS público. Direção confirmada: manter o Drive do Flow e planejar a migração, preservando o cliente atual do Barba & Cabelo. [Resultado atualizado](#11-levantamento-de-1740-e-conferências-posteriores) e [três blocos restantes no plano](2026-10-31-google-separacao-flow-p28.md), seção 4: destino/operador, domínio/links e ensaio de compatibilidade. Nenhuma migração autorizada/executada; P-69 preservada, domínio/marca inalterados. Seções anteriores são histórico; não repetir o levantamento atendido.
+**Situação após relatório de ~18:05:** TI informa hash implantado igual à fonte analisada, zona Hostinger sem TXT Google e políticas dedicadas não encontradas nos caminhos testados. Hash atendido não conclui propriedade Google ou ensaio funcional. [Resultado atualizado](#12-relatório-de-1805-domínio-páginas-e-hash) e [encaminhamento das páginas públicas/ensaio](2026-10-31-flow-paginas-publicas-e-ensaio-p28.md). Direção mantém o cliente atual do Barba & Cabelo; migração não autorizada/executada. P-69, DNS, marca e P-26 preservados; não repetir leituras atendidas.
 
 ## 1. P-69 recebida — não refazer
 
@@ -183,3 +183,11 @@ Cron root aponta para o teste parado, não para produção; decisão P-26 preser
 [Registro detalhado e requisitos de compatibilidade](2026-10-31-google-separacao-flow-p28.md), seções 2, 4 e 8. Não repetir as seis perguntas originais: restam destino/operador, domínio/links e ensaio com pastas/arquivos do novo app. A escolha de manter/separar já está confirmada pelo dono. Nenhum Google, DNS, Flow ou servidor alterado; P-69 não refeita e P-28 sem reenvio.
 
 **Resposta posterior do dono:** agente de TI tem acesso ao painel DNS de `proh.media`. Acesso registrado para a preparação da comprovação; não significa domínio já verificado nem autorização para alterar DNS/IAM ou criar recursos nesta etapa.
+
+## 12. Relatório de ~18:05: domínio, páginas e hash
+
+Fonte externa: `relatorio-claude-p28-blocos-2-3-2026-10-31.md`, entregue pelo dono e lido inteiro. Segundo o TI, zona Hostinger sem TXT Google; ausência não comprova inexistência de propriedade por outro método. Caminhos comuns de políticas devolvem shell SPA no Flow e 404 em PROH/www; não cadastrar essas respostas como políticas válidas. CNAME de `flow` aponta para `flow-proh-media.pages.dev`, divergindo da hospedagem atribuída antes à Hostinger; confirmar publicação antes de entregar rotas.
+
+Arquivo Drive de produção com **blob Git `17e98b8278747857329dcf38d1412b682e3c714e`**, igual à fonte analisada segundo o relatório. Comparação de versão atendida; ensaio OAuth/pastas não executado. Nenhuma chamada à função ou alteração/reinício informada.
+
+[Plano, seção 9](2026-10-31-google-separacao-flow-p28.md), e [tarefa técnica preparada para o agente Flow](2026-10-31-flow-paginas-publicas-e-ensaio-p28.md): apresentação/privacidade públicas, Termos se oferecidos, pipeline a confirmar e ensaio separado. Destino/operador e propriedade associada ainda pendentes. Sem migração, criação de projeto/cliente ou reenvio nesta entrega.
