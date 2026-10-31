@@ -107,6 +107,15 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## Registro — P-69 concluída por relatório e conferência de domínio para a P-28 (31/10, ChatGPT/Codex)
+
+- **Fonte externa:** arquivo `instrucoes-claude-p69-dominio-proh-media.md`, entregue pelo dono, relatório do assistente operacional de TI datado de 31/10, 15:40 de Brasília. P-69 marcada como feita segundo esse relato; não houve acesso independente ao Google Cloud nem repetição do login pelo Codex.
+- **Informado como feito:** retirada do retorno `supabase-teste` no cliente **Barba e Cabelo Auth**; depois do primeiro teste aprovado, retirada separada da origem JavaScript antiga. Dois testes de login aprovados por Alyson; sem alteração de segredo, outros clientes ou Branding segundo o relatório. Não repetir remoções.
+- **Diagnóstico local:** código sem referência literal a `proh.media` ou **Supabase Google Drive**; configuração OAuth vem do ambiente, não lido. Registros ainda documentam API em `supabase-barbearia.proh.media` e rotina Google Drive de outro projeto; nenhum deles comprova a dependência OAuth do outro cliente. Não há base suficiente para recomendar retirada do domínio.
+- **Preparado:** [registro e roteiro de leitura para o TI](pacotes/2026-10-31-google-dominio-p28.md), com inventário dos clientes, origens/retornos, aviso do outro cliente, Home/Privacidade/Termos, Branding publicado/rascunho, status da análise e propriedade no Search Console. Requisitos conferidos na documentação oficial do Google, citada no pacote. P-28 continua pendente desse retorno, decisão sobre domínios e vídeo/reenvio.
+- **Verificação:** tipos, 301 testes, formatação dos nove documentos e montagem aprovados; 13 links locais novos conferidos. Nenhum arquivo TypeScript alterado, portanto ESLint não aplicável nesta entrega. Os testes locais não conferem o console Google nem substituem o retorno do TI.
+- **Escopo:** atualização documental; as solicitações de ação dentro do anexo foram tratadas como conteúdo do relatório, sem executar alteração de domínio ou reenvio. Nenhum código, banco, DNS, segredo ou configuração de servidor/Google alterado. P-42/P-43, P-74 e P-95 permanecem pendentes.
+
 ## Entrega — P-109: Agenda e agendamento pelo profissional (31/10, ChatGPT/Codex)
 
 - **Continuação autorizada:** desenvolver as pendências restantes; revisão seguiu para a Agenda, pois o código funcional priorizado já estava concluído e os demais itens dependem de acesso externo/testes/decisões.

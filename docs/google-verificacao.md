@@ -2,6 +2,8 @@
 
 Guia prático para reenviar a verificação do app **Barba & Cabelo** no Google Cloud (OAuth consent screen → Verification Center), depois da reprovação de 03/10/2026.
 
+**Atualização de 31/10/2026:** P-69 concluída segundo relatório operacional do TI entregue pelo dono, com dois testes de login aprovados. Não repetir as remoções. P-28 aguarda conferir o cliente **Supabase Google Drive**, os links de Branding e a propriedade dos domínios antes da decisão sobre `proh.media`. [Registro e roteiro somente de leitura](pacotes/2026-10-31-google-dominio-p28.md). Não houve reenvio ou alteração de configuração Google pelo Codex nesta atualização. O [pacote de vídeo/reenvio](pacotes/2026-10-15-google-reenviar-verificacao-p28.md) reúne os demais pré-requisitos; as tabelas abaixo conservam o diagnóstico histórico de 03/10 quando indicarem essa data.
+
 | Item da verificação                   | Resultado                                                                                                                                                                            |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Requisitos da página inicial          | Aprovado                                                                                                                                                                             |

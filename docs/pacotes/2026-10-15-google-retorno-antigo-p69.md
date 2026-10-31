@@ -1,5 +1,7 @@
 # Google Cloud: tirar o retorno antigo do cliente OAuth (P-69) — 15/10/2026
 
+**Concluída em 31/10/2026, segundo relatório operacional entregue pelo dono. Não executar novamente os passos de remoção abaixo.** Saíram o retorno antigo e, em alteração separada após o primeiro teste aprovado, a origem JavaScript `https://supabase-teste.proh.media`; dois testes de login aprovados pelo dono. Branding não mudou. [Registro recebido e próxima conferência de domínio](2026-10-31-google-dominio-p28.md). O roteiro original fica como histórico; a revisão de `proh.media` segue na P-28.
+
 **Quem executa:** pessoa ou agente com acesso de edição ao projeto Google Cloud `proh-media-drive` · **Onde:** Google Cloud Console, no navegador de um computador, e o site https://beauty.contheiner.digital (só para testar o login) · **Escrito por:** Claude (Claude Code), a pedido do dono do Barba & Cabelo, em 15/10/2026, por volta das 21:50 (horário de Brasília, UTC−3).
 
 **Suposição:** quem executa recebe só este texto. Não precisa do repositório, da VPS nem do Coolify. **Tempo:** cerca de 20 minutos, mais 5 minutos de espera antes do teste final. **Pendência:** P-69. A P-28 (reenviar a verificação do Google) é outro pacote.

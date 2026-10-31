@@ -182,8 +182,8 @@ Em **Ajustes da loja** o card **Google Agenda e Contatos** inicia o fluxo B.
 5. **Authorized redirect URIs** (todos):
    - `https://supabasebeauty.contheiner.digital/auth/v1/callback` ← login (fluxo A; é o retorno em uso desde 30/09/2026)
    - `https://beauty.contheiner.digital/auth/google-apps` ← Agenda/Contatos (fluxo B)
-   - (local, se testar) `http://localhost:<porta>/auth/google-apps` — nesta máquina o servidor local roda em 8090; o que está cadastrado no Google Cloud hoje: não confirmado
-   - `https://supabase-teste.proh.media/auth/v1/callback`: **não é mais deste projeto** (leva ao Flow TEST desde 29/09/2026). Se ainda estiver na lista, retirar (passo a passo na P-69 de [guia/pendencias.md](guia/pendencias.md)). Em 13/10/2026 o servidor e o código já não tinham esse endereço.
+   - (local, se testar) `http://localhost:<porta>/auth/google-apps` — nesta máquina o servidor local roda em 8090; o relatório do TI de 31/10 informa `http://localhost:8080/auth/google-apps` no cliente. Não trocar a porta cadastrada automaticamente.
+   - `https://supabase-teste.proh.media/auth/v1/callback`: **não é mais deste projeto** (leva ao Flow TEST desde 29/09/2026). **P-69 concluída em 31/10 segundo relatório recebido:** removidos esse retorno e, separadamente, a origem JavaScript antiga, com dois testes de login aprovados pelo dono. Não repetir. [Registro e conferência de domínio antes da P-28](pacotes/2026-10-31-google-dominio-p28.md).
    - O projeto Google Cloud do app é o `proh-media-drive` ([guia/banco-e-implantacao.md](guia/banco-e-implantacao.md), seção 11).
 6. Copiar **Client ID** e **Client Secret**. Não versionar no Git.
 
