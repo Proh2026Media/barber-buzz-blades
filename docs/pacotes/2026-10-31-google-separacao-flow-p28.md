@@ -1,10 +1,10 @@
 # P-28 — Proposta de separar o Drive do Flow preservando o cliente do Barba & Cabelo
 
-**31/10/2026 · Proposta para decisão, não roteiro autorizado de execução.** O complemento do TI foi somente de leitura. A continuidade do Drive do Flow e seu responsável ainda precisam ser confirmados pelo dono. Nenhum recurso Google, credencial ou serviço foi alterado nesta preparação.
+**31/10/2026 · Direção de planejamento confirmada pelo dono; execução ainda não autorizada.** Após o complemento, o dono escolheu: **“Manter o Drive do Flow e planejar essa separação”**, preservando o cliente atual do Barba & Cabelo. O responsável operacional e os detalhes da seção 4 ainda precisam ser levantados. Nenhum recurso Google, credencial ou serviço foi alterado nesta preparação.
 
 ## 1. Proposta concreta
 
-**Se o Drive do Flow deve continuar, migrar essa integração para um projeto Google Cloud dedicado ao Flow e conservar o cliente atual do Barba & Cabelo no `proh-media-drive`.** Depois da migração estável e da retirada planejada do uso antigo do Flow, adequar a marca do projeto atual ao Barba & Cabelo e retomar a P-28. O nome `proh-media-drive`, sozinho, não obriga mudar o cliente do Barba & Cabelo; renomear um projeto também não separa suas credenciais ou sua marca.
+**Direção escolhida: manter o Drive do Flow e planejar sua migração para um projeto Google Cloud dedicado ao Flow, conservando o cliente atual do Barba & Cabelo no `proh-media-drive`.** Depois da migração estável e da retirada planejada do uso antigo do Flow, adequar a marca do projeto atual ao Barba & Cabelo e retomar a P-28. O nome `proh-media-drive`, sozinho, não obriga mudar o cliente do Barba & Cabelo; renomear um projeto também não separa suas credenciais ou sua marca.
 
 | Sistema        | Evidência informada pelo TI                                                                                                            | Proposta                                                                                                         |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
@@ -12,11 +12,11 @@
 | Flow produção  | Stack ativa em `supabase.proh.media`; cliente **Supabase Google Drive** identificado na configuração, com uma conexão Drive registrada | Preparar projeto próprio, nova autorização da conta responsável e troca limitada à integração Drive do Flow      |
 | Flow teste     | Stack parada em `supabase-teste.proh.media`, com arquivos e volumes preservados                                                        | Manter parada. Não copiar o retorno de teste para produção sem um uso aprovado e ambiente próprio                |
 
-**Por que essa direção:** reduz a mudança de credenciais no sistema com login real em produção, concentrando a migração na conexão Drive identificada. Isso é uma avaliação de impacto a partir do relato, não garantia de ausência de interrupção nem decisão já tomada pelo dono. Se o levantamento restante revelar outras dependências, revisar a proposta antes de executar.
+**Por que essa direção:** reduz a mudança de credenciais no sistema com login real em produção, concentrando a migração na conexão Drive identificada. Isso é uma avaliação de impacto a partir do relato, não garantia de ausência de interrupção. O dono confirmou o planejamento; se o levantamento restante revelar outras dependências, revisar o plano antes de executar.
 
 **Alternativa a comparar antes da decisão de execução:** dedicar outro projeto ao Barba & Cabelo e conservar o Flow no projeto atual. Essa opção evita alterar o Flow e depende dos domínios do Barba & Cabelo, mas exige planejar a troca do cliente de login e de Agenda/Contatos, testar o vínculo das contas existentes e obter novas autorizações quando necessárias. A proposta de mover o Drive depende de acesso ao frontend/responsável Flow e dos requisitos de `proh.media`; se isso impedir o avanço, reavaliar a alternativa. O relatório não traz contagens de usuários de login Google e conexões Agenda/Contatos do Barba & Cabelo para encerrar essa comparação. Nenhuma das duas opções está autorizada para execução por este documento.
 
-Se o dono decidir aposentar o Drive do Flow, preparar uma desativação própria em vez de criar uma integração nova. Stack em execução, conexão registrada e poucos logs não autorizam concluir abandono. A frase do anexo sobre “projetos dedicados por sistema” foi registrada como contexto do relato, não como autorização para criar ou alterar projetos.
+A continuidade está confirmada pela resposta direta do dono, sem depender de inferência dos logs. A frase do anexo sobre “projetos dedicados por sistema” continua sendo contexto do relato; a resposta do dono escolheu a direção do planejamento e não autorizou criar ou alterar projetos nesta etapa.
 
 ## 2. Evidências e limites
 
@@ -43,7 +43,7 @@ O [guia geral OAuth](https://developers.google.com/identity/protocols/oauth2) in
 
 Não repetir P-69, inventário de clientes nem identificação já concluída. Para transformar esta proposta em execução verificável, faltam:
 
-1. **Responsável e continuidade:** quem mantém o Flow e quem pode autorizar sua conta Drive. O dono decide manter ou aposentar a integração; não inferir pela data de logs.
+1. **Responsável operacional:** quem mantém o Flow e quem pode autorizar sua conta Drive. A continuidade e a direção de planejamento já foram confirmadas pelo dono; não perguntar novamente nem inferir abandono pela data de logs.
 2. **Endereço e caminho real:** URL do frontend Flow, `APP_URL`, `publicBase`, retorno efetivamente emitido e ação usada em `/admin?tab=drive`. Registrar só URLs, nomes de configuração e correspondências; nunca valores de segredos/tokens.
 3. **Configuração do Drive:** escopos realmente solicitados e APIs necessárias; onde cliente/segredo/conexão são persistidos e carregados. Mapear todas as fontes para uma troca ou retorno não ser desfeito num restart. Não copiar escopos Agenda/Contatos do Barba & Cabelo para o Flow.
 4. **Projeto de destino:** se já existe um projeto dedicado ao Flow, seu ID/número, uso, proprietários, marca e clientes. Sem destino confirmado, não criar nem reutilizar projeto por suposição; o `barba-e-cabelo` não está escolhido como destino.
@@ -52,7 +52,7 @@ Não repetir P-69, inventário de clientes nem identificação já concluída. P
 
 **Recado para encaminhar ao TI:**
 
-> O cliente Drive já foi identificado como Flow produção; não repetir esse diagnóstico nem a P-69. Leia a proposta completa e devolva apenas as seis lacunas acima, até onde seu acesso já autoriza. Não crie projeto/cliente, não troque credenciais, não desconecte/revogue contas, não altere Branding/DNS/IAM e não inicie a stack de teste. Não envie segredos ou tokens. A proposta é manter o cliente do Barba & Cabelo e, se o dono confirmar a continuidade do Flow, planejar a migração só do Drive para um projeto dedicado.
+> O cliente Drive já foi identificado como Flow produção; não repetir esse diagnóstico nem a P-69. O dono confirmou manter o Drive e planejar sua migração para projeto dedicado, preservando o cliente atual do Barba & Cabelo. Leia o plano completo e devolva apenas as seis lacunas acima, até onde seu acesso já autoriza. Não crie projeto/cliente, não troque credenciais, não desconecte/revogue contas, não altere Branding/DNS/IAM e não inicie a stack de teste. Não envie segredos ou tokens. A autorização atual é de planejamento; nenhum ambiente deve ser alterado por este levantamento.
 
 ## 5. Sequência proposta, após decisão e pacote de execução completo
 
@@ -78,6 +78,6 @@ Não alterar por esta proposta a rotina `google-drive/share-expire` mantida pela
 
 ## 7. Decisão e devolutiva
 
-**Decisão pendente do dono:** o Drive do Flow deve continuar e a direção proposta — migrar o Drive, preservando o cliente atual do Barba & Cabelo — é a escolhida? O complemento relata usos, não autoriza modificar as credenciais de outro sistema. Mesmo com a direção escolhida, os detalhes operacionais da seção 4 precisam constar do pacote antes de uma execução.
+**Direção confirmada pelo dono em 31/10:** manter o Drive do Flow e planejar a separação, migrando essa integração e preservando o cliente atual do Barba & Cabelo. A pergunta apresentada explicitava que a escolha era sobre o plano, sem alteração de configuração nesta etapa. Não pedir a mesma decisão novamente. O complemento do TI e essa escolha não autorizam executar a migração; os detalhes operacionais da seção 4 precisam constar do pacote antes da execução.
 
 **Devolutiva do TI para preparar esse pacote:** responsável; URLs reais; escopos/APIs; fontes de configuração; projeto de destino conferido; evidência de domínio/marca; dependências/contagens; ensaio de Drive/renovação e plano de retorno. Apenas nomes, estados, URLs e evidências sem credenciais. Na entrega atual foram preparados documentos; nenhuma migração, criação/exclusão de cliente, revogação ou reenvio foi realizado.
