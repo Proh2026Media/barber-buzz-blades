@@ -1,4 +1,4 @@
-# Revisão visual integral — P-101 a P-107 (29 e 30/10/2026)
+# Revisão visual integral — P-101 a P-108 (29 a 31/10/2026)
 
 O dono considerou insuficientes as mudanças da P-100 e apontou páginas sem revisão. Esta entrega amplia a composição por tarefa e registra a cobertura por área. Implementação e verificação técnica não significam aprovação estética do dono.
 
@@ -234,3 +234,35 @@ Dados fictícios. As comparações mantêm a mesma largura, altura e preferênci
 - Capturas adicionais em 320/640/767/800/1100/1280/1366 px; texto base em 200% em 320/640/768/1024/1536 px. Inspeção visual dos painéis e comparação móvel sem tolerância.
 
 Chrome isolado com rede externa bloqueada. Evidências extensas locais em `/tmp/barba-p107/`. Sem tarefa de implantação para TI. Aparelhos físicos/Safari e integrações reais continuam em P-42/P-43; esta etapa não declara encerrada a revisão geral nem aprovada a experiência pelo dono.
+
+## P-108 — Início do admin, atalhos e janela do WhatsApp (31/10/2026)
+
+Continuação da revisão após Relatórios. No **Admin → Início**, a divisão em três colunas esticava cartões curtos até a altura de todo o ranking, deixando grandes áreas vazias e nomes comprimidos. Com fonte ampliada, indicadores, atalhos de teste e instruções do WhatsApp ultrapassavam suas áreas. Também foi reproduzido o corte no aviso de atualização quando o painel já tinha dados.
+
+| Situação                                                  | Antes                                          | Depois                                           |
+| --------------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------ |
+| Resumo, ranking e crescimento, 1024 × 820 px              | [Antes](evidencias/p108/visao-geral-antes.png) | [Depois](evidencias/p108/visao-geral-depois.png) |
+| Janela do WhatsApp, 1024 × 820 px, fonte base em 200%     | [Antes](evidencias/p108/whatsapp-antes.png)    | [Depois](evidencias/p108/whatsapp-depois.png)    |
+| Confirmação do WhatsApp, 320 × 820 px, fonte base em 200% | [Antes](evidencias/p108/confirmacao-antes.png) | [Depois](evidencias/p108/confirmacao-depois.png) |
+
+Mesmos dados fictícios e dimensões em cada par. A imagem quadriculada é uma ilustração local para validar dimensões, sem código de conexão válido. A fonte raiz ampliada não representa todos os modos de zoom dos sistemas.
+
+### Composição e continuidade
+
+- **Computador:** ranking em área mais ampla, acompanhado por distribuição e crescimento em cartões com altura própria. A primeira linha acompanha o resumo sem abrir um intervalo artificial antes do gráfico. Indicadores têm quatro colunas quando recebem 48rem e cedem para duas ou uma quando necessário; divisores acompanham as linhas.
+- **Tablet e texto ampliado:** as análises se dividem com 36rem de largura própria. Quando falta espaço, ficam em coluna. Em área muito estreita, os seis meses usam barras horizontais com os mesmos valores e rótulos acessíveis.
+- **Atalhos:** `DemoTourHub` mede seu próprio cartão, inclusive na janela da ficha. Os papéis usam duas, três ou cinco colunas conforme o espaço; título, selos e escolhas cedem em área extrema. Barbearia selecionada e destinos continuam os mesmos.
+- **WhatsApp:** cartão e janela do código usam containers próprios. Instruções e imagem ficam em coluna quando o espaço relativo à fonte é insuficiente; a imagem mantém proporção quadrada. Em área extrema, cada instrução ganha uma linha própria e o título fica fora da área do botão de fechar. Corpo rolável e ação de conferência alcançável. A confirmação de desconexão também foi corrigida após inspeção visual: título, consequências e ações se reorganizam, com rolagem para alcançar a saída segura.
+- **Erros e celular:** avisos de atualização e ações se ajustam com fonte ampliada. Comparação de quatro estados em 390 × 820 px: início, extras e janela do código estritamente idênticos; captura das análises variou um único pixel. Composição móvel e identidade preservadas.
+- **Código:** `PlatformDashboard`, `PlatformShell`, `PlatformWhatsAppCard`, `DemoTourHub`, `ConfirmDialog` e `styles/plataforma.css`. `ConfirmDialog.className` é opcional; o ajuste de composição se aplica somente à confirmação do WhatsApp. Mesmos números, filtros, perguntas de confirmação, textos, temas, três cantos, permissões e consultas. Nenhuma regra de conexão, envio ou desconexão foi alterada; sem migration.
+
+### Verificações e limites
+
+- `scripts/verificar.sh`: tipos, 301 testes, ESLint dos cinco arquivos TSX, formatação e montagem de produção.
+- Montagem final: sete fluxos aprovados em 390/768/1024/1440/1920 px e fonte base em 200% em 320/1024 px, com os três cantos e tema escuro. Quatro filtros dos indicadores, expandir/recolher atenção, ranking, ficha e janela de papéis por teclado.
+- Escolha da barbearia do teste mantida ao alternar 390/1024 px e voltar; links dos papéis continuam apontando para a escolha. Falhas de atualização mantêm ranking e permitem nova tentativa; consulta do WhatsApp também recuperada após falha simulada.
+- Código conservado ao redimensionar, conferência ainda não conectada, fechar/reabrir com retorno de foco, sucesso simulado e confirmação de desconexão cancelada. Nenhum comando real enviado à integração. Confirmação inspecionada também em 390 px padrão e 320/768 px com fonte em 200%; saída segura alcançada por rolagem.
+- Primeira carga com erro e estado sem barbearias em 1440 px e em 320 px com fonte em 200%: nova tentativa recupera os dados, e o vazio abre o cadastro existente sem criar uma loja.
+- Capturas dos quatro estados do painel e janela em sete cenários; conferência adicional do Início em 320/640/800/1100/1280/1536 px. Medição de textos e controles, desconsiderando apenas o recorte decorativo da barra dividida e a margem prevista do alvo de fechar avisos.
+
+Chrome isolado com chamadas externas bloqueadas e respostas fictícias. Não foi conectado, desconectado ou enviado WhatsApp real; nenhuma barbearia, conta ou convite foi criado. Testes físicos/Safari e integrações reais continuam em P-42/P-43. Sem tarefa nova para TI; esta rodada não encerra a revisão geral nem presume aprovação estética do dono. Evidências extensas locais: `/tmp/barba-p108/`.

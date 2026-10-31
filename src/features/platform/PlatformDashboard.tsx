@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type CSSProperties } from "react";
 import {
   CalendarClock,
   ChevronRight,
@@ -138,7 +138,7 @@ export function PlatformDashboard({
   // Falhou e não há nada na tela: é erro, não "nenhuma barbearia" (evita criar uma duplicada).
   if (!loading && shops.length === 0 && loadError) {
     return (
-      <section className="space-y-4" aria-label={t("plat.dash.aria")}>
+      <section className="plat-dashboard space-y-4" aria-label={t("plat.dash.aria")}>
         {header}
         <EmptyState
           status="danger"
@@ -163,7 +163,7 @@ export function PlatformDashboard({
 
   if (!loading && shops.length === 0) {
     return (
-      <section className="space-y-4" aria-label={t("plat.dash.aria")}>
+      <section className="plat-dashboard space-y-4" aria-label={t("plat.dash.aria")}>
         {header}
         <EmptyState
           tone="store"
@@ -190,7 +190,7 @@ export function PlatformDashboard({
   const activeMeta = SHOP_STATUS.active;
 
   return (
-    <section className="space-y-4" aria-label={t("plat.dash.aria")}>
+    <section className="plat-dashboard space-y-4" aria-label={t("plat.dash.aria")}>
       {header}
 
       <div
@@ -240,8 +240,8 @@ export function PlatformDashboard({
         />
       </div>
 
-      {/* Divisão, ranking e crescimento: coluna no celular; a partir de 768 px lado a lado
-          (src/styles/plataforma.css). */}
+      {/* Divisão e crescimento acompanham o ranking quando há largura útil, sem esticar
+          cartões curtos até a altura de toda a lista (src/styles/plataforma.css). */}
       <div className="plat-dash-blocks grid gap-4">
         {!loading && (
           <div className="plat-dash-segment app-action-card p-4">
@@ -287,12 +287,12 @@ export function PlatformDashboard({
                     <button
                       type="button"
                       onClick={() => onOpenShop?.(row.shop.id)}
-                      className="flex min-h-14 w-full items-center gap-3 rounded-2xl px-2 py-2 text-left transition hover:bg-muted/50"
+                      className="plat-dash-ranking-row flex min-h-14 w-full items-center gap-3 rounded-2xl px-2 py-2 text-left transition hover:bg-muted/50"
                     >
                       <span className="grid size-7 shrink-0 place-items-center rounded-full bg-muted text-xs font-bold tabular-nums">
                         {index + 1}
                       </span>
-                      <span className="min-w-0 flex-1 space-y-1.5">
+                      <span className="plat-dash-ranking-content min-w-0 flex-1 space-y-1.5">
                         <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                           <span className="min-w-0 break-words text-sm font-semibold">
                             {row.shop.name}
@@ -380,7 +380,10 @@ function GrowthColumns({
   const { t } = useI18n();
   const max = Math.max(1, ...months.map((item) => item.count));
   return (
-    <ul className="grid h-40 grid-cols-6 items-end gap-2" aria-label={t("plat.dash.growthTitle")}>
+    <ul
+      className="plat-dash-growth-chart grid h-40 grid-cols-6 items-end gap-2"
+      aria-label={t("plat.dash.growthTitle")}
+    >
       {months.map((item) => {
         const month = item.date.toLocaleDateString(locale, { month: "short" }).replace(".", "");
         const height = Math.round((item.count / max) * 100);
@@ -395,8 +398,12 @@ function GrowthColumns({
             </span>
             <span
               aria-hidden
-              className={`w-full max-w-10 rounded-t-xl ${item.count > 0 ? "bg-primary" : "bg-muted"}`}
-              style={{ height: item.count > 0 ? `${Math.max(height, 8)}%` : "4px" }}
+              className={`plat-dash-growth-bar w-full max-w-10 rounded-t-xl ${item.count > 0 ? "bg-primary" : "bg-muted"}`}
+              style={
+                {
+                  "--growth-size": item.count > 0 ? `${Math.max(height, 8)}%` : "4px",
+                } as CSSProperties
+              }
             />
             <span aria-hidden className="text-xs font-semibold capitalize text-muted-foreground">
               {month}

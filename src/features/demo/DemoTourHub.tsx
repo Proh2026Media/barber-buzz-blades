@@ -26,7 +26,7 @@ type DemoTourHubProps = {
 };
 
 const TILE =
-  "flex h-full min-h-[4.5rem] w-full min-w-0 flex-col items-center justify-center gap-1.5 rounded-2xl border px-1.5 py-2 text-center text-xs font-bold leading-tight transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold";
+  "demo-tour-tile flex h-full min-h-[4.5rem] w-full min-w-0 flex-col items-center justify-center gap-1.5 rounded-2xl border px-1.5 py-2 text-center text-xs font-bold leading-tight transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold";
 const TILE_OFF =
   "border-border bg-background hover:border-primary/40 hover:bg-primary/5 aria-disabled:pointer-events-none aria-disabled:opacity-50 disabled:pointer-events-none disabled:opacity-50";
 const TILE_ON = "border-primary bg-primary text-primary-foreground";
@@ -161,7 +161,10 @@ export function DemoTourHub({
 
   return (
     <section
-      className={cn("space-y-4", !bare && "rounded-3xl border border-border bg-card p-4 sm:p-5")}
+      className={cn(
+        "demo-tour-hub space-y-4",
+        !bare && "demo-tour-full rounded-3xl border border-border bg-card p-4 sm:p-5",
+      )}
     >
       {bare ? (
         <StatusBadge tone="success" icon={ShieldCheck} label={t("demo.hub.safe")} />
@@ -181,7 +184,7 @@ export function DemoTourHub({
         </Hint>
       ) : (
         <div className="space-y-3">
-          <div className="grid grid-cols-3 gap-x-2 gap-y-1.5">
+          <div className="demo-tour-entry-grid grid grid-cols-3 gap-x-2 gap-y-1.5">
             <Group cell labelKey="demo.hub.groupClient">
               {roleTile(byId("customer"))}
             </Group>
@@ -209,12 +212,7 @@ export function DemoTourHub({
           </div>
           <Group labelKey="demo.hub.groupTeam">
             {/* Na janela ("Testar como…") a largura é a da janela, não a da tela: até 3 colunas. */}
-            <div
-              className={cn(
-                "grid grid-cols-2 gap-2 min-[360px]:grid-cols-3",
-                !bare && "sm:grid-cols-5",
-              )}
-            >
+            <div className="demo-tour-team-grid grid grid-cols-2 gap-2">
               {team.map((role) => (
                 <div key={role.id} className="h-full">
                   {roleTile(role)}

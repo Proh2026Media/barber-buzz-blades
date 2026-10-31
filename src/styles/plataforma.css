@@ -18,8 +18,19 @@
     border: 0;
     box-shadow: none;
   }
-  .plat-dash-metrics > * + * {
+  .plat-dash-metrics > :nth-child(even) {
     border-left: 1px solid var(--border);
+  }
+  .plat-dash-metrics > :nth-child(n + 3) {
+    border-top: 1px solid var(--border);
+  }
+  @container platform-dashboard (min-width: 48rem) {
+    .plat-dash-metrics > * + * {
+      border-left: 1px solid var(--border);
+    }
+    .plat-dash-metrics > :nth-child(n + 3) {
+      border-top: 0;
+    }
   }
 }
 
@@ -162,52 +173,253 @@
   }
 }
 
-/* ---------- Início: números em 4 e blocos lado a lado ---------- */
+/* ---------- Início: distribuição pela área disponível ---------- */
+.platform-workspace > main:has(> .platform-overview) {
+  container: platform-overview / inline-size;
+}
+.plat-dashboard {
+  container: platform-dashboard / inline-size;
+}
+.plat-dash-growth {
+  container: platform-growth / inline-size;
+}
+.plat-dash-growth-bar {
+  height: var(--growth-size);
+}
+.plat-dash-blocks > *,
+.plat-overview-extras > * {
+  min-width: 0;
+}
 @media (min-width: 768px) {
-  .plat-dash-blocks {
+  .plat-dash-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-areas:
-      "segment ranking"
-      "growth ranking";
-    align-items: start;
   }
-  .plat-dash-segment {
-    grid-area: segment;
+  @container platform-dashboard (min-width: 48rem) {
+    .plat-dash-metrics {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
   }
-  .plat-dash-ranking {
-    grid-area: ranking;
+  @container platform-dashboard (min-width: 36rem) {
+    .plat-dash-blocks {
+      grid-template-columns: minmax(12rem, 1fr) minmax(0, 1.7fr);
+      grid-template-areas: "segment ranking" "growth ranking";
+      grid-template-rows: min-content minmax(0, 1fr);
+      align-items: start;
+    }
+    .plat-dash-segment {
+      grid-area: segment;
+    }
+    .plat-dash-ranking {
+      grid-area: ranking;
+    }
+    .plat-dash-growth {
+      grid-area: growth;
+    }
   }
-  .plat-dash-growth {
-    grid-area: growth;
+  @container platform-overview (min-width: 48rem) {
+    .plat-overview-extras {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 20rem;
+      gap: 1.5rem;
+      align-items: start;
+    }
+    .plat-overview-extras > * {
+      margin-block: 0 !important;
+    }
+    .plat-overview-extras > .plat-wa-card {
+      order: 2;
+    }
+    .plat-overview-extras:not(:has(> .plat-wa-card)) {
+      grid-template-columns: minmax(0, 1fr);
+    }
   }
 }
-@media (min-width: 1024px) {
-  .plat-dash-blocks {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1fr);
-    grid-template-areas: "segment ranking growth";
-    align-items: stretch;
+@container platform-dashboard (max-width: 18rem) {
+  .plat-dashboard > * {
+    overflow-wrap: anywhere;
   }
 }
-/* WhatsApp da plataforma como widget de 20rem ao lado do "Testar como…". */
-@media (min-width: 1024px) {
-  .plat-overview-extras {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 20rem;
-    gap: 1.5rem;
-    align-items: start;
-  }
-  .plat-overview-extras > * {
-    margin-block: 0 !important;
-  }
-  .plat-overview-extras > .plat-wa-card {
-    order: 2;
-    position: sticky;
-    top: 1rem;
-  }
-  /* Sem o cartão do WhatsApp (demonstração), o "Testar como…" usa a largura toda: a coluna
-     de 20rem não fica vazia à direita. */
-  .plat-overview-extras:not(:has(> .plat-wa-card)) {
+@container platform-dashboard (max-width: 14rem) {
+  .plat-dash-metrics {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .plat-dash-metrics > :nth-child(even) {
+    border-left: 0;
+  }
+  .plat-dash-metrics > * + * {
+    border-top: 1px solid var(--border);
+  }
+  .plat-dashboard > :first-child {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .plat-dash-ranking-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .plat-dash-ranking-row > :last-child {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .plat-dash-ranking-content {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+@container platform-growth (max-width: 12rem) {
+  .plat-dash-growth-chart {
+    display: flex;
+    height: auto;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  .plat-dash-growth-chart > li {
+    display: grid;
+    height: auto;
+    grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .plat-dash-growth-chart > li > :first-child {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .plat-dash-growth-chart > li > :last-child {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .plat-dash-growth-bar {
+    grid-column: 2;
+    grid-row: 1;
+    width: var(--growth-size);
+    max-width: 100%;
+    height: 0.5rem;
+    border-radius: var(--control-radius);
+  }
+}
+@container platform-overview (max-width: 18rem) {
+  .platform-workspace main > [role="alert"] {
+    overflow-wrap: anywhere;
+  }
+  .platform-workspace main > [role="alert"] > :last-child,
+  .platform-workspace main > [role="alert"] button {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+  }
+  .platform-overview > *,
+  .plat-overview-attention > * {
+    overflow-wrap: anywhere;
+  }
+  .plat-overview-attention > h2 {
+    flex-wrap: wrap;
+  }
+  .plat-overview-attention li > :last-child,
+  .plat-overview-attention button {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+  }
+}
+
+/* Os mesmos atalhos cabem na janela, no painel lateral e na demonstração. */
+.demo-tour-hub {
+  container: demo-tour / inline-size;
+}
+@container demo-tour (min-width: 18rem) {
+  .demo-tour-team-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@container demo-tour (min-width: 32rem) {
+  .demo-tour-full .demo-tour-team-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+@container demo-tour (max-width: 12rem) {
+  .demo-tour-hub > * {
+    overflow-wrap: anywhere;
+  }
+  .demo-tour-entry-grid,
+  .demo-tour-team-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .demo-tour-tile > * {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  .demo-tour-hub > :first-child > :last-child {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+/* WhatsApp: cartão compacto e código com instruções pela largura relativa à fonte. */
+.platform-wa-card {
+  container: platform-wa / inline-size;
+}
+.platform-wa-qr {
+  container: platform-wa-qr / inline-size;
+}
+.platform-wa-code {
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+}
+.platform-wa-qr .dialog-scroll-area[data-layout="split"] > * {
+  min-width: 0;
+}
+@container platform-wa-qr (max-width: 38rem) {
+  .platform-wa-qr .dialog-scroll-area[data-layout="split"] {
+    display: flex;
+    flex-direction: column;
+  }
+  .platform-wa-qr .dialog-scroll-area[data-layout="split"] > * {
+    width: 100%;
+    position: static;
+  }
+}
+@container platform-wa (max-width: 18rem) {
+  .platform-wa-card > * {
+    overflow-wrap: anywhere;
+  }
+  .platform-wa-card button,
+  .platform-wa-card > :first-child > :last-child {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+  }
+  .platform-wa-card summary {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+  .platform-wa-card [role="alert"] > :last-child {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+@container platform-wa-qr (max-width: 12rem) {
+  .platform-wa-qr > * {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .platform-wa-qr-title {
+    padding-inline-end: 0;
+    padding-top: 2.75rem;
+  }
+  .platform-wa-qr ol li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .platform-wa-qr ol li > :last-child {
+    grid-column: 1 / -1;
+  }
+  .platform-wa-qr [role="alert"] > :last-child,
+  .platform-wa-qr button {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
   }
 }
 
@@ -676,5 +888,54 @@
   .platform-reports > .workspace-section-title {
     flex-wrap: wrap;
     overflow-wrap: anywhere;
+  }
+}
+
+/* A confirmação do WhatsApp também precisa caber com o texto ampliado. */
+.platform-wa-confirm {
+  container: platform-wa-confirm / inline-size;
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+}
+@container platform-wa-confirm (max-width: 18rem) {
+  .platform-wa-confirm > * {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .platform-wa-confirm button {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .platform-wa-confirm > :last-child {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@container platform-wa-confirm (max-width: 12rem) {
+  .platform-wa-confirm > :first-child > div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.platform-test-as-dialog {
+  container: platform-test-as / inline-size;
+}
+@container platform-test-as (max-width: 18rem) {
+  .platform-test-as-dialog > * {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}
+@container platform-test-as (max-width: 12rem) {
+  .platform-test-as-title {
+    display: block;
+    padding-inline-end: 0;
+    padding-top: 2.75rem;
+  }
+  .platform-test-as-title > svg {
+    display: block;
+    margin-bottom: 0.5rem;
   }
 }

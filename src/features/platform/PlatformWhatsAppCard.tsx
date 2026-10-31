@@ -298,7 +298,7 @@ export const PlatformWhatsAppCard = forwardRef<
       <img
         src={qrcode}
         alt={t("integr.platformWa.qrAlt")}
-        className="mx-auto size-56 rounded-2xl border border-border bg-white p-2"
+        className="platform-wa-code mx-auto size-56 rounded-2xl border border-border bg-white p-2"
       />
       {/* "Esperando a leitura…" só quando há um código para ler. */}
       <div className="flex justify-center">
@@ -364,7 +364,7 @@ export const PlatformWhatsAppCard = forwardRef<
   return (
     <section
       ref={sectionRef}
-      className={`space-y-4 rounded-3xl border border-border bg-card p-4 sm:p-5 ${className ?? ""}`}
+      className={`platform-wa-card space-y-4 rounded-3xl border border-border bg-card p-4 sm:p-5 ${className ?? ""}`}
     >
       <SectionHeader
         icon={MessageCircle}
@@ -501,6 +501,7 @@ export const PlatformWhatsAppCard = forwardRef<
       )}
 
       <ConfirmDialog
+        className="platform-wa-confirm"
         open={confirmOff}
         onOpenChange={setConfirmOff}
         tone="danger"
@@ -527,8 +528,8 @@ export const PlatformWhatsAppCard = forwardRef<
         }}
       >
         {phone ? (
-          <DialogContent className="max-h-[92dvh] max-w-sm rounded-3xl border-border bg-card p-5">
-            <DialogTitle className="min-h-11 pr-12 pt-2 text-lg font-bold leading-snug">
+          <DialogContent className="platform-wa-qr max-h-[92dvh] max-w-sm rounded-3xl border-border bg-card p-5">
+            <DialogTitle className="platform-wa-qr-title min-h-11 pr-12 pt-2 text-lg font-bold leading-snug">
               {t("plat.wa.qrTitle")}
             </DialogTitle>
             <DialogDescription className="sr-only">{t("plat.wa.qrDescription")}</DialogDescription>
@@ -544,9 +545,9 @@ export const PlatformWhatsAppCard = forwardRef<
             )}
           </DialogContent>
         ) : (
-          <DialogContent size="lg" className="bg-card">
+          <DialogContent size="lg" className="platform-wa-qr bg-card">
             <DialogHeader>
-              <DialogTitle className="min-h-11 pr-12 text-lg font-bold leading-snug">
+              <DialogTitle className="platform-wa-qr-title min-h-11 pr-12 text-lg font-bold leading-snug">
                 {t("plat.wa.qrTitle")}
               </DialogTitle>
               <DialogDescription className="sr-only">

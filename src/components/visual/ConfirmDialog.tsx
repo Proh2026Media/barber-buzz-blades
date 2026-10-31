@@ -53,6 +53,7 @@ export function ConfirmDialog({
   errorText,
   errorDetail,
   confirmDisabled,
+  className,
 }: {
   open: boolean;
   desktopSide?: boolean;
@@ -89,6 +90,8 @@ export function ConfirmDialog({
   /** Motivo devolvido pela ação (uma linha), mostrado abaixo do resultado da falha. */
   errorDetail?: ReactNode;
   confirmDisabled?: boolean;
+  /** Ajustes de composição específicos da tarefa, sem mudar as outras confirmações. */
+  className?: string;
 }) {
   const { t } = useI18n();
   const [busy, setBusy] = useState(false);
@@ -155,7 +158,7 @@ export function ConfirmDialog({
     >
       <AlertDialogContent
         desktopSide={desktopSide}
-        className="gap-4 rounded-3xl border-border bg-card"
+        className={cn("gap-4 rounded-3xl border-border bg-card", className)}
         onEscapeKeyDown={(event) => {
           if (busy) event.preventDefault();
         }}

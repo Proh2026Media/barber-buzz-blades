@@ -1,8 +1,10 @@
 # Leia primeiro — Barba & Cabelo
 
-Porta de entrada para o agente que vai continuar o projeto (Cursor, Claude Code, Codex e outros). Atualizado em **30/10/2026**.
+Porta de entrada para o agente que vai continuar o projeto (Cursor, Claude Code, Codex e outros). Atualizado em **31/10/2026**.
 
 **Passagem do dia (24/10/2026):** o dono passa a continuar o projeto no ChatGPT. Leia antes [passagem-chatgpt-2026-10-24.md](passagem-chatgpt-2026-10-24.md). As passagens anteriores ([21/10, Claude Code aplicativo](passagem-claude-code-app-2026-10-21.md); [15/10](passagem-claude-2026-10-15.md)) ficam como histórico.
+
+**Atualização de 31/10 — P-108:** revisão de **Admin → Início**: ranking com espaço de leitura, resumo e crescimento sem cartões esticados, indicadores/atalhos pela largura útil e janela do WhatsApp sem instruções encobertas com fonte ampliada. Mesma identidade, celular e regras; seleção, filtros e recuperação preservados. Evidências e limites na seção P-108 de [revisao-visual-integral-2026-10-29.md](revisao-visual-integral-2026-10-29.md). Nenhuma integração real acionada; sem migration/TI. Não refazer P-105 a P-107.
 
 **Atualização de 30/10 — P-107:** revisão de **Admin → Relatórios**: situação/ação de privacidade deixam de ficar cortadas; indicadores, questionários e painéis se organizam pela largura útil em rem. Seleção e fluxos mantidos; celular padrão preservado. Comparações e limites na seção P-107 de [revisao-visual-integral-2026-10-29.md](revisao-visual-integral-2026-10-29.md). Mesmos dados, regras e identidade; sem migration/TI. Não refazer Acessos/Barbearias das P-105/P-106.
 

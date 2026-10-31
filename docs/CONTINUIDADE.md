@@ -6,7 +6,7 @@
 
 **15/10/2026 (noite) — passagem concluída no Claude Code:** ver a entrada "Passagem de 15/10" logo abaixo da Diretriz. Comece por [LEIA-PRIMEIRO.md](LEIA-PRIMEIRO.md). A função `register-shop` da P-38 foi publicada às 22:54; faltam os pacotes do Google (P-69 e P-28, em [pacotes/](pacotes/)).
 
-Atualizado em **30/10/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
+Atualizado em **31/10/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
 ## Comece aqui
 
@@ -106,6 +106,13 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - Esportes sempre visível;
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
+
+## Entrega — P-108: Início do admin e janela do WhatsApp (31/10, ChatGPT/Codex)
+
+- **Continuação autorizada:** revisão de Admin → Início após Relatórios, sem refazer as entregas anteriores.
+- **Corrigido:** cartões curtos esticados e ranking comprimido; indicadores/atalhos que ignoravam a largura útil; instruções do WhatsApp encobertas pela imagem com fonte ampliada; título, avisos e confirmação de desconexão cortados em área estreita. Containers e barras do crescimento adaptáveis, com os mesmos dados.
+- **Preservado:** identidade, três cantos, textos, filtros, destinos dos papéis e regras de conexão. Quatro comparações móveis: três idênticas e uma com diferença de um pixel.
+- **Verificação e limites:** tipos, 301 testes, ESLint, formatação e montagem; sete fluxos aprovados no pacote compilado com filtros/teclado, recuperação de erros, código ao redimensionar e cancelamento da confirmação. Erro inicial e vazio também conferidos. Detalhes e imagens na seção P-108 de [revisao-visual-integral-2026-10-29.md](revisao-visual-integral-2026-10-29.md). Chrome isolado, sem operação real, migration ou tarefa para TI. P-42/P-43 e revisão geral continuam.
 
 ## Entrega — P-107: Relatórios pela largura útil (30/10, ChatGPT/Codex)
 

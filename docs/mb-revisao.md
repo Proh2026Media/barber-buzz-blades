@@ -169,3 +169,7 @@ Após a confirmação do dono de que Acessos foi resolvido: lista e ficha de Bar
 ## P-107 — Relatórios da administração (30/10/2026)
 
 Indicadores, lista/prévia dos questionários e painel de privacidade pela largura útil em rem. Situação e ação da tabela deixam de ficar cortadas; cartões nas áreas estreitas, títulos/detalhes/mensagens ajustados com fonte ampliada. Mesma identidade, três cantos e regras; referência móvel inicial idêntica e fluxos de teclado/recuperação com dados fictícios. Comparações e limites na seção P-107 de [revisao-visual-integral-2026-10-29.md](revisao-visual-integral-2026-10-29.md).
+
+## P-108 — Início da administração e WhatsApp (31/10/2026)
+
+Ranking com espaço de leitura e cartões de resumo/crescimento com altura própria. Indicadores, atalhos e janela do WhatsApp consideram a largura em rem; instruções não ficam encobertas, títulos, avisos e confirmação de desconexão se ajustam em área extrema e imagem mantém proporção. Mesma identidade, três cantos e regras; celular preservado. Filtros, teclado, recuperação e sequência do código exercitados com respostas locais fictícias. Comparações e limites na seção P-108 de [revisao-visual-integral-2026-10-29.md](revisao-visual-integral-2026-10-29.md).

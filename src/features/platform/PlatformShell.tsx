@@ -553,7 +553,10 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
           />
         )}
 
-        <div key={platformTab} className="mb-panel space-y-6">
+        <div
+          key={platformTab}
+          className={`mb-panel space-y-6 ${platformTab === "overview" ? "platform-overview" : ""}`}
+        >
           {platformTab === "overview" && (
             <>
               <div className="workspace-section-title app-section-title">
@@ -564,6 +567,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
               </div>
               {/* "Tudo em ordem" só com os dados carregados e o WhatsApp conectado (fora da demo). */}
               <AttentionList
+                className="plat-overview-attention"
                 items={attention}
                 allClear={
                   !loading && !loadError && shops.length > 0 && (demoMode || waStatus === "open")
@@ -662,8 +666,8 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
         </div>
 
         {/* Fica montado nas outras abas (escondido) para a lista de atenção e o contador
-            da barra saberem o estado do WhatsApp em qualquer aba. No Início, a partir de
-            1024 px, é um widget de 20rem ao lado do "Testar como…" (plataforma.css). */}
+            da barra saberem o estado do WhatsApp. No Início, ocupa a lateral quando há
+            largura útil para as duas tarefas (plataforma.css). */}
         {/* Na demonstração não há cartão do WhatsApp: fora do Início não renderiza nada (o
             último filho do main é quem define a margem do space-y). */}
         {(platformTab === "overview" || !demoMode) && (
@@ -803,9 +807,9 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       <Dialog open={!!testAsShopId} onOpenChange={(open) => !open && setTestAsShopId(null)}>
         <DialogContent
           aria-describedby={undefined}
-          className="max-h-[92dvh] w-[calc(100vw-1.5rem)] max-w-lg overflow-y-auto rounded-3xl border-border bg-card p-5"
+          className="platform-test-as-dialog max-h-[92dvh] w-[calc(100vw-1.5rem)] max-w-lg overflow-y-auto rounded-3xl border-border bg-card p-5"
         >
-          <DialogTitle className="flex min-h-11 items-center gap-2 pr-12 text-lg font-bold">
+          <DialogTitle className="platform-test-as-title flex min-h-11 items-center gap-2 pr-12 text-lg font-bold">
             <FlaskConical className="size-5 text-gold" aria-hidden />
             {t("plat.testAs.title", {
               name:
