@@ -1,6 +1,6 @@
 # Google: conferir `proh.media` antes da P-28 — 31/10/2026
 
-**Situação:** P-69 concluída segundo relatório operacional recebido do dono; decisão sobre `proh.media` ainda sem evidência suficiente. Este pacote é de **leitura**, para a pessoa ou agente de TI com acesso ao Google Cloud e ao Search Console. Não altera o aplicativo nem a configuração do Google.
+**Situação após o relatório de ~16:05:** P-69 concluída; conferência de domínio recebida. `proh.media` consta em dois retornos do cliente **Supabase Google Drive** e nos três links do Branding **Proh Media**. **Manter a configuração nesta etapa.** A P-28 depende de resolver a identidade compartilhada e a comprovação do domínio. [Resultados e encaminhamento](#8-resultado-da-conferência-recebido-em-3110-1605) abaixo. As seções 1–7 preservam o registro e o roteiro anterior; não repetir o inventário já entregue nem executar remoções.
 
 ## 1. P-69 recebida — não refazer
 
@@ -23,7 +23,7 @@ Projeto **`proh-media-drive`**, número **`1072350331037`**, cliente Web **Barba
 | Retorno           | `https://beauty.contheiner.digital/auth/google-apps`         |
 | Retorno local     | `http://localhost:8080/auth/google-apps`                     |
 
-Branding continua, segundo o relato, com `proh.media` e `contheiner.digital` em **Authorized domains**. Existe outro cliente Web, **Supabase Google Drive**, com um aviso ainda não identificado. Não foram conferidos os endereços desse cliente, os links de Home/Privacidade/Termos nem a propriedade no Search Console. Os dois testes de login não validam a integração Agenda/Contatos, o outro cliente ou a propriedade dos domínios.
+No primeiro relato, Branding continuava com `proh.media` e `contheiner.digital` em **Authorized domains**, e o outro cliente Web **Supabase Google Drive** ainda não havia sido aberto. Essas lacunas foram parcialmente resolvidas no relatório de ~16:05 (seção 8). Os dois testes de login não validam a integração Agenda/Contatos, o outro cliente ou a propriedade dos domínios.
 
 ## 2. Diagnóstico possível no repositório
 
@@ -34,7 +34,7 @@ Conferência local em 31/10/2026, sem ler `.env`, segredos ou configuração da 
 - O [registro de implantação](../guia/banco-e-implantacao.md), seções 10–11, e [mb-operacao.md](../mb-operacao.md) ainda documentam `supabase-barbearia.proh.media` como endereço da API, junto do alias `supabasebeauty.contheiner.digital`. Isso impede afirmar que toda a infraestrutura usa apenas `contheiner.digital`, mas **uma URL de API, isoladamente, não prova que o domínio seja necessário no Branding**. É preciso localizar seu uso nos campos OAuth relevantes.
 - O guia de implantação, seção 8, registra uma rotina `google-drive/share-expire` de outro projeto, mantida por decisão do dono (P-26). Não há evidência que a vincule ao cliente **Supabase Google Drive**; não apagar nem alterar essa rotina para esta investigação.
 
-**Conclusão atual:** não há base suficiente para recomendar a retirada de `proh.media`. Conservar a configuração enquanto o TI coleta os dados abaixo é uma medida provisória, não uma decisão definitiva do dono de manter o domínio na P-28.
+**Conclusão preliminar, antes do relatório de ~16:05:** não havia base suficiente para recomendar a retirada de `proh.media`. O relatório posterior identificou usos nos campos OAuth e no Branding (seção 8), confirmando que a retirada não deve seguir nesta etapa.
 
 ## 3. O que o Google exige
 
@@ -102,4 +102,53 @@ Limites ou acessos ausentes:
 
 Se o outro cliente atender a um aplicativo diferente, separar projetos pode ser avaliado posteriormente, com plano próprio de credenciais, consentimento e migração. Não é uma ação automática nem necessária para concluir este inventário.
 
-**P-28:** P-69 atendida pelo relatório recebido. Falta concluir esta conferência, a decisão sobre os domínios e os demais pré-requisitos do [pacote de vídeo/reenvio](2026-10-15-google-reenviar-verificacao-p28.md). Nenhuma verificação foi reenviada nesta sessão.
+**P-28:** P-69 atendida pelo relatório recebido. A conferência foi entregue posteriormente; resultados, limites e próximo passo nas seções 8–9. O [pacote de vídeo/reenvio](2026-10-15-google-reenviar-verificacao-p28.md) depende da resolução de marca/domínios. Nenhuma verificação foi reenviada pelo Codex.
+
+## 8. Resultado da conferência recebido em 31/10, ~16:05
+
+**Fonte externa:** `relatorio-claude-conferencia-dominios-2026-10-31.md`, entregue pelo dono, executado pelo assistente operacional de TI no navegador. Não é inspeção independente do Google Cloud pelo Codex. E-mails pessoais do anexo foram omitidos deste registro.
+
+| Campo                                 | Resultado informado                                                                                                                                                                  |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Projeto                               | `proh-media-drive`, nº `1072350331037`, conferido                                                                                                                                    |
+| Inventário                            | Dois clientes, ambos Web: **Barba e Cabelo Auth** e **Supabase Google Drive**; nenhum cliente ficou sem conferência                                                                  |
+| Barba e Cabelo Auth                   | Listas iguais às da seção 1; P-69 preservada                                                                                                                                         |
+| Google Drive — origens JavaScript     | Nenhuma                                                                                                                                                                              |
+| Google Drive — retornos               | `https://supabase-teste.proh.media/functions/v1/google-drive/callback` e `https://supabase.proh.media/functions/v1/google-drive/callback`                                            |
+| Google Drive — uso                    | Criado em 03/09; último uso exibido em 29/09. Aplicativo/equipe responsável **não confirmado**                                                                                       |
+| Aviso do Google Drive                 | Aviso sobre dois segredos ativos, criados em 03/09 e 30/09; nenhum valor aberto ou alterado. Não era aviso sobre os endereços. Não há autorização de rotação/exclusão nesta entrega  |
+| Branding — nome                       | **Proh Media**                                                                                                                                                                       |
+| Branding — Home, Privacidade e Termos | Os três campos apontam para `https://proh.media`                                                                                                                                     |
+| Domínios autorizados                  | `proh.media` e `contheiner.digital`                                                                                                                                                  |
+| Branding — publicado/rascunho         | **Não confirmado.** Console pede verificar a marca antes de mostrá-la aos usuários                                                                                                   |
+| Verification Center                   | Sem análise em andamento; segundo o TI, console pede verificar/publicar a marca antes da verificação de acesso a dados                                                               |
+| Search Console — contheiner.digital   | Propriedade de domínio; conta executora como proprietária confirmada, também Owner (Legacy) no IAM do projeto                                                                        |
+| Search Console — proh.media           | Conta executora sem acesso à propriedade de domínio. Prefixos de URL e eventual outra conta proprietária não conferidos; propriedade **não confirmada**, não comprovadamente ausente |
+| Alterações                            | Nenhuma configuração ou dado alterado pelo TI, segundo o relato                                                                                                                      |
+
+**Conclusões a partir do relato:**
+
+- `proh.media` continua em uso na configuração do projeto, tanto em retornos de outro cliente quanto nos links de Branding. Não retirar o domínio com o objetivo de concluir a P-28.
+- Os retornos `functions/v1/google-drive/callback` pertencem ao outro cliente e são diferentes do retorno de login `auth/v1/callback` removido pela P-69. **Não aplicar a limpeza da P-69 ao cliente Google Drive.**
+- Dois clientes OAuth foram confirmados; isso não identifica, por si só, dois aplicativos independentes ou marcas diferentes. A associação do cliente Drive a EventFlow/Flow continua sendo hipótese, inclusive no relatório do TI.
+- Marca e links cadastrados divergem dos esperados no pacote do Barba & Cabelo. Os registros de aprovação de marca/páginas de 03/10 são históricos; não comprovam aprovação da configuração atual. Não é possível determinar por esses relatos quando ou por que ocorreu a divergência.
+- “Último uso em 29/09” não prova abandono. O aviso de múltiplos segredos também não autoriza desativar um deles. Responsável e uso em execução precisam ser identificados antes de uma proposta de mudança.
+
+## 9. Próxima etapa: definir a identidade OAuth sem afetar o outro uso
+
+**Recomendação técnica:** se o cliente Drive pertencer a um aplicativo de outra marca, usar projetos separados para as marcas. O [Google recomenda um projeto por marca distinta](https://developers.google.com/identity/siwg/best-practices), pois todos os clientes de um projeto compartilham nome, logo, suporte e links de consentimento. Criar apenas outro cliente no mesmo projeto não separa a marca. Isso é uma direção para planejamento, **não autorização para criar, migrar ou excluir recursos**.
+
+| Situação confirmada pelo dono/TI                                 | Proposta a preparar                                                                                                                                                                                                                     |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Drive atende a outro aplicativo de marca distinta e segue em uso | Planejar a separação dos projetos. Primeiro mapear os dois usos e escolher qual integração migrar, considerando login, conexões existentes, renovação de tokens e testes. Não presumir que é o Barba & Cabelo que deve mudar de cliente |
+| Drive é parte do mesmo aplicativo/marca                          | Preparar uma configuração de marca que represente o aplicativo e todos os usos, com links corretos e propriedade de cada domínio. Mudança compartilhada exige avaliar os dois clientes                                                  |
+| Dono informa que Drive não é mais utilizado                      | TI confirma dependências em execução e responsável; depois preparar eventual desativação em pacote próprio. Não excluir cliente, segredo ou retorno só com base na data de último uso                                                   |
+| Uso ainda desconhecido                                           | Manter configuração e levantar apenas as lacunas abaixo; não iniciar vídeo/reenvio                                                                                                                                                      |
+
+**Recado para o TI — complemento de leitura, sem repetir a P-69 ou o inventário já entregue:**
+
+> Identifique o aplicativo e o responsável pelo cliente “Supabase Google Drive”. Se já tiver acesso autorizado à infraestrutura desse aplicativo, confira apenas por leitura qual serviço/configuração usa o cliente e seus retornos; compare identificadores no próprio ambiente e relate somente a correspondência, sem valores de credenciais. Não abra outros projetos/contas sem acesso autorizado. Confira se existe proprietário verificado de `proh.media` no Search Console, associado ao Cloud como Owner ou Editor; a falta de acesso pela conta atual não prova que o domínio esteja sem verificação. Registre o estado publicado/rascunho do Branding, se a tela permitir identificar, sem clicar em Verify, Publish ou Save. Não altere DNS, marca, cliente, segredo, rotina `share-expire` ou servidor.
+
+Devolver: **(1)** aplicativo e responsável pelo Drive, com evidência e estado de uso; **(2)** correspondência do cliente com configuração em execução, ou limite de acesso; **(3)** propriedade de `proh.media` e associação ao IAM, sem e-mail pessoal; **(4)** estado publicado/rascunho, ou não confirmado. Não repetir a lista de clientes/URLs já registrada, salvo divergência.
+
+Depois do retorno e da definição do dono sobre a identidade, preparar a mudança concreta com cópia de segurança, testes dos dois usos, impacto nas conexões e como desfazer. Se houver troca de cliente em alguma integração, ela precisa de ensaio próprio; os testes de login da P-69 não cobrem essa troca. A verificação/publicação de marca vem antes do pedido de acesso a dados, conforme o estado do console relatado e os requisitos do Google. Só então revisar o roteiro de vídeo/reenvio da P-28 para a configuração escolhida.
