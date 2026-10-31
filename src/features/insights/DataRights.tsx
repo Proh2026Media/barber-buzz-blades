@@ -29,7 +29,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
-import { useViewportAtLeast } from "@/lib/device";
+import { useContainerWidth } from "@/lib/use-container-width";
 import { t as tNow, useI18n } from "@/lib/i18n";
 
 export type PrivacyRequest = {
@@ -92,9 +92,10 @@ export function DataRights({
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [demoDeleted, setDemoDeleted] = useState(false);
   const confirmInputId = useId();
-  // Admin da plataforma a partir de 1024 px: os pedidos em tabela (DataList); abaixo, os
-  // cartões de sempre.
-  const table = useViewportAtLeast(1024);
+  // A lateral de Relatórios pode ser estreita mesmo no PC. A tabela precisa de espaço
+  // para protocolo, conta, situação e ação; os mesmos cartões atendem às demais larguras.
+  const [adminRef, widthRem] = useContainerWidth<HTMLElement>();
+  const table = widthRem >= 48;
 
   useEffect(() => {
     let cancelled = false;
@@ -395,7 +396,7 @@ export function DataRights({
     {
       key: "status",
       header: t("ins.rights.colStatus"),
-      width: "7rem",
+      width: "9rem",
       cell: (row) => (
         <StatusBadge
           tone={row.status === "reviewing" ? "pending" : "neutral"}
@@ -426,8 +427,9 @@ export function DataRights({
 
   return (
     <section
+      ref={adminRef}
       aria-label={t("ins.rights.title")}
-      className="space-y-4 rounded-2xl border border-border bg-card p-4"
+      className="data-rights-admin space-y-4 rounded-2xl border border-border bg-card p-4"
     >
       <SectionHeader
         as="h3"
@@ -439,7 +441,7 @@ export function DataRights({
               type="button"
               disabled={busy || loading}
               onClick={() => setVersion((v) => v + 1)}
-              className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-3 text-sm font-semibold disabled:opacity-60"
+              className="rights-action flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-3 text-sm font-semibold disabled:opacity-60"
             >
               <RefreshCw
                 className={`size-4 ${loading ? "motion-safe:animate-spin" : ""}`}
@@ -456,6 +458,8 @@ export function DataRights({
           <LoadingState variant="list" count={1} label={t("ins.rights.loading")} />
         ) : table ? (
           <DataList
+            tableFrom={0}
+            className="data-rights-table"
             rows={rows}
             rowKey={(row) => row.id}
             columns={requestColumns}
@@ -477,8 +481,11 @@ export function DataRights({
         ) : (
           <>
             {rows.map((row) => (
-              <div key={row.id} className="space-y-2 rounded-xl border border-border p-3 text-xs">
-                <p className="flex items-center gap-2 text-sm font-semibold">
+              <div
+                key={row.id}
+                className="data-rights-request space-y-2 rounded-xl border border-border p-3 text-xs"
+              >
+                <p className="rights-request-status flex items-center gap-2 text-sm font-semibold">
                   <Trash2 className="size-4 shrink-0 text-gold" aria-hidden />
                   {t("ins.rights.deletion", {
                     status:
@@ -499,7 +506,7 @@ export function DataRights({
                     type="button"
                     disabled={busy}
                     onClick={() => void adminUpdate("reviewing", row.id)}
-                    className="flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-3 text-sm font-semibold disabled:opacity-60"
+                    className="rights-action flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-3 text-sm font-semibold disabled:opacity-60"
                   >
                     <Search className="size-4" aria-hidden />
                     {t("ins.rights.startReview")}

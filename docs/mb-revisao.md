@@ -165,3 +165,7 @@ Cartões de papéis sem sobreposição na lateral, seletor separado do título q
 ## P-106 — Barbearias e ficha do admin (29/10/2026)
 
 Após a confirmação do dono de que Acessos foi resolvido: lista e ficha de Barbearias pela largura útil, nome/cabeçalho legíveis com texto ampliado, ações sem corte e uma tarefa de janela por vez, mantendo seleção e campos. Identidade e regras preservadas. Duas capturas móveis padrão idênticas; comparações e limites na seção P-106 de [revisao-visual-integral-2026-10-29.md](revisao-visual-integral-2026-10-29.md).
+
+## P-107 — Relatórios da administração (30/10/2026)
+
+Indicadores, lista/prévia dos questionários e painel de privacidade pela largura útil em rem. Situação e ação da tabela deixam de ficar cortadas; cartões nas áreas estreitas, títulos/detalhes/mensagens ajustados com fonte ampliada. Mesma identidade, três cantos e regras; referência móvel inicial idêntica e fluxos de teclado/recuperação com dados fictícios. Comparações e limites na seção P-107 de [revisao-visual-integral-2026-10-29.md](revisao-visual-integral-2026-10-29.md).

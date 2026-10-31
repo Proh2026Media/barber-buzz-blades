@@ -6,7 +6,7 @@
 
 **15/10/2026 (noite) — passagem concluída no Claude Code:** ver a entrada "Passagem de 15/10" logo abaixo da Diretriz. Comece por [LEIA-PRIMEIRO.md](LEIA-PRIMEIRO.md). A função `register-shop` da P-38 foi publicada às 22:54; faltam os pacotes do Google (P-69 e P-28, em [pacotes/](pacotes/)).
 
-Atualizado em **29/10/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
+Atualizado em **30/10/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
 ## Comece aqui
 
@@ -106,6 +106,13 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - Esportes sempre visível;
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
+
+## Entrega — P-107: Relatórios pela largura útil (30/10, ChatGPT/Codex)
+
+- **Continuação autorizada:** revisão de Admin → Relatórios, sem refazer a P-101 nem as correções de Acessos/Barbearias.
+- **Corrigido:** situação/ação de privacidade cortadas em 1024 px; indicadores e questionários comprimidos com fonte ampliada; cortes de títulos, detalhes e mensagens em área estreita. Composição por containers; tabela administrativa pela largura em rem, com os mesmos cartões quando não cabe.
+- **Preservado:** seleção ao redimensionar, identidade e três cantos, dados, cálculos, perguntas, regras e permissões. Referência inicial de celular em 390 px idêntica pixel a pixel.
+- **Verificação e limites:** tipos, 301 testes, ESLint, formatação e montagem; sete fluxos de questionários e recuperação de erros aprovados na montagem final, com dados fictícios. Comparações e matriz na seção P-107 de [revisao-visual-integral-2026-10-29.md](revisao-visual-integral-2026-10-29.md). Nenhum pedido real alterado; sem migration/TI. P-42/P-43 e revisão geral continuam.
 
 ## Entrega — P-106: Barbearias e ficha pela largura útil (29/10, ChatGPT/Codex)
 

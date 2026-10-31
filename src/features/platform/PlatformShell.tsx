@@ -595,9 +595,8 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                   <h2>{t("plat.insights.title")}</h2>
                 </WorkspaceHeading>
               </div>
-              {/* Pilha na largura toda em todas as faixas: a coluna lateral de 22rem ficava só com
-                  "Pedidos de privacidade" (3 linhas) e 90% vazia, enquanto os 6 tiles do
-                  acompanhamento se espremiam em 2 ou 3 colunas. */}
+              {/* Indicadores na largura toda; catálogo e privacidade se aproximam apenas
+                  quando há espaço útil para as duas tarefas. */}
               <div className="platform-reports-grid space-y-6">
                 <BusinessInsights />
                 <SurveyCatalog />

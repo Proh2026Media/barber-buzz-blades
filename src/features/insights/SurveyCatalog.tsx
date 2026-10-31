@@ -90,7 +90,7 @@ export function SurveyCatalog({ compact = false }: { compact?: boolean }) {
   return (
     <section
       aria-label={t("ins.catalog.title")}
-      className="space-y-4 rounded-2xl border border-primary/20 bg-card p-4"
+      className="survey-catalog space-y-4 rounded-2xl border border-primary/20 bg-card p-4"
     >
       <SectionHeader
         as="h3"
@@ -98,7 +98,7 @@ export function SurveyCatalog({ compact = false }: { compact?: boolean }) {
         title={t("ins.catalog.title")}
         description={t("ins.catalog.summary", { count: keys.length })}
       />
-      <div className="grid gap-4 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+      <div className="survey-catalog-layout grid gap-4">
         <div className="space-y-2" role="list" aria-label={t("ins.catalog.selectAria")}>
           {keys.map((key) => (
             <button
@@ -115,12 +115,12 @@ export function SurveyCatalog({ compact = false }: { compact?: boolean }) {
             </button>
           ))}
         </div>
-        <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 to-background p-4 md:self-start">
+        <div className="survey-catalog-preview rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 to-background p-4">
           <p className="text-xs font-bold uppercase tracking-wider text-primary">
             {t("ins.catalog.preview")}
           </p>
           <h3 className="mt-3 text-sm font-bold">{question.title}</h3>
-          <div className="mt-4 grid grid-cols-2 gap-2">
+          <div className="survey-catalog-options mt-4 grid grid-cols-2 gap-2">
             {Object.entries(question.options).map(([value, label]) => (
               <div
                 key={value}

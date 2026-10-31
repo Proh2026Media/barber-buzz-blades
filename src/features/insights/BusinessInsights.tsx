@@ -526,12 +526,19 @@ function DelayTile({
     },
   ];
   return (
-    <div className={cn("app-action-card min-w-0 space-y-2 p-4", className)}>
+    <div
+      className={cn("business-insights-delays app-action-card min-w-0 space-y-2 p-4", className)}
+    >
       <p className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
         <IconTile icon={Clock3} tone="highlight" size="sm" />
         {t("ins.biz.avgDelay")}
       </p>
-      <div className={cn("space-y-2", wide && "sm:grid sm:grid-cols-2 sm:gap-6 sm:space-y-0")}>
+      <div
+        className={cn(
+          "business-insights-delay-rows space-y-2",
+          wide && "sm:grid sm:grid-cols-2 sm:gap-6 sm:space-y-0",
+        )}
+      >
         {rows.map((row) => {
           const Icon = row.icon;
           return (

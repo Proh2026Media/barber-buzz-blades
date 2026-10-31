@@ -387,31 +387,144 @@
   }
 }
 
-@media (min-width: 1024px) {
-  .platform-reports-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1.3fr) minmax(18rem, 0.7fr);
-    gap: 1.5rem;
-    align-items: start;
+/* Relatórios: o espaço da tarefa e o tamanho do texto decidem a composição. */
+.platform-reports {
+  container: platform-reports / inline-size;
+  min-width: 0;
+}
+.platform-reports .business-insights {
+  container: report-insights / inline-size;
+}
+.platform-reports-grid > * {
+  min-width: 0;
+}
+@media (min-width: 768px) {
+  @container platform-reports (min-width: 64rem) {
+    .platform-reports-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(20rem, 0.7fr);
+      gap: 1.5rem;
+      align-items: start;
+    }
+    .platform-reports-grid > * {
+      margin: 0;
+    }
+    .platform-reports-grid > .business-insights {
+      grid-column: 1 / -1;
+    }
   }
-  .platform-reports-grid > * {
-    margin: 0;
+  @container report-insights (min-width: 60rem) {
+    .platform-reports .business-insights-tiles {
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+    }
+    .platform-reports .business-insights-tiles > :first-child {
+      grid-column: span 2;
+    }
+  }
+}
+@container report-insights (max-width: 32rem) {
+  .platform-reports .business-insights-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .platform-reports .business-insights-tiles > :first-child,
+  .platform-reports .business-insights-delays {
+    grid-column: 1 / -1;
+  }
+  .platform-reports .business-insights-delay-rows {
+    display: block;
+  }
+  .platform-reports .business-insights-delay-rows > * + * {
+    margin-top: 0.5rem;
+  }
+}
+@container report-insights (max-width: 18rem) {
+  .platform-reports .business-insights > * {
+    overflow-wrap: anywhere;
+  }
+  .platform-reports .business-insights summary {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+  .platform-reports .business-insights [role="alert"] > :last-child,
+  .platform-reports .business-insights [role="alert"] button {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+  }
+  .platform-reports .business-insights-comparison :is(.flex, .inline-flex) {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+}
+@container report-insights (max-width: 12rem) {
+  .platform-reports .business-insights-tiles {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .platform-reports .business-insights-tiles > * {
+    grid-column: 1 / -1;
+    overflow-wrap: anywhere;
+  }
+  .platform-reports .business-insights > :first-child {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    overflow-wrap: anywhere;
+  }
+  .platform-reports .business-insights > :first-child > * {
     min-width: 0;
   }
-  .platform-reports-grid > .business-insights {
-    grid-column: 1 / -1;
+  .platform-reports .business-insights-delay-rows > div > p:first-child {
+    flex-wrap: wrap;
   }
 }
 
-@media (min-width: 1024px) {
-  .platform-reports .business-insights-tiles {
-    grid-template-columns: repeat(7, minmax(0, 1fr));
+.survey-catalog {
+  container: survey-catalog / inline-size;
+}
+.survey-catalog-layout > * {
+  min-width: 0;
+}
+@container survey-catalog (min-width: 36rem) {
+  .survey-catalog-layout {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
   }
-  .platform-reports .business-insights-tiles > :first-child {
-    grid-column: span 2;
+  .survey-catalog-preview {
+    align-self: start;
   }
-  .platform-reports .business-insights-tiles > * {
+}
+@container survey-catalog (max-width: 18rem) {
+  .survey-catalog-layout,
+  .survey-catalog > :first-child {
+    overflow-wrap: anywhere;
+  }
+}
+@container survey-catalog (max-width: 12rem) {
+  .survey-catalog-options {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.data-rights-admin {
+  container: data-rights / inline-size;
+}
+.data-rights-table table {
+  table-layout: fixed;
+}
+.data-rights-admin .rights-action {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+@container data-rights (max-width: 18rem) {
+  .data-rights-admin > * {
+    overflow-wrap: anywhere;
+  }
+  .data-rights-admin > :first-child > :last-child {
     min-width: 0;
+    max-width: 100%;
+  }
+  .rights-request-status {
+    flex-wrap: wrap;
   }
 }
 
@@ -555,6 +668,13 @@
     min-width: 0;
     max-width: 100%;
     white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+
+@container platform-reports (max-width: 18rem) {
+  .platform-reports > .workspace-section-title {
+    flex-wrap: wrap;
     overflow-wrap: anywhere;
   }
 }

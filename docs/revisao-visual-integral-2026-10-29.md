@@ -1,4 +1,4 @@
-# Revisão visual integral — P-101 a P-106 (29/10/2026)
+# Revisão visual integral — P-101 a P-107 (29 e 30/10/2026)
 
 O dono considerou insuficientes as mudanças da P-100 e apontou páginas sem revisão. Esta entrega amplia a composição por tarefa e registra a cobertura por área. Implementação e verificação técnica não significam aprovação estética do dono.
 
@@ -205,3 +205,32 @@ Mesmo estado e dados fictícios em cada imagem. A fonte raiz foi ampliada; não 
 - Personalização aberta pela ficha em 390/768/1024 px com uma janela de tarefa ativa. Modelos e regras da edição permanecem os existentes.
 
 Validação em Chrome isolado, com rede externa bloqueada e dados fictícios. Sem migration ou tarefa para TI; nenhum convite, conta ou barbearia real criado. Testes físicos/Safari e integrações reais continuam em P-42/P-43. Não encerra a revisão de todo o sistema. Evidências extensas locais: `/tmp/barba-p106/`.
+
+## P-107 — Relatórios do admin pela largura útil (30/10/2026)
+
+Continuação autorizada da revisão em **Admin → Relatórios**, após Barbearias. A P-101 já organizava essa página; esta rodada corrige falhas reproduzidas sem refazer os dados ou as regras: tabela de privacidade cortava a situação e a ação em 1024 px; indicadores e questionários se comprimiam com fonte ampliada; mensagens e detalhes podiam ultrapassar a área estreita.
+
+| Situação                                       | Antes                                          | Depois                                           |
+| ---------------------------------------------- | ---------------------------------------------- | ------------------------------------------------ |
+| Indicadores, 1024 × 768 px, fonte base em 200% | [Antes](evidencias/p107/indicadores-antes.png) | [Depois](evidencias/p107/indicadores-depois.png) |
+| Privacidade, 1024 × 820 px, fonte padrão       | [Antes](evidencias/p107/privacidade-antes.png) | [Depois](evidencias/p107/privacidade-depois.png) |
+
+Dados fictícios. As comparações mantêm a mesma largura, altura e preferência de fonte em cada par. Fonte raiz ampliada não equivale a testar todos os modos de zoom dos sistemas operacionais.
+
+### Composição e comportamento
+
+- **Computador:** indicadores conservam a faixa única quando recebem pelo menos 60rem de área útil. Abaixo disso, cedem para linhas legíveis; o valor dos concluídos ocupa a largura necessária. Questionários e privacidade ficam lado a lado quando a página recebe 64rem, e se empilham antes disso.
+- **Tablet e texto ampliado:** lista e prévia do questionário só dividem a área com 36rem no próprio cartão. A prévia fica abaixo quando falta espaço; a seleção permanece ao redimensionar. Opções, títulos e conteúdos expansíveis se reorganizam em áreas extremas.
+- **Privacidade:** `DataRights` reutiliza `useContainerWidth`; a tabela requer 48rem de largura própria, com colunas fixas e espaço para situação/ação. Em painéis estreitos, usa os cartões existentes. Atualizar, iniciar análise e os avisos de resultado permanecem acessíveis. A área de dados da conta do cliente e o catálogo compacto não receberam mudança visual.
+- **Celular:** captura inicial de Relatórios em 390 × 768 px estritamente idêntica à anterior. As alterações móveis corrigem cortes com texto ampliado; cores, tipografia, superfícies, ícones e três modos de canto permanecem os mesmos.
+- **Escopo:** CSS em `styles/plataforma.css`, classes de composição em `BusinessInsights`/`SurveyCatalog`, largura da tabela administrativa em `DataRights` e comentário atualizado em `PlatformShell`. Mesmas consultas, cálculos, perguntas, idiomas, permissões e regras de privacidade. Nenhum texto novo ou migration.
+
+### Verificações e limites
+
+- `scripts/verificar.sh`: tipos, 301 testes, ESLint dos quatro arquivos TSX alterados, Prettier e montagem de produção.
+- Montagem final: sete fluxos da rota administrativa real com respostas fictícias, todos aprovados: oito temas por teclado, prévia, seleção preservada ao alternar 390/1024/1920 px, conteúdos expansíveis, atualizar indicadores e nova tentativa após falha.
+- Pedidos fictícios com identificadores longos: falha na ação sem remover o pedido, nova tentativa, mudança para análise, erro ao consultar e atualização posterior. Nenhuma solicitação real foi alterada.
+- Cenários em 390/768/1024/1440/1920 px, cantos retos/semi arredondados/arredondados e tema escuro; texto base em 200% em 320 e 1024 px. Sem corte interno, rolagem horizontal ou erro de página nos fluxos finais.
+- Capturas adicionais em 320/640/767/800/1100/1280/1366 px; texto base em 200% em 320/640/768/1024/1536 px. Inspeção visual dos painéis e comparação móvel sem tolerância.
+
+Chrome isolado com rede externa bloqueada. Evidências extensas locais em `/tmp/barba-p107/`. Sem tarefa de implantação para TI. Aparelhos físicos/Safari e integrações reais continuam em P-42/P-43; esta etapa não declara encerrada a revisão geral nem aprovada a experiência pelo dono.
