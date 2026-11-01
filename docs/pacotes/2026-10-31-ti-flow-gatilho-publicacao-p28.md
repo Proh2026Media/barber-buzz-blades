@@ -1,5 +1,7 @@
 # P-28 — Pacote para TI/Guardião: gatilho de publicação do Flow
 
+**Concluído — relatório TI de 31/10, 21:30–21:32, conferido pelo Codex.** Origem e hub com sucesso, issue #17 fechada; leitura direta posterior confirma origem/espelho no mesmo commit. Não repetir cadastro de segredo nem disparo. Os passos 1–6 ficam como histórico; [resultado na seção 7](#7-resultado-recebido-e-conferido). A próxima tarefa está na [revisão do PR #35](2026-10-31-flow-revisao-pr35-p28.md), fora do reparo deste gatilho.
+
 **31/10/2026 · Destinatário: agente de TI, com o responsável pelo cofre de credenciais quando necessário.** Objetivo: restabelecer o aviso automático da origem do Flow ao hub e comprovar o espelhamento. O pedido ao Codex foi preparar este arquivo; nenhuma configuração ou execução remota foi realizada. Ao receber o pacote, seguir o escopo autorizado por Alyson no encaminhamento.
 
 ## 1. Diagnóstico já concluído
@@ -83,3 +85,13 @@ Devolver **`relatorio-ti-flow-gatilho-p28-2026-10-31.md`**, contendo:
 - Confirmação do escopo preservado; nenhuma credencial, token, conteúdo de `.env` ou saída de ambiente anexada.
 
 Não devolver outro levantamento completo. O Codex usará esse resultado junto com o [PR de proteção a preparar pelo Claude/Flow](2026-10-31-flow-retorno-e-protecao-p28.md); reparar o gatilho não conclui nem autoriza a migração Drive.
+
+## 7. Resultado recebido e conferido
+
+Fonte externa lida inteira: `relatorio-ti-flow-gatilho-p28-2026-10-31.md`, entregue pelo dono. TI informa validação em **31/10, 21:30–21:32 de Brasília** (01/11, 00:30–00:32 UTC). Secret já cadastrado pelo responsável do cofre; nenhum novo cadastro ou disparo manual nesta validação. Permissões e validade até **01/11/2027** vêm do relato, sem leitura de valor/cofre pelo Codex.
+
+Codex confirmou metadados pelo GitHub: [origem 41256948853](https://github.com/Proh2026Media/flow-proh-media/actions/runs/41256948853), evento push, commit `0f1cb334b6cc7ac36291815bf9271f466e65de8a`, passo “Pedir espelhamento ao hub” com sucesso; [hub 41256954251](https://github.com/PROH-Media/hub-control/actions/runs/41256954251), passo “Espelhar flow-proh-media” com sucesso. Issue #17 fechada como concluída às **21:32:16 de Brasília**. Nenhuma mensagem/comentário enviado pelo Codex.
+
+A lacuna de acesso do TI ao SHA do espelho foi atendida por leitura do Codex: origem e espelho já avançaram juntos ao commit posterior `e82919c77eed12440409d465b596822cfca1efcb`, PR #35. Site público responde 200 e serve `index-BtYtShCP.js`, posterior ao bundle do relatório. Não é divergência nem motivo para republicar a versão antiga.
+
+**Gatilho corrigido e comprovado.** Função Drive da VPS ainda na versão anterior, segundo leitura SSH sem alterações do Codex; PR #35 exige [ajuste pontual antes da implantação](2026-10-31-flow-revisao-pr35-p28.md). Não alterar credencial, cron, Google ou servidor por este encerramento.

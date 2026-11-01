@@ -1,6 +1,6 @@
 # P-28 — Proposta de separar o Drive do Flow preservando o cliente do Barba & Cabelo
 
-**31/10/2026 · Retorno Claude/Flow e complemento TI de 19:50–19:52 incorporados.** Páginas públicas entregues no PR #33 e confirmadas sem sessão pelo Codex; não refazer. Origem e espelho em `2cc4907`, hospedagem pública Hostinger. Falha do gatilho identificada: `HUB_DISPATCH_TOKEN` ausente segundo o TI, sem reparo executado. Destino/operador, propriedade associada, proteção dos IDs e ensaio continuam pendentes. [Devolutiva e próxima tarefa de proteção](2026-10-31-flow-retorno-e-protecao-p28.md). O desenho recebido precisa de ajustes antes de execução; páginas publicadas não autorizam migração, cron ou Google. P-69 e P-26 preservadas.
+**31/10/2026 · Gatilho corrigido e comprovado; PR #35 integrado.** Codex confirmou execuções origem/hub, issue #17 fechada e origem/espelho na fonte nova. Leitura SSH encontrou a função Drive ainda na versão antiga; nenhuma implantação executada. A revisão do PR #35 reproduziu lacuna na validação dos IDs de Clientes/Lixeira. [Ajuste complementar antes da implantação](2026-10-31-flow-revisao-pr35-p28.md), sem refazer páginas, gatilho ou PR original. Destino/operador Google, propriedade associada e ensaio continuam pendentes. P-69 e P-26 preservadas.
 
 ## 1. Proposta concreta
 
@@ -153,3 +153,13 @@ TI identificou falta de `HUB_DISPATCH_TOKEN` no gatilho instantâneo; workflow a
 **Próximo trabalho proposto:** PR em rascunho do Flow para proteger IDs, validar autorização antes de substituir conexão, tratar falha parcial/persistência/cache e diagnóstico sem gravação, com mocks locais. Não depende de iniciar a stack de teste nem de obter token real. [Escopo, testes e responsáveis](2026-10-31-flow-retorno-e-protecao-p28.md).
 
 O desenho recebido não está aceito para execução: zero linhas no banco não justifica nova raiz; retirar revogação automática do token em erro; diagnóstico não pode herdar gravações de `loadConfig`/`status`; cópia auxiliar no próprio banco precisa de proteção/restauração; teste no dia 8 não comprova estado de publicação Google. APP_URL e correção do cron não viram exigências automáticas. Projeto/operador, propriedade associada, ensaio real e pacote operacional ainda faltam. Não remover cliente antigo, mudar Branding ou reenviar P-28 nesta etapa.
+
+## 11. Gatilho encerrado e revisão da proteção entregue
+
+Relatório TI `relatorio-ti-flow-gatilho-p28-2026-10-31.md` lido inteiro: validação de **21:30–21:32 de Brasília**, credencial já cadastrada pelo responsável e cadeia do push #34 com sucesso. Codex confirmou execuções/etapas específicas pelo GitHub e issue #17 fechada. [Encerramento e evidências](2026-10-31-ti-flow-gatilho-publicacao-p28.md#7-resultado-recebido-e-conferido). Não criar outra credencial nem repetir disparo/inventário.
+
+Consulta posterior confirmou origem e espelho no commit `e82919c77eed12440409d465b596822cfca1efcb`, PR #35 integrado às **21:32:55 de Brasília**. Publicação do frontend não prova implantação da função: leitura SSH do Codex encontrou `index.ts` no blob antigo `17e98b8278747857329dcf38d1412b682e3c714e` e `protecao.ts` ausente. Nenhuma função, diagnóstico ou painel Drive chamado; nenhum arquivo remoto alterado.
+
+**Próxima tarefa:** PR complementar do Flow para validar os IDs principais já gravados em `garantirRaiz` e na autorização candidata. Quatro reproduções locais com dependências fictícias mostraram raiz aceita com Clientes/Lixeira inacessíveis ou na lixeira e candidata gravada sem essas verificações. Cobrir também falha na preparação de pastas após gravar a candidata; não revogar para desfazer. [Código, linhas e critérios de regressão](2026-10-31-flow-revisao-pr35-p28.md).
+
+A versão futura exige `index.ts` e `protecao.ts` correspondentes; preparar implantação/retorno somente depois da correção/revisão. Destino/operador, domínio associado, compatibilidade de arquivos, cópia protegida e ensaio real ainda faltam. Páginas e gatilho atendidos; P-28 não concluída por isso. Nenhuma ação Google, DNS, cron, implantação ou migração executada pelo Codex.

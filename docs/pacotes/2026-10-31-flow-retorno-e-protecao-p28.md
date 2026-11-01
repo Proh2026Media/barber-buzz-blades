@@ -1,5 +1,7 @@
 # P-28 — Retorno do Flow e próxima tarefa de proteção
 
+**Atualização posterior:** gatilho corrigido e comprovado, [relatório encerrado](2026-10-31-ti-flow-gatilho-publicacao-p28.md#7-resultado-recebido-e-conferido). PR #35 de proteção já integrado ao Flow; não solicitar o PR original de novo. Codex confirmou fonte nova no GitHub, versão antiga ainda na VPS e uma lacuna nas verificações de Clientes/Lixeira, reproduzida com mocks. [Devolutiva atual para ajuste complementar](2026-10-31-flow-revisao-pr35-p28.md). O restante deste arquivo preserva o encaminhamento anterior à entrega do PR #35; não é autorização para implantá-lo ou migrar.
+
 **31/10/2026 · Devolutiva para Alyson e o agente responsável pelo Flow.** As páginas públicas foram entregues. A próxima tarefa de código proposta é proteger a conexão e os IDs antes do ensaio da migração. Este documento registra evidências e prepara uma tarefa revisável; não executa nem autoriza migração, alteração de produção, DNS, IAM, credenciais ou abertura da stack de teste.
 
 ## 1. Resultado recebido e conferido

@@ -1,6 +1,6 @@
 # Google: conferir `proh.media` antes da P-28 — 31/10/2026
 
-**Situação após retorno do Claude/Flow e TI de 19:50–19:52:** páginas públicas entregues no PR #33, publicação Hostinger e origem/espelho confirmados pelo Codex. Gatilho falhou por segredo ausente segundo o TI; cron e variáveis já reconferidos. [Resultado atualizado](#13-retorno-flow-páginas-publicadas-e-próxima-tarefa) e [devolutiva de proteção](2026-10-31-flow-retorno-e-protecao-p28.md). Não repetir inventários nem refazer páginas. Destino/operador, propriedade associada, PR e ensaio ainda pendentes; migração não executada. Cliente Barba & Cabelo, P-69 e P-26 preservados.
+**Situação após relatório TI de 21:30–21:32 e conferência posterior:** gatilho corrigido/comprovado, páginas atendidas e PR #35 já integrado. Codex confirmou origem/espelho atualizados; função Drive na VPS ainda antiga. [Plano, seção 11](2026-10-31-google-separacao-flow-p28.md), e [revisão do PR #35](2026-10-31-flow-revisao-pr35-p28.md): validar também Clientes/Lixeira antes de gravar candidata ou produzir efeitos. Não refazer gatilho, páginas ou PR original. Destino/operador, propriedade associada, implantação corrigida e ensaio ainda pendentes; migração não executada. Cliente Barba & Cabelo, P-69 e P-26 preservados.
 
 ## 1. P-69 recebida — não refazer
 
