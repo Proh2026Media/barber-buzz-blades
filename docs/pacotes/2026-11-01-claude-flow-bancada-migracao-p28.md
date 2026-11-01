@@ -1,6 +1,6 @@
 # P-28 — Para Claude/Flow: ferramentas de cópia/retorno e bancada de compatibilidade
 
-**Entrega e quatro ajustes conferidos:** PR #37 no head `67e7fb7`, ainda em rascunho/sem merge. Codex confirmou **86 testes e quatro casos independentes aprovados**. [Resultado da revisão](2026-11-01-flow-pr37-ajustes-conferidos-p28.md). Não refazer a especificação nem as correções atendidas. Próximo: decisão de integração e [preparação operacional da TI](2026-11-01-ti-flow-pr37-preparacao-operacional-p28.md), antes de material real. O restante preserva o pedido original.
+**Entrega atendida e integrada em 01/11, 18:57 Brasília:** PR #37 na main `13f1dc9`, árvore idêntica ao head `67e7fb7` dos **86 testes e quatro casos independentes aprovados**. [Merge e procedimento TI conferidos](2026-11-01-ti-flow-pr37-runtime-ensaio-conferido-p28.md); próximo é decidir a execução da etapa A, exclusivamente fictícia. Não pedir novo relatório/PR ao Claude, refazer a especificação ou as correções atendidas. O restante preserva o pedido original.
 
 **01/11/2026 · Implementação e testes isolados no repositório Flow, por PR.** Encaminhar ao Claude que desenvolve o Flow. Este arquivo especifica a próxima entrega; não autoriza executar Google, trocar a conexão viva, restaurar produção, iniciar stack parada ou publicar código.
 

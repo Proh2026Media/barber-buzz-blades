@@ -1,5 +1,7 @@
 # P-28 — Para TI: concluir a preparação operacional do PR #37
 
+**Atendido em 01/11:** procedimento TI de 18:55–18:56 recebido e lido inteiro; PR #37 integrado externamente às 18:57, main `13f1dc9` com conteúdo idêntico ao revisado. [Resultado, correções dos comandos e etapa A pronta para decisão](2026-11-01-ti-flow-pr37-runtime-ensaio-conferido-p28.md). Não pedir outro relatório geral, repetição dos testes locais ou nova decisão de merge. A execução de runtime/ensaio fictício na VPS ainda não ocorreu; Google não bloqueia essa etapa. O texto abaixo preserva o pedido de preparação original.
+
 **01/11/2026 · Complemento ao pacote de cópia/retorno, somente preparação.** O PR #37 já existe e seus quatro ajustes foram [conferidos pelo Codex](2026-11-01-flow-pr37-ajustes-conferidos-p28.md): **86 testes + quatro casos independentes aprovados**. Usar o head **`67e7fb785b7c11163438aa82a41e3d947a3ff212`**. Não repetir abertura de PR, instalação #36, diagnóstico de 15:32:55 ou inventário geral.
 
 ## 1. Aproveitar o retorno já entregue
