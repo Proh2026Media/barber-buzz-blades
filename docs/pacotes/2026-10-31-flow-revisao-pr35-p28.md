@@ -1,5 +1,7 @@
 # P-28 — Revisão do PR #35 do Flow e ajuste antes da implantação
 
+**Atualização — correção entregue no PR #36 e revisada:** os pontos abaixo foram atendidos no head `78381de3a0abfbf0c72fcabbf4245caa1252a3f8`. Codex executou 94 testes do módulo e as quatro regressões independentes com sucesso. [Conclusão da revisão e próximos passos](2026-10-31-flow-revisao-pr36-p28.md). PR ainda aberto/em rascunho; não confundir correção na branch com merge ou implantação. Este arquivo preserva o achado da versão #35; não pedir outro PR para o mesmo ajuste.
+
 **31/10/2026 · Devolutiva para o Claude/Flow.** O gatilho de publicação foi corrigido e comprovado. O [PR #35](https://github.com/Proh2026Media/flow-proh-media/pull/35) de proteção já foi integrado; **não refazer o PR original**. A revisão dirigida abaixo identificou uma lacuna reproduzível nos IDs de Clientes/Lixeira. Preparar um PR complementar com testes isolados, conforme o encaminhamento do dono e o `AGENTS.md` do Flow. Este documento não executa implantação ou migração.
 
 ## 1. Estado conferido

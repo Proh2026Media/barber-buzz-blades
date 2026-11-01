@@ -1,6 +1,6 @@
 # P-28 — Proposta de separar o Drive do Flow preservando o cliente do Barba & Cabelo
 
-**31/10/2026 · Gatilho corrigido e comprovado; PR #35 integrado.** Codex confirmou execuções origem/hub, issue #17 fechada e origem/espelho na fonte nova. Leitura SSH encontrou a função Drive ainda na versão antiga; nenhuma implantação executada. A revisão do PR #35 reproduziu lacuna na validação dos IDs de Clientes/Lixeira. [Ajuste complementar antes da implantação](2026-10-31-flow-revisao-pr35-p28.md), sem refazer páginas, gatilho ou PR original. Destino/operador Google, propriedade associada e ensaio continuam pendentes. P-69 e P-26 preservadas.
+**31/10/2026 · PR #36 revisado, sem achados impeditivos nos pontos solicitados.** Correção de Clientes/Lixeira e falha parcial conferida; Codex executou 94 testes do módulo e quatro regressões independentes com sucesso. [Revisão e limites](2026-10-31-flow-revisao-pr36-p28.md). PR continua aberto/em rascunho, decisão de merge do dono pendente. [Preparação da implantação para TI/Flow](2026-10-31-ti-flow-preparar-implantacao-pr36-p28.md), sem execução. Última leitura da VPS encontrou função antiga; não repetida nesta rodada. Páginas/gatilho atendidos. Destino/operador Google, propriedade e ensaio real ainda pendentes; P-69/P-26 preservadas.
 
 ## 1. Proposta concreta
 
@@ -163,3 +163,11 @@ Consulta posterior confirmou origem e espelho no commit `e82919c77eed12440409d46
 **Próxima tarefa:** PR complementar do Flow para validar os IDs principais já gravados em `garantirRaiz` e na autorização candidata. Quatro reproduções locais com dependências fictícias mostraram raiz aceita com Clientes/Lixeira inacessíveis ou na lixeira e candidata gravada sem essas verificações. Cobrir também falha na preparação de pastas após gravar a candidata; não revogar para desfazer. [Código, linhas e critérios de regressão](2026-10-31-flow-revisao-pr35-p28.md).
 
 A versão futura exige `index.ts` e `protecao.ts` correspondentes; preparar implantação/retorno somente depois da correção/revisão. Destino/operador, domínio associado, compatibilidade de arquivos, cópia protegida e ensaio real ainda faltam. Páginas e gatilho atendidos; P-28 não concluída por isso. Nenhuma ação Google, DNS, cron, implantação ou migração executada pelo Codex.
+
+## 12. PR #36 recebido e revisado
+
+Relatório `relatorio-claude-flow-pr36-p28-2026-10-31 04.md` lido inteiro. GitHub confirma PR #36 aberto/em rascunho, head `78381de3a0abfbf0c72fcabbf4245caa1252a3f8`; origem/espelho main continuam em `e82919c77eed12440409d465b596822cfca1efcb`. Nenhum merge ou implantação realizado pelo Codex.
+
+O módulo agora confere coerência e os três IDs existentes antes de criar/gravar; candidata usa o próprio token nas três inspeções. A orquestração usada pelo callback real retorna estado parcial explícito quando a preparação falha depois da gravação. Codex executou **94 testes do módulo** em cópia isolada e repetiu **quatro regressões independentes**, todos aprovados. Não repetiu os 106 testes completos, Deno check, tipos/lint do Flow declarados pelo Claude. [Conclusão versionada e limites](2026-10-31-flow-revisao-pr36-p28.md).
+
+**Próximo passo:** decisão do dono sobre merge; depois preparar o procedimento autorizado de implantação dos dois arquivos, com cópia/retorno e primeira validação controlada por diagnóstico, sem abrir `status`. [Arquivo de preparação para TI/Flow](2026-10-31-ti-flow-preparar-implantacao-pr36-p28.md). Não repetir o PR para os mesmos pontos nem confundir integração no Git com função na VPS. A migração Google continua dependendo de destino/operador, propriedade, compatibilidade e ensaio próprios.

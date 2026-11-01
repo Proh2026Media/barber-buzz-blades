@@ -1,6 +1,6 @@
 # Google: conferir `proh.media` antes da P-28 — 31/10/2026
 
-**Situação após relatório TI de 21:30–21:32 e conferência posterior:** gatilho corrigido/comprovado, páginas atendidas e PR #35 já integrado. Codex confirmou origem/espelho atualizados; função Drive na VPS ainda antiga. [Plano, seção 11](2026-10-31-google-separacao-flow-p28.md), e [revisão do PR #35](2026-10-31-flow-revisao-pr35-p28.md): validar também Clientes/Lixeira antes de gravar candidata ou produzir efeitos. Não refazer gatilho, páginas ou PR original. Destino/operador, propriedade associada, implantação corrigida e ensaio ainda pendentes; migração não executada. Cliente Barba & Cabelo, P-69 e P-26 preservados.
+**Situação após relatório do PR #36:** complemento revisado, 94 testes do módulo e quatro regressões independentes aprovados pelo Codex; sem achados impeditivos nos pontos solicitados. PR ainda aberto/em rascunho; merge e implantação não realizados. [Plano, seção 12](2026-10-31-google-separacao-flow-p28.md), [revisão](2026-10-31-flow-revisao-pr36-p28.md) e [preparação TI/Flow](2026-10-31-ti-flow-preparar-implantacao-pr36-p28.md). Páginas/gatilho atendidos. Destino/operador, propriedade e ensaio real ainda pendentes; P-28 não reenviada. Cliente Barba & Cabelo, P-69/P-26 preservados.
 
 ## 1. P-69 recebida — não refazer
 
