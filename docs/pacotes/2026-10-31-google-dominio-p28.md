@@ -1,6 +1,6 @@
 # Google: conferir `proh.media` antes da P-28 — 31/10/2026
 
-**Situação após relatório de ~18:05:** TI informa hash implantado igual à fonte analisada, zona Hostinger sem TXT Google e políticas dedicadas não encontradas nos caminhos testados. Hash atendido não conclui propriedade Google ou ensaio funcional. [Resultado atualizado](#12-relatório-de-1805-domínio-páginas-e-hash) e [encaminhamento das páginas públicas/ensaio](2026-10-31-flow-paginas-publicas-e-ensaio-p28.md). Direção mantém o cliente atual do Barba & Cabelo; migração não autorizada/executada. P-69, DNS, marca e P-26 preservados; não repetir leituras atendidas.
+**Situação após retorno do Claude/Flow e TI de 19:50–19:52:** páginas públicas entregues no PR #33, publicação Hostinger e origem/espelho confirmados pelo Codex. Gatilho falhou por segredo ausente segundo o TI; cron e variáveis já reconferidos. [Resultado atualizado](#13-retorno-flow-páginas-publicadas-e-próxima-tarefa) e [devolutiva de proteção](2026-10-31-flow-retorno-e-protecao-p28.md). Não repetir inventários nem refazer páginas. Destino/operador, propriedade associada, PR e ensaio ainda pendentes; migração não executada. Cliente Barba & Cabelo, P-69 e P-26 preservados.
 
 ## 1. P-69 recebida — não refazer
 
@@ -191,3 +191,13 @@ Fonte externa: `relatorio-claude-p28-blocos-2-3-2026-10-31.md`, entregue pelo do
 Arquivo Drive de produção com **blob Git `17e98b8278747857329dcf38d1412b682e3c714e`**, igual à fonte analisada segundo o relatório. Comparação de versão atendida; ensaio OAuth/pastas não executado. Nenhuma chamada à função ou alteração/reinício informada.
 
 [Plano, seção 9](2026-10-31-google-separacao-flow-p28.md), e [tarefa técnica preparada para o agente Flow](2026-10-31-flow-paginas-publicas-e-ensaio-p28.md): apresentação/privacidade públicas, Termos se oferecidos, pipeline a confirmar e ensaio separado. Destino/operador e propriedade associada ainda pendentes. Sem migração, criação de projeto/cliente ou reenvio nesta entrega.
+
+## 13. Retorno Flow: páginas publicadas e próxima tarefa
+
+Fonte principal `relatorio-claude-flow-retorno-p28-2026-10-31 2.md`, entregue pelo dono; complementos de entrega Flow e conferências TI de 19:50–19:52 localizados nesta máquina. O retorno do TI já existe; não solicitar novamente o pacote que o Claude ainda marcava como aguardado.
+
+Páginas `/sobre-o-flow`, `/privacidade` e `/termos` entregues no PR #33, integrado/publicado por Alyson segundo o relato. Codex confirmou merge, origem/espelho em `2cc490788209e32480282f8730e4f4062dfad2e7`, cabeçalhos Hostinger e renderização sem sessão das três rotas em 375/768/1440 px, com backend bloqueado/simulado. Não é ensaio de Drive ou aprovação jurídica/Google.
+
+TI identificou `HUB_DISPATCH_TOKEN` ausente no gatilho instantâneo; arquivo atual confirma gatilho habilitado para a origem Flow. Não generalizar que ambos os workflows são pulados nem tratar espelho igual como correção do gatilho. Cron continua no teste e variáveis Google/APP_URL ausentes segundo o retorno. Sem mudança de DNS, Google, função ou produção pelo Codex.
+
+[Plano, seção 10](2026-10-31-google-separacao-flow-p28.md), e [devolutiva para o PR de proteção](2026-10-31-flow-retorno-e-protecao-p28.md): preservar IDs, validar antes de gravar conexão, tratar cache/falha parcial e diagnóstico sem gravação, com testes isolados. Desenho recebido ainda requer correções; não aprovar nova raiz pelo banco vazio nem revogar token automaticamente em falha. Destino/operador e domínio associado seguem pendentes; cron P-26 não muda por este relatório. P-69 não refeita; P-28 ainda sem vídeo/reenvio.

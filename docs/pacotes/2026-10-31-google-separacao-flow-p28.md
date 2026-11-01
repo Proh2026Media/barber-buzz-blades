@@ -1,6 +1,6 @@
 # P-28 — Proposta de separar o Drive do Flow preservando o cliente do Barba & Cabelo
 
-**31/10/2026 · Relatório de ~18:05 incorporado; planejamento confirmado, execução ainda não autorizada.** Segundo o TI, hash da função implantada igual ao blob analisado: comparação atendida, não repetir. Zona Hostinger sem TXT Google e páginas legais não encontradas nos caminhos testados, com limites na seção 9. Manter a escolha de migrar o Drive preservando o cliente do Barba & Cabelo. Faltam destino/operador, comprovação associada, páginas públicas válidas e ensaio funcional. [Encaminhamento técnico das páginas e do ensaio](2026-10-31-flow-paginas-publicas-e-ensaio-p28.md). Nenhum recurso Google, DNS, código Flow ou produção alterado nesta entrega.
+**31/10/2026 · Retorno Claude/Flow e complemento TI de 19:50–19:52 incorporados.** Páginas públicas entregues no PR #33 e confirmadas sem sessão pelo Codex; não refazer. Origem e espelho em `2cc4907`, hospedagem pública Hostinger. Falha do gatilho identificada: `HUB_DISPATCH_TOKEN` ausente segundo o TI, sem reparo executado. Destino/operador, propriedade associada, proteção dos IDs e ensaio continuam pendentes. [Devolutiva e próxima tarefa de proteção](2026-10-31-flow-retorno-e-protecao-p28.md). O desenho recebido precisa de ajustes antes de execução; páginas publicadas não autorizam migração, cron ou Google. P-69 e P-26 preservadas.
 
 ## 1. Proposta concreta
 
@@ -51,6 +51,8 @@ O [guia geral OAuth](https://developers.google.com/identity/protocols/oauth2) in
 
 ## 4. Situação do levantamento e o que falta
 
+**Atualização vigente:** páginas públicas atendidas pelo retorno do Flow; complemento TI de 19:50–19:52 recebido, não aguardando nova rodada. Detalhes e revisão do desenho na seção 10 e na [devolutiva](2026-10-31-flow-retorno-e-protecao-p28.md). A tabela abaixo mantém a base do levantamento inicial quando indicar horários anteriores.
+
 | Item pedido                 | Situação após ~17:40 e conferência própria                                                                                                                        |
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Continuidade/direção        | Confirmadas diretamente pelo dono; não perguntar novamente                                                                                                        |
@@ -63,10 +65,10 @@ O [guia geral OAuth](https://developers.google.com/identity/protocols/oauth2) in
 **Três blocos restantes para fechar o pacote de execução:**
 
 1. **Destino Google e operador:** formalizar quem poderá autorizar a conta Drive e escolher o projeto dedicado. Proposta de nome: **Flow PROH Media Drive**, ID sugerido **`flow-proh-media-drive`**; disponibilidade não conferida e recurso não criado. Qualquer alternativa precisa de ID/número, uso e IAM conferidos. O `barba-e-cabelo` não é destino escolhido. A criação/configuração exige autorização de execução, distinta da direção de planejamento já aprovada.
-2. **Domínio e marca:** acesso DNS do TI já confirmado e zona consultada, sem TXT Google no retorno. Falta comprovação associada à conta/projeto de destino, sem acrescentar TXT/IAM nesta preparação. Políticas dedicadas não encontradas nos caminhos testados: preparar apresentação e privacidade públicas; Termos se oferecidos/cadastrados. [Rotas propostas, conteúdo e critérios de aceite](2026-10-31-flow-paginas-publicas-e-ensaio-p28.md). Não cadastrar propostas antes de publicação/verificação. Confirmar o pipeline diante do CNAME Pages, sem trocar DNS por suposição.
+2. **Domínio e marca:** acesso DNS já confirmado; comprovação Google associada ao destino ainda pendente, sem acrescentar TXT/IAM nesta preparação. Páginas de apresentação, privacidade e Termos já publicadas pelo Flow, conferidas no navegador isolado. Não recriar nem usar as URLs do Barba & Cabelo na marca Flow. Revisão jurídica/contato ainda não confirmados. Hostinger atende o público; divergência do registro Pages não obriga limpeza DNS para preparar o PR. Corrigir o gatilho é tarefa própria, com causa conhecida.
 3. **Compatibilidade e ensaio:** versão implantada **já conferida pelo TI**; não pedir novo hash. Preparar a troca respeitando efeitos de callback/status, acesso por arquivo do novo app e regras do Flow (seção 8). Cópia protegida das **duas linhas** de `integracoes`, IDs e segredos de assinatura/cron; teste de acesso às pastas antes da criação/substituição automática, nova autorização, renovação real e retorno. A igualdade de código e as contagens zero no banco não substituem o ensaio de pastas no Drive.
 
-**Recado para encaminhar ao TI:**
+**Recado anterior para encaminhar ao TI — histórico, substituído pela devolutiva da seção 10:**
 
 > Relatórios de ~17:40/~18:05 recebidos: não repetir URLs, escopo, banco, contagens, zona/TXT ou hash já atendidos. A direção continua manter/migrar o Drive preservando o cliente do Barba & Cabelo. Seguir o encaminhamento das páginas públicas e do ensaio; formalizar destino/operador e preparar a comprovação Google do domínio. Confirmar o pipeline diante do CNAME Pages. Não abrir a aba Drive/chamar status como leitura, criar/configurar recursos Google, trocar credenciais, iniciar teste, corrigir cron ou alterar DNS/IAM por esta preparação. Não enviar segredos/tokens. Ler o AGENTS do Flow antes de qualquer tarefa nesse repositório.
 
@@ -139,3 +141,15 @@ Fonte externa lida inteira: `relatorio-claude-p28-blocos-2-3-2026-10-31.md`, ent
 | Ainda pendente    | Destino/operador, propriedade associada, páginas válidas, cópia protegida e ensaio OAuth/pastas. Não concluídos pelo relatório de hash                                                                                                                                                                |
 
 **Trabalho preparado:** [encaminhamento das páginas públicas e do ensaio Flow](2026-10-31-flow-paginas-publicas-e-ensaio-p28.md). Apresentação proposta em `/sobre-o-flow`, privacidade em `/privacidade`, Termos se oferecidos em `/termos`; rotas **propostas, não publicadas**. Conteúdo/implementação pertencem ao Flow e seguem sua revisão. Não copiar política do Barba & Cabelo nem cadastrar URLs sem verificar a publicação real.
+
+## 10. Retorno Flow, páginas entregues e desenho ainda a revisar
+
+Fonte principal: `relatorio-claude-flow-retorno-p28-2026-10-31 2.md`, entregue pelo dono e lido inteiro. Relatórios complementares de entrega e conferências TI encontrados nesta máquina; o retorno TI de **19:50–19:52** já atende a rodada que o Claude marcava como aguardada. Não pedir de novo espelho, cron ou nomes de variáveis.
+
+Codex confirmou pelo GitHub o PR #33 integrado às **19:18:22 de Brasília**, origem e espelho no commit `2cc490788209e32480282f8730e4f4062dfad2e7`. Claude atribui a publicação ao Alyson; Codex não publicou no Flow. Hostinger confirmada nos cabeçalhos públicos; três rotas renderizadas sem sessão em 375/768/1440 px, com backend bloqueado/simulado, sem rolagem lateral, erros de console ou recursos `/functions/v1/`. Esses testes não são ensaio OAuth/Drive nem aprovação jurídica/Google.
+
+TI identificou falta de `HUB_DISPATCH_TOKEN` no gatilho instantâneo; workflow atual está habilitado para a origem Flow, contrariando a afirmação anterior de que ambos eram pulados. Origem/espelho iguais não provam sincronização reparada. TI também reconfirmou cron no teste e ambiente Google/APP_URL ausente; fonte viva relatada continua no banco.
+
+**Próximo trabalho proposto:** PR em rascunho do Flow para proteger IDs, validar autorização antes de substituir conexão, tratar falha parcial/persistência/cache e diagnóstico sem gravação, com mocks locais. Não depende de iniciar a stack de teste nem de obter token real. [Escopo, testes e responsáveis](2026-10-31-flow-retorno-e-protecao-p28.md).
+
+O desenho recebido não está aceito para execução: zero linhas no banco não justifica nova raiz; retirar revogação automática do token em erro; diagnóstico não pode herdar gravações de `loadConfig`/`status`; cópia auxiliar no próprio banco precisa de proteção/restauração; teste no dia 8 não comprova estado de publicação Google. APP_URL e correção do cron não viram exigências automáticas. Projeto/operador, propriedade associada, ensaio real e pacote operacional ainda faltam. Não remover cliente antigo, mudar Branding ou reenviar P-28 nesta etapa.

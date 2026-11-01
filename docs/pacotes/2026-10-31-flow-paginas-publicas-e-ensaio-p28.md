@@ -1,5 +1,7 @@
 # P-28 — Encaminhamento técnico: páginas públicas e ensaio do Flow
 
+**Atualização após retorno do Claude/Flow:** páginas implementadas no PR #33, integrado/publicado por Alyson segundo o relato; Codex confirmou merge, origem/espelho no mesmo commit e três páginas renderizadas sem sessão em 375/768/1440 px, com backend bloqueado/simulado. **Não refazer as páginas.** O texto abaixo preserva a tarefa de preparação original. [Estado atual, revisão do ensaio e próxima tarefa de proteção](2026-10-31-flow-retorno-e-protecao-p28.md); migração e configuração Google continuam pendentes.
+
 **31/10/2026 · Preparação para o agente responsável pelo Flow.** O dono confirmou manter o Drive e planejar sua separação, preservando o cliente atual do Barba & Cabelo. Este documento concretiza as tarefas identificadas; não autoriza publicar páginas, criar/configurar recursos Google, alterar DNS/IAM ou executar a migração nesta etapa.
 
 ## 1. Leituras concluídas — não repetir
