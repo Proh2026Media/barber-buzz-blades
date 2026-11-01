@@ -6,7 +6,7 @@
 
 **15/10/2026 (noite) — passagem concluída no Claude Code:** ver a entrada "Passagem de 15/10" logo abaixo da Diretriz. Comece por [LEIA-PRIMEIRO.md](LEIA-PRIMEIRO.md). A função `register-shop` da P-38 foi publicada às 22:54; faltam os pacotes do Google (P-69 e P-28, em [pacotes/](pacotes/)).
 
-Atualizado em **31/10/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
+Atualizado em **01/11/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
 ## Comece aqui
 
@@ -106,6 +106,15 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - Esportes sempre visível;
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
+
+## Registro — instalação Flow autorizada e preparação remota P-28 (01/11, ChatGPT/Codex)
+
+- **Autorização direta:** Alyson respondeu “faça o que for preciso” à instalação do pacote revisão 2. Abrange somente os dois arquivos, cópia/retorno, stop/start limitado às funções Flow e diagnóstico em baixo uso. Não pedir novamente esse OK; migração Google continua fora do escopo.
+- **Executado:** pré-verificação SSH; dois artefatos do merge `9262985` obtidos pelo conector GitHub e conferidos localmente/na VPS contra os blobs revisados; staging e cópia do código antigo criadas fora da API. Operação **`20261101T174338Z`**. [Registro completo, horários, caminhos, hashes e retomada](pacotes/2026-11-01-flow-instalacao-pr36-p28.md).
+- **Estado comprovado:** pasta viva ainda com apenas `index.ts` antigo `17e98b82…`, helper ausente, container `running healthy`, mesmo início de 31/10. Tráfego Kong nos cinco minutos anteriores a 14:42:04 Brasília sem chamadas às funções; revalidar janela antes de eventual parada. Nenhum restart ou código vivo alterado.
+- **Bloqueio concreto:** login existente do Flow usado sem revelar senha; acesso ao Painel Admin visível. Na página pública, Edge bloqueou a colagem do diagnóstico com aviso de segurança. A política de controle do computador exige liberação pessoal pelo dono, já solicitada; não contornada. Nenhum `diagnostico` executado ou aba Drive/`status` acionado pelo agente.
+- **Pendente:** ação pessoal no aviso → diagnóstico → revalidação das condições → instalação/diagnóstico pós. Depois, linha de base e pacote próprio de cópia/restauração/ensaio considerando cron ativo. Não repetir merge, projetos ou preparação já conferida; não marcar proteção implantada. Banco, OAuth, cron, DNS, demais stacks, cliente Barba & Cabelo, `.env` e `.vscode/` preservados.
+- **Verificação:** tipos, **301 testes**, formatação dos seis documentos e montagem aprovados; **15 links/âncoras locais novos** conferidos. ESLint não aplicável, sem TypeScript alterado. Não equivale a implantação ou diagnóstico real da função Flow; testes isolados do mesmo manifesto não repetidos.
 
 ## Registro — consolidado Flow e pacote TI revisão 2 da P-28 (31/10, ChatGPT/Codex)
 

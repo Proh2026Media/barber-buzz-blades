@@ -1,5 +1,7 @@
 # P-28 — Pacote TI: implantação da proteção Drive (PR #36) — PREPARAÇÃO
 
+**Estado em 01/11/2026:** Alyson autorizou a instalação desta revisão 2. Artefatos exatos e cópia do código antigo preparados na VPS; pasta viva continua antiga, sem reinício. Diagnóstico e troca aguardam a liberação pessoal do aviso do Edge, já solicitada ao dono. [Registro e retomada da operação](2026-11-01-flow-instalacao-pr36-p28.md). As menções abaixo a aguardar autorização descrevem a preparação de 31/10; não pedir novamente o OK do pacote. Migração Google continua fora do escopo.
+
 **Versão para decisão do dono — revisão 2 da TI com adendo do Codex.** Fonte: `pacote-ti-flow-implantacao-pr36-p28-2026-10-31 06.md`, entregue no consolidado e lido inteiro. Codex confirmou merge/manifesto e estado da VPS; não executou instalação. A revisão 2 incorpora o ajuste do Claude para manter backup/staging fora da API. Nesta cópia, o retorno do §5 também preserva a versão nova e exige conferir o backup antes da troca. [Revisão e estado consolidado](#11-revisão-do-codex-e-estado-consolidado).
 
 **Revisão 2** · 31/10/2026 · 22:28 (America/Sao_Paulo)
@@ -323,3 +325,7 @@ O [AGENTS.md do Flow, seção 6](https://github.com/Proh2026Media/flow-proh-medi
 **Escopo a decidir:** instalar somente os dois arquivos desse manifesto, com a janela stop/start do container indicado, cópia/retorno e validação admin por `diagnostico`. Sem troca de cliente/token, Google, banco, cron, DNS ou stack de teste. Não confundir autorização dessa proteção com autorização para migrar o Drive.
 
 Depois da instalação comprovada, preparar o pacote de cópia/restauração e ensaio da migração. O cron agora ativo escreve em `google_drive`; o pacote futuro precisa considerar essa concorrência, sem restaurar uma linha antiga por cima de atualizações novas ou mudar o agendamento por este documento. O desenho seletivo de backup continua uma proposta, não comandos executáveis aprovados.
+
+## 12. Autorização e preparação de 01/11
+
+O pedido direto de Alyson **“faça o que for preciso”**, após a pergunta sobre este pacote, autorizou a instalação dos dois arquivos, cópia/retorno e stop/start limitado às funções Flow, com diagnóstico e baixo uso. Artefatos do manifesto conferidos e copiados para staging exclusiva; cópia do `index.ts` antigo verificada. Nenhuma parada ou troca da pasta viva executada. O diagnóstico depende de liberação pessoal do aviso de segurança do Edge; não contornar o aviso nem renovar a autorização já dada. [Relatório de preparação, caminhos e sequência de retomada](2026-11-01-flow-instalacao-pr36-p28.md).
