@@ -107,6 +107,13 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## Registro — retorno TI da instalação Flow P-28 conciliado (01/11, ChatGPT/Codex)
+
+- **Fonte externa lida inteira:** `relatorio-ti-flow-instalacao-pr36-p28-2026-11-01.md`, entregue pelo dono. TI revalidou a mesma operação entre **15:36:34 e 15:37:13 Brasília**; não repetiu instalação, parada/início ou chamada à função. Hashes, backup, permissões, pastas, saúde e StartedAt relatados coincidem com o registro próprio. “Operação concorrente” designa a instalação já concluída pelo Codex; não houve segunda implantação.
+- **Pendência conciliada:** o anexo marca diagnóstico no navegador do dono como pendente por não tê-lo executado na sessão TI. A chamada de **15:32:55 Brasília**, reconhecida no próprio preflight/anexo, já foi executada pelo Codex **no Edge de Alyson com sessão administrativa existente**, após a liberação pessoal, com HTTP 200 e estados/contagens observados no console e no Kong. Instalação e diagnóstico continuam concluídos; não pedir nova chamada ao dono ou ao TI.
+- **Registro atualizado:** [relatório operacional, seção 9](pacotes/2026-11-01-flow-instalacao-pr36-p28.md#9-retorno-da-ti-recebido-e-conciliado) e pendências. Nenhuma instrução anexada tratada como autorização adicional; sem novo SSH, diagnóstico, cópia/reinício, banco, OAuth, cron, DNS ou Google nesta conciliação. Próxima etapa P-28 mantida: pacote protegido de cópia/restauração das integrações e ensaio considerando cron ativo. `.env` e `.vscode/` locais preservados.
+- **Verificação:** tipos, **301 testes**, formatação dos três documentos e montagem aprovados; **dois links/âncoras locais novos** conferidos, diff sem erros de espaço. ESLint não aplicável, sem TypeScript alterado. Nenhuma repetição da validação de produção ou dos testes isolados Flow dos mesmos blobs.
+
 ## Aplicação — proteção Flow PR #36 e linha de base P-28 (01/11, ChatGPT/Codex)
 
 - **Autorização e retomada:** pacote revisão 2 já autorizado; Alyson informou “pronto” após a liberação pessoal do aviso do Edge. Colagem e diagnóstico funcionaram; nenhuma nova autorização solicitada. Pull/vez atendidos; `.env` e `.vscode/` locais preservados.
