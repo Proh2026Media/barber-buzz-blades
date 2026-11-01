@@ -1,5 +1,7 @@
 # P-28 — Para TI: preparar a cópia protegida e o retorno da integração Flow
 
+**Atualização após retorno Claude:** PR #37 recebido; Codex confirmou 72 testes aprovados com banco fictício e reproduziu quatro falhas adicionais. [Revisão e ajustes pendentes](2026-11-01-flow-revisao-pr37-p28.md). A TI pode continuar a conferência operacional/dos dados restantes, mas o procedimento com material real aguarda o código corrigido e a revisão. Não repetir instalação/diagnóstico ou os inventários atendidos.
+
 **01/11/2026 · Preparação operacional, sem execução de cópia secreta, restauração ou migração.** Encaminhar este arquivo ao agente de TI. O [arquivo do Claude/Flow](2026-11-01-claude-flow-bancada-migracao-p28.md) define as ferramentas e os testes que ele implementará em PR. A TI confere a operação e devolve o procedimento; não edita o mesmo projeto em paralelo.
 
 ## 1. Ponto de partida atendido
