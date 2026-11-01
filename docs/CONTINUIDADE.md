@@ -107,6 +107,14 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## Entrega — arquivo para TI sobre o gatilho de publicação Flow P-28 (31/10, ChatGPT/Codex)
+
+- **Pedido:** dono solicitou também o arquivo para encaminhar ao TI. Preparado [pacote do gatilho Flow](pacotes/2026-10-31-ti-flow-gatilho-publicacao-p28.md), complementar à tarefa do Claude.
+- **Escopo:** causa conhecida `HUB_DISPATCH_TOKEN` ausente, origem/controle/espelho exatos, credencial de acesso mínimo, validação encadeada e relatório esperado. Distingue preparação de execução e operador do cofre de token usado pelo workflow. Não usa push manual no espelho, não repete inventários e não trata páginas acessíveis como prova de gatilho corrigido.
+- **Conferência:** trecho atual do workflow Flow lido pelo GitHub; permissão de dispatch conferida na documentação oficial. Nenhum segredo lido/criado, workflow acionado, mensagem enviada ou configuração externa alterada. `.env` e `.vscode/` preservados.
+- **Pendente:** execução pelo TI/Guardião conforme encaminhamento do dono; PR de proteção, destino/operador Google, propriedade e ensaio continuam na P-28. Cron P-26 e cliente Barba & Cabelo preservados.
+- **Verificação:** tipos, **301 testes**, formatação dos quatro documentos e montagem aprovados; **quatro links locais novos** conferidos. ESLint não aplicável, sem TypeScript alterado. São verificações do Barba & Cabelo; o gatilho Flow ainda não foi corrigido/executado por esta entrega.
+
 ## Registro — retorno Flow, páginas entregues e revisão do ensaio P-28 (31/10, ChatGPT/Codex)
 
 - **Fonte principal lida inteira:** `relatorio-claude-flow-retorno-p28-2026-10-31 2.md`, entregue pelo dono. Complementos de entrega Flow e conferências TI de **19:50–19:52** encontrados nesta máquina; a rodada que o Claude marcava como aguardada já foi entregue. Propostas dos anexos não executadas como autorização do dono.

@@ -46,6 +46,8 @@ Preparar **PR em rascunho no repositório do Flow**, seguindo seu `AGENTS.md`, c
 
 ## 4. Demais responsáveis e ordem
 
+**Arquivo para encaminhar ao TI/Guardião:** [gatilho de publicação do Flow](2026-10-31-ti-flow-gatilho-publicacao-p28.md), com alvos, credencial mínima, validação e modelo de devolutiva. Preparação documental; nenhuma configuração ou execução do gatilho realizada pelo Codex.
+
 | Responsável                | Próxima entrega concreta                                                                                                                                                                                                                                                                           |
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Claude/Flow                | PR de proteção acima e desenho de ensaio corrigido. Páginas já entregues; não refazer                                                                                                                                                                                                              |

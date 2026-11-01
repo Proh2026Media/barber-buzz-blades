@@ -32,6 +32,8 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 
 **Dono confirmou acesso DNS do agente de TI a `proh.media`.** Não perguntar novamente sobre acesso. Comprovação no Google e execução continuam pendentes; preparar domínio/destino pelo plano, sem adicionar TXT, alterar IAM ou criar recursos nesta etapa.
 
+**Arquivo de encaminhamento TI solicitado pelo dono:** [gatilho de publicação do Flow](../pacotes/2026-10-31-ti-flow-gatilho-publicacao-p28.md). Corrigir `HUB_DISPATCH_TOKEN` no local correto e validar origem → hub → espelho/site quando a execução for encaminhada; sem repetir diagnóstico, mudar cron/Google ou migrar Drive. Arquivo preparado, correção ainda não executada pelo Codex.
+
 **P-99 concluída:** publicação na Hostinger confirmada por HTTP público em 28/10 às 18:57:47, após o espelhamento. A nº 98 também foi aplicada em 28/10 às 19:17, conforme relatório recebido em 29/10; não há migration escrita pendente.
 
 Atualizada em 29/10/2026: código executável de P-44, P-45, P-48 e P-75 concluído; P-78 aplicada na VPS em 28/10, 19:17 (Brasília), segundo relatório do agente Claude. Pacote: [implantacao-falha-login-google-2026-10-28.md](../implantacao-falha-login-google-2026-10-28.md). P-71 aprovada e aplicada em 29/10: “agendamento” nas telas do cliente em pt-BR. Os itens abaixo dependem de acesso externo, aparelhos ou decisão de produto.
