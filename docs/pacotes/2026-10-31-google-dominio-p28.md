@@ -1,6 +1,6 @@
 # Google: conferir `proh.media` antes da P-28 — 31/10/2026
 
-**Situação após relatório do PR #36:** complemento revisado, 94 testes do módulo e quatro regressões independentes aprovados pelo Codex; sem achados impeditivos nos pontos solicitados. PR ainda aberto/em rascunho; merge e implantação não realizados. [Plano, seção 12](2026-10-31-google-separacao-flow-p28.md), [revisão](2026-10-31-flow-revisao-pr36-p28.md) e [preparação TI/Flow](2026-10-31-ti-flow-preparar-implantacao-pr36-p28.md). Páginas/gatilho atendidos. Destino/operador, propriedade e ensaio real ainda pendentes; P-28 não reenviada. Cliente Barba & Cabelo, P-69/P-26 preservados.
+**Situação após consolidado de ~22:40:** #36 integrado, revisão de código atendida, origem/espelho e manifesto confirmados; função da VPS ainda antiga. Pacote TI revisão 2 incorporado, com adendo do Codex ao retorno, pronto para decisão de instalação. Cron em produção/APP_URL configurado confirmados por leitura; projeto Google dedicado criado segundo Guardião e ainda não aplicado. [Plano, seção 13](2026-10-31-google-separacao-flow-p28.md) e [pacote vigente](2026-10-31-ti-flow-implantacao-pr36-revisao2-p28.md). Não repetir merge, projeto, páginas/gatilho ou inventários. Operador/propriedade, implantação, cópia/retorno e ensaio real pendentes; P-28 sem reenvio/migração. Cliente Barba & Cabelo/P-69 preservados; nenhuma mudança de cron pelo Codex.
 
 ## 1. P-69 recebida — não refazer
 

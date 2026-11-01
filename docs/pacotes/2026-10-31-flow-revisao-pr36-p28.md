@@ -1,5 +1,7 @@
 # P-28 — Revisão do PR #36 do Flow
 
+**Atualização após consolidado:** merge confirmado às **22:02:39 de Brasília**, commit `926298529da2b0e565599eb3e1f86d834e514be1`; os blobs revisados não mudaram. Origem/espelho atualizados; função da VPS ainda antiga, confirmada por hash nesta rodada. [Pacote TI, revisão 2 com adendo do Codex](2026-10-31-ti-flow-implantacao-pr36-revisao2-p28.md), preparado e aguardando decisão de execução do dono. O estado aberto/rascunho abaixo corresponde à revisão anterior; não pedir novo merge ou repetir os testes dos mesmos blobs.
+
 **31/10/2026 · Resultado: sem achados impeditivos nos três pontos solicitados na revisão do PR #35.** O complemento corrige a validação das subpastas e explicita a falha posterior à gravação da conexão. O [PR #36](https://github.com/Proh2026Media/flow-proh-media/pull/36) continua **aberto e em rascunho**, aguardando a decisão do dono sobre o merge. Não houve comentário/review enviado ao GitHub, merge, publicação, implantação ou migração pelo Codex.
 
 ## 1. Fonte e versão revisadas

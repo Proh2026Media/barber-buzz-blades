@@ -1,5 +1,7 @@
 # P-28 — TI/Flow: preparar a implantação da proteção do Drive
 
+**Preparação atendida:** PR #36 integrado e pacote operacional da TI, revisão 2, recebido/revisado. [Arquivo vigente para decisão de instalação](2026-10-31-ti-flow-implantacao-pr36-revisao2-p28.md), com adendo do Codex ao retorno. Não pedir outro pacote com os mesmos dados; os passos abaixo preservam a solicitação original. Implantação e migração ainda não executadas pelo Codex.
+
 **31/10/2026 · Preparação para TI e responsável pelo Flow, após decisão de merge do PR #36.** O Codex revisou o complemento e executou 94 testes do módulo mais quatro regressões independentes. O PR segue em rascunho nesta entrega. Este arquivo prepara um pacote revisável; **não executar cópia, reinício, diagnóstico de produção ou migração por este encaminhamento de preparação**.
 
 ## 1. Objetivo e versão
