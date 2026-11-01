@@ -1,6 +1,6 @@
-# P-28 — Pacote TI: implantação da proteção Drive (PR #36) — PREPARAÇÃO
+# P-28 — Pacote TI: implantação da proteção Drive (PR #36) — APLICADO
 
-**Estado em 01/11/2026:** Alyson autorizou a instalação desta revisão 2. Artefatos exatos e cópia do código antigo preparados na VPS; pasta viva continua antiga, sem reinício. Diagnóstico e troca aguardam a liberação pessoal do aviso do Edge, já solicitada ao dono. [Registro e retomada da operação](2026-11-01-flow-instalacao-pr36-p28.md). As menções abaixo a aguardar autorização descrevem a preparação de 31/10; não pedir novamente o OK do pacote. Migração Google continua fora do escopo.
+**Aplicado em 01/11/2026, 15:32 Brasília:** somente os dois arquivos aprovados, backup fora da API e recarga limitada às funções Flow. Janela stop→healthy **8,309 s**, demais containers intactos. Diagnóstico pré 404 → pós **200**, conexão ativa e Raiz/Clientes/Lixeira acessíveis. [Resultado completo, hashes, horários e retorno disponível](2026-11-01-flow-instalacao-pr36-p28.md). Liberação pessoal do Edge atendida. O corpo abaixo preserva o procedimento revisado e o histórico de preparação; menções a autorização/execução futura não são pendências atuais. Não repetir instalação. Migração Google continua fora do escopo.
 
 **Versão para decisão do dono — revisão 2 da TI com adendo do Codex.** Fonte: `pacote-ti-flow-implantacao-pr36-p28-2026-10-31 06.md`, entregue no consolidado e lido inteiro. Codex confirmou merge/manifesto e estado da VPS; não executou instalação. A revisão 2 incorpora o ajuste do Claude para manter backup/staging fora da API. Nesta cópia, o retorno do §5 também preserva a versão nova e exige conferir o backup antes da troca. [Revisão e estado consolidado](#11-revisão-do-codex-e-estado-consolidado).
 
@@ -329,3 +329,9 @@ Depois da instalação comprovada, preparar o pacote de cópia/restauração e e
 ## 12. Autorização e preparação de 01/11
 
 O pedido direto de Alyson **“faça o que for preciso”**, após a pergunta sobre este pacote, autorizou a instalação dos dois arquivos, cópia/retorno e stop/start limitado às funções Flow, com diagnóstico e baixo uso. Artefatos do manifesto conferidos e copiados para staging exclusiva; cópia do `index.ts` antigo verificada. Nenhuma parada ou troca da pasta viva executada. O diagnóstico depende de liberação pessoal do aviso de segurança do Edge; não contornar o aviso nem renovar a autorização já dada. [Relatório de preparação, caminhos e sequência de retomada](2026-11-01-flow-instalacao-pr36-p28.md).
+
+## 13. Resultado da execução em 01/11
+
+Após o dono liberar pessoalmente o console, Codex concluiu este procedimento: diagnóstico autenticado anterior 404 às **15:31:05**, parada/troca/início apenas do container indicado entre **15:32:28 e 15:32:36**, diagnóstico posterior **200 às 15:32:55**, horários de Brasília. Hashes vivos iguais ao manifesto, backup antigo conferido fora da API, sete funções esperadas sem pastas extras, logs sem falha de importação/erro e demais containers intactos. Retorno não usado. [Relatório operacional](2026-11-01-flow-instalacao-pr36-p28.md).
+
+Conexão ativa e Raiz/Clientes/Lixeira acessíveis; amostra de registros zero. Instalação concluída, sem ensaio/migração Google ou alteração de banco, credenciais, cron, DNS ou outras stacks. Não usar a amostra vazia como prova de Drive vazio; preparar a cópia/restauração e o ensaio próprios antes da futura virada.

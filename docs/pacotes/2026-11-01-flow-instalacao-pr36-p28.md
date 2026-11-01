@@ -1,56 +1,82 @@
-# P-28 — Instalação autorizada da proteção Flow: preparação e ponto de retomada
+# P-28 — Instalação da proteção Flow: resultado e evidências
 
-**01/11/2026 · Instalação autorizada por Alyson; troca do código ainda não executada.** Os artefatos e a cópia do código atual estão prontos na VPS, fora da API. O Flow permanece com a versão anterior, saudável e sem reinício. O diagnóstico administrativo depende de uma intervenção pessoal no aviso de segurança do Edge.
+**01/11/2026 · Proteção do PR #36 instalada e validada em produção.** Somente os dois arquivos aprovados foram promovidos; recarga limitada ao container das funções Flow. Diagnóstico passou do 404 antigo para HTTP 200 com conexão ativa e as três pastas principais acessíveis. Janela stop→healthy de **8,309 segundos**; demais containers intactos.
 
 ## 1. Autorização e limites
 
-Após a apresentação do [pacote TI revisão 2](2026-10-31-ti-flow-implantacao-pr36-revisao2-p28.md), Alyson respondeu **“faça o que for preciso”**. A autorização cobre instalar os dois arquivos revisados do PR #36, preparar cópia e retorno, parar/iniciar somente o container das funções Flow e validar por `diagnostico`, em período de baixo uso. Não pedir novamente essa mesma autorização.
+Após a apresentação do [pacote TI revisão 2](2026-10-31-ti-flow-implantacao-pr36-revisao2-p28.md), Alyson respondeu **“faça o que for preciso”**. A autorização cobriu os dois arquivos, cópia/retorno, parada e início somente das funções Flow e validação por `diagnostico`, em baixo uso. Posteriormente, informou **“pronto”** após liberar pessoalmente o aviso de segurança do console do Edge. A colagem e o diagnóstico funcionaram na retomada.
 
-A migração Google continua dependendo de procedimento e decisão próprios. Esta instalação não inclui trocar cliente, tokens ou segredos, alterar banco, cron, DNS, Google Cloud, guardas dos scripts, stack de teste ou Barba & Cabelo.
+Não houve alteração de cliente/refresh token/segredos, configuração de integração, banco, cron, DNS, Google Cloud, guardas dos scripts, stack de teste ou Barba & Cabelo. Não foi usado o instalador restrito à stack de teste, nem Coolify Redeploy. Esta autorização de código não inclui migração Google.
 
-## 2. Conferências e preparação executadas
+## 2. Fonte e manifesto instalado
 
-- Fonte dos artefatos: merge **`926298529da2b0e565599eb3e1f86d834e514be1`** do repositório Flow. Conteúdo obtido pelo conector GitHub com referência fixa; hashes conferidos localmente e na VPS.
-- `index.ts` aprovado: **`e0db47fccb1e7e52852f385cc227b8df21d574d1`**.
-- `protecao.ts` aprovado: **`711879fb7b390fbabfdd67c203139e975ea80f3f`**.
-- Não foi copiado `protecao.test.ts`. Permanecem válidos os 94 testes do módulo e quatro regressões independentes já registrados, pois os blobs são os mesmos.
-- Pré-verificação por SSH em **01/11, ~17:32 UTC / 14:32 Brasília**: pasta viva com apenas `index.ts` antigo, blob **`17e98b8278747857329dcf38d1412b682e3c714e`**; helper ausente; funções `running healthy`.
-- Leitura de tráfego do Kong em **17:42:04 UTC / 14:42:04 Brasília**: logs disponíveis e zero requisições `/functions/v1/` nos cinco minutos anteriores. Isso é uma observação daquela janela; conferir novamente antes da parada.
-- Preparação remota iniciada em **17:43:38 UTC / 14:43:38 Brasília**, operação **`20261101T174338Z`**. Cópia dos dois artefatos para staging exclusiva, diretórios de preparação privados, arquivos `root:root`/`0644`.
-- Conferência posterior em **~17:46:50 UTC / 14:46:50 Brasília** confirmou ambos os hashes de staging e o hash antigo na cópia e na pasta viva. Container ainda saudável, iniciado em **31/10, 23:18:42.76895618 UTC / 20:18:42.76895618 Brasília**, sem reinício nesta operação.
+Fonte: merge **`926298529da2b0e565599eb3e1f86d834e514be1`**, repositório Flow. Conteúdo obtido pelo conector GitHub com referência fixa; hashes conferidos localmente, na staging e na pasta viva. Na retomada, `main` ainda servia os mesmos blobs.
 
-| Item                                | Local na VPS                                                                     |
-| ----------------------------------- | -------------------------------------------------------------------------------- |
-| Pasta viva, ainda antiga            | `/data/coolify/services/vv3jo93anprhqezhtu4ewcpl/volumes/functions/google-drive` |
-| Staging dos dois arquivos aprovados | `/root/staging-flow-google-drive-pr36-20261101T174338Z`                          |
-| Backup desta preparação             | `/root/backup-flow-google-drive-pr36-20261101T174338Z`                           |
-| Cópia conferida do código antigo    | Diretório `copia-arquivos` dentro do backup                                      |
-| Registro de preparação              | Arquivo `preflight.json` dentro do backup, modo `0600`                           |
+| Arquivo vivo  | Blob Git conferido                         |
+| ------------- | ------------------------------------------ |
+| `index.ts`    | `e0db47fccb1e7e52852f385cc227b8df21d574d1` |
+| `protecao.ts` | `711879fb7b390fbabfdd67c203139e975ea80f3f` |
 
-O registro remoto está na fase **`artefatos_e_copia_prontos_sem_parada`**. Contém manifesto, caminhos, horários e estado inicial dos containers. Trata-se de cópia do código, sem banco, credenciais ou configuração de integração; não substitui o backup protegido exigido na futura migração Google. A pasta viva original ainda não foi movida para `pasta-viva-pre-pr36`.
+Os dois arquivos são `root:root`/`0644`; diretório vivo `0755`. `protecao.test.ts` não foi instalado. Permanecem válidos os 94 testes do módulo e quatro regressões independentes já registrados, pois os blobs são idênticos. O Deno check do Claude sobre esses blobs foi aceito conforme o pacote; não repetido nesta máquina sem Deno.
 
-## 3. Bloqueio concreto antes da parada
+## 3. Preparação e prova anterior
 
-O login existente foi usado no Edge sem revelar senha. A interface apresentou acesso ao Painel Admin. A sessão foi mantida na página pública **`https://flow.proh.media/sobre-o-flow`**, sem abrir a aba Drive ou chamar `status`.
+A operação **`20261101T174338Z`** começou com staging exclusiva e cópia conferida do código antigo, fora da API, às **17:43:38 UTC / 14:43:38 Brasília**. Pasta viva ainda com apenas `index.ts` antigo **`17e98b8278747857329dcf38d1412b682e3c714e`**, helper ausente e funções saudáveis. Houve uma interrupção da preparação para a liberação pessoal do aviso do Edge; nenhum código vivo foi trocado durante essa espera.
 
-Ao colar o comando de diagnóstico no DevTools, o Edge bloqueou a operação e exibiu o aviso de segurança que solicita **“permitir colagem”**. O comando não foi executado. A política de controle do computador exige que **o próprio usuário** examine e libere avisos de segurança do navegador; o agente não pode digitar a liberação nem contorná-la com outro método de entrada.
+Na retomada, os hashes, a cópia, a saúde e a lista de funções foram revalidados. Diagnóstico autenticado prévio em **18:31:05 UTC / 15:31:05 Brasília**, confirmado no Kong: **404**, com a mensagem de ação desconhecida esperada na versão antiga. Autorização usada somente dentro da sessão existente do navegador, sem copiar/exibir token.
 
-Alyson já foi avisado e recebeu o pedido para revisar o aviso, digitar pessoalmente a expressão indicada, pressionar Enter e informar quando concluir. A autorização da instalação continua válida; falta essa ação pessoal, não outra aprovação do pacote. Até que o diagnóstico esteja disponível, manter a pasta viva e o container atuais.
+Leitura de tráfego às **18:31:41 UTC / 15:31:41 Brasília**, últimos cinco minutos: somente `share-expire` agendado (GET 200), preflight do diagnóstico (OPTIONS 200) e diagnóstico anterior (GET 404). Nenhuma chamada de uso interativo identificada nessa janela. Cron não foi alterado; o resultado da rotina é uma observação pontual, não prova de seu funcionamento futuro.
 
-## 4. Retomada sem repetir trabalho
+## 4. Execução e disponibilidade
 
-1. Confirmar que Alyson concluiu a liberação no próprio Edge. Não inferir a ação apenas de uma mensagem de autorização para o agente fazê-la.
-2. Executar o diagnóstico com a sessão existente, enviando sua autorização apenas à API Flow; registrar somente HTTP, estados e contagens. Não imprimir/copiar tokens. Na versão antiga, o esperado é `404` com ação `diagnostico` desconhecida; autenticação ou conectividade pendentes devem ser resolvidas antes da parada. Não usar `status` como substituto.
-3. Revalidar a vez, hashes vivos/staging/cópia, saúde, tráfego e lista de funções. Se houver mudança concorrente, reconciliar antes de continuar. A leitura de baixo uso de 14:42 não vale como janela indefinida.
-4. Seguir o pacote revisão 2: preparar retorno verificado, parar somente **`supabase-edge-functions-vv3jo93anprhqezhtu4ewcpl`**, guardar a pasta viva original em `pasta-viva-pre-pr36` dentro do backup e promover staging. Ajustar diretório vivo para `0755`, arquivos para `0644`, `root:root`.
-5. Conferir os dois hashes e ausência de pastas extras sob `volumes/functions/` antes de iniciar. Iniciar somente o container indicado; verificar saúde/importação e confirmar que DB/Auth/Kong/Storage/REST/MinIO mantiveram seus horários de início.
-6. Executar `diagnostico` administrativo após a instalação. Saúde do container ou hash sozinho não comprova que o módulo foi carregado. Registrar estados e contagens, sem IDs privados/tokens. IDs inacessíveis ou na lixeira não autorizam recriação de pastas ou migração.
-7. Se a implantação falhar, conferir o backup antes do retorno e preservar a versão nova fora da API em `pasta-pos-pr36`. Registrar horários UTC/Brasília, duração stop→healthy, hashes, diagnóstico e resultado do retorno, se usado.
+Somente **`supabase-edge-functions-vv3jo93anprhqezhtu4ewcpl`** foi parado/iniciado. A pasta antiga foi movida para o backup fora da API; staging foi promovida; hashes e permissões foram conferidos antes do início.
 
-Não executar a migração Google depois desta instalação por extensão da autorização. Após comprovar a proteção, preparar a linha de base e o pacote de cópia/restauração e ensaio, considerando o cron de produção ativo.
+| Marco em 01/11/2026            | UTC             | Brasília        |
+| ------------------------------ | --------------- | --------------- |
+| Início do comando de parada    | 18:32:28.142104 | 15:32:28.142104 |
+| Container confirmado parado    | 18:32:29.716147 | 15:32:29.716147 |
+| Troca dos arquivos concluída   | 18:32:29.717653 | 15:32:29.717653 |
+| Comando de início concluído    | 18:32:30.296125 | 15:32:30.296125 |
+| Container novamente saudável   | 18:32:36.451368 | 15:32:36.451368 |
+| Diagnóstico posterior HTTP 200 | 18:32:55        | 15:32:55        |
+| Conferência final registrada   | 18:34:11.573971 | 15:34:11.573971 |
 
-## 5. Resultado desta rodada
+Janela do início da parada até saudável: **8,309 s**. DB/Auth/Kong/Storage/REST/MinIO conservaram IDs e horários de início; não foram reiniciados. Logs das funções desde o início da intervenção disponíveis, com **zero falhas de importação e zero ocorrências de erro/exceção** na conferência final.
 
-**Concluído:** autorização registrada, artefatos exatos conferidos, staging exclusiva e cópia do código antigo preparadas na VPS. **Pendente:** liberação pessoal do aviso, diagnóstico, troca do código e validação posterior. Nenhuma parada, instalação, alteração de integração ou migração foi realizada. Não marcar a PR #36 como implantada por causa desta preparação.
+O volume continua com as sete pastas esperadas: `admin-reset-password`, `google-drive`, `hello`, `invite-marca-user`, `main`, `seed-demo-data`, `status-check`. Sem backup, staging ou cópia `.pre-pr36` servível sob `volumes/functions/`.
 
-Documentação do Barba & Cabelo verificada com tipos, **301 testes**, formatação dos seis documentos e montagem aprovados; **15 links/âncoras locais novos** conferidos. ESLint não aplicável, sem TypeScript alterado. Essas verificações não substituem o diagnóstico de produção ainda pendente. `.env` e `.vscode/` locais preservados e excluídos do envio.
+## 5. Diagnóstico posterior
+
+A chamada administrativa ao mesmo endpoint retornou **HTTP 200**, provando o carregamento do novo handler/módulo, além da saúde e dos hashes:
+
+- Conexão existente: **ativa**.
+- Pastas principais: **Raiz, Clientes e Lixeira = ok**.
+- Registros amostrados: **0**.
+- Pastas e fichas da amostra: todas as contagens de ok/lixeira/inacessível/erro iguais a **0**.
+
+Não foram retornados IDs privados ou credenciais no relatório. A amostra vazia **não demonstra que o Drive esteja vazio**, nem comprova acesso de um cliente OAuth de outro projeto. Não houve recriação de pastas, chamada a `status`, abertura da aba Drive, upload, callback ou ensaio de migração/renovação real. A instalação e o diagnóstico da conexão atual não aprovam a futura migração.
+
+## 6. Backup e retorno
+
+| Item                                       | Local na VPS                                                                          |
+| ------------------------------------------ | ------------------------------------------------------------------------------------- |
+| Pasta viva, versão aprovada                | `/data/coolify/services/vv3jo93anprhqezhtu4ewcpl/volumes/functions/google-drive`      |
+| Backup privado desta operação              | `/root/backup-flow-google-drive-pr36-20261101T174338Z`                                |
+| Pasta original, fonte do retorno           | `pasta-viva-pre-pr36`, dentro do backup                                               |
+| Cópia adicional conferida do código antigo | `copia-arquivos`, dentro do backup                                                    |
+| Registro da operação                       | `preflight.json`, dentro do backup, modo `0600`                                       |
+| Staging original, já promovida             | `/root/staging-flow-google-drive-pr36-20261101T174338Z` — não permanece neste caminho |
+
+Pasta original e cópia adicional conferidas com apenas o blob antigo **`17e98b8278747857329dcf38d1412b682e3c714e`**, sem helper. Registro remoto na fase **`instalacao_validada`**, com horários, manifesto, estados/contagens e comparação dos containers. Backup privado em `/root`, fora das funções servíveis; não contém banco, credenciais ou configuração de integração.
+
+**Retorno não necessário nem executado.** O [procedimento revisão 2, seção 5](2026-10-31-ti-flow-implantacao-pr36-revisao2-p28.md#5-rollback-concreto) continua disponível: conferir o backup antes de parar, preservar a versão nova em `pasta-pos-pr36` fora da API, restaurar a pasta original e validar. Não restaurar banco nem revogar Google para um retorno de código. Em intervenção futura, reavaliar o estado atual antes de aplicar este retorno.
+
+## 7. O que ainda falta na P-28
+
+Instalação da proteção e primeira linha de base atendidas. Não repetir PR, merge, instalação, projeto Google, páginas/gatilho ou inventário já concluídos.
+
+Próxima etapa: preparar o pacote protegido de cópia/restauração das integrações e o ensaio de compatibilidade com o projeto já criado, considerando o cron ativo e seus campos de varredura. Exigir retorno coerente entre configuração/conexão/cache, teste de IDs reais e renovação real. Operador que autorizará o Drive, propriedade Google associada, marca e revisão de contato/jurídico continuam pendentes. Cópia de código desta entrega não substitui o backup da migração. Migração, vídeo e reenvio não executados.
+
+## 8. Verificação da documentação
+
+No Barba & Cabelo: tipos, **301 testes**, formatação dos **12 documentos** e montagem aprovados; **25 links/âncoras locais novos** conferidos e diff sem erros de espaço. ESLint não aplicável, sem TypeScript alterado. Verificações do repositório distintas da validação real Flow descrita acima; testes isolados dos mesmos blobs não repetidos. `.env` e `.vscode/` locais preservados e excluídos do envio.
