@@ -1,5 +1,7 @@
 # P-28 — Revisão do PR #37: quatro ajustes antes do ensaio real
 
+**Ajustes atendidos no retorno:** head `67e7fb7`, mesmo PR #37, com **86 testes e quatro regressões independentes aprovados**. [Conferência das correções e próximos passos](2026-11-01-flow-pr37-ajustes-conferidos-p28.md). As quatro observações abaixo preservam o resultado do head `90135bb`; não solicitar a mesma correção outra vez. Merge e execução real continuam decisões próprias.
+
 **01/11/2026 · Para Claude/Flow, via Alyson.** Resultado da revisão do commit **`90135bb4072f4b443ddf02cfd62582ab96a1e170`**: **72/72 testes da entrega aprovados**, mas quatro casos adicionais reproduziram falhas. Corrigir e adicionar regressões **no mesmo PR #37** antes de avançar para uso com credenciais reais. Sem merge, publicação, restauração de produção ou novo consentimento autorizado por este documento.
 
 ## 1. Fontes e estado conferidos
@@ -73,7 +75,7 @@ A organização fora das funções servíveis, SQL parametrizado, captura consis
 
 O limite de escritor antigo em voo está documentado e testado pela entrega; a barreira operacional permanece requisito da futura virada. O restaurador continua restrito ao fictício, sem opção de desvio para produção. Não transformar a revisão em autorização para restauração real.
 
-Os GETs de conta e tokeninfo para validar a autorização candidata cabem na finalidade da bancada; não há motivo demonstrado para ampliar para `openid email`. A [biblioteca oficial Google usa POST no tokeninfo](https://github.com/googleapis/google-auth-library-nodejs/blob/main/src/auth/oauth2client.ts#L1172); a sondagem com marcador apenas confirmou a recepção do método nas duas formas, sem provar sucesso com credencial válida. O ensaio real e sua autorização continuam próprios.
+As consultas de conta e tokeninfo para validar a autorização candidata cabem na finalidade da bancada; não há motivo demonstrado para ampliar para `openid email`. A [biblioteca oficial Google usa POST no tokeninfo](https://github.com/googleapis/google-auth-library-nodejs/blob/main/src/auth/oauth2client.ts#L1172); a sondagem com marcador apenas confirmou a recepção do método nas duas formas, sem provar sucesso com credencial válida. O ensaio real e sua autorização continuam próprios.
 
 ## 5. Devolutiva solicitada
 

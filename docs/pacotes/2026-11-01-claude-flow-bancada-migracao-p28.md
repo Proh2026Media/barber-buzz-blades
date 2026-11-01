@@ -1,6 +1,6 @@
 # P-28 — Para Claude/Flow: ferramentas de cópia/retorno e bancada de compatibilidade
 
-**Entrega recebida e revisada:** PR #37 em rascunho, commit `90135bb`; 72 testes das ferramentas aprovados pelo Codex em PostgreSQL 15.8 fictício. Quatro casos adicionais reproduziram falhas: [devolutiva para corrigir no mesmo PR](2026-11-01-flow-revisao-pr37-p28.md). Não refazer esta especificação nem usar credenciais reais antes da correção/revisão. O restante preserva o pedido original.
+**Entrega e quatro ajustes conferidos:** PR #37 no head `67e7fb7`, ainda em rascunho/sem merge. Codex confirmou **86 testes e quatro casos independentes aprovados**. [Resultado da revisão](2026-11-01-flow-pr37-ajustes-conferidos-p28.md). Não refazer a especificação nem as correções atendidas. Próximo: decisão de integração e [preparação operacional da TI](2026-11-01-ti-flow-pr37-preparacao-operacional-p28.md), antes de material real. O restante preserva o pedido original.
 
 **01/11/2026 · Implementação e testes isolados no repositório Flow, por PR.** Encaminhar ao Claude que desenvolve o Flow. Este arquivo especifica a próxima entrega; não autoriza executar Google, trocar a conexão viva, restaurar produção, iniciar stack parada ou publicar código.
 
