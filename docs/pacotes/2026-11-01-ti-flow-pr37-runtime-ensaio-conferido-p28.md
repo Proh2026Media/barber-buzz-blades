@@ -1,6 +1,6 @@
 # P-28 — PR #37 integrado e procedimento TI conferido
 
-**01/11/2026 · Preparação concluída; execução da etapa A aguardando decisão de Alyson.** O recebimento do anexo não executa nem autoriza seus comandos. Este complemento resolve os pontos do roteiro abaixo; não é necessário pedir outro relatório geral à TI ou refazer os quatro ajustes do Claude.
+**Atualização de 01/11 — executado pela TI, resultado parcial:** duas rodadas **85/1/0**, ambas com **22/22 PostgreSQL aprovados** (15.19), limpeza relatada concluída. [Resultado conferido e correção direcionada de portas/prontidão](2026-11-01-flow-etapa-a-correcao-portas-p28.md). Não pedir aprovação inicial de A como se não tivesse sido executada nem repetir o roteiro com o mesmo código. Próximo: correção em PR, revisão e reensaio isolado. As seções abaixo preservam o procedimento preparado antes da execução; seus estados de A aguardando decisão estão superados por esta atualização. Captura real, Google e virada continuam próprios.
 
 ## 1. Merge e evidências conferidas
 
