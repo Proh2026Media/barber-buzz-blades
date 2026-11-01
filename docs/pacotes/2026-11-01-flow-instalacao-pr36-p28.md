@@ -77,6 +77,8 @@ Instalação da proteção e primeira linha de base atendidas. Não repetir PR, 
 
 Próxima etapa: preparar o pacote protegido de cópia/restauração das integrações e o ensaio de compatibilidade com o projeto já criado, considerando o cron ativo e seus campos de varredura. Exigir retorno coerente entre configuração/conexão/cache, teste de IDs reais e renovação real. Operador que autorizará o Drive, propriedade Google associada, marca e revisão de contato/jurídico continuam pendentes. Cópia de código desta entrega não substitui o backup da migração. Migração, vídeo e reenvio não executados.
 
+**Preparação posterior atendida:** [pacote Claude/Flow](2026-11-01-claude-flow-bancada-migracao-p28.md) e [pacote TI](2026-11-01-ti-flow-copia-restauracao-ensaio-p28.md) especificam agora ferramentas, testes fictícios, operação e bancada candidata separada da produção. Aguardar PR/relatórios e revisão antes de cópia secreta, restauração ou OAuth real; [plano atualizado, seção 16](2026-10-31-google-separacao-flow-p28.md#16-pacotes-de-cópiaretorno-e-bancada-isolada-preparados).
+
 ## 8. Verificação da documentação
 
 No Barba & Cabelo: tipos, **301 testes**, formatação dos **12 documentos** e montagem aprovados; **25 links/âncoras locais novos** conferidos e diff sem erros de espaço. ESLint não aplicável, sem TypeScript alterado. Verificações do repositório distintas da validação real Flow descrita acima; testes isolados dos mesmos blobs não repetidos. `.env` e `.vscode/` locais preservados e excluídos do envio.
