@@ -1,6 +1,6 @@
 # P-28 — PR #37: quatro ajustes conferidos no commit 67e7fb7
 
-**Atualização de 01/11, após a revisão:** #37 integrado às 18:57 Brasília; os quatro ajustes abaixo continuam atendidos. As duas corridas TI 85/1/0 revelaram falha nova nos testes, já corrigida no **#38**, main `9837ebc`, [conferido pelo Codex com 93/0/0](2026-11-01-flow-pr38-portas-conferidas-p28.md). Próximo: [TI reensaiar A com o novo código](2026-11-01-ti-flow-reensaio-pr38-p28.md). Não reabrir os quatro pontos, pedir outro merge ou repetir fonte antiga. As referências a PR aberto/decisão de merge nas seções seguintes são históricas.
+**Atualização de 01/11 — quatro ajustes e A atendidos:** #37/#38 integrados; falha posterior de portas corrigida no #38, reensaio TI **93/0/0** às 21:45 Brasília e limpeza [conferidos, A concluída](2026-11-01-flow-etapa-a-concluida-p28.md). Próximo: [decisão sobre captura protegida B](2026-11-01-ti-flow-captura-protegida-b-p28.md), preparada, não autorizada/executada. Não reabrir os quatro pontos, pedir PR/merge ou refazer A. Estados de PR aberto/reensaio pendente nas seções abaixo são históricos.
 
 **Resultado da revisão:** os quatro pontos anteriores foram atendidos. Codex conferiu o delta e executou **86 testes aprovados**, além dos quatro casos independentes com o resultado corrigido. Não há novo ajuste impeditivo nesses quatro pontos verificados. Preparo e execução com material real continuam em etapas próprias.
 

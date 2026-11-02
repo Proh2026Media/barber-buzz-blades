@@ -1,6 +1,6 @@
 # P-28 — Para TI: preparar a cópia protegida e o retorno da integração Flow
 
-**Atualização de 01/11:** PR #37 integrado externamente às **18:57 Brasília**, main `13f1dc9`, árvore idêntica ao head `67e7fb7` dos **86 testes e quatro casos independentes aprovados**. Procedimento TI de 18:55–18:56 recebido e [conferido com comandos corrigidos e etapa A pronta para decisão](2026-11-01-ti-flow-pr37-runtime-ensaio-conferido-p28.md). Sem execução remota, captura secreta ou Google nesta revisão. Não repetir merge, instalação/diagnóstico/inventário ou pedir outro relatório geral; o restante preserva o contrato de preparação original.
+**Atualização de 01/11 — preparação e A atendidas:** #37/#38 integrados, [etapa A concluída, reensaio TI 93/0/0 e limpeza conferidos](2026-11-01-flow-etapa-a-concluida-p28.md). Seguir agora o [pacote B pronto para decisão](2026-11-01-ti-flow-captura-protegida-b-p28.md), somente captura real/validação offline, ainda não autorizadas/executadas. Não pedir outro PR/merge, ensaio fictício ou levantamento geral. O texto abaixo preserva o contrato de cópia/retorno; restauração real e Google/virada continuam próprios.
 
 **01/11/2026 · Preparação operacional, sem execução de cópia secreta, restauração ou migração.** Encaminhar este arquivo ao agente de TI. O [arquivo do Claude/Flow](2026-11-01-claude-flow-bancada-migracao-p28.md) define as ferramentas e os testes que ele implementará em PR. A TI confere a operação e devolve o procedimento; não edita o mesmo projeto em paralelo.
 

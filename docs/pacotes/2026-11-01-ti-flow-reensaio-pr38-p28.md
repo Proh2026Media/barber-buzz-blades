@@ -1,5 +1,7 @@
 # P-28 — Para TI: reensaio da etapa A com PR #38 conferido
 
+**Executado e concluído em 01/11, 21:45 Brasília:** TI entregou 93/0/0, incluindo 22 PostgreSQL 15.19, sem realocações não provocadas; limpeza e [conferências do Codex registradas](2026-11-01-flow-etapa-a-concluida-p28.md). Não executar novamente este roteiro. Próximo: [decidir B — captura protegida](2026-11-01-ti-flow-captura-protegida-b-p28.md), ainda não autorizada/executada. Abaixo fica o procedimento histórico já atendido.
+
 **01/11/2026 · Escopo: somente reensaio fictício de A na VPS.** [Correção revisada pelo Codex](2026-11-01-flow-pr38-portas-conferidas-p28.md): uma rodada independente **93/0/0**, incluindo 22 PostgreSQL, sem novo achado impeditivo nos pontos examinados. PR #38 já integrado pelo dono. Este roteiro prepara a execução da TI após a decisão do dono; não inclui captura real, Google ou virada.
 
 ## 1. O que já foi atendido

@@ -1,6 +1,6 @@
 # P-28 — PR #38 conferido: portas e prontidão dos testes
 
-**01/11/2026 · Correção atendida nos pontos examinados.** Codex revisou o delta e executou uma rodada independente: **93 aprovados / 0 falhas / 0 pulados**, 605 asserções, incluindo **22/22 PostgreSQL**. O PR já foi integrado por Alyson; não pedir outro merge ou as mesmas correções. Falta o [reensaio da TI na VPS](2026-11-01-ti-flow-reensaio-pr38-p28.md) para concluir operacionalmente a etapa A.
+**Atualização de 01/11 — etapa A operacional concluída:** TI reensaiou às 21:45 Brasília, **93/0/0**, 22/22 PostgreSQL 15.19, sem realocações não provocadas; Codex conferiu log/fonte/tar/permissões/ausência de temporários e saúde. [Encerramento e detalhes](2026-11-01-flow-etapa-a-concluida-p28.md). Próximo: [decidir captura protegida B](2026-11-01-ti-flow-captura-protegida-b-p28.md), ainda não autorizada/executada. A revisão independente abaixo continua válida; seus estados de reensaio TI pendente são históricos, já atendidos. Não repetir a revisão/suíte ou pedir outro PR/merge.
 
 ## 1. Fonte recebida e versão conferida
 

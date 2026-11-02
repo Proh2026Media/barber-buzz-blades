@@ -1,6 +1,6 @@
 # P-28 — PR #37 integrado e procedimento TI conferido
 
-**Atualização de 01/11 — usar o reensaio do #38:** primeira etapa A executada pela TI, duas corridas 85/1/0 históricas. Correção de portas entregue/integrada no #38, main `9837ebc`, [revisada pelo Codex com 93/0/0](2026-11-01-flow-pr38-portas-conferidas-p28.md). Seguir o [novo pacote TI de reensaio](2026-11-01-ti-flow-reensaio-pr38-p28.md), com código/árvore/caminhos/labels atualizados e expectativa 93, preservando os logs antigos. Não executar outra vez a fonte #37. Abaixo fica o modelo operacional original; seus estados de A aguardando decisão e valores de código/critério foram superados. A operacional ainda aguarda o reensaio TI; B/C/D próprios.
+**Atualização de 01/11 — A concluída, não repetir:** reensaio #38 pela TI às 21:45 Brasília, **93/0/0**, 22 PG 15.19, limpeza e conferências do Codex registrados no [resultado de A](2026-11-01-flow-etapa-a-concluida-p28.md). Próximo é [decidir B — captura protegida](2026-11-01-ti-flow-captura-protegida-b-p28.md), pacote preparado, sem autorização/execução real. O texto abaixo é o modelo operacional anterior; seus códigos/contagens/estados de A pendente são históricos. Não executar fonte antiga, repetir testes, PR/merge ou #36. C/D próprios.
 
 ## 1. Merge e evidências conferidas
 
