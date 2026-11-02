@@ -1,6 +1,6 @@
-# P-28 — Para TI/Guardião: execução C para decisão
+# P-28 — Para TI/Guardião: roteiro C — executado parcialmente
 
-**02/11/2026 · Não executado; aguarda decisão explícita de Alyson.** [C2 conferida e corrigida](2026-11-02-flow-preparacao-c2-conferida-p28.md). TI executa, Guardião cuida da credencial/conta. A/B/T1 e disponibilidade do segredo existente estão atendidos. Não solicitar outro inventário, PR, segredo novo, captura B ou teste T1.
+**Executado pela TI em 02/11, resultado parcial:** [resumo/limites e retirada dos temporários](2026-11-02-flow-etapa-c-parcial-p28.md), candidato privado preservado, raiz 404 e exit 2. Não repetir este roteiro, consentimento ou renovação para contornar o acesso. C autorizada já executada; não pedir a mesma decisão novamente. Próximo: [Claude preparar modo seletivo Picker com testes fictícios](2026-11-02-claude-flow-picker-seletivo-p28.md), sem Google real/D. O restante preserva o procedimento original, inclusive o encerramento já cumprido; referências a decisão futura descrevem seu estado na elaboração.
 
 ## 1. Efeitos delimitados de C
 

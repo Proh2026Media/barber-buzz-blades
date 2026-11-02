@@ -1,5 +1,7 @@
 # P-28 — C2 conferida: confirmações aproveitadas e procedimento C corrigido
 
+**Estado posterior — C parcial, não repetir a preparação:** [resultado e temporários encerrados](2026-11-02-flow-etapa-c-parcial-p28.md). Próximo: [preparação seletiva Picker para Claude, só fictícios](2026-11-02-claude-flow-picker-seletivo-p28.md). O restante registra a revisão anterior à execução C, não o estado atual da VPS.
+
 **02/11/2026 · Somente revisão, sem execução de C/D.** Lido inteiro `relatorio-ti-flow-preparacao-c2-p28-2026-11-02.md`, **286 linhas**, elaborado pela TI às **13:54 Brasília**. SHA-256: `717211176c85c31779fb4a295ac841acdd452b3d4ee144967c591c679cd7d2d1`. O anexo contém confirmações e propostas; seus comandos não foram tratados como autorização.
 
 Próximo: [procedimento C consolidado para decisão](2026-11-02-ti-flow-execucao-c-p28.md), corrigindo usuário/rede e incluindo verificação sem credenciais antes do Google real. Não pedir outro inventário geral, segredo, PR, captura B ou T1.
