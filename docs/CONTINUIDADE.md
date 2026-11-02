@@ -107,6 +107,13 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## Atualização — acesso da TI à conta Google confirmado para preparar C (01/11, ChatGPT/Codex)
+
+- **Resposta direta do dono:** “A TI tem esse acesso”, sobre conseguir entrar na conta Google já usada pelo Drive do Flow. Capacidade atendida; não perguntar novamente nem pedir e-mail/credencial ao dono. Não inferir autorização de consentimento a partir dessa resposta.
+- **Onde:** [pacote C para TI](pacotes/2026-11-01-ti-flow-preparacao-c-p28.md), resultado de B, plano, porta de entrada e pendências atualizados. Detalhes privados da operação com a TI; cliente/metadados Google, IDs privados, custódia e transporte ainda em preparação. Removida a capacidade do operador da fila de pendências.
+- **Limites:** atualização documental, sem acesso à VPS, backup secreto, Google ou repositório Flow; sem consentimento/URI/token/virada. A/B continuam concluídas, `.env`/`.vscode/` locais preservados.
+- **Validação:** `scripts/verificar.sh` aprovado: tipos, **301 testes**, formatação dos seis documentos e montagem; ESLint não aplicável. Diff sem erros de espaço. Sem nova suíte ou ação real de C.
+
 ## Conferência — B concluída, preparação de C e escopo Barba & Cabelo esclarecido (01/11, ChatGPT/Codex)
 
 - **Escopo esclarecido com o dono:** este é o projeto Barba & Cabelo; Flow é dependência da P-28 pela separação Google escolhida para preservar o cliente B&C. Não abrir nova frente funcional Flow. Esclarecido que B era para TI, não Claude; dono retornou o relatório da execução.

@@ -46,7 +46,7 @@ A confirmação de formato/integridade é a saída da ferramenta de validação 
 
 **A e B concluídas.** B preserva a configuração existente; não altera o aplicativo nem a conta Google. `apta_para_restaurar: sim` atesta campos mínimos/par, não autoriza restauração de produção. O restaurador entregue continua restrito ao fictício. Cron ativo não é barreira de escritores; D exigirá nova imagem imediatamente anterior à virada e controle de concorrência.
 
-**C está em preparação:** falta confirmar operador da conta Google atual, IDs antigos em canal privado, custódia da credencial/candidato novos, metadados do cliente/projeto Google e transporte do callback. A pergunta sobre quem tem acesso à conta foi apresentada ao dono; acesso ao Google Cloud não comprova acesso ao Drive dessa conta. Não iniciar consentimento, obter token candidato, cadastrar URI, publicar marca ou promover conexão pelo recebimento deste relatório.
+**C está em preparação:** Alyson confirmou que **a TI tem acesso à conta Google já usada pelo Drive do Flow**; não perguntar novamente. Restam IDs antigos em canal privado, custódia da credencial/candidato novos, metadados do cliente/projeto Google e transporte do callback. A confirmação de acesso não autoriza iniciar consentimento, obter token candidato, cadastrar URI, publicar marca ou promover conexão.
 
 Seguir o [arquivo de preparação para TI](2026-11-01-ti-flow-preparacao-c-p28.md). Não é novo pedido de PR, backup, inventário geral ou teste de A/B. **P-28 permanece pendente até separar/validar o Flow e retomar a configuração/verificação Google do Barba & Cabelo conforme o plano escolhido.**
 
