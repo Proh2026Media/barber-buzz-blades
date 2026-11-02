@@ -1,5 +1,7 @@
 # P-28 — Para Claude/Flow: revisão do PR #39, correções antes de integrar
 
+**Ajustes atendidos e integração já conferida:** [nova revisão do head `3aa64e9` e merge `73d5317`](2026-11-02-flow-pr39-ajustes-conferidos-p28.md), 86/0 + 6/0 próprios. Não repetir as correções/merge nem reenviar esta versão histórica ao Claude como pedido pendente. Próximo: [decisão do ensaio Picker real para TI/Guardião](2026-11-02-ti-flow-ensaio-picker-p28.md). Abaixo fica a revisão da versão anterior `8a5e9b9`, com seus achados preservados.
+
 **02/11/2026 · Revisão concluída sobre `8a5e9b9`; PR em rascunho, aguardando correções.** [PR #39](https://github.com/Proh2026Media/flow-proh-media/pull/39). Os 81 testes existentes passaram na execução própria, mas quatro reproduções adicionais demonstraram uma mesma falha na aprovação da renovação. Corrigir **no mesmo PR**, sem outro inventário, teste A/B/T1, Google real ou tarefa para TI agora. C continua parcial pelo 404; D não iniciada.
 
 ## 1. Versão conferida e alcance

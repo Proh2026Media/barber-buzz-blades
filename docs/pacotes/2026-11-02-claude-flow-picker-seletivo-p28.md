@@ -1,6 +1,6 @@
 # P-28 — Para Claude/Flow: preparar seleção explícita de itens antigos com Picker
 
-**Entrega recebida e revisada — PR #39:** head `8a5e9b9`, rascunho, 81 testes próprios aprovados; quatro regressões reproduzem falsa aprovação na renovação. [Correções para Claude no mesmo PR](2026-11-02-flow-revisao-pr39-picker-p28.md). Não refazer a especificação ou outro PR; o pedido abaixo continua como contrato, com ajustes delimitados na revisão. Sem integração/Google real agora.
+**Entrega atendida, ajustes revistos e já integrados — PR #39:** [head `3aa64e9` / merge `73d5317` conferidos](2026-11-02-flow-pr39-ajustes-conferidos-p28.md), suíte própria 86/0 e seis verificações 6/0. Não pedir implementação/correções/merge de novo. Próximo: [TI/Guardião decidir novo ensaio real Picker](2026-11-02-ti-flow-ensaio-picker-p28.md). O pedido abaixo é histórico atendido; não autoriza executar Google por si só.
 
 **02/11/2026 · Código/testes fictícios em PR em rascunho; sem Google real ou implantação.** [C parcial e recursos encerrados](2026-11-02-flow-etapa-c-parcial-p28.md). Próxima preparação recomendada para a dependência Google da **P-28 do Barba & Cabelo**. Claude desenvolve a ferramenta no Flow; Codex revisa; TI/Guardião só executam futura etapa real após revisão/decisão. Não é novo inventário ou repetição dos PRs #36–#38.
 
