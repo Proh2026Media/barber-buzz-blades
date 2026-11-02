@@ -1,5 +1,7 @@
 # P-28 — Para TI/Guardião: fechar somente os requisitos restantes de C
 
+**Respondido pelo C2 em 02/11, não repetir:** segredo disponível, responsáveis/custódia e navegador aproveitados. [Revisão e conciliação](2026-11-02-flow-preparacao-c2-conferida-p28.md), com correções operacionais incorporadas ao [procedimento C para decisão](2026-11-02-ti-flow-execucao-c-p28.md). O texto abaixo é o pedido histórico respondido; não é nova coleta nem autorização de C/D.
+
 **02/11/2026 · Preparação específica, sem executar C/D.** [T1 concluído e conferido](2026-11-02-flow-t1-concluido-p28.md). Este arquivo é para a **TI com o Guardião**, sem novo pedido de código ao Claude. O objetivo segue a separação Google necessária à P-28 do **Barba & Cabelo**.
 
 ## 1. Aproveitar as entregas atendidas

@@ -1,6 +1,6 @@
 # P-28 — T1 concluído: transporte fictício conferido
 
-**02/11/2026 · A, B e T1 concluídos. C real e D não executadas.** A TI testou a ponte loopback com dados fictícios e encerrou seus recursos. Codex conferiu por leitura os artefatos e o estado posterior na VPS. Próximo: [fechar somente os requisitos restantes de C](2026-11-02-ti-flow-requisitos-restantes-c-p28.md), sem repetir T1, captura B, PR ou levantamento geral.
+**02/11/2026 · A, B e T1 concluídos. C real e D não executadas.** TI testou o transporte fictício e encerrou recursos, com artefatos/estado posterior conferidos pelo Codex. A preparação restante já foi respondida por C2: [revisão](2026-11-02-flow-preparacao-c2-conferida-p28.md). Próximo é [decisão sobre o procedimento C consolidado](2026-11-02-ti-flow-execucao-c-p28.md), sem repetir T1, B, PR ou coleta geral. As pendências descritas abaixo registram o estado anterior ao retorno C2.
 
 ## 1. Fonte, autorização relatada e alcance
 
