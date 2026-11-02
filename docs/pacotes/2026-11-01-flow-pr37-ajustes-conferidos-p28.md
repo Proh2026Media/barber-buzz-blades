@@ -1,6 +1,6 @@
 # P-28 — PR #37: quatro ajustes conferidos no commit 67e7fb7
 
-**Atualização de 01/11, após a revisão:** PR #37 integrado externamente às 18:57 Brasília, main `13f1dc9` em origem/espelho; árvore idêntica ao head revisado. A TI depois executou a etapa A: duas rodadas **85/1/0**, ambas com **22/22 PostgreSQL aprovados**; correção de portas/prontidão dos testes e reensaio pendentes. [Resultado e encaminhamento específico](2026-11-01-flow-etapa-a-correcao-portas-p28.md). As referências a PR aberto/decisão de merge abaixo são históricas. Os quatro ajustes desta revisão continuam atendidos; não reabri-los por essa falha nova.
+**Atualização de 01/11, após a revisão:** #37 integrado às 18:57 Brasília; os quatro ajustes abaixo continuam atendidos. As duas corridas TI 85/1/0 revelaram falha nova nos testes, já corrigida no **#38**, main `9837ebc`, [conferido pelo Codex com 93/0/0](2026-11-01-flow-pr38-portas-conferidas-p28.md). Próximo: [TI reensaiar A com o novo código](2026-11-01-ti-flow-reensaio-pr38-p28.md). Não reabrir os quatro pontos, pedir outro merge ou repetir fonte antiga. As referências a PR aberto/decisão de merge nas seções seguintes são históricas.
 
 **Resultado da revisão:** os quatro pontos anteriores foram atendidos. Codex conferiu o delta e executou **86 testes aprovados**, além dos quatro casos independentes com o resultado corrigido. Não há novo ajuste impeditivo nesses quatro pontos verificados. Preparo e execução com material real continuam em etapas próprias.
 

@@ -1,5 +1,7 @@
 # P-28 — Etapa A executada com falha: corrigir portas dos testes Flow
 
+**Correção atendida em 01/11:** PR #38 integrado às 21:19:20 Brasília, main `9837ebc`, conteúdo idêntico ao head `a29722d`. Codex revisou e executou **93/0/0**, incluindo 22 PostgreSQL; [resultado e limites](2026-11-01-flow-pr38-portas-conferidas-p28.md). Próximo é o [reensaio da TI com o novo código](2026-11-01-ti-flow-reensaio-pr38-p28.md). Não pedir outro PR/correção/merge. Abaixo fica o pedido e diagnóstico anteriores, atendidos; as duas corridas 85/1/0 permanecem históricas e a etapa A operacional aguarda o reensaio.
+
 **01/11/2026 · Encaminhamento direcionado ao Claude/Flow.** A TI executou a etapa A, mas as duas rodadas terminaram em **85 aprovados / 1 falha / 0 pulados**. Não aprovar pela união dos resultados nem repetir corridas até aparecer uma verde. Corrigir o apoio dos testes em PR próprio; depois revisar e fazer o reensaio isolado da TI. Nenhuma captura real ou migração está liberada por este arquivo.
 
 ## 1. Retorno da TI incorporado

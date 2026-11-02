@@ -1,6 +1,6 @@
 # P-28 — PR #37 integrado e procedimento TI conferido
 
-**Atualização de 01/11 — executado pela TI, resultado parcial:** duas rodadas **85/1/0**, ambas com **22/22 PostgreSQL aprovados** (15.19), limpeza relatada concluída. [Resultado conferido e correção direcionada de portas/prontidão](2026-11-01-flow-etapa-a-correcao-portas-p28.md). Não pedir aprovação inicial de A como se não tivesse sido executada nem repetir o roteiro com o mesmo código. Próximo: correção em PR, revisão e reensaio isolado. As seções abaixo preservam o procedimento preparado antes da execução; seus estados de A aguardando decisão estão superados por esta atualização. Captura real, Google e virada continuam próprios.
+**Atualização de 01/11 — usar o reensaio do #38:** primeira etapa A executada pela TI, duas corridas 85/1/0 históricas. Correção de portas entregue/integrada no #38, main `9837ebc`, [revisada pelo Codex com 93/0/0](2026-11-01-flow-pr38-portas-conferidas-p28.md). Seguir o [novo pacote TI de reensaio](2026-11-01-ti-flow-reensaio-pr38-p28.md), com código/árvore/caminhos/labels atualizados e expectativa 93, preservando os logs antigos. Não executar outra vez a fonte #37. Abaixo fica o modelo operacional original; seus estados de A aguardando decisão e valores de código/critério foram superados. A operacional ainda aguarda o reensaio TI; B/C/D próprios.
 
 ## 1. Merge e evidências conferidas
 
