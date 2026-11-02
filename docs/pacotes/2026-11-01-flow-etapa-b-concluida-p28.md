@@ -1,6 +1,6 @@
 # P-28 — Etapa B concluída: cópia protegida e validação conferidas
 
-**01/11/2026 · Resultado: B concluída.** A TI/Guardião executou a captura somente leitura e a validação offline em uma tentativa, conservou a cópia privada na VPS e removeu a conexão descartável. Codex conferiu os resumos permitidos, os 19 blobs, tamanho/modos, ausência dos runners/URL e saúde dos serviços. **O conteúdo da cópia secreta não foi lido nem exportado pelo Codex.** Próximo: [preparar C, sem consentimento ou migração](2026-11-01-ti-flow-preparacao-c-p28.md).
+**01/11/2026 · Resultado: B concluída.** A TI/Guardião executou a captura somente leitura e a validação offline em uma tentativa, conservou a cópia privada na VPS e removeu a conexão descartável. Codex conferiu os resumos permitidos, os 19 blobs, tamanho/modos, ausência dos runners/URL e saúde dos serviços. **O conteúdo da cópia secreta não foi lido nem exportado pelo Codex.** T1 também concluído posteriormente; próximo: [requisitos restantes de C, sem consentimento ou migração](2026-11-02-ti-flow-requisitos-restantes-c-p28.md).
 
 ## 1. Ligação com o Barba & Cabelo e fonte
 
@@ -46,7 +46,7 @@ A confirmação de formato/integridade é a saída da ferramenta de validação 
 
 **A e B concluídas.** B preserva a configuração existente; não altera o aplicativo nem a conta Google. `apta_para_restaurar: sim` atesta campos mínimos/par, não autoriza restauração de produção. O restaurador entregue continua restrito ao fictício. Cron ativo não é barreira de escritores; D exigirá nova imagem imediatamente anterior à virada e controle de concorrência.
 
-**Atualização de 02/11 — preparação C recebida/conferida:** [resultado e ajustes](2026-11-02-flow-preparacao-c-conferida-p28.md), metadados básicos aproveitados e operador TI já confirmado. Próximo: [decidir T1 fictício](2026-11-02-ti-flow-transporte-t1-p28.md), sem Google/credenciais. Guardião confirma disponibilidade do segredo novo já guardado; manifesto privado sob TI/Guardião na C autorizada, propriedade/custódia ainda pendentes. Não repetir B nem iniciar C real/URI/candidato ou D por esta atualização.
+**Atualização de 02/11 — T1 concluído:** [resultado e conferências](2026-11-02-flow-t1-concluido-p28.md); A/B/T1 atendidos, sem repetir. Próximo: [requisitos específicos restantes de C](2026-11-02-ti-flow-requisitos-restantes-c-p28.md), sem Google real/URI/candidato ou D. Guardião confirma disponibilidade do segredo novo já guardado; manifesto privado sob TI/Guardião na futura C. Custódia/propriedade e desenho de navegador/egresso/isolamento ainda próprios. Não reler B nem inferir autorização de C por T1.
 
 Seguir o [arquivo de preparação para TI](2026-11-01-ti-flow-preparacao-c-p28.md). Não é novo pedido de PR, backup, inventário geral ou teste de A/B. **P-28 permanece pendente até separar/validar o Flow e retomar a configuração/verificação Google do Barba & Cabelo conforme o plano escolhido.**
 

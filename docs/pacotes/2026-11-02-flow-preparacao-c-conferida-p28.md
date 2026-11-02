@@ -1,6 +1,6 @@
-# P-28 — Preparação C conferida; próximo passo é T1 fictício
+# P-28 — Preparação C conferida; T1 posteriormente concluído
 
-**02/11/2026 · Revisão da preparação recebida, sem execução de C.** A/B continuam concluídas. O próximo passo concreto é [T1 — teste fictício do transporte](2026-11-02-ti-flow-transporte-t1-p28.md), pronto para decisão do dono, incluindo instalação delimitada de `socat`. T1 não depende de URI Google, segredo ou manifesto real. Não pedir novamente acesso da TI à conta, PR/correções, backup B ou inventário geral.
+**Atualização de 02/11 — T1 posteriormente concluído:** [execução TI e conferências](2026-11-02-flow-t1-concluido-p28.md). A/B/T1 atendidos; próximo é [fechar os requisitos específicos de C](2026-11-02-ti-flow-requisitos-restantes-c-p28.md), sem repetir instalação/testes/inventário. O restante deste documento registra a revisão anterior ao T1, quando socat ainda estava ausente. Não é o estado atual da VPS nem autorização de C/D; preserva as fontes e ajustes que levaram ao roteiro.
 
 ## 1. Fontes e fatos aproveitados
 

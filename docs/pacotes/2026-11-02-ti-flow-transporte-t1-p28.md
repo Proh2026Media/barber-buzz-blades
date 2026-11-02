@@ -1,6 +1,6 @@
-# P-28 — Para TI: T1 fictício do transporte, pronto para decisão
+# P-28 — Para TI: roteiro T1 fictício do transporte — concluído
 
-**02/11/2026 · Não executado na VPS.** [Preparação C revisada](2026-11-02-flow-preparacao-c-conferida-p28.md). Este pacote propõe **somente T1**: instalar um pacote `socat` no host, criar um container fictício sem rede, testar loopback/Host pelo túnel SSH e encerrar os recursos. Não usa Google, segredo, manifesto real ou cópia B. Não adiciona URI nem executa C/D. Executar somente após autorização desse escopo pelo dono.
+**T1 executado pela TI em 02/11 e conferido:** [resultado, horários e limites](2026-11-02-flow-t1-concluido-p28.md). Autorização relatada para usar o box da TI no lugar do Mac; socat instalado, quatro HTTP atendidos e limpeza conferida. **Não repetir este roteiro.** Próximo: [requisitos restantes de C](2026-11-02-ti-flow-requisitos-restantes-c-p28.md), sem executar C/D. O texto abaixo preserva o procedimento original e seus pré-requisitos; as referências a execução futura descrevem seu estado na elaboração.
 
 ## 1. Efeitos exatos e pré-condições
 
@@ -159,4 +159,4 @@ Conferir: zero containers dos labels T1/operação; porta 8765 sem listener na V
 
 Depois de T1, retomar as pendências específicas de C real: segredo novo previamente guardado, manifesto privado sob TI/Guardião, propriedade/custódia e URI. Consentimento e candidato continuam exigindo decisão própria; D não está incluída.
 
-**Validação prévia do pacote:** seis verificações locais dos scripts fictícios aprovadas após corrigir encerramento com stdin aberto. Não executaram socat, SSH ou VPS. Tipos, 301 testes Barba & Cabelo, formatação dos oito documentos e montagem aprovados; 20 links/âncoras locais e quatro blocos Bash conferidos. A execução real T1 e instalação continuam aguardando autorização.
+**Validação prévia do pacote:** seis verificações locais dos scripts fictícios aprovadas após corrigir encerramento com stdin aberto. Não executaram socat, SSH ou VPS. Tipos, 301 testes Barba & Cabelo, formatação dos oito documentos e montagem aprovados; 20 links/âncoras locais e quatro blocos Bash conferidos. Esse era o estado prévio; execução real T1/instalação posteriormente atendidas conforme o resultado no topo.
