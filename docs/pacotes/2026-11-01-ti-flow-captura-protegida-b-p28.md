@@ -1,6 +1,6 @@
 # P-28 — Etapa B pronta para decisão: captura protegida das integrações Flow
 
-**01/11/2026 · Preparação concluída, sem execução.** A [etapa A está concluída](2026-11-01-flow-etapa-a-concluida-p28.md). Este pacote delimita a próxima decisão de Alyson: **uma captura somente leitura das integrações reais e sua validação offline**, com arquivo secreto preservado na própria VPS. A autorização anterior era apenas do reensaio fictício; não executar B pelo recebimento do relatório de A.
+**Executado e concluído em 01/11:** TI/Guardião capturou às 23:10 Brasília e validou offline às 23:11; cópia privada de 6.987 bytes, saídas 0, origens em banco, duas integrações e limpeza [conferidas pelo Codex](2026-11-01-flow-etapa-b-concluida-p28.md), sem ler/exportar conteúdo secreto. **Não executar B novamente nem pedir outra autorização/cópia.** Próximo: [preparação de C pela TI](2026-11-01-ti-flow-preparacao-c-p28.md), apenas dados restantes, sem consentimento/URI/token/virada. O texto abaixo é o pacote histórico de B já atendido; seus estados de B não autorizada/executada estão superados.
 
 ## 1. Escopo proposto para aprovação
 

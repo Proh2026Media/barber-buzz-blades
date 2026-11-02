@@ -1,6 +1,6 @@
 # P-28 — Etapa A concluída: reensaio do PR #38 conferido
 
-**01/11/2026 · Resultado: etapa A operacional concluída.** A TI executou a suíte completa na VPS com **93 aprovados, zero falhas/pulados, saída 0**, e documentou a limpeza. Codex conferiu o log original, os 19 blobs, o transporte, os modos privados e a ausência dos recursos temporários. Não repetir testes, correção de portas, PR/merge ou preparação geral. Próximo: [decidir a captura protegida B](2026-11-01-ti-flow-captura-protegida-b-p28.md), ainda não autorizada/executada.
+**Atualização de 01/11 — A e B concluídas:** A passou com 93/0/0; TI/Guardião posteriormente capturou/validou as integrações reais às 23:10/23:11 Brasília, com [resultado e custódia de B conferidos](2026-11-01-flow-etapa-b-concluida-p28.md). Próximo: [preparar C, sem consentimento/URI/token/virada](2026-11-01-ti-flow-preparacao-c-p28.md). Não repetir A/B, revisão/correção/PR/merge ou preparação geral. O histórico de A abaixo continua válido; menções de B ainda não autorizada são do estado anterior, já atendido.
 
 ## 1. Fonte e execução da TI
 
@@ -47,13 +47,13 @@ Essas falhas de preparo permanecem no histórico. A corrida completa válida foi
 
 ## 4. Estado depois do encerramento
 
-| Etapa                         | Estado                                                                                                         |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| A — runtime e ensaio fictício | **Concluída em 01/11**, reensaio TI do #38 conferido                                                           |
-| B — captura protegida         | [Pacote pronto para decisão](2026-11-01-ti-flow-captura-protegida-b-p28.md), **não autorizada/não executada**  |
-| C — Google/ensaio real        | Operador/conta, IDs privados, custódia do candidato, metadados/URI e transporte do callback continuam próprios |
-| D — virada                    | Procedimento/barreira contra cron/requisições/callbacks, promoção e aceitação próprios                         |
+| Etapa                         | Estado                                                                                                             |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| A — runtime e ensaio fictício | **Concluída em 01/11**, reensaio TI do #38 conferido                                                               |
+| B — captura protegida         | **Concluída em 01/11**, [captura/validação offline e limpeza conferidas](2026-11-01-flow-etapa-b-concluida-p28.md) |
+| C — Google/ensaio real        | Operador/conta, IDs privados, custódia do candidato, metadados/URI e transporte do callback continuam próprios     |
+| D — virada                    | Procedimento/barreira contra cron/requisições/callbacks, promoção e aceitação próprios                             |
 
-**P-28 não está concluída:** A atesta as ferramentas/isolamento com dados fictícios; ainda não existe cópia protegida das integrações reais nem migração Google por causa deste ensaio. O cliente Barba & Cabelo, #36/diagnóstico e cron atual permanecem preservados.
+**P-28 não está concluída:** A atesta ferramentas/isolamento com dados fictícios e B, concluída posteriormente, preserva a configuração real em cópia privada. O ensaio Google C e a virada D continuam próprios. Cliente Barba & Cabelo, #36/diagnóstico e cron atual preservados.
 
 **Validação do registro:** tipos, **301 testes Barba & Cabelo**, formatação dos onze documentos e montagem aprovados. Conferidos 33 links/âncoras locais novos, a sintaxe dos dois blocos Bash e o modelo JSON do pacote B, sem executá-lo. Sem alteração de código de aplicação nesta entrega documental.
