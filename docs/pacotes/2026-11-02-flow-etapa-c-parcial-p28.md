@@ -1,6 +1,6 @@
 # P-28 — C parcial: raiz antiga inacessível; temporários encerrados
 
-**02/11/2026 · C executada parcialmente, não aprovada; D não iniciada.** Conta, cliente novo e escopo foram confirmados, mas a primeira leitura da raiz retornou 404. O candidato foi preservado; nenhuma renovação foi executada. Codex concluiu a retirada dos temporários prevista no encerramento de C, preservando a custódia privada e a produção. Próximo: [Claude preparar ensaio seletivo com Picker e testes fictícios](2026-11-02-claude-flow-picker-seletivo-p28.md), sem Google real nesta entrega.
+**02/11/2026 · C executada parcialmente, não aprovada; D não iniciada.** Conta/cliente/escopo confirmados, raiz 404, candidato preservado e nenhuma renovação. Temporários já encerrados pelo Codex, custódia e produção preservadas. Preparação Picker entregue no PR #39 e revisada: [ajustes para Claude no mesmo PR](2026-11-02-flow-revisao-pr39-picker-p28.md), sem integrar/executar Google real antes da correção. O histórico de C abaixo continua válido; não repetir consentimento/limpeza.
 
 ## 1. Fonte e autorização relatada
 
