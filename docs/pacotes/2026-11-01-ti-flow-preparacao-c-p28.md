@@ -1,5 +1,7 @@
 # P-28 — Para TI: preparar C com os dados restantes, sem consentimento
 
+**Retorno recebido e conferido em 02/11:** projeto/cliente Web, Audience/marca e URI local ausente aproveitados; [revisão e pendências específicas](2026-11-02-flow-preparacao-c-conferida-p28.md). Não repetir a preparação geral. Próximo: [T1 fictício pronto para decisão](2026-11-02-ti-flow-transporte-t1-p28.md), sem Google/segredos; nenhuma instalação/teste remoto feito. Guardião confirma apenas disponibilidade do segredo já guardado; manifesto privado fica proposto para TI/Guardião na C autorizada. Propriedade/custódia ainda próprias. O texto abaixo é o pedido de preparação respondido, não autorização de C real/D.
+
 **01/11/2026 · Somente preparação e leitura dos metadados necessários.** [A e B concluídas](2026-11-01-flow-etapa-b-concluida-p28.md). O objetivo é destravar a verificação Google do **Barba & Cabelo** pela separação já escolhida do Drive do Flow. Este arquivo é para a **TI**, não é pedido de desenvolvimento geral ao Claude e não autoriza consentimento ou virada.
 
 ## 1. Aproveitar o que já está resolvido

@@ -6,7 +6,7 @@
 
 **15/10/2026 (noite) — passagem concluída no Claude Code:** ver a entrada "Passagem de 15/10" logo abaixo da Diretriz. Comece por [LEIA-PRIMEIRO.md](LEIA-PRIMEIRO.md). A função `register-shop` da P-38 foi publicada às 22:54; faltam os pacotes do Google (P-69 e P-28, em [pacotes/](pacotes/)).
 
-Atualizado em **01/11/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
+Atualizado em **02/11/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
 ## Comece aqui
 
@@ -106,6 +106,16 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - Esportes sempre visível;
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
+
+## Revisão — preparação C recebida e T1 fictício pronto para decisão (02/11, ChatGPT/Codex)
+
+- **Fonte lida inteira:** `relatorio-ti-flow-preparacao-c-p28-2026-11-02 1213.md`, 188 linhas, leitura TI 00:08 Brasília. Metadados do projeto/cliente Web novos, URI local ausente, Audience produção/External e marca não verificada aproveitados. Operador TI já confirmado; não inferir identidade pelo suporte/dev. Sem segredo baixado, URI/Google/listener/túnel ou B tocados segundo TI.
+- **Revisão com fontes oficiais:** [resultado e ajustes](pacotes/2026-11-02-flow-preparacao-c-conferida-p28.md), URI local compatível com Web quando cadastrada; segredo só visível/baixável na criação exige confirmar custódia prévia, sem rotação automática. Cliente antigo é o Drive Flow atual, não Auth B&C. DNS negativo sozinho não prova isolamento. Guardião confirma disponibilidade do segredo; TI/Guardião propostos para manifesto privado na futura C, sem nova pergunta geral ao dono.
+- **Leitura própria somente:** SSH de ferramentas e APT policy/simulação. Socat ausente; versão **1.8.0.0-4ubuntu0.1**, um pacote novo, zero atualizações/remoções. Não instalar/update/upgrade/autoremove ou executar remoto por esse relatório. Nenhum segredo, B, banco ou env lido.
+- **Pacote concreto:** [T1 para TI, aguardando decisão](pacotes/2026-11-02-ti-flow-transporte-t1-p28.md), socat fixado no host → docker exec por ID completo → retransmissor Bun no loopback, mock Bun validando Host, rede none, sem dados reais/Google/DB. Sem PID host reutilizável, pacote dentro do runner ou socket Docker montado. Socat permanecerá instalado se autorizado; cleanup só recursos próprios. C real/D não incluídas.
+- **Validação local dos scripts fictícios:** primeira versão ficou aberta com stdin persistente, corrigida ao EOF do destino; **seis verificações passaram**: 200/421/405/404, encerramento com stdin aberto e porta inválida. Artefatos `/var/folders/qf/cjj8xr7x1g58t5k07241q8900000gn/T/barba-p28-t1-revisao-apo3xuur/`. Não testou socat/SSH/VPS, nem repetiu suíte Flow. Nenhuma mudança no código do Flow, PR ou mensagem a outro agente. A/B e `.env`/`.vscode/` locais preservados; objetivo continua P-28 Barba & Cabelo.
+- **Preservação de serviços no futuro APT:** hooks needrestart do host lidos, com suporte a `NEEDRESTART_SUSPEND=1`; prefixo restrito à futura instalação, sem editar configuração permanente, adicionado ao pacote. Nenhuma instalação ou execução de hook feita nesta rodada.
+- **Validação Barba & Cabelo:** `scripts/verificar.sh` aprovado: tipos, **301 testes**, formatação dos oito documentos e montagem; ESLint não aplicável. 20 links/âncoras locais e quatro blocos Bash conferidos, diff sem erros de espaço. Sem repetir testes depois de já aprovados; T1 remoto continua aguardando decisão.
 
 ## Atualização — acesso da TI à conta Google confirmado para preparar C (01/11, ChatGPT/Codex)
 
