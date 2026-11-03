@@ -1,5 +1,7 @@
 # P-28 — #41 integrado e conferido; conta/IDs confirmados; ensaio dos 15 pronto para decisão
 
+**Retorno posterior de 03/11:** [ensaio dos 15 executado/conferido](2026-11-03-flow-acervo-15-conferido-p28.md), seleção/GETs/duas provas v2 aprovadas, retirado e preservado. Não repetir decisão/ensaio desta revisão anterior. [Próximo: Claude, barreira e fluxo D em fictícios](2026-11-03-claude-flow-barreira-promocao-d-p28.md), sem habilitar produção ou executar D.
+
 **03/11/2026 · Correção temporal e aceitação externa atendidas nos casos examinados.** Conta, três principais e conjunto de 15 confirmados pela TI/Guardião. Próximo: [procedimento TI/Guardião do ensaio dos 15 itens](2026-11-03-ti-flow-ensaio-acervo-15-p28.md), operação nova com seleção explícita e provas v2, para decisão específica do dono. Não repetir inventário, merge/correção #41, A/B/T1, instalação ou renovar o antigo conjunto de três pastas. **Novo ensaio e D não executados nesta revisão.**
 
 ## 1. Três anexos lidos integralmente

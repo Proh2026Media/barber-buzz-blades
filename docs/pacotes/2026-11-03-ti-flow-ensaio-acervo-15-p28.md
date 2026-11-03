@@ -1,5 +1,7 @@
 # P-28 — Para TI/Guardião: ensaio dos 15 itens, pronto para decisão
 
+**Executado e conferido em 03/11:** [resultado da operação `20261103T152301Z-233f1c84`](2026-11-03-flow-acervo-15-conferido-p28.md), autorizado às 12:18, 15/15 e duas provas v2 aprovadas, temporários retirados e custódia mantida. **Não repetir os comandos/consentimento/renovações abaixo.** [Próximo: desenvolvimento/ensaio fictício da barreira e promoção D](2026-11-03-claude-flow-barreira-promocao-d-p28.md). O roteiro seguinte é histórico da execução; D não autorizada.
+
 **03/11/2026 · Preparado, ainda não executado.** [#41 corrigido, integrado pelo dono e conferido](2026-11-03-flow-pr41-confirmacoes-d-v2-conferidos-p28.md), merge `d3f1c90`, ferramentas `1d65e1a`/25 arquivos. Conta e três IDs principais conferem; nove pastas totais/seis arquivos/zero atalhos, **15 IDs distintos sob Guardião**. Não repetir inventário, A/B/T1, instalação, merge ou duas renovações do antigo manifesto de três IDs.
 
 Este é **um novo ensaio isolado**, com **um consentimento para selecionar os 15 itens**, GETs de metadados e duas renovações v2 (imediata e após o vencimento inicial). Nenhuma escrita de integração/Drive, parada de funções, cron ou etapa D. Tempo de bancada inclui esperar o horário de vencimento emitido; em 02/11 foi cerca de uma hora. Não confundir com janela de indisponibilidade de produção.

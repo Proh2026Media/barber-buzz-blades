@@ -107,6 +107,15 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## Revisão — ensaio dos 15 concluído, conferência remota e preparação técnica D (03/11, ChatGPT/Codex)
+
+- **Anexo inteiro:** relatório TI acervo 15, 168 linhas. Operação `20261103T152301Z-233f1c84`, autorização do dono às 12:18 Brasília excluindo D. [Resultado e evidências](pacotes/2026-11-03-flow-acervo-15-conferido-p28.md).
+- **Conferência própria SSH só leitura:** resumos/exit 0, seleção/GETs 15/15; duas projeções v2 com 15 HTTP 200, conta/cliente/escopo/vínculo ok, horários distintos e segunda após vencimento. Código 25 blobs igual ao #41. Cred/config/manifesto/candidato e B não abertos; parser remoto devolveu só campos permitidos/igualdades, sem valores privados/hashes. Resumo de conclusão às 12:57:52.683 Brasília corrige a linha aproximada/UTC confusa do anexo.
+- **Retirada/preservação:** zero containers/redes/cadeias/listeners acervo e tmux ausente; 36 containers; DB/funções mesmos IDs/inícios e healthy. Três DROP eth0 por porta original (conntrack) observados e INPUT com ts-input. B 6.987 bytes, candidato C 468 e Picker três 801, root0600 e preservados, sem conteúdo lido. Box/Google/isolamento inicial são evidências TI, sem repetição ou escrita remota aqui.
+- **C ampliada fechada no conjunto observado:** não repetir ensaio/consentimento/renovação/inventário ou #41/A/B/T1. [Próximo pacote Claude](pacotes/2026-11-03-claude-flow-barreira-promocao-d-p28.md): implementar barreira e fluxo de promoção/retorno/reconciliação com fictícios e produção bloqueada; preservar guardas. D não autorizada/executada, cliente B&C e custódia mantidos, propriedade/marca/reenvio próprios.
+- **Ambiente local:** volume original não montado; criada cópia temporária limpa por HTTPS do origin, pull ff e vez obtida normalmente. Dependências pelo bun.lock congelado; nenhuma alteração de lock/dependências ou acesso ao `.env`/`.vscode/` originais. Registro será enviado ao origin após as verificações obrigatórias.
+- **Verificação documental:** tipos, 301 testes B&C, Prettier dos oito documentos e montagem aprovados (`scripts/verificar.sh`, saída 0), 38 links locais e diff conferidos. Formatação dos dois registros reconferida após inserir os resultados. Sem repetir suíte Flow ou ensaio real.
+
 ## Revisão — #41 integrado e conferido, 15 itens confirmados e ensaio preparado (03/11, ChatGPT/Codex)
 
 - **Três anexos integrais:** relatório Claude #41 (258 linhas), proposta TI D v2 (267) e confirmações TI/Guardião (26). [Resultado, hashes dos relatórios e alcance](pacotes/2026-11-03-flow-pr41-confirmacoes-d-v2-conferidos-p28.md). Propostas não são autorização de execução.
