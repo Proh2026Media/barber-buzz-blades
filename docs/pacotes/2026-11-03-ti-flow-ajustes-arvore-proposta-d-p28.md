@@ -1,5 +1,7 @@
 # P-28 — Para TI/Guardião: confirmações dirigidas e ajuste da proposta D
 
+**Retorno recebido e conciliado em 03/11:** Guardião confirmou conta/três IDs e 15 itens distintos; proposta D v2 aproveitada com lacunas próprias. [Revisão](2026-11-03-flow-pr41-confirmacoes-d-v2-conferidos-p28.md). Não repetir inventário/identidade ou perguntar por acesso. [Próximo: novo procedimento TI/Guardião do ensaio dos 15 para decisão](2026-11-03-ti-flow-ensaio-acervo-15-p28.md). Pedido original abaixo; D não executada.
+
 **03/11/2026 · Só leitura e preparação; nenhuma execução Google/virada.** [Revisão dos quatro anexos](2026-11-03-flow-pr40-arvore-proposta-d-conferidos-p28.md). O levantamento da árvore e a proposta foram recebidos; não refazer o inventário, A/B/T1, instalação, Picker de três pastas ou perguntar por acesso já confirmado.
 
 ## 1. Confirmar somente a ligação da árvore ao Flow

@@ -1,5 +1,7 @@
 # P-28 — Para Claude/Flow: ajuste do #40 e aceitação fora do handler
 
+**Atendido em 03/11:** #41 integrado pelo dono em `d3f1c90` às 12:03:36 Brasília e [conferido pelo Codex, 136/0/0 + 8/0](2026-11-03-flow-pr41-confirmacoes-d-v2-conferidos-p28.md). Falha temporal corrigida e aceitação externa atendida. Não pedir outro PR/merge para esses pontos. [Próximo: TI/Guardião, ensaio dos 15 para decisão](2026-11-03-ti-flow-ensaio-acervo-15-p28.md). Pedido original abaixo, sem execução real de D.
+
 **03/11/2026 · Novo PR, desenvolvimento/testes exclusivamente fictícios.** [Revisão consolidada](2026-11-03-flow-pr40-arvore-proposta-d-conferidos-p28.md). #40 já integrado pelo dono, main/espelho `321870b93e4b78ccac517be4cbf111c2cc5af770`, ferramentas `913bd2bf126580f9e0a683d679e44c4d972aa97f`. Não pedir outro merge do #40. Leia AGENTS vigente do Flow, use ramo `ia/*` e a vez; devolver PR em rascunho. Sem main, VPS, Google/cofre, candidato real ou produção.
 
 ## 1. Ajuste necessário, reproduzido independentemente

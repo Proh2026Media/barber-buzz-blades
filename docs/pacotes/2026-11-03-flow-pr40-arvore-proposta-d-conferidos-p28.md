@@ -1,5 +1,7 @@
 # P-28 — PR #40, árvore e proposta D: revisão consolidada
 
+**Atualização posterior de 03/11:** [#41 integrado/conferido, correção e aceitação externa atendidas](2026-11-03-flow-pr41-confirmacoes-d-v2-conferidos-p28.md), 136/0/0 + 8/0 próprios. Guardião confirmou conta/IDs/conjunto. Não reabrir o achado/inventário desta revisão histórica. [Próximo: ensaio dos 15 para decisão](2026-11-03-ti-flow-ensaio-acervo-15-p28.md). A reprodução e os resultados 4/1 abaixo preservam o estado anterior.
+
 **03/11/2026 · Revisão do código e das quatro devolutivas. D não executada.** #40 já integrado pelo dono; composição entregue, com **um ajuste reproduzido** na contagem de renovações. Árvore com itens adicionais relatada pela TI, ainda sem confirmação privada da conta/IDs nesta devolutiva. Próximo: [Claude — corrigir e preparar aceitação externa](2026-11-03-claude-flow-ajustes-pr40-aceitacao-p28.md) e [TI/Guardião — confirmação dirigida e revisão operacional](2026-11-03-ti-flow-ajustes-arvore-proposta-d-p28.md). Não repetir A/B/T1, instalação ou o Picker de três pastas.
 
 ## 1. Documentos recebidos integralmente

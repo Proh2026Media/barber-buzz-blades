@@ -1,6 +1,6 @@
 # P-28 — Picker real conferido: três pastas e duas renovações
 
-**Retomada posterior de 03/11:** [árvore e #40 recebidos/conferidos](2026-11-03-flow-pr40-arvore-proposta-d-conferidos-p28.md). TI relata itens adicionais, identidade privada a confirmar; prova v2 exigida no novo planejador, com ajuste temporal em revisão. Não repetir o ensaio deste registro nem renovar só os três IDs para preencher o novo requisito; preparar o conjunto adicional e consolidar suas provas próprias. Resultado de 02/11 abaixo continua válido no conjunto exercitado.
+**Retomada posterior de 03/11:** [#41 integrado/conferido e confirmações atendidas](2026-11-03-flow-pr41-confirmacoes-d-v2-conferidos-p28.md). Conta/três IDs e conjunto de 15 confirmados; correção temporal e aceitação externa passaram. [Procedimento novo dos 15 para decisão](2026-11-03-ti-flow-ensaio-acervo-15-p28.md), sem repetir o teste deste registro ou renovar só os três IDs. Resultado de 02/11 abaixo continua válido no conjunto exercitado.
 
 **Revisão em 03/11/2026 · Execução TI em 02/11/2026, Brasília (UTC−03).** Ensaio aprovado **no conjunto exercitado: três pastas principais**. Amostra de arquivos antigos não exercitada; acesso ao acervo inteiro e etapa D não aprovados por esse resultado. Não repetir Picker, consentimento, instalação, PR/merge, A/B/T1 ou perguntar novamente sobre o acesso da TI à conta Google.
 
