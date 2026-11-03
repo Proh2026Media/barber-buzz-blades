@@ -1,6 +1,6 @@
 # P-28 — Ajustes do PR #39 conferidos e já integrados
 
-**02/11/2026 · Correções atendidas nos pontos examinados.** O dono já integrou o PR #39. Não repetir merge, pedir outra correção para os quatro casos ou refazer A/B/T1. Próximo: [procedimento TI/Guardião para decidir o ensaio Picker real](2026-11-02-ti-flow-ensaio-picker-p28.md). A integração do código não executa o ensaio; C anterior continua parcial pelo 404 e D não iniciada.
+**03/11/2026 — revisão de código atendida e ensaio real recebido.** O dono integrou o PR #39 e a TI executou o Picker em 02/11 com autorização própria. [Resultado conferido](2026-11-03-flow-picker-conferido-p28.md): três pastas e duas renovações aprovadas, amostra antiga 0; D não iniciada. Não repetir merge/correções/A/B/T1/Picker. A revisão de 02/11 abaixo permanece como evidência do código testado.
 
 ## 1. Fonte e versão efetivamente conferidas
 

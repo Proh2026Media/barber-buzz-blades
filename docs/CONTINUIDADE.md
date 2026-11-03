@@ -6,7 +6,7 @@
 
 **15/10/2026 (noite) — passagem concluída no Claude Code:** ver a entrada "Passagem de 15/10" logo abaixo da Diretriz. Comece por [LEIA-PRIMEIRO.md](LEIA-PRIMEIRO.md). A função `register-shop` da P-38 foi publicada às 22:54; faltam os pacotes do Google (P-69 e P-28, em [pacotes/](pacotes/)).
 
-Atualizado em **02/11/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
+Atualizado em **03/11/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
 ## Comece aqui
 
@@ -106,6 +106,15 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - Esportes sempre visível;
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
+
+## Revisão — Picker real aprovado no conjunto de três pastas, cobertura e D em preparação (03/11, ChatGPT/Codex)
+
+- **Anexo:** `relatorio-ti-flow-ensaio-picker-p28-2026-11-02.md`, 155 linhas lidas integralmente. TI executou em **02/11**, operação `20261102T213801Z-44958e51`, sob autorização específica de Alyson às 17:00 Brasília abrangendo Guardião/consentimento/API e retirada. [Resultado e atribuição das evidências](pacotes/2026-11-03-flow-picker-conferido-p28.md).
+- **Resultado corroborado por leitura:** `conferir`, `iniciar-picker` e duas renovações exit 0; seleção 3/3, três principais acessíveis, conta/cliente/drive.file corretos, vínculo ok e segunda renovação após vencimento. **Amostra antiga 0**: aprovação é desse conjunto, não de todo o acervo. Comparação privada dos três IDs com B e navegador/Google são evidências TI, não leitura própria dos IDs.
+- **Fonte/custódia/retirada:** 20/20 blobs #39 conferidos, root/permissões adequados, zero containers/redes/saltos/cadeias Picker e listeners na VPS, tmux ausentes, regras anteriores conservadas. Banco/funções saudáveis com mesmos IDs/inícios, 36 containers. C anterior preservada; TI só fechou o tmux histórico, infraestrutura já retirada pelo Codex. Não abriu/exportou B, credencial, configuração, manifesto, candidato, ambiente ou log privado; sem chamada Google/escrita remota nesta revisão.
+- **Próximos pacotes:** [TI/Guardião — observação de metadados da árvore e proposta de barreira/retorno D](pacotes/2026-11-03-ti-flow-cobertura-preparacao-d-p28.md); [Claude/Flow — composição pura/plano de promoção e transação fictícia](pacotes/2026-11-03-claude-flow-plano-promocao-d-p28.md). Não repetir Picker, consentimento, PR/merge/A/B/T1, acesso ou inventário geral. Não modificar o manifesto/candidato aprovado para preencher amostra retroativamente.
+- **Limites:** D não iniciada, guardas de produção preservadas; B histórica exige futura captura fresca após barreira. Cliente Barba & Cabelo preservado, propriedade/marca e verificação final P-28 pendentes. Alteração local apenas documental; `.env` e `.vscode/` preservados e fora da entrega.
+- **Verificação da entrega documental:** `scripts/verificar.sh` saída 0, tipos/301 testes/Prettier dos nove documentos/montagem aprovados; 28 links novos conferidos, diff sem erro de espaço. Eslint não aplicável; nenhuma suíte Flow repetida. Formatação dos registros reconferida após inserir este resultado.
 
 ## Revisão — ajustes do PR #39 conferidos e já integrados, Picker real para decisão (02/11, ChatGPT/Codex)
 

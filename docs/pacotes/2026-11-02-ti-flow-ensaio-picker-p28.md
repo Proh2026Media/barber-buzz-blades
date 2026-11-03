@@ -1,6 +1,6 @@
-# P-28 — Para TI/Guardião: ensaio Picker real, pronto para decisão
+# P-28 — Para TI/Guardião: procedimento do ensaio Picker real
 
-**02/11/2026 · Não executado; aguarda autorização específica de Alyson.** [PR #39 corrigido, integrado e conferido](2026-11-02-flow-pr39-ajustes-conferidos-p28.md), merge `73d5317`. Não pedir merge/PR novo, outra A/B/T1 ou inventário geral. A etapa C anterior permanece parcial/404; seus temporários já foram retirados e seus arquivos privados serão preservados.
+**Atualização de 03/11 — executado pela TI em 02/11, autorizado por Alyson às 17:00 Brasília.** [Resultado conferido](2026-11-03-flow-picker-conferido-p28.md): três principais acessíveis, duas renovações aprovadas (inclusive após vencimento), temporários retirados e privados preservados. Amostra antiga 0, cobertura do acervo não demonstrada; D não iniciada. **Não repetir os comandos abaixo, consentimento ou aprovação.** Próximo: [TI — cobertura/preparação operacional](2026-11-03-ti-flow-cobertura-preparacao-d-p28.md) e [Claude — composição/plano fictício](2026-11-03-claude-flow-plano-promocao-d-p28.md). O procedimento abaixo permanece como histórico da execução autorizada.
 
 ## 1. Escopo que a decisão deste ensaio abrange
 
