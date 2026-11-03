@@ -1,5 +1,7 @@
 # P-28 — Para Claude/Flow: composição da promoção e plano D com fictícios
 
+**Retorno recebido em 03/11:** #40 entregue e integrado pelo dono em `321870b`. [Revisão própria 125/0/0 + 4/1](2026-11-03-flow-pr40-arvore-proposta-d-conferidos-p28.md) e [próximo pacote Claude](2026-11-03-claude-flow-ajustes-pr40-aceitacao-p28.md): novo PR para a deduplicação temporal e aceitação externa somente leitura. Não repetir o #40 nem executar duas renovações v2 do candidato antigo; futuras provas serão consolidadas com a cobertura. Pedido original abaixo; D não executada.
+
 **03/11/2026 · Preparação de código/procedimento; produção não executável nesta entrega.** Encaminhar ao Claude que desenvolve o Flow. O objetivo continua sendo separar o Drive do Flow do projeto Google compartilhado, dependência da P-28 do Barba & Cabelo. Não abrir melhorias gerais do Flow.
 
 ## 1. Ponto já atendido e lacuna concreta

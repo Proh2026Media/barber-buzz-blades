@@ -1,5 +1,7 @@
 # P-28 — Para TI/Guardião: cobertura restante e preparação operacional de D
 
+**Retorno recebido em 03/11:** árvore e proposta lidas; não repetir o levantamento. [Conciliação](2026-11-03-flow-pr40-arvore-proposta-d-conferidos-p28.md) e [somente os ajustes restantes para TI](2026-11-03-ti-flow-ajustes-arvore-proposta-d-p28.md): confirmar conta/IDs e corrigir a operação, sem novo ensaio ou virada. O texto abaixo é o pedido original.
+
 **03/11/2026 · Levantamento somente de leitura e proposta operacional.** Encaminhar à TI/Guardião. [Picker conferido](2026-11-03-flow-picker-conferido-p28.md): 3/3 principais e duas renovações passaram em 02/11; amostra antiga 0, acervo recursivo não demonstrado. Não repetir consentimento/Picker, A/B/T1, instalação #36, PR/merge ou inventário geral. Acesso à conta Google e custódia já confirmados.
 
 ## 1. Pergunta restante: há acervo antigo além das três pastas?
