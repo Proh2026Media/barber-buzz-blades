@@ -6,7 +6,7 @@
 
 **15/10/2026 (noite) — passagem concluída no Claude Code:** ver a entrada "Passagem de 15/10" logo abaixo da Diretriz. Comece por [LEIA-PRIMEIRO.md](LEIA-PRIMEIRO.md). A função `register-shop` da P-38 foi publicada às 22:54; faltam os pacotes do Google (P-69 e P-28, em [pacotes/](pacotes/)).
 
-Atualizado em **03/11/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
+Atualizado em **05/11/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
 ## Comece aqui
 
@@ -106,6 +106,14 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - Esportes sempre visível;
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
+
+## Revisão — #42 integrado, quatro falhas fictícias e VPS ainda #36 (05/11, ChatGPT/Codex)
+
+- **Anexo inteiro:** relatório Claude barreira/virada, 176 linhas, desenvolvimento 03/11 e integração pelo dono em 05/11 às 12:41:20 Brasília. [Revisão completa](pacotes/2026-11-05-flow-revisao-pr42-p28.md). Head `8c7edbc`, merge/origem/espelho `3c77d32`, árvore idêntica `47c6c1d`; ferramentas `abd056f`/27, função `e9ae215`/5, 34 blobs conferidos/intactos. Não pedir outro merge do #42.
+- **Próprios testes:** Bun 1.4.2 Linux/amd64 + PostgreSQL 15.8 fictício: 145/0/0, 1.738 assertivas; Vitest nativo 122/122, incluindo 16 barreira/94 proteção. Cinco independentes finais **1/4**: sessão de upload externa gera falso zero; falha em voo perde incerteza na intercalação ler aberta/fechar/apagar; retorno usa nova captura como esperado e apaga divergência; reconciliação devolve 0 com barreira reaberta. Controle de retorno normal passou, sem dados reais. Quatro containers/volumes anônimos/rede próprios retirados, fonte/checkout Flow intactos.
+- **Leitura própria VPS após merge:** `index.ts` e `protecao.ts` vivos com mesmos blobs do #36, `barreira.ts` ausente; banco/funções healthy com mesmos IDs/inícios e RestartCount 0. Sem banco/env/segredo/Google ou escrita remota, nenhuma instalação/reversão/reinício. Não pedir inventário TI duplicado.
+- **Próximo:** [Claude — novo PR com quatro correções](pacotes/2026-11-05-claude-flow-ajustes-pr42-p28.md), mantendo fictícios/guardas. Não instalar #42/habilitar produção ou repetir A/B/T1/ensaio dos 15/consentimento/renovação. D não autorizada/executada, cliente B&C preservado. Volume original voltou e o pull ff incorporou a entrega de 03/11; `.env`/`.vscode/` locais preservados.
+- **Verificação documental B&C:** tipos, 301 testes, Prettier dos sete documentos e montagem passaram (`scripts/verificar.sh`, saída 0), 17 links novos/diff conferidos. Formatação dos dois registros reconferida após inserir resultados. Os quatro casos independentes Flow continuam reprovados e registrados; `.env`/`.vscode/` fora da entrega.
 
 ## Revisão — ensaio dos 15 concluído, conferência remota e preparação técnica D (03/11, ChatGPT/Codex)
 

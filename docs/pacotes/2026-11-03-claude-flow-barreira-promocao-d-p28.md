@@ -1,5 +1,7 @@
 # P-28 — Para Claude/Flow: preparar a barreira e a promoção/retorno D
 
+**Retorno recebido em 05/11:** #42 entregue e integrado pelo dono em `3c77d32`. [Revisão própria](2026-11-05-flow-revisao-pr42-p28.md): suítes 145/0/0 + 122/122, independentes 1/4, quatro correções. [Novo pacote Claude](2026-11-05-claude-flow-ajustes-pr42-p28.md); não repetir entrega/merge do #42 ou ensaio dos 15. VPS ainda com arquivos #36 e sem barreira, sem instalação/D. Pedido original abaixo.
+
 **03/11/2026 · Implementação e testes só com fictícios; nenhum alvo de produção habilitado nesta entrega.** [Ensaio dos 15 concluído/conferido](2026-11-03-flow-acervo-15-conferido-p28.md): seleção/GETs e duas provas v2, conta/cliente/escopo/vínculo corretos, temporários retirados. Não repetir A/B/T1/Picker, consentimento, renovação real, inventário ou acesso. Essa é dependência P-28 do Barba & Cabelo, sem nova frente funcional geral do Flow.
 
 ## 1. Escopo e regras
