@@ -1,5 +1,7 @@
 # P-28 — Para Claude/Flow: três ajustes nos mecanismos do #44
 
+> **Retorno posterior de 06/11 — #45:** F1a/F1b/F2a atendidas, [181/0/0 + 145/145 + 9/9 independentes](2026-11-06-flow-revisao-pr45-p28.md). Sem novo pedido de correção. [Coordenação operacional externa TI/Guardião e Claude](2026-11-06-ti-flow-coordenacao-separacao-p28.md), foco de desenvolvimento retomado no B&C. Conteúdo abaixo histórico; não reaplicar os pedidos atendidos.
+
 **06/11/2026 · Desenvolvimento e ensaios fictícios.** [Revisão completa](2026-11-06-flow-revisao-pr44-p28.md). Este arquivo é para **Claude/desenvolvimento**, dependência Google da P-28 do Barba & Cabelo.
 
 Relatório `relatorio-claude-flow-pendencias-pr43-p28-2026-11-06.md` lido inteiro. [#44 integrado](https://github.com/Proh2026Media/flow-proh-media/pull/44) em **06/11 às 11:16:06 Brasília**, head `08f0b1ee421c3c09f7bcef85d86dae4335569ac1`, merge/main/espelho `e9b65d4813052aa3d37ef78a3e36028f88530eaf`, mesmo conteúdo. Trabalhar da main atual, com a vez e AGENTS do Flow, em **novo ramo e PR em rascunho**. Não pedir outro merge do #44.

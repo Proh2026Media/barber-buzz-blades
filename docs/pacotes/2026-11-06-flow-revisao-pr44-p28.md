@@ -1,5 +1,7 @@
 # P-28 — Revisão do #44: F3 atendida, três lacunas nos mecanismos novos
 
+> **Retorno posterior de 06/11 — #45:** F1a/F1b/F2a atendidas, [181/0/0 + 145/145 + 9/9 independentes](2026-11-06-flow-revisao-pr45-p28.md). Sem novo pedido de correção. [Coordenação operacional externa TI/Guardião e Claude](2026-11-06-ti-flow-coordenacao-separacao-p28.md), foco de desenvolvimento retomado no B&C. Conteúdo abaixo histórico; não reaplicar os pedidos atendidos.
+
 **06/11/2026 · ChatGPT/Codex · Revisão e ensaios fictícios.** Relatório `relatorio-claude-flow-pendencias-pr43-p28-2026-11-06.md` lido inteiro: **155 linhas**, SHA-256 `4aa3ac67c9303e1004ed6441e43559659dcfa5e421497ea58dba01384d71ba9a`. [Pedido respondido](2026-11-06-claude-flow-ajustes-pr43-p28.md), [revisão anterior](2026-11-06-flow-revisao-pr43-p28.md).
 
 **Resultado:** finalização de abas antigas **F3 atendida**; abrir/fechar não ignora mais incertas anteriores. Há três lacunas reproduzidas nos mecanismos novos: **F1a** erro externo capturado pelo cron some sob resposta HTTP 200; **F1b** permissão de outro arquivo é aceita como reconciliação; **F2a** token de próxima página fora da regex encerra a listagem como completa. F1/F2 continuam parciais; barreira/virada não homologadas. [Arquivo único para Claude](2026-11-06-claude-flow-ajustes-pr44-p28.md).
