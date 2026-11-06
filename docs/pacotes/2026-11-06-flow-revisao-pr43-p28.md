@@ -1,5 +1,7 @@
 # P-28 — Revisão do #43: correções confirmadas e três pendências
 
+> **Retorno posterior de 06/11:** pedido respondido pelo #44, já integrado. F3 atendida; F1/F2 avançaram, com [três lacunas nos mecanismos novos](2026-11-06-flow-revisao-pr44-p28.md). [Próximo arquivo Claude: F1a/F1b/F2a](2026-11-06-claude-flow-ajustes-pr44-p28.md). Conteúdo abaixo histórico; preservar as correções atendidas.
+
 **06/11/2026 · ChatGPT/Codex · Revisão e ensaios fictícios.** Relatório `relatorio-claude-flow-ajustes-pr42-p28-2026-11-05.md` lido integralmente: **137 linhas**, SHA-256 `4dabc6e0a824146b2ee21981a6b255fe711060c20b83c02d2ea9e850305137d1`. [Pedido anterior](2026-11-05-claude-flow-ajustes-pr42-p28.md) e [revisão do #42](2026-11-05-flow-revisao-pr42-p28.md).
 
 **Resultado:** os controles das quatro correções anteriores passaram. Restam **três pendências**, reproduzidas em quatro casos negativos: incertezas anteriores deixam de bloquear sem reconciliação; carência não comprova término dos uploads legados; e frontend antigo não finaliza com a barreira fechada. **Barreira/virada ainda não homologadas.** [Arquivo único para Claude/Flow](2026-11-06-claude-flow-ajustes-pr43-p28.md).

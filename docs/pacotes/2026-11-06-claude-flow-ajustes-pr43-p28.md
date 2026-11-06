@@ -1,5 +1,7 @@
 # P-28 — Para Claude/Flow: fechar três pendências do #43
 
+> **Retorno posterior de 06/11:** pedido respondido pelo #44, já integrado. F3 atendida; F1/F2 avançaram, com [três lacunas nos mecanismos novos](2026-11-06-flow-revisao-pr44-p28.md). [Próximo arquivo Claude: F1a/F1b/F2a](2026-11-06-claude-flow-ajustes-pr44-p28.md). Conteúdo abaixo histórico; preservar as correções atendidas.
+
 **06/11/2026 · Desenvolvimento e testes fictícios.** Arquivo para **Claude, que desenvolve o Flow**, dependência Google da P-28 do Barba & Cabelo. [Revisão e evidências](2026-11-06-flow-revisao-pr43-p28.md).
 
 Relatório `relatorio-claude-flow-ajustes-pr42-p28-2026-11-05.md` lido inteiro. O [#43 já foi integrado](https://github.com/Proh2026Media/flow-proh-media/pull/43) em **05/11 às 13:42:16 Brasília**: head `129e63ea2627716cba0d5f0dc1b48a8ff6fbe298`, merge `ff4471debf671f42a42fa55896a26c900e868e9b`, mesmo conteúdo. Trabalhar da main atual, com a vez/AGENTS do Flow, em **novo ramo e PR em rascunho**; não pedir outro merge do #43.
