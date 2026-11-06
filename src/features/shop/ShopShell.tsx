@@ -1926,6 +1926,9 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       {!demo && actor && shop && (
         <ShopWelcomeDialog
           pending={(actor as { welcome_seen_at?: string | null }).welcome_seen_at === null}
+          userId={viewerId}
+          memberId={actor.id}
+          memberUpdatedAt={actor.updated_at}
           shopId={shop.id}
           shopName={shop.name}
           role={actor.role}

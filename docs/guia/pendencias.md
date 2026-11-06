@@ -10,7 +10,7 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 - Situação: **pendente**, **feito — falta aplicar no banco**, **a decidir** (depende do dono), **não confirmado** (não deu para conferir daqui).
 - Cada item foi conferido no código e nas migrations em 12/10/2026. As linhas citadas são dessa data.
 - **Papéis da equipe no banco × nomes na tela:** `owner` e `partner` = **Dono** (sócio; `partner` é o nome antigo e aparece igual), `associate` = **Parceiro**, `employee` = **Contratado** ([roles-model.ts](../../src/features/shop/roles-model.ts); rótulos em `pt-BR.ts`). `shop_admin` é o papel antigo de `memberships`, que pode existir sem vínculo de equipe (CONTINUIDADE, onda 1 de 09/10).
-- Último id usado: **P-109**.
+- Último id usado: **P-110**.
 
 **Índice**
 
@@ -20,7 +20,7 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 4. [Migrations escritas e não aplicadas; operação do servidor](#4-migrations-escritas-e-não-aplicadas-operação-do-servidor) (P-21 a P-29, P-67 a P-69, P-73 e P-99)
 5. [Decisões do dono em aberto](#5-decisões-do-dono-em-aberto) (P-30 a P-39, P-53, P-71, P-74, P-76 e P-77)
 6. [Testes manuais com contas reais](#6-testes-manuais-com-contas-reais) (P-40 a P-43)
-7. [Dívida técnica](#7-dívida-técnica) (P-44 a P-48, P-51, P-52, P-55, P-63 a P-65, P-72, P-75 e P-78)
+7. [Dívida técnica](#7-dívida-técnica) (P-44 a P-48, P-51, P-52, P-55, P-63 a P-65, P-72, P-75, P-78 e P-110)
 8. [Ideias futuras](#8-ideias-futuras) (P-49, P-50 e P-54)
 9. [Interface por dispositivo: o que ficou](#9-interface-por-dispositivo-o-que-ficou) (P-79 a P-98 e P-100 a P-109)
 
@@ -503,6 +503,13 @@ Quando a pessoa cancela ou o Google recusa o login, a janela por cima do app mos
 A demonstração usa a regra de `shop_uses_staff_services`/`staff_service_terms` em [catalog.ts](../../src/features/demo/catalog.ts): catálogo explícito por profissional, equipe/serviços ativos e valores próprios. Bruno oferece corte em 45 min por R$ 55; Rafa oferece barba em 30 min por R$ 65; Dani não oferece barba. Escolha do cliente, horários livres, agendamento pelo painel, entrada/confirmação da espera e preços das reservas usam essas condições. Remarcar o mesmo serviço com o mesmo profissional conserva o preço reservado. A prévia copiada de uma loja real continua sem vínculos inventados, usando o catálogo copiado. Casos automáticos em `src/features/demo/model.test.ts`; nenhum acesso ou alteração no banco de produção. Registro da entrega em `CONTINUIDADE.md`.
 
 ---
+
+### P-110 — Boas-vindas por vínculo e sessão · feito em 06/11/2026
+
+- **Problemas corrigidos:** papel antigo `partner` cru no título; abertura sem sessão/para conta diferente; permanência após sair e resposta antiga reabrindo a janela; estado herdado ao trocar vínculo e repetição A→B→A; leitura antiga ocultando papel novo/volta à equipe.
+- **Mudança:** `ShopWelcomeDialog` usa o rótulo de `roleMeta`, sessão da conta esperada e eventos de autenticação com precedência sobre leitura atrasada. Estado por conta, id/atualização do vínculo e papel; só marca leitura ao fechar janela liberada. `ShopShell` fornece esses dados existentes. O updated_at já é atualizado pelo trigger de shop_members; nenhuma migration nova e P-17 não reaplicada.
+- **Verificado:** componente React/Radix/i18n real em bancada Chromium com auth/RPC simulados, **19/19 cenários** (14 fluxos e cinco idiomas), contra 3/19 na versão anterior. Nove comparações com lista completa de permissões em 390/834/1440 e cantos retos/semi/arredondados: geometria e conteúdo interno idênticos; celular inteiro sem pixels diferentes. Duas fotos de tablet têm 58/229 pixels diferentes fora da janela, sem deslocamento ou overflow; não foi declarada igualdade global nessas duas.
+- **Limites:** sem login/RPC real ou aparelho físico; P-42/P-43 permanecem. Identidade, regras/permissões, RPC existente e comportamento não bloqueante de fechamento em falha mantidos. Nenhum trabalho ou operação Flow nesta entrega.
 
 ## 8. Ideias futuras
 

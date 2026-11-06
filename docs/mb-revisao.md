@@ -177,3 +177,7 @@ Ranking com espaço de leitura e cartões de resumo/crescimento com altura próp
 ## P-109 — Agenda da loja e atendimento (31/10/2026)
 
 Agenda, formulário de agendar cliente e diretório pela largura útil em rem. Corrigidos navegação cortada, resumo comprimindo a lista, campos sobrepostos e ações sem espaço; título e avisos reorganizados em área extrema. Rascunho/horário mantidos, contratado sem seletor de outra agenda e duas referências móveis idênticas. Mesmas regras, dados e identidade. Comparações e limites na seção P-109 de [revisao-visual-integral-2026-10-29.md](revisao-visual-integral-2026-10-29.md).
+
+## P-110 — Boas-vindas por vínculo e sessão (06/11/2026)
+
+Corrigidos papel legado no título, abertura com sessão ausente/diferente, resposta de sessão atrasada e estado compartilhado entre vínculos. Leitura local por conta/vínculo/atualização/papel, com saída sem marcação automática e nova chegada respeitada. Mesma apresentação, cantos, permissões e RPC; sem migration. Bancada isolada do componente real: 19/19 cenários com auth/RPC simulados; nove pares de fotos em 390/834/1440 e três cantos, conteúdo/geometria idênticos e celular inteiro pixel idêntico. Limites e evidências na P-110 de [pendencias.md](guia/pendencias.md#p-110--boas-vindas-por-vínculo-e-sessão--feito-em-06112026) e no CONTINUIDADE; aparelhos/logins reais continuam pendentes.
