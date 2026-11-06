@@ -1,5 +1,7 @@
 # P-28 — Para Claude/Flow: quatro correções do #42 em novo PR
 
+> **Atualização de 06/11:** pedido respondido pelo #43, já integrado. [Revisão atual: correções atendidas e três pendências](2026-11-06-flow-revisao-pr43-p28.md); [próximo arquivo Claude: F1/F2/F3](2026-11-06-claude-flow-ajustes-pr43-p28.md). O conteúdo abaixo permanece como histórico, sem repetir os quatro pedidos do zero.
+
 **05/11/2026 · Revisão com reproduções fictícias; sem instalação ou D.** [Resultado consolidado](2026-11-05-flow-revisao-pr42-p28.md). O dono já integrou #42 às **12:41:20 Brasília**, merge `3c77d329667adc13ed01767598307545af579d37`, mesmo conteúdo do head `8c7edbc`. Não pedir outro merge do #42. Trabalhar em **novo ramo/PR em rascunho**, com a vez e AGENTS vigentes do Flow; sem main direta.
 
 Suítes próprias passaram: ferramentas **145/0/0**, Linux/amd64 Bun 1.4.2 e PostgreSQL 15.8 fictício; app/função Vitest **122/122**. Cinco controles independentes finais deram **1/4**, com controle de retorno normal passando e quatro falhas abaixo. Fonte preservada. Corrigir essas lacunas antes de homologar barreira/virada.

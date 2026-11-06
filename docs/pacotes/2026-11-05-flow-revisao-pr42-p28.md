@@ -1,5 +1,7 @@
 # P-28 — Revisão do #42 integrado: quatro ajustes antes da instalação
 
+> **Atualização de 06/11:** pedido respondido pelo #43, já integrado. [Revisão atual: correções atendidas e três pendências](2026-11-06-flow-revisao-pr43-p28.md); [próximo arquivo Claude: F1/F2/F3](2026-11-06-claude-flow-ajustes-pr43-p28.md). O conteúdo abaixo permanece como histórico, sem repetir os quatro pedidos do zero.
+
 **05/11/2026 · Código entregue e integrado, ainda não homologado para instalar a barreira ou executar D.** As suítes existentes passaram, mas cinco verificações independentes terminaram em **1 pass / 4 fail**, reproduzindo quatro falhas do fluxo. [Devolutiva para Claude](2026-11-05-claude-flow-ajustes-pr42-p28.md), em **novo PR** a partir da main. Não pedir outro merge do #42, não instalar esta versão e não repetir o ensaio Google dos 15 itens, que permanece concluído.
 
 ## 1. Relatório e versão

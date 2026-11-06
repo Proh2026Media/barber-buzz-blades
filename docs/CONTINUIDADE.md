@@ -6,7 +6,7 @@
 
 **15/10/2026 (noite) — passagem concluída no Claude Code:** ver a entrada "Passagem de 15/10" logo abaixo da Diretriz. Comece por [LEIA-PRIMEIRO.md](LEIA-PRIMEIRO.md). A função `register-shop` da P-38 foi publicada às 22:54; faltam os pacotes do Google (P-69 e P-28, em [pacotes/](pacotes/)).
 
-Atualizado em **05/11/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
+Atualizado em **06/11/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
 ## Comece aqui
 
@@ -106,6 +106,16 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - Esportes sempre visível;
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
+
+## Revisão — #43 conferido, correções atendidas e três pendências (06/11, ChatGPT/Codex)
+
+- **Anexo inteiro:** relatório Claude ajustes #42, 137 linhas. [Revisão do #43](pacotes/2026-11-06-flow-revisao-pr43-p28.md). GitHub mostra integração em 05/11 às 13:42:16 Brasília; head `129e63e`, merge/origem/espelho `ff4471d`, árvore idêntica `e088bc6`. Oito blobs do delta conferem com o anexo; ferramentas `b562503`/27, função `3b7aa5e`/5, 35 blobs de ensaio conferidos/intactos. Não pedir outro merge.
+- **Próprios:** ferramentas Bun 1.4.2 Linux/amd64 + PostgreSQL 15.8 fictício **154/0/0**, 1.820 assertivas (uma a menos que macOS por condição de caminho); Vitest **128/128**, incluindo 22 barreira/94 proteção; tipos do aplicativo e lint do escopo, saídas 0. Nove independentes **5 passaram/4 falharam**, 22 assertivas. Passaram upload rastreado/continuação com ticket, corrida original, retorno normal/divergente e reconciliação sem barreira. Três pendências: F1 incerteza anterior liberada sem reconciliação (antes de fechar e ao reabrir/fechar); F2 carência emite prova com PUT legado pendente; F3 aba antiga recebe 503 no finish, mantendo pendência. Google/XHR simulados; 25 h são relógio simulado, não teste real de duração; handler Deno completo não executado.
+- **Retirada:** três containers próprios, volumes anônimos e rede internal retirados; fonte/checkout Flow intactos. Dependências congeladas, sem alterar lock. Artefatos fictícios fora do B&C. Tipos estritos Bun/sabotagens do relatório são evidências Claude, não checks próprios desta rodada.
+- **Leitura SSH própria às 10:46:39 Brasília:** index/proteção vivos com blobs #36; barreira ausente; banco/funções healthy com mesmos IDs/inícios e RestartCount 0. Só arquivos/metadados, sem ambiente/banco/credenciais ou escrita remota; sem instalação/promoção/manutenção. Agora não é necessário inventário TI duplicado.
+- **Próximo:** [arquivo único para Claude — F1/F2/F3 em novo PR](pacotes/2026-11-06-claude-flow-ajustes-pr43-p28.md). Preservar as correções atendidas, guardas e produção bloqueada. Carência de 24 h não adotada, instalação/D não autorizadas/executadas. Ensaio dos 15/A/B/T1, candidato/B/cliente B&C preservados; propriedade/marca e vídeo/reenvio continuam próprios. `.env`/`.vscode/` locais fora da entrega.
+
+- **Verificação documental B&C:** `scripts/verificar.sh` saída 0, tipos/301 testes/Prettier dos oito documentos/montagem aprovados; 24 links locais novos e diff conferidos. Avisos da montagem sobre padrões PWA sem correspondência registrados na revisão; código/PWA sem alteração. Formatação dos dois registros reconferida após inserir resultados; quatro reprovações independentes Flow mantidas.
 
 ## Revisão — #42 integrado, quatro falhas fictícias e VPS ainda #36 (05/11, ChatGPT/Codex)
 
