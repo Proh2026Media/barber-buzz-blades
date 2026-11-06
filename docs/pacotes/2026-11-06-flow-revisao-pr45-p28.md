@@ -1,6 +1,6 @@
 # P-28 — #45 conferido: correções atendidas e dependência operacional externa
 
-> **Retorno externo posterior de 06/11:** [TI/Claude informam E1 concluída e E2 em espera](2026-11-06-p28-retorno-ti-espera-janela-d.md), com runtime/comandos reais e site entregues. Nenhum novo pedido de desenvolvimento Claude agora. Abaixo permanece a revisão própria do #45; não confundir seus testes com conferência independente das entregas posteriores/instalação.
+> **Atualização posterior de 06/11:** [E1b recebida e #46–#48 revisados](2026-11-06-flow-revisao-pr46-pr48-p28.md). Novo marco até **13/11 17:30:07.445 BRT**, Parte 1 TI às 17h45/A1 já autorizada segundo a devolutiva; há dois achados nas ferramentas reais #47, com [devolutiva única Claude/TI](2026-11-06-claude-flow-ajustes-pr46-pr48-p28.md). Não pedem reinstalação. Abaixo permanece a revisão histórica do #45; seus testes não são conferência da instalação nem substituem a revisão posterior.
 
 **06/11/2026 · ChatGPT/Codex.** Relatório `relatorio-claude-flow-ajustes-pr44-p28-2026-11-06.md` lido inteiro: **245 linhas**, SHA-256 `4c71ca83608bf4b445f8781df1a34677c34479159044deed6658d0f40e1711ec`. [Pedido respondido](2026-11-06-claude-flow-ajustes-pr44-p28.md), [revisão anterior](2026-11-06-flow-revisao-pr44-p28.md).
 

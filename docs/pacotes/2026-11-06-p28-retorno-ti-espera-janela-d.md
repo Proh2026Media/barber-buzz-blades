@@ -1,5 +1,7 @@
 # P-28 — Retorno conciliado: E1 informada como concluída, E2 em espera
 
+> **Histórico superado pela E1b e revisão #46–#48:** [estado atual](2026-11-06-flow-revisao-pr46-pr48-p28.md), mínimo **13/11 17:30:07.445 BRT** e Parte 1 TI **17h45/A1 já autorizada**, conforme a devolutiva posterior. Os horários 16h/16h15 abaixo e o pacote v1 não são atuais. Dois achados de ferramentas voltam ao Claude, sem indicação de reinstalar. Preserva-se abaixo o que havia sido recebido às 17h; não repetir suas etapas nem usar esse registro como comando atual.
+
 **06/11/2026 · ChatGPT/Codex · Registro documental, sem execução operacional.** Responde ao `relatorio-ti-p28-recebimento-pacote-janela-d-2026-11-06.md`, TI às **17h BRT**, lido inteiro (36 linhas, SHA-256 `cef409970d21b353674e140134789c2a4cf82c0b0d3725bffebffd93c9404527`). Atualiza o [encaminhamento anterior](2026-11-06-ti-flow-coordenacao-separacao-p28.md) e a [revisão própria do #45](2026-11-06-flow-revisao-pr45-p28.md).
 
 ## Estado recebido e atribuição
