@@ -1,5 +1,7 @@
 # P-28 — #45 conferido: correções atendidas e dependência operacional externa
 
+> **Retorno externo posterior de 06/11:** [TI/Claude informam E1 concluída e E2 em espera](2026-11-06-p28-retorno-ti-espera-janela-d.md), com runtime/comandos reais e site entregues. Nenhum novo pedido de desenvolvimento Claude agora. Abaixo permanece a revisão própria do #45; não confundir seus testes com conferência independente das entregas posteriores/instalação.
+
 **06/11/2026 · ChatGPT/Codex.** Relatório `relatorio-claude-flow-ajustes-pr44-p28-2026-11-06.md` lido inteiro: **245 linhas**, SHA-256 `4c71ca83608bf4b445f8781df1a34677c34479159044deed6658d0f40e1711ec`. [Pedido respondido](2026-11-06-claude-flow-ajustes-pr44-p28.md), [revisão anterior](2026-11-06-flow-revisao-pr44-p28.md).
 
 **Resultado:** F1a/F1b/F2a atendidas nesta revisão, sem novo pedido de correção. Ferramentas **181/0/0**, aplicativo/função **145/145**, **nove controles independentes passaram**. Isso encerra esta rodada de revisão do código do Flow, **não autoriza instalação ou D**.

@@ -1,5 +1,7 @@
 # P-28 — Coordenação externa para concluir a separação Google do Flow
 
+> **Respondido — relatos TI/Claude de 06/11, recebimento às 17h:** E1 informada concluída, runtime/comandos reais entregues e site com hook publicado. Agora **E2 — espera até 13/11 às 16:00:05.868 BRT**, com marco válido, e pré-checagens pela TI às 16h15. Nenhuma nova pendência de programação Claude. O texto abaixo registra o preparo anterior; não reenviar como pedido de repetir instalação, site ou comandos. A1/recibo fresco e etapas posteriores não foram executadas/autorizadas por este retorno.
+
 **06/11/2026 · Para TI/Guardião, com apoio do Claude que desenvolve o Flow.** Objetivo: consolidar a operação restante da separação, enquanto o desenvolvimento aqui volta ao **Barba & Cabelo**. Este arquivo prepara e organiza; **não autoriza instalação, manutenção, migração ou D**.
 
 ## Estado que não precisa ser refeito
