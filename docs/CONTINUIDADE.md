@@ -107,6 +107,24 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## P-113 — Cadastro e Meu perfil acompanham a conta atual (07/11, ChatGPT/Codex)
+
+**O que:** continuação da manutenção B&C pelas P-42/P-43. Pedido de nome no Início e Meu perfil deixam de conservar os dados da conta anterior quando a pessoa sai ou troca de usuário. Leituras e gravações atrasadas não atualizam a nova tela/cabeçalho. “Agora não” continua valendo por sete dias para a conta que dispensou o pedido. Renovação normal da sessão preserva a edição em andamento.
+
+**Onde:** `NamePrompt.tsx`, `ProfileSetup.tsx`, `CustomerProfile.tsx`, `ArenaApp.tsx` e `use-auth-session.ts`. O ambiente fornece o userId esperado; os formulários e as etapas são montados por conta. O hook comum passa a distinguir carregamento de sessão e permite tentar de novo quando a leitura falha. Meu perfil compartilha a sessão já observada com o cartão do WhatsApp. Trocar a conta desmonta também os campos de senha contidos nesse perfil; a implementação de `ChangePasswordCard` permanece a mesma.
+
+**Gravação e recuperação:** trava síncrona impede dois submits antes da atualização visual. O pedido de nome bloqueia o campo enquanto salva; erros conservam o rascunho. Leituras e gravações de nome usam a autorização da conta conferida, vinculada ao próprio pedido. Nova sessão divergente impede iniciar a gravação; resposta antiga não executa `onSaved`. Isso não reverte uma operação que já chegou ao servidor. A saída da conta agora trata também rejeição de rede, mostra o aviso existente e libera nova tentativa. Mesmos limites/normalização de cada formulário, adiamento, textos, permissões e contratos do banco.
+
+**Verificado:**
+
+- **36/36 cenários no Chromium**, contra **10/36 antes (26 falhas)**. Componentes React e i18n reais; sessão, usuários, perfis e gravações fictícios; painéis vizinhos de privacidade substituídos por componentes vazios. Contas divergentes, saída/troca, consultas e respostas atrasadas, clique repetido, autorização da gravação, erros de autenticação/rede, nova tentativa, adiamento por conta, foco após salvar, campos de senha após troca, renovação sem perder rascunho, demonstração e desinscrição. Depois: zero erros de página; antes: rejeição não tratada ao sair com falha simulada.
+- `scripts/verificar.sh` final com **saída 0**: tipos, **312/312 testes existentes**, ESLint/Prettier dos cinco TS/TSX e montagem. A cobertura permanente de observação de sessão continua na P-111; os casos de interface desta entrega estão na bancada local.
+- **36 pares visuais:** pedido de nome e Meu perfil em edição × 320/834/1280 × claro/escuro × três cantos. Mesma geometria/raios dos campos e nenhuma rolagem lateral. **34 capturas inteiras idênticas**; nas outras duas, diferenças isoladas de 2 pixels (perfil, 320, escuro, arredondado) e 3 pixels (perfil, 834, claro, reto), sem deslocamento. Amostras abertas para inspeção. Cor e iniciais do avatar da demonstração também conferidas iguais antes/depois. Nenhum CSS, cor, fonte ou texto novo.
+
+**Evidência local:** `/tmp/bc-continuacao-diretorio` aponta para a bancada, originais, roteiros e resumos. Rede externa e WebSocket bloqueados, sem conta/credencial ou gravação real; servidor temporário encerrado. PNGs próprios removidos ao terminar a inspeção. `.env` e `.vscode/` originais preservados.
+
+**Pendente:** integrações reais e aparelhos físicos/Safari/PWA/teclado virtual seguem nas P-42/P-43; esta entrega não encerra a revisão de todas as telas. P-74/P-95 continuam decisões e P-28 externa fica com a TI. Nenhuma migration, tarefa TI ou operação Flow. Último id: **P-113**.
+
 ## P-112 — WhatsApp por conta e confirmação sem pedidos duplicados (07/11, ChatGPT/Codex)
 
 **O que:** continuação da manutenção B&C pela P-42/P-43, no WhatsApp do cliente (Início/Conta) e do dono (Ajustes). Aviso e formulário acompanham a conta da tela; sair/trocar fecha a janela e limpa número/código anteriores. Consulta ao fechar já não desfaz “Agora não”. Envio, reenvio, confirmação automática/Enter e nova tentativa respeitam uma operação por vez e o bloqueio do cartão. A nova tentativa usa a preferência atual de avisos, sem recuperar a autorização anterior ao erro. No perfil, o atalho do WhatsApp espera o cartão carregar antes de receber foco.

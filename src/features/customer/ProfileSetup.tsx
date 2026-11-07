@@ -9,15 +9,17 @@ import { WhatsappConfirmBanner } from "./WhatsappConfirmBanner";
  * vez. Com as duas pendentes, mostra "Etapa 1 de 2 · Seu nome"; salvo o nome, aparece a do
  * WhatsApp. Cada etapa continua dispensável ("Agora não").
  */
-export function ProfileSetup({
-  userId,
-  disabled,
-  onNameSaved,
-}: {
+type ProfileSetupProps = {
   userId: string | null;
   disabled: boolean;
   onNameSaved: (name: string) => void;
-}) {
+};
+
+export function ProfileSetup(props: ProfileSetupProps) {
+  return <AccountProfileSetup key={props.userId ?? "sem-conta"} {...props} />;
+}
+
+function AccountProfileSetup({ userId, disabled, onNameSaved }: ProfileSetupProps) {
   const { t } = useI18n();
   const [nameState, setNameState] = useState<NamePromptState>("hidden");
   const [whatsPending, setWhatsPending] = useState(false);
@@ -49,6 +51,7 @@ export function ProfileSetup({
   return (
     <>
       <NamePrompt
+        userId={userId}
         disabled={disabled}
         onSaved={onNameSaved}
         onStateChange={onNameState}

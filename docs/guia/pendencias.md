@@ -10,7 +10,7 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 - Situação: **pendente**, **feito — falta aplicar no banco**, **a decidir** (depende do dono), **não confirmado** (não deu para conferir daqui).
 - Cada item foi conferido no código e nas migrations em 12/10/2026. As linhas citadas são dessa data.
 - **Papéis da equipe no banco × nomes na tela:** `owner` e `partner` = **Dono** (sócio; `partner` é o nome antigo e aparece igual), `associate` = **Parceiro**, `employee` = **Contratado** ([roles-model.ts](../../src/features/shop/roles-model.ts); rótulos em `pt-BR.ts`). `shop_admin` é o papel antigo de `memberships`, que pode existir sem vínculo de equipe (CONTINUIDADE, onda 1 de 09/10).
-- Último id usado: **P-112**.
+- Último id usado: **P-113**.
 
 **Índice**
 
@@ -20,13 +20,15 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 4. [Migrations escritas e não aplicadas; operação do servidor](#4-migrations-escritas-e-não-aplicadas-operação-do-servidor) (P-21 a P-29, P-67 a P-69, P-73 e P-99)
 5. [Decisões do dono em aberto](#5-decisões-do-dono-em-aberto) (P-30 a P-39, P-53, P-71, P-74, P-76 e P-77)
 6. [Testes manuais com contas reais](#6-testes-manuais-com-contas-reais) (P-40 a P-43)
-7. [Dívida técnica](#7-dívida-técnica) (P-44 a P-48, P-51, P-52, P-55, P-63 a P-65, P-72, P-75, P-78 e P-110 a P-112)
+7. [Dívida técnica](#7-dívida-técnica) (P-44 a P-48, P-51, P-52, P-55, P-63 a P-65, P-72, P-75, P-78 e P-110 a P-113)
 8. [Ideias futuras](#8-ideias-futuras) (P-49, P-50 e P-54)
 9. [Interface por dispositivo: o que ficou](#9-interface-por-dispositivo-o-que-ficou) (P-79 a P-98 e P-100 a P-109)
 
 ---
 
 ## 1. Próximas ações externas e decisões
+
+**07/11/2026 — P-113 concluída no B&C:** cadastro e Meu perfil acompanham a conta; edição de nome com uma gravação por vez, resposta antiga descartada, rascunho preservado em erro e saída recuperável. 36/36 cenários, 312 testes, tipos/lint/montagem e 36 comparações visuais. Mesma identidade; P-42/P-43 reais/físicas continuam. Detalhes na seção P-113 e no CONTINUIDADE.
 
 **07/11/2026 — P-112 concluída no B&C:** confirmação do WhatsApp por conta; pedidos concorrentes e respostas antigas tratados, “Agora não” e preferência atual de avisos respeitados. Atalho de Meu perfil aguarda o cartão antes do foco. 45/45 cenários + 2/2 de foco, 312 testes, tipos/lint/montagem e 72 comparações visuais. Integração real/aparelhos continuam em P-42/P-43; sem migration ou tarefa TI. Detalhes na seção P-112 e no CONTINUIDADE.
 
@@ -509,6 +511,13 @@ Quando a pessoa cancela ou o Google recusa o login, a janela por cima do app mos
 A demonstração usa a regra de `shop_uses_staff_services`/`staff_service_terms` em [catalog.ts](../../src/features/demo/catalog.ts): catálogo explícito por profissional, equipe/serviços ativos e valores próprios. Bruno oferece corte em 45 min por R$ 55; Rafa oferece barba em 30 min por R$ 65; Dani não oferece barba. Escolha do cliente, horários livres, agendamento pelo painel, entrada/confirmação da espera e preços das reservas usam essas condições. Remarcar o mesmo serviço com o mesmo profissional conserva o preço reservado. A prévia copiada de uma loja real continua sem vínculos inventados, usando o catálogo copiado. Casos automáticos em `src/features/demo/model.test.ts`; nenhum acesso ou alteração no banco de produção. Registro da entrega em `CONTINUIDADE.md`.
 
 ---
+
+### P-113 — Cadastro e Meu perfil por conta · feito em 07/11/2026
+
+- **Corrigido:** pedido de nome/perfil não acompanhavam saída ou troca de usuário; respostas antigas podiam atualizar o cabeçalho, e submits repetidos geravam mais de uma gravação. Erro rejeitado ao sair deixava a ação presa.
+- **Mudança:** conta esperada passada pelo ambiente, estado/etapas separados por conta, leituras e gravações com autorização correspondente; trava de envio e respostas antigas descartadas. Erros preservam edição e permitem nova tentativa. “Agora não” continua por conta e renovar a sessão não apaga rascunho. Hook comum informa carregamento e permite repetir leitura; perfil compartilha a sessão com o WhatsApp. Mesma aparência, validações, textos e RLS; sem migration/TI.
+- **Verificado:** **36/36 cenários**, contra 10/36 antes; **312/312 testes**, tipos/lint/montagem. 36 pares visuais em 320/834/1280, dois temas e três cantos; mesma geometria/raios e sem rolagem lateral. 34 capturas idênticas; duas com 2/3 pixels pontuais. Avatar da demonstração preservado. Evidências no CONTINUIDADE.
+- **Limites:** bancada com serviços fictícios, sem gravações reais; P-42/P-43 físicas/reais e decisões P-74/P-95 permanecem. Não altera a implementação da troca de senha nem representa encerramento de todas as telas.
 
 ### P-112 — WhatsApp por conta e confirmação sem pedidos duplicados · feito em 07/11/2026
 

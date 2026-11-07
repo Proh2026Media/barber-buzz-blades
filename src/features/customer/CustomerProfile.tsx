@@ -2,7 +2,16 @@ import { PrivacyCenter } from "@/features/insights/PrivacyCenter";
 import { DataRights } from "@/features/insights/DataRights";
 import { ChangePasswordCard } from "@/features/auth/ChangePasswordCard";
 import { LanguageSettingsCard } from "@/components/LanguageSettingsCard";
-import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
+import type { Session } from "@supabase/supabase-js";
 import {
   ChevronDown,
   FolderLock,
@@ -36,6 +45,7 @@ import { WhatsappProfileCard, type WhatsappStatus } from "@/features/customer/Wh
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
+import { useAuthSession } from "@/lib/auth/use-auth-session";
 import { LOCALE_NATIVE_NAMES, t as tNow, useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useViewportAtLeast } from "@/lib/device";
@@ -71,14 +81,8 @@ function jumpTo(id: string) {
   heading.focus({ preventScroll: true });
 }
 
-export function CustomerProfile({
-  onSaved,
-  children,
-  shops = [],
-  currentShopId = null,
-  focusWhatsapp = false,
-  onOpenShop,
-}: {
+type CustomerProfileProps = {
+  userId: string | null;
   /** Aberta pelo link "Número errado?" da entrada: rola e foca o cartão do WhatsApp. */
   focusWhatsapp?: boolean;
   onSaved?: (name: string) => void;
@@ -89,7 +93,45 @@ export function CustomerProfile({
   currentShopId?: string | null;
   /** Abre outra barbearia com a tela "Abrindo …" (sem isso, o link abre direto). */
   onOpenShop?: (shop: CustomerShop) => void;
-}) {
+};
+
+export function CustomerProfile(props: CustomerProfileProps) {
+  const demo = useDemo();
+  const { t } = useI18n();
+  const { session, currentSession, loading, retry } = useAuthSession(Boolean(demo));
+  if (!demo && (!props.userId || session?.user.id !== props.userId)) {
+    return loading ? (
+      <LoadingState variant="cards" count={1} label={t("profile.loading")} />
+    ) : (
+      <div className="app-action-card p-4 sm:p-5">
+        <Notice
+          tone="danger"
+          title={t("profile.errorLoadAccount")}
+          action={{ label: t("visual.retry"), onClick: retry }}
+        />
+      </div>
+    );
+  }
+  return (
+    <AccountCustomerProfile
+      key={demo ? "demo" : props.userId}
+      {...props}
+      userId={demo ? null : props.userId}
+      currentSession={currentSession}
+    />
+  );
+}
+
+function AccountCustomerProfile({
+  userId,
+  onSaved,
+  children,
+  shops = [],
+  currentShopId = null,
+  focusWhatsapp = false,
+  onOpenShop,
+  currentSession,
+}: CustomerProfileProps & { currentSession: RefObject<Session | null> }) {
   const demo = useDemo();
   const { t, locale } = useI18n();
   const uid = useId();
@@ -100,7 +142,6 @@ export function CustomerProfile({
   const [whatsapp, setWhatsapp] = useState("");
   const [whatsappOptIn, setWhatsappOptIn] = useState(false);
   const [whatsappVerified, setWhatsappVerified] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -113,6 +154,18 @@ export function CustomerProfile({
   const [whats, setWhats] = useState<WhatsappStatus | null>(null);
   const [privacyCount, setPrivacyCount] = useState<{ on: number; total: number } | null>(null);
   const [languageOpen, setLanguageOpen] = useState(false);
+  const active = useRef(true);
+  const inFlight = useRef(false);
+  const isCurrent = useCallback(
+    () => active.current && (Boolean(demo) || currentSession.current?.user.id === userId),
+    [demo, currentSession, userId],
+  );
+  useEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
+    };
+  }, []);
   const desktop = useViewportAtLeast(1024);
   const [activeSection, setActiveSection] = useState<string>(SECTION.whatsapp);
   const openSection = useCallback(
@@ -165,12 +218,21 @@ export function CustomerProfile({
           setWhatsappVerified(true);
           return;
         }
-        const { data, error: authError } = await supabase.auth.getUser();
-        if (authError || !data.user) throw new Error(tNow("profile.errorLoadAccount"));
-        const result = await supabase.from("profiles").select("*").eq("id", data.user.id).single();
+        const token = currentSession.current?.access_token;
+        if (!token || !isCurrent()) return;
+        const { data, error: authError } = await supabase.auth.getUser(token);
+        if (cancelled || !isCurrent()) return;
+        if (authError || !data.user || data.user.id !== userId) {
+          throw new Error(tNow("profile.errorLoadAccount"));
+        }
+        const result = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", data.user.id)
+          .single()
+          .setHeader("Authorization", `Bearer ${token}`);
         if (result.error) throw new Error(tNow("profile.errorLoad"));
-        if (!cancelled) {
-          setUserId(data.user.id);
+        if (!cancelled && isCurrent()) {
           setName(result.data.full_name ?? "");
           setEmail(data.user.email ?? "");
           setWhatsapp(result.data.whatsapp_e164 ?? "");
@@ -185,25 +247,28 @@ export function CustomerProfile({
           );
         }
       } catch (err) {
-        if (!cancelled) setError(friendlyAuthError(err, tNow("profile.errorLoad")));
+        if (!cancelled && isCurrent()) setError(friendlyAuthError(err, tNow("profile.errorLoad")));
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled && isCurrent()) setLoading(false);
       }
     }
     void load();
     return () => {
       cancelled = true;
     };
-  }, [demo, loadVersion]);
+  }, [demo, loadVersion, currentSession, isCurrent, userId]);
 
   async function save(event?: React.FormEvent) {
     event?.preventDefault();
+    if (!isCurrent() || inFlight.current || !editingName || loading || error) return;
     const normalized = nameDraft.trim();
     if (!normalized || normalized.length > 100) {
       setNameError(t("profile.errorName"));
       document.getElementById(nameInputId)?.focus();
       return;
     }
+    if (normalized === name.trim()) return;
+    inFlight.current = true;
     setBusy(true);
     setNameError(null);
     setNameResult({ state: "saving", text: t("common.saving") });
@@ -211,39 +276,57 @@ export function CustomerProfile({
       if (demo) demo.dispatch({ type: "profile.save", name: normalized });
       else {
         if (!userId) throw new Error(t("profile.errorNotLoaded"));
+        const { data, error: authError } = await supabase.auth.getSession();
+        if (!isCurrent()) return;
+        const session = data.session;
+        if (authError || session?.user.id !== userId || !session.access_token) {
+          throw new Error(t("profile.errorLoadAccount"));
+        }
         const result = await supabase
           .from("profiles")
           .update({ full_name: normalized })
           .eq("id", userId)
           .select("id")
-          .single();
+          .single()
+          .setHeader("Authorization", `Bearer ${session.access_token}`);
         if (result.error) throw new Error(t("profile.errorSave"));
       }
+      if (!isCurrent()) return;
       setName(normalized);
       onSaved?.(normalized);
       closeNameForm();
       setNameResult({ state: "saved", text: t("conta.nameSaved") });
     } catch (err) {
-      setNameResult({ state: "error", text: friendlyAuthError(err, t("profile.errorSave")) });
+      if (isCurrent()) {
+        setNameResult({ state: "error", text: friendlyAuthError(err, t("profile.errorSave")) });
+      }
     } finally {
-      setBusy(false);
+      inFlight.current = false;
+      if (isCurrent()) setBusy(false);
     }
   }
 
   async function signOut() {
+    if (!isCurrent() || inFlight.current) return;
     if (demo) {
       demo.exit();
       return;
     }
+    inFlight.current = true;
     setBusy(true);
     setSignOutError(null);
-    const { error: failure } = await supabase.auth.signOut();
-    if (failure) {
-      setSignOutError(t("profile.errorSignOut"));
-      setBusy(false);
-      return;
+    try {
+      const { error: failure } = await supabase.auth.signOut();
+      if (failure) throw failure;
+      if (!currentSession.current || currentSession.current.user.id === userId) {
+        window.location.href = "/auth";
+      }
+    } catch {
+      if (isCurrent()) setSignOutError(t("profile.errorSignOut"));
+    } finally {
+      inFlight.current = false;
+      if (isCurrent()) setBusy(false);
     }
-    window.location.href = "/auth";
   }
 
   const ready = Boolean(demo) || Boolean(userId);
@@ -559,6 +642,7 @@ export function CustomerProfile({
         {!loading && !error && (
           <WhatsappProfileCard
             userId={userId}
+            accountSession={currentSession}
             id={SECTION.whatsapp}
             demo={Boolean(demo)}
             disabled={busy || !ready}

@@ -1,6 +1,13 @@
 # Revisão MB — Barba & Cabelo
 
-Atualizado em **07/11/2026** (P-112; entradas anteriores preservadas como histórico). Fonte: [mb-interface.md](mb-interface.md). Regra: `.cursor/rules/mb.mdc`. Skill: `.cursor/skills/mb/`.
+Atualizado em **07/11/2026** (P-113; entradas anteriores preservadas como histórico). Fonte: [mb-interface.md](mb-interface.md). Regra: `.cursor/rules/mb.mdc`. Skill: `.cursor/skills/mb/`.
+
+## P-113 — Cadastro e Meu perfil por conta (07/11/2026)
+
+- **Fluxo:** nome, etapas e perfil acompanham a conta do ambiente; saída/troca descarta campos e respostas anteriores, incluindo os campos de senha contidos em Meu perfil. Renovação da mesma conta conserva a edição. Adiamento de sete dias por conta mantido.
+- **Estados:** uma gravação de nome por vez, campo bloqueado enquanto envia, rascunho preservado em erro, tentativa de leitura da sessão e saída da conta recuperáveis. Foco volta a “Editar nome” depois de salvar. Textos e componentes existentes.
+- **Validação:** 36/36 cenários com dados fictícios, 312 testes, tipos/lint/montagem. 36 comparações em 320/834/1280, dois temas e três cantos: mesmas dimensões e raios, sem rolagem lateral; 34 capturas idênticas e duas com 2/3 pixels pontuais. Amostras inspecionadas; avatar da demonstração preservado.
+- **Limites:** serviços de autenticação/perfil simulados e painéis de privacidade substituídos na bancada; P-42/P-43 reais/físicas permanecem. Não presume avaliação estética do dono nem revisão completa de todas as telas.
 
 ## P-112 — Confirmação do WhatsApp por conta (07/11/2026)
 

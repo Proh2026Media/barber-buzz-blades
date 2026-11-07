@@ -3219,6 +3219,7 @@ function ArenaApp({
           )}
           {tab === "perfil" && (
             <CustomerProfile
+              userId={userId}
               onSaved={setCustomerName}
               shops={myShops}
               currentShopId={shopId}

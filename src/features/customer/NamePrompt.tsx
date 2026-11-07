@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import type { Session } from "@supabase/supabase-js";
 import { Check, Loader2, MessageCircle, UserRound } from "lucide-react";
 import { FieldMessage, IconTile, Notice } from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
+import { useAuthSession } from "@/lib/auth/use-auth-session";
 
 /**
  * Pedido de nome no primeiro acesso.
@@ -47,6 +49,7 @@ function needsDisplayName(name: string | null | undefined, email: string | null 
 export type NamePromptState = "hidden" | "open" | "done";
 
 type Props = {
+  userId: string | null;
   /** Demonstração: o cartão nunca aparece. */
   disabled?: boolean;
   onSaved?: (name: string) => void;
@@ -56,37 +59,78 @@ type Props = {
   header?: ReactNode;
 };
 
-export function NamePrompt({ disabled = false, onSaved, onStateChange, header }: Props) {
+export function NamePrompt(props: Props) {
+  const { disabled = false, userId, onStateChange } = props;
+  const { session, currentSession } = useAuthSession(disabled);
+  const matchesAccount = Boolean(userId && session?.user.id === userId);
+  useEffect(() => {
+    if (!matchesAccount || disabled) onStateChange?.("hidden");
+  }, [matchesAccount, disabled, onStateChange]);
+  if (disabled) return null;
+  if (!matchesAccount || !userId) return null;
+  return (
+    <AccountNamePrompt key={userId} {...props} userId={userId} currentSession={currentSession} />
+  );
+}
+
+function AccountNamePrompt({
+  userId,
+  onSaved,
+  onStateChange,
+  header,
+  currentSession,
+}: Props & { userId: string; currentSession: RefObject<Session | null> }) {
   const { t } = useI18n();
-  const [userId, setUserId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedName, setSavedName] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const visible = !disabled && open;
+  const active = useRef(true);
+  const inFlight = useRef(false);
+  const isCurrent = useCallback(
+    () => active.current && currentSession.current?.user.id === userId,
+    [currentSession, userId],
+  );
+  useEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
+      onStateChange?.("hidden");
+    };
+  }, [onStateChange]);
+  const visible = open;
   const state: NamePromptState = !visible ? "hidden" : savedName ? "done" : "open";
   useEffect(() => {
     onStateChange?.(state);
   }, [onStateChange, state]);
 
   useEffect(() => {
-    if (disabled) return;
     let cancelled = false;
     void (async () => {
       try {
-        const { data } = await supabase.auth.getUser();
+        const token = currentSession.current?.access_token;
+        if (!token || !isCurrent()) return;
+        const { data, error: authError } = await supabase.auth.getUser(token);
         const user = data.user;
-        if (!user || cancelled || snoozedFor(user.id)) return;
+        if (
+          authError ||
+          !user ||
+          user.id !== userId ||
+          cancelled ||
+          !isCurrent() ||
+          snoozedFor(userId)
+        )
+          return;
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("full_name")
           .eq("id", user.id)
-          .maybeSingle();
-        if (cancelled || profileError || !profile) return;
+          .maybeSingle()
+          .setHeader("Authorization", `Bearer ${token}`);
+        if (cancelled || !isCurrent() || profileError || !profile || snoozedFor(userId)) return;
         if (!needsDisplayName(profile.full_name, user.email)) return;
-        setUserId(user.id);
         // Sugere o nome do Google, quando houver e não for o e-mail.
         const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
         const suggestion = [meta.full_name, meta.name].find(
@@ -103,27 +147,36 @@ export function NamePrompt({ disabled = false, onSaved, onStateChange, header }:
     return () => {
       cancelled = true;
     };
-  }, [disabled]);
+  }, [currentSession, isCurrent, userId]);
 
   async function save(event: React.FormEvent) {
     event.preventDefault();
+    if (!isCurrent() || inFlight.current) return;
     const normalized = name.trim().replace(/\s+/g, " ");
     if (normalized.length < NAME_MIN || normalized.length > NAME_MAX) {
       setError(t("cad.nome.errorLength"));
       inputRef.current?.focus();
       return;
     }
-    if (!userId) return;
+    inFlight.current = true;
     setBusy(true);
     setError(null);
     try {
+      const { data, error: authError } = await supabase.auth.getSession();
+      if (!isCurrent()) return;
+      const session = data.session;
+      if (authError || session?.user.id !== userId || !session.access_token) {
+        throw new Error(t("cad.nome.errorSave"));
+      }
       // Mesma gravação de Meu perfil: full_name é uma das colunas que o próprio usuário altera.
       const result = await supabase
         .from("profiles")
         .update({ full_name: normalized })
         .eq("id", userId)
         .select("id")
-        .single();
+        .single()
+        .setHeader("Authorization", `Bearer ${session.access_token}`);
+      if (!isCurrent()) return;
       if (result.error) {
         setError(t("cad.nome.errorSave"));
         return;
@@ -132,14 +185,16 @@ export function NamePrompt({ disabled = false, onSaved, onStateChange, header }:
       onSaved?.(normalized);
     } catch {
       // Sem rede: o cartão continua aberto, com o aviso e o nome digitado.
-      setError(t("cad.nome.errorSave"));
+      if (isCurrent()) setError(t("cad.nome.errorSave"));
     } finally {
-      setBusy(false);
+      inFlight.current = false;
+      if (isCurrent()) setBusy(false);
     }
   }
 
   function later() {
-    if (userId) snooze(userId);
+    if (!isCurrent() || inFlight.current) return;
+    snooze(userId);
     setOpen(false);
   }
 
@@ -180,6 +235,7 @@ export function NamePrompt({ disabled = false, onSaved, onStateChange, header }:
             maxLength={NAME_MAX}
             placeholder={t("cad.cliente.namePlaceholder")}
             value={name}
+            disabled={busy}
             onChange={(event) => {
               setName(event.target.value);
               setError(null);

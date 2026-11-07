@@ -1,27 +1,37 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { observeSession } from "./observe-session";
 
 /** Sessão viva das janelas de entrada; a referência também protege ações antes do render. */
 export function useAuthSession(disabled = false) {
-  const [snapshot, setSnapshot] = useState<{ session: Session | null }>({ session: null });
+  const [snapshot, setSnapshot] = useState<{ session: Session | null; loading: boolean }>({
+    session: null,
+    loading: true,
+  });
   const currentSession = useRef<Session | null>(null);
+  const [readVersion, setReadVersion] = useState(0);
+  const retry = useCallback(() => setReadVersion((version) => version + 1), []);
 
   useEffect(() => {
     currentSession.current = null;
-    setSnapshot({ session: null });
+    setSnapshot({ session: null, loading: true });
     if (disabled) return;
     const stop = observeSession(supabase.auth, (session) => {
       currentSession.current = session;
       // Alguns eventos mantêm o objeto da sessão: o invólucro novo também atualiza a tela.
-      setSnapshot({ session });
+      setSnapshot({ session, loading: false });
     });
     return () => {
       stop();
       currentSession.current = null;
     };
-  }, [disabled]);
+  }, [disabled, readVersion]);
 
-  return { session: disabled ? null : snapshot.session, currentSession };
+  return {
+    session: disabled ? null : snapshot.session,
+    currentSession,
+    loading: !disabled && snapshot.loading,
+    retry,
+  };
 }
