@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, type RefObject } from "react";
+import type { Session } from "@supabase/supabase-js";
 import { KeyRound, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -10,6 +11,7 @@ import {
 import { ChangePasswordCard } from "@/features/auth/ChangePasswordCard";
 import { supabase } from "@/integrations/supabase/client";
 import { mustChangePassword } from "@/lib/auth/password-change";
+import { useAuthSession } from "@/lib/auth/use-auth-session";
 import { useI18n } from "@/lib/i18n";
 
 /**
@@ -18,31 +20,41 @@ import { useI18n } from "@/lib/i18n";
  * Conta sem a marca (ou função de convite antiga no servidor): a janela nunca aparece.
  * Nunca na demonstração — quem chama passa `disabled`.
  */
-export function PasswordChangeGate({ disabled = false }: { disabled?: boolean }) {
+export function PasswordChangeGate({
+  disabled = false,
+  userId,
+}: {
+  disabled?: boolean;
+  userId: string | null;
+}) {
+  const { session, currentSession } = useAuthSession(disabled);
+  const user = session?.user;
+  if (disabled) return null;
+  if (!user || user.id !== userId || !mustChangePassword(user)) return null;
+  // Uma conta nova nunca herda os campos da senha anterior.
+  return <PasswordPrompt key={user.id} userId={user.id} currentSession={currentSession} />;
+}
+
+function PasswordPrompt({
+  userId,
+  currentSession,
+}: {
+  userId: string;
+  currentSession: RefObject<Session | null>;
+}) {
   const { t } = useI18n();
   const titleRef = useRef<HTMLHeadingElement>(null);
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    if (disabled) return;
-    let cancelled = false;
-    void supabase.auth.getSession().then(({ data }) => {
-      if (!cancelled && mustChangePassword(data.session?.user)) setOpen(true);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [disabled]);
 
   async function signOut() {
+    if (currentSession.current?.user.id !== userId) return;
     await supabase.auth.signOut();
-    window.location.assign("/auth");
+    if (!currentSession.current || currentSession.current.user.id === userId) {
+      window.location.assign("/auth");
+    }
   }
 
-  if (disabled || !open) return null;
-
   return (
-    <AlertDialog open={open}>
+    <AlertDialog open>
       <AlertDialogContent
         className="max-h-[calc(100dvh-2rem)] w-[calc(100vw-1.5rem)] max-w-md gap-4 overflow-y-auto rounded-[var(--panel-radius)] p-5 sm:p-6"
         onEscapeKeyDown={(event) => event.preventDefault()}
@@ -69,8 +81,9 @@ export function PasswordChangeGate({ disabled = false }: { disabled?: boolean })
         <ChangePasswordCard
           heading={false}
           onSaved={() => {
-            setOpen(false);
-            toast.success(t("password.gate.saved"));
+            if (currentSession.current?.user.id === userId) {
+              toast.success(t("password.gate.saved"));
+            }
           }}
         />
         <button

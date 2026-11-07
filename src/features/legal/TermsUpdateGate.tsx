@@ -1,4 +1,5 @@
-import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import type { Session } from "@supabase/supabase-js";
 import { CalendarDays, Check, FileCheck2, Loader2 } from "lucide-react";
 import { Notice, Tag } from "@/components/visual";
 import { LegalDocLinks } from "@/features/auth/entry";
@@ -11,6 +12,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { callOptionalRpc } from "@/lib/auth/optional-rpc";
 import { mustChangePassword } from "@/lib/auth/password-change";
+import { useAuthSession } from "@/lib/auth/use-auth-session";
 import { useI18n } from "@/lib/i18n";
 import { DPA_VERSION, PRIVACY_VERSION, TERMS_VERSION } from "./versions";
 
@@ -53,64 +55,123 @@ function withSlots(text: string, slots: Record<string, ReactNode>) {
 }
 
 type Props = {
+  /** Conta à qual pertence o ambiente aberto; não exibe dados sobre a tela de outra conta. */
+  userId: string | null;
   /** Demonstração ou tela sem conta real: a janela nunca aparece. */
   disabled?: boolean;
   /** Dono/sócio: inclui o Acordo de Tratamento de Dados no aceite. */
   withDpa?: boolean;
+  /** Enquanto consulta ou pergunta, as boas-vindas da loja esperam, sem sobrepor janelas. */
+  onPendingChange?: (state: TermsUpdateGateState) => void;
 };
 
-export function TermsUpdateGate({ disabled = false, withDpa = false }: Props) {
+export type TermsUpdateGateState = {
+  userId: string | null;
+  withDpa: boolean;
+  pending: boolean;
+};
+
+export function TermsUpdateGate({
+  userId,
+  disabled = false,
+  withDpa = false,
+  onPendingChange,
+}: Props) {
+  const { session, currentSession } = useAuthSession(disabled);
+  const user = session?.user;
+  const eligible = !disabled && !!user && user.id === userId && !mustChangePassword(user);
+
+  useEffect(() => {
+    if (!eligible) onPendingChange?.({ userId: null, withDpa, pending: true });
+  }, [eligible, withDpa, onPendingChange]);
+
+  if (disabled) return null;
+  if (!eligible || !userId) return null;
+  return (
+    <TermsForAccount
+      key={`${userId}:${withDpa}`}
+      userId={userId}
+      withDpa={withDpa}
+      currentSession={currentSession}
+      onPendingChange={onPendingChange}
+    />
+  );
+}
+
+function TermsForAccount({
+  userId,
+  withDpa,
+  currentSession,
+  onPendingChange,
+}: {
+  userId: string;
+  withDpa: boolean;
+  currentSession: RefObject<Session | null>;
+  onPendingChange?: Props["onPendingChange"];
+}) {
   const { t, intlLocale } = useI18n();
   const laterRef = useRef<HTMLButtonElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
-  const [userId, setUserId] = useState<string | null>(null);
+  const active = useRef(false);
+  const submitting = useRef(false);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (disabled) return;
     let cancelled = false;
+    active.current = true;
+    onPendingChange?.({ userId, withDpa, pending: true });
     void (async () => {
+      let outdated = false;
       try {
-        const { data } = await supabase.auth.getSession();
-        const user = data.session?.user;
-        // Senha temporária ainda não trocada: a janela de senha vem antes (PasswordChangeGate).
-        if (!user || cancelled || postponed(user.id) || mustChangePassword(user)) return;
+        if (postponed(userId)) return;
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("*")
-          .eq("id", user.id)
+          .eq("id", userId)
           .maybeSingle();
         if (cancelled || profileError || !profile) return;
         const row = profile as unknown as Record<string, unknown>;
         // Banco sem as colunas de aceite: nada a pedir.
         if (!("terms_accepted_at" in row) || !("terms_version" in row)) return;
-        const outdated =
+        outdated = Boolean(
           !row.terms_accepted_at ||
           row.terms_version !== TERMS_VERSION ||
           row.privacy_version !== PRIVACY_VERSION ||
-          (withDpa && "dpa_version" in row && row.dpa_version !== DPA_VERSION);
-        if (!outdated) return;
-        setUserId(user.id);
-        setOpen(true);
+          (withDpa && "dpa_version" in row && row.dpa_version !== DPA_VERSION),
+        );
       } catch {
         // Sem rede ou sem perfil: não pergunta agora.
+      } finally {
+        const currentUser = currentSession.current?.user;
+        if (!cancelled && currentUser?.id === userId && !mustChangePassword(currentUser)) {
+          setOpen(outdated);
+          onPendingChange?.({ userId, withDpa, pending: outdated });
+        }
       }
     })();
     return () => {
       cancelled = true;
+      active.current = false;
     };
-  }, [disabled, withDpa]);
+  }, [userId, withDpa, currentSession, onPendingChange]);
+
+  function stillCurrent() {
+    const user = currentSession.current?.user;
+    return active.current && user?.id === userId && !mustChangePassword(user);
+  }
 
   function later() {
-    if (busy) return;
-    if (userId) postpone(userId);
+    if (submitting.current || !stillCurrent()) return;
+    postpone(userId);
     setOpen(false);
+    onPendingChange?.({ userId, withDpa, pending: false });
   }
 
   async function agree() {
-    if (busy) return;
+    if (submitting.current || !stillCurrent()) return;
+    submitting.current = true;
     setBusy(true);
     setError(null);
     const result = await callOptionalRpc("record_my_terms_acceptance", {
@@ -119,18 +180,22 @@ export function TermsUpdateGate({ disabled = false, withDpa = false }: Props) {
       p_dpa_version: withDpa ? DPA_VERSION : null,
       p_age_confirmed: true,
     });
+    // Uma resposta de outra conta/versão da janela não fecha nem adia a pergunta atual.
+    if (!stillCurrent()) return;
+    submitting.current = false;
     setBusy(false);
     if (result.ok || result.missing) {
       // Função ainda ausente no servidor: fecha em silêncio e não pergunta de novo nesta
       // sessão (sem isso a janela voltaria a cada troca de tela).
-      if (result.missing && userId) postpone(userId);
+      if (result.missing) postpone(userId);
       setOpen(false);
+      onPendingChange?.({ userId, withDpa, pending: false });
       return;
     }
     setError(t("dec.termos.error"));
   }
 
-  if (disabled || !open) return null;
+  if (!open) return null;
 
   // A frase jurídica fica igual; os nomes ficam em texto e os links, nas linhas acima.
   const name = (label: string) => <strong className="font-semibold">{label}</strong>;

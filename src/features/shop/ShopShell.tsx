@@ -156,7 +156,7 @@ import { ClientDirectory } from "./ClientDirectory";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { useAvailabilitySignal } from "@/lib/shop/availability-signal";
-import { TermsUpdateGate } from "@/features/legal/TermsUpdateGate";
+import { TermsUpdateGate, type TermsUpdateGateState } from "@/features/legal/TermsUpdateGate";
 import { PasswordChangeGate } from "@/features/auth/PasswordChangeGate";
 import { ShopWelcomeDialog } from "./ShopWelcomeDialog";
 import { WhatsappConfirmBanner } from "@/features/customer/WhatsappConfirmBanner";
@@ -264,6 +264,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   const { t } = useI18n();
   const demo = useDemo();
   const viewerId = profile.user.id;
+  const [entryTerms, setEntryTerms] = useState<TermsUpdateGateState | null>(null);
   // Loja aberta (lib/auth/shop-acting): a pedida em "Minhas áreas" (?unidade=), a do domínio
   // em que a pessoa está, a escolha salva no aparelho (por conta) ou, com 2 ou mais lojas e
   // nenhuma escolha, a pergunta "Em qual barbearia…?". Na demonstração não lê nem grava nada.
@@ -1922,10 +1923,15 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       {settings && (
         <BrandFontFace url={settings.custom_font_url} faces={settings.custom_font_faces} />
       )}
-      <PasswordChangeGate disabled={Boolean(demo)} />
+      <PasswordChangeGate userId={viewerId} disabled={Boolean(demo)} />
       {!demo && actor && shop && (
         <ShopWelcomeDialog
-          pending={(actor as { welcome_seen_at?: string | null }).welcome_seen_at === null}
+          pending={
+            (actor as { welcome_seen_at?: string | null }).welcome_seen_at === null &&
+            entryTerms?.userId === viewerId &&
+            entryTerms.withDpa === powers.ownerLike &&
+            !entryTerms.pending
+          }
           userId={viewerId}
           memberId={actor.id}
           memberUpdatedAt={actor.updated_at}
@@ -1936,7 +1942,12 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
           capabilities={accessCapabilities}
         />
       )}
-      <TermsUpdateGate disabled={Boolean(demo)} withDpa={powers.ownerLike} />
+      <TermsUpdateGate
+        userId={viewerId}
+        disabled={Boolean(demo)}
+        withDpa={powers.ownerLike}
+        onPendingChange={setEntryTerms}
+      />
       <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur-xl px-4 py-3">
         {/* No celular o cabeçalho fica numa faixa fixa de 70rem; a partir de 768 px (coluna
             estreita no tablet, completa no computador) o styles.css tira o limite e o nome fica

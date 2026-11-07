@@ -2941,8 +2941,8 @@ function ArenaApp({
     >
       <BrandRootVariables vars={brandStyle} />
       <BrandFontFace url={shopSettings.custom_font_url} faces={shopSettings.custom_font_faces} />
-      <PasswordChangeGate disabled={Boolean(demoShopId)} />
-      <TermsUpdateGate disabled={Boolean(demoShopId)} />
+      <PasswordChangeGate userId={userId} disabled={Boolean(demoShopId)} />
+      <TermsUpdateGate userId={userId} disabled={Boolean(demoShopId)} />
       <CancellationDialog
         open={!!cancelTarget}
         busy={appointmentBusy !== null}

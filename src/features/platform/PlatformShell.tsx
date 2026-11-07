@@ -502,8 +502,8 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       style={brandStyle ? (brandStyle as CSSProperties) : undefined}
     >
       <BrandRootVariables vars={brandStyle} />
-      <PasswordChangeGate disabled={demoMode} />
-      <TermsUpdateGate disabled={demoMode} />
+      <PasswordChangeGate userId={profile.user.id} disabled={demoMode} />
+      <TermsUpdateGate userId={profile.user.id} disabled={demoMode} />
       {demoBrandSettings && (
         <BrandFontFace
           url={demoBrandSettings.custom_font_url}

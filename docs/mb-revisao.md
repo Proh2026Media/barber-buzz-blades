@@ -1,6 +1,13 @@
 # Revisão MB — Barba & Cabelo
 
-Atualizado em **22/10/2026** (seção "Revisão por dispositivo" no fim). Fonte: [mb-interface.md](mb-interface.md). Regra: `.cursor/rules/mb.mdc`. Skill: `.cursor/skills/mb/`.
+Atualizado em **07/11/2026** (P-111; entradas anteriores preservadas como histórico). Fonte: [mb-interface.md](mb-interface.md). Regra: `.cursor/rules/mb.mdc`. Skill: `.cursor/skills/mb/`.
+
+## P-111 — Continuidade da entrada por conta (07/11/2026)
+
+- **Tarefa:** concluir a entrada com senha obrigatória, decisão sobre termos e boas-vindas, sem janelas sobrepostas ou estado de outra conta.
+- **Correção:** observação da sessão e descarte de leitura/perfil/aceite antigos; campos de senha e estado de termos separados por conta; liberação das boas-vindas somente após os termos. Aceite continua opcional pelo “Agora não”, com o mesmo texto, versões e DPA; nenhuma regra jurídica ou permissão alterada.
+- **Validação:** 31/31 cenários com componentes React/Radix reais e servidor simulado, 312 testes de modelos/guardas, tipos/lint/montagem. Sessenta comparações em 320/390/834/1280/1440, dois temas e três cantos; mesmas dimensões/controles, sem mudança de CSS. Navegação de teclado e Escape conferidos, rejeições e atrasos tratados. Evidências/limites no CONTINUIDADE, entrada P-111.
+- **Limite:** navegador emulado; aparelhos físicos, teclado virtual real, Safari/PWA e integrações de P-42/P-43 continuam pendentes. Não é declaração de validação de todo o sistema ou nova aprovação estética do dono.
 
 ## Inventário de jornadas
 
