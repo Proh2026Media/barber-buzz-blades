@@ -11,6 +11,7 @@ export function ResendButton({
   totalSeconds = 60,
   onClick,
   busy,
+  disabled = false,
   label,
   waitLabel,
   busyLabel,
@@ -20,6 +21,8 @@ export function ResendButton({
   totalSeconds?: number;
   onClick: () => void;
   busy?: boolean;
+  /** Outra operação do mesmo fluxo impede o reenvio. */
+  disabled?: boolean;
   /** "Reenviar código". */
   label: string;
   /** "Reenviar em 42s" (já com o número). */
@@ -36,7 +39,7 @@ export function ResendButton({
     <button
       type="button"
       onClick={onClick}
-      disabled={busy || waiting}
+      disabled={disabled || busy || waiting}
       className={cn(
         "auth-brand-button inline-flex min-h-11 items-center gap-2 px-2 text-sm font-semibold text-foreground underline-offset-4 transition-colors enabled:hover:underline disabled:cursor-not-allowed disabled:text-muted-foreground",
         className,

@@ -1,4 +1,5 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState, type RefObject } from "react";
+import type { Session } from "@supabase/supabase-js";
 import {
   Bell,
   KeyRound,
@@ -28,6 +29,7 @@ import { CodeInput, ResendButton } from "@/features/auth/entry";
 import { supabase } from "@/integrations/supabase/client";
 import { guardedFetch } from "@/lib/demo-guard";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
+import { useAuthSession } from "@/lib/auth/use-auth-session";
 import { useI18n } from "@/lib/i18n";
 
 /**
@@ -42,6 +44,10 @@ import { useI18n } from "@/lib/i18n";
 export type WhatsappStatus = { number: string; verified: boolean; optIn: boolean };
 
 type Props = {
+  /** Conta que forneceu os dados iniciais do cartão. */
+  userId: string | null;
+  /** Na janela, reutiliza a sessão acompanhada pelo aviso, sem atrasar o foco inicial. */
+  accountSession?: RefObject<Session | null>;
   demo: boolean;
   disabled: boolean;
   initialNumber: string;
@@ -85,10 +91,7 @@ function formatBr(value: string) {
   return value;
 }
 
-async function callVerifyPhone(body: Record<string, unknown>): Promise<OtpPayload> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  if (!token) return { error: "Sessão expirada", error_code: "unauthorized" };
+async function callVerifyPhone(body: Record<string, unknown>, token: string): Promise<OtpPayload> {
   const base = import.meta.env.VITE_SUPABASE_URL || "";
   const response = await guardedFetch(`${base}/functions/v1/auth-otp`, {
     method: "POST",
@@ -112,7 +115,23 @@ async function callVerifyPhone(body: Record<string, unknown>): Promise<OtpPayloa
   return payload;
 }
 
-export function WhatsappProfileCard({
+export function WhatsappProfileCard(props: Props) {
+  const observed = useAuthSession(props.demo || Boolean(props.accountSession));
+  const session = props.accountSession ? props.accountSession.current : observed.session;
+  const currentSession = props.accountSession ?? observed.currentSession;
+  if (!props.demo && (!props.userId || session?.user.id !== props.userId)) return null;
+  return (
+    <AccountWhatsappForm
+      key={props.demo ? "demo" : props.userId}
+      {...props}
+      currentSession={currentSession}
+    />
+  );
+}
+
+function AccountWhatsappForm({
+  userId,
+  currentSession,
   demo,
   disabled,
   initialNumber,
@@ -121,7 +140,7 @@ export function WhatsappProfileCard({
   onStatusChange,
   id,
   bare = false,
-}: Props) {
+}: Props & { currentSession: RefObject<Session | null> }) {
   const { t } = useI18n();
   const uid = useId();
   const titleId = `${uid}-title`;
@@ -143,11 +162,46 @@ export function WhatsappProfileCard({
   const [codeError, setCodeError] = useState<string | null>(null);
   const [attemptsLeft, setAttemptsLeft] = useState<number | null>(null);
   const [result, setResult] = useState<{ state: ActionState; text: string } | null>(null);
-  const [retry, setRetry] = useState<(() => void) | null>(null);
+  const [retryNumber, setRetryNumber] = useState<string | null>(null);
   const [toggleState, setToggleState] = useState<ActionState | null>(null);
   const [toggleText, setToggleText] = useState<string | undefined>(undefined);
   // Acabou de confirmar por código nesta tela: as três etapas aparecem concluídas.
   const [justVerified, setJustVerified] = useState(false);
+  const active = useRef(false);
+  const inFlight = useRef(false);
+
+  useEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
+    };
+  }, []);
+
+  function isCurrent() {
+    return active.current && (demo || currentSession.current?.user.id === userId);
+  }
+
+  /** A trava síncrona cobre clique duplo e preenchimento automático seguido de Enter. */
+  function beginAction(kind: "save" | "send" | "verify") {
+    if (demo || disabled || inFlight.current || !isCurrent()) return false;
+    inFlight.current = true;
+    setBusy(kind);
+    return true;
+  }
+
+  function endAction() {
+    inFlight.current = false;
+    if (isCurrent()) setBusy(null);
+  }
+
+  async function sessionToken() {
+    if (!isCurrent()) throw { error_code: "unauthorized" } as OtpPayload;
+    const { data, error } = await supabase.auth.getSession();
+    if (error || !data.session?.access_token || data.session.user.id !== userId || !isCurrent()) {
+      throw { error_code: "unauthorized" } as OtpPayload;
+    }
+    return data.session.access_token;
+  }
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -156,12 +210,13 @@ export function WhatsappProfileCard({
   }, [cooldown]);
 
   useEffect(() => {
+    if (!demo && currentSession.current?.user.id !== userId) return;
     onStatusChange?.({ number: savedNumber, verified, optIn });
-  }, [onStatusChange, savedNumber, verified, optIn]);
+  }, [onStatusChange, savedNumber, verified, optIn, demo, userId, currentSession]);
 
-  function showResult(state: ActionState, text: string, again?: () => void) {
+  function showResult(state: ActionState, text: string, againNumber?: string) {
     setResult({ state, text });
-    setRetry(() => again ?? null);
+    setRetryNumber(againNumber ?? null);
   }
 
   function errorText(payload: OtpPayload | null, err?: unknown) {
@@ -191,10 +246,13 @@ export function WhatsappProfileCard({
 
   /** Liga/desliga avisos ou apaga o número (sem código). */
   async function saveWithoutCode(raw: string, nextOptIn: boolean) {
-    const { data, error: rpcError } = await supabase.rpc("save_my_whatsapp", {
-      p_raw: raw,
-      p_opt_in: nextOptIn,
-    });
+    const token = await sessionToken();
+    if (!isCurrent()) return;
+    // A autorização acompanha esta ação: uma troca de sessão não muda a conta da gravação.
+    const { data, error: rpcError } = await supabase
+      .rpc("save_my_whatsapp", { p_raw: raw, p_opt_in: nextOptIn })
+      .setHeader("Authorization", `Bearer ${token}`);
+    if (!isCurrent()) return;
     if (rpcError) {
       if (rpcError.code === "23505") throw { error_code: "phone_in_use" } as OtpPayload;
       throw rpcError;
@@ -208,19 +266,24 @@ export function WhatsappProfileCard({
   }
 
   async function sendCode(number: string) {
-    setBusy("send");
+    if (step === "code" && cooldown > 0) return;
+    if (!beginAction("send")) return;
     setCodeError(null);
     setResult(null);
     setJustVerified(false);
     try {
-      const payload = await callVerifyPhone({ action: "request", destination: number });
+      const token = await sessionToken();
+      if (!isCurrent()) return;
+      const payload = await callVerifyPhone({ action: "request", destination: number }, token);
+      if (!isCurrent()) return;
       if (!payload.ok) {
-        showResult("error", errorText(payload), () => void sendCode(number));
+        showResult("error", errorText(payload), number);
         return;
       }
       if (payload.already_verified) {
         // Mesmo número já confirmado: só grava a preferência de avisos.
         const data = await saveWithoutCode(number, optIn);
+        if (!isCurrent()) return;
         setVerified(true);
         setStep("edit");
         setEditing(false);
@@ -236,14 +299,17 @@ export function WhatsappProfileCard({
       setStep("code");
       setCooldown(payload.resend_after_seconds ?? RESEND_SECONDS);
     } catch (err) {
-      showResult("error", errorText(err as OtpPayload, err), () => void sendCode(number));
+      if (isCurrent()) {
+        showResult("error", errorText(err as OtpPayload, err), number);
+      }
     } finally {
-      setBusy(null);
+      endAction();
     }
   }
 
   async function submitNumber(event: React.FormEvent) {
     event.preventDefault();
+    if (disabled || inFlight.current || !isCurrent()) return;
     if (demo) {
       showResult("saved", t("profile.whatsappDemo"));
       return;
@@ -251,19 +317,20 @@ export function WhatsappProfileCard({
     const raw = whatsapp.trim();
     // Campo vazio com número gravado: apaga o número (sem código).
     if (!raw) {
-      setBusy("save");
+      if (!beginAction("save")) return;
       setResult(null);
       try {
         const data = await saveWithoutCode("", optIn);
+        if (!isCurrent()) return;
         setEditing(false);
         showResult(
           "saved",
           data?.whatsapp_opt_in_at ? t("profile.whatsappSavedOptIn") : t("profile.whatsappSaved"),
         );
       } catch (err) {
-        showResult("error", errorText(err as OtpPayload, err));
+        if (isCurrent()) showResult("error", errorText(err as OtpPayload, err));
       } finally {
-        setBusy(null);
+        endAction();
       }
       return;
     }
@@ -276,6 +343,7 @@ export function WhatsappProfileCard({
 
   /** Interruptor dos lembretes no resumo: grava na hora quando não precisa de código. */
   async function changeOptIn(next: boolean) {
+    if (disabled || inFlight.current || !isCurrent()) return;
     setToggleState(null);
     setToggleText(undefined);
     if (demo || !savedNumber || editing || (next && !verified)) {
@@ -284,38 +352,41 @@ export function WhatsappProfileCard({
       setOptIn(next);
       return;
     }
+    if (!beginAction("save")) return;
     const before = optIn;
     setOptIn(next);
     setToggleState("saving");
     setToggleText(undefined);
-    setBusy("save");
     try {
       const data = await saveWithoutCode(savedNumber, next);
+      if (!isCurrent()) return;
       setToggleState("saved");
       setToggleText(
         data?.whatsapp_opt_in_at ? t("conta.whats.remindersOn") : t("conta.whats.remindersOff"),
       );
     } catch (err) {
-      setOptIn(before);
-      setToggleState("error");
-      setToggleText(errorText(err as OtpPayload, err));
+      if (isCurrent()) {
+        setOptIn(before);
+        setToggleState("error");
+        setToggleText(errorText(err as OtpPayload, err));
+      }
     } finally {
-      setBusy(null);
+      endAction();
     }
   }
 
   async function verifyCode(value: string) {
-    if (!/^\d{6}$/.test(value) || busy) return;
-    setBusy("verify");
+    if (!/^\d{6}$/.test(value) || !beginAction("verify")) return;
     setCodeError(null);
     setResult(null);
     try {
-      const payload = await callVerifyPhone({
-        action: "verify",
-        destination: pendingNumber,
-        code: value,
-        opt_in: optIn,
-      });
+      const token = await sessionToken();
+      if (!isCurrent()) return;
+      const payload = await callVerifyPhone(
+        { action: "verify", destination: pendingNumber, code: value, opt_in: optIn },
+        token,
+      );
+      if (!isCurrent()) return;
       if (!payload.ok) {
         setCodeError(errorText(payload));
         if (typeof payload.attempts_left === "number") setAttemptsLeft(payload.attempts_left);
@@ -338,9 +409,9 @@ export function WhatsappProfileCard({
         payload.whatsapp_opt_in_at ? t("fix2.whats.verifiedOptIn") : t("fix2.whats.verified"),
       );
     } catch (err) {
-      setCodeError(errorText(null, err));
+      if (isCurrent()) setCodeError(errorText(null, err));
     } finally {
-      setBusy(null);
+      endAction();
     }
   }
 
@@ -488,6 +559,7 @@ export function WhatsappProfileCard({
               secondsLeft={cooldown}
               totalSeconds={RESEND_SECONDS}
               busy={busy === "send"}
+              disabled={locked}
               onClick={() => void sendCode(pendingNumber)}
               label={t("fix2.whats.resend")}
               waitLabel={t("fix2.whats.resendIn", { seconds: cooldown })}
@@ -495,7 +567,7 @@ export function WhatsappProfileCard({
             />
             <button
               type="button"
-              disabled={busy !== null}
+              disabled={locked}
               onClick={() => {
                 setStep("edit");
                 setEditing(true);
@@ -542,7 +614,9 @@ export function WhatsappProfileCard({
               title={t("conta.whats.consequence")}
               action={{
                 // Mesmo verbo da 1ª etapa logo acima ("Enviar código").
-                label: t("fix2.whats.sendCode"),
+                label: t(busy === "send" ? "fix2.whats.sending" : "fix2.whats.sendCode"),
+                disabled: locked,
+                busy: busy === "send",
                 icon: Send,
                 onClick: () => void sendCode(savedNumber),
               }}
@@ -601,7 +675,7 @@ export function WhatsappProfileCard({
             {editing && (
               <button
                 type="button"
-                disabled={busy !== null}
+                disabled={locked}
                 onClick={() => {
                   setEditing(false);
                   setWhatsapp(formatBr(savedNumber));
@@ -620,7 +694,7 @@ export function WhatsappProfileCard({
       <ActionResult
         state={result?.state}
         text={result?.text}
-        onRetry={retry ?? undefined}
+        onRetry={!locked && retryNumber !== null ? () => void sendCode(retryNumber) : undefined}
         onDismiss={() => setResult(null)}
         autoHideMs={6000}
       />

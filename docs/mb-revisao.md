@@ -1,6 +1,13 @@
 # Revisão MB — Barba & Cabelo
 
-Atualizado em **07/11/2026** (P-111; entradas anteriores preservadas como histórico). Fonte: [mb-interface.md](mb-interface.md). Regra: `.cursor/rules/mb.mdc`. Skill: `.cursor/skills/mb/`.
+Atualizado em **07/11/2026** (P-112; entradas anteriores preservadas como histórico). Fonte: [mb-interface.md](mb-interface.md). Regra: `.cursor/rules/mb.mdc`. Skill: `.cursor/skills/mb/`.
+
+## P-112 — Confirmação do WhatsApp por conta (07/11/2026)
+
+- **Fluxo:** conta correta do Início/Conta do cliente e dos Ajustes do dono; saída/troca limpa a janela e impede respostas antigas de afetarem a nova conta. Adiamento respeitado. Enviar, reenviar, confirmar e tentar novamente respeitam o estado ocupado; nova tentativa usa a preferência atual de avisos.
+- **Consistência:** estados de ação indisponível/ocupada no `Notice` e bloqueio externo no `ResendButton`, sem controles duplicados. Mesmos textos, cores, superfícies e cantos. Sessão compartilhada na janela preserva foco inicial; atalho no perfil espera a montagem do cartão.
+- **Validação:** 45/45 cenários do WhatsApp e 2/2 de foco; 312 testes, tipos/lint/montagem. 72 comparações 320/390/834/1280, dois temas e três cantos; mesma geometria, 36 interiores móveis idênticos. Evidências e diferenças pontuais no CONTINUIDADE.
+- **Limites:** navegador com dados fictícios; P-42/P-43 reais/físicas continuam. Não presume aprovação estética geral nem encerramento da revisão de todas as telas.
 
 ## P-111 — Continuidade da entrada por conta (07/11/2026)
 

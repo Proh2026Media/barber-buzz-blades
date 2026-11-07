@@ -134,11 +134,15 @@ export function CustomerProfile({
 
   // Link "Número errado?": assim que o cartão do WhatsApp aparece, ele vem para a tela com foco.
   const whatsappFocused = useRef(false);
+  const whatsappReady = whats !== null;
   useEffect(() => {
-    if (!focusWhatsapp || loading || error || whatsappFocused.current) return;
-    whatsappFocused.current = true;
-    window.setTimeout(() => openSection(SECTION.whatsapp), 50);
-  }, [focusWhatsapp, loading, error, openSection]);
+    if (!focusWhatsapp || loading || error || !whatsappReady || whatsappFocused.current) return;
+    const timer = window.setTimeout(() => {
+      whatsappFocused.current = true;
+      openSection(SECTION.whatsapp);
+    }, 50);
+    return () => window.clearTimeout(timer);
+  }, [focusWhatsapp, loading, error, openSection, whatsappReady]);
 
   // Só foca depois que o botão voltou à tela e saiu do "ocupado" (botão desativado não recebe foco).
   useEffect(() => {
@@ -554,6 +558,7 @@ export function CustomerProfile({
         {loading && <LoadingState variant="cards" count={1} hideLabel />}
         {!loading && !error && (
           <WhatsappProfileCard
+            userId={userId}
             id={SECTION.whatsapp}
             demo={Boolean(demo)}
             disabled={busy || !ready}

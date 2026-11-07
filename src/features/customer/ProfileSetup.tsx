@@ -10,9 +10,11 @@ import { WhatsappConfirmBanner } from "./WhatsappConfirmBanner";
  * WhatsApp. Cada etapa continua dispensável ("Agora não").
  */
 export function ProfileSetup({
+  userId,
   disabled,
   onNameSaved,
 }: {
+  userId: string | null;
   disabled: boolean;
   onNameSaved: (name: string) => void;
 }) {
@@ -53,6 +55,7 @@ export function ProfileSetup({
         header={steps(0)}
       />
       <WhatsappConfirmBanner
+        userId={userId}
         disabled={disabled}
         hidden={nameState === "open"}
         onVisibleChange={onWhats}

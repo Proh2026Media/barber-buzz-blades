@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import type { Session } from "@supabase/supabase-js";
 import { MessageCircle, ShieldCheck } from "lucide-react";
 import { IconTile } from "@/components/visual";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuthSession } from "@/lib/auth/use-auth-session";
 import { useI18n } from "@/lib/i18n";
 import { WhatsappProfileCard } from "./WhatsappProfileCard";
 
@@ -52,6 +54,8 @@ const ACCENT_EDGE = {
 type Pending = { userId: string; number: string; optIn: boolean };
 
 type Props = {
+  /** Conta à qual pertence o ambiente aberto. */
+  userId: string | null;
   /** Demonstração: o aviso nunca aparece. */
   disabled?: boolean;
   variant?: "customer" | "owner";
@@ -63,68 +67,106 @@ type Props = {
   header?: ReactNode;
 };
 
-export function WhatsappConfirmBanner({
-  disabled = false,
+export function WhatsappConfirmBanner(props: Props) {
+  const { disabled = false, userId, variant = "customer", onVisibleChange } = props;
+  const { session, currentSession } = useAuthSession(disabled);
+  const eligible = !disabled && !!userId && session?.user.id === userId;
+
+  useEffect(() => {
+    if (!eligible) onVisibleChange?.(false);
+  }, [eligible, onVisibleChange]);
+
+  if (disabled) return null;
+  if (!eligible || !userId) return null;
+  return (
+    <AccountWhatsappBanner
+      key={`${userId}:${variant}`}
+      {...props}
+      userId={userId}
+      currentSession={currentSession}
+    />
+  );
+}
+
+function AccountWhatsappBanner({
+  userId,
   variant = "customer",
   hidden = false,
   onVisibleChange,
   header,
-}: Props) {
+  currentSession,
+}: Props & { userId: string; currentSession: RefObject<Session | null> }) {
   const { t } = useI18n();
   const [pending, setPending] = useState<Pending | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const active = useRef(false);
+  const readVersion = useRef(0);
+  const dismissed = useRef(false);
 
   const check = useCallback(async () => {
+    const version = ++readVersion.current;
+    let result: Pending | null = null;
     try {
-      const { data } = await supabase.auth.getSession();
-      const user = data.session?.user;
-      if (!user || dismissedFor(user.id)) return null;
+      if (dismissed.current || dismissedFor(userId)) return;
+      if (currentSession.current?.user.id !== userId) return;
       const { data: profile, error } = await supabase
         .from("profiles")
         .select("*")
-        .eq("id", user.id)
+        .eq("id", userId)
         .maybeSingle();
-      if (error || !profile) return null;
+      if (error || !profile) return;
       const row = profile as unknown as Record<string, unknown>;
-      if (!("whatsapp_verified_at" in row)) return null;
+      if (!("whatsapp_verified_at" in row)) return;
       const number = typeof row.whatsapp_e164 === "string" ? row.whatsapp_e164 : "";
       const optIn = Boolean(row.whatsapp_opt_in_at);
-      if (!number || row.whatsapp_verified_at) return null;
-      if (variant === "customer" && !optIn) return null;
-      return { userId: user.id, number, optIn } satisfies Pending;
+      if (!number || row.whatsapp_verified_at) return;
+      if (variant === "customer" && !optIn) return;
+      result = { userId, number, optIn };
     } catch {
-      return null;
+      // Sem perfil/rede, o aviso continua dispensável.
+    } finally {
+      if (
+        active.current &&
+        version === readVersion.current &&
+        currentSession.current?.user.id === userId &&
+        !dismissed.current
+      ) {
+        setPending(result);
+      }
     }
-  }, [variant]);
+  }, [userId, variant, currentSession]);
 
   useEffect(() => {
-    if (disabled) return;
-    let cancelled = false;
-    void check().then((result) => {
-      if (!cancelled) setPending(result);
-    });
+    active.current = true;
+    void check();
     return () => {
-      cancelled = true;
+      active.current = false;
+      readVersion.current++;
     };
-  }, [disabled, check]);
+  }, [check]);
 
-  const visible = !disabled && Boolean(pending);
+  const visible = Boolean(pending);
   useEffect(() => {
     onVisibleChange?.(visible);
   }, [onVisibleChange, visible]);
 
   function later() {
-    if (pending) dismiss(pending.userId);
+    if (currentSession.current?.user.id !== userId) return;
+    dismissed.current = true;
+    readVersion.current++;
+    dismiss(userId);
     setPending(null);
   }
 
   function onDialogChange(next: boolean) {
+    if (currentSession.current?.user.id !== userId) return;
     setDialogOpen(next);
-    // Ao fechar, confere de novo: confirmado (ou número apagado) some o aviso.
-    if (!next) void check().then(setPending);
+    // Reabrir invalida a conferência anterior; dispensar nunca é desfeito por uma resposta.
+    if (next) readVersion.current++;
+    else void check();
   }
 
-  if (disabled || !pending || hidden) return null;
+  if (!pending || hidden) return null;
 
   const owner = variant === "owner";
 
@@ -162,7 +204,7 @@ export function WhatsappConfirmBanner({
           </button>
           <button
             type="button"
-            onClick={() => setDialogOpen(true)}
+            onClick={() => onDialogChange(true)}
             aria-haspopup="dialog"
             className="flex min-h-11 items-center justify-center gap-1.5 rounded-[var(--button-radius)] bg-primary px-3 text-sm font-semibold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
@@ -190,6 +232,8 @@ export function WhatsappConfirmBanner({
               Não confirmado"): a janela já é o cartão e o título dela já diz isso. As etapas
               Enviar código → Digitar código → Confirmado vêm do próprio cartão. */}
           <WhatsappProfileCard
+            userId={userId}
+            accountSession={currentSession}
             bare
             demo={false}
             disabled={false}

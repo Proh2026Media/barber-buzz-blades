@@ -2467,7 +2467,11 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   </div>
                 </div>
                 {powers.ownerLike && (
-                  <WhatsappConfirmBanner disabled={Boolean(demo)} variant="owner" />
+                  <WhatsappConfirmBanner
+                    userId={viewerId}
+                    disabled={Boolean(demo)}
+                    variant="owner"
+                  />
                 )}
                 <SettingsHub
                   sections={settingsSections}

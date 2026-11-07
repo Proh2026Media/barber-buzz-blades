@@ -7,7 +7,14 @@ import { visibleBottomLimit } from "./helpers";
 import { ACTION_STATE, type ActionState } from "./status";
 import { TONE_CLASS, TONE_ICON, TONE_SOFT, TONE_TEXT, toneIconMotion, type Tone } from "./tones";
 
-export type NoticeAction = { label: string; onClick: () => void; icon?: LucideIcon };
+export type NoticeAction = {
+  label: string;
+  onClick: () => void;
+  icon?: LucideIcon;
+  /** Impede novo acionamento enquanto a ação está indisponível. */
+  disabled?: boolean;
+  busy?: boolean;
+};
 
 export type NoticeProps = {
   tone: Tone;
@@ -65,9 +72,11 @@ export const Notice = forwardRef<HTMLDivElement, NoticeProps>(function Notice(
             <button
               type="button"
               onClick={action.onClick}
+              disabled={action.disabled || action.busy}
+              aria-busy={action.busy || undefined}
               className={cn(
                 TONE_TEXT,
-                "inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-[color:var(--tone-border)] bg-card/70 px-3 text-sm font-semibold transition hover:bg-card",
+                "inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-[color:var(--tone-border)] bg-card/70 px-3 text-sm font-semibold transition enabled:hover:bg-card disabled:cursor-not-allowed disabled:opacity-50",
               )}
             >
               {ActionIcon && <ActionIcon className="size-4" aria-hidden />}

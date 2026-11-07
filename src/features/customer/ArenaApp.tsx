@@ -3307,7 +3307,11 @@ function ArenaApp({
               }
             >
               <div className="mb-stagger min-w-0 space-y-4">
-                <ProfileSetup disabled={Boolean(demoShopId)} onNameSaved={setCustomerName} />
+                <ProfileSetup
+                  userId={userId}
+                  disabled={Boolean(demoShopId)}
+                  onNameSaved={setCustomerName}
+                />
                 <OtherShopNotices groups={otherShopGroups} onOpen={openOtherShop} />
                 {noShop && (
                   <AskShopLink
