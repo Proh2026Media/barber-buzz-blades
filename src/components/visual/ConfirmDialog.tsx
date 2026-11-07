@@ -101,12 +101,22 @@ export function ConfirmDialog({
   const error = failure ? (errorText ?? t("visual.result.failed")) : null;
   const errorDetailText = typeof errorDetail === "string" ? errorDetail : "";
   const confirmRef = useRef<HTMLButtonElement>(null);
+  const pending = useRef(false);
+  const cycle = useRef(0);
   const HeaderIcon = icon ?? TONE_ICON[tone];
   const ConfirmIcon = confirmIcon;
   const hasDetails = Boolean(summary) || Boolean(consequences?.length);
 
   useEffect(() => {
-    if (open) setFailure(null);
+    const currentCycle = cycle.current + 1;
+    cycle.current = currentCycle;
+    pending.current = false;
+    setBusy(false);
+    setFailure(null);
+    return () => {
+      cycle.current = currentCycle + 1;
+      pending.current = false;
+    };
   }, [open]);
 
   // Anuncia depois de desenhar, com o texto já atualizado pelo pai (motivo incluído).
@@ -135,16 +145,21 @@ export function ConfirmDialog({
   ) : null;
 
   async function confirm() {
-    if (busy) return;
+    if (!open || confirmDisabled || pending.current) return;
+    pending.current = true;
+    const startedAt = cycle.current;
     setBusy(true);
     setFailure(null);
     try {
       await onConfirm();
-      onOpenChange(false);
+      if (startedAt === cycle.current) onOpenChange(false);
     } catch {
-      setFailure({});
+      if (startedAt === cycle.current) setFailure({});
     } finally {
-      setBusy(false);
+      if (startedAt === cycle.current) {
+        pending.current = false;
+        setBusy(false);
+      }
     }
   }
 
@@ -152,7 +167,7 @@ export function ConfirmDialog({
     <AlertDialog
       open={open}
       onOpenChange={(next) => {
-        if (!next && busy) return;
+        if (!next && pending.current) return;
         onOpenChange(next);
       }}
     >
@@ -160,7 +175,7 @@ export function ConfirmDialog({
         desktopSide={desktopSide}
         className={cn("gap-4 rounded-3xl border-border bg-card", className)}
         onEscapeKeyDown={(event) => {
-          if (busy) event.preventDefault();
+          if (pending.current) event.preventDefault();
         }}
       >
         <AlertDialogHeader className="text-left sm:text-left">
@@ -202,7 +217,9 @@ export function ConfirmDialog({
           <button
             type="button"
             disabled={busy}
-            onClick={() => onOpenChange(false)}
+            onClick={() => {
+              if (!pending.current) onOpenChange(false);
+            }}
             className="min-h-11 w-full rounded-xl border border-border bg-card px-4 text-sm font-semibold transition hover:border-primary/40 disabled:opacity-60"
           >
             {cancelLabel}

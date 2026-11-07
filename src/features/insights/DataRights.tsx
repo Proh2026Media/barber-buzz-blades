@@ -1,4 +1,5 @@
-import { useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type RefObject } from "react";
+import type { Session } from "@supabase/supabase-js";
 import {
   CalendarDays,
   CheckCircle2,
@@ -29,6 +30,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useDemo } from "@/features/demo/context";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
+import { useAuthSession } from "@/lib/auth/use-auth-session";
 import { useContainerWidth } from "@/lib/use-container-width";
 import { t as tNow, useI18n } from "@/lib/i18n";
 
@@ -45,38 +47,79 @@ export type PrivacyRequest = {
  * (Agenda/Contatos). Melhor esforço: qualquer falha ou demora segue para a exclusão,
  * que apaga tokens e eventos do banco de qualquer forma.
  */
-async function revokeGoogleBeforeDelete() {
+async function revokeGoogleBeforeDelete(userId: string, token: string, isCurrent: () => boolean) {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
   try {
-    const { data } = await supabase.rpc("get_my_google_connection");
-    if (!(data as { connected?: boolean } | null)?.connected) return;
+    if (!isCurrent()) return;
+    const { data } = await supabase
+      .rpc("get_my_google_connection")
+      .setHeader("Authorization", `Bearer ${token}`);
+    if (!isCurrent() || !(data as { connected?: boolean } | null)?.connected) return;
     // Dono/sócio ativo não consegue excluir a conta (o banco recusa): não desconectar à toa.
-    const { data: sessionData } = await supabase.auth.getSession();
-    const uid = sessionData.session?.user.id;
-    if (!uid) return;
     const owners = await supabase
       .from("shop_members")
       .select("id", { count: "exact", head: true })
-      .eq("user_id", uid)
+      .eq("user_id", userId)
       .eq("active", true)
-      .in("role", ["owner", "partner"]);
-    if (owners.error || (owners.count ?? 0) > 0) return;
+      .in("role", ["owner", "partner"])
+      .setHeader("Authorization", `Bearer ${token}`);
+    if (!isCurrent() || owners.error || (owners.count ?? 0) > 0) return;
     await Promise.race([
-      supabase.functions.invoke("google-connect", { body: { action: "disconnect" } }),
-      new Promise((resolve) => setTimeout(resolve, 10_000)),
+      supabase.functions.invoke("google-connect", {
+        body: { action: "disconnect" },
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+      new Promise((resolve) => {
+        timeout = setTimeout(resolve, 10_000);
+      }),
     ]);
   } catch {
     /* segue com a exclusão */
+  } finally {
+    if (timeout !== undefined) clearTimeout(timeout);
   }
 }
 
-export function DataRights({
-  admin = false,
-  id,
-}: {
+type DataRightsProps = {
+  userId: string | null;
+  accountSession?: RefObject<Session | null>;
   admin?: boolean;
   /** id da seção (Conta do cliente), para os atalhos do resumo. */
   id?: string;
-}) {
+};
+
+export function DataRights(props: DataRightsProps) {
+  const demo = useDemo();
+  const { t } = useI18n();
+  const observed = useAuthSession(Boolean(demo) || Boolean(props.accountSession));
+  const currentSession = props.accountSession ?? observed.currentSession;
+  const session = props.accountSession ? props.accountSession.current : observed.session;
+  if (!demo && (!props.userId || session?.user.id !== props.userId)) {
+    return observed.loading ? (
+      <LoadingState variant="list" count={1} label={t("profile.loading")} />
+    ) : (
+      <Notice
+        tone="danger"
+        title={t("profile.errorLoadAccount")}
+        action={{ label: t("visual.retry"), onClick: observed.retry }}
+      />
+    );
+  }
+  return (
+    <AccountDataRights
+      key={`${demo ? "demo" : props.userId}:${Boolean(props.admin)}`}
+      {...props}
+      currentSession={currentSession}
+    />
+  );
+}
+
+function AccountDataRights({
+  userId,
+  admin = false,
+  id,
+  currentSession,
+}: DataRightsProps & { currentSession: RefObject<Session | null> }) {
   const demo = useDemo();
   const { t, intlLocale } = useI18n();
   const confirmWord = t("dataRights.confirmWord");
@@ -91,6 +134,27 @@ export function DataRights({
   const [downloadState, setDownloadState] = useState<ActionState | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [demoDeleted, setDemoDeleted] = useState(false);
+  const active = useRef(true);
+  const inFlight = useRef(false);
+  const isCurrent = useCallback(
+    () =>
+      active.current &&
+      (Boolean(demo) || Boolean(userId && currentSession.current?.user.id === userId)),
+    [demo, userId, currentSession],
+  );
+  useEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
+    };
+  }, []);
+  const sessionToken = useCallback(async () => {
+    const { data, error: failure } = await supabase.auth.getSession();
+    if (failure || !userId || data.session?.user.id !== userId || !data.session.access_token) {
+      throw new Error(tNow("profile.errorLoadAccount"));
+    }
+    return data.session.access_token;
+  }, [userId]);
   const confirmInputId = useId();
   // A lateral de Relatórios pode ser estreita mesmo no PC. A tabela precisa de espaço
   // para protocolo, conta, situação e ação; os mesmos cartões atendem às demais larguras.
@@ -112,31 +176,35 @@ export function DataRights({
     setLoading(true);
     void (async () => {
       try {
-        const { data, error: failure } = await supabase.rpc("list_privacy_requests", {
-          p_admin: true,
-        });
-        if (cancelled) return;
+        const token = await sessionToken();
+        if (cancelled || !isCurrent()) return;
+        const { data, error: failure } = await supabase
+          .rpc("list_privacy_requests", { p_admin: true })
+          .setHeader("Authorization", `Bearer ${token}`);
+        if (cancelled || !isCurrent()) return;
         if (failure) {
           setError(tNow("ins.rights.loadError"));
+          setRows([]);
         } else {
           setRows(Array.isArray(data) ? (data as unknown as PrivacyRequest[]) : []);
           setError("");
         }
       } catch {
-        if (cancelled) return;
+        if (cancelled || !isCurrent()) return;
         setError(tNow("ins.rights.loadError"));
         setRows([]);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled && isCurrent()) setLoading(false);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [demo, admin, version]);
+  }, [demo, admin, version, sessionToken, isCurrent]);
 
   async function downloadData() {
-    if (busy) return;
+    if (!isCurrent() || inFlight.current || admin) return;
+    inFlight.current = true;
     setBusy(true);
     setDownloadState("saving");
     try {
@@ -156,10 +224,15 @@ export function DataRights({
           prices: Object.fromEntries(appointments.map((row) => [row.id, demo.prices[row.id]])),
         };
       } else {
-        const result = await supabase.rpc("export_my_data");
+        const token = await sessionToken();
+        if (!isCurrent()) return;
+        const result = await supabase
+          .rpc("export_my_data")
+          .setHeader("Authorization", `Bearer ${token}`);
         if (result.error) throw result.error;
         data = result.data;
       }
+      if (!isCurrent()) return;
       const url = URL.createObjectURL(
         new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }),
       );
@@ -172,14 +245,16 @@ export function DataRights({
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       setDownloadState("saved");
     } catch {
-      setDownloadState("error");
+      if (isCurrent()) setDownloadState("error");
     } finally {
-      setBusy(false);
+      inFlight.current = false;
+      if (isCurrent()) setBusy(false);
     }
   }
 
   /** Exclui a conta. Em falha, rejeita: a janela de confirmação mostra o erro e fica aberta. */
   async function deleteAccountForever() {
+    if (!isCurrent() || inFlight.current || admin || !confirm) return;
     if (confirmText.trim().toUpperCase() !== confirmWord) return;
     if (demo) {
       demo.dispatch({ type: "privacy.erase" });
@@ -187,21 +262,40 @@ export function DataRights({
       setDemoDeleted(true);
       return;
     }
+    inFlight.current = true;
+    setBusy(true);
     setDeleteError(null);
     try {
-      await revokeGoogleBeforeDelete();
-      const result = await supabase.rpc("delete_my_account");
+      const token = await sessionToken();
+      if (!isCurrent() || !userId) return;
+      await revokeGoogleBeforeDelete(userId, token, isCurrent);
+      if (!isCurrent()) return;
+      const result = await supabase
+        .rpc("delete_my_account")
+        .setHeader("Authorization", `Bearer ${token}`);
+      if (!isCurrent()) return;
       if (result.error) throw result.error;
-      await supabase.auth.signOut();
-      window.location.assign("/");
+      // A exclusão já foi confirmada. Falha ao encerrar a sessão não restaura a conta.
+      try {
+        await supabase.auth.signOut();
+      } catch {
+        /* O retorno à entrada também ocorre quando a rede falha ao sair. */
+      }
+      if (!currentSession.current || currentSession.current.user.id === userId) {
+        window.location.assign("/");
+      }
     } catch (err) {
-      setDeleteError(friendlyAuthError(err, t("dataRights.deleteError")));
+      if (isCurrent()) setDeleteError(friendlyAuthError(err, t("dataRights.deleteError")));
       throw err;
+    } finally {
+      inFlight.current = false;
+      if (isCurrent()) setBusy(false);
     }
   }
 
   async function adminUpdate(action: "reviewing" | "cancelled", id: string) {
-    if (busy) return;
+    if (!isCurrent() || inFlight.current || loading || !admin) return;
+    inFlight.current = true;
     setBusy(true);
     setError("");
     setMessage("");
@@ -209,18 +303,21 @@ export function DataRights({
       if (demo) {
         demo.dispatch({ type: "privacy.request", status: action, id });
       } else {
-        const result = await supabase.rpc("update_privacy_request", {
-          p_id: id,
-          p_status: action,
-        });
+        const token = await sessionToken();
+        if (!isCurrent()) return;
+        const result = await supabase
+          .rpc("update_privacy_request", { p_id: id, p_status: action })
+          .setHeader("Authorization", `Bearer ${token}`);
         if (result.error) throw result.error;
       }
+      if (!isCurrent()) return;
       setVersion((v) => v + 1);
       setMessage(t("ins.rights.updated"));
     } catch {
-      setError(t("ins.rights.actionError"));
+      if (isCurrent()) setError(t("ins.rights.actionError"));
     } finally {
-      setBusy(false);
+      inFlight.current = false;
+      if (isCurrent()) setBusy(false);
     }
   }
 
@@ -298,6 +395,7 @@ export function DataRights({
               type="button"
               disabled={busy}
               onClick={() => {
+                if (!isCurrent() || inFlight.current) return;
                 setConfirmText("");
                 setDeleteError(null);
                 setConfirm(true);
@@ -343,8 +441,8 @@ export function DataRights({
           confirmIcon={Trash2}
           cancelLabel={t("conta.data.deleteCancel")}
           confirmDisabled={confirmText.trim().toUpperCase() !== confirmWord}
-          // Na falha, um só aviso: o resultado ("nada foi apagado") e, embaixo, o motivo.
-          errorText={t("conta.data.notDeleted")}
+          // Sem confirmação do servidor, não afirmar que a conta continua ativa.
+          errorText={t("dataRights.errorGeneric")}
           errorDetail={deleteError}
           onConfirm={deleteAccountForever}
         >
@@ -356,6 +454,7 @@ export function DataRights({
             <input
               id={confirmInputId}
               value={confirmText}
+              disabled={busy}
               onChange={(event) => setConfirmText(event.target.value)}
               autoComplete="off"
               autoCapitalize="characters"

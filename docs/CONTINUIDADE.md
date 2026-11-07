@@ -107,6 +107,25 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## P-114 — Privacidade, dados e confirmações por conta (07/11, ChatGPT/Codex)
+
+**O que:** continuação B&C pelas P-42/P-43. Escolhas de privacidade, download dos dados, exclusão da conta e solicitações da administração acompanham a conta da tela. Clique repetido não inicia pedidos concorrentes; respostas antigas não baixam arquivos nem atualizam a conta seguinte. Uma falha na leitura das escolhas agora permite tentar novamente, sem inventar consentimento.
+
+**Onde:** `PrivacyCenter.tsx`, `DataRights.tsx`, `CustomerProfile.tsx`, `PlatformShell.tsx` e `ConfirmDialog.tsx`. Cliente compartilha a sessão já acompanhada pelo perfil; administração acompanha sua própria sessão e reinicia o estado por conta. Leituras, gravações e etapas da desconexão Google vinculam a autorização ao pedido. Sair/trocar impede iniciar a próxima etapa; não cancela nem reverte uma operação já enviada ao servidor. Contratos, RLS, consentimentos e regra do dono/sócio ativo preservados.
+
+**Confirmação e recuperação:** o componente comum impede clique repetido no mesmo ciclo e descarta conclusão/erro de uma abertura anterior ou após desmontagem. Escape e cancelamento aguardam a operação; erro mantém a janela e devolve o foco à ação. Na exclusão, o campo de confirmação fica bloqueado enquanto envia. Falha incerta não afirma “Nada foi apagado”; se o servidor confirmou a exclusão e o encerramento da sessão falhou, a tela retorna à entrada. Textos existentes do dicionário, sem novas traduções ou CSS.
+
+**Verificado:**
+
+- **43/43 cenários no Chromium**, contra **13/43 antes (30 falhas)**; zero erros de página depois. Perfil, privacidade, dados e confirmação React/Radix reais, serviços fictícios. Inclui saída/troca, sessão divergente, respostas atrasadas, clique repetido, autorização da ação, leitura incompleta/rejeitada, falha e nova tentativa, confirmação por palavra, dono ativo, etapas Google, exportação, admin, demonstração, foco/Escape, reabertura e desmontagem. Os dois erros de página anteriores foram reproduzidos no carregamento de privacidade. O teste do retorno à entrada exigiu corrigir o charset da página fictícia, sem mudança adicional no aplicativo.
+- **3/3 transportes com o SDK Supabase instalado**, usando fetch fictício: RPC, leitura de vínculo e função preservam a autorização explícita da ação quando o token padrão é de outra conta. Sem rede real.
+- `scripts/verificar.sh` completo com **saída 0**: tipos, **312/312 testes existentes**, ESLint/Prettier dos cinco TS/TSX e montagem. Documentação conferida separadamente; cenários de interface ficam na bancada local.
+- **36 pares visuais idênticos:** privacidade, confirmação de exclusão e pedidos do admin em 320/834/1280; três cantos no claro e semi arredondado no escuro. Sem rolagem lateral, amostras abertas para inspeção. Comparação dos componentes com CSS da montagem, não uma nova auditoria de todas as páginas ou dos layouts completos por dispositivo.
+
+**Evidência local:** `/tmp/bc-conta-diretorio` aponta para originais, bancada, roteiros e resultados. Rede externa/WebSocket bloqueados; nenhuma conta, exportação, exclusão ou revogação real usada. Servidores encerrados e PNGs próprios removidos após inspeção. `.env` e `.vscode/` originais preservados.
+
+**Pendente:** integrações reais e aparelhos físicos/Safari/PWA/teclado virtual continuam nas P-42/P-43. P-74/P-95 seguem decisões e P-28 externa fica com a TI. Nenhuma migration, tarefa TI ou operação Flow. Último id: **P-114**.
+
 ## P-113 — Cadastro e Meu perfil acompanham a conta atual (07/11, ChatGPT/Codex)
 
 **O que:** continuação da manutenção B&C pelas P-42/P-43. Pedido de nome no Início e Meu perfil deixam de conservar os dados da conta anterior quando a pessoa sai ou troca de usuário. Leituras e gravações atrasadas não atualizam a nova tela/cabeçalho. “Agora não” continua valendo por sete dias para a conta que dispensou o pedido. Renovação normal da sessão preserva a edição em andamento.

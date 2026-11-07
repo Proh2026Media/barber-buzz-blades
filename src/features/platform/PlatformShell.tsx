@@ -604,7 +604,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
               <div className="platform-reports-grid space-y-6">
                 <BusinessInsights />
                 <SurveyCatalog />
-                <DataRights admin />
+                <DataRights userId={profile.user.id} admin />
               </div>
             </div>
           )}

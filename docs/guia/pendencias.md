@@ -10,7 +10,7 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 - Situação: **pendente**, **feito — falta aplicar no banco**, **a decidir** (depende do dono), **não confirmado** (não deu para conferir daqui).
 - Cada item foi conferido no código e nas migrations em 12/10/2026. As linhas citadas são dessa data.
 - **Papéis da equipe no banco × nomes na tela:** `owner` e `partner` = **Dono** (sócio; `partner` é o nome antigo e aparece igual), `associate` = **Parceiro**, `employee` = **Contratado** ([roles-model.ts](../../src/features/shop/roles-model.ts); rótulos em `pt-BR.ts`). `shop_admin` é o papel antigo de `memberships`, que pode existir sem vínculo de equipe (CONTINUIDADE, onda 1 de 09/10).
-- Último id usado: **P-113**.
+- Último id usado: **P-114**.
 
 **Índice**
 
@@ -20,13 +20,15 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 4. [Migrations escritas e não aplicadas; operação do servidor](#4-migrations-escritas-e-não-aplicadas-operação-do-servidor) (P-21 a P-29, P-67 a P-69, P-73 e P-99)
 5. [Decisões do dono em aberto](#5-decisões-do-dono-em-aberto) (P-30 a P-39, P-53, P-71, P-74, P-76 e P-77)
 6. [Testes manuais com contas reais](#6-testes-manuais-com-contas-reais) (P-40 a P-43)
-7. [Dívida técnica](#7-dívida-técnica) (P-44 a P-48, P-51, P-52, P-55, P-63 a P-65, P-72, P-75, P-78 e P-110 a P-113)
+7. [Dívida técnica](#7-dívida-técnica) (P-44 a P-48, P-51, P-52, P-55, P-63 a P-65, P-72, P-75, P-78 e P-110 a P-114)
 8. [Ideias futuras](#8-ideias-futuras) (P-49, P-50 e P-54)
 9. [Interface por dispositivo: o que ficou](#9-interface-por-dispositivo-o-que-ficou) (P-79 a P-98 e P-100 a P-109)
 
 ---
 
 ## 1. Próximas ações externas e decisões
+
+**07/11/2026 — P-114 concluída no B&C:** privacidade, exportação/exclusão e pedidos do admin protegidos contra conta divergente, respostas antigas e pedidos repetidos. Confirmações isolam cada abertura; erros permitem recuperação sem afirmar resultado não confirmado. 43/43 cenários, 3/3 transportes do SDK, 312 testes, tipos/lint/montagem e 36 pares visuais idênticos. P-42/P-43 reais/físicas continuam; sem migration/TI. Detalhes na seção P-114 e no CONTINUIDADE.
 
 **07/11/2026 — P-113 concluída no B&C:** cadastro e Meu perfil acompanham a conta; edição de nome com uma gravação por vez, resposta antiga descartada, rascunho preservado em erro e saída recuperável. 36/36 cenários, 312 testes, tipos/lint/montagem e 36 comparações visuais. Mesma identidade; P-42/P-43 reais/físicas continuam. Detalhes na seção P-113 e no CONTINUIDADE.
 
@@ -511,6 +513,13 @@ Quando a pessoa cancela ou o Google recusa o login, a janela por cima do app mos
 A demonstração usa a regra de `shop_uses_staff_services`/`staff_service_terms` em [catalog.ts](../../src/features/demo/catalog.ts): catálogo explícito por profissional, equipe/serviços ativos e valores próprios. Bruno oferece corte em 45 min por R$ 55; Rafa oferece barba em 30 min por R$ 65; Dani não oferece barba. Escolha do cliente, horários livres, agendamento pelo painel, entrada/confirmação da espera e preços das reservas usam essas condições. Remarcar o mesmo serviço com o mesmo profissional conserva o preço reservado. A prévia copiada de uma loja real continua sem vínculos inventados, usando o catálogo copiado. Casos automáticos em `src/features/demo/model.test.ts`; nenhum acesso ou alteração no banco de produção. Registro da entrega em `CONTINUIDADE.md`.
 
 ---
+
+### P-114 — Privacidade, dados e confirmações por conta · feito em 07/11/2026
+
+- **Corrigido:** privacidade sem recuperação de algumas falhas; pedidos duplicados; download e etapas de exclusão continuando após troca/saída; listagem e respostas antigas no admin. Confirmação comum podia repetir ação ou aplicar retorno de outra abertura. Erro incerto de exclusão afirmava que a conta continuava ativa.
+- **Mudança:** sessão compartilhada no perfil, observação própria no admin, estado por conta, autorização vinculada ao pedido e trava síncrona. Respostas antigas ignoradas e próximas etapas interrompidas ao sair/trocar. Confirmação preserva foco e recuperação, sem herdar resultado anterior. Mesma identidade, consentimentos, contratos e RLS; demonstração local, sem migration/TI.
+- **Verificado:** **43/43 cenários**, contra 13/43 antes; **3/3 transportes do SDK**, **312/312 testes**, tipos/lint/montagem. 36 pares visuais idênticos em 320/834/1280, três cantos no claro e semi arredondado no escuro; sem rolagem lateral. Evidências no CONTINUIDADE.
+- **Limites:** serviços fictícios; nenhuma exclusão, exportação ou revogação real. Operação já enviada não é revertida. P-42/P-43 reais/físicas e decisões P-74/P-95 permanecem; não encerra a revisão de todas as telas.
 
 ### P-113 — Cadastro e Meu perfil por conta · feito em 07/11/2026
 

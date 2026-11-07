@@ -1,5 +1,6 @@
 import { SurveyCatalog } from "./SurveyCatalog";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import type { Session } from "@supabase/supabase-js";
 import {
   CalendarDays,
   ChartLine,
@@ -57,9 +58,13 @@ const OPTIONAL: { key: OptionalKey; icon: LucideIcon; title: MessageKey; hint: M
 ];
 
 export function PrivacyCenter({
+  userId,
+  accountSession,
   id,
   onSummary,
 }: {
+  userId: string | null;
+  accountSession: RefObject<Session | null>;
   /** id da seção, para os atalhos do resumo da Conta. */
   id?: string;
   /** Quantas opções opcionais estão ligadas (gravadas), para o resumo da Conta. */
@@ -79,6 +84,29 @@ export function PrivacyCenter({
   const [erased, setErased] = useState(false);
   const [version, setVersion] = useState(0);
   const [confirmErase, setConfirmErase] = useState(false);
+  const active = useRef(true);
+  const inFlight = useRef(false);
+  const isCurrent = useCallback(
+    () =>
+      active.current &&
+      (Boolean(demo) || Boolean(userId && accountSession.current?.user.id === userId)),
+    [demo, userId, accountSession],
+  );
+  useEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
+    };
+  }, []);
+
+  const sessionToken = useCallback(async () => {
+    const { data, error } = await supabase.auth.getSession();
+    if (error || !userId || data.session?.user.id !== userId || !data.session.access_token) {
+      throw new Error("Sessão da conta indisponível");
+    }
+    return data.session.access_token;
+  }, [userId]);
+
   useEffect(() => {
     let cancelled = false;
     if (demo) {
@@ -90,21 +118,39 @@ export function PrivacyCenter({
     }
     setLoading(true);
     setLoadError(false);
-    void supabase.rpc("get_my_privacy").then(({ data, error: failure }) => {
-      if (cancelled) return;
-      if (failure) setLoadError(true);
-      else {
-        const value = data as unknown as { preferences: PrivacyPreferences; responses: Survey[] };
+    void (async () => {
+      try {
+        const token = await sessionToken();
+        if (cancelled || !isCurrent()) return;
+        const { data, error: failure } = await supabase
+          .rpc("get_my_privacy")
+          .setHeader("Authorization", `Bearer ${token}`);
+        if (cancelled || !isCurrent()) return;
+        const value = data as unknown as {
+          preferences: PrivacyPreferences;
+          responses: Survey[];
+        } | null;
+        if (
+          failure ||
+          !value?.preferences ||
+          !Array.isArray(value.responses) ||
+          !OPTIONAL.every(({ key }) => typeof value.preferences[key] === "boolean")
+        ) {
+          throw new Error("Escolhas indisponíveis");
+        }
         setPreferences(value.preferences);
         setSaved(value.preferences);
         setResponses(value.responses);
+      } catch {
+        if (!cancelled && isCurrent()) setLoadError(true);
+      } finally {
+        if (!cancelled && isCurrent()) setLoading(false);
       }
-      setLoading(false);
-    });
+    })();
     return () => {
       cancelled = true;
     };
-  }, [demo, version]);
+  }, [demo, version, sessionToken, isCurrent]);
 
   const onCount = OPTIONAL.filter(({ key }) => saved[key]).length;
   useEffect(() => {
@@ -115,42 +161,65 @@ export function PrivacyCenter({
 
   /** Grava as escolhas. Em falha, os interruptores ficam como a pessoa deixou. */
   async function save() {
+    if (!isCurrent() || inFlight.current || loading || loadError || changes === 0) return;
+    inFlight.current = true;
     setBusy(true);
     setSaveState("saving");
     setErased(false);
     try {
       if (demo) demo.dispatch({ type: "privacy.save", preferences });
       else {
-        const result = await supabase.rpc("save_my_privacy", {
-          p_analytics: preferences.analytics,
-          p_surveys: preferences.surveys,
-          p_marketing: preferences.marketing,
-        });
+        const token = await sessionToken();
+        if (!isCurrent()) return;
+        const result = await supabase
+          .rpc("save_my_privacy", {
+            p_analytics: preferences.analytics,
+            p_surveys: preferences.surveys,
+            p_marketing: preferences.marketing,
+          })
+          .setHeader("Authorization", `Bearer ${token}`);
         if (result.error) throw result.error;
       }
+      if (!isCurrent()) return;
       setSaved(preferences);
       setSaveState("saved");
       setSaveText(t("conta.privacy.saved"));
     } catch {
-      setSaveState("error");
-      setSaveText(t("privacy.errorSave"));
+      if (isCurrent()) {
+        setSaveState("error");
+        setSaveText(t("visual.result.failed"));
+      }
     } finally {
-      setBusy(false);
+      inFlight.current = false;
+      if (isCurrent()) setBusy(false);
     }
   }
 
   /** Apaga respostas e registros opcionais (a janela mostra o erro, se houver). */
   async function erase() {
-    if (demo) demo.dispatch({ type: "privacy.erase" });
-    else {
-      const result = await supabase.rpc("erase_my_optional_data");
-      if (result.error) throw result.error;
+    if (!isCurrent() || inFlight.current || !confirmErase || loading || loadError) return;
+    inFlight.current = true;
+    setBusy(true);
+    try {
+      if (demo) demo.dispatch({ type: "privacy.erase" });
+      else {
+        const token = await sessionToken();
+        if (!isCurrent()) return;
+        const result = await supabase
+          .rpc("erase_my_optional_data")
+          .setHeader("Authorization", `Bearer ${token}`);
+        if (result.error) throw result.error;
+      }
+      if (!isCurrent()) return;
+      setPreferences(defaultPrivacy);
+      setSaved(defaultPrivacy);
+      setResponses([]);
+      setSaveState(null);
+      setErased(true);
+    } finally {
+      inFlight.current = false;
+      if (isCurrent()) setBusy(false);
     }
-    setPreferences(defaultPrivacy);
-    setSaved(defaultPrivacy);
-    setResponses([]);
-    setSaveState(null);
-    setErased(true);
   }
 
   const answered = responses.filter((row) => row.state === "answered");
@@ -221,6 +290,7 @@ export function PrivacyCenter({
                         checked={preferences[key]}
                         disabled={busy}
                         onCheckedChange={(checked) => {
+                          if (inFlight.current || !isCurrent()) return;
                           setPreferences((current) => ({ ...current, [key]: checked }));
                           setSaveState(null);
                           setErased(false);
@@ -250,6 +320,7 @@ export function PrivacyCenter({
             stateText={saveText}
             onSave={() => void save()}
             onDiscard={() => {
+              if (inFlight.current || !isCurrent()) return;
               setPreferences(saved);
               setSaveState(null);
             }}
@@ -311,7 +382,9 @@ export function PrivacyCenter({
                   !preferences.surveys ? (
                     <button
                       type="button"
+                      disabled={busy}
                       onClick={() => {
+                        if (inFlight.current || !isCurrent()) return;
                         setPreferences((current) => ({ ...current, surveys: true }));
                         setSaveState(null);
                       }}
@@ -370,7 +443,9 @@ export function PrivacyCenter({
             )}
             <button
               type="button"
-              onClick={() => setConfirmErase(true)}
+              onClick={() => {
+                if (!inFlight.current && isCurrent()) setConfirmErase(true);
+              }}
               disabled={busy}
               className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold transition hover:border-primary/40 disabled:opacity-50"
             >

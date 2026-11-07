@@ -1,6 +1,13 @@
 # Revisão MB — Barba & Cabelo
 
-Atualizado em **07/11/2026** (P-113; entradas anteriores preservadas como histórico). Fonte: [mb-interface.md](mb-interface.md). Regra: `.cursor/rules/mb.mdc`. Skill: `.cursor/skills/mb/`.
+Atualizado em **07/11/2026** (P-114; entradas anteriores preservadas como histórico). Fonte: [mb-interface.md](mb-interface.md). Regra: `.cursor/rules/mb.mdc`. Skill: `.cursor/skills/mb/`.
+
+## P-114 — Privacidade, dados e confirmações por conta (07/11/2026)
+
+- **Fluxo:** escolhas, cópia dos dados, exclusão e pedidos do admin acompanham a conta atual. Clique repetido não inicia outra operação; respostas antigas não baixam arquivos nem avançam a exclusão na sessão seguinte.
+- **Estados:** erro de leitura permite nova tentativa e não inventa consentimento. Confirmações respeitam operação em curso e não herdam retorno de outra abertura; erro mantém foco e recuperação. Palavra de exclusão bloqueada durante o envio; mensagens existentes evitam afirmar resultado não confirmado.
+- **Validação:** 43/43 cenários, 3/3 transportes do SDK, 312 testes, tipos/lint/montagem. 36 pares visuais idênticos em 320/834/1280; três cantos no claro e semi arredondado no escuro, sem rolagem lateral. Amostras inspecionadas, mesmos estilos e composição.
+- **Limites:** componentes reais com serviços fictícios; P-42/P-43 reais/físicas continuam. Esta rodada não representa uma nova auditoria de todas as páginas ou aprovação estética geral.
 
 ## P-113 — Cadastro e Meu perfil por conta (07/11/2026)
 

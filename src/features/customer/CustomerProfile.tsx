@@ -747,6 +747,8 @@ function AccountCustomerProfile({
         </section>
 
         <PrivacyCenter
+          userId={userId}
+          accountSession={currentSession}
           id={SECTION.privacy}
           onSummary={(on, total) =>
             setPrivacyCount((current) =>
@@ -755,7 +757,7 @@ function AccountCustomerProfile({
           }
         />
 
-        <DataRights id={SECTION.data} />
+        <DataRights userId={userId} accountSession={currentSession} id={SECTION.data} />
 
         <section
           id={SECTION.security}
