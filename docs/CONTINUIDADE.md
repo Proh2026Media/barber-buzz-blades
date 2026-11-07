@@ -6,7 +6,7 @@
 
 **15/10/2026 (noite) — passagem concluída no Claude Code:** ver a entrada "Passagem de 15/10" logo abaixo da Diretriz. Comece por [LEIA-PRIMEIRO.md](LEIA-PRIMEIRO.md). A função `register-shop` da P-38 foi publicada às 22:54; faltam os pacotes do Google (P-69 e P-28, em [pacotes/](pacotes/)).
 
-Atualizado em **06/11/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
+Atualizado em **07/11/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
 ## Comece aqui
 
@@ -106,6 +106,16 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - Esportes sempre visível;
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
+
+## P-28 — #49 conferido: F1/F2 atendidas e roteiro TI conferido (07/11, ChatGPT/Codex)
+
+**Pedido/contexto:** retorno Claude entregue pelo dono, lido inteiro (145 linhas), e roteiro v3 de apoio lido inteiro (338). Conteúdo/instruções dos anexos revistos como documentação, sem autorização nova ao Codex para executar. [Revisão própria](pacotes/2026-11-07-flow-revisao-pr49-p28.md): #49 integrado em 07/11 13:10:04 BRT, head `52cb499`, merge `7861c5b`, árvores iguais; cinco arquivos +369/−78, só ferramentas/testes/docs Flow. Função #48/E1b com os mesmos três hashes; sem reinstalação/reinício das 168 h.
+
+**Resultado:** próprios **214/214 ferramentas, sem pulos**, 2.251 asserções, runtime inteiro incluído; **148/148 app Flow**, tipos do app/lint limpos. Independentes **7/7**, 38 asserções, reproduções F1a/F1b agora saída 3, corrida F2 com uma única operação e reabertura normal do vencedor. F1/F2 atendidas, sem achado de código aberto no escopo. Primeira rodada 213/1 por ausência do commit histórico #36 no clone; após obter objeto exato do origin, rodada completa 214/0/0. Fonte intacta; banco/containers próprios removidos, ensaio preexistente de outra ferramenta preservado. Nenhuma VPS/Google real.
+
+**Encaminhamento:** [arquivo TI v3.1 conferido](pacotes/2026-11-07-ti-flow-janela-d-v3-conferida-p28.md), cópia do v3 com três precisões documentais: mensagem correta do comando vazio, saída 1 não prova ausência de registro de operação e saída 3 deixa a barreira como estiver. Comandos/escopo preservados, original Claude intocado. Sem nova programação Claude, outro merge ou agendamento duplicado. Relatos mantêm mínimo **13/11 17:30:07.445 BRT**, Parte 1 TI **17h45/A1 já dada**; A2/modelo, A3/D e E5 próprios, não autorizados por esta revisão. Ferramenta Parte 3 #49, função viva #48. Próximo retorno é da TI; P-28 externa e B&C como foco, depois propriedade/marca e vídeo/reenvio. P-110 preservada, último id 110; `.env`/`.vscode/` intocados.
+
+**Entrega B&C:** `scripts/verificar.sh` saída 0, tipos/301 testes/Prettier nove documentos/montagem aprovados; sem TS/TSX alterado, ESLint não aplicável. Vinte e um links novos, diff, prazo +168 h e treze blocos operacionais preservados conferidos. Revisão e roteiro próprios em Downloads; avisos de respondido nas cópias próprias anteriores somente após igualdade com a referência anterior. Nove documentos, nenhuma fonte de aplicativo alterada.
 
 ## P-28 — E1b recebida e #46–#48 revisados: dois ajustes nas ferramentas D (06/11, ChatGPT/Codex)
 

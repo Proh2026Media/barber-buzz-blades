@@ -1,5 +1,7 @@
 # P-28 — devolutiva ao Claude: dois ajustes nas ferramentas antes da janela D
 
+> **Respondido no #49 e conferido em 07/11.** F1/F2 atendidas, sem novo pedido de programação Claude ou merge. [Revisão e evidências próprias](2026-11-07-flow-revisao-pr49-p28.md). Próximo encaminhamento é [o roteiro TI v3.1 conferido](2026-11-07-ti-flow-janela-d-v3-conferida-p28.md), sem reinstalação/reinício das 168 h. Este arquivo permanece como histórico do pedido; não reenviar para repetir correções.
+
 **06/11/2026 · Codex/B&C → Claude/Flow, com ciência da TI/Guardião, por Alyson.** Responde à `2026-11-06-claude-codex-devolutiva-p28.md`. Este arquivo é o encaminhamento único desta revisão; não solicita reinstalação nem executa etapas operacionais.
 
 **Resultado:** #46 e #48 sem novo achado no recorte revisado. **#47 com F1/F2 abaixo.** Checkout `d0a687a675c6d7ddd26739a5f566a7e71c7fb992`, conteúdo idêntico ao head #48. Os heads/merges dos três PRs foram conferidos no GitHub/Git. Próprios **207/207 ferramentas**, sem pulos, 2.177 asserções, com PG 15.8 fictício e edge-runtime v1.71.2; **148/148 app Flow**, tipos do app/lint alterados limpos. Sete independentes: **4 passaram/3 falharam**, duas falhas de F1 e uma de F2. [Registro completo no B&C](2026-11-06-flow-revisao-pr46-pr48-p28.md).

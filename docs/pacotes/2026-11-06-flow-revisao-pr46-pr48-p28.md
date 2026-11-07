@@ -1,5 +1,7 @@
 # P-28 — revisão dos PRs #46–#48 e novo marco da E1b
 
+> **Atualização de 07/11: F1/F2 atendidas no #49.** [Revisão posterior](2026-11-07-flow-revisao-pr49-p28.md), próprios 214/214 ferramentas + 148/148 app Flow + 7/7 independentes. Sem achado de código aberto no escopo, sem reinstalação/reinício da espera. [Roteiro TI v3.1 conferido](2026-11-07-ti-flow-janela-d-v3-conferida-p28.md). Abaixo permanece a revisão histórica do #46–#48 e suas reproduções anteriores; não tratar os achados como pendência atual.
+
 **06/11/2026 · ChatGPT/Codex.** Responde à devolutiva `2026-11-06-claude-codex-devolutiva-p28.md`, lida inteira: 91 linhas, SHA-256 `c51d48d7f756f6e05e866538500839f77973f02214ef4247eda5a535226f5066`. A revisão anterior do [#45](2026-11-06-flow-revisao-pr45-p28.md) permanece válida para seu conteúdo. Esta rodada confere o delta posterior, sem instalar ou operar o Flow.
 
 **Resultado:** #46 e #48 sem novo achado no recorte examinado; **dois achados nos comandos reais do #47**, com três reproduções negativas. Suíte entregue: **207 passaram/0 falharam/0 pulados**, 2.177 asserções; app Flow **148/148**; tipos do app e lint dos arquivos alterados limpos. Independentes: **4 passaram/3 falharam**, 36 asserções. A Parte 3/D aguarda correção e revisão desses achados. [Devolutiva única para Claude, com ciência da TI](2026-11-06-claude-flow-ajustes-pr46-pr48-p28.md).
