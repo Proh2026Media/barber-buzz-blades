@@ -115,6 +115,8 @@ export type ShopPowers = {
   seeTeam: boolean;
   /** Dono ou sócio da loja aberta: decisões entre donos, pessoas e %, clientes da loja. */
   society: boolean;
+  /** Conexão de recebimento própria do Parceiro independente. */
+  ownPayments: boolean;
   /** "Meus serviços": personaliza o próprio catálogo por cima do da loja. */
   ownCatalog: boolean;
   /** Sugere preço aos outros parceiros. */
@@ -154,6 +156,7 @@ export const NO_POWERS: ShopPowers = {
   manageShopChannels: false,
   seeTeam: false,
   society: false,
+  ownPayments: false,
   ownCatalog: false,
   suggestions: false,
   ownBlocks: false,
@@ -195,6 +198,7 @@ export function shopPowers(
       seeTeam: false,
       // Sem vínculo de equipe não há cartão de profissional nem sociedade registrada.
       society: false,
+      ownPayments: false,
       ownCatalog: false,
       suggestions: false,
       ownBlocks: false,
@@ -229,6 +233,7 @@ export function shopPowers(
     manageShopChannels: ownerLike,
     seeTeam: c.viewFullShop,
     society: c.society,
+    ownPayments: c.ownPayments,
     ownCatalog: c.ownCatalog,
     suggestions: c.suggestToPeers,
     ownBlocks: c.ownBlocks,

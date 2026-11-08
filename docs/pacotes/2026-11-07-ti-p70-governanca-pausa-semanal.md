@@ -8,7 +8,7 @@
 2. Instalar e conferir a P-70 por este roteiro.
 3. Executar [homologação B&C](2026-11-07-ti-barba-cabelo-homologacao-final.md), acrescentando os casos da seção 5 abaixo.
 
-**Não executar P-49 ou Flow por este pacote.** A P-49 está em preparação local, sem provedor, cobrança, tabela financeira ou mudança no cancelamento de produção. O roteiro P-28 que a TI já recebeu continua separado.
+**Não executar P-49 ou Flow por este pacote.** A P-49 permanece sem cobrança, livro financeiro ou mudança no cancelamento de produção. O dono já escolheu Mercado Pago; a conexão por recebedor tem [pacote separado](2026-11-07-ti-mercado-pago-conexao-p49.md). O roteiro P-28 que a TI já recebeu continua separado.
 
 ## 1. Entrega e pré-condições
 

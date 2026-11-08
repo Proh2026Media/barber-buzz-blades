@@ -1,6 +1,6 @@
 # Módulo de reembolso e cancelamento — proposta e desenvolvimento
 
-**Status em 07/11/2026:** desenvolvimento aprovado pelo dono, com preparação **parcial** implementada: modelo de cálculo/estados, testes e simulador local da demonstração. **P-49 não está concluída** e nenhuma cobrança, retenção ou devolução real está ativada. A pergunta sobre o provedor foi encaminhada e continua sem resposta; integração e homologação financeira permanecem pendentes. Contrato e evidências em [pagamentos-reembolsos-p49.md](pagamentos-reembolsos-p49.md).
+**Status em 07/11/2026:** desenvolvimento aprovado pelo dono, com preparação **parcial** implementada: modelo de cálculo/estados, testes e simulador local da demonstração. **P-49 não está concluída** e nenhuma cobrança, retenção ou devolução real está ativada. O dono escolheu Mercado Pago: Parceiro independente recebe em conta própria; donos e contratados, pela barbearia, sem repasse/comissão automática. A base de conexão por recebedor foi preparada; integração financeira e homologação continuam pendentes. Contrato e evidências em [pagamentos-reembolsos-p49.md](pagamentos-reembolsos-p49.md).
 
 A proposta original foi registrada em 16/09/2026. As decisões abaixo, adotadas em 07/11 pela delegação do dono, resolvem as lacunas de cálculo para desenvolver o módulo sem presumir pagamento ou criar dívida.
 

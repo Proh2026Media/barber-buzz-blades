@@ -5,6 +5,7 @@ export const SETTINGS_SECTIONS = [
   "aparencia",
   "agendamento",
   "pontos",
+  "pagamentos",
   "avisos",
   "enderecos",
   "perfil",

@@ -489,3 +489,18 @@ test("guarda mantém destino do login, permite equipe e recusa cliente com o mot
     { message: "/auth?next=/shop/pontos" },
   );
 });
+
+test("conexão Mercado Pago retoma o recebedor após login sem carregar segredos OAuth", () => {
+  const next =
+    "/auth/mercado-pago?shop=11111111-1111-4111-8111-111111111111&receiver_scope=professional";
+  assert.equal(
+    sanitizeNext(`${next}&code=segredo&state=nonce&staff_id=outro&next=https://evil.example#hash`),
+    next,
+  );
+  assert.equal(decidePostAuthPath({ next, access: ACCESS.dono }), next);
+  assert.equal(decidePostAuthPath({ next, access: ACCESS.cliente }), "/app");
+  assert.equal(
+    sanitizeNext("/auth/mercado-pago?shop=incorreto&receiver_scope=outro&code=segredo"),
+    "/auth/mercado-pago",
+  );
+});

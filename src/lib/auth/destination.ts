@@ -61,6 +61,11 @@ const KNOWN_DESTINATIONS: Record<string, Record<string, Check>> = {
     unidade: ID,
   },
   "/shop/pontos": {},
+  "/auth/mercado-pago": {
+    shop: (v) =>
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v),
+    receiver_scope: oneOf("shop", "professional"),
+  },
   "/platform": { aba: SLUG },
   "/demo": { view: SLUG, shop: REF },
   "/politica": { shop: REF, lang: (v) => /^[A-Za-z-]{2,12}$/.test(v) },
@@ -156,6 +161,7 @@ export function decidePostAuthPath(input: {
     // de cliente, a pessoa vai ao agendamento mesmo tendo papel profissional.
     return hasClientIntent(next) || home === "/app" ? next : home;
   }
+  if (path === "/auth/mercado-pago") return input.access.shop ? next : home;
   if (path === "/shop" || path.startsWith("/shop/")) return input.access.shop ? next : home;
   if (path === "/platform" || path === "/demo") return input.access.platform ? next : home;
   // Páginas comuns conhecidas (política do clube, abrir barbearia).

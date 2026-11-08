@@ -2,6 +2,8 @@
 
 Mapa do Barba & Cabelo para quem vai **mudar código**. Tudo aqui foi conferido no código e no git em 12/10/2026 (seções 5 e 13 revistas em 15/10/2026, por causa de P-32 e P-33; seções 3, 8, 15 e 16 revistas em 22/10/2026, com a entrega "interface por dispositivo"); o que não deu para conferir está marcado como "não confirmado". O histórico detalhado de cada entrega fica no [CONTINUIDADE](../CONTINUIDADE.md). Porta de entrada: [LEIA-PRIMEIRO](../LEIA-PRIMEIRO.md).
 
+**P-49, atualização 07/11/2026:** `features/payments` contém simulador e cartão de conexão; rota `/auth/mercado-pago` autoriza no domínio principal. `lib/payments/mercado-pago-client.ts` exige a sessão esperada e não recebe tokens MP. Edge `mercado-pago-connect` valida identidade, escopo loja/profissional, revisão, PKCE e nonce; `_shared/mercado-pago.ts` cifra credenciais e prepara o adapter. Migration100 privada, sem acesso direto de navegador. Recebedor pessoal é `associate`, não `partner`. Dinheiro desativado; ledger, checkout, webhook e renovação automática ainda não implementados. [Contrato e limites](../pagamentos-reembolsos-p49.md).
+
 ## Índice
 
 1. [Stack e versões](#1-stack-e-versões)

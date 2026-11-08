@@ -2,6 +2,10 @@
 
 Atualizado em **07/11/2026** (P-49/P-70; entradas anteriores preservadas como histórico). Fonte: [mb-interface.md](mb-interface.md). Regra: `.cursor/rules/mb.mdc`. Skill: `.cursor/skills/mb/`.
 
+## P-49 — Conexão pessoal e da loja (07/11/2026)
+
+Ajustes → Pagamentos distingue conta pessoal do Parceiro e conta da barbearia. Entrada no endereço principal, status sanitizado, autorização explícita, confirmação de desconexão local e aviso permanente de pagamentos desativados. Sem sessão, o destino guarda somente loja/escopo; código e estado OAuth nunca viram destino de login nem armazenamento persistente. Componentes visuais e dicionários existentes preservados; resultado de validação e limites no CONTINUIDADE. Esta é preparação da conexão, não interface de cobrança.
+
 ## P-49/P-70 — Simulação financeira e pausa com aprovação (07/11/2026)
 
 - **P-70:** pausa semanal da loja usa a fila existente com resumo visual dos dias/horários, criação/remoção pendente e resultado da decisão. Rascunho preservado em falhas, repetição bloqueada e mudança de conta/loja isolada. Pausa própria preservada; permissões conferidas no servidor. Banco nº 99 ainda depende da TI.

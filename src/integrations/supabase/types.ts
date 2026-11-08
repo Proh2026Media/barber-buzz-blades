@@ -663,6 +663,104 @@ export type Database = {
           },
         ];
       };
+      /** Privada: nenhuma leitura/gravação direta pelo navegador. */
+      mercado_pago_connections: {
+        Row: {
+          id: string;
+          barbershop_id: string;
+          receiver_scope: string;
+          professional_user_id: string | null;
+          staff_id: string | null;
+          status: string;
+          connection_revision: number;
+          collector_id: string | null;
+          live_mode: boolean | null;
+          access_token_ciphertext: string | null;
+          refresh_token_ciphertext: string | null;
+          token_expires_at: string | null;
+          connected_at: string | null;
+          connected_by: string | null;
+          disconnected_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          barbershop_id: string;
+          receiver_scope: string;
+          professional_user_id?: string | null;
+          staff_id?: string | null;
+          status?: string;
+          connection_revision?: number;
+          collector_id?: string | null;
+          live_mode?: boolean | null;
+          access_token_ciphertext?: string | null;
+          refresh_token_ciphertext?: string | null;
+          token_expires_at?: string | null;
+          connected_at?: string | null;
+          connected_by?: string | null;
+          disconnected_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["mercado_pago_connections"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "mercado_pago_connections_barbershop_id_fkey";
+            columns: ["barbershop_id"];
+            isOneToOne: false;
+            referencedRelation: "barbershops";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      /** Privada: nonce somente como SHA-256 e PKCE cifrado até o consumo. */
+      mercado_pago_oauth_requests: {
+        Row: {
+          id: string;
+          barbershop_id: string;
+          actor_id: string;
+          connection_id: string;
+          receiver_scope: string;
+          staff_id: string | null;
+          state_hash: string;
+          environment: string;
+          verifier_ciphertext: string | null;
+          connection_revision: number;
+          created_at: string;
+          expires_at: string;
+          consumed_at: string | null;
+          finished_at: string | null;
+          revoked_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          barbershop_id: string;
+          actor_id: string;
+          connection_id: string;
+          receiver_scope: string;
+          staff_id?: string | null;
+          state_hash: string;
+          environment: string;
+          verifier_ciphertext?: string | null;
+          connection_revision: number;
+          created_at: string;
+          expires_at: string;
+          consumed_at?: string | null;
+          finished_at?: string | null;
+          revoked_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["mercado_pago_oauth_requests"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "mercado_pago_oauth_requests_barbershop_id_fkey";
+            columns: ["barbershop_id"];
+            isOneToOne: false;
+            referencedRelation: "barbershops";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       shop_weekly_break_versions: {
         Row: { barbershop_id: string; revision: number };
         Insert: { barbershop_id: string; revision?: number };
@@ -1598,6 +1696,50 @@ export type Database = {
           p_roles: Database["public"]["Enums"]["app_role"][];
         };
         Returns: boolean;
+      };
+      get_mercado_pago_connection: {
+        Args: { p_shop_id: string; p_receiver_scope?: string; p_staff_id?: string | null };
+        Returns: Json;
+      };
+      begin_mercado_pago_connection: {
+        Args: {
+          p_shop_id: string;
+          p_actor_id: string;
+          p_state_hash: string;
+          p_verifier_ciphertext: string;
+          p_expected_revision: number;
+          p_environment: string;
+          p_receiver_scope: string;
+          p_staff_id: string | null;
+          p_connection_id: string;
+        };
+        Returns: Json;
+      };
+      consume_mercado_pago_connection: {
+        Args: { p_state_hash: string; p_actor_id: string };
+        Returns: Json;
+      };
+      finish_mercado_pago_connection: {
+        Args: {
+          p_attempt_id: string;
+          p_actor_id: string;
+          p_collector_id: string;
+          p_access_token_ciphertext: string;
+          p_refresh_token_ciphertext: string;
+          p_token_expires_at: string;
+          p_live_mode: boolean;
+        };
+        Returns: Json;
+      };
+      disconnect_mercado_pago_connection: {
+        Args: {
+          p_shop_id: string;
+          p_actor_id: string;
+          p_expected_revision: number;
+          p_receiver_scope?: string;
+          p_staff_id?: string | null;
+        };
+        Returns: Json;
       };
       get_weekly_break_governance: {
         Args: { p_shop_id: string };

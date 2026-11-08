@@ -4,6 +4,8 @@ Retrato do modelo **como está hoje (12/10/2026)**, depois das ondas 1, 2, 3 e 5
 
 Situações usadas: **feito**, **feito — falta aplicar no banco**, **pendente**, **a decidir**, **não confirmado**.
 
+**P-49, atualização 07/11/2026:** `ownPayments` permite somente ao próprio `associate` abrir/conectar sua conta MP, validando usuário + loja + staff ativo no banco. `owner`/`partner` são donos societários e usam a conexão da loja, como os atendimentos de `employee`. Gerente/plataforma não recebem poder de conexão por papel global. Para loja: dono único/majoritário com poder direto; sociedade que exige aprovação fica bloqueada nesta etapa. Para Parceiro: conexão pessoal independe dos percentuais societários e não pode ser administrada por colega/dono. Nenhuma dessas permissões ativa movimentação financeira. [Contrato](../pagamentos-reembolsos-p49.md).
+
 ## Índice
 
 1. [Glossário de papéis](#1-glossário-de-papéis)

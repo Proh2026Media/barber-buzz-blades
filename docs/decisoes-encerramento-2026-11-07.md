@@ -2,6 +2,10 @@
 
 **Data:** 07/11/2026. **Origem:** o dono pediu “execute tudo, execute as melhores decisões” e autorizou preparar instruções para as etapas que dependem de outras pessoas. Este registro adota as escolhas abaixo sem repetir perguntas já delegadas. A situação de execução continua em [guia/pendencias.md](guia/pendencias.md) e as evidências de cada entrega, no [CONTINUIDADE.md](CONTINUIDADE.md).
 
+## Atualização posterior — Mercado Pago e independência do Parceiro
+
+O dono escolheu Mercado Pago e confirmou explicitamente a divisão por recebedor: Parceiro independente em conta própria; donos/sócios e Contratados pela barbearia, sem repasse ou comissão automática. Isso resolve a escolha de provedor e destinatário, sem afirmar que o módulo financeiro está pronto. Conexão preparada; implantação/homologação OAuth e integração financeira continuam na P-49. Reembolso futuro deve usar a conta do recebimento original, mesmo após mudança do profissional. [Situação e contrato](pagamentos-reembolsos-p49.md).
+
 ## 1. Comportamentos existentes mantidos
 
 Estas escolhas encerram dúvidas de produto. Não representam funcionalidades novas nem novas permissões.

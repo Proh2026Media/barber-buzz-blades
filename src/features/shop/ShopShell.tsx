@@ -38,6 +38,7 @@ import { WhatsAppChannelCard } from "@/features/shop/settings/WhatsAppChannelCar
 import { SlugRedirectsCard } from "@/features/shop/settings/SlugRedirectsCard";
 import { ShopDepartureCard } from "@/features/shop/settings/ShopDepartureCard";
 import { ShopDomainCard } from "@/features/shop/settings/ShopDomainCard";
+import { MercadoPagoConnectionCard } from "@/features/payments/MercadoPagoConnectionCard";
 import { GoogleConnectionCard } from "@/features/shop/settings/GoogleConnectionCard";
 import { SettingsHub } from "@/features/shop/settings/SettingsHub";
 import { LandingEditor } from "@/features/shop/settings/LandingEditor";
@@ -1772,6 +1773,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       ? (["pontos"] as const)
       : []),
     ...(canManageShopChannels || powers.googleOwn ? (["avisos"] as const) : []),
+    ...(powers.society || (powers.ownPayments && ownStaffRow) ? (["pagamentos"] as const) : []),
     ...(!demo && canManageShopSettings ? (["enderecos"] as const) : []),
     // Meu perfil e link: todo profissional (foto, nome, "sobre" e o link para divulgar).
     ...(powers.ownProfile && ownStaffRow ? (["perfil"] as const) : []),
@@ -2692,6 +2694,15 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                         <LoyaltySettingsSummary enabled={settings.loyalty_enabled} />
                       );
                     }
+                    if (section === "pagamentos")
+                      return (
+                        <MercadoPagoConnectionCard
+                          shopId={shop.id}
+                          userId={viewerId}
+                          receiverScope={powers.ownPayments ? "professional" : "shop"}
+                          staffId={powers.ownPayments ? (ownStaffRow?.id ?? null) : null}
+                        />
+                      );
                     if (section === "avisos") {
                       return (
                         <>

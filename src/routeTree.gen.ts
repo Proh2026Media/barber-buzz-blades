@@ -25,6 +25,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShopPontosRouteImport } from './routes/shop_.pontos'
 import { Route as BShopSlugRouteImport } from './routes/b.$shopSlug'
 import { Route as AuthRetornoRouteImport } from './routes/auth_.retorno'
+import { Route as AuthMercadoPagoRouteImport } from './routes/auth_.mercado-pago'
 import { Route as AuthGoogleAppsRouteImport } from './routes/auth_.google-apps'
 
 const TermosRoute = TermosRouteImport.update({
@@ -107,6 +108,11 @@ const AuthRetornoRoute = AuthRetornoRouteImport.update({
   path: '/auth/retorno',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthMercadoPagoRoute = AuthMercadoPagoRouteImport.update({
+  id: '/auth_/mercado-pago',
+  path: '/auth/mercado-pago',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthGoogleAppsRoute = AuthGoogleAppsRouteImport.update({
   id: '/auth_/google-apps',
   path: '/auth/google-apps',
@@ -128,6 +134,7 @@ export interface FileRoutesByFullPath {
   '/shop': typeof ShopRoute
   '/termos': typeof TermosRoute
   '/auth/google-apps': typeof AuthGoogleAppsRoute
+  '/auth/mercado-pago': typeof AuthMercadoPagoRoute
   '/auth/retorno': typeof AuthRetornoRoute
   '/b/$shopSlug': typeof BShopSlugRoute
   '/shop/pontos': typeof ShopPontosRoute
@@ -147,6 +154,7 @@ export interface FileRoutesByTo {
   '/shop': typeof ShopRoute
   '/termos': typeof TermosRoute
   '/auth/google-apps': typeof AuthGoogleAppsRoute
+  '/auth/mercado-pago': typeof AuthMercadoPagoRoute
   '/auth/retorno': typeof AuthRetornoRoute
   '/b/$shopSlug': typeof BShopSlugRoute
   '/shop/pontos': typeof ShopPontosRoute
@@ -167,6 +175,7 @@ export interface FileRoutesById {
   '/shop': typeof ShopRoute
   '/termos': typeof TermosRoute
   '/auth_/google-apps': typeof AuthGoogleAppsRoute
+  '/auth_/mercado-pago': typeof AuthMercadoPagoRoute
   '/auth_/retorno': typeof AuthRetornoRoute
   '/b/$shopSlug': typeof BShopSlugRoute
   '/shop_/pontos': typeof ShopPontosRoute
@@ -188,6 +197,7 @@ export interface FileRouteTypes {
     | '/shop'
     | '/termos'
     | '/auth/google-apps'
+    | '/auth/mercado-pago'
     | '/auth/retorno'
     | '/b/$shopSlug'
     | '/shop/pontos'
@@ -207,6 +217,7 @@ export interface FileRouteTypes {
     | '/shop'
     | '/termos'
     | '/auth/google-apps'
+    | '/auth/mercado-pago'
     | '/auth/retorno'
     | '/b/$shopSlug'
     | '/shop/pontos'
@@ -226,6 +237,7 @@ export interface FileRouteTypes {
     | '/shop'
     | '/termos'
     | '/auth_/google-apps'
+    | '/auth_/mercado-pago'
     | '/auth_/retorno'
     | '/b/$shopSlug'
     | '/shop_/pontos'
@@ -246,6 +258,7 @@ export interface RootRouteChildren {
   ShopRoute: typeof ShopRoute
   TermosRoute: typeof TermosRoute
   AuthGoogleAppsRoute: typeof AuthGoogleAppsRoute
+  AuthMercadoPagoRoute: typeof AuthMercadoPagoRoute
   AuthRetornoRoute: typeof AuthRetornoRoute
   BShopSlugRoute: typeof BShopSlugRoute
   ShopPontosRoute: typeof ShopPontosRoute
@@ -365,6 +378,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRetornoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth_/mercado-pago': {
+      id: '/auth_/mercado-pago'
+      path: '/auth/mercado-pago'
+      fullPath: '/auth/mercado-pago'
+      preLoaderRoute: typeof AuthMercadoPagoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth_/google-apps': {
       id: '/auth_/google-apps'
       path: '/auth/google-apps'
@@ -390,6 +410,7 @@ const rootRouteChildren: RootRouteChildren = {
   ShopRoute: ShopRoute,
   TermosRoute: TermosRoute,
   AuthGoogleAppsRoute: AuthGoogleAppsRoute,
+  AuthMercadoPagoRoute: AuthMercadoPagoRoute,
   AuthRetornoRoute: AuthRetornoRoute,
   BShopSlugRoute: BShopSlugRoute,
   ShopPontosRoute: ShopPontosRoute,

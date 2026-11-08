@@ -1,5 +1,53 @@
 /** Dicionário principal (fonte). Toda chave nova nasce aqui, em pt-BR. */
 export const ptBR = {
+  "settingsHub.section.pagamentos": "Pagamentos",
+  "settingsHub.hint.pagamentos": "Conexão Mercado Pago do recebedor.",
+  "mp.title": "Mercado Pago",
+  "mp.ownDescription":
+    "Seus atendimentos como Parceiro independente recebem na sua conta, sem repasse pela barbearia.",
+  "mp.description": "Recebimentos da barbearia para atendimentos dos donos e contratados.",
+  "mp.connected": "Conta conectada",
+  "mp.notConnected": "Sem conta conectada",
+  "mp.unknown": "Conexão não verificada",
+  "mp.paymentsOff": "Pagamentos desativados",
+  "mp.realAccount": "Conta real",
+  "mp.testAccount": "Conta de teste",
+  "mp.preparation":
+    "Esta etapa prepara a conexão. Cobranças e reembolsos ainda não estão disponíveis no aplicativo.",
+  "mp.demo": "A demonstração não conecta contas nem movimenta dinheiro.",
+  "mp.loading": "Verificando conexão…",
+  "mp.unavailable":
+    "Esta conexão ainda está em preparação. Verifique novamente após a configuração da integração.",
+  "mp.session": "Entre na sua conta do Barba & Cabelo para continuar.",
+  "mp.denied": "Sua conta não pode alterar esta conexão de pagamentos.",
+  "mp.sharedGovernance":
+    "A conexão de pagamentos entre sócios ainda precisa do fluxo de aprovação. Ela permanece indisponível nesta etapa.",
+  "mp.failed":
+    "Não foi possível confirmar a conexão. Verifique novamente antes de tentar outra ação.",
+  "mp.uncertain":
+    "Ainda não foi possível confirmar o resultado. Volte à barbearia e verifique a conexão antes de repetir.",
+  "mp.connect": "Conectar Mercado Pago",
+  "mp.refresh": "Verificar conexão",
+  "mp.disconnect": "Desconectar do aplicativo",
+  "mp.disconnectTitle": "Desconectar esta conta do aplicativo?",
+  "mp.disconnectBody":
+    "O Barba & Cabelo deixará de usar esta conexão. Isso não cancela pagamentos nem revoga outras autorizações no Mercado Pago.",
+  "mp.disconnected": "Conexão removida do aplicativo.",
+  "mp.complete": "Conta conectada",
+  "mp.completeBody": "A conta do recebedor foi conectada. Os pagamentos continuam desativados.",
+  "mp.cancelled": "Autorização não concluída",
+  "mp.cancelledBody": "Você pode voltar à barbearia e iniciar a conexão quando quiser.",
+  "mp.completing": "Conferindo autorização…",
+  "mp.sessionRestart":
+    "Entre novamente e recomece a conexão pela barbearia. A autorização anterior não será reutilizada.",
+  "mp.invalid": "Este acesso está incompleto. Abra a conexão pelos ajustes da barbearia.",
+  "mp.openMain": "Abrir no endereço principal",
+  "mp.signIn": "Entrar no Barba & Cabelo",
+  "mp.alreadyConnected": "Este recebedor já tem uma conta conectada.",
+  "mp.opening": "Abrindo Mercado Pago…",
+  "mp.authorize": "Continuar no Mercado Pago",
+  "mp.back": "Voltar à barbearia",
+
   "p70.approvalHint": "A pausa da loja só muda depois da aprovação dos outros donos.",
   "p70.unavailable":
     "A pausa da loja aguarda uma atualização do sistema. Suas pausas individuais continuam disponíveis.",

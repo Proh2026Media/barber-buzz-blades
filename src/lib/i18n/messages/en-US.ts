@@ -1,6 +1,54 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const enUS: Record<MessageKey, string> = {
+  "settingsHub.section.pagamentos": "Payments",
+  "settingsHub.hint.pagamentos": "The recipient’s Mercado Pago connection.",
+  "mp.title": "Mercado Pago",
+  "mp.ownDescription":
+    "Your appointments as an independent Partner are paid into your own account, without transfers through the barbershop.",
+  "mp.description": "Barbershop receipts for appointments with owners and employees.",
+  "mp.connected": "Account connected",
+  "mp.notConnected": "No account connected",
+  "mp.unknown": "Connection not checked",
+  "mp.paymentsOff": "Payments disabled",
+  "mp.realAccount": "Live account",
+  "mp.testAccount": "Test account",
+  "mp.preparation":
+    "This step prepares the connection. Charges and refunds are not yet available in the app.",
+  "mp.demo": "The demo does not connect accounts or move money.",
+  "mp.loading": "Checking connection…",
+  "mp.unavailable":
+    "This connection is still being prepared. Check again after the integration has been configured.",
+  "mp.session": "Sign in to your Barba & Cabelo account to continue.",
+  "mp.denied": "Your account cannot change this payment connection.",
+  "mp.sharedGovernance":
+    "Connecting payments for co-owners still requires an approval workflow. It remains unavailable at this stage.",
+  "mp.failed": "We could not confirm the connection. Check again before trying another action.",
+  "mp.uncertain":
+    "The result could not be confirmed yet. Return to the barbershop and check the connection before repeating the action.",
+  "mp.connect": "Connect Mercado Pago",
+  "mp.refresh": "Check connection",
+  "mp.disconnect": "Disconnect from the app",
+  "mp.disconnectTitle": "Disconnect this account from the app?",
+  "mp.disconnectBody":
+    "Barba & Cabelo will stop using this connection. This does not cancel payments or revoke other Mercado Pago authorizations.",
+  "mp.disconnected": "Connection removed from the app.",
+  "mp.complete": "Account connected",
+  "mp.completeBody": "The recipient’s account has been connected. Payments remain disabled.",
+  "mp.cancelled": "Authorization not completed",
+  "mp.cancelledBody":
+    "You can return to the barbershop and start connecting whenever you are ready.",
+  "mp.completing": "Checking authorization…",
+  "mp.sessionRestart":
+    "Sign in again and restart the connection from the barbershop. The previous authorization will not be reused.",
+  "mp.invalid": "This link is incomplete. Open the connection from the barbershop settings.",
+  "mp.openMain": "Open the main website",
+  "mp.signIn": "Sign in to Barba & Cabelo",
+  "mp.alreadyConnected": "This recipient already has an account connected.",
+  "mp.opening": "Opening Mercado Pago…",
+  "mp.authorize": "Continue to Mercado Pago",
+  "mp.back": "Back to the barbershop",
+
   "p70.approvalHint": "The shop break changes only after the other owners approve it.",
   "p70.unavailable":
     "Shop breaks require a system update. Your individual breaks remain available.",

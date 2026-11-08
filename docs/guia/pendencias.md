@@ -4,7 +4,7 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 
 **Atualização de 24/10/2026 (ChatGPT/Codex):** P-90 e P-81 feitas, e P-80 aplicada em produção pelo agente da VPS às 16:57:15 (migration nº 97; relatório de Claude entregue pelo dono); o dono confirmou que ainda não realizou os testes da P-43 no iPad e no computador.
 
-**07/11/2026 — aprovação posterior de P-49/P-70:** P-70 implementada e validada localmente, com migration nº 99 aguardando TI. P-49 em desenvolvimento parcial: cálculo, estados e demonstração; falta definir o provedor e integrar pagamentos. Acesso às contas de teste com [roteiro próprio](../pacotes/2026-11-07-ti-acesso-contas-teste.md). Esta atualização supera o adiamento anterior; não encerra homologação real. Último id continua P-114.
+**07/11/2026 — aprovação posterior de P-49/P-70:** P-70 implementada e validada localmente, com migration nº 99 aguardando TI. P-49 parcial: cálculo, estados, demonstração e conexão OAuth preparados. Mercado Pago e divisão loja/Parceiro confirmados; nº 100 e função aguardam TI. Falta integrar e homologar pagamentos reais. Acesso às contas de teste com [roteiro próprio](../pacotes/2026-11-07-ti-acesso-contas-teste.md). Esta atualização supera o adiamento anterior; não encerra homologação real. Último id continua P-114.
 
 **07/11/2026 — execução das decisões delegadas:** P-74 e P-95 implementadas e conferidas em bancada; P-14/P-24/P-30/P-36/P-76/P-77 encerradas mantendo os comportamentos existentes. [Registro das escolhas](../decisoes-encerramento-2026-11-07.md). Testes reais/físicos e revisão profissional continuam externos. Nenhuma migration nova; último id permanece P-114.
 
@@ -64,7 +64,7 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 
 **Pacote TI encerrado:** [gatilho de publicação do Flow — resultado](../pacotes/2026-10-31-ti-flow-gatilho-publicacao-p28.md#7-resultado-recebido-e-conferido). Não recadastrar credencial ou repetir disparo. Correção externa comprovada, sem alteração de configuração pelo Codex; não implica migração Drive.
 
-**P-99 concluída:** publicação na Hostinger confirmada por HTTP público em 28/10 às 18:57:47, após o espelhamento. A nº 98 também foi aplicada em 28/10 às 19:17, conforme relatório recebido em 29/10. Naquela data não havia migration pendente; agora a nº 99/P-70 aguarda aplicação.
+**P-99 concluída:** publicação na Hostinger confirmada por HTTP público em 28/10 às 18:57:47, após o espelhamento. A nº 98 também foi aplicada em 28/10 às 19:17, conforme relatório recebido em 29/10. Naquela data não havia migration pendente; agora as nº 99/P-70 e nº 100/P-49 aguardam aplicação.
 
 Atualizada em 29/10/2026: código executável de P-44, P-45, P-48 e P-75 concluído; P-78 aplicada na VPS em 28/10, 19:17 (Brasília), segundo relatório do agente Claude. Pacote: [implantacao-falha-login-google-2026-10-28.md](../implantacao-falha-login-google-2026-10-28.md). P-71 aprovada e aplicada em 29/10: “agendamento” nas telas do cliente em pt-BR. Os itens abaixo dependem de acesso externo, aparelhos ou decisão de produto.
 
@@ -74,7 +74,7 @@ Atualizada em 29/10/2026: código executável de P-44, P-45, P-48 e P-75 conclu�
 | 2     | P-39              | Revisar documentos e operação jurídica                                 | Profissional responsável: [pacote de revisão](../pacotes/2026-11-07-revisao-juridica-barba-cabelo-p39.md). TI fornece os fatos operacionais no mesmo relatório de homologação.                                                                                    |
 | 3     | P-28              | Dependência externa: TI acompanha a janela já combinada                | [Arquivo TI v3.1](../pacotes/2026-11-07-ti-flow-janela-d-v3-conferida-p28.md). Relatos: mínimo 13/11 17:30:07.445; Parte 1 17h45/A1 dada; A2/A3 e E5 próprios. Sem programação Claude ou operação Flow nesta rodada.                                              |
 | 4     | P-28              | Concluir marca/domínios; depois vídeo e reenvio Google B&C             | Depende da configuração final e do retorno operacional: [pacote de reenvio](../pacotes/2026-10-15-google-reenviar-verificacao-p28.md). Não repetir etapas concluídas.                                                                                             |
-| 5     | P-49              | Concluir integração financeira após escolha do provedor                | Dono informa o provedor; desenvolvimento segue o [contrato preparado](../pagamentos-reembolsos-p49.md). Modelo e simulador entregues, sem cobranças reais.                                                                                                        |
+| 5     | P-49              | Homologar conexão Mercado Pago e concluir integração financeira        | TI: [instalar e homologar conexão por recebedor](../pacotes/2026-11-07-ti-mercado-pago-conexao-p49.md). Desenvolvimento: livro financeiro, checkout e conciliação pelo [contrato](../pagamentos-reembolsos-p49.md). Sem cobranças reais.                          |
 
 P-74/P-95 deixam a fila de decisões: o pedido de 07/11 autorizou as melhores escolhas, incluindo a mudança específica nas janelas longas do celular. P-14 mantém preferência por conta/aparelho/domínio, sem sincronização global. A revisão jurídica e a homologação externa continuam abertas; documentação e simulação não as substituem.
 
@@ -561,7 +561,7 @@ A demonstração usa a regra de `shop_uses_staff_services`/`staff_service_terms`
 
 **Aprovação posterior do dono:** executar a P-49. Preparados modelo puro em centavos, regras conservadoras para pagamentos parciais/sem aceite/sem antecipação, estados de solicitação/recusa/processamento/incerteza e simulador na demonstração da plataforma. **23 testes do modelo e 12 composições de interface com 348 verificações**, sem transação real. [Entrega e contrato de integração](../pagamentos-reembolsos-p49.md).
 
-**Falta:** resposta sobre o provedor (pergunta já encaminhada), contrato por loja, banco/permissões, integração e conciliação do provedor, comunicação revisada, homologação financeira e ativação. P-49 não está concluída; cancelamentos existentes não cobram nem devolvem dinheiro. A [intenção original](../reembolso-futuro.md) permanece como histórico.
+**Atualização:** Mercado Pago escolhido e divisão confirmada: Parceiro (`associate`) recebe na própria conta; donos/sócios e Contratados, pela loja, sem comissão/repasse automático. Conexão OAuth por recebedor e adapter preparados; nº 100 e função aguardam TI. **Falta:** homologar OAuth, implementar livro financeiro/checkout, aprovação compartilhada da conta da loja, reembolso pela conta original, integração e conciliação, comunicação revisada, homologação financeira e ativação. P-49 não está concluída; cancelamentos existentes não cobram nem devolvem dinheiro. A [intenção original](../reembolso-futuro.md) permanece como histórico.
 
 ### P-50 — Acerto de contas com o Parceiro · decidido em 15/10/2026: fica fora do app
 

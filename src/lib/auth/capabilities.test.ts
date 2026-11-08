@@ -229,3 +229,18 @@ test("Contratado com a permissão de bloqueio própria: bloqueia a agenda e envi
   // A pasta da própria foto não depende do bloqueio: basta a regra nova existir no banco.
   assert.equal(off.ownPhoto, true);
 });
+
+test("P-49: Parceiro independente conecta a própria conta; sócio e contratado não", () => {
+  assert.equal(powersOf("associate").ownPayments, true);
+  assert.equal(powersOf("owner").ownPayments, false);
+  assert.equal(powersOf("partner").ownPayments, false);
+  assert.equal(
+    powersOf("employee", { manage_own_services: true, view_money: true }).ownPayments,
+    false,
+  );
+  assert.equal(
+    powersOf("associate", { manage_operations: false, view_money: false }).ownPayments,
+    true,
+  );
+  assert.equal(shopPowers({ kind: "legacy-admin", actor: null }, null).ownPayments, false);
+});

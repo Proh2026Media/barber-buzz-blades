@@ -22,6 +22,8 @@ export type ShopCapabilities = {
 
   /** Faz parte da sociedade: decisões entre donos, pessoas e %, clientes da loja toda. */
   society: boolean;
+  /** Conexão de recebimento própria do Parceiro independente; não concede poder financeiro. */
+  ownPayments: boolean;
   /**
    * Catálogo próprio por cima do da loja ("Meus serviços"): preço, duração e "você atende".
    * Grava só nas próprias linhas (`staff_services`), sem pedir aprovação.
@@ -120,6 +122,7 @@ export function capabilitiesFor(
     viewTeamSchedule: true,
 
     society: full,
+    ownPayments: role === "associate",
     ownCatalog: !full && editOwnCatalog,
     suggestToPeers: role === "associate" && editOwnCatalog,
     ownBlocks,
