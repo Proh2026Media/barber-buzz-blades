@@ -139,6 +139,7 @@
         "customize people"
         "modules people"
         "shortcuts people"
+        "operations operations"
         "status status";
       gap: 1rem 1.5rem;
       align-items: start;
@@ -166,6 +167,9 @@
     }
     .plat-shop-detail > .plat-shop-shortcuts {
       grid-area: shortcuts;
+    }
+    .plat-shop-detail > .plat-shop-operations {
+      grid-area: operations;
     }
     .plat-shop-detail > .plat-shop-status {
       grid-area: status;

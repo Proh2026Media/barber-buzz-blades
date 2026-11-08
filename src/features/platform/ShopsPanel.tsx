@@ -83,6 +83,7 @@ type ShopsPanelProps = {
   onTestAs: (shopId: string) => void;
   /** Muda depois de adicionar alguém: a ficha recarrega a equipe. */
   teamRevision?: number;
+  onShopUpdated?: () => void;
 };
 
 /**
@@ -114,6 +115,7 @@ export function ShopsPanel({
   onPermissions,
   onTestAs,
   teamRevision = 0,
+  onShopUpdated,
 }: ShopsPanelProps) {
   const { t, intlLocale } = useI18n();
   const wide = useViewportAtLeast(1024);
@@ -221,6 +223,7 @@ export function ShopsPanel({
       onPermissions={() => onPermissions(selected.id)}
       onTestAs={() => onTestAs(selected.id)}
       teamRevision={teamRevision}
+      onShopUpdated={onShopUpdated}
     />
   ) : null;
 
@@ -564,17 +567,19 @@ export function ShopsPanel({
         >
           {device === "celular" ? (
             <DialogContent
+              size="lg"
+              mobileSheet
               aria-describedby={undefined}
               onCloseAutoFocus={preserveTaskFocus}
-              className="plat-shop-dialog bottom-0 top-auto max-h-[92dvh] w-full max-w-lg translate-y-0 gap-0 overflow-hidden rounded-t-3xl rounded-b-none border-border bg-card p-0 data-[state=closed]:slide-out-to-bottom-4 data-[state=open]:slide-in-from-bottom-4 sm:bottom-auto sm:top-[50%] sm:translate-y-[-50%] sm:rounded-3xl"
+              className="plat-shop-dialog gap-0 overflow-hidden border-border bg-card p-0"
             >
               <DialogTitle className="flex min-h-14 items-center gap-2 border-b border-border px-5 pr-14 text-base font-bold">
                 <Store className="size-4 shrink-0 text-gold" aria-hidden />
                 <span className="truncate">{t("plat.shops.sheetTitle")}</span>
               </DialogTitle>
-              <div className="plat-shop-aside max-h-[calc(92dvh-3.5rem)] overflow-y-auto overscroll-contain p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+              <DialogBody className="plat-shop-aside mx-0 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
                 {detail}
-              </div>
+              </DialogBody>
             </DialogContent>
           ) : (
             // Tablet em pé (768–1023): janela centrada, larga, com a ficha em blocos.

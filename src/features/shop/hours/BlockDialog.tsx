@@ -509,6 +509,7 @@ export function BlockDialog({
   return (
     <Dialog open onOpenChange={(open) => !open && !saving && onClose()}>
       <DialogContent
+        mobileSheet
         className="flex max-h-[90dvh] w-[calc(100%-2rem)] flex-col overflow-hidden rounded-3xl p-0 sm:max-w-lg sm:rounded-3xl"
         onEscapeKeyDown={(event) => saving && event.preventDefault()}
         onPointerDownOutside={(event) => saving && event.preventDefault()}

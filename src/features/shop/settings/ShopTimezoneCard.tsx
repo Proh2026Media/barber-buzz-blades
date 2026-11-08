@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   CalendarCheck,
   Clock,
@@ -34,6 +34,10 @@ import { TimeZoneSelect } from "@/features/register-owner/TimeZonePicker";
 import { useTimeZoneName } from "@/features/register-owner/timezone-name";
 
 type Availability = "checking" | "ready" | "missing";
+
+export function ShopTimezoneCard(props: Parameters<typeof ShopTimezoneEditor>[0]) {
+  return <ShopTimezoneEditor key={props.shopId ?? "demo"} {...props} />;
+}
 
 /** Diferença em minutos entre os relógios de dois fusos agora (entre −12 h e +12 h). */
 function clockDiff(from: string, to: string, now: Date) {
@@ -87,17 +91,19 @@ function ClockTile({
  * Dono/sócio troca pela RPC `set_shop_timezone`; enquanto ela não existir no banco
  * (o site é publicado antes), o fuso aparece só para leitura com "disponível em breve".
  */
-export function ShopTimezoneCard({
+function ShopTimezoneEditor({
   shopId,
   timeZone,
   canEdit,
   id,
+  onUpdated,
 }: {
   shopId?: string | null;
   timeZone?: string | null;
   canEdit: boolean;
   /** id do cartão, para o resumo do topo levar até aqui. */
   id?: string;
+  onUpdated?: () => void;
 }) {
   const { t } = useI18n();
   const demo = useDemo();
@@ -113,6 +119,14 @@ export function ShopTimezoneCard({
   const [deviceTimeZone] = useState(() => detectDeviceTimeZone());
   const [editing, setEditing] = useState(false);
   const editable = canEdit && !!shopId;
+  const mounted = useRef(true);
+  const inFlight = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     const next = normalizeTimeZone(timeZone) ?? DEFAULT_SHOP_TIME_ZONE;
@@ -144,7 +158,8 @@ export function ShopTimezoneCard({
   const canChange = editable && availability === "ready";
 
   async function save() {
-    if (!shopId || busy || !changed) return;
+    if (!mounted.current || !canChange || !shopId || inFlight.current || !changed) return;
+    inFlight.current = true;
     setBusy(true);
     setStatus(null);
     // Chamada direta (não callOptionalRpc) para ler o `status` devolvido: em sociedade
@@ -170,13 +185,19 @@ export function ShopTimezoneCard({
       if (error) {
         outcome = isMissingRpcError(error, httpStatus) ? "missing" : "error";
       } else {
-        const reply =
-          data && typeof data === "object" ? (data as Record<string, unknown>).status : null;
-        outcome = reply === "pending" ? "pending" : "applied";
+        const reply = data && typeof data === "object" ? (data as Record<string, unknown>) : null;
+        if (reply?.status === "pending" || reply?.status === "applied") {
+          outcome = reply.status;
+        } else if (reply?.status === "unchanged" && reply.timezone === draft) {
+          // Outro operador já pode ter aplicado a mesma escolha enquanto o formulário estava aberto.
+          outcome = "applied";
+        }
       }
     } catch {
       outcome = "error";
     }
+    inFlight.current = false;
+    if (!mounted.current) return;
     setBusy(false);
     if (outcome === "missing") {
       setAvailability("missing");
@@ -196,6 +217,7 @@ export function ShopTimezoneCard({
     setSaved(draft);
     setStatus("saved");
     setEditing(false);
+    onUpdated?.();
   }
 
   // Na demonstração, o relógio dela (o mesmo da Agenda e da linha "Horário da barbearia").

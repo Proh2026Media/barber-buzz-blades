@@ -1,5 +1,8 @@
 /** Dicionário principal (fonte). Toda chave nova nasce aqui, em pt-BR. */
 export const ptBR = {
+  "plat.shop.configuration": "Endereços e fuso horário",
+  "plat.shop.configurationDemo": "Esses ajustes ficam disponíveis nas barbearias reais.",
+
   "common.close": "Fechar",
   "common.wait": "Aguarde…",
   "common.demo": "Demonstração",

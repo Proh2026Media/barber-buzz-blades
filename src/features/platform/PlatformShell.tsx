@@ -661,6 +661,12 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                 setTestAsShopId(shopId);
               }}
               teamRevision={teamRevision}
+              onShopUpdated={() => {
+                void loadShops("refresh").catch((error: unknown) => {
+                  setRefreshing(false);
+                  setLoadError(friendlyAuthError(error, tNow("plat.shell.loadError")));
+                });
+              }}
             />
           )}
         </div>

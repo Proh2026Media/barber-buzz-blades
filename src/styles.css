@@ -887,6 +887,35 @@ body:has(.arena-workspace) {
   min-height: 0;
   overscroll-behavior: contain;
 }
+/* P-95: tarefas longas perto do polegar, mantendo o mesmo conteúdo e os três modos de canto. */
+@media (max-width: 767.98px) {
+  [role="dialog"][data-mobile-sheet="true"] {
+    top: auto;
+    right: max(0.5rem, env(safe-area-inset-right));
+    bottom: calc(var(--dialog-keyboard-inset, 0px) + max(0.5rem, env(safe-area-inset-bottom)));
+    left: max(0.5rem, env(safe-area-inset-left));
+    width: auto;
+    max-width: none;
+    max-height: calc(
+      var(--dialog-viewport-height, 100dvh) - max(1rem, env(safe-area-inset-top)) -
+        max(0.5rem, env(safe-area-inset-bottom))
+    );
+    min-height: 0;
+    margin: 0;
+    translate: none;
+    transform: none;
+    --tw-translate-x: 0;
+    --tw-translate-y: 0;
+    animation: none;
+    transition-property: color, background-color, border-color, box-shadow;
+  }
+  [data-mobile-sheet="true"] > :not(.dialog-scroll-area):not(form) {
+    flex-shrink: 0;
+  }
+  [data-mobile-sheet="true"] .dialog-scroll-area {
+    scroll-padding-block: 0.75rem;
+  }
+}
 .arena-workspace > main.max-w-xl {
   padding-inline: max(1rem, calc((100% - 34rem) / 2));
 }

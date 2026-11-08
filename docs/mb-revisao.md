@@ -1,6 +1,15 @@
 # Revisão MB — Barba & Cabelo
 
-Atualizado em **07/11/2026** (P-114; entradas anteriores preservadas como histórico). Fonte: [mb-interface.md](mb-interface.md). Regra: `.cursor/rules/mb.mdc`. Skill: `.cursor/skills/mb/`.
+Atualizado em **07/11/2026** (P-74/P-95; entradas anteriores preservadas como histórico). Fonte: [mb-interface.md](mb-interface.md). Regra: `.cursor/rules/mb.mdc`. Skill: `.cursor/skills/mb/`.
+
+## P-74/P-95 — Gestão da loja e tarefas longas no celular (07/11/2026)
+
+- **Administração:** domínio, links antigos e fuso reunidos na ficha da loja, em seção recolhível com escolhas visuais. Carrega ao abrir e mantém rascunhos entre assuntos. Gestão compartilhada com o dono; demo sem chamadas reais.
+- **Celular:** folha inferior na primitiva comum para tarefas longas, com altura ajustada ao teclado, áreas seguras, rolagem do corpo e foco preservado. Ficha administrativa corrigida nas laterais e no título fixo. Confirmações curtas continuam centradas.
+- **Identidade:** mesmas cores, tipografia, superfícies e modos de canto. Tablet/PC conservaram as 18 capturas da bancada da primitiva pixel a pixel. A mudança das janelas móveis foi autorizada pelo pedido de execução de 07/11.
+- **Conferência:** 42/42 cenários da primitiva; P-74 com 20/20 funcionais e quatro tamanhos da ficha completa; 33 aberturas e 87 visitas internas da demonstração/entradas públicas, sem erros ou rolagem lateral. Quatro formulários com 16 aberturas/foco/Escape e oito salvamentos/reaberturas fictícios.
+- **Verificação final:** 312/312 testes, tipos, lint, formatação e montagem aprovados.
+- **Limites:** P-40 a P-43 exigem homologação real e aparelhos; roteiro único preparado. Não representa execução de integrações ou aprovação estética do dono.
 
 ## P-114 — Privacidade, dados e confirmações por conta (07/11/2026)
 

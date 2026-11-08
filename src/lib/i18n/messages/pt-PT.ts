@@ -1,6 +1,9 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const ptPT: Record<MessageKey, string> = {
+  "plat.shop.configuration": "Endereços e fuso horário",
+  "plat.shop.configurationDemo": "Estes ajustes estão disponíveis nas barbearias reais.",
+
   "common.close": "Fechar",
   "common.wait": "Aguarde…",
   "common.demo": "Demonstração",

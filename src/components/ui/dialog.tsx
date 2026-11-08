@@ -13,6 +13,57 @@ function CloseLabel() {
   return <span className="sr-only">{t("common.close")}</span>;
 }
 
+/** Montado junto ao conteúdo: acompanha o teclado sem deixar observadores na janela fechada. */
+function MobileSheetViewport() {
+  const marker = React.useRef<HTMLSpanElement>(null);
+  React.useEffect(() => {
+    const surface = marker.current?.parentElement;
+    const viewport = window.visualViewport;
+    if (!surface || !viewport) return;
+    let frame = 0;
+    const clear = () => {
+      surface.style.removeProperty("--dialog-viewport-height");
+      surface.style.removeProperty("--dialog-keyboard-inset");
+    };
+    const update = () => {
+      // O zoom continua sendo controlado pelo navegador, sem encolher a folha novamente.
+      if (window.innerWidth >= 768 || viewport.scale !== 1) {
+        clear();
+        return;
+      }
+      surface.style.setProperty("--dialog-viewport-height", `${viewport.height}px`);
+      surface.style.setProperty(
+        "--dialog-keyboard-inset",
+        `${Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)}px`,
+      );
+      const focused = document.activeElement;
+      if (!(focused instanceof HTMLElement) || !surface.contains(focused)) return;
+      const scroller = focused.closest<HTMLElement>(".dialog-scroll-area");
+      if (!scroller) return;
+      const field = focused.getBoundingClientRect();
+      const area = scroller.getBoundingClientRect();
+      if (field.bottom > area.bottom) scroller.scrollTop += field.bottom - area.bottom + 12;
+      else if (field.top < area.top) scroller.scrollTop -= area.top - field.top + 12;
+    };
+    const schedule = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(update);
+    };
+    update();
+    viewport.addEventListener("resize", schedule);
+    viewport.addEventListener("scroll", schedule);
+    window.addEventListener("resize", schedule);
+    return () => {
+      cancelAnimationFrame(frame);
+      viewport.removeEventListener("resize", schedule);
+      viewport.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      clear();
+    };
+  }, []);
+  return <span ref={marker} hidden aria-hidden="true" />;
+}
+
 const Dialog = DialogPrimitive.Root;
 
 const DialogTrigger = DialogPrimitive.Trigger;
@@ -40,7 +91,7 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
  * Tamanho da janela (docs/dispositivos-2026-10-21.md, seção 4). O padrão `md` é exatamente o
  * comportamento anterior, para as telas que já passam `className` continuarem iguais.
  * A partir de 768 px: sm 28rem, md 32rem, lg 44rem, xl 60rem e page (quase tela cheia).
- * Abaixo de 768 px, lg/xl/page têm a largura de md. Em lg/xl/page a caixa não rola: é uma grade
+ * Abaixo de 768 px, lg/xl/booking/page abrem como folha inferior. Em lg/xl/page a caixa não rola: é uma grade
  * cabeçalho | corpo | rodapé e quem rola é o `DialogBody`.
  */
 type DialogSize = "sm" | "md" | "lg" | "xl" | "booking" | "page";
@@ -65,6 +116,8 @@ const DIALOG_SIZE_CLASS: Record<DialogSize, string> = {
 type DialogContentProps = React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
   size?: DialogSize;
   desktopSide?: boolean;
+  /** Folha inferior no celular. Padrão nos tamanhos longos; md/sm exigem escolha explícita. */
+  mobileSheet?: boolean;
 };
 
 /**
@@ -96,6 +149,7 @@ const DialogContent = React.forwardRef<
       children,
       size = "md",
       desktopSide = false,
+      mobileSheet = size !== "sm" && size !== "md",
       onOpenAutoFocus,
       onCloseAutoFocus,
       ...props
@@ -110,11 +164,13 @@ const DialogContent = React.forwardRef<
           ref={ref}
           data-size={size}
           data-desktop-side={desktopSide || undefined}
+          data-mobile-sheet={mobileSheet || undefined}
           className={cn(DIALOG_BOX_BASE, DIALOG_SIZE_CLASS[size], className)}
           {...props}
           {...focus}
         >
           {children}
+          {mobileSheet && <MobileSheetViewport />}
           <DialogPrimitive.Close className="absolute right-1.5 top-1.5 z-20 inline-flex size-11 items-center justify-center rounded-[var(--button-radius)] bg-card/90 text-muted-foreground backdrop-blur-sm ring-offset-background cursor-pointer transition-colors hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
             <X className="h-4 w-4" />
             <CloseLabel />

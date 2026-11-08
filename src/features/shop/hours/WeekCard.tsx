@@ -591,7 +591,10 @@ function DayHoursDialog({
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="flex max-h-[88dvh] w-[calc(100%-2rem)] flex-col overflow-hidden rounded-3xl p-0 sm:max-w-md sm:rounded-3xl">
+      <DialogContent
+        mobileSheet
+        className="flex max-h-[88dvh] w-[calc(100%-2rem)] flex-col overflow-hidden rounded-3xl p-0 sm:max-w-md sm:rounded-3xl"
+      >
         <div className="flex items-center gap-3 border-b border-border px-5 pb-3 pr-14 pt-5">
           {heading}
         </div>

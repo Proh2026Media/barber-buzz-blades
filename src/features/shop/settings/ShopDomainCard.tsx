@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import {
   CheckCircle2,
   Globe2,
@@ -154,6 +154,7 @@ function domainErrorText(err: unknown, fallback: string) {
 
 type ShopDomainCardProps = {
   shopId: string;
+  onUpdated?: () => void;
 };
 
 type Result = { state: ActionState; text: string };
@@ -161,7 +162,11 @@ type Result = { state: ActionState; text: string };
 type VerifyResult = { tone: "success" | "pending" | "danger"; text: string; missing?: boolean };
 type RecordCheck = { cname?: boolean; txt?: boolean };
 
-export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
+export function ShopDomainCard(props: ShopDomainCardProps) {
+  return <ShopDomainEditor key={props.shopId} {...props} />;
+}
+
+function ShopDomainEditor({ shopId, onUpdated }: ShopDomainCardProps) {
   const { t } = useI18n();
   const inputId = useId();
   const [settings, setSettings] = useState<DomainSettings | null>(null);
@@ -174,21 +179,34 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
   const [verifyResult, setVerifyResult] = useState<VerifyResult | null>(null);
   const [checks, setChecks] = useState<RecordCheck>({});
   const [removeOpen, setRemoveOpen] = useState(false);
+  const mounted = useRef(true);
+  const inFlight = useRef(false);
+  const readVersion = useRef(0);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   const load = useCallback(
     async (quiet = false) => {
+      if (!mounted.current) return;
+      const request = ++readVersion.current;
       if (!quiet) setLoadState("loading");
-      const { data, error: rpcError } = await supabase.rpc("get_shop_domain_settings", {
-        p_shop_id: shopId,
-      });
-      if (rpcError || !data) {
-        if (!quiet) setLoadState("error");
-        return;
+      try {
+        const { data, error: rpcError } = await supabase.rpc("get_shop_domain_settings", {
+          p_shop_id: shopId,
+        });
+        if (!mounted.current || request !== readVersion.current) return;
+        if (rpcError || !data) throw rpcError ?? new Error("Domínio indisponível");
+        const row = data as DomainSettings;
+        setSettings(row);
+        setDomainInput(row.custom_domain ?? "");
+        setLoadState("ready");
+      } catch {
+        if (mounted.current && request === readVersion.current && !quiet) setLoadState("error");
       }
-      const row = data as DomainSettings;
-      setSettings(row);
-      setDomainInput(row.custom_domain ?? "");
-      setLoadState("ready");
     },
     [shopId],
   );
@@ -200,7 +218,7 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
   async function callShopDomain(body: Record<string, string>) {
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData.session?.access_token;
-    if (!token) throw new Error(t("integr.err.session"));
+    if (!token || !mounted.current) throw new Error(t("integr.err.session"));
     const base = import.meta.env.VITE_SUPABASE_URL || "";
     const response = await guardedFetch(`${base}/functions/v1/shop-domain`, {
       method: "POST",
@@ -242,7 +260,8 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
 
   async function saveDomain(event: React.FormEvent) {
     event.preventDefault();
-    if (busy) return;
+    if (!mounted.current || inFlight.current) return;
+    inFlight.current = true;
     setAction("save");
     setSaveResult(null);
     setVerifyResult(null);
@@ -253,8 +272,11 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
         barbershop_id: shopId,
         domain: domainInput.trim(),
       });
+      if (!mounted.current) return;
       if (payload.settings) setSettings(payload.settings);
       else await load(true);
+      if (!mounted.current) return;
+      onUpdated?.();
       setSaveResult({
         state: payload.warning ? "pending" : "saved",
         text: payload.warning
@@ -264,25 +286,32 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
           : t("domainCard.saved"),
       });
     } catch (err) {
-      setSaveResult({ state: "error", text: domainErrorText(err, t("integr.domain.errSave")) });
+      if (mounted.current)
+        setSaveResult({ state: "error", text: domainErrorText(err, t("integr.domain.errSave")) });
     } finally {
-      setAction(null);
+      inFlight.current = false;
+      if (mounted.current) setAction(null);
     }
   }
 
   /** Remove o domínio próprio; erro sobe para a janela de confirmação mostrar. */
   async function clearDomain() {
+    if (!mounted.current || inFlight.current) return;
+    inFlight.current = true;
     setAction("clear");
     try {
       const payload = await callShopDomain({
         action: "clear",
         barbershop_id: shopId,
       });
+      if (!mounted.current) return;
       if (payload.settings) setSettings(payload.settings);
       else await load(true);
+      if (!mounted.current) return;
       setDomainInput("");
       setVerifyResult(null);
       setChecks({});
+      onUpdated?.();
       setSaveResult({
         state: payload.warning ? "pending" : "saved",
         text: payload.warning
@@ -292,12 +321,14 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
           : t("integr.domain.removed"),
       });
     } finally {
-      setAction(null);
+      inFlight.current = false;
+      if (mounted.current) setAction(null);
     }
   }
 
   async function verifyDomain() {
-    if (busy) return;
+    if (!mounted.current || inFlight.current) return;
+    inFlight.current = true;
     setAction("verify");
     setVerifyResult(null);
     try {
@@ -305,8 +336,11 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
         action: "verify",
         barbershop_id: shopId,
       });
+      if (!mounted.current) return;
       if (payload.settings) setSettings(payload.settings);
       else await load(true);
+      if (!mounted.current) return;
+      onUpdated?.();
       setChecks({ cname: true, txt: true });
       setVerifyResult(
         payload.ok
@@ -326,6 +360,7 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
             },
       );
     } catch (err) {
+      if (!mounted.current) return;
       const payload = err instanceof DomainMessageError ? err.payload : undefined;
       const code = readErrorCode(payload);
       const dnsPending = code === "domain_txt_missing" || code === "domain_dns_pending";
@@ -352,7 +387,8 @@ export function ShopDomainCard({ shopId }: ShopDomainCardProps) {
       // Recarrega o estado sem apagar o resultado da conferência.
       await load(true);
     } finally {
-      setAction(null);
+      inFlight.current = false;
+      if (mounted.current) setAction(null);
     }
   }
 

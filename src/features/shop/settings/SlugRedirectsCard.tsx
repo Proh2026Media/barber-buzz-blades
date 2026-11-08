@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowRight, History, Link2, Lock, RefreshCw, Trash2, XCircle } from "lucide-react";
 import {
   ConfirmDialog,
@@ -35,7 +35,11 @@ type SlugRedirectsCardProps = {
   canManageShopRedirects?: boolean;
 };
 
-export function SlugRedirectsCard({
+export function SlugRedirectsCard(props: SlugRedirectsCardProps) {
+  return <SlugRedirectsEditor key={props.shopId} {...props} />;
+}
+
+function SlugRedirectsEditor({
   shopId,
   currentShopSlug,
   canManageShopRedirects = true,
@@ -44,6 +48,15 @@ export function SlugRedirectsCard({
   const [shopRedirects, setShopRedirects] = useState<ShopRedirect[]>([]);
   const [staffRedirects, setStaffRedirects] = useState<StaffRedirect[]>([]);
   const [busy, setBusy] = useState(false);
+  const mounted = useRef(true);
+  const inFlight = useRef(false);
+  const readVersion = useRef(0);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const [error, setError] = useState<string | null>(null);
   // A lista (ou o "nenhum link antigo") só aparece depois de ler tudo sem erro; na falha
   // fica só o aviso com "Tentar de novo", sem um falso vazio logo abaixo.
@@ -57,21 +70,26 @@ export function SlugRedirectsCard({
   /** `quiet`: recarga depois de apagar, sem trocar a lista pelo esqueleto. */
   const load = useCallback(
     async (quiet = false) => {
+      if (!mounted.current) return;
+      const request = ++readVersion.current;
       setError(null);
       if (!quiet) setLoadState("loading");
-      const [shopResult, staffResult] = await Promise.all([
-        supabase.rpc("list_shop_slug_redirects", { p_shop_id: shopId }),
-        supabase.rpc("list_staff_slug_redirects", { p_shop_id: shopId }),
-      ]);
-      const failure = shopResult.error ?? staffResult.error;
-      if (failure) {
+      try {
+        const [shopResult, staffResult] = await Promise.all([
+          supabase.rpc("list_shop_slug_redirects", { p_shop_id: shopId }),
+          supabase.rpc("list_staff_slug_redirects", { p_shop_id: shopId }),
+        ]);
+        if (!mounted.current || request !== readVersion.current) return;
+        const failure = shopResult.error ?? staffResult.error;
+        if (failure) throw failure;
+        setShopRedirects((shopResult.data as ShopRedirect[]) ?? []);
+        setStaffRedirects((staffResult.data as StaffRedirect[]) ?? []);
+        setLoadState("ready");
+      } catch (failure) {
+        if (!mounted.current || request !== readVersion.current) return;
         setError(friendlyAuthError(failure));
         setLoadState("error");
-        return;
       }
-      setShopRedirects((shopResult.data as ShopRedirect[]) ?? []);
-      setStaffRedirects((staffResult.data as StaffRedirect[]) ?? []);
-      setLoadState("ready");
     },
     [shopId],
   );
@@ -82,6 +100,8 @@ export function SlugRedirectsCard({
 
   /** Apaga e recarrega; a falha sobe para a janela de confirmação mostrar o motivo. */
   async function removeShopRedirect(id: string) {
+    if (!mounted.current || !canManageShopRedirects || inFlight.current) return;
+    inFlight.current = true;
     setBusy(true);
     try {
       const { error: rpcError } = await supabase.rpc("delete_shop_slug_redirect", {
@@ -90,11 +110,14 @@ export function SlugRedirectsCard({
       if (rpcError) throw rpcError;
       await load(true);
     } finally {
-      setBusy(false);
+      inFlight.current = false;
+      if (mounted.current) setBusy(false);
     }
   }
 
   async function removeStaffRedirect(id: string) {
+    if (!mounted.current || !canManageShopRedirects || inFlight.current) return;
+    inFlight.current = true;
     setBusy(true);
     try {
       const { error: rpcError } = await supabase.rpc("delete_staff_slug_redirect", {
@@ -103,7 +126,8 @@ export function SlugRedirectsCard({
       if (rpcError) throw rpcError;
       await load(true);
     } finally {
-      setBusy(false);
+      inFlight.current = false;
+      if (mounted.current) setBusy(false);
     }
   }
 

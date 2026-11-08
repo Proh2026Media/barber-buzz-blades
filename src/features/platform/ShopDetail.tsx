@@ -38,6 +38,7 @@ import { AccountManagersPanel } from "./AccountManagersPanel";
 import { ShopTeamList } from "./ShopTeamList";
 import { DEFAULT_TIMEZONE, SHOP_STATUS, friendlyTimeZone, type ShopCounts } from "./shopStats";
 import { ShopLogo, type ShopLogoInfo } from "./ShopLogo";
+import { PlatformShopSettings } from "./PlatformShopSettings";
 
 export type ShopModule = "sports" | "loyalty";
 
@@ -60,6 +61,7 @@ type ShopDetailProps = {
   onTestAs: () => void;
   /** Muda depois de adicionar alguém: recarrega a equipe. */
   teamRevision?: number;
+  onShopUpdated?: () => void;
 };
 
 const SECONDARY =
@@ -85,6 +87,7 @@ export function ShopDetail({
   onPermissions,
   onTestAs,
   teamRevision = 0,
+  onShopUpdated,
 }: ShopDetailProps) {
   const { t, intlLocale } = useI18n();
   const sportsId = useId();
@@ -278,6 +281,13 @@ export function ShopDetail({
           onClick={onTestAs}
         />
       </section>
+
+      <PlatformShopSettings
+        key={shop.id}
+        shop={shop}
+        demoMode={demoMode}
+        onUpdated={onShopUpdated}
+      />
 
       <div className="plat-shop-status border-t border-border pt-4">
         <button
