@@ -1,6 +1,15 @@
 # Revisão MB — Barba & Cabelo
 
-Atualizado em **07/11/2026** (P-74/P-95; entradas anteriores preservadas como histórico). Fonte: [mb-interface.md](mb-interface.md). Regra: `.cursor/rules/mb.mdc`. Skill: `.cursor/skills/mb/`.
+Atualizado em **07/11/2026** (P-49/P-70; entradas anteriores preservadas como histórico). Fonte: [mb-interface.md](mb-interface.md). Regra: `.cursor/rules/mb.mdc`. Skill: `.cursor/skills/mb/`.
+
+## P-49/P-70 — Simulação financeira e pausa com aprovação (07/11/2026)
+
+- **P-70:** pausa semanal da loja usa a fila existente com resumo visual dos dias/horários, criação/remoção pendente e resultado da decisão. Rascunho preservado em falhas, repetição bloqueada e mudança de conta/loja isolada. Pausa própria preservada; permissões conferidas no servidor. Banco nº 99 ainda depende da TI.
+- **P-49:** simulador no Início da demonstração da plataforma, com escolhas visuais, valores fictícios, comparação pago/retido/devolução prevista e solicitação de complemento. Aviso explícito de simulação; nenhum pagamento real. Título corrigido para não colidir com o botão de fechar em 320 px.
+- **Identidade:** componentes comuns, cores e superfícies existentes, três modos de canto e quatro idiomas próprios (en-GB herda en-US). Sem mudar o cancelamento atual.
+- **Conferência:** P-70 com 21/21 cenários de interface, capturas inspecionadas em 320/834/1280. P-49 com 12/12 composições 320/390/834/1280 × três cantos, 348 verificações e mais sete revalidações do título. Sem erros de console, texto bruto de tradução ou rolagem lateral na bancada; teclado/foco/Escape conferidos.
+- **Verificação final:** 337/337 testes, tipos, lint, formatação e montagem aprovados.
+- **Limites:** Chromium com dados fictícios não substitui Safari, teclado virtual, PWA, aparelho físico ou integrações reais. P-49 parcial e sem provedor escolhido; homologação externa continua.
 
 ## P-74/P-95 — Gestão da loja e tarefas longas no celular (07/11/2026)
 

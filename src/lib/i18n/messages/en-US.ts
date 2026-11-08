@@ -1,6 +1,61 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const enUS: Record<MessageKey, string> = {
+  "p70.approvalHint": "The shop break changes only after the other owners approve it.",
+  "p70.unavailable":
+    "Shop breaks require a system update. Your individual breaks remain available.",
+  "p70.requestCreate": "Request break",
+  "p70.requestDelete": "Request removal",
+  "p70.pendingCreate": "Break requested",
+  "p70.pendingDelete": "Removal requested",
+  "p70.pendingHint": "Awaiting approval. The schedule remains unchanged.",
+  "p70.viewApprovals": "View decisions",
+  "p70.conflict":
+    "The shop has changed since this request. Review the current details and submit a new request.",
+  "p70.operationChanged":
+    "This submission already contains different details. Review the break and submit it again.",
+  "p70.closed":
+    "This request has already been closed. Review the decisions before making another request.",
+  "p70.choosePerson": "Choose a professional for this break.",
+  "p70.kindCreate": "Create recurring shop break",
+  "p70.kindDelete": "Remove recurring shop break",
+  "p70.alreadyExists": "This break is already saved.",
+  "p70.governanceLoadError": "Could not check break approvals. Please try again.",
+  "p49.open": "Simulate cancellation and refund",
+  "p49.title": "Cancellation and refund",
+  "p49.simulation":
+    "Simulation with fictional amounts. It does not charge, cancel bookings or move money.",
+  "p49.price": "Agreed price (R$)",
+  "p49.receivedInput": "Amount paid in the example (R$)",
+  "p49.when": "When was it cancelled?",
+  "p49.fourHours": "4 hours before",
+  "p49.threeHours": "Exactly 3 hours before",
+  "p49.twoHours": "2 hours before",
+  "p49.started": "After the start",
+  "p49.reason": "Stated reason",
+  "p49.forgot": "Forgot",
+  "p49.other": "Another reason",
+  "p49.unspecified": "Not stated",
+  "p49.actor": "Who cancelled?",
+  "p49.customer": "Customer",
+  "p49.shop": "Barbershop",
+  "p49.accepted": "Policy accepted when booking?",
+  "p49.received": "Paid in the example",
+  "p49.retention": "Expected withholding",
+  "p49.refund": "Expected refund",
+  "p49.withRetention":
+    "Withholding calculated using the 30% rule. The customer can request a review for the remainder.",
+  "p49.withoutRetention":
+    "No automatic withholding in this scenario. Only the paid amount can be refunded; no debt is created.",
+  "p49.requestFull": "Simulate a request for the remainder",
+  "p49.requested": "Simulated request: awaiting review",
+  "p49.requestedHint":
+    "Requesting a full refund does not confirm it. Review and confirmation of the transfer are still required.",
+  "p49.invalid":
+    "Enter valid amounts in reais with up to two decimal places. The price must be greater than zero.",
+  "p49.yes": "Yes",
+  "p49.no": "No",
+
   "plat.shop.configuration": "Addresses and time zone",
   "plat.shop.configurationDemo": "These settings are available for real shops.",
 

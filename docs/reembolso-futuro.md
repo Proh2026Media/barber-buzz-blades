@@ -1,34 +1,38 @@
-# Módulo de reembolso e cancelamento — ideia registrada
+# Módulo de reembolso e cancelamento — proposta e desenvolvimento
 
-**Status:** proposta preliminar para evolução futura, registrada em 16/09/2026. Nenhuma cobrança, retenção ou devolução foi implementada nesta etapa.
+**Status em 07/11/2026:** desenvolvimento aprovado pelo dono, com preparação **parcial** implementada: modelo de cálculo/estados, testes e simulador local da demonstração. **P-49 não está concluída** e nenhuma cobrança, retenção ou devolução real está ativada. A pergunta sobre o provedor foi encaminhada e continua sem resposta; integração e homologação financeira permanecem pendentes. Contrato e evidências em [pagamentos-reembolsos-p49.md](pagamentos-reembolsos-p49.md).
 
-## Regras solicitadas
+A proposta original foi registrada em 16/09/2026. As decisões abaixo, adotadas em 07/11 pela delegação do dono, resolvem as lacunas de cálculo para desenvolver o módulo sem presumir pagamento ou criar dívida.
 
-| Situação | Regra pretendida |
-| --- | --- |
-| Cancelamento por esquecimento com pelo menos 3 horas de antecedência | Gratuito; reembolso integral do que tiver sido pago. |
-| Cancelamento por esquecimento com menos de 3 horas de antecedência | Retenção/taxa de 30%; devolução dos 70% restantes quando houver pagamento integral antecipado. |
-| Cancelamento por outros motivos | Reembolso integral do que tiver sido pago. |
-| Cliente deseja reembolso integral mesmo após retenção dos 30% | Oferecer **Solicitar reembolso integral**; o barbeiro analisa a solicitação e efetua a devolução do valor restante. |
+## Regras adotadas para desenvolvimento
 
-O limite de 3 horas refere-se ao início do atendimento acordado. Exemplo: atendimento às 15h permite cancelamento gratuito por esquecimento até 12h, inclusive. Depois de 12h, aplica-se a regra dos 30% para esse motivo.
+| Situação                                                                                                                | Regra pretendida                                                                                                                                       |
+| ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Cancelamento por esquecimento com pelo menos 3 horas de antecedência                                                    | Sem retenção; devolução integral do pagamento comprovado.                                                                                              |
+| Cliente informa esquecimento, antes do início e com menos de 3 horas, com pagamento integral comprovado e aceite prévio | Reter 30% do total integral recebido, arredondados para baixo em centavos; devolver a diferença.                                                       |
+| Sinal/pagamento parcial, ausência de aceite ou recebimento diferente do total acordado                                  | Devolver integralmente o recebido comprovado, sem taxa automática.                                                                                     |
+| Sem pagamento antecipado                                                                                                | Zero a reter e a devolver; não criar dívida.                                                                                                           |
+| Cancelamento pela loja, outro motivo, motivo ausente, falta ou parada da série                                          | Não inferir esquecimento; sem retenção automática.                                                                                                     |
+| Cancelamento no início ou depois dele                                                                                   | Sem taxa automática; preservar as permissões atuais de cancelamento do atendimento.                                                                    |
+| Cliente deseja o complemento da parcela retida                                                                          | Oferecer **Solicitar reembolso integral**, com análise e decisão da pessoa autorizada. Solicitação, aprovação e processamento não comprovam devolução. |
+
+O limite de 3 horas refere-se ao início do atendimento acordado. Exemplo: atendimento às 15h permite cancelamento sem retenção por esquecimento até 12h, inclusive. Entre 12h e o início, a regra dos 30% só se aplica quando todas as condições da tabela forem atendidas. A comparação será feita no servidor, sem depender do relógio do aparelho.
 
 ## Experiência desejada
 
 - Módulo próprio, com política explicada antes da confirmação do agendamento e no cancelamento; seguir `/mb` para controles intuitivos e leitura clara.
 - Apresentar motivo, valor pago, eventual retenção e valor a devolver antes de concluir o cancelamento.
-- Usar seleção simples de motivos. Adicionar **Esquecimento** como motivo explícito quando o módulo for desenvolvido; não inferir esse motivo a partir de ausência de resposta, falta ou outros dados.
+- Usar seleção simples de motivos. **Esquecimento** já pode ser ensaiado no simulador; só entrará no cancelamento de produção com a integração e a política aplicáveis. Não inferir esse motivo a partir de ausência de resposta, falta ou outros dados.
 - Permitir ao cliente acompanhar a solicitação de reembolso integral e ao barbeiro consultar e efetuar o complemento, com histórico de valores e ações.
 - Distinguir solicitação, processamento e devolução efetivamente confirmada. Um clique não deve indicar que o dinheiro já foi devolvido.
 
-## Pontos a definir antes da implementação
+## Pontos ainda necessários para a integração real
 
-- Meio de pagamento e integração para receber, reter e devolver valores. Hoje o sistema registra preços e agendamentos, mas não comprova pagamentos.
-- Base dos 30% em caso de sinal ou pagamento parcial: valor total do serviço ou valor já pago. Não assumir essa decisão a partir do exemplo de pagamento integral.
-- Tratamento de reservas sem pagamento antecipado: a intenção menciona valor “retido/pago”, mas a forma de cobrar eventual taxa ainda não foi definida.
-- Quem ativa/configura o módulo, quais parâmetros poderão variar por barbearia e a política aplicável a reservas criadas antes da ativação.
-- Motivo não informado, falta sem cancelamento e cancelamento após o início do atendimento. Essas situações não foram equiparadas a esquecimento.
-- Critérios e prazo para o barbeiro atender a solicitação de devolução complementar, além do prazo de processamento do provedor.
+- Escolha do provedor e contrato para receber, reter e devolver valores. A pergunta já foi encaminhada ao dono e não foi respondida. Hoje o aplicativo de produção registra preços e agendamentos, mas não comprova pagamentos.
+- Quem ativa/configura o módulo, quais parâmetros poderão variar por barbearia e a permissão para aprovar o complemento. A decisão atual é não aplicar política retroativa aos agendamentos existentes.
+- Tratamento da remarcação com mudança de serviço, preço ou política, preservando a versão apresentada e exigindo novo aceite quando necessário.
+- Critérios e prazo para análise da solicitação complementar, além do prazo de processamento do provedor.
+- Revisão da comunicação aplicável, implementação no servidor e homologação com eventos repetidos, falhas e conciliação. Os detalhes técnicos estão no [contrato da P-49](pagamentos-reembolsos-p49.md).
 
 ## Cuidados para a futura implementação
 

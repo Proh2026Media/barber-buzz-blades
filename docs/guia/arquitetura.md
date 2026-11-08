@@ -310,9 +310,12 @@ Três faixas, com os mesmos números no CSS e no JavaScript (decisões em [dispo
 - Exceção: com `?shop=<id>` ("Testar como…" da ficha da loja), o `DemoWorkspace` lê loja, ajustes, serviços, equipe e horários reais **antes** de armar a trava.
 - Fotos da demo sem login real: `node scripts/foto.mjs "/demo?view=owner"` ([scripts/README.md](../../scripts/README.md)).
 
+- **P-49 (07/11):** `RefundPolicySimulator` aparece somente no Início da demonstração da plataforma. Usa `refund-policy.ts`, funções puras em centavos sem rede/persistência. Simula cancelamento/complemento sem cancelar agendamentos ou movimentar dinheiro; [contrato e pendências](../pagamentos-reembolsos-p49.md).
+
 ## 11. Uso do Supabase
 
 - **RPC é o caminho principal**: o front chama ~84 funções distintas (`supabase.rpc("…")`), ex.: `get_available_slots`, `create_direct_appointment`, `request_shop_change`, `get_team_schedule`, `resolve_shop_by_host`. Mudanças protegidas do painel vão por `request_shop_change` (aplica ou pede aprovação dos donos).
+- **P-70 (07/11, depende da nº 99):** `WeeklyBreaksCard` consulta `get_weekly_break_governance` e solicita criação/remoção da pausa da loja por `request_weekly_break_change`, integradas aos tipos `weekly_break.create/delete` da fila existente. Identificador da operação, versão por loja e revisão no servidor evitam repetição/aprovação sobre estado alterado; alterações de sociedade, matriz, fuso ou pausas invalidam a versão. Mudança de vínculo entre lojas invalida ambas. RPC ausente não libera escrita direta da pausa da loja; pausa individual mantém seu contrato. Rascunhos e respostas pertencem à conta/loja da ação, com recuperação em falha e aviso de solicitação pendente.
 - **Tabelas direto** (`.from("…")`, sob RLS): 22 tabelas; as mais usadas são `barbershop_settings`, `staff`, `profiles`, `services`, `barbershops`, `availability_blocks`, `staff_services`, `appointments`, `shop_members`.
 - **RPC que pode não existir ainda**: [optional-rpc.ts](../../src/lib/auth/optional-rpc.ts) (`callOptionalRpc`) — o site às vezes vai ao ar antes da migration; a chamada falha em silêncio.
 - **Arquivos (Storage)**: buckets `barbershop-logos` e `barbershop-fonts` ([branding-persist.ts](../../src/lib/shop/branding-persist.ts)) e `barbershop-services` (fotos de serviço e de profissional, [service-image.ts](../../src/lib/shop/service-image.ts)).

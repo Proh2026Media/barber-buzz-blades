@@ -80,3 +80,30 @@ test("ajustes mostram só os campos diferentes do atual", () => {
     ["horizon"],
   );
 });
+
+test("pausa da loja mostra dias e horário aprovados, inclusive na remoção", () => {
+  for (const kind of ["weekly_break.create", "weekly_break.delete"]) {
+    const view = describeChange(
+      kind,
+      {
+        id: "interno",
+        weekdays: [6, 1],
+        start_time: "12:00:00",
+        end_time: "13:00:00",
+        reason: "Almoço",
+        version: "7",
+        operation_id: "op",
+      },
+      base,
+    );
+    assert.equal(view.subject, "eq.diff.wholeShop");
+    assert.deepEqual(
+      view.rows.map((row) => row.key),
+      ["days", "when", "reason"],
+    );
+    assert.equal(view.rows[0]?.value, "shop.weekday.1, shop.weekday.6");
+    assert.equal(view.rows[1]?.value, "12:00–13:00");
+    assert.equal(view.destructive === true, kind.endsWith("delete"));
+    assert.equal(JSON.stringify(view).includes("interno"), false);
+  }
+});

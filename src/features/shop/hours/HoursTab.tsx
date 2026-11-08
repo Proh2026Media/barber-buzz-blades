@@ -105,7 +105,7 @@ function HoursTabContent({
   onBlockRequestHandled: () => void;
   onOpenApprovals?: () => void;
   /** Pausa fixa semanal (fora da demonstração). */
-  weeklyBreaks?: { canManageShop: boolean; onChanged: () => void };
+  weeklyBreaks?: { canManageShop: boolean; canManageStaff: boolean; onChanged: () => void };
 }) {
   const { t } = useI18n();
   const labels = useDayLabels();
@@ -338,6 +338,8 @@ function HoursTabContent({
         staff={staffOptions}
         ownStaff={ownStaff}
         canManageShop={weeklyBreaks.canManageShop}
+        canManageStaff={weeklyBreaks.canManageStaff}
+        onOpenApprovals={onOpenApprovals}
         onChanged={weeklyBreaks.onChanged}
       />
     </div>

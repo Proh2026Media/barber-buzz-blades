@@ -63,6 +63,7 @@ import { DEMO_OWNER_USER_ID } from "@/features/demo/team";
 import { platformTabFromSlug, platformTabSlug, type PlatformTab, type ShopFilter } from "./tabs";
 import { DemoAccountMenu, DemoRoleSelector } from "@/features/demo/DemoAccountMenu";
 import { DemoTourHub } from "@/features/demo/DemoTourHub";
+import { RefundPolicySimulator } from "@/features/payments/RefundPolicySimulator";
 import { useDemoChrome } from "@/features/demo/chrome";
 import { LoginPreviewDialog } from "@/features/shop/LoginPreviewDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -678,6 +679,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
             último filho do main é quem define a margem do space-y). */}
         {(platformTab === "overview" || !demoMode) && (
           <div className={platformTab === "overview" ? "plat-overview-extras space-y-6" : "hidden"}>
+            {demoMode && platformTab === "overview" && <RefundPolicySimulator />}
             {!demoMode && (
               <PlatformWhatsAppCard
                 ref={waRef}

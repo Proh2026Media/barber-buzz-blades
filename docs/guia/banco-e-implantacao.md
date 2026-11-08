@@ -12,7 +12,7 @@ Situações usadas: **feito**, **feito — falta aplicar no banco**, **pendente*
 
 1. [Visão da infraestrutura](#1-visão-da-infraestrutura)
 2. [Como o site é publicado](#2-como-o-site-é-publicado)
-3. [Inventário das 98 migrations](#3-inventário-das-98-migrations)
+3. [Inventário das 99 migrations](#3-inventário-das-99-migrations)
 4. [Como escrever uma migration nova](#4-como-escrever-uma-migration-nova)
 5. [Como as migrations são aplicadas](#5-como-as-migrations-são-aplicadas)
 6. [Testes SQL](#6-testes-sql)
@@ -68,7 +68,7 @@ git push origin main            (Proh2026Media/barber-buzz-blades — fonte da v
 - O comando de compilação configurado na Hostinger é **não confirmado** (o projeto define `npm run build` = `vite build && node scripts/copy-pwa.mjs` em `package.json`).
 - **Publicar o site não aplica nada no banco nem nas funções.** Migrations e Edge functions vão à VPS por outro caminho (seções 5 e 7). Por isso a tela nova precisa funcionar com o banco antigo (ver seção 4).
 
-## 3. Inventário das 98 migrations
+## 3. Inventário das 99 migrations
 
 Pasta: [supabase/migrations/](../../supabase/migrations/). A situação vem destas fontes:
 
@@ -179,6 +179,7 @@ Pasta: [supabase/migrations/](../../supabase/migrations/). A situação vem dest
 | 96  | `20261016130000_agendamento_pelo_painel`                     | Barbeiro marca pelo painel, cliente do balcão, apelido, recorrência na agenda (`shop_clients`, `book_for_client`…)     | aplicada em 20/10/2026 (20:04, Brasília) [L]               |
 | 97  | `20261024170000_diretorio_contatos_pontos`                   | WhatsApp e saldo da própria loja no diretório; mantém escopo e permissões                                              | aplicada em 24/10/2026 (16:57:15, Brasília) [M]            |
 | 98  | `20261028190000_falha_login_google`                          | Marcador temporário de falha do login Google, separado da ponte PKCE (P-78)                                            | aplicada em 28/10/2026 (19:17, Brasília) [N]               |
+| 99  | `20261107220000_governanca_pausa_semanal`                    | Criação/remoção de pausa da loja pela governança; versão, idempotência, conflitos e RLS (P-70)                         | escrita e testada localmente; **pendente na VPS** [O]      |
 
 Nota da nº 34: no banco remoto ela falhava em `text = uuid`, e por isso a coluna `icon` e o bucket não existiam. A nº 41 (`20260920010000_service_images_storage`) cria o mesmo efeito e foi aplicada; o arquivo da nº 34 também recebeu o cast correto (`barbershop_id::text`) para instalações novas. Fonte: CONTINUIDADE "Slider da espera e imagens de serviço" (20/09/2026).
 
@@ -189,6 +190,8 @@ Ordem em que foram aplicadas (13/10/2026): 83 → 84 → 85 → 86 → 87, e dep
 **[M] Nº 97 (24/10/2026, 16:57:15, Brasília):** aplicada pelo agente Claude na VPS, segundo `relatorio-claude-2026-10-24.md` entregue pelo dono. Commit `47b797503b9a6a3a9a02b5117bc1831a7fb8f01c`; backup `/root/backup-barba-cabelo-20261024-195652.dump` (1,3 MB, catálogo legível); 22 PASS/ROLLBACK no ensaio; assinatura final `382a1151bba2aea114651e3b2746f0d4`, privilégios `f|t|t`. Registro no CONTINUIDADE; teste da tela em produção ainda pendente (P-43). Não houve nova consulta à VPS por este agente.
 
 **[N] Nº 98 (28/10/2026, 19:17:07–19:17:10, Brasília):** aplicada pelo agente Claude na VPS, segundo `relatorio-claude-2026-10-28.md`, entregue pelo dono em 29/10. Commit `09f65f5d15c3010a339bc92144b6ecb11c7d0786`; três hashes reconferidos com o repositório. Backup `/root/backup-barba-p78-20261028-221625.dump` (1,3 MB, catálogo legível); 18 PASS/ROLLBACK; resultados finais `t`, `f|f`, `t|t`, `f|f`. Sem reinício, alteração de configuração ou dados de clientes. Registro no [pacote](../implantacao-falha-login-google-2026-10-28.md); testes físicos pendentes em P-42/P-43. Não houve nova consulta à VPS por este agente.
+
+**[O] Nº 99 (07/11/2026):** P-70 aprovada pelo dono e implementada. **35 PASS específicos**, regressão local **1.174 PASS/0 FAIL**; reversão seguida do teste legado **14 PASS**. [Roteiro TI](../pacotes/2026-11-07-ti-p70-governanca-pausa-semanal.md) com backup, ensaio transacional, aplicação, conferência e [reversão pontual](../../supabase/manutencao/2026-11-07_desfazer_governanca_pausa_semanal.sql). Não aplicada em produção nesta rodada; última aplicação registrada continua nº 98. Sem nova função Edge ou cron.
 
 ## 4. Como escrever uma migration nova
 
@@ -358,6 +361,8 @@ Fontes: [beauty-saas-infra.md](../beauty-saas-infra.md), [mb-operacao.md](../mb-
 | Google (login, Agenda, Contatos) | Cliente OAuth do projeto Google Cloud `proh-media-drive`; a verificação do Google vale para ele. Calendar API e People API ativadas                                                                                                          | CONTINUIDADE "Google — projeto real do app" (03/10/2026); [google-verificacao.md](../google-verificacao.md) (reenvio da verificação, tarefa do dono) |
 
 ## 12. O que falta aplicar no servidor
+
+**07/11/2026 — aplicar somente nº 99/P-70:** [pacote TI](../pacotes/2026-11-07-ti-p70-governanca-pausa-semanal.md). Antes, obter acesso às contas pelo [roteiro restrito](../pacotes/2026-11-07-ti-acesso-contas-teste.md); depois homologar criação/remoção entre sócios e demais fluxos reais. A P-49 tem somente modelo/simulador, sem migration financeira. Não reaplicar as nº 1–98.
 
 **Atualização de 29/10/2026 — nenhuma migration escrita pendente:** nº 98, P-78, aplicada em **28/10/2026, 19:17:07–19:17:10 (Brasília)** pelo agente Claude, segundo o relatório entregue pelo dono. Última de produção registrada: **nº 98**. Backup, 18 PASS/ROLLBACK e privilégios esperados; três hashes conferidos localmente. [Pacote e registro](../implantacao-falha-login-google-2026-10-28.md). **Não reaplicar.** Falta testar login Google real nos aparelhos (P-42/P-43).
 

@@ -1,6 +1,61 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const es: Record<MessageKey, string> = {
+  "p70.approvalHint": "La pausa del local solo cambia cuando los demás propietarios la aprueban.",
+  "p70.unavailable":
+    "La pausa del local requiere una actualización del sistema. Tus pausas individuales siguen disponibles.",
+  "p70.requestCreate": "Solicitar pausa",
+  "p70.requestDelete": "Solicitar eliminación",
+  "p70.pendingCreate": "Pausa solicitada",
+  "p70.pendingDelete": "Eliminación solicitada",
+  "p70.pendingHint": "Pendiente de aprobación. La agenda sigue igual.",
+  "p70.viewApprovals": "Ver decisiones",
+  "p70.conflict":
+    "El local cambió desde esta solicitud. Revisa los datos actuales y envía una nueva solicitud.",
+  "p70.operationChanged":
+    "Este envío ya contiene otros datos. Revisa la pausa y vuelve a enviarla.",
+  "p70.closed": "Esta solicitud ya se cerró. Revisa las decisiones antes de crear otra.",
+  "p70.choosePerson": "Elige un profesional para esta pausa.",
+  "p70.kindCreate": "Crear pausa fija del local",
+  "p70.kindDelete": "Eliminar pausa fija del local",
+  "p70.alreadyExists": "Esta pausa ya está guardada.",
+  "p70.governanceLoadError":
+    "No se pudo comprobar la aprobación de las pausas. Inténtalo de nuevo.",
+  "p49.open": "Simular cancelación y reembolso",
+  "p49.title": "Cancelación y reembolso",
+  "p49.simulation":
+    "Simulación con importes ficticios. No cobra, no cancela citas ni mueve dinero.",
+  "p49.price": "Precio acordado (R$)",
+  "p49.receivedInput": "Importe pagado en el ejemplo (R$)",
+  "p49.when": "¿Cuándo se canceló?",
+  "p49.fourHours": "4 horas antes",
+  "p49.threeHours": "Exactamente 3 horas antes",
+  "p49.twoHours": "2 horas antes",
+  "p49.started": "Después del inicio",
+  "p49.reason": "Motivo indicado",
+  "p49.forgot": "Olvido",
+  "p49.other": "Otro motivo",
+  "p49.unspecified": "No indicado",
+  "p49.actor": "¿Quién canceló?",
+  "p49.customer": "Cliente",
+  "p49.shop": "Barbería",
+  "p49.accepted": "¿Política aceptada al reservar?",
+  "p49.received": "Pagado en el ejemplo",
+  "p49.retention": "Retención prevista",
+  "p49.refund": "Devolución prevista",
+  "p49.withRetention":
+    "Retención calculada con la regla del 30%. El cliente puede solicitar una revisión para recibir el resto.",
+  "p49.withoutRetention":
+    "Sin retención automática en este escenario. Solo se puede devolver lo pagado; no se crea una deuda.",
+  "p49.requestFull": "Simular solicitud del resto",
+  "p49.requested": "Solicitud simulada: pendiente de revisión",
+  "p49.requestedHint":
+    "Solicitar la devolución total no la confirma. Faltan la revisión y la confirmación de la transferencia.",
+  "p49.invalid":
+    "Indique importes válidos en reales, con hasta dos decimales. El precio debe ser mayor que cero.",
+  "p49.yes": "Sí",
+  "p49.no": "No",
+
   "plat.shop.configuration": "Direcciones y zona horaria",
   "plat.shop.configurationDemo": "Estos ajustes están disponibles en las barberías reales.",
 

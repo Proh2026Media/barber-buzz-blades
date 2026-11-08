@@ -32,25 +32,30 @@ Estas escolhas encerram dúvidas de produto. Não representam funcionalidades no
 
 **Resultado em 07/11:** P-74 e P-95 implementadas e conferidas em bancada local. O [diário da entrega](CONTINUIDADE.md) registra os cenários e limites; a [lista de pendências](guia/pendencias.md) foi atualizada. Integrações reais e aparelhos continuam no roteiro TI. Esta tabela de decisões não comprova, por si, implantação na hospedagem.
 
-## 3. Evoluções que continuam condicionadas
+## 3. Aprovação posterior de P-49 e P-70
+
+**Adendo de 07/11:** depois das decisões iniciais deste documento, o dono aprovou o desenvolvimento de **P-49 e P-70**. Essa aprovação supera o adiamento anterior das duas frentes. O avanço de código e preparação não equivale a implantação de banco, confirmação de transferência ou ativação de pagamentos reais.
 
 ### P-49 — Pagamentos e reembolso
 
-**Decisão:** manter os cancelamentos atuais, sem cobrança, retenção ou devolução financeira ativada. O módulo não foi implementado. A [proposta de reembolso](reembolso-futuro.md) continua registrada.
+**Estado atual: desenvolvimento parcial.** Modelo puro de cálculo e estados, 23 testes e simulador local da demonstração implementados. O simulador calcula valores fictícios e cria um pedido complementar que permanece aguardando análise; não confirma uma transferência. Contrato e limites em [pagamentos-reembolsos-p49.md](pagamentos-reembolsos-p49.md), ligado à [proposta original](reembolso-futuro.md).
 
-Antes de implementar, são necessários: provedor de pagamentos, regra para sinal e pagamento parcial, tratamento de agendamento sem antecipação, responsável pela ativação da política e revisão da comunicação aplicável. A integração deve confirmar pagamentos e devoluções, impedir repetição e distinguir pedido de reembolso de valor efetivamente devolvido. O preço cadastrado de um serviço não será tratado como pagamento recebido.
+**Decisões adotadas:** retenção de 30% somente sobre pagamento integral comprovado, com aceite prévio, esquecimento expresso pelo cliente e cancelamento antes do início com menos de três horas. Exatamente três horas devolve integralmente. Sinal/parcial, ausência de aceite, cancelamento pela loja, demais motivos ou horário já iniciado não geram taxa automática; sem antecipação não há dívida. Retenção arredondada para baixo em centavos; complemento limitado ao saldo e sujeito a análise, sem afirmar devolução antes da confirmação.
+
+**Ainda pendente:** escolha do provedor — pergunta encaminhada, sem resposta —, integração e banco financeiro, permissões/ativação por loja, revisão da comunicação e homologação. Cancelamentos de produção permanecem sem cobrança automática, e o preço cadastrado de um serviço não será tratado como pagamento recebido. **P-49 não concluída.**
 
 ### P-70 — Pausa semanal da loja com aprovação entre sócios
 
-**Decisão:** retomar após o ensaio real de sociedade 50%/50% da P-41. A pausa própria continua disponível conforme a permissão do profissional. A pausa da loja inteira continua exigindo poder de aplicar mudanças.
+**Estado atual: implementada no código; implantação pendente.** A autorização posterior permitiu desenvolver a aprovação da pausa semanal da loja, com alteração de banco e interface. A [migration nº 99 — governança da pausa semanal](../supabase/migrations/20261107220000_governanca_pausa_semanal.sql) está preparada e **ainda precisa ser aplicada pela TI**, seguindo o [pacote P-70](pacotes/2026-11-07-ti-p70-governanca-pausa-semanal.md).
 
-Ainda não há fila de aprovação para a regra semanal. Criá-la exige alteração de banco, tela e testes próprios; não basta liberar o botão. Essa evolução permanece pendente, preservando o adiamento anterior até o uso real. Fontes: [migration da pausa semanal](../supabase/migrations/20261013220000_pausa_semanal.sql) e configuração `weeklyBreaks.canManageShop` em [ShopShell.tsx](../src/features/shop/ShopShell.tsx).
+A pausa própria continua conforme a permissão do profissional; a nova aprovação da loja segue a governança do servidor. O ensaio real 50%/50% continua necessário na homologação da P-41 e da implantação. Não declarar a funcionalidade ativa em produção somente pela presença do código ou pelo preparo do pacote.
 
 ## 4. Etapas externas e comprovação
 
 - **P-39:** encaminhar o [pacote de revisão jurídica](pacotes/2026-11-07-revisao-juridica-barba-cabelo-p39.md) ao profissional responsável. Preparar o pacote não conclui a revisão. Texto e versão de aceite permanecem vigentes até uma revisão efetiva.
 - **P-40/P-41/P-42:** concluir os cenários com contas e integrações reais em lojas de teste, registrando o que passou, falhou ou não pôde ser executado. Conferência de código ou serviço simulado não substitui esses resultados.
 - **P-43:** testar nos aparelhos físicos disponíveis e registrar aparelho, navegador, orientação e resultado. A emulação ajuda na correção, mas não comprova o aparelho.
+- **P-70:** TI aplicar e homologar a migration nº 99 pelo pacote próprio; registrar o resultado antes de tratar a aprovação semanal como ativa em produção.
 - **P-28:** continua na coordenação externa já definida. Esta rodada de decisões do B&C não cria nova tarefa de programação no Flow nem repete etapas encerradas. O roteiro operacional vigente e seus resultados continuam nas referências da P-28.
 
 As decisões acima retiram dúvidas da fila de desenvolvimento. Testes não executados, implantação não conferida e revisão profissional não recebida continuam identificados como pendentes.

@@ -191,3 +191,14 @@ test("saída à espera da liberação fala do dono, com a mensagem antiga ou a n
     assert.equal(friendlyAuthError({ code: "42501", message }), expected);
   }
 });
+
+test("conflitos de pausa semanal orientam um novo pedido", () => {
+  assert.match(
+    friendlyAuthError({ code: "40001", message: "weekly_break_conflict" }),
+    /loja mudou/,
+  );
+  assert.match(
+    friendlyAuthError({ code: "22023", message: "weekly_break_operation_changed" }),
+    /outros dados/,
+  );
+});

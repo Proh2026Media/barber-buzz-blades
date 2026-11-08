@@ -2448,9 +2448,20 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 onBlockRequestHandled={() => setHoursBlockRequest(null)}
                 onOpenApprovals={openApprovals}
                 weeklyBreaks={{
-                  canManageShop: !ownBlocksOnly && (!!demo || powers.writeMode === "direct"),
+                  canManageShop:
+                    !ownBlocksOnly &&
+                    (powers.writeMode === "direct" ||
+                      (!!capabilities?.canProposeOperations && !!capabilities.manageOperations)),
+                  canManageStaff:
+                    !ownBlocksOnly &&
+                    (!!demo ||
+                      powers.writeMode === "direct" ||
+                      (!!capabilities?.canApplyOperations && !!capabilities.manageOperations)),
                   onChanged: () => {
-                    if (!demo) void loadBlocks();
+                    if (!demo) {
+                      setGovernanceRevision((value) => value + 1);
+                      void loadBlocks();
+                    }
                   },
                 }}
               />

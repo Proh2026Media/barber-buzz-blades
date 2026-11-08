@@ -145,8 +145,20 @@ select pg_temp.check_ps(
 
 select pg_temp.as_user(:'owner_id');
 set local role authenticated;
-insert into public.availability_block_rules(barbershop_id, staff_id, weekdays, start_time, end_time, reason)
-values (:'shop_id', null, array[extract(dow from :'d'::date)::smallint], '15:00', '15:30', 'Reunião');
+-- P-70 exige a RPC para a loja inteira; conserva a execução deste teste em banco anterior.
+do $$
+declare c record;
+begin
+  select * into c from ps_ctx;
+  if to_regprocedure('public.request_weekly_break_change(uuid,text,jsonb)') is not null then
+    perform public.request_weekly_break_change(c.shop_id, 'create', jsonb_build_object(
+      'operation_id',gen_random_uuid(),'version',public.get_weekly_break_governance(c.shop_id)->>'version',
+      'weekdays',jsonb_build_array(extract(dow from c.d)::smallint),'start_time','15:00','end_time','15:30','reason','Reunião'));
+  else
+    insert into public.availability_block_rules(barbershop_id,weekdays,start_time,end_time,reason)
+      values(c.shop_id,array[extract(dow from c.d)::smallint],'15:00','15:30','Reunião');
+  end if;
+end $$;
 select pg_temp.check_ps(
   (select count(*) = 1 from public.list_shop_blocks(:'shop_id', pg_temp.ps_at('00:00'))
    where staff_id is null and starts_at = pg_temp.ps_at('15:00') and rule_id is not null),

@@ -86,6 +86,8 @@ export function readErrorCode(raw: unknown): string | null {
 }
 
 const PATTERNS: Array<{ test: RegExp; message: MessageKey }> = [
+  { test: /weekly_break_conflict/i, message: "p70.conflict" },
+  { test: /weekly_break_operation_changed/i, message: "p70.operationChanged" },
   // Regras da sociedade (saída da barbearia, partes dos donos): antes do padrão de permissão.
   { test: /s[óo]cio [úu]nico/i, message: "eq.leave.soleOwnerError" },
   { test: /active ownership must total 100/i, message: "eq.error.ownershipTotal" },

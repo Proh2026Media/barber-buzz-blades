@@ -9,10 +9,22 @@ import {
 } from "@/components/ui/dialog";
 import { useViewportAtLeast } from "@/lib/device";
 import { useDemo } from "@/features/demo/context";
-import { useCallback, useEffect, useState } from "react";
-import { CalendarDays, Clock3, Repeat, Store, Tag as TagIcon, Trash2, Users } from "lucide-react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  CalendarDays,
+  Clock3,
+  Hourglass,
+  Repeat,
+  Store,
+  Tag as TagIcon,
+  Trash2,
+  Users,
+} from "lucide-react";
 import {
   ActionResult,
+  ApprovalNote,
+  Notice,
+  LoadingState,
   ChoiceChips,
   ConfirmDialog,
   DetailList,
@@ -24,7 +36,7 @@ import {
   type ActionState,
 } from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
-import type { Tables } from "@/integrations/supabase/types";
+import type { Json, Tables } from "@/integrations/supabase/types";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { isMissingRpcError } from "@/lib/auth/optional-rpc";
 import { useI18n } from "@/lib/i18n";
@@ -41,35 +53,62 @@ const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
 const REASONS = BLOCK_REASONS.filter((item) => item.id !== "holiday");
 type ReasonId = (typeof REASONS)[number]["id"];
 
-/**
- * "Pausa fixa": almoço ou intervalo que se repete toda semana. Cada pausa vira bloqueios comuns
- * nos próximos meses (o servidor estende sozinho); apagar a pausa libera os dias seguintes.
- * Sem a migration 20261013220000 no banco, o cartão não aparece.
- */
-export function WeeklyBreaksCard({
+type PendingBreak = {
+  id: string;
+  kind: "weekly_break.create" | "weekly_break.delete";
+  payload: {
+    id: string;
+    weekdays: number[];
+    start_time: string;
+    end_time: string;
+    reason?: string;
+  };
+};
+type WeeklyBreaksProps = {
+  shopId: string;
+  staff: StaffOption[];
+  ownStaff: StaffOption | null;
+  /** Pode solicitar pausa da loja; o servidor decide se depende dos demais donos. */
+  canManageShop: boolean;
+  /** Pode aplicar diretamente pausas de profissionais, conforme a capacidade vigente. */
+  canManageStaff?: boolean;
+  onChanged: () => void;
+  onOpenApprovals?: () => void;
+};
+
+export function WeeklyBreaksCard(props: WeeklyBreaksProps) {
+  return <WeeklyBreaksEditor key={props.shopId} {...props} />;
+}
+
+function WeeklyBreaksEditor({
   shopId,
   staff,
   ownStaff,
   canManageShop,
+  canManageStaff = canManageShop,
   onChanged,
-}: {
-  shopId: string;
-  staff: StaffOption[];
-  /** Quem só cuida da própria agenda: a pausa vale só para ela. */
-  ownStaff: StaffOption | null;
-  /** Cria pausa da loja toda ou de qualquer profissional. */
-  canManageShop: boolean;
-  /** Bloqueios gerados mudaram: recarrega a lista de bloqueios. */
-  onChanged: () => void;
-}) {
+  onOpenApprovals,
+}: WeeklyBreaksProps) {
   const { t } = useI18n();
   const demo = useDemo();
   const wide = useViewportAtLeast(768);
   const demoMode = !!demo;
   const labels = useDayLabels();
+  const titleId = useId();
+  const mounted = useRef(true);
+  const inFlight = useRef(false);
+  const readVersion = useRef(0);
+  const operation = useRef<{ signature: string; id: string } | null>(null);
   const [rules, setRules] = useState<WeeklyRule[] | null>(null);
   const [supported, setSupported] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [governance, setGovernance] = useState<{
+    version: string;
+    requiresApproval: boolean;
+  } | null>(null);
+  const [governanceMissing, setGovernanceMissing] = useState(false);
+  const [governanceError, setGovernanceError] = useState<string | null>(null);
+  const [pending, setPending] = useState<PendingBreak[]>([]);
   const [formOpen, setFormOpen] = useState(false);
   const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5, 6]);
   const [range, setRange] = useState({ start: "12:00", end: "13:00" });
@@ -78,8 +117,16 @@ export function WeeklyBreaksCard({
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState<{ state: ActionState; text: string } | null>(null);
   const [confirming, setConfirming] = useState<WeeklyRule | null>(null);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   const load = useCallback(async () => {
+    if (!mounted.current) return;
+    const request = ++readVersion.current;
     if (demoMode) {
       setRules(
         (current) =>
@@ -96,32 +143,83 @@ export function WeeklyBreaksCard({
             } as WeeklyRule,
           ],
       );
+      setGovernance({ version: "demo", requiresApproval: false });
       return;
     }
-    const { data, error, status } = await supabase
-      .from("availability_block_rules")
-      .select("*")
-      .eq("barbershop_id", shopId)
-      .order("created_at", { ascending: true });
-    if (error) {
-      if (error.code === "PGRST205" || error.code === "42P01" || isMissingRpcError(error, status)) {
-        setSupported(false);
-        return;
-      }
-      setLoadError(friendlyAuthError(error, t("hours.weekly.loadError")));
-      return;
-    }
-    setLoadError(null);
-    setRules(data ?? []);
-  }, [shopId, t, demoMode]);
-
+    const fresh = () => mounted.current && request === readVersion.current;
+    await Promise.all([
+      (async () => {
+        try {
+          const { data, error, status } = await supabase
+            .from("availability_block_rules")
+            .select("*")
+            .eq("barbershop_id", shopId)
+            .order("created_at", { ascending: true });
+          if (!fresh()) return;
+          if (error) {
+            if (
+              error.code === "PGRST205" ||
+              error.code === "42P01" ||
+              isMissingRpcError(error, status)
+            ) {
+              setSupported(false);
+              return;
+            }
+            throw error;
+          }
+          setLoadError(null);
+          setRules(data ?? []);
+        } catch (error) {
+          if (fresh()) setLoadError(friendlyAuthError(error, t("hours.weekly.loadError")));
+        }
+      })(),
+      canManageShop
+        ? (async () => {
+            try {
+              const { data, error, status } = await supabase.rpc("get_weekly_break_governance", {
+                p_shop_id: shopId,
+              });
+              if (!fresh()) return;
+              if (error && isMissingRpcError(error, status)) {
+                setGovernance(null);
+                setGovernanceMissing(true);
+                setGovernanceError(null);
+                return;
+              }
+              if (error) throw error;
+              const state = data as {
+                version?: string;
+                requires_approval?: boolean;
+                pending?: PendingBreak[];
+              } | null;
+              if (
+                typeof state?.version !== "string" ||
+                typeof state.requires_approval !== "boolean"
+              )
+                throw new Error(t("p70.governanceLoadError"));
+              setGovernance({ version: state.version, requiresApproval: state.requires_approval });
+              setPending(Array.isArray(state.pending) ? state.pending : []);
+              setGovernanceMissing(false);
+              setGovernanceError(null);
+            } catch (error) {
+              if (fresh()) {
+                setGovernance(null);
+                setGovernanceError(friendlyAuthError(error, t("p70.governanceLoadError")));
+              }
+            }
+          })()
+        : Promise.resolve(),
+    ]);
+  }, [shopId, t, demoMode, canManageShop]);
   useEffect(() => {
     void load();
   }, [load]);
 
-  const canCreate = canManageShop || !!ownStaff;
-  if (!supported || (!canCreate && !rules?.length)) return null;
-
+  const canWholeShop = canManageShop && !!governance;
+  const canCreate = !!rules && !loadError && (canWholeShop || canManageStaff || !!ownStaff);
+  if (!supported || (!canCreate && !rules?.length && !canManageShop && !ownStaff)) return null;
+  const wholeShop = !ownStaff && !staffId;
+  const approval = wholeShop && governance?.requiresApproval;
   const nameOf = (id: string | null) =>
     id
       ? (staff.find((member) => member.id === id)?.display_name ??
@@ -133,19 +231,67 @@ export function WeeklyBreaksCard({
       : WEEK_ORDER.filter((day) => weekdays.includes(day))
           .map((day) => labels.weekdayShort(day))
           .join(", ");
-  const timeOf = (rule: WeeklyRule) =>
+  const timeOf = (rule: Pick<WeeklyRule, "start_time" | "end_time">) =>
     rangeLabel(rule.start_time.slice(0, 5), rule.end_time.slice(0, 5));
   const canDelete = (rule: WeeklyRule) =>
-    canManageShop || (!!ownStaff && rule.staff_id === ownStaff.id);
+    rule.staff_id
+      ? canManageStaff || (!!ownStaff && rule.staff_id === ownStaff.id)
+      : canWholeShop &&
+        !pending.some((item) => item.kind === "weekly_break.delete" && item.payload.id === rule.id);
   const problem =
     days.length === 0
       ? t("hours.weekly.pickDay")
       : range.end <= range.start
         ? t("hours.block.endAfterStart")
-        : null;
-
+        : wholeShop && !canWholeShop
+          ? t(governanceMissing ? "p70.unavailable" : "p70.choosePerson")
+          : null;
+  const operationId = (action: string, payload: unknown) => {
+    const signature = JSON.stringify({ action, payload });
+    if (operation.current?.signature !== signature)
+      operation.current = { signature, id: crypto.randomUUID() };
+    return operation.current.id;
+  };
+  async function requestShop(
+    action: "create" | "delete",
+    payload: Record<string, Json | undefined>,
+  ) {
+    if (!canWholeShop || !governance) throw new Error(t("p70.unavailable"));
+    const { data, error, status } = await supabase.rpc("request_weekly_break_change", {
+      p_shop_id: shopId,
+      p_action: action,
+      p_payload: {
+        ...payload,
+        version: governance.version,
+        operation_id: operationId(action, payload),
+      },
+    });
+    if (error) {
+      if (isMissingRpcError(error, status)) {
+        if (mounted.current) {
+          setGovernance(null);
+          setGovernanceMissing(true);
+        }
+        throw new Error(t("p70.unavailable"));
+      }
+      throw error;
+    }
+    const outcome = data && typeof data === "object" && !Array.isArray(data) ? data.status : null;
+    if (!["pending", "applied", "unchanged"].includes(String(outcome))) {
+      if (["rejected", "cancelled", "expired"].includes(String(outcome))) {
+        operation.current = null;
+        throw new Error(t("p70.closed"));
+      }
+      throw new Error(
+        t(action === "delete" ? "hours.weekly.deleteError" : "hours.weekly.saveError"),
+      );
+    }
+    operation.current = null;
+    return outcome as "pending" | "applied" | "unchanged";
+  }
   async function create() {
-    if (problem || saving) return;
+    if (!mounted.current || problem || !canCreate || inFlight.current) return;
+    inFlight.current = true;
     setSaving(true);
     setResult(null);
     const reasonKey = REASONS.find((item) => item.id === reasonId)?.key ?? "shop.block.reasonBreak";
@@ -157,30 +303,87 @@ export function WeeklyBreaksCard({
       end_time: range.end,
       reason: t(reasonKey),
     };
-    if (demoMode) {
-      setRules((current) => [
-        ...(current ?? []),
-        { ...draft, id: crypto.randomUUID(), created_at: new Date().toISOString() } as WeeklyRule,
-      ]);
-      setSaving(false);
+    try {
+      let outcome: "pending" | "applied" | "unchanged" = "applied";
+      if (demoMode) {
+        setRules((current) => [
+          ...(current ?? []),
+          { ...draft, id: crypto.randomUUID(), created_at: new Date().toISOString() } as WeeklyRule,
+        ]);
+      } else if (!draft.staff_id) {
+        outcome = await requestShop("create", draft);
+      } else {
+        if (!canManageStaff && draft.staff_id !== ownStaff?.id) return;
+        const { error } = await supabase.from("availability_block_rules").insert(draft);
+        if (error) throw error;
+      }
+      if (!mounted.current) return;
       setFormOpen(false);
-      setResult({ state: "saved", text: t("hours.weekly.demoSaved") });
-      return;
-    }
-    const { error } = await supabase.from("availability_block_rules").insert(draft);
-    setSaving(false);
-    if (error) {
+      setResult({
+        state: outcome === "pending" ? "pending" : "saved",
+        text: t(
+          demoMode
+            ? "hours.weekly.demoSaved"
+            : outcome === "pending"
+              ? "p70.pendingHint"
+              : outcome === "unchanged"
+                ? "p70.alreadyExists"
+                : "hours.weekly.saved",
+        ),
+      });
+      if (!demoMode) {
+        await load();
+        if (mounted.current) onChanged();
+      }
+    } catch (error) {
+      if (!mounted.current) return;
       setResult({ state: "error", text: friendlyAuthError(error, t("hours.weekly.saveError")) });
-      return;
+      if ((error as { code?: string })?.code === "40001") {
+        operation.current = null;
+        await load();
+      }
+    } finally {
+      inFlight.current = false;
+      if (mounted.current) setSaving(false);
     }
-    setFormOpen(false);
-    setResult({ state: "saved", text: t("hours.weekly.saved") });
-    await load();
-    onChanged();
+  }
+  async function remove() {
+    if (!confirming || !canDelete(confirming) || !mounted.current || inFlight.current) return;
+    inFlight.current = true;
+    try {
+      let outcome: "pending" | "applied" | "unchanged" = "applied";
+      if (demoMode)
+        setRules((current) => (current ?? []).filter((rule) => rule.id !== confirming.id));
+      else if (!confirming.staff_id) outcome = await requestShop("delete", { id: confirming.id });
+      else {
+        const { error } = await supabase
+          .from("availability_block_rules")
+          .delete()
+          .eq("id", confirming.id);
+        if (error) throw error;
+      }
+      if (!mounted.current) return;
+      setResult({
+        state: outcome === "pending" ? "pending" : "saved",
+        text: t(outcome === "pending" ? "p70.pendingHint" : "hours.weekly.deleted"),
+      });
+      if (!demoMode) {
+        await load();
+        if (mounted.current) onChanged();
+      }
+    } catch (error) {
+      if ((error as { code?: string })?.code === "40001") {
+        operation.current = null;
+        await load();
+      }
+      throw new Error(friendlyAuthError(error, t("hours.weekly.deleteError")));
+    } finally {
+      inFlight.current = false;
+    }
   }
 
   const formFields = (
-    <>
+    <fieldset disabled={saving} className="min-w-0 space-y-4">
       <ChoiceChips<number>
         multiple
         label={t("hours.weekly.days")}
@@ -214,8 +417,8 @@ export function WeeklyBreaksCard({
           value={staffId}
           onChange={setStaffId}
           options={[
-            { value: "", label: t("shop.block.wholeShop"), icon: Store },
-            ...staff.map((member) => ({
+            ...(canWholeShop ? [{ value: "", label: t("shop.block.wholeShop"), icon: Store }] : []),
+            ...(canManageStaff ? staff : []).map((member) => ({
               value: member.id,
               label: member.display_name,
               media: (
@@ -249,7 +452,13 @@ export function WeeklyBreaksCard({
             })
           : t("hours.weekly.pickDay")}
       </Hint>
-    </>
+      {wholeShop && <ApprovalNote />}
+      {approval && (
+        <Hint icon={Hourglass} tone="pending">
+          {t("p70.approvalHint")}
+        </Hint>
+      )}
+    </fieldset>
   );
   const formActions = (
     <div className="flex gap-2">
@@ -268,25 +477,53 @@ export function WeeklyBreaksCard({
         className="action-button action-confirm flex-1"
       >
         <Repeat aria-hidden />
-        {saving ? t("hours.weekly.saving") : t("hours.weekly.save")}
+        {saving
+          ? t("hours.weekly.saving")
+          : t(approval ? "p70.requestCreate" : "hours.weekly.save")}
       </button>
     </div>
   );
 
   return (
     <section
-      aria-labelledby="hours-weekly-title"
+      aria-labelledby={titleId}
       className="space-y-4 rounded-2xl border border-border bg-card p-4"
     >
       <SectionHeader
-        id="hours-weekly-title"
+        id={titleId}
         as="h3"
         icon={Repeat}
         tone="danger"
         title={t("hours.weekly.title")}
         description={t("hours.weekly.description")}
       />
+      {rules === null && !loadError && (
+        <LoadingState variant="list" count={1} label={t("common.wait")} />
+      )}
       {loadError && <ActionResult state="error" text={loadError} onRetry={() => void load()} />}
+      {governanceError && (
+        <ActionResult state="error" text={governanceError} onRetry={() => void load()} />
+      )}
+      {governanceMissing && <Notice tone="info" title={t("p70.unavailable")} />}
+      {pending.length > 0 && (
+        <div className="space-y-2">
+          {pending.map((item) => (
+            <Notice
+              key={item.id}
+              tone="pending"
+              title={t(
+                item.kind === "weekly_break.delete" ? "p70.pendingDelete" : "p70.pendingCreate",
+              )}
+              children={`${daysLabel(item.payload.weekdays)} · ${timeOf(item.payload)} · ${item.payload.reason || t("shop.block.defaultReason")}`}
+              action={
+                onOpenApprovals
+                  ? { label: t("p70.viewApprovals"), onClick: onOpenApprovals }
+                  : undefined
+              }
+            />
+          ))}
+        </div>
+      )}
 
       {rules && rules.length > 0 && (
         <ul className="space-y-1.5">
@@ -408,28 +645,26 @@ export function WeeklyBreaksCard({
           ) : null
         }
         consequences={[
-          { icon: CalendarDays, tone: "success", text: t("hours.weekly.deleteEffect") },
+          {
+            icon: CalendarDays,
+            tone:
+              confirming?.staff_id == null && governance?.requiresApproval ? "pending" : "success",
+            text: t(
+              confirming?.staff_id == null && governance?.requiresApproval
+                ? "p70.approvalHint"
+                : "hours.weekly.deleteEffect",
+            ),
+          },
         ]}
-        confirmLabel={t("hours.weekly.deleteConfirm")}
+        confirmLabel={t(
+          confirming?.staff_id == null && governance?.requiresApproval
+            ? "p70.requestDelete"
+            : "hours.weekly.deleteConfirm",
+        )}
         busyLabel={t("hours.blocks.deleting")}
         confirmIcon={Trash2}
         cancelLabel={t("hours.weekly.keep")}
-        onConfirm={async () => {
-          if (!confirming) return;
-          if (demoMode) {
-            setRules((current) => (current ?? []).filter((rule) => rule.id !== confirming.id));
-            setResult({ state: "saved", text: t("hours.weekly.deleted") });
-            return;
-          }
-          const { error } = await supabase
-            .from("availability_block_rules")
-            .delete()
-            .eq("id", confirming.id);
-          if (error) throw new Error(friendlyAuthError(error, t("hours.weekly.deleteError")));
-          setResult({ state: "saved", text: t("hours.weekly.deleted") });
-          await load();
-          onChanged();
-        }}
+        onConfirm={remove}
       />
     </section>
   );

@@ -2,6 +2,7 @@ import {
   CalendarX2,
   Clock3,
   Globe2,
+  Repeat,
   Scissors,
   SlidersHorizontal,
   Trash2,
@@ -70,6 +71,8 @@ const KIND: Record<string, { icon: LucideIcon; title: MessageKey; destructive?: 
   "staff.toggle": { icon: Users, title: "eq.kind.staffToggle" },
   "staff.delete": { icon: Trash2, title: "eq.kind.staffDelete", destructive: true },
   "shop.timezone": { icon: Globe2, title: "eq.kind.timezone" },
+  "weekly_break.create": { icon: Repeat, title: "p70.kindCreate" },
+  "weekly_break.delete": { icon: Trash2, title: "p70.kindDelete", destructive: true },
   "hours.replace": { icon: Clock3, title: "eq.kind.hours" },
   "availability.create": { icon: CalendarX2, title: "eq.kind.blockCreate" },
   "availability.delete": { icon: Trash2, title: "eq.kind.blockDelete", destructive: true },
@@ -311,6 +314,22 @@ export function describeChange(
     }
     const reason = str(source.reason);
     if (reason) push("reason", t("eq.diff.reason"), reason);
+    return view;
+  }
+
+  if (kind === "weekly_break.create" || kind === "weekly_break.delete") {
+    view.subject = t("eq.diff.wholeShop");
+    const weekdays = Array.isArray(payload.weekdays) ? payload.weekdays : [];
+    const selected = [1, 2, 3, 4, 5, 6, 0].filter((day) => weekdays.includes(day));
+    if (selected.length)
+      push(
+        "days",
+        t("hours.weekly.days"),
+        selected.map((day) => t(`shop.weekday.${day}` as MessageKey)).join(", "),
+      );
+    if (str(payload.start_time) && str(payload.end_time))
+      push("when", t("hours.block.time"), `${hhmm(payload.start_time)}–${hhmm(payload.end_time)}`);
+    if (str(payload.reason)) push("reason", t("eq.diff.reason"), str(payload.reason)!);
     return view;
   }
 

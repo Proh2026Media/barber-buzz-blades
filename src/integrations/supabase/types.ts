@@ -663,6 +663,20 @@ export type Database = {
           },
         ];
       };
+      shop_weekly_break_versions: {
+        Row: { barbershop_id: string; revision: number };
+        Insert: { barbershop_id: string; revision?: number };
+        Update: { barbershop_id?: string; revision?: number };
+        Relationships: [
+          {
+            foreignKeyName: "shop_weekly_break_versions_barbershop_id_fkey";
+            columns: ["barbershop_id"];
+            isOneToOne: true;
+            referencedRelation: "barbershops";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       availability_block_rules: {
         Row: {
           id: string;
@@ -1584,6 +1598,14 @@ export type Database = {
           p_roles: Database["public"]["Enums"]["app_role"][];
         };
         Returns: boolean;
+      };
+      get_weekly_break_governance: {
+        Args: { p_shop_id: string };
+        Returns: Json;
+      };
+      request_weekly_break_change: {
+        Args: { p_shop_id: string; p_action: string; p_payload: Json };
+        Returns: Json;
       };
       request_shop_change: {
         Args: { p_shop_id: string; p_kind: string; p_payload: Json };
