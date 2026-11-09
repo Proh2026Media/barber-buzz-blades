@@ -1,12 +1,19 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const ptPT: Record<MessageKey, string> = {
+  "waPair.restart": "Recomeçar com este número",
+  "waPair.restartNotice":
+    "O WhatsApp ainda não confirmou esta ligação. Existe uma preparação anterior neste canal. Recomeçar termina essa preparação e gera um código para o número indicado.",
+  "waPair.restartFailed":
+    "Não foi possível terminar a preparação anterior. Verifique a ligação e tente novamente.",
+  "waPair.country": "País",
   "waPair.qr": "Ler código QR",
   "waPair.useCode": "Conectar com código",
   "waPair.title": "Conectar WhatsApp com código",
   "waPair.description": "Introduza o número do WhatsApp que pretende ligar.",
-  "waPair.phone": "WhatsApp com indicativo do país e número",
-  "waPair.invalidPhone": "Introduza o indicativo do país e o número. Exemplo: +351 912 345 678.",
+  "waPair.phone": "Número do WhatsApp",
+  "waPair.invalidPhone":
+    "Confirme o país e indique o número completo. Não precisa de escrever o indicativo do país.",
   "waPair.generate": "Gerar código",
   "waPair.loading": "Conferindo…",
   "waPair.check": "Verificar conexão",

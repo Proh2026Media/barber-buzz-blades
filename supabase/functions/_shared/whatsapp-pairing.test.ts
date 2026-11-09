@@ -63,7 +63,11 @@ test("sessão conectada não é recriada ou desconectada", async () => {
 });
 test("tentativa em andamento não é reiniciada nem tem código antigo reaproveitado", async () => {
   const f = fixture("connecting", [{ pairingCode: CODE }]);
-  await assert.rejects(f.run(), /PAIRING_IN_PROGRESS/);
+  assert.deepEqual(await f.run(), {
+    status: "connecting",
+    pairing_code: null,
+    restart_required: true,
+  });
   assert.equal(f.calls.length, 1);
 });
 test("criação recebe o número normalizado e a integração Baileys", async () => {
@@ -122,4 +126,91 @@ test("telefone inválido não faz chamada remota", async () => {
     /PAIRING_PHONE_INVALID/,
   );
   assert.equal(called, false);
+});
+
+function restartFixture(states: string[], logoutFails = false) {
+  const calls: string[] = [];
+  const call: EvolutionCall = async (path) => {
+    calls.push(path);
+    if (path.includes("connectionState")) {
+      const state = states.length > 1 ? states.shift() : states[0];
+      return { instance: { instanceName: "instancia", ...(state === "missing" ? {} : { state }) } };
+    }
+    if (path.includes("logout") && logoutFails) throw new Error("resposta privada fictícia");
+    if (path.includes("create")) return { qrcode: { pairingCode: CODE } };
+    if (path.includes("connect/")) return { pairingCode: CODE };
+    return { status: "SUCCESS" };
+  };
+  return {
+    calls,
+    run: () => connectWithPairingCode(call, "instancia", PHONE, "restart-pairing", async () => {}),
+  };
+}
+test("instância ausente em resposta 200 da Evolution 2.3.7 pode ser criada", async () => {
+  const f = restartFixture(["missing"]);
+  assert.equal((await f.run()).pairing_code, CODE);
+  assert.equal(f.calls.includes("/instance/create"), true);
+  assert.equal(
+    f.calls.some((p) => p.includes("logout")),
+    false,
+  );
+});
+test("recomeço só encerra preparação após segunda conferência e usa número pedido", async () => {
+  const f = restartFixture(["connecting", "connecting", "close"]);
+  assert.equal((await f.run()).pairing_code, CODE);
+  assert.deepEqual(f.calls, [
+    "/instance/connectionState/instancia",
+    "/instance/connectionState/instancia",
+    "/instance/logout/instancia",
+    "/instance/connectionState/instancia",
+    `/instance/connect/instancia?number=${PHONE}`,
+  ]);
+});
+test("se conectou entre as duas leituras, recomeço preserva sessão", async () => {
+  const f = restartFixture(["connecting", "open"]);
+  assert.deepEqual(await f.run(), { status: "open", pairing_code: null });
+  assert.equal(
+    f.calls.some((p) => p.includes("logout")),
+    false,
+  );
+});
+test("se tentativa fechou sozinha, recomeço dispensa logout", async () => {
+  const f = restartFixture(["connecting", "close"]);
+  assert.equal((await f.run()).pairing_code, CODE);
+  assert.equal(
+    f.calls.some((p) => p.includes("logout")),
+    false,
+  );
+});
+test("logout com falha e estado ainda conectando não reaproveita código anterior", async () => {
+  const f = restartFixture(["connecting"], true);
+  await assert.rejects(f.run(), { message: "PAIRING_RESTART_UNAVAILABLE" });
+  assert.equal(f.calls.filter((p) => p.includes("logout")).length, 1);
+  assert.equal(
+    f.calls.some((p) => p.includes("/connect/") || p.includes("/create")),
+    false,
+  );
+});
+test("resposta incerta do logout exige conferência antes de conectar", async () => {
+  const f = restartFixture(["connecting", "connecting", "close"], true);
+  assert.equal((await f.run()).pairing_code, CODE);
+});
+test("preparação removida durante encerramento recria somente após ausência confirmada", async () => {
+  const f = restartFixture(["connecting", "connecting", "missing"]);
+  assert.equal((await f.run()).pairing_code, CODE);
+  assert.equal(
+    f.calls.some((p) => p.includes("delete") || p.includes("restart")),
+    false,
+  );
+  assert.equal(f.calls.filter((p) => p.includes("/create")).length, 1);
+});
+test("estado desconhecido recusa reinício sem logout", async () => {
+  const f = restartFixture(["unknown"]);
+  await assert.rejects(f.run(), { message: "PAIRING_UNAVAILABLE" });
+  assert.equal(f.calls.length, 1);
+});
+test("sessão aberta desde o começo permanece intacta no recomeço", async () => {
+  const f = restartFixture(["open"]);
+  assert.deepEqual(await f.run(), { status: "open", pairing_code: null });
+  assert.equal(f.calls.length, 1);
 });

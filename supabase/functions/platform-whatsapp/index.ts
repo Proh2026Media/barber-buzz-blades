@@ -7,7 +7,7 @@ import { corsHeaders, evolutionFetch, json } from "../_shared/evolution.ts";
 type Body = {
   method?: "qr" | "code";
   phone?: string;
-  action?: "status" | "connect" | "pairing-status" | "logout";
+  action?: "status" | "connect" | "restart-pairing" | "pairing-status" | "logout";
 };
 
 function mapEvolutionState(
@@ -76,10 +76,12 @@ Deno.serve(async (req) => {
 
     const body = (await req.json()) as Body;
     const action = body.action ?? "status";
-    if (!["status", "connect", "pairing-status", "logout"].includes(action))
+    if (!["status", "connect", "restart-pairing", "pairing-status", "logout"].includes(action))
       return json({ error: "ACTION_INVALID" }, 400);
     const wantsPairing =
-      action === "pairing-status" || (action === "connect" && body.method === "code");
+      action === "restart-pairing" ||
+      action === "pairing-status" ||
+      (action === "connect" && body.method === "code");
     if (body.method && body.method !== "qr" && body.method !== "code")
       return json({ error: "PAIRING_METHOD_INVALID" }, 400);
     if (wantsPairing && !pairingPhone(body.phone))
@@ -93,7 +95,7 @@ Deno.serve(async (req) => {
           evolutionFetch,
           instanceName,
           body.phone!,
-          action === "pairing-status" ? action : "connect",
+          action === "pairing-status" || action === "restart-pairing" ? action : "connect",
         );
         return json({ ok: true, pairing_supported: true, instance_name: instanceName, ...result });
       } catch (error) {

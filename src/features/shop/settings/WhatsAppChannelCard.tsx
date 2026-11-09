@@ -190,7 +190,13 @@ function WhatsAppBubble({ text, shopName }: { text: string; shopName: string }) 
  * mensagens automáticas com "quando sai" e o interruptor de cada uma, e o editor de textos com
  * a prévia em balão. Ações raras (desconectar, novo código) ficam em "⋯" e pedem confirmação.
  */
-export function WhatsAppChannelCard({ shopId }: { shopId: string }) {
+export function WhatsAppChannelCard({
+  shopId,
+  shopTimeZone,
+}: {
+  shopId: string;
+  shopTimeZone?: string;
+}) {
   const demo = useDemo();
   const { t } = useI18n();
   const editorRef = useRef<WhatsAppChipEditorHandle>(null);
@@ -996,6 +1002,7 @@ export function WhatsAppChannelCard({ shopId }: { shopId: string }) {
         onOpenChange={setPairOpen}
         endpoint="whatsapp-channel"
         shopId={shopId}
+        shopTimeZone={shopTimeZone}
         demo={Boolean(demo)}
         onUpdate={(payload) => {
           setChannel(payload.channel ?? null);

@@ -2727,7 +2727,9 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     if (section === "avisos") {
                       return (
                         <>
-                          {canManageShopChannels && <WhatsAppChannelCard shopId={shop.id} />}
+                          {canManageShopChannels && (
+                            <WhatsAppChannelCard shopId={shop.id} shopTimeZone={shop.timezone} />
+                          )}
                           {(canManageShopChannels || powers.googleOwn) && (
                             <GoogleConnectionCard
                               shopId={shop.id}

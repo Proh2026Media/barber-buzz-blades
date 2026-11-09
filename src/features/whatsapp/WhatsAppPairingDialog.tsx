@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import type { Session } from "@supabase/supabase-js";
 import { CheckCircle2, Copy, Loader2, Smartphone } from "lucide-react";
 import {
@@ -17,9 +25,17 @@ import { useDemo } from "@/features/demo/context";
 import { guardedFetch } from "@/lib/demo-guard";
 import { useAuthSession } from "@/lib/auth/use-auth-session";
 import { useI18n, type MessageKey } from "@/lib/i18n";
+import {
+  initialPairingCountry,
+  rememberPairingCountry,
+  pairingCountries,
+  normalizePairingPhone,
+  type CountryCode,
+} from "./pairing-phone";
 
 export type WhatsAppPairingPayload = {
   pairing_supported?: boolean;
+  restart_required?: boolean;
   pairing_code?: string | null;
   status?: "open" | "connecting" | "disconnected";
   channel?: Tables<"whatsapp_channels"> | null;
@@ -30,6 +46,7 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   endpoint: "whatsapp-channel" | "platform-whatsapp";
   shopId?: string;
+  shopTimeZone?: string;
   demo?: boolean;
   onUpdate: (payload: WhatsAppPairingPayload) => void;
 };
@@ -80,6 +97,7 @@ function PairingForm({
   open,
   endpoint,
   shopId,
+  shopTimeZone,
   userId,
   currentSession,
   onUpdate,
@@ -88,10 +106,15 @@ function PairingForm({
   userId: string;
   currentSession: RefObject<Session | null>;
 }) {
-  const { t } = useI18n();
-  const [phone, setPhone] = useState("+");
+  const { t, locale } = useI18n();
+  const [country, setCountry] = useState<CountryCode>(() =>
+    initialPairingCountry(shopTimeZone, locale),
+  );
+  const countries = useMemo(() => pairingCountries(locale), [locale]);
+  const [phone, setPhone] = useState("");
   const [code, setCode] = useState<string | null>(null);
   const [started, setStarted] = useState(false);
+  const [restartRequired, setRestartRequired] = useState(false);
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<MessageKey | null>(null);
@@ -115,13 +138,14 @@ function PairingForm({
   }, [open]);
 
   const request = useCallback(
-    async (action: "connect" | "pairing-status") => {
+    async (action: "connect" | "pairing-status" | "restart-pairing") => {
       if (pending.current || !visible.current || currentSession.current?.user.id !== userId) return;
-      const number = phone.replace(/\D/g, "");
-      if (!/^\+?[\d\s().-]+$/.test(phone) || !/^[1-9]\d{7,14}$/.test(number)) {
+      const normalized = normalizePairingPhone(phone, country);
+      if (!normalized) {
         setError("waPair.invalidPhone");
         return;
       }
+      const number = normalized.digits;
       pending.current = true;
       setBusy(true);
       setError(null);
@@ -134,7 +158,7 @@ function PairingForm({
       try {
         const { data } = await supabase.auth.getSession();
         if (!current() || data.session?.user.id !== userId) return;
-        if (action === "connect") setStarted(true);
+        if (action !== "pairing-status") setStarted(true);
         const response = await guardedFetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${endpoint}`,
           {
@@ -156,15 +180,26 @@ function PairingForm({
         const payload = (await response.json()) as WhatsAppPairingPayload;
         if (!current()) return;
         if (!response.ok) {
+          if (action === "restart-pairing") {
+            setStarted(false);
+            setRestartRequired(true);
+          }
           if (
             payload.error === "PAIRING_IN_PROGRESS" ||
             payload.error === "PAIRING_PHONE_INVALID"
           ) {
             setStarted(false);
             setError(
-              payload.error === "PAIRING_IN_PROGRESS" ? "waPair.inProgress" : "waPair.invalidPhone",
+              payload.error === "PAIRING_IN_PROGRESS"
+                ? "waPair.needsUpdate"
+                : "waPair.invalidPhone",
             );
-          } else setError("waPair.failed");
+          } else
+            setError(
+              payload.error === "PAIRING_RESTART_UNAVAILABLE"
+                ? "waPair.restartFailed"
+                : "waPair.failed",
+            );
           setCode(null);
           return;
         }
@@ -172,6 +207,13 @@ function PairingForm({
           setStarted(false);
           setCode(null);
           setError("waPair.needsUpdate");
+          return;
+        }
+        setRestartRequired(Boolean(payload.restart_required));
+        if (payload.restart_required) {
+          setStarted(false);
+          setCode(null);
+          update.current(payload);
           return;
         }
         update.current(payload);
@@ -193,6 +235,10 @@ function PairingForm({
         }
       } catch {
         if (current()) {
+          if (action === "restart-pairing") {
+            setStarted(false);
+            setRestartRequired(true);
+          }
           setCode(null);
           setError("waPair.failed");
         }
@@ -201,12 +247,12 @@ function PairingForm({
         if (version === generation.current) setBusy(false);
       }
     },
-    [phone, userId, endpoint, shopId, currentSession],
+    [phone, country, userId, endpoint, shopId, currentSession],
   );
 
   // Uma consulta por vez; resultado antigo nunca chega a outra conta/loja/abertura.
   useEffect(() => {
-    if (!open || !started || done || error) return;
+    if (!open || !started || restartRequired || done || error) return;
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout>;
     const poll = async () => {
@@ -218,7 +264,7 @@ function PairingForm({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [open, started, done, error, request]);
+  }, [open, started, restartRequired, done, error, request]);
 
   return (
     <PairingFrame open={open} onOpenChange={onOpenChange}>
@@ -228,15 +274,53 @@ function PairingForm({
         ) : (
           <>
             <label className="block space-y-2 text-sm font-semibold">
+              <span>{t("waPair.country")}</span>
+              <select
+                value={country}
+                disabled={started || busy}
+                onChange={(event) => {
+                  const selected = event.target.value as CountryCode;
+                  const previous = normalizePairingPhone(phone, country);
+                  if (previous && (phone.trim().startsWith("+") || phone.trim().startsWith("00")))
+                    setPhone(previous.national);
+                  setCountry(selected);
+                  rememberPairingCountry(selected);
+                }}
+                className="min-h-11 w-full min-w-0 rounded-[var(--control-radius)] border border-input bg-background px-3 py-2 text-base disabled:opacity-60"
+              >
+                {countries.map((option) => (
+                  <option key={option.country} value={option.country}>
+                    {option.name} (+{option.code})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block space-y-2 text-sm font-semibold">
               <span>{t("waPair.phone")}</span>
               <input
                 type="tel"
                 autoComplete="tel"
                 value={phone}
-                onChange={(event) => setPhone(event.target.value)}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setPhone(value);
+                  if (value.trim().startsWith("+") || value.trim().startsWith("00")) {
+                    const detected = normalizePairingPhone(value, country)?.country;
+                    if (detected) {
+                      setCountry(detected);
+                      rememberPairingCountry(detected);
+                    }
+                  }
+                }}
                 disabled={started || busy}
                 maxLength={24}
-                placeholder="+55 11 99999-9999"
+                placeholder={
+                  country === "BR"
+                    ? "(11) 99999-9999"
+                    : country === "PT"
+                      ? "912 345 678"
+                      : undefined
+                }
                 className="min-h-11 w-full rounded-[var(--control-radius)] border border-input bg-background px-3 py-2 text-base disabled:opacity-60"
               />
             </label>
@@ -284,6 +368,7 @@ function PairingForm({
               <li>{t("waPair.step3")}</li>
             </ol>
             <Hint icon={Smartphone}>{t("waPair.notSms")}</Hint>
+            {restartRequired && <Notice tone="info" title={t("waPair.restartNotice")} />}
             {error && <Notice tone="warning" title={t(error)} />}
           </>
         )}
@@ -294,14 +379,26 @@ function PairingForm({
             type="button"
             disabled={busy}
             className="action-button action-confirm w-full sm:w-auto"
-            onClick={() => void request(started ? "pairing-status" : "connect")}
+            onClick={() =>
+              void request(
+                restartRequired ? "restart-pairing" : started ? "pairing-status" : "connect",
+              )
+            }
           >
             {busy ? (
               <Loader2 className="animate-spin" aria-hidden="true" />
             ) : (
               <Smartphone aria-hidden="true" />
             )}
-            {t(busy ? "waPair.loading" : started ? "waPair.check" : "waPair.generate")}
+            {t(
+              busy
+                ? "waPair.loading"
+                : restartRequired
+                  ? "waPair.restart"
+                  : started
+                    ? "waPair.check"
+                    : "waPair.generate",
+            )}
           </button>
         </DialogActions>
       )}

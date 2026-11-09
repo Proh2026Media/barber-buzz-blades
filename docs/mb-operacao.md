@@ -391,6 +391,10 @@ Atualizado em **22/09/2026**.
 
 Atualizado em **22/09/2026**.
 
+### P-115 — correção de retomada e país (09/11/2026)
+
+A primeira instalação foi confirmada pela TI às 15h45. Correção posterior: “conectando” oferece **Recomeçar com este número**, em vez de bloqueio sem saída. A ação reconfere o estado e só encerra a preparação por pedido explícito; não apagar instâncias manualmente. País vem sugerido e pode ser corrigido no seletor; informar apenas número nacional/DDD, ou colar o internacional completo. [Estado e implantação](pacotes/2026-11-09-whatsapp-p115-retomada-e-pais.md). Entradas abaixo descrevem a entrega inicial.
+
 ### P-115 — QR e código de pareamento (09/11/2026)
 
 A interface oferece **Ler QR Code** e **Conectar com código** nos cartões da plataforma e da barbearia. As novas funções precisam ser instaladas pelo [pacote TI](pacotes/2026-11-09-ti-whatsapp-pareamento-evolution-p115.md); implantação e pareamento real ainda pendentes. Código Evolution/Baileys tem oito caracteres; o SMS de seis dígitos para registrar o número e os OTP do B&C não mudam.

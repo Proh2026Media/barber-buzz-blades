@@ -1,5 +1,7 @@
 # TI — WhatsApp por QR Code ou código de pareamento (P-115)
 
+**Histórico da primeira instalação:** a TI confirmou aplicação de `c49a783` e publicação do frontend em 09/11, 15h41–15h45. A correção posterior de retomada/país está no [registro atualizado](2026-11-09-whatsapp-p115-retomada-e-pais.md); não reinstalar o ZIP inicial por cima dela.
+
 **Preparado em 09/11/2026. Destino: Barba & Cabelo.** Pedido confirmado pelo dono: permitir os dois métodos na plataforma e nas barbearias, usando a Evolution API existente. Desenvolvimento local concluído; **instalação das funções e pareamento real ainda não confirmados**.
 
 ## 1. O que instalar

@@ -107,6 +107,17 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## P-115 — Retomada da preparação e país automático (09/11, ChatGPT/Codex)
+
+Relatório `relatorio-ti-whatsapp-p115-2026-11-09.md` lido integralmente. Primeira entrega `c49a783` instalada pela TI entre 15h41 e 15h45 BRT; três hashes iguais ao repositório, Edge saudável, frontend novo publicado. Essas etapas deixaram de estar pendentes, mas o pareamento no aparelho não foi homologado. O dono informou bloqueio no **admin da plataforma** e pediu país automático.
+
+Leitura própria da Evolution confirmou plataforma em `connecting`, Loja Teste em `close` no runtime e outra loja operacional em `open`. Nenhuma chamada de conexão/logout foi feita durante o diagnóstico. `connecting` era tratado como erro sem recuperação, embora não prove aparelho conectado.
+
+- `connect` em preparação anterior agora oferece `restart_required`; botão explícito **Recomeçar com este número** envia `restart-pairing`. O helper reconfere estado antes de logout, não manda delete/restart de instância e só inicia com o número pedido após confirmar fechamento/ausência. Se o estado já for `open`, retorna conectado. Erro/incerteza não reaproveita código de outra tentativa. Estado ausente em HTTP 200 da Evolution 2.3.7 também é reconhecido.
+- País sugerido localmente por escolha manual salva, fuso da loja/aparelho, região do navegador e idioma do app; sem GPS, serviço de IP ou permissão de localização. Seletor permite correção e lembra só o país. `libphonenumber-js/min` normaliza números nacionais/internacionais e evita DDI duplicado; `bun.lock` atualizado, sem introduzir package-lock. A loja fornece seu fuso ao componente; administração usa o aparelho/navegador.
+- **452/452 testes**, tipos, lint, formatação e montagem aprovados. Bancada do navegador cobre preparação anterior, clique explícito, telefone nacional, internacional colado, seletor de país, falha recuperável e sessão concluída; três larguras. Dados fictícios, sem pareamento real.
+- [Registro de implantação e limites](pacotes/2026-11-09-whatsapp-p115-retomada-e-pais.md). Flow, Salvy, Mercado Pago e banco não fazem parte desta correção.
+
 ## P-115 — WhatsApp por QR Code e código de pareamento (09/11, ChatGPT/Codex)
 
 O dono confirmou que a integração solicitada é no **Barba & Cabelo**. A Evolution/Baileys oferece pareamento por número com **oito caracteres**; não se trata do SMS de seis dígitos usado para registrar o WhatsApp nem do OTP já existente do aplicativo.

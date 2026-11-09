@@ -1,8 +1,9 @@
-/** Pareamento por telefone. Não armazena códigos nem desconecta sessões existentes. */
+/** Pareamento por telefone. Recomeço é explícito e confere novamente o estado da sessão. */
 export type EvolutionCall = (path: string, init?: RequestInit) => Promise<unknown>;
 export type PairingResult = {
   status: "open" | "connecting" | "disconnected";
   pairing_code: string | null;
+  restart_required?: boolean;
 };
 
 export function pairingPhone(raw: unknown): string | null {
@@ -42,37 +43,64 @@ export async function connectWithPairingCode(
   call: EvolutionCall,
   instance: string,
   phone: string,
-  action: "connect" | "pairing-status",
+  action: "connect" | "pairing-status" | "restart-pairing",
   pause: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
 ): Promise<PairingResult> {
   const number = pairingPhone(phone);
   if (!number) throw new Error("PAIRING_PHONE_INVALID");
   const path = encodeURIComponent(instance);
-  let state = "close";
-  let missing = false;
-  try {
-    const result = (await call(`/instance/connectionState/${path}`, { method: "GET" })) as {
-      instance?: { state?: string };
-      state?: string;
-    };
-    state = result.instance?.state ?? result.state ?? "unknown";
-  } catch (error) {
-    if (!evolutionInstanceMissing(error)) throw new Error("PAIRING_UNAVAILABLE");
-    missing = true;
-  }
+  const readState = async (): Promise<string> => {
+    try {
+      const result = (await call(`/instance/connectionState/${path}`, { method: "GET" })) as {
+        instance?: { instanceName?: string; state?: string };
+        state?: string;
+      };
+      // A Evolution 2.3.7 também responde 200 com instanceName, sem state, quando ausente.
+      if (result?.instance?.instanceName === instance && result.instance.state === undefined)
+        return "missing";
+      return result?.instance?.state ?? result?.state ?? "unknown";
+    } catch (error) {
+      if (evolutionInstanceMissing(error)) return "missing";
+      throw new Error("PAIRING_UNAVAILABLE");
+    }
+  };
+  let state = await readState();
   if (state === "open") return { status: "open", pairing_code: null };
-  if (action === "pairing-status" && (missing || state === "close" || state === "disconnected")) {
+  if (action === "pairing-status" && ["missing", "close", "disconnected"].includes(state)) {
     return { status: "disconnected", pairing_code: null };
   }
-  // Nunca reinicia uma tentativa de outra janela/método nem mostra um código antigo como novo.
-  if (action === "connect" && state !== "close" && state !== "disconnected") {
-    throw new Error(state === "connecting" ? "PAIRING_IN_PROGRESS" : "PAIRING_UNAVAILABLE");
+  if (state === "connecting" && action === "connect") {
+    // "Conectando" não prova um aparelho vinculado. Oferece saída explícita, sem reset automático.
+    return { status: "connecting", pairing_code: null, restart_required: true };
   }
+  if (state === "connecting" && action === "restart-pairing") {
+    // Esta ação vem do botão específico, após a pessoa escolher recomeçar a preparação.
+    // Reconfere imediatamente antes do logout; nunca manda delete/restart de instância.
+    state = await readState();
+    if (state === "open") return { status: "open", pairing_code: null };
+    if (state === "connecting") {
+      try {
+        await call(`/instance/logout/${path}`, { method: "DELETE" });
+      } catch {
+        // Uma falha pode ocorrer depois de encerrar a tentativa. Só o estado permite continuar.
+      }
+      for (let attempt = 0; attempt < 4; attempt++) {
+        state = await readState();
+        if (state === "open") return { status: "open", pairing_code: null };
+        if (["missing", "close", "disconnected"].includes(state)) break;
+        if (attempt < 3) await pause(500);
+      }
+      if (!["missing", "close", "disconnected"].includes(state))
+        throw new Error("PAIRING_RESTART_UNAVAILABLE");
+    }
+  }
+  if (action !== "pairing-status" && !["missing", "close", "disconnected"].includes(state))
+    throw new Error("PAIRING_UNAVAILABLE");
   if (action === "pairing-status" && state !== "connecting") {
     throw new Error("PAIRING_UNAVAILABLE");
   }
   try {
-    if (missing) {
+    if (state === "missing") {
       const created = await call("/instance/create", {
         method: "POST",
         body: JSON.stringify({
@@ -86,7 +114,7 @@ export async function connectWithPairingCode(
       if (code) return { status: "connecting", pairing_code: code };
     }
     // A Evolution pode devolver o primeiro resultado antes de terminar de gerar o código.
-    for (let attempt = 0; attempt < (action === "connect" ? 3 : 1); attempt++) {
+    for (let attempt = 0; attempt < (action !== "pairing-status" ? 3 : 1); attempt++) {
       const result = await call(`/instance/connect/${path}?number=${number}`, { method: "GET" });
       const current = result as { instance?: { state?: string }; state?: string; error?: unknown };
       if (current?.error) throw new Error("PAIRING_UNAVAILABLE");
@@ -94,7 +122,7 @@ export async function connectWithPairingCode(
         return { status: "open", pairing_code: null };
       const code = pairingCode(result);
       if (code) return { status: "connecting", pairing_code: code };
-      if (action === "connect" && attempt < 2) await pause(750);
+      if (action !== "pairing-status" && attempt < 2) await pause(750);
     }
     return { status: "connecting", pairing_code: null };
   } catch {

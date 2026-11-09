@@ -1,11 +1,18 @@
 /** Dicionário principal (fonte). Toda chave nova nasce aqui, em pt-BR. */
 export const ptBR = {
+  "waPair.restart": "Recomeçar com este número",
+  "waPair.restartNotice":
+    "O WhatsApp ainda não confirmou esta conexão. Há uma preparação anterior neste canal. Recomeçar encerra essa preparação e gera um código para o número informado.",
+  "waPair.restartFailed":
+    "Não foi possível encerrar a preparação anterior. Verifique a conexão e tente novamente.",
+  "waPair.country": "País",
   "waPair.qr": "Ler QR Code",
   "waPair.useCode": "Conectar com código",
   "waPair.title": "Conectar WhatsApp com código",
   "waPair.description": "Informe o número do WhatsApp que deseja conectar.",
-  "waPair.phone": "WhatsApp com código do país e DDD",
-  "waPair.invalidPhone": "Informe o código do país, DDD e número. Exemplo: +55 11 99999-9999.",
+  "waPair.phone": "DDD e número do WhatsApp",
+  "waPair.invalidPhone":
+    "Confira o país e informe o número completo com DDD. Não precisa digitar o código do país.",
   "waPair.generate": "Gerar código",
   "waPair.loading": "Conferindo…",
   "waPair.check": "Verificar conexão",

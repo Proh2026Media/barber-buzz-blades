@@ -194,11 +194,11 @@ for (const endpoint of ["platform-whatsapp", "whatsapp-channel"]) {
       false,
     );
   });
-  test(`${endpoint}: tentativa concorrente recebe conflito sem reiniciar`, async () => {
+  test(`${endpoint}: tentativa em andamento oferece recomeço explícito sem reiniciar`, async () => {
     const f = fixture(endpoint, { state: "connecting" });
     const result = await f.request({ action: "connect", method: "code", phone: "5511999990000" });
-    assert.equal(result.status, 409);
-    assert.equal(result.body.error, "PAIRING_IN_PROGRESS");
+    assert.equal(result.status, 200);
+    assert.equal(result.body.restart_required, true);
     assert.equal(
       f.calls.some((p) => /\/create|\/connect\//.test(p)),
       false,
@@ -225,3 +225,32 @@ test("loja sem canal: status não cria registro no banco", async () => {
     false,
   );
 });
+
+for (const endpoint of ["platform-whatsapp", "whatsapp-channel"]) {
+  test(`${endpoint}: recomeço exige sessão e permissão do mesmo escopo`, async () => {
+    const body = { action: "restart-pairing", method: "code", phone: "5511999990000" };
+    const noAuth = fixture(endpoint);
+    assert.equal((await noAuth.request(body, false)).status, 401);
+    assert.equal(noAuth.calls.length, 0);
+    const denied = fixture(endpoint, { allowed: false });
+    assert.equal((await denied.request(body)).status, 403);
+    assert.equal(
+      denied.calls.some((p) => p.startsWith("/")),
+      false,
+    );
+  });
+  test(`${endpoint}: recomeço de sessão aberta devolve conectado sem alterar Evolution`, async () => {
+    const f = fixture(endpoint, { state: "open" });
+    const result = await f.request({
+      action: "restart-pairing",
+      method: "code",
+      phone: "5511999990000",
+    });
+    assert.equal(result.status, 200);
+    assert.equal(result.body.pairing_code, null);
+    assert.equal(
+      f.calls.some((p) => /logout|delete|\/connect\/|\/create/.test(p)),
+      false,
+    );
+  });
+}

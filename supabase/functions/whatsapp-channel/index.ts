@@ -5,7 +5,14 @@ import { corsHeaders, evolutionFetch, instanceNameForShop, json } from "../_shar
 type Body = {
   method?: "qr" | "code";
   phone?: string;
-  action?: "status" | "connect" | "pairing-status" | "create" | "logout" | "settings";
+  action?:
+    | "status"
+    | "connect"
+    | "restart-pairing"
+    | "pairing-status"
+    | "create"
+    | "logout"
+    | "settings";
   barbershop_id?: string;
   notify_booking?: boolean;
   notify_reminder?: boolean;
@@ -62,10 +69,22 @@ Deno.serve(async (req) => {
 
     const body = (await req.json()) as Body;
     const action = body.action ?? "status";
-    if (!["status", "connect", "pairing-status", "logout", "create", "settings"].includes(action))
+    if (
+      ![
+        "status",
+        "connect",
+        "restart-pairing",
+        "pairing-status",
+        "logout",
+        "create",
+        "settings",
+      ].includes(action)
+    )
       return json({ error: "ACTION_INVALID" }, 400);
     const wantsPairing =
-      action === "pairing-status" || (action === "connect" && body.method === "code");
+      action === "restart-pairing" ||
+      action === "pairing-status" ||
+      (action === "connect" && body.method === "code");
     if (body.method && body.method !== "qr" && body.method !== "code")
       return json({ error: "PAIRING_METHOD_INVALID" }, 400);
     if (wantsPairing && !pairingPhone(body.phone))
@@ -170,7 +189,7 @@ Deno.serve(async (req) => {
           evolutionFetch,
           channel.instance_name,
           body.phone!,
-          action === "pairing-status" ? action : "connect",
+          action === "pairing-status" || action === "restart-pairing" ? action : "connect",
         );
         const { data: updated, error } = await admin
           .from("whatsapp_channels")
@@ -184,6 +203,7 @@ Deno.serve(async (req) => {
           pairing_supported: true,
           channel: updated,
           pairing_code: result.pairing_code,
+          restart_required: result.restart_required,
         });
       } catch (error) {
         const code = error instanceof Error ? error.message : "PAIRING_UNAVAILABLE";
