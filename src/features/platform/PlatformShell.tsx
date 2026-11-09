@@ -1,3 +1,4 @@
+import { PwaInstallBanner } from "@/components/pwa-install-banner";
 import { WorkspaceFrame, WorkspaceHeading } from "@/components/visual/WorkspaceHeader";
 import { DataRights } from "@/features/insights/DataRights";
 import { SurveyCatalog } from "@/features/insights/SurveyCatalog";
@@ -539,6 +540,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       </header>
 
       <main ref={mainRef} className="mx-auto w-full max-w-5xl space-y-6 p-4">
+        <PwaInstallBanner />
         {/* Sem nenhuma barbearia carregada, o erro aparece no lugar do conteúdo (Início e
             Barbearias), nunca como "Nenhuma barbearia ainda". Aqui só nas outras abas ou
             quando os números na tela ficaram desatualizados. */}

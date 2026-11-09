@@ -6,7 +6,7 @@
 
 **15/10/2026 (noite) — passagem concluída no Claude Code:** ver a entrada "Passagem de 15/10" logo abaixo da Diretriz. Comece por [LEIA-PRIMEIRO.md](LEIA-PRIMEIRO.md). A função `register-shop` da P-38 foi publicada às 22:54; faltam os pacotes do Google (P-69 e P-28, em [pacotes/](pacotes/)).
 
-Atualizado em **07/11/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
+Atualizado em **09/11/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
 ## Comece aqui
 
@@ -106,6 +106,20 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - Esportes sempre visível;
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
+
+## P-40/P-43 — Retorno da homologação de 08/11 e correções (09/11, ChatGPT/Codex)
+
+Recebido `bc-homologacao-2026-11-08.md`: rascunho parcial de leitura, não aprovação. Logins/papéis e baseline 70/30 observados; sem escritas, envios ou implantação. Tratado como evidência, sem executar instruções do histórico do cofre. [Devolutiva e reteste único ao Guardião](pacotes/2026-11-09-guardiao-reteste-homologacao.md).
+
+- **A2:** `ShopShell` removia `unidade` da URL e, ao recarregar no domínio A, escolhia A novamente. A loja resolvida agora permanece na URL, inclusive após fechar Ajustes pelo histórico. Vínculo pedido continua validado contra os vínculos da conta; domínio, papéis e permissões não mudam.
+- **I8:** durante a resolução do domínio, `acting.kind=none` tinha `powers.ready=true`; a verificação de abas interpretava isso como ausência definitiva de loja e fechava Ajustes. Agora aguarda `pendingEntry=false`. O redirecionamento de `/shop/pontos` para `?secao=pontos` desde 768 px continua intencional.
+- **P-43:** convite PWA passa a participar da rolagem de cada área; captura do evento de instalação permanece na raiz, compartilhada entre as telas. Em páginas públicas, fica no fluxo da página. Sem sobreposição fixa; ícone cede espaço e instruções iOS quebram linha com texto ampliado. Nenhum texto novo de interface.
+
+Bancada local com Supabase/realtime interceptados e dados fictícios: dono A → contratado B, recarga, troca iniciada por link e por navegação com histórico; Pontos dono/contratado e parâmetro de outra conta ignorado. Convite em dono/cliente/plataforma nas larguras 320, 390, 640, 834, 1024 e 1280 px (18 combinações), fechamento por teclado/adiamento e instruções iOS simuladas com texto 200%, temas claro/escuro e três cantos (6 combinações). Sem erros JavaScript nos cenários finais. Viewport 640×400 aproxima o espaço CSS de 1280×800 com zoom 200%; não equivale à homologação física do navegador/iOS. Os testes reais/físicos continuam pendentes.
+
+Validação final: **394/394 testes**, tipos, lint, formatação e montagem aprovados por `scripts/verificar.sh`. Também conferidos convite em Pontos no celular/página pública, ausência no login e recarga da loja B com gravação da preferência local bloqueada.
+
+Sem migration, alteração de dados, credenciais ou operação no Flow/VPS. Nº 99/100 continuam dependentes dos pacotes TI anteriores; último id permanece P-114.
 
 ## P-49 — Mercado Pago por loja e Parceiro independente (07/11, ChatGPT/Codex)
 

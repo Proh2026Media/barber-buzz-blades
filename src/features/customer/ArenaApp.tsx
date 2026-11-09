@@ -1,3 +1,4 @@
+import { PwaInstallBanner } from "@/components/pwa-install-banner";
 import { WorkspaceFrame, WorkspaceHeading } from "@/components/visual/WorkspaceHeader";
 import { SurveyCard } from "@/features/insights/SurveyCard";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
@@ -3205,6 +3206,7 @@ function ArenaApp({
             : ""
         }`}
       >
+        <PwaInstallBanner />
         <div key={tab} className="mb-panel">
           {/* Veio de uma recusa do painel ou da plataforma: diz o motivo, uma vez. */}
           {refusal && (

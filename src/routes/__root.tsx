@@ -17,7 +17,7 @@ import { deviceBootstrapScript } from "../lib/device";
 import { DEFAULT_LOCALE, localeFromTag, localeBootstrapScript } from "../lib/i18n/locale";
 import { useI18n } from "../lib/i18n";
 import { PwaRegister } from "../lib/pwa";
-import { PwaInstallBanner } from "../components/pwa-install-banner";
+import { PwaInstallBanner, PwaInstallProvider } from "../components/pwa-install-banner";
 import { Toaster } from "../components/ui/sonner";
 
 import { loadLocale } from "../lib/i18n/translate";
@@ -135,9 +135,11 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <PwaRegister />
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
-      <PwaInstallBanner />
+      <PwaInstallProvider>
+        <PwaInstallBanner fallback />
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <Outlet />
+      </PwaInstallProvider>
       <Toaster />
     </QueryClientProvider>
   );

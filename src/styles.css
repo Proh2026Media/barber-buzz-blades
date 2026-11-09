@@ -2667,10 +2667,15 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
   }
 }
 
-/* O banner de instalação some enquanto houver janela aberta, para não cobrir
-   o formulário nem fechar a janela com um toque fora dela. */
-body:has(:is([role="dialog"], [role="alertdialog"])[data-state="open"]) .pwa-install-banner {
-  display: none;
+/* Convite de instalação no fluxo da página. Em área estreita ou texto ampliado,
+   o ícone decorativo cede espaço ao título e à ação de fechar. */
+.pwa-install-card {
+  container-type: inline-size;
+}
+@container (max-width: 20rem) {
+  .pwa-install-icon {
+    display: none;
+  }
 }
 
 /* Editor de identidade visual: a barra de salvar acompanha o fim do diálogo.

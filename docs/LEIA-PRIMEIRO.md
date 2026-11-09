@@ -1,5 +1,7 @@
 # Leia primeiro — Barba & Cabelo
 
+**09/11/2026 — retorno da homologação (P-40/P-43):** relatório do Guardião de 08/11 recebido como **parcial**, sem aprovação integral. Corrigidas a perda da loja escolhida na recarga, a saída prematura de Ajustes/Pontos durante identificação do domínio e a sobreposição do convite de instalação. [Devolutiva e reteste dirigido](pacotes/2026-11-09-guardiao-reteste-homologacao.md). Sem migration; P-40 a P-43 reais/físicas continuam abertas. Não repetir logins/cofre já preparados nem operar o Flow por este retorno.
+
 Porta de entrada para o agente que vai continuar o projeto (Cursor, Claude Code, Codex e outros). Atualizado em **07/11/2026**.
 
 **Passagem do dia (24/10/2026):** o dono passa a continuar o projeto no ChatGPT. Leia antes [passagem-chatgpt-2026-10-24.md](passagem-chatgpt-2026-10-24.md). As passagens anteriores ([21/10, Claude Code aplicativo](passagem-claude-code-app-2026-10-21.md); [15/10](passagem-claude-2026-10-15.md)) ficam como histórico.

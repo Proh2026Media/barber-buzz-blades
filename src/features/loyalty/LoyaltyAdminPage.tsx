@@ -1,3 +1,4 @@
+import { PwaInstallBanner } from "@/components/pwa-install-banner";
 import {
   useCallback,
   useEffect,
@@ -297,6 +298,7 @@ export function LoyaltyAdminPage({
             : "loyalty-admin-content mx-auto max-w-3xl space-y-5 p-4 pb-10"
         }
       >
+        {!embedded && <PwaInstallBanner />}
         {!shop ? (
           <EmptyState tone="bell" title={t("loyalty.admin.noShop")} />
         ) : loading ? (

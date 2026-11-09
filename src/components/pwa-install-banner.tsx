@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { Maximize2, Share, Smartphone, SquarePlus, X, Zap } from "lucide-react";
 import { Tag } from "@/components/visual";
@@ -45,9 +45,16 @@ function dismissedRecently() {
  * Android/computador: botão "Adicionar à tela inicial" (quando o navegador permite).
  * iPhone: os 2 passos (Compartilhar → Adicionar à Tela de Início), só no app e no painel.
  */
-export function PwaInstallBanner() {
-  const { t } = useI18n();
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
+const InstallContext = createContext<{
+  deferred: BeforeInstallPromptEvent | null;
+  ios: boolean;
+  dismissed: boolean;
+  dismiss: () => void;
+  install: () => Promise<void>;
+} | null>(null);
+
+/** Captura o convite uma vez, inclusive antes de a área autenticada terminar de carregar. */
+export function PwaInstallProvider({ children }: { children: ReactNode }) {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const [ios, setIos] = useState(false);
   const [dismissed, setDismissed] = useState(true);
@@ -65,10 +72,6 @@ export function PwaInstallBanner() {
     return () => window.removeEventListener("beforeinstallprompt", onPrompt);
   }, []);
 
-  const inApp = ["/app", "/shop", "/demo"].some((prefix) => pathname.startsWith(prefix));
-  const showIos = ios && !deferred && inApp;
-  if (dismissed || hiddenOn(pathname) || (!deferred && !showIos)) return null;
-
   function dismiss() {
     try {
       window.localStorage.setItem(DISMISS_KEY, String(Date.now() + DISMISS_MS));
@@ -78,25 +81,47 @@ export function PwaInstallBanner() {
     setDismissed(true);
   }
 
+  async function install() {
+    if (!deferred) return;
+    await deferred.prompt();
+    await deferred.userChoice;
+    setDeferred(null);
+  }
+
   return (
-    // Celular: centrado acima da barra. Computador (≥ 1024 px): ancorado no canto inferior direito.
-    <div className="pwa-install-banner pointer-events-none fixed inset-x-0 bottom-[var(--app-banner-bottom)] z-[80] flex justify-center p-3 lg:inset-x-auto lg:bottom-4 lg:right-4 lg:justify-end lg:p-0">
+    <InstallContext.Provider value={{ deferred, ios, dismissed, dismiss, install }}>
+      {children}
+    </InstallContext.Provider>
+  );
+}
+
+/** Dentro dos painéis, participa da rolagem do conteúdo; fora deles, usa o fluxo da página. */
+export function PwaInstallBanner({ fallback = false }: { fallback?: boolean }) {
+  const { t } = useI18n();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const install = useContext(InstallContext);
+  const workspace = ["/app", "/shop", "/shop/pontos", "/demo", "/platform"].includes(
+    pathname.replace(/\/+$/, ""),
+  );
+  if (!install || (fallback && workspace)) return null;
+  const { deferred, ios, dismissed, dismiss } = install;
+  const showIos = ios && !deferred && workspace;
+  if (dismissed || hiddenOn(pathname) || (!deferred && !showIos)) return null;
+
+  return (
+    <div className={`pwa-install-banner mx-auto mb-4 w-full max-w-3xl ${fallback ? "p-3" : ""}`}>
       <section
         aria-label={t("entry.pwa.title")}
-        className="entry-result-card pointer-events-auto w-full max-w-md p-3 shadow-2xl lg:max-w-sm"
+        className="pwa-install-card entry-result-card w-full p-3"
       >
         <div className="flex items-start gap-3">
           <img
             src="/icons/icon-192.png"
             alt=""
-            className="size-12 shrink-0 rounded-[var(--control-radius)]"
+            className="pwa-install-icon size-12 shrink-0 rounded-[var(--control-radius)]"
           />
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold tracking-tight">{t("entry.pwa.title")}</p>
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              <Tag icon={Zap}>{t("entry.pwa.oneTap")}</Tag>
-              <Tag icon={Maximize2}>{t("entry.pwa.fullScreen")}</Tag>
-            </div>
+            <p className="break-words text-sm font-bold tracking-tight">{t("entry.pwa.title")}</p>
           </div>
           <button
             type="button"
@@ -107,8 +132,15 @@ export function PwaInstallBanner() {
             <X size={16} aria-hidden="true" />
           </button>
         </div>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          <Tag icon={Zap}>{t("entry.pwa.oneTap")}</Tag>
+          <Tag icon={Maximize2}>{t("entry.pwa.fullScreen")}</Tag>
+        </div>
         {showIos ? (
-          <ol aria-label={t("entry.pwa.iosLabel")} className="mt-3 grid grid-cols-2 gap-2">
+          <ol
+            aria-label={t("entry.pwa.iosLabel")}
+            className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2"
+          >
             {(
               [
                 [Share, t("entry.pwa.iosShare")],
@@ -117,7 +149,7 @@ export function PwaInstallBanner() {
             ).map(([Icon, label], index) => (
               <li
                 key={label}
-                className="flex min-h-11 items-center gap-2 rounded-[var(--control-radius)] border border-border bg-background/60 px-2.5 py-2 text-xs font-semibold"
+                className="flex min-h-11 min-w-0 items-center gap-2 rounded-[var(--control-radius)] border border-border bg-background/60 px-2.5 py-2 text-xs font-semibold"
               >
                 <span
                   aria-hidden="true"
@@ -126,7 +158,7 @@ export function PwaInstallBanner() {
                   {index + 1}
                 </span>
                 <Icon className="size-4 shrink-0 text-gold" aria-hidden="true" />
-                <span className="min-w-0">{label}</span>
+                <span className="min-w-0 [overflow-wrap:anywhere]">{label}</span>
               </li>
             ))}
           </ol>
@@ -135,13 +167,7 @@ export function PwaInstallBanner() {
             <button
               type="button"
               className="action-button action-confirm mt-3 w-full"
-              onClick={() => {
-                void (async () => {
-                  await deferred.prompt();
-                  await deferred.userChoice;
-                  setDeferred(null);
-                })();
-              }}
+              onClick={() => void install.install()}
             >
               <Smartphone aria-hidden="true" />
               {t("entry.pwa.add")}

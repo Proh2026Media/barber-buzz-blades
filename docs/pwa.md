@@ -7,7 +7,7 @@ O Barba & Cabelo pode ser instalado na tela inicial (Android/Chrome e iOS Safari
 - Manifesto: `public/manifest.webmanifest`
 - Ícones: `public/icons/` (180, 192, 512 + maskable)
 - Service worker: `vite-plugin-pwa` (build gera `sw.js`)
-- Banner “Instalar o app” quando o navegador oferecer
+- Convite “Instalar o app” quando o navegador oferecer: desde 09/11/2026, ocupa espaço no conteúdo rolável da loja, cliente, administração e pontos; nas páginas públicas, acompanha o fluxo da página. Não sobrepõe os controles. O evento é capturado uma vez na raiz, inclusive durante a entrada nas áreas autenticadas. Fechar adia por 30 dias neste aparelho.
 - Metas Apple/Android no `__root.tsx`
 - Safe area em modo `standalone`
 

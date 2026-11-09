@@ -1,3 +1,4 @@
+import { PwaInstallBanner } from "@/components/pwa-install-banner";
 import { SettingsPanel, SettingsPanels } from "./settings/SettingsPanels";
 import { useDevice } from "@/lib/device";
 import { WorkspaceFrame, WorkspaceHeading } from "@/components/visual/WorkspaceHeader";
@@ -245,17 +246,19 @@ function shopTermsOf(services: Tables<"services">[]) {
   );
 }
 
-/** Loja pedida em "Minhas áreas" (`/shop?unidade=<vínculo>`): vale só na entrada. */
+/** Loja pedida em "Minhas áreas" ou mantida após a troca (`?unidade=<vínculo>`). */
 function readRequestedShop(): string | null {
   if (typeof window === "undefined") return null;
   return new URLSearchParams(window.location.search).get("unidade");
 }
 
-function clearRequestedShop() {
+function rememberRequestedShop(actorId: string) {
   if (typeof window === "undefined") return;
   const url = new URL(window.location.href);
-  if (!url.searchParams.has("unidade")) return;
-  url.searchParams.delete("unidade");
+  // Um Voltar pode sair do painel antes de o React desmontar o componente.
+  if (url.pathname.replace(/\/+$/, "") !== "/shop") return;
+  if (url.searchParams.get("unidade") === actorId) return;
+  url.searchParams.set("unidade", actorId);
   window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
 }
 
@@ -285,7 +288,6 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   const [foreignHost, setForeignHost] = useState<{ id: string; name: string } | null>(null);
   useEffect(() => {
     if (demo) return;
-    clearRequestedShop();
     if (isPlatformApexHost()) return;
     let active = true;
     const decide = (hostShopId: string | null) => {
@@ -331,6 +333,16 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     ? { kind: "none", actor: null, shop: null, reason: "no-shop" }
     : resolvedActing;
   const actor = acting.actor;
+  // O endereço conserva a loja efetivamente aberta, inclusive depois de voltar de uma
+  // seção de Ajustes. Recarregar não deixa o domínio substituir a escolha explícita.
+  // Só grava vínculos já resolvidos da conta atual; o parâmetro nunca concede acesso.
+  useEffect(() => {
+    if (!actor || demo) return;
+    const remember = () => rememberRequestedShop(actor.id);
+    remember();
+    window.addEventListener("popstate", remember);
+    return () => window.removeEventListener("popstate", remember);
+  }, [actor, demo]);
   // Permissões guardadas junto da loja a que pertencem: ao trocar de loja, nada da anterior
   // vale enquanto as da nova carregam ("Abrindo Barbearia X…").
   const [access, setAccess] = useState(() => ({
@@ -1857,13 +1869,21 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
 
   useEffect(() => {
     // Só redireciona com capacidades já resolvidas — evita bounce enquanto a matriz carrega.
-    if (!powers.ready) return;
+    if (pendingEntry || !powers.ready) return;
     if (tab === "servicos" && !canEditServices) setTab("agenda");
     if (tab === "equipe" && !canManageTeam) setTab("agenda");
     if (tab === "horarios" && !canManageOperations) setTab("agenda");
     if (tab === "configuracoes" && !canOpenSettings) setTab("agenda");
     // "Equipe" na Agenda some sozinho para quem não vê a loja toda (ver AgendaTab).
-  }, [tab, canEditServices, canManageTeam, canManageOperations, canOpenSettings, powers.ready]);
+  }, [
+    tab,
+    canEditServices,
+    canManageTeam,
+    canManageOperations,
+    canOpenSettings,
+    powers.ready,
+    pendingEntry,
+  ]);
 
   // Erro de uma aba não fica à mostra na outra.
   useEffect(() => {
@@ -2049,6 +2069,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
               : ""
         }`}
       >
+        <PwaInstallBanner />
         <ApprovalNoteContext.Provider value={approvalNote}>
           <div key={tab} className="mb-panel space-y-6">
             {/* Domínio de outra barbearia: diz onde a pessoa está e leva ao endereço da loja dela. */}
