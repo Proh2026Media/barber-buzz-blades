@@ -391,6 +391,12 @@ Atualizado em **22/09/2026**.
 
 Atualizado em **22/09/2026**.
 
+### P-115 — QR e código de pareamento (09/11/2026)
+
+A interface oferece **Ler QR Code** e **Conectar com código** nos cartões da plataforma e da barbearia. As novas funções precisam ser instaladas pelo [pacote TI](pacotes/2026-11-09-ti-whatsapp-pareamento-evolution-p115.md); implantação e pareamento real ainda pendentes. Código Evolution/Baileys tem oito caracteres; o SMS de seis dígitos para registrar o número e os OTP do B&C não mudam.
+
+`status` não inicia sessão. `status` com `method: "qr"` acompanha QR ativo; `pairing-status` acompanha a tentativa por número. Canal conectado é preservado; tentativa em andamento deve ser concluída ou expirar antes de iniciar outro código. Não desconectar canais operacionais para trocar o método. Sem migration nem variável nova.
+
 ### O que já está ligado
 
 | Item                     | Valor                                                                               |
@@ -407,9 +413,9 @@ Atualizado em **22/09/2026**.
 ### Como conectar uma loja
 
 1. Entrar no painel da barbearia como **dono** ou **sócio**.
-2. **Ajustes** → card **WhatsApp da barbearia** → **Conectar WhatsApp**.
-3. Escanear o QR no celular (WhatsApp → Aparelhos conectados).
-4. **Atualizar** até status **Conectado**.
+2. **Ajustes → Avisos** → cartão **WhatsApp da barbearia** → **Ler QR Code** ou, após instalar P-115, **Conectar com código**.
+3. No QR, escanear em WhatsApp → Aparelhos conectados. No código, informar o número internacional no B&C e digitar os oito caracteres em Conectar aparelho → Conectar com número de telefone no WhatsApp.
+4. Aguardar o estado **Conectado**; a janela acompanha automaticamente.
 5. Ligar/desligar avisos de horário e lembrete conforme a loja.
 
 ### Cliente

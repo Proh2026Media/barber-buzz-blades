@@ -1,6 +1,36 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const enUS: Record<MessageKey, string> = {
+  "waPair.qr": "Scan QR code",
+  "waPair.useCode": "Connect with a code",
+  "waPair.title": "Connect WhatsApp with a code",
+  "waPair.description": "Enter the WhatsApp number you want to connect.",
+  "waPair.phone": "WhatsApp number with country and area code",
+  "waPair.invalidPhone":
+    "Enter the country code, area code and number. Example: +55 11 99999-9999.",
+  "waPair.generate": "Generate code",
+  "waPair.loading": "Checking…",
+  "waPair.check": "Check connection",
+  "waPair.enterCode": "Enter this code in WhatsApp",
+  "waPair.codeLabel": "Pairing code",
+  "waPair.copy": "Copy code",
+  "waPair.copied": "Code copied",
+  "waPair.copyFailed": "Could not copy. Enter the displayed code in WhatsApp.",
+  "waPair.step1": "Open WhatsApp on your phone and go to Linked devices.",
+  "waPair.step2": "Tap Link a device, then choose Link with phone number.",
+  "waPair.step3": "Enter the code shown here and confirm in WhatsApp.",
+  "waPair.notSms":
+    "This code has 8 characters. It differs from the six-digit SMS code used to register your number.",
+  "waPair.waiting": "Preparing the code. The connection will be checked automatically.",
+  "waPair.inProgress":
+    "A connection attempt is already in progress. Complete it using the QR code or wait for it to end before generating another code.",
+  "waPair.failed": "Could not confirm the connection. Check again before starting another attempt.",
+  "waPair.needsUpdate":
+    "Code pairing still needs to be enabled on the server. Use the QR code for now.",
+  "waPair.ended": "The attempt ended without connecting. You can generate another code.",
+  "waPair.demo":
+    "The demo does not connect real numbers. In your barbershop, you can choose a QR code or a pairing code.",
+
   "settingsHub.section.pagamentos": "Payments",
   "settingsHub.hint.pagamentos": "The recipient’s Mercado Pago connection.",
   "mp.title": "Mercado Pago",

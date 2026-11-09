@@ -1,3 +1,4 @@
+import { WhatsAppPairingDialog } from "@/features/whatsapp/WhatsAppPairingDialog";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import {
   CheckCircle2,
@@ -80,7 +81,7 @@ const QR_STEPS: { key: string; icon: LucideIcon; labelKey: MessageKey }[] = [
   { key: "scan", icon: ScanLine, labelKey: "plat.wa.step3" },
 ];
 
-async function callPlatformWhatsApp(action: "status" | "connect" | "logout") {
+async function callPlatformWhatsApp(action: "status" | "connect" | "logout", method?: "qr") {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData.session?.access_token;
   if (!token) throw new Error(tNow("integr.err.session"));
@@ -93,7 +94,7 @@ async function callPlatformWhatsApp(action: "status" | "connect" | "logout") {
       apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ action }),
+    body: JSON.stringify({ action, ...(method ? { method } : {}) }),
   });
   const payload = (await response.json()) as PlatformWaPayload;
   if (!response.ok) throw new Error(payload.error || tNow("integr.platformWa.errGeneric"));
@@ -122,6 +123,7 @@ export const PlatformWhatsAppCard = forwardRef<
   const [displayPhone, setDisplayPhone] = useState<string | null>(null);
   const [qrcode, setQrcode] = useState<string | null>(null);
   const [qrOpen, setQrOpen] = useState(false);
+  const [pairOpen, setPairOpen] = useState(false);
   const [justConnected, setJustConnected] = useState(false);
   /** "Já li o código" conferiu e ainda não conectou. */
   const [scanNote, setScanNote] = useState(false);
@@ -178,7 +180,7 @@ export const PlatformWhatsAppCard = forwardRef<
     const timer = window.setInterval(() => {
       void (async () => {
         try {
-          apply(await callPlatformWhatsApp("status"));
+          apply(await callPlatformWhatsApp("status", "qr"));
         } catch {
           /* ignore polling errors */
         }
@@ -405,7 +407,21 @@ export const PlatformWhatsAppCard = forwardRef<
               ? t("integr.wa.status.connecting")
               : canShowQr
                 ? t("plat.wa.showCode")
-                : t("integr.wa.connect")}
+                : t("waPair.qr")}
+          </button>
+        )}
+        {status !== "open" && (
+          <button
+            type="button"
+            disabled={busy !== null}
+            className="action-button action-confirm"
+            onClick={() => {
+              setQrOpen(false);
+              setPairOpen(true);
+            }}
+          >
+            <Smartphone aria-hidden="true" />
+            {t("waPair.useCode")}
           </button>
         )}
         <button
@@ -515,6 +531,17 @@ export const PlatformWhatsAppCard = forwardRef<
         confirmIcon={Unplug}
         cancelLabel={t("plat.wa.keep")}
         onConfirm={disconnect}
+      />
+
+      <WhatsAppPairingDialog
+        open={pairOpen}
+        onOpenChange={setPairOpen}
+        endpoint="platform-whatsapp"
+        onUpdate={(payload) => {
+          apply(payload);
+          if (payload.status === "open")
+            setResult({ state: "saved", text: t("integr.platformWa.connected") });
+        }}
       />
 
       <Dialog

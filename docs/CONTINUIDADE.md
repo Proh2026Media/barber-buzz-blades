@@ -107,6 +107,17 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## P-115 — WhatsApp por QR Code e código de pareamento (09/11, ChatGPT/Codex)
+
+O dono confirmou que a integração solicitada é no **Barba & Cabelo**. A Evolution/Baileys oferece pareamento por número com **oito caracteres**; não se trata do SMS de seis dígitos usado para registrar o WhatsApp nem do OTP já existente do aplicativo.
+
+- `WhatsAppPairingDialog` compartilhado entre plataforma e loja: telefone com DDI/DDD, código em dois grupos, cópia, passos curtos, atualização automática e retorno de conexão. Estado vinculado à conta/loja/abertura; resposta tardia não entra em outra janela/conta. Código sai da tela ao fechar/conectar; demonstração não monta o formulário real.
+- `whatsapp-pairing.ts` valida número, separa `pairingCode` do texto cru do QR, preserva sessões abertas e bloqueia início sobre tentativa já em andamento. Cria com `number` ou conecta por `?number=`; consultas verificam o estado antes de buscar o código.
+- `platform-whatsapp` e `whatsapp-channel` conservam permissões e escopo da instância. Consulta comum não cria sessão; `status` com `method: "qr"` atualiza a imagem somente em tentativa ativa. Nenhum telefone/código novo persistido pelo B&C, nenhuma migration ou variável nova.
+- 34 testes novos executam helper e handlers reais com dependências em memória: autorização, escopo, entrada inválida, sessão aberta, conflito, instância ausente, QR atualizado e erro sanitizado. Telas conferidas em bancada com dados fictícios; nenhum número conectado ou mensagem real enviada nesta rodada.
+- Verificação final: **428/428 testes**, tipos, lint, formatação e montagem aprovados. Bancada do navegador: plataforma em 320/390/834/1280 px; loja em 320/834/1280 px com 600 px de altura; entrada inválida, atualização do código, fechar/reabrir, conexão, backend antigo, conflito, QR e teclado. Três cantos × claro/escuro conferidos no componente novo; nenhuma conexão externa real.
+- [Pacote único TI](pacotes/2026-11-09-ti-whatsapp-pareamento-evolution-p115.md) para instalar dois handlers e helper e homologar no aparelho controlado. **Não instalado/validado no runtime Edge real nesta rodada.** Frontend publicado não encerra P-115. Flow, Salvy, Mercado Pago e P-70 não alterados.
+
 ## P-40/P-43 — Retorno da homologação de 08/11 e correções (09/11, ChatGPT/Codex)
 
 Recebido `bc-homologacao-2026-11-08.md`: rascunho parcial de leitura, não aprovação. Logins/papéis e baseline 70/30 observados; sem escritas, envios ou implantação. Tratado como evidência, sem executar instruções do histórico do cofre. [Devolutiva e reteste único ao Guardião](pacotes/2026-11-09-guardiao-reteste-homologacao.md).

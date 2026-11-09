@@ -1,5 +1,7 @@
 # Pendências — lista única e priorizada
 
+**09/11/2026 — P-115, WhatsApp por QR ou código:** implementados os dois métodos nos cartões da plataforma e da loja. Pareamento Evolution/Baileys usa **oito caracteres**, diferente do SMS de seis dígitos. Permissões e canais existentes preservados; consultas comuns não iniciam conexão. Código local e bancada conferidos; **funções no servidor e pareamento real aguardam TI**, pelo [pacote único](../pacotes/2026-11-09-ti-whatsapp-pareamento-evolution-p115.md). Sem migration/env nova, sem mudança no Flow ou na Salvy. Último id usado: P-115.
+
 **09/11/2026 — retorno da homologação (P-40/P-43):** relatório do Guardião de 08/11 recebido como **parcial**, sem aprovação integral. Corrigidas a perda da loja escolhida na recarga, a saída prematura de Ajustes/Pontos durante identificação do domínio e a sobreposição do convite de instalação. [Devolutiva e reteste dirigido](../pacotes/2026-11-09-guardiao-reteste-homologacao.md). Sem migration; P-40 a P-43 reais/físicas continuam abertas. Não repetir logins/cofre já preparados nem operar o Flow por este retorno.
 
 Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (madrugada, Claude Code)** com a entrega "interface por dispositivo" (novos P-79 a P-95 na seção 9; P-75 com o que avançou), em **20/10/2026** (P-73 aplicada no servidor pelo TI) e em **16/10/2026 (madrugada, Claude Code)** com a entrega de 16/10 (agendamento pelo painel, login Google no app instalado, simplificação visual; novos P-73 a P-76; depois da revisão de código da mesma madrugada, P-77 e P-78) e, antes, em **15/10/2026 (noite, Claude Code)** com a passagem de 15/10: decisões P-26, P-33, P-34, P-35, P-37, P-50 e P-70; feitos P-27, P-31, P-32 e P-38 (função publicada no servidor às 22:54); P-67 aplicado; novos P-71 e P-72. Porta de entrada: [LEIA-PRIMEIRO.md](../LEIA-PRIMEIRO.md). O registro detalhado de cada entrega continua em [CONTINUIDADE.md](../CONTINUIDADE.md), do mais novo para o mais antigo.
@@ -16,7 +18,7 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 - Situação: **pendente**, **feito — falta aplicar no banco**, **a decidir** (depende do dono), **não confirmado** (não deu para conferir daqui).
 - Cada item foi conferido no código e nas migrations em 12/10/2026. As linhas citadas são dessa data.
 - **Papéis da equipe no banco × nomes na tela:** `owner` e `partner` = **Dono** (sócio; `partner` é o nome antigo e aparece igual), `associate` = **Parceiro**, `employee` = **Contratado** ([roles-model.ts](../../src/features/shop/roles-model.ts); rótulos em `pt-BR.ts`). `shop_admin` é o papel antigo de `memberships`, que pode existir sem vínculo de equipe (CONTINUIDADE, onda 1 de 09/10).
-- Último id usado: **P-114**.
+- Último id usado: **P-115**.
 
 **Índice**
 
@@ -782,3 +784,9 @@ Entrega de 22/10/2026 (CONTINUIDADE, entrada "Interface por dispositivo"; plano 
 - **Entregue:** navegação/resumo/atendimentos sem compressão, campos sem sobreposição e diretório em tabela ou cartões pela largura útil. Título, avisos e ações ajustados em área extrema; rascunho e horário preservados.
 - **Evidência e validação:** seção P-109 de [revisao-visual-integral-2026-10-29.md](../revisao-visual-integral-2026-10-29.md), quatro imagens, referências móveis idênticas e fluxos fictícios de dono/contratado.
 - **Limites:** nenhum dado real ou aviso enviado; mesmas regras, permissões e identidade. Sem migration. P-69 com acesso do agente confirmado pelo dono, mas execução/relatório pendentes; P-28, P-42/P-43 e decisões P-74/P-95 continuam.
+
+## P-115 — Conexão WhatsApp por QR Code e código (09/11/2026)
+
+**Implementado no código; instalação e homologação real pendentes.** Mesma Evolution, instância própria da plataforma e uma por loja. Código de oito caracteres, telefone internacional, acompanhamento automático e orientação em cinco idiomas. Sessão aberta não é reiniciada; tentativa em andamento impede novo pareamento por código. QR continua disponível e atualizado enquanto a janela está aberta.
+
+Novo helper compartilhado e dois handlers; nenhum segredo no frontend e nenhuma migration/env nova. [TI — instalação e testes reais](../pacotes/2026-11-09-ti-whatsapp-pareamento-evolution-p115.md). Não encerrar esta pendência apenas porque o frontend foi publicado. OTP de seis dígitos do B&C continua igual.

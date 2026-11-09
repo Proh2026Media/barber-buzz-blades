@@ -1,5 +1,7 @@
 # Leia primeiro — Barba & Cabelo
 
+**09/11/2026 — P-115, WhatsApp por QR ou código:** implementados os dois métodos nos cartões da plataforma e da loja. Pareamento Evolution/Baileys usa **oito caracteres**, diferente do SMS de seis dígitos. Permissões e canais existentes preservados; consultas comuns não iniciam conexão. Código local e bancada conferidos; **funções no servidor e pareamento real aguardam TI**, pelo [pacote único](pacotes/2026-11-09-ti-whatsapp-pareamento-evolution-p115.md). Sem migration/env nova, sem mudança no Flow ou na Salvy. Último id usado: P-115.
+
 **09/11/2026 — retorno da homologação (P-40/P-43):** relatório do Guardião de 08/11 recebido como **parcial**, sem aprovação integral. Corrigidas a perda da loja escolhida na recarga, a saída prematura de Ajustes/Pontos durante identificação do domínio e a sobreposição do convite de instalação. [Devolutiva e reteste dirigido](pacotes/2026-11-09-guardiao-reteste-homologacao.md). Sem migration; P-40 a P-43 reais/físicas continuam abertas. Não repetir logins/cofre já preparados nem operar o Flow por este retorno.
 
 Porta de entrada para o agente que vai continuar o projeto (Cursor, Claude Code, Codex e outros). Atualizado em **07/11/2026**.

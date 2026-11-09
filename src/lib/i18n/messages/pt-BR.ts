@@ -1,5 +1,35 @@
 /** Dicionário principal (fonte). Toda chave nova nasce aqui, em pt-BR. */
 export const ptBR = {
+  "waPair.qr": "Ler QR Code",
+  "waPair.useCode": "Conectar com código",
+  "waPair.title": "Conectar WhatsApp com código",
+  "waPair.description": "Informe o número do WhatsApp que deseja conectar.",
+  "waPair.phone": "WhatsApp com código do país e DDD",
+  "waPair.invalidPhone": "Informe o código do país, DDD e número. Exemplo: +55 11 99999-9999.",
+  "waPair.generate": "Gerar código",
+  "waPair.loading": "Conferindo…",
+  "waPair.check": "Verificar conexão",
+  "waPair.enterCode": "Digite este código no WhatsApp",
+  "waPair.codeLabel": "Código de pareamento",
+  "waPair.copy": "Copiar código",
+  "waPair.copied": "Código copiado",
+  "waPair.copyFailed": "Não foi possível copiar. Digite o código exibido no WhatsApp.",
+  "waPair.step1": "Abra o WhatsApp no celular e entre em Aparelhos conectados.",
+  "waPair.step2": "Toque em Conectar aparelho e escolha Conectar com número de telefone.",
+  "waPair.step3": "Digite o código mostrado aqui e confirme no WhatsApp.",
+  "waPair.notSms":
+    "Este código tem 8 caracteres. Ele é diferente do código de seis dígitos recebido por SMS para cadastrar o número.",
+  "waPair.waiting": "Preparando o código. A conexão será conferida automaticamente.",
+  "waPair.inProgress":
+    "Já existe uma tentativa de conexão em andamento. Conclua pelo QR Code ou aguarde a tentativa terminar antes de gerar outro código.",
+  "waPair.failed":
+    "Não foi possível confirmar a conexão. Verifique novamente antes de iniciar outra tentativa.",
+  "waPair.needsUpdate":
+    "A conexão por código ainda precisa ser habilitada no servidor. Use o QR Code por enquanto.",
+  "waPair.ended": "A tentativa terminou sem conexão. Você pode gerar outro código.",
+  "waPair.demo":
+    "A demonstração não conecta números reais. Na sua barbearia, você poderá escolher QR Code ou código de pareamento.",
+
   "settingsHub.section.pagamentos": "Pagamentos",
   "settingsHub.hint.pagamentos": "Conexão Mercado Pago do recebedor.",
   "mp.title": "Mercado Pago",

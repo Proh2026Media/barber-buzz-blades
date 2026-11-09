@@ -1,6 +1,37 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const es: Record<MessageKey, string> = {
+  "waPair.qr": "Escanear código QR",
+  "waPair.useCode": "Conectar con código",
+  "waPair.title": "Conectar WhatsApp con código",
+  "waPair.description": "Introduce el número de WhatsApp que quieres conectar.",
+  "waPair.phone": "WhatsApp con código de país y de área",
+  "waPair.invalidPhone":
+    "Introduce el código de país, de área y el número. Ejemplo: +55 11 99999-9999.",
+  "waPair.generate": "Generar código",
+  "waPair.loading": "Comprobando…",
+  "waPair.check": "Comprobar conexión",
+  "waPair.enterCode": "Introduce este código en WhatsApp",
+  "waPair.codeLabel": "Código de vinculación",
+  "waPair.copy": "Copiar código",
+  "waPair.copied": "Código copiado",
+  "waPair.copyFailed": "No se pudo copiar. Introduce el código mostrado en WhatsApp.",
+  "waPair.step1": "Abre WhatsApp en el móvil y ve a Dispositivos vinculados.",
+  "waPair.step2": "Pulsa Vincular un dispositivo y elige Vincular con número de teléfono.",
+  "waPair.step3": "Introduce el código mostrado aquí y confirma en WhatsApp.",
+  "waPair.notSms":
+    "Este código tiene 8 caracteres. Es diferente del código de seis dígitos recibido por SMS para registrar el número.",
+  "waPair.waiting": "Preparando el código. La conexión se comprobará automáticamente.",
+  "waPair.inProgress":
+    "Ya hay un intento de conexión en curso. Complétalo con el código QR o espera a que termine antes de generar otro código.",
+  "waPair.failed":
+    "No se pudo confirmar la conexión. Comprueba de nuevo antes de iniciar otro intento.",
+  "waPair.needsUpdate":
+    "La vinculación por código aún debe habilitarse en el servidor. Usa el código QR por ahora.",
+  "waPair.ended": "El intento terminó sin conexión. Puedes generar otro código.",
+  "waPair.demo":
+    "La demostración no conecta números reales. En tu barbería podrás elegir un código QR o de vinculación.",
+
   "settingsHub.section.pagamentos": "Pagos",
   "settingsHub.hint.pagamentos": "Conexión Mercado Pago del receptor.",
   "mp.title": "Mercado Pago",

@@ -1,10 +1,13 @@
+import { connectWithPairingCode, evolutionQr, pairingPhone } from "../_shared/whatsapp-pairing.ts";
 /** Status/QR do WhatsApp da plataforma (OTP de /cadastrar). Só platform_admin. */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders, evolutionFetch, json } from "../_shared/evolution.ts";
 
 type Body = {
-  action?: "status" | "connect" | "logout";
+  method?: "qr" | "code";
+  phone?: string;
+  action?: "status" | "connect" | "pairing-status" | "logout";
 };
 
 function mapEvolutionState(
@@ -73,7 +76,31 @@ Deno.serve(async (req) => {
 
     const body = (await req.json()) as Body;
     const action = body.action ?? "status";
+    if (!["status", "connect", "pairing-status", "logout"].includes(action))
+      return json({ error: "ACTION_INVALID" }, 400);
+    const wantsPairing =
+      action === "pairing-status" || (action === "connect" && body.method === "code");
+    if (body.method && body.method !== "qr" && body.method !== "code")
+      return json({ error: "PAIRING_METHOD_INVALID" }, 400);
+    if (wantsPairing && !pairingPhone(body.phone))
+      return json({ error: "PAIRING_PHONE_INVALID" }, 400);
+
     const instanceName = platformInstance();
+
+    if (wantsPairing) {
+      try {
+        const result = await connectWithPairingCode(
+          evolutionFetch,
+          instanceName,
+          body.phone!,
+          action === "pairing-status" ? action : "connect",
+        );
+        return json({ ok: true, pairing_supported: true, instance_name: instanceName, ...result });
+      } catch (error) {
+        const code = error instanceof Error ? error.message : "PAIRING_UNAVAILABLE";
+        return json({ error: code }, code === "PAIRING_IN_PROGRESS" ? 409 : 502);
+      }
+    }
 
     let qrcode: string | null = null;
     let displayPhone: string | null = null;
@@ -126,33 +153,33 @@ Deno.serve(async (req) => {
         state = mapEvolutionState(stateData?.instance?.state ?? stateData?.state);
       } catch (err) {
         if (!isMissingInstance(err)) throw err;
-        qrcode = (await ensureInstance()) ?? qrcode;
+        if (action === "connect") qrcode = (await ensureInstance()) ?? qrcode;
         state = "disconnected";
       }
 
-      if (state !== "open" && (action === "connect" || state === "disconnected")) {
+      if (
+        action === "status" &&
+        body.method === "qr" &&
+        (state === "connecting" || state === "qr")
+      ) {
+        qrcode = evolutionQr(
+          await evolutionFetch(`/instance/connect/${instanceName}`, { method: "GET" }),
+        );
+      }
+
+      if (state !== "open" && action === "connect") {
         try {
           const connectData = (await evolutionFetch(`/instance/connect/${instanceName}`, {
             method: "GET",
           })) as { base64?: string; qrcode?: { base64?: string }; code?: string };
-          qrcode =
-            normalizeQr(
-              connectData?.base64 ??
-                connectData?.qrcode?.base64 ??
-                (connectData?.code ? connectData.code : null),
-            ) ?? qrcode;
+          qrcode = evolutionQr(connectData) ?? qrcode;
         } catch (err) {
           if (!isMissingInstance(err)) throw err;
           qrcode = (await ensureInstance()) ?? qrcode;
           const connectData = (await evolutionFetch(`/instance/connect/${instanceName}`, {
             method: "GET",
           })) as { base64?: string; qrcode?: { base64?: string }; code?: string };
-          qrcode =
-            normalizeQr(
-              connectData?.base64 ??
-                connectData?.qrcode?.base64 ??
-                (connectData?.code ? connectData.code : null),
-            ) ?? qrcode;
+          qrcode = evolutionQr(connectData) ?? qrcode;
         }
       }
 
@@ -165,6 +192,7 @@ Deno.serve(async (req) => {
             | Array<{ ownerJid?: string; instance?: { ownerJid?: string } }>
             | {
                 ownerJid?: string;
+                instance?: { ownerJid?: string };
               };
           const row = Array.isArray(info) ? info[0] : info;
           const jid = row?.ownerJid ?? row?.instance?.ownerJid;

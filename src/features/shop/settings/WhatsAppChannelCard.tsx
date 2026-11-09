@@ -1,3 +1,4 @@
+import { WhatsAppPairingDialog } from "@/features/whatsapp/WhatsAppPairingDialog";
 import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import {
   AlarmClock,
@@ -198,6 +199,7 @@ export function WhatsAppChannelCard({ shopId }: { shopId: string }) {
   const [checked, setChecked] = useState(false);
   const [qrcode, setQrcode] = useState<string | null>(null);
   const [qrOpen, setQrOpen] = useState(false);
+  const [pairOpen, setPairOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [connectResult, setConnectResult] = useState<{
     state: ActionState;
@@ -293,7 +295,11 @@ export function WhatsAppChannelCard({ shopId }: { shopId: string }) {
     try {
       const payload = await callChannel({ action: "status", barbershop_id: shopId });
       setChannel(payload.channel ?? null);
-      setQrcode(payload.qrcode ?? null);
+      setQrcode(
+        (previous) =>
+          payload.qrcode ??
+          (["qr", "connecting"].includes(payload.channel?.status ?? "") ? previous : null),
+      );
       await templatesLoad;
     } catch (err) {
       await templatesLoad;
@@ -314,9 +320,17 @@ export function WhatsAppChannelCard({ shopId }: { shopId: string }) {
     const timer = window.setInterval(() => {
       void (async () => {
         try {
-          const payload = await callChannel({ action: "status", barbershop_id: shopId });
+          const payload = await callChannel({
+            action: "status",
+            method: "qr",
+            barbershop_id: shopId,
+          });
           setChannel(payload.channel ?? null);
-          setQrcode(payload.qrcode ?? null);
+          setQrcode(
+            (previous) =>
+              payload.qrcode ??
+              (["qr", "connecting"].includes(payload.channel?.status ?? "") ? previous : null),
+          );
           if (payload.channel?.status === "open") {
             setQrOpen(false);
             setConnectResult({ state: "saved", text: tNow("integr.wa.connected") });
@@ -341,7 +355,11 @@ export function WhatsAppChannelCard({ shopId }: { shopId: string }) {
     try {
       const payload = await callChannel({ action: "connect", barbershop_id: shopId });
       setChannel(payload.channel ?? null);
-      setQrcode(payload.qrcode ?? null);
+      setQrcode(
+        (previous) =>
+          payload.qrcode ??
+          (["qr", "connecting"].includes(payload.channel?.status ?? "") ? previous : null),
+      );
       if (payload.qrcode) setQrOpen(true);
       setConnectResult(
         payload.channel?.status === "open"
@@ -861,9 +879,21 @@ export function WhatsAppChannelCard({ shopId }: { shopId: string }) {
               className="action-button action-confirm sm:px-5"
             >
               <QrCode className="size-4" aria-hidden />
-              {t(dropped ? "integr.wa.reconnectWa" : "integr.wa.connect")}
+              {t(dropped ? "integr.wa.reconnectWa" : "waPair.qr")}
             </button>
           )}
+          <button
+            type="button"
+            disabled={busy}
+            className="action-button action-confirm sm:px-5"
+            onClick={() => {
+              setQrOpen(false);
+              setPairOpen(true);
+            }}
+          >
+            <Smartphone aria-hidden="true" />
+            {t("waPair.useCode")}
+          </button>
         </div>
       )}
       <ActionResult
@@ -960,6 +990,22 @@ export function WhatsAppChannelCard({ shopId }: { shopId: string }) {
           </div>
         </details>
       )}
+
+      <WhatsAppPairingDialog
+        open={pairOpen}
+        onOpenChange={setPairOpen}
+        endpoint="whatsapp-channel"
+        shopId={shopId}
+        demo={Boolean(demo)}
+        onUpdate={(payload) => {
+          setChannel(payload.channel ?? null);
+          setChecked(true);
+          if (payload.channel?.status === "open") {
+            setQrcode(null);
+            setConnectResult({ state: "saved", text: t("integr.wa.connected") });
+          }
+        }}
+      />
 
       {/* QR: no celular, passos, código e botões empilhados (como antes); do tablet em diante,
           janela larga com os passos à esquerda e o código grande à direita. */}

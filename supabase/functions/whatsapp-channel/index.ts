@@ -1,8 +1,11 @@
+import { connectWithPairingCode, evolutionQr, pairingPhone } from "../_shared/whatsapp-pairing.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders, evolutionFetch, instanceNameForShop, json } from "../_shared/evolution.ts";
 
 type Body = {
-  action?: "status" | "connect" | "create" | "logout" | "settings";
+  method?: "qr" | "code";
+  phone?: string;
+  action?: "status" | "connect" | "pairing-status" | "create" | "logout" | "settings";
   barbershop_id?: string;
   notify_booking?: boolean;
   notify_reminder?: boolean;
@@ -59,6 +62,15 @@ Deno.serve(async (req) => {
 
     const body = (await req.json()) as Body;
     const action = body.action ?? "status";
+    if (!["status", "connect", "pairing-status", "logout", "create", "settings"].includes(action))
+      return json({ error: "ACTION_INVALID" }, 400);
+    const wantsPairing =
+      action === "pairing-status" || (action === "connect" && body.method === "code");
+    if (body.method && body.method !== "qr" && body.method !== "code")
+      return json({ error: "PAIRING_METHOD_INVALID" }, 400);
+    if (wantsPairing && !pairingPhone(body.phone))
+      return json({ error: "PAIRING_PHONE_INVALID" }, 400);
+
     const shopId = body.barbershop_id?.trim();
     if (!shopId) return json({ error: "barbershop_id required" }, 400);
 
@@ -105,6 +117,16 @@ Deno.serve(async (req) => {
       return json({ ok: true, channel: updated });
     }
 
+    if (!channel && (action === "status" || action === "pairing-status")) {
+      return json({
+        ok: true,
+        channel: null,
+        qrcode: null,
+        pairing_code: null,
+        pairing_supported: true,
+      });
+    }
+
     const instanceName = channel?.instance_name ?? instanceNameForShop(shopId, shop.slug);
     if (!channel) {
       const { data: created, error: createError } = await admin
@@ -140,6 +162,33 @@ Deno.serve(async (req) => {
         .select("*")
         .single();
       return json({ ok: true, channel: updated, qrcode: null });
+    }
+
+    if (wantsPairing) {
+      try {
+        const result = await connectWithPairingCode(
+          evolutionFetch,
+          channel.instance_name,
+          body.phone!,
+          action === "pairing-status" ? action : "connect",
+        );
+        const { data: updated, error } = await admin
+          .from("whatsapp_channels")
+          .update({ status: result.status, last_error: null })
+          .eq("barbershop_id", shopId)
+          .select("*")
+          .single();
+        if (error) return json({ error: "PAIRING_UNAVAILABLE" }, 502);
+        return json({
+          ok: true,
+          pairing_supported: true,
+          channel: updated,
+          pairing_code: result.pairing_code,
+        });
+      } catch (error) {
+        const code = error instanceof Error ? error.message : "PAIRING_UNAVAILABLE";
+        return json({ error: code }, code === "PAIRING_IN_PROGRESS" ? 409 : 502);
+      }
     }
 
     let qrcode: string | null = null;
@@ -192,14 +241,22 @@ Deno.serve(async (req) => {
           state = mapEvolutionState(stateData?.instance?.state ?? stateData?.state);
         } catch (err) {
           if (!isMissingInstance(err)) throw err;
-          qrcode = normalizeQr(await ensureInstance()) ?? qrcode;
+          if (action === "connect" || action === "create")
+            qrcode = normalizeQr(await ensureInstance()) ?? qrcode;
           state = "disconnected";
         }
 
         if (
-          state !== "open" &&
-          (action === "connect" || action === "create" || state === "disconnected")
+          action === "status" &&
+          body.method === "qr" &&
+          (state === "connecting" || state === "qr")
         ) {
+          qrcode = evolutionQr(
+            await evolutionFetch(`/instance/connect/${channel.instance_name}`, { method: "GET" }),
+          );
+        }
+
+        if (state !== "open" && (action === "connect" || action === "create")) {
           try {
             const connectData = (await evolutionFetch(
               `/instance/connect/${channel.instance_name}`,
@@ -208,12 +265,7 @@ Deno.serve(async (req) => {
               },
             )) as { base64?: string; qrcode?: { base64?: string }; code?: string };
 
-            qrcode =
-              normalizeQr(
-                connectData?.base64 ??
-                  connectData?.qrcode?.base64 ??
-                  (connectData?.code ? connectData.code : null),
-              ) ?? qrcode;
+            qrcode = evolutionQr(connectData) ?? qrcode;
           } catch (err) {
             if (!isMissingInstance(err)) throw err;
             qrcode = normalizeQr(await ensureInstance()) ?? qrcode;
@@ -223,12 +275,7 @@ Deno.serve(async (req) => {
                 method: "GET",
               },
             )) as { base64?: string; qrcode?: { base64?: string }; code?: string };
-            qrcode =
-              normalizeQr(
-                connectData?.base64 ??
-                  connectData?.qrcode?.base64 ??
-                  (connectData?.code ? connectData.code : null),
-              ) ?? qrcode;
+            qrcode = evolutionQr(connectData) ?? qrcode;
           }
         }
 
@@ -243,6 +290,7 @@ Deno.serve(async (req) => {
               | Array<{ ownerJid?: string; instance?: { ownerJid?: string } }>
               | {
                   ownerJid?: string;
+                  instance?: { ownerJid?: string };
                 };
             const row = Array.isArray(info) ? info[0] : info;
             const jid = row?.ownerJid ?? row?.instance?.ownerJid;

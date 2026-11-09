@@ -440,3 +440,9 @@ Nomes de variáveis de ambiente das funções aparecem nos arquivos; **valores f
 - Arquivos de servidor do modelo Lovable: `src/lib/api/example.functions.ts`, `src/integrations/supabase/client.server.ts` e `auth-middleware.ts` não têm nenhum uso no código (`src/lib/config.server.ts` só é usado pelo exemplo). `auth-attacher.ts` só é registrado em `start.ts`, como `functionMiddleware`, e não tem efeito enquanto nenhuma `createServerFn` for chamada. Remover: a decidir.
 
 **Separação para recarga rápida (28/10/2026, P-44):** helpers antes exportados com componentes agora ficam em `roles-model.ts`, `team-model.ts`, `tier-model.ts`, `agenda/attendance-model.ts`, `agenda/summary-model.ts`, `catalog-view-model.ts`, `setup-model.ts` e `register-owner/timezone-name.ts`. Importar regras desses módulos; reservar os `.tsx` correspondentes aos componentes.
+
+### Pareamento WhatsApp — P-115 (09/11/2026)
+
+`features/whatsapp/WhatsAppPairingDialog.tsx` atende plataforma e loja, com estados isolados por conta/escopo/abertura, uma requisição por vez e acompanhamento enquanto visível. `useDemo` impede formulário real na demonstração. Novos textos usam `waPair.*` nos cinco idiomas.
+
+`_shared/whatsapp-pairing.ts` atende `platform-whatsapp` e `whatsapp-channel`, usando `number` da Evolution para pareamento de oito caracteres. Não armazena telefone/código nem desconecta sessões para trocar método. Permissões anteriores e nome de instância obtido do servidor permanecem. `status` não inicia conexão; `status` com `method: "qr"` atualiza o QR ativo; `pairing-status` acompanha código. Testes Node executam os handlers com dependências em memória; instalação/compatibilidade Edge e pareamento real são uma etapa separada no pacote P-115.

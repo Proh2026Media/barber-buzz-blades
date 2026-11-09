@@ -1,6 +1,36 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const ptPT: Record<MessageKey, string> = {
+  "waPair.qr": "Ler código QR",
+  "waPair.useCode": "Conectar com código",
+  "waPair.title": "Conectar WhatsApp com código",
+  "waPair.description": "Introduza o número do WhatsApp que pretende ligar.",
+  "waPair.phone": "WhatsApp com indicativo do país e número",
+  "waPair.invalidPhone": "Introduza o indicativo do país e o número. Exemplo: +351 912 345 678.",
+  "waPair.generate": "Gerar código",
+  "waPair.loading": "Conferindo…",
+  "waPair.check": "Verificar conexão",
+  "waPair.enterCode": "Digite este código no WhatsApp",
+  "waPair.codeLabel": "Código de pareamento",
+  "waPair.copy": "Copiar código",
+  "waPair.copied": "Código copiado",
+  "waPair.copyFailed": "Não foi possível copiar. Digite o código exibido no WhatsApp.",
+  "waPair.step1": "Abra o WhatsApp no telemóvel e entre em Dispositivos associados.",
+  "waPair.step2": "Toque em Associar dispositivo e escolha Associar com número de telefone.",
+  "waPair.step3": "Introduza o código mostrado aqui e confirme no WhatsApp.",
+  "waPair.notSms":
+    "Este código tem 8 caracteres. Ele é diferente do código de seis dígitos recebido por SMS para cadastrar o número.",
+  "waPair.waiting": "Preparando o código. A conexão será conferida automaticamente.",
+  "waPair.inProgress":
+    "Já existe uma tentativa de conexão em andamento. Conclua pelo QR Code ou aguarde a tentativa terminar antes de gerar outro código.",
+  "waPair.failed":
+    "Não foi possível confirmar a conexão. Verifique novamente antes de iniciar outra tentativa.",
+  "waPair.needsUpdate":
+    "A conexão por código ainda precisa ser habilitada no servidor. Use o QR Code por enquanto.",
+  "waPair.ended": "A tentativa terminou sem conexão. Você pode gerar outro código.",
+  "waPair.demo":
+    "A demonstração não conecta números reais. Na sua barbearia, você poderá escolher QR Code ou código de pareamento.",
+
   "settingsHub.section.pagamentos": "Pagamentos",
   "settingsHub.hint.pagamentos": "Ligação Mercado Pago do recebedor.",
   "mp.title": "Mercado Pago",
