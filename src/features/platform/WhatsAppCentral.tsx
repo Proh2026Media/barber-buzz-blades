@@ -1,6 +1,21 @@
 import { useDemo } from "@/features/demo/context";
 import { useEffect, useRef, useState } from "react";
-import { ArrowRightLeft, Loader2, MessageCircle, Plus, RefreshCw } from "lucide-react";
+import {
+  ArrowRightLeft,
+  ArrowLeft,
+  ArrowRight,
+  Store,
+  Smartphone,
+  Scissors,
+  ShieldCheck,
+  KeyRound,
+  History,
+  Search,
+  Loader2,
+  MessageCircle,
+  Plus,
+  RefreshCw,
+} from "lucide-react";
 import { Notice, Hint, ChoiceChips } from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -14,6 +29,7 @@ import {
 
 import { WhatsAppNumberDestinations, type WhatsAppNumberLink } from "./WhatsAppNumberDestinations";
 
+type DetailTab = "links" | "connection" | "reserve" | "history";
 type Channel = Tables<"whatsapp_channels">;
 type Directory = {
   number_sharing?: boolean;
@@ -69,11 +85,14 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
   const [label, setLabel] = useState("");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "available" | "assigned" | "backup">("all");
+  const [tab, setTab] = useState<DetailTab>("links");
+  const [platformOpen, setPlatformOpen] = useState(false);
+  const initialLinkRead = useRef(false);
   const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<MessageKey | null>(null);
   const [saved, setSaved] = useState(false);
-  const detail = useRef<HTMLDivElement>(null);
+  const detail = useRef<HTMLElement>(null);
   const pending = useRef(false);
   const live = useRef(true);
   const createId = useRef<string | null>(null);
@@ -82,7 +101,10 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
     if (!live.current) return;
     if (failed) throw failed;
     setData(result as unknown as Directory);
-    setSelected((current) => current ?? new URLSearchParams(window.location.search).get("numero"));
+    if (!initialLinkRead.current) {
+      initialLinkRead.current = true;
+      setSelected(new URLSearchParams(window.location.search).get("numero"));
+    }
   }
   useEffect(() => {
     live.current = true;
@@ -113,14 +135,21 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
     }
   }
   const channel = data?.channels.find((c) => c.id === selected);
-  const selectedNumberId = channel?.id;
+  const screen = platformOpen ? "platform" : (channel?.id ?? "numbers");
   useEffect(() => {
-    if (!selectedNumberId || !window.matchMedia("(max-width: 1023px)").matches) return;
-    const frame = requestAnimationFrame(() =>
-      detail.current?.scrollIntoView({ block: "start", behavior: "instant" }),
-    );
+    const frame = requestAnimationFrame(() => {
+      detail.current?.scrollIntoView({ block: "start", behavior: "instant" });
+      detail.current?.focus({ preventScroll: true });
+    });
     return () => cancelAnimationFrame(frame);
-  }, [selectedNumberId]);
+  }, [screen]);
+  function chooseNumber(id: string, nextTab: DetailTab = "links") {
+    setSelected(id);
+    setTab(nextTab);
+    setPlatformOpen(false);
+    setSaved(false);
+    setError(null);
+  }
   const reservedBy = data?.channels.find((c) => c.backup_instance_name === channel?.instance_name);
   function configure(number: Channel, configuration: NumberConfiguration) {
     void run(async () => {
@@ -171,359 +200,547 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
           .toLocaleLowerCase(locale)
           .includes(query.toLocaleLowerCase(locale)),
     ) ?? [];
+  const numberLinks = (number: Channel) => {
+    const owner =
+      data?.channels.find((n) => n.backup_instance_name === number.instance_name) ?? number;
+    return data?.number_sharing
+      ? (data.links ?? []).filter((b) => b.channel_id === owner.id)
+      : owner.barbershop_id
+        ? [{ id: owner.id, barbershop_id: owner.barbershop_id, staff_id: owner.staff_id }]
+        : [];
+  };
+  const tabs: { value: DetailTab; label: MessageKey; icon: typeof Store; disabled?: boolean }[] = [
+    { value: "links", label: "waHub.shops", icon: Store },
+    { value: "connection", label: "waHub.connection", icon: Smartphone },
+    {
+      value: "reserve",
+      label: "waNumbers.backup",
+      icon: ShieldCheck,
+      disabled: !channel?.barbershop_id || Boolean(reservedBy),
+    },
+    { value: "history", label: "waHub.history", icon: History },
+  ];
+  const shared =
+    (data?.links ?? []).filter((b) => b.channel_id === (reservedBy ?? channel)?.id).length > 1;
   return (
-    <section className="space-y-5 min-w-0">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
+    <section className="min-w-0 space-y-5 outline-none" ref={detail} tabIndex={-1}>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
           <h2 className="text-xl font-bold">{t("waCentral.title")}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{t("waCentral.subtitle")}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{t("waHub.subtitle")}</p>
         </div>
         <button className="action-button" disabled={busy || demo} onClick={() => void run(load)}>
-          <RefreshCw className="size-4" aria-hidden />
-          {t("waCentral.refresh")}
+          <RefreshCw className={`size-4 ${busy ? "animate-spin" : ""}`} aria-hidden />
+          <span className="sr-only tablet:not-sr-only">{t("waCentral.refresh")}</span>
         </button>
-      </div>
+      </header>
       {demo ? (
         <Notice tone="info" title={t("waPair.demo")} />
       ) : (
         <>
-          <details className="rounded-2xl border border-border bg-card p-4">
-            <summary className="cursor-pointer font-semibold">{t("waCentral.platform")}</summary>
-            <div className="mt-4">
-              <PlatformWhatsAppCard />
-            </div>
-          </details>
-          <Notice tone="info" title={t("waNumbers.intro")} />
           {error && <Notice tone="danger" title={t(error)} />}
           {saved && <Notice tone="success" title={t("waCentral.saved")} />}
-          <details
-            className="rounded-2xl border border-border bg-card p-4"
-            open={adding}
-            onToggle={(event) => setAdding(event.currentTarget.open)}
-          >
-            <summary className="cursor-pointer font-semibold">{t("waNumbers.addAnother")}</summary>
-            <form
-              className="flex flex-wrap items-end gap-3 pt-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                void run(async () => {
-                  createId.current ??= crypto.randomUUID();
-                  const { data: id, error: failed } = await supabase.rpc(
-                    "platform_create_whatsapp_channel",
-                    { p_id: createId.current, p_label: label.trim() },
-                  );
-                  if (failed) throw failed;
-                  if (!live.current) return;
-                  createId.current = null;
-                  setLabel("");
-                  setAdding(false);
-                  setFilter("all");
-                  setQuery("");
-                  setSelected(id);
-                  await load();
-                });
+          {(channel || platformOpen) && (
+            <button
+              className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold"
+              disabled={busy}
+              onClick={() => {
+                setSelected(null);
+                setPlatformOpen(false);
+                setSaved(false);
+                setError(null);
               }}
             >
-              <label className="grid min-w-0 flex-1 basis-60 gap-1 font-semibold text-sm">
-                {t("waCentral.label")}
-                <input
-                  className={field}
-                  value={label}
-                  maxLength={80}
-                  minLength={2}
-                  required
-                  disabled={busy || !data}
-                  onChange={(e) => setLabel(e.target.value)}
-                />
-              </label>
-              <button
-                className="action-button action-confirm"
-                disabled={busy || !data || label.trim().length < 2}
-              >
-                <Plus className="size-4" aria-hidden />
-                {t("waCentral.add")}
-              </button>
-            </form>
-          </details>
-          {busy && !data && (
-            <p role="status" className="flex items-center gap-2">
-              <Loader2 className="size-4 animate-spin" aria-hidden />
-              {t("shop.loading")}
-            </p>
+              <ArrowLeft className="size-4" aria-hidden />
+              {t("waHub.back")}
+            </button>
           )}
-          {data && (
-            <div className="grid items-start gap-5 pc:grid-cols-[minmax(260px,0.8fr)_minmax(0,1.4fr)]">
-              <div className="min-w-0 space-y-3">
-                <h3 className="font-bold">{t("waNumbers.existing")}</h3>
-                <ChoiceChips<"all" | "available" | "assigned" | "backup">
-                  label={t("waNumbers.filter")}
-                  hideLabel
-                  value={filter}
-                  onChange={setFilter}
-                  options={[
-                    { value: "all", label: t("waNumbers.all") },
-                    { value: "available", label: t("waNumbers.available") },
-                    { value: "assigned", label: t("waNumbers.assigned") },
-                    { value: "backup", label: t("waNumbers.reserves") },
-                  ]}
-                />
-                <label className="grid gap-1 text-sm font-semibold">
-                  {t("waCentral.search")}
-                  <input
-                    className={field}
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                  />
-                </label>
-                <div className="grid gap-2 tablet:grid-cols-2 pc:grid-cols-1">
-                  {filtered.map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      disabled={busy}
-                      aria-pressed={selected === c.id}
-                      onClick={() => {
-                        setSelected(c.id);
-                        setSaved(false);
-                        setError(null);
-                      }}
-                      className={`min-w-0 rounded-2xl border p-4 text-left ${selected === c.id ? "border-primary bg-accent" : "border-border bg-card"}`}
-                    >
-                      <span className="block break-words font-bold">
-                        {c.label || c.display_phone || t("waCentral.channel")}
-                      </span>
-                      <span className="mt-1 block break-words text-sm">
-                        {numberDestinations(c)}
-                      </span>
-                      {c.display_phone && (
-                        <span className="block text-sm text-muted-foreground">
-                          {c.display_phone}
-                        </span>
-                      )}
-                      <span className="mt-2 block text-xs font-semibold">
-                        {data.channels.some(
-                          (owner) => owner.backup_instance_name === c.instance_name,
-                        )
-                          ? t("waNumbers.backup")
-                          : c.barbershop_id
-                            ? t("waNumbers.primary")
-                            : t("waCentral.unassigned")}
-                        {c.barbershop_id && (
-                          <>
-                            {" "}
-                            ·{" "}
-                            {t(
-                              c.delivery_mode === "paused" ||
-                                !(data.number_sharing
-                                  ? data.links?.some((b) => b.channel_id === c.id && b.enabled)
-                                  : c.enabled)
-                                ? "waCentral.disabled"
-                                : c.delivery_mode === "backup"
-                                  ? "waNumbers.backupInUse"
-                                  : "waCentral.enabled",
-                            )}
-                          </>
-                        )}
-                      </span>
-                    </button>
-                  ))}
+          {platformOpen ? (
+            <section className="min-w-0 max-w-3xl space-y-4">
+              <div className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4">
+                <KeyRound className="size-6 shrink-0 text-primary" aria-hidden />
+                <div>
+                  <h3 className="font-bold">{t("waCentral.platform")}</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">{t("waHub.platformHint")}</p>
                 </div>
-                {!filtered.length && <Hint>{t("waCentral.empty")}</Hint>}
               </div>
-              <div ref={detail} className="min-w-0 scroll-mt-24 space-y-4">
-                {channel ? (
-                  <>
-                    {(data.links ?? []).filter((b) => b.channel_id === (reservedBy ?? channel).id)
-                      .length > 1 && <Notice tone="warning" title={t("waShared.connectionHint")} />}
-                    {reservedBy ? (
-                      <section className="space-y-3 rounded-2xl border border-border bg-card p-4">
-                        <h3 className="font-bold">{t("waNumbers.backup")}</h3>
-                        <p className="break-words text-sm">
-                          {t("waNumbers.reservedFor", {
-                            name: numberName(reservedBy, t("waCentral.channel")),
-                          })}
-                        </p>
-                        <p className="text-sm">{numberDestinations(reservedBy)}</p>
-                        <button
-                          className="action-button"
-                          disabled={busy}
-                          onClick={() => setSelected(reservedBy.id)}
-                        >
-                          {t("waNumbers.viewPrimary")}
-                        </button>
-                      </section>
-                    ) : (
-                      <>
-                        {data.number_sharing && channel.barbershop_id ? (
-                          <WhatsAppNumberDestinations
-                            key={`links:${channel.id}:${channel.routing_version}`}
-                            links={(data.links ?? []).filter((b) => b.channel_id === channel.id)}
-                            shops={data.shops}
-                            staff={data.staff}
-                            busy={busy}
-                            destination={destination}
-                            add={(shop, staff) =>
-                              void run(async () => {
-                                const { error: failed } = await supabase.rpc(
-                                  "platform_add_whatsapp_link",
-                                  {
-                                    p_id: channel.id,
-                                    p_version: channel.routing_version,
-                                    p_shop: shop,
-                                    p_staff: staff,
-                                    p_enabled: false,
-                                  },
-                                );
-                                if (failed) throw failed;
-                                await load();
-                                if (live.current) setSaved(true);
-                              })
-                            }
-                            update={(link, enabled, returns, remove) =>
-                              void run(async () => {
-                                const { error: failed } = await supabase.rpc(
-                                  "platform_update_whatsapp_link",
-                                  {
-                                    p_link: link.id,
-                                    p_version: link.version,
-                                    p_enabled: enabled,
-                                    p_returns: returns,
-                                    p_remove: remove,
-                                  },
-                                );
-                                if (failed) throw failed;
-                                await load();
-                                if (live.current) setSaved(true);
-                              })
-                            }
-                          />
-                        ) : (
-                          <Assignment
-                            key={`${channel.id}:${channel.routing_version}`}
-                            channel={channel}
-                            data={data}
-                            busy={busy}
-                            reserve={(primary) =>
-                              configure(primary, {
-                                backupId: channel.id,
-                                mode: "primary",
-                                technical: false,
-                                returns: primary.return_notice_enabled,
-                                keepLegacy: false,
-                              })
-                            }
-                            save={(shop, staff, enabled) =>
-                              run(async () => {
-                                const { error: failed } = await supabase.rpc(
-                                  "platform_assign_whatsapp_channel",
-                                  {
-                                    p_id: channel.id,
-                                    p_version: channel.routing_version,
-                                    p_shop: shop,
-                                    p_staff: staff,
-                                    p_enabled: enabled,
-                                  },
-                                );
-                                if (failed) throw failed;
-                                await load();
-                                if (live.current) setSaved(true);
-                              })
-                            }
-                          />
-                        )}
-                        {channel.barbershop_id && (
-                          <WhatsAppNumberReserve
-                            key={`reserve:${channel.id}:${channel.routing_version}`}
-                            number={channel}
-                            numbers={data.channels}
-                            perDestinationReturns={Boolean(data.number_sharing)}
-                            supported={Boolean(data.number_reserves)}
-                            busy={busy}
-                            save={(configuration) => configure(channel, configuration)}
-                            selectNumber={setSelected}
-                          />
-                        )}
-                      </>
-                    )}
-                    <PlatformWhatsAppCard
-                      key={channel.id}
-                      channelId={channel.id}
-                      title={channel.label || t("waCentral.channel")}
-                    />
-                    <details className="rounded-2xl border border-border bg-card p-4">
-                      <summary className="cursor-pointer font-semibold">
-                        {t("waCentral.history")}
-                      </summary>
-                      <ol className="mt-3 space-y-3 text-sm">
-                        {data.history
-                          .filter((h) => h.channel_id === channel.id)
-                          .map((h) => (
-                            <li key={h.id} className="break-words">
-                              <time>{new Date(h.created_at).toLocaleString(locale)}</time>
-                              <p>
-                                {destination(h.old_shop_id, h.old_staff_id)} →{" "}
-                                {destination(h.new_shop_id, h.new_staff_id)}
-                              </p>
-                            </li>
-                          ))}
-                      </ol>
-                      {(data.link_history ?? [])
-                        .filter((h) => h.channel_id === channel.id)
-                        .map((h) => (
-                          <p key={h.id} className="mt-3 break-words text-sm">
-                            <time>{new Date(h.created_at).toLocaleString(locale)}</time>
-                            {" · "}
-                            {t(
-                              h.action === "added"
-                                ? "waShared.added"
-                                : h.action === "removed"
-                                  ? "waShared.removed"
-                                  : "waShared.updated",
-                            )}
-                            {" · "}
-                            {destination(h.after_config.barbershop_id, h.after_config.staff_id)}
-                          </p>
-                        ))}
-                      {(data.configuration_history ?? [])
-                        .filter((h) => h.channel_id === channel.id)
-                        .map((h) => (
-                          <p key={h.id} className="mt-3 break-words text-sm">
-                            <time>{new Date(h.created_at).toLocaleString(locale)}</time>
-                            {" · "}
-                            {t("waNumbers.configurationChanged")}
-                            {" · "}
-                            {t(
-                              h.after_config.mode === "backup"
-                                ? "waNumbers.backup"
-                                : h.after_config.mode === "paused"
-                                  ? "waDelivery.paused"
-                                  : "waNumbers.primary",
-                            )}
-                            {h.after_config.backup && (
-                              <>
-                                {" "}
-                                ·{" "}
-                                {numberName(
-                                  data.channels.find(
-                                    (n) => n.instance_name === h.after_config.backup,
-                                  ) ??
-                                    ({
-                                      label: t("waNumbers.legacy"),
-                                      display_phone: null,
-                                    } as Channel),
-                                  t("waCentral.channel"),
-                                )}
-                              </>
-                            )}
-                          </p>
-                        ))}
-                    </details>
-                  </>
+              <PlatformWhatsAppCard />
+            </section>
+          ) : channel && data ? (
+            <div className="min-w-0 space-y-4">
+              <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-2 rounded-2xl border border-border bg-card p-4 tablet:grid-cols-[auto_minmax(0,1fr)_auto] tablet:p-5">
+                <span className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-accent text-primary">
+                  <Smartphone className="size-7" aria-hidden />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h3 className="break-words text-lg font-bold">
+                    {channel.label || t("waCentral.channel")}
+                  </h3>
+                  <p className="break-words text-sm text-muted-foreground">
+                    {channel.display_phone || t("waHub.phonePending")}
+                  </p>
+                </div>
+                <span className="col-start-2 inline-flex items-center gap-2 justify-self-start rounded-xl border border-border px-3 py-2 text-sm tablet:col-start-auto">
+                  <Store className="size-4 shrink-0" aria-hidden />
+                  {t("waHub.destinationsCount", { count: numberLinks(channel).length })}
+                </span>
+              </div>
+              <div
+                className="grid grid-cols-2 gap-2 tablet:grid-cols-4"
+                role="group"
+                aria-label={t("waHub.numberSections")}
+              >
+                {tabs.map(({ value, label, icon: Icon, disabled }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    disabled={busy || disabled}
+                    aria-pressed={tab === value}
+                    onClick={() => setTab(value)}
+                    className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border px-3 py-3 text-sm font-semibold disabled:opacity-45 ${tab === value ? "border-primary bg-accent text-foreground" : "border-border bg-card text-muted-foreground hover:bg-accent"}`}
+                  >
+                    <Icon className="size-5 shrink-0" aria-hidden />
+                    {t(label)}
+                  </button>
+                ))}
+              </div>
+              <div hidden={tab !== "links"} className="min-w-0">
+                {reservedBy ? (
+                  <section className="space-y-4 rounded-2xl border border-border bg-card p-5">
+                    <ShieldCheck className="size-9 text-primary" aria-hidden />
+                    <h3 className="font-bold">
+                      {t("waNumbers.reservedFor", {
+                        name: numberName(reservedBy, t("waCentral.channel")),
+                      })}
+                    </h3>
+                    <p className="break-words text-sm">{numberDestinations(reservedBy)}</p>
+                    <button
+                      className="action-button action-confirm"
+                      disabled={busy}
+                      onClick={() => chooseNumber(reservedBy.id)}
+                    >
+                      {t("waNumbers.viewPrimary")}
+                      <ArrowRight className="size-4" aria-hidden />
+                    </button>
+                  </section>
+                ) : data.number_sharing && channel.barbershop_id ? (
+                  <WhatsAppNumberDestinations
+                    key={`links:${channel.id}`}
+                    numberLabel={numberName(channel, t("waCentral.channel"))}
+                    error={error ? t(error) : null}
+                    links={(data.links ?? []).filter((b) => b.channel_id === channel.id)}
+                    shops={data.shops}
+                    staff={data.staff}
+                    busy={busy}
+                    destination={destination}
+                    add={async (shop, staff) => {
+                      let added = false;
+                      await run(async () => {
+                        const { error: failed } = await supabase.rpc("platform_add_whatsapp_link", {
+                          p_id: channel.id,
+                          p_version: channel.routing_version,
+                          p_shop: shop,
+                          p_staff: staff,
+                          p_enabled: false,
+                        });
+                        if (failed) throw failed;
+                        await load();
+                        if (live.current) setSaved(true);
+                        added = true;
+                      });
+                      return added;
+                    }}
+                    update={(link, enabled, returns, remove) =>
+                      void run(async () => {
+                        const { error: failed } = await supabase.rpc(
+                          "platform_update_whatsapp_link",
+                          {
+                            p_link: link.id,
+                            p_version: link.version,
+                            p_enabled: enabled,
+                            p_returns: returns,
+                            p_remove: remove,
+                          },
+                        );
+                        if (failed) throw failed;
+                        await load();
+                        if (live.current) setSaved(true);
+                      })
+                    }
+                  />
                 ) : (
-                  <Notice tone="info" title={t("waCentral.select")} />
+                  <Assignment
+                    key={`${channel.id}:${channel.routing_version}`}
+                    channel={channel}
+                    data={data}
+                    busy={busy}
+                    reserve={(primary) =>
+                      configure(primary, {
+                        backupId: channel.id,
+                        mode: "primary",
+                        technical: false,
+                        returns: primary.return_notice_enabled,
+                        keepLegacy: false,
+                      })
+                    }
+                    save={(shop, staff, enabled) =>
+                      run(async () => {
+                        const { error: failed } = await supabase.rpc(
+                          "platform_assign_whatsapp_channel",
+                          {
+                            p_id: channel.id,
+                            p_version: channel.routing_version,
+                            p_shop: shop,
+                            p_staff: staff,
+                            p_enabled: enabled,
+                          },
+                        );
+                        if (failed) throw failed;
+                        await load();
+                        if (live.current) setSaved(true);
+                      })
+                    }
+                  />
                 )}
               </div>
+              <div hidden={tab !== "connection"} className="max-w-3xl space-y-4">
+                {shared && <Notice tone="warning" title={t("waShared.connectionHint")} />}
+                <PlatformWhatsAppCard
+                  key={channel.id}
+                  channelId={channel.id}
+                  title={channel.label || t("waCentral.channel")}
+                />
+              </div>
+              <div hidden={tab !== "reserve"} className="max-w-3xl space-y-4">
+                {shared && <Notice tone="warning" title={t("waShared.connectionHint")} />}
+                {channel.barbershop_id && !reservedBy && (
+                  <WhatsAppNumberReserve
+                    key={`reserve:${channel.id}:${channel.routing_version}`}
+                    number={channel}
+                    numbers={data.channels}
+                    perDestinationReturns={Boolean(data.number_sharing)}
+                    supported={Boolean(data.number_reserves)}
+                    busy={busy}
+                    save={(configuration) => configure(channel, configuration)}
+                    selectNumber={(id) => chooseNumber(id, "connection")}
+                  />
+                )}
+              </div>
+              <section
+                hidden={tab !== "history"}
+                className="max-w-3xl rounded-2xl border border-border bg-card p-5"
+              >
+                <h3 className="flex items-center gap-2 font-bold">
+                  <History className="size-5" aria-hidden />
+                  {t("waHub.history")}
+                </h3>
+                {!data.history.some((h) => h.channel_id === channel.id) &&
+                  !(data.link_history ?? []).some((h) => h.channel_id === channel.id) &&
+                  !(data.configuration_history ?? []).some((h) => h.channel_id === channel.id) && (
+                    <p className="mt-3 text-sm text-muted-foreground">{t("waHub.noHistory")}</p>
+                  )}
+                <ol className="mt-3 space-y-3 text-sm">
+                  {data.history
+                    .filter((h) => h.channel_id === channel.id)
+                    .map((h) => (
+                      <li key={h.id} className="break-words">
+                        <time>{new Date(h.created_at).toLocaleString(locale)}</time>
+                        <p>
+                          {destination(h.old_shop_id, h.old_staff_id)} →{" "}
+                          {destination(h.new_shop_id, h.new_staff_id)}
+                        </p>
+                      </li>
+                    ))}
+                </ol>
+                {(data.link_history ?? [])
+                  .filter((h) => h.channel_id === channel.id)
+                  .map((h) => (
+                    <p key={h.id} className="mt-3 break-words text-sm">
+                      <time>{new Date(h.created_at).toLocaleString(locale)}</time>
+                      {" · "}
+                      {t(
+                        h.action === "added"
+                          ? "waShared.added"
+                          : h.action === "removed"
+                            ? "waShared.removed"
+                            : "waShared.updated",
+                      )}
+                      {" · "}
+                      {destination(h.after_config.barbershop_id, h.after_config.staff_id)}
+                    </p>
+                  ))}
+                {(data.configuration_history ?? [])
+                  .filter((h) => h.channel_id === channel.id)
+                  .map((h) => (
+                    <p key={h.id} className="mt-3 break-words text-sm">
+                      <time>{new Date(h.created_at).toLocaleString(locale)}</time>
+                      {" · "}
+                      {t("waNumbers.configurationChanged")}
+                      {" · "}
+                      {t(
+                        h.after_config.mode === "backup"
+                          ? "waNumbers.backup"
+                          : h.after_config.mode === "paused"
+                            ? "waDelivery.paused"
+                            : "waNumbers.primary",
+                      )}
+                      {h.after_config.backup && (
+                        <>
+                          {" "}
+                          ·{" "}
+                          {numberName(
+                            data.channels.find((n) => n.instance_name === h.after_config.backup) ??
+                              ({
+                                label: t("waNumbers.legacy"),
+                                display_phone: null,
+                              } as Channel),
+                            t("waCentral.channel"),
+                          )}
+                        </>
+                      )}
+                    </p>
+                  ))}
+              </section>
             </div>
+          ) : (
+            <>
+              <section className="grid items-center gap-3 rounded-2xl border border-border bg-card p-4 tablet:grid-cols-[minmax(0,1fr)_minmax(250px,0.8fr)] tablet:gap-5 tablet:p-6">
+                <div>
+                  <h3 className="text-base font-bold tablet:text-lg">{t("waHub.sharedTitle")}</h3>
+                  <p className="mt-2 hidden max-w-xl text-sm text-muted-foreground tablet:block">
+                    {t("waHub.sharedHint")}
+                  </p>
+                </div>
+                <div className="flex min-w-0 items-center justify-center gap-3" aria-hidden="true">
+                  <div className="grid justify-items-center gap-2">
+                    <span className="grid size-12 place-items-center rounded-2xl border border-primary/30 bg-accent text-primary tablet:size-16">
+                      <Smartphone className="size-7 tablet:size-9" />
+                    </span>
+                    <span className="text-xs font-semibold">{t("waHub.oneNumber")}</span>
+                  </div>
+                  <ArrowRight className="size-5 shrink-0 text-muted-foreground" />
+                  <div className="grid gap-2">
+                    <span className="flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs font-semibold">
+                      <Store className="size-5 text-primary" />
+                      {t("waHub.shops")}
+                    </span>
+                    <span className="flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs font-semibold">
+                      <Scissors className="size-5 text-primary" />
+                      {t("waHub.professionals")}
+                    </span>
+                  </div>
+                </div>
+              </section>
+              <section className="min-w-0 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h3 className="flex items-center gap-2 font-bold">
+                    {t("waNumbers.existing")}
+                    <span className="rounded-lg bg-accent px-2 py-1 text-sm">
+                      {data?.channels.length ?? "—"}
+                    </span>
+                  </h3>
+                  <button
+                    className="action-button"
+                    disabled={busy || !data}
+                    onClick={() => setAdding(!adding)}
+                    aria-expanded={adding}
+                  >
+                    <Plus className="size-4" aria-hidden />
+                    <span className="sr-only tablet:not-sr-only">{t("waNumbers.addAnother")}</span>
+                  </button>
+                </div>
+                {adding && (
+                  <form
+                    className="flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card p-4"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      void run(async () => {
+                        createId.current ??= crypto.randomUUID();
+                        const { data: id, error: failed } = await supabase.rpc(
+                          "platform_create_whatsapp_channel",
+                          { p_id: createId.current, p_label: label.trim() },
+                        );
+                        if (failed) throw failed;
+                        if (!live.current) return;
+                        createId.current = null;
+                        setLabel("");
+                        setAdding(false);
+                        setFilter("all");
+                        setQuery("");
+                        chooseNumber(id);
+                        await load();
+                      });
+                    }}
+                  >
+                    <label className="grid min-w-0 flex-1 basis-60 gap-1 text-sm font-semibold">
+                      {t("waCentral.label")}
+                      <input
+                        className={field}
+                        value={label}
+                        minLength={2}
+                        maxLength={80}
+                        required
+                        disabled={busy}
+                        onChange={(e) => setLabel(e.target.value)}
+                      />
+                    </label>
+                    <button
+                      className="action-button action-confirm"
+                      disabled={busy || label.trim().length < 2}
+                    >
+                      {t("waCentral.add")}
+                    </button>
+                  </form>
+                )}
+                <div className="grid items-end gap-3 pc:grid-cols-[minmax(0,1fr)_minmax(240px,0.6fr)]">
+                  <ChoiceChips<"all" | "available" | "assigned" | "backup">
+                    label={t("waNumbers.filter")}
+                    hideLabel
+                    value={filter}
+                    onChange={setFilter}
+                    options={[
+                      { value: "all", label: t("waNumbers.all") },
+                      { value: "available", label: t("waNumbers.available") },
+                      { value: "assigned", label: t("waNumbers.assigned") },
+                      { value: "backup", label: t("waNumbers.reserves") },
+                    ]}
+                  />
+                  <label className="grid min-w-0 gap-1 text-sm font-semibold">
+                    {t("waCentral.search")}
+                    <span className="relative block">
+                      <Search
+                        className="pointer-events-none absolute left-3 top-3 size-5 text-muted-foreground"
+                        aria-hidden
+                      />
+                      <input
+                        className={`${field} pl-10`}
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                      />
+                    </span>
+                  </label>
+                </div>
+                {busy && !data && (
+                  <p role="status" className="flex items-center gap-2">
+                    <Loader2 className="size-4 animate-spin" aria-hidden />
+                    {t("shop.loading")}
+                  </p>
+                )}
+                <div className="grid gap-4 tablet:grid-cols-2 pc:grid-cols-3">
+                  {filtered.map((c) => {
+                    const owner = data?.channels.find(
+                      (n) => n.backup_instance_name === c.instance_name,
+                    );
+                    const links = numberLinks(c);
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        disabled={busy}
+                        onClick={() => chooseNumber(c.id)}
+                        className="group flex min-w-0 flex-col rounded-2xl border border-border bg-card p-4 text-left transition-colors hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                      >
+                        <span className="flex items-start justify-between gap-3">
+                          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-accent text-primary">
+                            {owner ? (
+                              <ShieldCheck className="size-6" aria-hidden />
+                            ) : (
+                              <Smartphone className="size-6" aria-hidden />
+                            )}
+                          </span>
+                          <span className="rounded-lg border border-border px-2 py-1 text-xs font-semibold">
+                            {t(
+                              owner
+                                ? "waNumbers.backup"
+                                : c.barbershop_id
+                                  ? "waNumbers.primary"
+                                  : "waNumbers.available",
+                            )}
+                          </span>
+                        </span>
+                        <span className="mt-4 block break-words font-bold">
+                          {c.label || t("waCentral.channel")}
+                        </span>
+                        <span className="mt-1 break-words text-sm text-muted-foreground">
+                          {c.display_phone || t("waHub.phonePending")}
+                        </span>
+                        <span className="my-4 grid flex-1 content-start gap-2">
+                          {links.slice(0, 2).map((b) => (
+                            <span key={b.id} className="flex min-w-0 items-start gap-2 text-sm">
+                              <Store
+                                className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                                aria-hidden
+                              />
+                              <span className="break-words">
+                                {destination(b.barbershop_id, b.staff_id)}
+                              </span>
+                            </span>
+                          ))}
+                          {links.length > 2 && (
+                            <span className="text-xs text-muted-foreground">
+                              {t("waHub.moreDestinations", { count: links.length - 2 })}
+                            </span>
+                          )}
+                          {!links.length && (
+                            <span className="text-sm text-muted-foreground">
+                              {t("waHub.availableHint")}
+                            </span>
+                          )}
+                        </span>
+                        <span className="flex min-h-11 items-center justify-between gap-2 border-t border-border pt-3 text-sm font-bold text-primary">
+                          <span>
+                            {t(
+                              owner
+                                ? "waHub.manageBackup"
+                                : c.barbershop_id && data?.number_sharing
+                                  ? "waHub.useElsewhere"
+                                  : "waHub.chooseDestination",
+                            )}
+                          </span>
+                          <ArrowRight className="size-4 shrink-0" aria-hidden />
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {data && !filtered.length && (
+                  <div className="rounded-2xl border border-dashed border-border p-6 text-center">
+                    <Search className="mx-auto mb-2 size-8 text-muted-foreground" aria-hidden />
+                    <p>{t("waCentral.empty")}</p>
+                    {(query || filter !== "all") && (
+                      <button
+                        className="action-button mt-3"
+                        onClick={() => {
+                          setQuery("");
+                          setFilter("all");
+                        }}
+                      >
+                        {t("waHub.clearFilters")}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </section>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  setPlatformOpen(true);
+                  setError(null);
+                  setSaved(false);
+                }}
+                className="flex w-full items-center gap-4 rounded-2xl border border-border bg-card p-4 text-left"
+              >
+                <KeyRound className="size-6 shrink-0 text-primary" aria-hidden />
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold">{t("waCentral.platform")}</span>
+                  <span className="mt-1 block text-sm text-muted-foreground">
+                    {t("waHub.platformHint")}
+                  </span>
+                </span>
+                <ArrowRight className="size-5 shrink-0" aria-hidden />
+              </button>
+            </>
           )}
         </>
       )}

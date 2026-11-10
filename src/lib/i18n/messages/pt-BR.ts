@@ -1,5 +1,32 @@
 /** Dicionário principal (fonte). Toda chave nova nasce aqui, em pt-BR. */
 export const ptBR = {
+  "waHub.subtitle": "Escolha um número e veja quais barbearias e profissionais ele atende.",
+  "waHub.back": "Todos os números",
+  "waHub.platformHint": "Número usado pela plataforma, incluindo os códigos de acesso.",
+  "waHub.phonePending": "Telefone aparece após conectar",
+  "waHub.destinationsCount": "Destinos: {count}",
+  "waHub.numberSections": "Áreas do número",
+  "waHub.shops": "Barbearias",
+  "waHub.connection": "Conexão",
+  "waHub.history": "Histórico",
+  "waHub.noHistory": "Nenhuma alteração registrada para este número.",
+  "waHub.sharedTitle": "Um número, várias barbearias",
+  "waHub.sharedHint":
+    "Reaproveite um número cadastrado. Adicione barbearias ou profissionais e controle os avisos de cada um.",
+  "waHub.oneNumber": "Um número",
+  "waHub.professionals": "Profissionais",
+  "waHub.moreDestinations": "Mais {count} destinos",
+  "waHub.availableHint": "Disponível para uma barbearia, um profissional ou como reserva.",
+  "waHub.useElsewhere": "Usar em outra barbearia",
+  "waHub.chooseDestination": "Escolher destino",
+  "waHub.clearFilters": "Limpar filtros",
+  "waHub.manageBackup": "Gerenciar reserva",
+  "waHub.linksHint":
+    "Estas barbearias e profissionais usam o mesmo número. Os avisos são controlados separadamente.",
+  "waHub.addShop": "Adicionar barbearia",
+  "waHub.linkDialogHint":
+    "Escolha quem também vai usar este número. Os destinos atuais continuam como estão.",
+  "waHub.editNotices": "Ajustar avisos",
   "waShared.preferencesChanged":
     "As preferências mudaram. Confira os valores atuais antes de tentar novamente.",
   "waShared.destinations": "Quem usa este número",
@@ -8,16 +35,16 @@ export const ptBR = {
   "waShared.add": "Vincular outra barbearia ou profissional",
   "waShared.choose": "Escolha a barbearia",
   "waShared.addHint":
-    "O novo vínculo começa com os avisos pausados. Os vínculos atuais são mantidos.",
-  "waShared.link": "Adicionar vínculo",
-  "waShared.save": "Salvar este vínculo",
-  "waShared.remove": "Remover vínculo",
+    "Os avisos começam pausados para este novo destino. Você pode habilitá-los depois.",
+  "waShared.link": "Usar este número",
+  "waShared.save": "Salvar avisos",
+  "waShared.remove": "Remover destino",
   "waShared.removeHint":
-    "Remove apenas este vínculo e cancela seus avisos pendentes. Os demais continuam como estão.",
+    "Remove este destino e cancela apenas os avisos dele que ainda estão na fila. Os demais continuam como estão.",
   "waShared.confirmRemove": "Confirmar remoção",
   "waShared.manage": "Este número é compartilhado. Gerencie os vínculos na Central de WhatsApp.",
   "waShared.connectionHint":
-    "Conexão, pausa do número e reserva valem para todos os vínculos abaixo deste número. Para pausar só uma loja, use o controle do vínculo.",
+    "Conexão, pausa do número e reserva valem para todas as barbearias e profissionais que usam este número. Os avisos podem ser ajustados separadamente.",
   "waShared.added": "Vínculo adicionado",
   "waShared.removed": "Vínculo removido",
   "waShared.updated": "Preferências do vínculo alteradas",
@@ -77,7 +104,7 @@ export const ptBR = {
   "waCentral.shop": "Barbearia",
   "waCentral.staff": "Profissional",
   "waCentral.wholeShop": "Geral da barbearia",
-  "waCentral.enable": "Habilitar avisos para este vínculo",
+  "waCentral.enable": "Habilitar avisos para este destino",
   "waCentral.moveWarning":
     "A transferência cancela os avisos ainda na fila do vínculo anterior. O histórico permanece na barbearia de origem.",
   "waCentral.confirm": "Conferi o destino e quero transferir este número.",

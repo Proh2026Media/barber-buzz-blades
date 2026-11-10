@@ -2,6 +2,17 @@
 
 Atualizado em **07/11/2026** (P-49/P-70; entradas anteriores preservadas como histórico). Fonte: [mb-interface.md](mb-interface.md). Regra: `.cursor/rules/mb.mdc`. Skill: `.cursor/skills/mb/`.
 
+## P-119 — Central de WhatsApp reorganizada (10/11/2026, complemento)
+
+O dono não encontrava o compartilhamento e apontou a composição confusa da página. A tarefa principal passa a ser escolher um número, ver seus destinos e adicionar outra barbearia/profissional sem substituir os atuais.
+
+- Inventário usa a largura disponível em cartões com ícone, identificação, função e destinos, filtros e busca. Ilustração com ícones mostra um número atendendo barbearias/profissionais; cadastro de outro número é secundário.
+- Detalhes têm volta à lista e quatro seções: Barbearias, Conexão, Reserva e Histórico. Trocar de seção preserva rascunhos; voltar preserva filtros. O endereço com número pré-selecionado não força a reabertura após voltar/atualizar.
+- Ação “Usar em outra barbearia” abre janela com o número escolhido e apenas os campos necessários. Novo destino começa pausado; falha aparece dentro da janela e mantém os campos. Sucesso fecha a janela e devolve o foco. Cartões de destino usam estados visuais e “Ajustar avisos” para controles individuais, com remoção confirmada.
+- Número de acesso da plataforma tem entrada e tela próprias. Conexão e reserva continuam compartilhadas entre os destinos, com aviso antes dos controles. Regras de envio, permissões e RPCs preservadas.
+- Identidade e componentes comuns preservados: superfícies off-white, cores de ação/estado, tipografia, três modos de canto e traduções nos cinco idiomas. Computador aproveita grade; tablet reorganiza colunas; celular mantém controles por toque e janela como folha inferior.
+- Validação: 210 combinações de largura/tema/cantos, 20 pares largura/idioma e 492/492 testes; tipos/lint/montagem aprovados. Abertura móvel e telefone ajustados após inspeção das capturas, com repetição dos 90 cenários principais. Evidências e limites no CONTINUIDADE. Validação local com dados fictícios; produção autenticada, pareamento e aparelhos físicos permanecem pendentes. Não repetir nº 101–104 ou implantação Edge.
+
 ## P-119 — Um número para vários destinos (10/11/2026)
 
 Central mantém inventário à esquerda no computador e detalhes abaixo no celular. Número selecionado mostra cartões de vínculos, preferências e remoção individual confirmada; inclusão adicional não substitui os atuais. Alcance da conexão/reserva compartilhadas visível antes das ações. Busca encontra todos os destinos. Identidade, superfícies e três modos de canto preservados; novos textos nos dicionários. Rota real e componentes em bancada isolada; 30 combinações 320/390/834/1024/1280, claro/escuro e cantos, sem overflow; teclado, seleção/rolagem móvel e falhas recuperáveis conferidos. Cartão da loja mantém avisos/modelos e reconhece gestão centralizada da conexão. Nº 104 e funções Edge instaladas pela TI em 10/11, 16:24:03–16:24:04, conforme relatório. Conferência visual em produção e homologação física pendentes.

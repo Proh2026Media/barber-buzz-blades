@@ -1,6 +1,33 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const enUS: Record<MessageKey, string> = {
+  "waHub.subtitle": "Choose a number to see which barbershops and professionals use it.",
+  "waHub.back": "All numbers",
+  "waHub.platformHint": "The platform number, including access codes.",
+  "waHub.phonePending": "Phone appears after connecting",
+  "waHub.destinationsCount": "Destinations: {count}",
+  "waHub.numberSections": "Number sections",
+  "waHub.shops": "Barbershops",
+  "waHub.connection": "Connection",
+  "waHub.history": "History",
+  "waHub.noHistory": "No changes recorded for this number.",
+  "waHub.sharedTitle": "One number, several barbershops",
+  "waHub.sharedHint":
+    "Reuse an existing number. Add barbershops or professionals and manage their notifications separately.",
+  "waHub.oneNumber": "One number",
+  "waHub.professionals": "Professionals",
+  "waHub.moreDestinations": "{count} more destinations",
+  "waHub.availableHint": "Available for a barbershop, a professional or as a backup.",
+  "waHub.useElsewhere": "Use at another barbershop",
+  "waHub.chooseDestination": "Choose destination",
+  "waHub.clearFilters": "Clear filters",
+  "waHub.manageBackup": "Manage backup",
+  "waHub.linksHint":
+    "These barbershops and professionals share this number. Notifications are managed separately.",
+  "waHub.addShop": "Add barbershop",
+  "waHub.linkDialogHint":
+    "Choose who will also use this number. Existing destinations stay as they are.",
+  "waHub.editNotices": "Manage notifications",
   "waShared.preferencesChanged":
     "Preferences have changed. Review the current values before trying again.",
   "waShared.destinations": "Who uses this number",
@@ -8,16 +35,17 @@ export const enUS: Record<MessageKey, string> = {
     "One number can serve several shops and professionals. Notifications and histories remain separate.",
   "waShared.add": "Link another shop or professional",
   "waShared.choose": "Choose a shop",
-  "waShared.addHint": "The new link starts with notifications paused. Existing links are kept.",
-  "waShared.link": "Add link",
-  "waShared.save": "Save this link",
-  "waShared.remove": "Remove link",
+  "waShared.addHint":
+    "Notifications start paused for this new destination. You can enable them later.",
+  "waShared.link": "Use this number",
+  "waShared.save": "Save notifications",
+  "waShared.remove": "Remove destination",
   "waShared.removeHint":
-    "Removes only this link and cancels its pending notifications. Other links remain unchanged.",
+    "Removes this destination and cancels only its queued notifications. Other destinations stay as they are.",
   "waShared.confirmRemove": "Confirm removal",
   "waShared.manage": "This number is shared. Manage its links in the WhatsApp Center.",
   "waShared.connectionHint":
-    "Connection, number pause and backup affect every link for this number. To pause just one shop, use that link’s control.",
+    "Connection, number pausing and backup apply to every barbershop and professional using this number. Notifications can be managed separately.",
   "waShared.added": "Link added",
   "waShared.removed": "Link removed",
   "waShared.updated": "Link preferences changed",
@@ -77,7 +105,7 @@ export const enUS: Record<MessageKey, string> = {
   "waCentral.shop": "Barbershop",
   "waCentral.staff": "Professional",
   "waCentral.wholeShop": "Whole shop",
-  "waCentral.enable": "Enable notifications for this assignment",
+  "waCentral.enable": "Enable notifications for this destination",
   "waCentral.moveWarning":
     "Transferring cancels queued notifications for the previous assignment. History stays with the original shop.",
   "waCentral.confirm": "I checked the destination and want to transfer this number.",
