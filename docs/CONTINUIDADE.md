@@ -1,5 +1,13 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 10/11/2026 — P-116: instalação TI recebida e conferida
+
+Relatório `relatorio-ti-p116-2026-11-10.md` recebido: migration nº 101 aplicada em 10/11 às 11:19:34–11:19:36 (Brasília), funções do commit `6050438` instaladas, backup e ensaio com ROLLBACK, reinício apenas das funções. Cron voltou com HTTP 200 segundo a TI. Não reinstalar; nº 99/100 e Flow não foram alterados.
+
+Conferência própria somente de leitura via SSH: hashes completos das duas funções iguais ao repositório/relatório; banco e funções saudáveis; quatro colunas novas em canais e quatro na fila; orçamento vazio, dois canais principais sem reserva nem retorno ativo, quatro avisos históricos enviados e nenhum pendente/em envio. Privilégios de preparação por authenticated, configuração por anon e INSERT de canal por authenticated negados. A referência da TI a duas colunas na fila foi uma contagem parcial: as quatro estão presentes.
+
+**Pendente:** conta WhatsApp previamente ativada, pareamento do canal da Loja Teste e homologação autenticada de permissões/envios com destinatário autorizado. Reserva não preparada nem associada; retorno permanece desligado. Estado salvo no banco não comprova conexão viva com Evolution. Não houve envio, mudança de configuração, chamada do dispatcher ou teste SQL de escrita nesta conferência. [Registro completo](pacotes/2026-11-10-p116-instalacao-conferida.md).
+
 ## 10/11/2026 — P-116: avisos prioritários, limite de comunicação e reserva técnica
 
 Pedido aprovado após esclarecer o modelo: notificações esperadas de agendamento, retorno semanal por frequência e até duas comunicações promocionais por semana. Adotada janela móvel de sete dias por cliente, global entre lojas, com retorno dentro da cota. Registro de consentimento existente reaproveitado; retirada é conferida antes do envio. Cliente com próximo horário não recebe convite automático; retorno exige três dias de visitas concluídas e autorização de análise/marketing. Desligado por loja na instalação.
@@ -12,7 +20,7 @@ Interface: ficha da barbearia no admin ganha WhatsApp com principal/reserva/paus
 
 Validação: regressão SQL local em transações com ROLLBACK; handlers reais executados com dependências fictícias; tipos, eslint, prettier e montagem pelo verificar.sh. Conferência Chromium isolada em 320/390/834/1280, reserva exige confirmação técnica, nenhuma escrita na abertura, falha conserva formulário e banco antigo mostra orientação. 467 testes do app, 39 cenários SQL específicos, regressão completa sem falhas e 49 verificações da reversão. Dois temas e três cantos também conferidos no Chromium; contagem final da regressão no pacote. Sem mensagens reais, dados/credenciais reais ou homologação em aparelhos físicos.
 
-**Produção pendente:** [arquivo único TI](pacotes/2026-11-10-ti-whatsapp-comunicacao-p116.md), migration nº 101 + duas funções + preparação dos números. Não aplicada pelo agente de código, conforme regra do projeto. Esta entrega não cria/compra números nem ativa o número Salvy que está somente no painel. Baileys continua precisando de conta WhatsApp previamente ativada. Sem mudança no Flow ou em pagamentos. A proposta anterior de um número por dois barbeiros não virou roteamento automático; vale o principal fixo por loja aprovado na conversa.
+**Histórico anterior à instalação acima — produção então pendente:** [arquivo único TI](pacotes/2026-11-10-ti-whatsapp-comunicacao-p116.md), migration nº 101 + duas funções + preparação dos números. Não aplicada pelo agente de código, conforme regra do projeto. Esta entrega não cria/compra números nem ativa o número Salvy que está somente no painel. Baileys continua precisando de conta WhatsApp previamente ativada. Sem mudança no Flow ou em pagamentos. A proposta anterior de um número por dois barbeiros não virou roteamento automático; vale o principal fixo por loja aprovado na conversa.
 
 **22/10/2026 (madrugada) — interface por dispositivo publicada em 22/10/2026:** celular intocado, tablet com coluna estreita e computador com coluna completa, cada área refeita para a largura. Entrada "Interface por dispositivo" abaixo; plano em [dispositivos-2026-10-21.md](dispositivos-2026-10-21.md). O dono precisa testar no tablet e no computador.
 
@@ -20,7 +28,7 @@ Validação: regressão SQL local em transações com ROLLBACK; handlers reais e
 
 **15/10/2026 (noite) — passagem concluída no Claude Code:** ver a entrada "Passagem de 15/10" logo abaixo da Diretriz. Comece por [LEIA-PRIMEIRO.md](LEIA-PRIMEIRO.md). A função `register-shop` da P-38 foi publicada às 22:54; faltam os pacotes do Google (P-69 e P-28, em [pacotes/](pacotes/)).
 
-Atualizado em **09/11/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
+Atualizado em **10/11/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
 ## Comece aqui
 

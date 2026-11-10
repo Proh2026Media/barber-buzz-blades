@@ -1,5 +1,7 @@
 # TI — avisos e canais fixos do Barba & Cabelo (P-116)
 
+> **Instalado pela TI em 10/11/2026. Não executar novamente os passos de instalação.** Este pacote fica como histórico; situação atual e próximos passos no [registro da conferência](2026-11-10-p116-instalacao-conferida.md). O arquivo entregue em Downloads e o ZIP original permanecem preservados.
+
 Data: 10/11/2026, Brasília. **Código implementado e testado localmente; instalação em produção pendente.** Este pacote é exclusivo do B&C. Não envolve Flow, Mercado Pago, compras de números ou troca de credenciais.
 
 ## Decisão aprovada
