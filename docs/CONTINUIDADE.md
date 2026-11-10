@@ -101,6 +101,14 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## 10/11/2026 — P-119: instalação recebida — aplicada no servidor conforme TI
+
+**O que:** nº 104 aplicada às 16:24:03–16:24:04 e duas funções publicadas. Quatro números/instâncias e fila preservados; três vínculos equivalentes semeados. Não reinstalar. [Conferência e limites](pacotes/2026-11-10-p119-instalacao-relatada.md).
+
+**Como conferido:** relatório integral, hashes/tamanhos das duas funções iguais ao commit `1a420bf`; sem nova consulta própria à VPS. HTTP público confirmou textos P-119 em `index-CvTpXKMh.js` e RPC de compartilhamento em `PlatformShell-DXCDjmVM.js`; não substitui teste autenticado. Observação de grants herdados da view avaliada localmente: zero operações de escrita suportadas e zero triggers, em transação com ROLLBACK. Revogação explícita registrada para a próxima alteração da view, sem reescrever nº 104 nem abrir instalação desnecessária. Documentação atualizada; nenhum código de produto ou configuração real alterado.
+
+**Pendente:** conferência visual autenticada e homologação real do roteiro existente, com números/destinos/destinatário combinados. Não inferir ativação/compartilhamento pela instalação. Externa Barbearia preservada. Sem Flow, nº 99/100, pagamentos, pareamento ou mensagens nesta rodada.
+
 ## 10/11/2026 — P-119: um número para vários destinos — migration pendente na VPS; P-118 instalada conforme TI
 
 **Pedido:** reutilizar o mesmo número cadastrado em várias barbearias/profissionais; recebido relatório TI nº 103. **Entrega:** Central com lista de destinos, inclusão sem substituir os atuais, preferências individuais, remoção confirmada e busca por todos os destinos. Novo vínculo começa pausado. Conexão/reserva são únicas e seu alcance compartilhado é indicado; mesmo estilo, cantos e organização responsiva.

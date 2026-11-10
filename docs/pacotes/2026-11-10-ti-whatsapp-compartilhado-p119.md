@@ -1,6 +1,6 @@
 # TI — um número para várias barbearias/profissionais (P-119)
 
-10/11/2026. **Código verificado localmente; nº 104 e duas funções Edge pendentes na VPS.** O dono pediu compartilhar os números já cadastrados no B&C. Nº 103 instalada às 15:37:35, segundo [relatório recebido](2026-11-10-p118-instalacao-relatada.md). Não reinstalar nº 101–103, não aplicar nº 99/100 e não operar Flow.
+10/11/2026. **Instalação concluída pela TI em 10/11, 16:24:03–16:24:04, conforme [relatório recebido](2026-11-10-p119-instalacao-relatada.md). Não reinstalar. Conferência visual e homologação real pendentes.** Etapas de instalação abaixo preservadas como histórico e referência. O dono pediu compartilhar os números já cadastrados no B&C. Nº 103 instalada às 15:37:35, segundo [relatório recebido](2026-11-10-p118-instalacao-relatada.md). Não reinstalar nº 101–103, não aplicar nº 99/100 e não operar Flow.
 
 ## Resultado esperado
 

@@ -4,7 +4,7 @@ Atualizado em **07/11/2026** (P-49/P-70; entradas anteriores preservadas como hi
 
 ## P-119 — Um número para vários destinos (10/11/2026)
 
-Central mantém inventário à esquerda no computador e detalhes abaixo no celular. Número selecionado mostra cartões de vínculos, preferências e remoção individual confirmada; inclusão adicional não substitui os atuais. Alcance da conexão/reserva compartilhadas visível antes das ações. Busca encontra todos os destinos. Identidade, superfícies e três modos de canto preservados; novos textos nos dicionários. Rota real e componentes em bancada isolada; 30 combinações 320/390/834/1024/1280, claro/escuro e cantos, sem overflow; teclado, seleção/rolagem móvel e falhas recuperáveis conferidos. Cartão da loja mantém avisos/modelos e reconhece gestão centralizada da conexão. Homologação física e nº 104/Edge pendentes na TI.
+Central mantém inventário à esquerda no computador e detalhes abaixo no celular. Número selecionado mostra cartões de vínculos, preferências e remoção individual confirmada; inclusão adicional não substitui os atuais. Alcance da conexão/reserva compartilhadas visível antes das ações. Busca encontra todos os destinos. Identidade, superfícies e três modos de canto preservados; novos textos nos dicionários. Rota real e componentes em bancada isolada; 30 combinações 320/390/834/1024/1280, claro/escuro e cantos, sem overflow; teclado, seleção/rolagem móvel e falhas recuperáveis conferidos. Cartão da loja mantém avisos/modelos e reconhece gestão centralizada da conexão. Nº 104 e funções Edge instaladas pela TI em 10/11, 16:24:03–16:24:04, conforme relatório. Conferência visual em produção e homologação física pendentes.
 
 ## P-49 — Conexão pessoal e da loja (07/11/2026)
 
