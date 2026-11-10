@@ -18,6 +18,10 @@ Deno.serve(async (req) => {
       return json({ error: "Missing Supabase env" }, 500);
     }
 
+    if (req.headers.get("Authorization") !== `Bearer ${serviceKey}`) {
+      return json({ error: "Sem autorização para despachar avisos" }, 401);
+    }
+
     const admin = createClient(supabaseUrl, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
@@ -84,6 +88,10 @@ Deno.serve(async (req) => {
       /* próxima rodada tenta de novo */
     }
 
+    // Convites de retorno são opcionais, consentidos e limitados no banco.
+    const { error: returnError } = await admin.rpc("process_whatsapp_return_notices");
+    if (returnError) return json({ error: "Regras de comunicação indisponíveis" }, 503);
+
     const { data: batch, error: claimError } = await admin.rpc("claim_whatsapp_outbox", {
       p_limit: 20,
     });
@@ -104,79 +112,60 @@ Deno.serve(async (req) => {
     let failed = 0;
 
     for (const row of rows) {
-      const { data: channel } = await admin
-        .from("whatsapp_channels")
-        .select("instance_name, status, enabled, staff_id")
-        .eq("barbershop_id", row.barbershop_id)
-        .is("staff_id", null)
-        .maybeSingle();
-
-      // Fallback: canal do staff no payload, senão qualquer canal da loja.
-      let resolved = channel;
-      const preferStaff = row.payload?.staff_id;
-      if ((!resolved?.enabled || resolved.status !== "open") && preferStaff) {
-        const { data: staffChannel } = await admin
-          .from("whatsapp_channels")
-          .select("instance_name, status, enabled, staff_id")
-          .eq("barbershop_id", row.barbershop_id)
-          .eq("staff_id", preferStaff)
-          .maybeSingle();
-        resolved = staffChannel;
-      }
-      if (!resolved) {
-        const { data: anyChannel } = await admin
-          .from("whatsapp_channels")
-          .select("instance_name, status, enabled, staff_id")
-          .eq("barbershop_id", row.barbershop_id)
-          .limit(1)
-          .maybeSingle();
-        resolved = anyChannel;
-      }
-
-      if (!resolved?.enabled || resolved.status !== "open" || !resolved.instance_name) {
-        await admin.rpc("complete_whatsapp_outbox", {
-          p_id: row.id,
-          p_ok: false,
-          p_error: "Canal WhatsApp indisponível",
-        });
+      const { data: delivery, error: prepareError } = await admin.rpc("prepare_whatsapp_delivery", {
+        p_id: row.id,
+      });
+      if (prepareError) return json({ error: "Não foi possível conferir a fila de avisos" }, 503);
+      if (!delivery) {
         failed += 1;
         continue;
       }
-
+      const target = delivery as { instance_name: string; to_e164: string; body: string };
+      // Uma consulta sem efeito precede o envio. Nunca troca de número por erro/banimento.
+      let connected = false;
       try {
-        const result = (await evolutionFetch(`/message/sendText/${resolved.instance_name}`, {
-          method: "POST",
-          body: JSON.stringify({
-            number: digitsOnlyPhone(row.to_e164),
-            text: row.body,
-          }),
-        })) as { key?: { id?: string }; message?: { key?: { id?: string } } };
-
-        const providerId = result?.key?.id ?? result?.message?.key?.id ?? null;
-
-        await admin.rpc("complete_whatsapp_outbox", {
+        const state = (await evolutionFetch(
+          `/instance/connectionState/${encodeURIComponent(target.instance_name)}`,
+          {
+            signal: AbortSignal.timeout(10_000),
+          },
+        )) as { instance?: { state?: string } };
+        connected = state?.instance?.state === "open";
+      } catch {
+        /* Nenhum sendText foi chamado; pode adiar com segurança. */
+      }
+      if (!connected) {
+        const { error } = await admin.rpc("defer_whatsapp_delivery", { p_id: row.id });
+        if (error) return json({ error: "Não foi possível adiar o aviso" }, 503);
+        failed += 1;
+        continue;
+      }
+      try {
+        const result = (await evolutionFetch(
+          `/message/sendText/${encodeURIComponent(target.instance_name)}`,
+          {
+            method: "POST",
+            signal: AbortSignal.timeout(20_000),
+            body: JSON.stringify({ number: digitsOnlyPhone(target.to_e164), text: target.body }),
+          },
+        )) as { key?: { id?: string }; message?: { key?: { id?: string } } };
+        const providerId = result?.key?.id ?? result?.message?.key?.id;
+        if (!providerId) throw new Error("Envio sem confirmação do provedor");
+        const { error } = await admin.rpc("complete_whatsapp_outbox", {
           p_id: row.id,
           p_ok: true,
           p_provider_message_id: providerId,
         });
+        // O provedor aceitou, mas o banco pode estar indisponível. Não repetir.
+        if (error) return json({ error: "Envio aceito; registro pendente de conferência" }, 503);
         sent += 1;
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Falha no envio";
-        await admin.rpc("complete_whatsapp_outbox", {
+      } catch {
+        const { error } = await admin.rpc("complete_whatsapp_outbox", {
           p_id: row.id,
           p_ok: false,
-          p_error: message,
+          p_error: "Resultado incerto; conferir no provedor antes de reenviar",
         });
-        // Reagenda retry curto enquanto houver tentativas.
-        if (row.attempts < 5) {
-          await admin
-            .from("whatsapp_outbox")
-            .update({
-              status: "pending",
-              scheduled_at: new Date(Date.now() + 60_000).toISOString(),
-            })
-            .eq("id", row.id);
-        }
+        if (error) return json({ error: "Resultado pendente de conferência" }, 503);
         failed += 1;
       }
     }

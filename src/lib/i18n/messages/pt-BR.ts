@@ -1,5 +1,31 @@
 /** Dicionário principal (fonte). Toda chave nova nasce aqui, em pt-BR. */
 export const ptBR = {
+  "waDelivery.accepted": "Aviso colocado na fila de envio",
+  "waDelivery.reserveActive": "Os avisos estão direcionados ao canal reserva da barbearia.",
+  "waDelivery.managed":
+    "O B&C gerencia a conexão deste número. Para conectar ou reconectar, fale com o suporte.",
+  "waDelivery.title": "Canais e comunicações",
+  "waDelivery.unavailable":
+    "Conecte o canal principal e solicite à TI a instalação das regras de comunicação.",
+  "waDelivery.backup": "Identificador do canal reserva",
+  "waDelivery.backupHint":
+    "A TI fornece este identificador após preparar um número exclusivo. Deixe vazio se ainda não houver reserva.",
+  "waDelivery.mode": "Canal usado nos avisos",
+  "waDelivery.primary": "Principal fixo",
+  "waDelivery.reserve": "Reserva por falha técnica",
+  "waDelivery.paused": "Pausado para revisão",
+  "waDelivery.technical":
+    "Confirmei uma falha técnica. Não estou substituindo um número bloqueado ou banido.",
+  "waDelivery.returns": "Ativar lembrete de retorno conforme a frequência do cliente",
+  "waDelivery.limits":
+    "Até duas comunicações por cliente a cada sete dias, incluindo um lembrete de retorno. Exigem aceite; avisos de agendamento são separados.",
+  "waDelivery.saved": "Configuração salva. Nenhuma mensagem foi enviada por esta ação.",
+  "waDelivery.error":
+    "Não foi possível salvar ou carregar. Confira a instalação com a TI e tente novamente.",
+  "waDelivery.limited":
+    "O cliente não autorizou ofertas ou já atingiu o limite de duas comunicações em sete dias.",
+  "waDelivery.noAppointment":
+    "Este cliente não tem um próximo agendamento para receber este aviso.",
   "waPair.restart": "Recomeçar com este número",
   "waPair.restartNotice":
     "O WhatsApp ainda não confirmou esta conexão. Há uma preparação anterior neste canal. Recomeçar encerra essa preparação e gera um código para o número informado.",

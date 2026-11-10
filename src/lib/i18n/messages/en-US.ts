@@ -1,6 +1,30 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const enUS: Record<MessageKey, string> = {
+  "waDelivery.accepted": "Notification queued for delivery",
+  "waDelivery.reserveActive": "Notifications are routed to the shop’s backup channel.",
+  "waDelivery.managed":
+    "B&C manages this number’s connection. Contact support to connect or reconnect it.",
+  "waDelivery.title": "Channels and communications",
+  "waDelivery.unavailable":
+    "Connect the primary channel and ask IT to install the communication rules.",
+  "waDelivery.backup": "Backup channel identifier",
+  "waDelivery.backupHint":
+    "IT provides this identifier after preparing a dedicated number. Leave blank if no backup is available.",
+  "waDelivery.mode": "Channel used for notifications",
+  "waDelivery.primary": "Fixed primary",
+  "waDelivery.reserve": "Backup for technical failure",
+  "waDelivery.paused": "Paused for review",
+  "waDelivery.technical":
+    "I confirmed a technical failure. I am not replacing a blocked or banned number.",
+  "waDelivery.returns": "Enable return reminders based on visit frequency",
+  "waDelivery.limits":
+    "Up to two communications per customer every seven days, including one return reminder. Consent is required; appointment notifications are separate.",
+  "waDelivery.saved": "Settings saved. This action did not send any messages.",
+  "waDelivery.error": "Could not save or load. Check the installation with IT and try again.",
+  "waDelivery.limited":
+    "The customer has not opted into offers or has reached two communications in seven days.",
+  "waDelivery.noAppointment": "This customer has no upcoming appointment for this notification.",
   "waPair.restart": "Start again with this number",
   "waPair.restartNotice":
     "WhatsApp has not confirmed this connection yet. This channel has an earlier setup attempt. Starting again ends that attempt and generates a code for the number entered.",

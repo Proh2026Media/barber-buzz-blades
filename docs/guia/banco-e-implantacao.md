@@ -1,5 +1,7 @@
 # Banco, servidores e publicação
 
+**10/11/2026 — nº 101/P-116 preparada, não aplicada:** [comunicação WhatsApp, reserva e roteiro TI](../pacotes/2026-11-10-ti-whatsapp-comunicacao-p116.md). Instalar dispatcher novo antes da migration; ele recusa consumir a fila sem as novas regras. Retorno automático desligado por padrão. Não reaplicar nº 99/100 por este pacote.
+
 Guia de retomada para agentes de código (Cursor, Codex, Claude Code) e para o dono. Escrito em 12/10/2026 a partir do código, do git e dos documentos citados. O registro detalhado de cada entrega continua em [CONTINUIDADE.md](../CONTINUIDADE.md); aqui fica o mapa.
 
 Situações usadas: **feito**, **feito — falta aplicar no banco**, **pendente**, **a decidir**, **não confirmado**.

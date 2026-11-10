@@ -1084,6 +1084,10 @@ export type Database = {
       };
       whatsapp_channels: {
         Row: {
+          backup_instance_name: string | null;
+          delivery_mode: string;
+          delivery_reason: string | null;
+          return_notice_enabled: boolean;
           barbershop_id: string;
           instance_name: string;
           status: Database["public"]["Enums"]["whatsapp_channel_status"];
@@ -1097,6 +1101,10 @@ export type Database = {
           updated_at: string;
         };
         Insert: {
+          backup_instance_name?: string | null;
+          delivery_mode?: string;
+          delivery_reason?: string | null;
+          return_notice_enabled?: boolean;
           barbershop_id: string;
           instance_name: string;
           status?: Database["public"]["Enums"]["whatsapp_channel_status"];
@@ -1345,6 +1353,16 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      configure_shop_whatsapp_delivery: {
+        Args: {
+          p_shop_id: string;
+          p_backup_instance: string | null;
+          p_mode: string;
+          p_reason: string;
+          p_return_enabled: boolean;
+        };
+        Returns: Json;
+      };
       get_available_slots: {
         Args: {
           p_shop_id: string;

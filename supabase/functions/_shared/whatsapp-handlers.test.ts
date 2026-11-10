@@ -7,7 +7,13 @@ import { connectWithPairingCode, evolutionQr, pairingPhone } from "./whatsapp-pa
 /** Executa os handlers reais com dependências em memória, sem rede ou credenciais. */
 function fixture(
   endpoint: string,
-  options: { allowed?: boolean; channel?: boolean; state?: string } = {},
+  options: {
+    allowed?: boolean;
+    channel?: boolean;
+    state?: string;
+    mode?: "primary" | "backup" | "paused";
+    platformAdmin?: boolean;
+  } = {},
 ) {
   const calls: string[] = [];
   const writes: unknown[] = [];
@@ -18,12 +24,20 @@ function fixture(
           barbershop_id: "loja-ficticia",
           instance_name: "instancia-da-loja",
           status: "disconnected",
+          delivery_mode: options.mode ?? "primary",
+          backup_instance_name: options.mode === "backup" ? "reserva-da-loja" : null,
         };
   const client = {
     auth: { getUser: async () => ({ data: { user: { id: "usuario-ficticio" } }, error: null }) },
     rpc: async (name: string) => {
       calls.push(name);
-      return { data: options.allowed !== false, error: null };
+      return {
+        data:
+          name === "is_platform_admin"
+            ? options.platformAdmin !== false && options.allowed !== false
+            : options.allowed !== false,
+        error: null,
+      };
     },
     from(table: string) {
       let mutation: Record<string, unknown> | undefined;
@@ -40,6 +54,7 @@ function fixture(
       const query = {
         select: () => query,
         eq: () => query,
+        is: () => query,
         update: (data: Record<string, unknown>) => {
           mutation = data;
           return query;
@@ -254,3 +269,45 @@ for (const endpoint of ["platform-whatsapp", "whatsapp-channel"]) {
     );
   });
 }
+
+for (const mode of ["backup", "paused"] as const) {
+  test(`loja com ${mode}: conectar ou desconectar não altera o principal`, async () => {
+    const f = fixture("whatsapp-channel", { mode });
+    for (const action of ["connect", "create", "logout", "restart-pairing"]) {
+      const result = await f.request({ action, method: "code", phone: "5511999990000" });
+      assert.equal(result.status, 409);
+    }
+    assert.equal(f.writes.length, 0);
+    assert.equal(
+      f.calls.some((p) => p.startsWith("/")),
+      false,
+    );
+  });
+}
+test("reserva selecionada: consulta mostra seu estado sem alterar registro do principal", async () => {
+  const f = fixture("whatsapp-channel", { mode: "backup", state: "open" });
+  const result = await f.request({ action: "status", method: "qr" });
+  assert.equal(result.status, 200);
+  assert.equal((result.body.channel as { status: string }).status, "open");
+  assert.equal(result.body.qrcode, null);
+  assert.ok(f.calls.includes("/instance/connectionState/reserva-da-loja"));
+  assert.equal(f.writes.length, 0);
+  assert.equal(
+    f.calls.some((p) => /connect\/|create|delete|logout/.test(p)),
+    false,
+  );
+});
+
+test("dono da loja não conecta números fornecidos pelo B&C, mas pode consultar", async () => {
+  const f = fixture("whatsapp-channel", { platformAdmin: false });
+  assert.equal(
+    (await f.request({ action: "connect", method: "code", phone: "5511999990000" })).status,
+    403,
+  );
+  assert.equal(
+    f.calls.some((p) => p.startsWith("/")),
+    false,
+  );
+  assert.equal((await f.request({ action: "logout" })).status, 403);
+  assert.equal((await f.request({ action: "status" })).status, 200);
+});

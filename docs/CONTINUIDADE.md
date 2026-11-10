@@ -1,5 +1,19 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 10/11/2026 — P-116: avisos prioritários, limite de comunicação e reserva técnica
+
+Pedido aprovado após esclarecer o modelo: notificações esperadas de agendamento, retorno semanal por frequência e até duas comunicações promocionais por semana. Adotada janela móvel de sete dias por cliente, global entre lojas, com retorno dentro da cota. Registro de consentimento existente reaproveitado; retirada é conferida antes do envio. Cliente com próximo horário não recebe convite automático; retorno exige três dias de visitas concluídas e autorização de análise/marketing. Desligado por loja na instalação.
+
+Migration nº 101 adiciona orçamento atômico, prioridade, roteamento fixo e reserva; corrige dedupe de remarcação e invalida aviso anterior de horário alterado. Worker autenticado consulta conexão sem efeitos e só reprograma quando não tentou enviar; timeout/resultado sem ID/registro incerto exige conferência, sem rodízio. Mantida recuperação anterior de e-mails transacionais; promoções usam um canal e não repetem automaticamente após incerteza. Configuração de reserva restrita ao admin com proteção contra UPDATE/INSERT direto de donos e reutilização entre lojas. A tela da loja mostra a reserva selecionada sem alterar a instância principal.
+
+Conectar/desconectar os números fornecidos fica restrito ao admin na interface e no endpoint; donos não alteram identidade/rota por escrita direta. A loja conserva os ajustes dos avisos.
+
+Interface: ficha da barbearia no admin ganha WhatsApp com principal/reserva/pausa e retorno opcional; mesmos componentes MB e idiomas. Avisar cliente explica a cota e diferencia aviso aceito na fila de entrega. Formulário preserva entrada em falha, bloqueia repetição e trata banco antigo. Número geral da plataforma/OTP separado.
+
+Validação: regressão SQL local em transações com ROLLBACK; handlers reais executados com dependências fictícias; tipos, eslint, prettier e montagem pelo verificar.sh. Conferência Chromium isolada em 320/390/834/1280, reserva exige confirmação técnica, nenhuma escrita na abertura, falha conserva formulário e banco antigo mostra orientação. 467 testes do app, 39 cenários SQL específicos, regressão completa sem falhas e 49 verificações da reversão. Dois temas e três cantos também conferidos no Chromium; contagem final da regressão no pacote. Sem mensagens reais, dados/credenciais reais ou homologação em aparelhos físicos.
+
+**Produção pendente:** [arquivo único TI](pacotes/2026-11-10-ti-whatsapp-comunicacao-p116.md), migration nº 101 + duas funções + preparação dos números. Não aplicada pelo agente de código, conforme regra do projeto. Esta entrega não cria/compra números nem ativa o número Salvy que está somente no painel. Baileys continua precisando de conta WhatsApp previamente ativada. Sem mudança no Flow ou em pagamentos. A proposta anterior de um número por dois barbeiros não virou roteamento automático; vale o principal fixo por loja aprovado na conversa.
+
 **22/10/2026 (madrugada) — interface por dispositivo publicada em 22/10/2026:** celular intocado, tablet com coluna estreita e computador com coluna completa, cada área refeita para a largura. Entrada "Interface por dispositivo" abaixo; plano em [dispositivos-2026-10-21.md](dispositivos-2026-10-21.md). O dono precisa testar no tablet e no computador.
 
 **20/10/2026 (noite) — aplicado no servidor:** as migrations nº 95 e 96 e a função `google-calendar-dispatch` da entrega de 16/10 (agendamento pelo barbeiro no painel, cliente do balcão, recorrente, login Google no app instalado), pelo TI, com o pacote [implantacao-agendamento-painel-2026-10-16.md](implantacao-agendamento-painel-2026-10-16.md). Última migration em produção: `20261016130000_agendamento_pelo_painel`. Falta só o teste do dono no celular (P-43).

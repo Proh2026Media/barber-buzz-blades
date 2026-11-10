@@ -193,9 +193,11 @@ function WhatsAppBubble({ text, shopName }: { text: string; shopName: string }) 
 export function WhatsAppChannelCard({
   shopId,
   shopTimeZone,
+  canManageConnection = false,
 }: {
   shopId: string;
   shopTimeZone?: string;
+  canManageConnection?: boolean;
 }) {
   const demo = useDemo();
   const { t } = useI18n();
@@ -281,6 +283,10 @@ export function WhatsAppChannelCard({
       setChannel({
         barbershop_id: shopId,
         instance_name: "demo-shop",
+        backup_instance_name: null,
+        delivery_mode: "primary",
+        delivery_reason: null,
+        return_notice_enabled: false,
         status: "open",
         display_phone: "+5511999999999",
         enabled: true,
@@ -490,7 +496,9 @@ export function WhatsAppChannelCard({
     setTemplateResult({ state: "pending", text: t("integr.wa.restored") });
   }
 
-  const connection = connectionOf(channel, checked);
+  const primaryMode = !channel?.delivery_mode || channel.delivery_mode === "primary";
+  const connection =
+    channel?.delivery_mode === "paused" ? "paused" : connectionOf(channel, checked);
   const meta = CONNECTION_META[connection];
   const live = connection === "open";
   const activeMeta = TEMPLATE_META.find((m) => m.key === activeTemplate) ?? TEMPLATE_META[0];
@@ -519,7 +527,7 @@ export function WhatsAppChannelCard({
   const dropped = showProblem || (connectResult?.state === "error" && !!connectResult.dropped);
 
   const moreActions = [
-    ...(channel && channel.status === "open"
+    ...(canManageConnection && primaryMode && channel && channel.status === "open"
       ? [
           {
             id: "reconnect",
@@ -812,6 +820,15 @@ export function WhatsAppChannelCard({
         aside={<StatusBadge tone={meta.tone} icon={meta.icon} label={t(meta.label)} live />}
       />
 
+      {!canManageConnection && <Notice tone="info" title={t("waDelivery.managed")} />}
+      {!primaryMode && (
+        <Notice
+          tone="info"
+          title={t(
+            channel?.delivery_mode === "backup" ? "waDelivery.reserveActive" : "waDelivery.paused",
+          )}
+        />
+      )}
       {/* Resultado da conexão em uma frase grande, com o número e as ações raras ao lado. */}
       <div
         className={cn(
@@ -866,42 +883,46 @@ export function WhatsAppChannelCard({
         </div>
       </div>
 
-      {connection !== "checking" && connection !== "open" && connection !== "paused" && (
-        <div className="flex flex-col gap-2 sm:flex-row">
-          {qrcode && connection === "waitingQr" ? (
-            <button
-              type="button"
-              onClick={() => setQrOpen(true)}
-              className="action-button action-confirm sm:px-5"
-            >
-              <QrCode className="size-4" aria-hidden />
-              {t("integr.wa.showCode")}
-            </button>
-          ) : (
+      {canManageConnection &&
+        primaryMode &&
+        connection !== "checking" &&
+        connection !== "open" &&
+        connection !== "paused" && (
+          <div className="flex flex-col gap-2 sm:flex-row">
+            {qrcode && connection === "waitingQr" ? (
+              <button
+                type="button"
+                onClick={() => setQrOpen(true)}
+                className="action-button action-confirm sm:px-5"
+              >
+                <QrCode className="size-4" aria-hidden />
+                {t("integr.wa.showCode")}
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void connect()}
+                className="action-button action-confirm sm:px-5"
+              >
+                <QrCode className="size-4" aria-hidden />
+                {t(dropped ? "integr.wa.reconnectWa" : "waPair.qr")}
+              </button>
+            )}
             <button
               type="button"
               disabled={busy}
-              onClick={() => void connect()}
               className="action-button action-confirm sm:px-5"
+              onClick={() => {
+                setQrOpen(false);
+                setPairOpen(true);
+              }}
             >
-              <QrCode className="size-4" aria-hidden />
-              {t(dropped ? "integr.wa.reconnectWa" : "waPair.qr")}
+              <Smartphone aria-hidden="true" />
+              {t("waPair.useCode")}
             </button>
-          )}
-          <button
-            type="button"
-            disabled={busy}
-            className="action-button action-confirm sm:px-5"
-            onClick={() => {
-              setQrOpen(false);
-              setPairOpen(true);
-            }}
-          >
-            <Smartphone aria-hidden="true" />
-            {t("waPair.useCode")}
-          </button>
-        </div>
-      )}
+          </div>
+        )}
       <ActionResult
         state={connectResult?.state}
         text={connectResult?.text}

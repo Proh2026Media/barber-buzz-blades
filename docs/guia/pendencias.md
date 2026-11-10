@@ -1,5 +1,7 @@
 # Pendências — lista única e priorizada
 
+**10/11/2026 — P-116, comunicação controlada:** código e bancada implementados; **migration nº 101 e duas funções aguardam TI**. Avisos transacionais prioritários, até duas comunicações por cliente/sete dias entre lojas, um retorno incluído na cota, consentimento revalidado e canal fixo por loja com reserva técnica explícita. Retorno automático desligado na instalação. [Pacote único TI](../pacotes/2026-11-10-ti-whatsapp-comunicacao-p116.md). Sem compra/ativação de números, alternância por mensagem ou operação Flow. Evolution/Baileys continua exigindo conta WhatsApp ativada; o número Salvy apenas no painel não está conectado por esta entrega. Último id P-116.
+
 **09/11/2026 — P-115, retomada e país automático:** relatório da TI confirma a primeira instalação (`c49a783`) e frontend publicado às 15h44. Correção posterior substitui o bloqueio genérico de “conectando” por **Recomeçar com este número**, com nova conferência antes de encerrar a preparação; não reinicia automaticamente uma tentativa ao abrir a tela. País sugerido pela preferência anterior, fuso da loja/aparelho e região do navegador, com seletor e número nacional sem DDI. [Diagnóstico e implantação da correção](../pacotes/2026-11-09-whatsapp-p115-retomada-e-pais.md). Pareamento real no aparelho continua pendente.
 
 **09/11/2026 — P-115, WhatsApp por QR ou código:** implementados os dois métodos nos cartões da plataforma e da loja. Pareamento Evolution/Baileys usa **oito caracteres**, diferente do SMS de seis dígitos. Permissões e canais existentes preservados; consultas comuns não iniciam conexão. Código local e bancada conferidos; **funções no servidor e pareamento real aguardam TI**, pelo [pacote único](../pacotes/2026-11-09-ti-whatsapp-pareamento-evolution-p115.md). Sem migration/env nova, sem mudança no Flow ou na Salvy. Último id usado: P-115.
@@ -20,7 +22,7 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 - Situação: **pendente**, **feito — falta aplicar no banco**, **a decidir** (depende do dono), **não confirmado** (não deu para conferir daqui).
 - Cada item foi conferido no código e nas migrations em 12/10/2026. As linhas citadas são dessa data.
 - **Papéis da equipe no banco × nomes na tela:** `owner` e `partner` = **Dono** (sócio; `partner` é o nome antigo e aparece igual), `associate` = **Parceiro**, `employee` = **Contratado** ([roles-model.ts](../../src/features/shop/roles-model.ts); rótulos em `pt-BR.ts`). `shop_admin` é o papel antigo de `memberships`, que pode existir sem vínculo de equipe (CONTINUIDADE, onda 1 de 09/10).
-- Último id usado: **P-115**.
+- Último id usado: **P-116**.
 
 **Índice**
 
@@ -792,3 +794,7 @@ Entrega de 22/10/2026 (CONTINUIDADE, entrada "Interface por dispositivo"; plano 
 **Implementado no código; instalação e homologação real pendentes.** Mesma Evolution, instância própria da plataforma e uma por loja. Código de oito caracteres, telefone internacional, acompanhamento automático e orientação em cinco idiomas. Sessão aberta não é reiniciada; tentativa em andamento impede novo pareamento por código. QR continua disponível e atualizado enquanto a janela está aberta.
 
 Novo helper compartilhado e dois handlers; nenhum segredo no frontend e nenhuma migration/env nova. [TI — instalação e testes reais](../pacotes/2026-11-09-ti-whatsapp-pareamento-evolution-p115.md). Não encerrar esta pendência apenas porque o frontend foi publicado. OTP de seis dígitos do B&C continua igual.
+
+## P-116 — Notificações, comunicações consentidas e reserva técnica (10/11/2026)
+
+**Implementado e testado; falta instalação e homologação TI.** Limite global por cliente de duas comunicações em sete dias corridos, incluindo um retorno por histórico, sem próximo agendamento. Privacidade e avisos são conferidos novamente antes de enviar; eventos repetidos não criam o mesmo aviso. Principal fixo por loja, reserva dedicada selecionada pela administração em falha técnica, pausa para revisão; resultado externo incerto não dispara retry cego. Painel administrativo compatível com banco antigo. Retorno opcional inicia desligado. [Pacote de instalação e números](../pacotes/2026-11-10-ti-whatsapp-comunicacao-p116.md). O modelo de um número por dois barbeiros e a ativação sem aplicativo via Baileys não foram implementados nem prometidos.

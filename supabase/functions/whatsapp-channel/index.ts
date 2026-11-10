@@ -106,6 +106,12 @@ Deno.serve(async (req) => {
     void allowed;
     void allowError;
 
+    if (action !== "settings" && (action !== "status" || body.method === "qr")) {
+      const { data: canConnect, error: roleError } = await userClient.rpc("is_platform_admin");
+      if (roleError || !canConnect)
+        return json({ error: "A administração do B&C gerencia a conexão deste número." }, 403);
+    }
+
     const { data: shop } = await admin
       .from("barbershops")
       .select("id, slug, name")
@@ -117,7 +123,36 @@ Deno.serve(async (req) => {
       .from("whatsapp_channels")
       .select("*")
       .eq("barbershop_id", shopId)
+      .is("staff_id", null)
       .maybeSingle();
+
+    // Consulta da reserva sem criar, parear ou mudar a instância principal.
+    async function activeChannel(row: typeof channel) {
+      if (!row || row.delivery_mode !== "backup" || !row.backup_instance_name) return row;
+      let status: ReturnType<typeof mapEvolutionState> = "disconnected";
+      try {
+        const state = (await evolutionFetch(
+          `/instance/connectionState/${encodeURIComponent(row.backup_instance_name)}`,
+          {
+            method: "GET",
+            signal: AbortSignal.timeout(10_000),
+          },
+        )) as { instance?: { state?: string } };
+        status = mapEvolutionState(state.instance?.state);
+      } catch {
+        /* A tela mostra indisponibilidade, sem tentar outro número. */
+      }
+      return { ...row, status, display_phone: null };
+    }
+    if (channel?.delivery_mode && channel.delivery_mode !== "primary") {
+      if (action === "status")
+        return json({ ok: true, channel: await activeChannel(channel), qrcode: null });
+      if (action !== "settings")
+        return json(
+          { error: "Canal gerenciado pela administração; confira a rota antes de conectar." },
+          409,
+        );
+    }
 
     if (action === "settings") {
       if (!channel) return json({ error: "Conecte o WhatsApp antes de salvar ajustes." }, 400);
@@ -130,10 +165,11 @@ Deno.serve(async (req) => {
           enabled: body.enabled ?? channel.enabled,
         })
         .eq("barbershop_id", shopId)
+        .is("staff_id", null)
         .select("*")
         .single();
       if (error) return json({ error: error.message }, 500);
-      return json({ ok: true, channel: updated });
+      return json({ ok: true, channel: await activeChannel(updated) });
     }
 
     if (!channel && (action === "status" || action === "pairing-status")) {
@@ -178,6 +214,7 @@ Deno.serve(async (req) => {
         .from("whatsapp_channels")
         .update({ status: "disconnected", display_phone: null, last_error: null })
         .eq("barbershop_id", shopId)
+        .is("staff_id", null)
         .select("*")
         .single();
       return json({ ok: true, channel: updated, qrcode: null });
@@ -195,6 +232,7 @@ Deno.serve(async (req) => {
           .from("whatsapp_channels")
           .update({ status: result.status, last_error: null })
           .eq("barbershop_id", shopId)
+          .is("staff_id", null)
           .select("*")
           .single();
         if (error) return json({ error: "PAIRING_UNAVAILABLE" }, 502);
@@ -339,6 +377,7 @@ Deno.serve(async (req) => {
             last_error: null,
           })
           .eq("barbershop_id", shopId)
+          .is("staff_id", null)
           .select("*")
           .single();
         channel = updated ?? channel;

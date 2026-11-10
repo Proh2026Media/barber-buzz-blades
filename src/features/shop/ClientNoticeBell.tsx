@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   CalendarCheck,
   CalendarClock,
@@ -93,6 +93,7 @@ export function ClientNoticeBell({
 }) {
   const { t } = useI18n();
   const demo = useDemo();
+  const sending = useRef(false);
   const [open, setOpen] = useState(false);
   const [choice, setChoice] = useState<NoticePreset | null>(null);
   const [state, setState] = useState<ActionState | null>(null);
@@ -127,7 +128,8 @@ export function ClientNoticeBell({
   }, [open, shopId, customerId]);
 
   async function send() {
-    if (!choice || state === "saving") return;
+    if (!choice || sending.current) return;
+    sending.current = true;
     setState("saving");
     setError(null);
     try {
@@ -164,18 +166,29 @@ export function ClientNoticeBell({
       setWaitSeconds(0);
       setOpen(false);
       toast.success(
-        channels.length
-          ? t("team.notice.sentBy", {
-              channels: channels.map(channelLabel).join(t("team.notice.and")),
-            })
-          : t("team.notice.recorded"),
+        result?.status === "accepted"
+          ? t("waDelivery.accepted")
+          : channels.length
+            ? t("team.notice.sentBy", {
+                channels: channels.map(channelLabel).join(t("team.notice.and")),
+              })
+            : t("team.notice.recorded"),
         { description: name },
       );
     } catch (cause) {
       // Nunca a frase crua do banco: sempre a versão amigável, com o que fazer.
-      setError(friendlyAuthError(cause, t("team.notice.sendError")));
+      const message =
+        typeof cause === "object" && cause && "message" in cause ? String(cause.message) : "";
+      setError(
+        message.includes("NOTICE_COMMUNICATION_LIMIT_OR_CONSENT")
+          ? t("waDelivery.limited")
+          : message.includes("NOTICE_NO_APPOINTMENT")
+            ? t("waDelivery.noAppointment")
+            : friendlyAuthError(cause, t("team.notice.sendError")),
+      );
       setState("error");
     } finally {
+      sending.current = false;
       setState((current) => (current === "saving" ? null : current));
     }
   }
@@ -246,6 +259,7 @@ export function ClientNoticeBell({
             </Notice>
           )}
 
+          <Hint>{t("waDelivery.limits")}</Hint>
           <ChoiceCards
             legend={t("team.notice.pick")}
             columns={1}

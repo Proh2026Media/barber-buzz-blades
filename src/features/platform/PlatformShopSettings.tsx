@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, Clock, Globe2, History } from "lucide-react";
+import { ChevronDown, Clock, Globe2, History, MessageCircle } from "lucide-react";
 import { ChoiceChips, Notice } from "@/components/visual";
 import type { Tables } from "@/integrations/supabase/types";
 import { useI18n } from "@/lib/i18n";
@@ -7,7 +7,10 @@ import { ShopDomainCard } from "@/features/shop/settings/ShopDomainCard";
 import { ShopTimezoneCard } from "@/features/shop/settings/ShopTimezoneCard";
 import { SlugRedirectsCard } from "@/features/shop/settings/SlugRedirectsCard";
 
-type Panel = "domain" | "redirects" | "timezone";
+import { WhatsAppChannelCard } from "@/features/shop/settings/WhatsAppChannelCard";
+import { ShopWhatsAppDelivery } from "./ShopWhatsAppDelivery";
+
+type Panel = "domain" | "redirects" | "timezone" | "whatsapp";
 
 /** Gestão compartilhada: os mesmos contratos e permissões usados nos Ajustes da loja. */
 export function PlatformShopSettings({
@@ -51,8 +54,18 @@ export function PlatformShopSettings({
                 { value: "domain", label: t("domainCard.title"), icon: Globe2 },
                 { value: "redirects", label: t("redirects.title"), icon: History },
                 { value: "timezone", label: t("dec.tz.settings.title"), icon: Clock },
+                { value: "whatsapp", label: "WhatsApp", icon: MessageCircle },
               ]}
             />
+            <div hidden={panel !== "whatsapp"} className="space-y-3">
+              <WhatsAppChannelCard
+                key={`channel-${shop.id}`}
+                shopId={shop.id}
+                shopTimeZone={shop.timezone}
+                canManageConnection
+              />
+              <ShopWhatsAppDelivery key={shop.id} shopId={shop.id} />
+            </div>
             {/* Trocar assunto ou recolher mantém rascunhos; mudar de loja remonta a ficha. */}
             <div hidden={panel !== "domain"}>
               <ShopDomainCard key={shop.id} shopId={shop.id} onUpdated={onUpdated} />

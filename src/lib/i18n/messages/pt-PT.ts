@@ -1,6 +1,31 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const ptPT: Record<MessageKey, string> = {
+  "waDelivery.accepted": "Aviso colocado na fila de envio",
+  "waDelivery.reserveActive": "Os avisos estão direcionados para o canal de reserva da barbearia.",
+  "waDelivery.managed":
+    "O B&C gere a ligação deste número. Para ligar ou voltar a ligar, contacte o apoio.",
+  "waDelivery.title": "Canais e comunicações",
+  "waDelivery.unavailable":
+    "Ligue o canal principal e peça à equipa técnica a instalação das regras de comunicação.",
+  "waDelivery.backup": "Identificador do canal de reserva",
+  "waDelivery.backupHint":
+    "A equipa técnica fornece este identificador após preparar um número exclusivo. Deixe vazio se ainda não houver reserva.",
+  "waDelivery.mode": "Canal usado nos avisos",
+  "waDelivery.primary": "Principal fixo",
+  "waDelivery.reserve": "Reserva por falha técnica",
+  "waDelivery.paused": "Em pausa para revisão",
+  "waDelivery.technical":
+    "Confirmei uma falha técnica. Não estou a substituir um número bloqueado ou banido.",
+  "waDelivery.returns": "Ativar lembrete de regresso conforme a frequência do cliente",
+  "waDelivery.limits":
+    "Até duas comunicações por cliente a cada sete dias, incluindo um lembrete de regresso. Exigem consentimento; avisos de marcação são separados.",
+  "waDelivery.saved": "Configuração guardada. Esta ação não enviou mensagens.",
+  "waDelivery.error":
+    "Não foi possível guardar ou carregar. Confirme a instalação com a equipa técnica e tente novamente.",
+  "waDelivery.limited":
+    "O cliente não autorizou ofertas ou atingiu o limite de duas comunicações em sete dias.",
+  "waDelivery.noAppointment": "Este cliente não tem uma próxima marcação para receber este aviso.",
   "waPair.restart": "Recomeçar com este número",
   "waPair.restartNotice":
     "O WhatsApp ainda não confirmou esta ligação. Existe uma preparação anterior neste canal. Recomeçar termina essa preparação e gera um código para o número indicado.",
