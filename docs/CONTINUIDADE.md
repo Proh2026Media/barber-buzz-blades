@@ -1,5 +1,9 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 10/11/2026 — P-117: “número” nos textos do WhatsApp
+
+A pedido do dono, substituído “canal” por “número” nos rótulos, ações, busca, confirmações e avisos de distribuição/conexão do WhatsApp, incluindo número principal e reserva. Ajuste nos quatro dicionários; en-GB herda en-US. Campo técnico da reserva continua identificado como conexão, pois recebe o identificador fornecido pela TI, não um telefone. Chaves internas, banco, funções e vínculos preservados. Sem nova instalação TI; homologação real P-117 permanece pendente.
+
 ## 10/11/2026 — P-117: instalação recebida; homologação real pendente
 
 Relatório TI confirma nº 102 aplicada em transação às 13:47:04–13:47:05 (Brasília), após backup/ensaio, com quatro arquivos de funções publicados e reinício somente das funções. Conferência própria local: hashes completos e tamanhos dos quatro arquivos iguais ao relatório e ao commit `94e0726`. Não houve consulta nova à VPS, envio, pareamento ou alteração de canais nesta rodada.

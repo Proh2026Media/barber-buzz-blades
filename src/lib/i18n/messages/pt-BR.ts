@@ -2,18 +2,18 @@
 export const ptBR = {
   "waCentral.tab": "WhatsApp",
   "waCentral.title": "Central de WhatsApp",
-  "waCentral.subtitle": "Conecte os números do B&C e escolha quem usa cada canal.",
+  "waCentral.subtitle": "Conecte os números de WhatsApp do B&C e escolha quem pode usá-los.",
   "waCentral.platform": "Número da plataforma · códigos de acesso",
   "waCentral.refresh": "Atualizar lista",
-  "waCentral.label": "Nome para identificar o canal",
-  "waCentral.add": "Adicionar canal",
-  "waCentral.search": "Buscar número, canal ou barbearia",
+  "waCentral.label": "Nome para identificar o número",
+  "waCentral.add": "Adicionar número",
+  "waCentral.search": "Buscar número, nome ou barbearia",
   "waCentral.unassigned": "Disponível · sem vínculo",
-  "waCentral.channel": "Canal WhatsApp",
+  "waCentral.channel": "Número de WhatsApp",
   "waCentral.enabled": "Avisos habilitados",
   "waCentral.disabled": "Avisos pausados",
-  "waCentral.empty": "Nenhum canal encontrado.",
-  "waCentral.select": "Selecione um canal para conectar ou distribuir.",
+  "waCentral.empty": "Nenhum número encontrado.",
+  "waCentral.select": "Selecione um número para conectar ou distribuir.",
   "waCentral.assignment": "Quem usa este número",
   "waCentral.shop": "Barbearia",
   "waCentral.staff": "Profissional",
@@ -21,25 +21,25 @@ export const ptBR = {
   "waCentral.enable": "Habilitar avisos para este vínculo",
   "waCentral.moveWarning":
     "A transferência cancela os avisos ainda na fila do vínculo anterior. O histórico permanece na barbearia de origem.",
-  "waCentral.confirm": "Conferi o destino e quero transferir este canal.",
+  "waCentral.confirm": "Conferi o destino e quero transferir este número.",
   "waCentral.save": "Salvar distribuição",
   "waCentral.saved": "Distribuição salva. Nenhuma mensagem foi enviada por esta ação.",
   "waCentral.history": "Transferências recentes",
   "waCentral.inactiveShop": "Barbearia indisponível",
   "waCentral.inactiveStaff": "Profissional indisponível",
   "waCentral.connectionHint":
-    "Conecte uma conta WhatsApp já ativada. Cadastrar o canal não ativa nem compra um número.",
-  "waCentral.offHint": "Sem conexão, os avisos deste canal não podem ser entregues.",
+    "Use uma conta WhatsApp já ativada. O cadastro no B&C não compra números nem ativa a conta.",
+  "waCentral.offHint": "Sem conexão, os avisos deste número não podem ser entregues.",
   "waCentral.error":
     "Não foi possível carregar ou salvar. Atualize a lista; se persistir, peça à TI para conferir a instalação da central.",
   "waCentral.stale":
-    "Este canal mudou em outra tela. Atualize a lista e confira o vínculo antes de salvar.",
+    "As configurações deste número mudaram em outra tela. Atualize a lista e confira o vínculo antes de salvar.",
   "waCentral.occupied":
-    "Este destino já tem um canal. Libere o vínculo atual antes de transferir outro.",
+    "Este destino já tem um número. Libere o vínculo atual antes de transferir outro.",
   "waCentral.invalidTarget":
-    "Escolha uma barbearia e um profissional ativos. Um canal sem vínculo deve ficar pausado.",
+    "Escolha uma barbearia e um profissional ativos. Um número sem vínculo deve ficar pausado.",
   "waCentral.reserveFirst":
-    "Volte ao canal principal e retire a reserva nos ajustes da barbearia antes de transferir.",
+    "Volte ao número principal e retire a reserva nos ajustes da barbearia antes de transferir.",
   "waCentral.deliveryBusy":
     "Há envio em andamento ou com resultado incerto. Aguarde ou peça à TI para conferir antes de transferir.",
   "waCentral.labelInvalid": "Use um nome entre 2 e 80 caracteres.",
@@ -59,16 +59,16 @@ export const ptBR = {
     "Aguarde antes de pedir outro código. Após três pedidos, espere 15 minutos ou entre com e-mail.",
   "waLogin.unavailable": "Não foi possível concluir. Tente novamente ou entre com e-mail e senha.",
   "waDelivery.accepted": "Aviso colocado na fila de envio",
-  "waDelivery.reserveActive": "Os avisos estão direcionados ao canal reserva da barbearia.",
+  "waDelivery.reserveActive": "Os avisos estão direcionados ao número reserva da barbearia.",
   "waDelivery.managed":
     "O B&C gerencia a conexão deste número. Para conectar ou reconectar, fale com o suporte.",
-  "waDelivery.title": "Canais e comunicações",
+  "waDelivery.title": "Números e comunicações",
   "waDelivery.unavailable":
-    "Conecte o canal principal e solicite à TI a instalação das regras de comunicação.",
-  "waDelivery.backup": "Identificador do canal reserva",
+    "Conecte o número principal e solicite à TI a instalação das regras de comunicação.",
+  "waDelivery.backup": "Identificador da conexão reserva",
   "waDelivery.backupHint":
     "A TI fornece este identificador após preparar um número exclusivo. Deixe vazio se ainda não houver reserva.",
-  "waDelivery.mode": "Canal usado nos avisos",
+  "waDelivery.mode": "Número usado nos avisos",
   "waDelivery.primary": "Principal fixo",
   "waDelivery.reserve": "Reserva por falha técnica",
   "waDelivery.paused": "Pausado para revisão",
@@ -86,7 +86,7 @@ export const ptBR = {
     "Este cliente não tem um próximo agendamento para receber este aviso.",
   "waPair.restart": "Recomeçar com este número",
   "waPair.restartNotice":
-    "O WhatsApp ainda não confirmou esta conexão. Há uma preparação anterior neste canal. Recomeçar encerra essa preparação e gera um código para o número informado.",
+    "O WhatsApp ainda não confirmou esta conexão. Há uma tentativa anterior em andamento. Recomeçar encerra essa tentativa e gera um código para o número informado.",
   "waPair.restartFailed":
     "Não foi possível encerrar a preparação anterior. Verifique a conexão e tente novamente.",
   "waPair.country": "País",

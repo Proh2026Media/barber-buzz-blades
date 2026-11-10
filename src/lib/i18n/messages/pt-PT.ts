@@ -3,18 +3,18 @@ import type { MessageKey } from "./pt-BR.ts";
 export const ptPT: Record<MessageKey, string> = {
   "waCentral.tab": "WhatsApp",
   "waCentral.title": "Central de WhatsApp",
-  "waCentral.subtitle": "Conecte os números do B&C e escolha quem usa cada canal.",
+  "waCentral.subtitle": "Ligue os números de WhatsApp do B&C e escolha quem pode utilizá-los.",
   "waCentral.platform": "Número da plataforma · códigos de acesso",
   "waCentral.refresh": "Atualizar lista",
-  "waCentral.label": "Nome para identificar o canal",
-  "waCentral.add": "Adicionar canal",
-  "waCentral.search": "Buscar número, canal ou barbearia",
+  "waCentral.label": "Nome para identificar o número",
+  "waCentral.add": "Adicionar número",
+  "waCentral.search": "Pesquisar número, nome ou barbearia",
   "waCentral.unassigned": "Disponível · sem vínculo",
-  "waCentral.channel": "Canal WhatsApp",
+  "waCentral.channel": "Número de WhatsApp",
   "waCentral.enabled": "Avisos habilitados",
   "waCentral.disabled": "Avisos pausados",
-  "waCentral.empty": "Nenhum canal encontrado.",
-  "waCentral.select": "Selecione um canal para conectar ou distribuir.",
+  "waCentral.empty": "Nenhum número encontrado.",
+  "waCentral.select": "Selecione um número para conectar ou distribuir.",
   "waCentral.assignment": "Quem usa este número",
   "waCentral.shop": "Barbearia",
   "waCentral.staff": "Profissional",
@@ -22,25 +22,25 @@ export const ptPT: Record<MessageKey, string> = {
   "waCentral.enable": "Habilitar avisos para este vínculo",
   "waCentral.moveWarning":
     "A transferência cancela os avisos ainda na fila do vínculo anterior. O histórico permanece na barbearia de origem.",
-  "waCentral.confirm": "Conferi o destino e quero transferir este canal.",
+  "waCentral.confirm": "Conferi o destino e quero transferir este número.",
   "waCentral.save": "Guardar distribuição",
   "waCentral.saved": "Distribuição guardada. Nenhuma mensagem foi enviada por esta ação.",
   "waCentral.history": "Transferências recentes",
   "waCentral.inactiveShop": "Barbearia indisponível",
   "waCentral.inactiveStaff": "Profissional indisponível",
   "waCentral.connectionHint":
-    "Conecte uma conta WhatsApp já ativada. Cadastrar o canal não ativa nem compra um número.",
-  "waCentral.offHint": "Sem conexão, os avisos deste canal não podem ser entregues.",
+    "Use uma conta WhatsApp já ativada. O registo no B&C não compra números nem ativa a conta.",
+  "waCentral.offHint": "Sem conexão, os avisos deste número não podem ser entregues.",
   "waCentral.error":
-    "Não foi possível carregar ou guardadar. Atualize a lista; se persistir, peça à TI para conferir a instalação da central.",
+    "Não foi possível carregar ou guardar. Atualize a lista; se persistir, peça à TI para conferir a instalação da central.",
   "waCentral.stale":
-    "Este canal mudou em outra tela. Atualize a lista e confira o vínculo antes de guardadar.",
+    "As definições deste número mudaram noutro ecrã. Atualize a lista e confira a associação antes de guardar.",
   "waCentral.occupied":
-    "Este destino já tem um canal. Libere o vínculo atual antes de transferir outro.",
+    "Este destino já tem um número. Libere o vínculo atual antes de transferir outro.",
   "waCentral.invalidTarget":
-    "Escolha uma barbearia e um profissional ativos. Um canal sem vínculo deve ficar pausado.",
+    "Escolha uma barbearia e um profissional ativos. Um número sem vínculo deve ficar pausado.",
   "waCentral.reserveFirst":
-    "Volte ao canal principal e retire a reserva nos ajustes da barbearia antes de transferir.",
+    "Volte ao número principal e retire a reserva nos ajustes da barbearia antes de transferir.",
   "waCentral.deliveryBusy":
     "Há envio em andamento ou com resultado incerto. Aguarde ou peça à TI para conferir antes de transferir.",
   "waCentral.labelInvalid": "Use um nome entre 2 e 80 caracteres.",
@@ -61,16 +61,16 @@ export const ptPT: Record<MessageKey, string> = {
   "waLogin.unavailable":
     "Não foi possível concluir. Tente novamente ou entre com email e palavra-passe.",
   "waDelivery.accepted": "Aviso colocado na fila de envio",
-  "waDelivery.reserveActive": "Os avisos estão direcionados para o canal de reserva da barbearia.",
+  "waDelivery.reserveActive": "Os avisos estão direcionados para o número de reserva da barbearia.",
   "waDelivery.managed":
     "O B&C gere a ligação deste número. Para ligar ou voltar a ligar, contacte o apoio.",
-  "waDelivery.title": "Canais e comunicações",
+  "waDelivery.title": "Números e comunicações",
   "waDelivery.unavailable":
-    "Ligue o canal principal e peça à equipa técnica a instalação das regras de comunicação.",
-  "waDelivery.backup": "Identificador do canal de reserva",
+    "Ligue o número principal e peça à equipa técnica a instalação das regras de comunicação.",
+  "waDelivery.backup": "Identificador da ligação de reserva",
   "waDelivery.backupHint":
     "A equipa técnica fornece este identificador após preparar um número exclusivo. Deixe vazio se ainda não houver reserva.",
-  "waDelivery.mode": "Canal usado nos avisos",
+  "waDelivery.mode": "Número usado nos avisos",
   "waDelivery.primary": "Principal fixo",
   "waDelivery.reserve": "Reserva por falha técnica",
   "waDelivery.paused": "Em pausa para revisão",
@@ -87,7 +87,7 @@ export const ptPT: Record<MessageKey, string> = {
   "waDelivery.noAppointment": "Este cliente não tem uma próxima marcação para receber este aviso.",
   "waPair.restart": "Recomeçar com este número",
   "waPair.restartNotice":
-    "O WhatsApp ainda não confirmou esta ligação. Existe uma preparação anterior neste canal. Recomeçar termina essa preparação e gera um código para o número indicado.",
+    "O WhatsApp ainda não confirmou esta ligação. Existe uma tentativa anterior em curso. Recomeçar termina essa tentativa e gera um código para o número indicado.",
   "waPair.restartFailed":
     "Não foi possível terminar a preparação anterior. Verifique a ligação e tente novamente.",
   "waPair.country": "País",

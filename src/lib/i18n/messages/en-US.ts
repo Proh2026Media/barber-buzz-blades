@@ -2,19 +2,19 @@ import type { MessageKey } from "./pt-BR.ts";
 
 export const enUS: Record<MessageKey, string> = {
   "waCentral.tab": "WhatsApp",
-  "waCentral.title": "WhatsApp channels",
-  "waCentral.subtitle": "Connect B&C numbers and choose who uses each channel.",
+  "waCentral.title": "WhatsApp numbers",
+  "waCentral.subtitle": "Connect B&C WhatsApp numbers and choose who can use them.",
   "waCentral.platform": "Platform number · sign-in codes",
   "waCentral.refresh": "Refresh list",
-  "waCentral.label": "Channel name",
-  "waCentral.add": "Add channel",
-  "waCentral.search": "Find number, channel or shop",
+  "waCentral.label": "Number name",
+  "waCentral.add": "Add number",
+  "waCentral.search": "Find number, name or shop",
   "waCentral.unassigned": "Available · unassigned",
-  "waCentral.channel": "WhatsApp channel",
+  "waCentral.channel": "WhatsApp number",
   "waCentral.enabled": "Notifications enabled",
   "waCentral.disabled": "Notifications paused",
-  "waCentral.empty": "No channels found.",
-  "waCentral.select": "Select a channel to connect or assign.",
+  "waCentral.empty": "No numbers found.",
+  "waCentral.select": "Select a number to connect or assign.",
   "waCentral.assignment": "Who uses this number",
   "waCentral.shop": "Barbershop",
   "waCentral.staff": "Professional",
@@ -22,25 +22,25 @@ export const enUS: Record<MessageKey, string> = {
   "waCentral.enable": "Enable notifications for this assignment",
   "waCentral.moveWarning":
     "Transferring cancels queued notifications for the previous assignment. History stays with the original shop.",
-  "waCentral.confirm": "I checked the destination and want to transfer this channel.",
+  "waCentral.confirm": "I checked the destination and want to transfer this number.",
   "waCentral.save": "Save assignment",
   "waCentral.saved": "Assignment saved. This action did not send any messages.",
   "waCentral.history": "Recent transfers",
   "waCentral.inactiveShop": "Unavailable shop",
   "waCentral.inactiveStaff": "Unavailable professional",
   "waCentral.connectionHint":
-    "Connect an activated WhatsApp account. Adding a channel does not activate or buy a number.",
-  "waCentral.offHint": "Without a connection, this channel cannot deliver notifications.",
+    "Use an activated WhatsApp account. Registering with B&C does not buy numbers or activate the account.",
+  "waCentral.offHint": "Without a connection, this number cannot deliver notifications.",
   "waCentral.error":
-    "Could not load or save. Refresh the list; if it persists, ask IT to check the channel manager installation.",
+    "Could not load or save. Refresh the list; if it persists, ask IT to check the WhatsApp manager installation.",
   "waCentral.stale":
-    "This channel changed elsewhere. Refresh the list and review the assignment before saving.",
+    "This number’s settings changed elsewhere. Refresh the list and review the assignment before saving.",
   "waCentral.occupied":
-    "This destination already has a channel. Release its current assignment first.",
+    "This destination already has a number. Release its current assignment first.",
   "waCentral.invalidTarget":
-    "Choose an active shop and professional. Unassigned channels must stay paused.",
+    "Choose an active shop and professional. Unassigned numbers must stay paused.",
   "waCentral.reserveFirst":
-    "Switch to the primary channel and remove the backup in shop settings before transferring.",
+    "Switch to the primary number and remove the backup in shop settings before transferring.",
   "waCentral.deliveryBusy":
     "A delivery is in progress or its result is uncertain. Wait or ask IT to review before transferring.",
   "waCentral.labelInvalid": "Use a name between 2 and 80 characters.",
@@ -60,16 +60,16 @@ export const enUS: Record<MessageKey, string> = {
     "Wait before requesting another code. After three requests, wait 15 minutes or sign in with email.",
   "waLogin.unavailable": "Could not complete. Try again or sign in with email and password.",
   "waDelivery.accepted": "Notification queued for delivery",
-  "waDelivery.reserveActive": "Notifications are routed to the shop’s backup channel.",
+  "waDelivery.reserveActive": "Notifications are routed to the shop’s backup number.",
   "waDelivery.managed":
     "B&C manages this number’s connection. Contact support to connect or reconnect it.",
-  "waDelivery.title": "Channels and communications",
+  "waDelivery.title": "Numbers and communications",
   "waDelivery.unavailable":
-    "Connect the primary channel and ask IT to install the communication rules.",
-  "waDelivery.backup": "Backup channel identifier",
+    "Connect the primary number and ask IT to install the communication rules.",
+  "waDelivery.backup": "Backup connection identifier",
   "waDelivery.backupHint":
     "IT provides this identifier after preparing a dedicated number. Leave blank if no backup is available.",
-  "waDelivery.mode": "Channel used for notifications",
+  "waDelivery.mode": "Number used for notifications",
   "waDelivery.primary": "Fixed primary",
   "waDelivery.reserve": "Backup for technical failure",
   "waDelivery.paused": "Paused for review",
@@ -85,7 +85,7 @@ export const enUS: Record<MessageKey, string> = {
   "waDelivery.noAppointment": "This customer has no upcoming appointment for this notification.",
   "waPair.restart": "Start again with this number",
   "waPair.restartNotice":
-    "WhatsApp has not confirmed this connection yet. This channel has an earlier setup attempt. Starting again ends that attempt and generates a code for the number entered.",
+    "WhatsApp has not confirmed this connection yet. There is an earlier setup attempt in progress. Starting again ends that attempt and generates a code for the number entered.",
   "waPair.restartFailed":
     "Could not end the earlier setup attempt. Check the connection and try again.",
   "waPair.country": "Country",

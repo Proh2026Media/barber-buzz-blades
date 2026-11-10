@@ -3,18 +3,18 @@ import type { MessageKey } from "./pt-BR.ts";
 export const es: Record<MessageKey, string> = {
   "waCentral.tab": "WhatsApp",
   "waCentral.title": "Central de WhatsApp",
-  "waCentral.subtitle": "Conecta los números de B&C y elige quién usa cada canal.",
+  "waCentral.subtitle": "Conecta los números de WhatsApp de B&C y elige quién puede usarlos.",
   "waCentral.platform": "Número de la plataforma · códigos de acceso",
   "waCentral.refresh": "Actualizar lista",
-  "waCentral.label": "Nombre del canal",
-  "waCentral.add": "Añadir canal",
-  "waCentral.search": "Buscar número, canal o barbería",
+  "waCentral.label": "Nombre del número",
+  "waCentral.add": "Añadir número",
+  "waCentral.search": "Buscar número, nombre o barbería",
   "waCentral.unassigned": "Disponible · sin asignar",
-  "waCentral.channel": "Canal de WhatsApp",
+  "waCentral.channel": "Número de WhatsApp",
   "waCentral.enabled": "Avisos habilitados",
   "waCentral.disabled": "Avisos en pausa",
-  "waCentral.empty": "No se encontraron canales.",
-  "waCentral.select": "Selecciona un canal para conectar o asignar.",
+  "waCentral.empty": "No se encontraron números.",
+  "waCentral.select": "Selecciona un número para conectar o asignar.",
   "waCentral.assignment": "Quién usa este número",
   "waCentral.shop": "Barbería",
   "waCentral.staff": "Profesional",
@@ -22,25 +22,25 @@ export const es: Record<MessageKey, string> = {
   "waCentral.enable": "Habilitar avisos para esta asignación",
   "waCentral.moveWarning":
     "La transferencia cancela los avisos pendientes de la asignación anterior. El historial permanece en la barbería original.",
-  "waCentral.confirm": "He revisado el destino y quiero transferir este canal.",
+  "waCentral.confirm": "He revisado el destino y quiero transferir este número.",
   "waCentral.save": "Guardar asignación",
   "waCentral.saved": "Asignación guardada. Esta acción no envió ningún mensaje.",
   "waCentral.history": "Transferencias recientes",
   "waCentral.inactiveShop": "Barbería no disponible",
   "waCentral.inactiveStaff": "Profesional no disponible",
   "waCentral.connectionHint":
-    "Conecta una cuenta de WhatsApp ya activada. Añadir el canal no activa ni compra un número.",
-  "waCentral.offHint": "Sin conexión, este canal no puede entregar avisos.",
+    "Usa una cuenta de WhatsApp ya activada. El registro en B&C no compra números ni activa la cuenta.",
+  "waCentral.offHint": "Sin conexión, este número no puede entregar avisos.",
   "waCentral.error":
     "No se pudo cargar o guardar. Actualiza la lista; si continúa, pide a TI que revise la instalación.",
   "waCentral.stale":
-    "Este canal cambió en otra pantalla. Actualiza la lista y revisa la asignación antes de guardar.",
+    "La configuración de este número cambió en otra pantalla. Actualiza la lista y revisa la asignación antes de guardar.",
   "waCentral.occupied":
-    "Este destino ya tiene un canal. Libera la asignación actual antes de transferir otro.",
+    "Este destino ya tiene un número. Libera la asignación actual antes de transferir otro.",
   "waCentral.invalidTarget":
-    "Elige una barbería y un profesional activos. Los canales sin asignar deben permanecer en pausa.",
+    "Elige una barbería y un profesional activos. Los números sin asignar deben permanecer en pausa.",
   "waCentral.reserveFirst":
-    "Vuelve al canal principal y retira la reserva en los ajustes de la barbería antes de transferir.",
+    "Vuelve al número principal y retira la reserva en los ajustes de la barbería antes de transferir.",
   "waCentral.deliveryBusy":
     "Hay un envío en curso o con resultado incierto. Espera o pide a TI que lo revise antes de transferir.",
   "waCentral.labelInvalid": "Usa un nombre de entre 2 y 80 caracteres.",
@@ -61,16 +61,16 @@ export const es: Record<MessageKey, string> = {
   "waLogin.unavailable":
     "No se pudo completar. Inténtalo de nuevo o entra con correo y contraseña.",
   "waDelivery.accepted": "Aviso añadido a la cola de envío",
-  "waDelivery.reserveActive": "Los avisos se dirigen al canal de reserva de la barbería.",
+  "waDelivery.reserveActive": "Los avisos se dirigen al número de reserva de la barbería.",
   "waDelivery.managed":
     "B&C gestiona la conexión de este número. Contacta con soporte para conectarlo o reconectarlo.",
-  "waDelivery.title": "Canales y comunicaciones",
+  "waDelivery.title": "Números y comunicaciones",
   "waDelivery.unavailable":
-    "Conecta el canal principal y solicita a TI la instalación de las reglas de comunicación.",
-  "waDelivery.backup": "Identificador del canal de reserva",
+    "Conecta el número principal y solicita a TI la instalación de las reglas de comunicación.",
+  "waDelivery.backup": "Identificador de la conexión de reserva",
   "waDelivery.backupHint":
     "TI proporciona este identificador tras preparar un número exclusivo. Déjalo vacío si no hay reserva.",
-  "waDelivery.mode": "Canal utilizado para avisos",
+  "waDelivery.mode": "Número utilizado para avisos",
   "waDelivery.primary": "Principal fijo",
   "waDelivery.reserve": "Reserva por fallo técnico",
   "waDelivery.paused": "En pausa para revisión",
@@ -87,7 +87,7 @@ export const es: Record<MessageKey, string> = {
   "waDelivery.noAppointment": "Este cliente no tiene una próxima cita para recibir este aviso.",
   "waPair.restart": "Volver a empezar con este número",
   "waPair.restartNotice":
-    "WhatsApp aún no ha confirmado esta conexión. Hay un intento de preparación anterior en este canal. Volver a empezar finaliza ese intento y genera un código para el número indicado.",
+    "WhatsApp aún no ha confirmado esta conexión. Hay un intento anterior en curso. Volver a empezar finaliza ese intento y genera un código para el número indicado.",
   "waPair.restartFailed":
     "No se pudo finalizar la preparación anterior. Comprueba la conexión e inténtalo de nuevo.",
   "waPair.country": "País",
