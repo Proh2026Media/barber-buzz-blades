@@ -1,6 +1,8 @@
 # Pendências — lista única e priorizada
 
-**10/11/2026 — P-116 instalada pela TI:** migration nº 101 aplicada às 11:19:34–11:19:36 (Brasília), com as duas funções publicadas. Conferência posterior somente de leitura confirmou arquivos, estrutura e permissões; **não reinstalar**. Falta pareamento e homologação autenticada com destinatário de teste autorizado. Retorno automático desligado e nenhuma reserva associada. [Registro da instalação](../pacotes/2026-11-10-p116-instalacao-conferida.md). A conta WhatsApp precisa estar previamente ativada para usar Evolution/Baileys; o número Salvy apenas no painel não atende esse pré-requisito. Nº 99/100, Flow e pagamentos não foram alterados. Último id P-116.
+**10/11/2026 — P-117, central de WhatsApp e login pessoal:** implementados inventário/distribuição de canais para loja ou profissional, transferência auditada e login global por código no número pessoal confirmado. São usos separados; transferir canal não muda a conta do usuário. **Migration nº 102 e quatro arquivos de funções aguardam instalação TI**, pelo [pacote único](../pacotes/2026-11-10-ti-central-whatsapp-login-p117.md). P-116/nº 101 já instalada, não refazer. Sem ativação de números ou mensagens reais. Último id P-117.
+
+**10/11/2026 — P-116 instalada pela TI:** migration nº 101 aplicada às 11:19:34–11:19:36 (Brasília), com as duas funções publicadas. Conferência posterior somente de leitura confirmou arquivos, estrutura e permissões; **não reinstalar**. Falta pareamento e homologação autenticada com destinatário de teste autorizado. Retorno automático desligado e nenhuma reserva associada. [Registro da instalação](../pacotes/2026-11-10-p116-instalacao-conferida.md). A conta WhatsApp precisa estar previamente ativada para usar Evolution/Baileys; o número Salvy apenas no painel não atende esse pré-requisito. Nº 99/100, Flow e pagamentos não foram alterados. Último id naquela entrega: P-116.
 
 **09/11/2026 — P-115, retomada e país automático:** relatório da TI confirma a primeira instalação (`c49a783`) e frontend publicado às 15h44. Correção posterior substitui o bloqueio genérico de “conectando” por **Recomeçar com este número**, com nova conferência antes de encerrar a preparação; não reinicia automaticamente uma tentativa ao abrir a tela. País sugerido pela preferência anterior, fuso da loja/aparelho e região do navegador, com seletor e número nacional sem DDI. [Diagnóstico e implantação da correção](../pacotes/2026-11-09-whatsapp-p115-retomada-e-pais.md). Pareamento real no aparelho continua pendente.
 
@@ -22,7 +24,7 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 - Situação: **pendente**, **feito — falta aplicar no banco**, **a decidir** (depende do dono), **não confirmado** (não deu para conferir daqui).
 - Cada item foi conferido no código e nas migrations em 12/10/2026. As linhas citadas são dessa data.
 - **Papéis da equipe no banco × nomes na tela:** `owner` e `partner` = **Dono** (sócio; `partner` é o nome antigo e aparece igual), `associate` = **Parceiro**, `employee` = **Contratado** ([roles-model.ts](../../src/features/shop/roles-model.ts); rótulos em `pt-BR.ts`). `shop_admin` é o papel antigo de `memberships`, que pode existir sem vínculo de equipe (CONTINUIDADE, onda 1 de 09/10).
-- Último id usado: **P-116**.
+- Último id usado: **P-117**.
 
 **Índice**
 
@@ -798,3 +800,7 @@ Novo helper compartilhado e dois handlers; nenhum segredo no frontend e nenhuma 
 ## P-116 — Notificações, comunicações consentidas e reserva técnica (10/11/2026)
 
 **Instalado pela TI em 10/11; falta pareamento e homologação real.** [Conferência da instalação](../pacotes/2026-11-10-p116-instalacao-conferida.md). Limite global por cliente de duas comunicações em sete dias corridos, incluindo um retorno por histórico, sem próximo agendamento. Privacidade e avisos são conferidos novamente antes de enviar; eventos repetidos não criam o mesmo aviso. Principal fixo por loja, reserva dedicada selecionada pela administração em falha técnica, pausa para revisão; resultado externo incerto não dispara retry cego. Painel administrativo compatível com banco antigo. Retorno opcional inicia desligado. [Pacote de instalação e números](../pacotes/2026-11-10-ti-whatsapp-comunicacao-p116.md). O modelo de um número por dois barbeiros e a ativação sem aplicativo via Baileys não foram implementados nem prometidos.
+
+## P-117 — Central de canais e login pessoal por WhatsApp (10/11/2026)
+
+**Implementado; instalação e homologação reais pendentes.** Central administrativa lista/cadastra/conecta e distribui canal para uma loja inteira ou um profissional; destino válido, confirmação, auditoria, versão e fila protegidos. Não há agrupamento automático de dois barbeiros por número. Login global usa WhatsApp pessoal já confirmado, código único de seis dígitos, limites atômicos e sessão da mesma conta; canal de autenticação exclusivo da plataforma. Canais não ativam contas WhatsApp. [Pacote único TI](../pacotes/2026-11-10-ti-central-whatsapp-login-p117.md), nº 102 e quatro arquivos de funções. Nº 101 não se repete; nº 99/100 e Flow preservados.

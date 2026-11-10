@@ -165,6 +165,7 @@ Deno.serve(async (req) => {
           enabled: body.enabled ?? channel.enabled,
         })
         .eq("barbershop_id", shopId)
+        .eq("id", channel.id)
         .is("staff_id", null)
         .select("*")
         .single();
@@ -214,6 +215,7 @@ Deno.serve(async (req) => {
         .from("whatsapp_channels")
         .update({ status: "disconnected", display_phone: null, last_error: null })
         .eq("barbershop_id", shopId)
+        .eq("id", channel.id)
         .is("staff_id", null)
         .select("*")
         .single();
@@ -232,6 +234,7 @@ Deno.serve(async (req) => {
           .from("whatsapp_channels")
           .update({ status: result.status, last_error: null })
           .eq("barbershop_id", shopId)
+          .eq("id", channel.id)
           .is("staff_id", null)
           .select("*")
           .single();
@@ -377,6 +380,7 @@ Deno.serve(async (req) => {
             last_error: null,
           })
           .eq("barbershop_id", shopId)
+          .eq("id", channel.id)
           .is("staff_id", null)
           .select("*")
           .single();
@@ -386,7 +390,8 @@ Deno.serve(async (req) => {
         await admin
           .from("whatsapp_channels")
           .update({ last_error: message.slice(0, 400), status: "disconnected" })
-          .eq("barbershop_id", shopId);
+          .eq("barbershop_id", shopId)
+          .eq("id", channel.id);
         return json({ error: message, channel }, 502);
       }
     }

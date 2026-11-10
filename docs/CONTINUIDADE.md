@@ -1,5 +1,15 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 10/11/2026 — P-117: canais administrados e login com WhatsApp pessoal
+
+Dono confirmou que distribui o WhatsApp do sistema à barbearia ou a profissionais específicos; o WhatsApp de login é pessoal e independente. Implementada aba WhatsApp na plataforma, cadastro idempotente de canais livres, conexão reutilizando QR/código, busca, distribuição geral/individual, confirmação e histórico. Um destino por canal, sem agrupamento automático de profissionais. Banco impede destino ocupado/inválido, versão antiga e transferência com envio em curso/incerto; cancela fila antiga pendente sem levar histórico entre lojas. Canal do profissional passa a ser usado nos avisos identificados pelo atendimento; regras de consentimento/cota P-116 preservadas.
+
+Login global na entrada usa código de seis dígitos no número pessoal confirmado. Não exige loja, Google ou senha; não cria nova conta. Código expira em dez minutos, uso único, cinco erros, três pedidos por 15 minutos e reenvio após 60 segundos, com limite atômico no banco. Número desconhecido não é revelado pela resposta; telefone da conta revalidado antes da sessão. Códigos saem somente pelo número da plataforma, fora das filas de loja. País sugerido e editável. E-mail/senha/Google continuam.
+
+Validação isolada: 32 cenários SQL novos, regressão completa 1.304 PASS/0 FAIL; concorrência real de oito pedidos resultou em um desafio aceito e sete limitados. Reversão ensaiada com ROLLBACK. 485 testes automatizados, tipos/lint/formatação/montagem aprovados; Chromium nos três dispositivos, dois temas/três cantos, fluxos de erro e sucesso, sem rede de produção. Foto inicial durante redimensionamento foi reconferida com geometria estabilizada; login usa folha móvel com acompanhamento do teclado. Tela e handlers reconhecem escopo de canal antes de mutações, evitando que função antiga ignore channel_id e opere a plataforma. Atualizações da função antiga de loja também fixam o id para não afetar um substituto durante transferência.
+
+**A instalar pela TI:** nº 102 + quatro arquivos de funções, pelo [pacote único](pacotes/2026-11-10-ti-central-whatsapp-login-p117.md), primeiro funções e depois migration. Nº 101 já instalada, sem reexecução; nº 99/100, Flow e pagamentos não alterados. Sem número comprado/ativado, mensagens reais ou mudança de configuração na VPS. Conta WhatsApp ativada e homologação com destinatário autorizado seguem pendentes. O último estado informado da Salvy (apenas no painel) não permite parear Baileys.
+
 ## 10/11/2026 — P-116: instalação TI recebida e conferida
 
 Relatório `relatorio-ti-p116-2026-11-10.md` recebido: migration nº 101 aplicada em 10/11 às 11:19:34–11:19:36 (Brasília), funções do commit `6050438` instaladas, backup e ensaio com ROLLBACK, reinício apenas das funções. Cron voltou com HTTP 200 segundo a TI. Não reinstalar; nº 99/100 e Flow não foram alterados.

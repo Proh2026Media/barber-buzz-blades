@@ -281,6 +281,10 @@ export function WhatsAppChannelCard({
   const refresh = useCallback(async () => {
     if (demo) {
       setChannel({
+        id: "demo-whatsapp",
+        staff_id: null,
+        label: "",
+        routing_version: 0,
         barbershop_id: shopId,
         instance_name: "demo-shop",
         backup_instance_name: null,

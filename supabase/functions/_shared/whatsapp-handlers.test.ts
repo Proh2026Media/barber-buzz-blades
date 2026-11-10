@@ -13,6 +13,7 @@ function fixture(
     state?: string;
     mode?: "primary" | "backup" | "paused";
     platformAdmin?: boolean;
+    instance?: string;
   } = {},
 ) {
   const calls: string[] = [];
@@ -22,7 +23,8 @@ function fixture(
       ? null
       : {
           barbershop_id: "loja-ficticia",
-          instance_name: "instancia-da-loja",
+          id: "11111111-1111-4111-8111-111111111111",
+          instance_name: options.instance ?? "instancia-da-loja",
           status: "disconnected",
           delivery_mode: options.mode ?? "primary",
           backup_instance_name: options.mode === "backup" ? "reserva-da-loja" : null,
@@ -310,4 +312,48 @@ test("dono da loja não conecta números fornecidos pelo B&C, mas pode consultar
   );
   assert.equal((await f.request({ action: "logout" })).status, 403);
   assert.equal((await f.request({ action: "status" })).status, 200);
+});
+
+test("central: canal cadastrado usa instância do banco e ignora nome enviado", async () => {
+  const f = fixture("platform-whatsapp");
+  const result = await f.request({
+    action: "status",
+    channel_id: "11111111-1111-4111-8111-111111111111",
+    instance_name: "alvo-arbitrario",
+  });
+  assert.equal(result.status, 200);
+  assert.ok(f.calls.includes("/instance/connectionState/instancia-da-loja"));
+  assert.ok(!f.calls.some((c) => c.includes("alvo-arbitrario")));
+});
+test("central: identificador inválido não cai no canal de autenticação", async () => {
+  const f = fixture("platform-whatsapp");
+  assert.equal((await f.request({ action: "logout", channel_id: "" })).status, 400);
+  assert.ok(!f.calls.some((c) => c.startsWith("/instance/")));
+});
+test("central: dono de loja não conecta um canal pelo identificador", async () => {
+  const f = fixture("platform-whatsapp", { platformAdmin: false });
+  assert.equal(
+    (await f.request({ action: "connect", channel_id: "11111111-1111-4111-8111-111111111111" }))
+      .status,
+    403,
+  );
+  assert.equal(f.writes.length, 0);
+});
+test("central: instância de autenticação não pode ser usada como canal de loja", async () => {
+  const f = fixture("platform-whatsapp", { instance: "instancia-plataforma" });
+  assert.equal(
+    (await f.request({ action: "connect", channel_id: "11111111-1111-4111-8111-111111111111" }))
+      .status,
+    409,
+  );
+  assert.ok(!f.calls.some((c) => c.startsWith("/instance/")));
+});
+test("central: canal inexistente não aciona Evolution", async () => {
+  const f = fixture("platform-whatsapp", { channel: false });
+  assert.equal(
+    (await f.request({ action: "connect", channel_id: "11111111-1111-4111-8111-111111111111" }))
+      .status,
+    404,
+  );
+  assert.ok(!f.calls.some((c) => c.startsWith("/instance/")));
 });

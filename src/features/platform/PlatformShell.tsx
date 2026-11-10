@@ -1,3 +1,4 @@
+import { WhatsAppCentral } from "./WhatsAppCentral";
 import { PwaInstallBanner } from "@/components/pwa-install-banner";
 import { WorkspaceFrame, WorkspaceHeading } from "@/components/visual/WorkspaceHeader";
 import { DataRights } from "@/features/insights/DataRights";
@@ -493,6 +494,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
     { id: "overview" as const, label: t("plat.tabs.home"), icon: LayoutDashboard },
     { id: "shops" as const, label: t("plat.tabs.shops"), icon: Store },
     { id: "permissions" as const, label: t("plat.tabs.permissions"), icon: KeyRound },
+    { id: "whatsapp" as const, label: t("waCentral.tab"), icon: QrCode },
     { id: "insights" as const, label: t("plat.tabs.insights"), icon: BarChart3 },
   ];
   const activeNavIndex = navItems.findIndex((item) => item.id === platformTab);
@@ -594,6 +596,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
             </>
           )}
 
+          {platformTab === "whatsapp" && <WhatsAppCentral demo={demoMode} />}
           {platformTab === "insights" && (
             <div className="platform-reports space-y-6">
               <div className="workspace-section-title app-section-title">

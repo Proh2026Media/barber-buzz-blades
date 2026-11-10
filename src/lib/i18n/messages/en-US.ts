@@ -1,6 +1,64 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const enUS: Record<MessageKey, string> = {
+  "waCentral.tab": "WhatsApp",
+  "waCentral.title": "WhatsApp channels",
+  "waCentral.subtitle": "Connect B&C numbers and choose who uses each channel.",
+  "waCentral.platform": "Platform number · sign-in codes",
+  "waCentral.refresh": "Refresh list",
+  "waCentral.label": "Channel name",
+  "waCentral.add": "Add channel",
+  "waCentral.search": "Find number, channel or shop",
+  "waCentral.unassigned": "Available · unassigned",
+  "waCentral.channel": "WhatsApp channel",
+  "waCentral.enabled": "Notifications enabled",
+  "waCentral.disabled": "Notifications paused",
+  "waCentral.empty": "No channels found.",
+  "waCentral.select": "Select a channel to connect or assign.",
+  "waCentral.assignment": "Who uses this number",
+  "waCentral.shop": "Barbershop",
+  "waCentral.staff": "Professional",
+  "waCentral.wholeShop": "Whole shop",
+  "waCentral.enable": "Enable notifications for this assignment",
+  "waCentral.moveWarning":
+    "Transferring cancels queued notifications for the previous assignment. History stays with the original shop.",
+  "waCentral.confirm": "I checked the destination and want to transfer this channel.",
+  "waCentral.save": "Save assignment",
+  "waCentral.saved": "Assignment saved. This action did not send any messages.",
+  "waCentral.history": "Recent transfers",
+  "waCentral.inactiveShop": "Unavailable shop",
+  "waCentral.inactiveStaff": "Unavailable professional",
+  "waCentral.connectionHint":
+    "Connect an activated WhatsApp account. Adding a channel does not activate or buy a number.",
+  "waCentral.offHint": "Without a connection, this channel cannot deliver notifications.",
+  "waCentral.error":
+    "Could not load or save. Refresh the list; if it persists, ask IT to check the channel manager installation.",
+  "waCentral.stale":
+    "This channel changed elsewhere. Refresh the list and review the assignment before saving.",
+  "waCentral.occupied":
+    "This destination already has a channel. Release its current assignment first.",
+  "waCentral.invalidTarget":
+    "Choose an active shop and professional. Unassigned channels must stay paused.",
+  "waCentral.reserveFirst":
+    "Switch to the primary channel and remove the backup in shop settings before transferring.",
+  "waCentral.deliveryBusy":
+    "A delivery is in progress or its result is uncertain. Wait or ask IT to review before transferring.",
+  "waCentral.labelInvalid": "Use a name between 2 and 80 characters.",
+  "waLogin.title": "Sign in with WhatsApp",
+  "waLogin.description": "Receive a WhatsApp code to sign in to your account.",
+  "waLogin.verifiedOnly":
+    "Use the number already verified on your account. First time here? Register with email and verify WhatsApp in My profile.",
+  "waLogin.sent": "If this number is verified on an account, you will receive a code.",
+  "waLogin.expiry": "The code is valid for 10 minutes. Use the most recent one.",
+  "waLogin.send": "Get code",
+  "waLogin.enter": "Confirm and sign in",
+  "waLogin.resend": "Resend code",
+  "waLogin.change": "Change number",
+  "waLogin.wait": "New code in {seconds}s",
+  "waLogin.invalid": "Incorrect, expired or already used code. Check it or request a new one.",
+  "waLogin.limit":
+    "Wait before requesting another code. After three requests, wait 15 minutes or sign in with email.",
+  "waLogin.unavailable": "Could not complete. Try again or sign in with email and password.",
   "waDelivery.accepted": "Notification queued for delivery",
   "waDelivery.reserveActive": "Notifications are routed to the shop’s backup channel.",
   "waDelivery.managed":

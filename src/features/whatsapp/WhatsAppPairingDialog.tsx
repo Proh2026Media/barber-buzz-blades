@@ -46,6 +46,7 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   endpoint: "whatsapp-channel" | "platform-whatsapp";
   shopId?: string;
+  channelId?: string;
   shopTimeZone?: string;
   demo?: boolean;
   onUpdate: (payload: WhatsAppPairingPayload) => void;
@@ -78,7 +79,7 @@ export function WhatsAppPairingDialog(props: Props) {
   if (!demoMode && session?.user)
     return (
       <PairingForm
-        key={`${session.user.id}:${props.endpoint}:${props.shopId ?? "platform"}`}
+        key={`${session.user.id}:${props.endpoint}:${props.channelId ?? props.shopId ?? "platform"}`}
         {...props}
         userId={session.user.id}
         currentSession={currentSession}
@@ -97,6 +98,7 @@ function PairingForm({
   open,
   endpoint,
   shopId,
+  channelId,
   shopTimeZone,
   userId,
   currentSession,
@@ -159,6 +161,27 @@ function PairingForm({
         const { data } = await supabase.auth.getSession();
         if (!current() || data.session?.user.id !== userId) return;
         if (action !== "pairing-status") setStarted(true);
+        if (channelId) {
+          const check = await guardedFetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/platform-whatsapp`,
+            {
+              method: "POST",
+              signal: AbortSignal.timeout(10000),
+              headers: {
+                Authorization: `Bearer ${data.session.access_token}`,
+                apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "",
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ action: "status", channel_id: channelId }),
+            },
+          );
+          const scope = await check.json();
+          if (!current()) return;
+          if (!check.ok || scope.managed_channel_id !== channelId) {
+            setError("waPair.needsUpdate");
+            return;
+          }
+        }
         const response = await guardedFetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${endpoint}`,
           {
@@ -174,6 +197,7 @@ function PairingForm({
               method: "code",
               phone: number,
               ...(shopId ? { barbershop_id: shopId } : {}),
+              ...(channelId ? { channel_id: channelId } : {}),
             }),
           },
         );
@@ -247,7 +271,7 @@ function PairingForm({
         if (version === generation.current) setBusy(false);
       }
     },
-    [phone, country, userId, endpoint, shopId, currentSession],
+    [phone, country, userId, endpoint, shopId, channelId, currentSession],
   );
 
   // Uma consulta por vez; resultado antigo nunca chega a outra conta/loja/abertura.

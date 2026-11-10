@@ -1,3 +1,4 @@
+import { whatsappLogin } from "./login.ts";
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders, digitsOnlyPhone, evolutionFetch, json } from "../_shared/evolution.ts";
 
@@ -130,6 +131,7 @@ async function sendWhatsapp(instance: string, normalized: string, text: string) 
   await evolutionFetch(`/message/sendText/${instance}`, {
     method: "POST",
     body: JSON.stringify({ number: digitsOnlyPhone(normalized), text }),
+    signal: AbortSignal.timeout(15_000),
   });
 }
 
@@ -444,6 +446,14 @@ Deno.serve(async (req) => {
 
     if (purpose !== "login" && purpose !== "recovery") {
       return fail("invalid_purpose", "Finalidade inválida", 400);
+    }
+
+    if (purpose === "login") {
+      const result = await whatsappLogin(admin, body, {
+        instance: platformInstance(),
+        send: sendWhatsapp,
+      });
+      return json(result.body, result.status);
     }
 
     if (!shopRef) {

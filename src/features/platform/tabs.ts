@@ -1,5 +1,5 @@
 /** Áreas do painel da plataforma (barra inferior) e o filtro da lista de barbearias. */
-export type PlatformTab = "overview" | "shops" | "permissions" | "insights";
+export type PlatformTab = "overview" | "shops" | "permissions" | "insights" | "whatsapp";
 
 export type ShopFilter = "all" | "active" | "suspended" | "noAdmin";
 
@@ -9,6 +9,7 @@ const TAB_SLUGS: Record<PlatformTab, string> = {
   shops: "barbearias",
   permissions: "acessos",
   insights: "relatorios",
+  whatsapp: "whatsapp",
 };
 
 export function platformTabSlug(tab: PlatformTab) {

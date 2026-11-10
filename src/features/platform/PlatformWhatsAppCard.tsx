@@ -58,6 +58,7 @@ export type PlatformWaReport = PlatformWaStatus | "error";
 export type PlatformWhatsAppHandle = { connect: () => void; recheck: () => void };
 
 type PlatformWaPayload = {
+  managed_channel_id?: string | null;
   error?: string;
   instance_name?: string;
   status?: PlatformWaStatus;
@@ -81,7 +82,14 @@ const QR_STEPS: { key: string; icon: LucideIcon; labelKey: MessageKey }[] = [
   { key: "scan", icon: ScanLine, labelKey: "plat.wa.step3" },
 ];
 
-async function callPlatformWhatsApp(action: "status" | "connect" | "logout", method?: "qr") {
+async function callPlatformWhatsApp(
+  action: "status" | "connect" | "logout",
+  method?: "qr",
+  channelId?: string,
+) {
+  // Função antiga ignora channel_id: nunca deixá-la operar o número da plataforma.
+  if (channelId && (action !== "status" || method))
+    await callPlatformWhatsApp("status", undefined, channelId);
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData.session?.access_token;
   if (!token) throw new Error(tNow("integr.err.session"));
@@ -94,10 +102,16 @@ async function callPlatformWhatsApp(action: "status" | "connect" | "logout", met
       apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ action, ...(method ? { method } : {}) }),
+    body: JSON.stringify({
+      action,
+      ...(method ? { method } : {}),
+      ...(channelId ? { channel_id: channelId } : {}),
+    }),
   });
   const payload = (await response.json()) as PlatformWaPayload;
   if (!response.ok) throw new Error(payload.error || tNow("integr.platformWa.errGeneric"));
+  if (channelId && payload.managed_channel_id !== channelId)
+    throw new Error(tNow("waPair.needsUpdate"));
   return payload;
 }
 
@@ -112,8 +126,10 @@ export const PlatformWhatsAppCard = forwardRef<
     /** Avisa a tela quando o estado muda (null = ainda conferindo; "error" = não deu). */
     onStatusChange?: (status: PlatformWaReport | null) => void;
     className?: string;
+    channelId?: string;
+    title?: string;
   }
->(function PlatformWhatsAppCard({ onStatusChange, className }, ref) {
+>(function PlatformWhatsAppCard({ onStatusChange, className, channelId, title }, ref) {
   const { t } = useI18n();
   const sectionRef = useRef<HTMLElement>(null);
   const [status, setStatus] = useState<PlatformWaStatus>("disconnected");
@@ -155,7 +171,7 @@ export const PlatformWhatsAppCard = forwardRef<
     setBusy("status");
     setError(null);
     try {
-      const payload = await callPlatformWhatsApp("status");
+      const payload = await callPlatformWhatsApp("status", undefined, channelId);
       apply(payload);
       return payload.status ?? null;
     } catch (err) {
@@ -168,7 +184,7 @@ export const PlatformWhatsAppCard = forwardRef<
     } finally {
       setBusy(null);
     }
-  }, [apply]);
+  }, [apply, channelId]);
 
   useEffect(() => {
     void refresh();
@@ -180,14 +196,14 @@ export const PlatformWhatsAppCard = forwardRef<
     const timer = window.setInterval(() => {
       void (async () => {
         try {
-          apply(await callPlatformWhatsApp("status", "qr"));
+          apply(await callPlatformWhatsApp("status", "qr", channelId));
         } catch {
           /* ignore polling errors */
         }
       })();
     }, 4000);
     return () => window.clearInterval(timer);
-  }, [qrOpen, status, apply]);
+  }, [qrOpen, status, apply, channelId]);
 
   // Conectou com a janela aberta (pela consulta automática ou por "Já li o código"):
   // mostra "✓ WhatsApp conectado" e fecha sozinha.
@@ -215,7 +231,7 @@ export const PlatformWhatsAppCard = forwardRef<
     setError(null);
     setResult(null);
     try {
-      const payload = await callPlatformWhatsApp("connect");
+      const payload = await callPlatformWhatsApp("connect", undefined, channelId);
       apply(payload);
       if (payload.qrcode) setQrOpen(true);
       if (payload.status === "open") {
@@ -229,7 +245,7 @@ export const PlatformWhatsAppCard = forwardRef<
     } finally {
       setBusy(null);
     }
-  }, [apply]);
+  }, [apply, channelId]);
 
   useImperativeHandle(
     ref,
@@ -260,7 +276,7 @@ export const PlatformWhatsAppCard = forwardRef<
     setError(null);
     setResult(null);
     try {
-      const payload = await callPlatformWhatsApp("logout");
+      const payload = await callPlatformWhatsApp("logout", undefined, channelId);
       apply(payload);
       setQrcode(null);
       setResult({ state: "saved", text: t("integr.platformWa.disconnected") });
@@ -338,7 +354,7 @@ export const PlatformWhatsAppCard = forwardRef<
           action={{ label: t("visual.retry"), onClick: error.retry, icon: RefreshCw }}
         />
       )}
-      <Hint icon={Info}>{t("plat.wa.whichNumber")}</Hint>
+      <Hint icon={Info}>{t(channelId ? "waCentral.connectionHint" : "plat.wa.whichNumber")}</Hint>
     </>
   );
   const qrScanned = (
@@ -370,8 +386,8 @@ export const PlatformWhatsAppCard = forwardRef<
     >
       <SectionHeader
         icon={MessageCircle}
-        title={t("integr.platformWa.title")}
-        description={t("plat.wa.purpose")}
+        title={title ?? t("integr.platformWa.title")}
+        description={t(channelId ? "waCentral.connectionHint" : "plat.wa.purpose")}
         aside={
           known ? (
             <StatusBadge tone={meta.tone} icon={meta.icon} label={t(meta.labelKey)} live />
@@ -386,7 +402,7 @@ export const PlatformWhatsAppCard = forwardRef<
       {known && status === "open" && displayPhone && <Tag icon={Phone}>{displayPhone}</Tag>}
       {known && status !== "open" && (
         <Hint icon={XCircle} tone="danger">
-          {t("plat.wa.consequence")}
+          {t(channelId ? "waCentral.offHint" : "plat.wa.consequence")}
         </Hint>
       )}
 
@@ -440,7 +456,7 @@ export const PlatformWhatsAppCard = forwardRef<
           <MoreActions
             className="ms-auto"
             label={t("plat.wa.more")}
-            title={t("integr.platformWa.title")}
+            title={title ?? t("integr.platformWa.title")}
             actions={[
               {
                 id: "swap",
@@ -499,7 +515,9 @@ export const PlatformWhatsAppCard = forwardRef<
                 key: "path",
                 icon: Link2,
                 tone: "muted" as const,
-                text: t("plat.wa.techPath", { path: "/cadastrar" }),
+                text: channelId
+                  ? t("waCentral.connectionHint")
+                  : t("plat.wa.techPath", { path: "/cadastrar" }),
               },
               ...(lastError
                 ? [
@@ -524,7 +542,12 @@ export const PlatformWhatsAppCard = forwardRef<
         icon={Unplug}
         title={t("plat.wa.offTitle")}
         consequences={[
-          { key: "codes", icon: XCircle, tone: "danger", text: t("plat.wa.consequence") },
+          {
+            key: "codes",
+            icon: XCircle,
+            tone: "danger",
+            text: t(channelId ? "waCentral.offHint" : "plat.wa.consequence"),
+          },
           { key: "back", icon: QrCode, tone: "muted", text: t("plat.wa.offBack") },
         ]}
         confirmLabel={t("integr.disconnect")}
@@ -537,6 +560,7 @@ export const PlatformWhatsAppCard = forwardRef<
         open={pairOpen}
         onOpenChange={setPairOpen}
         endpoint="platform-whatsapp"
+        channelId={channelId}
         onUpdate={(payload) => {
           apply(payload);
           if (payload.status === "open")

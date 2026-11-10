@@ -1,3 +1,4 @@
+import { WhatsAppLogin } from "@/features/auth/WhatsAppLogin";
 import { AuthFrame } from "@/features/auth/AuthFrame";
 import {
   ArrowLeft,
@@ -2623,6 +2624,7 @@ function AuthPage() {
                 </div>
 
                 <div className="grid gap-3">
+                  <WhatsAppLogin disabled={busy || googleBusy} onAuthenticated={goAfterAuth} />
                   <button
                     type="button"
                     onClick={() => void handleGoogle()}

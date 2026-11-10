@@ -1084,11 +1084,15 @@ export type Database = {
       };
       whatsapp_channels: {
         Row: {
+          id: string;
+          staff_id: string | null;
+          label: string;
+          routing_version: number;
           backup_instance_name: string | null;
           delivery_mode: string;
           delivery_reason: string | null;
           return_notice_enabled: boolean;
-          barbershop_id: string;
+          barbershop_id: string | null;
           instance_name: string;
           status: Database["public"]["Enums"]["whatsapp_channel_status"];
           display_phone: string | null;
@@ -1101,11 +1105,15 @@ export type Database = {
           updated_at: string;
         };
         Insert: {
+          id?: string;
+          staff_id?: string | null;
+          label?: string;
+          routing_version?: number;
           backup_instance_name?: string | null;
           delivery_mode?: string;
           delivery_reason?: string | null;
           return_notice_enabled?: boolean;
-          barbershop_id: string;
+          barbershop_id: string | null;
           instance_name: string;
           status?: Database["public"]["Enums"]["whatsapp_channel_status"];
           display_phone?: string | null;
@@ -1353,6 +1361,21 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      platform_whatsapp_directory: { Args: Record<string, never>; Returns: Json };
+      platform_create_whatsapp_channel: {
+        Args: { p_id: string; p_label: string };
+        Returns: string;
+      };
+      platform_assign_whatsapp_channel: {
+        Args: {
+          p_id: string;
+          p_version: number;
+          p_shop: string | null;
+          p_staff: string | null;
+          p_enabled: boolean;
+        };
+        Returns: Json;
+      };
       configure_shop_whatsapp_delivery: {
         Args: {
           p_shop_id: string;

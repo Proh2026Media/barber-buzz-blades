@@ -1,5 +1,7 @@
 # Banco, servidores e publicação
 
+**10/11/2026 — nº 102/P-117 preparada, pendente:** central administrativa de canais e login por WhatsApp pessoal, com [pacote TI próprio](../pacotes/2026-11-10-ti-central-whatsapp-login-p117.md). Depende da nº 101 já instalada; não requer nem instala nº 99/100.
+
 **10/11/2026 — nº 101/P-116 aplicada pela TI:** às 11:19:34–11:19:36 (Brasília), com duas funções publicadas e reinício somente das funções. [Registro e conferência independente](../pacotes/2026-11-10-p116-instalacao-conferida.md). Não reinstalar. Retorno automático desligado; pareamento e homologação real pendentes. Nº 99/100 não foram aplicadas por este pacote.
 
 Guia de retomada para agentes de código (Cursor, Codex, Claude Code) e para o dono. Escrito em 12/10/2026 a partir do código, do git e dos documentos citados. O registro detalhado de cada entrega continua em [CONTINUIDADE.md](../CONTINUIDADE.md); aqui fica o mapa.
@@ -14,7 +16,7 @@ Situações usadas: **feito**, **feito — falta aplicar no banco**, **pendente*
 
 1. [Visão da infraestrutura](#1-visão-da-infraestrutura)
 2. [Como o site é publicado](#2-como-o-site-é-publicado)
-3. [Inventário das 101 migrations](#3-inventário-das-101-migrations)
+3. [Inventário das 102 migrations](#3-inventário-das-102-migrations)
 4. [Como escrever uma migration nova](#4-como-escrever-uma-migration-nova)
 5. [Como as migrations são aplicadas](#5-como-as-migrations-são-aplicadas)
 6. [Testes SQL](#6-testes-sql)
@@ -70,7 +72,7 @@ git push origin main            (Proh2026Media/barber-buzz-blades — fonte da v
 - O comando de compilação configurado na Hostinger é **não confirmado** (o projeto define `npm run build` = `vite build && node scripts/copy-pwa.mjs` em `package.json`).
 - **Publicar o site não aplica nada no banco nem nas funções.** Migrations e Edge functions vão à VPS por outro caminho (seções 5 e 7). Por isso a tela nova precisa funcionar com o banco antigo (ver seção 4).
 
-## 3. Inventário das 101 migrations
+## 3. Inventário das 102 migrations
 
 Pasta: [supabase/migrations/](../../supabase/migrations/). A situação vem destas fontes:
 
@@ -184,6 +186,7 @@ Pasta: [supabase/migrations/](../../supabase/migrations/). A situação vem dest
 | 99  | `20261107220000_governanca_pausa_semanal`                    | Criação/remoção de pausa da loja pela governança; versão, idempotência, conflitos e RLS (P-70)                         | escrita e testada localmente; **pendente na VPS** [O]                   |
 | 100 | `20261107230000_mercado_pago_conexao`                        | Conexão OAuth Mercado Pago da loja e do Parceiro, PKCE/estado único/cifras privadas; sem dinheiro                      | escrita e testada localmente; **pendente na VPS** [P]                   |
 | 101 | `20261110120000_whatsapp_comunicacao_controlada`             | Comunicação consentida, cota por cliente e reserva técnica WhatsApp                                                    | aplicada pela TI em 10/11/2026, 11:19:34–11:19:36; homologação pendente |
+| 102 | `20261110150000_central_whatsapp_login`                      | Central de canais, transferência auditada, rota profissional e login global por WhatsApp                               | escrita e testada localmente; pendente na VPS                           |
 
 Nota da nº 34: no banco remoto ela falhava em `text = uuid`, e por isso a coluna `icon` e o bucket não existiam. A nº 41 (`20260920010000_service_images_storage`) cria o mesmo efeito e foi aplicada; o arquivo da nº 34 também recebeu o cast correto (`barbershop_id::text`) para instalações novas. Fonte: CONTINUIDADE "Slider da espera e imagens de serviço" (20/09/2026).
 

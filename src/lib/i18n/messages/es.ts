@@ -1,6 +1,65 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const es: Record<MessageKey, string> = {
+  "waCentral.tab": "WhatsApp",
+  "waCentral.title": "Central de WhatsApp",
+  "waCentral.subtitle": "Conecta los números de B&C y elige quién usa cada canal.",
+  "waCentral.platform": "Número de la plataforma · códigos de acceso",
+  "waCentral.refresh": "Actualizar lista",
+  "waCentral.label": "Nombre del canal",
+  "waCentral.add": "Añadir canal",
+  "waCentral.search": "Buscar número, canal o barbería",
+  "waCentral.unassigned": "Disponible · sin asignar",
+  "waCentral.channel": "Canal de WhatsApp",
+  "waCentral.enabled": "Avisos habilitados",
+  "waCentral.disabled": "Avisos en pausa",
+  "waCentral.empty": "No se encontraron canales.",
+  "waCentral.select": "Selecciona un canal para conectar o asignar.",
+  "waCentral.assignment": "Quién usa este número",
+  "waCentral.shop": "Barbería",
+  "waCentral.staff": "Profesional",
+  "waCentral.wholeShop": "General de la barbería",
+  "waCentral.enable": "Habilitar avisos para esta asignación",
+  "waCentral.moveWarning":
+    "La transferencia cancela los avisos pendientes de la asignación anterior. El historial permanece en la barbería original.",
+  "waCentral.confirm": "He revisado el destino y quiero transferir este canal.",
+  "waCentral.save": "Guardar asignación",
+  "waCentral.saved": "Asignación guardada. Esta acción no envió ningún mensaje.",
+  "waCentral.history": "Transferencias recientes",
+  "waCentral.inactiveShop": "Barbería no disponible",
+  "waCentral.inactiveStaff": "Profesional no disponible",
+  "waCentral.connectionHint":
+    "Conecta una cuenta de WhatsApp ya activada. Añadir el canal no activa ni compra un número.",
+  "waCentral.offHint": "Sin conexión, este canal no puede entregar avisos.",
+  "waCentral.error":
+    "No se pudo cargar o guardar. Actualiza la lista; si continúa, pide a TI que revise la instalación.",
+  "waCentral.stale":
+    "Este canal cambió en otra pantalla. Actualiza la lista y revisa la asignación antes de guardar.",
+  "waCentral.occupied":
+    "Este destino ya tiene un canal. Libera la asignación actual antes de transferir otro.",
+  "waCentral.invalidTarget":
+    "Elige una barbería y un profesional activos. Los canales sin asignar deben permanecer en pausa.",
+  "waCentral.reserveFirst":
+    "Vuelve al canal principal y retira la reserva en los ajustes de la barbería antes de transferir.",
+  "waCentral.deliveryBusy":
+    "Hay un envío en curso o con resultado incierto. Espera o pide a TI que lo revise antes de transferir.",
+  "waCentral.labelInvalid": "Usa un nombre de entre 2 y 80 caracteres.",
+  "waLogin.title": "Entrar con WhatsApp",
+  "waLogin.description": "Recibe un código por WhatsApp para entrar en tu cuenta.",
+  "waLogin.verifiedOnly":
+    "Usa el número ya verificado en tu cuenta. Si es tu primera vez, regístrate con correo y confirma WhatsApp en Mi perfil.",
+  "waLogin.sent": "Si este número está verificado en una cuenta, recibirás un código.",
+  "waLogin.expiry": "El código es válido durante 10 minutos. Usa el más reciente.",
+  "waLogin.send": "Recibir código",
+  "waLogin.enter": "Confirmar y entrar",
+  "waLogin.resend": "Reenviar código",
+  "waLogin.change": "Cambiar número",
+  "waLogin.wait": "Nuevo código en {seconds}s",
+  "waLogin.invalid": "Código incorrecto, caducado o ya utilizado. Revísalo o pide uno nuevo.",
+  "waLogin.limit":
+    "Espera antes de pedir otro código. Después de tres solicitudes, espera 15 minutos o entra con correo.",
+  "waLogin.unavailable":
+    "No se pudo completar. Inténtalo de nuevo o entra con correo y contraseña.",
   "waDelivery.accepted": "Aviso añadido a la cola de envío",
   "waDelivery.reserveActive": "Los avisos se dirigen al canal de reserva de la barbería.",
   "waDelivery.managed":

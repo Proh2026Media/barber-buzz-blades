@@ -5,6 +5,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders, evolutionFetch, json } from "../_shared/evolution.ts";
 
 type Body = {
+  channel_id?: string;
   method?: "qr" | "code";
   phone?: string;
   action?: "status" | "connect" | "restart-pairing" | "pairing-status" | "logout";
@@ -87,7 +88,39 @@ Deno.serve(async (req) => {
     if (wantsPairing && !pairingPhone(body.phone))
       return json({ error: "PAIRING_PHONE_INVALID" }, 400);
 
-    const instanceName = platformInstance();
+    let instanceName: string;
+    let managedChannel: { id: string; instance_name: string } | null = null;
+    if (body.channel_id !== undefined) {
+      if (
+        typeof body.channel_id !== "string" ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.channel_id)
+      )
+        return json({ error: "CHANNEL_INVALID" }, 400);
+      const { data, error } = await userClient
+        .from("whatsapp_channels")
+        .select("id,instance_name")
+        .eq("id", body.channel_id)
+        .single();
+      if (error || !data) return json({ error: "CHANNEL_NOT_FOUND" }, 404);
+      managedChannel = data;
+      instanceName = data.instance_name;
+      if (instanceName === (Deno.env.get("PLATFORM_EVOLUTION_INSTANCE") ?? "").trim())
+        return json({ error: "CHANNEL_RESERVED" }, 409);
+    } else instanceName = platformInstance();
+    const admin = createClient(supabaseUrl, serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    async function saveState(status: string, display_phone: string | null = null) {
+      if (!managedChannel) return;
+      const { error } = await admin
+        .from("whatsapp_channels")
+        .update({ status, display_phone })
+        .eq("id", managedChannel.id);
+      if (error) throw new Error("CHANNEL_STATE_UNSAVED");
+    }
+
+    const channelJson = (payload: Record<string, unknown>, status = 200) =>
+      json({ ...payload, managed_channel_id: managedChannel?.id ?? null }, status);
 
     if (wantsPairing) {
       try {
@@ -97,10 +130,16 @@ Deno.serve(async (req) => {
           body.phone!,
           action === "pairing-status" || action === "restart-pairing" ? action : "connect",
         );
-        return json({ ok: true, pairing_supported: true, instance_name: instanceName, ...result });
+        await saveState(result.status ?? "disconnected");
+        return channelJson({
+          ok: true,
+          pairing_supported: true,
+          instance_name: instanceName,
+          ...result,
+        });
       } catch (error) {
         const code = error instanceof Error ? error.message : "PAIRING_UNAVAILABLE";
-        return json({ error: code }, code === "PAIRING_IN_PROGRESS" ? 409 : 502);
+        return channelJson({ error: code }, code === "PAIRING_IN_PROGRESS" ? 409 : 502);
       }
     }
 
@@ -130,10 +169,11 @@ Deno.serve(async (req) => {
     if (action === "logout") {
       try {
         await evolutionFetch(`/instance/logout/${instanceName}`, { method: "DELETE" });
-      } catch {
-        /* ignore */
+      } catch (err) {
+        if (!isMissingInstance(err)) throw err;
       }
-      return json({
+      await saveState("disconnected");
+      return channelJson({
         ok: true,
         instance_name: instanceName,
         status: "disconnected",
@@ -216,7 +256,7 @@ Deno.serve(async (req) => {
               : "disconnected";
     } catch (err) {
       lastError = err instanceof Error ? err.message : "Falha Evolution";
-      return json(
+      return channelJson(
         {
           error: lastError,
           instance_name: instanceName,
@@ -229,7 +269,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    return json({
+    await saveState(status, displayPhone);
+    return channelJson({
       ok: true,
       instance_name: instanceName,
       status,
