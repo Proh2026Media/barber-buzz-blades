@@ -1,6 +1,43 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const enUS: Record<MessageKey, string> = {
+  "waNumbers.addAnother": "Add another number",
+  "waNumbers.existing": "Registered numbers",
+  "waNumbers.filter": "Filter numbers",
+  "waNumbers.all": "All",
+  "waNumbers.available": "Available",
+  "waNumbers.assigned": "Assigned",
+  "waNumbers.reserves": "Backups",
+  "waNumbers.settings": "Primary and backup",
+  "waNumbers.primary": "Primary",
+  "waNumbers.backup": "Backup",
+  "waNumbers.noBackup": "No backup number",
+  "waNumbers.legacy": "Backup configured by IT",
+  "waNumbers.backupHint":
+    "Choose an available number. The backup is exclusive to this primary and does not take over notifications automatically.",
+  "waNumbers.viewBackup": "View and connect backup",
+  "waNumbers.manual": "Switching is manual. The backup must be connected before use.",
+  "waNumbers.save": "Save primary and backup",
+  "waNumbers.intro":
+    "Choose an existing number to assign to a shop or professional. Add another only when you need a new number.",
+  "waNumbers.reservedFor": "Backup for {name}",
+  "waNumbers.viewPrimary": "View primary number",
+  "waNumbers.configurationChanged": "Configuration changed",
+  "waNumbers.role": "How to use this number",
+  "waNumbers.reserveFor": "Which primary needs this backup?",
+  "waNumbers.choosePrimary": "Choose the primary number",
+  "waNumbers.reserveForHint":
+    "Only assigned primary numbers without a backup are listed. This action reserves the backup; notifications stay on the primary.",
+  "waNumbers.assignBackup": "Set as backup",
+  "waNumbers.backupInUse": "Backup in use",
+  "waNumbers.install":
+    "Primary and backup require server update P-118. Ask IT to install the package; existing assignments remain unchanged.",
+  "waNumbers.unavailable":
+    "This number is not available as a backup. Refresh the list and choose an available number.",
+  "waNumbers.reservedError":
+    "This number is already a backup. Remove its assignment in the primary settings before assigning it elsewhere.",
+  "waNumbers.technicalRequired": "Confirm the technical failure before using the backup.",
+  "waNumbers.manage": "Manage numbers in the central panel",
   "waCentral.tab": "WhatsApp",
   "waCentral.title": "WhatsApp numbers",
   "waCentral.subtitle": "Connect B&C WhatsApp numbers and choose who can use them.",

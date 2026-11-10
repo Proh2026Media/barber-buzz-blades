@@ -1361,6 +1361,18 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      platform_configure_whatsapp_number: {
+        Args: {
+          p_id: string;
+          p_version: number;
+          p_backup_id: string | null;
+          p_mode: string;
+          p_technical: boolean;
+          p_return_enabled: boolean;
+          p_keep_legacy?: boolean;
+        };
+        Returns: Json;
+      };
       platform_whatsapp_directory: { Args: Record<string, never>; Returns: Json };
       platform_create_whatsapp_channel: {
         Args: { p_id: string; p_label: string };

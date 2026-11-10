@@ -1,6 +1,43 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const es: Record<MessageKey, string> = {
+  "waNumbers.addAnother": "Añadir otro número",
+  "waNumbers.existing": "Números registrados",
+  "waNumbers.filter": "Filtrar números",
+  "waNumbers.all": "Todos",
+  "waNumbers.available": "Disponibles",
+  "waNumbers.assigned": "Asignados",
+  "waNumbers.reserves": "Reservas",
+  "waNumbers.settings": "Principal y reserva",
+  "waNumbers.primary": "Principal",
+  "waNumbers.backup": "Reserva",
+  "waNumbers.noBackup": "Sin número de reserva",
+  "waNumbers.legacy": "Reserva configurada por TI",
+  "waNumbers.backupHint":
+    "Elige un número libre. La reserva es exclusiva de este principal y no asume los avisos automáticamente.",
+  "waNumbers.viewBackup": "Ver y conectar la reserva",
+  "waNumbers.manual": "El cambio es manual. La reserva debe estar conectada antes de utilizarla.",
+  "waNumbers.save": "Guardar principal y reserva",
+  "waNumbers.intro":
+    "Elige un número ya registrado para asignarlo a la barbería o al profesional. Añade otro solo cuando necesites un número nuevo.",
+  "waNumbers.reservedFor": "Reserva de {name}",
+  "waNumbers.viewPrimary": "Ver número principal",
+  "waNumbers.configurationChanged": "Configuración modificada",
+  "waNumbers.role": "Cómo usar este número",
+  "waNumbers.reserveFor": "¿Para qué principal es la reserva?",
+  "waNumbers.choosePrimary": "Elige el número principal",
+  "waNumbers.reserveForHint":
+    "Se muestran los principales ya asignados y sin reserva. Esta acción solo aparta la reserva; los avisos siguen en el principal.",
+  "waNumbers.assignBackup": "Definir como reserva",
+  "waNumbers.backupInUse": "Reserva en uso",
+  "waNumbers.install":
+    "Principal y reserva requieren la actualización P-118 en el servidor. Pide a TI que instale el paquete; las asignaciones actuales se conservan.",
+  "waNumbers.unavailable":
+    "Este número no está disponible como reserva. Actualiza la lista y elige un número libre.",
+  "waNumbers.reservedError":
+    "Este número ya es una reserva. Retira su asignación en la configuración del principal antes de asignarlo a otro destino.",
+  "waNumbers.technicalRequired": "Confirma el fallo técnico antes de usar la reserva.",
+  "waNumbers.manage": "Gestionar números en la central",
   "waCentral.tab": "WhatsApp",
   "waCentral.title": "Central de WhatsApp",
   "waCentral.subtitle": "Conecta los números de WhatsApp de B&C y elige quién puede usarlos.",

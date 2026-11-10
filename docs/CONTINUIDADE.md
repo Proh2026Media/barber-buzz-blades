@@ -1,5 +1,13 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 10/11/2026 — P-118: números existentes e reserva visível — migration pendente na VPS
+
+Dono não encontrava principal/reserva e pediu reaproveitar os números existentes. Diagnóstico: bundle público já continha Central de WhatsApp e “Adicionar número”; reserva estava na ficha da loja como identificador técnico. Central agora prioriza inventário/filtros, com cadastro recolhido; número livre pode ser principal ou reserva. Na seleção, edição de reserva por nome/telefone, modo manual e acesso à conexão da reserva; profissional específico também atendido. Atalho da ficha leva à mesma central. Seleção no celular rola aos detalhes. Não importa Evolution/Salvy automaticamente, não ativa nem compra números.
+
+Migration nº 103 preserva valores existentes e amplia validação para reserva cadastrada livre, pausada e exclusiva. Configuração usa versão, histórico administrativo e bloqueio em envio/incerteza; protege contra distribuição de reserva em uso e invalida formulários antigos do número reservado/liberado. Compatibilidade com identificadores legados e formulário antigo. Sem alternância automática. Sem mudança no telefone pessoal do login ou no remetente da plataforma.
+
+Bancada PostgreSQL: 1.337 PASS/0 FAIL, 33 novos; concorrência real de dois principais pela mesma reserva resultou em um aceite/uma recusa. Reversão em transação conferida. Navegador isolado nos três dispositivos, dois temas/três cantos; nenhum envio real. [Pacote TI](pacotes/2026-11-10-ti-whatsapp-reserva-visual-p118.md), aplicação só da nº 103, sem funções Edge/reinício. Nº 101/102 instaladas, não repetir; homologação real permanece pendente.
+
 ## 10/11/2026 — P-117: “número” nos textos do WhatsApp
 
 A pedido do dono, substituído “canal” por “número” nos rótulos, ações, busca, confirmações e avisos de distribuição/conexão do WhatsApp, incluindo número principal e reserva. Ajuste nos quatro dicionários; en-GB herda en-US. Campo técnico da reserva continua identificado como conexão, pois recebe o identificador fornecido pela TI, não um telefone. Chaves internas, banco, funções e vínculos preservados. Sem nova instalação TI; homologação real P-117 permanece pendente.

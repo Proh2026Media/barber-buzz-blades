@@ -1,6 +1,43 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const ptPT: Record<MessageKey, string> = {
+  "waNumbers.addAnother": "Adicionar outro número",
+  "waNumbers.existing": "Números registados",
+  "waNumbers.filter": "Filtrar números",
+  "waNumbers.all": "Todos",
+  "waNumbers.available": "Disponíveis",
+  "waNumbers.assigned": "Associados",
+  "waNumbers.reserves": "Reservas",
+  "waNumbers.settings": "Principal e reserva",
+  "waNumbers.primary": "Principal",
+  "waNumbers.backup": "Reserva",
+  "waNumbers.noBackup": "Sem número de reserva",
+  "waNumbers.legacy": "Reserva configurada pela equipa técnica",
+  "waNumbers.backupHint":
+    "Escolha um número livre. A reserva fica exclusiva deste principal e não assume os avisos automaticamente.",
+  "waNumbers.viewBackup": "Ver e ligar a reserva",
+  "waNumbers.manual": "A troca é manual. A reserva deve estar ligada antes de ser utilizada.",
+  "waNumbers.save": "Guardar principal e reserva",
+  "waNumbers.intro":
+    "Escolha um número já registado para o associar à barbearia ou ao profissional. Adicione outro apenas quando precisar de um novo número.",
+  "waNumbers.reservedFor": "Reserva de {name}",
+  "waNumbers.viewPrimary": "Ver número principal",
+  "waNumbers.configurationChanged": "Configuração alterada",
+  "waNumbers.role": "Como utilizar este número",
+  "waNumbers.reserveFor": "Reservar para qual principal?",
+  "waNumbers.choosePrimary": "Escolha o número principal",
+  "waNumbers.reserveForHint":
+    "São listados os principais já associados e sem reserva. Esta ação apenas separa a reserva; os avisos continuam no principal.",
+  "waNumbers.assignBackup": "Definir como reserva",
+  "waNumbers.backupInUse": "Reserva em utilização",
+  "waNumbers.install":
+    "Principal e reserva precisam da atualização P-118 no servidor. Peça à equipa técnica para instalar o pacote; as associações atuais continuam preservadas.",
+  "waNumbers.unavailable":
+    "Este número não está disponível como reserva. Atualize a lista e escolha um número livre.",
+  "waNumbers.reservedError":
+    "Este número já é uma reserva. Retire a associação na configuração do principal antes de o distribuir.",
+  "waNumbers.technicalRequired": "Confirme a falha técnica antes de utilizar a reserva.",
+  "waNumbers.manage": "Gerir números na central",
   "waCentral.tab": "WhatsApp",
   "waCentral.title": "Central de WhatsApp",
   "waCentral.subtitle": "Ligue os números de WhatsApp do B&C e escolha quem pode utilizá-los.",

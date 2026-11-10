@@ -1,5 +1,7 @@
 # Pendências — lista única e priorizada
 
+**10/11/2026 — P-118, reaproveitamento de números e reserva visual:** central prioriza números cadastrados, com filtros Disponíveis/Vinculados/Reservas e cadastro recolhido. Principal e reserva ficam visíveis; escolha da reserva pelo nome/telefone, tanto para loja como profissional, sem identificador técnico. Reutilizar não cria número novo. **Nº 103 pendente na VPS**, pelo [pacote TI](../pacotes/2026-11-10-ti-whatsapp-reserva-visual-p118.md); nenhuma função Edge/reinício. Nº 101/102 já instaladas, não repetir. Homologação real pendente. Último id P-118.
+
 **10/11/2026 — P-117, central de WhatsApp e login pessoal:** implementados inventário/distribuição de canais para loja ou profissional, transferência auditada e login global por código no número pessoal confirmado. São usos separados; transferir canal não muda a conta do usuário. **Instalação concluída pela TI em 10/11, 13:47:04–13:47:05 (Brasília)**, conforme relatório recebido; hashes dos quatro arquivos conferidos localmente. **Homologação real pendente; não reinstalar.** [Registro do retorno](../pacotes/2026-11-10-p117-instalacao-relatada.md). Roteiro de testes no [pacote único](../pacotes/2026-11-10-ti-central-whatsapp-login-p117.md). P-116/nº 101 já instalada, não refazer. Sem ativação de números ou mensagens reais. Último id P-117.
 
 **10/11/2026 — P-116 instalada pela TI:** migration nº 101 aplicada às 11:19:34–11:19:36 (Brasília), com as duas funções publicadas. Conferência posterior somente de leitura confirmou arquivos, estrutura e permissões; **não reinstalar**. Falta pareamento e homologação autenticada com destinatário de teste autorizado. Retorno automático desligado e nenhuma reserva associada. [Registro da instalação](../pacotes/2026-11-10-p116-instalacao-conferida.md). A conta WhatsApp precisa estar previamente ativada para usar Evolution/Baileys; o número Salvy apenas no painel não atende esse pré-requisito. Nº 99/100, Flow e pagamentos não foram alterados. Último id naquela entrega: P-116.
@@ -24,7 +26,7 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 - Situação: **pendente**, **feito — falta aplicar no banco**, **a decidir** (depende do dono), **não confirmado** (não deu para conferir daqui).
 - Cada item foi conferido no código e nas migrations em 12/10/2026. As linhas citadas são dessa data.
 - **Papéis da equipe no banco × nomes na tela:** `owner` e `partner` = **Dono** (sócio; `partner` é o nome antigo e aparece igual), `associate` = **Parceiro**, `employee` = **Contratado** ([roles-model.ts](../../src/features/shop/roles-model.ts); rótulos em `pt-BR.ts`). `shop_admin` é o papel antigo de `memberships`, que pode existir sem vínculo de equipe (CONTINUIDADE, onda 1 de 09/10).
-- Último id usado: **P-117**.
+- Último id usado: **P-118**.
 
 **Índice**
 
@@ -806,3 +808,7 @@ Novo helper compartilhado e dois handlers; nenhum segredo no frontend e nenhuma 
 **Implementado e instalado pela TI em 10/11/2026; homologação real pendente.** Nº 102 aplicada às 13:47:04–13:47:05 (Brasília), conforme relatório; não reinstalar. [Registro do retorno](../pacotes/2026-11-10-p117-instalacao-relatada.md). Central administrativa lista/cadastra/conecta e distribui canal para uma loja inteira ou um profissional; destino válido, confirmação, auditoria, versão e fila protegidos. Não há agrupamento automático de dois barbeiros por número. Login global usa WhatsApp pessoal já confirmado, código único de seis dígitos, limites atômicos e sessão da mesma conta; canal de autenticação exclusivo da plataforma. Canais não ativam contas WhatsApp. [Pacote único TI](../pacotes/2026-11-10-ti-central-whatsapp-login-p117.md), nº 102 e quatro arquivos de funções. Nº 101 não se repete; nº 99/100 e Flow preservados.
 
 **Ajuste de linguagem em 10/11/2026:** na interface WhatsApp, usar “número”, conforme pedido do dono; central, distribuição, conexão e reserva atualizadas em todos os idiomas. Sem mudança de banco ou nova tarefa TI.
+
+## P-118 — Números existentes, principal e reserva visíveis (10/11/2026)
+
+**Feito — falta aplicar no banco.** Seleção e reaproveitamento dos números cadastrados, cadastro secundário, filtros e edição de principal/reserva na central. Reserva por loja ou profissional, exclusividade, versão e histórico; envio em andamento/incerto bloqueia mudança. Migração nº 103 e homologação real pendentes. [Pacote TI](../pacotes/2026-11-10-ti-whatsapp-reserva-visual-p118.md). Sem importação automática de Evolution/Salvy, sem números comprados/ativados ou rodízio.

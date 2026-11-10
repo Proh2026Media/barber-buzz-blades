@@ -1,5 +1,42 @@
 /** Dicionário principal (fonte). Toda chave nova nasce aqui, em pt-BR. */
 export const ptBR = {
+  "waNumbers.addAnother": "Adicionar outro número",
+  "waNumbers.existing": "Números cadastrados",
+  "waNumbers.filter": "Filtrar números",
+  "waNumbers.all": "Todos",
+  "waNumbers.available": "Disponíveis",
+  "waNumbers.assigned": "Vinculados",
+  "waNumbers.reserves": "Reservas",
+  "waNumbers.settings": "Principal e reserva",
+  "waNumbers.primary": "Principal",
+  "waNumbers.backup": "Reserva",
+  "waNumbers.noBackup": "Sem número reserva",
+  "waNumbers.legacy": "Reserva configurada pela TI",
+  "waNumbers.backupHint":
+    "Escolha um número livre. A reserva fica exclusiva deste principal e não assume os avisos automaticamente.",
+  "waNumbers.viewBackup": "Ver e conectar a reserva",
+  "waNumbers.manual": "A troca é manual. A reserva deve estar conectada antes de ser usada.",
+  "waNumbers.save": "Salvar principal e reserva",
+  "waNumbers.intro":
+    "Escolha um número já cadastrado para vinculá-lo à barbearia ou ao profissional. Adicione outro somente quando precisar de um novo número.",
+  "waNumbers.reservedFor": "Reserva de {name}",
+  "waNumbers.viewPrimary": "Ver número principal",
+  "waNumbers.configurationChanged": "Configuração alterada",
+  "waNumbers.role": "Como usar este número",
+  "waNumbers.reserveFor": "Reservar para qual principal?",
+  "waNumbers.choosePrimary": "Escolha o número principal",
+  "waNumbers.reserveForHint":
+    "São listados os principais já vinculados e sem reserva. Esta ação apenas separa a reserva; os avisos continuam no principal.",
+  "waNumbers.assignBackup": "Definir como reserva",
+  "waNumbers.backupInUse": "Reserva em uso",
+  "waNumbers.install":
+    "Principal e reserva precisam da atualização P-118 no servidor. Peça à TI para instalar o pacote; os vínculos atuais continuam preservados.",
+  "waNumbers.unavailable":
+    "Este número não está disponível como reserva. Atualize a lista e escolha um número livre.",
+  "waNumbers.reservedError":
+    "Este número já é uma reserva. Retire o vínculo na configuração do principal antes de distribuí-lo.",
+  "waNumbers.technicalRequired": "Confirme a falha técnica antes de usar a reserva.",
+  "waNumbers.manage": "Gerenciar números na central",
   "waCentral.tab": "WhatsApp",
   "waCentral.title": "Central de WhatsApp",
   "waCentral.subtitle": "Conecte os números de WhatsApp do B&C e escolha quem pode usá-los.",
@@ -39,7 +76,7 @@ export const ptBR = {
   "waCentral.invalidTarget":
     "Escolha uma barbearia e um profissional ativos. Um número sem vínculo deve ficar pausado.",
   "waCentral.reserveFirst":
-    "Volte ao número principal e retire a reserva nos ajustes da barbearia antes de transferir.",
+    "Selecione Principal em “Número usado nos avisos”, retire a reserva e salve antes de transferir.",
   "waCentral.deliveryBusy":
     "Há envio em andamento ou com resultado incerto. Aguarde ou peça à TI para conferir antes de transferir.",
   "waCentral.labelInvalid": "Use um nome entre 2 e 80 caracteres.",
