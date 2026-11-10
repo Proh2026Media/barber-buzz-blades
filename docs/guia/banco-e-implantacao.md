@@ -1,6 +1,6 @@
 # Banco, servidores e publicação
 
-**10/11/2026 — nº 102/P-117 preparada, pendente:** central administrativa de canais e login por WhatsApp pessoal, com [pacote TI próprio](../pacotes/2026-11-10-ti-central-whatsapp-login-p117.md). Depende da nº 101 já instalada; não requer nem instala nº 99/100.
+**10/11/2026 — nº 102/P-117 aplicada pela TI:** às 13:47:04–13:47:05 (Brasília), segundo o relatório recebido; quatro arquivos de funções publicados antes da migration. Hashes/tamanhos conferidos localmente, sem nova consulta à VPS nesta rodada. [Registro do retorno](../pacotes/2026-11-10-p117-instalacao-relatada.md). **Não reinstalar; homologação real pendente.** Nº 99/100 não foram alteradas.
 
 **10/11/2026 — nº 101/P-116 aplicada pela TI:** às 11:19:34–11:19:36 (Brasília), com duas funções publicadas e reinício somente das funções. [Registro e conferência independente](../pacotes/2026-11-10-p116-instalacao-conferida.md). Não reinstalar. Retorno automático desligado; pareamento e homologação real pendentes. Nº 99/100 não foram aplicadas por este pacote.
 
@@ -186,7 +186,7 @@ Pasta: [supabase/migrations/](../../supabase/migrations/). A situação vem dest
 | 99  | `20261107220000_governanca_pausa_semanal`                    | Criação/remoção de pausa da loja pela governança; versão, idempotência, conflitos e RLS (P-70)                         | escrita e testada localmente; **pendente na VPS** [O]                   |
 | 100 | `20261107230000_mercado_pago_conexao`                        | Conexão OAuth Mercado Pago da loja e do Parceiro, PKCE/estado único/cifras privadas; sem dinheiro                      | escrita e testada localmente; **pendente na VPS** [P]                   |
 | 101 | `20261110120000_whatsapp_comunicacao_controlada`             | Comunicação consentida, cota por cliente e reserva técnica WhatsApp                                                    | aplicada pela TI em 10/11/2026, 11:19:34–11:19:36; homologação pendente |
-| 102 | `20261110150000_central_whatsapp_login`                      | Central de canais, transferência auditada, rota profissional e login global por WhatsApp                               | escrita e testada localmente; pendente na VPS                           |
+| 102 | `20261110150000_central_whatsapp_login`                      | Central de canais, transferência auditada, rota profissional e login global por WhatsApp                               | aplicada pela TI em 10/11/2026, 13:47:04–13:47:05; homologação pendente |
 
 Nota da nº 34: no banco remoto ela falhava em `text = uuid`, e por isso a coluna `icon` e o bucket não existiam. A nº 41 (`20260920010000_service_images_storage`) cria o mesmo efeito e foi aplicada; o arquivo da nº 34 também recebeu o cast correto (`barbershop_id::text`) para instalações novas. Fonte: CONTINUIDADE "Slider da espera e imagens de serviço" (20/09/2026).
 

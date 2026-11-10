@@ -1,5 +1,11 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 10/11/2026 — P-117: instalação recebida; homologação real pendente
+
+Relatório TI confirma nº 102 aplicada em transação às 13:47:04–13:47:05 (Brasília), após backup/ensaio, com quatro arquivos de funções publicados e reinício somente das funções. Conferência própria local: hashes completos e tamanhos dos quatro arquivos iguais ao relatório e ao commit `94e0726`. Não houve consulta nova à VPS, envio, pareamento ou alteração de canais nesta rodada.
+
+Inventário da migration e guias atualizados: **não reinstalar**. Segundo a TI, permissões/saúde/cron corretos, vínculos preservados e fila sem pendência ou incerteza. Falta homologar central, distribuição/transferência e login pessoal com destinatário de teste combinado e conta WhatsApp ativada; autorização de instalação relatada excluiu essas ações. O roteiro já existe no pacote P-117, sem novo pedido ao Flow. [Registro e limites](pacotes/2026-11-10-p117-instalacao-relatada.md).
+
 ## 10/11/2026 — P-117: canais administrados e login com WhatsApp pessoal
 
 Dono confirmou que distribui o WhatsApp do sistema à barbearia ou a profissionais específicos; o WhatsApp de login é pessoal e independente. Implementada aba WhatsApp na plataforma, cadastro idempotente de canais livres, conexão reutilizando QR/código, busca, distribuição geral/individual, confirmação e histórico. Um destino por canal, sem agrupamento automático de profissionais. Banco impede destino ocupado/inválido, versão antiga e transferência com envio em curso/incerto; cancela fila antiga pendente sem levar histórico entre lojas. Canal do profissional passa a ser usado nos avisos identificados pelo atendimento; regras de consentimento/cota P-116 preservadas.
