@@ -1,6 +1,8 @@
 # Banco, servidores e publicação
 
-**10/11/2026 — nº 103/P-118 preparada, pendente:** reserva escolhida pelo número cadastrado, exclusiva por principal da loja/profissional, versão e histórico. [Pacote TI](../pacotes/2026-11-10-ti-whatsapp-reserva-visual-p118.md). Só migration, sem funções Edge ou reinício. Nº 101/102 já instaladas; nº 99/100 fora do escopo.
+**10/11/2026 — P-119, um número para vários destinos:** central permite adicionar várias barbearias/profissionais ao mesmo número, com avisos por vínculo, remoção isolada e identificação da loja nas mensagens. Uma conexão e reserva para todos os vínculos; preferências/históricos/permissões separados. **Nº 104 e duas funções Edge pendentes na VPS**: [pacote TI](../pacotes/2026-11-10-ti-whatsapp-compartilhado-p119.md). Nº 103/P-118 **instalada pela TI às 15:37:35**, segundo [retorno recebido](../pacotes/2026-11-10-p118-instalacao-relatada.md); não reaplicar. Homologação real continua pendente. Último id P-119.
+
+**10/11/2026 — nº 103/P-118 instalada pela TI às 15:37:35:** reserva escolhida pelo número cadastrado, exclusiva por principal da loja/profissional, versão e histórico. [Pacote TI](../pacotes/2026-11-10-ti-whatsapp-reserva-visual-p118.md). Aplicação conforme relatório recebido, sem nova consulta à VPS nesta rodada. Não reinstalar. Só migration, sem funções Edge ou reinício. Nº 101/102 já instaladas; nº 99/100 fora do escopo.
 
 **10/11/2026 — nº 102/P-117 aplicada pela TI:** às 13:47:04–13:47:05 (Brasília), segundo o relatório recebido; quatro arquivos de funções publicados antes da migration. Hashes/tamanhos conferidos localmente, sem nova consulta à VPS nesta rodada. [Registro do retorno](../pacotes/2026-11-10-p117-instalacao-relatada.md). **Não reinstalar; homologação real pendente.** Nº 99/100 não foram alteradas.
 

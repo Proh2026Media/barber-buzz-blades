@@ -1,6 +1,28 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const es: Record<MessageKey, string> = {
+  "waShared.preferencesChanged":
+    "Las preferencias cambiaron. Revisa los valores actuales antes de volver a intentarlo.",
+  "waShared.destinations": "Quién usa este número",
+  "waShared.intro":
+    "Un mismo número puede atender varias barberías y profesionales. Los avisos e historiales permanecen separados.",
+  "waShared.add": "Vincular otra barbería o profesional",
+  "waShared.choose": "Elige la barbería",
+  "waShared.addHint":
+    "El nuevo vínculo comienza con los avisos pausados. Se mantienen los vínculos actuales.",
+  "waShared.link": "Añadir vínculo",
+  "waShared.save": "Guardar este vínculo",
+  "waShared.remove": "Eliminar vínculo",
+  "waShared.removeHint":
+    "Elimina solo este vínculo y cancela sus avisos pendientes. Los demás siguen igual.",
+  "waShared.confirmRemove": "Confirmar eliminación",
+  "waShared.manage": "Este número es compartido. Gestiona los vínculos en la Central de WhatsApp.",
+  "waShared.connectionHint":
+    "La conexión, la pausa del número y la reserva afectan a todos sus vínculos. Para pausar solo una barbería, usa el control del vínculo.",
+  "waShared.added": "Vínculo añadido",
+  "waShared.removed": "Vínculo eliminado",
+  "waShared.updated": "Preferencias del vínculo modificadas",
+
   "waNumbers.addAnother": "Añadir otro número",
   "waNumbers.existing": "Números registrados",
   "waNumbers.filter": "Filtrar números",

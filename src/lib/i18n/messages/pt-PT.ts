@@ -1,6 +1,29 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const ptPT: Record<MessageKey, string> = {
+  "waShared.preferencesChanged":
+    "As preferências mudaram. Confira os valores atuais antes de tentar novamente.",
+  "waShared.destinations": "Quem usa este número",
+  "waShared.intro":
+    "Um mesmo número pode servir várias barbearias e profissionais. Os avisos e históricos continuam separados.",
+  "waShared.add": "Associar outra barbearia ou profissional",
+  "waShared.choose": "Escolha a barbearia",
+  "waShared.addHint":
+    "A nova associação começa com os avisos em pausa. As associações atuais mantêm-se.",
+  "waShared.link": "Adicionar associação",
+  "waShared.save": "Guardar esta associação",
+  "waShared.remove": "Remover associação",
+  "waShared.removeHint":
+    "Remove apenas esta associação e cancela os seus avisos pendentes. As restantes mantêm-se.",
+  "waShared.confirmRemove": "Confirmar remoção",
+  "waShared.manage":
+    "Este número é partilhado. Faça a gestão das associações na Central de WhatsApp.",
+  "waShared.connectionHint":
+    "A ligação, a pausa do número e a reserva aplicam-se a todas as associações deste número. Para pausar só uma loja, use o controlo da associação.",
+  "waShared.added": "Associação adicionada",
+  "waShared.removed": "Associação removida",
+  "waShared.updated": "Preferências da associação alteradas",
+
   "waNumbers.addAnother": "Adicionar outro número",
   "waNumbers.existing": "Números registados",
   "waNumbers.filter": "Filtrar números",

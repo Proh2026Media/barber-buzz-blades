@@ -1,61 +1,5 @@
 # Transição para a próxima IA — Barba & Cabelo
 
-## 10/11/2026 — P-118: números existentes e reserva visível — migration pendente na VPS
-
-Dono não encontrava principal/reserva e pediu reaproveitar os números existentes. Diagnóstico: bundle público já continha Central de WhatsApp e “Adicionar número”; reserva estava na ficha da loja como identificador técnico. Central agora prioriza inventário/filtros, com cadastro recolhido; número livre pode ser principal ou reserva. Na seleção, edição de reserva por nome/telefone, modo manual e acesso à conexão da reserva; profissional específico também atendido. Atalho da ficha leva à mesma central. Seleção no celular rola aos detalhes. Não importa Evolution/Salvy automaticamente, não ativa nem compra números.
-
-Migration nº 103 preserva valores existentes e amplia validação para reserva cadastrada livre, pausada e exclusiva. Configuração usa versão, histórico administrativo e bloqueio em envio/incerteza; protege contra distribuição de reserva em uso e invalida formulários antigos do número reservado/liberado. Compatibilidade com identificadores legados e formulário antigo. Sem alternância automática. Sem mudança no telefone pessoal do login ou no remetente da plataforma.
-
-Bancada PostgreSQL: 1.337 PASS/0 FAIL, 33 novos; concorrência real de dois principais pela mesma reserva resultou em um aceite/uma recusa. Reversão em transação conferida. Navegador isolado nos três dispositivos, dois temas/três cantos; nenhum envio real. [Pacote TI](pacotes/2026-11-10-ti-whatsapp-reserva-visual-p118.md), aplicação só da nº 103, sem funções Edge/reinício. Nº 101/102 instaladas, não repetir; homologação real permanece pendente.
-
-## 10/11/2026 — P-117: “número” nos textos do WhatsApp
-
-A pedido do dono, substituído “canal” por “número” nos rótulos, ações, busca, confirmações e avisos de distribuição/conexão do WhatsApp, incluindo número principal e reserva. Ajuste nos quatro dicionários; en-GB herda en-US. Campo técnico da reserva continua identificado como conexão, pois recebe o identificador fornecido pela TI, não um telefone. Chaves internas, banco, funções e vínculos preservados. Sem nova instalação TI; homologação real P-117 permanece pendente.
-
-## 10/11/2026 — P-117: instalação recebida; homologação real pendente
-
-Relatório TI confirma nº 102 aplicada em transação às 13:47:04–13:47:05 (Brasília), após backup/ensaio, com quatro arquivos de funções publicados e reinício somente das funções. Conferência própria local: hashes completos e tamanhos dos quatro arquivos iguais ao relatório e ao commit `94e0726`. Não houve consulta nova à VPS, envio, pareamento ou alteração de canais nesta rodada.
-
-Inventário da migration e guias atualizados: **não reinstalar**. Segundo a TI, permissões/saúde/cron corretos, vínculos preservados e fila sem pendência ou incerteza. Falta homologar central, distribuição/transferência e login pessoal com destinatário de teste combinado e conta WhatsApp ativada; autorização de instalação relatada excluiu essas ações. O roteiro já existe no pacote P-117, sem novo pedido ao Flow. [Registro e limites](pacotes/2026-11-10-p117-instalacao-relatada.md).
-
-## 10/11/2026 — P-117: canais administrados e login com WhatsApp pessoal
-
-Dono confirmou que distribui o WhatsApp do sistema à barbearia ou a profissionais específicos; o WhatsApp de login é pessoal e independente. Implementada aba WhatsApp na plataforma, cadastro idempotente de canais livres, conexão reutilizando QR/código, busca, distribuição geral/individual, confirmação e histórico. Um destino por canal, sem agrupamento automático de profissionais. Banco impede destino ocupado/inválido, versão antiga e transferência com envio em curso/incerto; cancela fila antiga pendente sem levar histórico entre lojas. Canal do profissional passa a ser usado nos avisos identificados pelo atendimento; regras de consentimento/cota P-116 preservadas.
-
-Login global na entrada usa código de seis dígitos no número pessoal confirmado. Não exige loja, Google ou senha; não cria nova conta. Código expira em dez minutos, uso único, cinco erros, três pedidos por 15 minutos e reenvio após 60 segundos, com limite atômico no banco. Número desconhecido não é revelado pela resposta; telefone da conta revalidado antes da sessão. Códigos saem somente pelo número da plataforma, fora das filas de loja. País sugerido e editável. E-mail/senha/Google continuam.
-
-Validação isolada: 32 cenários SQL novos, regressão completa 1.304 PASS/0 FAIL; concorrência real de oito pedidos resultou em um desafio aceito e sete limitados. Reversão ensaiada com ROLLBACK. 485 testes automatizados, tipos/lint/formatação/montagem aprovados; Chromium nos três dispositivos, dois temas/três cantos, fluxos de erro e sucesso, sem rede de produção. Foto inicial durante redimensionamento foi reconferida com geometria estabilizada; login usa folha móvel com acompanhamento do teclado. Tela e handlers reconhecem escopo de canal antes de mutações, evitando que função antiga ignore channel_id e opere a plataforma. Atualizações da função antiga de loja também fixam o id para não afetar um substituto durante transferência.
-
-**A instalar pela TI:** nº 102 + quatro arquivos de funções, pelo [pacote único](pacotes/2026-11-10-ti-central-whatsapp-login-p117.md), primeiro funções e depois migration. Nº 101 já instalada, sem reexecução; nº 99/100, Flow e pagamentos não alterados. Sem número comprado/ativado, mensagens reais ou mudança de configuração na VPS. Conta WhatsApp ativada e homologação com destinatário autorizado seguem pendentes. O último estado informado da Salvy (apenas no painel) não permite parear Baileys.
-
-## 10/11/2026 — P-116: instalação TI recebida e conferida
-
-Relatório `relatorio-ti-p116-2026-11-10.md` recebido: migration nº 101 aplicada em 10/11 às 11:19:34–11:19:36 (Brasília), funções do commit `6050438` instaladas, backup e ensaio com ROLLBACK, reinício apenas das funções. Cron voltou com HTTP 200 segundo a TI. Não reinstalar; nº 99/100 e Flow não foram alterados.
-
-Conferência própria somente de leitura via SSH: hashes completos das duas funções iguais ao repositório/relatório; banco e funções saudáveis; quatro colunas novas em canais e quatro na fila; orçamento vazio, dois canais principais sem reserva nem retorno ativo, quatro avisos históricos enviados e nenhum pendente/em envio. Privilégios de preparação por authenticated, configuração por anon e INSERT de canal por authenticated negados. A referência da TI a duas colunas na fila foi uma contagem parcial: as quatro estão presentes.
-
-**Pendente:** conta WhatsApp previamente ativada, pareamento do canal da Loja Teste e homologação autenticada de permissões/envios com destinatário autorizado. Reserva não preparada nem associada; retorno permanece desligado. Estado salvo no banco não comprova conexão viva com Evolution. Não houve envio, mudança de configuração, chamada do dispatcher ou teste SQL de escrita nesta conferência. [Registro completo](pacotes/2026-11-10-p116-instalacao-conferida.md).
-
-## 10/11/2026 — P-116: avisos prioritários, limite de comunicação e reserva técnica
-
-Pedido aprovado após esclarecer o modelo: notificações esperadas de agendamento, retorno semanal por frequência e até duas comunicações promocionais por semana. Adotada janela móvel de sete dias por cliente, global entre lojas, com retorno dentro da cota. Registro de consentimento existente reaproveitado; retirada é conferida antes do envio. Cliente com próximo horário não recebe convite automático; retorno exige três dias de visitas concluídas e autorização de análise/marketing. Desligado por loja na instalação.
-
-Migration nº 101 adiciona orçamento atômico, prioridade, roteamento fixo e reserva; corrige dedupe de remarcação e invalida aviso anterior de horário alterado. Worker autenticado consulta conexão sem efeitos e só reprograma quando não tentou enviar; timeout/resultado sem ID/registro incerto exige conferência, sem rodízio. Mantida recuperação anterior de e-mails transacionais; promoções usam um canal e não repetem automaticamente após incerteza. Configuração de reserva restrita ao admin com proteção contra UPDATE/INSERT direto de donos e reutilização entre lojas. A tela da loja mostra a reserva selecionada sem alterar a instância principal.
-
-Conectar/desconectar os números fornecidos fica restrito ao admin na interface e no endpoint; donos não alteram identidade/rota por escrita direta. A loja conserva os ajustes dos avisos.
-
-Interface: ficha da barbearia no admin ganha WhatsApp com principal/reserva/pausa e retorno opcional; mesmos componentes MB e idiomas. Avisar cliente explica a cota e diferencia aviso aceito na fila de entrega. Formulário preserva entrada em falha, bloqueia repetição e trata banco antigo. Número geral da plataforma/OTP separado.
-
-Validação: regressão SQL local em transações com ROLLBACK; handlers reais executados com dependências fictícias; tipos, eslint, prettier e montagem pelo verificar.sh. Conferência Chromium isolada em 320/390/834/1280, reserva exige confirmação técnica, nenhuma escrita na abertura, falha conserva formulário e banco antigo mostra orientação. 467 testes do app, 39 cenários SQL específicos, regressão completa sem falhas e 49 verificações da reversão. Dois temas e três cantos também conferidos no Chromium; contagem final da regressão no pacote. Sem mensagens reais, dados/credenciais reais ou homologação em aparelhos físicos.
-
-**Histórico anterior à instalação acima — produção então pendente:** [arquivo único TI](pacotes/2026-11-10-ti-whatsapp-comunicacao-p116.md), migration nº 101 + duas funções + preparação dos números. Não aplicada pelo agente de código, conforme regra do projeto. Esta entrega não cria/compra números nem ativa o número Salvy que está somente no painel. Baileys continua precisando de conta WhatsApp previamente ativada. Sem mudança no Flow ou em pagamentos. A proposta anterior de um número por dois barbeiros não virou roteamento automático; vale o principal fixo por loja aprovado na conversa.
-
-**22/10/2026 (madrugada) — interface por dispositivo publicada em 22/10/2026:** celular intocado, tablet com coluna estreita e computador com coluna completa, cada área refeita para a largura. Entrada "Interface por dispositivo" abaixo; plano em [dispositivos-2026-10-21.md](dispositivos-2026-10-21.md). O dono precisa testar no tablet e no computador.
-
-**20/10/2026 (noite) — aplicado no servidor:** as migrations nº 95 e 96 e a função `google-calendar-dispatch` da entrega de 16/10 (agendamento pelo barbeiro no painel, cliente do balcão, recorrente, login Google no app instalado), pelo TI, com o pacote [implantacao-agendamento-painel-2026-10-16.md](implantacao-agendamento-painel-2026-10-16.md). Última migration em produção: `20261016130000_agendamento_pelo_painel`. Falta só o teste do dono no celular (P-43).
-
-**15/10/2026 (noite) — passagem concluída no Claude Code:** ver a entrada "Passagem de 15/10" logo abaixo da Diretriz. Comece por [LEIA-PRIMEIRO.md](LEIA-PRIMEIRO.md). A função `register-shop` da P-38 foi publicada às 22:54; faltam os pacotes do Google (P-69 e P-28, em [pacotes/](pacotes/)).
-
 Atualizado em **10/11/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
 ## Comece aqui
@@ -156,6 +100,74 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - Esportes sempre visível;
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
+
+## 10/11/2026 — P-119: um número para vários destinos — migration pendente na VPS; P-118 instalada conforme TI
+
+**Pedido:** reutilizar o mesmo número cadastrado em várias barbearias/profissionais; recebido relatório TI nº 103. **Entrega:** Central com lista de destinos, inclusão sem substituir os atuais, preferências individuais, remoção confirmada e busca por todos os destinos. Novo vínculo começa pausado. Conexão/reserva são únicas e seu alcance compartilhado é indicado; mesmo estilo, cantos e organização responsiva.
+
+Banco nº 104 separa conexão física e vínculos, preserva dados existentes por semeadura e fixa vínculo no outbox. Número/loja original não mudam em tentativas antigas; remover vínculo cancela suas pendências e recriá-lo não ressuscita mensagens. Identificação da loja nas mensagens compartilhadas. Preferência profissional prevalece sem fallback quando pausada; consentimento/limite semanal permanecem. Exclusão de uma loja não exclui número usado por outra. RLS, permissão, versão, auditoria e envio incerto protegidos.
+
+Duas funções Edge e leitura do menu/ficha adaptadas ao vínculo efetivo da loja; contrato anterior somente quando RPC ausente. Controle de conexão fica na central; cartão da loja mantém preferências/modelos. Login pessoal e remetente da plataforma separados.
+
+**Verificações:** PostgreSQL local 1.383 PASS, incluindo 46 novos; reversão em ROLLBACK; 492 testes Node (sete novos nos handlers), tipos/lint/formatação/montagem. Navegador Chromium isolado com componentes reais e backend simulado: inclusão, habilitação individual, erro preservando rascunho, remoção, busca, compatibilidade nº 103, seleção móvel e 30 combinações de largura/tema/cantos. Imagens inspecionadas em `/tmp/bc-p119-pc.png` e `/tmp/bc-p119-mobile.png`; testes sem serviço externo ou envio real.
+
+**Operação:** [P-118 instalada conforme relatório](pacotes/2026-11-10-p118-instalacao-relatada.md), 10/11 às 15:37:35; números/fila preservados, não reaplicar. P-119 pronta no código, **nº 104/duas funções e homologação real pendentes** pelo [pacote TI](pacotes/2026-11-10-ti-whatsapp-compartilhado-p119.md). Sem operação na VPS, números reais, Flow, Salvy ou Mercado Pago. Arquivos locais preexistentes `.env` e `.vscode/` preservados e fora do commit.
+
+## 10/11/2026 — P-118: números existentes e reserva visível — migration pendente na VPS
+
+Dono não encontrava principal/reserva e pediu reaproveitar os números existentes. Diagnóstico: bundle público já continha Central de WhatsApp e “Adicionar número”; reserva estava na ficha da loja como identificador técnico. Central agora prioriza inventário/filtros, com cadastro recolhido; número livre pode ser principal ou reserva. Na seleção, edição de reserva por nome/telefone, modo manual e acesso à conexão da reserva; profissional específico também atendido. Atalho da ficha leva à mesma central. Seleção no celular rola aos detalhes. Não importa Evolution/Salvy automaticamente, não ativa nem compra números.
+
+Migration nº 103 preserva valores existentes e amplia validação para reserva cadastrada livre, pausada e exclusiva. Configuração usa versão, histórico administrativo e bloqueio em envio/incerteza; protege contra distribuição de reserva em uso e invalida formulários antigos do número reservado/liberado. Compatibilidade com identificadores legados e formulário antigo. Sem alternância automática. Sem mudança no telefone pessoal do login ou no remetente da plataforma.
+
+Bancada PostgreSQL: 1.337 PASS/0 FAIL, 33 novos; concorrência real de dois principais pela mesma reserva resultou em um aceite/uma recusa. Reversão em transação conferida. Navegador isolado nos três dispositivos, dois temas/três cantos; nenhum envio real. [Pacote TI](pacotes/2026-11-10-ti-whatsapp-reserva-visual-p118.md), aplicação só da nº 103, sem funções Edge/reinício. Nº 101/102 instaladas, não repetir; homologação real permanece pendente.
+
+## 10/11/2026 — P-117: “número” nos textos do WhatsApp
+
+A pedido do dono, substituído “canal” por “número” nos rótulos, ações, busca, confirmações e avisos de distribuição/conexão do WhatsApp, incluindo número principal e reserva. Ajuste nos quatro dicionários; en-GB herda en-US. Campo técnico da reserva continua identificado como conexão, pois recebe o identificador fornecido pela TI, não um telefone. Chaves internas, banco, funções e vínculos preservados. Sem nova instalação TI; homologação real P-117 permanece pendente.
+
+## 10/11/2026 — P-117: instalação recebida; homologação real pendente
+
+Relatório TI confirma nº 102 aplicada em transação às 13:47:04–13:47:05 (Brasília), após backup/ensaio, com quatro arquivos de funções publicados e reinício somente das funções. Conferência própria local: hashes completos e tamanhos dos quatro arquivos iguais ao relatório e ao commit `94e0726`. Não houve consulta nova à VPS, envio, pareamento ou alteração de canais nesta rodada.
+
+Inventário da migration e guias atualizados: **não reinstalar**. Segundo a TI, permissões/saúde/cron corretos, vínculos preservados e fila sem pendência ou incerteza. Falta homologar central, distribuição/transferência e login pessoal com destinatário de teste combinado e conta WhatsApp ativada; autorização de instalação relatada excluiu essas ações. O roteiro já existe no pacote P-117, sem novo pedido ao Flow. [Registro e limites](pacotes/2026-11-10-p117-instalacao-relatada.md).
+
+## 10/11/2026 — P-117: canais administrados e login com WhatsApp pessoal
+
+Dono confirmou que distribui o WhatsApp do sistema à barbearia ou a profissionais específicos; o WhatsApp de login é pessoal e independente. Implementada aba WhatsApp na plataforma, cadastro idempotente de canais livres, conexão reutilizando QR/código, busca, distribuição geral/individual, confirmação e histórico. Um destino por canal, sem agrupamento automático de profissionais. Banco impede destino ocupado/inválido, versão antiga e transferência com envio em curso/incerto; cancela fila antiga pendente sem levar histórico entre lojas. Canal do profissional passa a ser usado nos avisos identificados pelo atendimento; regras de consentimento/cota P-116 preservadas.
+
+Login global na entrada usa código de seis dígitos no número pessoal confirmado. Não exige loja, Google ou senha; não cria nova conta. Código expira em dez minutos, uso único, cinco erros, três pedidos por 15 minutos e reenvio após 60 segundos, com limite atômico no banco. Número desconhecido não é revelado pela resposta; telefone da conta revalidado antes da sessão. Códigos saem somente pelo número da plataforma, fora das filas de loja. País sugerido e editável. E-mail/senha/Google continuam.
+
+Validação isolada: 32 cenários SQL novos, regressão completa 1.304 PASS/0 FAIL; concorrência real de oito pedidos resultou em um desafio aceito e sete limitados. Reversão ensaiada com ROLLBACK. 485 testes automatizados, tipos/lint/formatação/montagem aprovados; Chromium nos três dispositivos, dois temas/três cantos, fluxos de erro e sucesso, sem rede de produção. Foto inicial durante redimensionamento foi reconferida com geometria estabilizada; login usa folha móvel com acompanhamento do teclado. Tela e handlers reconhecem escopo de canal antes de mutações, evitando que função antiga ignore channel_id e opere a plataforma. Atualizações da função antiga de loja também fixam o id para não afetar um substituto durante transferência.
+
+**A instalar pela TI:** nº 102 + quatro arquivos de funções, pelo [pacote único](pacotes/2026-11-10-ti-central-whatsapp-login-p117.md), primeiro funções e depois migration. Nº 101 já instalada, sem reexecução; nº 99/100, Flow e pagamentos não alterados. Sem número comprado/ativado, mensagens reais ou mudança de configuração na VPS. Conta WhatsApp ativada e homologação com destinatário autorizado seguem pendentes. O último estado informado da Salvy (apenas no painel) não permite parear Baileys.
+
+## 10/11/2026 — P-116: instalação TI recebida e conferida
+
+Relatório `relatorio-ti-p116-2026-11-10.md` recebido: migration nº 101 aplicada em 10/11 às 11:19:34–11:19:36 (Brasília), funções do commit `6050438` instaladas, backup e ensaio com ROLLBACK, reinício apenas das funções. Cron voltou com HTTP 200 segundo a TI. Não reinstalar; nº 99/100 e Flow não foram alterados.
+
+Conferência própria somente de leitura via SSH: hashes completos das duas funções iguais ao repositório/relatório; banco e funções saudáveis; quatro colunas novas em canais e quatro na fila; orçamento vazio, dois canais principais sem reserva nem retorno ativo, quatro avisos históricos enviados e nenhum pendente/em envio. Privilégios de preparação por authenticated, configuração por anon e INSERT de canal por authenticated negados. A referência da TI a duas colunas na fila foi uma contagem parcial: as quatro estão presentes.
+
+**Pendente:** conta WhatsApp previamente ativada, pareamento do canal da Loja Teste e homologação autenticada de permissões/envios com destinatário autorizado. Reserva não preparada nem associada; retorno permanece desligado. Estado salvo no banco não comprova conexão viva com Evolution. Não houve envio, mudança de configuração, chamada do dispatcher ou teste SQL de escrita nesta conferência. [Registro completo](pacotes/2026-11-10-p116-instalacao-conferida.md).
+
+## 10/11/2026 — P-116: avisos prioritários, limite de comunicação e reserva técnica
+
+Pedido aprovado após esclarecer o modelo: notificações esperadas de agendamento, retorno semanal por frequência e até duas comunicações promocionais por semana. Adotada janela móvel de sete dias por cliente, global entre lojas, com retorno dentro da cota. Registro de consentimento existente reaproveitado; retirada é conferida antes do envio. Cliente com próximo horário não recebe convite automático; retorno exige três dias de visitas concluídas e autorização de análise/marketing. Desligado por loja na instalação.
+
+Migration nº 101 adiciona orçamento atômico, prioridade, roteamento fixo e reserva; corrige dedupe de remarcação e invalida aviso anterior de horário alterado. Worker autenticado consulta conexão sem efeitos e só reprograma quando não tentou enviar; timeout/resultado sem ID/registro incerto exige conferência, sem rodízio. Mantida recuperação anterior de e-mails transacionais; promoções usam um canal e não repetem automaticamente após incerteza. Configuração de reserva restrita ao admin com proteção contra UPDATE/INSERT direto de donos e reutilização entre lojas. A tela da loja mostra a reserva selecionada sem alterar a instância principal.
+
+Conectar/desconectar os números fornecidos fica restrito ao admin na interface e no endpoint; donos não alteram identidade/rota por escrita direta. A loja conserva os ajustes dos avisos.
+
+Interface: ficha da barbearia no admin ganha WhatsApp com principal/reserva/pausa e retorno opcional; mesmos componentes MB e idiomas. Avisar cliente explica a cota e diferencia aviso aceito na fila de entrega. Formulário preserva entrada em falha, bloqueia repetição e trata banco antigo. Número geral da plataforma/OTP separado.
+
+Validação: regressão SQL local em transações com ROLLBACK; handlers reais executados com dependências fictícias; tipos, eslint, prettier e montagem pelo verificar.sh. Conferência Chromium isolada em 320/390/834/1280, reserva exige confirmação técnica, nenhuma escrita na abertura, falha conserva formulário e banco antigo mostra orientação. 467 testes do app, 39 cenários SQL específicos, regressão completa sem falhas e 49 verificações da reversão. Dois temas e três cantos também conferidos no Chromium; contagem final da regressão no pacote. Sem mensagens reais, dados/credenciais reais ou homologação em aparelhos físicos.
+
+**Histórico anterior à instalação acima — produção então pendente:** [arquivo único TI](pacotes/2026-11-10-ti-whatsapp-comunicacao-p116.md), migration nº 101 + duas funções + preparação dos números. Não aplicada pelo agente de código, conforme regra do projeto. Esta entrega não cria/compra números nem ativa o número Salvy que está somente no painel. Baileys continua precisando de conta WhatsApp previamente ativada. Sem mudança no Flow ou em pagamentos. A proposta anterior de um número por dois barbeiros não virou roteamento automático; vale o principal fixo por loja aprovado na conversa.
+
+**22/10/2026 (madrugada) — interface por dispositivo publicada em 22/10/2026:** celular intocado, tablet com coluna estreita e computador com coluna completa, cada área refeita para a largura. Entrada "Interface por dispositivo" abaixo; plano em [dispositivos-2026-10-21.md](dispositivos-2026-10-21.md). O dono precisa testar no tablet e no computador.
+
+**20/10/2026 (noite) — aplicado no servidor:** as migrations nº 95 e 96 e a função `google-calendar-dispatch` da entrega de 16/10 (agendamento pelo barbeiro no painel, cliente do balcão, recorrente, login Google no app instalado), pelo TI, com o pacote [implantacao-agendamento-painel-2026-10-16.md](implantacao-agendamento-painel-2026-10-16.md). Última migration em produção: `20261016130000_agendamento_pelo_painel`. Falta só o teste do dono no celular (P-43).
+
+**15/10/2026 (noite) — passagem concluída no Claude Code:** ver a entrada "Passagem de 15/10" logo abaixo da Diretriz. Comece por [LEIA-PRIMEIRO.md](LEIA-PRIMEIRO.md). A função `register-shop` da P-38 foi publicada às 22:54; faltam os pacotes do Google (P-69 e P-28, em [pacotes/](pacotes/)).
 
 ## P-115 — Retomada da preparação e país automático (09/11, ChatGPT/Codex)
 
@@ -1327,7 +1339,7 @@ Motivada pela análise dos formulários (cliente e dono). Guia: [implantacao-cad
 - **Painel:** `ShopSetupChecklist` "Deixe sua barbearia pronta" (horários, 1º serviço, endereço e WhatsApp, logo/cores, copiar link) para dono/sócio, some ao concluir. Limitações: "Está certo" dos horários e "link copiado" ficam no aparelho (localStorage); depois de "Esconder guia" não há botão para mostrar de novo.
 - **Legal:** nova página `/acordo-de-dados` (5 idiomas) — **rascunho que precisa de revisão de advogado** (foro, menção ao RGPD art. 28, arts. 33/34 no pt-PT). Política e Termos ajustados; versões em `src/features/legal/versions.ts`.
 - **Banco (não aplicado):** `20261003200000_cadastro_aceite.sql` (colunas de aceite em `profiles` sem UPDATE pelo usuário; `handle_new_user` lê nome/aceite/idade/WhatsApp não verificado; RPC `record_my_terms_acceptance`) e `20261003210000_slugify_acentos.sql` (`slugify_pt` trocava í→e, ç→y; links novos saem certos, antigos não mudam). Teste `supabase/tests/cadastro_aceite.sql`. **Validado em cópia local** no estado atual da produção (80 migrations): 27 PASS, aplicação e reaplicação ok, 27 testes antigos idênticos antes/depois, `anon` sem EXECUTE, usuário sem UPDATE no aceite.
-- Verificado: tsc, 142 testes (inclui `signup-phone`, `owner-signup`, `integrations/friendly-error`), eslint, build; telas `/auth` (cadastro) e `/cadastrar` a 390px sem rolagem lateral nem erro no console. **Não verificado:** cadastro real ponta a ponta, guia da loja com login, tema escuro do `/auth`.
+- Verificado: tsc, 146 testes (inclui `signup-phone`, `owner-signup`, `integrations/friendly-error`), eslint, build; telas `/auth` (cadastro) e `/cadastrar` a 390px sem rolagem lateral nem erro no console. **Não verificado:** cadastro real ponta a ponta, guia da loja com login, tema escuro do `/auth`.
 - Pendências: `register-shop` ainda grava avisos do dono com opt-in fixo; fuso horário da loja fixo em São Paulo; contas Google antigas sem aceite registrado.
 
 ## Google — projeto real do app e aviso antigo na tela (03/10, noite)
@@ -2008,7 +2020,7 @@ Entrega de tema/metadados (16/09/2026): `npm run typecheck` passou; `npm test` *
 Validação anterior (módulo de espera):
 
 - `npm run typecheck`: passou.
-- `npm test`: **45 testes passaram**.
+- `npm test`: **46 testes passaram**.
 - `npm run lint`: zero erros; seis avisos já existentes de Fast Refresh em componentes UI.
 - `npm run build`: passou; `git diff --check`: passou.
 - Banco: `booking_reliability.sql` + `slot_waiting.sql` passaram em transação com rollback. Regressões de ocorrências, confirmação automática, faltas sem pontos e Esportes também passaram.

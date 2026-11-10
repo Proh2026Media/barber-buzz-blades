@@ -1,6 +1,8 @@
 # Pendências — lista única e priorizada
 
-**10/11/2026 — P-118, reaproveitamento de números e reserva visual:** central prioriza números cadastrados, com filtros Disponíveis/Vinculados/Reservas e cadastro recolhido. Principal e reserva ficam visíveis; escolha da reserva pelo nome/telefone, tanto para loja como profissional, sem identificador técnico. Reutilizar não cria número novo. **Nº 103 pendente na VPS**, pelo [pacote TI](../pacotes/2026-11-10-ti-whatsapp-reserva-visual-p118.md); nenhuma função Edge/reinício. Nº 101/102 já instaladas, não repetir. Homologação real pendente. Último id P-118.
+**10/11/2026 — P-119, um número para vários destinos:** central permite adicionar várias barbearias/profissionais ao mesmo número, com avisos por vínculo, remoção isolada e identificação da loja nas mensagens. Uma conexão e reserva para todos os vínculos; preferências/históricos/permissões separados. **Nº 104 e duas funções Edge pendentes na VPS**: [pacote TI](../pacotes/2026-11-10-ti-whatsapp-compartilhado-p119.md). Nº 103/P-118 **instalada pela TI às 15:37:35**, segundo [retorno recebido](../pacotes/2026-11-10-p118-instalacao-relatada.md); não reaplicar. Homologação real continua pendente. Último id P-119.
+
+**10/11/2026 — P-118, reaproveitamento de números e reserva visual:** central prioriza números cadastrados, com filtros Disponíveis/Vinculados/Reservas e cadastro recolhido. Principal e reserva ficam visíveis; escolha da reserva pelo nome/telefone, tanto para loja como profissional, sem identificador técnico. Reutilizar não cria número novo. **Nº 103 instalada pela TI em 10/11 às 15:37:35 (relatório recebido); não reaplicar.** Histórico do [pacote TI](../pacotes/2026-11-10-ti-whatsapp-reserva-visual-p118.md); nenhuma função Edge/reinício. Nº 101/102 já instaladas, não repetir. Homologação real pendente. Último id P-118.
 
 **10/11/2026 — P-117, central de WhatsApp e login pessoal:** implementados inventário/distribuição de canais para loja ou profissional, transferência auditada e login global por código no número pessoal confirmado. São usos separados; transferir canal não muda a conta do usuário. **Instalação concluída pela TI em 10/11, 13:47:04–13:47:05 (Brasília)**, conforme relatório recebido; hashes dos quatro arquivos conferidos localmente. **Homologação real pendente; não reinstalar.** [Registro do retorno](../pacotes/2026-11-10-p117-instalacao-relatada.md). Roteiro de testes no [pacote único](../pacotes/2026-11-10-ti-central-whatsapp-login-p117.md). P-116/nº 101 já instalada, não refazer. Sem ativação de números ou mensagens reais. Último id P-117.
 
@@ -26,7 +28,7 @@ Situação detalhada item a item em **13/10/2026**, atualizada em **22/10/2026 (
 - Situação: **pendente**, **feito — falta aplicar no banco**, **a decidir** (depende do dono), **não confirmado** (não deu para conferir daqui).
 - Cada item foi conferido no código e nas migrations em 12/10/2026. As linhas citadas são dessa data.
 - **Papéis da equipe no banco × nomes na tela:** `owner` e `partner` = **Dono** (sócio; `partner` é o nome antigo e aparece igual), `associate` = **Parceiro**, `employee` = **Contratado** ([roles-model.ts](../../src/features/shop/roles-model.ts); rótulos em `pt-BR.ts`). `shop_admin` é o papel antigo de `memberships`, que pode existir sem vínculo de equipe (CONTINUIDADE, onda 1 de 09/10).
-- Último id usado: **P-118**.
+- Último id usado: **P-119**.
 
 **Índice**
 
@@ -811,4 +813,8 @@ Novo helper compartilhado e dois handlers; nenhum segredo no frontend e nenhuma 
 
 ## P-118 — Números existentes, principal e reserva visíveis (10/11/2026)
 
-**Feito — falta aplicar no banco.** Seleção e reaproveitamento dos números cadastrados, cadastro secundário, filtros e edição de principal/reserva na central. Reserva por loja ou profissional, exclusividade, versão e histórico; envio em andamento/incerto bloqueia mudança. Migração nº 103 e homologação real pendentes. [Pacote TI](../pacotes/2026-11-10-ti-whatsapp-reserva-visual-p118.md). Sem importação automática de Evolution/Salvy, sem números comprados/ativados ou rodízio.
+**Instalada pela TI em 10/11, 15:37:35; homologação real pendente.** Seleção e reaproveitamento dos números cadastrados, cadastro secundário, filtros e edição de principal/reserva na central. Reserva por loja ou profissional, exclusividade, versão e histórico; envio em andamento/incerto bloqueia mudança. Nº 103 aplicada segundo relatório; não reaplicar. [Pacote TI](../pacotes/2026-11-10-ti-whatsapp-reserva-visual-p118.md). Sem importação automática de Evolution/Salvy, sem números comprados/ativados ou rodízio.
+
+## P-119 — Mesmo número em várias barbearias/profissionais (10/11/2026)
+
+**Código pronto e verificado; nº 104/duas funções Edge e homologação real pendentes.** Destinos múltiplos sobre uma conexão, sem duplicar número Evolution. Cada vínculo tem avisos/retorno/versionamento próprios, com remoção confirmada e cancelamento somente de suas pendências. Roteamento e fila preservam o destino original; reserva física acompanha os vínculos. Dono só acessa suas preferências; central/auditoria restritas ao admin. Novos vínculos começam pausados. [Pacote único TI](../pacotes/2026-11-10-ti-whatsapp-compartilhado-p119.md). Nº 103 já instalada, não repetir; sem Flow, compras de linhas, pareamento ou mensagens reais nesta entrega.

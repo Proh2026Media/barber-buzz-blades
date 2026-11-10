@@ -1,3 +1,4 @@
+import { shopWhatsAppNumber } from "@/lib/whatsapp/shop-number";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -42,18 +43,9 @@ export function useSettingsSignals({
     if (!active || demo || !shopId) return;
     let alive = true;
     if (channels) {
-      void supabase
-        .from("whatsapp_channels")
-        .select("status, enabled, last_error")
-        .eq("barbershop_id", shopId)
-        // Só o canal da loja (staff_id nulo), como o despachante; cada parceiro tem o seu canal.
-        // `staff_id` ainda não está nos tipos gerados, por isso o `filter` sem tipo.
-        .filter("staff_id", "is", null)
-        .limit(1)
-        .maybeSingle()
-        .then(({ data, error }) => {
-          if (alive && !error) setSignals((current) => ({ ...current, whatsapp: data ?? null }));
-        });
+      void shopWhatsAppNumber(shopId).then(({ data, error }) => {
+        if (alive && !error) setSignals((current) => ({ ...current, whatsapp: data ?? null }));
+      });
     }
     if (loyalty) {
       void supabase

@@ -84,7 +84,7 @@ import {
 } from "@/features/shop/WhatsAppChipEditor";
 import { CONNECTION_META, connectionOf } from "./whatsapp-connection";
 
-type Channel = Tables<"whatsapp_channels">;
+type Channel = Tables<"whatsapp_channels"> & { number_link_id?: string; link_version?: number };
 
 const MAX_LENGTH = 1000;
 
@@ -153,6 +153,7 @@ async function callChannel(body: Record<string, unknown>) {
   });
   const payload = (await response.json()) as {
     error?: string;
+    centrally_managed?: boolean;
     channel?: Channel;
     qrcode?: string | null;
   };
@@ -204,6 +205,8 @@ export function WhatsAppChannelCard({
   const editorRef = useRef<WhatsAppChipEditorHandle>(null);
   const editorBlockRef = useRef<HTMLElement>(null);
   const [channel, setChannel] = useState<Channel | null>(null);
+  const [centrallyManaged, setCentrallyManaged] = useState(false);
+  const manageConnection = canManageConnection && !centrallyManaged;
   const [checked, setChecked] = useState(false);
   const [qrcode, setQrcode] = useState<string | null>(null);
   const [qrOpen, setQrOpen] = useState(false);
@@ -218,6 +221,7 @@ export function WhatsAppChannelCard({
   const [prefStatus, setPrefStatus] = useState<{
     field: "enabled" | "notify_booking" | "notify_reminder";
     state: ActionState;
+    stale?: boolean;
   } | null>(null);
   const [templates, setTemplates] = useState<Record<WhatsAppTemplateKey, string>>({
     ...DEFAULT_WHATSAPP_BODIES,
@@ -310,6 +314,7 @@ export function WhatsAppChannelCard({
     const templatesLoad = loadTemplates().catch(() => setTemplatesLoadFailed(true));
     try {
       const payload = await callChannel({ action: "status", barbershop_id: shopId });
+      setCentrallyManaged(Boolean(payload.centrally_managed));
       setChannel(payload.channel ?? null);
       setQrcode(
         (previous) =>
@@ -422,6 +427,8 @@ export function WhatsAppChannelCard({
     try {
       const payload = await callChannel({
         action: "settings",
+        number_link_id: channel.number_link_id,
+        link_version: channel.link_version,
         barbershop_id: shopId,
         notify_booking: field === "notify_booking" ? value : channel.notify_booking,
         notify_reminder: field === "notify_reminder" ? value : channel.notify_reminder,
@@ -430,9 +437,18 @@ export function WhatsAppChannelCard({
       });
       setChannel(payload.channel ?? null);
       setPrefStatus({ field, state: "saved" });
-    } catch {
+    } catch (err) {
       setChannel(previous);
-      setPrefStatus({ field, state: "error" });
+      const stale = err instanceof Error && err.message.includes("WA_STALE");
+      if (stale) {
+        try {
+          const current = await callChannel({ action: "status", barbershop_id: shopId });
+          setChannel(current.channel ?? null);
+        } catch {
+          /* Mantém o estado anterior e permite verificar novamente. */
+        }
+      }
+      setPrefStatus({ field, state: "error", stale });
     }
   }
 
@@ -531,7 +547,7 @@ export function WhatsAppChannelCard({
   const dropped = showProblem || (connectResult?.state === "error" && !!connectResult.dropped);
 
   const moreActions = [
-    ...(canManageConnection && primaryMode && channel && channel.status === "open"
+    ...(manageConnection && primaryMode && channel && channel.status === "open"
       ? [
           {
             id: "reconnect",
@@ -600,7 +616,11 @@ export function WhatsAppChannelCard({
         {prefStatus?.field === field && (
           <InlineStatus
             state={prefStatus.state}
-            text={prefStatus.state === "error" ? t("integr.wa.prefError") : undefined}
+            text={
+              prefStatus.state === "error"
+                ? t(prefStatus.stale ? "waShared.preferencesChanged" : "integr.wa.prefError")
+                : undefined
+            }
             onRetry={() => void savePref(field, !checkedValue)}
           />
         )}
@@ -824,7 +844,7 @@ export function WhatsAppChannelCard({
         aside={<StatusBadge tone={meta.tone} icon={meta.icon} label={t(meta.label)} live />}
       />
 
-      {!canManageConnection && <Notice tone="info" title={t("waDelivery.managed")} />}
+      {!manageConnection && <Notice tone="info" title={t("waDelivery.managed")} />}
       {!primaryMode && (
         <Notice
           tone="info"
@@ -887,7 +907,7 @@ export function WhatsAppChannelCard({
         </div>
       </div>
 
-      {canManageConnection &&
+      {manageConnection &&
         primaryMode &&
         connection !== "checking" &&
         connection !== "open" &&

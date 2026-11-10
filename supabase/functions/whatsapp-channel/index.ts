@@ -18,6 +18,8 @@ type Body = {
   notify_reminder?: boolean;
   reminder_hours_before?: number;
   enabled?: boolean;
+  number_link_id?: string;
+  link_version?: number;
 };
 
 function mapEvolutionState(
@@ -118,6 +120,74 @@ Deno.serve(async (req) => {
       .eq("id", shopId)
       .single();
     if (!shop) return json({ error: "Shop not found" }, 404);
+
+    // Nº 104: preferências por vínculo; conexão única gerenciada na central.
+    const linked = await userClient.rpc("shop_whatsapp_channel", { p_shop: shopId });
+    if (linked.error && !["PGRST202", "42883"].includes(linked.error.code))
+      return json({ error: linked.error.message }, 500);
+    if (!linked.error) {
+      const row = linked.data;
+      if (action === "settings") {
+        if (!row)
+          return json({ error: "A administração precisa vincular um número à barbearia." }, 409);
+        if (body.number_link_id !== row.number_link_id || body.link_version !== row.link_version)
+          return json({ error: "WA_STALE" }, 409);
+        const updated = await userClient.rpc("shop_update_whatsapp_preferences", {
+          p_shop: shopId,
+          p_link: row.number_link_id,
+          p_version: row.link_version,
+          p_enabled: body.enabled ?? row.enabled,
+          p_booking: body.notify_booking ?? row.notify_booking,
+          p_reminder: body.notify_reminder ?? row.notify_reminder,
+          p_hours: body.reminder_hours_before ?? row.reminder_hours_before,
+        });
+        if (updated.error) return json({ error: updated.error.message }, 409);
+        let effective = updated.data;
+        if (effective?.delivery_mode === "backup") {
+          let status: ReturnType<typeof mapEvolutionState> = "disconnected";
+          try {
+            const state = (await evolutionFetch(
+              `/instance/connectionState/${encodeURIComponent(effective.backup_instance_name)}`,
+              { method: "GET", signal: AbortSignal.timeout(10_000) },
+            )) as { instance?: { state?: string } };
+            status = mapEvolutionState(state.instance?.state);
+          } catch {
+            /* Consulta sem alterar a reserva. */
+          }
+          effective = { ...effective, status, display_phone: null };
+        }
+        return json({ ok: true, channel: effective, centrally_managed: true });
+      }
+      if (action !== "status" || body.method === "qr")
+        return json({ error: "Gerencie a conexão deste número na Central de WhatsApp." }, 409);
+      if (!row) return json({ ok: true, channel: null, qrcode: null, centrally_managed: true });
+      const instance =
+        row.delivery_mode === "backup" ? row.backup_instance_name : row.instance_name;
+      let status: ReturnType<typeof mapEvolutionState> = "disconnected";
+      if (instance) {
+        try {
+          const state = (await evolutionFetch(
+            `/instance/connectionState/${encodeURIComponent(instance)}`,
+            { method: "GET", signal: AbortSignal.timeout(10_000) },
+          )) as { instance?: { state?: string } };
+          status = mapEvolutionState(state.instance?.state);
+        } catch {
+          /* Consulta não inicia nem troca a conexão. */
+        }
+      }
+      if (row.delivery_mode === "primary")
+        await admin.from("whatsapp_channels").update({ status }).eq("id", row.id);
+      return json({
+        ok: true,
+        channel: {
+          ...row,
+          status,
+          display_phone: row.delivery_mode === "backup" ? null : row.display_phone,
+        },
+        qrcode: null,
+        centrally_managed: true,
+      });
+    }
 
     let { data: channel } = await admin
       .from("whatsapp_channels")

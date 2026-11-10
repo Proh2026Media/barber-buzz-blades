@@ -1,6 +1,27 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const enUS: Record<MessageKey, string> = {
+  "waShared.preferencesChanged":
+    "Preferences have changed. Review the current values before trying again.",
+  "waShared.destinations": "Who uses this number",
+  "waShared.intro":
+    "One number can serve several shops and professionals. Notifications and histories remain separate.",
+  "waShared.add": "Link another shop or professional",
+  "waShared.choose": "Choose a shop",
+  "waShared.addHint": "The new link starts with notifications paused. Existing links are kept.",
+  "waShared.link": "Add link",
+  "waShared.save": "Save this link",
+  "waShared.remove": "Remove link",
+  "waShared.removeHint":
+    "Removes only this link and cancels its pending notifications. Other links remain unchanged.",
+  "waShared.confirmRemove": "Confirm removal",
+  "waShared.manage": "This number is shared. Manage its links in the WhatsApp Center.",
+  "waShared.connectionHint":
+    "Connection, number pause and backup affect every link for this number. To pause just one shop, use that link’s control.",
+  "waShared.added": "Link added",
+  "waShared.removed": "Link removed",
+  "waShared.updated": "Link preferences changed",
+
   "waNumbers.addAnother": "Add another number",
   "waNumbers.existing": "Registered numbers",
   "waNumbers.filter": "Filter numbers",

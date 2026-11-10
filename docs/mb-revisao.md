@@ -2,6 +2,10 @@
 
 Atualizado em **07/11/2026** (P-49/P-70; entradas anteriores preservadas como histórico). Fonte: [mb-interface.md](mb-interface.md). Regra: `.cursor/rules/mb.mdc`. Skill: `.cursor/skills/mb/`.
 
+## P-119 — Um número para vários destinos (10/11/2026)
+
+Central mantém inventário à esquerda no computador e detalhes abaixo no celular. Número selecionado mostra cartões de vínculos, preferências e remoção individual confirmada; inclusão adicional não substitui os atuais. Alcance da conexão/reserva compartilhadas visível antes das ações. Busca encontra todos os destinos. Identidade, superfícies e três modos de canto preservados; novos textos nos dicionários. Rota real e componentes em bancada isolada; 30 combinações 320/390/834/1024/1280, claro/escuro e cantos, sem overflow; teclado, seleção/rolagem móvel e falhas recuperáveis conferidos. Cartão da loja mantém avisos/modelos e reconhece gestão centralizada da conexão. Homologação física e nº 104/Edge pendentes na TI.
+
 ## P-49 — Conexão pessoal e da loja (07/11/2026)
 
 Ajustes → Pagamentos distingue conta pessoal do Parceiro e conta da barbearia. Entrada no endereço principal, status sanitizado, autorização explícita, confirmação de desconexão local e aviso permanente de pagamentos desativados. Sem sessão, o destino guarda somente loja/escopo; código e estado OAuth nunca viram destino de login nem armazenamento persistente. Componentes visuais e dicionários existentes preservados; resultado de validação e limites no CONTINUIDADE. Esta é preparação da conexão, não interface de cobrança.

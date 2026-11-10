@@ -14,6 +14,8 @@ function fixture(
     mode?: "primary" | "backup" | "paused";
     platformAdmin?: boolean;
     instance?: string;
+    shared?: boolean;
+    sharedError?: boolean;
   } = {},
 ) {
   const calls: string[] = [];
@@ -31,8 +33,21 @@ function fixture(
         };
   const client = {
     auth: { getUser: async () => ({ data: { user: { id: "usuario-ficticio" } }, error: null }) },
-    rpc: async (name: string) => {
+    rpc: async (name: string, args?: Record<string, unknown>) => {
       calls.push(name);
+      if (name === "shop_whatsapp_channel")
+        return options.sharedError
+          ? { data: null, error: { code: "42501", message: "negado" } }
+          : options.shared
+            ? {
+                data: channel && { ...channel, number_link_id: "vinculo-da-loja", link_version: 7 },
+                error: null,
+              }
+            : { data: null, error: { code: "PGRST202" } };
+      if (name === "shop_update_whatsapp_preferences") {
+        writes.push(args);
+        return { data: { ...channel, enabled: args?.p_enabled }, error: null };
+      }
       return {
         data:
           name === "is_platform_admin"
@@ -356,4 +371,84 @@ test("central: canal inexistente não aciona Evolution", async () => {
     404,
   );
   assert.ok(!f.calls.some((c) => c.startsWith("/instance/")));
+});
+
+test("compartilhamento consulta somente a conexão existente, sem iniciar pareamento", async () => {
+  const f = fixture("whatsapp-channel", { shared: true, state: "open" });
+  const r = await f.request({ action: "status" });
+  assert.equal(r.status, 200);
+  assert.equal(r.body.centrally_managed, true);
+  assert.equal(r.body.channel.number_link_id, "vinculo-da-loja");
+  assert.ok(f.calls.some((c) => c.includes("connectionState/instancia-da-loja")));
+  assert.ok(!f.calls.some((c) => c.includes("/connect/") || c.includes("/create")));
+});
+test("preferências compartilhadas usam vínculo/versionamento e não atualizam o número", async () => {
+  const f = fixture("whatsapp-channel", { shared: true, platformAdmin: false });
+  const r = await f.request({
+    action: "settings",
+    enabled: false,
+    number_link_id: "vinculo-da-loja",
+    link_version: 7,
+  });
+  assert.equal(r.status, 200);
+  assert.equal(f.writes.length, 1);
+  assert.deepEqual(Object.keys(f.writes[0] as object).sort(), [
+    "p_booking",
+    "p_enabled",
+    "p_hours",
+    "p_link",
+    "p_reminder",
+    "p_shop",
+    "p_version",
+  ]);
+  assert.equal((f.writes[0] as { p_link: string }).p_link, "vinculo-da-loja");
+  assert.equal(f.calls.filter((c) => c.startsWith("/instance")).length, 0);
+});
+test("conectar ou desconectar compartilhado exige central, inclusive para admin", async () => {
+  for (const action of ["connect", "create", "logout"]) {
+    const f = fixture("whatsapp-channel", { shared: true });
+    const r = await f.request({ action });
+    assert.equal(r.status, 409);
+    assert.equal(f.writes.length, 0);
+    assert.ok(!f.calls.some((c) => c.startsWith("/instance")));
+  }
+});
+test("erro de permissão no vínculo não recorre à consulta antiga", async () => {
+  const f = fixture("whatsapp-channel", { sharedError: true });
+  const r = await f.request({ action: "status" });
+  assert.equal(r.status, 500);
+  assert.equal(f.writes.length, 0);
+  assert.ok(!f.calls.some((c) => c.startsWith("/instance")));
+});
+test("loja sem vínculo compartilhado retorna vazia sem cadastrar instância", async () => {
+  const f = fixture("whatsapp-channel", { shared: true, channel: false });
+  const r = await f.request({ action: "status" });
+  assert.equal(r.body.channel, null);
+  assert.equal(f.writes.length, 0);
+});
+
+test("preferências antigas não sobrescrevem vínculo novo ou outra versão", async () => {
+  for (const body of [
+    {},
+    { number_link_id: "outro", link_version: 7 },
+    { number_link_id: "vinculo-da-loja", link_version: 6 },
+  ]) {
+    const f = fixture("whatsapp-channel", { shared: true });
+    const r = await f.request({ action: "settings", enabled: false, ...body });
+    assert.equal(r.status, 409);
+    assert.equal(f.writes.length, 0);
+  }
+});
+test("salvar preferências da reserva consulta o estado dela sem conectar", async () => {
+  const f = fixture("whatsapp-channel", { shared: true, mode: "backup", state: "close" });
+  const r = await f.request({
+    action: "settings",
+    enabled: true,
+    number_link_id: "vinculo-da-loja",
+    link_version: 7,
+  });
+  assert.equal(r.status, 200);
+  assert.equal(r.body.channel.status, "disconnected");
+  assert.ok(f.calls.includes("/instance/connectionState/reserva-da-loja"));
+  assert.ok(!f.calls.some((c) => c.includes("/connect/") || c.includes("/create")));
 });

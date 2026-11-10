@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { supabase } from "@/integrations/supabase/client";
+import { shopWhatsAppNumber } from "@/lib/whatsapp/shop-number";
 import { useDemo } from "@/features/demo/context";
 
 /** Um único editor de principal/reserva, visível na central administrativa. */
@@ -13,15 +13,9 @@ export function ShopWhatsAppDelivery({ shopId }: { shopId: string }) {
     let live = true;
     setNumberId(null);
     if (!demo)
-      void supabase
-        .from("whatsapp_channels")
-        .select("id")
-        .eq("barbershop_id", shopId)
-        .is("staff_id", null)
-        .maybeSingle()
-        .then(({ data }) => {
-          if (live) setNumberId(data?.id ?? null);
-        });
+      void shopWhatsAppNumber(shopId).then(({ data }) => {
+        if (live) setNumberId(data?.id ?? null);
+      });
     return () => {
       live = false;
     };

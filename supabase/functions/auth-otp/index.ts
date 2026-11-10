@@ -499,11 +499,17 @@ Deno.serve(async (req) => {
         return fail("invalid_whatsapp", "Informe um WhatsApp válido com DDD", 400);
       }
 
-      const { data: channelRow } = await admin
-        .from("whatsapp_channels")
-        .select("status, enabled")
-        .eq("barbershop_id", shop.id)
-        .maybeSingle();
+      const linked = await admin.rpc("shop_whatsapp_channel", { p_shop: shop.id });
+      let channelRow = linked.error ? null : linked.data;
+      if (linked.error && ["PGRST202", "42883"].includes(linked.error.code)) {
+        const legacy = await admin
+          .from("whatsapp_channels")
+          .select("status, enabled")
+          .eq("barbershop_id", shop.id)
+          .is("staff_id", null)
+          .maybeSingle();
+        channelRow = legacy.data;
+      }
 
       if (!channelRow?.enabled || channelRow.status !== "open") {
         return fail(

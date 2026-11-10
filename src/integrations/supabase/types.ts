@@ -1373,6 +1373,39 @@ export type Database = {
         };
         Returns: Json;
       };
+      platform_add_whatsapp_link: {
+        Args: {
+          p_id: string;
+          p_version: number;
+          p_shop: string;
+          p_staff: string | null;
+          p_enabled?: boolean;
+        };
+        Returns: Json;
+      };
+      platform_update_whatsapp_link: {
+        Args: {
+          p_link: string;
+          p_version: number;
+          p_enabled: boolean;
+          p_returns: boolean;
+          p_remove?: boolean;
+        };
+        Returns: Json;
+      };
+      shop_whatsapp_channel: { Args: { p_shop: string }; Returns: Json };
+      shop_update_whatsapp_preferences: {
+        Args: {
+          p_shop: string;
+          p_link: string;
+          p_version: number;
+          p_enabled: boolean;
+          p_booking: boolean;
+          p_reminder: boolean;
+          p_hours: number;
+        };
+        Returns: Json;
+      };
       platform_whatsapp_directory: { Args: Record<string, never>; Returns: Json };
       platform_create_whatsapp_channel: {
         Args: { p_id: string; p_label: string };

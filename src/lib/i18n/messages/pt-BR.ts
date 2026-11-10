@@ -1,5 +1,27 @@
 /** Dicionário principal (fonte). Toda chave nova nasce aqui, em pt-BR. */
 export const ptBR = {
+  "waShared.preferencesChanged":
+    "As preferências mudaram. Confira os valores atuais antes de tentar novamente.",
+  "waShared.destinations": "Quem usa este número",
+  "waShared.intro":
+    "Um mesmo número pode atender várias barbearias e profissionais. Os avisos e históricos continuam separados.",
+  "waShared.add": "Vincular outra barbearia ou profissional",
+  "waShared.choose": "Escolha a barbearia",
+  "waShared.addHint":
+    "O novo vínculo começa com os avisos pausados. Os vínculos atuais são mantidos.",
+  "waShared.link": "Adicionar vínculo",
+  "waShared.save": "Salvar este vínculo",
+  "waShared.remove": "Remover vínculo",
+  "waShared.removeHint":
+    "Remove apenas este vínculo e cancela seus avisos pendentes. Os demais continuam como estão.",
+  "waShared.confirmRemove": "Confirmar remoção",
+  "waShared.manage": "Este número é compartilhado. Gerencie os vínculos na Central de WhatsApp.",
+  "waShared.connectionHint":
+    "Conexão, pausa do número e reserva valem para todos os vínculos abaixo deste número. Para pausar só uma loja, use o controle do vínculo.",
+  "waShared.added": "Vínculo adicionado",
+  "waShared.removed": "Vínculo removido",
+  "waShared.updated": "Preferências do vínculo alteradas",
+
   "waNumbers.addAnother": "Adicionar outro número",
   "waNumbers.existing": "Números cadastrados",
   "waNumbers.filter": "Filtrar números",

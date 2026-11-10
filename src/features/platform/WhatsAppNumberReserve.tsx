@@ -36,6 +36,7 @@ export function WhatsAppNumberReserve({
   number,
   numbers,
   supported,
+  perDestinationReturns = false,
   busy,
   save,
   selectNumber,
@@ -43,6 +44,7 @@ export function WhatsAppNumberReserve({
   number: WhatsAppNumber;
   numbers: WhatsAppNumber[];
   supported: boolean;
+  perDestinationReturns?: boolean;
   busy: boolean;
   save: (configuration: NumberConfiguration) => void;
   selectNumber: (id: string) => void;
@@ -145,16 +147,18 @@ export function WhatsAppNumberReserve({
               {t("waDelivery.technical")}
             </label>
           )}
-          <label className="flex min-h-11 items-start gap-3 text-sm">
-            <input
-              type="checkbox"
-              className="mt-1 size-5 shrink-0"
-              checked={returns}
-              disabled={busy}
-              onChange={(e) => setReturns(e.target.checked)}
-            />
-            {t("waDelivery.returns")}
-          </label>
+          {!perDestinationReturns && (
+            <label className="flex min-h-11 items-start gap-3 text-sm">
+              <input
+                type="checkbox"
+                className="mt-1 size-5 shrink-0"
+                checked={returns}
+                disabled={busy}
+                onChange={(e) => setReturns(e.target.checked)}
+              />
+              {t("waDelivery.returns")}
+            </label>
+          )}
           <Hint>{t("waDelivery.limits")}</Hint>
           <button
             className="action-button action-confirm"

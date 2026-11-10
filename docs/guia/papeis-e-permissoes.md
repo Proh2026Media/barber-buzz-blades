@@ -276,3 +276,7 @@ Regras ao mexer em papéis:
 - Toda regra que protege dado ou dinheiro precisa estar **no banco**; a tela só esconde. Ao criar uma, atualize a coluna "Garantia" das seções 4 e 8.
 - Mudou um padrão da matriz no banco? Mude também o padrão em `capabilitiesFor` (o argumento `fallback`) para tela e banco não divergirem. Hoje já divergem num ponto: o banco dá `manage_own_services` ao dono, a tela só ao Parceiro (sem efeito prático, porque o dono já gere o catálogo inteiro).
 - Conferir a tela de cada papel: `node scripts/foto.mjs "/demo?view=owner"` (repita com `equal`, `minority`, `associate`, `employee`, `customer`, `platform`) e `scripts/verificar.sh` antes de enviar (ele não cobre os testes SQL; ver acima).
+
+### Números compartilhados (P-119)
+
+Somente a administração distribui/remove vínculos de números, conecta e troca principal/reserva. Dono com `shop_can_manage_whatsapp` lê e altera apenas as preferências gerais de sua loja por RPC; não enumera destinos nem histórico administrativo. O profissional específico mantém precedência de roteamento, inclusive pausado. Alterar conexão/reserva/pausa global afeta todos os vínculos; pausar um vínculo afeta apenas aquele destino. RLS e versão são conferidas no banco, não apenas na interface. Login com telefone pessoal continua separado. Instalação nº 104 ainda pendente na VPS.
