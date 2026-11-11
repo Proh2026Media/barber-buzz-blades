@@ -101,6 +101,16 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## 10/11/2026 — P-119: opção 01 aplicada — Central de operação
+
+**Pedido e resultado:** o dono aprovou o protótipo 01. A Central usa lista compacta de números com busca/filtro e painel de destinos lado a lado desde 1024 px; primeiro número selecionado no computador. Celular/tablet vertical usam lista → detalhe com volta, conservando filtros. A composição anterior em cartões fica como histórico abaixo.
+
+**Uso:** destinos em linhas, com ícone e nome da loja/profissional; “Usar em outra barbearia” destacado abaixo, reserva identificada no rodapé, conexão acessível pelo estado e opções secundárias no menu. Número da plataforma/acesso permanece separado. Rascunhos dos avisos requerem “Salvar avisos”; versão atualiza valores sem remontar a linha. Remoção confirmada com cancelar. Reaproveitamento, inclusão pausada, RPCs, permissões e regras preservados. A leitura de conexão apresenta falha como falha, sem afirmar conectado; consultar não inicia pareamento.
+
+**Validação local:** Chromium/Playwright com rede externa interceptada e dados fictícios. Compartilhar sem criar número, erros/rascunhos, teclado/Escape/foco, pedido repetido, preferências individuais, remoção isolada, reserva e retorno ao principal, seções preservando rascunhos, filtros, URL, cadastro/primeiro destino e compatibilidade nº 103. **210 combinações** de sete estados × 320/390/834/1024/1280 × claro/escuro × três cantos; **20 pares** de largura/idioma na rota administrativa. Seleção automática no computador, lista móvel, alinhamento das colunas, desconexão/falha/recuperação e isolamento do estado por número, lista vazia/erro e nomes longos em 320/390/768/834/1024/1152/1440. Capturas do computador, celular e janela inspecionadas. Evidências em `/tmp/bc-op-ui.mjs`, `/tmp/bc-op-complemento.mjs`, `/tmp/bc-op-estados.mjs`, logs correspondentes e `/tmp/bc-op-rota-*.png`. **492/492 testes, tipos, eslint, formatação e montagem aprovados** em `/tmp/bc-op-verificar.log`.
+
+**Operação e limites:** somente frontend; sem migration/Edge/configuração nova e sem pacote TI adicional. Nº 104 já instalada conforme relatório anterior. Nenhuma atribuição, conexão ou mensagem real; homologação autenticada e física continua pendente. `.env` e `.vscode/` preexistentes preservados fora do commit. Flow e pagamentos fora do escopo.
+
 ## 10/11/2026 — P-119: revisão visual da Central de WhatsApp
 
 **Problema e resultado:** o dono não localizava o compartilhamento e pediu uma página intuitiva e ilustrada. Inventário em cartões ocupa a largura disponível, com identificação e destinos. Relação número → barbearias/profissionais ilustrada com ícones. Seleção abre uma área dedicada com quatro seções: Barbearias, Conexão, Reserva e Histórico. Número da plataforma/códigos de acesso separado da distribuição.

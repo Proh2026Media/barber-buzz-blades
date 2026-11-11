@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Plus, Trash2, Store, Scissors, Smartphone, ArrowDown, Settings2 } from "lucide-react";
-import { Notice, StatusBadge } from "@/components/visual";
+import { Plus, Trash2, Store, Scissors, Smartphone, Settings2 } from "lucide-react";
+import { Notice } from "@/components/visual";
 import {
   Dialog,
   DialogContent,
@@ -50,45 +50,31 @@ export function WhatsAppNumberDestinations({
   const [professional, setProfessional] = useState("");
   return (
     <section className="min-w-0 space-y-4">
-      <div className="grid gap-4 rounded-2xl border border-border bg-card p-5 tablet:grid-cols-[minmax(0,1fr)_auto] tablet:items-center">
-        <div>
-          <h3 className="text-lg font-bold">{t("waShared.destinations")}</h3>
-          <p className="mt-1 max-w-xl text-sm text-muted-foreground">{t("waHub.linksHint")}</p>
-        </div>
-        <button
-          className="action-button action-confirm"
-          disabled={busy}
-          onClick={() => setAdding(true)}
-        >
-          <Plus className="size-5 shrink-0" aria-hidden />
-          {t("waHub.useElsewhere")}
-        </button>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="font-bold">{t("waShared.destinations")}</h3>
+        <span className="text-sm text-muted-foreground">
+          {t("waHub.destinationsCount", { count: links.length })}
+        </span>
       </div>
-      <div className="flex justify-center" aria-hidden="true">
-        <ArrowDown className="size-6 text-muted-foreground" />
-      </div>
-      <div className="grid min-w-0 gap-4 tablet:grid-cols-2 pc:grid-cols-[repeat(auto-fit,minmax(18rem,1fr))]">
+      <div className="divide-y divide-border">
         {links.map((link) => (
           <Destination
-            key={`${link.id}:${link.version}`}
+            key={link.id}
             link={link}
             name={destination(link.barbershop_id, link.staff_id)}
             busy={busy}
             update={update}
           />
         ))}
-        <button
-          className="flex min-h-40 flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-border bg-card p-5 text-center hover:border-primary"
-          disabled={busy}
-          onClick={() => setAdding(true)}
-        >
-          <span className="grid size-12 place-items-center rounded-xl bg-accent text-primary">
-            <Store className="size-6" aria-hidden />
-          </span>
-          <span className="text-sm font-bold">{t("waHub.addShop")}</span>
-          <Plus className="size-5 text-primary" aria-hidden />
-        </button>
       </div>
+      <button
+        className="action-button action-confirm w-full"
+        disabled={busy}
+        onClick={() => setAdding(true)}
+      >
+        <Plus className="size-5 shrink-0" aria-hidden />
+        {t("waHub.useElsewhere")}
+      </button>
       <Dialog
         open={adding}
         onOpenChange={(open) => {
@@ -203,24 +189,47 @@ function Destination({
   update: Props["update"];
 }) {
   const { t } = useI18n();
-  const [enabled, setEnabled] = useState(link.enabled);
-  const [returns, setReturns] = useState(link.return_notice_enabled);
+  const [draft, setDraft] = useState({
+    version: link.version,
+    enabled: link.enabled,
+    returns: link.return_notice_enabled,
+  });
+  const enabled = draft.version === link.version ? draft.enabled : link.enabled;
+  const returns = draft.version === link.version ? draft.returns : link.return_notice_enabled;
+  const dirty = enabled !== link.enabled || returns !== link.return_notice_enabled;
   const [removing, setRemoving] = useState(false);
   return (
-    <article className="min-w-0 space-y-3 rounded-2xl border border-border bg-card p-4">
-      <span className="grid size-11 place-items-center rounded-xl bg-accent text-primary">
-        {link.staff_id ? (
-          <Scissors className="size-6" aria-hidden />
-        ) : (
-          <Store className="size-6" aria-hidden />
-        )}
-      </span>
-      <h4 className="break-words font-semibold">{name}</h4>
-      <StatusBadge
-        tone={link.enabled ? "success" : "neutral"}
-        label={t(link.enabled ? "waCentral.enabled" : "waCentral.disabled")}
-      />
-      <details className="border-t border-border pt-2">
+    <article className="min-w-0 space-y-2 py-4 first:pt-1 last:pb-1">
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-accent text-primary">
+          {link.staff_id ? (
+            <Scissors className="size-6" aria-hidden />
+          ) : (
+            <Store className="size-6" aria-hidden />
+          )}
+        </span>
+        <div className="min-w-0 flex-1 basis-32">
+          <h4 className="break-words font-semibold">{name}</h4>
+          <p className="text-sm text-muted-foreground">
+            {t(link.staff_id ? "waCentral.staff" : "waCentral.wholeShop")}
+          </p>
+        </div>
+        <label className="flex min-h-11 items-center gap-2 text-sm">
+          <input
+            className="size-5 shrink-0"
+            type="checkbox"
+            aria-label={t("waCentral.enable")}
+            checked={enabled}
+            disabled={busy}
+            onChange={(e) => {
+              setDraft({ version: link.version, enabled: e.target.checked, returns });
+              setRemoving(false);
+            }}
+          />
+          {t(enabled ? "waCentral.enabled" : "waCentral.disabled")}
+        </label>
+      </div>
+      <details>
         <summary className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-semibold">
           <Settings2 className="size-4" aria-hidden />
           {t("waHub.editNotices")}
@@ -229,46 +238,46 @@ function Destination({
           <input
             className="size-5 shrink-0"
             type="checkbox"
-            checked={enabled}
-            disabled={busy}
-            onChange={(e) => setEnabled(e.target.checked)}
-          />
-          {t("waCentral.enable")}
-        </label>
-        <label className="flex min-h-11 items-center gap-3 text-sm">
-          <input
-            className="size-5 shrink-0"
-            type="checkbox"
             checked={returns}
             disabled={busy}
-            onChange={(e) => setReturns(e.target.checked)}
+            onChange={(e) =>
+              setDraft({ version: link.version, enabled, returns: e.target.checked })
+            }
           />
           {t("waDelivery.returns")}
         </label>
-        <div className="flex flex-wrap gap-2">
+        <button className="action-button" disabled={busy} onClick={() => setRemoving(!removing)}>
+          <Trash2 className="size-4" aria-hidden />
+          {t("waShared.remove")}
+        </button>
+      </details>
+      {dirty && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-accent p-3">
+          <span className="text-sm">{t("waOperation.unsaved")}</span>
           <button
             className="action-button action-confirm"
-            disabled={busy || (enabled === link.enabled && returns === link.return_notice_enabled)}
+            disabled={busy}
             onClick={() => update(link, enabled, returns, false)}
           >
             {t("waShared.save")}
           </button>
-          <button className="action-button" disabled={busy} onClick={() => setRemoving(!removing)}>
-            <Trash2 className="size-4" aria-hidden />
-            {t("waShared.remove")}
-          </button>
         </div>
-      </details>
+      )}
       {removing && (
         <div className="space-y-2">
           <Notice tone="warning" title={t("waShared.removeHint")} />
-          <button
-            className="action-button"
-            disabled={busy}
-            onClick={() => update(link, false, false, true)}
-          >
-            {t("waShared.confirmRemove")}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button className="action-button" disabled={busy} onClick={() => setRemoving(false)}>
+              {t("common.cancel")}
+            </button>
+            <button
+              className="action-button"
+              disabled={busy}
+              onClick={() => update(link, false, false, true)}
+            >
+              {t("waShared.confirmRemove")}
+            </button>
+          </div>
         </div>
       )}
     </article>

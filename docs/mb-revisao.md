@@ -2,6 +2,15 @@
 
 Atualizado em **07/11/2026** (P-49/P-70; entradas anteriores preservadas como histórico). Fonte: [mb-interface.md](mb-interface.md). Regra: `.cursor/rules/mb.mdc`. Skill: `.cursor/skills/mb/`.
 
+## P-119 — protótipo 01: Central de operação (10/11/2026)
+
+O dono escolheu a opção 01 entre os três protótipos. Esta composição substitui o inventário de cartões descrito na entrada anterior.
+
+- Desde 1024 px, lista compacta com busca/filtro e painel do número lado a lado. A seleção mantém a lista disponível; o primeiro número abre automaticamente no computador. Abaixo de 1024 px, lista e detalhe têm navegação própria, com volta e filtros preservados.
+- Destinos em linhas com ícone de loja/profissional, nome, avisos e ajustes. “Usar em outra barbearia” ocupa a largura do painel. Reserva identificada no rodapé; conexão pelo estado do número; histórico e demais controles no menu de opções.
+- Alterar avisos mostra rascunho e botão de salvar; não há escrita automática. Salvar atualiza a linha sem remontar seus detalhes. Inclusão preserva os destinos existentes e começa pausada; remoção continua confirmada. Conexão/reserva seguem compartilhadas e o número de acesso da plataforma fica separado.
+- Identidade, cinco idiomas, modos de canto e componentes comuns preservados. Validação local: 210 combinações de largura/tema/cantos, 20 pares largura/idioma, sete larguras com nomes longos, estados de conexão, vazio/erro e recuperação. Capturas da rota administrativa inspecionadas. Sem conexão ou envio real; homologação física/autenticada permanece pendente.
+
 ## P-119 — Central de WhatsApp reorganizada (10/11/2026, complemento)
 
 O dono não encontrava o compartilhamento e apontou a composição confusa da página. A tarefa principal passa a ser escolher um número, ver seus destinos e adicionar outra barbearia/profissional sem substituir os atuais.

@@ -1,6 +1,14 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const ptPT: Record<MessageKey, string> = {
+  "waOperation.title": "Números e destinos",
+  "waOperation.subtitle": "Escolha o número. Veja e ajuste quem o utiliza.",
+  "waOperation.options": "Opções do número",
+  "waOperation.backToDestinations": "Voltar aos destinos",
+  "waOperation.checkConnection": "Não foi possível verificar",
+  "waOperation.connectionDetails": "Ver ligação do número",
+  "waOperation.unsaved": "Alterações não guardadas",
+  "waOperation.available": "Disponível",
   "waHub.subtitle": "Escolha um número e veja que barbearias e profissionais serve.",
   "waHub.back": "Todos os números",
   "waHub.platformHint": "Número utilizado pela plataforma, incluindo os códigos de acesso.",

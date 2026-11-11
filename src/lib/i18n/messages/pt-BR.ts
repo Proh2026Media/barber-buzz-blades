@@ -1,5 +1,13 @@
 /** Dicionário principal (fonte). Toda chave nova nasce aqui, em pt-BR. */
 export const ptBR = {
+  "waOperation.title": "Números e destinos",
+  "waOperation.subtitle": "Escolha o número. Veja e ajuste quem o utiliza.",
+  "waOperation.options": "Opções do número",
+  "waOperation.backToDestinations": "Voltar aos destinos",
+  "waOperation.checkConnection": "Não foi possível conferir",
+  "waOperation.connectionDetails": "Ver conexão do número",
+  "waOperation.unsaved": "Alterações não salvas",
+  "waOperation.available": "Disponível",
   "waHub.subtitle": "Escolha um número e veja quais barbearias e profissionais ele atende.",
   "waHub.back": "Todos os números",
   "waHub.platformHint": "Número usado pela plataforma, incluindo os códigos de acesso.",
