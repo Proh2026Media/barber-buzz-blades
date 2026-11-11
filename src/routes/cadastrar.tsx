@@ -1,3 +1,4 @@
+import { otpRequestBody } from "@/lib/auth/otp-request";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import {
@@ -94,7 +95,7 @@ async function callRegisterShop(body: Record<string, unknown>) {
       "Content-Type": "application/json",
       apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "",
     },
-    body: JSON.stringify(body),
+    body: otpRequestBody(body),
   });
   const payload = (await response.json().catch(() => ({}))) as {
     ok?: boolean;
@@ -102,6 +103,7 @@ async function callRegisterShop(body: Record<string, unknown>) {
     error_code?: string;
     message?: string;
     destination?: string;
+    delivery_state?: "accepted" | "unknown";
     verification_token?: string;
     email?: string;
     shop_slug?: string;
@@ -373,13 +375,16 @@ function CadastrarPage() {
     return true;
   }
 
+  const otpRequestPending = useRef(false);
+  const [uncertainSend, setUncertainSend] = useState(false);
   async function requestOtp(fromResend = false) {
-    if (busy) return;
+    if (busy || otpRequestPending.current || (fromResend && resendIn > 0)) return;
     const errors = validate();
     if (Object.keys(errors).length > 0) {
       showFieldErrors(errors);
       return;
     }
+    otpRequestPending.current = true;
     setBusy(true);
     setError(null);
     setFieldErrors({});
@@ -390,6 +395,7 @@ function CadastrarPage() {
         action: "request",
         destination: number,
       });
+      setUncertainSend(payload.delivery_state === "unknown");
       setDestination(payload.destination || number);
       // O número e o exemplo da mensagem aparecem no cartão do código; aqui só o anúncio.
       announce(t("register.codeSent"));
@@ -399,6 +405,7 @@ function CadastrarPage() {
       // Erro de um campo leva de volta a ele (showFieldErrors troca a etapa).
       handleServerError(err, "register.errorSendCode");
     } finally {
+      otpRequestPending.current = false;
       setBusy(false);
     }
   }
@@ -1117,6 +1124,7 @@ function CadastrarPage() {
 
             {step === "otp" && (
               <form onSubmit={verifyCode} className="platform-register-form">
+                {uncertainSend && <Notice tone="warning" title={t("waSafety.otpUnknown")} />}
                 <CodeSentCard
                   toLabel={t("entry.code.sentTo")}
                   number={maskBrPhone(destination)}

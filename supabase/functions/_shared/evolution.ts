@@ -1,4 +1,6 @@
-/** Shared helpers for Evolution API edge functions. */
+import { sendWhatsapp } from "./whatsapp-send.ts";
+
+/** Transporte da Evolution; envios somente pela autorização comum. */
 
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,7 +23,7 @@ export function evolutionConfig() {
   return { url, apiKey };
 }
 
-export async function evolutionFetch(path: string, init: RequestInit = {}) {
+async function evolutionRequest(path: string, init: RequestInit = {}) {
   const { url, apiKey } = evolutionConfig();
   const response = await fetch(`${url}${path}`, {
     ...init,
@@ -52,6 +54,25 @@ export async function evolutionFetch(path: string, init: RequestInit = {}) {
     throw new Error(message);
   }
   return data;
+}
+
+export async function evolutionFetch(path: string, init: RequestInit = {}) {
+  // O cliente de administração só administra instâncias. Não aceita outros caminhos.
+  if (
+    !/^\/instance\/(create|connect|connectionState|fetchInstances|logout|delete)(?:\/|\?|$)/.test(
+      path,
+    ) ||
+    path.includes("..") ||
+    /%2e|%2f/i.test(path)
+  )
+    throw new Error("WA_OUTBOUND_REQUIRED");
+  return evolutionRequest(path, init);
+}
+
+export function sendAuthorizedWhatsapp(
+  ...args: [Parameters<typeof sendWhatsapp>[0], Parameters<typeof sendWhatsapp>[1]]
+) {
+  return sendWhatsapp(...args, evolutionRequest);
 }
 
 export function instanceNameForShop(shopId: string, slug?: string | null) {

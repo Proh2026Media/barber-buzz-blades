@@ -1,6 +1,35 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const enUS: Record<MessageKey, string> = {
+  "waSafety.otpUnknown":
+    "We could not confirm sending. If the code arrives, you can use it. Wait before requesting another.",
+  "waSafety.title": "Pauses and delivery monitoring",
+  "waSafety.unchecked": "Status not checked",
+  "waSafety.globalPaused": "All sending paused",
+  "waSafety.globalEnabled": "Global pause off",
+  "waSafety.scope": "Apply to",
+  "waSafety.global": "All numbers",
+  "waSafety.reason": "Reason for pause",
+  "waSafety.review": "Under review",
+  "waSafety.restriction": "Restriction reported in WhatsApp",
+  "waSafety.maintenance": "Maintenance",
+  "waSafety.resumed": "Resumed after review",
+  "waSafety.paused": "Sending paused",
+  "waSafety.error": "Could not update. Check the status before trying again.",
+  "waSafety.globalWins": "The global pause is still blocking this number.",
+  "waSafety.inFlightHint":
+    "Pausing prevents new transmissions. Messages already in progress may still arrive.",
+  "waSafety.resume": "Resume sending",
+  "waSafety.pause": "Pause sending",
+  "waSafety.accepted": "Provider accepted · 24h",
+  "waSafety.unknown": "Unconfirmed result · 24h",
+  "waSafety.inFlight": "In progress",
+  "waSafety.pending": "Queued",
+  "waSafety.receiptHint":
+    "Provider acceptance does not mean delivery. Delivery confirmation is not available in this integration.",
+  "waSafety.resumeHint":
+    "Confirm that WhatsApp has lifted the restriction and the connection is working. The queue will be checked again before each send.",
+
   "waOrg.title": "WhatsApp",
   "waOrg.navigation": "WhatsApp views",
   "waOrg.shops": "Barbershops",
@@ -208,7 +237,8 @@ export const enUS: Record<MessageKey, string> = {
   "waLogin.description": "Receive a WhatsApp code to sign in to your account.",
   "waLogin.verifiedOnly":
     "Use the number already verified on your account. First time here? Register with email and verify WhatsApp in My profile.",
-  "waLogin.sent": "If this number is verified on an account, you will receive a code.",
+  "waLogin.sent":
+    "If this number is verified on an account and sending is available, a code may arrive. You can also use another sign-in method.",
   "waLogin.expiry": "The code is valid for 10 minutes. Use the most recent one.",
   "waLogin.send": "Get code",
   "waLogin.enter": "Confirm and sign in",
@@ -449,7 +479,7 @@ export const enUS: Record<MessageKey, string> = {
   "auth.info.finishingLogin": "Finishing sign-in…",
   "auth.info.canClose": "You can close this window.",
   "auth.info.codeSentIfAccount":
-    "If there's an account with this WhatsApp number, we've sent a code.",
+    "If an account exists and sending is available, enter the code when it arrives.",
   "auth.info.codeConfirmed": "Code confirmed. Set a new password.",
   "auth.info.resetLinkSent":
     "If there's an account with this email, we've sent a link to reset the password.",
@@ -534,7 +564,7 @@ export const enUS: Record<MessageKey, string> = {
   "register.step.done": "Done",
   "register.errorFillAll": "Fill in barbershop, name, email and password (min. 6).",
   "register.errorWhatsapp": "Enter your WhatsApp number with area code.",
-  "register.codeSent": "Code sent on WhatsApp.",
+  "register.codeSent": "Code request received. Enter it when it arrives.",
   "register.errorSendCode": "We couldn't send the code.",
   "register.errorIncomplete": "Verification incomplete.",
   "register.confirmedFinishing": "WhatsApp confirmed. Finishing sign-up…",
@@ -605,7 +635,7 @@ export const enUS: Record<MessageKey, string> = {
   "conta.whats.remindersOff": "Reminders off",
   "conta.whats.remove": "Remove number",
   "conta.whats.keepNumber": "Keep number",
-  "conta.whats.sentTo": "Code sent to",
+  "conta.whats.sentTo": "Waiting for the code for",
   "conta.whats.stepsLabel": "Steps to confirm WhatsApp",
   "conta.whats.stepSend": "Send code",
   "conta.whats.stepType": "Enter code",
@@ -1727,7 +1757,7 @@ export const enUS: Record<MessageKey, string> = {
   "legal.privacy.s5Item5":
     "**Hashed passwords:** the authentication service stores passwords only as a cryptographic hash (bcrypt); no one, not even our team, can see them.",
   "legal.privacy.s5Item6":
-    "**Protected verification codes:** codes sent by WhatsApp are stored only as a hash (SHA-256), are valid for 10 minutes, work only once and have a sending limit; 5 wrong attempts invalidate the code.",
+    "**Protected verification codes:** codes sent by WhatsApp are stored only as a HMAC-SHA-256, are valid for 10 minutes, work only once and have a sending limit; 5 wrong attempts invalidate the code.",
   "legal.privacy.s5Item7":
     "**Protected Google connection:** the authorization request is signed (HMAC), tied to your account and expires in 10 minutes. Google returns the authorization only to the redirect address registered in our project, and the code is exchanged for tokens on the server, using the app's secret key — tokens never pass through the browser. This way, someone else cannot link their Google account to your account in the app or reuse an intercepted authorization.",
   "legal.privacy.s5Item8":
@@ -3381,7 +3411,7 @@ export const enUS: Record<MessageKey, string> = {
   "gate.step.code": "Code",
   "gate.sending": "Sending…",
   "gate.entering": "Signing in…",
-  "gate.codeSent": "Code sent to {phone} on WhatsApp",
+  "gate.codeSent": "Enter the code when it arrives on WhatsApp {phone}",
   "gate.signIn": "Sign in to my account",
   "app.notFound.title": "Page not found",
   "app.notFound.body": "The address you opened doesn't exist or has moved.",
@@ -4483,7 +4513,7 @@ export const enUS: Record<MessageKey, string> = {
   "fix2.whats.badgeUnverified": "Not verified",
   "fix2.whats.sendCode": "Send code",
   "fix2.whats.sending": "Sending code…",
-  "fix2.whats.codeSent": "Code sent to {number}.",
+  "fix2.whats.codeSent": "Waiting for the code for {number}.",
   "fix2.whats.codeLabel": "Verification code",
   "fix2.whats.codeHint": "The code is valid for 10 minutes.",
   "fix2.whats.confirm": "Confirm code",
@@ -4590,7 +4620,7 @@ export const enUS: Record<MessageKey, string> = {
   "entry.rule.ok": "done",
   "entry.rule.missing": "missing",
   "entry.example": "Example",
-  "entry.code.sentTo": "Sent to",
+  "entry.code.sentTo": "Waiting for the code for",
   "entry.code.example": "Your code: ••• •••",
   "entry.back.shop": "Back to the barbershop",
   "entry.back.home": "Home",

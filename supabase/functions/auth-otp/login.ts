@@ -1,12 +1,20 @@
+import { randomOtp } from "../_shared/whatsapp-otp.ts";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 /** Login global: somente número pessoal confirmado; remetente exclusivo da plataforma. */
 export async function whatsappLogin(
   admin: SupabaseClient,
-  body: { action?: string; destination?: string; code?: string },
+  body: { action?: string; destination?: string; code?: string; request_id?: string },
   deps: {
     instance: string;
-    send: (instance: string, phone: string, text: string) => Promise<void>;
+    hash: (context: string) => Promise<string>;
+    send: (
+      instance: string,
+      phone: string,
+      text: string,
+      challengeId: string,
+      codeHash: string,
+    ) => Promise<void>;
   },
 ): Promise<{ status: number; body: Record<string, unknown> }> {
   const fail = (error_code: string, status = 400) => ({
@@ -21,24 +29,15 @@ export async function whatsappLogin(
   // O formulário envia E.164 após sugerir o país; não assumir Brasil no servidor.
   const phone = typeof body.destination === "string" ? body.destination.trim() : "";
   if (!/^\+[1-9]\d{7,14}$/.test(phone)) return fail("invalid_whatsapp");
-  const hash = async (code: string) => {
-    const bytes = await crypto.subtle.digest(
-      "SHA-256",
-      new TextEncoder().encode(`login:platform:${phone}:${code}`),
-    );
-    return [...new Uint8Array(bytes)].map((v) => v.toString(16).padStart(2, "0")).join("");
-  };
+  const hash = (code: string) => deps.hash(`login:platform:${phone}:${code}`);
   if (action === "request") {
     if (!deps.instance) return fail("whatsapp_unavailable", 503);
-    // Rejection sampling: todos os códigos de seis dígitos têm a mesma probabilidade.
-    const value = new Uint32Array(1);
-    do {
-      crypto.getRandomValues(value);
-    } while (value[0] >= 4_294_000_000);
-    const code = String(value[0] % 1_000_000).padStart(6, "0");
-    const { data, error } = await admin.rpc("request_whatsapp_login", {
+    const code = randomOtp();
+    const codeHash = await hash(code);
+    const { data, error } = await admin.rpc("request_whatsapp_login_once", {
       p_destination: phone,
-      p_code_hash: await hash(code),
+      p_code_hash: codeHash,
+      p_request_id: body.request_id ?? null,
     });
     if (error)
       return fail(
@@ -52,15 +51,14 @@ export async function whatsappLogin(
           deps.instance,
           phone,
           `Barba & Cabelo\nSeu código de acesso: ${code}\nVálido por 10 minutos. Não compartilhe este código. Se não pediu, ignore.`,
+          data.challenge_id,
+          codeHash,
         );
       } catch {
         // Mesma resposta para número conhecido/desconhecido, inclusive falha de envio.
         // Não repetir: o provedor pode ter aceitado antes do timeout.
-        await admin
-          .from("auth_otp_challenges")
-          .update({ consumed_at: new Date().toISOString() })
-          .eq("id", data.challenge_id);
-        console.error("auth-otp: envio de login indisponível; desafio invalidado");
+        // Não invalida um código que pode ter sido entregue antes do timeout.
+        console.error("auth-otp: envio de login indisponível");
       }
     }
     return { status: 200, body: { ok: true, expires_in_seconds: 600, resend_after_seconds: 60 } };
@@ -88,11 +86,8 @@ export async function whatsappLogin(
   if (profileError || !profile) return fail("otp_invalid");
   const { data: account, error: userError } = await admin.auth.admin.getUserById(match.user_id);
   const user = account?.user;
-  if (
-    userError ||
-    !user?.email ||
-    (user.banned_until && Date.parse(user.banned_until) > Date.now())
-  )
+  const bannedUntil = (user as { banned_until?: string } | undefined)?.banned_until;
+  if (userError || !user?.email || (bannedUntil && Date.parse(bannedUntil) > Date.now()))
     return fail("otp_invalid");
   const { data: link, error: linkError } = await admin.auth.admin.generateLink({
     type: "magiclink",

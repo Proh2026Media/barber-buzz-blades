@@ -22,7 +22,9 @@
 set -u
 cd "$(dirname "$0")/.." || exit 1
 
-NOME=barba-db-local
+NOME="${BC_BANCO_LOCAL_NOME:-barba-db-local}"
+PORTA="${BC_BANCO_LOCAL_PORTA:-54329}"
+[[ "$NOME" =~ ^barba-[a-z0-9-]+$ && "$PORTA" =~ ^[0-9]+$ ]] || { echo "banco-local: nome ou porta inválida"; exit 1; }
 IMAGEM=supabase/postgres:15.8.1.085
 SENHA=localtest
 PSQL=(docker exec -i -e PGPASSWORD=$SENHA "$NOME" psql -h localhost -d postgres -X)
@@ -31,7 +33,7 @@ subir() {
   local ate="${1:-}"
   docker info >/dev/null 2>&1 || { echo "banco-local: o Docker está desligado (open -a Docker)"; exit 1; }
   docker rm -f "$NOME" >/dev/null 2>&1
-  docker run -d --name "$NOME" -e POSTGRES_PASSWORD=$SENHA -p 127.0.0.1:54329:5432 "$IMAGEM" >/dev/null || exit 1
+  docker run -d --name "$NOME" -e POSTGRES_PASSWORD=$SENHA -p "127.0.0.1:$PORTA:5432" "$IMAGEM" >/dev/null || exit 1
   for _ in $(seq 1 60); do
     docker exec "$NOME" pg_isready -U postgres -h localhost >/dev/null 2>&1 && break
     sleep 1

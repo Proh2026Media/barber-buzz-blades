@@ -1,6 +1,35 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const ptPT: Record<MessageKey, string> = {
+  "waSafety.otpUnknown":
+    "Não foi possível confirmar o envio. Se o código chegar, pode utilizá-lo. Aguarde antes de pedir outro.",
+  "waSafety.title": "Pausas e acompanhamento",
+  "waSafety.unchecked": "Estado não verificado",
+  "waSafety.globalPaused": "Todos os envios em pausa",
+  "waSafety.globalEnabled": "Pausa global desativada",
+  "waSafety.scope": "Onde aplicar",
+  "waSafety.global": "Todos os números",
+  "waSafety.reason": "Motivo da pausa",
+  "waSafety.review": "Em revisão",
+  "waSafety.restriction": "Restrição indicada no WhatsApp",
+  "waSafety.maintenance": "Manutenção",
+  "waSafety.resumed": "Retomado após verificação",
+  "waSafety.paused": "Envios em pausa",
+  "waSafety.error": "Não foi possível atualizar. Verifique o estado antes de tentar novamente.",
+  "waSafety.globalWins": "A pausa global continua a bloquear este número.",
+  "waSafety.inFlightHint":
+    "A pausa impede novas transmissões. Mensagens já em curso ainda podem chegar.",
+  "waSafety.resume": "Retomar envios",
+  "waSafety.pause": "Pausar envios",
+  "waSafety.accepted": "Aceites pelo fornecedor · 24h",
+  "waSafety.unknown": "Sem resultado confirmado · 24h",
+  "waSafety.inFlight": "Em curso",
+  "waSafety.pending": "Na fila",
+  "waSafety.receiptHint":
+    "Aceite pelo fornecedor não significa entregue. Esta integração não disponibiliza confirmação de entrega.",
+  "waSafety.resumeHint":
+    "Confirme que o WhatsApp libertou a conta e que a ligação funciona. A fila será verificada novamente antes de cada envio.",
+
   "waOrg.title": "WhatsApp",
   "waOrg.navigation": "Organização do WhatsApp",
   "waOrg.shops": "Barbearias",
@@ -209,7 +238,8 @@ export const ptPT: Record<MessageKey, string> = {
   "waLogin.description": "Receba um código no WhatsApp para entrar na sua conta.",
   "waLogin.verifiedOnly":
     "Use o número já confirmado na sua conta. No primeiro acesso, registe-se com email e confirme o WhatsApp em O meu perfil.",
-  "waLogin.sent": "Se este número estiver confirmado em uma conta, receberá um código.",
+  "waLogin.sent":
+    "Se este número estiver confirmado numa conta e o envio estiver disponível, o código poderá chegar. Também pode usar outra forma de acesso.",
   "waLogin.expiry": "O código vale por 10 minutos. Use o mais recente.",
   "waLogin.send": "Receber código",
   "waLogin.enter": "Confirmar e entrar",
@@ -450,7 +480,8 @@ export const ptPT: Record<MessageKey, string> = {
   "auth.info.openingGoogle": "A abrir o Google…",
   "auth.info.finishingLogin": "A concluir o início de sessão…",
   "auth.info.canClose": "Pode fechar esta janela.",
-  "auth.info.codeSentIfAccount": "Se existir uma conta com este WhatsApp, enviámos um código.",
+  "auth.info.codeSentIfAccount":
+    "Se existir conta e o envio estiver disponível, introduza o código quando chegar.",
   "auth.info.codeConfirmed": "Código confirmado. Defina uma nova palavra-passe.",
   "auth.info.resetLinkSent":
     "Se existir uma conta com este e-mail, enviámos a ligação para redefinir a palavra-passe.",
@@ -536,7 +567,7 @@ export const ptPT: Record<MessageKey, string> = {
   "register.step.done": "Pronto",
   "register.errorFillAll": "Preencha barbearia, nome, e-mail e palavra-passe (mín. 6).",
   "register.errorWhatsapp": "Indique o WhatsApp com indicativo.",
-  "register.codeSent": "Código enviado por WhatsApp.",
+  "register.codeSent": "Pedido de código recebido. Introduza-o quando chegar.",
   "register.errorSendCode": "Não foi possível enviar o código.",
   "register.errorIncomplete": "Verificação incompleta.",
   "register.confirmedFinishing": "WhatsApp confirmado. A concluir o registo…",
@@ -607,7 +638,7 @@ export const ptPT: Record<MessageKey, string> = {
   "conta.whats.remindersOff": "Lembretes desligados",
   "conta.whats.remove": "Remover número",
   "conta.whats.keepNumber": "Manter número",
-  "conta.whats.sentTo": "Código enviado para",
+  "conta.whats.sentTo": "A aguardar o código para",
   "conta.whats.stepsLabel": "Passos para confirmar o WhatsApp",
   "conta.whats.stepSend": "Enviar código",
   "conta.whats.stepType": "Introduzir código",
@@ -1728,7 +1759,7 @@ export const ptPT: Record<MessageKey, string> = {
   "legal.privacy.s5Item5":
     "**Palavras-passe com hash:** o serviço de autenticação guarda as palavras-passe apenas como hash criptográfico (bcrypt); ninguém, nem a nossa equipa, as consegue ver.",
   "legal.privacy.s5Item6":
-    "**Códigos de verificação protegidos:** os códigos enviados por WhatsApp são guardados apenas como hash (SHA-256), valem 10 minutos, servem uma única vez e têm limite de envios; 5 tentativas erradas invalidam o código.",
+    "**Códigos de verificação protegidos:** os códigos enviados por WhatsApp são guardados apenas como HMAC-SHA-256, valem 10 minutos, servem uma única vez e têm limite de envios; 5 tentativas erradas invalidam o código.",
   "legal.privacy.s5Item7":
     "**Ligação à Google protegida:** o pedido de autorização é assinado (HMAC), fica associado à sua conta e expira em 10 minutos. A Google só devolve a autorização ao endereço de retorno registado no nosso projeto, e a troca pelos tokens é feita no servidor, com a chave secreta da aplicação — os tokens nunca passam pelo navegador. Assim, outra pessoa não consegue associar a conta Google dela à sua conta na aplicação nem aproveitar uma autorização intercetada.",
   "legal.privacy.s5Item8":
@@ -3393,7 +3424,7 @@ export const ptPT: Record<MessageKey, string> = {
   "gate.step.code": "Código",
   "gate.sending": "A enviar…",
   "gate.entering": "A entrar…",
-  "gate.codeSent": "Código enviado para {phone} pelo WhatsApp",
+  "gate.codeSent": "Introduza o código quando chegar ao WhatsApp {phone}",
   "gate.signIn": "Entrar na minha conta",
   "app.notFound.title": "Página não encontrada",
   "app.notFound.body": "O endereço que abriu não existe ou foi movido.",
@@ -4502,7 +4533,7 @@ export const ptPT: Record<MessageKey, string> = {
   "fix2.whats.badgeUnverified": "Não confirmado",
   "fix2.whats.sendCode": "Enviar código",
   "fix2.whats.sending": "A enviar código…",
-  "fix2.whats.codeSent": "Código enviado para {number}.",
+  "fix2.whats.codeSent": "A aguardar o código para {number}.",
   "fix2.whats.codeLabel": "Código de confirmação",
   "fix2.whats.codeHint": "O código é válido durante 10 minutos.",
   "fix2.whats.confirm": "Confirmar código",
@@ -4612,7 +4643,7 @@ export const ptPT: Record<MessageKey, string> = {
   "entry.rule.ok": "pronto",
   "entry.rule.missing": "falta",
   "entry.example": "Exemplo",
-  "entry.code.sentTo": "Enviámos para",
+  "entry.code.sentTo": "A aguardar o código para",
   "entry.code.example": "O seu código: ••• •••",
   "entry.back.shop": "Voltar à barbearia",
   "entry.back.home": "Início",

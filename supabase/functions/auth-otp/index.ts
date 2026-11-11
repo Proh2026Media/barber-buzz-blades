@@ -1,17 +1,19 @@
+import { randomOtp, otpVerifier } from "../_shared/whatsapp-otp.ts";
 import { whatsappLogin } from "./login.ts";
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { corsHeaders, digitsOnlyPhone, evolutionFetch, json } from "../_shared/evolution.ts";
+import { corsHeaders, sendAuthorizedWhatsapp, json } from "../_shared/evolution.ts";
 
 type Purpose = "login" | "recovery" | "verify_phone";
 
 type Body = {
+  request_id?: string;
   action?: "request" | "verify";
   shop?: string;
   channel?: "whatsapp" | "email";
   purpose?: Purpose;
   destination?: string;
   code?: string;
-  /** verify_phone: liga os avisos por WhatsApp ao gravar o número (padrão: true). */
+  /** verify_phone: liga os avisos somente com escolha explícita. */
   opt_in?: boolean;
 };
 
@@ -49,10 +51,8 @@ function fail(
   return json({ ...extra, error: message, error_code: errorCode }, status);
 }
 
-async function sha256Hex(value: string) {
-  const data = new TextEncoder().encode(value);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+async function codeVerifier(value: string) {
+  return otpVerifier(value, Deno.env.get("WHATSAPP_OTP_HMAC_KEY") ?? "");
 }
 
 /**
@@ -67,18 +67,8 @@ function platformInstance() {
 
 const MAX_VERIFY_ATTEMPTS = 5;
 const CODE_TTL_MS = 10 * 60 * 1000;
-/** Envios por número em 15 minutos (todas as lojas / todas as contas). */
-const MAX_SENDS_PER_DESTINATION = 3;
-/** verify_phone: envios por conta em 1 hora (impede disparar códigos para muitos números). */
-const MAX_VERIFY_PHONE_SENDS_PER_USER = 6;
 /** Espera mínima sugerida ao app antes de reenviar. */
 const RESEND_AFTER_SECONDS = 60;
-
-function randomOtp() {
-  const n = crypto.getRandomValues(new Uint8Array(3));
-  const num = ((n[0] << 16) | (n[1] << 8) | n[2]) % 1_000_000;
-  return String(num).padStart(6, "0");
-}
 
 type CheckedRow = { challenge_id: string | null; user_id: string | null };
 
@@ -125,43 +115,6 @@ async function classifyFailure(
   return fail("otp_invalid", "Código incorreto ou expirado", 400, {
     attempts_left: Math.max(0, MAX_VERIFY_ATTEMPTS - (latest.attempts ?? 0)),
   });
-}
-
-async function sendWhatsapp(instance: string, normalized: string, text: string) {
-  await evolutionFetch(`/message/sendText/${instance}`, {
-    method: "POST",
-    body: JSON.stringify({ number: digitsOnlyPhone(normalized), text }),
-    signal: AbortSignal.timeout(15_000),
-  });
-}
-
-/**
- * Pedidos em paralelo passam juntos pela contagem feita antes de gravar. Depois
- * de gravar o desafio, a contagem é refeita: se o novo desafio passou do limite,
- * ele é anulado (consumed_at) e nenhum código é enviado. Assim o limite de envios
- * (e, com ele, o de códigos válidos ao mesmo tempo) não é contornado por corrida.
- */
-async function voidIfOverLimit(
-  admin: SupabaseClient,
-  challengeId: string,
-  counts: Array<{ count: Promise<number | null>; max: number }>,
-) {
-  const values = await Promise.all(counts.map((entry) => entry.count));
-  const over = values.some((value, index) => (value ?? 0) > counts[index].max);
-  if (over) {
-    await admin
-      .from("auth_otp_challenges")
-      .update({ consumed_at: new Date().toISOString() })
-      .eq("id", challengeId);
-  }
-  return over;
-}
-
-async function countChallenges(
-  query: PromiseLike<{ count: number | null; error: unknown }>,
-): Promise<number | null> {
-  const { count } = await query;
-  return count;
 }
 
 /**
@@ -229,44 +182,14 @@ async function handleVerifyPhone(req: Request, admin: SupabaseClient, action: st
       );
     }
 
-    const since15 = new Date(Date.now() - 15 * 60 * 1000).toISOString();
-    const since60 = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-    const countDestination = () =>
-      countChallenges(
-        admin
-          .from("auth_otp_challenges")
-          .select("id", { count: "exact", head: true })
-          .eq("destination", normalized)
-          .eq("channel", "whatsapp")
-          .eq("purpose", "verify_phone")
-          .gte("created_at", since15),
-      );
-    const countUser = () =>
-      countChallenges(
-        admin
-          .from("auth_otp_challenges")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", user.id)
-          .eq("purpose", "verify_phone")
-          .gte("created_at", since60),
-      );
-    // O limite vem ANTES de dizer se o número está em outra conta: sem isso,
-    // qualquer conta logada testaria números à vontade (enumeração).
-    const [destCount, userCount] = await Promise.all([countDestination(), countUser()]);
-    if (
-      (destCount ?? 0) >= MAX_SENDS_PER_DESTINATION ||
-      (userCount ?? 0) >= MAX_VERIFY_PHONE_SENDS_PER_USER
-    ) {
-      return fail("rate_limited", "Muitas tentativas. Aguarde alguns minutos.", 429);
-    }
-
     const takenElsewhere = holders.ids.some((id) => id !== user.id);
     const code = randomOtp();
     // O hash inclui a conta: um código só confirma o número para quem o pediu.
-    const codeHash = await sha256Hex(`verify_phone:${user.id}:${normalized}:${code}`);
+    const codeHash = await codeVerifier(`verify_phone:${user.id}:${normalized}:${code}`);
     const { data: inserted, error: insertError } = await admin
       .from("auth_otp_challenges")
       .insert({
+        request_id: body.request_id,
         user_id: user.id,
         barbershop_id: null,
         channel: "whatsapp",
@@ -282,46 +205,41 @@ async function handleVerifyPhone(req: Request, admin: SupabaseClient, action: st
       .single();
     if (insertError || !inserted) {
       // 22P02: finalidade 'verify_phone' ainda não existe (migration pendente).
-      if (insertError?.code === "22P02") return unavailable();
+      if (insertError?.message?.includes("WA_RATE_LIMIT"))
+        return fail("rate_limited", "Aguarde antes de pedir outro código.", 429);
+      if (insertError?.code === "22P02" || insertError?.message?.includes("WA_SENDING_PAUSED"))
+        return unavailable();
       console.error("auth-otp: falha ao gravar o desafio (verify_phone)", insertError?.message);
       return fail("internal_error", "Não foi possível gerar o código. Tente de novo.", 500);
     }
     if (takenElsewhere) {
       return fail("phone_in_use", "Este WhatsApp já está em outra conta", 409);
     }
-    if (
-      await voidIfOverLimit(admin, (inserted as { id: string }).id, [
-        { count: countDestination(), max: MAX_SENDS_PER_DESTINATION },
-        { count: countUser(), max: MAX_VERIFY_PHONE_SENDS_PER_USER },
-      ])
-    ) {
-      return fail("rate_limited", "Muitas tentativas. Aguarde alguns minutos.", 429);
-    }
 
     try {
-      await sendWhatsapp(
+      const sent = await sendAuthorizedWhatsapp(admin, {
+        challengeId: inserted.id,
         instance,
-        normalized,
-        `Barba & Cabelo\nCódigo para confirmar seu WhatsApp: ${code}\nVálido por 10 minutos. Se não foi você que pediu, ignore esta mensagem.`,
-      );
+        codeHash,
+        text: `Barba & Cabelo\nCódigo para confirmar seu WhatsApp: ${code}\nVálido por 10 minutos. Se não foi você que pediu, ignore esta mensagem.`,
+      });
+      if (sent.state === "blocked") return unavailable();
+      // Resultado incerto ainda permite digitar o código que pode ter chegado.
+      return json({
+        ok: true,
+        channel: "whatsapp",
+        delivery_state: sent.state,
+        expires_in_seconds: CODE_TTL_MS / 1000,
+        resend_after_seconds: RESEND_AFTER_SECONDS,
+      });
     } catch (err) {
-      console.error(
-        "auth-otp: falha ao enviar o WhatsApp (verify_phone)",
-        err instanceof Error ? err.message : err,
-      );
+      console.error("auth-otp: envio da confirmação indisponível");
       return fail(
         "whatsapp_unavailable",
         "Não foi possível enviar o WhatsApp. Confira o número e tente de novo.",
         502,
       );
     }
-
-    return json({
-      ok: true,
-      channel: "whatsapp",
-      expires_in_seconds: CODE_TTL_MS / 1000,
-      resend_after_seconds: RESEND_AFTER_SECONDS,
-    });
   }
 
   // verify
@@ -332,7 +250,7 @@ async function handleVerifyPhone(req: Request, admin: SupabaseClient, action: st
 
   // Aqui não se olha antes se o número está em outra conta: isso responderia
   // sem código nem tentativa gasta. apply_verified_whatsapp recusa (23505) depois.
-  const codeHash = await sha256Hex(`verify_phone:${user.id}:${normalized}:${code}`);
+  const codeHash = await codeVerifier(`verify_phone:${user.id}:${normalized}:${code}`);
   // Checagem restrita aos desafios desta conta (auth_otp_check_user_code): erros
   // de outra conta no mesmo número não gastam as tentativas do dono.
   const { data: checked, error: checkError } = await admin.rpc("auth_otp_check_user_code", {
@@ -361,7 +279,7 @@ async function handleVerifyPhone(req: Request, admin: SupabaseClient, action: st
   const { data: saved, error: saveError } = await admin.rpc("apply_verified_whatsapp", {
     p_user_id: user.id,
     p_whatsapp: normalized,
-    p_opt_in: body.opt_in ?? true,
+    p_opt_in: body.opt_in === true,
   });
   if (saveError) {
     if (saveError.code === "23505") {
@@ -387,8 +305,7 @@ async function handleVerifyPhone(req: Request, admin: SupabaseClient, action: st
 
 /**
  * Conta dona do número para login/recuperação: só número verificado.
- * Se a migration 20261003180000 ainda não foi aplicada (coluna ausente),
- * cai para a busca antiga para não derrubar o login.
+ * Indisponibilidade da prova não permite recorrer a um número não confirmado.
  */
 async function findAccountByWhatsapp(admin: SupabaseClient, normalized: string) {
   const verified = await admin
@@ -398,14 +315,7 @@ async function findAccountByWhatsapp(admin: SupabaseClient, normalized: string) 
     .not("whatsapp_verified_at", "is", null)
     .maybeSingle();
   if (!verified.error) return (verified.data as { id: string } | null)?.id ?? null;
-  if (verified.error.code === "42703" || /whatsapp_verified_at/.test(verified.error.message)) {
-    const legacy = await admin
-      .from("profiles")
-      .select("id")
-      .eq("whatsapp_e164", normalized)
-      .maybeSingle();
-    return (legacy.data as { id: string } | null)?.id ?? null;
-  }
+
   return null;
 }
 
@@ -451,7 +361,10 @@ Deno.serve(async (req) => {
     if (purpose === "login") {
       const result = await whatsappLogin(admin, body, {
         instance: platformInstance(),
-        send: sendWhatsapp,
+        hash: codeVerifier,
+        send: async (instance, _phone, text, challengeId, codeHash) => {
+          await sendAuthorizedWhatsapp(admin, { instance, text, challengeId, codeHash });
+        },
       });
       return json(result.body, result.status);
     }
@@ -528,25 +441,6 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Limite por destino em todas as lojas: trocar de loja não libera mais códigos
-      // (e, portanto, mais tentativas de verificação).
-      const since = new Date(Date.now() - 15 * 60 * 1000).toISOString();
-      const countDestination = () =>
-        countChallenges(
-          admin
-            .from("auth_otp_challenges")
-            .select("id", { count: "exact", head: true })
-            .eq("destination", normalized)
-            .eq("channel", "whatsapp")
-            .not("barbershop_id", "is", null)
-            .gte("created_at", since),
-        );
-      const count = await countDestination();
-
-      if ((count ?? 0) >= MAX_SENDS_PER_DESTINATION) {
-        return fail("rate_limited", "Muitas tentativas. Aguarde alguns minutos.", 429);
-      }
-
       const userId = await findAccountByWhatsapp(admin, normalized as string);
 
       // Resposta genérica (mesmo status e mesmos campos) para login e recovery:
@@ -559,7 +453,7 @@ Deno.serve(async (req) => {
       };
 
       const code = randomOtp();
-      const codeHash = await sha256Hex(`${shop.id}:${normalized}:${code}`);
+      const codeHash = await codeVerifier(`recovery:${shop.id}:${normalized}:${code}`);
       const expiresAt = new Date(Date.now() + CODE_TTL_MS).toISOString();
 
       // O desafio é gravado mesmo sem conta (user_id nulo, código nunca enviado):
@@ -568,6 +462,7 @@ Deno.serve(async (req) => {
       const { data: inserted, error: insertError } = await admin
         .from("auth_otp_challenges")
         .insert({
+          request_id: body.request_id,
           user_id: userId,
           barbershop_id: shop.id,
           channel: "whatsapp",
@@ -579,40 +474,30 @@ Deno.serve(async (req) => {
         .select("id")
         .single();
       if (insertError || !inserted) {
-        console.error("auth-otp: falha ao gravar o desafio", insertError?.message);
+        if (insertError?.message?.includes("WA_RATE_LIMIT"))
+          return fail("rate_limited", "Aguarde antes de pedir outro código.", 429);
+        if (insertError?.message?.includes("WA_SENDING_PAUSED"))
+          return fail("whatsapp_unavailable", "WhatsApp indisponível. Use o e-mail.", 503);
+        console.error("auth-otp: falha ao gravar o desafio");
         return fail("internal_error", "Não foi possível gerar o código. Tente de novo.", 500);
       }
-      // Mesma resposta com ou sem conta: a recontagem também não revela nada.
-      if (
-        await voidIfOverLimit(admin, (inserted as { id: string }).id, [
-          { count: countDestination(), max: MAX_SENDS_PER_DESTINATION },
-        ])
-      ) {
-        return fail("rate_limited", "Muitas tentativas. Aguarde alguns minutos.", 429);
-      }
-
       if (!userId) {
         return json(genericOk);
       }
 
-      const bodyText =
-        purpose === "login"
-          ? `${shop.name}\nSeu código de acesso: ${code}\nVálido por 10 minutos.`
-          : `${shop.name}\nCódigo para redefinir a senha: ${code}\nVálido por 10 minutos.`;
+      const bodyText = `${shop.name}\nCódigo para redefinir a senha: ${code}\nVálido por 10 minutos.`;
 
       // Envio direto pela instância da plataforma (sem passar pela outbox da loja).
       try {
-        await sendWhatsapp(instance, normalized as string, bodyText);
-      } catch (err) {
-        console.error(
-          "auth-otp: falha ao enviar o WhatsApp",
-          err instanceof Error ? err.message : err,
-        );
-        return fail(
-          "whatsapp_unavailable",
-          "Não foi possível enviar o WhatsApp. Tente de novo ou use o e-mail.",
-          502,
-        );
+        await sendAuthorizedWhatsapp(admin, {
+          instance,
+          challengeId: inserted.id,
+          codeHash,
+          text: bodyText,
+        });
+      } catch {
+        // Mesma resposta de conta desconhecida. O código possivelmente entregue continua válido.
+        console.error("auth-otp: envio de recuperação indisponível");
       }
 
       return json(genericOk);
@@ -631,7 +516,7 @@ Deno.serve(async (req) => {
 
     // Checagem atômica no banco: consome o desafio no acerto; no erro, soma a
     // tentativa e invalida os desafios abertos após MAX_VERIFY_ATTEMPTS erros.
-    const codeHash = await sha256Hex(`${shop.id}:${normalized}:${code}`);
+    const codeHash = await codeVerifier(`recovery:${shop.id}:${normalized}:${code}`);
     const { data: checked, error: checkError } = await admin.rpc("auth_otp_check_code", {
       p_barbershop_id: shop.id,
       p_destination: normalized,
@@ -657,11 +542,19 @@ Deno.serve(async (req) => {
       return fail("account_not_found", "Conta não encontrada para este WhatsApp", 404);
     }
 
+    if ((await findAccountByWhatsapp(admin, normalized as string)) !== match.user_id)
+      return fail("otp_invalid", "Código inválido ou expirado", 400);
+
     // generateLink exige o e-mail da conta.
     const { data: userData, error: getUserError } = await admin.auth.admin.getUserById(
       match.user_id,
     );
-    if (getUserError || !userData.user?.email) {
+    const bannedUntil = (userData.user as { banned_until?: string } | null)?.banned_until;
+    if (
+      getUserError ||
+      !userData.user?.email ||
+      (bannedUntil && Date.parse(bannedUntil) > Date.now())
+    ) {
       return fail(
         "account_without_email",
         "Conta sem e-mail vinculado; complete o cadastro com e-mail.",
@@ -670,7 +563,7 @@ Deno.serve(async (req) => {
     }
 
     const { data: link, error: linkError } = await admin.auth.admin.generateLink({
-      type: purpose === "login" ? "magiclink" : "recovery",
+      type: "recovery",
       email: userData.user.email,
     });
 
@@ -689,7 +582,9 @@ Deno.serve(async (req) => {
       purpose,
     });
   } catch (err) {
-    console.error("auth-otp: erro inesperado", err instanceof Error ? err.message : err);
+    console.error("auth-otp: erro inesperado");
+    if (err instanceof Error && err.message === "WA_OTP_KEY_UNAVAILABLE")
+      return fail("whatsapp_unavailable", "WhatsApp indisponível. Use outra forma de acesso.", 503);
     return fail("internal_error", "Não foi possível continuar. Tente de novo.", 500);
   }
 });

@@ -1,3 +1,5 @@
+-- Cenário local explícito de envios liberados; a migration nasce pausada.
+update public.whatsapp_send_controls set paused=false where scope='global';
 -- P-119: bancada fictícia; executar em transação com ROLLBACK. Nenhum envio externo.
 create temporary table wa119 as select gen_random_uuid() shop,gen_random_uuid() other_shop,
  gen_random_uuid() owner,gen_random_uuid() staff,gen_random_uuid() other_staff,gen_random_uuid() main,gen_random_uuid() reserve;

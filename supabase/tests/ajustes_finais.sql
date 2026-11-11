@@ -134,6 +134,7 @@ select pg_temp.check_fin(
 -- 3. Limpeza de desafios de código antigos
 -- ---------------------------------------------------------------------------
 
+alter table public.auth_otp_challenges disable trigger guard_whatsapp_otp_request;
 insert into public.auth_otp_challenges(
   user_id, barbershop_id, channel, destination, code_hash, purpose,
   expires_at, consumed_at, created_at)
@@ -148,6 +149,7 @@ cross join (values
   ('recente-aberto', now(), null::timestamptz, now() + interval '10 minutes')
 ) as v(tag, created_at, consumed_at, expires_at);
 
+alter table public.auth_otp_challenges enable trigger guard_whatsapp_otp_request;
 select pg_temp.check_fin(public.purge_auth_otp_challenges() >= 2, 'Limpeza informa quantos apagou');
 select pg_temp.check_fin(
   not exists (select 1 from public.auth_otp_challenges a join fin_ctx c

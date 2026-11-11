@@ -1,9 +1,11 @@
+import { randomOtp, otpVerifier } from "../_shared/whatsapp-otp.ts";
 /** OTP e cadastro de barbearia via WhatsApp da plataforma (sem loja ainda). */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { corsHeaders, digitsOnlyPhone, evolutionFetch, json } from "../_shared/evolution.ts";
+import { corsHeaders, sendAuthorizedWhatsapp, json } from "../_shared/evolution.ts";
 
 type Body = {
+  request_id?: string;
   action?: "request" | "verify" | "register";
   destination?: string;
   code?: string;
@@ -22,24 +24,15 @@ type Body = {
   /** Usar o WhatsApp confirmado do dono como contato público da barbearia. */
   shop_whatsapp_same?: boolean;
   /**
-   * P-38: o dono quer avisos por WhatsApp (a tela já traz marcado). Só booleano; sem o campo
-   * (tela anterior à pergunta, PWA com o pacote antigo) fica ligado, como sempre foi gravado.
+   * P-38: escolha explícita sobre avisos; confirmação do número não concede consentimento.
    */
   whatsapp_opt_in?: boolean;
   /** Fuso horário IANA da barbearia (opcional; inválido é ignorado e fica o padrão). */
   timezone?: string;
 };
 
-async function sha256Hex(value: string) {
-  const data = new TextEncoder().encode(value);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-function randomOtp() {
-  const n = crypto.getRandomValues(new Uint8Array(3));
-  const num = ((n[0] << 16) | (n[1] << 8) | n[2]) % 1_000_000;
-  return String(num).padStart(6, "0");
+async function codeVerifier(value: string) {
+  return otpVerifier(value, Deno.env.get("WHATSAPP_OTP_HMAC_KEY") ?? "");
 }
 
 function randomToken() {
@@ -286,29 +279,14 @@ Deno.serve(async (req) => {
       // Não diz aqui se o número já tem conta: sem login, isso viraria um jeito de
       // descobrir quais WhatsApps estão cadastrados. Quem tem o aparelho recebe o
       // código e fica sabendo no passo "verify" (phone_in_use).
-      const since = new Date(Date.now() - 15 * 60 * 1000).toISOString();
-      const countDestination = async () => {
-        const { count } = await admin
-          .from("auth_otp_challenges")
-          .select("id", { count: "exact", head: true })
-          .eq("destination", normalized)
-          .eq("purpose", "signup")
-          .is("barbershop_id", null)
-          .gte("created_at", since);
-        return count ?? 0;
-      };
-
-      if ((await countDestination()) >= MAX_SENDS_PER_DESTINATION) {
-        return fail("rate_limited", "Muitas tentativas. Aguarde alguns minutos.", 429);
-      }
-
       const code = randomOtp();
-      const codeHash = await sha256Hex(`platform:${normalized}:${code}`);
+      const codeHash = await codeVerifier(`platform:${normalized}:${code}`);
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
       const { data: inserted, error: insertError } = await admin
         .from("auth_otp_challenges")
         .insert({
+          request_id: body.request_id,
           user_id: null,
           barbershop_id: null,
           channel: "whatsapp",
@@ -320,44 +298,40 @@ Deno.serve(async (req) => {
         .select("id")
         .single();
       if (insertError || !inserted) {
+        if (insertError?.message?.includes("WA_RATE_LIMIT"))
+          return fail("rate_limited", "Aguarde antes de pedir outro código.", 429);
+        if (insertError?.message?.includes("WA_SENDING_PAUSED"))
+          return fail("whatsapp_unavailable", "Envios de WhatsApp pausados no momento.", 503);
         console.error("register-shop: falha ao gravar o desafio", insertError?.message);
         return fail("internal_error", "Não foi possível gerar o código. Tente de novo.", 500);
       }
-      // Pedidos em paralelo passam juntos pela contagem acima: recontar depois de
-      // gravar e anular o desafio que passou do limite (sem enviar código).
-      if ((await countDestination()) > MAX_SENDS_PER_DESTINATION) {
-        await admin
-          .from("auth_otp_challenges")
-          .update({ consumed_at: new Date().toISOString() })
-          .eq("id", (inserted as { id: string }).id);
-        return fail("rate_limited", "Muitas tentativas. Aguarde alguns minutos.", 429);
-      }
-
       const text = `Barba & Cabelo\nSeu código para abrir a barbearia: ${code}\nVálido por 10 minutos.`;
 
+      let deliveryState: string;
       try {
-        await evolutionFetch(`/message/sendText/${platformInstance()}`, {
-          method: "POST",
-          body: JSON.stringify({
-            number: digitsOnlyPhone(normalized),
-            text,
-          }),
+        const sent = await sendAuthorizedWhatsapp(admin, {
+          instance: platformInstance(),
+          challengeId: inserted.id,
+          codeHash,
+          text,
         });
-      } catch (err) {
-        console.error(
-          "register-shop: falha ao enviar o WhatsApp",
-          err instanceof Error ? err.message : err,
-        );
+        if (sent.state === "blocked")
+          return fail("whatsapp_unavailable", "Envio de WhatsApp indisponível no momento.", 503);
+        deliveryState = sent.state;
+      } catch {
+        console.error("register-shop: envio de código indisponível");
         return fail(
           "whatsapp_unavailable",
-          "Não foi possível enviar o WhatsApp agora. Tente de novo em alguns minutos.",
-          502,
+          "Não foi possível confirmar o envio. Aguarde antes de pedir outro código.",
+          503,
         );
       }
 
       return json({
         ok: true,
-        message: "Enviamos um código para o WhatsApp informado.",
+        message: "Se o código chegar, digite abaixo. A aceitação do envio não confirma a entrega.",
+        delivery_state: deliveryState,
+        resend_after_seconds: 60,
         expires_in_seconds: 600,
         destination: normalized,
       });
@@ -376,7 +350,7 @@ Deno.serve(async (req) => {
 
       // Checagem atômica no banco (mesma do auth-otp): no acerto consome o desafio;
       // no erro soma a tentativa e invalida os desafios abertos após o limite.
-      const codeHash = await sha256Hex(`platform:${normalized}:${code}`);
+      const codeHash = await codeVerifier(`platform:${normalized}:${code}`);
       const { data: checked, error: checkError } = await admin.rpc("auth_otp_check_code", {
         p_barbershop_id: null,
         p_destination: normalized,
@@ -438,7 +412,7 @@ Deno.serve(async (req) => {
       if (optInInformed && typeof body.whatsapp_opt_in !== "boolean") {
         return fail("invalid_opt_in", "Escolha se quer receber avisos pelo WhatsApp.", 400);
       }
-      const whatsappOptIn = optInInformed ? body.whatsapp_opt_in === true : true;
+      const whatsappOptIn = body.whatsapp_opt_in === true;
 
       if (!token) {
         return fail("verification_expired", "Confirme o WhatsApp antes de continuar.", 400);
@@ -636,7 +610,9 @@ Deno.serve(async (req) => {
 
     return fail("invalid_action", "Ação inválida", 400);
   } catch (err) {
-    console.error("register-shop: erro inesperado", err instanceof Error ? err.message : err);
+    console.error("register-shop: erro inesperado");
+    if (err instanceof Error && err.message === "WA_OTP_KEY_UNAVAILABLE")
+      return fail("whatsapp_unavailable", "Envio de WhatsApp indisponível no momento.", 503);
     return fail("internal_error", "Cadastro falhou. Tente de novo.", 500);
   }
 });

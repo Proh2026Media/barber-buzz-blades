@@ -1,3 +1,4 @@
+import { otpRequestBody } from "@/lib/auth/otp-request";
 import { useEffect, useId, useRef, useState, type RefObject } from "react";
 import type { Session } from "@supabase/supabase-js";
 import {
@@ -70,6 +71,7 @@ type OtpPayload = {
   attempts_left?: number;
   already_verified?: boolean;
   resend_after_seconds?: number;
+  delivery_state?: "accepted" | "unknown";
   whatsapp_e164?: string | null;
   whatsapp_opt_in_at?: string | null;
 };
@@ -102,7 +104,7 @@ async function callVerifyPhone(body: Record<string, unknown>, token: string): Pr
       apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ purpose: "verify_phone", channel: "whatsapp", ...body }),
+    body: otpRequestBody({ purpose: "verify_phone", channel: "whatsapp", ...body }),
   });
   let payload: OtpPayload = {};
   try {
@@ -158,6 +160,7 @@ function AccountWhatsappForm({
   const [step, setStep] = useState<"edit" | "code">("edit");
   // Com número gravado, o cartão mostra o resumo; "Trocar número" abre o campo.
   const [editing, setEditing] = useState(false);
+  const [uncertainSend, setUncertainSend] = useState(false);
   const [pendingNumber, setPendingNumber] = useState("");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState<"save" | "send" | "verify" | null>(null);
@@ -296,6 +299,7 @@ function AccountWhatsappForm({
         );
         return;
       }
+      setUncertainSend(payload.delivery_state === "unknown");
       setPendingNumber(number);
       setCode("");
       setAttemptsLeft(null);
@@ -518,6 +522,7 @@ function AccountWhatsappForm({
           className="space-y-4"
         >
           {confirmSteps(1)}
+          {uncertainSend && <Notice tone="warning" title={t("waSafety.otpUnknown")} />}
           <p className="text-sm">
             {t("conta.whats.sentTo")}{" "}
             <strong className="whitespace-nowrap tabular-nums">{formatBr(pendingNumber)}</strong>

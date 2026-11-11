@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { otpVerifier } from "../_shared/whatsapp-otp.ts";
 import { whatsappLogin } from "./login.ts";
 
 function fixture(
@@ -21,7 +22,7 @@ function fixture(
       if (options.rpcError) return { error: { message: options.rpcError } };
       return {
         data:
-          name === "request_whatsapp_login"
+          name === "request_whatsapp_login_once"
             ? { challenge_id: "desafio", user_id: options.known === false ? null : "conta" }
             : options.valid === false
               ? []
@@ -72,6 +73,7 @@ function fixture(
     run: (body: Parameters<typeof whatsappLogin>[1], instance = "plataforma") =>
       whatsappLogin(client as never, body, {
         instance,
+        hash: (context) => otpVerifier(context, "chave-ficticia-local-com-mais-de-32-caracteres"),
         send: async (instance, phone, text) => {
           calls.push({ name: "send", args: { instance, phone, text } });
           if (options.sendFails) throw new Error("timeout");
@@ -95,12 +97,12 @@ test("número desconhecido recebe mesma resposta sem envio", async () => {
   assert.deepEqual(await a.run({ destination: phone }), await b.run({ destination: phone }));
   assert.ok(!b.calls.some((c) => c.name === "send"));
 });
-test("timeout não distingue conta e invalida código sem reenviar", async () => {
+test("timeout não distingue conta, preserva código possivelmente entregue e não reenvia", async () => {
   const a = fixture({ sendFails: true }),
     b = fixture({ known: false });
   assert.deepEqual(await a.run({ destination: phone }), await b.run({ destination: phone }));
   assert.equal(a.calls.filter((c) => c.name === "send").length, 1);
-  assert.ok(a.calls.some((c) => c.name === "invalidate"));
+  assert.ok(!a.calls.some((c) => c.name === "invalidate"));
 });
 test("remetente ausente não cria desafio", async () => {
   const f = fixture();

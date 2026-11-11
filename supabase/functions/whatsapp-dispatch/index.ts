@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { corsHeaders, digitsOnlyPhone, evolutionFetch, json } from "../_shared/evolution.ts";
+import { corsHeaders, sendAuthorizedWhatsapp, json } from "../_shared/evolution.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -48,6 +48,7 @@ Deno.serve(async (req) => {
     if (new Date().getUTCMinutes() === 17) {
       try {
         await admin.rpc("purge_auth_otp_challenges");
+        await admin.rpc("purge_whatsapp_send_audit");
       } catch {
         /* ignore if migration not applied yet */
       }
@@ -93,7 +94,7 @@ Deno.serve(async (req) => {
     if (returnError) return json({ error: "Regras de comunicação indisponíveis" }, 503);
 
     const { data: batch, error: claimError } = await admin.rpc("claim_whatsapp_outbox", {
-      p_limit: 20,
+      p_limit: 5,
     });
     if (claimError) {
       return json({ error: claimError.message }, 500);
@@ -101,6 +102,7 @@ Deno.serve(async (req) => {
 
     const rows = (batch ?? []) as Array<{
       id: string;
+      lease_token: string;
       barbershop_id: string;
       to_e164: string;
       body: string;
@@ -112,66 +114,18 @@ Deno.serve(async (req) => {
     let failed = 0;
 
     for (const row of rows) {
-      const { data: delivery, error: prepareError } = await admin.rpc("prepare_whatsapp_delivery", {
-        p_id: row.id,
+      const result = await sendAuthorizedWhatsapp(admin, {
+        outboxId: row.id,
+        leaseToken: row.lease_token,
       });
-      if (prepareError) return json({ error: "Não foi possível conferir a fila de avisos" }, 503);
-      if (!delivery) {
-        failed += 1;
-        continue;
-      }
-      const target = delivery as { instance_name: string; to_e164: string; body: string };
-      // Uma consulta sem efeito precede o envio. Nunca troca de número por erro/banimento.
-      let connected = false;
-      try {
-        const state = (await evolutionFetch(
-          `/instance/connectionState/${encodeURIComponent(target.instance_name)}`,
-          {
-            signal: AbortSignal.timeout(10_000),
-          },
-        )) as { instance?: { state?: string } };
-        connected = state?.instance?.state === "open";
-      } catch {
-        /* Nenhum sendText foi chamado; pode adiar com segurança. */
-      }
-      if (!connected) {
-        const { error } = await admin.rpc("defer_whatsapp_delivery", { p_id: row.id });
-        if (error) return json({ error: "Não foi possível adiar o aviso" }, 503);
-        failed += 1;
-        continue;
-      }
-      try {
-        const result = (await evolutionFetch(
-          `/message/sendText/${encodeURIComponent(target.instance_name)}`,
-          {
-            method: "POST",
-            signal: AbortSignal.timeout(20_000),
-            body: JSON.stringify({ number: digitsOnlyPhone(target.to_e164), text: target.body }),
-          },
-        )) as { key?: { id?: string }; message?: { key?: { id?: string } } };
-        const providerId = result?.key?.id ?? result?.message?.key?.id;
-        if (!providerId) throw new Error("Envio sem confirmação do provedor");
-        const { error } = await admin.rpc("complete_whatsapp_outbox", {
-          p_id: row.id,
-          p_ok: true,
-          p_provider_message_id: providerId,
-        });
-        // O provedor aceitou, mas o banco pode estar indisponível. Não repetir.
-        if (error) return json({ error: "Envio aceito; registro pendente de conferência" }, 503);
-        sent += 1;
-      } catch {
-        const { error } = await admin.rpc("complete_whatsapp_outbox", {
-          p_id: row.id,
-          p_ok: false,
-          p_error: "Resultado incerto; conferir no provedor antes de reenviar",
-        });
-        if (error) return json({ error: "Resultado pendente de conferência" }, 503);
-        failed += 1;
-      }
+      if (!result.recorded)
+        return json({ error: "Resultado pendente de conferência; sem reenvio automático" }, 503);
+      if (result.state === "accepted") sent += 1;
+      else failed += 1;
     }
 
     return json({ ok: true, claimed: rows.length, sent, failed });
   } catch (err) {
-    return json({ error: err instanceof Error ? err.message : "Dispatch failed" }, 500);
+    return json({ error: "Não foi possível conferir os envios" }, 503);
   }
 });

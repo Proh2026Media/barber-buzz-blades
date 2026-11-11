@@ -1,3 +1,4 @@
+import { otpRequestBody } from "@/lib/auth/otp-request";
 import { WhatsAppLogin } from "@/features/auth/WhatsAppLogin";
 import { AuthFrame } from "@/features/auth/AuthFrame";
 import {
@@ -264,7 +265,7 @@ async function callVerifyPhone(body: Record<string, unknown>): Promise<VerifyPho
       apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ purpose: "verify_phone", channel: "whatsapp", ...body }),
+    body: otpRequestBody({ purpose: "verify_phone", channel: "whatsapp", ...body }),
   });
   let payload: VerifyPhonePayload = {};
   try {
@@ -1229,7 +1230,7 @@ function AuthPage() {
         "Content-Type": "application/json",
         apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "",
       },
-      body: JSON.stringify({
+      body: otpRequestBody({
         action: "request",
         shop: effectiveShopRef,
         channel: "whatsapp",
@@ -1357,7 +1358,7 @@ function AuthPage() {
               "Content-Type": "application/json",
               apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "",
             },
-            body: JSON.stringify({
+            body: otpRequestBody({
               action: "verify",
               shop: effectiveShopRef,
               channel: "whatsapp",

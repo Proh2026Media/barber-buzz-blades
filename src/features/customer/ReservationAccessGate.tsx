@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { initialPairingCountry, normalizePairingPhone } from "@/features/whatsapp/pairing-phone";
+import { otpRequestBody } from "@/lib/auth/otp-request";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { KeyRound, Loader2, LogIn, MessageCircle, Scissors, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,7 +47,7 @@ const STATUSES: AppointmentStatus[] = [
   "cancelled",
 ];
 /** Espera antes de permitir pedir outro código (só na tela; o servidor tem o próprio limite). */
-const RESEND_SECONDS = 30;
+const RESEND_SECONDS = 60;
 
 /** "(11) •••••-0000": o destino do código sem expor o número inteiro. */
 function maskedPhone(value: string) {
@@ -69,7 +71,7 @@ export function ReservationAccessGate({
   shopSlug?: string;
   onAuthenticated: () => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [lookup, setLookup] = useState<Lookup | null>(null);
   const [shop, setShop] = useState<ShopLook | null>(null);
   const [shopTimeZone, setShopTimeZone] = useState(DEFAULT_SHOP_TIMEZONE);
@@ -78,6 +80,7 @@ export function ReservationAccessGate({
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"phone" | "code">("phone");
   const [busy, setBusy] = useState(false);
+  const actionPending = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [sentAt, setSentAt] = useState<number | null>(null);
   const [canResend, setCanResend] = useState(false);
@@ -125,6 +128,13 @@ export function ReservationAccessGate({
   }, [token]);
 
   async function sendCode() {
+    if (busy || actionPending.current || (step === "code" && !canResend)) return;
+    const normalized = normalizePairingPhone(phone, initialPairingCountry(locale));
+    if (!normalized) {
+      setError(t("waPair.invalidPhone"));
+      return;
+    }
+    actionPending.current = true;
     setBusy(true);
     setError(null);
     try {
@@ -135,12 +145,12 @@ export function ReservationAccessGate({
           "Content-Type": "application/json",
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "",
         },
-        body: JSON.stringify({
+        body: otpRequestBody({
           action: "request",
           purpose: "login",
           shop: shopSlug || lookup?.barbershop_id,
           channel: "whatsapp",
-          destination: phone,
+          destination: `+${normalized.digits}`,
         }),
       });
       const payload = (await response.json().catch(() => ({}))) as {
@@ -154,11 +164,19 @@ export function ReservationAccessGate({
     } catch (err) {
       setError(friendlyAuthError(err, t("gate.sendError")));
     } finally {
+      actionPending.current = false;
       setBusy(false);
     }
   }
 
   async function verifyCode() {
+    if (busy || actionPending.current) return;
+    const normalized = normalizePairingPhone(phone, initialPairingCountry(locale));
+    if (!normalized) {
+      setError(t("waPair.invalidPhone"));
+      return;
+    }
+    actionPending.current = true;
     setBusy(true);
     setError(null);
     try {
@@ -169,12 +187,12 @@ export function ReservationAccessGate({
           "Content-Type": "application/json",
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "",
         },
-        body: JSON.stringify({
+        body: otpRequestBody({
           action: "verify",
           purpose: "login",
           shop: shopSlug || lookup?.barbershop_id,
           channel: "whatsapp",
-          destination: phone,
+          destination: `+${normalized.digits}`,
           code,
         }),
       });
@@ -190,7 +208,7 @@ export function ReservationAccessGate({
 
       const { error: verifyError } = await supabase.auth.verifyOtp({
         token_hash: payload.hashed_token,
-        type: (payload.verification_type as "magiclink" | "recovery") || "magiclink",
+        type: "email",
       });
       if (verifyError) throw verifyError;
 
@@ -204,6 +222,7 @@ export function ReservationAccessGate({
     } catch (err) {
       setError(friendlyAuthError(err, t("gate.signInError")));
     } finally {
+      actionPending.current = false;
       setBusy(false);
     }
   }
@@ -360,7 +379,7 @@ export function ReservationAccessGate({
           }}
         >
           <Notice
-            tone="success"
+            tone="info"
             title={t("gate.codeSent", { phone: maskedPhone(phone) })}
             className="rounded-[var(--control-radius)]"
           />

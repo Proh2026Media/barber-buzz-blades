@@ -1,3 +1,4 @@
+import { otpRequestBody } from "@/lib/auth/otp-request";
 import { useDemo } from "@/features/demo/context";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, MessageCircle } from "lucide-react";
@@ -107,7 +108,7 @@ function LoginForm({ onAuthenticated }: { onAuthenticated: () => Promise<void> }
             "Content-Type": "application/json",
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "",
           },
-          body: JSON.stringify({
+          body: otpRequestBody({
             action,
             purpose: "login",
             channel: "whatsapp",

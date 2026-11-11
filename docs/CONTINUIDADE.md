@@ -1,6 +1,25 @@
 # Transição para a próxima IA — Barba & Cabelo
 
-Atualizado em **10/11/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
+Atualizado em **11/11/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
+
+## 11/11/2026 — auditoria WhatsApp concluída localmente, sem publicação
+
+**Autorização específica do dono:** adotar `INSTRUCOES_CODEX_WHATSAPP_BARBA_CABELO.md` para auditar e corrigir **localmente**, sem publicar nem alterar produção. Base `93e3f1ce8b67882dfa314b16e06ab4727fe10ff5`, ramo `auditoria/whatsapp-confiabilidade-2026-11-10`. Não rodar `autossave.sh` nem enviar este ramo ao `origin` sem nova autorização. `.env` e `.vscode/` já tinham alterações do usuário e foram preservados. Nenhuma operação no Flow.
+
+**Resultado:** [auditoria com evidências, inventário e achados](auditoria-whatsapp-2026-11-11.md). Todos os emissores passam pela mesma autorização de saída; pausa global/por número persistente, trilha sem conteúdo, limites e criação de desafios atômicos, HMAC com segredo de servidor, identificador único do pedido, posse temporária da fila e proteção contra worker antigo. Consentimento/evento são novamente conferidos antes de transmitir. Timeout ou resposta sem identificador permanece desconhecido, sem repetição automática nem troca de número. Três incertezas em 15 minutos exigem revisão manual. Interface mostra pausas e distingue aceite de entrega; código por link de agendamento tem número normalizado, proteção de clique duplo e espera de 60 segundos. Métodos de e-mail/Google existentes preservados.
+
+**Banco/servidor:** nº 105 `20261110230000_whatsapp_saida_protegida.sql` **somente local, não instalada**. Nasce com pausa global ativa; depende do conjunto de funções e de `WHATSAPP_OTP_HMAC_KEY`, sem registrar seu valor. Nº 101–104 já instaladas: não repetir. [Pacote TI para futura janela](pacotes/2026-11-11-ti-whatsapp-saida-protegida.md) inclui sequência, interrupção de emissores antigos, expiração dos desafios anteriores, conferência e reversão operacional que pausa sem apagar evidências. O pacote não autoriza implantação nem mensagem real.
+
+**Verificações executadas, todas locais/fictícias:**
+
+- `scripts/verificar.sh`: tipos, **520/520 testes**, lint, formatação e montagem aprovados. Exclusão temporária de `.vscode/`, sem modificar a configuração do usuário.
+- `deno check --no-lock`: `auth-otp`, `register-shop`, `whatsapp-dispatch`, `platform-whatsapp` e `whatsapp-channel` aprovadas, incluindo auxiliares compartilhados.
+- `scripts/banco-local.sh testes supabase/migrations/20261110230000_whatsapp_saida_protegida.sql`: **1.422 PASS, 0 FAIL/ERROR**, sendo 39 novos casos; transações com rollback. Dados históricos de testes antigos adaptados explicitamente à pausa e aos novos limites.
+- `python3 scripts/testar-whatsapp-concorrencia.py`: **5/5 PASS**, duas conexões reais em container local exclusivo: pedidos simultâneos de finalidades diferentes, consumo único de código, posse única de job, autorização única e nenhum reenvio do resultado incerto. Container descartado ao final.
+- Reversão operacional ensaiada dentro de transação local: pausa global confirmada e trilha preservada; rollback do ensaio.
+- Playwright, rede do sistema inteiramente simulada: **30 combinações** (360/390/768/1024/1440 px × dois temas × três cantos), pausa global/por número, confirmação, erro sem falso sucesso, clique duplo, teclado e ampliação de texto. Capturas de celular/computador inspecionadas. Acesso pelo link também passou: número E.164, um único pedido, identificador e reenvio bloqueado aos 30 segundos/liberado após 60, com relógio simulado.
+
+**Limites:** as correções não demonstram a causa da restrição da Meta nem garantem ausência de novo bloqueio. Não houve envio, pareamento, reinício remoto, implantação ou teste com pessoa real. O estado atual da conta depende do titular/TI. Homologação física e entrega real continuam externas. Próximo passo: revisar o pacote local e autorizar uma janela somente quando desejado; nada a reenviar ao Claude/Flow.
 
 ## 10/11/2026 — captura confirma restrição temporária e uma entrega de código
 

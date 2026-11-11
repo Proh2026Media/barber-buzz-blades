@@ -1,3 +1,4 @@
+import { WhatsAppSendingControls } from "./WhatsAppSendingControls";
 import { WhatsAppShopDirectory } from "./WhatsAppShopDirectory";
 import { useDemo } from "@/features/demo/context";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -333,6 +334,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
         <Notice tone="info" title={t("waPair.demo")} />
       ) : (
         <>
+          <WhatsAppSendingControls numbers={data?.channels ?? []} />
           {error && <Notice tone="danger" title={t(error)} />}
           {saved && <Notice tone="success" title={t("waCentral.saved")} />}
           <div

@@ -1361,6 +1361,12 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      whatsapp_send_dashboard: { Args: Record<string, never>; Returns: Json };
+      set_whatsapp_send_pause: {
+        Args: { p_scope: string; p_paused: boolean; p_reason: string; p_version?: number };
+        Returns: Json;
+      };
+
       platform_configure_whatsapp_number: {
         Args: {
           p_id: string;

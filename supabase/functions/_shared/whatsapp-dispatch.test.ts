@@ -1,3 +1,4 @@
+import { sendWhatsapp } from "./whatsapp-send.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -25,19 +26,22 @@ function fixture(
       calls.push({ name, args });
       if (name === "process_whatsapp_return_notices" && options.migrationError)
         return { error: { message: "ausente" } };
-      if (name === "claim_whatsapp_outbox") return { data: [{ id: "mensagem", attempts: 1 }] };
-      if (name === "prepare_whatsapp_delivery")
+      if (name === "claim_whatsapp_outbox")
+        return { data: [{ id: "mensagem", attempts: 1, lease_token: "posse" }] };
+      if (name === "whatsapp_send_candidate") return { data: { instance_name: "principal-fixo" } };
+      if (name === "authorize_whatsapp_send")
         return {
           data:
             options.prepare === false
               ? null
               : {
+                  attempt_id: "tentativa",
                   instance_name: "principal-fixo",
                   to_e164: "+5511999999999",
                   body: "Aviso fictício",
                 },
         };
-      if (name === "complete_whatsapp_outbox" && options.completionError)
+      if (name === "finish_whatsapp_send" && options.completionError)
         return { error: { message: "banco indisponível" } };
       return { data: null, error: null };
     },
@@ -53,7 +57,7 @@ function fixture(
   };
   new Function(
     "createClient",
-    "evolutionFetch",
+    "sendAuthorizedWhatsapp",
     "digitsOnlyPhone",
     "corsHeaders",
     "json",
@@ -62,7 +66,7 @@ function fixture(
     stripTypeScriptTypes(source),
   )(
     () => client,
-    evolutionFetch,
+    (db: never, input: never) => sendWhatsapp(db, input, evolutionFetch),
     (p: string) => p.replace(/\D/g, ""),
     {},
     (b: unknown, s = 200) => Response.json(b, { status: s }),
@@ -107,16 +111,14 @@ test("um único envio usa somente a rota preparada no banco", async () => {
     [{ name: "/message/sendText/principal-fixo" }],
   );
   assert.equal(
-    f.calls.find((c) => c.name === "complete_whatsapp_outbox")?.args?.p_provider_message_id,
+    f.calls.find((c) => c.name === "finish_whatsapp_send")?.args?.p_provider_id,
     "aceite-ficticio",
   );
 });
 test("consentimento ou agendamento recusado pelo banco não chama Evolution", async () => {
   const f = fixture({ prepare: false });
   await f.run();
-  assert.ok(
-    !f.calls.some((c) => c.name.startsWith("/instance/") || c.name.startsWith("/message/")),
-  );
+  assert.ok(!f.calls.some((c) => c.name.startsWith("/message/")));
 });
 for (const options of [
   { state: "close" },
@@ -127,7 +129,7 @@ for (const options of [
   test(`pré-conferência indisponível adia sem envio: ${JSON.stringify(options)}`, async () => {
     const f = fixture(options);
     await f.run();
-    assert.ok(f.calls.some((c) => c.name === "defer_whatsapp_delivery"));
+    assert.ok(f.calls.some((c) => c.name === "defer_whatsapp_send"));
     assert.ok(!f.calls.some((c) => c.name.includes("/message/")));
   });
 }
@@ -136,13 +138,13 @@ for (const options of [{ sendError: true }, { providerId: false }]) {
     const f = fixture(options);
     await f.run();
     assert.equal(f.calls.filter((c) => c.name.includes("/message/")).length, 1);
-    assert.equal(f.calls.find((c) => c.name === "complete_whatsapp_outbox")?.args?.p_ok, false);
-    assert.ok(!f.calls.some((c) => c.name === "defer_whatsapp_delivery"));
+    assert.equal(f.calls.find((c) => c.name === "finish_whatsapp_send")?.args?.p_provider_id, null);
+    assert.ok(!f.calls.some((c) => c.name === "defer_whatsapp_send"));
   });
 }
 test("aceite externo e falha no banco não produzem outro envio", async () => {
   const f = fixture({ completionError: true });
   assert.equal((await f.run()).status, 503);
   assert.equal(f.calls.filter((c) => c.name.includes("/message/")).length, 1);
-  assert.equal(f.calls.filter((c) => c.name === "complete_whatsapp_outbox").length, 1);
+  assert.equal(f.calls.filter((c) => c.name === "finish_whatsapp_send").length, 1);
 });
