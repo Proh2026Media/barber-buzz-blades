@@ -558,6 +558,8 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
             </>
           ) : (
             <PlatformAccountMenu
+              key={profile.user.id}
+              userId={profile.user.id}
               name={accountName}
               email={profile.user.email}
               areas={myAreas}

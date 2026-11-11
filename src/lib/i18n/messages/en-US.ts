@@ -1958,6 +1958,11 @@ export const enUS: Record<MessageKey, string> = {
   "plat.brand.title": "Customize {name}",
   "plat.brand.loading": "Loading branding…",
   "plat.brand.shopNameFallback": "Barbershop",
+  "account.whatsapp.title": "Personal WhatsApp",
+  "account.whatsapp.description":
+    "Verify your number to sign in with WhatsApp. This is separate from the numbers the system uses to send notifications.",
+  "account.whatsapp.loadError": "Could not load your WhatsApp number.",
+  "account.whatsapp.loginPending": "Verify this number to use it to sign in.",
   "plat.account.menuAria": "Account menu for {name}",
   "plat.account.role": "Platform administrator",
   "plat.account.password": "Change password",

@@ -1961,6 +1961,11 @@ export const ptPT: Record<MessageKey, string> = {
   "plat.brand.title": "Personalizar {name}",
   "plat.brand.loading": "A carregar identidade…",
   "plat.brand.shopNameFallback": "Barbearia",
+  "account.whatsapp.title": "WhatsApp pessoal",
+  "account.whatsapp.description":
+    "Confirme o seu número para entrar na conta por WhatsApp. É separado dos números utilizados pelo sistema para enviar avisos.",
+  "account.whatsapp.loadError": "Não foi possível carregar o seu WhatsApp.",
+  "account.whatsapp.loginPending": "Confirme este número para o utilizar no início de sessão.",
   "plat.account.menuAria": "Menu da conta de {name}",
   "plat.account.role": "Administrador da plataforma",
   "plat.account.password": "Alterar palavra-passe",

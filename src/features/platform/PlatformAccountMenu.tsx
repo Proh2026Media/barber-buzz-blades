@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { KeyRound, Languages, LogOut, type LucideIcon } from "lucide-react";
+import { useRef, useState } from "react";
+import { KeyRound, Languages, LogOut, MessageCircle, type LucideIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogBody, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { PersonAvatar } from "@/components/visual";
 import { ChangePasswordCard } from "@/features/auth/ChangePasswordCard";
 import { LanguageSettingsCard } from "@/components/LanguageSettingsCard";
@@ -9,6 +9,7 @@ import { MyAreasSection } from "@/features/account/MyAreas";
 import { useAreaSwitch } from "@/features/account/useAreas";
 import type { AreaItem } from "@/lib/auth/areas";
 import { useI18n } from "@/lib/i18n";
+import { PersonalWhatsappSettings } from "@/features/account/PersonalWhatsappSettings";
 
 const ITEM =
   "flex min-h-12 w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-semibold transition hover:bg-muted";
@@ -19,14 +20,16 @@ function MenuIcon({ icon: Icon }: { icon: LucideIcon }) {
 
 /**
  * Menu da conta do painel da plataforma: quem está conectado, "Minhas áreas" (só as barbearias
- * em que o admin é da equipe, com o papel, e o app do cliente), senha, idioma e sair.
+ * em que o admin é da equipe, com o papel, e o app do cliente), WhatsApp pessoal, senha, idioma e sair.
  */
 export function PlatformAccountMenu({
+  userId,
   name,
   email,
   areas,
   onSignOut,
 }: {
+  userId: string;
   name: string;
   email?: string | null;
   /** Áreas da conta; sem vínculo de equipe não há atalho para barbearia nenhuma. */
@@ -35,10 +38,11 @@ export function PlatformAccountMenu({
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
   const areaSwitch = useAreaSwitch();
-  const [panel, setPanel] = useState<"password" | "language" | null>(null);
+  const [panel, setPanel] = useState<"password" | "language" | "whatsapp" | null>(null);
 
-  function openPanel(next: "password" | "language") {
+  function openPanel(next: "password" | "language" | "whatsapp") {
     setOpen(false);
     window.setTimeout(() => setPanel(next), 0);
   }
@@ -48,6 +52,7 @@ export function PlatformAccountMenu({
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <button
+            ref={trigger}
             type="button"
             aria-label={t("plat.account.menuAria", { name })}
             className="app-icon-button p-0!"
@@ -80,6 +85,10 @@ export function PlatformAccountMenu({
             }}
           />
           <div className="space-y-0.5 border-t border-border pt-1">
+            <button type="button" className={ITEM} onClick={() => openPanel("whatsapp")}>
+              <MenuIcon icon={MessageCircle} />
+              {t("account.whatsapp.title")}
+            </button>
             <button type="button" className={ITEM} onClick={() => openPanel("password")}>
               <MenuIcon icon={KeyRound} />
               {t("plat.account.password")}
@@ -102,19 +111,36 @@ export function PlatformAccountMenu({
 
       <Dialog open={panel !== null} onOpenChange={(next) => !next && setPanel(null)}>
         <DialogContent
+          mobileSheet={panel === "whatsapp"}
           aria-describedby={undefined}
-          className="max-h-[92dvh] max-w-md rounded-3xl border-border bg-card p-5"
+          className={`max-h-[92dvh] max-w-md rounded-3xl border-border bg-card p-5 ${panel === "whatsapp" ? "grid-rows-[auto_minmax(0,1fr)] overflow-hidden" : ""}`}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            trigger.current?.focus();
+          }}
         >
           <DialogTitle className="flex min-h-11 items-center gap-2 pr-12 text-lg font-bold">
             {panel === "language" ? (
               <Languages className="size-5 text-gold" aria-hidden />
+            ) : panel === "whatsapp" ? (
+              <MessageCircle className="size-5 text-gold" aria-hidden />
             ) : (
               <KeyRound className="size-5 text-gold" aria-hidden />
             )}
-            {panel === "language" ? t("language.title") : t("plat.account.password")}
+            {panel === "language"
+              ? t("language.title")
+              : panel === "whatsapp"
+                ? t("account.whatsapp.title")
+                : t("plat.account.password")}
           </DialogTitle>
           {panel === "password" && <ChangePasswordCard />}
           {panel === "language" && <LanguageSettingsCard hideHeading />}
+          {panel === "whatsapp" && (
+            <DialogBody className="-mx-5 px-5">
+              <p className="text-sm text-muted-foreground">{t("account.whatsapp.description")}</p>
+              <PersonalWhatsappSettings userId={userId} />
+            </DialogBody>
+          )}
         </DialogContent>
       </Dialog>
     </>

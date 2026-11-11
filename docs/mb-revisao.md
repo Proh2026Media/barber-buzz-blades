@@ -2,6 +2,13 @@
 
 Atualizado em **07/11/2026** (P-49/P-70; entradas anteriores preservadas como histórico). Fonte: [mb-interface.md](mb-interface.md). Regra: `.cursor/rules/mb.mdc`. Skill: `.cursor/skills/mb/`.
 
+## P-117 — WhatsApp pessoal do administrador (10/11/2026)
+
+- Menu do avatar ganha “WhatsApp pessoal”, separado da Central de WhatsApp. Cadastro/confirmação pelo fluxo existente; mesmo admin sem loja pode informar o próprio número.
+- Janela compacta no computador e folha inferior no celular, corpo rolável, estado de confirmação e retorno de foco ao avatar. Troca, manutenção e remoção disponíveis; o atalho não altera a preferência de lembretes.
+- Conta diferente/saída durante leitura não mostra dados anteriores. Falha de leitura ou ausência da coluna de confirmação bloqueia o formulário e oferece nova tentativa.
+- Bancada fictícia: cadastro, código incorreto/correto, clique repetido, reabertura, troca/cancelamento/remoção, indisponibilidade, preferências preservadas e respostas antigas; 30 combinações de cinco larguras, três cantos e dois temas. Código conferido também em 320 × 480; capturas inspecionadas. Testes reais de envio continuam dependendo do titular e do número de acesso conectado.
+
 ## P-119 — status estável, navegação superior e destinos pendentes (10/11/2026)
 
 - O status conhecido não é apagado pelo `null` inicial do cartão de conexão: troca de número confere em segundo plano e aplica o resultado/falha ao número correto. A primeira lista e a atualização explícita mantêm seus indicadores de atividade.

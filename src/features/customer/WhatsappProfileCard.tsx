@@ -59,6 +59,8 @@ type Props = {
   id?: string;
   /** Dentro de uma janela: sem moldura e sem cabeçalho próprio (o título é o da janela). */
   bare?: boolean;
+  /** Atalho de acesso pessoal: preserva a preferência de lembretes, sem editá-la aqui. */
+  loginOnly?: boolean;
 };
 
 type OtpPayload = {
@@ -140,6 +142,7 @@ function AccountWhatsappForm({
   onStatusChange,
   id,
   bare = false,
+  loginOnly = false,
 }: Props & { currentSession: RefObject<Session | null> }) {
   const { t } = useI18n();
   const uid = useId();
@@ -491,7 +494,9 @@ function AccountWhatsappForm({
         />
       )}
 
-      {step === "edit" && (
+      {loginOnly && step === "edit" && <StatusBadge {...badge} size="sm" />}
+
+      {!loginOnly && step === "edit" && (
         // Para que serve o número, em duas dicas com ícone (no lugar do parágrafo).
         <IconList
           size="sm"
@@ -611,7 +616,7 @@ function AccountWhatsappForm({
             <Notice
               tone="warning"
               role="none"
-              title={t("conta.whats.consequence")}
+              title={t(loginOnly ? "account.whatsapp.loginPending" : "conta.whats.consequence")}
               action={{
                 // Mesmo verbo da 1ª etapa logo acima ("Enviar código").
                 label: t(busy === "send" ? "fix2.whats.sending" : "fix2.whats.sendCode"),
@@ -622,7 +627,7 @@ function AccountWhatsappForm({
               }}
             />
           )}
-          {optInRow}
+          {!loginOnly && optInRow}
         </div>
       ) : (
         <form onSubmit={(event) => void submitNumber(event)} className="space-y-3">
@@ -645,7 +650,7 @@ function AccountWhatsappForm({
               className="min-h-11 w-full rounded-xl border border-border bg-background px-3 py-2"
             />
           </div>
-          {!savedNumber && optInRow}
+          {!loginOnly && !savedNumber && optInRow}
           {/* Número novo: as etapas mostram que vem um código (no lugar da frase). */}
           {!demo && !removing && changed && whatsapp.trim() && confirmSteps(0)}
           <div className="flex flex-wrap gap-2">

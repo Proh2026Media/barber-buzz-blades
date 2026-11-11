@@ -2,6 +2,16 @@
 
 Atualizado em **10/11/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
+## 10/11/2026 — P-117: cadastro do WhatsApp pessoal no painel global
+
+**Problema:** o administrador sem WhatsApp confirmado não tinha acesso ao cadastro pessoal no menu da administração. O número da plataforma para envio não é o telefone do login.
+
+**Entrega:** `PlatformAccountMenu` recebe o id da conta e abre “WhatsApp pessoal”. `PersonalWhatsappSettings` lê o perfil com sessão explícita, ignora respostas depois de sair/trocar conta/fechar a janela e oferece retry em falha. Reutiliza `WhatsappProfileCard` com apresentação de login: confirmação pelo `auth-otp` existente, sem editar preferências de lembretes. Número só é considerado confirmado se houver telefone e `whatsapp_verified_at`. Formulário não aparece quando o perfil não pôde ser lido ou o banco não possui a coluna. Menu é substituído pelo menu fictício na demonstração, conforme catálogo existente de componentes exclusivos do ambiente real.
+
+**Validação:** tipos, lint, formatação e montagem aprovados; 492/492 testes após registrar o componente no catálogo da guarda de demonstração. Bancada de navegador com respostas fictícias cobriu código inválido/correto, duplicação, persistência por reabertura, troca/cancelamento/remoção, falhas/retry, preferência de lembretes preservada, retorno antigo descartado e foco/Escape. Cinco larguras (320, 390, 834, 1024, 1440), três cantos e dois temas: 30 combinações, além do código em 320 × 480. Banco sem coluna bloqueia o formulário; conta diferente não consulta o perfil e saída durante consulta não expõe a resposta. Senha/idioma continuam abrindo; capturas de celular/computador inspecionadas.
+
+**Limites:** nenhum número pessoal inserido em produção, nenhum código ou mensagem real enviado. O titular entra pela forma atual, abre avatar → WhatsApp pessoal, informa seu número e confirma o código. Sem nova migration, função, segredo, instalação TI ou mudança no Flow.
+
 ## Comece aqui
 
 1. **Comece por [LEIA-PRIMEIRO.md](LEIA-PRIMEIRO.md)**: regras de trabalho e roteiro pelo guia em [guia/](guia/). Este arquivo é o diário detalhado de cada entrega, para consulta; os itens abaixo são de 03/10.

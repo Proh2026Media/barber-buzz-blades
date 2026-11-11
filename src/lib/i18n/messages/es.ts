@@ -1966,6 +1966,11 @@ export const es: Record<MessageKey, string> = {
   "plat.brand.title": "Personalizar {name}",
   "plat.brand.loading": "Cargando identidad…",
   "plat.brand.shopNameFallback": "Barbería",
+  "account.whatsapp.title": "WhatsApp personal",
+  "account.whatsapp.description":
+    "Confirma tu número para iniciar sesión con WhatsApp. Es independiente de los números que utiliza el sistema para enviar avisos.",
+  "account.whatsapp.loadError": "No se pudo cargar tu número de WhatsApp.",
+  "account.whatsapp.loginPending": "Confirma este número para usarlo al iniciar sesión.",
   "plat.account.menuAria": "Menú de la cuenta de {name}",
   "plat.account.role": "Administrador de la plataforma",
   "plat.account.password": "Cambiar contraseña",

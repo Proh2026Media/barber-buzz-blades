@@ -83,6 +83,10 @@ test("o cliente do banco passa toda chamada pela trava da demonstração", () =>
  */
 const OUTSIDE_DEMO = new Map<string, string>([
   [
+    "features/account/PersonalWhatsappSettings.tsx",
+    "PlatformAccountMenu: substituído por DemoAccountMenu em demoMode/demoChrome",
+  ],
+  [
     "features/shop/hours/WeeklyBreaksCard.tsx",
     "Horários: o painel só passa a pausa fixa fora da demonstração",
   ],
