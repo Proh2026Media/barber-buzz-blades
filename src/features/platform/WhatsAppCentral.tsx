@@ -1,8 +1,9 @@
-import { WhatsAppMissingDestinations } from "./WhatsAppMissingDestinations";
+import { WhatsAppShopDirectory } from "./WhatsAppShopDirectory";
 import { useDemo } from "@/features/demo/context";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowRightLeft,
+  Clock3,
   Link2,
   ArrowLeft,
   ArrowRight,
@@ -93,7 +94,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "available" | "assigned" | "backup">("all");
   const [tab, setTab] = useState<DetailTab>("links");
-  const [platformOpen, setPlatformOpen] = useState(false);
+  const [view, setView] = useState<"shops" | "numbers" | "access">("shops");
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [reports, setReports] = useState<Record<string, PlatformWaReport>>({});
   const connection = useRef<PlatformWhatsAppHandle>(null);
@@ -120,6 +121,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
       const target = numbers.find((n) => n.id === requested);
       setSelected(target?.id ?? numbers.find((n) => n.display_phone?.trim())?.id ?? null);
       setDetailsOpen(Boolean(target));
+      if (target) setView("numbers");
       if (target && !target.display_phone?.trim()) setTab("connection");
     }
   }
@@ -165,21 +167,22 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
     },
     [channelId],
   );
-  const screen = platformOpen ? "platform" : detailsOpen ? channel?.id : "numbers";
+  const screen = `${view}:${detailsOpen ? channel?.id : "list"}`;
   useEffect(() => {
+    if (view !== "numbers") return;
     const frame = requestAnimationFrame(() => {
-      const target = detailsOpen && !platformOpen ? detail.current : root.current;
+      const target = detailsOpen && view === "numbers" ? detail.current : root.current;
       if (!window.matchMedia("(min-width: 1024px)").matches)
         target?.scrollIntoView({ block: "start", behavior: "instant" });
       target?.focus({ preventScroll: true });
     });
     return () => cancelAnimationFrame(frame);
-  }, [screen, detailsOpen, platformOpen]);
+  }, [screen, detailsOpen, view]);
   function chooseNumber(id: string, nextTab: DetailTab = "links") {
     setSelected(id);
     setDetailsOpen(true);
     setTab(nextTab);
-    setPlatformOpen(false);
+    setView("numbers");
     setSaved(false);
     setError(null);
   }
@@ -219,21 +222,6 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
       ? links.map((b) => destination(b.barbershop_id, b.staff_id)).join(" • ")
       : destination(owner.barbershop_id, owner.staff_id);
   };
-  const filtered =
-    data?.channels.filter(
-      (c) =>
-        (filter === "all" ||
-          (filter === "backup"
-            ? data.channels.some((n) => n.backup_instance_name === c.instance_name)
-            : filter === "assigned"
-              ? Boolean(c.barbershop_id)
-              : !c.barbershop_id &&
-                !data.channels.some((n) => n.backup_instance_name === c.instance_name))) &&
-        Boolean(c.display_phone?.trim()) &&
-        `${c.label} ${c.display_phone ?? ""} ${numberDestinations(c)}`
-          .toLocaleLowerCase(locale)
-          .includes(query.toLocaleLowerCase(locale)),
-    ) ?? [];
   const numberLinks = (number: Channel) => {
     const owner =
       data?.channels.find((n) => n.backup_instance_name === number.instance_name) ?? number;
@@ -243,12 +231,27 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
         ? [{ id: owner.id, barbershop_id: owner.barbershop_id, staff_id: owner.staff_id }]
         : [];
   };
+  const filtered =
+    data?.channels.filter(
+      (c) =>
+        (filter === "all" ||
+          (filter === "backup"
+            ? data.channels.some((n) => n.backup_instance_name === c.instance_name)
+            : filter === "assigned"
+              ? numberLinks(c).length > 0
+              : numberLinks(c).length === 0 &&
+                !data.channels.some((n) => n.backup_instance_name === c.instance_name))) &&
+        Boolean(c.display_phone?.trim()) &&
+        `${c.label} ${c.display_phone ?? ""} ${numberDestinations(c)}`
+          .toLocaleLowerCase(locale)
+          .includes(query.toLocaleLowerCase(locale)),
+    ) ?? [];
   const shared =
     (data?.links ?? []).filter((b) => b.channel_id === (reservedBy ?? channel)?.id).length > 1;
   const backup = data?.channels.find((n) => n.instance_name === channel?.backup_instance_name);
   function backToNumbers() {
     setDetailsOpen(false);
-    setPlatformOpen(false);
+    setView("numbers");
     setSaved(false);
     setError(null);
   }
@@ -301,8 +304,16 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
     <section ref={root} tabIndex={-1} className="min-w-0 space-y-5 outline-none">
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <h2 className="text-xl font-bold">{t("waOperation.title")}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{t("waOperation.subtitle")}</p>
+          <h2 className="text-xl font-bold">{t("waOrg.title")}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t(
+              view === "shops"
+                ? "waOrg.shopsHint"
+                : view === "numbers"
+                  ? "waOrg.numbersHint"
+                  : "waOrg.accessHint",
+            )}
+          </p>
         </div>
         <button
           className="action-button"
@@ -324,7 +335,43 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
         <>
           {error && <Notice tone="danger" title={t(error)} />}
           {saved && <Notice tone="success" title={t("waCentral.saved")} />}
-          {data?.number_sharing && !platformOpen && (
+          <div
+            role="group"
+            aria-label={t("waOrg.navigation")}
+            className="grid grid-cols-3 gap-2 rounded-2xl border border-border bg-card p-2"
+          >
+            {(
+              [
+                { id: "shops", title: "waOrg.shops", icon: Store, count: data?.shops.length },
+                {
+                  id: "numbers",
+                  title: "waOrg.numbers",
+                  icon: Smartphone,
+                  count: data?.channels.filter((n) => n.display_phone?.trim()).length,
+                },
+                { id: "access", title: "waOrg.access", icon: KeyRound },
+              ] as const
+            ).map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                aria-pressed={view === item.id}
+                onClick={() => {
+                  setView(item.id);
+                  setError(null);
+                  setSaved(false);
+                }}
+                className={`flex min-h-16 min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-2 py-3 text-center text-sm font-semibold transition-colors tablet:flex-row tablet:gap-2 ${view === item.id ? "bg-accent text-foreground ring-1 ring-primary/30" : "text-muted-foreground hover:bg-muted"}`}
+              >
+                <item.icon className="size-5 shrink-0" aria-hidden />
+                <span>{t(item.title)}</span>
+                {"count" in item && item.count !== undefined && (
+                  <span className="text-xs tabular-nums text-muted-foreground">{item.count}</span>
+                )}
+              </button>
+            ))}
+          </div>
+          {data?.number_sharing && view !== "access" && (
             <button
               type="button"
               className="action-button action-confirm w-full tablet:w-auto"
@@ -350,7 +397,37 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
               viewNumber={chooseNumber}
             />
           )}
-          {platformOpen ? (
+          {view === "shops" ? (
+            data ? (
+              <WhatsAppShopDirectory
+                shops={data.shops}
+                staff={data.staff}
+                numbers={data.channels.map((n) => ({ ...n, status: reports[n.id] ?? n.status }))}
+                links={
+                  data.number_sharing
+                    ? (data.links ?? [])
+                    : data.channels
+                        .filter((n) => n.barbershop_id)
+                        .map((n) => ({
+                          id: n.id,
+                          channel_id: n.id,
+                          barbershop_id: n.barbershop_id!,
+                          staff_id: n.staff_id,
+                          enabled: n.enabled,
+                        }))
+                }
+                busy={busy || !data.number_sharing}
+                link={(target) => openLink(target)}
+                viewNumber={chooseNumber}
+                resume={(id) => chooseNumber(id, "connection")}
+              />
+            ) : busy ? (
+              <p role="status" className="flex items-center gap-2 p-4 text-sm">
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+                {t("shop.loading")}
+              </p>
+            ) : null
+          ) : view === "access" ? (
             <section className="max-w-3xl space-y-4">
               <button className="action-button" disabled={busy} onClick={backToNumbers}>
                 <ArrowLeft className="size-4" aria-hidden />
@@ -359,8 +436,8 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
               <div className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4">
                 <KeyRound className="size-6 shrink-0 text-primary" aria-hidden />
                 <div>
-                  <h3 className="font-bold">{t("waCentral.platform")}</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">{t("waHub.platformHint")}</p>
+                  <h3 className="font-bold">{t("waOrg.access")}</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">{t("waOrg.accessHint")}</p>
                 </div>
               </div>
               <PlatformWhatsAppCard />
@@ -434,10 +511,10 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                               </span>
                               <span className="min-w-0">
                                 <span className="block break-words text-sm font-bold">
-                                  {c.label || t("waCentral.channel")}
+                                  {c.display_phone}
                                 </span>
                                 <span className="block break-words text-xs text-muted-foreground">
-                                  {c.display_phone || t("waHub.phonePending")}
+                                  {c.label || t("waOrg.registeredNumber")}
                                 </span>
                               </span>
                             </span>
@@ -445,8 +522,11 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                               <span className="text-xs text-muted-foreground">
                                 {owner
                                   ? t("waNumbers.backup")
-                                  : c.barbershop_id
-                                    ? t("waHub.destinationsCount", { count: numberLinks(c).length })
+                                  : numberLinks(c).length
+                                    ? t("waOrg.usedShops", {
+                                        count: new Set(numberLinks(c).map((l) => l.barbershop_id))
+                                          .size,
+                                      })
                                     : t("waOperation.available")}
                               </span>
                               <ConnectionBadge status={reports[c.id] ?? c.status} />
@@ -471,43 +551,6 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                         </button>
                       )}
                     </div>
-                  )}
-                  {data?.channels.some((c) => !c.display_phone?.trim()) && (
-                    <details className="border-t border-border pt-2">
-                      <summary className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-semibold">
-                        <Smartphone className="size-4" aria-hidden />
-                        {t("waMissing.pending")}
-                        <span className="text-muted-foreground">
-                          {data.channels.filter((c) => !c.display_phone?.trim()).length}
-                        </span>
-                      </summary>
-                      <p className="mb-2 text-xs text-muted-foreground">
-                        {t("waMissing.pendingHint")}
-                      </p>
-                      <ul className="divide-y divide-border">
-                        {data.channels
-                          .filter((c) => !c.display_phone?.trim())
-                          .map((c) => (
-                            <li key={c.id}>
-                              <button
-                                className="flex min-h-11 w-full flex-col gap-1 py-3 text-left"
-                                disabled={busy}
-                                onClick={() => chooseNumber(c.id, "connection")}
-                              >
-                                <span className="break-words text-sm font-semibold">
-                                  {c.label || t("waMissing.pending")}
-                                </span>
-                                <span className="break-words text-xs text-muted-foreground">
-                                  {numberDestinations(c)}
-                                </span>
-                                <span className="text-xs font-semibold">
-                                  {t("waMissing.resume")}
-                                </span>
-                              </button>
-                            </li>
-                          ))}
-                      </ul>
-                    </details>
                   )}
                   <div className="border-t border-border pt-3">
                     <button
@@ -587,10 +630,12 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                       </span>
                       <div className="min-w-0 flex-1">
                         <h3 className="break-words text-lg font-bold">
-                          {channel.label || t("waCentral.channel")}
+                          {channel.display_phone || t("waOrg.incompleteItem")}
                         </h3>
                         <p className="break-words text-sm text-muted-foreground">
-                          {channel.display_phone || t("waHub.phonePending")}
+                          {channel.display_phone
+                            ? channel.label || t("waOrg.registeredNumber")
+                            : t("waOrg.noPhoneYet")}
                         </p>
                         <button
                           type="button"
@@ -605,7 +650,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                       </div>
                       <MoreActions
                         label={t("waOperation.options")}
-                        title={channel.label || t("waCentral.channel")}
+                        title={channel.display_phone || t("waOrg.incompleteItem")}
                         actions={[
                           {
                             id: "links",
@@ -780,7 +825,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                         onStatusChange={report}
                         key={channel.id}
                         channelId={channel.id}
-                        title={channel.label || t("waCentral.channel")}
+                        title={channel.display_phone || t("waOrg.incompleteItem")}
                       />
                     </div>
                     <div hidden={tab !== "reserve"} className="max-w-3xl space-y-4">
@@ -883,33 +928,58 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                   </div>
                 )}
               </div>
-              {data?.number_sharing && (
-                <div className={detailsOpen && channel ? "hidden min-[1024px]:block" : "block"}>
-                  <WhatsAppMissingDestinations
-                    shops={data.shops}
-                    staff={data.staff}
-                    links={(data.links ?? []).filter((link) =>
-                      data.channels.some(
-                        (n) => n.id === link.channel_id && n.display_phone?.trim(),
-                      ),
-                    )}
-                    busy={busy}
-                    link={(target) => openLink({ shop: target.shop, staff: target.staff })}
-                  />
-                </div>
+              {data?.channels.some((n) => !n.display_phone?.trim()) && (
+                <details className="rounded-2xl border border-dashed border-border bg-card p-4 tablet:p-5">
+                  <summary className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-semibold">
+                    <Clock3 className="size-5 shrink-0 text-muted-foreground" aria-hidden />
+                    {t("waOrg.incomplete")}
+                    <span className="ml-auto tabular-nums text-muted-foreground">
+                      {data.channels.filter((n) => !n.display_phone?.trim()).length}
+                    </span>
+                  </summary>
+                  <p className="mb-3 text-sm text-muted-foreground">{t("waOrg.incompleteHint")}</p>
+                  <ul className="divide-y divide-border">
+                    {data.channels
+                      .filter((n) => !n.display_phone?.trim())
+                      .map((n) => (
+                        <li key={n.id} className="flex flex-wrap items-center gap-3 py-3">
+                          <div className="min-w-0 flex-1 basis-52">
+                            <p className="text-sm font-semibold">
+                              {n.label || t("waOrg.incompleteItem")}
+                            </p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {t("waOrg.noPhoneYet")}
+                            </p>
+                            <p className="mt-1 break-words text-sm">
+                              {t("waOrg.preparedFor", { name: numberDestinations(n) })}
+                            </p>
+                          </div>
+                          {n.barbershop_id && (
+                            <button
+                              type="button"
+                              className="action-button action-confirm"
+                              disabled={busy}
+                              onClick={() =>
+                                openLink({ shop: n.barbershop_id!, staff: n.staff_id })
+                              }
+                            >
+                              <Link2 className="size-4" aria-hidden />
+                              {t("waOrg.chooseNumber")}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className="action-button"
+                            disabled={busy}
+                            onClick={() => chooseNumber(n.id, "connection")}
+                          >
+                            {t("waOrg.resume")}
+                          </button>
+                        </li>
+                      ))}
+                  </ul>
+                </details>
               )}
-              <button
-                className="action-button"
-                disabled={busy}
-                onClick={() => {
-                  setPlatformOpen(true);
-                  setError(null);
-                  setSaved(false);
-                }}
-              >
-                <KeyRound className="size-4" aria-hidden />
-                {t("waCentral.platform")}
-              </button>
             </>
           )}
         </>

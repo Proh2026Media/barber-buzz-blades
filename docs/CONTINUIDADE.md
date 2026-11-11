@@ -2,6 +2,16 @@
 
 Atualizado em **10/11/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
+## 10/11/2026 — reorganização completa da central e cadastro pessoal pendente
+
+**Pedido:** o dono apontou confusão entre telefones cadastrados, barbearias/profissionais e conexões em preparação, pediu plano seguido de execução e autorizou retirar o telefone da conta de cliente identificada anteriormente.
+
+**Cadastro pessoal:** após uma primeira tentativa SSH que expirou antes de conectar, a segunda concluiu a transação. A conta foi conferida por e-mail e telefone esperados, bloqueada para atualização, e teve `whatsapp_e164`, `whatsapp_verified_at` e `whatsapp_opt_in_at` limpos. Desafios WhatsApp pendentes da mesma conta/telefone foram consumidos. COMMIT confirmado. Não repetir a remoção nem atribuir o telefone a outra conta sem pedido.
+
+**Interface:** [plano e execução](plano-central-whatsapp-2026-11-10.md). `WhatsAppShopDirectory` substitui `WhatsAppMissingDestinations`; a página abre em Barbearias e oferece Números/Códigos de acesso. Geral e profissionais são apresentados juntos, com cobertura real, busca e filtros. Inventário mostra telefone primeiro e não mistura registros sem telefone. Cadastros incompletos têm área secundária e destino previsto. Atalhos continuam usando `WhatsAppLinkDialog`; deep link `numero` abre o detalhe correspondente. Estados de conexão, uso, avisos, pausa e reserva são distintos; identidade e modos de canto preservados.
+
+**Lógica e validação:** `directory-model.ts` acompanha `whatsapp_route_link`; vínculo próprio incompleto bloqueia herança, enquanto ausência de vínculo próprio permite usar o geral. Sete testes novos e 499/499 no conjunto; tipos/lint/formatação/montagem aprovados. Bancada com dados fictícios na rota administrativa: seleção contextual, compartilhamento, profissional próprio sem alterar o geral, cadastros incompletos, busca/filtros, pausa/reserva, teclado; 90 combinações de área/largura/tema/cantos, texto ampliado e nomes longos. Capturas inspecionadas. Nenhuma mensagem/pareamento real. Sem migration/Edge/TI; `.env` e `.vscode/` preexistentes preservados.
+
 ## 10/11/2026 — P-119: correção do reaproveitamento nas preparações
 
 O dono informou que a preparação de uma barbearia oferecia apenas QR Code, sem seleção de WhatsApp existente. A consulta de diagnóstico na VPS foi somente leitura: compartilhamento continua instalado e há preparação sem telefone ainda vinculada. Não houve perda dos números ou vínculos existentes.

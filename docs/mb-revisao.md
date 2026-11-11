@@ -2,6 +2,12 @@
 
 Atualizado em **07/11/2026** (P-49/P-70; entradas anteriores preservadas como histórico). Fonte: [mb-interface.md](mb-interface.md). Regra: `.cursor/rules/mb.mdc`. Skill: `.cursor/skills/mb/`.
 
+## P-119 — barbearias, números e códigos separados (10/11/2026)
+
+Plano pedido pelo dono e executado: [registro completo](plano-central-whatsapp-2026-11-10.md). A entrada agora mostra todas as barbearias, número geral e profissionais (próprio, uso do geral ou sem número). Inventário destaca o telefone, uso, conexão e reserva; cadastros sem telefone ficam fora dessa lista. A autenticação da plataforma tem área própria. A antiga lista de “sem número” foi substituída por busca/filtros na visão completa de barbearias.
+
+O modelo de cobertura respeita a prioridade do vínculo próprio, inclusive quando incompleto, e conserva estados de pausa/reserva. Não muda a regra de envio para simplificar a apresentação. Sete testes novos, 499/499 no conjunto, tipos/lint/formatação/montagem aprovados; bancada em 90 combinações, capturas inspecionadas, texto ampliado e nomes longos. Integrações simuladas; sem envio/pareamento real.
+
 ## P-119 — reutilizar número dentro da preparação (10/11/2026, correção)
 
 - O dono apontou o caminho exato: abrir uma barbearia em “Conexões em preparação” mostrava apenas o pareamento. Agora essa tela oferece “Vincular número existente”, já com o destino preenchido. A mesma ação fica visível no topo da central.
