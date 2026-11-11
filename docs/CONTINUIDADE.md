@@ -101,6 +101,18 @@ Novos testes em `src/features/shop/{agenda,catalog,hours,settings}/*.test.ts` (1
   - bônus de check-in em dia de jogo: o texto foi retirado porque a regra não existe.
   - ~~criar barbearia e adicionar pessoa no modo demonstração da Plataforma ainda chamam o servidor real~~ — já resolvido no código: os dois ficam bloqueados na demo ("Fora da demonstração, … seria criada/entraria"), assim como gerentes de conta, WhatsApp, termos e gravação da marca. Desde 09/10 a demonstração também tem ids fictícios e uma trava de rede (`src/lib/demo-guard.ts`).
 
+## 10/11/2026 — P-119: correções de status, cabeçalho e números/pendências
+
+**Pedidos:** impedir “Carregando” a cada seleção, usar menu superior no computador, corrigir o nome da plataforma e separar números reais de preparações/destinos ainda sem vínculo.
+
+**Entrega:** status inicial nulo do cartão não substitui mais a última leitura; o telefone selecionado é conferido em segundo plano, com resultado e erro isolados por número. No primeiro acesso a cada número, usa-se o estado retornado pelo diretório até a consulta terminar. O menu administrativo passa ao cabeçalho desde 1024 px, mantendo navegação por teclado, aba/URL, conta/tema e navegação abaixo dessa largura. “Plataforma Arena” era texto fixo legado, corrigido para “Barba & Cabelo” nos dicionários.
+
+**Números e destinos:** somente `display_phone` preenchido entra no inventário. Entradas sem telefone ficam em “Conexões em preparação”, com seus destinos preservados e acesso ao pareamento/revisão. A criação abre Conexão, não um cartão fictício na lista principal. Nova área lista barbearias sem vínculo geral e profissionais não cobertos por vínculo próprio/geral. Uma associação pausada ou em preparação não é desfeita nem tratada como destino livre. Escolher um número identificado existente usa `platform_add_whatsapp_link`, preserva demais destinos, valida versão no servidor e começa pausado. Reservas excluídas das opções. Sem novo cadastro de número nessa ação, sem mudança de regras ou permissões.
+
+**Validação:** registros de bancada em `/tmp/bc-status-troca-final.log`, `/tmp/bc-header-validado.log` e `/tmp/bc-missing-validado.log`; capturas `/tmp/bc-header-*.png` e `/tmp/bc-missing-desktop.png`. Conferências com dados fictícios e rede externa interceptada; nenhum número real conectado, atribuído ou usado para mensagens. Homologação autenticada/física continua pendente. 65 combinações de largura/idioma/tema/cantos e navegação das cinco abas por teclado em quatro larguras; vínculo de número compartilhado e livre, falha/rascunho/recuperação, exclusão de reservas das opções, cobertura geral e preparações recuperáveis. Status com resposta lenta, troca/retorno, atualização explícita e falha/recuperação conferidos. Tipos, 492/492 testes, lint, formatação e montagem aprovados em `/tmp/bc-status-verificar-final.log`. O aviso de exportação auxiliar do componente foi removido, com lint novamente limpo em `/tmp/bc-missing-lint.log`; não altera o comportamento.
+
+**Operação:** complemento de frontend, sem migration/Edge/variável nova, sem tarefa adicional para TI. `.env` e `.vscode/` preexistentes fora do commit. Flow e pagamentos não alterados.
+
 ## 10/11/2026 — P-119: opção 01 aplicada — Central de operação
 
 **Pedido e resultado:** o dono aprovou o protótipo 01. A Central usa lista compacta de números com busca/filtro e painel de destinos lado a lado desde 1024 px; primeiro número selecionado no computador. Celular/tablet vertical usam lista → detalhe com volta, conservando filtros. A composição anterior em cartões fica como histórico abaixo.

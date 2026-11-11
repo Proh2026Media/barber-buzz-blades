@@ -522,6 +522,32 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
           </h1>
         </div>
 
+        <nav className="platform-header-nav" aria-label={t("plat.tabs.aria")}>
+          {navItems.map(({ id, icon: Icon, label }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setPlatformTab(id)}
+              aria-current={platformTab === id ? "page" : undefined}
+              aria-pressed={platformTab === id}
+            >
+              <span className="relative shrink-0">
+                <Icon className="size-5" aria-hidden />
+                {id === "overview" && platformTab !== "overview" && (
+                  <CountBadge
+                    count={attention.length}
+                    label={t(attention.length === 1 ? "plat.att.countOne" : "plat.att.countMany", {
+                      count: attention.length,
+                    })}
+                    className="absolute -right-3 -top-2"
+                  />
+                )}
+              </span>
+              <span>{label}</span>
+            </button>
+          ))}
+        </nav>
+
         <div className="workspace-header-actions flex shrink-0 items-center gap-2 sm:gap-3">
           <ThemeToggle />
           {headerActions}

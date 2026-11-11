@@ -2,6 +2,13 @@
 
 Atualizado em **07/11/2026** (P-49/P-70; entradas anteriores preservadas como histórico). Fonte: [mb-interface.md](mb-interface.md). Regra: `.cursor/rules/mb.mdc`. Skill: `.cursor/skills/mb/`.
 
+## P-119 — status estável, navegação superior e destinos pendentes (10/11/2026)
+
+- O status conhecido não é apagado pelo `null` inicial do cartão de conexão: troca de número confere em segundo plano e aplica o resultado/falha ao número correto. A primeira lista e a atualização explícita mantêm seus indicadores de atividade.
+- Menu da administração no cabeçalho desde 1024 px, em duas linhas no computador compacto e uma linha desde 1280 px. A barra móvel e a navegação do tablet vertical permanecem; abas, URL, conta, tema e avisos mantidos. Identificação real corrigida para Barba & Cabelo nos cinco idiomas; o nome anterior era texto legado do dicionário.
+- Inventário lista somente entradas com telefone identificado. Preparações ficam em uma lista própria, com nome/destinos e abertura da conexão. Não são apagadas nem desassociadas automaticamente. Cadastro novo abre o pareamento; o telefone aparece na lista após a identificação e atualização dos dados.
+- “Barbearias e profissionais sem número” lista destinos sem vínculo, com busca e escolha de número existente. Um vínculo geral cobre profissionais sem vínculo próprio; vínculo pausado continua sendo vínculo. Preparações já vinculadas ficam na seção de preparação, para concluir ou revisar a associação existente. Reservas não entram como candidatas a principal. A inclusão reutiliza a RPC de compartilhamento, conserva os demais vínculos e começa pausada.
+
 ## P-119 — protótipo 01: Central de operação (10/11/2026)
 
 O dono escolheu a opção 01 entre os três protótipos. Esta composição substitui o inventário de cartões descrito na entrada anterior.

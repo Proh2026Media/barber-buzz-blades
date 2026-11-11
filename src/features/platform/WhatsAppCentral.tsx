@@ -1,3 +1,4 @@
+import { WhatsAppMissingDestinations } from "./WhatsAppMissingDestinations";
 import { useDemo } from "@/features/demo/context";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -91,7 +92,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
   const [tab, setTab] = useState<DetailTab>("links");
   const [platformOpen, setPlatformOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [reports, setReports] = useState<Record<string, PlatformWaReport | null>>({});
+  const [reports, setReports] = useState<Record<string, PlatformWaReport>>({});
   const connection = useRef<PlatformWhatsAppHandle>(null);
   const root = useRef<HTMLElement>(null);
   const initialLinkRead = useRef(false);
@@ -113,8 +114,9 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
       const requested = new URLSearchParams(window.location.search).get("numero");
       const numbers = (result as unknown as Directory).channels;
       const target = numbers.find((n) => n.id === requested);
-      setSelected(target?.id ?? numbers[0]?.id ?? null);
+      setSelected(target?.id ?? numbers.find((n) => n.display_phone?.trim())?.id ?? null);
       setDetailsOpen(Boolean(target));
+      if (target && !target.display_phone?.trim()) setTab("connection");
     }
   }
   useEffect(() => {
@@ -145,11 +147,14 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
       if (live.current) setBusy(false);
     }
   }
-  const channel = data?.channels.find((c) => c.id === selected) ?? data?.channels[0];
+  const channel =
+    data?.channels.find((c) => c.id === selected) ??
+    data?.channels.find((c) => c.display_phone?.trim());
   const channelId = channel?.id;
   const report = useCallback(
     (status: PlatformWaReport | null) => {
-      if (!channelId) return;
+      // A montagem do cartão envia null antes da consulta. Não apaga o estado já conhecido.
+      if (!channelId || status === null) return;
       setReports((current) =>
         current[channelId] === status ? current : { ...current, [channelId]: status },
       );
@@ -220,6 +225,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
               ? Boolean(c.barbershop_id)
               : !c.barbershop_id &&
                 !data.channels.some((n) => n.backup_instance_name === c.instance_name))) &&
+        Boolean(c.display_phone?.trim()) &&
         `${c.label} ${c.display_phone ?? ""} ${numberDestinations(c)}`
           .toLocaleLowerCase(locale)
           .includes(query.toLocaleLowerCase(locale)),
@@ -294,7 +300,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                   <div className="flex items-center justify-between gap-2 px-1">
                     <h3 className="text-sm font-bold">{t("waNumbers.existing")}</h3>
                     <span className="text-xs text-muted-foreground">
-                      {data?.channels.length ?? "—"}
+                      {data?.channels.filter((c) => c.display_phone?.trim()).length ?? "—"}
                     </span>
                   </div>
                   <label className="relative block">
@@ -368,9 +374,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                                     ? t("waHub.destinationsCount", { count: numberLinks(c).length })
                                     : t("waOperation.available")}
                               </span>
-                              <ConnectionBadge
-                                status={reports[c.id] === undefined ? c.status : reports[c.id]}
-                              />
+                              <ConnectionBadge status={reports[c.id] ?? c.status} />
                             </span>
                           </button>
                         </li>
@@ -392,6 +396,43 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                         </button>
                       )}
                     </div>
+                  )}
+                  {data?.channels.some((c) => !c.display_phone?.trim()) && (
+                    <details className="border-t border-border pt-2">
+                      <summary className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-semibold">
+                        <Smartphone className="size-4" aria-hidden />
+                        {t("waMissing.pending")}
+                        <span className="text-muted-foreground">
+                          {data.channels.filter((c) => !c.display_phone?.trim()).length}
+                        </span>
+                      </summary>
+                      <p className="mb-2 text-xs text-muted-foreground">
+                        {t("waMissing.pendingHint")}
+                      </p>
+                      <ul className="divide-y divide-border">
+                        {data.channels
+                          .filter((c) => !c.display_phone?.trim())
+                          .map((c) => (
+                            <li key={c.id}>
+                              <button
+                                className="flex min-h-11 w-full flex-col gap-1 py-3 text-left"
+                                disabled={busy}
+                                onClick={() => chooseNumber(c.id, "connection")}
+                              >
+                                <span className="break-words text-sm font-semibold">
+                                  {c.label || t("waMissing.pending")}
+                                </span>
+                                <span className="break-words text-xs text-muted-foreground">
+                                  {numberDestinations(c)}
+                                </span>
+                                <span className="text-xs font-semibold">
+                                  {t("waMissing.resume")}
+                                </span>
+                              </button>
+                            </li>
+                          ))}
+                      </ul>
+                    </details>
                   )}
                   <div className="border-t border-border pt-3">
                     <button
@@ -422,7 +463,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                           setAdding(false);
                           setFilter("all");
                           setQuery("");
-                          chooseNumber(id);
+                          chooseNumber(id, "connection");
                           await load();
                         });
                       }}
@@ -483,7 +524,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                           disabled={busy}
                           onClick={() => setTab("connection")}
                         >
-                          <ConnectionBadge status={reports[channel.id] ?? null} />
+                          <ConnectionBadge status={reports[channel.id] ?? channel.status} />
                           <ArrowRight className="size-3 text-muted-foreground" aria-hidden />
                         </button>
                       </div>
@@ -774,6 +815,49 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                   </div>
                 )}
               </div>
+              {data?.number_sharing && (
+                <div className={detailsOpen && channel ? "hidden min-[1024px]:block" : "block"}>
+                  <WhatsAppMissingDestinations
+                    shops={data.shops}
+                    staff={data.staff}
+                    links={data.links ?? []}
+                    numbers={data.channels.filter(
+                      (c) =>
+                        c.display_phone?.trim() &&
+                        !data.channels.some(
+                          (owner) => owner.backup_instance_name === c.instance_name,
+                        ),
+                    )}
+                    busy={busy}
+                    error={error ? t(error) : null}
+                    link={async (id, shop, staff) => {
+                      let added = false;
+                      const number = data.channels.find((c) => c.id === id);
+                      if (!number) return false;
+                      await run(async () => {
+                        const { error: failed } = await supabase.rpc("platform_add_whatsapp_link", {
+                          p_id: number.id,
+                          p_version: number.routing_version,
+                          p_shop: shop,
+                          p_staff: staff,
+                          p_enabled: false,
+                        });
+                        if (failed) throw failed;
+                        await load();
+                        if (live.current) {
+                          chooseNumber(id);
+                          setSaved(true);
+                          requestAnimationFrame(() =>
+                            detail.current?.focus({ preventScroll: true }),
+                          );
+                        }
+                        added = true;
+                      });
+                      return added;
+                    }}
+                  />
+                </div>
+              )}
               <button
                 className="action-button"
                 disabled={busy}

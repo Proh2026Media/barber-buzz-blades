@@ -1,6 +1,21 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const ptPT: Record<MessageKey, string> = {
+  "waMissing.title": "Barbearias e profissionais sem número",
+  "waMissing.hint":
+    "Associe um número existente. O número geral da barbearia também serve os profissionais sem número próprio.",
+  "waMissing.search": "Pesquisar barbearia ou profissional",
+  "waMissing.professional": "Sem número para os atendimentos",
+  "waMissing.shop": "Sem número geral da barbearia",
+  "waMissing.link": "Associar número existente",
+  "waMissing.number": "Número a utilizar",
+  "waMissing.choose": "Escolha um número",
+  "waMissing.noNumbers":
+    "Nenhum número identificado disponível. Conclua uma ligação antes de associar.",
+  "waMissing.pending": "Ligações em preparação",
+  "waMissing.pendingHint":
+    "Ainda sem telefone identificado. Abra para concluir a ligação ou rever os destinos já associados.",
+  "waMissing.resume": "Concluir ou rever ligação",
   "waOperation.title": "Números e destinos",
   "waOperation.subtitle": "Escolha o número. Veja e ajuste quem o utiliza.",
   "waOperation.options": "Opções do número",
@@ -1904,7 +1919,7 @@ export const ptPT: Record<MessageKey, string> = {
   "plat.invite.roleAssociate": "parceiro",
   "plat.invite.roleEmployee": "contratado",
   "plat.header.eyebrow": "Gestão global",
-  "plat.header.title": "Plataforma Arena",
+  "plat.header.title": "Barba & Cabelo",
   "plat.tabs.aria": "Áreas da administração",
   "plat.tabs.overview": "Visão geral",
   "plat.tabs.shops": "Barbearias",

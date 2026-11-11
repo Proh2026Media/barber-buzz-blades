@@ -1,5 +1,20 @@
 /** Dicionário principal (fonte). Toda chave nova nasce aqui, em pt-BR. */
 export const ptBR = {
+  "waMissing.title": "Barbearias e profissionais sem número",
+  "waMissing.hint":
+    "Vincule um número existente. O número geral da barbearia também atende aos profissionais sem número próprio.",
+  "waMissing.search": "Buscar barbearia ou profissional",
+  "waMissing.professional": "Sem número para os atendimentos",
+  "waMissing.shop": "Sem número geral da barbearia",
+  "waMissing.link": "Vincular número existente",
+  "waMissing.number": "Número que será utilizado",
+  "waMissing.choose": "Escolha um número",
+  "waMissing.noNumbers":
+    "Nenhum número identificado disponível. Conclua uma conexão antes de vincular.",
+  "waMissing.pending": "Conexões em preparação",
+  "waMissing.pendingHint":
+    "Ainda sem telefone identificado. Abra para concluir a conexão ou revisar os destinos já vinculados.",
+  "waMissing.resume": "Concluir ou revisar conexão",
   "waOperation.title": "Números e destinos",
   "waOperation.subtitle": "Escolha o número. Veja e ajuste quem o utiliza.",
   "waOperation.options": "Opções do número",
@@ -1895,7 +1910,7 @@ export const ptBR = {
   "plat.invite.roleAssociate": "parceiro",
   "plat.invite.roleEmployee": "contratado",
   "plat.header.eyebrow": "Gestão global",
-  "plat.header.title": "Plataforma Arena",
+  "plat.header.title": "Barba & Cabelo",
   "plat.tabs.aria": "Áreas da administração",
   "plat.tabs.overview": "Visão geral",
   "plat.tabs.shops": "Barbearias",

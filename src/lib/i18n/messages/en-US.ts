@@ -1,6 +1,20 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const enUS: Record<MessageKey, string> = {
+  "waMissing.title": "Shops and professionals without a number",
+  "waMissing.hint":
+    "Link an existing number. The shop’s general number also serves professionals without their own number.",
+  "waMissing.search": "Search shop or professional",
+  "waMissing.professional": "No number for appointments",
+  "waMissing.shop": "No general shop number",
+  "waMissing.link": "Link existing number",
+  "waMissing.number": "Number to use",
+  "waMissing.choose": "Choose a number",
+  "waMissing.noNumbers": "No identified number is available. Complete a connection before linking.",
+  "waMissing.pending": "Connections being prepared",
+  "waMissing.pendingHint":
+    "No phone number identified yet. Open to complete the connection or review existing destinations.",
+  "waMissing.resume": "Complete or review connection",
   "waOperation.title": "Numbers and destinations",
   "waOperation.subtitle": "Choose a number. View and manage who uses it.",
   "waOperation.options": "Number options",
@@ -1902,7 +1916,7 @@ export const enUS: Record<MessageKey, string> = {
   "plat.invite.roleAssociate": "partner",
   "plat.invite.roleEmployee": "employee",
   "plat.header.eyebrow": "Global management",
-  "plat.header.title": "Arena Platform",
+  "plat.header.title": "Barba & Cabelo",
   "plat.tabs.aria": "Admin areas",
   "plat.tabs.overview": "Overview",
   "plat.tabs.shops": "Barbershops",

@@ -943,3 +943,76 @@
     margin-bottom: 0.5rem;
   }
 }
+
+/* Administração: navegação no cabeçalho em computador e tablet horizontal.
+   A barra existente permanece no celular e no tablet vertical. */
+.platform-header-nav {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .arena-workspace.platform-workspace:has(> .app-mobile-nav) {
+    display: flex;
+    flex-direction: column;
+  }
+  .arena-workspace.platform-workspace > .app-mobile-nav {
+    display: none !important;
+  }
+  .arena-workspace.platform-workspace > .workspace-header-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.75rem 1.5rem;
+    padding-inline: 2rem;
+  }
+  .platform-workspace .workspace-header-actions {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+  .platform-workspace .platform-header-nav {
+    display: flex;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+  .platform-header-nav > button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+    min-height: 44px;
+    padding: 0.625rem 1rem;
+    border-radius: var(--button-radius);
+    font-size: 0.875rem;
+    font-weight: 650;
+    color: inherit;
+  }
+  .platform-header-nav > button:hover {
+    background: rgb(255 255 255 / 10%);
+  }
+  .platform-header-nav > button[aria-current="page"] {
+    background: var(--card);
+    color: var(--card-foreground);
+  }
+  .arena-workspace.platform-workspace:has(> .app-mobile-nav) > main {
+    max-width: 96rem;
+    margin-inline: auto;
+    padding-inline: 2rem;
+    padding-bottom: 2.5rem !important;
+  }
+}
+@media (min-width: 1280px) {
+  .arena-workspace.platform-workspace > .workspace-header-grid {
+    grid-template-columns: minmax(10rem, 1fr) auto minmax(6rem, 1fr);
+  }
+  .platform-workspace .platform-header-nav {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .platform-workspace .workspace-header-actions {
+    grid-column: 3;
+  }
+}
