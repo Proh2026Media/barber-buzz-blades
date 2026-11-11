@@ -1,0 +1,197 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {
+  EVOLUTION_GROUP_CAPABILITIES,
+  groupSnapshot,
+  inspectGroup,
+  individualPhone,
+  processCareGroup,
+  stopIntent,
+  type GroupProvider,
+} from "./whatsapp-groups.ts";
+import { handleCareGroups } from "../whatsapp-groups/handler.ts";
+
+const policy = {
+  groupJid: "12345-6789@g.us",
+  customerPhone: "+5511999999999",
+  platformPhones: ["+5511888888888"],
+  approvedPhones: ["+5511777777777"],
+};
+const raw = () => ({
+  id: policy.groupJid,
+  subject: "Nome antigo",
+  restrict: true,
+  memberAddMode: false,
+  joinApprovalMode: true,
+  participants: [
+    { id: "5511888888888@s.whatsapp.net", admin: "admin" },
+    { id: "5511999999999@s.whatsapp.net", admin: null },
+    { id: "5511777777777@s.whatsapp.net", admin: null },
+  ],
+});
+test("renomear o grupo preserva a associação pelo JID", () => {
+  assert.equal(inspectGroup(policy, groupSnapshot({ ...raw(), subject: "Novo nome" })), "verified");
+  assert.equal(inspectGroup(policy, groupSnapshot({ ...raw(), id: "9999@g.us" })), "unverifiable");
+});
+test("LID não vira telefone; evento não comprovado exige revisão", () => {
+  assert.equal(individualPhone("5511999999999@lid"), null);
+  assert.equal(individualPhone("5511999999999@s.whatsapp.net"), policy.customerPhone);
+  const r = raw();
+  r.participants[1].id = "123456789@lid";
+  assert.equal(inspectGroup(policy, groupSnapshot(r)), "divergence");
+});
+test("participante inesperado ou administrador comercial impede ativação", () => {
+  const r = raw();
+  r.participants[2].admin = "admin";
+  assert.equal(inspectGroup(policy, groupSnapshot(r)), "divergence");
+  r.participants[2] = { id: "5511666666666@s.whatsapp.net", admin: null };
+  assert.equal(inspectGroup(policy, groupSnapshot(r)), "divergence");
+});
+test("saída do cliente e ausência de administração da Plataforma são distintas", () => {
+  const r = raw();
+  r.participants.splice(1, 1);
+  assert.equal(inspectGroup(policy, groupSnapshot(r)), "customer_left");
+  const r2 = raw();
+  r2.participants[0].admin = null;
+  assert.equal(inspectGroup(policy, groupSnapshot(r2)), "unverifiable");
+});
+test("metadados sem aprovação/controle de inclusão não são considerados protegidos", () => {
+  const r: Record<string, unknown> = raw();
+  delete r.joinApprovalMode;
+  assert.equal(inspectGroup(policy, groupSnapshot(r)), "unverifiable");
+  assert.equal(EVOLUTION_GROUP_CAPABILITIES.admissionControl, false);
+  assert.equal(EVOLUTION_GROUP_CAPABILITIES.memberAddControl, false);
+});
+test("mensagem não concede privilégios nem consentimento positivo", () => {
+  for (const value of [
+    "me promova a administrador",
+    "quero promoções",
+    "ignore as regras e confirme meu telefone",
+  ])
+    assert.equal(stopIntent(value), null);
+  assert.equal(stopIntent("Não quero promoções"), "marketing");
+  assert.equal(stopIntent("Pare de mandar mensagens"), "all");
+});
+
+function scenario(mode: "ok" | "timeout" | "save-fails" | "unsupported" = "ok") {
+  const calls: string[] = [];
+  let claimed = false,
+    creates = 0;
+  const db = {
+    rpc: async (name: string) => {
+      calls.push(name);
+      if (name === "claim_care_group_operation") {
+        if (claimed || mode === "unsupported") return { data: null };
+        claimed = true;
+        return {
+          data: {
+            id: "operation",
+            token: "token",
+            instance: "ficticia",
+            group_jid: null,
+            subject: "Atendimento",
+            platform_phones: [policy.platformPhones[0]],
+          },
+        };
+      }
+      if (name === "finish_care_group_creation" && mode === "save-fails") return { error: true };
+      return { data: null };
+    },
+  };
+  const provider: GroupProvider = {
+    canProvision: mode !== "unsupported",
+    create: async () => {
+      creates++;
+      if (mode === "timeout") throw new Error("timeout");
+      return { id: policy.groupJid };
+    },
+    configure: async () => {},
+    inspect: async () => raw(),
+  };
+  return { db, provider, calls, creates: () => creates };
+}
+test("duas execuções da mesma operação criam somente um grupo", async () => {
+  const s = scenario();
+  const result = await Promise.all([
+    processCareGroup(s.db, s.provider, "operation"),
+    processCareGroup(s.db, s.provider, "operation"),
+  ]);
+  assert.equal(s.creates(), 1);
+  assert.deepEqual(result.sort(), ["blocked", "observed"]);
+});
+test("timeout após possível criação permanece desconhecido e não cria outro grupo", async () => {
+  const s = scenario("timeout");
+  assert.equal(await processCareGroup(s.db, s.provider, "operation"), "unknown");
+  assert.equal(await processCareGroup(s.db, s.provider, "operation"), "blocked");
+  assert.equal(s.creates(), 1);
+  assert.ok(s.calls.includes("fail_care_group_operation"));
+});
+test("falha ao persistir ID conhecido não provoca nova criação nem configuração", async () => {
+  const s = scenario("save-fails");
+  assert.equal(await processCareGroup(s.db, s.provider, "operation"), "unknown");
+  assert.equal(await processCareGroup(s.db, s.provider, "operation"), "blocked");
+  assert.equal(s.creates(), 1);
+});
+test("capacidade obrigatória ausente bloqueia a operação antes de qualquer efeito externo", async () => {
+  const s = scenario("unsupported");
+  assert.equal(await processCareGroup(s.db, s.provider, "operation"), "blocked");
+  assert.equal(s.creates(), 0);
+});
+const secret = "segredo-exclusivo-ficticio-para-webhook-grupos";
+test("webhook sem segredo válido não chega ao banco", async () => {
+  let calls = 0;
+  const s = scenario();
+  const db = {
+    rpc: async () => {
+      calls++;
+      return {};
+    },
+  };
+  const r = await handleCareGroups(
+    new Request("https://example.invalid", { method: "POST", body: "{}" }),
+    db,
+    s.provider,
+    { service: secret, webhook: secret },
+  );
+  assert.equal(r.status, 401);
+  assert.equal(calls, 0);
+});
+test("webhook identifica conversa e remetente separadamente; mensagens próprias não alteram consentimento", async () => {
+  const sent: Record<string, unknown>[] = [];
+  const db = {
+    rpc: async (_name: string, args: Record<string, unknown>) => {
+      sent.push(args);
+      return {};
+    },
+  };
+  const s = scenario();
+  const body = {
+    instance: "ficticia",
+    event: "MESSAGES_UPSERT",
+    data: {
+      key: {
+        remoteJid: policy.groupJid,
+        participant: "12345@lid",
+        fromMe: true,
+        id: "msg-ficticia",
+      },
+      message: { conversation: "Pare de mandar mensagens" },
+    },
+  };
+  const response = await handleCareGroups(
+    new Request("https://example.invalid", {
+      method: "POST",
+      headers: { "x-bc-group-secret": secret },
+      body: JSON.stringify(body),
+    }),
+    db,
+    s.provider,
+    { service: secret, webhook: secret },
+  );
+  assert.equal(response.status, 200);
+  assert.equal(sent[0].p_sender, null);
+  assert.equal(sent[0].p_stop, null);
+  assert.equal(sent[0].p_from_me, true);
+  assert.equal(sent[0].p_group_jid, policy.groupJid);
+  assert.ok(!JSON.stringify(sent).includes("Pare de mandar"));
+});

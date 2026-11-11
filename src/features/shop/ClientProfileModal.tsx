@@ -1,3 +1,4 @@
+import { CareGroupPanel } from "@/features/whatsapp/CareGroupPanel";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
@@ -507,6 +508,7 @@ function AccountClientModal({
               {/* Os dois blocos (resumo | histórico) ficam lado a lado a partir de 1024 px
                   (src/styles/agenda.css); antes disso, a mesma pilha de sempre. */}
               <div className="agenda-client-aside space-y-5">
+                <CareGroupPanel shopId={shopId} customerId={customerId} readOnly />
                 {nicknameReady && (
                   <NicknameEditor value={profile.nickname ?? null} onSave={saveNickname} />
                 )}

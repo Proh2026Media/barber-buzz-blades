@@ -1412,6 +1412,17 @@ export type Database = {
         };
         Returns: Json;
       };
+      care_group_read: { Args: { p_shop: string; p_customer?: string }; Returns: Json };
+      care_group_request: {
+        Args: { p_shop: string; p_accept: boolean; p_accounts: string[] };
+        Returns: Json;
+      };
+      care_group_customer_update: {
+        Args: { p_group: string; p_version: number; p_action: string; p_values?: Json };
+        Returns: Json;
+      };
+      care_group_admin: { Args: { p_action: string; p_values?: Json }; Returns: Json };
+      care_group_invite: { Args: { p_group: string }; Returns: string };
       platform_whatsapp_directory: { Args: Record<string, never>; Returns: Json };
       platform_create_whatsapp_channel: {
         Args: { p_id: string; p_label: string };

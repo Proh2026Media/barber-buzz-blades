@@ -1,3 +1,4 @@
+import { CareGroupPanel } from "@/features/whatsapp/CareGroupPanel";
 import { PrivacyCenter } from "@/features/insights/PrivacyCenter";
 import { DataRights } from "@/features/insights/DataRights";
 import { ChangePasswordCard } from "@/features/auth/ChangePasswordCard";
@@ -56,6 +57,7 @@ export type { CustomerShop };
 
 const SECTION = {
   whatsapp: "conta-whatsapp",
+  groups: "conta-grupos",
   rhythm: "conta-ritmo",
   shops: "conta-barbearias",
   language: "conta-idioma",
@@ -167,6 +169,7 @@ function AccountCustomerProfile({
     };
   }, []);
   const desktop = useViewportAtLeast(1024);
+  const [groupAvailable, setGroupAvailable] = useState(false);
   const [activeSection, setActiveSection] = useState<string>(SECTION.whatsapp);
   const openSection = useCallback(
     (id: string) => {
@@ -360,6 +363,9 @@ function AccountCustomerProfile({
       label: "WhatsApp",
       badge: whatsBadge ? <StatusBadge {...whatsBadge} size="sm" /> : undefined,
     },
+    ...(currentShopId && groupAvailable
+      ? [{ id: SECTION.groups, icon: MessageCircle, label: t("care.nav") }]
+      : []),
     ...(children ? [{ id: SECTION.rhythm, icon: Repeat, label: t("rhythm.title") }] : []),
     ...(otherShops.length > 0
       ? [
@@ -651,6 +657,16 @@ function AccountCustomerProfile({
             initialVerified={whatsappVerified}
             onStatusChange={setWhats}
           />
+        )}
+
+        {currentShopId && userId && (
+          <div id={SECTION.groups} hidden={!groupAvailable}>
+            <CareGroupPanel
+              shopId={currentShopId}
+              customerId={userId}
+              onAvailable={setGroupAvailable}
+            />
+          </div>
         )}
 
         {children && (

@@ -59,9 +59,10 @@ async function evolutionRequest(path: string, init: RequestInit = {}) {
 export async function evolutionFetch(path: string, init: RequestInit = {}) {
   // O cliente de administração só administra instâncias. Não aceita outros caminhos.
   if (
-    !/^\/instance\/(create|connect|connectionState|fetchInstances|logout|delete)(?:\/|\?|$)/.test(
+    (!/^\/instance\/(create|connect|connectionState|fetchInstances|logout|delete)(?:\/|\?|$)/.test(
       path,
-    ) ||
+    ) &&
+      !(path.startsWith("/group/findGroupInfos/") && (!init.method || init.method === "GET"))) ||
     path.includes("..") ||
     /%2e|%2f/i.test(path)
   )

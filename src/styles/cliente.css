@@ -357,6 +357,7 @@
   .customer-profile[data-profile-section="conta-whatsapp"]
     .customer-profile-panels
     > #conta-whatsapp,
+  .customer-profile[data-profile-section="conta-grupos"] .customer-profile-panels > #conta-grupos,
   .customer-profile[data-profile-section="conta-ritmo"] .customer-profile-panels > #conta-ritmo,
   .customer-profile[data-profile-section="conta-barbearias"]
     .customer-profile-panels

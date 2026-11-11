@@ -1,8 +1,10 @@
+import { CareGroupsAdmin } from "./CareGroupsAdmin";
 import { WhatsAppSendingControls } from "./WhatsAppSendingControls";
 import { WhatsAppShopDirectory } from "./WhatsAppShopDirectory";
 import { useDemo } from "@/features/demo/context";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  UsersRound,
   ArrowRightLeft,
   Clock3,
   Link2,
@@ -95,7 +97,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "available" | "assigned" | "backup">("all");
   const [tab, setTab] = useState<DetailTab>("links");
-  const [view, setView] = useState<"shops" | "numbers" | "access">("shops");
+  const [view, setView] = useState<"shops" | "numbers" | "access" | "groups">("shops");
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [reports, setReports] = useState<Record<string, PlatformWaReport>>({});
   const connection = useRef<PlatformWhatsAppHandle>(null);
@@ -340,7 +342,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
           <div
             role="group"
             aria-label={t("waOrg.navigation")}
-            className="grid grid-cols-3 gap-2 rounded-2xl border border-border bg-card p-2"
+            className="grid grid-cols-2 tablet:grid-cols-4 gap-2 rounded-2xl border border-border bg-card p-2"
           >
             {(
               [
@@ -352,6 +354,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                   count: data?.channels.filter((n) => n.display_phone?.trim()).length,
                 },
                 { id: "access", title: "waOrg.access", icon: KeyRound },
+                { id: "groups", title: "care.nav", icon: UsersRound },
               ] as const
             ).map((item) => (
               <button
@@ -373,7 +376,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
               </button>
             ))}
           </div>
-          {data?.number_sharing && view !== "access" && (
+          {data?.number_sharing && view !== "access" && view !== "groups" && (
             <button
               type="button"
               className="action-button action-confirm w-full tablet:w-auto"
@@ -399,7 +402,9 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
               viewNumber={chooseNumber}
             />
           )}
-          {view === "shops" ? (
+          {view === "groups" ? (
+            <CareGroupsAdmin shops={data?.shops ?? []} numbers={data?.channels ?? []} />
+          ) : view === "shops" ? (
             data ? (
               <WhatsAppShopDirectory
                 shops={data.shops}

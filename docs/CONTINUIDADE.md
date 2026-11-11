@@ -2,6 +2,20 @@
 
 Atualizado em **11/11/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
+## 11/11/2026 — grupos exclusivos, desenvolvimento local com automação bloqueada
+
+**Pedido:** dono adotou `INSTRUCOES_CODEX_GRUPOS_EXCLUSIVOS_BARBA_CABELO.md` para implementar apenas localmente. Pausa respeitada e retomada autorizada. Ramo `desenvolvimento/grupos-exclusivos-2026-11-11`, sobre a auditoria local `9549513`; sem publicação, produção, grupos, mensagens reais ou Flow. `.env` e `.vscode/` preexistentes preservados.
+
+**Entregue:** [registro completo](grupos-atendimento-2026-11-11.md), migration nº 106, função e política de grupos, testes e telas. Identificação por `groupJid`, independente do nome; unicidade por Cliente/loja; nenhuma recriação após tentativa incerta, mesmo expirando ou mudando a versão; atribuição com aprovação do Cliente; revogação por saída/mudança de identidade; administradores exclusivamente da Plataforma; webhook autenticado e sem conteúdo persistido; preferências explícitas e teto de 0/1/3 promoções por mês compartilhado entre lojas. Encerramento de grupo usado não provoca fallback individual. Novas tabelas privadas e funções de serviço com privilégios restritos.
+
+**Interface:** Administração → WhatsApp → Grupos de atendimento; Conta do Cliente com adesão, participantes e preferências; ficha da loja somente para participante autorizado. Mesmos estilos/cantos, duas áreas no computador. Janela de encerramento conserva erro/retry. Adesão e marketing não vêm marcados.
+
+**Limite real:** código oficial Evolution 2.3.7 não expõe integralmente controle de adição e aprovação de entrada. Adaptador real permanece incapaz de criar; nenhuma flag de frontend contorna isso. Preferências armazenadas não significam fila de grupos funcionando. Convites, admissão/remoção real, saída de mensagens, avaliação/retorno por evento, atendimento humano, recibos e painel detalhado ainda exigem integração e homologação. [Arquivo TI](pacotes/2026-11-11-ti-grupos-atendimento-capacidades.md) pede apenas diagnóstico; não autoriza implantação ou mensagens.
+
+**Validação:** 532 testes e tipos/lint/formatação/montagem; Deno check da função; 1.467 PASS/0 FAIL em banco local (45 de grupos); quatro ensaios concorrentes com conexões reais num container descartável; 128 verificações Playwright/36 telas em 320/390/768/834/1024/1440 e três cantos, APIs fictícias. Capturas de celular e computador inspecionadas. Não houve ensaio físico ou integração real. Reversão operacional preparada para pausar sem apagar evidências.
+
+**Continuação:** TI confere versão efetiva e contrato dos controles por leitura; depois completar integração local conforme evidências. Nº 105 e nº 106 continuam não instaladas, e nº 101–104 não devem ser repetidas. Sem autossave/push. Não apresentar grupos como operação concluída em produção.
+
 ## 11/11/2026 — auditoria WhatsApp concluída localmente, sem publicação
 
 **Autorização específica do dono:** adotar `INSTRUCOES_CODEX_WHATSAPP_BARBA_CABELO.md` para auditar e corrigir **localmente**, sem publicar nem alterar produção. Base `93e3f1ce8b67882dfa314b16e06ab4727fe10ff5`, ramo `auditoria/whatsapp-confiabilidade-2026-11-10`. Não rodar `autossave.sh` nem enviar este ramo ao `origin` sem nova autorização. `.env` e `.vscode/` já tinham alterações do usuário e foram preservados. Nenhuma operação no Flow.
