@@ -1,5 +1,7 @@
 # Pendências — lista única e priorizada
 
+**11/11/2026 — integração local do ciclo de grupos feita:** [entrega](../pacotes/2026-11-11-bc-integracao-grupos-local.md). Adaptador, convite, admissão, remoção, encerramento e recuperação ensaiados com PostgreSQL local. Nº 107 preparada, junto de 105/106 ainda não instalada; provedor real bloqueado. Próximo desenvolvimento: saída por evento, atendimento humano e recibos, depois observabilidade/privacidade e piloto autorizado. Não repetir diagnóstico TI nem operar Flow.
+
 **11/11/2026 — extensão Evolution local preparada:** [patch, testes e limites](../pacotes/2026-11-11-evolution-extensao-grupos-local.md). 26 testes e construção Linux/AMD64 aprovados. Diagnóstico TI encerrado; falta integrar B&C e completar ensaios antes de janela/piloto autorizado. Nenhuma publicação/instalação; nº 105/106 e adaptador bloqueados. Migration da Evolution também exige etapa própria.
 
 **11/11/2026 — diagnóstico Evolution recebido:** não pedir novamente à TI a mesma conferência. [Revisão do retorno](../pacotes/2026-11-11-evolution-grupos-retorno-ti.md) confirma lacunas e define contrato de extensão local; nenhum fork ou servidor instalado. Receptor B&C corrigido para evento nativo e reentrega, 534 testes. Próximo: extensão revisável, integração local restante e só depois autorização de piloto/janela. Não usar descrição/nome como prova de identidade nem webhook em memória como entrega garantida.

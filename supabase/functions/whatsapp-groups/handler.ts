@@ -2,6 +2,7 @@ import {
   groupSnapshot,
   individualPhone,
   processCareGroup,
+  recoverCareGroup,
   stopIntent,
   type GroupProvider,
 } from "../_shared/whatsapp-groups.ts";
@@ -74,15 +75,41 @@ export async function handleCareGroups(
         const result = await db.rpc("purge_care_group_audit", {});
         return answer({ ok: !result.error }, result.error ? 503 : 200);
       }
-      if (body.action !== "process" || typeof body.operation_id !== "string")
+      if (body.action === "reconcile") {
+        if (!provider.canProvision) return answer({ state: "blocked" });
+        const pending = await db.rpc("queue_care_group_reconciliation", {});
+        if (pending.error || !Array.isArray(pending.data))
+          return answer({ error: "Conferência indisponível" }, 503);
+        const states: string[] = [];
+        for (const id of pending.data.slice(0, 5)) {
+          if (typeof id !== "string") return answer({ error: "Operação inválida" }, 503);
+          states.push(await processCareGroup(db, provider, id));
+        }
+        return answer({ states });
+      }
+      if (
+        !["process", "recover"].includes(body.action) ||
+        typeof body.operation_id !== "string" ||
+        !/^[0-9a-f-]{36}$/i.test(body.operation_id)
+      )
         return answer({ error: "Operação inválida" }, 400);
-      const state = await processCareGroup(db, provider, body.operation_id);
+      const state =
+        body.action === "recover"
+          ? await recoverCareGroup(db, provider, body.operation_id)
+          : await processCareGroup(db, provider, body.operation_id);
       return answer({ state });
     }
     const kind = String(body.event ?? "")
       .toLowerCase()
       .replace(/[_-]/g, ".");
-    if (!["group.participants.update", "groups.update", "messages.upsert"].includes(kind))
+    if (
+      ![
+        "group.participants.update",
+        "group.join.request",
+        "groups.update",
+        "messages.upsert",
+      ].includes(kind)
+    )
       return answer({ ignored: true });
     if (typeof body.instance !== "string" || body.instance.length > 100)
       return answer({ error: "Instância inválida" }, 400);
@@ -108,15 +135,44 @@ export async function handleCareGroups(
           kind,
           jid,
           kind === "messages.upsert" ? messageId : null,
-          kind === "messages.upsert" && messageId ? null : (body.date_time ?? null),
+          kind === "messages.upsert" && messageId
+            ? null
+            : typeof body.event_id === "string" && /^[0-9a-f-]{36}$/i.test(body.event_id)
+              ? body.event_id
+              : (body.date_time ?? null),
           kind === "messages.upsert" ? [sender, intent, fromMe] : item,
         ]),
       );
+      if (kind === "group.participants.update" && item?.action === "remove") {
+        const removed = Array.isArray(item.participants)
+          ? item.participants
+              .map((p: unknown) => {
+                const value = typeof p === "string" ? p : (p as { id?: unknown })?.id;
+                return typeof value === "string" && /^[0-9]+@(s\.whatsapp\.net|lid)$/.test(value)
+                  ? value
+                  : null;
+              })
+              .filter((v: unknown) => v !== null)
+          : [];
+        if (removed.length > 50) return answer({ error: "Muitos participantes" }, 413);
+        const departure = await db.rpc("care_group_removed_members", {
+          p_instance: body.instance,
+          p_group_jid: jid,
+          p_event_key: await digest("departure:" + eventKey),
+          p_jids: removed,
+        });
+        if (departure.error) return answer({ error: "Conferência indisponível" }, 503);
+      }
       const result = await db.rpc("care_group_event", {
         p_instance: body.instance,
         p_group_jid: jid,
         p_event_key: eventKey,
-        p_kind: kind === "group.participants.update" ? "group-participants.update" : kind,
+        p_kind:
+          kind === "group.participants.update"
+            ? "group-participants.update"
+            : kind === "group.join.request"
+              ? "group.join-request"
+              : kind,
         p_sender: sender,
         p_stop: intent,
         p_from_me: fromMe,

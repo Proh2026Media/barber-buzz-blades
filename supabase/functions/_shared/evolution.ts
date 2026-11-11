@@ -89,3 +89,27 @@ export function instanceNameForShop(shopId: string, slug?: string | null) {
 export function digitsOnlyPhone(e164: string) {
   return e164.replace(/\D/g, "");
 }
+
+/** Administração de grupos separada do transporte de mensagens; nenhum endpoint de envio. */
+export function evolutionGroupTransport(path: string, init: RequestInit = {}) {
+  const match = /^\/group\/([A-Za-z]+)\/[A-Za-z0-9_-]{1,100}(?:\?[^#]*)?$/.exec(path);
+  const get = ["bcCapabilities", "bcInspect", "bcCreateStatus", "joinRequests", "inviteCode"];
+  const post = [
+    "bcCreate",
+    "updateSetting",
+    "updateMemberAddMode",
+    "updateJoinApprovalMode",
+    "joinRequests",
+    "updateParticipant",
+    "revokeInviteCode",
+  ];
+  if (
+    !match ||
+    !(init.method === "POST" ? post : !init.method || init.method === "GET" ? get : []).includes(
+      match[1],
+    )
+  ) {
+    throw new Error("GROUP_ROUTE_FORBIDDEN");
+  }
+  return evolutionRequest(path, init);
+}

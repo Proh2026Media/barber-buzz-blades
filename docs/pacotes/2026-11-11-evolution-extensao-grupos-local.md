@@ -1,5 +1,7 @@
 # Evolution — extensão local para grupos do B&C
 
+**Continuação posterior de 11/11:** o [ciclo de grupos foi integrado ao B&C localmente](2026-11-11-bc-integracao-grupos-local.md), com nova migration nº 107 e ensaio PostgreSQL/provedor fictício. Isso atende a integração de criação, convite, participantes, encerramento e recuperação; fila de mensagens e recibos continuam pendentes. Nada instalado ou liberado para piloto.
+
 **11/11/2026. Entrega de código para revisão, sem pedido de instalação à TI.** Complementa o [retorno já encerrado](2026-11-11-evolution-grupos-retorno-ti.md). A confirmação da TI foi recebida como evidência; a autorização vigente continua limitada ao desenvolvimento local.
 
 ## Resultado

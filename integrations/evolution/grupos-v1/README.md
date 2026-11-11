@@ -86,4 +86,4 @@ Tipos TypeScript, lint dos arquivos de produção alterados, montagem e validaç
 
 Não houve teste real de WhatsApp, criação sem participante adicional, admissão, identidade PN/LID ao vivo ou entrega de mensagem. Regras de consentimento/revogação/troca de equipe são responsabilidade do B&C e precisam do ensaio integrado. O pacote não elimina o risco de restrição pela Meta.
 
-Próximo trabalho: integrar o adaptador B&C, convites/remoções, reconciliação, fila de eventos de negócio e recibos ao cliente correto, mantendo o bloqueio até completar testes locais e definir piloto autorizado. [Registro de entrega](../../../docs/pacotes/2026-11-11-evolution-extensao-grupos-local.md).
+Atualização de 11/11: [adaptador, convites, participantes, encerramento e recuperação integrados localmente](../../../docs/pacotes/2026-11-11-bc-integracao-grupos-local.md), com nº 107 ainda não instalada. Próximo trabalho: fila de eventos de negócio, atendimento humano e recibos ao Cliente correto, mantendo o bloqueio até completar testes locais e definir piloto autorizado. [Registro de entrega](../../../docs/pacotes/2026-11-11-evolution-extensao-grupos-local.md).

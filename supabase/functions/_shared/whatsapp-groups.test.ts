@@ -77,29 +77,43 @@ function scenario(mode: "ok" | "timeout" | "save-fails" | "unsupported" = "ok") 
   const calls: string[] = [];
   let claimed = false,
     creates = 0;
+  const job = {
+    id: "operation",
+    token: "token",
+    instance: "ficticia",
+    group_jid: null as string | null,
+    subject: "Atendimento",
+    platform_phones: [policy.platformPhones[0]],
+    customer_phone: policy.customerPhone,
+    approved_phones: policy.approvedPhones,
+    removable_phones: [],
+    kind: "create",
+    use_group: false,
+    entry_pending: true,
+  };
   const db = {
     rpc: async (name: string) => {
       calls.push(name);
       if (name === "claim_care_group_operation") {
         if (claimed || mode === "unsupported") return { data: null };
         claimed = true;
-        return {
-          data: {
-            id: "operation",
-            token: "token",
-            instance: "ficticia",
-            group_jid: null,
-            subject: "Atendimento",
-            platform_phones: [policy.platformPhones[0]],
-          },
-        };
+        return { data: { ...job } };
       }
       if (name === "finish_care_group_creation" && mode === "save-fails") return { error: true };
+      if (name === "finish_care_group_creation") job.group_jid = policy.groupJid;
+      if (name === "authorize_care_group_step") return { data: { ...job } };
       return { data: null };
     },
   };
   const provider: GroupProvider = {
     canProvision: mode !== "unsupported",
+    capabilities: async () => {},
+    recover: async () => ({ id: policy.groupJid }),
+    requests: async () => [],
+    decide: async () => {},
+    member: async () => {},
+    invite: async () => "https://chat.whatsapp.com/TESTEFICTICIO123",
+    revoke: async () => {},
     create: async () => {
       creates++;
       if (mode === "timeout") throw new Error("timeout");
@@ -201,7 +215,7 @@ test("Evento nativo com hífen e alias de configuração chegam à mesma confer�
   const calls: Record<string, unknown>[] = [];
   const db = {
     rpc: async (_name: string, args: Record<string, unknown>) => {
-      calls.push(args);
+      if (_name === "care_group_event") calls.push(args);
       return {};
     },
   };

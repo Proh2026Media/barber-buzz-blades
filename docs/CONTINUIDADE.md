@@ -2,6 +2,16 @@
 
 Atualizado em **11/11/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
+## 11/11/2026 — ciclo de grupos integrado localmente; nº 107 não instalada
+
+Dono autorizou continuar integração/testes após confirmação TI; mantida a limitação local. [Entrega, verificação e próxima janela](pacotes/2026-11-11-bc-integracao-grupos-local.md). Adaptador `bc-groups-v1`, chave de criação persistente, autorização no banco antes de cada mutação, convite privado do Cliente, admissão por identidade, inclusão/remoção de equipe aprovada e encerramento com conferência. Identidade anterior conservada para remoção; associação PN/LID somente pelo mesmo registro autoritativo. Sem promoção de pessoa comercial.
+
+Nº 107 separa nova autorização de entrada do histórico de uso, registra saída negativa e recupera ID pelo diário sem repetir criação. Confirmação/falha tardias não desfazem pausa do operador, saída ou versão posterior. Reconciliação de serviço preparada, sem instalar agendamento. Runtime continua `canProvision=false`; flag de ambiente não o libera.
+
+Verificações: 552 testes (32 de grupos), 1.494 PASS SQL/zero erros, Deno nas três funções afetadas pelo transporte e ensaio integrado com PostgreSQL real/concorrência e Evolution inteiramente fictícia. Reversão existente ensaiada, sem apagar vínculo ou permitir fallback. Tipos/lint/formatação/montagem conferidos. Não houve mudança UI; não repetida homologação visual/física como evidência nova.
+
+Ainda faltam saída/fila de notificações para grupos, avaliação/retorno/atendimento humano, recibos do Cliente, painel operacional detalhado e revisão de privacidade. Nada em produção, nenhum grupo/mensagem real ou Flow; migrations 105/106/107 e Evolution não instaladas. `.env`/`.vscode` preservados; commit somente local, sem autossave/push. TI não recebeu ordem de execução; autorizações futuras serão sobre roteiro concreto revisado.
+
 ## 11/11/2026 — extensão Evolution preparada e verificada localmente
 
 Após a TI confirmar o encerramento do diagnóstico, continuado o desenvolvimento local autorizado. [Entrega](pacotes/2026-11-11-evolution-extensao-grupos-local.md) e [artefatos](../integrations/evolution/grupos-v1/README.md). Patch sobre commit exato relatado, versão `2.3.7-bc.groups.1`: controles/admissão, oito rotas guardadas, PN/LID sem inferência por dígitos, diário persistente de criação e desconhecido sem retry, envelope com ID estável no retry e recibos por participante. Não promete entrega durável do webhook. Novo Dockerfile fixa base e separa aplicação de migrations da inicialização.
