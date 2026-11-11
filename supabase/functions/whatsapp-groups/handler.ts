@@ -81,7 +81,7 @@ export async function handleCareGroups(
     }
     const kind = String(body.event ?? "")
       .toLowerCase()
-      .replaceAll("_", ".");
+      .replace(/[_-]/g, ".");
     if (!["group.participants.update", "groups.update", "messages.upsert"].includes(kind))
       return answer({ ignored: true });
     if (typeof body.instance !== "string" || body.instance.length > 100)
@@ -96,14 +96,20 @@ export async function handleCareGroups(
       // Não usar participantAlt/phoneNumber quando a origem puder ser um LID não resolvido.
       const content = item?.message?.conversation ?? item?.message?.extendedTextMessage?.text;
       const intent = fromMe ? null : stopIntent(content);
+      // Reentrega da mesma mensagem pode ganhar outra data de envelope.
+      // A finalidade negativa e a identidade resolvida distinguem complementos legítimos.
+      const messageId =
+        typeof item?.key?.id === "string" && item.key.id.length > 0 && item.key.id.length <= 200
+          ? item.key.id
+          : null;
       const eventKey = await digest(
         JSON.stringify([
           body.instance,
           kind,
           jid,
-          item?.key?.id ?? null,
-          body.date_time ?? null,
-          kind === "messages.upsert" ? intent : item,
+          kind === "messages.upsert" ? messageId : null,
+          kind === "messages.upsert" && messageId ? null : (body.date_time ?? null),
+          kind === "messages.upsert" ? [sender, intent, fromMe] : item,
         ]),
       );
       const result = await db.rpc("care_group_event", {

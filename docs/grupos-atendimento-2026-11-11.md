@@ -2,6 +2,8 @@
 
 Data: 11/11/2026. Autorização: o dono adotou `INSTRUCOES_CODEX_GRUPOS_EXCLUSIVOS_BARBA_CABELO.md` para implementação **somente local**. Ramo `desenvolvimento/grupos-exclusivos-2026-11-11`, sobre a auditoria local `9549513`. Sem publicação, migration em produção, grupos, mensagens ou operação no Flow. Não executar autossave/push.
 
+**Retorno TI recebido em 11/11:** diagnóstico confirmou as lacunas; [revisão e contrato seguinte](pacotes/2026-11-11-evolution-grupos-retorno-ti.md). Não repetir o pedido de diagnóstico. Correção adicional do receptor local com dois testes; nenhuma liberação da criação real.
+
 ## Resultado e limite desta entrega
 
 Implementados cadastro de solicitações, consentimento, preferências, atribuição de participantes, estados, controles no banco, processamento com provedor simulado, webhook protegido e telas. A criação automática real permanece bloqueada no adaptador. Isso é uma preparação verificável, **não uma integração de grupos pronta para ativar**.

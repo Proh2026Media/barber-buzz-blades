@@ -1,5 +1,7 @@
 # TI — verificar capacidades para grupos exclusivos do B&C
 
+**Pedido atendido pela TI em 11/11/2026. Não reenviar para repetir.** [Retorno revisado e próxima etapa técnica](2026-11-11-evolution-grupos-retorno-ti.md). O restante conserva o pedido original como histórico.
+
 Data: 11/11/2026. Destinatário: TI/Guardião da integração do **Barba & Cabelo**. Não envolve Flow/Claude.
 
 ## Pedido concreto

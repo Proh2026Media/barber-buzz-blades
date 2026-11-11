@@ -195,3 +195,84 @@ test("webhook identifica conversa e remetente separadamente; mensagens próprias
   assert.equal(sent[0].p_group_jid, policy.groupJid);
   assert.ok(!JSON.stringify(sent).includes("Pare de mandar"));
 });
+
+test("Evento nativo com hífen e alias de configuração chegam à mesma conferência", async () => {
+  const secret = "s".repeat(40);
+  const calls: Record<string, unknown>[] = [];
+  const db = {
+    rpc: async (_name: string, args: Record<string, unknown>) => {
+      calls.push(args);
+      return {};
+    },
+  };
+  const provider = scenario().provider;
+  for (const event of ["group-participants.update", "GROUP_PARTICIPANTS_UPDATE"]) {
+    const response = await handleCareGroups(
+      new Request("https://example.invalid", {
+        method: "POST",
+        headers: { "x-bc-group-secret": secret },
+        body: JSON.stringify({
+          instance: "ficticia",
+          event,
+          date_time: "2026-11-11T18:00:00Z",
+          data: {
+            id: policy.groupJid,
+            action: "remove",
+            participants: [{ id: "12345@lid", phoneNumber: "12345" }],
+          },
+        }),
+      }),
+      db,
+      provider,
+      { service: secret, webhook: secret },
+    );
+    assert.equal(response.status, 200);
+  }
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].p_kind, "group-participants.update");
+  assert.equal(calls[0].p_event_key, calls[1].p_event_key);
+  assert.equal(calls[0].p_sender, null);
+  assert.equal(calls[0].p_stop, null);
+});
+
+test("Reentrega de mensagem conserva chave mesmo com outra data do envelope", async () => {
+  const secret = "s".repeat(40),
+    calls: Record<string, unknown>[] = [];
+  const db = {
+    rpc: async (_name: string, args: Record<string, unknown>) => {
+      calls.push(args);
+      return {};
+    },
+  };
+  for (const date_time of ["2026-11-11T18:00:00Z", "2026-11-11T18:01:00Z"]) {
+    const response = await handleCareGroups(
+      new Request("https://example.invalid", {
+        method: "POST",
+        headers: { "x-bc-group-secret": secret },
+        body: JSON.stringify({
+          instance: "ficticia",
+          event: "messages.upsert",
+          date_time,
+          apikey: "NAO-PERSISTIR",
+          data: {
+            key: {
+              id: "msg-1",
+              remoteJid: policy.groupJid,
+              participant: "5511999999999@s.whatsapp.net",
+              fromMe: false,
+            },
+            message: { conversation: "Não quero promoções" },
+          },
+        }),
+      }),
+      db,
+      scenario().provider,
+      { service: secret, webhook: secret },
+    );
+    assert.equal(response.status, 200);
+  }
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].p_event_key, calls[1].p_event_key);
+  assert.equal(calls[0].p_stop, "marketing");
+  assert.ok(!JSON.stringify(calls).includes("NAO-PERSISTIR"));
+});

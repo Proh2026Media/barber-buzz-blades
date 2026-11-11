@@ -2,6 +2,14 @@
 
 Atualizado em **11/11/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
+## 11/11/2026 — retorno TI sobre Evolution e contrato do webhook
+
+Recebido `relatorio-ti-evolution-grupos-2026-11-11.md` como evidência, sem autorização de executar as sugestões. [Análise](pacotes/2026-11-11-evolution-grupos-retorno-ti.md): TI relata imagem/digest e paridade com commit oficial; recursos de admissão existem na biblioteca, mas faltam rotas/consulta na Evolution. Codex conferiu código público, sem VPS. Diagnóstico encerrado; não repetir pedido à TI.
+
+Correções locais: nome nativo `group-participants.update` agora reconhecido como o alias da configuração; mesma mensagem com nova data do envelope conserva chave de deduplicação. Dois novos testes, total 534, tipos/lint/formatação/montagem e Deno aprovados. Nenhuma mudança SQL ou UI; não repetidas suítes de banco/interface sem necessidade. Nº 105/106 não instaladas e adaptador real segue bloqueado.
+
+Proposta TI qualificada: descrição é posterior à criação e não garante recuperação; `correlationId` apenas na resposta não resolve queda antes da persistência; webhook finito em memória pode perder todos os retries, e ID/sequência não cria durabilidade. Próximo contrato pede extensão local revisável de controles, pedidos e diário durável; resultado incerto permanece sem recriação. Recibos individuais opcionais, sem afirmar entrega ao Cliente quando ausentes. Não foi implementado fork nem feita nova ação operacional; `.env`/`.vscode` do usuário preservados.
+
 ## 11/11/2026 — grupos exclusivos, desenvolvimento local com automação bloqueada
 
 **Pedido:** dono adotou `INSTRUCOES_CODEX_GRUPOS_EXCLUSIVOS_BARBA_CABELO.md` para implementar apenas localmente. Pausa respeitada e retomada autorizada. Ramo `desenvolvimento/grupos-exclusivos-2026-11-11`, sobre a auditoria local `9549513`; sem publicação, produção, grupos, mensagens reais ou Flow. `.env` e `.vscode/` preexistentes preservados.
