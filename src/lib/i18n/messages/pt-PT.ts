@@ -1,6 +1,18 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const ptPT: Record<MessageKey, string> = {
+  "waLink.reusePreparation":
+    "Utilize um número já registado nesta barbearia, sem ler outro código QR.",
+  "waLink.hint":
+    "Escolha um número registado e quem o vai utilizar. Pode servir mais de uma barbearia.",
+  "waLink.pending": "Este destino tem uma preparação sem número.",
+  "waLink.pendingHint":
+    "Desvincular liberta apenas este destino para a nova escolha. A preparação e os outros vínculos são mantidos.",
+  "waLink.release": "Desvincular preparação",
+  "waLink.released": "Destino disponível. Clique em Usar este número para concluir.",
+  "waLink.already": "Este destino já utiliza o número escolhido.",
+  "waLink.occupied": "Este destino já tem outro número associado.",
+  "waLink.viewCurrent": "Ver número atual",
   "waMissing.title": "Barbearias e profissionais sem número",
   "waMissing.hint":
     "Associe um número existente. O número geral da barbearia também serve os profissionais sem número próprio.",

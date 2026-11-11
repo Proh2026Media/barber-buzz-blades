@@ -1,5 +1,16 @@
 /** Dicionário principal (fonte). Toda chave nova nasce aqui, em pt-BR. */
 export const ptBR = {
+  "waLink.reusePreparation": "Use um número já cadastrado nesta barbearia, sem ler outro QR Code.",
+  "waLink.hint":
+    "Escolha um número cadastrado e quem vai utilizá-lo. Ele pode atender mais de uma barbearia.",
+  "waLink.pending": "Este destino tem uma preparação sem número.",
+  "waLink.pendingHint":
+    "Desvincular libera apenas este destino para sua nova escolha. A preparação e os outros vínculos são mantidos.",
+  "waLink.release": "Desvincular preparação",
+  "waLink.released": "Destino liberado. Clique em Usar este número para concluir.",
+  "waLink.already": "Este destino já usa o número escolhido.",
+  "waLink.occupied": "Este destino já tem outro número vinculado.",
+  "waLink.viewCurrent": "Ver número atual",
   "waMissing.title": "Barbearias e profissionais sem número",
   "waMissing.hint":
     "Vincule um número existente. O número geral da barbearia também atende aos profissionais sem número próprio.",

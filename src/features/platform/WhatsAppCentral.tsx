@@ -3,6 +3,7 @@ import { useDemo } from "@/features/demo/context";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowRightLeft,
+  Link2,
   ArrowLeft,
   ArrowRight,
   Store,
@@ -32,6 +33,8 @@ import {
 } from "./WhatsAppNumberReserve";
 
 import { WhatsAppNumberDestinations, type WhatsAppNumberLink } from "./WhatsAppNumberDestinations";
+
+import { WhatsAppLinkDialog, type WhatsAppLinkRequest } from "./WhatsAppLinkDialog";
 
 type DetailTab = "links" | "connection" | "reserve" | "history";
 type Channel = Tables<"whatsapp_channels">;
@@ -97,6 +100,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
   const root = useRef<HTMLElement>(null);
   const initialLinkRead = useRef(false);
   const [adding, setAdding] = useState(false);
+  const [linkRequest, setLinkRequest] = useState<WhatsAppLinkRequest | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<MessageKey | null>(null);
   const [saved, setSaved] = useState(false);
@@ -248,6 +252,51 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
     setSaved(false);
     setError(null);
   }
+  function openLink(request: WhatsAppLinkRequest = {}) {
+    setError(null);
+    setSaved(false);
+    setLinkRequest(request);
+  }
+  async function addLink(id: string, shop: string, staff: string | null) {
+    let added = false;
+    const number = data?.channels.find((n) => n.id === id);
+    if (!number) return false;
+    await run(async () => {
+      const { error: failed } = await supabase.rpc("platform_add_whatsapp_link", {
+        p_id: number.id,
+        p_version: number.routing_version,
+        p_shop: shop,
+        p_staff: staff,
+        p_enabled: false,
+      });
+      if (failed) throw failed;
+      await load();
+      if (live.current) {
+        chooseNumber(id);
+        setSaved(true);
+      }
+      added = true;
+    });
+    return added;
+  }
+  async function releasePreparation(link: WhatsAppNumberLink) {
+    let released = false;
+    const owner = data?.channels.find((n) => n.id === link.channel_id);
+    if (!owner || owner.display_phone?.trim()) return false;
+    await run(async () => {
+      const { error: failed } = await supabase.rpc("platform_update_whatsapp_link", {
+        p_link: link.id,
+        p_version: link.version,
+        p_enabled: false,
+        p_returns: false,
+        p_remove: true,
+      });
+      if (failed) throw failed;
+      await load();
+      released = true;
+    });
+    return released;
+  }
   return (
     <section ref={root} tabIndex={-1} className="min-w-0 space-y-5 outline-none">
       <header className="flex items-start justify-between gap-3">
@@ -275,6 +324,32 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
         <>
           {error && <Notice tone="danger" title={t(error)} />}
           {saved && <Notice tone="success" title={t("waCentral.saved")} />}
+          {data?.number_sharing && !platformOpen && (
+            <button
+              type="button"
+              className="action-button action-confirm w-full tablet:w-auto"
+              disabled={busy}
+              onClick={() => openLink()}
+            >
+              <Link2 className="size-5 shrink-0" aria-hidden />
+              {t("waMissing.link")}
+            </button>
+          )}
+          {data?.number_sharing && linkRequest && (
+            <WhatsAppLinkDialog
+              request={linkRequest}
+              numbers={data.channels}
+              shops={data.shops}
+              staff={data.staff}
+              links={data.links ?? []}
+              busy={busy}
+              error={error ? t(error) : null}
+              close={() => setLinkRequest(null)}
+              add={addLink}
+              release={releasePreparation}
+              viewNumber={chooseNumber}
+            />
+          )}
           {platformOpen ? (
             <section className="max-w-3xl space-y-4">
               <button className="action-button" disabled={busy} onClick={backToNumbers}>
@@ -599,33 +674,10 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                       ) : data.number_sharing && channel.barbershop_id ? (
                         <WhatsAppNumberDestinations
                           key={`links:${channel.id}`}
-                          numberLabel={numberName(channel, t("waCentral.channel"))}
-                          error={error ? t(error) : null}
                           links={(data.links ?? []).filter((b) => b.channel_id === channel.id)}
-                          shops={data.shops}
-                          staff={data.staff}
                           busy={busy}
                           destination={destination}
-                          add={async (shop, staff) => {
-                            let added = false;
-                            await run(async () => {
-                              const { error: failed } = await supabase.rpc(
-                                "platform_add_whatsapp_link",
-                                {
-                                  p_id: channel.id,
-                                  p_version: channel.routing_version,
-                                  p_shop: shop,
-                                  p_staff: staff,
-                                  p_enabled: false,
-                                },
-                              );
-                              if (failed) throw failed;
-                              await load();
-                              if (live.current) setSaved(true);
-                              added = true;
-                            });
-                            return added;
-                          }}
+                          add={() => openLink({ number: channel.id })}
                           update={(link, enabled, returns, remove) =>
                             void run(async () => {
                               const { error: failed } = await supabase.rpc(
@@ -706,6 +758,22 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                       )}
                     </div>
                     <div hidden={tab !== "connection"} className="max-w-3xl space-y-4">
+                      {data.number_sharing && !channel.display_phone?.trim() && !reservedBy && (
+                        <Notice
+                          tone="info"
+                          title={t("waLink.reusePreparation")}
+                          action={{
+                            label: t("waMissing.link"),
+                            icon: Link2,
+                            disabled: busy,
+                            onClick: () =>
+                              openLink({
+                                shop: channel.barbershop_id ?? undefined,
+                                staff: channel.staff_id,
+                              }),
+                          }}
+                        />
+                      )}
                       {shared && <Notice tone="warning" title={t("waShared.connectionHint")} />}
                       <PlatformWhatsAppCard
                         ref={connection}
@@ -820,41 +888,13 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                   <WhatsAppMissingDestinations
                     shops={data.shops}
                     staff={data.staff}
-                    links={data.links ?? []}
-                    numbers={data.channels.filter(
-                      (c) =>
-                        c.display_phone?.trim() &&
-                        !data.channels.some(
-                          (owner) => owner.backup_instance_name === c.instance_name,
-                        ),
+                    links={(data.links ?? []).filter((link) =>
+                      data.channels.some(
+                        (n) => n.id === link.channel_id && n.display_phone?.trim(),
+                      ),
                     )}
                     busy={busy}
-                    error={error ? t(error) : null}
-                    link={async (id, shop, staff) => {
-                      let added = false;
-                      const number = data.channels.find((c) => c.id === id);
-                      if (!number) return false;
-                      await run(async () => {
-                        const { error: failed } = await supabase.rpc("platform_add_whatsapp_link", {
-                          p_id: number.id,
-                          p_version: number.routing_version,
-                          p_shop: shop,
-                          p_staff: staff,
-                          p_enabled: false,
-                        });
-                        if (failed) throw failed;
-                        await load();
-                        if (live.current) {
-                          chooseNumber(id);
-                          setSaved(true);
-                          requestAnimationFrame(() =>
-                            detail.current?.focus({ preventScroll: true }),
-                          );
-                        }
-                        added = true;
-                      });
-                      return added;
-                    }}
+                    link={(target) => openLink({ shop: target.shop, staff: target.staff })}
                   />
                 </div>
               )}

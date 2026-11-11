@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2, Store, Scissors, Smartphone, Settings2 } from "lucide-react";
+import { Plus, Trash2, Store, Scissors, Settings2 } from "lucide-react";
 import { Notice } from "@/components/visual";
 import {
   Dialog,
@@ -22,32 +22,14 @@ export type WhatsAppNumberLink = {
   version: number;
 };
 type Props = {
-  numberLabel: string;
-  error: string | null;
   links: WhatsAppNumberLink[];
-  shops: { id: string; name: string }[];
-  staff: { id: string; shop_id: string; name: string }[];
   busy: boolean;
   destination: (shop: string, staff: string | null) => string;
-  add: (shop: string, staff: string | null) => Promise<boolean>;
+  add: () => void;
   update: (link: WhatsAppNumberLink, enabled: boolean, returns: boolean, remove: boolean) => void;
 };
-const field = "min-h-11 w-full min-w-0 rounded-xl border border-border bg-background px-3 text-sm";
-export function WhatsAppNumberDestinations({
-  numberLabel,
-  error,
-  links,
-  shops,
-  staff,
-  busy,
-  destination,
-  add,
-  update,
-}: Props) {
+export function WhatsAppNumberDestinations({ links, busy, destination, add, update }: Props) {
   const { t } = useI18n();
-  const [adding, setAdding] = useState(false);
-  const [shop, setShop] = useState("");
-  const [professional, setProfessional] = useState("");
   return (
     <section className="min-w-0 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -67,112 +49,10 @@ export function WhatsAppNumberDestinations({
           />
         ))}
       </div>
-      <button
-        className="action-button action-confirm w-full"
-        disabled={busy}
-        onClick={() => setAdding(true)}
-      >
+      <button className="action-button action-confirm w-full" disabled={busy} onClick={add}>
         <Plus className="size-5 shrink-0" aria-hidden />
         {t("waHub.useElsewhere")}
       </button>
-      <Dialog
-        open={adding}
-        onOpenChange={(open) => {
-          if (!busy) setAdding(open);
-        }}
-      >
-        <DialogContent
-          size="lg"
-          className="bg-card"
-          onEscapeKeyDown={(event) => {
-            if (busy) event.preventDefault();
-          }}
-          onPointerDownOutside={(event) => {
-            if (busy) event.preventDefault();
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle>{t("waHub.useElsewhere")}</DialogTitle>
-            <DialogDescription>{t("waHub.linkDialogHint")}</DialogDescription>
-          </DialogHeader>
-          <form
-            className="contents"
-            onSubmit={async (event) => {
-              event.preventDefault();
-              if (shop && !busy && (await add(shop, professional || null))) {
-                setAdding(false);
-                setShop("");
-                setProfessional("");
-              }
-            }}
-          >
-            <DialogBody className="space-y-4">
-              <div className="flex items-center gap-3 rounded-xl border border-border bg-accent p-3">
-                <Smartphone className="size-6 shrink-0 text-primary" aria-hidden />
-                <strong className="min-w-0 break-words text-sm">{numberLabel}</strong>
-              </div>
-              {error && <Notice tone="danger" title={error} />}
-              <div className="grid gap-3 tablet:grid-cols-2">
-                <label className="grid min-w-0 gap-1 text-sm font-semibold">
-                  {t("waCentral.shop")}
-                  <select
-                    required
-                    aria-label={t("waCentral.shop")}
-                    className={field}
-                    value={shop}
-                    disabled={busy}
-                    onChange={(e) => {
-                      setShop(e.target.value);
-                      setProfessional("");
-                    }}
-                  >
-                    <option value="">{t("waShared.choose")}</option>
-                    {shops.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="grid min-w-0 gap-1 text-sm font-semibold">
-                  {t("waCentral.staff")}
-                  <select
-                    className={field}
-                    aria-label={t("waCentral.staff")}
-                    value={professional}
-                    disabled={busy || !shop}
-                    onChange={(e) => setProfessional(e.target.value)}
-                  >
-                    <option value="">{t("waCentral.wholeShop")}</option>
-                    {staff
-                      .filter((s) => s.shop_id === shop)
-                      .map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name}
-                        </option>
-                      ))}
-                  </select>
-                </label>
-              </div>
-
-              <Notice tone="info" title={t("waShared.addHint")} />
-            </DialogBody>
-            <DialogActions>
-              <button
-                type="button"
-                className="action-button"
-                disabled={busy}
-                onClick={() => setAdding(false)}
-              >
-                {t("common.cancel")}
-              </button>
-              <button className="action-button action-confirm" disabled={busy || !shop}>
-                {t("waShared.link")}
-              </button>
-            </DialogActions>
-          </form>
-        </DialogContent>
-      </Dialog>
     </section>
   );
 }

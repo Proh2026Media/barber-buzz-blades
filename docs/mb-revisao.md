@@ -2,6 +2,13 @@
 
 Atualizado em **07/11/2026** (P-49/P-70; entradas anteriores preservadas como histórico). Fonte: [mb-interface.md](mb-interface.md). Regra: `.cursor/rules/mb.mdc`. Skill: `.cursor/skills/mb/`.
 
+## P-119 — reutilizar número dentro da preparação (10/11/2026, correção)
+
+- O dono apontou o caminho exato: abrir uma barbearia em “Conexões em preparação” mostrava apenas o pareamento. Agora essa tela oferece “Vincular número existente”, já com o destino preenchido. A mesma ação fica visível no topo da central.
+- Janela única para entrada global, número selecionado e destino pendente. Lista números identificados mesmo que já atendam outras barbearias; reserva continua fora das opções. Destino com o mesmo número informa que já está vinculado; outro número identificado permite abrir a configuração atual, sem substituição silenciosa.
+- Preparações sem telefone deixam de esconder destinos da lista de pendências. Se uma preparação ocupa o destino, sua remoção exige ação explícita, protegida pelas RPCs de versão/fila existentes. Só depois se conclui a escolha do número. Uma falha na segunda etapa conserva a escolha e mostra o erro; não afirma que o vínculo novo foi criado.
+- Conferência fictícia no caminho informado pelo dono, incluindo falhas nas duas etapas, preservação dos demais vínculos e compartilhamento em mais uma loja; 15 combinações de largura/cantos (320, 390, 834, 1024 e 1440 px). Tipos, 492 testes, lint, formatação e montagem aprovados. Nenhuma alteração de vínculo ou mensagem em produção.
+
 ## P-117 — WhatsApp pessoal do administrador (10/11/2026)
 
 - Menu do avatar ganha “WhatsApp pessoal”, separado da Central de WhatsApp. Cadastro/confirmação pelo fluxo existente; mesmo admin sem loja pode informar o próprio número.

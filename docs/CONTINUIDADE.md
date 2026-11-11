@@ -2,6 +2,16 @@
 
 Atualizado em **10/11/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
+## 10/11/2026 — P-119: correção do reaproveitamento nas preparações
+
+O dono informou que a preparação de uma barbearia oferecia apenas QR Code, sem seleção de WhatsApp existente. A consulta de diagnóstico na VPS foi somente leitura: compartilhamento continua instalado e há preparação sem telefone ainda vinculada. Não houve perda dos números ou vínculos existentes.
+
+**Correção:** `WhatsAppLinkDialog` concentra a escolha número → barbearia → profissional. Abre diretamente na conexão em preparação com o destino preenchido, pelo botão sempre visível no topo ou pelo “Usar em outra barbearia” do número selecionado. `WhatsAppMissingDestinations` considera cobertura apenas os vínculos de números identificados; preparações não escondem mais as pendências. A lista principal continua só com telefones identificados.
+
+**Vínculo antigo:** quando o destino está ocupado por uma preparação sem telefone, a janela mostra “Desvincular preparação”; usa `platform_update_whatsapp_link` com versão e `p_remove=true`, para aquele vínculo apenas. Após leitura atualizada, “Usar este número” usa `platform_add_whatsapp_link`, inicialmente pausado. São duas ações explícitas: se a segunda falhar/cancelar, o destino continua liberado e o novo vínculo não é anunciado como concluído. Preparação e outros destinos permanecem. Número identificado já vinculado não é substituído por essa opção; pode-se abrir o número atual. Reserva, conflitos de versão e envios em andamento/incertos conservam as proteções do banco.
+
+**Verificação:** tipos, 492/492 testes, lint, formatação e montagem aprovados. Bancada fictícia percorreu exatamente preparação → número existente, com destino preenchido, falhas/recuperação nas duas etapas, preservação dos vínculos anteriores, mesmo número em várias lojas, seleção contextual/global, conflito de destino e reservas fora da escolha. Quinze combinações de cinco larguras e três cantos, capturas de celular/computador inspecionadas. Nenhum pedido de pareamento/criação, nenhum envio e nenhuma associação real executados. Sem migration/Edge/TI.
+
 ## 10/11/2026 — P-117: cadastro do WhatsApp pessoal no painel global
 
 **Problema:** o administrador sem WhatsApp confirmado não tinha acesso ao cadastro pessoal no menu da administração. O número da plataforma para envio não é o telefone do login.

@@ -1,6 +1,18 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const enUS: Record<MessageKey, string> = {
+  "waLink.reusePreparation":
+    "Use an existing number for this barbershop without scanning another QR code.",
+  "waLink.hint":
+    "Choose an existing number and who will use it. One number can serve multiple barbershops.",
+  "waLink.pending": "This destination has a setup with no phone number.",
+  "waLink.pendingHint":
+    "Unlinking frees only this destination for your new choice. The setup and other links are kept.",
+  "waLink.release": "Unlink setup",
+  "waLink.released": "Destination available. Select Use this number to finish.",
+  "waLink.already": "This destination already uses the selected number.",
+  "waLink.occupied": "This destination already has another number linked.",
+  "waLink.viewCurrent": "View current number",
   "waMissing.title": "Shops and professionals without a number",
   "waMissing.hint":
     "Link an existing number. The shop’s general number also serves professionals without their own number.",
