@@ -1,5 +1,7 @@
 # Evolution e grupos — revisão do retorno da TI
 
+**Complemento posterior de 11/11:** a [extensão local foi preparada e testada](2026-11-11-evolution-extensao-grupos-local.md); o contrato abaixo permanece como histórico da revisão, não indicação de instalação. Consulta do manifesto público confirmou que os digests relatados são índice OCI e seu filho AMD64, e não evidência isolada de divergência. Diagnóstico TI encerrado; nenhuma nova execução no servidor.
+
 Data: 11/11/2026. Entrada: `relatorio-ti-evolution-grupos-2026-11-11.md`, entregue pelo dono, referente à inspeção da TI entre 17h41 e 18h00 (Brasília). Documento de evidência, não autorização de mudanças no servidor.
 
 ## Conclusão

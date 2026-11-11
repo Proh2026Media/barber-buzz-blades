@@ -1,5 +1,7 @@
 # Grupos exclusivos de atendimento — preparação local
 
+**Atualização 11/11 — extensão do provedor preparada:** [pacote local](pacotes/2026-11-11-evolution-extensao-grupos-local.md) implementa as rotas/diário/eventos sobre a revisão exata, com 26 testes e imagem local construída. Isso supera a etapa de apenas propor a extensão, mas não libera o adaptador B&C nem confirma capacidade em produção. Integração, ensaios e autorizações operacionais continuam pendentes.
+
 Data: 11/11/2026. Autorização: o dono adotou `INSTRUCOES_CODEX_GRUPOS_EXCLUSIVOS_BARBA_CABELO.md` para implementação **somente local**. Ramo `desenvolvimento/grupos-exclusivos-2026-11-11`, sobre a auditoria local `9549513`. Sem publicação, migration em produção, grupos, mensagens ou operação no Flow. Não executar autossave/push.
 
 **Retorno TI recebido em 11/11:** diagnóstico confirmou as lacunas; [revisão e contrato seguinte](pacotes/2026-11-11-evolution-grupos-retorno-ti.md). Não repetir o pedido de diagnóstico. Correção adicional do receptor local com dois testes; nenhuma liberação da criação real.

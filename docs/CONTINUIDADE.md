@@ -2,6 +2,14 @@
 
 Atualizado em **11/11/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
+## 11/11/2026 — extensão Evolution preparada e verificada localmente
+
+Após a TI confirmar o encerramento do diagnóstico, continuado o desenvolvimento local autorizado. [Entrega](pacotes/2026-11-11-evolution-extensao-grupos-local.md) e [artefatos](../integrations/evolution/grupos-v1/README.md). Patch sobre commit exato relatado, versão `2.3.7-bc.groups.1`: controles/admissão, oito rotas guardadas, PN/LID sem inferência por dígitos, diário persistente de criação e desconhecido sem retry, envelope com ID estável no retry e recibos por participante. Não promete entrega durável do webhook. Novo Dockerfile fixa base e separa aplicação de migrations da inicialização.
+
+26 testes aprovados (20 núcleo, dois HTTP, dois webhook, dois PostgreSQL real em container descartado), tipos/lint de produção/montagem/schemas Prisma e aplicação do patch limpo. Imagem Linux/AMD64 construída localmente; sem executar aplicação/sessões reais. MySQL somente validação de schema. Manifesto público confirma que `1bd8afc4…d339` contém o filho AMD64 `456b4104…dfc81`; diferença isolada não prova divergência de implantação.
+
+Verificação final do B&C: `scripts/verificar.sh` aprovado, com tipos, **534/534 testes**, formatação e montagem; eslint sem arquivos TS alterados nesta etapa. Código B&C funcional não alterado nesta etapa; adaptador permanece bloqueado e nº 105/106 não instaladas. Próximo: integração local restante e ensaios, antes de qualquer piloto autorizado. Nenhuma VPS, Flow, mensagem/grupo real, autossave ou push. `.env` e `.vscode/` preservados. Testes SQL/UI anteriores do B&C não repetidos sem mudança correspondente.
+
 ## 11/11/2026 — retorno TI sobre Evolution e contrato do webhook
 
 Recebido `relatorio-ti-evolution-grupos-2026-11-11.md` como evidência, sem autorização de executar as sugestões. [Análise](pacotes/2026-11-11-evolution-grupos-retorno-ti.md): TI relata imagem/digest e paridade com commit oficial; recursos de admissão existem na biblioteca, mas faltam rotas/consulta na Evolution. Codex conferiu código público, sem VPS. Diagnóstico encerrado; não repetir pedido à TI.
