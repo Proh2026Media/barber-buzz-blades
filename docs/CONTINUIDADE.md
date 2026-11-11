@@ -2,6 +2,10 @@
 
 Atualizado em **10/11/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
+## 10/11/2026 — investigação das desconexões WhatsApp, 23h03–23h10
+
+[Diagnóstico e próximos passos para TI](pacotes/2026-11-10-diagnostico-whatsapp-sessoes.md). Somente leitura: dois eventos separados. 66 consultas ao `platform-whatsapp` recusadas com HTTP 401 entre 22h43 e 23h03 coincidem com 66 `session_not_found` no Auth. Isso impede conferir números, sem desconectá-los. Evolution confirmou os finais 4593 e 0022 abertos; plataforma final 5627 fechada por `401 / conflict / device_removed` às 22h37 e 23h03. A primeira queda antecede a reorganização visual. Sem prova de banimento, ação manual específica ou indisponibilidade geral. Serviços sem reinício recente; Evolution 2.3.7/Baileys 7.0.0-rc.9. Handler/pareamento instalados conferem; diferença do auxiliar Evolution é só formatação. Acesso voltou a responder HTTP 200 em consultas recentes, mas plataforma continua fechada. Conferência do aplicativo do titular e novo pareamento somente da plataforma pendentes; não reiniciar, atualizar nem reconectar os números ativos automaticamente. Nenhuma alteração funcional ou remota nesta investigação.
+
 ## 10/11/2026 — reorganização completa da central e cadastro pessoal pendente
 
 **Pedido:** o dono apontou confusão entre telefones cadastrados, barbearias/profissionais e conexões em preparação, pediu plano seguido de execução e autorizou retirar o telefone da conta de cliente identificada anteriormente.
