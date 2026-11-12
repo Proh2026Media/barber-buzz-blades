@@ -34,3 +34,8 @@ export function whatsappCoverage<N extends DirectoryNumber, L extends DirectoryL
     return { kind: "shop" as const, number: generalNumber, link: general, pending: own };
   return { kind: "none" as const, number: undefined, link: undefined, pending: own };
 }
+
+/** Um cadastro só entra no catálogo quando tem telefone identificado; conexão é outro estado. */
+export function hasIdentifiedNumber(number: Pick<DirectoryNumber, "display_phone">) {
+  return /^\+?[1-9]\d{7,14}$/.test(number.display_phone?.trim() ?? "");
+}

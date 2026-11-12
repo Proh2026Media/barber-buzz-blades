@@ -152,6 +152,10 @@ export const ptBR = {
   "waOrg.awaitingConnection": "Aguardando conexão",
   "waOrg.identifyingNumber": "Conectado · identificando número",
   "waOrg.finishConnection": "Continuar conexão",
+  "waOrg.preparations": "Conexões por concluir",
+  "waOrg.preparationsHint": "Ainda sem telefone identificado. Abra para continuar.",
+  "waNumbers.platformReserveHint":
+    "Reserva definida sem troca automática. Os grupos existentes mantêm seus números atuais.",
   "waOrg.incomplete": "Cadastros de número não concluídos",
   "waOrg.incompleteHint":
     "São tentativas que ainda não têm telefone identificado. Continue para conectar um novo número ou escolha um número já cadastrado para o destino.",

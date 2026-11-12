@@ -1,3 +1,4 @@
+import { hasIdentifiedNumber } from "@/lib/whatsapp/directory-model";
 import { CareGroupsAdmin } from "./CareGroupsAdmin";
 import { WhatsAppSendingControls } from "./WhatsAppSendingControls";
 import { WhatsAppShopDirectory } from "./WhatsAppShopDirectory";
@@ -52,6 +53,7 @@ type Directory = {
     created_at: string;
   }[];
   number_reserves?: boolean;
+  unassigned_reserves?: boolean;
   configuration_history?: {
     id: string;
     channel_id: string;
@@ -121,12 +123,10 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
       const requested = new URLSearchParams(window.location.search).get("numero");
       const numbers = (result as unknown as Directory).channels;
       const target = numbers.find((n) => n.id === requested);
-      setSelected(
-        target?.id ?? numbers.find((n) => n.display_phone?.trim())?.id ?? numbers[0]?.id ?? null,
-      );
+      setSelected(target?.id ?? numbers.find(hasIdentifiedNumber)?.id ?? numbers[0]?.id ?? null);
       setDetailsOpen(Boolean(target));
       if (target) setView("numbers");
-      if (target && !target.display_phone?.trim()) setTab("connection");
+      if (target && !hasIdentifiedNumber(target)) setTab("connection");
     }
   }
   useEffect(() => {
@@ -159,7 +159,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
   }
   const channel =
     data?.channels.find((c) => c.id === selected) ??
-    data?.channels.find((c) => c.display_phone?.trim()) ??
+    data?.channels.find(hasIdentifiedNumber) ??
     data?.channels[0];
   const channelId = channel?.id;
   const report = useCallback(
@@ -250,16 +250,18 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
         ? [{ id: owner.id, barbershop_id: owner.barbershop_id, staff_id: owner.staff_id }]
         : [];
   };
+  const identified = data?.channels.filter(hasIdentifiedNumber) ?? [];
+  const preparations = data?.channels.filter((n) => !hasIdentifiedNumber(n)) ?? [];
   const filtered =
-    data?.channels.filter(
+    identified.filter(
       (c) =>
         (filter === "all" ||
           (filter === "backup"
-            ? data.channels.some((n) => n.backup_instance_name === c.instance_name)
+            ? (data?.channels ?? []).some((n) => n.backup_instance_name === c.instance_name)
             : filter === "assigned"
               ? numberLinks(c).length > 0
               : numberLinks(c).length === 0 &&
-                !data.channels.some((n) => n.backup_instance_name === c.instance_name))) &&
+                !(data?.channels ?? []).some((n) => n.backup_instance_name === c.instance_name))) &&
         `${c.label} ${c.display_phone ?? ""} ${numberDestinations(c)}`
           .toLocaleLowerCase(locale)
           .includes(query.toLocaleLowerCase(locale)),
@@ -366,7 +368,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                   id: "numbers",
                   title: "waOrg.numbers",
                   icon: Smartphone,
-                  count: data?.channels.length,
+                  count: data ? identified.length : undefined,
                 },
                 { id: "access", title: "waOrg.access", icon: KeyRound },
                 { id: "groups", title: "care.nav", icon: UsersRound },
@@ -474,7 +476,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                   <div className="flex items-center justify-between gap-2 px-1">
                     <h3 className="text-sm font-bold">{t("waNumbers.existing")}</h3>
                     <span className="text-xs text-muted-foreground">
-                      {data?.channels.length ?? "—"}
+                      {data ? identified.length : "—"}
                     </span>
                   </div>
                   <label className="relative block">
@@ -509,7 +511,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                       {t("shop.loading")}
                     </p>
                   )}
-                  <ul className="space-y-2">
+                  <ul aria-label={t("waNumbers.existing")} className="space-y-2">
                     {filtered.map((c) => {
                       const owner = data?.channels.find(
                         (n) => n.backup_instance_name === c.instance_name,
@@ -585,6 +587,31 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                         </button>
                       )}
                     </div>
+                  )}
+                  {preparations.length > 0 && (
+                    <section
+                      aria-label={t("waOrg.preparations")}
+                      className="space-y-2 border-t border-border pt-3"
+                    >
+                      <h4 className="text-sm font-semibold">
+                        {t("waOrg.preparations")} · {preparations.length}
+                      </h4>
+                      <p className="text-xs text-muted-foreground">{t("waOrg.preparationsHint")}</p>
+                      {preparations.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          className="action-button w-full justify-between text-left"
+                          disabled={busy}
+                          onClick={() => chooseNumber(item.id, "connection")}
+                        >
+                          <span className="min-w-0 break-words">
+                            {item.label || t("waOrg.incompleteItem")}
+                          </span>
+                          <ArrowRight className="size-4 shrink-0" aria-hidden />
+                        </button>
+                      ))}
+                    </section>
                   )}
                   <div className="border-t border-border pt-3">
                     <button
@@ -809,7 +836,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                           }
                         />
                       )}
-                      {channel.barbershop_id && !reservedBy && (
+                      {hasIdentifiedNumber(channel) && !reservedBy && (
                         <button
                           type="button"
                           disabled={busy}
@@ -864,13 +891,16 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                     </div>
                     <div hidden={tab !== "reserve"} className="max-w-3xl space-y-4">
                       {shared && <Notice tone="warning" title={t("waShared.connectionHint")} />}
-                      {channel.barbershop_id && !reservedBy && (
+                      {hasIdentifiedNumber(channel) && !reservedBy && (
                         <WhatsAppNumberReserve
                           key={`reserve:${channel.id}:${channel.routing_version}`}
                           number={channel}
                           numbers={data.channels}
                           perDestinationReturns={Boolean(data.number_sharing)}
-                          supported={Boolean(data.number_reserves)}
+                          supported={Boolean(
+                            channel.barbershop_id ? data.number_reserves : data.unassigned_reserves,
+                          )}
+                          assignmentOnly={!channel.barbershop_id}
                           busy={busy}
                           save={(configuration) => configure(channel, configuration)}
                           selectNumber={(id) => chooseNumber(id, "connection")}
@@ -1031,7 +1061,9 @@ function Assignment({
   const candidates = data.channels.filter(
     (n) =>
       n.id !== channel.id &&
-      n.barbershop_id &&
+      hasIdentifiedNumber(n) &&
+      (n.barbershop_id || data.unassigned_reserves) &&
+      !data.channels.some((owner) => owner.backup_instance_name === n.instance_name) &&
       !n.backup_instance_name &&
       n.delivery_mode === "primary",
   );
@@ -1041,6 +1073,7 @@ function Assignment({
   const [confirmed, setConfirmed] = useState(false);
   const moved = shop !== (channel.barbershop_id ?? "") || staff !== (channel.staff_id ?? "");
   const rolePicker =
+    hasIdentifiedNumber(channel) &&
     !channel.barbershop_id &&
     !channel.backup_instance_name &&
     channel.delivery_mode === "primary" &&
@@ -1083,8 +1116,10 @@ function Assignment({
                 <option value="">{t("waNumbers.choosePrimary")}</option>
                 {candidates.map((n) => (
                   <option key={n.id} value={n.id}>
-                    {numberName(n, t("waCentral.channel"))} ·{" "}
-                    {data.shops.find((s) => s.id === n.barbershop_id)?.name}
+                    {numberName(n, t("waCentral.channel"))}
+                    {n.barbershop_id
+                      ? ` · ${data.shops.find((s) => s.id === n.barbershop_id)?.name ?? ""}`
+                      : ""}
                     {n.staff_id
                       ? ` · ${data.staff.find((s) => s.id === n.staff_id)?.name ?? t("waCentral.inactiveStaff")}`
                       : ""}

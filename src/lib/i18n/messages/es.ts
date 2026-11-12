@@ -156,6 +156,10 @@ export const es: Record<MessageKey, string> = {
   "waOrg.awaitingConnection": "Pendiente de conexión",
   "waOrg.identifyingNumber": "Conectado · identificando número",
   "waOrg.finishConnection": "Continuar conexión",
+  "waOrg.preparations": "Conexiones por completar",
+  "waOrg.preparationsHint": "Aún sin teléfono identificado. Abre para continuar.",
+  "waNumbers.platformReserveHint":
+    "Reserva definida sin cambio automático. Los grupos existentes mantienen sus números actuales.",
   "waOrg.incomplete": "Registros de número sin terminar",
   "waOrg.incompleteHint":
     "Estos registros aún no tienen un teléfono identificado. Continúa para conectar uno nuevo o elige un número existente para el destino.",

@@ -1,3 +1,4 @@
+import { hasIdentifiedNumber } from "@/lib/whatsapp/directory-model";
 import { useState } from "react";
 import { ShieldCheck } from "lucide-react";
 import { ChoiceChips, Hint, Notice } from "@/components/visual";
@@ -18,6 +19,7 @@ export const numberName = (number: WhatsAppNumber, fallback: string) =>
 export function availableReserves(numbers: WhatsAppNumber[], primary: WhatsAppNumber) {
   return numbers.filter(
     (n) =>
+      hasIdentifiedNumber(n) &&
       n.id !== primary.id &&
       !n.barbershop_id &&
       !n.staff_id &&
@@ -37,6 +39,7 @@ export function WhatsAppNumberReserve({
   numbers,
   supported,
   perDestinationReturns = false,
+  assignmentOnly = false,
   busy,
   save,
   selectNumber,
@@ -45,6 +48,7 @@ export function WhatsAppNumberReserve({
   numbers: WhatsAppNumber[];
   supported: boolean;
   perDestinationReturns?: boolean;
+  assignmentOnly?: boolean;
   busy: boolean;
   save: (configuration: NumberConfiguration) => void;
   selectNumber: (id: string) => void;
@@ -80,9 +84,9 @@ export function WhatsAppNumberReserve({
               return;
             save({
               backupId: backup && backup !== "legacy" ? backup : null,
-              mode,
+              mode: assignmentOnly ? "primary" : mode,
               technical: mode === "backup" && (!needsConfirmation || technical),
-              returns,
+              returns: assignmentOnly ? false : returns,
               keepLegacy: backup === "legacy",
             });
           }}
@@ -120,21 +124,23 @@ export function WhatsAppNumberReserve({
               {t("waNumbers.viewBackup")}
             </button>
           )}
-          <ChoiceChips<NumberMode>
-            label={t("waDelivery.mode")}
-            value={mode}
-            disabled={busy}
-            onChange={(value) => {
-              setMode(value);
-              setTechnical(false);
-            }}
-            options={[
-              { value: "primary", label: t("waNumbers.primary") },
-              { value: "backup", label: t("waNumbers.backup"), disabled: !backup },
-              { value: "paused", label: t("waDelivery.paused") },
-            ]}
-          />
-          <Hint>{t("waNumbers.manual")}</Hint>
+          {!assignmentOnly && (
+            <ChoiceChips<NumberMode>
+              label={t("waDelivery.mode")}
+              value={mode}
+              disabled={busy}
+              onChange={(value) => {
+                setMode(value);
+                setTechnical(false);
+              }}
+              options={[
+                { value: "primary", label: t("waNumbers.primary") },
+                { value: "backup", label: t("waNumbers.backup"), disabled: !backup },
+                { value: "paused", label: t("waDelivery.paused") },
+              ]}
+            />
+          )}
+          <Hint>{t(assignmentOnly ? "waNumbers.platformReserveHint" : "waNumbers.manual")}</Hint>
           {needsConfirmation && (
             <label className="flex min-h-11 items-start gap-3 text-sm">
               <input
@@ -147,7 +153,7 @@ export function WhatsAppNumberReserve({
               {t("waDelivery.technical")}
             </label>
           )}
-          {!perDestinationReturns && (
+          {!perDestinationReturns && !assignmentOnly && (
             <label className="flex min-h-11 items-start gap-3 text-sm">
               <input
                 type="checkbox"
@@ -159,7 +165,7 @@ export function WhatsAppNumberReserve({
               {t("waDelivery.returns")}
             </label>
           )}
-          <Hint>{t("waDelivery.limits")}</Hint>
+          {!assignmentOnly && <Hint>{t("waDelivery.limits")}</Hint>}
           <button
             className="action-button action-confirm"
             disabled={busy || (mode === "backup" && (!backup || (needsConfirmation && !technical)))}

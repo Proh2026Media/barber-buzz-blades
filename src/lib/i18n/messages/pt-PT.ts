@@ -154,6 +154,10 @@ export const ptPT: Record<MessageKey, string> = {
   "waOrg.awaitingConnection": "A aguardar ligação",
   "waOrg.identifyingNumber": "Ligado · a identificar número",
   "waOrg.finishConnection": "Continuar ligação",
+  "waOrg.preparations": "Ligações por concluir",
+  "waOrg.preparationsHint": "Ainda sem telefone identificado. Abra para continuar.",
+  "waNumbers.platformReserveHint":
+    "Reserva definida sem troca automática. Os grupos existentes mantêm os seus números atuais.",
   "waOrg.incomplete": "Registos de número por concluir",
   "waOrg.incompleteHint":
     "São tentativas que ainda não têm telefone identificado. Continue para ligar um novo número ou escolha um número já registado para o destino.",

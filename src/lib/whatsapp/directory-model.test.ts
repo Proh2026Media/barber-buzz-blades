@@ -53,3 +53,11 @@ test("telefone em branco e vínculo sem cadastro de número não significam cobe
   );
   assert.equal(whatsappCoverage("loja", null, [], [general]).kind, "none");
 });
+
+import { hasIdentifiedNumber } from "./directory-model.ts";
+test("catálogo distingue telefone identificado de estado da conexão", () => {
+  for (const display_phone of [null, "", "  ", "Sem telefone", "+"]) {
+    assert.equal(hasIdentifiedNumber({ display_phone }), false);
+  }
+  assert.equal(hasIdentifiedNumber({ display_phone: "+5511999990000" }), true);
+});
