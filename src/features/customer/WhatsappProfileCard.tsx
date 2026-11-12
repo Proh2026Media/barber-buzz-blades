@@ -37,7 +37,7 @@ import { useI18n } from "@/lib/i18n";
  * WhatsApp do perfil com confirmação por código.
  *
  * Número novo ou ainda não confirmado → auth-otp (purpose 'verify_phone') envia
- * um código de 6 dígitos pelo WhatsApp da plataforma; ao confirmar, o servidor
+ * um código de 6 dígitos no grupo exclusivo validado; ao confirmar, o servidor
  * grava o número como verificado. Só ligar/desligar avisos ou apagar o número
  * continua pela RPC save_my_whatsapp (sem código).
  */
@@ -62,6 +62,7 @@ type Props = {
   bare?: boolean;
   /** Atalho de acesso pessoal: preserva a preferência de lembretes, sem editá-la aqui. */
   loginOnly?: boolean;
+  onOpenGroup?: () => void;
 };
 
 type OtpPayload = {
@@ -145,6 +146,7 @@ function AccountWhatsappForm({
   id,
   bare = false,
   loginOnly = false,
+  onOpenGroup,
 }: Props & { currentSession: RefObject<Session | null> }) {
   const { t } = useI18n();
   const uid = useId();
@@ -168,6 +170,7 @@ function AccountWhatsappForm({
   const [codeError, setCodeError] = useState<string | null>(null);
   const [attemptsLeft, setAttemptsLeft] = useState<number | null>(null);
   const [result, setResult] = useState<{ state: ActionState; text: string } | null>(null);
+  const [groupUnavailable, setGroupUnavailable] = useState(false);
   const [retryNumber, setRetryNumber] = useState<string | null>(null);
   const [toggleState, setToggleState] = useState<ActionState | null>(null);
   const [toggleText, setToggleText] = useState<string | undefined>(undefined);
@@ -238,7 +241,7 @@ function AccountWhatsappForm({
       case "rate_limited":
         return t("fix2.whats.errRateLimited");
       case "whatsapp_unavailable":
-        return t("fix2.whats.errUnavailable");
+        return t("care.profileCodeUnavailable");
       case "phone_in_use":
         return t("fix2.whats.errPhoneInUse");
       case "invalid_whatsapp":
@@ -277,13 +280,16 @@ function AccountWhatsappForm({
     setCodeError(null);
     setResult(null);
     setJustVerified(false);
+    setGroupUnavailable(false);
     try {
       const token = await sessionToken();
       if (!isCurrent()) return;
       const payload = await callVerifyPhone({ action: "request", destination: number }, token);
       if (!isCurrent()) return;
       if (!payload.ok) {
-        showResult("error", errorText(payload), number);
+        const unavailable = payload.error_code === "whatsapp_unavailable";
+        setGroupUnavailable(unavailable);
+        showResult("error", errorText(payload), unavailable ? undefined : number);
         return;
       }
       if (payload.already_verified) {
@@ -701,12 +707,18 @@ function AccountWhatsappForm({
         </form>
       )}
 
+      {groupUnavailable && onOpenGroup && (
+        <button type="button" className="action-button" disabled={locked} onClick={onOpenGroup}>
+          <MessageCircle aria-hidden />
+          {t("care.openSetup")}
+        </button>
+      )}
       <ActionResult
         state={result?.state}
         text={result?.text}
         onRetry={!locked && retryNumber !== null ? () => void sendCode(retryNumber) : undefined}
         onDismiss={() => setResult(null)}
-        autoHideMs={6000}
+        autoHideMs={groupUnavailable ? 0 : 6000}
       />
     </section>
   );

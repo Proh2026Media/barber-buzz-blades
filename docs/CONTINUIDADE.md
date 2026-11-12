@@ -1,5 +1,14 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 12/11/2026 — retorno TI nº 117 e primeiro acesso mais claro (somente local)
+
+Relatório `relatorio-ti-p120-conferencia-117-prontidao-login-2026-11-12.md` recebido. A nº 117b já está em `origin/main` (`f785ba8`); não reaplicar cartões. Corrigida a interface do login/grupo: escolhas de primeiro acesso, três passos visuais, convite indisponível, envio incerto, limite de pedidos, adesão expirada e telefone confirmado sem promessa de login pronto. Sete arquivos de frontend/dicionários; sem alteração de backend ou produção. [Devolutiva e pendências](pacotes/2026-11-12-ti-p120-retorno-117-login-claro.md). Cliente permanece Gmail/4593, grupo antigo do administrador não é reaproveitado. Piloto não pronto: dois administradores, extensão no principal e ciclo robusto ainda pendentes. Pasta e prévia da marca intocadas nesta entrega.
+
+
+## 12/11/2026 — Central: cartões apenas para números identificados
+
+Complemento local sobre main `61cca00`: tentativas incompletas ficam em seletor no diálogo; conteúdo de pareamento sem cartão de número. Cobertura e vinculação adotam o mesmo validador do catálogo. Identificado desconectado permanece visível. Tipos, 572 testes, lint e build aprovados; 36 combinações de interface e retomada/recarga/identificação simuladas. Sem dados reais alterados, migrations ou publicação. [Pacote isolado TI](pacotes/2026-11-12-ti-central-somente-numeros-confirmados.md). Nº 117 instalada segundo relatório da TI; não reaplicar. Localhost 8090 passa a servir o checkout isolado atualizado, preservando o ramo de grupos.
+
 **11/11/2026 — P-120, cadastro de barbearia corrigido e implantação preparada:** `/cadastrar` usa conta autenticada por e-mail/Google, aceita termos e cria loja transacional com fuso/sociedade e chave contra duplicação; `register-shop` legado desativado. **Nova nº 110, ainda não instalada.** 568 testes, 1.553 verificações SQL, concorrência em duas conexões, 55 verificações de tela e 27 cenários integrados de grupo. Quatro testes Evolution repetidos três vezes; recriações locais 13,413/13,373/13,472 s, sem WhatsApp real. [Roteiro vigente TI](pacotes/2026-11-11-ti-p120-implantacao-piloto.md). Dono autorizou os quatro itens; número da plataforma ainda precisa ser conectado e cliente identificado. Registry pendente de credencial de publicação da TI. Sem push/main, instalação ou mensagem real nesta entrega. Último id P-121.
 
 ## 11/11/2026 — P-120, primeiro acesso protegido; P-121, cliente multiloja
@@ -2209,3 +2218,19 @@ name: mb
 description: Orientar mudanças de interface no projeto Barba & Cabelo para uma experiência moderna, intuitiva e acessível a diferentes idades. Aplicar quando o usuário invocar /mb ou $mb ou pedir melhorias visuais e de interação nesse projeto.
 
 ---
+
+
+## 12/11/2026 — Web Push, monitor no cabeçalho e atualização consolidada para TI
+
+Pedido do dono: habilitar notificações web, avisar o admin sobre falhas dos números em qualquer área e consolidar o que não foi enviado à TI desde o primeiro pedido. Trabalho em ramo isolado, atualizado sobre `aca86fe`; original e marca preservados. [Roteiro e pacote](pacotes/2026-11-12-ti-bc-push-monitor-login.md).
+
+Web Push local com opt-in por sessão/aparelho, VAPID, payload cifrado e genérico, fila de eventos de agendamentos, revalidação de acesso, revogação e teste próprio. Migration `20261112230000_notificacoes_web_push.sql` nasce desativada. Monitor usa `20261112231000_painel_saude_whatsapp.sql` e Edge de leitura, respeita catálogo, diferencia falta de confirmação de desconexão e mantém estado anterior durante falha. Ícone nos cabeçalhos da plataforma, loja e cliente para admin global. Sem envio, reconexão ou leitura de chats.
+
+Confirmação de telefone trata `whatsapp_unavailable` com orientação para o grupo e atalho contextual. Não altera o estado real da Gmail nem torna o piloto apto. Dois admins/ciclo anual/convite seguro e demais blocos de grupos seguem fora desta entrega. [Regra editorial aprovada](comunicacao-notificacoes-2026-11-12.md): naturalidade por clareza/contexto, sem erros propositais, abreviações ou simulação humana. Nenhum motor de typos implantado.
+
+Tipos, testes automatizados, SQL em banco descartável, cifra VAPID/aes128gcm, funções Deno e bancada de navegador realizados; resultados finais e limites em `VALIDACAO.md` do pacote. Nenhuma prova de push em aparelho real nem de entrega WhatsApp; homologação operacional com TI permanece necessária. Sem push/main, migrations reais ou segredos no pacote.
+
+
+## 12/11/2026 — Revisão 2: identidade de cliente é a barbearia
+
+Antes de enviar o pacote, o dono reservou a marca B&C à gestão de donos/administradores. Textos locais de acesso/grupo/push e rodapé público ajustados nos idiomas. Push passa a carregar nome da barbearia do agendamento, resolvido no servidor no envio; worker não força título/logo da plataforma. Teste sem loja usa identificação neutra. Nenhum texto de grupo real mudou: contrato de identidade comercial + filtro de OTP na extensão precisam de implementação coordenada; roteiro TI registra essa dependência e proíbe correção isolada de string/ativação do piloto como se estivesse pronto. Metadados globais/PWA não foram declarados totalmente convertidos. Marca, produção e terceiros não foram tocados. Pacote anterior desta entrega foi substituído pela revisão 2.

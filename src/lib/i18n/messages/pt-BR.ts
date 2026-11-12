@@ -1,7 +1,53 @@
 /** Dicionário principal (fonte). Toda chave nova nasce aqui, em pt-BR. */
 export const ptBR = {
+  "waHealth.title": "Saúde do WhatsApp",
+  "waHealth.refreshHint":
+    "Atualiza a cada 20 segundos enquanto esta página estiver visível. Conexão ativa não garante entrega de mensagens.",
+  "waHealth.unavailable": "Não foi possível atualizar. A situação dos números pode ter mudado.",
+  "waHealth.paused": "Os envios estão pausados para toda a plataforma.",
+  "waHealth.unknownConnection": "Conexão sem confirmação atual",
+  "waHealth.checking": "Conferindo os números…",
+  "waHealth.empty": "Nenhum número identificado para acompanhar.",
+  "waHealth.numberPaused": "Envios pausados por configuração",
+  "waHealth.checked": "Conexões conferidas às {time}",
+  "waHealth.openCentral": "Abrir Central WhatsApp",
+  "waHealth.alertCount": "WhatsApp: {count} número(s) precisam de atenção",
+  "waHealth.disconnected": "Número desconectado ou aguardando conexão",
+  "waHealth.failed": "Há falhas de envio registradas nas últimas 24 horas",
+  "waHealth.unknownDelivery": "Há envios sem resultado confirmado nas últimas 24 horas",
+  "waHealth.pending": "Há mensagens aguardando envio há mais de 5 minutos",
+  "waHealth.connected": "Conectado",
+  "waHealth.attention": "Verificar",
+
+  "push.title": "Notificações neste aparelho",
+  "push.description":
+    "Receba avisos de criação, alteração e cancelamento de agendamentos, mesmo com o aplicativo fechado.",
+  "push.install":
+    "No iPhone ou iPad, adicione o aplicativo da barbearia à tela inicial e abra pelo ícone para ativar as notificações.",
+  "push.unsupported":
+    "Este navegador não oferece notificações web neste contexto. Use um navegador compatível com uma conexão segura.",
+  "push.blocked":
+    "As notificações estão bloqueadas pelo navegador. Libere-as nas permissões deste site e abra esta tela novamente.",
+  "push.preparing":
+    "As notificações estão em preparação. Você poderá ativá-las após a liberação do serviço.",
+  "push.on": "Notificações ativadas neste aparelho",
+  "push.off": "Notificações desativadas neste aparelho",
+  "push.enable": "Ativar notificações",
+  "push.disable": "Desativar neste aparelho",
+  "push.test": "Enviar teste",
+  "push.testQueued":
+    "Teste solicitado. Aguarde até um minuto; a entrega depende do navegador e da conexão.",
+  "push.error":
+    "Não foi possível atualizar as notificações. Confira sua conexão e tente novamente.",
+  "push.device":
+    "A escolha vale para esta conta e este aparelho. Não envia promoções nem códigos de login.",
+
+  "care.profileCodeUnavailable":
+    "O código é enviado somente ao seu grupo de atendimento. Não foi possível enviar agora; confira a preparação e sua entrada no grupo.",
+  "care.openSetup": "Ver meu grupo e próximos passos",
+
   "waLogin.haveGroup": "Já ativei meu grupo",
-  "waLogin.haveGroupHint": "Meu telefone já está confirmado no B&C.",
+  "waLogin.haveGroupHint": "Meu telefone já está confirmado no aplicativo.",
   "waLogin.firstAccess": "Ainda não ativei meu grupo",
   "waLogin.firstAccessHint": "Entre por e-mail. No seu perfil, abra o atendimento pelo WhatsApp.",
   "waLogin.requested": "Pedido recebido",
@@ -20,10 +66,10 @@ export const ptBR = {
     "O grupo ainda está em preparação ou revisão. Você pode continuar usando sua conta por e-mail.",
   "care.checkEntry": "Já entrei · conferir",
 
-  "auth.sharedAccountTitle": "Já usa o B&C em outra barbearia?",
+  "auth.sharedAccountTitle": "Já tem cadastro em outra barbearia?",
   "auth.sharedAccountHint":
     "Use a mesma conta e o mesmo WhatsApp pessoal. Depois de entrar, você poderá se vincular a esta barbearia. Seus pontos e agendamentos ficam separados por loja.",
-  "auth.useExistingAccount": "Usar minha conta do B&C",
+  "auth.useExistingAccount": "Usar minha conta existente",
   "auth.useExistingAccountHint":
     "Entre com sua conta existente para continuar nesta barbearia. Se esqueceu a senha, use a recuperação por e-mail.",
   "care.expired": "A confirmação do telefone expirou. Continue no mesmo grupo.",
@@ -52,20 +98,19 @@ export const ptBR = {
   "care.owner": "Dono",
   "care.associate": "Parceiro",
   "care.employee": "Funcionário/colaborador",
-  "care.platform": "Plataforma",
+  "care.platform": "Atendimento automático",
   "care.error": "Não foi possível conferir ou salvar. Atualize e tente novamente.",
   "care.saved": "Preferências salvas",
-  "care.intro":
-    "Um grupo exclusivo para seu atendimento nesta barbearia, com administração da Plataforma.",
+  "care.intro": "Um grupo exclusivo para os avisos desta barbearia.",
   "care.disabled": "Grupos ainda não disponíveis nesta etapa",
   "care.people": "Quem participa do meu atendimento",
   "care.visibility":
-    "Este grupo reúne apenas você e os números autorizados do B&C. Profissionais da barbearia não têm acesso ao grupo nem às conversas.",
+    "Este grupo reúne apenas você e os números autorizados de atendimento automático. Profissionais da barbearia não têm acesso ao grupo nem às conversas.",
   "care.approved": "Participação autorizada por você",
   "care.approvalNeeded": "Aguardando sua autorização para participar",
   "care.allowPerson": "Autorizar participante",
   "care.removePerson": "Solicitar remoção",
-  "care.accept": "Quero meu grupo exclusivo com os números do B&C apresentados acima.",
+  "care.accept": "Quero meu grupo exclusivo com os números de atendimento apresentados acima.",
   "care.request": "Criar meu grupo de atendimento",
   "care.rejoin": "Solicitar retorno ao atendimento",
   "care.preparation":
@@ -356,11 +401,11 @@ export const ptBR = {
   "waCentral.labelInvalid": "Use um nome entre 2 e 80 caracteres.",
   "waLogin.useEmail": "Usar e-mail",
   "waLogin.title": "Entrar com WhatsApp",
-  "waLogin.description": "Receba o código no seu grupo exclusivo do B&C.",
+  "waLogin.description": "Receba o código no seu grupo de atendimento da barbearia.",
   "waLogin.verifiedOnly":
-    "Use seu número confirmado e um grupo ativo do B&C. Sem grupo disponível, entre com e-mail.",
+    "Use seu número confirmado e um grupo de atendimento ativo. Sem grupo disponível, entre com e-mail.",
   "waLogin.sent":
-    "Se receber o código no seu grupo do B&C, digite abaixo. Se não chegar, use o e-mail.",
+    "Se receber o código no seu grupo de atendimento, digite abaixo. Se não chegar, use o e-mail.",
   "waLogin.expiry": "O código vale por 10 minutos. Use o mais recente.",
   "waLogin.send": "Receber código",
   "waLogin.enter": "Confirmar e entrar",
@@ -4473,7 +4518,7 @@ export const ptBR = {
   "shopLanding.hoursRange": "{from} às {to}",
   "shopLanding.closed": "Fechado",
   "shopLanding.whatsapp": "WhatsApp",
-  "shopLanding.footer": "Agendamento online por Barba & Cabelo",
+  "shopLanding.footer": "Agendamento online",
   "shopLanding.privacy": "Privacidade",
   "shopLanding.terms": "Termos de uso",
   "landingEditor.title": "Página da barbearia",

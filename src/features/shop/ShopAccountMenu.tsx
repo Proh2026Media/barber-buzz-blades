@@ -1,5 +1,7 @@
+import { PushNotificationsCard } from "@/features/notifications/PushNotifications";
 import { useState } from "react";
 import {
+  Bell,
   Check,
   ChevronDown,
   KeyRound,
@@ -176,9 +178,9 @@ export function ShopAccountMenu({
     }
     areaSwitch.open(area);
   }
-  const [panel, setPanel] = useState<"password" | "language" | null>(null);
+  const [panel, setPanel] = useState<"push" | "password" | "language" | null>(null);
 
-  function openPanel(next: "password" | "language") {
+  function openPanel(next: "push" | "password" | "language") {
     setOpen(false);
     window.setTimeout(() => setPanel(next), 0);
   }
@@ -243,6 +245,10 @@ export function ShopAccountMenu({
             )
           )}
           <div className="space-y-0.5 border-t border-border pt-1">
+            <button type="button" className={ITEM} onClick={() => openPanel("push")}>
+              <MenuIcon icon={Bell} />
+              {t("push.title")}
+            </button>
             <button type="button" className={ITEM} onClick={() => openPanel("password")}>
               <MenuIcon icon={KeyRound} />
               {t("eq.account.password")}
@@ -269,13 +275,20 @@ export function ShopAccountMenu({
           className="max-h-[92dvh] max-w-md rounded-3xl border-border bg-card p-5"
         >
           <DialogTitle className="flex min-h-11 items-center gap-2 pr-12 text-lg font-bold">
-            {panel === "language" ? (
+            {panel === "push" ? (
+              <Bell className="size-5 text-gold" aria-hidden />
+            ) : panel === "language" ? (
               <Languages className="size-5 text-gold" aria-hidden />
             ) : (
               <KeyRound className="size-5 text-gold" aria-hidden />
             )}
-            {panel === "language" ? t("eq.account.language") : t("eq.account.password")}
+            {panel === "push"
+              ? t("push.title")
+              : panel === "language"
+                ? t("eq.account.language")
+                : t("eq.account.password")}
           </DialogTitle>
+          {panel === "push" && <PushNotificationsCard bare />}
           {panel === "password" && <ChangePasswordCard />}
           {panel === "language" && (
             <div className="space-y-4">

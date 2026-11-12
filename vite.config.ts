@@ -40,6 +40,7 @@ export default defineConfig({
         // diferentes, e o Workbox abortava o service worker (sem cache nem modo offline).
         manifest: false,
         workbox: {
+          importScripts: ["/push-events.js"],
           // O client bundle do Nitro fica em .output/public; o plugin gera o SW em dist/.
           // Precache mínimo dos estáticos públicos; fontes são empacotadas localmente.
           globPatterns: ["icons/*", "manifest.webmanifest"],

@@ -1,3 +1,4 @@
+import { PushNotificationsCard } from "@/features/notifications/PushNotifications";
 import { CareGroupPanel } from "@/features/whatsapp/CareGroupPanel";
 import { PrivacyCenter } from "@/features/insights/PrivacyCenter";
 import { DataRights } from "@/features/insights/DataRights";
@@ -58,6 +59,7 @@ export type { CustomerShop };
 const SECTION = {
   whatsapp: "conta-whatsapp",
   groups: "conta-grupos",
+  push: "conta-notificacoes",
   rhythm: "conta-ritmo",
   shops: "conta-barbearias",
   language: "conta-idioma",
@@ -366,6 +368,7 @@ function AccountCustomerProfile({
     ...(currentShopId && groupAvailable
       ? [{ id: SECTION.groups, icon: MessageCircle, label: t("care.nav") }]
       : []),
+    { id: SECTION.push, icon: MessageCircle, label: t("push.title") },
     ...(children ? [{ id: SECTION.rhythm, icon: Repeat, label: t("rhythm.title") }] : []),
     ...(otherShops.length > 0
       ? [
@@ -643,6 +646,7 @@ function AccountCustomerProfile({
 
       {/* Mesmos painéis montados: no computador, o índice escolhe a seção visível. */}
       <div className="customer-profile-panels space-y-5">
+        <PushNotificationsCard id={SECTION.push} />
         {/* Reserva o lugar do WhatsApp enquanto carrega (a página não pula). */}
         {loading && <LoadingState variant="cards" count={1} hideLabel />}
         {!loading && !error && (
@@ -655,6 +659,9 @@ function AccountCustomerProfile({
             initialNumber={whatsapp}
             initialOptIn={whatsappOptIn}
             initialVerified={whatsappVerified}
+            onOpenGroup={
+              currentShopId && groupAvailable ? () => openSection(SECTION.groups) : undefined
+            }
             onStatusChange={setWhats}
           />
         )}

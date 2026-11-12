@@ -1,8 +1,53 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const enUS: Record<MessageKey, string> = {
+  "waHealth.title": "WhatsApp health",
+  "waHealth.refreshHint":
+    "Refreshes every 20 seconds while this page is visible. An active connection does not guarantee message delivery.",
+  "waHealth.unavailable": "Could not refresh. Number statuses may have changed.",
+  "waHealth.paused": "Sending is paused across the platform.",
+  "waHealth.unknownConnection": "Connection not currently confirmed",
+  "waHealth.checking": "Checking numbers…",
+  "waHealth.empty": "No identified numbers to monitor.",
+  "waHealth.numberPaused": "Sending paused in settings",
+  "waHealth.checked": "Connections checked at {time}",
+  "waHealth.openCentral": "Open WhatsApp Center",
+  "waHealth.alertCount": "WhatsApp: {count} number(s) need attention",
+  "waHealth.disconnected": "Number disconnected or waiting to connect",
+  "waHealth.failed": "Send failures were recorded in the last 24 hours",
+  "waHealth.unknownDelivery": "Some sends have no confirmed outcome in the last 24 hours",
+  "waHealth.pending": "Some messages have been waiting more than 5 minutes",
+  "waHealth.connected": "Connected",
+  "waHealth.attention": "Check",
+
+  "push.title": "Notifications on this device",
+  "push.description":
+    "Get appointment creation, change and cancellation alerts, even when the app is closed.",
+  "push.install":
+    "On iPhone or iPad, add your barbershop’s app to the Home Screen and open its icon to enable notifications.",
+  "push.unsupported":
+    "This browser does not support web notifications in this context. Use a compatible browser with a secure connection.",
+  "push.blocked":
+    "Notifications are blocked by your browser. Allow them in this site’s permissions and reopen this screen.",
+  "push.preparing":
+    "Notifications are being prepared. You can enable them once the service is available.",
+  "push.on": "Notifications enabled on this device",
+  "push.off": "Notifications disabled on this device",
+  "push.enable": "Enable notifications",
+  "push.disable": "Disable on this device",
+  "push.test": "Send test",
+  "push.testQueued":
+    "Test requested. Allow up to a minute; delivery depends on your browser and connection.",
+  "push.error": "We could not update notifications. Check your connection and try again.",
+  "push.device":
+    "This choice applies to this account and device. No promotions or sign-in codes are sent.",
+
+  "care.profileCodeUnavailable":
+    "The code is sent only to your care group. We could not send it now; check group setup and your membership.",
+  "care.openSetup": "View my group and next steps",
+
   "waLogin.haveGroup": "I already activated my group",
-  "waLogin.haveGroupHint": "My phone is already verified in B&C.",
+  "waLogin.haveGroupHint": "My phone is already verified in the app.",
   "waLogin.firstAccess": "I have not activated my group yet",
   "waLogin.firstAccessHint": "Sign in with email. Open WhatsApp support in your profile.",
   "waLogin.requested": "Request received",
@@ -21,10 +66,10 @@ export const enUS: Record<MessageKey, string> = {
     "The group is still being prepared or reviewed. You can keep signing in with email.",
   "care.checkEntry": "I joined · check",
 
-  "auth.sharedAccountTitle": "Already use B&C at another barbershop?",
+  "auth.sharedAccountTitle": "Already have an account at another barbershop?",
   "auth.sharedAccountHint":
     "Use the same account and personal WhatsApp number. After signing in, you can join this barbershop. Your points and appointments stay separate for each shop.",
-  "auth.useExistingAccount": "Use my B&C account",
+  "auth.useExistingAccount": "Use my existing account",
   "auth.useExistingAccountHint":
     "Sign in with your existing account to continue at this barbershop. If you forgot your password, recover it by email.",
   "care.expired": "Phone confirmation expired. Continue in the same group.",
@@ -53,19 +98,19 @@ export const enUS: Record<MessageKey, string> = {
   "care.owner": "Owner",
   "care.associate": "Partner",
   "care.employee": "Employee/collaborator",
-  "care.platform": "Platform",
+  "care.platform": "Automated notifications",
   "care.error": "Could not check or save. Refresh and try again.",
   "care.saved": "Preferences saved",
-  "care.intro": "An exclusive care group for this shop, administered by the Platform.",
+  "care.intro": "An exclusive group for notifications from this barbershop.",
   "care.disabled": "Groups are not available at this stage",
   "care.people": "Who takes part in my care",
   "care.visibility":
-    "This group includes only you and authorized B&C numbers. Shop professionals cannot access the group or its conversations.",
+    "This group includes only you and the authorized automated notification numbers. Shop professionals cannot access the group or its conversations.",
   "care.approved": "Participation authorized by you",
   "care.approvalNeeded": "Waiting for your permission to join",
   "care.allowPerson": "Authorize participant",
   "care.removePerson": "Request removal",
-  "care.accept": "I want my exclusive group with the B&C numbers listed above.",
+  "care.accept": "I want my exclusive group with the notification numbers listed above.",
   "care.request": "Create my care group",
   "care.rejoin": "Request to return to group care",
   "care.preparation":
@@ -357,11 +402,11 @@ export const enUS: Record<MessageKey, string> = {
   "waCentral.labelInvalid": "Use a name between 2 and 80 characters.",
   "waLogin.useEmail": "Use email",
   "waLogin.title": "Sign in with WhatsApp",
-  "waLogin.description": "Receive the code in your exclusive B&C group.",
+  "waLogin.description": "Receive the code in your barbershop’s care group.",
   "waLogin.verifiedOnly":
-    "Use your verified number and an active B&C group. If no group is available, sign in with email.",
+    "Use your verified number and an active care group. If no group is available, sign in with email.",
   "waLogin.sent":
-    "If you receive a code in your B&C group, enter it below. If it does not arrive, use email.",
+    "If the code arrives in your care group, enter it below. If it does not arrive, use email.",
   "waLogin.expiry": "The code is valid for 10 minutes. Use the most recent one.",
   "waLogin.send": "Get code",
   "waLogin.enter": "Confirm and sign in",
@@ -4469,7 +4514,7 @@ export const enUS: Record<MessageKey, string> = {
   "shopLanding.hoursRange": "{from}–{to}",
   "shopLanding.closed": "Closed",
   "shopLanding.whatsapp": "WhatsApp",
-  "shopLanding.footer": "Online booking by Barba & Cabelo",
+  "shopLanding.footer": "Online booking",
   "shopLanding.privacy": "Privacy",
   "shopLanding.terms": "Terms of use",
   "landingEditor.title": "Barbershop page",
