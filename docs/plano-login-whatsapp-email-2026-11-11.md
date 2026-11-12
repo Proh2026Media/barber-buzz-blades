@@ -2,9 +2,9 @@
 
 Data: 11/11/2026. P-120. Destinatário: desenvolvimento do Barba & Cabelo.
 
-**Preparação concluída; implementação funcional pendente.** Após pedir a preparação, o dono esclareceu: o grupo terá somente o cliente e números autorizados da plataforma; profissionais não terão acesso ao grupo nem às conversas. Determinou que o código seja enviado nesse grupo, **não em conversa privada**. Essa decisão substitui a recomendação anterior de manter o código individual.
+**Implementação parcial local em 11/11/2026:** [entrega e verificações](pacotes/2026-11-11-p120-login-grupo-local.md). A restrição de participantes, autorização de login de grupo, bloqueio de OTP privado e alternativa por e-mail já estão no código e foram ensaiados. O plano abaixo permanece como matriz de aceite completa; não está concluído. Faltam primeiro acesso, confirmação inicial do telefone, rota protegida na extensão e homologação/isolamento antes de ativar.
 
-Nenhum comportamento, configuração ou dado real foi alterado nesta preparação. O código atual ainda permite profissionais aprovados nos grupos e envia OTP individualmente; **não deve ser ativado como se já cumprisse a nova regra**.
+Nenhum comportamento ou dado real foi alterado. Nº 105–108 não instaladas e chamada real de envio bloqueada. Esta etapa local não deve ser publicada isoladamente: a confirmação inicial do telefone ainda precisa ser adaptada ao grupo. Não há código por e-mail; a alternativa reutiliza e-mail/senha e recuperação por link.
 
 ## 1. Escopo definido
 
@@ -25,7 +25,7 @@ Nenhum comportamento, configuração ou dado real foi alterado nesta preparaçã
 
 O anexo `logica-envio-codigo-login-whatsapp-2026-11-11 5464567.md` (v7, arquivo local com espaço final) permanece referência. A autorização para código no grupo não adota automaticamente rodízio, proxies, números exclusivos por loja, reações ou aleatoriedade desse anexo.
 
-## 2. O que já existe e o que muda
+## 2. Base da preparação e mudanças planejadas (histórico)
 
 | Base local conferida                                                                                                                                                       | Mudança necessária                                                                                                                                                        |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -112,12 +112,12 @@ Verificar testes direcionados, `scripts/verificar.sh`, Deno, SQL local descartá
 
 ## 5. Próxima entrega e instalação
 
-O próximo trabalho é **do desenvolvimento**: A antes de B/C; D acompanha o fluxo para não impedir primeiro acesso; E valida o conjunto. Não há nova tarefa TI agora.
+O próximo trabalho é **do desenvolvimento**: concluir D (primeiro acesso/confirmar telefone no grupo), C (contrato da extensão/isolamento) e E (ensaio integral). A e B têm implementação local descrita na entrega vinculada no topo. Não há nova tarefa TI agora.
 
-Manter grupos/OTP de grupo desativados até concluir o conjunto. Não publicar a mudança parcial que remove o privado sem oferecer um caminho de acesso funcional. A futura migration será posterior à nº 107 e não substitui a migration própria da extensão Evolution. Nº 101–104 não devem ser reaplicadas.
+Manter grupos/OTP de grupo desativados até concluir o conjunto. Não publicar a mudança parcial que remove o privado sem oferecer um caminho de acesso funcional. A nº 108 está escrita e testada localmente, posterior à nº 107 e não substitui a migration própria da extensão Evolution. Nº 101–104 não devem ser reaplicadas.
 
 Preparar pacote de implantação com commits, hashes, ordem, backup, medição de indisponibilidade, ensaio e reversão. Imagem, migrations, recriação, webhook e piloto permanecem etapas de produção separadas da autorização local. Reversão mantém pausas e provas de tentativa, desativa OTP de grupo e conserva o acesso alternativo; **não restaura envio privado silenciosamente**.
 
-## 6. Verificação desta preparação
+## 6. Verificação da preparação inicial (histórico)
 
 Anexo lido integralmente e contratos locais citados conferidos. Documento define decisões, alterações, dependências e critérios; funcionalidades e testes novos ainda pendentes. Nenhum código funcional, dado real, VPS, Flow, grupo ou mensagem foi alterado. A revisão inicial da documentação passou na verificação geral (552 testes, tipos, formatação e montagem); isso não valida funcionalidades futuras. A versão final deste plano é conferida quanto a referências, formatação e diferença de arquivos.

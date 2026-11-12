@@ -64,17 +64,27 @@ do $$ begin
   exception when insufficient_privilege then raise notice 'PASS: Dono sem atribuição não vê conversa'; end;
 end $$;
 select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',true);
-select public.care_group_admin('propose_participant',jsonb_build_object('group_id',g.id,'version',g.version,'user_id',c.owner)) is not null
-  from public.whatsapp_care_groups g cross join wa120 c;
+do $$ begin
+  begin perform public.care_group_admin('propose_participant','{}'); raise exception 'FAIL: proposta aceita';
+  exception when insufficient_privilege then raise notice 'PASS: nem admin propõe profissional'; end;
+end $$;
 select set_config('request.jwt.claim.sub',owner::text,true) from wa120;
 do $$ begin
   begin perform public.care_group_read((select shop from wa120),(select customer from wa120)); raise exception 'FAIL: proposta equivaleu a aprovação';
   exception when insufficient_privilege then raise notice 'PASS: proposta não concede acesso antes da aprovação'; end;
 end $$;
 select set_config('request.jwt.claim.sub',customer::text,true) from wa120;
-select public.care_group_customer_update(g.id,g.version,'approve_participant',jsonb_build_object('user_id',c.owner)) is not null from public.whatsapp_care_groups g cross join wa120 c;
+do $$ begin
+  begin perform public.care_group_customer_update((select id from public.whatsapp_care_groups),(select version from public.whatsapp_care_groups),'approve_participant','{}'); raise exception 'FAIL: aprovação aceita';
+  exception when insufficient_privilege then raise notice 'PASS: cliente não admite profissional'; end;
+end $$;
+insert into public.whatsapp_care_participants(group_id,user_id,role,approved_at,approved_phone,revoked_at)
+select g.id,c.owner,'owner',now(),'+5511777777777',now() from public.whatsapp_care_groups g cross join wa120 c;
 select set_config('request.jwt.claim.sub',owner::text,true) from wa120;
-select pg_temp.check_wa120(public.care_group_read(shop,customer)->'group' is not null,'Participante aprovado e vinculado acessa apenas a ficha permitida') from wa120;
+do $$ begin
+  begin perform public.care_group_read((select shop from wa120),(select customer from wa120)); raise exception 'FAIL: antigo participante leu ficha';
+  exception when insufficient_privilege then raise notice 'PASS: antigo participante não lê ficha'; end;
+end $$;
 select set_config('request.jwt.claim.sub',customer::text,true) from wa120;
 do $$ begin
   begin perform public.care_group_customer_update((select id from public.whatsapp_care_groups),null,'close'); raise exception 'FAIL: versão nula aceita';
@@ -94,7 +104,7 @@ select pg_temp.check_wa120((select job->>'token' is not null from care_test_job)
 select pg_temp.check_wa120(public.claim_care_group_operation((select (job->>'id')::uuid from care_test_job),true) is null,'Mesma operação não recebe segunda licença');
 select public.finish_care_group_creation((job->>'id')::uuid,(job->>'token')::uuid,'12345-67890@g.us') from care_test_job;
 create temporary table care_snapshot as select jsonb_build_object('id','12345-67890@g.us','locked',true,'adminsAddOnly',true,'approvalRequired',true,
-  'participants',jsonb_build_array(jsonb_build_object('jid','5511888888888@s.whatsapp.net','admin',true),jsonb_build_object('jid',substring(phone from 2)||'@s.whatsapp.net','admin',false),jsonb_build_object('jid','5511777777777@s.whatsapp.net','admin',false))) value from wa120;
+  'participants',jsonb_build_array(jsonb_build_object('jid','5511888888888@s.whatsapp.net','admin',true),jsonb_build_object('jid',substring(phone from 2)||'@s.whatsapp.net','admin',false))) value from wa120;
 select public.observe_care_group((job->>'id')::uuid,(job->>'token')::uuid,(select value from care_snapshot)) from care_test_job;
 select pg_temp.check_wa120((select state='active' and use_group from public.whatsapp_care_groups),'Snapshot completo ativa apenas grupo correto na bancada');
 -- Texto de profissional jamais modifica preferências do Cliente.
@@ -106,7 +116,10 @@ select pg_temp.check_wa120(not public.care_group_event('teste-'||shop,'12345-678
 select public.care_group_event('teste-'||shop,'12345-67890@g.us','evento-atrasado','group-participants.update',null,null,false) from wa120;
 select pg_temp.check_wa120((select state='paused_divergence' and not controls_verified from public.whatsapp_care_groups),'Evento fora de ordem pausa, nunca reativa');
 select set_config('request.jwt.claim.sub',customer::text,true) from wa120;
-select public.care_group_customer_update(g.id,g.version,'remove_participant',jsonb_build_object('user_id',c.owner)) is not null from public.whatsapp_care_groups g cross join wa120 c;
+do $$ begin
+  begin perform public.care_group_customer_update((select id from public.whatsapp_care_groups),(select version from public.whatsapp_care_groups),'remove_participant','{}'); raise exception 'FAIL: fluxo antigo ativo';
+  exception when insufficient_privilege then raise notice 'PASS: cliente não gerencia equipe'; end;
+end $$;
 select set_config('request.jwt.claim.sub',owner::text,true) from wa120;
 do $$ begin
   begin perform public.care_group_read((select shop from wa120),(select customer from wa120)); raise exception 'FAIL: removido ainda lê';
@@ -132,13 +145,19 @@ select pg_temp.check_wa120((select not (public.care_group_admin('read')->>'capab
 
 -- Cada variação abaixo usa apenas a fixture desta transação.
 update public.whatsapp_care_groups set state='active',revoked_at=null;
-update public.whatsapp_care_participants set approved_at=now(),revoked_at=null;
+do $$ begin
+  begin update public.whatsapp_care_participants set approved_at=now(),revoked_at=null; raise exception 'FAIL: reativação antiga aceita';
+  exception when insufficient_privilege then raise notice 'PASS: nem escrita direta reativa profissional'; end;
+end $$;
 update public.shop_members set active=false where user_id=(select owner from wa120);
 select pg_temp.check_wa120((select approved_at is null and revoked_at is not null from public.whatsapp_care_participants),'Saída da equipe revoga aprovação antiga');
-select pg_temp.check_wa120((select not controls_verified and state='paused_divergence' from public.whatsapp_care_groups),'Mudança de equipe pausa até conferir remoção');
+select pg_temp.check_wa120((select not exists(select 1 from public.whatsapp_care_participants where revoked_at is null)),'Mudança de equipe não recupera permissão antiga');
 update public.shop_members set active=true where user_id=(select owner from wa120);
 select pg_temp.check_wa120((select approved_at is null from public.whatsapp_care_participants),'Recontratar não recupera ciência antiga');
-update public.whatsapp_care_participants set approved_at=now(),revoked_at=null;
+do $$ begin
+  begin update public.whatsapp_care_participants set approved_at=now(),revoked_at=null; raise exception 'FAIL: reativação antiga aceita';
+  exception when insufficient_privilege then raise notice 'PASS: nem escrita direta reativa profissional'; end;
+end $$;
 select set_config('request.jwt.claim.role','service_role',true);
 update public.profiles set whatsapp_verified_at=null where id=(select owner from wa120);
 select pg_temp.check_wa120((select approved_at is null and revoked_at is not null from public.whatsapp_care_participants),'Perder telefone confirmado revoga identidade comercial');

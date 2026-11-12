@@ -51,9 +51,11 @@ do $$ declare c record; begin select * into c from wa120;
   raise notice 'PASS: limite atômico compartilhado entre cadastro e login';
 end $$;
 select pg_temp.check_wa120(public.whatsapp_send_candidate(p_challenge_id=>id,p_instance=>'plataforma-teste',p_code_hash=>repeat('b',64)) is null,'Código de outro pedido não ganha licença') from challenge;
-create temporary table license as select public.authorize_whatsapp_send('plataforma-teste',p_challenge_id=>id,p_instance=>'plataforma-teste',p_code_hash=>repeat('a',64)) permit from challenge;
-select pg_temp.check_wa120(permit ? 'attempt_id','Licença persistida antes da transmissão') from license;
-select pg_temp.check_wa120(public.authorize_whatsapp_send('plataforma-teste',p_challenge_id=>id,p_instance=>'plataforma-teste',p_code_hash=>repeat('a',64))->>'reason'='duplicate','Repetição do desafio não recebe segunda licença') from challenge;
+select pg_temp.check_wa120(public.authorize_whatsapp_send('plataforma-teste',p_challenge_id=>id,p_instance=>'plataforma-teste',p_code_hash=>repeat('a',64))->>'reason'='group_required','Emissor individual recusa OTP') from challenge;
+-- Registro fictício de transmissão já iniciada: testa finalização sem chamar provedor.
+create temporary table license as with inserted as (
+  insert into public.whatsapp_send_attempts(challenge_id,instance_name) select id,'plataforma-teste' from challenge returning id
+) select jsonb_build_object('attempt_id',id) permit from inserted;
 select public.finish_whatsapp_send((permit->>'attempt_id')::uuid,null) from license;
 select pg_temp.check_wa120((select state='unknown' from public.whatsapp_send_attempts where challenge_id=c.id),'Timeout conserva resultado desconhecido') from challenge c;
 select pg_temp.check_wa120((select consumed_at is null from public.auth_otp_challenges where id=c.id),'Código possivelmente entregue continua válido') from challenge c;
@@ -121,6 +123,6 @@ select pg_temp.check_wa120((select count(*)=0 from public.auth_otp_check_code(nu
 insert into public.whatsapp_send_attempts(challenge_id,instance_name,state,started_at) select gen_random_uuid(),'plataforma-falhas','unknown',now()-interval '1 minute' from generate_series(1,3);
 insert into public.auth_otp_challenges(channel,destination,code_hash,purpose,expires_at)
  values('whatsapp','+5511999998888',repeat('d',64),'signup',now()+interval '10 minutes');
-select pg_temp.check_wa120(public.authorize_whatsapp_send('plataforma-falhas',p_challenge_id=>id,p_instance=>'plataforma-falhas',p_code_hash=>repeat('d',64))->>'reason'='review','Falhas persistentes interrompem novas transmissões') from public.auth_otp_challenges where destination='+5511999998888';
-select pg_temp.check_wa120(public.whatsapp_sending_paused('plataforma-falhas',true),'Pausa automática permanece até revisão manual');
+select pg_temp.check_wa120(public.authorize_whatsapp_send('plataforma-falhas',p_challenge_id=>id,p_instance=>'plataforma-falhas',p_code_hash=>repeat('d',64))->>'reason'='group_required','Cadastro também não transmite OTP individual') from public.auth_otp_challenges where destination='+5511999998888';
+
 select pg_temp.check_wa120(not exists(select 1 from public.whatsapp_send_attempts where challenge_id in(select id from public.auth_otp_challenges where destination='+5511999998888')),'Circuito não cria transmissão adicional');

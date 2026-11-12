@@ -23,12 +23,12 @@ export const es: Record<MessageKey, string> = {
   "care.disabled": "Los grupos aún no están disponibles en esta etapa",
   "care.people": "Quién participa en mi atención",
   "care.visibility":
-    "Todos los participantes podrán ver los mensajes y datos compartidos en el grupo.",
+    "Este grupo incluye solo al cliente y los números autorizados de B&C. Los profesionales de la barbería no tienen acceso al grupo ni a las conversaciones.",
   "care.approved": "Participación autorizada por ti",
   "care.approvalNeeded": "Esperando tu autorización para participar",
   "care.allowPerson": "Autorizar participante",
   "care.removePerson": "Solicitar eliminación",
-  "care.accept": "Quiero esta atención en grupo y conozco a los participantes indicados.",
+  "care.accept": "Quiero mi grupo exclusivo con los números de B&C indicados arriba.",
   "care.request": "Crear mi grupo de atención",
   "care.rejoin": "Solicitar volver a la atención",
   "care.preparation":
@@ -71,7 +71,7 @@ export const es: Record<MessageKey, string> = {
   "care.propose": "Proponer un participante vinculado al establecimiento",
   "care.askApproval": "Solicitar autorización del Cliente",
   "care.noCommercialAdmins":
-    "Dueño, Colaborador independiente y Empleado/colaborador solo entran con autorización del Cliente y permanecen como participantes comunes.",
+    "Solo el cliente y los números autorizados de la plataforma participan en el grupo.",
   "care.nav": "Grupos de atención",
 
   "waSafety.otpUnknown":
@@ -307,12 +307,13 @@ export const es: Record<MessageKey, string> = {
   "waCentral.deliveryBusy":
     "Hay un envío en curso o con resultado incierto. Espera o pide a TI que lo revise antes de transferir.",
   "waCentral.labelInvalid": "Usa un nombre de entre 2 y 80 caracteres.",
+  "waLogin.useEmail": "Usar correo electrónico",
   "waLogin.title": "Entrar con WhatsApp",
-  "waLogin.description": "Recibe un código por WhatsApp para entrar en tu cuenta.",
+  "waLogin.description": "Recibe el código en tu grupo exclusivo de B&C.",
   "waLogin.verifiedOnly":
-    "Usa el número ya verificado en tu cuenta. Si es tu primera vez, regístrate con correo y confirma WhatsApp en Mi perfil.",
+    "Usa tu número verificado y un grupo activo de B&C. Si no hay un grupo disponible, entra con correo electrónico.",
   "waLogin.sent":
-    "Si este número está verificado en una cuenta y el envío está disponible, el código puede llegar. También puedes usar otra forma de acceso.",
+    "Si recibes el código en tu grupo de B&C, introdúcelo abajo. Si no llega, usa el correo electrónico.",
   "waLogin.expiry": "El código es válido durante 10 minutos. Usa el más reciente.",
   "waLogin.send": "Recibir código",
   "waLogin.enter": "Confirmar y entrar",

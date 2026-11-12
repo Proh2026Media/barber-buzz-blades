@@ -125,7 +125,7 @@ test("Criação usa chave persistente, protege grupo e guarda convite sem adicio
   assert.equal(await f.run(), "blocked");
   assert.equal(f.evo.state.creates, 1);
 });
-test("Cliente aprovado entra antes da equipe autorizada; ninguém é promovido", async () => {
+test("Somente Cliente é admitido; aprovação antiga da equipe não concede entrada", async () => {
   const f = fixture(true);
   f.job.approved_phones = [staff];
   f.evo.state.requests = [customer.slice(1) + "@s.whatsapp.net"];
@@ -134,7 +134,7 @@ test("Cliente aprovado entra antes da equipe autorizada; ninguém é promovido",
   assert.equal(f.state.invite, null);
   assert.equal(f.evo.state.group.participants.filter((p) => p.admin).length, 1);
   assert.ok(
-    f.evo.state.group.participants.some((p) => p.id === staff.slice(1) + "@s.whatsapp.net"),
+    !f.evo.state.group.participants.some((p) => p.id === staff.slice(1) + "@s.whatsapp.net"),
   );
   assert.ok(!JSON.stringify(f.evo.state.calls).includes('"promote"'));
 });
@@ -150,7 +150,7 @@ test("Convite vazado não aprova terceiro; pedido LID sem prova também é rejei
     ["reject", "reject"],
   );
 });
-test("Profissional não entra antes do Cliente", async () => {
+test("Pedido do profissional é recusado mesmo com aprovação antiga", async () => {
   const f = fixture(true);
   f.job.approved_phones = [staff];
   f.evo.state.requests = [staff.slice(1) + "@s.whatsapp.net"];
@@ -275,8 +275,7 @@ test("Grupo já protegido é apenas conferido, sem reconfiguração que gere eve
 test("Resposta de inclusão sem participante observado não ativa o grupo", async () => {
   const f = fixture(true);
   protect(f);
-  add(f);
-  f.job.approved_phones = [staff];
+  f.evo.state.requests = [customer.slice(1) + "@s.whatsapp.net"];
   f.evo.state.admissionFails = true;
   assert.equal(await f.run(), "paused");
   assert.equal(f.state.saved, false);

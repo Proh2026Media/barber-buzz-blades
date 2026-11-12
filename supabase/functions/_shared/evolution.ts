@@ -1,3 +1,4 @@
+import { sendGroupLogin } from "./whatsapp-group-login.ts";
 import { sendWhatsapp } from "./whatsapp-send.ts";
 
 /** Transporte da Evolution; envios somente pela autorização comum. */
@@ -112,4 +113,11 @@ export function evolutionGroupTransport(path: string, init: RequestInit = {}) {
     throw new Error("GROUP_ROUTE_FORBIDDEN");
   }
   return evolutionRequest(path, init);
+}
+
+/** Não liberar por variável de ambiente antes do piloto de composição/isolamento. */
+export function sendAuthorizedGroupLogin(
+  ...args: [Parameters<typeof sendGroupLogin>[0], Parameters<typeof sendGroupLogin>[1]]
+) {
+  return sendGroupLogin(...args, evolutionRequest, false);
 }

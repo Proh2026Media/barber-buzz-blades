@@ -22,7 +22,7 @@ function fixture(
       if (options.rpcError) return { error: { message: options.rpcError } };
       return {
         data:
-          name === "request_whatsapp_login_once"
+          name === "request_whatsapp_group_login"
             ? { challenge_id: "desafio", user_id: options.known === false ? null : "conta" }
             : options.valid === false
               ? []
@@ -70,12 +70,11 @@ function fixture(
   };
   return {
     calls,
-    run: (body: Parameters<typeof whatsappLogin>[1], instance = "plataforma") =>
+    run: (body: Parameters<typeof whatsappLogin>[1]) =>
       whatsappLogin(client as never, body, {
-        instance,
         hash: (context) => otpVerifier(context, "chave-ficticia-local-com-mais-de-32-caracteres"),
-        send: async (instance, phone, text) => {
-          calls.push({ name: "send", args: { instance, phone, text } });
+        send: async (text) => {
+          calls.push({ name: "send", args: { text } });
           if (options.sendFails) throw new Error("timeout");
         },
       }),
@@ -87,7 +86,6 @@ test("login global envia seis dígitos apenas pela plataforma", async () => {
   const r = await f.run({ action: "request", destination: phone });
   assert.equal(r.status, 200);
   const sent = f.calls.find((c) => c.name === "send")?.args as { instance: string; text: string };
-  assert.equal(sent.instance, "plataforma");
   assert.match(sent.text, /\b\d{6}\b/);
   assert.ok(!JSON.stringify(r.body).includes("desafio"));
 });
@@ -104,9 +102,9 @@ test("timeout não distingue conta, preserva código possivelmente entregue e n�
   assert.equal(a.calls.filter((c) => c.name === "send").length, 1);
   assert.ok(!a.calls.some((c) => c.name === "invalidate"));
 });
-test("remetente ausente não cria desafio", async () => {
+test("meio diferente de WhatsApp não cria desafio", async () => {
   const f = fixture();
-  assert.equal((await f.run({ destination: phone }, "")).status, 503);
+  assert.equal((await f.run({ destination: phone, channel: "email" })).status, 400);
   assert.equal(f.calls.length, 0);
 });
 test("telefone e ação inválidos não chegam ao banco", async () => {

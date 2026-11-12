@@ -1,5 +1,7 @@
 # Papéis, ambientes e permissões
 
+**P-120, atualização local de 11/11/2026:** grupos são exclusivos do cliente e dos números controlados/autorizados da plataforma. Profissionais, donos e funcionários da loja não aprovam participantes nem consultam o grupo de outro cliente. A ficha da loja não monta mais o painel; RPC também recusa leitura de outro titular. Administração global conserva estados e controle dos números, sem código/corpo das conversas. Nº 108 somente local e envios bloqueados; isolamento externo de instâncias/aparelhos exige homologação. [Entrega](../pacotes/2026-11-11-p120-login-grupo-local.md).
+
 Retrato do modelo **como está hoje (12/10/2026)**, depois das ondas 1, 2, 3 e 5 de 09/10/2026. Fontes principais: [plano-ambientes.md](../plano-ambientes.md), [plano-governanca-sociedade-gerente.md](../plano-governanca-sociedade-gerente.md), [CONTINUIDADE.md](../CONTINUIDADE.md) (seções de 17/09, 18/09, 22/09, 24/09, 25/09, 29/09 e 09/10), o código em [src/lib/auth/](../../src/lib/auth/) e as migrations citadas. Último commit conferido: `e7328ee` (09/10/2026).
 
 Situações usadas: **feito**, **feito — falta aplicar no banco**, **pendente**, **a decidir**, **não confirmado**.

@@ -18,7 +18,6 @@ type Payload = {
     state: string;
     version: number;
   }[];
-  eligible_staff: { user_id: string; shop_id: string; name: string }[];
 };
 const field = "min-h-11 w-full min-w-0 rounded-xl border border-border bg-background px-3 text-sm";
 export function CareGroupsAdmin({
@@ -36,8 +35,7 @@ export function CareGroupsAdmin({
   const [shop, setShop] = useState(""),
     [number, setNumber] = useState(""),
     [owned, setOwned] = useState(false),
-    [selected, setSelected] = useState(""),
-    [staff, setStaff] = useState("");
+    [selected, setSelected] = useState("");
   const live = useRef(true),
     pending = useRef(false);
   async function action(name: string, values: Json = {}) {
@@ -179,7 +177,6 @@ export function CareGroupsAdmin({
                 className={`flex min-h-16 w-full flex-col items-start rounded-xl border p-3 text-left ${selected === g.id ? "border-gold bg-muted" : "border-border"}`}
                 onClick={() => {
                   setSelected(g.id);
-                  setStaff("");
                 }}
               >
                 <strong className="break-words">{g.customer_name}</strong>
@@ -212,32 +209,6 @@ export function CareGroupsAdmin({
                   {t("care.review")}
                 </button>
               </div>
-              <label className="block space-y-1 text-sm">
-                <span>{t("care.propose")}</span>
-                <select className={field} value={staff} onChange={(e) => setStaff(e.target.value)}>
-                  <option value="">{t("care.choose")}</option>
-                  {data?.eligible_staff
-                    ?.filter((s) => s.shop_id === group.shop_id)
-                    .map((s) => (
-                      <option key={s.user_id} value={s.user_id}>
-                        {s.name}
-                      </option>
-                    ))}
-                </select>
-              </label>
-              <button
-                className="action-button action-confirm"
-                disabled={busy || !staff}
-                onClick={() =>
-                  void action("propose_participant", {
-                    group_id: group.id,
-                    version: group.version,
-                    user_id: staff,
-                  })
-                }
-              >
-                {t("care.askApproval")}
-              </button>
               <p className="text-xs text-muted-foreground">{t("care.noCommercialAdmins")}</p>
             </div>
           )}

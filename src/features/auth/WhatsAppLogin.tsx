@@ -25,13 +25,17 @@ import {
 export function WhatsAppLogin({
   disabled,
   onAuthenticated,
+  onUseEmail,
 }: {
   disabled: boolean;
   onAuthenticated: () => Promise<void>;
+  onUseEmail: () => void;
 }) {
   const { t } = useI18n();
   const demo = useDemo();
   const [open, setOpen] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const emailRequested = useRef(false);
   return (
     <>
       <button
@@ -45,20 +49,55 @@ export function WhatsAppLogin({
         <MessageCircle className="size-5" aria-hidden />
         {t("waLogin.title")}
       </button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent size="md" mobileSheet className="bg-card">
+      <Dialog
+        open={open}
+        onOpenChange={(value) => {
+          if (!verifying) setOpen(value);
+        }}
+      >
+        <DialogContent
+          size="md"
+          mobileSheet
+          className="bg-card"
+          onCloseAutoFocus={(event) => {
+            if (emailRequested.current) {
+              event.preventDefault();
+              emailRequested.current = false;
+              onUseEmail();
+            }
+          }}
+        >
           <DialogHeader>
             <DialogTitle>{t("waLogin.title")}</DialogTitle>
             <DialogDescription>{t("waLogin.description")}</DialogDescription>
           </DialogHeader>
-          <DialogBody>{open && <LoginForm onAuthenticated={onAuthenticated} />}</DialogBody>
+          <DialogBody>
+            {open && (
+              <LoginForm
+                onAuthenticated={onAuthenticated}
+                onVerifying={setVerifying}
+                onUseEmail={() => {
+                  emailRequested.current = true;
+                  setOpen(false);
+                }}
+              />
+            )}
+          </DialogBody>
         </DialogContent>
       </Dialog>
     </>
   );
 }
 
-function LoginForm({ onAuthenticated }: { onAuthenticated: () => Promise<void> }) {
+function LoginForm({
+  onAuthenticated,
+  onUseEmail,
+  onVerifying,
+}: {
+  onAuthenticated: () => Promise<void>;
+  onUseEmail: () => void;
+  onVerifying: (value: boolean) => void;
+}) {
   const { t, locale } = useI18n();
   const [country, setCountry] = useState<CountryCode>(() =>
     initialPairingCountry(undefined, locale),
@@ -96,6 +135,7 @@ function LoginForm({ onAuthenticated }: { onAuthenticated: () => Promise<void> }
       return;
     }
     pending.current = true;
+    if (action === "verify") onVerifying(true);
     setBusy(true);
     setError(null);
     try {
@@ -132,7 +172,13 @@ function LoginForm({ onAuthenticated }: { onAuthenticated: () => Promise<void> }
       if (action === "request") {
         setDestination(normalized);
         setCode("");
-        setCooldown(60);
+        setCooldown(
+          Number.isInteger(payload.resend_after_seconds) &&
+            payload.resend_after_seconds >= 60 &&
+            payload.resend_after_seconds <= 900
+            ? payload.resend_after_seconds
+            : 60,
+        );
         return;
       }
       if (typeof payload.hashed_token !== "string" || !payload.hashed_token)
@@ -151,6 +197,7 @@ function LoginForm({ onAuthenticated }: { onAuthenticated: () => Promise<void> }
         if (action === "request") setCooldown(60);
       }
     } finally {
+      if (action === "verify") onVerifying(false);
       pending.current = false;
       if (live.current) setBusy(false);
     }
@@ -214,6 +261,14 @@ function LoginForm({ onAuthenticated }: { onAuthenticated: () => Promise<void> }
         </>
       )}
       {error && <Notice tone="danger" title={t(error)} />}
+      <button
+        type="button"
+        className="entry-link-button w-full"
+        disabled={busy && Boolean(destination)}
+        onClick={onUseEmail}
+      >
+        {t("waLogin.useEmail")}
+      </button>
       <button
         className="action-button action-confirm w-full"
         disabled={busy || (destination ? code.length !== 6 : cooldown > 0)}

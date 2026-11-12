@@ -26,7 +26,6 @@ const raw = () => ({
   participants: [
     { id: "5511888888888@s.whatsapp.net", admin: "admin" },
     { id: "5511999999999@s.whatsapp.net", admin: null },
-    { id: "5511777777777@s.whatsapp.net", admin: null },
   ],
 });
 test("renomear o grupo preserva a associação pelo JID", () => {
@@ -42,7 +41,7 @@ test("LID não vira telefone; evento não comprovado exige revisão", () => {
 });
 test("participante inesperado ou administrador comercial impede ativação", () => {
   const r = raw();
-  r.participants[2].admin = "admin";
+  r.participants.push({ id: "5511777777777@s.whatsapp.net", admin: "admin" });
   assert.equal(inspectGroup(policy, groupSnapshot(r)), "divergence");
   r.participants[2] = { id: "5511666666666@s.whatsapp.net", admin: null };
   assert.equal(inspectGroup(policy, groupSnapshot(r)), "divergence");

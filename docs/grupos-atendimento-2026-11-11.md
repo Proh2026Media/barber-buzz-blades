@@ -1,6 +1,6 @@
 # Grupos exclusivos de atendimento — preparação local
 
-**Decisão posterior do dono em 11/11 — P-120:** os grupos terão **somente cliente + números autorizados da plataforma**, sem profissionais nem acesso deles às conversas. Códigos deverão ir ao grupo, não ao privado. [Preparação da mudança](plano-login-whatsapp-email-2026-11-11.md). **Ainda não implementada:** permissões/equipe/OTP individual descritos abaixo são o código anterior e precisam ser adaptados antes de ativar. Bloqueio real permanece.
+**Atualização P-120 em 11/11:** grupos locais agora permitem somente cliente + números autorizados da plataforma. Nº 108 revoga participantes profissionais, remove controles de aprovação e leitura na ficha da loja. OTP de login possui caminho exclusivo de grupo em bancada e não usa privado. [Entrega e limites](pacotes/2026-11-11-p120-login-grupo-local.md). O histórico abaixo descreve o modelo anterior; não reutilizar aprovação de equipe. Envio real e criação continuam bloqueados; primeiro acesso e homologação ainda pendentes.
 
 **Atualização posterior de 11/11 — ciclo integrado localmente:** [adaptador, controles e ensaio completo do ciclo](pacotes/2026-11-11-bc-integracao-grupos-local.md). Nº 107 acrescenta autorização por etapa, identidade aprovada e retorno voluntário; convite/admissão/remoção/encerramento/recuperação já implementados e testados. As descrições abaixo registram a preparação inicial. Permanecem bloqueio real, fila/envio, recibos e demais pendências expressas na nova entrega.
 

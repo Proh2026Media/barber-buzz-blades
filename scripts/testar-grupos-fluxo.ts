@@ -1,3 +1,4 @@
+import { sendGroupLogin } from "../supabase/functions/_shared/whatsapp-group-login.ts";
 /** Executado somente pelo roteiro Python, contra container descartável e transporte fictício. */
 import { spawn } from "node:child_process";
 import { readFile } from "node:fs/promises";
@@ -81,6 +82,7 @@ const files = [
   "20261110230000_whatsapp_saida_protegida.sql",
   "20261111120000_grupos_atendimento.sql",
   "20261111200000_grupos_integracao_evolution.sql",
+  "20261111210000_grupos_exclusivos_plataforma.sql",
 ];
 const migrations = await Promise.all(
   files.map((f) => readFile(root + "supabase/migrations/" + f, "utf8")),
@@ -161,9 +163,49 @@ check(
   "Pedido autorizado ativa o vínculo após consulta",
 );
 check(
-  evo.state.group.participants.some((p) => p.id === "5511777777777@s.whatsapp.net") &&
+  !evo.state.group.participants.some((p) => p.id === "5511777777777@s.whatsapp.net") &&
     evo.state.group.participants.filter((p) => p.admin).length === 1,
-  "Equipe aprovada é comum e Plataforma mantém administração",
+  "Profissional antigo não entra e Plataforma mantém administração",
+);
+// O envio é fictício, mas autorização, concorrência e consumo usam PostgreSQL real.
+await sql("update whatsapp_group_settings set login_enabled=true;");
+const challenge = JSON.parse(
+  await sql(
+    `select request_whatsapp_group_login(${quote(fixture.phone)},repeat('a',64),gen_random_uuid());`,
+  ),
+);
+let loginMessages = 0;
+const loginTransport = async (path: string, init?: RequestInit) => {
+  if (path.startsWith("/message/sendText/")) {
+    const body = JSON.parse(String(init?.body));
+    assert.equal(body.number, evo.groupId);
+    loginMessages++;
+    return { key: { id: "codigo-ficticio" } };
+  }
+  return evo.transport(path, init);
+};
+const loginInput = {
+  challengeId: challenge.challenge_id,
+  codeHash: "a".repeat(64),
+  text: "Código fictício: 123456",
+};
+const loginResults = await Promise.all([
+  sendGroupLogin(db, loginInput, loginTransport, true),
+  sendGroupLogin(db, loginInput, loginTransport, true),
+]);
+check(
+  loginResults.includes("accepted") && loginResults.includes("blocked") && loginMessages === 1,
+  "OTP concorrente transmite uma vez somente ao grupo correto",
+);
+const loginMatch = JSON.parse(
+  await sql(`select check_whatsapp_group_login(${quote(fixture.phone)},repeat('a',64));`),
+);
+check(loginMatch.user_id === fixture.customer, "Código do grupo autentica somente o titular");
+check(
+  (await sql(
+    `select check_whatsapp_group_login(${quote(fixture.phone)},repeat('a',64)) is null;`,
+  )) === "t",
+  "Código de grupo consumido não autentica novamente",
 );
 evo.state.requests = ["5511666666666@s.whatsapp.net"];
 await event(
@@ -270,4 +312,21 @@ check(
   "Reversão existente desliga adesões e invalida convites na nº 107",
 );
 check(reversed.preserved, "Reversão conserva grupo e histórico sem liberar fallback individual");
+const exclusiveRollback = (
+  await readFile(root + "supabase/rollback/20261111210000_grupos_exclusivos_plataforma.sql", "utf8")
+).replace(/^begin;|^commit;/gm, "");
+const exclusiveReversed = JSON.parse(
+  await sql(
+    "begin;" +
+      exclusiveRollback +
+      `select jsonb_build_object('disabled',not enrollment_enabled and not login_enabled,'routes',(select count(*)>0 from whatsapp_group_login_routes),'attempts',(select count(*)>0 from whatsapp_send_attempts),'private_blocked',authorize_whatsapp_send('ficticia',null,null,gen_random_uuid(),'ficticia','hash')->>'reason'='group_required') from whatsapp_group_settings;rollback;`,
+  ),
+);
+check(
+  exclusiveReversed.disabled &&
+    exclusiveReversed.routes &&
+    exclusiveReversed.attempts &&
+    exclusiveReversed.private_blocked,
+  "Reversão nº 108 preserva provas e bloqueia grupo e OTP privado",
+);
 console.log(`TOTAL: ${checks} PASS; PostgreSQL real e Evolution inteiramente fictícia`);

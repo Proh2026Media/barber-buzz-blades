@@ -2625,7 +2625,13 @@ function AuthPage() {
                 </div>
 
                 <div className="grid gap-3">
-                  <WhatsAppLogin disabled={busy || googleBusy} onAuthenticated={goAfterAuth} />
+                  <WhatsAppLogin
+                    disabled={busy || googleBusy}
+                    onAuthenticated={goAfterAuth}
+                    onUseEmail={() => {
+                      emailInputRef.current?.focus();
+                    }}
+                  />
                   <button
                     type="button"
                     onClick={() => void handleGoogle()}

@@ -17,11 +17,6 @@ export const careStates: Record<string, MessageKey> = {
   closed: "care.closed",
   creation_unknown: "care.unknown",
 };
-export const careRoles: Record<string, MessageKey> = {
-  owner: "care.owner",
-  associate: "care.associate",
-  employee: "care.employee",
-};
 type Group = {
   id: string;
   state: string;
@@ -206,42 +201,6 @@ function CareGroupContent({
                 </span>
               </div>
             ))}
-            {data.participants
-              .filter((p) => !p.revoked)
-              .map((p) => (
-                <div
-                  key={p.user_id}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border p-3 text-sm"
-                >
-                  <span>
-                    {p.name} · {t(careRoles[p.role])}
-                    <small className="block text-muted-foreground">
-                      {t(p.approved ? "care.approved" : "care.approvalNeeded")}
-                    </small>
-                  </span>
-                  {!readOnly && !ended && (
-                    <div className="flex flex-wrap gap-2">
-                      {!p.approved && (
-                        <button
-                          className="action-button action-confirm"
-                          disabled={busy}
-                          onClick={() => void update("approve_participant", { user_id: p.user_id })}
-                        >
-                          {t("care.allowPerson")}
-                        </button>
-                      )}
-                      <button
-                        className="action-button"
-                        disabled={busy}
-                        onClick={() => void update("remove_participant", { user_id: p.user_id })}
-                      >
-                        <UserMinus aria-hidden />
-                        {t("care.removePerson")}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
           </div>
           {!readOnly && (!group || ended) && (
             <div className="space-y-3">

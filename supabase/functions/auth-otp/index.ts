@@ -1,7 +1,12 @@
 import { randomOtp, otpVerifier } from "../_shared/whatsapp-otp.ts";
 import { whatsappLogin } from "./login.ts";
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { corsHeaders, sendAuthorizedWhatsapp, json } from "../_shared/evolution.ts";
+import {
+  corsHeaders,
+  sendAuthorizedWhatsapp,
+  sendAuthorizedGroupLogin,
+  json,
+} from "../_shared/evolution.ts";
 
 type Purpose = "login" | "recovery" | "verify_phone";
 
@@ -360,10 +365,9 @@ Deno.serve(async (req) => {
 
     if (purpose === "login") {
       const result = await whatsappLogin(admin, body, {
-        instance: platformInstance(),
         hash: codeVerifier,
-        send: async (instance, _phone, text, challengeId, codeHash) => {
-          await sendAuthorizedWhatsapp(admin, { instance, text, challengeId, codeHash });
+        send: async (text, challengeId, codeHash) => {
+          await sendAuthorizedGroupLogin(admin, { text, challengeId, codeHash });
         },
       });
       return json(result.body, result.status);

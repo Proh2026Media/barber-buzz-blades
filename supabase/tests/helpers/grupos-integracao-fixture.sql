@@ -35,10 +35,7 @@ select public.apply_verified_whatsapp(owner,'+5511777777777',true) is not null f
 select set_config('request.jwt.claim.role','',true);
 select set_config('request.jwt.claim.sub',customer::text,true) from wa120;
 select public.care_group_request(shop,true,array(select id from public.whatsapp_group_accounts)) is not null from wa120;
-select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',true);
-select public.care_group_admin('propose_participant',jsonb_build_object('group_id',g.id,'version',g.version,'user_id',c.owner)) is not null
-  from public.whatsapp_care_groups g cross join wa120 c;
-select set_config('request.jwt.claim.sub',customer::text,true) from wa120;
-select public.care_group_customer_update(g.id,g.version,'approve_participant',jsonb_build_object('user_id',c.owner)) is not null
-  from public.whatsapp_care_groups g cross join wa120 c;
+-- Identidade histórica revogada, usada para conferir remoção sem nova aprovação.
+insert into public.whatsapp_care_participants(group_id,user_id,role,approved_at,approved_phone,revoked_at)
+select g.id,c.owner,'owner',now(),'+5511777777777',now() from public.whatsapp_care_groups g cross join wa120 c;
 select set_config('request.jwt.claim.sub','',true);

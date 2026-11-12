@@ -21,12 +21,13 @@ export const enUS: Record<MessageKey, string> = {
   "care.intro": "An exclusive care group for this shop, administered by the Platform.",
   "care.disabled": "Groups are not available at this stage",
   "care.people": "Who takes part in my care",
-  "care.visibility": "All participants can see messages and information shared in the group.",
+  "care.visibility":
+    "This group includes only you and authorized B&C numbers. Shop professionals cannot access the group or its conversations.",
   "care.approved": "Participation authorized by you",
   "care.approvalNeeded": "Waiting for your permission to join",
   "care.allowPerson": "Authorize participant",
   "care.removePerson": "Request removal",
-  "care.accept": "I want this group care and acknowledge the listed participants.",
+  "care.accept": "I want my exclusive group with the B&C numbers listed above.",
   "care.request": "Create my care group",
   "care.rejoin": "Request to return to group care",
   "care.preparation":
@@ -69,7 +70,7 @@ export const enUS: Record<MessageKey, string> = {
   "care.propose": "Propose a participant linked to this establishment",
   "care.askApproval": "Request Customer authorization",
   "care.noCommercialAdmins":
-    "Owner, Partner and Employee/collaborator join only with Customer authorization and remain ordinary participants.",
+    "Only the customer and authorized platform numbers participate in the group.",
   "care.nav": "Care groups",
 
   "waSafety.otpUnknown":
@@ -304,12 +305,13 @@ export const enUS: Record<MessageKey, string> = {
   "waCentral.deliveryBusy":
     "A delivery is in progress or its result is uncertain. Wait or ask IT to review before transferring.",
   "waCentral.labelInvalid": "Use a name between 2 and 80 characters.",
+  "waLogin.useEmail": "Use email",
   "waLogin.title": "Sign in with WhatsApp",
-  "waLogin.description": "Receive a WhatsApp code to sign in to your account.",
+  "waLogin.description": "Receive the code in your exclusive B&C group.",
   "waLogin.verifiedOnly":
-    "Use the number already verified on your account. First time here? Register with email and verify WhatsApp in My profile.",
+    "Use your verified number and an active B&C group. If no group is available, sign in with email.",
   "waLogin.sent":
-    "If this number is verified on an account and sending is available, a code may arrive. You can also use another sign-in method.",
+    "If you receive a code in your B&C group, enter it below. If it does not arrive, use email.",
   "waLogin.expiry": "The code is valid for 10 minutes. Use the most recent one.",
   "waLogin.send": "Get code",
   "waLogin.enter": "Confirm and sign in",

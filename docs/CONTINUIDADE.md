@@ -1,5 +1,13 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 11/11/2026 — P-120, exclusividade e login de grupo em bancada
+
+[Entrega local](pacotes/2026-11-11-p120-login-grupo-local.md). Implementada nº 108: revogação de equipe, leitura somente pelo titular, composição exata e desafio ligado ao grupo/versão/instância. OTP privado bloqueado para todos os emissores que passam pela autorização central. Login consulta provedor fictício, autoriza uma tentativa e verifica consumo único. Interface retira equipe/ficha da loja e acrescenta **Usar e-mail**, com foco e proteção contra resposta tardia. Primeiro acesso e confirmação inicial do telefone ainda pendentes; envio real permanece explicitamente bloqueado.
+
+562 testes unitários, 1.519 verificações SQL e 21 verificações integradas com PostgreSQL real local/provedor fictício; tipos, lint, formatação, montagem e Deno. Bancada de interface: 128 verificações/36 telas de grupos e 150 verificações/30 telas de login, sem rede real. Inclui largura 320–1440, temas/cantos, alternativa de e-mail e resposta tardia. Sem homologação em aparelho físico.
+
+Nº 105–108 não instaladas. Sem publicação, mensagens/grupos reais, VPS ou Flow. Preservados `.env` e `.vscode/`. Próximo: preparar confirmação inicial no grupo a partir de sessão autenticada, depois contrato da extensão/isolamento e ensaio integral; não passar esta etapa incompleta à TI para instalar.
+
 Atualizado em **11/11/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
 ## 11/11/2026 — P-120, preparação do código no grupo exclusivo

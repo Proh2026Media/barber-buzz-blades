@@ -66,11 +66,7 @@ export function groupSnapshot(raw: unknown): GroupSnapshot | null {
 
 export function inspectGroup(policy: GroupPolicy, snapshot: GroupSnapshot | null) {
   if (!snapshot || snapshot.id !== policy.groupJid) return "unverifiable" as const;
-  const expected = new Set([
-    policy.customerPhone,
-    ...policy.platformPhones,
-    ...policy.approvedPhones,
-  ]);
+  const expected = new Set([policy.customerPhone, ...policy.platformPhones]);
   const seen = new Set<string>();
   let platformAdmin = false;
   for (const member of snapshot.participants) {
@@ -89,6 +85,7 @@ export function inspectGroup(policy: GroupPolicy, snapshot: GroupSnapshot | null
   }
   if (!platformAdmin || !snapshot.locked || !snapshot.adminsAddOnly || !snapshot.approvalRequired)
     return "unverifiable" as const;
+  if (policy.platformPhones.some((phone) => !seen.has(phone))) return "unverifiable" as const;
   if (!seen.has(policy.customerPhone)) return "customer_left" as const;
   return "verified" as const;
 }
@@ -296,11 +293,7 @@ export async function processCareGroup(db: Database, provider: GroupProvider, op
     // Participante revogado conhecido pode ser removido. Intruso desconhecido exige revisão.
     for (const member of value.participants) {
       const phone = individualPhone(member.jid)!;
-      if (
-        job!.removable_phones.includes(phone) &&
-        !job!.approved_phones.includes(phone) &&
-        phone !== job!.customer_phone
-      ) {
+      if (job!.removable_phones.includes(phone) && phone !== job!.customer_phone) {
         await provider.member(
           job!.instance,
           groupId,
@@ -308,9 +301,7 @@ export async function processCareGroup(db: Database, provider: GroupProvider, op
           "remove",
           () => authorize("participants"),
         );
-      } else if (
-        ![job!.customer_phone, ...job!.platform_phones, ...job!.approved_phones].includes(phone)
-      ) {
+      } else if (![job!.customer_phone, ...job!.platform_phones].includes(phone)) {
         throw new Error("GROUP_DIVERGENCE");
       }
     }
@@ -318,10 +309,7 @@ export async function processCareGroup(db: Database, provider: GroupProvider, op
     structural(value);
     if (
       value.participants.some(
-        (p) =>
-          ![job!.customer_phone, ...job!.platform_phones, ...job!.approved_phones].includes(
-            individualPhone(p.jid)!,
-          ),
+        (p) => ![job!.customer_phone, ...job!.platform_phones].includes(individualPhone(p.jid)!),
       )
     )
       throw new Error("GROUP_REMOVAL_UNCONFIRMED");
@@ -345,36 +333,20 @@ export async function processCareGroup(db: Database, provider: GroupProvider, op
       value = await snapshot();
       structural(value);
       const phone = individualPhone(jid);
-      const customerPresent = value.participants.some(
-        (p) => individualPhone(p.jid) === job!.customer_phone,
-      );
-      const approved =
-        phone === job!.customer_phone ||
-        (customerPresent && phone !== null && job!.approved_phones.includes(phone));
+      const approved = phone === job!.customer_phone;
       // Pedido LID sem correspondência autoritativa não é convertido em telefone.
       await provider.decide(job!.instance, groupId, jid, approved ? "approve" : "reject", () =>
         authorize("participants"),
       );
-    }
-    value = await snapshot();
-    structural(value);
-    if (value.participants.some((p) => individualPhone(p.jid) === job!.customer_phone)) {
-      for (const phone of job!.approved_phones) {
-        if (value.participants.some((p) => individualPhone(p.jid) === phone)) continue;
-        await provider.member(
-          job!.instance,
-          groupId,
-          `${phone.slice(1)}@s.whatsapp.net`,
-          "add",
-          () => authorize("participants"),
-        );
+      if (approved) {
         value = await snapshot();
         structural(value);
-        if (!value.participants.some((p) => individualPhone(p.jid) === phone))
+        if (!value.participants.some((p) => individualPhone(p.jid) === job!.customer_phone))
           throw new Error("GROUP_ADMISSION_UNCONFIRMED");
       }
     }
     value = await snapshot();
+    structural(value);
     const state = inspectGroup(policy(), value);
     if (state !== "verified" && !(state === "customer_left" && job!.entry_pending))
       throw new Error("GROUP_UNVERIFIABLE");

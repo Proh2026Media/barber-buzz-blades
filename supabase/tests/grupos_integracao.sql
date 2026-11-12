@@ -36,11 +36,17 @@ select set_config('request.jwt.claim.role','',true);
 select set_config('request.jwt.claim.sub',customer::text,true) from wa120;
 select public.care_group_request(shop,true,array(select id from public.whatsapp_group_accounts)) is not null from wa120;
 select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',true);
-select public.care_group_admin('propose_participant',jsonb_build_object('group_id',g.id,'version',g.version,'user_id',c.owner)) is not null
-  from public.whatsapp_care_groups g cross join wa120 c;
+do $$ begin
+  begin perform public.care_group_admin('propose_participant','{}'); raise exception 'FAIL: proposta aceita';
+  exception when insufficient_privilege then raise notice 'PASS: nem admin propõe profissional'; end;
+end $$;
 select set_config('request.jwt.claim.sub',customer::text,true) from wa120;
-select public.care_group_customer_update(g.id,g.version,'approve_participant',jsonb_build_object('user_id',c.owner)) is not null
-  from public.whatsapp_care_groups g cross join wa120 c;
+do $$ begin
+  begin perform public.care_group_customer_update((select id from public.whatsapp_care_groups),(select version from public.whatsapp_care_groups),'approve_participant','{}'); raise exception 'FAIL: aprovação aceita';
+  exception when insufficient_privilege then raise notice 'PASS: cliente não admite profissional'; end;
+end $$;
+insert into public.whatsapp_care_participants(group_id,user_id,role,approved_at,approved_phone,revoked_at)
+select g.id,c.owner,'owner',now(),'+5511777777777',now() from public.whatsapp_care_groups g cross join wa120 c;
 select set_config('request.jwt.claim.sub','',true);
 
 select pg_temp.check_wa120((select approved_phone='+5511777777777' from public.whatsapp_care_participants),'Aprovação captura telefone verificado da pessoa');
@@ -50,7 +56,7 @@ select pg_temp.check_wa120(not has_function_privilege('service_role','public.car
 create temporary table care_job107 as select public.claim_care_group_operation(o.id,true) job
  from public.whatsapp_care_operations o join public.whatsapp_care_groups g on g.id=o.group_id and g.version=o.version;
 select pg_temp.check_wa120((select job->>'token' is not null from care_job107),'Operação recebe autorização com contexto completo');
-select pg_temp.check_wa120((select job->'approved_phones' ? '+5511777777777' from care_job107),'Contexto contém somente equipe aprovada');
+select pg_temp.check_wa120((select job->'approved_phones' = '[]'::jsonb from care_job107),'Contexto nunca autoriza equipe comercial');
 select pg_temp.check_wa120(public.authorize_care_group_step((job->>'id')::uuid,(job->>'token')::uuid,'create') is not null,'Etapa confere posse e consentimento novamente') from care_job107;
 do $$ begin
  begin perform public.authorize_care_group_step((select (job->>'id')::uuid from care_job107),gen_random_uuid(),'create'); raise exception 'FAIL: token de outra posse';
