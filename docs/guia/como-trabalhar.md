@@ -304,6 +304,8 @@ A VPS não tem credencial de envio ao GitHub (registro de 03/10/2026): o resulta
 
 ## 6. Trabalho com o dono
 
+**Regra de entrega à TI (12/11/2026):** seguir [AGENTS.md — Entregas para a TI / Guardião](../../AGENTS.md#entregas-para-a-ti--guardião-decisão-do-dono-em-12112026). O Codex entrega implementação e pacote verificáveis; desenvolvimento incompleto continua com o Codex. A TI confere o ambiente, configura, instala e homologa. Pedidos apenas de diagnóstico/revisão devem ser identificados assim, sem sugerir que a implementação já esteja pronta.
+
 - O dono **não é programador**. Fale em pt-BR simples, sem jargão; explique o efeito para o cliente ou o barbeiro, não o código.
 - **Mostre em vez de explicar:** envie a foto da tela (seção 3.3) em vez de descrever o layout.
 - Decisão de produto (regra de negócio, texto que o cliente vê, cobrança, permissões) é dele. Não decida sozinho: registre em [pendencias.md](pendencias.md) como "a decidir", com 2 ou 3 opções e a consequência de cada uma.

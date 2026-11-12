@@ -2234,3 +2234,8 @@ Tipos, testes automatizados, SQL em banco descartável, cifra VAPID/aes128gcm, f
 ## 12/11/2026 — Revisão 2: identidade de cliente é a barbearia
 
 Antes de enviar o pacote, o dono reservou a marca B&C à gestão de donos/administradores. Textos locais de acesso/grupo/push e rodapé público ajustados nos idiomas. Push passa a carregar nome da barbearia do agendamento, resolvido no servidor no envio; worker não força título/logo da plataforma. Teste sem loja usa identificação neutra. Nenhum texto de grupo real mudou: contrato de identidade comercial + filtro de OTP na extensão precisam de implementação coordenada; roteiro TI registra essa dependência e proíbe correção isolada de string/ativação do piloto como se estivesse pronto. Metadados globais/PWA não foram declarados totalmente convertidos. Marca, produção e terceiros não foram tocados. Pacote anterior desta entrega foi substituído pela revisão 2.
+
+
+## 12/11/2026 — Preferência persistente: entrega pronta à TI
+
+O dono pediu para guardar a orientação para as próximas entregas: enviar à TI implementação concluída, arquivos e roteiro verificáveis, não apenas objetivos para ela resolver. Desenvolvimento pendente permanece com o Codex; diagnóstico/revisão deve ser explicitamente separado de instalação/homologação. Regra registrada no AGENTS.md e referenciada no guia de trabalho. Somente documentação local; nenhum novo envio à TI, atualização de produção ou alteração no pacote v2 já entregue neste registro.
