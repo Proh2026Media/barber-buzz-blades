@@ -148,6 +148,10 @@ export const ptBR = {
   "waOrg.teamCount": "Profissionais: {count}",
   "waOrg.missingCount": "Sem número: {count}",
   "waOrg.noShops": "Nenhuma barbearia cadastrada.",
+  "waOrg.personalNumber": "Este WhatsApp é pessoal e não pode ser usado como número da plataforma.",
+  "waOrg.awaitingConnection": "Aguardando conexão",
+  "waOrg.identifyingNumber": "Conectado · identificando número",
+  "waOrg.finishConnection": "Continuar conexão",
   "waOrg.incomplete": "Cadastros de número não concluídos",
   "waOrg.incompleteHint":
     "São tentativas que ainda não têm telefone identificado. Continue para conectar um novo número ou escolha um número já cadastrado para o destino.",

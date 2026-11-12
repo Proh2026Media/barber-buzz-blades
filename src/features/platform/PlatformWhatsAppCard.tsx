@@ -124,7 +124,7 @@ export const PlatformWhatsAppCard = forwardRef<
   PlatformWhatsAppHandle,
   {
     /** Avisa a tela quando o estado muda (null = ainda conferindo; "error" = não deu). */
-    onStatusChange?: (status: PlatformWaReport | null) => void;
+    onStatusChange?: (status: PlatformWaReport | null, phone?: string | null) => void;
     className?: string;
     channelId?: string;
     title?: string;
@@ -163,8 +163,8 @@ export const PlatformWhatsAppCard = forwardRef<
   }, []);
 
   useEffect(() => {
-    onStatusChange?.(checkFailed ? "error" : known ? status : null);
-  }, [checkFailed, known, status, onStatusChange]);
+    onStatusChange?.(checkFailed ? "error" : known ? status : null, displayPhone);
+  }, [checkFailed, known, status, displayPhone, onStatusChange]);
 
   /** Confere o estado e devolve o que veio (null quando a conferência falhou). */
   const refresh = useCallback(async (): Promise<PlatformWaStatus | null> => {

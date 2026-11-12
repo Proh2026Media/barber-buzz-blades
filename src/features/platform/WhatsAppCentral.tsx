@@ -6,7 +6,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   UsersRound,
   ArrowRightLeft,
-  Clock3,
   Link2,
   ArrowLeft,
   ArrowRight,
@@ -122,7 +121,9 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
       const requested = new URLSearchParams(window.location.search).get("numero");
       const numbers = (result as unknown as Directory).channels;
       const target = numbers.find((n) => n.id === requested);
-      setSelected(target?.id ?? numbers.find((n) => n.display_phone?.trim())?.id ?? null);
+      setSelected(
+        target?.id ?? numbers.find((n) => n.display_phone?.trim())?.id ?? numbers[0]?.id ?? null,
+      );
       setDetailsOpen(Boolean(target));
       if (target) setView("numbers");
       if (target && !target.display_phone?.trim()) setTab("connection");
@@ -158,15 +159,30 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
   }
   const channel =
     data?.channels.find((c) => c.id === selected) ??
-    data?.channels.find((c) => c.display_phone?.trim());
+    data?.channels.find((c) => c.display_phone?.trim()) ??
+    data?.channels[0];
   const channelId = channel?.id;
   const report = useCallback(
-    (status: PlatformWaReport | null) => {
+    (status: PlatformWaReport | null, phone?: string | null) => {
       // A montagem do cartão envia null antes da consulta. Não apaga o estado já conhecido.
       if (!channelId || status === null) return;
       setReports((current) =>
         current[channelId] === status ? current : { ...current, [channelId]: status },
       );
+      if (phone?.trim())
+        setData((current) => {
+          const number = current?.channels.find((n) => n.id === channelId);
+          if (!current || !number || (number.display_phone === phone && number.status === status))
+            return current;
+          return {
+            ...current,
+            channels: current.channels.map((n) =>
+              n.id === channelId
+                ? { ...n, display_phone: phone, ...(status !== "error" ? { status } : {}) }
+                : n,
+            ),
+          };
+        });
     },
     [channelId],
   );
@@ -244,7 +260,6 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
               ? numberLinks(c).length > 0
               : numberLinks(c).length === 0 &&
                 !data.channels.some((n) => n.backup_instance_name === c.instance_name))) &&
-        Boolean(c.display_phone?.trim()) &&
         `${c.label} ${c.display_phone ?? ""} ${numberDestinations(c)}`
           .toLocaleLowerCase(locale)
           .includes(query.toLocaleLowerCase(locale)),
@@ -351,7 +366,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                   id: "numbers",
                   title: "waOrg.numbers",
                   icon: Smartphone,
-                  count: data?.channels.filter((n) => n.display_phone?.trim()).length,
+                  count: data?.channels.length,
                 },
                 { id: "access", title: "waOrg.access", icon: KeyRound },
                 { id: "groups", title: "care.nav", icon: UsersRound },
@@ -459,7 +474,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                   <div className="flex items-center justify-between gap-2 px-1">
                     <h3 className="text-sm font-bold">{t("waNumbers.existing")}</h3>
                     <span className="text-xs text-muted-foreground">
-                      {data?.channels.filter((c) => c.display_phone?.trim()).length ?? "—"}
+                      {data?.channels.length ?? "—"}
                     </span>
                   </div>
                   <label className="relative block">
@@ -505,7 +520,14 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                             type="button"
                             aria-pressed={channel?.id === c.id}
                             disabled={busy}
-                            onClick={() => chooseNumber(c.id)}
+                            onClick={() =>
+                              chooseNumber(
+                                c.id,
+                                c.display_phone?.trim() && c.status === "open"
+                                  ? "links"
+                                  : "connection",
+                              )
+                            }
                             className={`flex w-full min-w-0 flex-col gap-3 rounded-xl border p-3 text-left transition-colors ${channel?.id === c.id ? "border-primary/40 bg-accent" : "border-transparent hover:bg-accent/60"}`}
                           >
                             <span className="flex min-w-0 items-center gap-3">
@@ -518,10 +540,12 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                               </span>
                               <span className="min-w-0">
                                 <span className="block break-words text-sm font-bold">
-                                  {c.display_phone}
+                                  {c.display_phone || c.label || t("waOrg.incompleteItem")}
                                 </span>
                                 <span className="block break-words text-xs text-muted-foreground">
-                                  {c.label || t("waOrg.registeredNumber")}
+                                  {c.display_phone
+                                    ? c.label || t("waOrg.registeredNumber")
+                                    : t("waOrg.finishConnection")}
                                 </span>
                               </span>
                             </span>
@@ -536,7 +560,10 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                                       })
                                     : t("waOperation.available")}
                               </span>
-                              <ConnectionBadge status={reports[c.id] ?? c.status} />
+                              <ConnectionBadge
+                                status={reports[c.id] ?? c.status}
+                                pending={!c.display_phone?.trim()}
+                              />
                             </span>
                           </button>
                         </li>
@@ -935,58 +962,6 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                   </div>
                 )}
               </div>
-              {data?.channels.some((n) => !n.display_phone?.trim()) && (
-                <details className="rounded-2xl border border-dashed border-border bg-card p-4 tablet:p-5">
-                  <summary className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-semibold">
-                    <Clock3 className="size-5 shrink-0 text-muted-foreground" aria-hidden />
-                    {t("waOrg.incomplete")}
-                    <span className="ml-auto tabular-nums text-muted-foreground">
-                      {data.channels.filter((n) => !n.display_phone?.trim()).length}
-                    </span>
-                  </summary>
-                  <p className="mb-3 text-sm text-muted-foreground">{t("waOrg.incompleteHint")}</p>
-                  <ul className="divide-y divide-border">
-                    {data.channels
-                      .filter((n) => !n.display_phone?.trim())
-                      .map((n) => (
-                        <li key={n.id} className="flex flex-wrap items-center gap-3 py-3">
-                          <div className="min-w-0 flex-1 basis-52">
-                            <p className="text-sm font-semibold">
-                              {n.label || t("waOrg.incompleteItem")}
-                            </p>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              {t("waOrg.noPhoneYet")}
-                            </p>
-                            <p className="mt-1 break-words text-sm">
-                              {t("waOrg.preparedFor", { name: numberDestinations(n) })}
-                            </p>
-                          </div>
-                          {n.barbershop_id && (
-                            <button
-                              type="button"
-                              className="action-button action-confirm"
-                              disabled={busy}
-                              onClick={() =>
-                                openLink({ shop: n.barbershop_id!, staff: n.staff_id })
-                              }
-                            >
-                              <Link2 className="size-4" aria-hidden />
-                              {t("waOrg.chooseNumber")}
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            className="action-button"
-                            disabled={busy}
-                            onClick={() => chooseNumber(n.id, "connection")}
-                          >
-                            {t("waOrg.resume")}
-                          </button>
-                        </li>
-                      ))}
-                  </ul>
-                </details>
-              )}
             </>
           )}
         </>
@@ -995,30 +970,42 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
   );
 }
 
-function ConnectionBadge({ status }: { status: PlatformWaReport | null }) {
+function ConnectionBadge({
+  status,
+  pending = false,
+}: {
+  status: PlatformWaReport | null;
+  pending?: boolean;
+}) {
   const { t } = useI18n();
   const label: MessageKey =
-    status === "open"
-      ? "integr.wa.status.open"
-      : status === "disconnected"
-        ? "integr.wa.status.disconnected"
-        : status === "qr"
-          ? "plat.wa.waitingScan"
-          : status === "connecting"
-            ? "integr.wa.status.connecting"
-            : status === "error"
-              ? "waOperation.checkConnection"
-              : "shop.loading";
+    pending && status !== "error"
+      ? status === "open"
+        ? "waOrg.identifyingNumber"
+        : "waOrg.awaitingConnection"
+      : status === "open"
+        ? "integr.wa.status.open"
+        : status === "disconnected"
+          ? "integr.wa.status.disconnected"
+          : status === "qr"
+            ? "plat.wa.waitingScan"
+            : status === "connecting"
+              ? "integr.wa.status.connecting"
+              : status === "error"
+                ? "waOperation.checkConnection"
+                : "shop.loading";
   return (
     <StatusBadge
       tone={
-        status === "open"
-          ? "success"
-          : status === "error"
-            ? "warning"
-            : status === "disconnected"
-              ? "neutral"
-              : "pending"
+        pending
+          ? "pending"
+          : status === "open"
+            ? "success"
+            : status === "error"
+              ? "warning"
+              : status === "disconnected"
+                ? "neutral"
+                : "pending"
       }
       label={t(label)}
     />

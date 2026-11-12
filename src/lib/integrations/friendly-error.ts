@@ -13,6 +13,7 @@ function rawText(raw: unknown): string {
 }
 
 const PATTERNS: Array<{ test: RegExp; message: MessageKey }> = [
+  { test: /WA_PERSONAL_NUMBER/, message: "waOrg.personalNumber" },
   // Antes de "sessão": o token do Google venceu ou foi revogado — reconectar o Google, não entrar no app de novo.
   {
     test: /invalid_grant|has been expired or revoked|Invalid Credentials|Conexão Google expirada/i,

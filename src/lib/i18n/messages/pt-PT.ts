@@ -150,6 +150,10 @@ export const ptPT: Record<MessageKey, string> = {
   "waOrg.teamCount": "Profissionais: {count}",
   "waOrg.missingCount": "Sem número: {count}",
   "waOrg.noShops": "Nenhuma barbearia registada.",
+  "waOrg.personalNumber": "Este WhatsApp é pessoal e não pode ser usado como número da plataforma.",
+  "waOrg.awaitingConnection": "A aguardar ligação",
+  "waOrg.identifyingNumber": "Ligado · a identificar número",
+  "waOrg.finishConnection": "Continuar ligação",
   "waOrg.incomplete": "Registos de número por concluir",
   "waOrg.incompleteHint":
     "São tentativas que ainda não têm telefone identificado. Continue para ligar um novo número ou escolha um número já registado para o destino.",

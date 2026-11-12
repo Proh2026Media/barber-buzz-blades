@@ -150,6 +150,10 @@ export const enUS: Record<MessageKey, string> = {
   "waOrg.teamCount": "Professionals: {count}",
   "waOrg.missingCount": "Without a number: {count}",
   "waOrg.noShops": "No barbershops registered.",
+  "waOrg.personalNumber": "This WhatsApp is personal and cannot be used as a platform number.",
+  "waOrg.awaitingConnection": "Waiting to connect",
+  "waOrg.identifyingNumber": "Connected · identifying number",
+  "waOrg.finishConnection": "Continue connection",
   "waOrg.incomplete": "Unfinished number setups",
   "waOrg.incompleteHint":
     "These setups have no identified phone number yet. Continue to connect a new number or choose an existing one for the destination.",

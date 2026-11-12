@@ -47,3 +47,7 @@ test("mensagem do Google já traduzida não vira a mensagem do WhatsApp", () => 
   assert.doesNotMatch(twice, /WhatsApp/);
   assert.equal(integrationErrorKind(new Error(once)), "errors.integration.googleReconnect");
 });
+
+test("número pessoal orienta sem pedir novo pareamento", () => {
+  assert.match(friendlyIntegrationError("WA_PERSONAL_NUMBER", FALLBACK), /WhatsApp é pessoal/);
+});
