@@ -13,7 +13,7 @@ export async function whatsappLogin(
   },
   deps: {
     hash: (context: string) => Promise<string>;
-    send: (text: string, challengeId: string, codeHash: string) => Promise<void>;
+    send: (code: string, challengeId: string, codeHash: string) => Promise<void>;
   },
 ): Promise<{ status: number; body: Record<string, unknown> }> {
   const fail = (error_code: string, status = 400) => ({
@@ -46,11 +46,7 @@ export async function whatsappLogin(
     if (!data?.challenge_id) return fail("whatsapp_unavailable", 503);
     if (data.user_id) {
       try {
-        await deps.send(
-          `Barba & Cabelo\nSeu código de acesso: ${code}\nVálido por 10 minutos. Não compartilhe este código. Se não pediu, ignore.`,
-          data.challenge_id,
-          codeHash,
-        );
+        await deps.send(code, data.challenge_id, codeHash);
       } catch {
         // Mesma resposta para número conhecido/desconhecido, inclusive falha de envio.
         // Não repetir: o provedor pode ter aceitado antes do timeout.

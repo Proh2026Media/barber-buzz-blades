@@ -1,6 +1,24 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const enUS: Record<MessageKey, string> = {
+  "auth.sharedAccountTitle": "Already use B&C at another barbershop?",
+  "auth.sharedAccountHint":
+    "Use the same account and personal WhatsApp number. After signing in, you can join this barbershop. Your points and appointments stay separate for each shop.",
+  "auth.useExistingAccount": "Use my B&C account",
+  "auth.useExistingAccountHint":
+    "Sign in with your existing account to continue at this barbershop. If you forgot your password, recover it by email.",
+  "care.expired": "Phone confirmation expired. Continue in the same group.",
+  "care.resume": "Resume confirmation",
+  "care.phoneHint":
+    "Enter your WhatsApp number with area code. Verification takes place in the group.",
+  "care.joinHint": "Open the invitation, request to join with this number, then refresh this page.",
+  "care.openGroup": "Open my group",
+  "care.getInvite": "Get invitation",
+  "care.verifyHint":
+    "After joining the group, verify your number with the code. No code will be sent privately.",
+  "care.verifyCode": "Verify code",
+  "care.sendCode": "Receive code in group",
+  "care.phoneConfirmed": "Phone verified. You can use the group to sign in.",
   "care.save": "Save preferences",
   "care.title": "Your care on WhatsApp",
   "care.requested": "Request recorded",
@@ -4604,7 +4622,7 @@ export const enUS: Record<MessageKey, string> = {
   "fix2.whats.errUnavailable":
     "We couldn't send the WhatsApp message right now. Check the number or try again later.",
   "fix2.whats.errPhoneInUse":
-    "This WhatsApp number is already verified on another account. Use a different number.",
+    "This WhatsApp number is verified on another account. If it is yours, sign in to that account to use the same number at any barbershop.",
   "fix2.whats.errInvalidNumber": "Enter a valid WhatsApp number with area code.",
   "fix3.google.eventsTitle": "Upcoming Google Calendar events",
   "fix3.google.eventsLoading": "Loading events…",

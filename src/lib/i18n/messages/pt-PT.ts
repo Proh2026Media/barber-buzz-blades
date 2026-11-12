@@ -1,6 +1,24 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const ptPT: Record<MessageKey, string> = {
+  "auth.sharedAccountTitle": "Já usa o B&C noutra barbearia?",
+  "auth.sharedAccountHint":
+    "Use a mesma conta e o mesmo WhatsApp pessoal. Depois de entrar, poderá associar-se a esta barbearia. Os seus pontos e marcações ficam separados por loja.",
+  "auth.useExistingAccount": "Usar a minha conta B&C",
+  "auth.useExistingAccountHint":
+    "Entre com a sua conta existente para continuar nesta barbearia. Se não se lembra da palavra-passe, use a recuperação por e-mail.",
+  "care.expired": "A confirmação do telefone expirou. Continue no mesmo grupo.",
+  "care.resume": "Retomar confirmação",
+  "care.phoneHint":
+    "Indique o seu WhatsApp com indicativo. A confirmação será feita dentro do grupo.",
+  "care.joinHint": "Abra o convite, peça para entrar com este número e atualize esta página.",
+  "care.openGroup": "Abrir o meu grupo",
+  "care.getInvite": "Obter convite",
+  "care.verifyHint":
+    "Depois de entrar no grupo, confirme o número com o código. Não será enviado por mensagem privada.",
+  "care.verifyCode": "Confirmar código",
+  "care.sendCode": "Receber código no grupo",
+  "care.phoneConfirmed": "Número confirmado. Pode usar o grupo para entrar na sua conta.",
   "care.save": "Guardar preferências",
   "care.title": "Seu atendimento pelo WhatsApp",
   "care.requested": "Solicitação registrada",
@@ -4625,7 +4643,8 @@ export const ptPT: Record<MessageKey, string> = {
     "Foram pedidos demasiados códigos. Aguarde alguns minutos e tente novamente.",
   "fix2.whats.errUnavailable":
     "Não foi possível enviar o WhatsApp agora. Verifique o número ou tente mais tarde.",
-  "fix2.whats.errPhoneInUse": "Este WhatsApp já está confirmado noutra conta. Use outro número.",
+  "fix2.whats.errPhoneInUse":
+    "Este WhatsApp já foi confirmado noutra conta. Se é sua, entre nela para usar o mesmo número em qualquer barbearia.",
   "fix2.whats.errInvalidNumber": "Indique um número de WhatsApp válido com indicativo.",
   "fix3.google.eventsTitle": "Próximos eventos do Google Calendar",
   "fix3.google.eventsLoading": "A carregar eventos…",

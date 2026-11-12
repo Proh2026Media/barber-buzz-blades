@@ -1,0 +1,1567 @@
+diff --git a/Dockerfile.bc-groups b/Dockerfile.bc-groups
+new file mode 100644
+index 00000000..dcb6d14e
+--- /dev/null
++++ b/Dockerfile.bc-groups
+@@ -0,0 +1,26 @@
++# Extensão local sobre a imagem exata relatada pela TI. Nenhuma tag mutável.
++FROM evoapicloud/evolution-api@sha256:1bd8afc4a6cf48822e6cf02469aeae7bd35a12a6b616eacd1291926307f4d339 AS builder
++WORKDIR /evolution
++ARG DATABASE_PROVIDER=postgresql
++COPY package.json package-lock.json tsconfig.json tsup.config.ts ./
++COPY src ./src
++COPY prisma ./prisma
++RUN case "$DATABASE_PROVIDER" in postgresql|mysql) ;; *) exit 1 ;; esac && \
++    DATABASE_CONNECTION_URI="$DATABASE_PROVIDER://build:build@127.0.0.1:1/build" \
++    npx --no-install prisma generate --schema "prisma/$DATABASE_PROVIDER-schema.prisma" && \
++    npm run build
++
++FROM evoapicloud/evolution-api@sha256:1bd8afc4a6cf48822e6cf02469aeae7bd35a12a6b616eacd1291926307f4d339
++WORKDIR /evolution
++ARG BC_PATCH_SHA256=nao-informado
++LABEL org.opencontainers.image.version="2.3.7-bc.groups.2" \
++      org.bc.base-revision="cd800f2976e1e5b682fbf86a01ee4d85ae61f370" \
++      org.bc.patch-sha256="$BC_PATCH_SHA256"
++COPY --from=builder /evolution/dist ./dist
++COPY --from=builder /evolution/node_modules/.prisma ./node_modules/.prisma
++COPY --from=builder /evolution/prisma ./prisma
++COPY --from=builder /evolution/package.json ./package.json
++COPY --from=builder /evolution/package-lock.json ./package-lock.json
++ENV BC_GROUPS_EXTENSION_ENABLED=false
++# Migrations exigem etapa própria autorizada; não imprimir URL de banco nem migrar ao reiniciar.
++ENTRYPOINT ["node", "dist/main.js"]
+diff --git a/package-lock.json b/package-lock.json
+index c45e8fef..3b6acd4b 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -1,12 +1,12 @@
+ {
+   "name": "evolution-api",
+-  "version": "2.3.7",
++  "version": "2.3.7-bc.groups.2",
+   "lockfileVersion": 3,
+   "requires": true,
+   "packages": {
+     "": {
+       "name": "evolution-api",
+-      "version": "2.3.7",
++      "version": "2.3.7-bc.groups.2",
+       "license": "Apache-2.0",
+       "dependencies": {
+         "@adiwajshing/keyed-db": "^0.2.4",
+diff --git a/package.json b/package.json
+index 56e32fcc..4bb3c904 100644
+--- a/package.json
++++ b/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "evolution-api",
+-  "version": "2.3.7",
++  "version": "2.3.7-bc.groups.2",
+   "description": "Rest api for communication with WhatsApp",
+   "main": "./dist/main.js",
+   "type": "commonjs",
+@@ -20,7 +20,9 @@
+     "db:studio": "node runWithProvider.js \"npx prisma studio --schema ./prisma/DATABASE_PROVIDER-schema.prisma\"",
+     "db:migrate:dev": "node runWithProvider.js \"rm -rf ./prisma/migrations && cp -r ./prisma/DATABASE_PROVIDER-migrations ./prisma/migrations && npx prisma migrate dev --schema ./prisma/DATABASE_PROVIDER-schema.prisma && cp -r ./prisma/migrations/* ./prisma/DATABASE_PROVIDER-migrations\"",
+     "db:migrate:dev:win": "node runWithProvider.js \"xcopy /E /I prisma\\DATABASE_PROVIDER-migrations prisma\\migrations && npx prisma migrate dev --schema prisma\\DATABASE_PROVIDER-schema.prisma\"",
+-    "prepare": "husky"
++    "prepare": "husky",
++    "test:bc-groups": "node --import tsx --test test/bc-groups.test.ts test/bc-group-routes.test.ts test/bc-group-webhook.test.ts",
++    "test:bc-groups:db": "node --import tsx --test test/bc-group-database.test.ts"
+   },
+   "repository": {
+     "type": "git",
+diff --git a/prisma/mysql-migrations/20261111190000_bc_group_operations/migration.sql b/prisma/mysql-migrations/20261111190000_bc_group_operations/migration.sql
+new file mode 100644
+index 00000000..d8aba37d
+--- /dev/null
++++ b/prisma/mysql-migrations/20261111190000_bc_group_operations/migration.sql
+@@ -0,0 +1,6 @@
++CREATE TABLE `BcGroupOperation` (
++ `id` VARCHAR(191) NOT NULL,`instanceId` VARCHAR(191) NOT NULL,`operationKey` VARCHAR(36) NOT NULL,
++ `requestHash` VARCHAR(64) NOT NULL,`state` VARCHAR(16) NOT NULL,`groupJid` VARCHAR(128),
++ `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),`updatedAt` DATETIME(3) NOT NULL,
++ PRIMARY KEY (`id`), UNIQUE INDEX `BcGroupOperation_instanceId_operationKey_key` (`instanceId`,`operationKey`)
++) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+diff --git a/prisma/mysql-migrations/20261111220000_bc_group_codes/migration.sql b/prisma/mysql-migrations/20261111220000_bc_group_codes/migration.sql
+new file mode 100644
+index 00000000..d009f0b2
+--- /dev/null
++++ b/prisma/mysql-migrations/20261111220000_bc_group_codes/migration.sql
+@@ -0,0 +1,2 @@
++ALTER TABLE `BcGroupOperation` ADD COLUMN `messageId` VARCHAR(200);
++CREATE TABLE `BcGroupLease` (`instanceId` VARCHAR(191) NOT NULL PRIMARY KEY, `token` VARCHAR(36) NOT NULL, `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3));
+diff --git a/prisma/mysql-schema.prisma b/prisma/mysql-schema.prisma
+index 71b5a743..b8cd25bb 100644
+--- a/prisma/mysql-schema.prisma
++++ b/prisma/mysql-schema.prisma
+@@ -755,3 +755,24 @@ model EvoaiSetting {
+   Instance        Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+   instanceId      String    @unique
+ }
++
++// Registro durável de criação B&C. Sem cascade: excluir instância não apaga evidência.
++model BcGroupOperation {
++  messageId String? @db.VarChar(200)
++  id           String   @id @default(cuid())
++  instanceId   String   @db.VarChar(191)
++  operationKey String   @db.VarChar(36)
++  requestHash  String   @db.VarChar(64)
++  state        String   @db.VarChar(16)
++  groupJid     String?  @db.VarChar(128)
++  createdAt    DateTime @default(now())
++  updatedAt    DateTime @updatedAt
++
++  @@unique([instanceId, operationKey])
++}
++
++model BcGroupLease {
++ instanceId String @id @db.VarChar(191)
++ token String @db.VarChar(36)
++ createdAt DateTime @default(now())
++}
+diff --git a/prisma/postgresql-migrations/20261111190000_bc_group_operations/migration.sql b/prisma/postgresql-migrations/20261111190000_bc_group_operations/migration.sql
+new file mode 100644
+index 00000000..b9c2e038
+--- /dev/null
++++ b/prisma/postgresql-migrations/20261111190000_bc_group_operations/migration.sql
+@@ -0,0 +1,6 @@
++CREATE TABLE "BcGroupOperation" (
++ "id" TEXT NOT NULL PRIMARY KEY,"instanceId" VARCHAR(191) NOT NULL,"operationKey" VARCHAR(36) NOT NULL,
++ "requestHash" VARCHAR(64) NOT NULL,"state" VARCHAR(16) NOT NULL,"groupJid" VARCHAR(128),
++ "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,"updatedAt" TIMESTAMP(3) NOT NULL
++);
++CREATE UNIQUE INDEX "BcGroupOperation_instanceId_operationKey_key" ON "BcGroupOperation"("instanceId","operationKey");
+diff --git a/prisma/postgresql-migrations/20261111220000_bc_group_codes/migration.sql b/prisma/postgresql-migrations/20261111220000_bc_group_codes/migration.sql
+new file mode 100644
+index 00000000..19072653
+--- /dev/null
++++ b/prisma/postgresql-migrations/20261111220000_bc_group_codes/migration.sql
+@@ -0,0 +1,2 @@
++ALTER TABLE "BcGroupOperation" ADD COLUMN "messageId" VARCHAR(200);
++CREATE TABLE "BcGroupLease" ("instanceId" VARCHAR(191) PRIMARY KEY, "token" VARCHAR(36) NOT NULL, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP);
+diff --git a/prisma/postgresql-schema.prisma b/prisma/postgresql-schema.prisma
+index 6b98f88d..f8e2b8d0 100644
+--- a/prisma/postgresql-schema.prisma
++++ b/prisma/postgresql-schema.prisma
+@@ -761,3 +761,24 @@ model EvoaiSetting {
+   Instance        Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+   instanceId      String    @unique
+ }
++
++// Registro durável de criação B&C. Sem cascade: excluir instância não apaga evidência.
++model BcGroupOperation {
++  messageId String? @db.VarChar(200)
++  id           String   @id @default(cuid())
++  instanceId   String   @db.VarChar(191)
++  operationKey String   @db.VarChar(36)
++  requestHash  String   @db.VarChar(64)
++  state        String   @db.VarChar(16)
++  groupJid     String?  @db.VarChar(128)
++  createdAt    DateTime @default(now())
++  updatedAt    DateTime @updatedAt
++
++  @@unique([instanceId, operationKey])
++}
++
++model BcGroupLease {
++ instanceId String @id @db.VarChar(191)
++ token String @db.VarChar(36)
++ createdAt DateTime @default(now())
++}
+diff --git a/src/api/controllers/group.controller.ts b/src/api/controllers/group.controller.ts
+index ebe7c036..8618e94c 100644
+--- a/src/api/controllers/group.controller.ts
++++ b/src/api/controllers/group.controller.ts
+@@ -18,6 +18,13 @@ import { WAMonitoringService } from '@api/services/monitor.service';
+ export class GroupController {
+   constructor(private readonly waMonitor: WAMonitoringService) {}
+ 
++  public async bcCommand(instanceName: string, command: string, data: unknown) {
++    const service = this.waMonitor.waInstances[instanceName];
++    if (typeof service?.bcGroupCommand !== 'function')
++      throw { status: 503, message: 'Integração de grupos indisponível' };
++    return service.bcGroupCommand(command, data);
++  }
++
+   public async createGroup(instance: InstanceDto, create: CreateGroupDto) {
+     return await this.waMonitor.waInstances[instance.instanceName].createGroup(create);
+   }
+diff --git a/src/api/integrations/channel/whatsapp/bc-groups/core.ts b/src/api/integrations/channel/whatsapp/bc-groups/core.ts
+new file mode 100644
+index 00000000..ad77e533
+--- /dev/null
++++ b/src/api/integrations/channel/whatsapp/bc-groups/core.ts
+@@ -0,0 +1,370 @@
++import { createHash, randomUUID } from 'node:crypto';
++
++import type { GroupMetadata, WASocket } from 'baileys';
++
++export const BC_GROUP_PROTOCOL = 'bc-groups-v2';
++export class GroupExtensionError extends Error {
++  constructor(
++    public status: number,
++    message: string,
++  ) {
++    super(message);
++  }
++}
++const fail = (status: number, message: string): never => {
++  throw new GroupExtensionError(status, message);
++};
++const groupId = (value: unknown): string =>
++  typeof value === 'string' && value.length <= 128 && /^[0-9-]+@g\.us$/.test(value)
++    ? value
++    : fail(400, 'Identificador de grupo inválido');
++const operationId = (value: unknown): string =>
++  typeof value === 'string' && /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(value)
++    ? value.toLowerCase()
++    : fail(400, 'Identificador de operação inválido');
++const pn = (value: unknown): string | null =>
++  typeof value === 'string' && /^[1-9][0-9]{7,14}@s\.whatsapp\.net$/.test(value) ? value : null;
++const identity = (value: unknown): string | null =>
++  typeof value === 'string' && /^[0-9]+(?::[0-9]+)?@(s\.whatsapp\.net|lid)$/.test(value)
++    ? value.replace(/:[0-9]+@/, '@')
++    : null;
++export function extensionEnabled(instanceName: string, env: NodeJS.ProcessEnv = process.env) {
++  return (
++    env.BC_GROUPS_EXTENSION_ENABLED === 'true' &&
++    (env.BC_GROUPS_INSTANCES ?? '')
++      .split(',')
++      .map((s) => s.trim())
++      .includes(instanceName)
++  );
++}
++export function configuredPlatformJids(instanceName: string, env: NodeJS.ProcessEnv = process.env): string[] {
++  try {
++    const values = JSON.parse(env.BC_GROUPS_PLATFORM_JIDS ?? '{}')[instanceName];
++    return Array.isArray(values) && values.length <= 5 && values.every((v) => pn(v))
++      ? ([...new Set(values)] as string[])
++      : [];
++  } catch {
++    return [];
++  }
++}
++export function participantIdentity(value: unknown) {
++  const p =
++    typeof value === 'string' ? { id: value } : (value as { id?: unknown; phoneNumber?: unknown; lid?: unknown });
++  const id = identity(p?.id);
++  const phone = pn(id) ?? pn(p?.phoneNumber);
++  const conflict =
++    Boolean(p?.phoneNumber && (!pn(p.phoneNumber) || (pn(id) && pn(id) !== pn(p.phoneNumber)))) ||
++    Boolean(id?.endsWith('@lid') && p?.lid && id !== p.lid);
++  return {
++    jid: id,
++    conflict,
++    phoneNumber: conflict ? null : phone,
++    lid: typeof p?.lid === 'string' && /^[0-9]+@lid$/.test(p.lid) ? p.lid : id?.endsWith('@lid') ? id : null,
++  };
++}
++export function groupView(group: GroupMetadata) {
++  return {
++    ...group,
++    memberAddMode: typeof group.memberAddMode === 'boolean' ? group.memberAddMode : null,
++    joinApprovalMode: typeof group.joinApprovalMode === 'boolean' ? group.joinApprovalMode : null,
++    addressingMode: group.addressingMode ?? null,
++  };
++}
++export function eventEnvelope(instanceName: string, event: string) {
++  return extensionEnabled(instanceName) && /^(groups\.|group[.-]|message-receipt\.)/.test(event)
++    ? { event_id: randomUUID(), contract_version: BC_GROUP_PROTOCOL }
++    : {};
++}
++export type Operation = {
++  instanceId: string;
++  operationKey: string;
++  requestHash: string;
++  state: string;
++  groupJid: string | null;
++  messageId?: string | null;
++};
++export type OperationStore = {
++  lock: (instanceId: string, token: string) => Promise<boolean>;
++  unlock: (instanceId: string, token: string) => Promise<void>;
++  accepted: (instanceId: string, key: string, messageId: string) => Promise<void>;
++  find: (instanceId: string, key: string) => Promise<Operation | null>;
++  claim: (value: Operation) => Promise<boolean>;
++  created: (instanceId: string, key: string, jid: string) => Promise<void>;
++};
++type Socket = Pick<
++  WASocket,
++  | 'sendMessage'
++  | 'groupSettingUpdate'
++  | 'groupParticipantsUpdate'
++  | 'groupInviteCode'
++  | 'groupRevokeInvite'
++  | 'groupMetadata'
++  | 'groupCreate'
++  | 'groupMemberAddMode'
++  | 'groupJoinApprovalMode'
++  | 'groupRequestParticipantsList'
++  | 'groupRequestParticipantsUpdate'
++>;
++export type Dependencies = {
++  instanceId: string;
++  instanceName: string;
++  socket: Socket;
++  self: () => string[];
++  ready: () => boolean;
++  store: OperationStore;
++  platformJids: string[];
++};
++function strictBody(input: unknown, keys: string[]): Record<string, unknown> {
++  if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).some((k) => !keys.includes(k)))
++    return fail(400, 'Campos inválidos');
++  return input as Record<string, unknown>;
++}
++async function asAdmin(d: Dependencies, jid: string) {
++  const group = await d.socket.groupMetadata(jid);
++  if (group?.id !== jid) return fail(409, 'Grupo não confirmado');
++  const self = d.self().map(identity).filter(Boolean);
++  const matches = group.participants.filter((p) => {
++    const resolved = participantIdentity(p);
++    return (
++      !resolved.conflict &&
++      (self.includes(resolved.jid) || (resolved.phoneNumber && self.includes(resolved.phoneNumber)))
++    );
++  });
++  if (matches.length !== 1 || !['admin', 'superadmin'].includes(matches[0].admin))
++    return fail(403, 'Número da Plataforma sem administração confirmada');
++  return group;
++}
++async function executeUnlocked(d: Dependencies, command: string, input: unknown) {
++  if (!extensionEnabled(d.instanceName)) return fail(503, 'Extensão de grupos desativada');
++  if (!d.ready() || !d.self().some((jid) => d.platformJids.includes(identity(jid))))
++    return fail(503, 'Número da Plataforma indisponível ou não autorizado');
++  if (command === 'capabilities')
++    return {
++      contract: BC_GROUP_PROTOCOL,
++      memberAddControl: true,
++      admissionControl: true,
++      persistentOperations: true,
++      receiptEvents: true,
++      durableWebhook: false,
++      protectedCodes: true,
++      serializedCommands: true,
++    };
++  if (command === 'createStatus') {
++    const p = strictBody(input, ['operationId']);
++    const key = operationId(p.operationId);
++    return (await d.store.find(d.instanceId, key)) ?? fail(404, 'Operação não encontrada');
++  }
++  if (command === 'create') {
++    const p = strictBody(input, ['operationId', 'subject', 'participants']);
++    const key = operationId(p.operationId);
++    if (typeof p.subject !== 'string' || p.subject.trim().length < 1 || p.subject.length > 100)
++      return fail(400, 'Nome de grupo inválido');
++    if (
++      !Array.isArray(p.participants) ||
++      p.participants.length > 5 ||
++      !p.participants.every((jid) => pn(jid) && d.platformJids.includes(jid)) ||
++      new Set(p.participants).size !== p.participants.length
++    )
++      return fail(400, 'A criação aceita somente números autorizados da Plataforma');
++    const participants = [...p.participants].sort() as string[];
++    const hash = createHash('sha256')
++      .update(JSON.stringify([p.subject, participants]))
++      .digest('hex');
++    const pending: Operation = {
++      instanceId: d.instanceId,
++      operationKey: key,
++      requestHash: hash,
++      state: 'unknown',
++      groupJid: null,
++    };
++    const won = await d.store.claim(pending);
++    if (!won) {
++      const prior = await d.store.find(d.instanceId, key);
++      if (!prior || prior.requestHash !== hash) return fail(409, 'Operação já utilizada com outros parâmetros');
++      return prior;
++    }
++    // Uma queda em qualquer ponto posterior mantém desconhecido. Nunca recuperar a licença para criar.
++    try {
++      if (!d.ready()) return pending;
++      const result = await d.socket.groupCreate(p.subject, participants);
++      const jid = groupId(result?.id);
++      await d.store.created(d.instanceId, key, jid);
++      return { ...pending, state: 'created', groupJid: jid };
++    } catch {
++      return pending;
++    }
++  }
++  if (command === 'sendCode') {
++    const p = strictBody(input, [
++      'operationId',
++      'groupJid',
++      'customerJid',
++      'platformJids',
++      'purpose',
++      'expiresAt',
++      'code',
++    ]);
++    const key = operationId(p.operationId),
++      jid = groupId(p.groupJid);
++    const expiry = typeof p.expiresAt === 'string' ? Date.parse(p.expiresAt) : NaN;
++    if (
++      !pn(p.customerJid) ||
++      !Array.isArray(p.platformJids) ||
++      !p.platformJids.length ||
++      !p.platformJids.every((v) => pn(v) && d.platformJids.includes(v)) ||
++      new Set(p.platformJids).size !== p.platformJids.length ||
++      p.platformJids.includes(p.customerJid) ||
++      !['login', 'verify_phone'].includes(p.purpose as string) ||
++      typeof p.code !== 'string' ||
++      !/^\d{6}$/.test(p.code) ||
++      !Number.isFinite(expiry) ||
++      expiry <= Date.now() ||
++      expiry > Date.now() + 600000
++    )
++      return fail(400, 'Pedido de código inválido');
++    const hash = createHash('sha256')
++      .update(JSON.stringify([jid, p.customerJid, [...p.platformJids].sort(), p.purpose, p.expiresAt]))
++      .digest('hex');
++    const prior = await d.store.find(d.instanceId, key);
++    if (prior) {
++      if (prior.requestHash !== hash) return fail(409, 'Operação incompatível');
++      return prior;
++    }
++    const group = await asAdmin(d, jid);
++    const expected = new Set([p.customerJid, ...p.platformJids]);
++    const seen = new Set<string>();
++    if (group.restrict !== true || group.memberAddMode !== false || group.joinApprovalMode !== true)
++      return fail(409, 'Controles não confirmados');
++    for (const member of group.participants) {
++      const who = participantIdentity(member);
++      if (
++        who.conflict ||
++        !who.phoneNumber ||
++        !expected.has(who.phoneNumber) ||
++        seen.has(who.phoneNumber) ||
++        (member.admin && (!['admin', 'superadmin'].includes(member.admin) || who.phoneNumber === p.customerJid))
++      )
++        return fail(409, 'Composição divergente');
++      seen.add(who.phoneNumber);
++    }
++    if (seen.size !== expected.size || !d.self().some((v) => (p.platformJids as string[]).includes(identity(v))))
++      return fail(409, 'Composição incompleta');
++    const pending: Operation = {
++      instanceId: d.instanceId,
++      operationKey: key,
++      requestHash: hash,
++      state: 'code_unknown',
++      groupJid: jid,
++    };
++    if (!(await d.store.claim(pending))) return (await d.store.find(d.instanceId, key)) ?? pending;
++    try {
++      if (!d.ready() || Date.now() >= expiry) return pending;
++      const text = `Barba & Cabelo\n${p.purpose === 'login' ? 'Seu código de acesso' : 'Código para confirmar seu WhatsApp'}: ${p.code}\nVálido até ${new Date(expiry).toISOString()}. Não compartilhe este código.`;
++      const message = await d.socket.sendMessage(jid, { text });
++      const id = message?.key?.id;
++      if (typeof id !== 'string' || !id || id.length > 200) return pending;
++      await d.store.accepted(d.instanceId, key, id);
++      return { ...pending, state: 'code_accepted', messageId: id };
++    } catch {
++      return pending;
++    }
++  }
++  if (['setting', 'member', 'invite', 'revoke'].includes(command)) {
++    const p = strictBody(input, command === 'member' ? ['groupJid', 'jid', 'action'] : ['groupJid']);
++    const jid = groupId(p.groupJid);
++    await asAdmin(d, jid);
++    if (command === 'setting') {
++      await d.socket.groupSettingUpdate(jid, 'locked');
++      return groupView(await asAdmin(d, jid));
++    }
++    if (command === 'invite')
++      return { inviteUrl: 'https://chat.whatsapp.com/' + (await d.socket.groupInviteCode(jid)) };
++    if (command === 'revoke') {
++      await d.socket.groupRevokeInvite(jid);
++      return { revoked: true };
++    }
++    if (
++      !['add', 'remove'].includes(p.action as string) ||
++      !identity(p.jid) ||
++      (p.action === 'add' && (!pn(p.jid) || !d.platformJids.includes(p.jid as string)))
++    )
++      return fail(400, 'Participante não autorizado');
++    return d.socket.groupParticipantsUpdate(jid, [p.jid as string], p.action as 'add' | 'remove');
++  }
++  const keys =
++    command === 'requests' || command === 'inspect'
++      ? ['groupJid']
++      : command === 'decide'
++        ? ['groupJid', 'participants', 'action']
++        : ['groupJid', 'mode'];
++  const p = strictBody(input, keys);
++  const jid = groupId(p.groupJid);
++  if (!['inspect', 'requests', 'decide', 'memberMode', 'approvalMode'].includes(command))
++    return fail(400, 'Operação inválida');
++  const group = await asAdmin(d, jid);
++  if (command === 'inspect') return groupView(group);
++  if (command === 'requests') return d.socket.groupRequestParticipantsList(jid);
++  if (command === 'decide') {
++    if (
++      !['approve', 'reject'].includes(p.action as string) ||
++      !Array.isArray(p.participants) ||
++      p.participants.length < 1 ||
++      p.participants.length > 50 ||
++      !p.participants.every((v) => typeof v === 'string' && identity(v) === v) ||
++      new Set(p.participants).size !== p.participants.length
++    )
++      return fail(400, 'Pedido de entrada inválido');
++    const pending = await d.socket.groupRequestParticipantsList(jid);
++    if (!p.participants.every((jid) => pending.some((item) => item.jid === jid)))
++      return fail(409, 'Pedido de entrada não está mais pendente');
++    // A decisão de consentimento pertence ao B&C; aqui não há aprovação por mera posse de convite.
++    if (
++      p.action === 'approve' &&
++      (group.memberAddMode !== false || group.joinApprovalMode !== true || group.restrict !== true)
++    )
++      return fail(409, 'Controles de entrada não confirmados');
++    if (!d.ready()) return fail(503, 'Conexão indisponível');
++    return d.socket.groupRequestParticipantsUpdate(jid, p.participants as string[], p.action as 'approve' | 'reject');
++  }
++  if (command === 'memberMode') {
++    if (!['admin_add', 'all_member_add'].includes(p.mode as string)) return fail(400, 'Modo de inclusão inválido');
++    if (!d.ready()) return fail(503, 'Conexão indisponível');
++    await d.socket.groupMemberAddMode(jid, p.mode as 'admin_add' | 'all_member_add');
++  } else {
++    if (!['on', 'off'].includes(p.mode as string)) return fail(400, 'Modo de aprovação inválido');
++    if (!d.ready()) return fail(503, 'Conexão indisponível');
++    await d.socket.groupJoinApprovalMode(jid, p.mode as 'on' | 'off');
++  }
++  const observed = await asAdmin(d, jid);
++  const verified =
++    command === 'memberMode'
++      ? observed.memberAddMode === (p.mode === 'all_member_add')
++      : observed.joinApprovalMode === (p.mode === 'on');
++  if (!verified) return fail(409, 'Alteração sem confirmação; conferir antes de continuar');
++  return groupView(observed);
++}
++
++/** A trava persistente não expira sozinha: processo perdido exige revisão antes de liberar. */
++export async function executeGroupCommand(d: Dependencies, command: string, input: unknown) {
++  if (['capabilities', 'createStatus'].includes(command)) return executeUnlocked(d, command, input);
++  const token = randomUUID();
++  if (!(await d.store.lock(d.instanceId, token))) return fail(409, 'Operação em andamento; conferir antes de repetir');
++  try {
++    return await executeUnlocked(d, command, input);
++  } finally {
++    await d.store.unlock(d.instanceId, token);
++  }
++}
++
++/** Não armazenar nem reenviar OTP para webhooks, chats ou integrações secundárias. */
++export function isGroupCodeMessage(message: { key?: { remoteJid?: string }; message?: unknown }) {
++  if (!/@g\.us$/.test(message?.key?.remoteJid ?? '')) return false;
++  let remaining = 1000;
++  const contains = (value: unknown, depth = 0): boolean => {
++    if (--remaining < 0 || depth > 10) return false;
++    if (typeof value === 'string')
++      return /Barba & Cabelo\n(?:Seu código de acesso|Código para confirmar seu WhatsApp): \d{6}\n/.test(value);
++    return Boolean(value && typeof value === 'object' && Object.values(value).some((v) => contains(v, depth + 1)));
++  };
++  return contains(message.message);
++}
+diff --git a/src/api/integrations/channel/whatsapp/bc-groups/store.ts b/src/api/integrations/channel/whatsapp/bc-groups/store.ts
+new file mode 100644
+index 00000000..414e7c05
+--- /dev/null
++++ b/src/api/integrations/channel/whatsapp/bc-groups/store.ts
+@@ -0,0 +1,44 @@
++import type { PrismaClient } from '@prisma/client';
++
++import type { OperationStore } from './core';
++
++/** Restrição única no banco: nenhuma posse em memória nem retry após início incerto. */
++export function operationStore(db: PrismaClient): OperationStore {
++  return {
++    lock: async (instanceId, token) => {
++      try {
++        await db.bcGroupLease.create({ data: { instanceId, token } });
++        return true;
++      } catch (error) {
++        if (error?.code === 'P2002') return false;
++        throw error;
++      }
++    },
++    unlock: async (instanceId, token) => {
++      await db.bcGroupLease.deleteMany({ where: { instanceId, token } });
++    },
++    accepted: async (instanceId, operationKey, messageId) => {
++      await db.bcGroupOperation.update({
++        where: { instanceId_operationKey: { instanceId, operationKey } },
++        data: { state: 'code_accepted', messageId },
++      });
++    },
++    find: (instanceId, operationKey) =>
++      db.bcGroupOperation.findUnique({ where: { instanceId_operationKey: { instanceId, operationKey } } }),
++    claim: async (data) => {
++      try {
++        await db.bcGroupOperation.create({ data });
++        return true;
++      } catch (error) {
++        if (error?.code === 'P2002') return false;
++        throw error;
++      }
++    },
++    created: async (instanceId, operationKey, groupJid) => {
++      await db.bcGroupOperation.update({
++        where: { instanceId_operationKey: { instanceId, operationKey } },
++        data: { state: 'created', groupJid },
++      });
++    },
++  };
++}
+diff --git a/src/api/integrations/channel/whatsapp/whatsapp.baileys.service.ts b/src/api/integrations/channel/whatsapp/whatsapp.baileys.service.ts
+index 60e857fc..f8fd5e49 100644
+--- a/src/api/integrations/channel/whatsapp/whatsapp.baileys.service.ts
++++ b/src/api/integrations/channel/whatsapp/whatsapp.baileys.service.ts
+@@ -153,6 +153,14 @@ import { PassThrough, Readable } from 'stream';
+ import { v4 } from 'uuid';
+ 
+ import { BaileysMessageProcessor } from './baileysMessage.processor';
++import {
++  configuredPlatformJids,
++  executeGroupCommand,
++  extensionEnabled,
++  isGroupCodeMessage,
++  participantIdentity,
++} from './bc-groups/core';
++import { operationStore } from './bc-groups/store';
+ import { useVoiceCallsBaileys } from './voiceCalls/useVoiceCallsBaileys';
+ 
+ export interface ExtendedIMessageKey extends proto.IMessageKey {
+@@ -940,6 +948,7 @@ export class BaileysStartupService extends ChannelStartupService {
+       syncType?: proto.HistorySync.HistorySyncType;
+     }) => {
+       try {
++        if (extensionEnabled(this.instance.name)) messages = messages.filter((message) => !isGroupCodeMessage(message));
+         if (syncType === proto.HistorySync.HistorySyncType.ON_DEMAND) {
+           console.log('received on-demand history sync, messages=', messages);
+         }
+@@ -1085,6 +1094,7 @@ export class BaileysStartupService extends ChannelStartupService {
+     ) => {
+       try {
+         for (const received of messages) {
++          if (extensionEnabled(this.instance.name) && isGroupCodeMessage(received)) continue;
+           if (
+             received?.messageStubParameters?.some?.((param) =>
+               [
+@@ -1750,6 +1760,14 @@ export class BaileysStartupService extends ChannelStartupService {
+       participants: string[];
+       action: ParticipantAction;
+     }) => {
++      if (extensionEnabled(this.instance.name)) {
++        this.sendDataWebhook(Events.GROUP_PARTICIPANTS_UPDATE, {
++          ...participantsUpdate,
++          participantsData: participantsUpdate.participants.map(participantIdentity),
++        });
++        this.updateGroupMetadataCache(participantsUpdate.id);
++        return;
++      }
+       // ENHANCEMENT: Adds participantsData field while maintaining backward compatibility
+       // MAINTAINS: participants: string[] (original JID strings)
+       // ADDS: participantsData: { jid: string, phoneNumber: string, name?: string, imgUrl?: string }[]
+@@ -1926,6 +1944,12 @@ export class BaileysStartupService extends ChannelStartupService {
+ 
+             if (events['message-receipt.update']) {
+               const payload = events['message-receipt.update'] as MessageUserReceiptUpdate[];
++              if (extensionEnabled(this.instance.name) && !settings?.groupsIgnore) {
++                const groups = payload.filter(
++                  (e) => typeof e.key.remoteJid === 'string' && e.key.remoteJid.endsWith('@g.us'),
++                );
++                if (groups.length) this.sendDataWebhook(Events.MESSAGE_RECEIPT_UPDATE, groups);
++              }
+               const remotesJidMap: Record<string, number> = {};
+ 
+               for (const event of payload) {
+@@ -1952,6 +1976,9 @@ export class BaileysStartupService extends ChannelStartupService {
+             }
+ 
+             if (!settings?.groupsIgnore) {
++              if (extensionEnabled(this.instance.name) && events['group.join-request']) {
++                this.sendDataWebhook(Events.GROUP_JOIN_REQUEST, events['group.join-request']);
++              }
+               if (events['groups.upsert']) {
+                 const payload = events['groups.upsert'];
+                 this.groupHandler['groups.upsert'](payload);
+@@ -4326,6 +4353,22 @@ export class BaileysStartupService extends ChannelStartupService {
+     return await this.findGroup({ groupJid }, 'inner');
+   };
+ 
++  public async bcGroupCommand(command: string, data: unknown) {
++    return executeGroupCommand(
++      {
++        instanceId: this.instanceId,
++        instanceName: this.instance.name,
++        socket: this.client,
++        self: () => [this.client?.user?.id, this.client?.user?.lid].filter(Boolean),
++        ready: () => this.connectionStatus?.state === 'open',
++        store: operationStore(this.prismaRepository),
++        platformJids: configuredPlatformJids(this.instance.name),
++      },
++      command,
++      data,
++    );
++  }
++
+   public async createGroup(create: CreateGroupDto) {
+     try {
+       const participants = (await this.whatsappNumber({ numbers: create.participants }))
+@@ -4432,6 +4475,13 @@ export class BaileysStartupService extends ChannelStartupService {
+         descId: group.descId,
+         restrict: group.restrict,
+         announce: group.announce,
++        ...(extensionEnabled(this.instance.name)
++          ? {
++              memberAddMode: typeof group.memberAddMode === 'boolean' ? group.memberAddMode : null,
++              joinApprovalMode: typeof group.joinApprovalMode === 'boolean' ? group.joinApprovalMode : null,
++              addressingMode: group.addressingMode ?? null,
++            }
++          : {}),
+         participants: group.participants,
+         isCommunity: group.isCommunity,
+         isCommunityAnnounce: group.isCommunityAnnounce,
+@@ -4465,6 +4515,13 @@ export class BaileysStartupService extends ChannelStartupService {
+         descId: group.descId,
+         restrict: group.restrict,
+         announce: group.announce,
++        ...(extensionEnabled(this.instance.name)
++          ? {
++              memberAddMode: typeof group.memberAddMode === 'boolean' ? group.memberAddMode : null,
++              joinApprovalMode: typeof group.joinApprovalMode === 'boolean' ? group.joinApprovalMode : null,
++              addressingMode: group.addressingMode ?? null,
++            }
++          : {}),
+         isCommunity: group.isCommunity,
+         isCommunityAnnounce: group.isCommunityAnnounce,
+         linkedParent: group.linkedParent,
+diff --git a/src/api/integrations/event/event.controller.ts b/src/api/integrations/event/event.controller.ts
+index 39b52184..441cb609 100644
+--- a/src/api/integrations/event/event.controller.ts
++++ b/src/api/integrations/event/event.controller.ts
+@@ -153,8 +153,11 @@ export class EventController {
+     'CHATS_UPSERT',
+     'CHATS_UPDATE',
+     'CHATS_DELETE',
++    'GROUP_JOIN_REQUEST',
++    'MESSAGE_RECEIPT_UPDATE',
+     'GROUPS_UPSERT',
+     'GROUP_UPDATE',
++    'GROUPS_UPDATE',
+     'GROUP_PARTICIPANTS_UPDATE',
+     'CONNECTION_UPDATE',
+     'LABELS_EDIT',
+diff --git a/src/api/integrations/event/webhook/webhook.controller.ts b/src/api/integrations/event/webhook/webhook.controller.ts
+index 7f1dd8dc..3a8f88f4 100644
+--- a/src/api/integrations/event/webhook/webhook.controller.ts
++++ b/src/api/integrations/event/webhook/webhook.controller.ts
+@@ -1,3 +1,4 @@
++import { eventEnvelope } from '@api/integrations/channel/whatsapp/bc-groups/core';
+ import { EventDto } from '@api/integrations/event/event.dto';
+ import { PrismaRepository } from '@api/repository/repository.service';
+ import { WAMonitoringService } from '@api/services/monitor.service';
+@@ -90,18 +91,22 @@ export class WebhookController extends EventController implements EventControlle
+     const enabledLog = configService.get<Log>('LOG').LEVEL.includes('WEBHOOKS');
+     const regex = /^(https?:\/\/)/;
+ 
++    const groupEnvelope = eventEnvelope(instanceName, event);
+     const webhookData = {
+       ...(extra ?? {}),
+       event,
++      ...groupEnvelope,
+       instance: instanceName,
+       data,
+       destination: instance?.url || `${webhookConfig.GLOBAL.URL}/${transformedWe}`,
+       date_time: dateTime,
+       sender,
+       server_url: serverUrl,
+-      apikey: apiKey,
++      ...(groupEnvelope.event_id ? {} : { apikey: apiKey }),
+     };
+ 
++    if (groupEnvelope.event_id) delete webhookData.apikey;
++
+     if (local && instance?.enabled) {
+       if (Array.isArray(webhookLocal) && webhookLocal.includes(we)) {
+         let baseURL: string;
+@@ -116,7 +121,7 @@ export class WebhookController extends EventController implements EventControlle
+           const logData = {
+             local: `${origin}.sendData-Webhook`,
+             url: baseURL,
+-            ...webhookData,
++            ...(groupEnvelope.event_id ? { event, instance: instanceName, ...groupEnvelope } : webhookData),
+           };
+ 
+           this.logger.log(logData);
+@@ -161,7 +166,7 @@ export class WebhookController extends EventController implements EventControlle
+           const logData = {
+             local: `${origin}.sendData-Webhook-Global`,
+             url: globalURL,
+-            ...webhookData,
++            ...(groupEnvelope.event_id ? { event, instance: instanceName, ...groupEnvelope } : webhookData),
+           };
+ 
+           this.logger.log(logData);
+diff --git a/src/api/routes/bc-group.routes.ts b/src/api/routes/bc-group.routes.ts
+new file mode 100644
+index 00000000..62ec842e
+--- /dev/null
++++ b/src/api/routes/bc-group.routes.ts
+@@ -0,0 +1,72 @@
++import { timingSafeEqual } from 'node:crypto';
++
++import type { RequestHandler, Router } from 'express';
++import { validate } from 'jsonschema';
++
++import { extensionEnabled } from '../integrations/channel/whatsapp/bc-groups/core';
++import { bcGroupSchemas } from './bc-group.schemas';
++
++/** Reutiliza todas as guardas existentes. Query/body nunca escolhem a instância autenticada. */
++export function registerBcGroupRoutes(
++  router: Router,
++  guards: RequestHandler[],
++  execute: (instance: string, command: string, data: unknown) => Promise<unknown>,
++) {
++  const windows = new Map<string, { start: number; count: number }>();
++  const commands = [
++    ['post', 'updateMemberAddMode', 'memberMode'],
++    ['post', 'updateJoinApprovalMode', 'approvalMode'],
++    ['get', 'joinRequests', 'requests'],
++    ['post', 'joinRequests', 'decide'],
++    ['post', 'bcCreate', 'create'],
++    ['post', 'bcSendCode', 'sendCode'],
++    ['post', 'bcSetting', 'setting'],
++    ['post', 'bcMember', 'member'],
++    ['get', 'bcInvite', 'invite'],
++    ['post', 'bcRevoke', 'revoke'],
++    ['get', 'bcCreateStatus', 'createStatus'],
++    ['get', 'bcCapabilities', 'capabilities'],
++    ['get', 'bcInspect', 'inspect'],
++  ] as const;
++  for (const [method, path, command] of commands) {
++    router[method]('/' + path + '/:instanceName', ...guards, async (req, res, next) => {
++      try {
++        const secret = process.env.BC_GROUPS_API_SECRET ?? '',
++          supplied = req.get('x-bc-group-key') ?? '';
++        if (
++          secret.length < 32 ||
++          Buffer.byteLength(secret) !== Buffer.byteLength(supplied) ||
++          !timingSafeEqual(Buffer.from(secret), Buffer.from(supplied))
++        ) {
++          res.status(403).json({ error: 'Acesso restrito ao B&C' });
++          return;
++        }
++
++        const data = method === 'get' ? req.query : req.body;
++        if (!validate(data, bcGroupSchemas[command]).valid) {
++          res.status(400).json({ error: 'Parâmetros inválidos' });
++          return;
++        }
++        const now = Date.now();
++        for (const [name, window] of windows) if (now - window.start >= 60000) windows.delete(name);
++        const window = windows.get(req.params.instanceName) ?? { start: now, count: 0 };
++        if (++window.count > 60) {
++          res.status(429).json({ error: 'Aguarde antes de tentar novamente' });
++          return;
++        }
++        windows.set(req.params.instanceName, window);
++        const result = await execute(req.params.instanceName, command, data);
++        res.status(200).json(result);
++      } catch (error) {
++        next(error);
++      }
++    });
++  }
++  router.use('/:operation/:instanceName', (req, res, next) => {
++    if (extensionEnabled(req.params.instanceName)) {
++      res.status(403).json({ error: 'Instância exclusiva: use o contrato B&C' });
++      return;
++    }
++    next();
++  });
++}
+diff --git a/src/api/routes/bc-group.schemas.ts b/src/api/routes/bc-group.schemas.ts
+new file mode 100644
+index 00000000..8c9938ec
+--- /dev/null
++++ b/src/api/routes/bc-group.schemas.ts
+@@ -0,0 +1,50 @@
++import type { JSONSchema7 } from 'json-schema';
++const groupJid = { type: 'string', maxLength: 128, pattern: '^[0-9-]+@g\\.us$' };
++const operationId = {
++  type: 'string',
++  pattern: '^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$',
++};
++const schema = (properties: Record<string, unknown>, required = Object.keys(properties)): JSONSchema7 =>
++  ({ type: 'object', additionalProperties: false, properties, required }) as JSONSchema7;
++export const bcGroupSchemas: Record<string, JSONSchema7> = {
++  capabilities: schema({}),
++  sendCode: schema({
++    operationId,
++    groupJid,
++    customerJid: { type: 'string' },
++    platformJids: { type: 'array', minItems: 1, maxItems: 5, uniqueItems: true, items: { type: 'string' } },
++    purpose: { enum: ['login', 'verify_phone'] },
++    expiresAt: { type: 'string', maxLength: 40 },
++    code: { type: 'string', pattern: '^[0-9]{6}$' },
++  }),
++  setting: schema({ groupJid }),
++  invite: schema({ groupJid }),
++  revoke: schema({ groupJid }),
++  member: schema({ groupJid, jid: { type: 'string' }, action: { enum: ['add', 'remove'] } }),
++  inspect: schema({ groupJid }),
++  requests: schema({ groupJid }),
++  memberMode: schema({ groupJid, mode: { enum: ['admin_add', 'all_member_add'] } }),
++  approvalMode: schema({ groupJid, mode: { enum: ['on', 'off'] } }),
++  createStatus: schema({ operationId }),
++  create: schema({
++    operationId,
++    subject: { type: 'string', minLength: 1, maxLength: 100 },
++    participants: {
++      type: 'array',
++      maxItems: 5,
++      uniqueItems: true,
++      items: { type: 'string', pattern: '^[1-9][0-9]{7,14}@s\\.whatsapp\\.net$' },
++    },
++  }),
++  decide: schema({
++    groupJid,
++    action: { enum: ['approve', 'reject'] },
++    participants: {
++      type: 'array',
++      minItems: 1,
++      maxItems: 50,
++      uniqueItems: true,
++      items: { type: 'string', pattern: '^[0-9]+@(s\\.whatsapp\\.net|lid)$' },
++    },
++  }),
++};
+diff --git a/src/api/routes/group.router.ts b/src/api/routes/group.router.ts
+index 7086b117..99f830d7 100644
+--- a/src/api/routes/group.router.ts
++++ b/src/api/routes/group.router.ts
+@@ -30,11 +30,15 @@ import {
+ } from '@validate/validate.schema';
+ import { RequestHandler, Router } from 'express';
+ 
++import { registerBcGroupRoutes } from './bc-group.routes';
+ import { HttpStatus } from './index.router';
+ 
+ export class GroupRouter extends RouterBroker {
+   constructor(...guards: RequestHandler[]) {
+     super();
++    registerBcGroupRoutes(this.router, guards, (instance, command, data) =>
++      groupController.bcCommand(instance, command, data),
++    );
+     this.router
+       .post(this.routerPath('create'), ...guards, async (req, res) => {
+         const response = await this.dataValidate<CreateGroupDto>({
+diff --git a/src/api/types/wa.types.ts b/src/api/types/wa.types.ts
+index 8f7c6a39..497dd357 100644
+--- a/src/api/types/wa.types.ts
++++ b/src/api/types/wa.types.ts
+@@ -24,6 +24,8 @@ export enum Events {
+   CHATS_UPDATE = 'chats.update',
+   CHATS_UPSERT = 'chats.upsert',
+   CHATS_DELETE = 'chats.delete',
++  GROUP_JOIN_REQUEST = 'group.join-request',
++  MESSAGE_RECEIPT_UPDATE = 'message-receipt.update',
+   GROUPS_UPSERT = 'groups.upsert',
+   GROUPS_UPDATE = 'groups.update',
+   GROUP_PARTICIPANTS_UPDATE = 'group-participants.update',
+diff --git a/test/bc-group-database.test.ts b/test/bc-group-database.test.ts
+new file mode 100644
+index 00000000..2ac6f37c
+--- /dev/null
++++ b/test/bc-group-database.test.ts
+@@ -0,0 +1,95 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { PrismaClient } from '@prisma/client';
++import { operationStore } from '../src/api/integrations/channel/whatsapp/bc-groups/store';
++import {
++  executeGroupCommand,
++  type Dependencies,
++  type Operation,
++} from '../src/api/integrations/channel/whatsapp/bc-groups/core';
++const url = new URL(process.env.DATABASE_CONNECTION_URI ?? 'http://invalido');
++if (
++  process.env.BC_GROUP_TEST_DATABASE !== 'local-only' ||
++  url.hostname !== '127.0.0.1' ||
++  url.port !== '54332' ||
++  url.pathname !== '/postgres'
++)
++  throw new Error('Este teste exige banco local descartável na porta 54332');
++process.env.BC_GROUPS_EXTENSION_ENABLED = 'true';
++process.env.BC_GROUPS_INSTANCES = 'bc-ficticia';
++const self = '5511888888888@s.whatsapp.net',
++  jid = '12345-67890@g.us';
++let creates = 0;
++function deps(db: PrismaClient): Dependencies {
++  return {
++    instanceId: 'teste',
++    instanceName: 'bc-ficticia',
++    platformJids: [self],
++    ready: () => true,
++    self: () => [self],
++    store: operationStore(db),
++    socket: {
++      groupCreate: async () => {
++        creates++;
++        await new Promise((r) => setTimeout(r, 30));
++        return { id: jid };
++      },
++    } as unknown as Dependencies,
++  };
++}
++test('PostgreSQL: dois clientes disputam uma criação, inclusive depois de reiniciar clientes', async () => {
++  const a = new PrismaClient(),
++    b = new PrismaClient();
++  const request = { operationId: '11111111-1111-4111-8111-111111111111', subject: 'Fictício', participants: [] };
++  try {
++    await Promise.allSettled([
++      executeGroupCommand(deps(a), 'create', request),
++      executeGroupCommand(deps(b), 'create', request),
++    ]);
++    assert.equal(creates, 1);
++    assert.equal(await a.bcGroupOperation.count(), 1);
++  } finally {
++    await a.$disconnect();
++    await b.$disconnect();
++  }
++  const next = new PrismaClient();
++  try {
++    assert.equal(((await executeGroupCommand(deps(next), 'create', request)) as Operation).groupJid, jid);
++    assert.equal(creates, 1);
++    assert.equal(await operationStore(next).find('outra', request.operationId), null);
++  } finally {
++    await next.$disconnect();
++  }
++});
++test('PostgreSQL: queda depois da criação mantém desconhecido, sem segunda chamada', async () => {
++  const request = { operationId: '22222222-2222-4222-8222-222222222222', subject: 'Fictício', participants: [] };
++  const a = new PrismaClient();
++  let before = creates;
++  try {
++    const d = deps(a);
++    d.store.created = async () => {
++      throw new Error('Falha fictícia na confirmação');
++    };
++    assert.equal(((await executeGroupCommand(d, 'create', request)) as Operation).state, 'unknown');
++  } finally {
++    await a.$disconnect();
++  }
++  const b = new PrismaClient();
++  try {
++    assert.equal(((await executeGroupCommand(deps(b), 'create', request)) as Operation).state, 'unknown');
++    assert.equal(creates, before + 1);
++    assert.equal(await b.bcGroupOperation.count(), 2);
++  } finally {
++    await b.$disconnect();
++  }
++});
++
++test('PostgreSQL: trava sobrevive a desconexão e só o titular a solta',async()=>{
++ const a=new PrismaClient();await operationStore(a).lock('travada','titular');await a.$disconnect();
++ const b=new PrismaClient();try {const store=operationStore(b);assert.equal(await store.lock('travada','outro'),false);await store.unlock('travada','outro');assert.equal(await store.lock('travada','novo'),false);await store.unlock('travada','titular');assert.equal(await store.lock('travada','novo'),true);await store.unlock('travada','novo');}finally{await b.$disconnect();}
++});
++test('PostgreSQL: confirmação de código persiste sem texto nem código',async()=>{
++ const a=new PrismaClient();const key='33333333-3333-4333-8333-333333333333';
++ try{const store=operationStore(a);await store.claim({instanceId:'otp',operationKey:key,requestHash:'a'.repeat(64),state:'code_unknown',groupJid:jid});await store.accepted('otp',key,'mensagem-ficticia');}finally{await a.$disconnect();}
++ const b=new PrismaClient();try {const record=await operationStore(b).find('otp',key);assert.equal(record?.state,'code_accepted');assert.equal(record?.messageId,'mensagem-ficticia');assert.ok(!('code' in record!));}finally{await b.$disconnect();}
++});
+diff --git a/test/bc-group-routes.test.ts b/test/bc-group-routes.test.ts
+new file mode 100644
+index 00000000..36065105
+--- /dev/null
++++ b/test/bc-group-routes.test.ts
+@@ -0,0 +1,101 @@
++import test from 'node:test';
++process.env.BC_GROUPS_API_SECRET='s'.repeat(40);
++import assert from 'node:assert/strict';
++import express from 'express';
++import { registerBcGroupRoutes } from '../src/api/routes/bc-group.routes';
++import { bcGroupSchemas } from '../src/api/routes/bc-group.schemas';
++import { validate } from 'jsonschema';
++import { once } from 'node:events';
++test('Treze rotas preservam guardas, validação e instância autenticada', async () => {
++  const app = express();
++  app.use(express.json());
++  const router = express.Router();
++  let guards = 0;
++  const calls: any[] = [];
++  registerBcGroupRoutes(
++    router,
++    [
++      (req, res, next) => {
++        guards++;
++        if (req.get('apikey') !== 'ficticia') {
++          res.sendStatus(401);
++          return;
++        }
++        next();
++      },
++    ],
++    async (instance, command, data) => {
++      calls.push({ instance, command, data });
++      return { ok: true };
++    },
++  );
++  app.use('/group', router);
++  const server = app.listen(0, '127.0.0.1');
++  await once(server, 'listening');
++  const port = (server.address() as any).port;
++  const groupJid = '12345@g.us',
++    operationId = '11111111-1111-4111-8111-111111111111';
++  const routes: [string, string, Record<string, unknown>][] = [
++    ['POST', 'updateMemberAddMode', { groupJid, mode: 'admin_add' }],
++    ['POST', 'updateJoinApprovalMode', { groupJid, mode: 'on' }],
++    ['GET', 'joinRequests', { groupJid }],
++    ['POST', 'joinRequests', { groupJid, participants: ['5511888888888@s.whatsapp.net'], action: 'reject' }],
++    ['POST', 'bcCreate', { operationId, subject: 'Teste', participants: [] }],
++    ['GET', 'bcCreateStatus', { operationId }],
++    ['GET', 'bcCapabilities', {}],
++    ['GET', 'bcInspect', { groupJid }],
++    ['POST','bcSendCode',{operationId,groupJid,customerJid:'5511999999999@s.whatsapp.net',platformJids:['5511888888888@s.whatsapp.net'],purpose:'login',expiresAt:new Date(Date.now()+60000).toISOString(),code:'123456'}],
++    ['POST','bcSetting',{groupJid}],
++    ['POST','bcMember',{groupJid,jid:'5511888888888@s.whatsapp.net',action:'add'}],
++    ['GET','bcInvite',{groupJid}],
++    ['POST','bcRevoke',{groupJid}],
++  ];
++  try {
++    for (const [method, path, body] of routes) {
++      let url = `http://127.0.0.1:${port}/group/${path}/correta`;
++      const options: any = { method, headers: { 'content-type': 'application/json', apikey: 'ficticia', 'x-bc-group-key':'s'.repeat(40) } };
++      if (method === 'GET') url += '?' + new URLSearchParams(body as Record<string, string>);
++      else options.body = JSON.stringify(body);
++      assert.equal((await fetch(url, { ...options, headers: {} })).status, 401);
++      assert.equal((await fetch(url,{...options,headers:{...options.headers,'x-bc-group-key':'incorreta'}})).status,403);
++      assert.equal((await fetch(url, options)).status, 200);
++      const attack = method === 'GET' ? url + (url.includes('?') ? '&' : '?') + 'instanceName=outra' : url;
++      assert.equal(
++        (
++          await fetch(
++            attack,
++            method === 'POST' ? { ...options, body: JSON.stringify({ ...body, instanceName: 'outra' }) } : options,
++          )
++        ).status,
++        400,
++      );
++    }
++    assert.equal(guards, 52);
++    assert.equal(calls.length, 13);
++    assert.ok(calls.every((c) => c.instance === 'correta'));
++    for (let i = 0; i < 47; i++)
++      assert.equal(
++        (await fetch(`http://127.0.0.1:${port}/group/bcCapabilities/correta`, { headers: { apikey: 'ficticia', 'x-bc-group-key':'s'.repeat(40) } }))
++          .status,
++        200,
++      );
++    assert.equal(
++      (await fetch(`http://127.0.0.1:${port}/group/bcCapabilities/correta`, { headers: { apikey: 'ficticia', 'x-bc-group-key':'s'.repeat(40) } }))
++        .status,
++      429,
++    );
++  } finally {
++    await new Promise<void>((resolve, reject) => server.close((e) => (e ? reject(e) : resolve())));
++  }
++});
++test('Schemas rejeitam JID solto, promoção e modo não suportado', () => {
++  assert.equal(validate({ groupJid: '12345' }, bcGroupSchemas.inspect).valid, false);
++  assert.equal(validate({ groupJid: '12345@g.us', mode: 'inventado' }, bcGroupSchemas.memberMode).valid, false);
++  assert.equal(
++    validate(
++      { groupJid: '12345@g.us', participants: ['5511888888888@s.whatsapp.net'], action: 'promote' },
++      bcGroupSchemas.decide,
++    ).valid,
++    false,
++  );
++});
+diff --git a/test/bc-group-webhook.test.ts b/test/bc-group-webhook.test.ts
+new file mode 100644
+index 00000000..b7ed1223
+--- /dev/null
++++ b/test/bc-group-webhook.test.ts
+@@ -0,0 +1,112 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import axios from 'axios';
++import { WebhookController } from '../src/api/integrations/event/webhook/webhook.controller';
++import { configService } from '../src/config/env.config';
++process.env.BC_GROUPS_EXTENSION_ENABLED = 'true';
++process.env.BC_GROUPS_INSTANCES = 'bc-ficticia';
++test('Webhook local preserva ID no retry, usa header e omite apikey de grupos B&C', async () => {
++  const originalGet = configService.get,
++    originalCreate = axios.create;
++  const bodies: any[] = [];
++  let headers: any;
++  configService.get = ((key: string) =>
++    key === 'LOG'
++      ? { LEVEL: [] }
++      : {
++          GLOBAL: { ENABLED: false },
++          REQUEST: { TIMEOUT_MS: 1000 },
++          RETRY: { MAX_ATTEMPTS: 2, INITIAL_DELAY_SECONDS: 0 },
++        }) as typeof configService.get;
++  axios.create = ((options: any) => {
++    headers = options.headers;
++    return {
++      post: async (_path: string, body: any) => {
++        bodies.push(structuredClone(body));
++        if (bodies.length === 1) throw { response: { status: 503 } };
++      },
++    };
++  }) as typeof axios.create;
++  try {
++    const db: any = {
++      webhook: {
++        findUnique: async () => ({
++          enabled: true,
++          url: 'https://example.invalid/webhook',
++          events: ['GROUP_PARTICIPANTS_UPDATE'],
++          headers: { 'x-bc-group-secret': 'ficticio' },
++        }),
++      },
++    };
++    const monitor: any = { waInstances: { 'bc-ficticia': { instanceId: 'instancia-ficticia' } } };
++    const controller = new WebhookController(db, monitor);
++    await controller.emit({
++      instanceName: 'bc-ficticia',
++      origin: 'teste',
++      event: 'group-participants.update',
++      data: { id: '12345@g.us', participants: [] },
++      serverUrl: 'https://example.invalid',
++      dateTime: '2026-11-11T00:00:00Z',
++      sender: 'ficticio',
++      apiKey: 'NAO-ENVIAR',
++      extra: { apikey: 'NAO-ENVIAR-EXTRA' },
++      local: true,
++    });
++    assert.equal(bodies.length, 2);
++    assert.equal(bodies[0].event_id, bodies[1].event_id);
++    assert.equal(bodies[0].contract_version, 'bc-groups-v2');
++    assert.equal(headers['x-bc-group-secret'], 'ficticio');
++    assert.equal(bodies[0].apikey, undefined);
++  } finally {
++    configService.get = originalGet;
++    axios.create = originalCreate;
++  }
++});
++test('Recibo encaminhado conserva identidade individual, sem inventar entrega ao Cliente', async () => {
++  const originalGet = configService.get,
++    originalCreate = axios.create;
++  let body: any;
++  configService.get = ((key: string) =>
++    key === 'LOG'
++      ? { LEVEL: [] }
++      : { GLOBAL: { ENABLED: false }, RETRY: { MAX_ATTEMPTS: 1 } }) as typeof configService.get;
++  axios.create = (() => ({
++    post: async (_path: string, value: any) => {
++      body = value;
++    },
++  })) as typeof axios.create;
++  try {
++    const controller = new WebhookController(
++      {
++        webhook: {
++          findUnique: async () => ({
++            enabled: true,
++            url: 'https://example.invalid/webhook',
++            events: ['MESSAGE_RECEIPT_UPDATE'],
++            headers: { 'x-bc-group-secret': 'ficticio' },
++          }),
++        },
++      } as any,
++      { waInstances: { 'bc-ficticia': { instanceId: 'instancia-ficticia' } } } as any,
++    );
++    const receipt = {
++      key: { id: 'mensagem-ficticia', remoteJid: '12345@g.us' },
++      receipt: { userJid: '5511777777777@s.whatsapp.net', readTimestamp: 123 },
++    };
++    await controller.emit({
++      instanceName: 'bc-ficticia',
++      origin: 'teste',
++      event: 'message-receipt.update',
++      data: [receipt],
++      serverUrl: 'https://example.invalid',
++      dateTime: '2026-11-11T00:00:00Z',
++      sender: 'ficticio',
++      local: true,
++    });
++    assert.deepEqual(body.data, [receipt]);
++    assert.equal(body.data[0].deliveredToCustomer, undefined);
++  } finally {
++    configService.get = originalGet;
++    axios.create = originalCreate;
++  }
++});
+diff --git a/test/bc-groups.test.ts b/test/bc-groups.test.ts
+new file mode 100644
+index 00000000..fbe1d347
+--- /dev/null
++++ b/test/bc-groups.test.ts
+@@ -0,0 +1,261 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import {
++  executeGroupCommand,
++  isGroupCodeMessage,
++  participantIdentity,
++  groupView,
++  extensionEnabled,
++  configuredPlatformJids,
++  eventEnvelope,
++  type Dependencies,
++  type Operation,
++} from '../src/api/integrations/channel/whatsapp/bc-groups/core';
++const shop = 'bc-ficticia',
++  self = '5511888888888@s.whatsapp.net',
++  other = '5511777777777@s.whatsapp.net',
++  jid = '12345-67890@g.us',
++  operationId = '11111111-1111-4111-8111-111111111111';
++process.env.BC_GROUPS_EXTENSION_ENABLED = 'true';
++process.env.BC_GROUPS_INSTANCES = shop;
++const request = { operationId, subject: 'Atendimento fictício', participants: [] };
++function fixture() {
++  const rows = new Map<string, Operation>();
++  let creates = 0;
++  let locked=false;
++  let metadata: any = {
++    id: jid,
++    subject: 'Nome',
++    owner: self,
++    restrict: true,
++    memberAddMode: false,
++    joinApprovalMode: true,
++    participants: [{ id: self, admin: 'superadmin' }],
++  };
++  const socket = {
++    groupMetadata: async () => metadata,
++    groupCreate: async () => {
++      creates++;
++      await new Promise((r) => setTimeout(r, 5));
++      return metadata;
++    },
++    groupMemberAddMode: async (_jid: string, mode: string) => {
++      metadata.memberAddMode = mode === 'all_member_add';
++    },
++    groupJoinApprovalMode: async (_jid: string, mode: string) => {
++      metadata.joinApprovalMode = mode === 'on';
++    },
++    groupRequestParticipantsList: async () => [{ jid: other }],
++    groupRequestParticipantsUpdate: async (_jid: string, ids: string[], action: string) =>
++      ids.map((jid) => ({ jid, status: action })),
++  };
++  const d: Dependencies = {
++    instanceId: 'id-ficticio',
++    instanceName: shop,
++    socket: socket as Dependencies['socket'],
++    self: () => [self],
++    ready: () => true,
++    platformJids: [self],
++    store: {
++      lock: async()=>{if(locked)return false;locked=true;return true;}, unlock: async()=>{locked=false;},
++      accepted: async(i,k,messageId)=>{Object.assign(rows.get(i+k)!,{state:'code_accepted',messageId});},
++      find: async (i, k) => rows.get(i + k) ?? null,
++      claim: async (row) => {
++        const k = row.instanceId + row.operationKey;
++        if (rows.has(k)) return false;
++        rows.set(k, { ...row });
++        return true;
++      },
++      created: async (i, k, g) => {
++        Object.assign(rows.get(i + k)!, { state: 'created', groupJid: g });
++      },
++    },
++  };
++  return {
++    d,
++    socket,
++    rows,
++    get creates() {
++      return creates;
++    },
++    get metadata() {
++      return metadata;
++    },
++  };
++}
++const rejects = (fn: () => Promise<unknown>, status: number) => assert.rejects(fn, (e: any) => e.status === status);
++test('Flag nasce desligada e instância fora da lista não é habilitada', () => {
++  assert.equal(extensionEnabled(shop, {}), false);
++  assert.equal(extensionEnabled('outra'), false);
++  assert.deepEqual(configuredPlatformJids(shop, { BC_GROUPS_PLATFORM_JIDS: 'invalido' }), []);
++});
++test('Instância não autorizada não chega ao provedor', async () => {
++  const f = fixture();
++  f.d.instanceName = 'outra';
++  await rejects(() => executeGroupCommand(f.d, 'create', request), 503);
++  assert.equal(f.creates, 0);
++});
++test('Número não pertencente à Plataforma não cria', async () => {
++  const f = fixture();
++  f.d.platformJids = [];
++  await rejects(() => executeGroupCommand(f.d, 'create', request), 503);
++  assert.equal(f.creates, 0);
++});
++test('Criar com participante comercial ou promoção é negado', async () => {
++  const f = fixture();
++  await rejects(() => executeGroupCommand(f.d, 'create', { ...request, participants: [other] }), 400);
++  await rejects(() => executeGroupCommand(f.d, 'create', { ...request, promoteParticipants: true }), 400);
++  assert.equal(f.creates, 0);
++});
++test('Concorrência recebe um único direito de criação', async () => {
++  const f = fixture();
++  await Promise.allSettled(Array.from({ length: 10 }, () => executeGroupCommand(f.d, 'create', request)));
++  assert.equal(f.creates, 1);
++  assert.equal(((await executeGroupCommand(f.d, 'create', request)) as Operation).groupJid, jid);
++});
++test('Nova chamada após restart conserva operação conhecida', async () => {
++  const f = fixture();
++  await executeGroupCommand(f.d, 'create', request);
++  const next = { ...f.d };
++  assert.equal(((await executeGroupCommand(next, 'create', request)) as Operation).state, 'created');
++  assert.equal(f.creates, 1);
++});
++test('Mesmo identificador com conteúdo diferente é conflito', async () => {
++  const f = fixture();
++  await executeGroupCommand(f.d, 'create', request);
++  await rejects(() => executeGroupCommand(f.d, 'create', { ...request, subject: 'Outro' }), 409);
++  assert.equal(f.creates, 1);
++});
++test('Timeout depois da chamada mantém desconhecido sem repetir', async () => {
++  const f = fixture();
++  let calls = 0;
++  f.d.socket.groupCreate = async () => {
++    calls++;
++    throw new Error('timeout');
++  };
++  assert.equal(((await executeGroupCommand(f.d, 'create', request)) as Operation).state, 'unknown');
++  await executeGroupCommand(f.d, 'create', request);
++  assert.equal(calls, 1);
++});
++test('Falha ao guardar ID conhecido não concede outra criação', async () => {
++  const f = fixture();
++  f.d.store.created = async () => {
++    throw new Error('banco');
++  };
++  assert.equal(((await executeGroupCommand(f.d, 'create', request)) as Operation).state, 'unknown');
++  await executeGroupCommand(f.d, 'create', request);
++  assert.equal(f.creates, 1);
++});
++test('Banco indisponível antes da licença impede chamada externa', async () => {
++  const f = fixture();
++  f.d.store.claim = async () => {
++    throw new Error('banco');
++  };
++  await assert.rejects(() => executeGroupCommand(f.d, 'create', request));
++  assert.equal(f.creates, 0);
++});
++test('Consulta de outra instância não revela operação', async () => {
++  const f = fixture();
++  await executeGroupCommand(f.d, 'create', request);
++  f.d.instanceId = 'outro-id';
++  await rejects(() => executeGroupCommand(f.d, 'createStatus', { operationId }), 404);
++});
++test('Somente admin real aplica controles; enum inválido não modifica', async () => {
++  const f = fixture();
++  f.metadata.participants[0].admin = null;
++  await rejects(() => executeGroupCommand(f.d, 'memberMode', { groupJid: jid, mode: 'admin_add' }), 403);
++  f.metadata.participants[0].admin = 'admin';
++  await rejects(() => executeGroupCommand(f.d, 'memberMode', { groupJid: jid, mode: 'inventado' }), 400);
++});
++test('Controles retornam leitura atual, não presumem sucesso', async () => {
++  const f = fixture();
++  f.metadata.memberAddMode = true;
++  assert.equal(
++    ((await executeGroupCommand(f.d, 'memberMode', { groupJid: jid, mode: 'admin_add' })) as any).memberAddMode,
++    false,
++  );
++  f.metadata.joinApprovalMode = false;
++  assert.equal(
++    ((await executeGroupCommand(f.d, 'approvalMode', { groupJid: jid, mode: 'on' })) as any).joinApprovalMode,
++    true,
++  );
++  f.d.socket.groupJoinApprovalMode = async () => {};
++  await rejects(() => executeGroupCommand(f.d, 'approvalMode', { groupJid: jid, mode: 'off' }), 409);
++});
++test('Ausência de metadados permanece desconhecida', () => {
++  assert.equal(groupView({ id: jid, participants: [] } as any).joinApprovalMode, null);
++});
++test('Grupo diferente e PN conflitante não conferem administração', async () => {
++  const f = fixture();
++  f.metadata.id = '999@g.us';
++  await rejects(() => executeGroupCommand(f.d, 'inspect', { groupJid: jid }), 409);
++});
++test('Terceiro sem pedido pendente não é aprovado', async () => {
++  const f = fixture();
++  await rejects(
++    () => executeGroupCommand(f.d, 'decide', { groupJid: jid, participants: [self], action: 'approve' }),
++    409,
++  );
++});
++test('Aprovação exige controles e não cria privilégios', async () => {
++  const f = fixture();
++  f.metadata.joinApprovalMode = false;
++  await rejects(
++    () => executeGroupCommand(f.d, 'decide', { groupJid: jid, participants: [other], action: 'approve' }),
++    409,
++  );
++  f.metadata.joinApprovalMode = true;
++  assert.deepEqual(
++    await executeGroupCommand(f.d, 'decide', { groupJid: jid, participants: [other], action: 'approve' }),
++    [{ jid: other, status: 'approve' }],
++  );
++  await rejects(
++    () => executeGroupCommand(f.d, 'decide', { groupJid: jid, participants: [other], action: 'promote' }),
++    400,
++  );
++});
++test('LID sem PN confiável não é telefone; preserva associação original', () => {
++  assert.equal(participantIdentity('123456789@lid').phoneNumber, null);
++  assert.equal(participantIdentity({ id: '123456789@lid', phoneNumber: '123456789' }).phoneNumber, null);
++  assert.deepEqual(participantIdentity({ id: '123456789@lid', phoneNumber: other }), {
++    jid: '123456789@lid',
++    phoneNumber: other,
++    lid: '123456789@lid',
++    conflict: false,
++  });
++});
++test('Envelope só é acrescentado às instâncias e eventos autorizados', () => {
++  assert.deepEqual(eventEnvelope('outra', 'groups.update'), {});
++  assert.deepEqual(eventEnvelope(shop, 'messages.upsert'), {});
++  const e = eventEnvelope(shop, 'group-participants.update');
++  assert.match(e.event_id!, /^[a-f0-9-]{36}$/);
++  assert.equal(e.contract_version, 'bc-groups-v2');
++});
++
++test('PN conflitante não identifica o administrador', async () => {
++  const f = fixture();
++  f.metadata.participants = [{ id: other, phoneNumber: self, admin: 'admin' }];
++  await rejects(() => executeGroupCommand(f.d, 'inspect', { groupJid: jid }), 403);
++});
++
++const customer='5511999999999@s.whatsapp.net';
++function codeRequest(){return {operationId,groupJid:jid,customerJid:customer,platformJids:[self],purpose:'login',expiresAt:new Date(Date.now()+590000).toISOString(),code:'123456'};}
++test('OTP: somente grupo exato, diário único e sem conteúdo persistido',async()=>{
++ const f=fixture();f.metadata.participants.push({id:customer,admin:null});let sends=0;
++ f.d.socket.sendMessage=async(target,body)=>{assert.equal(target,jid);assert.match((body as any).text,/123456/);sends++;return {key:{id:'mensagem'}} as any;};
++ const req=codeRequest();await Promise.allSettled(Array.from({length:8},()=>executeGroupCommand(f.d,'sendCode',req)));
++ assert.equal(sends,1);assert.equal((await executeGroupCommand(f.d,'sendCode',req) as any).state,'code_accepted');assert.equal(sends,1);
++ assert.ok(!JSON.stringify([...f.rows.values()]).includes('123456'));
++});
++test('OTP bloqueia terceiro, cliente administrador, ausência e validade vencida',async()=>{
++ for(const mode of ['third','admin','absent','expired','controls']){const f=fixture();if(mode!=='absent')f.metadata.participants.push({id:customer,admin:mode==='admin'?'admin':null});if(mode==='third')f.metadata.participants.push({id:other,admin:null});if(mode==='controls')f.metadata.joinApprovalMode=false;
++ let calls=0;f.d.socket.sendMessage=async()=>{calls++;return {} as any;};const req=codeRequest();if(mode==='expired')req.expiresAt='2020-01-01T00:00:00Z';await assert.rejects(()=>executeGroupCommand(f.d,'sendCode',req));assert.equal(calls,0);}
++});
++test('Timeout e reinício não repetem OTP já iniciado',async()=>{
++ const f=fixture();f.metadata.participants.push({id:customer,admin:null});let sends=0;f.d.socket.sendMessage=async()=>{sends++;throw new Error('timeout');};const req=codeRequest();assert.equal((await executeGroupCommand(f.d,'sendCode',req) as any).state,'code_unknown');await executeGroupCommand({...f.d},'sendCode',req);assert.equal(sends,1);
++});
++test('Mutação controlada não passa durante transmissão',async()=>{
++ const f=fixture();f.metadata.participants.push({id:customer,admin:null});let release:()=>void;const pending=new Promise<void>(r=>release=r);f.d.socket.sendMessage=async()=>{await pending;return {key:{id:'x'}} as any;};const send=executeGroupCommand(f.d,'sendCode',codeRequest());await new Promise(r=>setTimeout(r,5));await rejects(()=>executeGroupCommand(f.d,'memberMode',{groupJid:jid,mode:'all_member_add'}),409);release!();await send;
++});
++
++test('OTP próprio ou citado não entra em histórico, webhook ou chat',()=>{const message={key:{remoteJid:jid},message:{extendedTextMessage:{text:'resposta',contextInfo:{quotedMessage:{conversation:'Barba & Cabelo\nSeu código de acesso: 123456\nVálido'}}}}};assert.equal(isGroupCodeMessage(message),true);assert.equal(isGroupCodeMessage({key:{remoteJid:jid},message:{conversation:'Mensagem comum'}}),false);});

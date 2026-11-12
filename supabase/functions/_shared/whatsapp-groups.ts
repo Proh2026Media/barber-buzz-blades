@@ -322,6 +322,17 @@ export async function processCareGroup(db: Database, provider: GroupProvider, op
       await observe(value);
       return "customer_left";
     }
+    // Inclusão restrita aos números de plataforma já consentidos, nunca ao Cliente.
+    for (const phone of job!.platform_phones) {
+      if (value.participants.some((p) => individualPhone(p.jid) === phone)) continue;
+      await provider.member(job!.instance, groupId, phone.slice(1) + "@s.whatsapp.net", "add", () =>
+        authorize("participants"),
+      );
+      value = await snapshot();
+      structural(value);
+      if (!value.participants.some((p) => individualPhone(p.jid) === phone))
+        throw new Error("GROUP_ADMISSION_UNCONFIRMED");
+    }
     await provider.configure(job!.instance, groupId, () => authorize("configure"));
     const pending = await provider.requests(job!.instance, groupId);
     for (const jid of pending.sort(

@@ -94,15 +94,15 @@ export function digitsOnlyPhone(e164: string) {
 /** Administração de grupos separada do transporte de mensagens; nenhum endpoint de envio. */
 export function evolutionGroupTransport(path: string, init: RequestInit = {}) {
   const match = /^\/group\/([A-Za-z]+)\/[A-Za-z0-9_-]{1,100}(?:\?[^#]*)?$/.exec(path);
-  const get = ["bcCapabilities", "bcInspect", "bcCreateStatus", "joinRequests", "inviteCode"];
+  const get = ["bcCapabilities", "bcInspect", "bcCreateStatus", "joinRequests", "bcInvite"];
   const post = [
     "bcCreate",
-    "updateSetting",
+    "bcSetting",
     "updateMemberAddMode",
     "updateJoinApprovalMode",
     "joinRequests",
-    "updateParticipant",
-    "revokeInviteCode",
+    "bcMember",
+    "bcRevoke",
   ];
   if (
     !match ||
@@ -112,12 +112,33 @@ export function evolutionGroupTransport(path: string, init: RequestInit = {}) {
   ) {
     throw new Error("GROUP_ROUTE_FORBIDDEN");
   }
-  return evolutionRequest(path, init);
+  return evolutionRequest(path, {
+    ...init,
+    headers: { ...init.headers, "x-bc-group-key": Deno.env.get("WHATSAPP_GROUP_API_SECRET") ?? "" },
+  });
 }
 
 /** Não liberar por variável de ambiente antes do piloto de composição/isolamento. */
 export function sendAuthorizedGroupLogin(
   ...args: [Parameters<typeof sendGroupLogin>[0], Parameters<typeof sendGroupLogin>[1]]
 ) {
-  return sendGroupLogin(...args, evolutionRequest, false);
+  return sendGroupLogin(
+    ...args,
+    (path, init) =>
+      evolutionRequest(path, {
+        ...init,
+        headers: {
+          ...init?.headers,
+          "x-bc-group-key": Deno.env.get("WHATSAPP_GROUP_API_SECRET") ?? "",
+        },
+      }),
+    groupPilotEnabled(),
+  );
+}
+
+export function groupPilotEnabled() {
+  return (
+    Deno.env.get("WHATSAPP_GROUP_PILOT_ENABLED") === "true" &&
+    (Deno.env.get("WHATSAPP_GROUP_API_SECRET") ?? "").length >= 32
+  );
 }

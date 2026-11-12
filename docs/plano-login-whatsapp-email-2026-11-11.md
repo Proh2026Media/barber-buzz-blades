@@ -1,5 +1,7 @@
 # Preparação do login no grupo exclusivo e alternativa por e-mail
 
+**Continuação implementada em 11/11:** [adesão provisória, confirmação no grupo e contrato protegido v2](pacotes/2026-11-11-p120-primeiro-acesso-grupo.md). Os itens de primeiro acesso do cliente, múltiplos números e rota de envio agora foram ensaiados localmente. Nº 109 não instalada; flags desligadas. Permanecem isolamento/piloto, alternativa do cadastro público de nova barbearia e comunicação geral. Histórico anterior abaixo não significa que as partes entregues devam ser refeitas.
+
 Data: 11/11/2026. P-120. Destinatário: desenvolvimento do Barba & Cabelo.
 
 **Implementação parcial local em 11/11/2026:** [entrega e verificações](pacotes/2026-11-11-p120-login-grupo-local.md). A restrição de participantes, autorização de login de grupo, bloqueio de OTP privado e alternativa por e-mail já estão no código e foram ensaiados. O plano abaixo permanece como matriz de aceite completa; não está concluído. Faltam primeiro acesso, confirmação inicial do telefone, rota protegida na extensão e homologação/isolamento antes de ativar.

@@ -1,5 +1,7 @@
 # Banco, servidores e publicação
 
+**11/11/2026 — nº 109 e Evolution v2, somente locais:** `20261111220000_grupos_primeiro_acesso.sql` depende de 105–108, permite adesão provisória e confirmação do telefone no grupo. Reversão conservadora própria; **nenhuma instalada**. Extension `2.3.7-bc.groups.2` tem duas migrations no banco Evolution (operações + códigos/trava), distintas do Supabase. Piloto por flags desligadas por padrão. [Entrega e impedimentos de publicação](../pacotes/2026-11-11-p120-primeiro-acesso-grupo.md); [TI somente revisão/pré-piloto](../pacotes/2026-11-11-ti-p120-revisao-piloto-grupos.md). Não reaplicar nº 101–104.
+
 **11/11/2026 — nº 107 e nº 108 somente locais:** nº 107 integra o ciclo dos grupos; nº 108 (`20261111210000_grupos_exclusivos_plataforma.sql`) revoga equipe, exige composição exclusiva, protege o desafio de login e bloqueia OTP privado. Depende de 105/106/107. `login_enabled=false` e emissor real bloqueado. [Entrega P-120](../pacotes/2026-11-11-p120-login-grupo-local.md), com reversão operacional que preserva evidências/permissões e não restaura envio privado. **Não instalar/publicar esta etapa parcial.** Primeiro acesso e extensão ainda pendentes; nº 101–104 não devem ser reaplicadas.
 
 **11/11/2026 — nº 106 somente local:** `20261111120000_grupos_atendimento.sql`, dependente da nº 105. Tabelas privadas, consentimento/participantes, posse de operações e teto mensal global. 1.467 PASS, quatro ensaios concorrentes; [detalhes e limitações](../grupos-atendimento-2026-11-11.md). **Não instalada; função `whatsapp-groups` não publicada.** Nasce desligada e adaptador real bloqueado por capacidades ausentes. [Pedido TI é somente diagnóstico](../pacotes/2026-11-11-ti-grupos-atendimento-capacidades.md), sem autorização de instalar/ativar. Nº 101–104 preservadas.
@@ -26,7 +28,7 @@ Situações usadas: **feito**, **feito — falta aplicar no banco**, **pendente*
 
 1. [Visão da infraestrutura](#1-visão-da-infraestrutura)
 2. [Como o site é publicado](#2-como-o-site-é-publicado)
-3. [Inventário das 106 migrations](#3-inventário-das-106-migrations)
+3. [Inventário das 109 migrations](#3-inventário-das-106-migrations)
 4. [Como escrever uma migration nova](#4-como-escrever-uma-migration-nova)
 5. [Como as migrations são aplicadas](#5-como-as-migrations-são-aplicadas)
 6. [Testes SQL](#6-testes-sql)
@@ -82,7 +84,7 @@ git push origin main            (Proh2026Media/barber-buzz-blades — fonte da v
 - O comando de compilação configurado na Hostinger é **não confirmado** (o projeto define `npm run build` = `vite build && node scripts/copy-pwa.mjs` em `package.json`).
 - **Publicar o site não aplica nada no banco nem nas funções.** Migrations e Edge functions vão à VPS por outro caminho (seções 5 e 7). Por isso a tela nova precisa funcionar com o banco antigo (ver seção 4).
 
-## 3. Inventário das 106 migrations
+## 3. Inventário das 109 migrations
 
 Pasta: [supabase/migrations/](../../supabase/migrations/). A situação vem destas fontes:
 
@@ -201,6 +203,9 @@ Pasta: [supabase/migrations/](../../supabase/migrations/). A situação vem dest
 | 104 | `20261110190000_whatsapp_numero_compartilhado`               | Mesmo número para várias lojas/profissionais, vínculos e preferências separados                                        | aplicada pela TI em 10/11/2026, 16:24:03–16:24:04; homologação pendente     |
 | 105 | `20261110230000_whatsapp_saida_protegida`                    | Saída única, pausa, limites atômicos, tentativas e posse da fila                                                       | escrita e testada localmente; **não instalada, implantação não autorizada** |
 | 106 | `20261111120000_grupos_atendimento`                          | Grupos exclusivos: consentimento, identidade, operações e teto mensal                                                  | somente local; capacidade real bloqueada; **não instalar**                  |
+| 107 | `20261111200000_grupos_integracao_evolution`                 | Ciclo protegido de grupos e reconciliação                                                                              | somente local; não instalada                                                |
+| 108 | `20261111210000_grupos_exclusivos_plataforma`                | Exclusividade e OTP ligado ao grupo                                                                                    | somente local; não instalada                                                |
+| 109 | `20261111220000_grupos_primeiro_acesso`                      | Adesão provisória e confirmação no grupo                                                                               | somente local; não instalada                                                |
 
 Nota da nº 34: no banco remoto ela falhava em `text = uuid`, e por isso a coluna `icon` e o bucket não existiam. A nº 41 (`20260920010000_service_images_storage`) cria o mesmo efeito e foi aplicada; o arquivo da nº 34 também recebeu o cast correto (`barbershop_id::text`) para instalações novas. Fonte: CONTINUIDADE "Slider da espera e imagens de serviço" (20/09/2026).
 

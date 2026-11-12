@@ -1,11 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { evolutionGroupTransport } from "../_shared/evolution.ts";
+import { evolutionGroupTransport, groupPilotEnabled } from "../_shared/evolution.ts";
 import { evolutionGroupProvider } from "../_shared/evolution-groups.ts";
 import { handleCareGroups } from "./handler.ts";
 
-// Trava de publicação: integração testável por injeção, nunca liberada por variável de ambiente.
+// Piloto desligado por padrão; habilitação somente na janela explicitamente autorizada.
 // Somente uma entrega explicitamente autorizada poderá habilitar o piloto real.
-const provider = evolutionGroupProvider(evolutionGroupTransport, false);
+const provider = evolutionGroupProvider(evolutionGroupTransport, groupPilotEnabled());
 Deno.serve(async (req) => {
   const url = Deno.env.get("SUPABASE_URL"),
     key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SERVICE_KEY");

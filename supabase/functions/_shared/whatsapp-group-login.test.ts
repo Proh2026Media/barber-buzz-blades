@@ -24,6 +24,8 @@ function fixture(
     customer_phone: "+5511999999999",
     platform_phones: ["+5511888888888"],
     sender_phone: "+5511888888888",
+    purpose: "login",
+    expires_at: new Date(Date.now() + 600000).toISOString(),
   };
   const db = {
     rpc: async (name: string) => {
@@ -46,6 +48,8 @@ function fixture(
   };
   const transport = async (path: string, init?: RequestInit) => {
     calls.push(path);
+    if (path.startsWith("/group/bcCapabilities/"))
+      return { contract: "bc-groups-v2", protectedCodes: true, serializedCommands: true };
     if (path.startsWith("/group/bcInspect/"))
       return {
         id: options.wrongGroup ? "999@g.us" : context.group_jid,
@@ -60,7 +64,7 @@ function fixture(
       };
     bodies.push(JSON.parse(String(init?.body)));
     if (options.timeout) throw new Error("timeout depois da transmissão");
-    return { key: { id: "mensagem-ficticia" } };
+    return { state: "code_accepted", messageId: "mensagem-ficticia" };
   };
   return {
     calls,
@@ -68,7 +72,7 @@ function fixture(
     run: () =>
       sendGroupLogin(
         db,
-        { challengeId: "desafio", codeHash: "hash", text: "Código fictício: 123456" },
+        { challengeId: "desafio", codeHash: "hash", code: "123456" },
         transport,
         options.enabled ?? true,
       ),
@@ -78,7 +82,7 @@ test("login envia somente ao JID conferido; nunca converte grupo em telefone", a
   const f = fixture();
   assert.equal(await f.run(), "accepted");
   assert.equal(f.bodies.length, 1);
-  assert.equal(f.bodies[0].number, "123-456@g.us");
+  assert.equal(f.bodies[0].groupJid, "123-456@g.us");
   assert.ok(
     f.calls.indexOf("authorize_whatsapp_group_login") >
       f.calls.findIndex((c) => c.startsWith("/group/bcInspect/")),

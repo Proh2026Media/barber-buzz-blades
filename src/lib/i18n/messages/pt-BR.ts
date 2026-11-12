@@ -1,5 +1,22 @@
 /** Dicionário principal (fonte). Toda chave nova nasce aqui, em pt-BR. */
 export const ptBR = {
+  "auth.sharedAccountTitle": "Já usa o B&C em outra barbearia?",
+  "auth.sharedAccountHint":
+    "Use a mesma conta e o mesmo WhatsApp pessoal. Depois de entrar, você poderá se vincular a esta barbearia. Seus pontos e agendamentos ficam separados por loja.",
+  "auth.useExistingAccount": "Usar minha conta do B&C",
+  "auth.useExistingAccountHint":
+    "Entre com sua conta existente para continuar nesta barbearia. Se esqueceu a senha, use a recuperação por e-mail.",
+  "care.expired": "A confirmação do telefone expirou. Continue no mesmo grupo.",
+  "care.resume": "Retomar confirmação",
+  "care.phoneHint": "Informe seu WhatsApp com DDD. A confirmação será feita dentro do grupo.",
+  "care.joinHint": "Abra o convite, solicite entrada com este número e depois atualize esta tela.",
+  "care.openGroup": "Abrir meu grupo",
+  "care.getInvite": "Obter convite",
+  "care.verifyHint":
+    "Depois de entrar no grupo, confirme seu número com o código. Nenhum código será enviado no privado.",
+  "care.verifyCode": "Confirmar código",
+  "care.sendCode": "Receber código no grupo",
+  "care.phoneConfirmed": "Telefone confirmado. Você poderá usar o grupo para entrar na sua conta.",
   "care.save": "Salvar preferências",
   "care.title": "Seu atendimento pelo WhatsApp",
   "care.requested": "Solicitação registrada",
@@ -4609,7 +4626,8 @@ export const ptBR = {
   "fix2.whats.errRateLimited": "Muitos códigos pedidos. Aguarde alguns minutos e tente de novo.",
   "fix2.whats.errUnavailable":
     "Não conseguimos enviar o WhatsApp agora. Confira o número ou tente mais tarde.",
-  "fix2.whats.errPhoneInUse": "Este WhatsApp já está confirmado em outra conta. Use outro número.",
+  "fix2.whats.errPhoneInUse":
+    "Este WhatsApp já foi confirmado em outra conta. Se ela é sua, entre nela para usar o mesmo número em qualquer barbearia.",
   "fix2.whats.errInvalidNumber": "Informe um WhatsApp válido com DDD.",
   "fix3.google.eventsTitle": "Próximos eventos da Agenda Google",
   "fix3.google.eventsLoading": "Carregando eventos…",

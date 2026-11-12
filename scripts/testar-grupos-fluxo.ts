@@ -68,7 +68,9 @@ const db = {
       throw new Error("RPC inválida");
     try {
       const value = await sql(
-        `set role service_role;select to_jsonb(public.${name}(${Object.entries(args)
+        `set role service_role;set request.jwt.claim.role='service_role';select to_jsonb(public.${name}(${Object.entries(
+          args,
+        )
           .map(([k, v]) => `${k}=>${quote(v)}`)
           .join(",")}));`,
       );
@@ -83,16 +85,27 @@ const files = [
   "20261111120000_grupos_atendimento.sql",
   "20261111200000_grupos_integracao_evolution.sql",
   "20261111210000_grupos_exclusivos_plataforma.sql",
+  "20261111220000_grupos_primeiro_acesso.sql",
 ];
 const migrations = await Promise.all(
   files.map((f) => readFile(root + "supabase/migrations/" + f, "utf8")),
 );
-await sql(
-  "begin;" +
-    migrations.join("\n") +
-    (await readFile(root + "supabase/tests/helpers/grupos-integracao-fixture.sql", "utf8")) +
-    "commit;",
+const bootstrap = process.env.BC_GROUP_BOOTSTRAP === "1";
+let fixtureSql = await readFile(
+  root + "supabase/tests/helpers/grupos-integracao-fixture.sql",
+  "utf8",
 );
+if (bootstrap)
+  fixtureSql = fixtureSql
+    .replace(
+      "select public.apply_verified_whatsapp(customer,phone,true) is not null from wa120;",
+      "insert into memberships(user_id,barbershop_id,role) select customer,shop,'customer' from wa120;",
+    )
+    .replace(
+      "care_group_request(shop,true,array(select id from public.whatsapp_group_accounts))",
+      "care_group_begin(shop,true,array(select id from public.whatsapp_group_accounts),phone)",
+    );
+await sql("begin;" + migrations.join("\n") + fixtureSql + "commit;");
 const fixture = JSON.parse(
   await sql(
     "select row_to_json(x) from (select c.customer,c.owner,c.phone,g.id group_id,n.instance_name from wa120 c join whatsapp_care_groups g on g.customer_id=c.customer join whatsapp_group_accounts a on a.id=any(g.approved_accounts) join whatsapp_channels n on n.id=a.channel_id) x;",
@@ -169,25 +182,72 @@ check(
 );
 // O envio é fictício, mas autorização, concorrência e consumo usam PostgreSQL real.
 await sql("update whatsapp_group_settings set login_enabled=true;");
+let loginMessages = 0;
+const loginTransport = async (path: string, init?: RequestInit) => {
+  if (path.startsWith("/group/bcSendCode/")) {
+    const body = JSON.parse(String(init?.body));
+    assert.equal(body.groupJid, evo.groupId);
+    loginMessages++;
+    return { state: "code_accepted", messageId: "codigo-ficticio" };
+  }
+  return evo.transport(path, init);
+};
+if (bootstrap) {
+  check(
+    (await sql(
+      `select whatsapp_verified_at is null from profiles where id=${quote(fixture.customer)};`,
+    )) === "t",
+    "Entrar no grupo não confirma telefone",
+  );
+  const request = JSON.parse(
+    await sql(
+      `select request_whatsapp_group_phone(${quote(fixture.customer)},${quote(fixture.phone)},repeat('b',64),gen_random_uuid());`,
+    ),
+  );
+  check(
+    (await sendGroupLogin(
+      db,
+      { challengeId: request.challenge_id, codeHash: "b".repeat(64), code: "123456" },
+      loginTransport,
+      true,
+    )) === "accepted",
+    "Primeira confirmação vai somente ao grupo",
+  );
+  const profile = JSON.parse(
+    await sql(
+      `set request.jwt.claim.role='service_role';select check_whatsapp_group_phone(${quote(fixture.customer)},${quote(fixture.phone)},repeat('b',64));`,
+    ),
+  );
+  check(
+    profile.whatsapp_e164 === fixture.phone &&
+      profile.whatsapp_verified_at &&
+      !profile.whatsapp_opt_in_at,
+    "Prova confirma telefone sem obrigar marketing ou avisos",
+  );
+  check(
+    (await sql(
+      `set request.jwt.claim.role='service_role';select check_whatsapp_group_phone(${quote(fixture.customer)},${quote(fixture.phone)},repeat('b',64)) is null;`,
+    )) === "t",
+    "Confirmação consumida não pode ser reutilizada",
+  );
+  check(
+    (await processCareGroup(db, provider, await next())) === "observed",
+    "Telefone confirmado passa por nova conferência",
+  );
+  await sql(
+    "update auth_otp_challenges set created_at=created_at-interval '61 seconds';update whatsapp_send_attempts set started_at=started_at-interval '61 seconds';",
+  );
+  loginMessages = 0;
+}
 const challenge = JSON.parse(
   await sql(
     `select request_whatsapp_group_login(${quote(fixture.phone)},repeat('a',64),gen_random_uuid());`,
   ),
 );
-let loginMessages = 0;
-const loginTransport = async (path: string, init?: RequestInit) => {
-  if (path.startsWith("/message/sendText/")) {
-    const body = JSON.parse(String(init?.body));
-    assert.equal(body.number, evo.groupId);
-    loginMessages++;
-    return { key: { id: "codigo-ficticio" } };
-  }
-  return evo.transport(path, init);
-};
 const loginInput = {
   challengeId: challenge.challenge_id,
   codeHash: "a".repeat(64),
-  text: "Código fictício: 123456",
+  code: "123456",
 };
 const loginResults = await Promise.all([
   sendGroupLogin(db, loginInput, loginTransport, true),
@@ -328,5 +388,19 @@ check(
     exclusiveReversed.attempts &&
     exclusiveReversed.private_blocked,
   "Reversão nº 108 preserva provas e bloqueia grupo e OTP privado",
+);
+const bootstrapRollback = (
+  await readFile(root + "supabase/rollback/20261111220000_grupos_primeiro_acesso.sql", "utf8")
+).replace(/^begin;|^commit;/gm, "");
+const bootstrapReversed = JSON.parse(
+  await sql(
+    "begin;" +
+      bootstrapRollback +
+      `select jsonb_build_object('disabled',not enrollment_enabled and not login_enabled,'preserved',(select count(*)>0 from whatsapp_group_login_routes),'unconfirmed',(select count(*)=0 from whatsapp_care_groups where controls_verified)) from whatsapp_group_settings;rollback;`,
+  ),
+);
+check(
+  bootstrapReversed.disabled && bootstrapReversed.preserved && bootstrapReversed.unconfirmed,
+  "Reversão nº 109 bloqueia ativação e preserva provas",
 );
 console.log(`TOTAL: ${checks} PASS; PostgreSQL real e Evolution inteiramente fictícia`);

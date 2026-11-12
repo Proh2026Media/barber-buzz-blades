@@ -1,10 +1,16 @@
 # Pendências — lista única e priorizada
 
+**11/11/2026 — P-120 avançou e P-121 corrigida localmente:** [entrega atual](../pacotes/2026-11-11-p120-primeiro-acesso-grupo.md). Primeiro acesso do cliente, confirmação no grupo e extensão protegida v2 implementados/ensaiados; nº 109 local. [P-121 — mesma conta/telefone em várias lojas](../pacotes/2026-11-11-p121-cliente-varias-barbearias.md), com reaproveitamento explícito na entrada e prioridade ao destino atual. Último id: **P-121**. Não publicar/instalar; flags desligadas.
+
+## P-121 — cliente com mesmo telefone em várias barbearias — corrigido localmente em 11/11
+
+Cadastro orienta reutilizar a conta, conserva o destino e trata conta já existente. Mesmo telefone confirmado e perfil com dois vínculos/grupos ensaiados; pontos por loja preservados. Não permite duas pessoas compartilharem a identidade de login nem funde duplicatas. Publicação/homologação real pendentes junto da entrega local.
+
 **11/11/2026 — P-120 parcialmente implementada localmente:** [entrega](../pacotes/2026-11-11-p120-login-grupo-local.md). Exclusividade, bloqueio de OTP privado, desafio vinculado ao grupo e alternativa de e-mail ensaiados. Nenhuma instalação TI; último id usado: **P-120**.
 
 ## P-120 — Código de login no grupo exclusivo
 
-**Situação: parcial, somente local.** Nº 108 revoga profissionais, restringe leitura, vincula desafio/titular/grupo/versão e bloqueia emissores privados. Ensaio integrado inclui envio único e consumo único com provedor fictício. Falta concluir primeiro acesso e confirmação inicial do telefone no grupo, contrato protegido da Evolution, serialização e isolamento operacional, demais emissores de códigos e piloto. A função real de envio continua bloqueada. E-mail/senha e recuperação por link preservados; código de login por e-mail não implementado. Não publicar nem ativar parcialmente. [Plano completo](../plano-login-whatsapp-email-2026-11-11.md).
+**Situação: fluxo cliente/OTP implementado e ensaiado localmente, operação ainda pendente.** Nº 108 exclusividade/OTP privado e nº 109 adesão provisória/confirmação; Evolution v2 com diário/trava/rota protegida. Primeiro acesso, composição, consumo único e duas lojas testados. Flags desligadas; nº 105–109 não instaladas. Antes de publicação geral faltam alternativa autenticada para cadastro de nova barbearia (`register-shop` legado), isolamento operacional e piloto autorizado. Comunicação de negócio/marketing/recibos permanece no escopo maior. [Entrega vigente](../pacotes/2026-11-11-p120-primeiro-acesso-grupo.md); [TI revisão/pré-piloto](../pacotes/2026-11-11-ti-p120-revisao-piloto-grupos.md). Código por e-mail não implementado; e-mail/senha e recuperação nativos preservados.
 
 **11/11/2026 — integração local do ciclo de grupos feita:** [entrega](../pacotes/2026-11-11-bc-integracao-grupos-local.md). Adaptador, convite, admissão, remoção, encerramento e recuperação ensaiados com PostgreSQL local. Nº 107 preparada, junto de 105/106 ainda não instalada; provedor real bloqueado. Próximo desenvolvimento: saída por evento, atendimento humano e recibos, depois observabilidade/privacidade e piloto autorizado. Não repetir diagnóstico TI nem operar Flow.
 

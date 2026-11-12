@@ -121,7 +121,7 @@ function scenario(mode: "ok" | "timeout" | "save-fails" | "unsupported" = "ok") 
     configure: async () => {},
     inspect: async () => raw(),
   };
-  return { db, provider, calls, creates: () => creates };
+  return { db, provider, calls, job, creates: () => creates };
 }
 test("duas execuções da mesma operação criam somente um grupo", async () => {
   const s = scenario();
@@ -288,4 +288,20 @@ test("Reentrega de mensagem conserva chave mesmo com outra data do envelope", as
   assert.equal(calls[0].p_event_key, calls[1].p_event_key);
   assert.equal(calls[0].p_stop, "marketing");
   assert.ok(!JSON.stringify(calls).includes("NAO-PERSISTIR"));
+});
+
+test("vários números autorizados entram sem adicionar o Cliente automaticamente", async () => {
+  const s = scenario();
+  s.job.platform_phones.push("+5511666666666");
+  const state = raw();
+  const added: string[] = [];
+  s.provider.inspect = async () => state;
+  s.provider.member = async (_instance, _group, jid, action, before) => {
+    await before();
+    assert.equal(action, "add");
+    added.push(jid);
+    state.participants.push({ id: jid, admin: null });
+  };
+  assert.equal(await processCareGroup(s.db, s.provider, "operation"), "observed");
+  assert.deepEqual(added, ["5511666666666@s.whatsapp.net"]);
 });

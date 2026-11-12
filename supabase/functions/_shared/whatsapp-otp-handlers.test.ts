@@ -1,3 +1,4 @@
+import { groupPhone } from "../auth-otp/group-phone.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -19,7 +20,16 @@ function fixture(
         error: options.unauthorized ? {} : null,
       }),
     },
-    rpc: async () => ({ data: phone }),
+    rpc: async (name: string, args: Record<string, unknown>) => {
+      if (name === "normalize_br_whatsapp") return { data: phone };
+      if (name === "request_whatsapp_group_phone") {
+        calls.push({ name: "challenge", value: { request_id: args.p_request_id } });
+        return options.insertError
+          ? { error: { message: options.insertError } }
+          : { data: { challenge_id: "desafio" } };
+      }
+      return { data: null };
+    },
     from: (table: string) => {
       const query = {
         select: () => query,
@@ -44,6 +54,8 @@ function fixture(
     "",
   );
   new Function(
+    "groupPhone",
+    "sendAuthorizedGroupLogin",
     "createClient",
     "sendAuthorizedWhatsapp",
     "randomOtp",
@@ -53,6 +65,11 @@ function fixture(
     "Deno",
     stripTypeScriptTypes(source),
   )(
+    groupPhone,
+    async (_db: unknown, value: unknown) => {
+      calls.push({ name: "send", value });
+      return "unknown";
+    },
     () => db,
     async (_db: unknown, value: unknown) => {
       calls.push({ name: "send", value });
@@ -98,11 +115,12 @@ for (const endpoint of ["auth-otp", "register-shop"] as const) {
     assert.equal(payload.delivery_state, "unknown");
     const sent = f.calls.find((c) => c.name === "send")?.value as {
       challengeId: string;
-      text: string;
+      text?: string;
+      code?: string;
       codeHash: string;
     };
     assert.equal(sent.challengeId, "desafio");
-    const code = sent.text.match(/\b\d{6}\b/)?.[0];
+    const code = sent.code ?? sent.text?.match(/\b\d{6}\b/)?.[0];
     assert.ok(code);
     assert.equal(
       sent.codeHash,

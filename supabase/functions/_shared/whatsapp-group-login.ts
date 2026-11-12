@@ -15,12 +15,16 @@ type Context = {
   customer_phone: string;
   platform_phones: string[];
   sender_phone: string;
+  purpose: "login" | "verify_phone";
+  expires_at: string;
 };
 function validContext(value: unknown): value is Context {
   if (!value || typeof value !== "object") return false;
   const c = value as Context;
   const phone = (v: unknown) => typeof v === "string" && /^\+[1-9]\d{7,14}$/.test(v);
   return (
+    ["login", "verify_phone"].includes(c.purpose) &&
+    Date.parse(c.expires_at) > Date.now() &&
     typeof c.group_id === "string" &&
     /^[0-9a-f-]{36}$/i.test(c.group_id) &&
     typeof c.group_jid === "string" &&
@@ -40,20 +44,29 @@ function validContext(value: unknown): value is Context {
   );
 }
 
-/** Ensaio local injetável. A chamada real continua explicitamente bloqueada até homologação. */
+/** Envio protegido, desligado por padrão; ativação depende do piloto configurado. */
 export async function sendGroupLogin(
   db: Database,
-  input: { challengeId: string; codeHash: string; text: string },
+  input: { challengeId: string; codeHash: string; code: string },
   transport: Transport,
   enabled = false,
 ): Promise<"blocked" | "accepted" | "unknown"> {
-  if (!enabled) return "blocked";
+  if (!enabled || !/^\d{6}$/.test(input.code)) return "blocked";
   const args = { p_challenge_id: input.challengeId, p_code_hash: input.codeHash };
   const candidate = await db.rpc("whatsapp_group_login_context", args);
   if (candidate.error || !validContext(candidate.data)) return "blocked";
   const context = candidate.data;
   const instance = encodeURIComponent(context.instance_name);
   try {
+    const capabilities = (await transport(`/group/bcCapabilities/${instance}`, {
+      signal: AbortSignal.timeout(5000),
+    })) as { contract?: string; protectedCodes?: boolean; serializedCommands?: boolean };
+    if (
+      capabilities?.contract !== "bc-groups-v2" ||
+      capabilities.protectedCodes !== true ||
+      capabilities.serializedCommands !== true
+    )
+      return "blocked";
     const snapshot = groupSnapshot(
       await transport(
         `/group/bcInspect/${instance}?${new URLSearchParams({ groupJid: context.group_jid })}`,
@@ -94,17 +107,26 @@ export async function sendGroupLogin(
     return "blocked";
   let providerId: string | null = null;
   try {
-    const result = (await transport(`/message/sendText/${instance}`, {
+    const result = (await transport(`/group/bcSendCode/${instance}`, {
       method: "POST",
       signal: AbortSignal.timeout(15000),
-      body: JSON.stringify({ number: context.group_jid, text: input.text }),
-    })) as { key?: { id?: unknown } };
+      body: JSON.stringify({
+        operationId: permit.attempt_id,
+        groupJid: context.group_jid,
+        customerJid: context.customer_phone.slice(1) + "@s.whatsapp.net",
+        platformJids: context.platform_phones.map((p) => p.slice(1) + "@s.whatsapp.net"),
+        purpose: context.purpose,
+        expiresAt: context.expires_at,
+        code: input.code,
+      }),
+    })) as { state?: string; messageId?: unknown };
     if (
-      typeof result?.key?.id === "string" &&
-      result.key.id.length > 0 &&
-      result.key.id.length <= 200
+      result?.state === "code_accepted" &&
+      typeof result.messageId === "string" &&
+      result.messageId.length > 0 &&
+      result.messageId.length <= 200
     )
-      providerId = result.key.id;
+      providerId = result.messageId;
   } catch {
     /* Tentativa já persistida: não repetir nem enviar ao privado. */
   }

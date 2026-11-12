@@ -1,5 +1,7 @@
 # Grupos exclusivos de atendimento — preparação local
 
+**Continuação P-120/P-121:** [primeiro acesso e envio protegido local](pacotes/2026-11-11-p120-primeiro-acesso-grupo.md), com nº 109 e extensão v2. Confirmação inicial do cliente agora ensaiada; mesma conta/telefone permitida em várias lojas. Flags desligadas, nada instalado. Pendem homologação/isolamento, cadastro público de nova barbearia e comunicação de negócio; não publicar globalmente. Esta atualização prevalece sobre pendências de implementação já resolvidas nas entradas anteriores.
+
 **Atualização P-120 em 11/11:** grupos locais agora permitem somente cliente + números autorizados da plataforma. Nº 108 revoga participantes profissionais, remove controles de aprovação e leitura na ficha da loja. OTP de login possui caminho exclusivo de grupo em bancada e não usa privado. [Entrega e limites](pacotes/2026-11-11-p120-login-grupo-local.md). O histórico abaixo descreve o modelo anterior; não reutilizar aprovação de equipe. Envio real e criação continuam bloqueados; primeiro acesso e homologação ainda pendentes.
 
 **Atualização posterior de 11/11 — ciclo integrado localmente:** [adaptador, controles e ensaio completo do ciclo](pacotes/2026-11-11-bc-integracao-grupos-local.md). Nº 107 acrescenta autorização por etapa, identidade aprovada e retorno voluntário; convite/admissão/remoção/encerramento/recuperação já implementados e testados. As descrições abaixo registram a preparação inicial. Permanecem bloqueio real, fila/envio, recibos e demais pendências expressas na nova entrega.

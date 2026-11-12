@@ -1,5 +1,15 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 11/11/2026 — P-120, primeiro acesso protegido; P-121, cliente multiloja
+
+[Entrega P-120](pacotes/2026-11-11-p120-primeiro-acesso-grupo.md). Nº 109 separa adesão provisória de prova de telefone; convite próprio, admissão, confirmação no grupo e login posterior. Código nunca privado; recuperação por e-mail. Extensão Evolution `2.3.7-bc.groups.2`, patch completo sobre revisão exata, com segredo adicional, rota própria de código, diário e trava persistente, filtro de histórico/webhook e inclusão controlada dos demais números da plataforma. Imagem local Linux/AMD64 construída, sem registry/VPS.
+
+[P-121](pacotes/2026-11-11-p121-cliente-varias-barbearias.md), pedido durante a implementação: mesma pessoa usa mesma conta/telefone em várias lojas. Entrada destaca reutilização, erro de telefone deixa de mandar trocar o número e retorno prioriza a loja do link. Confirmado em SQL: dois vínculos, mesmo telefone comprovado, grupos separados, pontos separados e nenhum privilégio profissional. Limite de adesões novas ajustado para cinco por pessoa/hora, uma por loja.
+
+Verificação: 570 testes B&C; 1.538 PASS SQL; 27 PASS integrados (PostgreSQL local e provedor fictício), incluindo reversão nº 109; 33 testes Evolution (quatro PostgreSQL), tipos/lint/montagem/imagem. Interface: 300 verificações/30 telas do primeiro acesso; 128/36 dos grupos; 20/5 larguras da entrada multiloja; 320–1440 px, temas/cantos nas bancadas de grupos/primeiro acesso. Capturas representativas vistas. Deno confere auth-otp/whatsapp-groups. O roteiro final aprovou tipos, 570 testes, lint e montagem; a checagem geral de Prettier apontou apenas `.vscode/extensions.json` preexistente e preservado. Formatação dos arquivos desta entrega conferida separadamente. Lint dos alterados mantém dois avisos preexistentes do painel de grupos; montagem mantém avisos de dependências/tamanho.
+
+Somente local; flags desligadas e nº 105–109 não instaladas. [Pacote TI de revisão/pré-piloto](pacotes/2026-11-11-ti-p120-revisao-piloto-grupos.md), sem autorização de instalar. Publicação geral depende também da alternativa do cadastro de nova barbearia e isolamento real; comunicação de negócio/marketing/recibos ainda não liberada. Sem grupo/mensagem real, VPS, Flow, push ou autossave. `.env` e `.vscode/` preservados. Último id P-121.
+
 ## 11/11/2026 — P-120, exclusividade e login de grupo em bancada
 
 [Entrega local](pacotes/2026-11-11-p120-login-grupo-local.md). Implementada nº 108: revogação de equipe, leitura somente pelo titular, composição exata e desafio ligado ao grupo/versão/instância. OTP privado bloqueado para todos os emissores que passam pela autorização central. Login consulta provedor fictício, autoriza uma tentativa e verifica consumo único. Interface retira equipe/ficha da loja e acrescenta **Usar e-mail**, com foco e proteção contra resposta tardia. Primeiro acesso e confirmação inicial do telefone ainda pendentes; envio real permanece explicitamente bloqueado.

@@ -1,5 +1,7 @@
 # P-120 — exclusividade e login pelo grupo, entrega local
 
+**Continuação posterior:** [entrega de primeiro acesso e extensão v2](2026-11-11-p120-primeiro-acesso-grupo.md) resolve os itens 1–3 de desenvolvimento listados abaixo. Nº 109, confirmação, envio protegido e multiloja ensaiados. Este arquivo registra a primeira etapa; sua descrição de bloqueio fixo no código foi substituída por piloto configurável, desligado por padrão. Não instalado nem liberado globalmente.
+
 Data: 11/11/2026. Destinatário: desenvolvimento do Barba & Cabelo. **Não é pedido de instalação à TI.**
 
 ## Resultado e alcance

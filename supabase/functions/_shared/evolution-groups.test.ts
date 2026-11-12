@@ -160,7 +160,7 @@ test("Pedido do profissional é recusado mesmo com aprovação antiga", async ()
 test("Revogação entre etapas interrompe configuração antes da próxima chamada", async () => {
   const f = fixture();
   f.evo.state.before = async (route) => {
-    if (route === "updateSetting") f.state.valid = false;
+    if (route === "bcSetting") f.state.valid = false;
   };
   assert.equal(await f.run(), "paused");
   assert.ok(!f.evo.state.calls.some((c) => c.route === "updateMemberAddMode"));
@@ -207,7 +207,7 @@ test("Encerramento revoga convite e remove participantes registrados, preservand
   assert.equal(await f.run(), "closed");
   assert.equal(f.evo.state.group.participants.length, 1);
   assert.equal(f.state.invite, null);
-  assert.ok(f.evo.state.calls.some((c) => c.route === "revokeInviteCode"));
+  assert.ok(f.evo.state.calls.some((c) => c.route === "bcRevoke"));
 });
 test("Resposta perdida recupera por chave/hash sem repetir criação", async () => {
   const f = fixture();

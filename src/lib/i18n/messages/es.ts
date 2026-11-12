@@ -1,6 +1,24 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const es: Record<MessageKey, string> = {
+  "auth.sharedAccountTitle": "¿Ya usas B&C en otra barbería?",
+  "auth.sharedAccountHint":
+    "Usa la misma cuenta y tu mismo WhatsApp personal. Al iniciar sesión podrás vincularte a esta barbería. Tus puntos y citas se mantienen separados por establecimiento.",
+  "auth.useExistingAccount": "Usar mi cuenta de B&C",
+  "auth.useExistingAccountHint":
+    "Inicia sesión con tu cuenta existente para continuar en esta barbería. Si olvidaste la contraseña, recupérala por correo.",
+  "care.expired": "La confirmación del teléfono caducó. Continúa en el mismo grupo.",
+  "care.resume": "Retomar confirmación",
+  "care.phoneHint":
+    "Introduce tu WhatsApp con prefijo. La verificación se realiza dentro del grupo.",
+  "care.joinHint": "Abre la invitación, solicita entrar con este número y actualiza esta página.",
+  "care.openGroup": "Abrir mi grupo",
+  "care.getInvite": "Obtener invitación",
+  "care.verifyHint":
+    "Después de entrar al grupo, verifica tu número con el código. No se enviará por mensaje privado.",
+  "care.verifyCode": "Confirmar código",
+  "care.sendCode": "Recibir código en el grupo",
+  "care.phoneConfirmed": "Teléfono verificado. Puedes usar el grupo para iniciar sesión.",
   "care.save": "Guardar preferencias",
   "care.title": "Tu atención por WhatsApp",
   "care.requested": "Solicitud registrada",
@@ -4638,7 +4656,8 @@ export const es: Record<MessageKey, string> = {
     "Has pedido demasiados códigos. Espera unos minutos e inténtalo de nuevo.",
   "fix2.whats.errUnavailable":
     "No pudimos enviar el WhatsApp ahora. Revisa el número o inténtalo más tarde.",
-  "fix2.whats.errPhoneInUse": "Este WhatsApp ya está confirmado en otra cuenta. Usa otro número.",
+  "fix2.whats.errPhoneInUse":
+    "Este WhatsApp ya está confirmado en otra cuenta. Si es tuya, inicia sesión en ella para usar el mismo número en cualquier barbería.",
   "fix2.whats.errInvalidNumber": "Introduce un WhatsApp válido con código de área.",
   "fix3.google.eventsTitle": "Próximos eventos de Google Calendar",
   "fix3.google.eventsLoading": "Cargando eventos…",

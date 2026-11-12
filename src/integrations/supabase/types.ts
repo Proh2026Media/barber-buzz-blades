@@ -1413,6 +1413,10 @@ export type Database = {
         Returns: Json;
       };
       care_group_read: { Args: { p_shop: string; p_customer?: string }; Returns: Json };
+      care_group_begin: {
+        Args: { p_shop: string; p_accept: boolean; p_accounts: string[]; p_phone: string };
+        Returns: Json;
+      };
       care_group_request: {
         Args: { p_shop: string; p_accept: boolean; p_accounts: string[] };
         Returns: Json;

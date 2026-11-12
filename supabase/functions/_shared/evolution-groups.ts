@@ -60,7 +60,7 @@ export function evolutionGroupProvider(request: GroupTransport, enabled = false)
     capabilities: async (instance) => {
       const c = record(await get("bcCapabilities", instance));
       if (
-        c.contract !== "bc-groups-v1" ||
+        c.contract !== "bc-groups-v2" ||
         c.memberAddControl !== true ||
         c.admissionControl !== true ||
         c.persistentOperations !== true
@@ -92,8 +92,7 @@ export function evolutionGroupProvider(request: GroupTransport, enabled = false)
     configure: async (instance, groupJid, before) => {
       // Somente proteger; nunca desbloquear, desligar aprovação ou promover participantes.
       const prior = groupSnapshot(await inspect(instance, groupJid));
-      if (!prior?.locked)
-        await post("updateSetting", instance, { groupJid, action: "locked" }, before);
+      if (!prior?.locked) await post("bcSetting", instance, { groupJid }, before);
       if (!prior?.adminsAddOnly)
         await post("updateMemberAddMode", instance, { groupJid, mode: "admin_add" }, before);
       if (!prior?.approvalRequired)
@@ -116,11 +115,11 @@ export function evolutionGroupProvider(request: GroupTransport, enabled = false)
     },
     member: async (instance, groupJid, jid, action, before) => {
       if (!individualPhone(jid) && !/^[0-9]+@lid$/.test(jid)) fail();
-      await post("updateParticipant", instance, { groupJid, participants: [jid], action }, before);
+      await post("bcMember", instance, { groupJid, jid, action }, before);
     },
     invite: async (instance, groupJid, before) => {
       await before();
-      const value = record(await get("inviteCode", instance, { groupJid })).inviteUrl;
+      const value = record(await get("bcInvite", instance, { groupJid })).inviteUrl;
       if (
         typeof value !== "string" ||
         !/^https:\/\/chat\.whatsapp\.com\/[A-Za-z0-9]{10,100}$/.test(value)
@@ -129,7 +128,7 @@ export function evolutionGroupProvider(request: GroupTransport, enabled = false)
       return value;
     },
     revoke: async (instance, groupJid, before) => {
-      const result = record(await post("revokeInviteCode", instance, { groupJid }, before));
+      const result = record(await post("bcRevoke", instance, { groupJid }, before));
       if (result.revoked !== true) fail();
     },
   };

@@ -1,3 +1,4 @@
+import { customerAuthReturn } from "@/lib/auth/customer-return";
 import { otpRequestBody } from "@/lib/auth/otp-request";
 import { WhatsAppLogin } from "@/features/auth/WhatsAppLogin";
 import { AuthFrame } from "@/features/auth/AuthFrame";
@@ -1049,8 +1050,8 @@ function AuthPage() {
    * 1. grava o aceite dos Termos quando o perfil ainda não tem (metadados do cadastro ou
    *    conta Google nova que viu o aviso junto ao botão);
    * 2. WhatsApp informado no cadastro que não chegou ao perfil (o e-mail precisava de
-   *    confirmação): grava e abre a confirmação por código.
-   * Devolve true quando abriu o passo do WhatsApp. Banco antigo (RPC ou coluna ausente)
+   *    confirmação): grava sem confirmar; a prova de posse ocorre no grupo do cliente.
+   * Banco antigo (RPC ou coluna ausente)
    * não atrapalha a entrada.
    */
   async function runFirstAccessChecks(): Promise<boolean> {
@@ -1112,14 +1113,8 @@ function AuthPage() {
         p_opt_in: optIn,
       });
       if (saveError) return false;
-      setPassword("");
-      setPhoneNumber(raw);
-      setPhoneOptIn(optIn);
-      setPhoneCode("");
-      setPhoneUnavailable(false);
-      setMode("verifyPhone");
-      await requestPhoneCode(raw);
-      return true;
+      // Não envia código antes de existir grupo exclusivo.
+      return false;
     } catch {
       return false;
     }
@@ -1135,14 +1130,7 @@ function AuthPage() {
     // área usada neste aparelho ou a mais alta da conta.
     const path = await resolvePostAuthPath(nextOverride ?? preferredNext);
     const shopRef = effectiveShopRefLatest.current || shopFallback;
-    if (shopRef && (path === "/app" || path.startsWith("/app"))) {
-      const url = new URL(path, window.location.origin);
-      if (!url.searchParams.get("shop")) url.searchParams.set("shop", shopRef);
-      url.searchParams.set("join", "1");
-      window.location.href = `${url.pathname}${url.search}`;
-      return;
-    }
-    window.location.href = path;
+    window.location.href = customerAuthReturn(path, shopRef);
   }
 
   async function goAfterAuth() {
@@ -1487,6 +1475,12 @@ function AuthPage() {
       });
       if (error) {
         const msg = error.message || "";
+        if (error.code === "user_already_exists" || /already (registered|exists)/i.test(msg)) {
+          switchMode("signin");
+          setInfo(tNow("auth.useExistingAccountHint"), "info");
+          return;
+        }
+
         if (/confirmação|confirmation|sending.*email|enviando e-mail/i.test(msg)) {
           throw new Error(tNow("auth.error.confirmationEmail"));
         }
@@ -1494,7 +1488,7 @@ function AuthPage() {
       }
 
       // Com autoconfirm, a sessão já vem: grava o WhatsApp (ainda não confirmado)
-      // e abre o passo de confirmação por código. Sem confirmar, o número não
+      // e segue para a conta. A confirmação ocorre no grupo. Sem confirmar, o número não
       // serve para entrar nem recuperar a senha pelo WhatsApp.
       if (signUpData.session) {
         // Já entrou: as conferências do primeiro acesso não precisam repetir o WhatsApp.
@@ -1517,13 +1511,7 @@ function AuthPage() {
           await goAfterAuth();
           return;
         }
-        setPassword("");
-        setPhoneNumber(signupWhatsapp);
-        setPhoneOptIn(signupOptIn);
-        setPhoneCode("");
-        setPhoneUnavailable(false);
-        setMode("verifyPhone");
-        await requestPhoneCode(signupWhatsapp);
+        await goAfterAuth();
         return;
       }
 
@@ -1937,6 +1925,23 @@ function AuthPage() {
               </div>
             )}
 
+            {!resultScreen && effectiveShopRef && (mode === "signin" || mode === "signup") && (
+              <Notice
+                tone="info"
+                title={t("auth.sharedAccountTitle")}
+                {...(mode === "signup"
+                  ? {
+                      action: {
+                        label: t("auth.useExistingAccount"),
+                        onClick: () => switchMode("signin"),
+                      },
+                    }
+                  : {})}
+              >
+                {t("auth.sharedAccountHint")}
+              </Notice>
+            )}
+
             {emailResult && (
               <section className="grid gap-5" aria-labelledby="auth-result-title">
                 <ResultHero
@@ -2126,47 +2131,6 @@ function AuthPage() {
                   >
                     {t("entry.link.expiredDetail")}
                   </Notice>
-                )}
-                {mode === "forgot" && effectiveShopRef && (
-                  <div
-                    className="entry-channel-tabs auth-brand-control grid grid-cols-2 gap-1 bg-muted p-1"
-                    role="tablist"
-                    aria-label={t("auth.recoveryChannel")}
-                  >
-                    {(
-                      [
-                        { id: "email" as const, label: t("auth.channel.email"), icon: Mail },
-                        {
-                          id: "whatsapp" as const,
-                          label: t("auth.channel.whatsapp"),
-                          icon: MessageCircle,
-                        },
-                      ] as const
-                    ).map(({ id, label, icon: Icon }) => (
-                      <button
-                        key={id}
-                        type="button"
-                        role="tab"
-                        aria-selected={recoveryChannel === id}
-                        onClick={() => {
-                          setRecoveryChannel(id);
-                          setOtpSent(false);
-                          setOtpCode("");
-                          setRecoveryResendIn(0);
-                          setError(null);
-                          setInfo(null);
-                        }}
-                        className={`auth-brand-button flex min-h-11 items-center justify-center gap-2 text-sm font-semibold transition-colors ${
-                          recoveryChannel === id
-                            ? "bg-card text-foreground shadow-sm"
-                            : "text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        <Icon className="size-4" aria-hidden="true" />
-                        {label}
-                      </button>
-                    ))}
-                  </div>
                 )}
 
                 {mode === "signup" && (

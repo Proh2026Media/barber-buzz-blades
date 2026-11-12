@@ -1,3 +1,4 @@
+import { GroupPhoneAccess } from "./GroupPhoneAccess";
 import { useEffect, useRef, useState } from "react";
 import { UsersRound, ShieldCheck, RefreshCw, UserMinus } from "lucide-react";
 import { Notice, SectionHeader, ConfirmDialog } from "@/components/visual";
@@ -28,6 +29,10 @@ type Group = {
 };
 type Data = {
   enabled: boolean;
+  phone?: string;
+  phone_confirmed?: boolean;
+  phone_ready?: boolean;
+  enrollment_expired?: boolean;
   group: Group | null;
   preferences: { monthly_marketing: number; proactive_paused: boolean } | null;
   participants: {
@@ -87,6 +92,7 @@ function CareGroupContent({
     proactive_paused: false,
     return_on: "",
   });
+  const [phone, setPhone] = useState("");
   const [closing, setClosing] = useState(false),
     [saved, setSaved] = useState(false);
   const live = useRef(true),
@@ -111,6 +117,7 @@ function CareGroupContent({
     });
     if (r.error) throw r.error;
     apply(r.data);
+    if (live.current) setPhone((r.data as { phone?: string })?.phone ?? "");
   }
   async function run(work: () => Promise<void>, propagate = false) {
     if (demo || pending.current) return;
@@ -204,6 +211,22 @@ function CareGroupContent({
           </div>
           {!readOnly && (!group || ended) && (
             <div className="space-y-3">
+              {!group && (
+                <label className="grid gap-1 text-sm font-semibold">
+                  {t("waPair.phone")}
+                  <input
+                    type="tel"
+                    autoComplete="tel"
+                    value={phone}
+                    disabled={busy}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className={field}
+                  />
+                  <span className="text-xs font-normal text-muted-foreground">
+                    {t("care.phoneHint")}
+                  </span>
+                </label>
+              )}
               <label className="flex min-h-11 items-start gap-3 text-sm">
                 <input
                   type="checkbox"
@@ -226,9 +249,10 @@ function CareGroupContent({
                     });
                   else
                     void run(async () => {
-                      const r = await supabase.rpc("care_group_request", {
+                      const r = await supabase.rpc("care_group_begin", {
                         p_shop: shopId,
                         p_accept: accepted,
+                        p_phone: phone,
                         p_accounts: data.platform_participants.map((p) => p.id),
                       });
                       if (r.error) throw r.error;
@@ -242,6 +266,41 @@ function CareGroupContent({
               </button>
               <p className="text-xs text-muted-foreground">{t("care.preparation")}</p>
             </div>
+          )}
+          {!readOnly &&
+            group &&
+            !ended &&
+            data.enrollment_expired &&
+            group.state !== "creation_unknown" && (
+              <Notice
+                tone="warning"
+                title={t("care.expired")}
+                action={{
+                  label: t("care.resume"),
+                  onClick: () =>
+                    void run(async () => {
+                      const r = await supabase.rpc("care_group_begin", {
+                        p_shop: shopId,
+                        p_accept: true,
+                        p_phone: data.phone ?? "",
+                        p_accounts: data.platform_participants.map((p) => p.id),
+                      });
+                      if (r.error) throw r.error;
+                      apply(r.data);
+                    }),
+                }}
+              />
+            )}
+          {!readOnly && group && !ended && data.phone && (
+            <GroupPhoneAccess
+              key={group.id}
+              groupId={group.id}
+              phone={data.phone}
+              ready={data.phone_ready === true}
+              confirmed={data.phone_confirmed === true}
+              waiting={group.state === "waiting_customer"}
+              onConfirmed={() => void run(load)}
+            />
           )}
           {!readOnly && group && !ended && (
             <div className="space-y-4 border-t border-border pt-4">

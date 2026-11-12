@@ -18,7 +18,7 @@ export function fakeEvolution() {
     lostCreateResponse: false,
     removalFails: false,
     admissionFails: false,
-    contract: "bc-groups-v1",
+    contract: "bc-groups-v2",
     before: async (_route: string) => {},
   };
   const transport = async (path: string, init: RequestInit = {}) => {
@@ -30,6 +30,8 @@ export function fakeEvolution() {
     if (route === "bcCapabilities")
       return {
         contract: state.contract,
+        protectedCodes: true,
+        serializedCommands: true,
         memberAddControl: true,
         admissionControl: true,
         persistentOperations: true,
@@ -50,7 +52,7 @@ export function fakeEvolution() {
     if (route === "bcCreateStatus") return state.records.get(body.operationId);
     if (body.groupJid !== groupId) throw new Error("Outro grupo");
     if (route === "bcInspect") return structuredClone(state.group);
-    if (route === "updateSetting") state.group.restrict = body.action === "locked";
+    if (route === "bcSetting") state.group.restrict = true;
     else if (route === "updateMemberAddMode") state.group.memberAddMode = body.mode !== "admin_add";
     else if (route === "updateJoinApprovalMode") state.group.joinApprovalMode = body.mode === "on";
     else if (route === "joinRequests") {
@@ -59,15 +61,15 @@ export function fakeEvolution() {
       state.requests = state.requests.filter((v) => v !== jid);
       if (body.action === "approve" && !state.admissionFails)
         state.group.participants.push({ id: jid, admin: null });
-    } else if (route === "updateParticipant") {
-      const jid = body.participants[0];
+    } else if (route === "bcMember") {
+      const jid = body.jid;
       if (body.action === "add" && !state.admissionFails)
         state.group.participants.push({ id: jid, admin: null });
       else if (body.action === "remove" && !state.removalFails)
         state.group.participants = state.group.participants.filter((p) => p.id !== jid);
-    } else if (route === "inviteCode")
+    } else if (route === "bcInvite")
       return { inviteUrl: "https://chat.whatsapp.com/FICTICIO123456789" };
-    else if (route === "revokeInviteCode") return { revoked: true };
+    else if (route === "bcRevoke") return { revoked: true };
     else throw new Error("Rota não simulada: " + route);
     return {};
   };
