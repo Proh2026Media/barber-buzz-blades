@@ -1,6 +1,6 @@
 import { useDemo } from "@/features/demo/context";
 import { useEffect, useRef, useState } from "react";
-import { ExternalLink, KeyRound } from "lucide-react";
+import { ExternalLink, KeyRound, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { guardedFetch } from "@/lib/demo-guard";
 import { otpRequestBody } from "@/lib/auth/otp-request";
@@ -15,6 +15,9 @@ export function GroupPhoneAccess({
   ready,
   confirmed,
   waiting,
+  expired,
+  refreshing,
+  onRefresh,
   onConfirmed,
 }: {
   groupId: string;
@@ -22,6 +25,9 @@ export function GroupPhoneAccess({
   ready: boolean;
   confirmed: boolean;
   waiting: boolean;
+  expired: boolean;
+  refreshing: boolean;
+  onRefresh: () => void;
   onConfirmed: () => void;
 }) {
   const { t } = useI18n();
@@ -47,7 +53,15 @@ export function GroupPhoneAccess({
     }
   }, [cooldown]);
   async function run(action: "invite" | "request" | "verify") {
-    if (demo || pending.current || (action === "request" && cooldown > 0)) return;
+    if (
+      demo ||
+      pending.current ||
+      refreshing ||
+      expired ||
+      (action !== "invite" && !ready) ||
+      (action === "request" && cooldown > 0)
+    )
+      return;
     pending.current = true;
     setBusy(true);
     setError(null);
@@ -95,6 +109,11 @@ export function GroupPhoneAccess({
       } = await supabase.auth.getSession();
       if (!live.current || current?.user.id !== session.user.id) return;
       if (!response.ok || payload.ok !== true) {
+        if (payload.error_code === "rate_limited") {
+          setError("waLogin.limit");
+          setCooldown(900);
+          return;
+        }
         if (payload.error_code === "otp_invalid") {
           setError("waLogin.invalid");
           return;
@@ -102,6 +121,7 @@ export function GroupPhoneAccess({
         throw new Error();
       }
       if (action === "request") {
+        if (payload.delivery_state === "unknown") setError("care.codeUnavailable");
         setRequested(true);
         setCode("");
         setCooldown(60);
@@ -112,8 +132,17 @@ export function GroupPhoneAccess({
       }
     } catch {
       if (live.current) {
-        setError("care.error");
-        if (action === "request") setCooldown(60);
+        setError(
+          action === "invite"
+            ? "care.inviteUnavailable"
+            : action === "request"
+              ? "care.codeUnavailable"
+              : "care.error",
+        );
+        if (action === "request") {
+          setRequested(true);
+          setCooldown(60);
+        }
       }
     } finally {
       pending.current = false;
@@ -122,9 +151,9 @@ export function GroupPhoneAccess({
   }
   return (
     <div className="space-y-3 border-t border-border pt-4">
-      {waiting && (
+      {waiting && !expired && (
         <>
-          <p className="text-sm">{t("care.joinHint")}</p>
+          <p className="break-all text-sm font-semibold">{phone}</p>
           {invite ? (
             <a
               className="action-button inline-flex"
@@ -136,14 +165,18 @@ export function GroupPhoneAccess({
               {t("care.openGroup")}
             </a>
           ) : (
-            <button className="action-button" disabled={busy} onClick={() => void run("invite")}>
+            <button
+              className="action-button"
+              disabled={busy || refreshing}
+              onClick={() => void run("invite")}
+            >
               <ExternalLink aria-hidden />
               {t("care.getInvite")}
             </button>
           )}
         </>
       )}
-      {!confirmed && (
+      {!confirmed && ready && !expired && (
         <>
           <p className="text-sm">{t("care.verifyHint")}</p>
           <p className="text-sm font-semibold break-all">{phone}</p>
@@ -164,7 +197,9 @@ export function GroupPhoneAccess({
           )}
           <button
             className="action-button action-confirm"
-            disabled={busy || !ready || (requested ? code.length !== 6 : cooldown > 0)}
+            disabled={
+              busy || refreshing || !ready || (requested ? code.length !== 6 : cooldown > 0)
+            }
             onClick={() => void run(requested ? "verify" : "request")}
           >
             <KeyRound aria-hidden />
@@ -173,7 +208,7 @@ export function GroupPhoneAccess({
           {requested && (
             <button
               className="entry-link-button"
-              disabled={busy || cooldown > 0}
+              disabled={busy || refreshing || !ready || cooldown > 0}
               onClick={() => void run("request")}
             >
               {t("waLogin.resend")}
@@ -185,6 +220,17 @@ export function GroupPhoneAccess({
             </p>
           )}
         </>
+      )}
+      {!ready && !expired && (
+        <div className="space-y-2">
+          <p role="status" className="text-sm text-muted-foreground">
+            {t(waiting ? "care.awaitEntry" : "care.awaitPreparation")}
+          </p>
+          <button className="action-button" disabled={busy || refreshing} onClick={onRefresh}>
+            <RefreshCw aria-hidden />
+            {t(waiting ? "care.checkEntry" : "care.refresh")}
+          </button>
+        </div>
       )}
       {confirmed && <Notice tone="info" title={t("care.phoneConfirmed")} />}
       {error && <Notice id={"group-phone-error-" + groupId} tone="danger" title={t(error)} />}

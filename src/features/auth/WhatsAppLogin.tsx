@@ -1,7 +1,7 @@
 import { otpRequestBody } from "@/lib/auth/otp-request";
 import { useDemo } from "@/features/demo/context";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, MessageCircle } from "lucide-react";
+import { ArrowRight, KeyRound, Loader2, Mail, MessageCircle } from "lucide-react";
 import {
   Dialog,
   DialogBody,
@@ -103,6 +103,7 @@ function LoginForm({
     initialPairingCountry(undefined, locale),
   );
   const countries = useMemo(() => pairingCountries(locale), [locale]);
+  const [hasGroup, setHasGroup] = useState(false);
   const [phone, setPhone] = useState("");
   const [destination, setDestination] = useState<string | null>(null);
   const [code, setCode] = useState("");
@@ -159,7 +160,7 @@ function LoginForm({
       );
       const payload = await response.json();
       if (!live.current) return;
-      if (!response.ok) {
+      if (!response.ok || payload.ok !== true) {
         if (payload.error_code === "rate_limited") {
           setCooldown(60);
           setError("waLogin.limit");
@@ -202,6 +203,39 @@ function LoginForm({
       if (live.current) setBusy(false);
     }
   }
+  if (!hasGroup)
+    return (
+      <div className="space-y-3">
+        <button
+          type="button"
+          className="action-button w-full justify-between gap-3 p-4 text-left"
+          onClick={() => setHasGroup(true)}
+        >
+          <KeyRound className="size-6 shrink-0" aria-hidden />
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">{t("waLogin.haveGroup")}</span>
+            <span className="block text-sm font-normal opacity-80">
+              {t("waLogin.haveGroupHint")}
+            </span>
+          </span>
+          <ArrowRight className="size-5 shrink-0" aria-hidden />
+        </button>
+        <button
+          type="button"
+          className="action-button w-full justify-between gap-3 p-4 text-left"
+          onClick={onUseEmail}
+        >
+          <Mail className="size-6 shrink-0" aria-hidden />
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">{t("waLogin.firstAccess")}</span>
+            <span className="block text-sm font-normal opacity-80">
+              {t("waLogin.firstAccessHint")}
+            </span>
+          </span>
+          <ArrowRight className="size-5 shrink-0" aria-hidden />
+        </button>
+      </div>
+    );
   const field = "min-h-11 w-full min-w-0 rounded-xl border border-border bg-background px-3";
   return (
     <form
@@ -245,7 +279,8 @@ function LoginForm({
         </>
       ) : (
         <>
-          <Notice tone="info" title={t("waLogin.sent")}>
+          <Notice tone="info" title={t("waLogin.requested")}>
+            <p className="mb-1">{t("waLogin.sent")}</p>
             <span className="break-all">{destination}</span>
           </Notice>
           <CodeInput

@@ -1,6 +1,26 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const enUS: Record<MessageKey, string> = {
+  "waLogin.haveGroup": "I already activated my group",
+  "waLogin.haveGroupHint": "My phone is already verified in B&C.",
+  "waLogin.firstAccess": "I have not activated my group yet",
+  "waLogin.firstAccessHint": "Sign in with email. Open WhatsApp support in your profile.",
+  "waLogin.requested": "Request received",
+  "care.steps": "Activate group access",
+  "care.stepRequest": "Request group",
+  "care.stepJoin": "Join group",
+  "care.stepPhone": "Verify phone",
+  "care.stepDone": "Completed",
+  "care.inviteUnavailable":
+    "Invite unavailable. Refresh the group status. If it remains unavailable, sign in with email and wait for access.",
+  "care.codeUnavailable":
+    "We could not confirm sending. If the code reached the group, enter it below. Wait before requesting another. You can keep using email.",
+  "care.awaitEntry": "Join using the invite, then check your membership here.",
+  "care.refresh": "Refresh status",
+  "care.awaitPreparation":
+    "The group is still being prepared or reviewed. You can keep signing in with email.",
+  "care.checkEntry": "I joined · check",
+
   "auth.sharedAccountTitle": "Already use B&C at another barbershop?",
   "auth.sharedAccountHint":
     "Use the same account and personal WhatsApp number. After signing in, you can join this barbershop. Your points and appointments stay separate for each shop.",
@@ -18,7 +38,7 @@ export const enUS: Record<MessageKey, string> = {
     "After joining the group, verify your number with the code. No code will be sent privately.",
   "care.verifyCode": "Verify code",
   "care.sendCode": "Receive code in group",
-  "care.phoneConfirmed": "Phone verified. You can use the group to sign in.",
+  "care.phoneConfirmed": "Phone verified. WhatsApp sign-in also requires an available group.",
   "care.save": "Save preferences",
   "care.title": "Your care on WhatsApp",
   "care.requested": "Request recorded",

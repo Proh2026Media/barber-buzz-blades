@@ -1,6 +1,6 @@
 import { GroupPhoneAccess } from "./GroupPhoneAccess";
 import { useEffect, useRef, useState } from "react";
-import { UsersRound, ShieldCheck, RefreshCw, UserMinus } from "lucide-react";
+import { Check, UsersRound, ShieldCheck, RefreshCw, UserMinus } from "lucide-react";
 import { Notice, SectionHeader, ConfirmDialog } from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
@@ -194,8 +194,53 @@ function CareGroupContent({
             <p className="text-sm text-muted-foreground">{t("care.intro")}</p>
           )}
           {!data.enabled && <Notice tone="info" title={t("care.disabled")} />}
-          <div className="space-y-2">
-            <h3 className="text-sm font-semibold">{t("care.people")}</h3>
+          {!readOnly && !ended && (
+            <ol aria-label={t("care.steps")} className="grid gap-2 tablet:grid-cols-3">
+              {(["care.stepRequest", "care.stepJoin", "care.stepPhone"] as const).map(
+                (label, index) => {
+                  const completed = [
+                    Boolean(group),
+                    group?.state === "active",
+                    data.phone_confirmed === true,
+                  ][index];
+                  const current = !group
+                    ? 0
+                    : group.state === "waiting_customer"
+                      ? 1
+                      : data.phone_ready
+                        ? 2
+                        : -1;
+                  return (
+                    <li
+                      key={label}
+                      aria-current={!completed && index === current ? "step" : undefined}
+                      className="flex min-w-0 items-center gap-2 rounded-xl border border-border p-3 text-sm"
+                    >
+                      <span
+                        className={
+                          "flex size-7 shrink-0 items-center justify-center rounded-full " +
+                          (completed
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-muted-foreground")
+                        }
+                      >
+                        {completed ? (
+                          <Check className="size-4" aria-label={t("care.stepDone")} />
+                        ) : (
+                          index + 1
+                        )}
+                      </span>
+                      <span className="min-w-0 break-words">{t(label)}</span>
+                    </li>
+                  );
+                },
+              )}
+            </ol>
+          )}
+          <details className="space-y-2" open={!group}>
+            <summary className="min-h-11 cursor-pointer content-center text-sm font-semibold">
+              {t("care.people")}
+            </summary>
             <p className="text-sm text-muted-foreground">{t("care.visibility")}</p>
             {data.platform_participants.map((p) => (
               <div
@@ -208,7 +253,7 @@ function CareGroupContent({
                 </span>
               </div>
             ))}
-          </div>
+          </details>
           {!readOnly && (!group || ended) && (
             <div className="space-y-3">
               {!group && (
@@ -271,6 +316,7 @@ function CareGroupContent({
             group &&
             !ended &&
             data.enrollment_expired &&
+            !data.phone_confirmed &&
             group.state !== "creation_unknown" && (
               <Notice
                 tone="warning"
@@ -293,18 +339,23 @@ function CareGroupContent({
             )}
           {!readOnly && group && !ended && data.phone && (
             <GroupPhoneAccess
-              key={group.id}
+              key={`${group.id}:${group.version}:${data.phone}`}
               groupId={group.id}
               phone={data.phone}
               ready={data.phone_ready === true}
               confirmed={data.phone_confirmed === true}
               waiting={group.state === "waiting_customer"}
+              expired={data.enrollment_expired === true && data.phone_confirmed !== true}
+              refreshing={busy}
+              onRefresh={() => void run(load)}
               onConfirmed={() => void run(load)}
             />
           )}
           {!readOnly && group && !ended && (
-            <div className="space-y-4 border-t border-border pt-4">
-              <h3 className="font-semibold">{t("care.preferences")}</h3>
+            <details className="space-y-4 border-t border-border pt-4">
+              <summary className="min-h-11 cursor-pointer content-center font-semibold">
+                {t("care.preferences")}
+              </summary>
               {(["notifications", "review_invites", "proactive_paused"] as const).map((key) => (
                 <label key={key} className="flex min-h-11 items-center gap-3 text-sm">
                   <input
@@ -367,13 +418,20 @@ function CareGroupContent({
                   {t("care.close")}
                 </button>
               </div>
-            </div>
+              <p className="text-xs text-muted-foreground">{t("care.receipt")}</p>
+            </details>
           )}
-          <button className="action-button" disabled={busy} onClick={() => void run(load)}>
-            <RefreshCw aria-hidden />
-            {t("waCentral.refresh")}
-          </button>
-          <p className="text-xs text-muted-foreground">{t("care.receipt")}</p>
+          {(readOnly ||
+            !group ||
+            ended ||
+            !data.phone ||
+            data.phone_ready ||
+            data.enrollment_expired) && (
+            <button className="action-button" disabled={busy} onClick={() => void run(load)}>
+              <RefreshCw aria-hidden />
+              {t("care.refresh")}
+            </button>
+          )}
         </>
       )}
       <ConfirmDialog

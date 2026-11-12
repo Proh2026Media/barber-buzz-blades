@@ -1,5 +1,25 @@
 /** Dicionário principal (fonte). Toda chave nova nasce aqui, em pt-BR. */
 export const ptBR = {
+  "waLogin.haveGroup": "Já ativei meu grupo",
+  "waLogin.haveGroupHint": "Meu telefone já está confirmado no B&C.",
+  "waLogin.firstAccess": "Ainda não ativei meu grupo",
+  "waLogin.firstAccessHint": "Entre por e-mail. No seu perfil, abra o atendimento pelo WhatsApp.",
+  "waLogin.requested": "Pedido recebido",
+  "care.steps": "Ativar acesso pelo grupo",
+  "care.stepRequest": "Solicitar grupo",
+  "care.stepJoin": "Entrar no grupo",
+  "care.stepPhone": "Confirmar telefone",
+  "care.stepDone": "Concluído",
+  "care.inviteUnavailable":
+    "Convite indisponível. Atualize a situação do grupo. Se continuar assim, entre por e-mail e aguarde a liberação.",
+  "care.codeUnavailable":
+    "Não foi possível confirmar o envio. Se o código chegou ao grupo, digite-o abaixo. Aguarde antes de pedir outro. Você pode continuar usando e-mail.",
+  "care.awaitEntry": "Entre pelo convite e depois confira sua entrada aqui.",
+  "care.refresh": "Atualizar situação",
+  "care.awaitPreparation":
+    "O grupo ainda está em preparação ou revisão. Você pode continuar usando sua conta por e-mail.",
+  "care.checkEntry": "Já entrei · conferir",
+
   "auth.sharedAccountTitle": "Já usa o B&C em outra barbearia?",
   "auth.sharedAccountHint":
     "Use a mesma conta e o mesmo WhatsApp pessoal. Depois de entrar, você poderá se vincular a esta barbearia. Seus pontos e agendamentos ficam separados por loja.",
@@ -16,7 +36,8 @@ export const ptBR = {
     "Depois de entrar no grupo, confirme seu número com o código. Nenhum código será enviado no privado.",
   "care.verifyCode": "Confirmar código",
   "care.sendCode": "Receber código no grupo",
-  "care.phoneConfirmed": "Telefone confirmado. Você poderá usar o grupo para entrar na sua conta.",
+  "care.phoneConfirmed":
+    "Telefone confirmado. O login por WhatsApp também depende de um grupo disponível.",
   "care.save": "Salvar preferências",
   "care.title": "Seu atendimento pelo WhatsApp",
   "care.requested": "Solicitação registrada",

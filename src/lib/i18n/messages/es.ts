@@ -1,6 +1,26 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const es: Record<MessageKey, string> = {
+  "waLogin.haveGroup": "Ya activé mi grupo",
+  "waLogin.haveGroupHint": "Mi teléfono ya está confirmado en B&C.",
+  "waLogin.firstAccess": "Todavía no activé mi grupo",
+  "waLogin.firstAccessHint": "Entra con tu correo. En tu perfil, abre la atención por WhatsApp.",
+  "waLogin.requested": "Solicitud recibida",
+  "care.steps": "Activar acceso por el grupo",
+  "care.stepRequest": "Solicitar grupo",
+  "care.stepJoin": "Entrar al grupo",
+  "care.stepPhone": "Confirmar teléfono",
+  "care.stepDone": "Completado",
+  "care.inviteUnavailable":
+    "Invitación no disponible. Actualiza el estado del grupo. Si sigue igual, entra con tu correo y espera la habilitación.",
+  "care.codeUnavailable":
+    "No pudimos confirmar el envío. Si el código llegó al grupo, introdúcelo abajo. Espera antes de pedir otro. Puedes seguir usando el correo.",
+  "care.awaitEntry": "Entra con la invitación y después comprueba tu entrada aquí.",
+  "care.refresh": "Actualizar estado",
+  "care.awaitPreparation":
+    "El grupo sigue en preparación o revisión. Puedes seguir entrando con tu correo.",
+  "care.checkEntry": "Ya entré · comprobar",
+
   "auth.sharedAccountTitle": "¿Ya usas B&C en otra barbería?",
   "auth.sharedAccountHint":
     "Usa la misma cuenta y tu mismo WhatsApp personal. Al iniciar sesión podrás vincularte a esta barbería. Tus puntos y citas se mantienen separados por establecimiento.",
@@ -18,7 +38,8 @@ export const es: Record<MessageKey, string> = {
     "Después de entrar al grupo, verifica tu número con el código. No se enviará por mensaje privado.",
   "care.verifyCode": "Confirmar código",
   "care.sendCode": "Recibir código en el grupo",
-  "care.phoneConfirmed": "Teléfono verificado. Puedes usar el grupo para iniciar sesión.",
+  "care.phoneConfirmed":
+    "Teléfono confirmado. El acceso por WhatsApp también necesita un grupo disponible.",
   "care.save": "Guardar preferencias",
   "care.title": "Tu atención por WhatsApp",
   "care.requested": "Solicitud registrada",
