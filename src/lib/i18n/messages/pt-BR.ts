@@ -1,5 +1,51 @@
 /** Dicionário principal (fonte). Toda chave nova nasce aqui, em pt-BR. */
 export const ptBR = {
+  "waHealth.title": "Saúde do WhatsApp",
+  "waHealth.refreshHint":
+    "Atualiza a cada 20 segundos enquanto esta página estiver visível. Conexão ativa não garante entrega de mensagens.",
+  "waHealth.unavailable": "Não foi possível atualizar. A situação dos números pode ter mudado.",
+  "waHealth.paused": "Os envios estão pausados para toda a plataforma.",
+  "waHealth.unknownConnection": "Conexão sem confirmação atual",
+  "waHealth.checking": "Conferindo os números…",
+  "waHealth.empty": "Nenhum número identificado para acompanhar.",
+  "waHealth.numberPaused": "Envios pausados por configuração",
+  "waHealth.checked": "Conexões conferidas às {time}",
+  "waHealth.openCentral": "Abrir Central WhatsApp",
+  "waHealth.alertCount": "WhatsApp: {count} número(s) precisam de atenção",
+  "waHealth.disconnected": "Número desconectado ou aguardando conexão",
+  "waHealth.failed": "Há falhas de envio registradas nas últimas 24 horas",
+  "waHealth.unknownDelivery": "Há envios sem resultado confirmado nas últimas 24 horas",
+  "waHealth.pending": "Há mensagens aguardando envio há mais de 5 minutos",
+  "waHealth.connected": "Conectado",
+  "waHealth.attention": "Verificar",
+
+  "push.title": "Notificações neste aparelho",
+  "push.description":
+    "Receba avisos de criação, alteração e cancelamento de agendamentos, mesmo com o B&C fechado.",
+  "push.install":
+    "No iPhone ou iPad, adicione o B&C à tela inicial e abra pelo ícone para ativar as notificações.",
+  "push.unsupported":
+    "Este navegador não oferece notificações web neste contexto. Use um navegador compatível com uma conexão segura.",
+  "push.blocked":
+    "As notificações estão bloqueadas pelo navegador. Libere-as nas permissões deste site e abra esta tela novamente.",
+  "push.preparing":
+    "As notificações estão em preparação. Você poderá ativá-las após a liberação do serviço.",
+  "push.on": "Notificações ativadas neste aparelho",
+  "push.off": "Notificações desativadas neste aparelho",
+  "push.enable": "Ativar notificações",
+  "push.disable": "Desativar neste aparelho",
+  "push.test": "Enviar teste",
+  "push.testQueued":
+    "Teste solicitado. Aguarde até um minuto; a entrega depende do navegador e da conexão.",
+  "push.error":
+    "Não foi possível atualizar as notificações. Confira sua conexão e tente novamente.",
+  "push.device":
+    "A escolha vale para esta conta e este aparelho. Não envia promoções nem códigos de login.",
+
+  "care.profileCodeUnavailable":
+    "O código é enviado somente ao seu grupo do B&C. Não foi possível enviar agora; confira a preparação e sua entrada no grupo.",
+  "care.openSetup": "Ver meu grupo e próximos passos",
+
   "waLogin.haveGroup": "Já ativei meu grupo",
   "waLogin.haveGroupHint": "Meu telefone já está confirmado no B&C.",
   "waLogin.firstAccess": "Ainda não ativei meu grupo",

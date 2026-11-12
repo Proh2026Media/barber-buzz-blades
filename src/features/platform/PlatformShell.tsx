@@ -1,3 +1,4 @@
+import { WhatsAppHealthIndicator } from "./WhatsAppHealthIndicator";
 import { WhatsAppCentral } from "./WhatsAppCentral";
 import { PwaInstallBanner } from "@/components/pwa-install-banner";
 import { WorkspaceFrame, WorkspaceHeading } from "@/components/visual/WorkspaceHeader";
@@ -549,6 +550,12 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
         </nav>
 
         <div className="workspace-header-actions flex shrink-0 items-center gap-2 sm:gap-3">
+          {!demoMode && !demoChrome && (
+            <WhatsAppHealthIndicator
+              key={profile.user.id}
+              onOpenCentral={() => setPlatformTab("whatsapp")}
+            />
+          )}
           <ThemeToggle />
           {headerActions}
           {demoMode || demoChrome ? (

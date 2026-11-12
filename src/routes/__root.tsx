@@ -16,6 +16,7 @@ import { themeBootstrapScript } from "../lib/theme";
 import { deviceBootstrapScript } from "../lib/device";
 import { DEFAULT_LOCALE, localeFromTag, localeBootstrapScript } from "../lib/i18n/locale";
 import { useI18n } from "../lib/i18n";
+import { PushAccountGuard } from "@/features/notifications/PushAccountGuard";
 import { PwaRegister } from "../lib/pwa";
 import { PwaInstallBanner, PwaInstallProvider } from "../components/pwa-install-banner";
 import { Toaster } from "../components/ui/sonner";
@@ -135,6 +136,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <PwaRegister />
+      <PushAccountGuard />
       <PwaInstallProvider>
         <PwaInstallBanner fallback />
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}

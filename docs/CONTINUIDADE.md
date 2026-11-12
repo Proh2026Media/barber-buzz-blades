@@ -2218,3 +2218,14 @@ name: mb
 description: Orientar mudanças de interface no projeto Barba & Cabelo para uma experiência moderna, intuitiva e acessível a diferentes idades. Aplicar quando o usuário invocar /mb ou $mb ou pedir melhorias visuais e de interação nesse projeto.
 
 ---
+
+
+## 12/11/2026 — Web Push, monitor no cabeçalho e atualização consolidada para TI
+
+Pedido do dono: habilitar notificações web, avisar o admin sobre falhas dos números em qualquer área e consolidar o que não foi enviado à TI desde o primeiro pedido. Trabalho em ramo isolado, atualizado sobre `aca86fe`; original e marca preservados. [Roteiro e pacote](pacotes/2026-11-12-ti-bc-push-monitor-login.md).
+
+Web Push local com opt-in por sessão/aparelho, VAPID, payload cifrado e genérico, fila de eventos de agendamentos, revalidação de acesso, revogação e teste próprio. Migration `20261112230000_notificacoes_web_push.sql` nasce desativada. Monitor usa `20261112231000_painel_saude_whatsapp.sql` e Edge de leitura, respeita catálogo, diferencia falta de confirmação de desconexão e mantém estado anterior durante falha. Ícone nos cabeçalhos da plataforma, loja e cliente para admin global. Sem envio, reconexão ou leitura de chats.
+
+Confirmação de telefone trata `whatsapp_unavailable` com orientação para o grupo e atalho contextual. Não altera o estado real da Gmail nem torna o piloto apto. Dois admins/ciclo anual/convite seguro e demais blocos de grupos seguem fora desta entrega. [Regra editorial aprovada](comunicacao-notificacoes-2026-11-12.md): naturalidade por clareza/contexto, sem erros propositais, abreviações ou simulação humana. Nenhum motor de typos implantado.
+
+Tipos, testes automatizados, SQL em banco descartável, cifra VAPID/aes128gcm, funções Deno e bancada de navegador realizados; resultados finais e limites em `VALIDACAO.md` do pacote. Nenhuma prova de push em aparelho real nem de entrega WhatsApp; homologação operacional com TI permanece necessária. Sem push/main, migrations reais ou segredos no pacote.

@@ -1,3 +1,4 @@
+import { WhatsAppHealthIndicator } from "@/features/platform/WhatsAppHealthIndicator";
 import { PwaInstallBanner } from "@/components/pwa-install-banner";
 import { SettingsPanel, SettingsPanels } from "./settings/SettingsPanels";
 import { useDevice } from "@/lib/device";
@@ -2032,6 +2033,11 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
 
           <div className="workspace-header-actions flex shrink-0 items-center gap-1.5 sm:gap-2">
             <ThemeToggle />
+            {!demo && profile.memberships.some((m) => m.role === "platform_admin") && (
+              <WhatsAppHealthIndicator
+                onOpenCentral={() => window.location.assign("/platform?aba=whatsapp")}
+              />
+            )}
             {headerActions}
             {/* Na demonstração a visão Plataforma e a saída ficam no frasco e no menu da conta. */}
             {!demo && (

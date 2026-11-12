@@ -1,3 +1,4 @@
+import { WhatsAppHealthIndicator } from "@/features/platform/WhatsAppHealthIndicator";
 import { PwaInstallBanner } from "@/components/pwa-install-banner";
 import { WorkspaceFrame, WorkspaceHeading } from "@/components/visual/WorkspaceHeader";
 import { SurveyCard } from "@/features/insights/SurveyCard";
@@ -3162,6 +3163,11 @@ function ArenaApp({
               />
             </span>
           </button>
+          {!demo && account?.memberships.some((m) => m.role === "platform_admin") && (
+            <WhatsAppHealthIndicator
+              onOpenCentral={() => window.location.assign("/platform?aba=whatsapp")}
+            />
+          )}
           {headerActions}
           {demoChrome ? (
             <>

@@ -1,6 +1,51 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const enUS: Record<MessageKey, string> = {
+  "waHealth.title": "WhatsApp health",
+  "waHealth.refreshHint":
+    "Refreshes every 20 seconds while this page is visible. An active connection does not guarantee message delivery.",
+  "waHealth.unavailable": "Could not refresh. Number statuses may have changed.",
+  "waHealth.paused": "Sending is paused across the platform.",
+  "waHealth.unknownConnection": "Connection not currently confirmed",
+  "waHealth.checking": "Checking numbers…",
+  "waHealth.empty": "No identified numbers to monitor.",
+  "waHealth.numberPaused": "Sending paused in settings",
+  "waHealth.checked": "Connections checked at {time}",
+  "waHealth.openCentral": "Open WhatsApp Center",
+  "waHealth.alertCount": "WhatsApp: {count} number(s) need attention",
+  "waHealth.disconnected": "Number disconnected or waiting to connect",
+  "waHealth.failed": "Send failures were recorded in the last 24 hours",
+  "waHealth.unknownDelivery": "Some sends have no confirmed outcome in the last 24 hours",
+  "waHealth.pending": "Some messages have been waiting more than 5 minutes",
+  "waHealth.connected": "Connected",
+  "waHealth.attention": "Check",
+
+  "push.title": "Notifications on this device",
+  "push.description":
+    "Get appointment creation, change and cancellation alerts, even when B&C is closed.",
+  "push.install":
+    "On iPhone or iPad, add B&C to the Home Screen and open its icon to enable notifications.",
+  "push.unsupported":
+    "This browser does not support web notifications in this context. Use a compatible browser with a secure connection.",
+  "push.blocked":
+    "Notifications are blocked by your browser. Allow them in this site’s permissions and reopen this screen.",
+  "push.preparing":
+    "Notifications are being prepared. You can enable them once the service is available.",
+  "push.on": "Notifications enabled on this device",
+  "push.off": "Notifications disabled on this device",
+  "push.enable": "Enable notifications",
+  "push.disable": "Disable on this device",
+  "push.test": "Send test",
+  "push.testQueued":
+    "Test requested. Allow up to a minute; delivery depends on your browser and connection.",
+  "push.error": "We could not update notifications. Check your connection and try again.",
+  "push.device":
+    "This choice applies to this account and device. No promotions or sign-in codes are sent.",
+
+  "care.profileCodeUnavailable":
+    "The code is sent only to your B&C group. We could not send it now; check group setup and your membership.",
+  "care.openSetup": "View my group and next steps",
+
   "waLogin.haveGroup": "I already activated my group",
   "waLogin.haveGroupHint": "My phone is already verified in B&C.",
   "waLogin.firstAccess": "I have not activated my group yet",

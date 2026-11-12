@@ -1,5 +1,6 @@
+import { PushNotificationsCard } from "@/features/notifications/PushNotifications";
 import { useRef, useState } from "react";
-import { KeyRound, Languages, LogOut, MessageCircle, type LucideIcon } from "lucide-react";
+import { Bell, KeyRound, Languages, LogOut, MessageCircle, type LucideIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogBody, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { PersonAvatar } from "@/components/visual";
@@ -40,9 +41,9 @@ export function PlatformAccountMenu({
   const [open, setOpen] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
   const areaSwitch = useAreaSwitch();
-  const [panel, setPanel] = useState<"password" | "language" | "whatsapp" | null>(null);
+  const [panel, setPanel] = useState<"push" | "password" | "language" | "whatsapp" | null>(null);
 
-  function openPanel(next: "password" | "language" | "whatsapp") {
+  function openPanel(next: "push" | "password" | "language" | "whatsapp") {
     setOpen(false);
     window.setTimeout(() => setPanel(next), 0);
   }
@@ -85,6 +86,10 @@ export function PlatformAccountMenu({
             }}
           />
           <div className="space-y-0.5 border-t border-border pt-1">
+            <button type="button" className={ITEM} onClick={() => openPanel("push")}>
+              <MenuIcon icon={Bell} />
+              {t("push.title")}
+            </button>
             <button type="button" className={ITEM} onClick={() => openPanel("whatsapp")}>
               <MenuIcon icon={MessageCircle} />
               {t("account.whatsapp.title")}
@@ -120,19 +125,24 @@ export function PlatformAccountMenu({
           }}
         >
           <DialogTitle className="flex min-h-11 items-center gap-2 pr-12 text-lg font-bold">
-            {panel === "language" ? (
+            {panel === "push" ? (
+              <Bell className="size-5 text-gold" aria-hidden />
+            ) : panel === "language" ? (
               <Languages className="size-5 text-gold" aria-hidden />
             ) : panel === "whatsapp" ? (
               <MessageCircle className="size-5 text-gold" aria-hidden />
             ) : (
               <KeyRound className="size-5 text-gold" aria-hidden />
             )}
-            {panel === "language"
-              ? t("language.title")
-              : panel === "whatsapp"
-                ? t("account.whatsapp.title")
-                : t("plat.account.password")}
+            {panel === "push"
+              ? t("push.title")
+              : panel === "language"
+                ? t("language.title")
+                : panel === "whatsapp"
+                  ? t("account.whatsapp.title")
+                  : t("plat.account.password")}
           </DialogTitle>
+          {panel === "push" && <PushNotificationsCard bare />}
           {panel === "password" && <ChangePasswordCard />}
           {panel === "language" && <LanguageSettingsCard hideHeading />}
           {panel === "whatsapp" && (
