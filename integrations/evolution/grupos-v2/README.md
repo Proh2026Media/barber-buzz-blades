@@ -45,3 +45,11 @@ Migrations próprias da Evolution: `20261111190000_bc_group_operations` e `20261
 29 testes de política/HTTP/webhook e quatro com PostgreSQL real/duas conexões passaram. Tipos, lint dos fontes alterados, montagem e construção da imagem passaram. Incluem segredo obrigatório das 13 rotas, falta de controles/cliente, terceiros, cliente administrador, expiração, concorrência, resultado incerto e persistência da trava/aceitação após reinício dos clientes de banco.
 
 A trava coordena os comandos deste contrato; não controla ações externas do próprio WhatsApp. Rotas gerais de mensagens/chats e integrações externas não constituem uma sandbox por usuário da barbearia. A TI deve comprovar que os profissionais não têm credenciais, sessão/aparelho pareado, acesso a painéis, logs, backups ou exportações desses números. Não habilitar OTP se esse isolamento não estiver demonstrado. Não houve grupo/mensagem real, ensaio PN/LID ao vivo ou medição de indisponibilidade. Não há promessa de eliminação de restrições da Meta.
+
+## Preparação posterior à revisão TI
+
+O cadastro de barbearia ganhou alternativa autenticada (B&C nº 110), sem alterar este patch. Roteiro vigente: [implantação e piloto](../../../docs/pacotes/2026-11-11-ti-p120-implantacao-piloto.md). O dono autorizou os quatro itens; conexão do número e identificação do cliente ainda faltam.
+
+`testar-banco-local.py` agora espera TCP do PostgreSQL; quatro testes passaram em três execuções. `testar-reinicio-local.py` mediu três recriações em rede interna (13,413 / 13,373 / 13,472 segundos), sem WhatsApp real e preservando volume sentinela. Isso não prevê indisponibilidade na VPS.
+
+`publicar-imagem.py CHECKOUT_BASE ghcr.io/ORGANIZACAO/bc-evolution-groups:2.3.7-bc.groups.2 SAIDA_JSON` prepara fonte exata, constrói e publica AMD64, retornando digest. Exige credencial Docker de publicação do Guardião; não foi executado contra registry nesta máquina. Não instala nem altera produção.

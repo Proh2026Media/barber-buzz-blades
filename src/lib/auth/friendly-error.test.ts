@@ -117,7 +117,7 @@ test("every error_code returned by auth-otp and register-shop is known to the ap
     "../../../supabase/functions/register-shop/index.ts",
   ]) {
     const codes = serverErrorCodes(path);
-    assert.ok(codes.length > 10, `nenhum ErrorCode lido em ${path}`);
+    assert.ok(codes.length > 0, `nenhum ErrorCode lido em ${path}`);
     for (const code of codes) {
       assert.ok(isKnownErrorCode(code), `${code} (${path}) sem tradução em friendly-error.ts`);
     }

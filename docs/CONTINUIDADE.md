@@ -1,5 +1,7 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+**11/11/2026 — P-120, cadastro de barbearia corrigido e implantação preparada:** `/cadastrar` usa conta autenticada por e-mail/Google, aceita termos e cria loja transacional com fuso/sociedade e chave contra duplicação; `register-shop` legado desativado. **Nova nº 110, ainda não instalada.** 568 testes, 1.553 verificações SQL, concorrência em duas conexões, 55 verificações de tela e 27 cenários integrados de grupo. Quatro testes Evolution repetidos três vezes; recriações locais 13,413/13,373/13,472 s, sem WhatsApp real. [Roteiro vigente TI](pacotes/2026-11-11-ti-p120-implantacao-piloto.md). Dono autorizou os quatro itens; número da plataforma ainda precisa ser conectado e cliente identificado. Registry pendente de credencial de publicação da TI. Sem push/main, instalação ou mensagem real nesta entrega. Último id P-121.
+
 ## 11/11/2026 — P-120, primeiro acesso protegido; P-121, cliente multiloja
 
 [Entrega P-120](pacotes/2026-11-11-p120-primeiro-acesso-grupo.md). Nº 109 separa adesão provisória de prova de telefone; convite próprio, admissão, confirmação no grupo e login posterior. Código nunca privado; recuperação por e-mail. Extensão Evolution `2.3.7-bc.groups.2`, patch completo sobre revisão exata, com segredo adicional, rota própria de código, diário e trava persistente, filtro de histórico/webhook e inclusão controlada dos demais números da plataforma. Imagem local Linux/AMD64 construída, sem registry/VPS.

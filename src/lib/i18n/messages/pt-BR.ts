@@ -646,6 +646,14 @@ export const ptBR = {
   "landing.step3": "Compartilhe o link",
   "common.back": "Voltar",
   "common.backHome": "Voltar ao início",
+  "register.account.signin": "Entre ou crie sua conta",
+  "register.account.signinHint":
+    "Use e-mail e senha ou Google. Depois, você volta para concluir a barbearia.",
+  "register.account.lead": "Sua barbearia será vinculada à sua conta do B&C.",
+  "register.account.terms":
+    "Tenho 18 anos ou mais e aceito os Termos de Uso, a Política de Privacidade e o Acordo de Tratamento de Dados.",
+  "register.account.after": "Depois, configure horários, serviços e o WhatsApp nos Ajustes.",
+  "register.account.unavailable": "O cadastro está sendo atualizado. Tente novamente mais tarde.",
   "register.failed": "Não foi possível concluir o cadastro.",
   "register.step.whatsapp": "WhatsApp",
   "register.step.done": "Pronto",

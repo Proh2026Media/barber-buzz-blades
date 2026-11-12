@@ -650,6 +650,14 @@ export const enUS: Record<MessageKey, string> = {
   "landing.step3": "Share the link",
   "common.back": "Back",
   "common.backHome": "Back to home",
+  "register.account.signin": "Sign in or create your account",
+  "register.account.signinHint":
+    "Use email and password or Google. Then return to finish setting up your barbershop.",
+  "register.account.lead": "Your barbershop will be linked to your B&C account.",
+  "register.account.terms":
+    "I am 18 or older and accept the Terms of Use, Privacy Policy and Data Processing Agreement.",
+  "register.account.after": "Next, set up hours, services and WhatsApp in Settings.",
+  "register.account.unavailable": "Registration is being updated. Please try again later.",
   "register.failed": "We couldn't complete the sign-up.",
   "register.step.whatsapp": "WhatsApp",
   "register.step.done": "Done",

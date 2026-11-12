@@ -1958,6 +1958,19 @@ export type Database = {
         Args: { p_appointment_id: string; p_staff_id: string };
         Returns: Json;
       };
+      register_my_barbershop: {
+        Args: {
+          p_request_id: string;
+          p_name: string;
+          p_timezone: string;
+          p_society_intent: string;
+          p_terms_accepted: boolean;
+          p_terms_version: string;
+          p_privacy_version: string;
+          p_dpa_version: string;
+        };
+        Returns: Json;
+      };
       create_own_barbershop: {
         Args: { p_name: string };
         Returns: Json;

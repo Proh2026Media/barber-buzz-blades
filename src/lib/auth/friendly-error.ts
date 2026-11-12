@@ -17,6 +17,7 @@ const ERROR_CODE_MESSAGES: Record<string, MessageKey | null> = {
   whatsapp_unavailable: "fix2.edge.whatsappUnavailable",
   phone_in_use: "fix2.edge.phoneInUse",
   invalid_whatsapp: "register.errorWhatsapp",
+  shop_authenticated_signup_required: "register.account.signinHint",
   verification_expired: "fix2.edge.verificationExpired",
   email_in_use: "errors.alreadyRegistered",
   email_invalid: "fix2.edge.emailInvalid",

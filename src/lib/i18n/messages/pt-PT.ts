@@ -653,6 +653,14 @@ export const ptPT: Record<MessageKey, string> = {
   "landing.step3": "Partilhe a ligação",
   "common.back": "Voltar",
   "common.backHome": "Voltar ao início",
+  "register.account.signin": "Entre ou crie a sua conta",
+  "register.account.signinHint":
+    "Use e-mail e palavra-passe ou Google. Depois, regressa para concluir a barbearia.",
+  "register.account.lead": "A sua barbearia ficará associada à sua conta do B&C.",
+  "register.account.terms":
+    "Tenho 18 anos ou mais e aceito os Termos de Utilização, a Política de Privacidade e o Acordo de Tratamento de Dados.",
+  "register.account.after": "Depois, configure horários, serviços e o WhatsApp nas Definições.",
+  "register.account.unavailable": "O registo está a ser atualizado. Tente novamente mais tarde.",
   "register.failed": "Não foi possível concluir o registo.",
   "register.step.whatsapp": "WhatsApp",
   "register.step.done": "Pronto",

@@ -28,7 +28,7 @@ try:
         "supabase/postgres:15.8.1.085"], text=True).strip()
     subprocess.run([docker, "start", owned_id], check=True, stdout=subprocess.DEVNULL)
     for _ in range(60):
-        if subprocess.run([docker, "exec", owned_id, "pg_isready", "-U", "postgres"],
+        if subprocess.run([docker, "exec", owned_id, "pg_isready", "-h", "127.0.0.1", "-U", "postgres"],
                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
             break
         time.sleep(1)

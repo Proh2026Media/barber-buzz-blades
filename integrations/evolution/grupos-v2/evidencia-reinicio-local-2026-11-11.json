@@ -1,0 +1,7 @@
+{
+  "image": "sha256:109213e71679b426dada691d5116eabb502f60274385b44ce3b6578829fec259",
+  "scope": "API local vazia; sem WhatsApp, sem sessões ou tráfego externo",
+  "recreate_seconds": [13.413, 13.373, 13.472],
+  "volume_preserved": true,
+  "note": "Medição inclui parada/recriação/prontidão HTTP nesta máquina; não mede retorno de instâncias WhatsApp."
+}

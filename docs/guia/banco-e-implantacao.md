@@ -1,5 +1,7 @@
 # Banco, servidores e publicação
 
+**11/11/2026 — nova nº 110 local:** `20261111230000_cadastro_loja_autenticado.sql`; criação idempotente de loja na conta autenticada, sem OTP privado. Nº 105–110 ainda não instaladas; [roteiro vigente](../pacotes/2026-11-11-ti-p120-implantacao-piloto.md).
+
 **11/11/2026 — nº 109 e Evolution v2, somente locais:** `20261111220000_grupos_primeiro_acesso.sql` depende de 105–108, permite adesão provisória e confirmação do telefone no grupo. Reversão conservadora própria; **nenhuma instalada**. Extension `2.3.7-bc.groups.2` tem duas migrations no banco Evolution (operações + códigos/trava), distintas do Supabase. Piloto por flags desligadas por padrão. [Entrega e impedimentos de publicação](../pacotes/2026-11-11-p120-primeiro-acesso-grupo.md); [TI somente revisão/pré-piloto](../pacotes/2026-11-11-ti-p120-revisao-piloto-grupos.md). Não reaplicar nº 101–104.
 
 **11/11/2026 — nº 107 e nº 108 somente locais:** nº 107 integra o ciclo dos grupos; nº 108 (`20261111210000_grupos_exclusivos_plataforma.sql`) revoga equipe, exige composição exclusiva, protege o desafio de login e bloqueia OTP privado. Depende de 105/106/107. `login_enabled=false` e emissor real bloqueado. [Entrega P-120](../pacotes/2026-11-11-p120-login-grupo-local.md), com reversão operacional que preserva evidências/permissões e não restaura envio privado. **Não instalar/publicar esta etapa parcial.** Primeiro acesso e extensão ainda pendentes; nº 101–104 não devem ser reaplicadas.

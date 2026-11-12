@@ -106,7 +106,7 @@ function fixture(
       ),
   };
 }
-for (const endpoint of ["auth-otp", "register-shop"] as const) {
+for (const endpoint of ["auth-otp"] as const) {
   test(`${endpoint}: pedido usa HMAC e saída comum; resultado incerto permite digitar sem fingir entrega`, async () => {
     const f = fixture(endpoint);
     const response = await f.run();
@@ -154,5 +154,13 @@ for (const endpoint of ["auth-otp", "register-shop"] as const) {
 test("confirmação pessoal exige sessão válida antes de gerar código", async () => {
   const f = fixture("auth-otp", { unauthorized: true });
   assert.equal((await f.run()).status, 401);
+  assert.equal(f.calls.length, 0);
+});
+
+test("Cadastro legado recusa pedido sem criar desafio, conta ou envio privado", async () => {
+  const f = fixture("register-shop");
+  const response = await f.run();
+  assert.equal(response.status, 410);
+  assert.equal((await response.json()).error_code, "shop_authenticated_signup_required");
   assert.equal(f.calls.length, 0);
 });
