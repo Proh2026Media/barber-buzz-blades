@@ -1,5 +1,9 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 12/11/2026 — Central: cartões apenas para números identificados
+
+Complemento local sobre main `61cca00`: tentativas incompletas ficam em seletor no diálogo; conteúdo de pareamento sem cartão de número. Cobertura e vinculação adotam o mesmo validador do catálogo. Identificado desconectado permanece visível. Tipos, 572 testes, lint e build aprovados; 36 combinações de interface e retomada/recarga/identificação simuladas. Sem dados reais alterados, migrations ou publicação. [Pacote isolado TI](pacotes/2026-11-12-ti-central-somente-numeros-confirmados.md). Nº 117 instalada segundo relatório da TI; não reaplicar. Localhost 8090 passa a servir o checkout isolado atualizado, preservando o ramo de grupos.
+
 **11/11/2026 — P-120, cadastro de barbearia corrigido e implantação preparada:** `/cadastrar` usa conta autenticada por e-mail/Google, aceita termos e cria loja transacional com fuso/sociedade e chave contra duplicação; `register-shop` legado desativado. **Nova nº 110, ainda não instalada.** 568 testes, 1.553 verificações SQL, concorrência em duas conexões, 55 verificações de tela e 27 cenários integrados de grupo. Quatro testes Evolution repetidos três vezes; recriações locais 13,413/13,373/13,472 s, sem WhatsApp real. [Roteiro vigente TI](pacotes/2026-11-11-ti-p120-implantacao-piloto.md). Dono autorizou os quatro itens; número da plataforma ainda precisa ser conectado e cliente identificado. Registry pendente de credencial de publicação da TI. Sem push/main, instalação ou mensagem real nesta entrega. Último id P-121.
 
 ## 11/11/2026 — P-120, primeiro acesso protegido; P-121, cliente multiloja
