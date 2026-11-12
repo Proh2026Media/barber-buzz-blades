@@ -2,6 +2,14 @@
 
 Atualizado em **11/11/2026**. Este documento resume decisões e entregas da conversa anterior; conferir o código antes de alterar comportamentos.
 
+## 11/11/2026 — P-120, preparação do código no grupo exclusivo
+
+Após revisão do anexo v7 da TI e pedido de preparação, o dono corrigiu a premissa: somente cliente e números autorizados da plataforma nos grupos; profissionais sem acesso a grupo/conversas; código no grupo, não no privado. [Plano final](plano-login-whatsapp-email-2026-11-11.md) substitui a recomendação inicial de OTP individual. Não adota automaticamente outras propostas do anexo (rodízio, proxies, aleatoriedade, exclusividade de números por loja).
+
+Mapeados os contratos locais: o ciclo ainda admite equipe aprovada e o OTP ainda é individual. O plano exige mudar ambos, bloquear profissionais no backend e nas instâncias, conferir composição antes do envio, manter diário/idempotência/limites e tratar criação/primeiro acesso sem depender do próprio código no grupo. E-mail/senha e recuperação por link já existem; código por e-mail não. P-119 preservada, sem envio simultâneo a vários grupos.
+
+Entrega somente documental: etapas A–E, arquivos, dependências, critérios de aceite e implantação futura. Nenhum código funcional alterado. A verificação geral da preparação inicial passou (552 testes, tipos, formatação e montagem); não é validação da funcionalidade futura. Revisão final de referências/formatação/diff. Nº 105/106/107 continuam locais/não instaladas. Nenhuma VPS, Flow, grupo/mensagem real, autossave ou push; `.env` e `.vscode/` preservados. Nada a encaminhar à TI agora.
+
 ## 11/11/2026 — ciclo de grupos integrado localmente; nº 107 não instalada
 
 Dono autorizou continuar integração/testes após confirmação TI; mantida a limitação local. [Entrega, verificação e próxima janela](pacotes/2026-11-11-bc-integracao-grupos-local.md). Adaptador `bc-groups-v1`, chave de criação persistente, autorização no banco antes de cada mutação, convite privado do Cliente, admissão por identidade, inclusão/remoção de equipe aprovada e encerramento com conferência. Identidade anterior conservada para remoção; associação PN/LID somente pelo mesmo registro autoritativo. Sem promoção de pessoa comercial.

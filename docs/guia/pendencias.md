@@ -1,5 +1,11 @@
 # Pendências — lista única e priorizada
 
+**11/11/2026 — P-120 preparada, implementação pendente:** [código no grupo exclusivo e alternativa por e-mail](../plano-login-whatsapp-email-2026-11-11.md). Decisão final do dono: cliente + números autorizados da plataforma; profissionais sem acesso a grupo/conversas; código no grupo, não no privado. Corrigir o modelo anterior antes de ativar. Compartilhamento de números mantido. Nenhuma nova instalação TI; último id usado: **P-120**.
+
+## P-120 — Código de login no grupo exclusivo
+
+**Situação: pendente.** Preparação feita em 11/11/2026; [escopo e critérios](../plano-login-whatsapp-email-2026-11-11.md). Implementar restrição de participantes/permissões, autorização e envio protegido de OTP de grupo, primeiro acesso sem dependência circular e alternativa por e-mail. Código local ainda aceita profissionais aprovados e OTP individual. Preservar limites da nº 105, P-119 e histórico; não ativar parcialmente. Código de login por e-mail exige contrato e ensaios próprios. Sem produção autorizada.
+
 **11/11/2026 — integração local do ciclo de grupos feita:** [entrega](../pacotes/2026-11-11-bc-integracao-grupos-local.md). Adaptador, convite, admissão, remoção, encerramento e recuperação ensaiados com PostgreSQL local. Nº 107 preparada, junto de 105/106 ainda não instalada; provedor real bloqueado. Próximo desenvolvimento: saída por evento, atendimento humano e recibos, depois observabilidade/privacidade e piloto autorizado. Não repetir diagnóstico TI nem operar Flow.
 
 **11/11/2026 — extensão Evolution local preparada:** [patch, testes e limites](../pacotes/2026-11-11-evolution-extensao-grupos-local.md). 26 testes e construção Linux/AMD64 aprovados. Diagnóstico TI encerrado; falta integrar B&C e completar ensaios antes de janela/piloto autorizado. Nenhuma publicação/instalação; nº 105/106 e adaptador bloqueados. Migration da Evolution também exige etapa própria.

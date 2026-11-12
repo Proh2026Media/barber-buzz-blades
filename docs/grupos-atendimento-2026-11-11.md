@@ -1,5 +1,7 @@
 # Grupos exclusivos de atendimento — preparação local
 
+**Decisão posterior do dono em 11/11 — P-120:** os grupos terão **somente cliente + números autorizados da plataforma**, sem profissionais nem acesso deles às conversas. Códigos deverão ir ao grupo, não ao privado. [Preparação da mudança](plano-login-whatsapp-email-2026-11-11.md). **Ainda não implementada:** permissões/equipe/OTP individual descritos abaixo são o código anterior e precisam ser adaptados antes de ativar. Bloqueio real permanece.
+
 **Atualização posterior de 11/11 — ciclo integrado localmente:** [adaptador, controles e ensaio completo do ciclo](pacotes/2026-11-11-bc-integracao-grupos-local.md). Nº 107 acrescenta autorização por etapa, identidade aprovada e retorno voluntário; convite/admissão/remoção/encerramento/recuperação já implementados e testados. As descrições abaixo registram a preparação inicial. Permanecem bloqueio real, fila/envio, recibos e demais pendências expressas na nova entrega.
 
 **Atualização 11/11 — extensão do provedor preparada:** [pacote local](pacotes/2026-11-11-evolution-extensao-grupos-local.md) implementa as rotas/diário/eventos sobre a revisão exata, com 26 testes e imagem local construída. Isso supera a etapa de apenas propor a extensão, mas não libera o adaptador B&C nem confirma capacidade em produção. Integração, ensaios e autorizações operacionais continuam pendentes.
