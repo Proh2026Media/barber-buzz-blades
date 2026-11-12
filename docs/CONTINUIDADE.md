@@ -1,5 +1,10 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 12/11/2026 — retorno TI nº 117 e primeiro acesso mais claro (somente local)
+
+Relatório `relatorio-ti-p120-conferencia-117-prontidao-login-2026-11-12.md` recebido. A nº 117b já está em `origin/main` (`f785ba8`); não reaplicar cartões. Corrigida a interface do login/grupo: escolhas de primeiro acesso, três passos visuais, convite indisponível, envio incerto, limite de pedidos, adesão expirada e telefone confirmado sem promessa de login pronto. Sete arquivos de frontend/dicionários; sem alteração de backend ou produção. [Devolutiva e pendências](pacotes/2026-11-12-ti-p120-retorno-117-login-claro.md). Cliente permanece Gmail/4593, grupo antigo do administrador não é reaproveitado. Piloto não pronto: dois administradores, extensão no principal e ciclo robusto ainda pendentes. Pasta e prévia da marca intocadas nesta entrega.
+
+
 ## 12/11/2026 — Central: cartões apenas para números identificados
 
 Complemento local sobre main `61cca00`: tentativas incompletas ficam em seletor no diálogo; conteúdo de pareamento sem cartão de número. Cobertura e vinculação adotam o mesmo validador do catálogo. Identificado desconectado permanece visível. Tipos, 572 testes, lint e build aprovados; 36 combinações de interface e retomada/recarga/identificação simuladas. Sem dados reais alterados, migrations ou publicação. [Pacote isolado TI](pacotes/2026-11-12-ti-central-somente-numeros-confirmados.md). Nº 117 instalada segundo relatório da TI; não reaplicar. Localhost 8090 passa a servir o checkout isolado atualizado, preservando o ramo de grupos.
