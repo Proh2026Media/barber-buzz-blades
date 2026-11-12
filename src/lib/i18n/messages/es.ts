@@ -121,6 +121,10 @@ export const es: Record<MessageKey, string> = {
   "waSafety.resumeHint":
     "Confirma que WhatsApp levantó la restricción y que la conexión funciona. La cola se comprobará antes de cada envío.",
 
+  "waConnect.hint": "El número aparece en la lista después de conectarse y ser identificado.",
+  "waConnect.resume": "Retomar vinculación",
+  "waConnect.change": "Volver a las opciones",
+  "waConnect.close": "Cerrar",
   "waOrg.title": "WhatsApp",
   "waOrg.navigation": "Vistas de WhatsApp",
   "waOrg.shops": "Barberías",
@@ -174,10 +178,10 @@ export const es: Record<MessageKey, string> = {
     "Usa un número ya registrado para esta barbería sin escanear otro código QR.",
   "waLink.hint":
     "Elige un número registrado y quién lo utilizará. Puede atender a varias barberías.",
-  "waLink.pending": "Este destino tiene una preparación sin número.",
+  "waLink.pending": "No hay un número confirmado para este destino.",
   "waLink.pendingHint":
-    "Desvincular libera solo este destino para tu nueva elección. Se conservan la preparación y los otros vínculos.",
-  "waLink.release": "Desvincular preparación",
+    "Libera el vínculo anterior para elegir un número que ya se haya conectado.",
+  "waLink.release": "Liberar vínculo anterior",
   "waLink.released": "Destino disponible. Pulsa Usar este número para terminar.",
   "waLink.already": "Este destino ya usa el número elegido.",
   "waLink.occupied": "Este destino ya tiene otro número vinculado.",

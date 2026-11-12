@@ -1,3 +1,4 @@
+import { WhatsAppConnectDialog } from "./WhatsAppConnectDialog";
 import { hasIdentifiedNumber } from "@/lib/whatsapp/directory-model";
 import { CareGroupsAdmin } from "./CareGroupsAdmin";
 import { WhatsAppSendingControls } from "./WhatsAppSendingControls";
@@ -94,7 +95,6 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
   const { t, locale } = useI18n();
   const [data, setData] = useState<Directory | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
-  const [label, setLabel] = useState("");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "available" | "assigned" | "backup">("all");
   const [tab, setTab] = useState<DetailTab>("links");
@@ -113,6 +113,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
   const pending = useRef(false);
   const live = useRef(true);
   const createId = useRef<string | null>(null);
+  const [pairingId, setPairingId] = useState<string | null>(null);
   async function load() {
     const { data: result, error: failed } = await supabase.rpc("platform_whatsapp_directory");
     if (!live.current) return;
@@ -123,10 +124,18 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
       const requested = new URLSearchParams(window.location.search).get("numero");
       const numbers = (result as unknown as Directory).channels;
       const target = numbers.find((n) => n.id === requested);
-      setSelected(target?.id ?? numbers.find(hasIdentifiedNumber)?.id ?? numbers[0]?.id ?? null);
+      setSelected(
+        (target && hasIdentifiedNumber(target) ? target.id : null) ??
+          numbers.find(hasIdentifiedNumber)?.id ??
+          null,
+      );
       setDetailsOpen(Boolean(target));
       if (target) setView("numbers");
-      if (target && !hasIdentifiedNumber(target)) setTab("connection");
+      if (target && !hasIdentifiedNumber(target)) {
+        setPairingId(target.id);
+        setAdding(true);
+        setDetailsOpen(false);
+      }
     }
   }
   useEffect(() => {
@@ -158,12 +167,11 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
     }
   }
   const channel =
-    data?.channels.find((c) => c.id === selected) ??
-    data?.channels.find(hasIdentifiedNumber) ??
-    data?.channels[0];
+    data?.channels.find((c) => c.id === selected && hasIdentifiedNumber(c)) ??
+    data?.channels.find(hasIdentifiedNumber);
   const channelId = channel?.id;
-  const report = useCallback(
-    (status: PlatformWaReport | null, phone?: string | null) => {
+  const updateReport = useCallback(
+    (channelId: string | undefined, status: PlatformWaReport | null, phone?: string | null) => {
       // A montagem do cartão envia null antes da consulta. Não apaga o estado já conhecido.
       if (!channelId || status === null) return;
       setReports((current) =>
@@ -184,7 +192,17 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
           };
         });
     },
-    [channelId],
+    [],
+  );
+  const report = useCallback(
+    (status: PlatformWaReport | null, phone?: string | null) =>
+      updateReport(channelId, status, phone),
+    [channelId, updateReport],
+  );
+  const pairingReport = useCallback(
+    (status: PlatformWaReport | null, phone?: string | null) =>
+      updateReport(pairingId ?? undefined, status, phone),
+    [pairingId, updateReport],
   );
   const screen = `${view}:${detailsOpen ? channel?.id : "list"}`;
   useEffect(() => {
@@ -198,6 +216,12 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
     return () => cancelAnimationFrame(frame);
   }, [screen, detailsOpen, view]);
   function chooseNumber(id: string, nextTab: DetailTab = "links") {
+    const number = data?.channels.find((n) => n.id === id);
+    if (number && !hasIdentifiedNumber(number)) {
+      setPairingId(id);
+      setAdding(true);
+      return;
+    }
     setSelected(id);
     setDetailsOpen(true);
     setTab(nextTab);
@@ -419,6 +443,39 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
               viewNumber={chooseNumber}
             />
           )}
+          {adding && data && (
+            <WhatsAppConnectDialog
+              attempts={preparations}
+              number={data.channels.find((n) => n.id === pairingId)}
+              busy={busy}
+              error={error ? t(error) : null}
+              close={() => {
+                setAdding(false);
+                setPairingId(null);
+              }}
+              resume={setPairingId}
+              report={pairingReport}
+              complete={(id) => {
+                setAdding(false);
+                setPairingId(null);
+                chooseNumber(id);
+              }}
+              create={async (label) => {
+                await run(async () => {
+                  createId.current ??= crypto.randomUUID();
+                  const { data: id, error: failed } = await supabase.rpc(
+                    "platform_create_whatsapp_channel",
+                    { p_id: createId.current, p_label: label },
+                  );
+                  if (failed) throw failed;
+                  await load();
+                  if (!live.current) return;
+                  createId.current = null;
+                  setPairingId(id);
+                });
+              }}
+            />
+          )}
           {view === "groups" ? (
             <CareGroupsAdmin shops={data?.shops ?? []} numbers={data?.channels ?? []} />
           ) : view === "shops" ? (
@@ -443,7 +500,6 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                 busy={busy || !data.number_sharing}
                 link={(target) => openLink(target)}
                 viewNumber={chooseNumber}
-                resume={(id) => chooseNumber(id, "connection")}
               />
             ) : busy ? (
               <p role="status" className="flex items-center gap-2 p-4 text-sm">
@@ -588,85 +644,20 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                       )}
                     </div>
                   )}
-                  {preparations.length > 0 && (
-                    <section
-                      aria-label={t("waOrg.preparations")}
-                      className="space-y-2 border-t border-border pt-3"
-                    >
-                      <h4 className="text-sm font-semibold">
-                        {t("waOrg.preparations")} · {preparations.length}
-                      </h4>
-                      <p className="text-xs text-muted-foreground">{t("waOrg.preparationsHint")}</p>
-                      {preparations.map((item) => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          className="action-button w-full justify-between text-left"
-                          disabled={busy}
-                          onClick={() => chooseNumber(item.id, "connection")}
-                        >
-                          <span className="min-w-0 break-words">
-                            {item.label || t("waOrg.incompleteItem")}
-                          </span>
-                          <ArrowRight className="size-4 shrink-0" aria-hidden />
-                        </button>
-                      ))}
-                    </section>
-                  )}
                   <div className="border-t border-border pt-3">
                     <button
                       className="action-button w-full"
                       disabled={busy || !data}
                       aria-expanded={adding}
-                      onClick={() => setAdding(!adding)}
+                      onClick={() => {
+                        setPairingId(null);
+                        setAdding(true);
+                      }}
                     >
                       <Plus className="size-4" aria-hidden />
                       {t("waNumbers.addAnother")}
                     </button>
                   </div>
-                  {adding && (
-                    <form
-                      className="space-y-3"
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        void run(async () => {
-                          createId.current ??= crypto.randomUUID();
-                          const { data: id, error: failed } = await supabase.rpc(
-                            "platform_create_whatsapp_channel",
-                            { p_id: createId.current, p_label: label.trim() },
-                          );
-                          if (failed) throw failed;
-                          if (!live.current) return;
-                          createId.current = null;
-                          setLabel("");
-                          setAdding(false);
-                          setFilter("all");
-                          setQuery("");
-                          chooseNumber(id, "connection");
-                          await load();
-                        });
-                      }}
-                    >
-                      <label className="grid min-w-0 gap-1 text-sm font-semibold">
-                        {t("waCentral.label")}
-                        <input
-                          className={field}
-                          value={label}
-                          minLength={2}
-                          maxLength={80}
-                          required
-                          disabled={busy}
-                          onChange={(e) => setLabel(e.target.value)}
-                        />
-                      </label>
-                      <button
-                        className="action-button action-confirm w-full"
-                        disabled={busy || label.trim().length < 2}
-                      >
-                        {t("waCentral.add")}
-                      </button>
-                    </form>
-                  )}
                 </aside>
                 {channel && data ? (
                   <section

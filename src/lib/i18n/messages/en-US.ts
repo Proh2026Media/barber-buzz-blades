@@ -120,6 +120,10 @@ export const enUS: Record<MessageKey, string> = {
   "waSafety.resumeHint":
     "Confirm that WhatsApp has lifted the restriction and the connection is working. The queue will be checked again before each send.",
 
+  "waConnect.hint": "The number appears in the list after connecting and being identified.",
+  "waConnect.resume": "Resume pairing",
+  "waConnect.change": "Back to options",
+  "waConnect.close": "Close",
   "waOrg.title": "WhatsApp",
   "waOrg.navigation": "WhatsApp views",
   "waOrg.shops": "Barbershops",
@@ -172,10 +176,9 @@ export const enUS: Record<MessageKey, string> = {
     "Use an existing number for this barbershop without scanning another QR code.",
   "waLink.hint":
     "Choose an existing number and who will use it. One number can serve multiple barbershops.",
-  "waLink.pending": "This destination has a setup with no phone number.",
-  "waLink.pendingHint":
-    "Unlinking frees only this destination for your new choice. The setup and other links are kept.",
-  "waLink.release": "Unlink setup",
+  "waLink.pending": "No confirmed number for this destination.",
+  "waLink.pendingHint": "Release the previous link to choose a number that has already connected.",
+  "waLink.release": "Release previous link",
   "waLink.released": "Destination available. Select Use this number to finish.",
   "waLink.already": "This destination already uses the selected number.",
   "waLink.occupied": "This destination already has another number linked.",

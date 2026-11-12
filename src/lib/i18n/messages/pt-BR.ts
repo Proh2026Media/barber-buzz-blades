@@ -118,6 +118,10 @@ export const ptBR = {
   "waSafety.resumeHint":
     "Confirme que o WhatsApp liberou a conta e que a conexão está funcionando. A fila será conferida novamente antes de cada envio.",
 
+  "waConnect.hint": "O número aparece na lista depois de conectar e ser identificado.",
+  "waConnect.resume": "Retomar pareamento",
+  "waConnect.change": "Voltar às opções",
+  "waConnect.close": "Fechar",
   "waOrg.title": "WhatsApp",
   "waOrg.navigation": "Organização do WhatsApp",
   "waOrg.shops": "Barbearias",
@@ -169,10 +173,9 @@ export const ptBR = {
   "waLink.reusePreparation": "Use um número já cadastrado nesta barbearia, sem ler outro QR Code.",
   "waLink.hint":
     "Escolha um número cadastrado e quem vai utilizá-lo. Ele pode atender mais de uma barbearia.",
-  "waLink.pending": "Este destino tem uma preparação sem número.",
-  "waLink.pendingHint":
-    "Desvincular libera apenas este destino para sua nova escolha. A preparação e os outros vínculos são mantidos.",
-  "waLink.release": "Desvincular preparação",
+  "waLink.pending": "Nenhum número confirmado neste destino.",
+  "waLink.pendingHint": "Libere o vínculo antigo para escolher um número já conectado.",
+  "waLink.release": "Liberar vínculo antigo",
   "waLink.released": "Destino liberado. Clique em Usar este número para concluir.",
   "waLink.already": "Este destino já usa o número escolhido.",
   "waLink.occupied": "Este destino já tem outro número vinculado.",

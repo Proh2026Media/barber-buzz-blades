@@ -16,12 +16,11 @@ type Props = {
   busy: boolean;
   link: (target: { shop: string; staff: string | null }) => void;
   viewNumber: (id: string) => void;
-  resume: (id: string) => void;
 };
 
 /** Uma barbearia aparece uma vez. A equipe mostra se usa número próprio ou o geral. */
 export function WhatsAppShopDirectory(props: Props) {
-  const { shops, staff, numbers, links, busy, link, viewNumber, resume } = props;
+  const { shops, staff, numbers, links, busy, link, viewNumber } = props;
   const { t, locale } = useI18n();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
@@ -106,9 +105,7 @@ export function WhatsAppShopDirectory(props: Props) {
               </span>
             </div>
           ) : (
-            <p className="mt-1 text-xs text-muted-foreground">
-              {t(coverage.pending ? "waOrg.pendingTarget" : "waOrg.chooseHint")}
-            </p>
+            <p className="mt-1 text-xs text-muted-foreground">{t("waOrg.chooseHint")}</p>
           )}
         </div>
         <div className="flex flex-wrap gap-2">
@@ -145,16 +142,6 @@ export function WhatsAppShopDirectory(props: Props) {
                 <Link2 className="size-4" aria-hidden />
                 {t("waOrg.chooseNumber")}
               </button>
-              {coverage.pending && (
-                <button
-                  type="button"
-                  className="inline-flex min-h-11 items-center rounded-xl px-2 text-sm font-semibold text-muted-foreground"
-                  disabled={busy}
-                  onClick={() => resume(coverage.pending!.channel_id)}
-                >
-                  {t("waOrg.resume")}
-                </button>
-              )}
             </>
           )}
         </div>

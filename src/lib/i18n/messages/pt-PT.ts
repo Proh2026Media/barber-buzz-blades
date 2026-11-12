@@ -120,6 +120,10 @@ export const ptPT: Record<MessageKey, string> = {
   "waSafety.resumeHint":
     "Confirme que o WhatsApp libertou a conta e que a ligação funciona. A fila será verificada novamente antes de cada envio.",
 
+  "waConnect.hint": "O número aparece na lista depois de ligar e ser identificado.",
+  "waConnect.resume": "Retomar emparelhamento",
+  "waConnect.change": "Voltar às opções",
+  "waConnect.close": "Fechar",
   "waOrg.title": "WhatsApp",
   "waOrg.navigation": "Organização do WhatsApp",
   "waOrg.shops": "Barbearias",
@@ -172,10 +176,9 @@ export const ptPT: Record<MessageKey, string> = {
     "Utilize um número já registado nesta barbearia, sem ler outro código QR.",
   "waLink.hint":
     "Escolha um número registado e quem o vai utilizar. Pode servir mais de uma barbearia.",
-  "waLink.pending": "Este destino tem uma preparação sem número.",
-  "waLink.pendingHint":
-    "Desvincular liberta apenas este destino para a nova escolha. A preparação e os outros vínculos são mantidos.",
-  "waLink.release": "Desvincular preparação",
+  "waLink.pending": "Nenhum número confirmado neste destino.",
+  "waLink.pendingHint": "Liberte a associação antiga para escolher um número já ligado.",
+  "waLink.release": "Libertar associação antiga",
   "waLink.released": "Destino disponível. Clique em Usar este número para concluir.",
   "waLink.already": "Este destino já utiliza o número escolhido.",
   "waLink.occupied": "Este destino já tem outro número associado.",
