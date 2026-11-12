@@ -48,32 +48,47 @@ export function allowedPushOrigin(origin: string, rules: string[]): boolean {
     return false;
   }
 }
-export function pushMessage(locale: string, kind: string, target: string, id: string) {
+export function pushMessage(
+  locale: string,
+  kind: string,
+  target: string,
+  id: string,
+  shopName?: unknown,
+) {
   const language = locale.startsWith("en") ? "en" : locale === "es" ? "es" : "pt";
   const copy = {
     pt: {
       test: "As notificações deste aparelho estão funcionando.",
-      created: "Há um novo agendamento. Abra o B&C para conferir.",
-      changed: "Um agendamento foi atualizado. Abra o B&C para conferir.",
-      cancelled: "Um agendamento foi cancelado. Abra o B&C para conferir.",
+      created: "Há um novo agendamento. Abra o aplicativo para conferir.",
+      changed: "Um agendamento foi atualizado. Abra o aplicativo para conferir.",
+      cancelled: "Um agendamento foi cancelado. Abra o aplicativo para conferir.",
     },
     en: {
       test: "Notifications are working on this device.",
-      created: "There is a new appointment. Open B&C to check.",
-      changed: "An appointment was updated. Open B&C to check.",
-      cancelled: "An appointment was cancelled. Open B&C to check.",
+      created: "There is a new appointment. Open the app to check.",
+      changed: "An appointment was updated. Open the app to check.",
+      cancelled: "An appointment was cancelled. Open the app to check.",
     },
     es: {
       test: "Las notificaciones funcionan en este dispositivo.",
-      created: "Hay una nueva cita. Abre B&C para verla.",
-      changed: "Una cita se actualizó. Abre B&C para verla.",
-      cancelled: "Una cita se canceló. Abre B&C para verla.",
+      created: "Hay una nueva cita. Abre la aplicación para verla.",
+      changed: "Una cita se actualizó. Abre la aplicación para verla.",
+      cancelled: "Una cita se canceló. Abre la aplicación para verla.",
     },
   };
   if (!["test", "created", "changed", "cancelled"].includes(kind)) throw new Error("PUSH_KIND");
-  // Nenhum nome, telefone, código de acesso ou conteúdo de atendimento na tela bloqueada.
+  // Identidade comercial da barbearia; sem nome do cliente, telefone ou código na tela bloqueada.
+  const title =
+    typeof shopName === "string"
+      ? shopName
+          .replace(/[\p{Cc}\p{Cf}]/gu, " ")
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, 100)
+      : "";
   return {
-    title: "Barba & Cabelo",
+    title:
+      title || (language === "en" ? "Appointments" : language === "es" ? "Citas" : "Agendamentos"),
     body: copy[language][kind as keyof typeof copy.pt],
     url: target === "/shop" ? "/shop" : "/app",
     tag: "bc-" + id,

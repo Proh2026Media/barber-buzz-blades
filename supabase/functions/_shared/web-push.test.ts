@@ -109,9 +109,26 @@ test("Payload preserva privacidade e caminhos internos", () => {
   for (const lang of ["pt-BR", "pt-PT", "en-US", "en-GB", "es"])
     for (const kind of ["created", "changed", "cancelled", "test"]) {
       const msg = pushMessage(lang, kind, "https://evil.invalid", "teste");
-      assert.equal(msg.title, "Barba & Cabelo");
+      assert.ok(!JSON.stringify(msg).includes("B&C"));
+      assert.ok(!JSON.stringify(msg).includes("Barba & Cabelo"));
       assert.equal(msg.url, "/app");
       assert.ok(msg.body.length < 200);
       assert.deepEqual(Object.keys(msg).sort(), ["body", "tag", "title", "url"]);
     }
+});
+
+test("Push usa a barbearia do contexto e nunca uma marca padrão da plataforma", () => {
+  assert.equal(
+    pushMessage("pt-BR", "created", "/app", "a", "Arena — Testes").title,
+    "Arena — Testes",
+  );
+  assert.equal(
+    pushMessage("pt-BR", "created", "/app", "b", "Outra Barbearia").title,
+    "Outra Barbearia",
+  );
+  assert.equal(pushMessage("pt-BR", "test", "/app", "c", " ").title, "Agendamentos");
+  assert.equal(
+    pushMessage("pt-BR", "created", "/app", "d", " Arena\n Testes ").title,
+    "Arena Testes",
+  );
 });

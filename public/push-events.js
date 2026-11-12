@@ -9,10 +9,12 @@ self.addEventListener("push", (event) => {
   const text = (value, fallback, max) =>
     typeof value === "string" && value.length > 0 ? value.slice(0, max) : fallback;
   event.waitUntil(
-    self.registration.showNotification("Barba & Cabelo", {
-      body: text(message.body, "Há uma atualização no B&C. Abra o aplicativo para conferir.", 200),
-      icon: "/icons/icon-192.png",
-      badge: "/icons/icon-192.png",
+    self.registration.showNotification(text(message.title, "Agendamentos", 100), {
+      body: text(
+        message.body,
+        "Há uma atualização no seu agendamento. Abra o aplicativo para conferir.",
+        200,
+      ),
       tag: text(message.tag, "bc-update", 100),
       data: { url: message.url === "/shop" ? "/shop" : "/app" },
     }),

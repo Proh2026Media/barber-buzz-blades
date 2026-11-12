@@ -1,20 +1,40 @@
 # B&C — pacote adicional para TI: Web Push, monitor WhatsApp e orientação de login
 
+**Revisão 2 — substitui o roteiro e o ZIP anteriores desta entrega. Não aplicar a revisão 1.**
+
 Data: 12/11/2026. Autor: Codex. Destinatário: TI/Guardião.
 Responde ao dono, que informou não ter enviado novos materiais desde o pedido de notificações push, e ao relatório `relatorio-ti-p120-conferencia-117-prontidao-login-2026-11-12.md` (SHA-256 `82fbd0d014e9b4705eda38d45de374ea81699d15905bbdc13ad75343e7220eef`).
 
 ## 1. O que mudou desde o último contato
 
-| Assunto                 | Entrega deste pacote                                                                                                                                                        | Dependência da TI                                                                                       |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Notificações web        | Inscrição voluntária por conta/sessão/aparelho, notificações de criação/alteração/cancelamento de agendamentos e teste próprio.                                             | Banco, função nova, chaves VAPID, execução periódica e publicação do frontend/SW.                       |
-| Saúde do WhatsApp       | Ícone no cabeçalho administrativo, também nas áreas de loja e cliente quando a conta é admin global. Detalhes de desconexão, falha, envio incerto, fila atrasada e pausas.  | RPC nova e função nova de leitura da Evolution.                                                         |
-| Confirmação do telefone | Falha `whatsapp_unavailable` deixa de orientar genericamente a conferir o número: explica a necessidade do grupo e oferece o atalho no perfil do cliente quando disponível. | Publicar frontend; não corrige a preparação do grupo por si só.                                         |
-| Tom das mensagens       | Regra editorial natural, cordial e profissional, sem erros propositais ou linguagem excessivamente jovial.                                                                  | Tomar ciência; não instalar aleatoriedade, simulação de digitação ou alterações nos textos cadastrados. |
+| Assunto                 | Entrega deste pacote                                                                                                                                                            | Dependência da TI                                                                                       |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Notificações web        | Inscrição voluntária por conta/sessão/aparelho, notificações de criação/alteração/cancelamento de agendamentos e teste próprio.                                                 | Banco, função nova, chaves VAPID, execução periódica e publicação do frontend/SW.                       |
+| Saúde do WhatsApp       | Ícone no cabeçalho administrativo, também nas áreas de loja e cliente quando a conta é admin global. Detalhes de desconexão, falha, envio incerto, fila atrasada e pausas.      | RPC nova e função nova de leitura da Evolution.                                                         |
+| Confirmação do telefone | Falha `whatsapp_unavailable` deixa de orientar genericamente a conferir o número: explica a necessidade do grupo e oferece o atalho no perfil do cliente quando disponível.     | Publicar frontend; não corrige a preparação do grupo por si só.                                         |
+| Tom das mensagens       | Regra editorial natural, cordial e profissional. Cliente final vê o nome da barbearia, sem B&C; marca da plataforma somente na comunicação de gestão com donos/administradores. | Tomar ciência; não instalar aleatoriedade, simulação de digitação ou alterações nos textos cadastrados. |
 
 A nº 117/117b não deve ser reaplicada. A consulta ao GitHub nesta entrega encontrou `origin/main` em `aca86fe` com o primeiro acesso já publicado. O pacote anterior `BC-P120-Primeiro-Acesso-2026-11-12.zip` não precisa ser aplicado novamente se essa entrega estiver presente. Conferir o SHA completo em `BASE.txt`; não presumir que a base continue a mesma depois de novas publicações.
 
 O Codex não fez push, instalação, mudança de flags, criação de grupo nem envio real nesta entrega. A pasta da marca permanece fora do escopo. Este pacote é separado das versões locais parciais nº 113/114 e não as contém.
+
+## 1.1 Decisão posterior do dono: identidade da barbearia para o cliente
+
+Esta revisão foi pedida **antes do envio à TI**. O Codex não enviou material a terceiros. O dono determinou que B&C/Barba & Cabelo não apareça como marca do atendimento dos clientes. Nos grupos, push, convites, descrição, boas-vindas, mensagem fixada e código de acesso, a referência comercial é a barbearia. A plataforma permanece na gestão com donos/administradores.
+
+**Implementado localmente neste pacote:** textos de cliente relativos a grupos, consentimento, acesso, conta compartilhada e push sem marca da plataforma; retirada da atribuição comercial no rodapé da página pública de loja. O push de agendamento usa o nome da barbearia obtido pelo agendamento no servidor, revalidado no momento de enviar. O cliente não escolhe esse nome na requisição. O worker respeita esse título e não força o ícone/logotipo da plataforma. Push de teste sem loja usa identificação neutra (“Agendamentos”), sem inventar uma barbearia. Não há nome pessoal nem código na tela bloqueada.
+
+**Ainda não implementado na extensão de grupos instalada:** o texto do OTP continua contendo `Barba & Cabelo` no patch v2 examinado, e a detecção que impede a persistência/reentrega de OTP também reconhece esse texto. A criação usa título padrão da plataforma. Não corrigir só com troca de string na VPS: isso pode quebrar a filtragem dos códigos e não resolve a associação confiável com a barbearia. Esta revisão não contém atualização da extensão nem migration do contrato de grupos.
+
+Antes de liberar grupos/códigos, a próxima entrega de desenvolvimento precisa:
+
+1. Resolver o nome da barbearia pela relação persistida `grupo → barbearia` no servidor; sem usar nome manual do grupo ou número remetente como identidade. Preservar revalidação, permissões e idempotência.
+2. Acrescentar identidade comercial validada ao contrato protegido da extensão, com capacidade/versionamento explícitos e bloqueio quando o runtime antigo não suportar. Não permitir texto arbitrário de OTP fornecido pelo navegador.
+3. Compor o código com nome da barbearia e atualizar conjuntamente a proteção de mensagens próprias/citadas, mantendo cobertura de mensagens antigas; demonstrar em testes que nenhum código vai a logs/webhooks/histórico.
+4. Aplicar identidade de loja ao título calculado, foto, boas-vindas, descrição e mensagem fixada no ciclo dos grupos já pendente. Não disparar reconciliação ou renomear grupos reais nesta revisão.
+5. Validar duas barbearias atendidas pelo mesmo número: nomes corretos por grupo/agendamento, sem vazamento de identidade entre lojas. Conferir também nome/ícone da PWA instalada e entradas públicas sem contexto antes de declarar a experiência inteira sem marca da plataforma. Os metadados globais e o login global ainda têm marca padrão; não estão cobertos por uma afirmação de remoção integral.
+
+A TI pode revisar/instalar o bloco independente de push/monitor conforme este roteiro. **Não considerar esta revisão suficiente para liberar o login em grupos nem afirmar que todas as superfícies de cliente já foram convertidas.** A pendência de contrato/mensagem do grupo continua com desenvolvimento; não enviar nova solicitação ao Claude/Flow. Não apagar identificação jurídica nem renomear identificadores técnicos.
 
 ## 2. Conteúdo e conferência antes da instalação
 
@@ -101,7 +121,7 @@ Essa ativação é só Web Push: não muda pausas, consentimentos, instâncias o
 
 ## 6. Frontend, SW e homologação
 
-Publicar o frontend somente com as funções e RPCs disponíveis. Confirmar HTTPS e os arquivos `/sw.js`, `/push-events.js`, manifesto e ícones, todos com conteúdo correto e sem fallback HTML. O SW gerado importa `/push-events.js`; o build coloca ambos em `.output/public`. Preservar a atualização/instalação PWA existente; não remover outros caches indiscriminadamente.
+Publicar o frontend somente com as funções e RPCs disponíveis. Confirmar HTTPS e os arquivos `/sw.js`, `/push-events.js`, manifesto e ícones, todos com conteúdo correto e sem fallback HTML. O push usa o nome da barbearia; o SO ainda pode mostrar o nome/ícone da PWA previamente instalada, o que deve ser conferido antes de declarar a experiência inteira com a marca da loja. O SW gerado importa `/push-events.js`; o build coloca ambos em `.output/public`. Preservar a atualização/instalação PWA existente; não remover outros caches indiscriminadamente.
 
 Acesso: menu da conta do administrador/profissional → **Notificações neste aparelho**; perfil do cliente → mesma seção. Permissão só é solicitada quando o titular clica em **Ativar notificações**. No iPhone/iPad, a tela orienta instalar na tela inicial e abrir pelo ícone; a disponibilidade também depende do sistema/navegador compatível. Nunca alterar manualmente a permissão do usuário.
 
@@ -124,7 +144,7 @@ O relatório da TI registrou Gmail sem telefone confirmado/consentimento/adesão
 
 Não reapresentar as flags como desligadas: o relatório diz piloto/adesão/login ligados e pausa global desligada, mas os números da plataforma com envio desabilitado. Não liberar o piloto apenas ligando `enabled`.
 
-A mudança de texto deste pacote orienta o titular a abrir o grupo; **não torna o login real pronto**. Não há solicitação para renovar convite por corrida de 30 segundos, executar reconcile, enviar código, instalar versões parciais 113/114, ligar extensão em outra instância, migrar/criar grupo ou alterar consentimento. Esses blocos seguem com o desenvolvimento e precisam de entrega própria antes da operação. A TI não precisa repetir toda a conferência já respondida para instalar os dois recursos independentes deste pacote.
+A mudança de texto deste pacote orienta o titular a abrir o grupo; **não torna o login real pronto**. A identidade de grupo também precisa atender à seção 1.1. Não há solicitação para renovar convite por corrida de 30 segundos, executar reconcile, enviar código, instalar versões parciais 113/114, ligar extensão em outra instância, migrar/criar grupo ou alterar consentimento. Esses blocos seguem com o desenvolvimento e precisam de entrega própria antes da operação. A TI não precisa repetir toda a conferência já respondida para instalar os dois recursos independentes deste pacote.
 
 ## 8. Pausa e retorno
 

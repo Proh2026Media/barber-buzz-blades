@@ -2229,3 +2229,8 @@ Web Push local com opt-in por sessão/aparelho, VAPID, payload cifrado e genéri
 Confirmação de telefone trata `whatsapp_unavailable` com orientação para o grupo e atalho contextual. Não altera o estado real da Gmail nem torna o piloto apto. Dois admins/ciclo anual/convite seguro e demais blocos de grupos seguem fora desta entrega. [Regra editorial aprovada](comunicacao-notificacoes-2026-11-12.md): naturalidade por clareza/contexto, sem erros propositais, abreviações ou simulação humana. Nenhum motor de typos implantado.
 
 Tipos, testes automatizados, SQL em banco descartável, cifra VAPID/aes128gcm, funções Deno e bancada de navegador realizados; resultados finais e limites em `VALIDACAO.md` do pacote. Nenhuma prova de push em aparelho real nem de entrega WhatsApp; homologação operacional com TI permanece necessária. Sem push/main, migrations reais ou segredos no pacote.
+
+
+## 12/11/2026 — Revisão 2: identidade de cliente é a barbearia
+
+Antes de enviar o pacote, o dono reservou a marca B&C à gestão de donos/administradores. Textos locais de acesso/grupo/push e rodapé público ajustados nos idiomas. Push passa a carregar nome da barbearia do agendamento, resolvido no servidor no envio; worker não força título/logo da plataforma. Teste sem loja usa identificação neutra. Nenhum texto de grupo real mudou: contrato de identidade comercial + filtro de OTP na extensão precisam de implementação coordenada; roteiro TI registra essa dependência e proíbe correção isolada de string/ativação do piloto como se estivesse pronto. Metadados globais/PWA não foram declarados totalmente convertidos. Marca, produção e terceiros não foram tocados. Pacote anterior desta entrega foi substituído pela revisão 2.

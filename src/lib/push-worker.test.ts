@@ -51,7 +51,7 @@ test("Push inválido ainda exibe aviso visível e genérico", async () => {
   });
   await pending!;
   assert.equal(f.shown.length, 1);
-  assert.equal(f.shown[0][0], "Barba & Cabelo");
+  assert.equal(f.shown[0][0], "Agendamentos");
   assert.equal(f.shown[0][1].data.url, "/app");
 });
 test("Push limita texto e ignora destino externo", async () => {
@@ -60,6 +60,7 @@ test("Push limita texto e ignora destino externo", async () => {
   f.handlers.push({
     data: {
       json: () => ({
+        title: "Arena — Testes",
         body: "x".repeat(1000),
         url: "https://externo.invalid",
         tag: "a".repeat(200),
@@ -70,6 +71,8 @@ test("Push limita texto e ignora destino externo", async () => {
     },
   });
   await pending!;
+  assert.equal(f.shown[0][0], "Arena — Testes");
+  assert.equal("icon" in f.shown[0][1], false);
   assert.equal(f.shown[0][1].body.length, 200);
   assert.equal(f.shown[0][1].tag.length, 100);
   assert.equal(f.shown[0][1].data.url, "/app");

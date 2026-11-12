@@ -62,7 +62,15 @@ Deno.serve(async (req) => {
         const outcome = await deliverWebPush(context, () =>
           webpush.generateRequestDetails(
             context,
-            JSON.stringify(pushMessage(context.locale, context.kind, context.target, context.id)),
+            JSON.stringify(
+              pushMessage(
+                context.locale,
+                context.kind,
+                context.target,
+                context.id,
+                context.shop_name,
+              ),
+            ),
             {
               TTL: 300,
               contentEncoding: "aes128gcm",

@@ -22,9 +22,9 @@ export const ptPT: Record<MessageKey, string> = {
 
   "push.title": "Notificações neste dispositivo",
   "push.description":
-    "Receba avisos de criação, alteração e cancelamento de marcações, mesmo com o B&C fechado.",
+    "Receba avisos de criação, alteração e cancelamento de marcações, mesmo com a aplicação fechada.",
   "push.install":
-    "No iPhone ou iPad, adicione o B&C ao ecrã principal e abra pelo ícone para ativar as notificações.",
+    "No iPhone ou iPad, adicione a aplicação da barbearia ao ecrã principal e abra pelo ícone para ativar as notificações.",
   "push.unsupported":
     "Este navegador não disponibiliza notificações web neste contexto. Use um navegador compatível com uma ligação segura.",
   "push.blocked":
@@ -44,11 +44,11 @@ export const ptPT: Record<MessageKey, string> = {
     "A escolha aplica-se a esta conta e a este dispositivo. Não envia promoções nem códigos de acesso.",
 
   "care.profileCodeUnavailable":
-    "O código é enviado apenas para o seu grupo do B&C. Não foi possível enviar agora; confira a preparação e a sua entrada no grupo.",
+    "O código é enviado apenas para o seu grupo de atendimento. Não foi possível enviar agora; confira a preparação e a sua entrada no grupo.",
   "care.openSetup": "Ver o meu grupo e próximos passos",
 
   "waLogin.haveGroup": "Já ativei o meu grupo",
-  "waLogin.haveGroupHint": "O meu telefone já está confirmado no B&C.",
+  "waLogin.haveGroupHint": "O meu telefone já está confirmado na aplicação.",
   "waLogin.firstAccess": "Ainda não ativei o meu grupo",
   "waLogin.firstAccessHint": "Entre por e-mail. No seu perfil, abra o atendimento pelo WhatsApp.",
   "waLogin.requested": "Pedido recebido",
@@ -67,10 +67,10 @@ export const ptPT: Record<MessageKey, string> = {
     "O grupo ainda está em preparação ou revisão. Pode continuar a usar a sua conta por e-mail.",
   "care.checkEntry": "Já entrei · verificar",
 
-  "auth.sharedAccountTitle": "Já usa o B&C noutra barbearia?",
+  "auth.sharedAccountTitle": "Já tem registo noutra barbearia?",
   "auth.sharedAccountHint":
     "Use a mesma conta e o mesmo WhatsApp pessoal. Depois de entrar, poderá associar-se a esta barbearia. Os seus pontos e marcações ficam separados por loja.",
-  "auth.useExistingAccount": "Usar a minha conta B&C",
+  "auth.useExistingAccount": "Usar a minha conta existente",
   "auth.useExistingAccountHint":
     "Entre com a sua conta existente para continuar nesta barbearia. Se não se lembra da palavra-passe, use a recuperação por e-mail.",
   "care.expired": "A confirmação do telefone expirou. Continue no mesmo grupo.",
@@ -100,20 +100,19 @@ export const ptPT: Record<MessageKey, string> = {
   "care.owner": "Dono",
   "care.associate": "Parceiro",
   "care.employee": "Funcionário/colaborador",
-  "care.platform": "Plataforma",
+  "care.platform": "Atendimento automático",
   "care.error": "Não foi possível conferir ou salvar. Atualize e tente novamente.",
   "care.saved": "Preferências salvas",
-  "care.intro":
-    "Um grupo exclusivo para seu atendimento nesta barbearia, com administração da Plataforma.",
+  "care.intro": "Um grupo exclusivo para os avisos desta barbearia.",
   "care.disabled": "Grupos ainda não disponíveis nesta etapa",
   "care.people": "Quem participa do meu atendimento",
   "care.visibility":
-    "Este grupo reúne apenas o cliente e os números autorizados do B&C. Os profissionais da barbearia não têm acesso ao grupo nem às conversas.",
+    "Este grupo reúne apenas o cliente e os números autorizados de atendimento automático. Os profissionais da barbearia não têm acesso ao grupo nem às conversas.",
   "care.approved": "Participação autorizada por você",
   "care.approvalNeeded": "Aguardando sua autorização para participar",
   "care.allowPerson": "Autorizar participante",
   "care.removePerson": "Solicitar remoção",
-  "care.accept": "Quero o meu grupo exclusivo com os números do B&C apresentados acima.",
+  "care.accept": "Quero o meu grupo exclusivo com os números de atendimento apresentados acima.",
   "care.request": "Criar meu grupo de atendimento",
   "care.rejoin": "Solicitar retorno ao atendimento",
   "care.preparation":
@@ -405,11 +404,11 @@ export const ptPT: Record<MessageKey, string> = {
   "waCentral.labelInvalid": "Use um nome entre 2 e 80 caracteres.",
   "waLogin.useEmail": "Usar e-mail",
   "waLogin.title": "Entrar com WhatsApp",
-  "waLogin.description": "Receba o código no seu grupo exclusivo do B&C.",
+  "waLogin.description": "Receba o código no seu grupo de atendimento da barbearia.",
   "waLogin.verifiedOnly":
-    "Use o seu número confirmado e um grupo ativo do B&C. Sem grupo disponível, entre com e-mail.",
+    "Use o seu número confirmado e um grupo de atendimento ativo. Sem grupo disponível, entre por e-mail.",
   "waLogin.sent":
-    "Se receber o código no seu grupo do B&C, introduza-o abaixo. Se não chegar, use o e-mail.",
+    "Se receber o código no seu grupo de atendimento, introduza-o abaixo. Se não chegar, use o e-mail.",
   "waLogin.expiry": "O código vale por 10 minutos. Use o mais recente.",
   "waLogin.send": "Receber código",
   "waLogin.enter": "Confirmar e entrar",
@@ -4531,7 +4530,7 @@ export const ptPT: Record<MessageKey, string> = {
   "shopLanding.hoursRange": "{from} às {to}",
   "shopLanding.closed": "Fechado",
   "shopLanding.whatsapp": "WhatsApp",
-  "shopLanding.footer": "Marcações online por Barba & Cabelo",
+  "shopLanding.footer": "Marcação online",
   "shopLanding.privacy": "Privacidade",
   "shopLanding.terms": "Termos de utilização",
   "landingEditor.title": "Página da barbearia",

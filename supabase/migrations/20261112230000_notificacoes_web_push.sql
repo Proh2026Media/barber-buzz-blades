@@ -100,7 +100,7 @@ begin
  update web_push_queue q set state='processing',lease=gen_random_uuid(),claimed_at=now() from picked p where q.id=p.id returning q.id,q.lease;
 end $$;
 create function public.web_push_authorize(p_id uuid,p_lease uuid) returns jsonb language plpgsql security definer set search_path=public as $$
-declare q web_push_queue%rowtype; s web_push_subscriptions%rowtype;
+declare q web_push_queue%rowtype; s web_push_subscriptions%rowtype; shop_name text;
 begin
  select * into q from web_push_queue where id=p_id and lease=p_lease and state='processing' and started_at is null for update;
  if q.id is null then return null; end if;
@@ -111,7 +111,8 @@ begin
    update web_push_queue set state='cancelled',finished_at=now() where id=q.id; return null;
  end if;
  update web_push_queue set started_at=now() where id=q.id;
- return jsonb_build_object('endpoint',s.endpoint,'keys',jsonb_build_object('p256dh',s.p256dh,'auth',s.auth_key),'locale',s.locale,'kind',q.kind,'target',q.target,'id',q.id);
+ select b.name into shop_name from appointments a join barbershops b on b.id=a.barbershop_id where a.id=q.appointment_id;
+ return jsonb_build_object('shop_name',shop_name,'endpoint',s.endpoint,'keys',jsonb_build_object('p256dh',s.p256dh,'auth',s.auth_key),'locale',s.locale,'kind',q.kind,'target',q.target,'id',q.id);
 end $$;
 create function public.web_push_finish(p_id uuid,p_lease uuid,p_result text) returns void language plpgsql security definer set search_path=public as $$
 begin

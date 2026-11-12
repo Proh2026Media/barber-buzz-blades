@@ -40,6 +40,7 @@ create temporary table push_claimed as select * from web_push_claim();
 select pg_temp.push_check((select count(*)=0 from web_push_claim()),'Segundo lote não pega tarefas em andamento');
 create temporary table push_permits as select p.id,p.lease,web_push_authorize(p.id,p.lease) permit from push_claimed p;
 select pg_temp.push_check((select bool_and(permit is not null) from push_permits),'Autoriza destinatários válidos');
+select pg_temp.push_check((select bool_and(permit->>'shop_name'='Push fictício') from push_permits),'Nome da barbearia deriva do agendamento no servidor');
 select pg_temp.push_check((select bool_and(web_push_authorize(id,lease) is null) from push_claimed),'Não autoriza a mesma transmissão duas vezes');
 select web_push_finish(id,lease,'unknown') from push_claimed;
 select pg_temp.push_check((select count(*)=0 from web_push_claim()),'Envio incerto nunca volta à fila automaticamente');
@@ -59,6 +60,15 @@ do $$ declare f record;begin select * into f from push_fixture;
  begin perform web_push_test(f.customer,f.customer_session,'https://fcm.googleapis.com/fcm/send/fake-customer');raise exception 'FAIL: repetiu teste';exception when others then if sqlerrm<>'PUSH_WAIT' then raise;end if;end;
 end $$;
 select pg_temp.push_check((select count(*)=1 from web_push_queue where kind='test'),'Teste próprio limitado a uma vez por minuto');
+-- A mesma conta recebe a identidade de cada loja pelo agendamento, não pela última visita.
+create temporary table push_second_shop as select gen_random_uuid() shop,gen_random_uuid() staff,gen_random_uuid() service,gen_random_uuid() appointment;
+insert into barbershops(id,name,slug) select shop,'Segunda barbearia fictícia','push-second-'||shop from push_second_shop;
+insert into staff(id,barbershop_id,display_name,user_id) select s.staff,s.shop,'Outro profissional fictício',f.outsider from push_second_shop s,push_fixture f;
+insert into services(id,barbershop_id,name,duration_minutes,price_cents) select service,shop,'Outro corte fictício',30,1000 from push_second_shop;
+insert into appointments(id,barbershop_id,customer_id,service_id,staff_id,starts_at,ends_at,status)
+ select s.appointment,s.shop,f.customer,s.service,s.staff,now()+interval '101 days',now()+interval '101 days 30 minutes','confirmed' from push_second_shop s,push_fixture f;
+create temporary table push_third_claim as select * from web_push_claim();
+select pg_temp.push_check((select web_push_authorize(c.id,c.lease)->>'shop_name'='Segunda barbearia fictícia' from push_third_claim c join web_push_queue q on q.id=c.id where q.appointment_id=(select appointment from push_second_shop)),'Mesmo cliente recebe nome da segunda loja sem reutilizar a primeira');
 delete from auth.sessions where id=(select customer_session from push_fixture);
 select pg_temp.push_check(not exists(select 1 from web_push_subscriptions where user_id=(select customer from push_fixture)),'Fim da sessão remove inscrição e fila vinculada');
 select web_push_revoke(owner,'https://fcm.googleapis.com/fcm/send/fake-owner') from push_fixture;
