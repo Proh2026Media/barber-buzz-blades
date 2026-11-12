@@ -121,6 +121,7 @@ export const ptPT: Record<MessageKey, string> = {
     "Confirme que o WhatsApp libertou a conta e que a ligação funciona. A fila será verificada novamente antes de cada envio.",
 
   "waConnect.hint": "O número aparece na lista depois de ligar e ser identificado.",
+  "waConnect.selectAttempt": "Escolha uma tentativa anterior",
   "waConnect.resume": "Retomar emparelhamento",
   "waConnect.change": "Voltar às opções",
   "waConnect.close": "Fechar",

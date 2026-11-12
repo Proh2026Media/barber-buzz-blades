@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { hasIdentifiedNumber } from "@/lib/whatsapp/directory-model";
 import { Link2, Smartphone } from "lucide-react";
 import { Notice } from "@/components/visual";
 import {
@@ -56,14 +57,14 @@ export function WhatsAppLinkDialog({
   const [released, setReleased] = useState(false);
   const candidates = numbers.filter(
     (n) =>
-      n.display_phone?.trim() &&
+      hasIdentifiedNumber(n) &&
       !numbers.some((owner) => owner.backup_instance_name === n.instance_name),
   );
   const occupied = links.find(
     (link) => link.barbershop_id === shop && link.staff_id === (professional || null),
   );
   const owner = numbers.find((n) => n.id === occupied?.channel_id);
-  const pending = Boolean(owner && !owner.display_phone?.trim());
+  const pending = Boolean(owner && !hasIdentifiedNumber(owner));
   const validNumber = candidates.some((n) => n.id === number);
   return (
     <Dialog

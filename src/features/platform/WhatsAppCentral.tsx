@@ -329,7 +329,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
   async function releasePreparation(link: WhatsAppNumberLink) {
     let released = false;
     const owner = data?.channels.find((n) => n.id === link.channel_id);
-    if (!owner || owner.display_phone?.trim()) return false;
+    if (!owner || hasIdentifiedNumber(owner)) return false;
     await run(async () => {
       const { error: failed } = await supabase.rpc("platform_update_whatsapp_link", {
         p_link: link.id,

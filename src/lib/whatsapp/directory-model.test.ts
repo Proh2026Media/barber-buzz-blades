@@ -61,3 +61,18 @@ test("catálogo distingue telefone identificado de estado da conexão", () => {
   }
   assert.equal(hasIdentifiedNumber({ display_phone: "+5511999990000" }), true);
 });
+
+// Estado aberto, por si só, não identifica um número para uso ou cobertura.
+test("conexão aberta sem telefone válido não cobre a barbearia", () => {
+  for (const display_phone of [null, "", "Sem telefone", "123", "+", "  "]) {
+    const number = { ...numbers[0], display_phone, status: "open" };
+    assert.equal(hasIdentifiedNumber(number), false);
+    const result = whatsappCoverage("loja", null, [number], [general]);
+    assert.equal(result.kind, "none");
+    assert.equal(result.number, undefined);
+    assert.equal(result.pending?.id, general.id);
+  }
+});
+test("número identificado continua no catálogo após desconectar", () => {
+  assert.equal(hasIdentifiedNumber(numbers[1]), true);
+});

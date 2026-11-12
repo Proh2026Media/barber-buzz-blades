@@ -23,14 +23,14 @@ export function whatsappCoverage<N extends DirectoryNumber, L extends DirectoryL
 ) {
   const own = links.find((l) => l.barbershop_id === shop && l.staff_id === staff);
   const ownNumber = numbers.find((n) => n.id === own?.channel_id);
-  if (own && ownNumber?.display_phone?.trim())
+  if (own && ownNumber && hasIdentifiedNumber(ownNumber))
     return { kind: "own" as const, number: ownNumber, link: own, pending: undefined };
   if (own) return { kind: "none" as const, number: undefined, link: undefined, pending: own };
   const general = staff
     ? links.find((l) => l.barbershop_id === shop && l.staff_id === null)
     : undefined;
   const generalNumber = numbers.find((n) => n.id === general?.channel_id);
-  if (general && generalNumber?.display_phone?.trim())
+  if (general && generalNumber && hasIdentifiedNumber(generalNumber))
     return { kind: "shop" as const, number: generalNumber, link: general, pending: own };
   return { kind: "none" as const, number: undefined, link: undefined, pending: own };
 }

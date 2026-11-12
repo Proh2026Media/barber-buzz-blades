@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowRight, Smartphone } from "lucide-react";
+import { Smartphone } from "lucide-react";
 import { Notice } from "@/components/visual";
 import {
   Dialog,
@@ -68,6 +68,7 @@ export function WhatsAppConnectDialog({
           {number ? (
             <>
               <PlatformWhatsAppCard
+                embedded
                 key={number.id}
                 channelId={number.id}
                 title={number.label}
@@ -82,23 +83,25 @@ export function WhatsAppConnectDialog({
           ) : (
             <>
               {attempts.length > 0 && (
-                <section aria-label={t("waConnect.resume")} className="space-y-2">
-                  <h3 className="text-sm font-semibold">{t("waConnect.resume")}</h3>
-                  {attempts.map((attempt) => (
-                    <button
-                      key={attempt.id}
-                      type="button"
-                      disabled={busy}
-                      className="action-button w-full justify-between text-left"
-                      onClick={() => resume(attempt.id)}
-                    >
-                      <span className="min-w-0 break-words">
+                <label className="grid min-w-0 gap-1 text-sm font-semibold">
+                  {t("waConnect.resume")}
+                  <select
+                    aria-label={t("waConnect.resume")}
+                    className="min-h-11 w-full min-w-0 rounded-xl border border-border bg-background px-3 text-sm"
+                    value=""
+                    disabled={busy}
+                    onChange={(event) => {
+                      if (event.target.value) resume(event.target.value);
+                    }}
+                  >
+                    <option value="">{t("waConnect.selectAttempt")}</option>
+                    {attempts.map((attempt) => (
+                      <option key={attempt.id} value={attempt.id}>
                         {attempt.label || t("waNumbers.addAnother")}
-                      </span>
-                      <ArrowRight className="size-4 shrink-0" aria-hidden />
-                    </button>
-                  ))}
-                </section>
+                      </option>
+                    ))}
+                  </select>
+                </label>
               )}
               <form
                 className="space-y-3"

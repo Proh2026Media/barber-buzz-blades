@@ -128,8 +128,13 @@ export const PlatformWhatsAppCard = forwardRef<
     className?: string;
     channelId?: string;
     title?: string;
+    /** No fluxo de pareamento, usa a própria janela, sem cartão de número fictício. */
+    embedded?: boolean;
   }
->(function PlatformWhatsAppCard({ onStatusChange, className, channelId, title }, ref) {
+>(function PlatformWhatsAppCard(
+  { onStatusChange, className, channelId, title, embedded = false },
+  ref,
+) {
   const { t } = useI18n();
   const sectionRef = useRef<HTMLElement>(null);
   const [status, setStatus] = useState<PlatformWaStatus>("disconnected");
@@ -382,7 +387,7 @@ export const PlatformWhatsAppCard = forwardRef<
   return (
     <section
       ref={sectionRef}
-      className={`platform-wa-card space-y-4 rounded-3xl border border-border bg-card p-4 sm:p-5 ${className ?? ""}`}
+      className={`${embedded ? "platform-wa-pairing space-y-4" : "platform-wa-card space-y-4 rounded-3xl border border-border bg-card p-4 sm:p-5"} ${className ?? ""}`}
     >
       <SectionHeader
         icon={MessageCircle}

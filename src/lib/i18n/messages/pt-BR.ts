@@ -119,6 +119,7 @@ export const ptBR = {
     "Confirme que o WhatsApp liberou a conta e que a conexão está funcionando. A fila será conferida novamente antes de cada envio.",
 
   "waConnect.hint": "O número aparece na lista depois de conectar e ser identificado.",
+  "waConnect.selectAttempt": "Escolha uma tentativa anterior",
   "waConnect.resume": "Retomar pareamento",
   "waConnect.change": "Voltar às opções",
   "waConnect.close": "Fechar",

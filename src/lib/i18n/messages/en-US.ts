@@ -121,6 +121,7 @@ export const enUS: Record<MessageKey, string> = {
     "Confirm that WhatsApp has lifted the restriction and the connection is working. The queue will be checked again before each send.",
 
   "waConnect.hint": "The number appears in the list after connecting and being identified.",
+  "waConnect.selectAttempt": "Choose a previous attempt",
   "waConnect.resume": "Resume pairing",
   "waConnect.change": "Back to options",
   "waConnect.close": "Close",

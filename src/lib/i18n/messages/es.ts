@@ -122,6 +122,7 @@ export const es: Record<MessageKey, string> = {
     "Confirma que WhatsApp levantó la restricción y que la conexión funciona. La cola se comprobará antes de cada envío.",
 
   "waConnect.hint": "El número aparece en la lista después de conectarse y ser identificado.",
+  "waConnect.selectAttempt": "Elige un intento anterior",
   "waConnect.resume": "Retomar vinculación",
   "waConnect.change": "Volver a las opciones",
   "waConnect.close": "Cerrar",
