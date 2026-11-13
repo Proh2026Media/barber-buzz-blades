@@ -1,5 +1,7 @@
 # B&C — Web Push: correção incremental do limite do dispatch
 
+**Estado posterior:** a TI confirmou este incremental instalado em 12/11 às 21:43–21:44, ainda desligado e sem cron. **Não reinstalar este pacote.** Próximo roteiro: [operação e homologação](2026-11-12-ti-webpush-operacao-homologacao.md). O restante preserva o procedimento histórico.
+
 Data: 12/11/2026. Autor: Codex. Destinatário: TI/Guardião.
 Responde a `relatorio-ti-p120-webpush-revisao-2026-11-12.md` e `instrucao-codex-webpush-ajustes-2026-11-12.md`, incluindo a atualização VAPID às 20:52.
 

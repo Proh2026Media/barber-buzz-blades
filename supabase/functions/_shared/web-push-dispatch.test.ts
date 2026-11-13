@@ -1,9 +1,19 @@
-import test from "node:test";
+import test, { type TestContext } from "node:test";
 import assert from "node:assert/strict";
-import { setTimeout as delay } from "node:timers/promises";
 import { createPushBudget } from "./web-push-budget.ts";
 import { dispatchPushBatch, type PushJob, type PushContext } from "./web-push-dispatch.ts";
 import { deliverWebPush } from "./web-push.ts";
+// Somente nos testes: timers e relógio monotônico avançam juntos, sem depender da CPU.
+function controlledClock(t: TestContext) {
+  let now = 0;
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  t.mock.method(performance, "now", () => now);
+  return (ms: number) => {
+    now += ms;
+    t.mock.timers.tick(ms);
+  };
+}
+
 const jobs: PushJob[] = Array.from({ length: 4 }, (_, i) => ({
   id: String(i),
   lease: `lease-${i}`,
@@ -19,6 +29,10 @@ const context = (job: PushJob): PushContext => ({
 
 test("Quatro envios avançam juntos sem transmitir antes da revalidação", async () => {
   const permits = new Set();
+  let release!: () => void;
+  const allSending = new Promise<void>((resolve) => {
+    release = resolve;
+  });
   let active = 0,
     peak = 0;
   const sent: string[] = [],
@@ -26,7 +40,6 @@ test("Quatro envios avançam juntos sem transmitir antes da revalidação", asyn
   const result = await dispatchPushBatch(
     jobs,
     async (j) => {
-      await delay(5);
       permits.add(j.id);
       return context(j);
     },
@@ -35,7 +48,8 @@ test("Quatro envios avançam juntos sem transmitir antes da revalidação", asyn
       active++;
       peak = Math.max(peak, active);
       sent.push(c.id);
-      await delay(25);
+      if (active === 4) release();
+      await allSending;
       active--;
       return "accepted";
     },
@@ -112,7 +126,8 @@ test("Lote do SQL antigo é recusado antes de autorizar ou transmitir", async ()
   assert.equal(calls, 0);
 });
 
-test("Prazo total encerra transporte travado mesmo sem cooperação com abort", async () => {
+test("Prazo total encerra transporte travado mesmo sem cooperação com abort", async (t) => {
+  const advance = controlledClock(t);
   let calls = 0;
   let signal: AbortSignal | null | undefined;
   const budget = createPushBudget(60, async (_input, init) => {
@@ -120,15 +135,25 @@ test("Prazo total encerra transporte travado mesmo sem cooperação com abort", 
     signal = init?.signal;
     return new Promise<Response>(() => {});
   });
-  const start = performance.now();
-  await assert.rejects(budget.databaseFetch("https://db.example.invalid"), /PUSH_DEADLINE/);
-  assert.ok(performance.now() - start < 500);
+  const pending = assert.rejects(
+    budget.databaseFetch("https://db.example.invalid"),
+    /PUSH_DEADLINE/,
+  );
+  advance(59);
+  assert.equal(signal?.aborted, false);
+  advance(1);
+  await pending;
   assert.ok(signal?.aborted);
   await assert.rejects(budget.providerFetch("https://fcm.googleapis.com/a"), /PUSH_DEADLINE/);
   assert.equal(calls, 1);
 });
 
-test("Cabeçalhos recebidos não removem o timeout do corpo; stream é cancelado", async () => {
+test("Cabeçalhos recebidos não removem o timeout do corpo; stream é cancelado", async (t) => {
+  const advance = controlledClock(t);
+  let reading!: () => void;
+  const bodyPending = new Promise<void>((resolve) => {
+    reading = resolve;
+  });
   let cancelled = false;
   const budget = createPushBudget(
     50,
@@ -138,30 +163,53 @@ test("Cabeçalhos recebidos não removem o timeout do corpo; stream é cancelado
           start(controller) {
             controller.enqueue(new TextEncoder().encode('{"incompleto":'));
           },
+          pull() {
+            reading();
+          },
           cancel() {
             cancelled = true;
           },
         }),
       ),
   );
-  await assert.rejects(budget.databaseFetch("https://db.example.invalid"), /PUSH_DEADLINE/);
+  const pending = assert.rejects(
+    budget.databaseFetch("https://db.example.invalid"),
+    /PUSH_DEADLINE/,
+  );
+  await bodyPending;
+  advance(50);
+  await pending;
   assert.ok(cancelled);
 });
 
-test("Consultas sucessivas compartilham o mesmo prazo, não ganham novo orçamento", async () => {
+test("Consultas sucessivas compartilham o mesmo prazo, não ganham novo orçamento", async (t) => {
+  const advance = controlledClock(t);
   let calls = 0;
+  let resolveFirst!: (response: Response) => void;
   const budget = createPushBudget(100, async () => {
     calls++;
-    await delay(65);
-    return new Response("{}");
+    return new Promise<Response>((resolve) => {
+      if (calls === 1) resolveFirst = resolve;
+    });
   });
-  assert.deepEqual(await (await budget.databaseFetch("https://db.example.invalid")).json(), {});
-  await assert.rejects(budget.databaseFetch("https://db.example.invalid"), /PUSH_DEADLINE/);
+  const first = budget.databaseFetch("https://db.example.invalid");
+  advance(65);
+  resolveFirst(new Response("{}"));
+  assert.deepEqual(await (await first).json(), {});
+  assert.equal(budget.remaining(), 35);
+  const second = assert.rejects(
+    budget.databaseFetch("https://db.example.invalid"),
+    /PUSH_DEADLINE/,
+  );
+  advance(35);
+  await second;
+  assert.equal(budget.remaining(), 0);
   await assert.rejects(budget.databaseFetch("https://db.example.invalid"), /PUSH_DEADLINE/);
   assert.equal(calls, 2);
 });
 
-test("Limita corpo externo, corpo de entrada e preserva respostas vazias", async () => {
+test("Limita corpo externo, corpo de entrada e preserva respostas vazias", async (t) => {
+  controlledClock(t);
   const large = createPushBudget(1000, async () => new Response("x".repeat(512001)));
   await assert.rejects(large.databaseFetch("https://db.example.invalid"), /PUSH_BODY_LIMIT/);
   const budget = createPushBudget(1000, async () => new Response(null, { status: 204 }));
@@ -177,7 +225,8 @@ test("Limita corpo externo, corpo de entrada e preserva respostas vazias", async
   );
 });
 
-test("Cancelamento original impede começar uma chamada de rede", async () => {
+test("Cancelamento original impede começar uma chamada de rede", async (t) => {
+  controlledClock(t);
   let calls = 0;
   const budget = createPushBudget(1000, async () => {
     calls++;
@@ -191,18 +240,20 @@ test("Cancelamento original impede começar uma chamada de rede", async () => {
   assert.equal(calls, 0);
 });
 
-test("Prazo vencido no envio conserva unknown e não reenvia", async () => {
+test("Prazo vencido no envio conserva unknown e não reenvia", async (t) => {
+  const advance = controlledClock(t);
   let calls = 0;
   const budget = createPushBudget(40, async () => {
     calls++;
     return new Promise<Response>(() => {});
   });
   const c = context(jobs[0]);
-  const result = await deliverWebPush(
+  const pending = deliverWebPush(
     c,
     () => ({ endpoint: c.endpoint, headers: {}, body: new Uint8Array() }),
     budget.providerFetch,
   );
-  assert.equal(result, "unknown");
+  advance(40);
+  assert.equal(await pending, "unknown");
   assert.equal(calls, 1);
 });
