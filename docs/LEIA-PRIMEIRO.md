@@ -1,5 +1,7 @@
 # Leia primeiro — Barba & Cabelo
 
+**12/11/2026 — Estatísticas no topo e distribuição assistida local:** escolher barbearia → gerar proposta → revisar/aplicar na prévia. Heurística usa conexão e vínculos, não volume real/aquecimento. Switch redesenhado com círculo centrado. [Critérios e demandas futuras](central-whatsapp-distribuicao-local-2026-11-12.md). Sem publicação, backend ou pacote TI novo.
+
 **12/11/2026 — Prévia da distribuição aprovada, com refinamentos solicitados:** contornos completos, pílulas, switches e opções circulares. Prévia local agora permite um principal e duas reservas; segunda reserva ainda exige ampliar contrato de backend, sem alterar migration nesta rodada. Estatísticas/sugestões são demanda NOVA e não implementada, claramente identificada na prévia. [Registro e próximos requisitos](central-whatsapp-distribuicao-local-2026-11-12.md). Sem publicação nem novo pacote TI.
 
 **12/11/2026 — Central WhatsApp, nova distribuição somente local:** Principal/Reserva agora definidos por barbearia ou profissional, com papéis compartilháveis, quadro visual, arrastar/clique/teclado e rascunho com salvar. Prévia sem login em `http://localhost:8090/previsao-whatsapp`, dados fictícios. Migration nova `20261113001000` e integração ainda não instaladas/publicadas; aguardar aprovação local. [Plano, fonte e verificações](central-whatsapp-distribuicao-local-2026-11-12.md). Não alterar o pacote de iPhone que a TI está trabalhando. `.env` desta cópia foi corrigido só localmente para o login; não incluir em commit.

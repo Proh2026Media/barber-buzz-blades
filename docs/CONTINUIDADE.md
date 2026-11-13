@@ -1,5 +1,9 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 12/11/2026 — Geração assistida e switches
+
+Estatísticas movidas para o primeiro bloco; protótipo determinístico para sugerir principal e duas reservas conectado à prévia, com revisão, invalidação por mudança de vínculos e aplicação somente em memória com avisos pausados. Telefones desconectados/repetidos excluídos, próprios de profissionais preservados. Switch substitui input pseudo-elemento por botão role=switch com círculo centrado e teclado. Demanda de dados para equidade por carga descrita no [registro](central-whatsapp-distribuicao-local-2026-11-12.md). Sem mudança de produção ou alegação de algoritmo baseado em envios reais.
+
 ## 12/11/2026 — Refinamentos após aprovação da prévia
 
 Aplicados contornos completos, separação entre lojas, ações em pílulas com ícones, ligar/desligar e opções circulares. Prévia fictícia com principal e duas reservas distintas, salvamento em memória e verificações de não repetição. Backend atual conserva uma reserva; bloqueio impede descartar silenciosamente uma segunda em chamada real. Estatísticas sem valores inventados, marcadas como proposta nova. [Especificação e limites](central-whatsapp-distribuicao-local-2026-11-12.md). Tipos/build/lint e testes visuais conferidos; sem nova mudança SQL, publicação ou pacote TI.

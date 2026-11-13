@@ -610,20 +610,25 @@ function DestinationRoute({
       {(route || dirty) && (
         <div className="wa-distribution-controls">
           <label className="wa-distribution-toggle">
-            <input
-              type="checkbox"
+            <button
+              type="button"
               role="switch"
-              checked={draft.enabled && draft.mode !== "paused"}
+              className="wa-toggle-control"
+              aria-label={t("waDistribution.notices")}
+              aria-checked={draft.enabled && draft.mode !== "paused"}
               disabled={locked || !draft.primary}
-              onChange={(event) => {
+              onClick={() => {
+                const enabled = !(draft.enabled && draft.mode !== "paused");
                 setDraft({
                   ...draft,
-                  enabled: event.target.checked,
-                  mode: event.target.checked && draft.mode === "paused" ? "primary" : draft.mode,
+                  enabled,
+                  mode: enabled && draft.mode === "paused" ? "primary" : draft.mode,
                 });
                 setSaved(false);
               }}
-            />
+            >
+              <span aria-hidden="true" />
+            </button>
             {t("waDistribution.notices")}
           </label>
           <div
@@ -655,16 +660,20 @@ function DestinationRoute({
             ))}
           </div>
           <label className="wa-distribution-toggle">
-            <input
-              type="checkbox"
+            <button
+              type="button"
               role="switch"
-              checked={draft.returns}
+              className="wa-toggle-control"
+              aria-label={t("waDistribution.returns")}
+              aria-checked={draft.returns}
               disabled={locked}
-              onChange={(event) => {
-                setDraft({ ...draft, returns: event.target.checked });
+              onClick={() => {
+                setDraft({ ...draft, returns: !draft.returns });
                 setSaved(false);
               }}
-            />
+            >
+              <span aria-hidden="true" />
+            </button>
             {t("waDistribution.returns")}
           </label>
         </div>

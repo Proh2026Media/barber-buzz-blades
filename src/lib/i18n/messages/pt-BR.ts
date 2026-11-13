@@ -1,5 +1,20 @@
 /** Dicionário principal (fonte). Toda chave nova nasce aqui, em pt-BR. */
 export const ptBR = {
+  "waAuto.title": "Distribuição assistida",
+  "waAuto.basis":
+    "Protótipo local: prioriza telefones conectados e distintos, com menos vínculos configurados. Não usa volume real nem aquecimento.",
+  "waAuto.shop": "Selecionar barbearia",
+  "waAuto.generate": "Gerar distribuição",
+  "waAuto.apply": "Aplicar na prévia",
+  "waAuto.effect":
+    "Altera somente o número geral desta barbearia. Profissionais com número próprio são preservados. Os avisos ficam pausados.",
+  "waAuto.missing":
+    "Há {count} telefones conectados distintos. Os espaços restantes ficam sem reserva.",
+  "waAuto.stale": "Os vínculos mudaram. Gere uma nova proposta.",
+  "waAuto.applied": "Proposta aplicada somente nesta prévia.",
+  "waAuto.sample": "Dados fictícios desta prévia",
+  "waAuto.bindings": "Destinos configurados",
+
   "waRefine.stats": "Estatísticas e sugestões",
   "waRefine.future": "Novo · ainda não implementado",
   "waRefine.futureHint":

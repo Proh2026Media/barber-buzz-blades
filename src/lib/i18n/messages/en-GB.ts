@@ -3,6 +3,21 @@ import type { MessageKey } from "./pt-BR.ts";
 
 export const enGB: Record<MessageKey, string> = {
   ...enUS,
+  "waAuto.title": "Assisted distribution",
+  "waAuto.basis":
+    "Local prototype: prioritises distinct connected phones with fewer configured assignments. Does not use actual message volume or warm-up.",
+  "waAuto.shop": "Select barbershop",
+  "waAuto.generate": "Generate distribution",
+  "waAuto.apply": "Apply to preview",
+  "waAuto.effect":
+    "Changes only this shop’s general number. Professionals with their own assignments are preserved. Notices remain paused.",
+  "waAuto.missing":
+    "There are {count} distinct connected phones. Remaining backup slots stay empty.",
+  "waAuto.stale": "Assignments changed. Generate a new proposal.",
+  "waAuto.applied": "Proposal applied only to this preview.",
+  "waAuto.sample": "Fictional data in this preview",
+  "waAuto.bindings": "Configured destinations",
+
   "waRefine.stats": "Statistics and suggestions",
   "waRefine.future": "New · not implemented yet",
   "waRefine.futureHint":

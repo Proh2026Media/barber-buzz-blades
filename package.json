@@ -4,6 +4,7 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
+    "test:distribution": "node --test src/lib/whatsapp/distribution-suggestion.test.ts",
     "dev": "vite dev",
     "build": "vite build && node scripts/copy-pwa.mjs",
     "build:dev": "vite build --mode development && node scripts/copy-pwa.mjs",

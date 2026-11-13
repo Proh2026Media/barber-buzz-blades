@@ -1,6 +1,21 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const es: Record<MessageKey, string> = {
+  "waAuto.title": "Distribución asistida",
+  "waAuto.basis":
+    "Prototipo local: prioriza teléfonos conectados distintos con menos vínculos configurados. No usa volumen real ni calentamiento.",
+  "waAuto.shop": "Seleccionar barbería",
+  "waAuto.generate": "Generar distribución",
+  "waAuto.apply": "Aplicar a la vista previa",
+  "waAuto.effect":
+    "Cambia solo el número general de esta barbería. Conserva los profesionales con número propio. Los avisos quedan pausados.",
+  "waAuto.missing":
+    "Hay {count} teléfonos conectados distintos. Las reservas restantes quedan vacías.",
+  "waAuto.stale": "Los vínculos cambiaron. Genere otra propuesta.",
+  "waAuto.applied": "Propuesta aplicada solo a esta vista previa.",
+  "waAuto.sample": "Datos ficticios de esta vista previa",
+  "waAuto.bindings": "Destinos configurados",
+
   "waRefine.stats": "Estadísticas y sugerencias",
   "waRefine.future": "Nuevo · aún no implementado",
   "waRefine.futureHint":

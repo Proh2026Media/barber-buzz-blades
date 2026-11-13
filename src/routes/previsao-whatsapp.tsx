@@ -1,3 +1,4 @@
+import { DistributionSuggestion } from "@/features/platform/DistributionSuggestion";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { FlaskConical, MessageCircle, RotateCcw, Smartphone } from "lucide-react";
@@ -103,6 +104,56 @@ function Preview() {
         </div>
       </header>
       <main className="mx-auto max-w-[100rem] space-y-5 px-4 py-5 tablet:px-6 tablet:py-6">
+        <section className="wa-future-stats" aria-label={t("waRefine.stats")}>
+          <header>
+            <h2>
+              <Smartphone className="size-5" aria-hidden />
+              {t("waRefine.stats")}
+            </h2>
+            <StatusBadge tone="warning" label={t("waRefine.future")} />
+          </header>
+          <p>{t("waRefine.futureHint")}</p>
+          <div>
+            {["volume", "days", "usage", "suggestions"].map((key) => (
+              <article key={key}>
+                <span>
+                  {key === "usage"
+                    ? t("waAuto.bindings")
+                    : t(("waRefine." + key) as "waRefine.volume")}
+                </span>
+                <strong>{key === "usage" ? routes.length : "—"}</strong>
+                <small>{t(key === "usage" ? "waAuto.sample" : "waRefine.noData")}</small>
+              </article>
+            ))}
+          </div>
+          <DistributionSuggestion
+            key={previewVersion}
+            numbers={numbers}
+            shops={shops}
+            routes={routes}
+            apply={(shop, ids) => {
+              setRoutes((all) => {
+                const current = all.find((r) => r.barbershop_id === shop && r.staff_id === null);
+                return [
+                  ...all.filter((r) => r.barbershop_id !== shop || r.staff_id !== null),
+                  {
+                    id: current?.id ?? `rota-${shop}-geral`,
+                    barbershop_id: shop,
+                    staff_id: null,
+                    channel_id: ids.primary,
+                    backup_channel_id: ids.backup,
+                    backup2_channel_id: ids.backup2,
+                    delivery_mode: "primary",
+                    enabled: false,
+                    return_notice_enabled: current?.return_notice_enabled ?? false,
+                    version: (current?.version ?? 0) + 1,
+                  },
+                ];
+              });
+              setSaved(true);
+            }}
+          />
+        </section>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <StatusBadge tone="info" icon={FlaskConical} label={t("waPreview.noRemote")} />
           <ChoiceChips
@@ -175,25 +226,6 @@ function Preview() {
           }}
           viewNumber={setSelectedNumber}
         />
-        <section className="wa-future-stats" aria-label={t("waRefine.stats")}>
-          <header>
-            <h2>
-              <Smartphone className="size-5" aria-hidden />
-              {t("waRefine.stats")}
-            </h2>
-            <StatusBadge tone="warning" label={t("waRefine.future")} />
-          </header>
-          <p>{t("waRefine.futureHint")}</p>
-          <div>
-            {["volume", "days", "usage", "suggestions"].map((key) => (
-              <article key={key}>
-                <span>{t(("waRefine." + key) as "waRefine.volume")}</span>
-                <strong>—</strong>
-                <small>{t("waRefine.noData")}</small>
-              </article>
-            ))}
-          </div>
-        </section>
       </main>
       <Dialog open={Boolean(selected)} onOpenChange={(open) => !open && setSelectedNumber(null)}>
         <DialogContent size="sm" className="bg-card">

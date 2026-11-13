@@ -1,5 +1,18 @@
 # Central WhatsApp — distribuição por destino
 
+## Estatísticas primeiro e geração assistida — somente prévia
+
+Estatísticas/sugestões são o primeiro bloco após o cabeçalho. A ação Selecionar barbearia → Gerar distribuição apresenta a proposta antes de Aplicar na prévia. Não grava no servidor, não habilita avisos e preserva profissionais com configuração própria. Duas reservas reais e telemetria de envio continuam pendentes de contrato/implementação.
+
+Protótipo da heurística implementado em `distribution-suggestion.ts`: considera apenas telefones identificados, conectados e fisicamente distintos. Para principal, compara quantidade de vínculos principais, depois reservas; para reservas, compara reservas, depois principais. Empates usam telefone para resultado determinístico. Desconsidera somente o vínculo geral que será substituído; inclui vínculos próprios dos profissionais. Não consome dados reais de envio, capacidade, fila ou aquecimento e não garante equidade de volume. Há três vagas no máximo; com menos números elegíveis, deixa reservas vazias e informa a quantidade. Proposta fica inválida se os vínculos mudarem antes de aplicar.
+
+Dados úteis para evolução: atendimentos previstos por profissional/loja, profissionais cobertos por herança, clientes com consentimento, fila atual e prazos, volume 7/30 dias, dias ativos, último envio, taxa de falhas/resultados incertos, capacidade definida pelo operador, pausas/restrições e atualidade da confirmação de conexão. Implementar elegibilidade e limites antes da ordenação. Pesos/limiares precisam de definição e validação; não inventar score de saúde nem representar aceitação como entrega. Sugestões não devem disparar failover, alternância, migração de grupos ou mensagens automaticamente. Equidade deve ser avaliada por carga e prazo, não só pela contagem de vínculos.
+
+Ligar/desligar foi reconstruído como botão acessível com `role=switch`, círculo independente e centralizado, trilha 44×26, foco visível, estados desabilitados e operação por teclado. Não depende mais de pseudo-elemento de input para desenhar o círculo.
+
+Verificações reproduzíveis: `npm run test:distribution` e `node scripts/testar-distribuicao-assistida.mjs`, além da matriz de interface existente. Fonte somente local, sem publicação ou nova instalação TI.
+
+
 ## Refinamento aprovado pelo dono — 12/11/2026
 
 Composição aprovada, com ajustes locais: retirar faixas coloridas de uma só lateral, separar melhor as barbearias, arredondar superfícies e usar ações em pílulas. Principal/Reserva continuam identificados por ícone e texto; azul indica seleção/confirmação, verde conexão confirmada e vermelho remoção. Preferências usam ligar/desligar; a escolha de telefone abre opções circulares, sem select nativo. Arrastar e alternativas por teclado/toque permanecem.
