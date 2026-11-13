@@ -1,3 +1,5 @@
+import { createPushBudget } from "../_shared/web-push-budget.ts";
+import { dispatchPushBatch } from "../_shared/web-push-dispatch.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import webpush from "npm:web-push@3.6.7";
 import {
@@ -20,8 +22,9 @@ const reply = (body: unknown, status = 200) =>
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
   if (req.method !== "POST") return reply({ error_code: "method" }, 405);
+  const budget = createPushBudget();
   try {
-    const raw = await req.text();
+    const raw = await budget.readRequest(req);
     if (raw.length > 8000) return reply({ error_code: "invalid" }, 400);
     const body = JSON.parse(raw),
       action = body?.action;
@@ -31,6 +34,7 @@ Deno.serve(async (req) => {
     if (!service || !url) return reply({ error_code: "unavailable" }, 503);
     const db = createClient(url, service, {
       auth: { persistSession: false, autoRefreshToken: false },
+      global: { fetch: budget.databaseFetch },
     });
     const auth = req.headers.get("Authorization") ?? "";
     const rpc = async (name: string, args: Record<string, unknown> = {}) => {
@@ -38,6 +42,8 @@ Deno.serve(async (req) => {
       if (r.error) throw new Error("PUSH_DATABASE");
       return r.data;
     };
+    if (action === "dispatch" && auth !== `Bearer ${service}`)
+      return reply({ error_code: "unauthorized" }, 401);
     const publicKey = Deno.env.get("WEB_PUSH_PUBLIC_KEY"),
       privateKey = Deno.env.get("WEB_PUSH_PRIVATE_KEY"),
       subject = Deno.env.get("WEB_PUSH_SUBJECT");
@@ -52,37 +58,39 @@ Deno.serve(async (req) => {
       Deno.env.get("WEB_PUSH_ENABLED") === "true" &&
       Boolean(publicKey && privateKey && subject);
     if (action === "dispatch") {
-      if (auth !== `Bearer ${service}`) return reply({ error_code: "unauthorized" }, 401);
       if (!enabled) return reply({ ok: true, enabled: false, processed: 0 });
       const jobs = await rpc("web_push_claim");
-      let processed = 0;
-      for (const job of jobs ?? []) {
-        const context = await rpc("web_push_authorize", { p_id: job.id, p_lease: job.lease });
-        if (!context) continue;
-        const outcome = await deliverWebPush(context, () =>
-          webpush.generateRequestDetails(
+      const result = await dispatchPushBatch(
+        jobs ?? [],
+        (job) => rpc("web_push_authorize", { p_id: job.id, p_lease: job.lease }),
+        (context) =>
+          deliverWebPush(
             context,
-            JSON.stringify(
-              pushMessage(
-                context.locale,
-                context.kind,
-                context.target,
-                context.id,
-                context.shop_name,
+            () =>
+              webpush.generateRequestDetails(
+                context,
+                JSON.stringify(
+                  pushMessage(
+                    context.locale,
+                    context.kind,
+                    context.target,
+                    context.id,
+                    context.shop_name,
+                  ),
+                ),
+                {
+                  TTL: 300,
+                  contentEncoding: "aes128gcm",
+                  urgency: "normal",
+                  vapidDetails: { subject, publicKey, privateKey },
+                },
               ),
-            ),
-            {
-              TTL: 300,
-              contentEncoding: "aes128gcm",
-              urgency: "normal",
-              vapidDetails: { subject, publicKey, privateKey },
-            },
+            budget.providerFetch,
           ),
-        );
-        await rpc("web_push_finish", { p_id: job.id, p_lease: job.lease, p_result: outcome });
-        processed++;
-      }
-      return reply({ ok: true, enabled: true, processed });
+        (job, outcome) =>
+          rpc("web_push_finish", { p_id: job.id, p_lease: job.lease, p_result: outcome }),
+      );
+      return reply({ ok: result.uncertain === 0, enabled: true, ...result });
     }
     const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
     const { data: user, error } = await db.auth.getUser(token);

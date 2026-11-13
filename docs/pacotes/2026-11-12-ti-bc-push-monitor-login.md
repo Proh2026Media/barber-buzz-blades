@@ -2,6 +2,8 @@
 
 **Revisão 2 — substitui o roteiro e o ZIP anteriores desta entrega. Não aplicar a revisão 1.**
 
+**Estado posterior, segundo retorno da TI recebido em 12/11:** esta revisão 2 já foi instalada e publicada em `04bf927`; VAPID configurado às 20:52, push desligado e sem cron. Não reaplicar este pacote nem gerar novas chaves. Próximo ajuste executável: [incremental do dispatch](2026-11-12-ti-webpush-dispatch-limitado.md). O restante deste documento preserva o roteiro histórico.
+
 Data: 12/11/2026. Autor: Codex. Destinatário: TI/Guardião.
 Responde ao dono, que informou não ter enviado novos materiais desde o pedido de notificações push, e ao relatório `relatorio-ti-p120-conferencia-117-prontidao-login-2026-11-12.md` (SHA-256 `82fbd0d014e9b4705eda38d45de374ea81699d15905bbdc13ad75343e7220eef`).
 

@@ -1,0 +1,208 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { setTimeout as delay } from "node:timers/promises";
+import { createPushBudget } from "./web-push-budget.ts";
+import { dispatchPushBatch, type PushJob, type PushContext } from "./web-push-dispatch.ts";
+import { deliverWebPush } from "./web-push.ts";
+const jobs: PushJob[] = Array.from({ length: 4 }, (_, i) => ({
+  id: String(i),
+  lease: `lease-${i}`,
+}));
+const context = (job: PushJob): PushContext => ({
+  id: job.id,
+  locale: "pt-BR",
+  kind: "test",
+  target: "/app",
+  endpoint: "https://fcm.googleapis.com/fcm/send/ficticio",
+  keys: { p256dh: "B".repeat(87), auth: "a".repeat(22) },
+});
+
+test("Quatro envios avançam juntos sem transmitir antes da revalidação", async () => {
+  const permits = new Set();
+  let active = 0,
+    peak = 0;
+  const sent: string[] = [],
+    finished: string[] = [];
+  const result = await dispatchPushBatch(
+    jobs,
+    async (j) => {
+      await delay(5);
+      permits.add(j.id);
+      return context(j);
+    },
+    async (c) => {
+      assert.ok(permits.has(c.id));
+      active++;
+      peak = Math.max(peak, active);
+      sent.push(c.id);
+      await delay(25);
+      active--;
+      return "accepted";
+    },
+    async (j, outcome) => {
+      assert.equal(outcome, "accepted");
+      finished.push(j.id);
+    },
+  );
+  assert.equal(peak, 4);
+  assert.equal(new Set(sent).size, 4);
+  assert.equal(finished.length, 4);
+  assert.deepEqual(result, { processed: 4, cancelled: 0, uncertain: 0 });
+});
+
+test("Permissão revogada cancela; falha de autorização isola sem transmitir", async () => {
+  const sent: string[] = [];
+  const result = await dispatchPushBatch(
+    jobs,
+    async (j) => {
+      if (j.id === "0") return null;
+      if (j.id === "1") throw new Error("banco sem resposta");
+      return context(j);
+    },
+    async (c) => {
+      sent.push(c.id);
+      return "accepted";
+    },
+    async () => {},
+  );
+  assert.deepEqual(sent.sort(), ["2", "3"]);
+  assert.deepEqual(result, { processed: 2, cancelled: 1, uncertain: 1 });
+});
+
+test("Falha do provedor registra unknown; finish incerto não repete o envio", async () => {
+  let calls = 0;
+  const finished: string[] = [];
+  const result = await dispatchPushBatch(
+    jobs,
+    async (j) => context(j),
+    async () => {
+      calls++;
+      throw new Error("conexão interrompida");
+    },
+    async (j, outcome) => {
+      assert.equal(outcome, "unknown");
+      finished.push(j.id);
+      if (j.id === "0") throw new Error("resultado do banco desconhecido");
+    },
+  );
+  assert.equal(calls, 4);
+  assert.equal(finished.length, 4);
+  assert.deepEqual(result, { processed: 3, cancelled: 0, uncertain: 1 });
+});
+
+test("Lote do SQL antigo é recusado antes de autorizar ou transmitir", async () => {
+  let calls = 0;
+  await assert.rejects(
+    dispatchPushBatch(
+      [...jobs, { id: "5", lease: "5" }],
+      async (j) => {
+        calls++;
+        return context(j);
+      },
+      async () => {
+        calls++;
+        return "accepted";
+      },
+      async () => {
+        calls++;
+      },
+    ),
+    /PUSH_BATCH_VERSION/,
+  );
+  assert.equal(calls, 0);
+});
+
+test("Prazo total encerra transporte travado mesmo sem cooperação com abort", async () => {
+  let calls = 0;
+  let signal: AbortSignal | null | undefined;
+  const budget = createPushBudget(60, async (_input, init) => {
+    calls++;
+    signal = init?.signal;
+    return new Promise<Response>(() => {});
+  });
+  const start = performance.now();
+  await assert.rejects(budget.databaseFetch("https://db.example.invalid"), /PUSH_DEADLINE/);
+  assert.ok(performance.now() - start < 500);
+  assert.ok(signal?.aborted);
+  await assert.rejects(budget.providerFetch("https://fcm.googleapis.com/a"), /PUSH_DEADLINE/);
+  assert.equal(calls, 1);
+});
+
+test("Cabeçalhos recebidos não removem o timeout do corpo; stream é cancelado", async () => {
+  let cancelled = false;
+  const budget = createPushBudget(
+    50,
+    async () =>
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode('{"incompleto":'));
+          },
+          cancel() {
+            cancelled = true;
+          },
+        }),
+      ),
+  );
+  await assert.rejects(budget.databaseFetch("https://db.example.invalid"), /PUSH_DEADLINE/);
+  assert.ok(cancelled);
+});
+
+test("Consultas sucessivas compartilham o mesmo prazo, não ganham novo orçamento", async () => {
+  let calls = 0;
+  const budget = createPushBudget(100, async () => {
+    calls++;
+    await delay(65);
+    return new Response("{}");
+  });
+  assert.deepEqual(await (await budget.databaseFetch("https://db.example.invalid")).json(), {});
+  await assert.rejects(budget.databaseFetch("https://db.example.invalid"), /PUSH_DEADLINE/);
+  await assert.rejects(budget.databaseFetch("https://db.example.invalid"), /PUSH_DEADLINE/);
+  assert.equal(calls, 2);
+});
+
+test("Limita corpo externo, corpo de entrada e preserva respostas vazias", async () => {
+  const large = createPushBudget(1000, async () => new Response("x".repeat(512001)));
+  await assert.rejects(large.databaseFetch("https://db.example.invalid"), /PUSH_BODY_LIMIT/);
+  const budget = createPushBudget(1000, async () => new Response(null, { status: 204 }));
+  assert.equal((await budget.databaseFetch("https://db.example.invalid")).status, 204);
+  await assert.rejects(
+    budget.readRequest(
+      new Request("https://app.example.invalid", {
+        method: "POST",
+        body: "x".repeat(8001),
+      }),
+    ),
+    /PUSH_BODY_LIMIT/,
+  );
+});
+
+test("Cancelamento original impede começar uma chamada de rede", async () => {
+  let calls = 0;
+  const budget = createPushBudget(1000, async () => {
+    calls++;
+    return new Response(null);
+  });
+  const controller = new AbortController();
+  controller.abort();
+  await assert.rejects(
+    budget.databaseFetch("https://db.example.invalid", { signal: controller.signal }),
+  );
+  assert.equal(calls, 0);
+});
+
+test("Prazo vencido no envio conserva unknown e não reenvia", async () => {
+  let calls = 0;
+  const budget = createPushBudget(40, async () => {
+    calls++;
+    return new Promise<Response>(() => {});
+  });
+  const c = context(jobs[0]);
+  const result = await deliverWebPush(
+    c,
+    () => ({ endpoint: c.endpoint, headers: {}, body: new Uint8Array() }),
+    budget.providerFetch,
+  );
+  assert.equal(result, "unknown");
+  assert.equal(calls, 1);
+});

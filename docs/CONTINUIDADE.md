@@ -2239,3 +2239,12 @@ Antes de enviar o pacote, o dono reservou a marca B&C à gestão de donos/admini
 ## 12/11/2026 — Preferência persistente: entrega pronta à TI
 
 O dono pediu para guardar a orientação para as próximas entregas: enviar à TI implementação concluída, arquivos e roteiro verificáveis, não apenas objetivos para ela resolver. Desenvolvimento pendente permanece com o Codex; diagnóstico/revisão deve ser explicitamente separado de instalação/homologação. Regra registrada no AGENTS.md e referenciada no guia de trabalho. Somente documentação local; nenhum novo envio à TI, atualização de produção ou alteração no pacote v2 já entregue neste registro.
+
+
+## 12/11/2026 — Retorno TI v2 e dispatch Web Push limitado
+
+TI relata revisão 2 instalada/publicada em `04bf9276281c5cd8d7f42f48ecb839d1a4a9b17e`, com VAPID configurado posteriormente às 20:52, `mailto:contato@proh.media`. Push continua desligado no banco/ambiente, sem cron e sem homologação. Não trocar chaves nem reaplicar/renomear as duas migrations instaladas; prefixo repetido com nº 117 permanece apenas como histórico. Não criar ledger de migrations.
+
+Correção local: migration nova `20261112232000_web_push_lotes_limitados.sql` limita claim a quatro, mantém leases/SKIP LOCKED e desconhecidos sem reenvio. Edge executa quatro tarefas em paralelo, isola falhas, aplica orçamento compartilhado de 40 s, consultas de até 5 s e provedor de até 8 s; corpo HTTP também limitado em tempo/tamanho. Recusa lote legado >4 antes de enviar. Processed significa resultado finalizado, não entrega visual. Revalidação por destinatário e pausa preservadas.
+
+Validação: 606 testes; tipos; lint sem erros (7 avisos preexistentes); build; Deno check; 31 verificações SQL e três de concorrência real no PostgreSQL descartável. HTTP local lento: 27.265 ms com quatro resultados desconhecidos e zero repetição. Bancada dos módulos na imagem `supabase/edge-runtime:v1.71.2`, compatível Deno 2.1.4, passou sem rede externa. Novo pacote incremental com arquivos completos, patch, hashes, roteiro, retorno e evidências. Nenhum envio real/push/main/instalação VPS, troca de chaves ou alteração de grupo, WhatsApp, marca e Flow.
