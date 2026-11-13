@@ -174,7 +174,7 @@
     /* Altura de referência da barra de navegação flutuante (`.app-mobile-nav`). */
     --app-nav-height: 4.8rem;
     /* Recuo do gesto inferior usado pelas faixas flutuantes. */
-    --app-floating-bottom: max(1rem, env(safe-area-inset-bottom));
+    --app-floating-bottom: max(1rem, var(--app-safe-bottom, env(safe-area-inset-bottom)));
     /* Distância visual única para o modo de cabeçalho e rodapé flutuantes. */
     --app-chrome-inset: 1rem;
   }
@@ -185,9 +185,9 @@
   /* PWA em tela cheia: o conteúdo usa safe-area nos headers/nav, sem deslocar o fundo. */
   /* Aplicado sempre: em navegador normal o env() vale 0 e o recuo continua igual. */
   .arena-workspace > header {
-    padding-top: max(1rem, env(safe-area-inset-top));
-    padding-left: max(1rem, env(safe-area-inset-left));
-    padding-right: max(1rem, env(safe-area-inset-right));
+    padding-top: max(1rem, var(--app-safe-top, env(safe-area-inset-top)));
+    padding-left: max(1rem, var(--app-safe-left, env(safe-area-inset-left)));
+    padding-right: max(1rem, var(--app-safe-right, env(safe-area-inset-right)));
   }
   /* O piso do recuo superior no app instalado fica fora de camada, depois da
      regra de 640px (ver "Piso do app instalado"), para vencer `p-4`/`py-4`. */
@@ -713,7 +713,7 @@ body:has(.arena-workspace)
 /* Barras fixas no pé (mudanças não salvas): ficam acima da barra de navegação flutuante;
    dentro de janelas, encostam no fim da janela. */
 :root {
-  --app-sticky-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  --app-sticky-bottom: max(0.75rem, var(--app-safe-bottom, env(safe-area-inset-bottom)));
 }
 body:has(.app-mobile-nav) {
   --app-sticky-bottom: calc(var(--app-floating-bottom) + var(--app-nav-height) + 0.75rem);
@@ -802,15 +802,15 @@ body:has(.arena-workspace) {
 }
 /* Em paisagem a barra também respeita os recortes laterais. */
 .app-mobile-nav-floating {
-  left: max(1rem, env(safe-area-inset-left));
-  right: max(1rem, env(safe-area-inset-right));
+  left: max(1rem, var(--app-safe-left, env(safe-area-inset-left)));
+  right: max(1rem, var(--app-safe-right, env(safe-area-inset-right)));
 }
 /* Personalização opcional: o cabeçalho usa o mesmo recuo de 1rem que já
    posiciona o menu inferior. O padrão sem a classe permanece inalterado. */
 .arena-workspace.brand-chrome-floating > header {
-  margin-top: max(var(--app-chrome-inset), env(safe-area-inset-top));
-  margin-right: max(var(--app-chrome-inset), env(safe-area-inset-right));
-  margin-left: max(var(--app-chrome-inset), env(safe-area-inset-left));
+  margin-top: max(var(--app-chrome-inset), var(--app-safe-top, env(safe-area-inset-top)));
+  margin-right: max(var(--app-chrome-inset), var(--app-safe-right, env(safe-area-inset-right)));
+  margin-left: max(var(--app-chrome-inset), var(--app-safe-left, env(safe-area-inset-left)));
   border: 1px solid color-mix(in oklab, var(--border) 65%, transparent);
   border-radius: var(--panel-radius);
   box-shadow:
@@ -818,9 +818,12 @@ body:has(.arena-workspace) {
     inset 0 1px 0 color-mix(in oklab, #fff 45%, transparent);
 }
 .arena-workspace.brand-chrome-floating > .app-mobile-nav {
-  right: max(var(--app-chrome-inset), env(safe-area-inset-right));
-  bottom: max(var(--app-chrome-inset), env(safe-area-inset-bottom)) !important;
-  left: max(var(--app-chrome-inset), env(safe-area-inset-left));
+  right: max(var(--app-chrome-inset), var(--app-safe-right, env(safe-area-inset-right)));
+  bottom: max(
+    var(--app-chrome-inset),
+    var(--app-safe-bottom, env(safe-area-inset-bottom))
+  ) !important;
+  left: max(var(--app-chrome-inset), var(--app-safe-left, env(safe-area-inset-left)));
 }
 .arena-workspace > header {
   position: relative;
@@ -891,14 +894,18 @@ body:has(.arena-workspace) {
 @media (max-width: 767.98px) {
   [role="dialog"][data-mobile-sheet="true"] {
     top: auto;
-    right: max(0.5rem, env(safe-area-inset-right));
-    bottom: calc(var(--dialog-keyboard-inset, 0px) + max(0.5rem, env(safe-area-inset-bottom)));
-    left: max(0.5rem, env(safe-area-inset-left));
+    right: max(0.5rem, var(--app-safe-right, env(safe-area-inset-right)));
+    bottom: calc(
+      var(--dialog-keyboard-inset, 0px) +
+        max(0.5rem, var(--app-safe-bottom, env(safe-area-inset-bottom)))
+    );
+    left: max(0.5rem, var(--app-safe-left, env(safe-area-inset-left)));
     width: auto;
     max-width: none;
     max-height: calc(
-      var(--dialog-viewport-height, 100dvh) - max(1rem, env(safe-area-inset-top)) -
-        max(0.5rem, env(safe-area-inset-bottom))
+      var(--dialog-viewport-height, 100dvh) -
+        max(1rem, var(--app-safe-top, env(safe-area-inset-top))) -
+        max(0.5rem, var(--app-safe-bottom, env(safe-area-inset-bottom)))
     );
     min-height: 0;
     margin: 0;
@@ -1428,7 +1435,7 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
 .app-mobile-nav {
   /* A barra flutua sobre o conteúdo: as classes utilitárias `fixed` cuidam do
      posicionamento e aqui só ajustamos o recuo da área de gesto inferior. */
-  bottom: max(1rem, env(safe-area-inset-bottom)) !important;
+  bottom: max(1rem, var(--app-safe-bottom, env(safe-area-inset-bottom))) !important;
   gap: 0.3rem;
   padding: 0.45rem !important;
   border: 1px solid color-mix(in oklab, var(--border) 55%, transparent) !important;
@@ -1466,8 +1473,8 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
    barra do cliente mede os rótulos, ver .app-mobile-nav-fit). */
 @media (max-width: 359px) {
   .app-mobile-nav-floating {
-    left: max(0.5rem, env(safe-area-inset-left));
-    right: max(0.5rem, env(safe-area-inset-right));
+    left: max(0.5rem, var(--app-safe-left, env(safe-area-inset-left)));
+    right: max(0.5rem, var(--app-safe-right, env(safe-area-inset-right)));
   }
   .app-mobile-nav button {
     padding-inline: 0.125rem !important;
@@ -1561,7 +1568,7 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   .arena-workspace:has(> .app-mobile-nav) {
     --app-rail-width: 6rem;
     /* Mesmo recuo do cabeçalho: a borda da coluna alinha com o nome da loja acima dela. */
-    --app-rail-inset: max(1rem, env(safe-area-inset-left));
+    --app-rail-inset: max(1rem, var(--app-safe-left, env(safe-area-inset-left)));
     display: grid;
     grid-template-columns: calc(var(--app-rail-width) + var(--app-rail-inset)) minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
@@ -1578,7 +1585,7 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   }
   body:has(.app-mobile-nav) {
     --app-banner-bottom: var(--app-floating-bottom);
-    --app-sticky-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    --app-sticky-bottom: max(0.75rem, var(--app-safe-bottom, env(safe-area-inset-bottom)));
   }
   /* A coluna é estática na grade (também com o cabeçalho flutuante da marca). */
   .arena-workspace > .app-mobile-nav,
@@ -2194,7 +2201,7 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
   .arena-workspace > main.customer-main-wide,
   .arena-workspace > main.shop-agenda-wide,
   .arena-workspace:has(> .app-mobile-nav) > main {
-    padding-inline: 1.5rem max(1rem, env(safe-area-inset-right));
+    padding-inline: 1.5rem max(1rem, var(--app-safe-right, env(safe-area-inset-right)));
   }
   /* Cabeçalho da barbearia de ponta a ponta, como o do cliente e o da plataforma: o nome fica
      sobre a coluna lateral e as ações no canto direito, sem a faixa centralizada de 70rem. Vale
@@ -2213,7 +2220,11 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
     --app-read-width: 60rem;
     --app-main-pad-top: 1.5rem;
     padding-inline: 2rem
-      max(2rem, env(safe-area-inset-right), calc(100% - 2rem - var(--app-read-width)));
+      max(
+        2rem,
+        var(--app-safe-right, env(safe-area-inset-right)),
+        calc(100% - 2rem - var(--app-read-width))
+      );
   }
   .arena-workspace:has(> .app-mobile-nav) > main.max-w-xl {
     --app-read-width: 40rem;
@@ -2597,17 +2608,17 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
     padding-inline: 1rem;
   }
   .arena-workspace > header {
-    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-top: max(1rem, var(--app-safe-top, env(safe-area-inset-top)));
     padding-bottom: 0.75rem;
-    padding-left: max(1rem, env(safe-area-inset-left));
-    padding-right: max(1rem, env(safe-area-inset-right));
+    padding-left: max(1rem, var(--app-safe-left, env(safe-area-inset-left)));
+    padding-right: max(1rem, var(--app-safe-right, env(safe-area-inset-right)));
   }
   .arena-workspace > nav:not(.app-mobile-nav) {
     width: 100%;
     margin: 0;
   }
   .app-mobile-nav {
-    bottom: max(1rem, env(safe-area-inset-bottom));
+    bottom: max(1rem, var(--app-safe-bottom, env(safe-area-inset-bottom)));
   }
   .app-mobile-nav button span {
     font-size: 11px;
@@ -2649,11 +2660,11 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
 @supports (-webkit-touch-callout: none) {
   @media (max-width: 640px) and (display-mode: standalone) {
     .arena-workspace > header {
-      padding-top: max(3.25rem, env(safe-area-inset-top));
+      padding-top: max(3.25rem, var(--app-safe-top, env(safe-area-inset-top)));
     }
     .arena-workspace.brand-chrome-floating > header {
       padding-top: 1rem;
-      margin-top: max(3.25rem, env(safe-area-inset-top));
+      margin-top: max(3.25rem, var(--app-safe-top, env(safe-area-inset-top)));
     }
   }
 }
@@ -2874,8 +2885,8 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
   display: flex;
   gap: 0.5rem;
   position: absolute;
-  top: max(0.85rem, env(safe-area-inset-top));
-  right: max(0.85rem, env(safe-area-inset-right));
+  top: max(0.85rem, var(--app-safe-top, env(safe-area-inset-top)));
+  right: max(0.85rem, var(--app-safe-right, env(safe-area-inset-right)));
   z-index: 5;
 }
 .auth-theme-toggle .app-icon-button {
@@ -3429,7 +3440,8 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
     align-items: center;
     flex-direction: column;
     justify-content: center;
-    padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
+    padding: max(1rem, var(--app-safe-top, env(safe-area-inset-top))) 1rem
+      max(1rem, var(--app-safe-bottom, env(safe-area-inset-bottom)));
   }
   .auth-layout-cover .auth-photo-copy {
     width: min(100%, 28rem);
@@ -3457,7 +3469,7 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
   /* Faixa de foto baixa: mantém a identidade e deixa o formulário caber na tela. */
   .auth-layout-split .auth-photo-layer {
     width: 100%;
-    height: calc(9rem + env(safe-area-inset-top));
+    height: calc(9rem + var(--app-safe-top, env(safe-area-inset-top)));
     min-height: 0;
     flex: 0 0 auto;
   }
@@ -3466,7 +3478,7 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
     top: 0;
     left: 0;
     width: 100%;
-    padding: max(1rem, env(safe-area-inset-top)) 7.25rem 2.5rem 1.25rem;
+    padding: max(1rem, var(--app-safe-top, env(safe-area-inset-top))) 7.25rem 2.5rem 1.25rem;
   }
   .auth-layout-split .auth-photo-copy-logo,
   .auth-layout-split .auth-photo-copy > p:last-child {
@@ -3481,7 +3493,7 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
   }
   .auth-layout-split .auth-brand-panel {
     width: calc(100% - 2rem);
-    margin: -2rem 1rem max(1rem, env(safe-area-inset-bottom));
+    margin: -2rem 1rem max(1rem, var(--app-safe-bottom, env(safe-area-inset-bottom)));
     align-self: center;
     border: 1px solid var(--border);
     background: var(--card);
@@ -3507,10 +3519,10 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
     padding: 0 6.5rem 0.5rem 0;
   }
   .auth-page:is(.auth-layout-cover, .auth-layout-card) {
-    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    padding-bottom: max(0.75rem, var(--app-safe-bottom, env(safe-area-inset-bottom)));
   }
   .auth-page.auth-layout-card {
-    padding-top: calc(max(0.85rem, env(safe-area-inset-top)) + 3.25rem);
+    padding-top: calc(max(0.85rem, var(--app-safe-top, env(safe-area-inset-top))) + 3.25rem);
   }
   .auth-page:is(.auth-layout-cover, .auth-layout-card) .auth-brand-panel {
     --auth-head-top: 1rem;

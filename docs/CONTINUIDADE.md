@@ -1,5 +1,9 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 12/11/2026 — Área útil do iPhone, somente local
+
+Acesso ao Xcode confirmado; Simulator não disponível para controle nesta sessão. Corrigidos o crescimento da logo sobre o nome da loja quando o topo reserva a câmera, os recuos laterais/inferiores, a altura útil com teclado, as janelas e a reserva do menu medida em vez de fixa. Navegação lateral rola em paisagem curta. Tipos, montagem, lint dos arquivos alterados, diff e 35 combinações Chromium com rede fictícia passaram; teclado e recortes sintéticos, sem homologação iOS real. [Roteiro e pacote TI](pacotes/2026-11-12-ti-interface-iphone.md). Fonte em `/private/tmp/bc-central-concluidos`; sem envio à main/produção. Marca e backend intocados. O recebimento do primeiro push foi confirmado pelo usuário; nome da instalação/“from” e login WhatsApp continuam pendências independentes.
+
 ## 12/11/2026 — retorno TI nº 117 e primeiro acesso mais claro (somente local)
 
 Relatório `relatorio-ti-p120-conferencia-117-prontidao-login-2026-11-12.md` recebido. A nº 117b já está em `origin/main` (`f785ba8`); não reaplicar cartões. Corrigida a interface do login/grupo: escolhas de primeiro acesso, três passos visuais, convite indisponível, envio incerto, limite de pedidos, adesão expirada e telefone confirmado sem promessa de login pronto. Sete arquivos de frontend/dicionários; sem alteração de backend ou produção. [Devolutiva e pendências](pacotes/2026-11-12-ti-p120-retorno-117-login-claro.md). Cliente permanece Gmail/4593, grupo antigo do administrador não é reaproveitado. Piloto não pronto: dois administradores, extensão no principal e ciclo robusto ainda pendentes. Pasta e prévia da marca intocadas nesta entrega.

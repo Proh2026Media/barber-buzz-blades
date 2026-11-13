@@ -18,6 +18,7 @@ import { DEFAULT_LOCALE, localeFromTag, localeBootstrapScript } from "../lib/i18
 import { useI18n } from "../lib/i18n";
 import { PushAccountGuard } from "@/features/notifications/PushAccountGuard";
 import { PwaRegister } from "../lib/pwa";
+import { VisibleViewport } from "../lib/visible-viewport";
 import { PwaInstallBanner, PwaInstallProvider } from "../components/pwa-install-banner";
 import { Toaster } from "../components/ui/sonner";
 
@@ -135,6 +136,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <VisibleViewport />
       <PwaRegister />
       <PushAccountGuard />
       <PwaInstallProvider>
