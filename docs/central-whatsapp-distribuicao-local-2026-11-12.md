@@ -1,5 +1,8 @@
 # Central WhatsApp — distribuição por destino
 
+**Atualização:** perfil de atividade implementado localmente nos cartões e como critério auxiliar da sugestão. Telemetria real depende de instalação futura; exemplos seguem fictícios. [Fonte, regras e limitações](criterios-atividade-whatsapp-2026-11-12.md). Removida a sombra azul unilateral que ainda restava na seleção.
+
+
 ## Esclarecimento de identidade — cantos compartilhados
 
 A pedido do dono, a prévia não tem seletor nem estado próprio de cantos. Superfícies e ações herdam `--panel-radius`, `--control-radius` e `--button-radius` do sistema/ambiente. Isso supera os raios fixos/pílulas forçadas da rodada visual anterior. Círculos de seleção e trilhas de switch conservam a forma funcional. A validação injeta temporariamente os três modos somente no navegador de testes, sem criar uma preferência paralela de página.

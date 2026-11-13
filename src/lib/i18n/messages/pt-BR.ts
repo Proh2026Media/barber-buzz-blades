@@ -1,8 +1,21 @@
 /** Dicionário principal (fonte). Toda chave nova nasce aqui, em pt-BR. */
 export const ptBR = {
+  "waActivity.unknown": "Sem histórico suficiente",
+  "waActivity.initial": "Atividade inicial",
+  "waActivity.regular": "Atividade regular",
+  "waActivity.established": "Histórico consistente",
+  "waActivity.review": "Revisar atividade",
+  "waActivity.accepted": "{count} envios aceitos pelo provedor",
+  "waActivity.days": "{count} dias com envios aceitos",
+  "waActivity.uncertain": "{count} resultados incertos",
+  "waActivity.simulated": "Exemplo fictício · 30 dias",
+  "waActivity.internal": "Critério interno · 30 dias",
+  "waActivity.rule":
+    "Critério interno: regular a partir de 20 aceites em 7 dias ativos; consistente a partir de 100 em 14 dias ativos. Incertos ou pausa exigem revisão. Sem nota oficial de qualidade; falhas definitivas ainda não são medidas separadamente.",
+
   "waAuto.title": "Distribuição assistida",
   "waAuto.basis":
-    "Protótipo local: prioriza telefones conectados e distintos, com menos vínculos configurados. Não usa volume real nem aquecimento.",
+    "Protótipo local: prioriza telefones conectados e distintos, com menos vínculos configurados. Usa vínculos e perfil de atividade quando medido.",
   "waAuto.shop": "Selecionar barbearia",
   "waAuto.generate": "Gerar distribuição",
   "waAuto.apply": "Aplicar na prévia",

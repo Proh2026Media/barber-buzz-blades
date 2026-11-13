@@ -1,9 +1,22 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const es: Record<MessageKey, string> = {
+  "waActivity.unknown": "Historial insuficiente",
+  "waActivity.initial": "Actividad inicial",
+  "waActivity.regular": "Actividad regular",
+  "waActivity.established": "Historial constante",
+  "waActivity.review": "Revisar actividad",
+  "waActivity.accepted": "{count} envíos aceptados por el proveedor",
+  "waActivity.days": "{count} días con envíos aceptados",
+  "waActivity.uncertain": "{count} resultados inciertos",
+  "waActivity.simulated": "Ejemplo ficticio · 30 días",
+  "waActivity.internal": "Criterio interno · 30 días",
+  "waActivity.rule":
+    "Criterio interno: regular desde 20 aceptaciones en 7 días activos; constante desde 100 en 14 días activos. Resultados inciertos o pausas requieren revisión. No es una calidad oficial; aún no se miden fallos definitivos por separado.",
+
   "waAuto.title": "Distribución asistida",
   "waAuto.basis":
-    "Prototipo local: prioriza teléfonos conectados distintos con menos vínculos configurados. No usa volumen real ni calentamiento.",
+    "Prototipo local: prioriza teléfonos conectados distintos con menos vínculos configurados. Usa perfiles de actividad cuando se miden.",
   "waAuto.shop": "Seleccionar barbería",
   "waAuto.generate": "Generar distribución",
   "waAuto.apply": "Aplicar a la vista previa",

@@ -1,3 +1,5 @@
+import { NumberActivity as NumberActivityBadge } from "./NumberActivity";
+import type { NumberActivity } from "@/lib/whatsapp/number-activity";
 import { WhatsAppConnectDialog } from "./WhatsAppConnectDialog";
 import {
   WhatsAppDistribution,
@@ -49,6 +51,7 @@ type DetailTab = "links" | "connection" | "reserve" | "history";
 type Channel = Tables<"whatsapp_channels">;
 type Directory = {
   destination_routing?: boolean;
+  number_activity?: Record<string, NumberActivity>;
   number_sharing?: boolean;
   links?: (WhatsAppNumberLink & {
     backup_channel_id?: string | null;
@@ -561,7 +564,11 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
               <WhatsAppDistribution
                 shops={data.shops}
                 staff={data.staff}
-                numbers={data.channels.map((n) => ({ ...n, status: reports[n.id] ?? n.status }))}
+                numbers={data.channels.map((n) => ({
+                  ...n,
+                  status: reports[n.id] ?? n.status,
+                  activity: data.number_activity?.[n.id],
+                }))}
                 routes={distributionRoutes}
                 supported={Boolean(data.destination_routing)}
                 busy={busy}
@@ -707,6 +714,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                                 status={reports[c.id] ?? c.status}
                                 pending={!c.display_phone?.trim()}
                               />
+                              <NumberActivityBadge activity={data?.number_activity?.[c.id]} />
                             </span>
                           </button>
                         </li>

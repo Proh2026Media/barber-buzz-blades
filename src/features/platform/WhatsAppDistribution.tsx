@@ -1,3 +1,5 @@
+import { NumberActivity as NumberActivityBadge } from "./NumberActivity";
+import { type NumberActivity } from "@/lib/whatsapp/number-activity";
 import { useId, useRef, useState, type DragEvent } from "react";
 import {
   ArrowRight,
@@ -27,6 +29,7 @@ export type DistributionNumber = {
   label: string | null;
   display_phone: string | null;
   status: string;
+  activity?: NumberActivity;
 };
 export type DistributionRoute = {
   id: string;
@@ -177,6 +180,9 @@ export function WhatsAppDistribution({
             <span className="wa-distribution-count">{catalogue.length}</span>
           </header>
           <p className="wa-distribution-helper">{t("waDistribution.numbersHint")}</p>
+          <p className="wa-distribution-helper" title={t("waActivity.rule")}>
+            {t("waActivity.internal")}
+          </p>
           <label className="wa-distribution-search">
             <Search className="size-4" aria-hidden />
             <span className="sr-only">{t("waDistribution.numberSearch")}</span>
@@ -234,6 +240,7 @@ export function WhatsAppDistribution({
                     )}
                   </div>
                   <Connection status={number.status} />
+                  <NumberActivityBadge activity={number.activity} />
                   <span className="wa-distribution-role-list">
                     {primaryCount > 0 && (
                       <span className="wa-distribution-role wa-distribution-role-primary">

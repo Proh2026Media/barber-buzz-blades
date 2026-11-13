@@ -153,7 +153,7 @@
   background: var(--accent);
 }
 .wa-distribution-number[data-selected="true"] {
-  box-shadow: inset 3px 0 var(--tone-info-line);
+  box-shadow: none;
   border-color: var(--tone-info-line);
   background: var(--tone-info-soft);
 }
@@ -711,7 +711,7 @@
 }
 .wa-distribution-icon-action {
   color: var(--tone-danger-ink, #b91c1c);
-  background: var(--tone-danger-soft, #fef2f2);
+  background: transparent;
   margin-left: auto;
 }
 .wa-distribution-slot-choice {
@@ -985,4 +985,31 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+}
+.wa-number-activity {
+  display: grid;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+}
+.wa-number-activity-metrics {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+}
+.wa-number-activity-metrics > span {
+  display: inline-flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+.wa-number-activity > small {
+  color: var(--muted-foreground);
+  font-size: 0.65rem;
+}
+
+.wa-distribution-icon-action:hover,
+.wa-distribution-icon-action:focus-visible {
+  background: var(--tone-danger-soft, #fef2f2);
 }

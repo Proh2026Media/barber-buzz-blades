@@ -1,4 +1,10 @@
-type Number = { id: string; display_phone: string | null; status: string };
+import { activityPreference, numberActivityLevel, type NumberActivity } from "./number-activity.ts";
+type Number = {
+  id: string;
+  display_phone: string | null;
+  status: string;
+  activity?: NumberActivity;
+};
 type Route = {
   barbershop_id: string;
   staff_id: string | null;
@@ -18,7 +24,14 @@ export function suggestDistribution(
   const seen = new Set<string>();
   const eligible = numbers.filter((n) => {
     const p = phone(n);
-    if (n.status !== "open" || !/^[1-9]\d{7,14}$/.test(p) || seen.has(p)) return false;
+    if (
+      n.status !== "open" ||
+      n.activity?.paused ||
+      numberActivityLevel(n.activity) === "review" ||
+      !/^[1-9]\d{7,14}$/.test(p) ||
+      seen.has(p)
+    )
+      return false;
     seen.add(p);
     return true;
   });
@@ -35,6 +48,7 @@ export function suggestDistribution(
   const ranked = [...eligible].sort(
     (a, b) =>
       load(a).primary - load(b).primary ||
+      activityPreference(a.activity) - activityPreference(b.activity) ||
       load(a).reserve - load(b).reserve ||
       phone(a).localeCompare(phone(b)),
   );
@@ -42,6 +56,7 @@ export function suggestDistribution(
   ranked.sort(
     (a, b) =>
       load(a).reserve - load(b).reserve ||
+      activityPreference(a.activity) - activityPreference(b.activity) ||
       load(a).primary - load(b).primary ||
       phone(a).localeCompare(phone(b)),
   );

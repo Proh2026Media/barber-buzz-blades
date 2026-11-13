@@ -1,5 +1,7 @@
 # Leia primeiro — Barba & Cabelo
 
+**12/11/2026 — Perfil de atividade nos cartões, somente local:** pesquisa registrada; critérios internos de volume/dias/pausa/incerteza, distintos da qualidade oficial do WhatsApp. Dados fictícios na prévia; consulta administrativa e proteção de identidade preparadas na nova migration `20261113002000`, não instalada. Removida a sombra unilateral remanescente no cartão selecionado. [Critérios, fonte e limites](criterios-atividade-whatsapp-2026-11-12.md). Sem produção ou novo pacote TI.
+
 **12/11/2026 — Cantos da Central seguem o sistema:** removido seletor próprio da prévia e raios fixos de superfícies/ações; tokens compartilhados restaurados. “Usa o geral” agora “Usa números da barbearia”. Não há indicador de aquecimento implementado. [Registro](central-whatsapp-distribuicao-local-2026-11-12.md). Somente local.
 
 **12/11/2026 — Estatísticas no topo e distribuição assistida local:** escolher barbearia → gerar proposta → revisar/aplicar na prévia. Heurística usa conexão e vínculos, não volume real/aquecimento. Switch redesenhado com círculo centrado. [Critérios e demandas futuras](central-whatsapp-distribuicao-local-2026-11-12.md). Sem publicação, backend ou pacote TI novo.

@@ -3,9 +3,22 @@ import type { MessageKey } from "./pt-BR.ts";
 
 export const enGB: Record<MessageKey, string> = {
   ...enUS,
+  "waActivity.unknown": "Insufficient history",
+  "waActivity.initial": "Initial activity",
+  "waActivity.regular": "Regular activity",
+  "waActivity.established": "Consistent history",
+  "waActivity.review": "Review activity",
+  "waActivity.accepted": "{count} sends accepted by the provider",
+  "waActivity.days": "{count} days with accepted sends",
+  "waActivity.uncertain": "{count} uncertain outcomes",
+  "waActivity.simulated": "Fictional example · 30 days",
+  "waActivity.internal": "Internal criteria · 30 days",
+  "waActivity.rule":
+    "Internal criteria: regular from 20 acceptances across 7 active days; consistent from 100 across 14 active days. Uncertain outcomes or pauses require review. Not an official quality rating; definitive failures are not yet measured separately.",
+
   "waAuto.title": "Assisted distribution",
   "waAuto.basis":
-    "Local prototype: prioritises distinct connected phones with fewer configured assignments. Does not use actual message volume or warm-up.",
+    "Local prototype: prioritises distinct connected phones with fewer configured assignments. Uses activity profiles when measured.",
   "waAuto.shop": "Select barbershop",
   "waAuto.generate": "Generate distribution",
   "waAuto.apply": "Apply to preview",

@@ -24,8 +24,34 @@ export const Route = createFileRoute("/previsao-whatsapp")({
 });
 
 const numbers: DistributionNumber[] = [
-  { id: "numero-a", label: "Número A", display_phone: "5511900000101", status: "open" },
-  { id: "numero-b", label: "Número B", display_phone: "5511900000202", status: "open" },
+  {
+    id: "numero-a",
+    label: "Número A",
+    display_phone: "5511900000101",
+    status: "open",
+    activity: {
+      accepted: 140,
+      uncertain: 0,
+      activeDays: 16,
+      observedDays: 21,
+      sampledAt: new Date().toISOString(),
+      source: "simulation",
+    },
+  },
+  {
+    id: "numero-b",
+    label: "Número B",
+    display_phone: "5511900000202",
+    status: "open",
+    activity: {
+      accepted: 24,
+      uncertain: 0,
+      activeDays: 7,
+      observedDays: 9,
+      sampledAt: new Date().toISOString(),
+      source: "simulation",
+    },
+  },
   { id: "numero-c", label: "Número C", display_phone: "5511900000303", status: "disconnected" },
 ];
 const shops = [

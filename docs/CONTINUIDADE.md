@@ -1,5 +1,9 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 12/11/2026 — Perfil de atividade e remoção da quina remanescente
+
+Pesquisadas fontes primárias; sem importar limites de marketing como aquecimento oficial. Cartões mostram perfil interno, aceites, dias e incertos; exemplos fictícios explícitos. Sugestão considera perfil após carga e exclui pausados/incertos para revisão. Nova migration local `20261113002000` agrega o diário e protege identidade para telefone novo não herdar histórico antigo. Removido `box-shadow: inset 3px 0` do estado selecionado. [Critérios e limites](criterios-atividade-whatsapp-2026-11-12.md). Testes de modelo, SQL/rollback, permissões, troca de telefone e 45 regressões de distribuição passaram. Nada publicado/instalado na VPS.
+
 ## 12/11/2026 — Herança e cantos esclarecidos
 
 Removidos estado/seletor próprios de cantos da prévia e sobrescritas fixas nas superfícies/ações da central. Tokens do sistema prevalecem; círculos/switch conservam forma funcional. Pílula de herança passa a “Usa números da barbearia”, com ícone. Métrica de aquecimento continua inexistente, sem inferência por conexão. Verificação dos modos reto/semi/arredondado no navegador, tipos/montagem/lint; somente local. [Detalhes](central-whatsapp-distribuicao-local-2026-11-12.md).
