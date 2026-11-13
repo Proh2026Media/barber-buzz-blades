@@ -1,5 +1,15 @@
 # Central WhatsApp — distribuição por destino
 
+## Refinamento aprovado pelo dono — 12/11/2026
+
+Composição aprovada, com ajustes locais: retirar faixas coloridas de uma só lateral, separar melhor as barbearias, arredondar superfícies e usar ações em pílulas. Principal/Reserva continuam identificados por ícone e texto; azul indica seleção/confirmação, verde conexão confirmada e vermelho remoção. Preferências usam ligar/desligar; a escolha de telefone abre opções circulares, sem select nativo. Arrastar e alternativas por teclado/toque permanecem.
+
+**Três números na prévia:** um principal, reserva 1 e reserva 2. As três escolhas são distintas e salvas apenas no estado da prévia. O contrato de produção/local SQL preparado anteriormente ainda aceita somente uma reserva: esta rodada NÃO alterou a migration nem afirma que a segunda já participa dos envios. Na integração real o recurso segue limitado ao contrato disponível. Antes de disponibilizar segunda reserva real, ampliar RPC, banco, concorrência, histórico, revalidação e seleção manual do emissor; nunca descartar silenciosamente a segunda escolha.
+
+**Estatísticas e sugestões são demanda NOVA, ainda NÃO implementada.** A prévia mostra espaços sem valores, identificados como proposta. Desenvolvimento posterior deve medir por telefone: envios aceitos por período (7/30 dias), dias com atividade, usos por destino, último envio e falhas/resultados incertos, distinguindo aceitação de entrega. A distribuição atual não oferece estes indicadores nem recomendações.
+
+“Aquecido” não é um estado verificado nem garantia de conta saudável. Preferir “Atividade recente”, com período e métricas claros. Sugestões futuras devem explicar o critério e a qualidade dos dados, considerar conexão/pausas/capacidade e exigir escolha do administrador; volume isolado não deve gerar selo de segurança nem provocar troca automática ou alternância de números. Primeiro especificar eventos, agregação, período, atualização e critérios; depois implementar e homologar.
+
 Entrega somente local, para aprovação visual do dono. Nenhuma publicação, instalação de migration na VPS, pareamento ou mensagem real. O pacote de iPhone que a TI está revisando não foi substituído.
 
 ## Problema e decisão

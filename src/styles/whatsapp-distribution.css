@@ -339,13 +339,11 @@
   min-width: 0;
   padding: 0.75rem;
   border: 1px solid var(--border);
-  border-left: 3px solid var(--tone-info-line);
   background: var(--background);
   border-radius: var(--control-radius);
 }
 .wa-distribution-slot-backup {
-  border-left-color: var(--tone-highlight-ink);
-  border-style: dashed;
+  border-style: solid;
 }
 .wa-distribution-slot[data-correlated="true"] {
   border-color: var(--tone-info-line);
@@ -661,4 +659,207 @@
   .wa-distribution-number {
     transition: none;
   }
+}
+
+/* Revisão aprovada: contorno inteiro, ações em pílulas e controles reconhecíveis. */
+.wa-distribution-shop {
+  margin-bottom: 1.75rem;
+  border: 1px solid var(--border);
+  border-radius: 1.5rem;
+  box-shadow: 0 5px 18px rgb(30 30 25 / 5%);
+}
+.wa-distribution-shop-title {
+  padding: 1.25rem;
+  border-radius: 1.5rem 1.5rem 0 0;
+  background: var(--card);
+  border-bottom: 2px solid var(--border);
+}
+.wa-distribution-shop-title h4 {
+  font-size: 1.05rem;
+}
+.wa-distribution-slot {
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  background: var(--card);
+}
+.wa-distribution-slot[data-correlated="true"] {
+  border: 1px solid var(--tone-info-line);
+}
+.wa-distribution .wa-distribution-customize,
+.wa-distribution .wa-distribution-inspect,
+.wa-distribution .wa-distribution-icon-action,
+.wa-distribution .wa-distribution-slot-choice,
+.wa-distribution .action-button,
+.wa-distribution .wa-distribution-mode button,
+.wa-distribution .wa-distribution-selection,
+.wa-distribution .wa-distribution-filters button {
+  border-radius: 999px !important;
+  text-decoration: none;
+}
+.wa-distribution-customize,
+.wa-distribution-inspect {
+  padding-inline: 0.85rem;
+  border: 1px solid var(--border);
+  background: var(--card);
+}
+.wa-distribution-customize {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+.wa-distribution-icon-action {
+  color: var(--tone-danger-ink, #b91c1c);
+  background: var(--tone-danger-soft, #fef2f2);
+  margin-left: auto;
+}
+.wa-distribution-slot-choice {
+  padding-inline: 0.6rem;
+}
+.wa-distribution-mode button[aria-pressed="true"],
+.wa-distribution-filters button[aria-pressed="true"] {
+  background: var(--tone-info-soft);
+  color: var(--tone-info-ink);
+  border-color: var(--tone-info-line);
+}
+.wa-distribution-toggle input[role="switch"] {
+  appearance: none;
+  width: 2.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: var(--muted-foreground);
+  position: relative;
+  border: 2px solid transparent;
+}
+.wa-distribution-toggle input[role="switch"]::after {
+  content: "";
+  display: block;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-top: 0.05rem;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.15s;
+}
+.wa-distribution-toggle input[role="switch"]:checked {
+  background: var(--tone-info-line);
+}
+.wa-distribution-toggle input[role="switch"]:checked::after {
+  transform: translateX(1rem);
+}
+.wa-distribution-technical input {
+  appearance: none;
+  border: 2px solid var(--muted-foreground);
+  border-radius: 50%;
+  background: var(--card);
+}
+.wa-distribution-technical input:checked {
+  border: 5px solid var(--tone-info-line);
+}
+.wa-number-options {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  background: var(--card);
+}
+.wa-number-options > button {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.65rem;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 1.5rem;
+  text-align: left;
+}
+.wa-number-options > button[aria-checked="true"] {
+  background: var(--tone-info-soft);
+  border-color: var(--tone-info-line);
+}
+.wa-number-options small {
+  display: block;
+  color: var(--muted-foreground);
+}
+.wa-option-circle {
+  display: grid;
+  place-items: center;
+  height: 1.1rem;
+  width: 1.1rem;
+  border: 2px solid var(--tone-info-line);
+  border-radius: 50%;
+  flex-shrink: 0;
+  color: var(--tone-info-ink);
+}
+.wa-future-stats {
+  border: 1px solid var(--border);
+  border-radius: 1.5rem;
+  background: var(--card);
+  padding: 1rem;
+}
+.wa-future-stats > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.wa-future-stats h2 {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-weight: 750;
+}
+.wa-future-stats > p {
+  font-size: 0.8rem;
+  margin-block: 0.75rem;
+  color: var(--muted-foreground);
+}
+.wa-future-stats > div {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: 0.75rem;
+}
+.wa-future-stats article {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+}
+.wa-future-stats strong {
+  font-size: 1.5rem;
+}
+.wa-future-stats small {
+  color: var(--muted-foreground);
+}
+@container wa-distribution (min-width: 68rem) {
+  .wa-distribution-slots:has([data-role="backup2"]) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.wa-distribution-number {
+  border-radius: 1.75rem;
+}
+.wa-distribution-number[data-selected="true"] {
+  border-color: var(--tone-info-line);
+  background: var(--tone-info-soft);
+  outline-color: var(--tone-info-line);
+}
+.wa-distribution-customize {
+  gap: 0.35rem;
+}
+.wa-distribution-savebar button:first-child {
+  color: var(--tone-danger-ink, #b91c1c);
+}
+.wa-distribution-savebar .action-confirm {
+  background: var(--tone-info-line);
+  color: white;
+}
+
+.wa-distribution-slot-backup2 .wa-distribution-slot-label {
+  color: var(--tone-highlight-ink);
 }

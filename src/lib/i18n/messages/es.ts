@@ -1,6 +1,16 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const es: Record<MessageKey, string> = {
+  "waRefine.stats": "Estadísticas y sugerencias",
+  "waRefine.future": "Nuevo · aún no implementado",
+  "waRefine.futureHint":
+    "Propuesta de desarrollo: medir envíos, días activos y usos por destino. El “calentamiento” no garantiza la salud de la cuenta ni evita restricciones.",
+  "waRefine.volume": "Envíos por periodo",
+  "waRefine.days": "Días activos",
+  "waRefine.usage": "Usos por barbería",
+  "waRefine.suggestions": "Sugerencias de distribución",
+  "waRefine.noData": "Medición aún no disponible",
+
   "waDistribution.title": "Distribución de números",
   "waDistribution.hint":
     "Selecciona un número y toca Principal o Reserva. En el ordenador también puedes arrastrarlo.",

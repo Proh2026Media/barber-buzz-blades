@@ -1,5 +1,9 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 12/11/2026 — Refinamentos após aprovação da prévia
+
+Aplicados contornos completos, separação entre lojas, ações em pílulas com ícones, ligar/desligar e opções circulares. Prévia fictícia com principal e duas reservas distintas, salvamento em memória e verificações de não repetição. Backend atual conserva uma reserva; bloqueio impede descartar silenciosamente uma segunda em chamada real. Estatísticas sem valores inventados, marcadas como proposta nova. [Especificação e limites](central-whatsapp-distribuicao-local-2026-11-12.md). Tipos/build/lint e testes visuais conferidos; sem nova mudança SQL, publicação ou pacote TI.
+
 ## 12/11/2026 — Distribuição visual por destino, somente local
 
 O dono pediu papéis cruzados entre números e revisão completa da distribuição, com aprovação local primeiro. Preparado quadro com Principal/Reserva visíveis, catálogo com contadores independentes, destaque dos usos, arrastar/clique/toque/teclado e salvamento explícito. Nova RPC por vínculo/versão e migration `20261113001000` somente local; nenhum dado real alterado. Tipos/build/lint passaram; 21 composições nos três cantos e cinco larguras da Central integrada, 45 PASS SQL/ROLLBACK e três concorrências aprovados. Correções de pausa por instância exata e adiamento sem gastar tentativa incluídas. [Entrega, testes e limites](central-whatsapp-distribuicao-local-2026-11-12.md). Prévia fictícia sem login em `/previsao-whatsapp`, exclusiva de desenvolvimento. Login do localhost teve configuração de API antiga corrigida no `.env` local, preservado fora do commit. Pacote anterior da TI, marca e Flow intocados. Sem autossave/push.

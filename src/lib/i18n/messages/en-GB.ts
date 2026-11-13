@@ -3,6 +3,16 @@ import type { MessageKey } from "./pt-BR.ts";
 
 export const enGB: Record<MessageKey, string> = {
   ...enUS,
+  "waRefine.stats": "Statistics and suggestions",
+  "waRefine.future": "New · not implemented yet",
+  "waRefine.futureHint":
+    "Development proposal: measure sends, active days and uses by destination. “Warm-up” does not guarantee account health or prevent restrictions.",
+  "waRefine.volume": "Sends per period",
+  "waRefine.days": "Active days",
+  "waRefine.usage": "Uses by barbershop",
+  "waRefine.suggestions": "Distribution suggestions",
+  "waRefine.noData": "Measurement not available yet",
+
   "waDistribution.title": "Number distribution",
   "waDistribution.hint":
     "Select a number, then tap Primary or Backup. On a computer, you can also drag it.",

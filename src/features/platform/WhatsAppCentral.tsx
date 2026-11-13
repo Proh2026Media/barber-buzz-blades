@@ -260,6 +260,11 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
     };
   });
   async function saveDistribution(target: DistributionSave) {
+    // O contrato atual não persiste a segunda reserva: nunca descartar essa escolha.
+    if (target.backup2) {
+      setError("waRefine.future");
+      return false;
+    }
     let completed = false;
     await run(async () => {
       const { error: failed } = await supabase.rpc("platform_set_whatsapp_route", {

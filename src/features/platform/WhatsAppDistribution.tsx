@@ -34,6 +34,7 @@ export type DistributionRoute = {
   staff_id: string | null;
   channel_id: string;
   backup_channel_id: string | null;
+  backup2_channel_id?: string | null;
   delivery_mode: "primary" | "backup" | "paused";
   enabled: boolean;
   version: number;
@@ -45,6 +46,7 @@ export type DistributionSave = {
   expectedVersion: number | null;
   primary: string | null;
   backup: string | null;
+  backup2?: string | null;
   mode: "primary" | "backup" | "paused";
   enabled: boolean;
   returns: boolean;
@@ -59,8 +61,9 @@ type Props = {
   busy: boolean;
   save: (target: DistributionSave) => Promise<boolean>;
   viewNumber: (id: string) => void;
+  secondReserve?: boolean;
 };
-type Role = "primary" | "backup";
+type Role = "primary" | "backup" | "backup2";
 const DRAG_TYPE = "application/x-bc-whatsapp-number";
 
 /** Só a apresentação muda; o vínculo e o envio conservam o identificador original. */
@@ -112,6 +115,7 @@ export function WhatsAppDistribution({
   busy,
   save,
   viewNumber,
+  secondReserve = false,
 }: Props) {
   const { t, locale } = useI18n();
   const [selected, setSelected] = useState<string | null>(null);
@@ -186,7 +190,9 @@ export function WhatsAppDistribution({
           <div className="wa-distribution-number-list">
             {visibleNumbers.map((number) => {
               const primaryCount = routes.filter((r) => r.channel_id === number.id).length;
-              const backupCount = routes.filter((r) => r.backup_channel_id === number.id).length;
+              const backupCount = routes.filter(
+                (r) => r.backup_channel_id === number.id || r.backup2_channel_id === number.id,
+              ).length;
               return (
                 <button
                   key={number.id}
@@ -303,6 +309,7 @@ export function WhatsAppDistribution({
               busy,
               save,
               viewNumber,
+              secondReserve,
               announce: setAnnouncement,
             };
             return (
@@ -378,6 +385,7 @@ function DestinationRoute({
   save,
   viewNumber,
   announce,
+  secondReserve,
 }: {
   shop: string;
   person: string | null;
@@ -392,12 +400,14 @@ function DestinationRoute({
   save: Props["save"];
   viewNumber: Props["viewNumber"];
   announce: (message: string) => void;
+  secondReserve?: boolean;
 }) {
   const { t } = useI18n();
   const source = route ?? inherited;
   const initial = {
     primary: source?.channel_id ?? null,
     backup: source?.backup_channel_id ?? null,
+    backup2: source?.backup2_channel_id ?? null,
     mode: route?.delivery_mode ?? ("primary" as DistributionRoute["delivery_mode"]),
     enabled: route?.enabled ?? false,
     returns: route?.return_notice_enabled ?? false,
@@ -436,7 +446,11 @@ function DestinationRoute({
       setError("");
       return;
     }
-    if (samePhone(id, role === "primary" ? draft.backup : draft.primary, numbers)) {
+    if (
+      (["primary", "backup", "backup2"] as Role[]).some(
+        (r) => r !== role && samePhone(id, draft[r], numbers),
+      )
+    ) {
       setError(t("waDistribution.sameNumber"));
       return;
     }
@@ -445,7 +459,7 @@ function DestinationRoute({
       [role]: id,
       ...(role === "backup" && !id ? { mode: "primary" as const } : {}),
       ...(role === "primary" && !id
-        ? { backup: null, mode: "paused" as const, enabled: false }
+        ? { backup: null, backup2: null, mode: "paused" as const, enabled: false }
         : {}),
     }));
     setEditing(true);
@@ -468,7 +482,11 @@ function DestinationRoute({
       setError(t("waDistribution.primaryRequired"));
       return;
     }
-    if (samePhone(draft.primary, draft.backup, numbers)) {
+    if (
+      samePhone(draft.primary, draft.backup, numbers) ||
+      samePhone(draft.primary, draft.backup2, numbers) ||
+      samePhone(draft.backup, draft.backup2, numbers)
+    ) {
       setError(t("waDistribution.sameNumber"));
       return;
     }
@@ -530,7 +548,7 @@ function DestinationRoute({
               setSaved(false);
             }}
           >
-            {t("waDistribution.customize")}
+            <Scissors className="size-3.5" aria-hidden /> {t("waDistribution.customize")}
           </button>
         )}
         {person && route && (
@@ -552,6 +570,7 @@ function DestinationRoute({
       <div className="wa-distribution-slots">
         <NumberSlot
           role="primary"
+          excluded={[draft.backup, draft.backup2]}
           id={draft.primary}
           other={draft.backup}
           name={targetLabel}
@@ -563,6 +582,7 @@ function DestinationRoute({
         />
         <NumberSlot
           role="backup"
+          excluded={[draft.primary, draft.backup2]}
           id={draft.backup}
           other={draft.primary}
           name={targetLabel}
@@ -572,12 +592,27 @@ function DestinationRoute({
           assign={assign}
           viewNumber={viewNumber}
         />
+        {secondReserve && (
+          <NumberSlot
+            role="backup2"
+            id={draft.backup2}
+            other={draft.primary}
+            excluded={[draft.primary, draft.backup]}
+            name={targetLabel}
+            numbers={numbers}
+            selected={selected}
+            locked={locked}
+            assign={assign}
+            viewNumber={viewNumber}
+          />
+        )}
       </div>
       {(route || dirty) && (
         <div className="wa-distribution-controls">
           <label className="wa-distribution-toggle">
             <input
               type="checkbox"
+              role="switch"
               checked={draft.enabled && draft.mode !== "paused"}
               disabled={locked || !draft.primary}
               onChange={(event) => {
@@ -615,12 +650,14 @@ function DestinationRoute({
                   <ShieldCheck className="size-3.5" aria-hidden />
                 )}
                 {t(mode === "primary" ? "waDistribution.primary" : "waDistribution.backup")}
+                {mode === "backup" && secondReserve ? " 1" : ""}
               </button>
             ))}
           </div>
           <label className="wa-distribution-toggle">
             <input
               type="checkbox"
+              role="switch"
               checked={draft.returns}
               disabled={locked}
               onChange={(event) => {
@@ -717,6 +754,7 @@ function NumberSlot({
   role,
   id,
   other,
+  excluded = [],
   name,
   numbers,
   selected,
@@ -727,6 +765,7 @@ function NumberSlot({
   role: Role;
   id: string | null;
   other: string | null;
+  excluded?: (string | null)[];
   name: string;
   numbers: DistributionNumber[];
   selected: string | null;
@@ -740,7 +779,9 @@ function NumberSlot({
   const [over, setOver] = useState(false);
   const number = numbers.find((n) => n.id === id);
   const chosen = numbers.find((n) => n.id === selected);
-  const roleLabel = t(role === "primary" ? "waDistribution.primary" : "waDistribution.backup");
+  const roleLabel =
+    t(role === "primary" ? "waDistribution.primary" : "waDistribution.backup") +
+    (role === "primary" ? "" : role === "backup" ? " 1" : " 2");
   const canDrop = (event: DragEvent) => !locked && event.dataTransfer.types.includes(DRAG_TYPE);
   return (
     <div
@@ -845,30 +886,45 @@ function NumberSlot({
         )}
       </div>
       {picking && (
-        <label className="wa-distribution-picker" id={pickerId}>
+        <div className="wa-distribution-picker" id={pickerId}>
           <span className="sr-only">
             {t("waDistribution.slotLabel", { role: roleLabel, name })}
           </span>
-          <select
-            autoFocus
-            value={id ?? ""}
-            disabled={locked}
-            onChange={(event) => {
-              assign(role, event.target.value || null);
-              setPicking(false);
-            }}
+          <div
+            role="radiogroup"
+            aria-label={t("waDistribution.slotLabel", { role: roleLabel, name })}
+            className="wa-number-options"
           >
-            <option value="">{t("waDistribution.choose")}</option>
             {numbers
-              .filter((n) => !samePhone(n.id, other, numbers))
+              .filter(
+                (n) =>
+                  !samePhone(n.id, other, numbers) &&
+                  !excluded.some((e) => samePhone(n.id, e, numbers)),
+              )
               .map((n) => (
-                <option key={n.id} value={n.id}>
-                  {phoneLabel(n.display_phone)}
-                  {n.label ? ` · ${n.label}` : ""}
-                </option>
+                <button
+                  key={n.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={id === n.id}
+                  disabled={locked}
+                  onClick={() => {
+                    assign(role, n.id);
+                    setPicking(false);
+                  }}
+                >
+                  <span className="wa-option-circle" aria-hidden>
+                    {id === n.id && <Check className="size-3" />}
+                  </span>
+                  <span>
+                    {phoneLabel(n.display_phone)}
+                    {n.label && <small>{n.label}</small>}
+                  </span>
+                  <Connection status={n.status} />
+                </button>
               ))}
-          </select>
-        </label>
+          </div>
+        </div>
       )}
     </div>
   );

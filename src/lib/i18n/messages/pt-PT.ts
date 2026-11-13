@@ -1,6 +1,16 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const ptPT: Record<MessageKey, string> = {
+  "waRefine.stats": "Estatísticas e sugestões",
+  "waRefine.future": "Novo · ainda não implementado",
+  "waRefine.futureHint":
+    "Proposta para desenvolvimento: medir envios, dias de atividade e usos por destino. “Aquecimento” não é garantia de saúde ou de ausência de bloqueios.",
+  "waRefine.volume": "Envios por período",
+  "waRefine.days": "Dias com atividade",
+  "waRefine.usage": "Usos por barbearia",
+  "waRefine.suggestions": "Sugestões de distribuição",
+  "waRefine.noData": "Medição ainda não disponível",
+
   "waDistribution.title": "Distribuição dos números",
   "waDistribution.hint":
     "Escolha um número e toque em Principal ou Reserva. No computador, você também pode arrastar.",

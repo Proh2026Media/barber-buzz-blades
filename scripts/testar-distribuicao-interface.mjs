@@ -113,6 +113,37 @@ try {
   await a.focus();
   await page.keyboard.press("Enter");
   assert.equal(await a.getAttribute("aria-pressed"), "true");
+  await page.locator('button[data-number-id="numero-b"]').click();
+  await target("nova:general")
+    .locator('[data-role="backup"] > button.wa-distribution-slot-choice')
+    .click();
+  await page.locator('button[data-number-id="numero-c"]').click();
+  await target("nova:general")
+    .locator('[data-role="backup2"] > button.wa-distribution-slot-choice')
+    .click();
+  await target("nova:general")
+    .getByRole("button", { name: "Salvar distribuição", exact: true })
+    .click();
+  assert.equal(
+    await target("nova:general").locator('[data-role="backup"]').getAttribute("data-number-id"),
+    "numero-b",
+  );
+  assert.equal(
+    await target("nova:general").locator('[data-role="backup2"]').getAttribute("data-number-id"),
+    "numero-c",
+  );
+  await page.getByRole("button", { name: "Recomeçar prévia", exact: true }).click();
+  await target("nova:general")
+    .locator('[data-role="primary"] > button.wa-distribution-slot-choice')
+    .click();
+  await target("nova:general").getByRole("radio").first().click();
+  assert.equal(
+    await target("nova:general").locator('[data-role="primary"]').getAttribute("data-number-id"),
+    "numero-a",
+  );
+  await target("nova:general")
+    .getByRole("button", { name: "Cancelar alterações", exact: true })
+    .click();
   for (const corner of ["square", "soft", "round"]) {
     await page.locator(".brand-page").evaluate((el, corner) => {
       el.classList.remove("brand-corners-square", "brand-corners-soft", "brand-corners-round");

@@ -116,6 +116,7 @@ function Preview() {
             ]}
           />
         </div>
+
         {saved && <Notice tone="success" title={t("waPreview.saved")} />}
         <WhatsAppDistribution
           key={previewVersion}
@@ -124,6 +125,7 @@ function Preview() {
           staff={staff}
           routes={routes}
           supported
+          secondReserve
           busy={false}
           save={async (target) => {
             const current = routes.find(
@@ -133,6 +135,10 @@ function Preview() {
               (current?.version ?? null) !== target.expectedVersion ||
               (!target.primary && target.backup !== null) ||
               (target.primary !== null && target.primary === target.backup) ||
+              Boolean(
+                target.backup2 &&
+                (target.backup2 === target.primary || target.backup2 === target.backup),
+              ) ||
               (target.primary !== null && !numbers.some((n) => n.id === target.primary)) ||
               (target.backup !== null && !numbers.some((n) => n.id === target.backup)) ||
               (target.mode === "backup" &&
@@ -156,6 +162,7 @@ function Preview() {
                   staff_id: target.staff,
                   channel_id: target.primary,
                   backup_channel_id: target.backup,
+                  backup2_channel_id: target.backup2 ?? null,
                   delivery_mode: target.mode,
                   enabled: target.enabled,
                   return_notice_enabled: target.returns,
@@ -168,6 +175,25 @@ function Preview() {
           }}
           viewNumber={setSelectedNumber}
         />
+        <section className="wa-future-stats" aria-label={t("waRefine.stats")}>
+          <header>
+            <h2>
+              <Smartphone className="size-5" aria-hidden />
+              {t("waRefine.stats")}
+            </h2>
+            <StatusBadge tone="warning" label={t("waRefine.future")} />
+          </header>
+          <p>{t("waRefine.futureHint")}</p>
+          <div>
+            {["volume", "days", "usage", "suggestions"].map((key) => (
+              <article key={key}>
+                <span>{t(("waRefine." + key) as "waRefine.volume")}</span>
+                <strong>—</strong>
+                <small>{t("waRefine.noData")}</small>
+              </article>
+            ))}
+          </div>
+        </section>
       </main>
       <Dialog open={Boolean(selected)} onOpenChange={(open) => !open && setSelectedNumber(null)}>
         <DialogContent size="sm" className="bg-card">
