@@ -1,5 +1,7 @@
 # Banco, servidores e publicação
 
+**13/11/2026 — retorno TI iPhone e diagnóstico da Central:** relatório recebido confirma frontend iPhone publicado em `8b6898b` em 12/11, sem mudança de backend/Evolution; homologação física pendente. [Análise de compatibilidade/impactos P-122](../pacotes/2026-11-13-ti-central-whatsapp-diagnostico-impactos-p122.md), sem ordem de instalação. Não reaplicar esse frontend nem executar as quatro migrations locais da Central antes de concluir/revisar os contratos faltantes.
+
 **13/11/2026 — distribuição/atividade/histórico, somente bancada local:** migrations novas `20261113001000` (papéis por destino), `20261113002000` (identidade/medição), `20261113003000` (histórico minimizado) e `20261113004000` (escopo comprovado de grupos e agregação por telefone). Nenhuma destas foi instalada na VPS. A nº 04000 substitui a medição genérica anterior: privado/legado/desconhecido não entram no perfil. Agregados e catálogo históricos privados, acesso administrativo via RPC, sem conteúdo/destinatários. [Critérios, dependências e limites](../criterios-atividade-whatsapp-2026-11-12.md). Segunda reserva e atribuição automática operacional ainda não persistidas; não incluir esta prévia no pacote que a TI está executando.
 
 **11/11/2026 — nova nº 110 local:** `20261111230000_cadastro_loja_autenticado.sql`; criação idempotente de loja na conta autenticada, sem OTP privado. Nº 105–110 ainda não instaladas; [roteiro vigente](../pacotes/2026-11-11-ti-p120-implantacao-piloto.md).

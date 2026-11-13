@@ -1,5 +1,11 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 13/11/2026 — Página WhatsApp aprovada e impactos preparados para TI
+
+Dono aprovou a página local e pediu análise/diagnóstico convertendo experiência em funções/atividades. Lido integralmente o retorno TI iPhone, inclusive Publicação: `8b6898b` já publicado, homologação física pendente; sem mudança de banco/Evolution. Fonte iPhone comparada à entrega local, arquivos iguais; incorporada main ao ramo local em `3c80b5b`, preservando também o import CSS da Central. Nenhum push.
+
+[Documento para TI/desenvolvimento](pacotes/2026-11-13-ti-central-whatsapp-diagnostico-impactos-p122.md): mapa de contratos reais, lacunas comprovadas, métricas somente grupos, distinção distribuição/autorização, três números, atribuição transacional, impacto em admins/OTP/ciclo, critérios de aceite e retorno. Pedido imediato à TI somente D0 de compatibilidade; reutilizar evidência atual e não operar. Desenvolvimento pendente não foi apresentado como pacote pronto. Sem publicação, instalação, novo grupo ou mensagem; marca e Flow intocados. `.env` excluído da entrega.
+
 ## 13/11/2026 — Central: grupos, histórico, ordenação e cabeçalho local
 
 - Métricas limitadas a envios comprovados em grupos. Privado, legado e destino desconhecido não contam; falta de dados fica explícita. Tempo observado não é idade da conta e dias ativos exigem envio.

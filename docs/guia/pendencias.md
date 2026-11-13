@@ -1,5 +1,7 @@
 # Pendências — lista única e priorizada
 
+**13/11/2026 — P-122: composição visual aprovada; integração pendente de desenvolvimento.** [Diagnóstico e atividades por função](../pacotes/2026-11-13-ti-central-whatsapp-diagnostico-impactos-p122.md). Compatibilidade real D0 pela TI; três posições, automação servidor, coleta de grupos, conciliação de admins/ciclo e ligação do frontend ainda precisam de implementação/testes. Não anunciar pacote pronto. Correção iPhone já publicada em `8b6898b` conforme relatório recebido; homologação física pendente.
+
 **13/11/2026 — Central: nova prévia pronta para aprovação local.** Arraste de principal/reservas, cabeçalho em faixa e atribuição automática de barbearias sem configuração ensaiados com dados fictícios. Métricas apenas de grupos e histórico minimizado preparados localmente. **P-122 — integração operacional da distribuição:** persistir segunda reserva, atribuir no cadastro transacional de loja e conciliar composição/admins dos grupos por versão, com proteção de incertos; ainda não operacional. [Critérios e limites](../criterios-atividade-whatsapp-2026-11-12.md). Não publicar/instalar nem substituir o pacote da TI. Último id: P-122.
 
 **12/11/2026 — Central WhatsApp: aprovação local pendente:** novo quadro por destino e contrato para o mesmo telefone ser principal em uma loja e reserva em outra preparados localmente. [Prévia, escopo e testes](../central-whatsapp-distribuicao-local-2026-11-12.md). Não confundir aprovação técnica com aprovação do dono; não publicar/instalar nem substituir o pacote atual da TI.

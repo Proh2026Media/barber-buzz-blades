@@ -2,6 +2,8 @@
 
 Atualizado em **07/11/2026** (P-49/P-70; entradas anteriores preservadas como histórico). Fonte: [mb-interface.md](mb-interface.md). Regra: `.cursor/rules/mb.mdc`. Skill: `.cursor/skills/mb/`.
 
+**13/11/2026 — aprovação do dono:** a nova página da Central WhatsApp foi aprovada visualmente. A integração operacional permanece pendente; [diagnóstico por função e critérios de aceite](pacotes/2026-11-13-ti-central-whatsapp-diagnostico-impactos-p122.md). Aprovação não publica nem habilita grupos/envios.
+
 ## 13/11/2026 — Central, revisão somente local
 
 Cabeçalho com estatísticas/atribuição/distribuição em uma fileira desde 1024 px; larguras menores empilhadas. Ordem dos controles: Principal/Reserva → Avisos → Avisos de retorno; Personalizar com ajustes ao final da linha. Indicador circular animado e redução de movimento respeitada. Três vagas com alça; cartões preenchidos arrastáveis e alternativa Mover para… por toque/teclado. Preserva os modos de canto, rascunho, salvar/cancelar e isolamento entre destinos.
