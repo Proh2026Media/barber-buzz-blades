@@ -1,0 +1,664 @@
+/* Distribuição por destino: telefone, papel e estado de conexão têm representações próprias. */
+.wa-distribution {
+  container: wa-distribution / inline-size;
+  min-width: 0;
+}
+.wa-distribution :is(button, input, select) {
+  font: inherit;
+}
+.wa-distribution button {
+  cursor: pointer;
+}
+.wa-distribution button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.wa-distribution :is(button, input, select):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+.wa-distribution-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.wa-distribution-heading h3 {
+  font-size: 1.125rem;
+  font-weight: 750;
+}
+.wa-distribution-heading p,
+.wa-distribution-helper {
+  margin-top: 0.25rem;
+  font-size: 0.8125rem;
+  color: var(--muted-foreground);
+  line-height: 1.5;
+}
+.wa-distribution-selection {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  border-radius: var(--button-radius);
+  padding: 0.5rem 0.75rem;
+  background: var(--tone-info-soft);
+  color: var(--tone-info-ink);
+  border: 1px solid var(--tone-info-line);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+.wa-distribution-selection-bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  padding-block: 0.5rem;
+  margin-block: -0.25rem 0.5rem;
+  background: var(--background);
+}
+.wa-distribution-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+.wa-distribution-pool {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--panel-radius);
+  background: var(--card);
+  padding: 1rem;
+}
+.wa-distribution-pool > header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+  font-weight: 750;
+}
+.wa-distribution-pool > header > svg {
+  color: var(--primary);
+}
+.wa-distribution-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+  border-radius: var(--button-radius);
+  padding: 0.2rem 0.5rem;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+.wa-distribution-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--control-radius);
+  background: var(--background);
+  padding-inline: 0.75rem;
+  min-width: 0;
+}
+.wa-distribution-pool > .wa-distribution-search {
+  margin-block: 0.75rem;
+}
+.wa-distribution-search svg {
+  flex-shrink: 0;
+  color: var(--muted-foreground);
+}
+.wa-distribution-search input {
+  min-height: 2.75rem;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  outline: none;
+  font-size: 0.875rem;
+}
+.wa-distribution-search:focus-within {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.wa-distribution-search input:focus-visible {
+  outline: none;
+}
+.wa-distribution-number-list {
+  display: grid;
+  gap: 0.5rem;
+}
+.wa-distribution-number {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.625rem;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border);
+  background: var(--background);
+  padding: 0.875rem;
+  border-radius: var(--control-radius);
+  text-align: left;
+  transition:
+    border-color 150ms,
+    background-color 150ms;
+}
+.wa-distribution-number:hover,
+.wa-distribution-number[data-selected="true"] {
+  border-color: var(--primary);
+  background: var(--accent);
+}
+.wa-distribution-number[data-selected="true"] {
+  box-shadow: inset 3px 0 var(--tone-info-line);
+  border-color: var(--tone-info-line);
+  background: var(--tone-info-soft);
+}
+.wa-distribution-number-top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
+}
+.wa-distribution-phone-icon {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border-radius: var(--control-radius);
+  color: var(--primary);
+  background: var(--card);
+}
+.wa-distribution-number-name {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.wa-distribution-number-name strong {
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.015em;
+}
+.wa-distribution-number-name > span {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+.wa-distribution-grip {
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+}
+.wa-distribution-role-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+.wa-distribution-role,
+.wa-distribution-unused {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: var(--button-radius);
+  padding: 0.25rem 0.4rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+.wa-distribution-role-primary {
+  color: var(--tone-info-ink);
+  background: var(--tone-info-soft);
+  border: 1px solid var(--tone-info-line);
+}
+.wa-distribution-role-backup {
+  color: var(--tone-highlight-ink);
+  background: var(--tone-warning-soft);
+  border: 1px dashed var(--tone-highlight-ink);
+}
+.wa-distribution-unused {
+  color: var(--muted-foreground);
+}
+.wa-distribution-targets {
+  min-width: 0;
+  display: grid;
+  gap: 1rem;
+}
+.wa-distribution-tools {
+  display: grid;
+  gap: 0.75rem;
+}
+.wa-distribution-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+.wa-distribution-filters button {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--button-radius);
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+  font-weight: 650;
+}
+.wa-distribution-filters button[aria-pressed="true"] {
+  background: var(--foreground);
+  color: var(--background);
+  border-color: var(--foreground);
+}
+.wa-distribution-shop {
+  min-width: 0;
+  border-radius: var(--panel-radius);
+  border: 1px solid var(--border);
+  background: var(--card);
+  overflow: hidden;
+}
+.wa-distribution-shop-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--accent);
+}
+.wa-distribution-shop-title > span:first-child {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border-radius: var(--control-radius);
+  background: var(--card);
+  color: var(--primary);
+}
+.wa-distribution-shop-title h4 {
+  font-size: 0.9375rem;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+.wa-distribution-destination {
+  min-width: 0;
+  padding: 1rem;
+}
+.wa-distribution-destination + .wa-distribution-destination {
+  border-top: 1px solid var(--border);
+}
+.wa-distribution-destination-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.wa-distribution-destination-title > div {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  margin-right: auto;
+}
+.wa-distribution-destination-title > div > svg {
+  flex-shrink: 0;
+  color: var(--muted-foreground);
+}
+.wa-distribution-destination-title h5 {
+  font-size: 0.875rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.wa-distribution-inherited {
+  border-radius: var(--button-radius);
+  background: var(--muted);
+  padding: 0.25rem 0.5rem;
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+  font-weight: 650;
+}
+.wa-distribution-customize {
+  min-height: 2.75rem;
+  padding-inline: 0.5rem;
+  border-radius: var(--button-radius);
+  color: var(--foreground);
+  font-size: 0.75rem;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.wa-distribution-slots {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.625rem;
+}
+.wa-distribution-slot {
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--tone-info-line);
+  background: var(--background);
+  border-radius: var(--control-radius);
+}
+.wa-distribution-slot-backup {
+  border-left-color: var(--tone-highlight-ink);
+  border-style: dashed;
+}
+.wa-distribution-slot[data-correlated="true"] {
+  border-color: var(--tone-info-line);
+  background: var(--tone-info-soft);
+  box-shadow: inset 0 0 0 1px var(--tone-info-line);
+}
+.wa-distribution-slot[data-drag-over="true"] {
+  background: var(--accent);
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.wa-distribution-slot-label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 1.75rem;
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.035em;
+}
+.wa-distribution-slot-primary .wa-distribution-slot-label {
+  color: var(--tone-info-ink);
+}
+.wa-distribution-slot-backup .wa-distribution-slot-label {
+  color: var(--tone-highlight-ink);
+}
+.wa-distribution-correlated-mark {
+  color: var(--tone-info-ink);
+  margin-left: auto;
+}
+.wa-distribution-icon-action {
+  display: inline-grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin-left: auto;
+  margin-block: -0.5rem;
+  margin-right: -0.5rem;
+  border-radius: var(--button-radius);
+}
+.wa-distribution-icon-action:hover {
+  background: var(--muted);
+}
+.wa-distribution-slot-choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 3rem;
+  width: 100%;
+  padding-block: 0.375rem;
+  border-radius: var(--button-radius);
+  text-align: left;
+}
+.wa-distribution-slot-choice > span {
+  display: grid;
+  gap: 0.125rem;
+  min-width: 0;
+}
+.wa-distribution-slot-choice strong {
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.wa-distribution-slot-choice small {
+  font-size: 0.6875rem;
+  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
+}
+.wa-distribution-slot-choice > svg {
+  flex-shrink: 0;
+  color: var(--primary);
+}
+.wa-distribution-slot-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.375rem;
+  min-height: 1.875rem;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+.wa-distribution-inspect {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 2.75rem;
+  border-radius: var(--button-radius);
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+}
+.wa-distribution-picker {
+  display: block;
+  margin-top: 0.5rem;
+}
+.wa-distribution-picker select {
+  min-height: 2.75rem;
+  width: 100%;
+  min-width: 0;
+  border-radius: var(--control-radius);
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 0.375rem 0.5rem;
+  font-size: 0.875rem;
+}
+.wa-distribution-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-top: 0.75rem;
+}
+.wa-distribution-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.wa-distribution-toggle input,
+.wa-distribution-technical input {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+  accent-color: var(--primary);
+}
+.wa-distribution-mode {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+.wa-distribution-mode > span {
+  font-size: 0.6875rem;
+  color: var(--muted-foreground);
+  margin-right: 0.25rem;
+}
+.wa-distribution-mode button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 2.75rem;
+  padding: 0.375rem 0.625rem;
+  border: 1px solid var(--border);
+  border-radius: var(--button-radius);
+  font-size: 0.6875rem;
+  font-weight: 650;
+}
+.wa-distribution-mode button[aria-pressed="true"] {
+  border-color: var(--primary);
+  background: var(--accent);
+}
+.wa-distribution-technical {
+  margin-top: 0.75rem;
+  border-radius: var(--control-radius);
+  border: 1px solid var(--border);
+  background: var(--muted);
+  padding: 0.75rem;
+}
+.wa-distribution-technical label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 650;
+}
+.wa-distribution-technical p {
+  margin-top: 0.375rem;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+.wa-distribution-savebar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.625rem;
+  padding: 0.75rem;
+  margin-top: 0.75rem;
+  border-radius: var(--control-radius);
+  background: var(--accent);
+}
+.wa-distribution-savebar > span {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+.wa-distribution-savebar > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.wa-distribution-savebar button {
+  font-size: 0.75rem;
+}
+.wa-distribution-error {
+  margin-top: 0.625rem;
+  color: var(--destructive);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.wa-distribution-success {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.625rem;
+  color: var(--foreground);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.wa-distribution-destination[data-inherited="true"] {
+  padding-block: 0.75rem;
+}
+.wa-distribution-destination[data-inherited="true"] .wa-distribution-slot {
+  padding: 0.5rem 0.625rem;
+}
+.wa-distribution-destination[data-inherited="true"] .wa-distribution-slot-label {
+  min-height: 1.25rem;
+}
+.wa-distribution-destination[data-inherited="true"] .wa-distribution-slot-choice {
+  min-height: 2rem;
+  padding-block: 0;
+}
+.wa-distribution-destination[data-inherited="true"] .wa-distribution-slot-choice small,
+.wa-distribution-destination[data-inherited="true"] .wa-distribution-inspect {
+  display: none;
+}
+.wa-distribution-destination[data-inherited="true"] .wa-distribution-slot-bottom {
+  min-height: 1.5rem;
+}
+.wa-distribution-empty,
+.wa-distribution-unavailable {
+  padding: 1rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--control-radius);
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+}
+.wa-distribution-unavailable {
+  margin-bottom: 1rem;
+}
+@container wa-distribution (max-width: 29.99rem) {
+  .wa-distribution-number-list {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scroll-padding: 0.15rem;
+    padding: 0.25rem 0.15rem 0.625rem;
+  }
+  .wa-distribution-number {
+    display: flex;
+    flex: 0 0 min(16rem, 86%);
+    scroll-snap-align: start;
+    gap: 0.375rem 0.5rem;
+    padding: 0.625rem;
+  }
+  .wa-distribution-number-top {
+    gap: 0.375rem;
+  }
+  .wa-distribution-phone-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+  .wa-distribution-number-name strong {
+    font-size: 0.8125rem;
+  }
+  .wa-distribution-number > :nth-child(2) {
+    align-self: flex-start;
+  }
+  .wa-distribution-role-list {
+    grid-column: 1 / -1;
+  }
+  .wa-distribution-grip {
+    display: none;
+  }
+  .wa-distribution-selection {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+@container wa-distribution (min-width: 30rem) {
+  .wa-distribution-slots {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .wa-distribution-number-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container wa-distribution (min-width: 57rem) {
+  .wa-distribution-layout {
+    grid-template-columns: minmax(15rem, 17rem) minmax(0, 1fr);
+  }
+  .wa-distribution-pool {
+    position: sticky;
+    top: 1rem;
+  }
+  .wa-distribution-number-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .wa-distribution-tools {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wa-distribution-number {
+    transition: none;
+  }
+}

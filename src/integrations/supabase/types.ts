@@ -1367,6 +1367,20 @@ export type Database = {
         Returns: Json;
       };
 
+      platform_set_whatsapp_route: {
+        Args: {
+          p_shop: string;
+          p_staff: string | null;
+          p_version: number;
+          p_primary_id: string | null;
+          p_backup_id: string | null;
+          p_mode: string;
+          p_enabled: boolean;
+          p_returns: boolean;
+          p_technical: boolean;
+        };
+        Returns: Json;
+      };
       platform_configure_whatsapp_number: {
         Args: {
           p_id: string;

@@ -1,5 +1,7 @@
 # Pendências — lista única e priorizada
 
+**12/11/2026 — Central WhatsApp: aprovação local pendente:** novo quadro por destino e contrato para o mesmo telefone ser principal em uma loja e reserva em outra preparados localmente. [Prévia, escopo e testes](../central-whatsapp-distribuicao-local-2026-11-12.md). Não confundir aprovação técnica com aprovação do dono; não publicar/instalar nem substituir o pacote atual da TI.
+
 **12/11/2026 — P-120, retorno TI nº 117:** frontend local de primeiro acesso corrigido e validado; nº 117b já publicada, não refazer cartões. Piloto ainda bloqueado por preparação das duas contas da plataforma, grupo/consentimento do Gmail e ciclo completo. [Devolutiva, pacote e limites](../pacotes/2026-11-12-ti-p120-retorno-117-login-claro.md). Nenhuma instalação/produção nesta entrega; marca pausada pelo dono.
 
 **12/11/2026 — Central, complemento da nº 117:** código local verificado retira cartões de tentativas incompletas do diálogo e unifica identificação em cobertura/vinculação. Sem nova migration. Publicação deste complemento pendente; [pacote TI](../pacotes/2026-11-12-ti-central-somente-numeros-confirmados.md). Nº 117 já instalada segundo a TI; não repetir.

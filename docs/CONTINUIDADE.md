@@ -1,5 +1,9 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 12/11/2026 — Distribuição visual por destino, somente local
+
+O dono pediu papéis cruzados entre números e revisão completa da distribuição, com aprovação local primeiro. Preparado quadro com Principal/Reserva visíveis, catálogo com contadores independentes, destaque dos usos, arrastar/clique/toque/teclado e salvamento explícito. Nova RPC por vínculo/versão e migration `20261113001000` somente local; nenhum dado real alterado. Tipos/build/lint passaram; 21 composições nos três cantos e cinco larguras da Central integrada, 45 PASS SQL/ROLLBACK e três concorrências aprovados. Correções de pausa por instância exata e adiamento sem gastar tentativa incluídas. [Entrega, testes e limites](central-whatsapp-distribuicao-local-2026-11-12.md). Prévia fictícia sem login em `/previsao-whatsapp`, exclusiva de desenvolvimento. Login do localhost teve configuração de API antiga corrigida no `.env` local, preservado fora do commit. Pacote anterior da TI, marca e Flow intocados. Sem autossave/push.
+
 ## 12/11/2026 — Área útil do iPhone, somente local
 
 Acesso ao Xcode confirmado; Simulator não disponível para controle nesta sessão. Corrigidos o crescimento da logo sobre o nome da loja quando o topo reserva a câmera, os recuos laterais/inferiores, a altura útil com teclado, as janelas e a reserva do menu medida em vez de fixa. Navegação lateral rola em paisagem curta. Tipos, montagem, lint dos arquivos alterados, diff e 35 combinações Chromium com rede fictícia passaram; teclado e recortes sintéticos, sem homologação iOS real. [Roteiro e pacote TI](pacotes/2026-11-12-ti-interface-iphone.md). Fonte em `/private/tmp/bc-central-concluidos`; sem envio à main/produção. Marca e backend intocados. O recebimento do primeiro push foi confirmado pelo usuário; nome da instalação/“from” e login WhatsApp continuam pendências independentes.
