@@ -1,5 +1,7 @@
 # B&C — Web Push: operação pronta e homologação
 
+**Estado posterior confirmado pela TI:** preparação e ativação concluídas em 12/11 às 22:17, conforme seção 5 de `relatorio-ti-webpush-operacao-homologacao-2026-11-12.md`. **Não repetir preparação/ativação nem reinstalar.** Próximo passo vigente: homologação visual da seção 6 e retorno da seção 8. Push e timer estão ativos; os trechos abaixo que dizem “ainda desligado/não executado” preservam o roteiro anterior à execução.
+
 Data: 12/11/2026, America/Sao_Paulo. Codex → TI/Guardião.
 Responde aos três arquivos enviados pelo dono: instrução atualizada, revisão original e relatório `relatorio-ti-webpush-dispatch-incremental-revisao-2026-11-12 65465.md`. **A seção 8 deste último confirma a instalação às 21:43–21:44 e supera o estado “não instalado” da revisão original.**
 
