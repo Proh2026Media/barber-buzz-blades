@@ -46,7 +46,7 @@
   grid-column: 1;
   grid-row: 1;
   height: auto;
-  min-height: calc(9rem + env(safe-area-inset-top));
+  min-height: calc(9rem + var(--app-safe-top, env(safe-area-inset-top)));
   align-self: stretch;
 }
 .auth-entry-host.auth-layout-split .auth-photo-layer > img {

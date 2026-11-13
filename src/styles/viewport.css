@@ -1,0 +1,142 @@
+/* Área útil compartilhada. Os recuos são do aparelho, não de um modelo de iPhone. */
+:root {
+  --app-safe-top: env(safe-area-inset-top, 0px);
+  --app-safe-right: env(safe-area-inset-right, 0px);
+  --app-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --app-safe-left: env(safe-area-inset-left, 0px);
+}
+
+@media (max-width: 1279.98px) {
+  .arena-workspace,
+  .demo-layout {
+    height: min(100dvh, var(--app-visible-height, 100dvh));
+  }
+  .demo-content .arena-workspace {
+    height: 100%;
+  }
+  .app-mobile-nav-floating {
+    left: max(1rem, var(--app-safe-left));
+    right: max(1rem, var(--app-safe-right));
+  }
+  .app-mobile-nav,
+  .arena-workspace.brand-chrome-floating > .app-mobile-nav {
+    bottom: max(1rem, var(--app-safe-bottom)) !important;
+  }
+  :root {
+    --app-floating-bottom: max(1rem, var(--app-safe-bottom));
+  }
+  .arena-workspace > header {
+    padding-top: calc(0.75rem + var(--app-safe-top));
+    padding-left: max(1rem, var(--app-safe-left));
+    padding-right: max(1rem, var(--app-safe-right));
+  }
+  .arena-workspace.brand-chrome-floating > header {
+    margin-top: calc(0.5rem + var(--app-safe-top));
+    padding-top: 0.75rem;
+    padding-inline: 1rem;
+  }
+  /* A logo ocupa a faixa de conteúdo, sem crescer junto com a área da câmera. */
+  .arena-workspace .brand-header-logo-wrap {
+    top: var(--app-safe-top);
+    left: var(--app-safe-left);
+  }
+  .arena-workspace.brand-chrome-floating .brand-header-logo-wrap {
+    top: 0;
+    left: 0;
+  }
+  .arena-workspace > main {
+    padding-left: max(var(--app-screen-gutter, 1rem), var(--app-safe-left));
+    padding-right: max(1rem, var(--app-safe-right));
+    scroll-padding-block: 1rem;
+  }
+  .arena-workspace:not(:has(> .app-mobile-nav)) > main {
+    padding-bottom: calc(1rem + var(--app-safe-bottom));
+  }
+  :root[data-keyboard-open="true"] .arena-workspace > main {
+    padding-bottom: 1rem !important;
+  }
+  :root[data-keyboard-open="true"] body {
+    --app-banner-bottom: 1rem;
+  }
+  [role="dialog"],
+  [role="alertdialog"] {
+    --dialog-safe-top: max(0.75rem, var(--app-safe-top));
+    --dialog-safe-bottom: max(0.75rem, var(--app-safe-bottom));
+    max-width: calc(
+      100% - max(0.75rem, var(--app-safe-left)) - max(0.75rem, var(--app-safe-right))
+    );
+    left: calc(
+      50% + (max(0.75rem, var(--app-safe-left)) - max(0.75rem, var(--app-safe-right))) / 2
+    );
+    max-height: calc(
+      var(--app-visible-height, 100dvh) - var(--dialog-safe-top) - var(--dialog-safe-bottom)
+    );
+    top: calc(
+      var(--app-visible-top, 0px) + var(--dialog-safe-top) +
+        (var(--app-visible-height, 100dvh) - var(--dialog-safe-top) - var(--dialog-safe-bottom)) / 2
+    );
+  }
+  [role="alertdialog"] {
+    overflow-y: auto;
+  }
+  .auth-page {
+    padding-left: var(--app-safe-left);
+    padding-right: var(--app-safe-right);
+  }
+  .platform-landing-stage,
+  .platform-register-stage {
+    padding-top: max(1.5rem, var(--app-safe-top));
+    padding-bottom: max(2.5rem, var(--app-safe-bottom));
+    padding-left: max(1.25rem, var(--app-safe-left));
+    padding-right: max(1.25rem, var(--app-safe-right));
+  }
+  .shop-landing.brand-page > header > div:not([aria-hidden]),
+  .shop-landing.brand-page > .public-sticky-bar {
+    padding-left: max(1rem, var(--app-safe-left));
+    padding-right: max(1rem, var(--app-safe-right));
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1279.98px) {
+  .arena-workspace {
+    --app-screen-gutter: 1.5rem;
+  }
+  /* Paisagem curta: todas as abas continuam alcançáveis por rolagem. */
+  .arena-workspace > .app-mobile-nav {
+    min-height: 0;
+    max-height: calc(100% - 1.25rem - max(1rem, var(--app-safe-bottom)));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .arena-workspace > .app-mobile-nav > button {
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 767.98px) {
+  /* A reserva acompanha a altura real da navegação, inclusive texto ampliado. */
+  .arena-workspace:has(> .app-mobile-nav) > main {
+    padding-bottom: calc(var(--app-floating-bottom) + var(--app-nav-height) + 1rem) !important;
+  }
+  /* Durante a digitação, prioriza campo e ações do formulário. */
+  :root[data-keyboard-open="true"] .arena-workspace > .app-mobile-nav {
+    display: none;
+  }
+  [role="dialog"][data-mobile-sheet="true"] {
+    top: auto;
+    bottom: calc(var(--app-keyboard-inset, 0px) + max(0.5rem, var(--app-safe-bottom)));
+    max-height: calc(
+      var(--app-visible-height, 100dvh) - max(1rem, var(--app-safe-top)) -
+        max(0.5rem, var(--app-safe-bottom))
+    );
+  }
+}
+
+/* Campos pequenos disparam ampliação automática no iOS; não bloquear o zoom do usuário. */
+@media (pointer: coarse) and (max-width: 1279.98px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select {
+    font-size: max(1rem, 16px);
+  }
+}

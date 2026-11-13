@@ -13,6 +13,14 @@ O Barba & Cabelo pode ser instalado na tela inicial (Android/Chrome e iOS Safari
 
 ## Como testar
 
+### Recuos e teclado — correção local de 12/11/2026
+
+`VisibleViewport` acompanha a área visível sem bloquear zoom; `styles/viewport.css` reúne os recuos do aparelho. `WorkspaceFrame` mede a navegação inferior para reservar espaço real na rolagem. Os diálogos usam a mesma informação de teclado, sem observadores separados por janela. A logo do cliente não inclui a área da câmera no cálculo de sua altura.
+
+Com o servidor em `localhost:8090`, `node scripts/testar-viewport.mjs` valida 35 combinações com dados fictícios e teclado/recortes simulados. Não substitui a validação física no iPhone. [Entrega e roteiro de homologação](pacotes/2026-11-12-ti-interface-iphone.md). Ainda não publicado.
+
+### Instalação
+
 1. Build de produção: `bun run build` (copia o SW para `.output/public`)
 2. Servir em HTTPS ou `localhost` / IP local
 3. No celular (mesma rede): abrir o app → menu do navegador → **Adicionar à tela de início** / **Instalar app**

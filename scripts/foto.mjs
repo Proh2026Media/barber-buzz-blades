@@ -23,7 +23,7 @@
  * encontrada, se um passo falhou ou se o --avaliar deu erro. Ajuda completa: scripts/README.md.
  */
 import { execSync } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
 import { homedir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
@@ -1255,7 +1255,11 @@ async function main() {
   process.exit(tudoOk ? 0 : 1);
 }
 
-main().catch((e) => {
-  console.error(`foto: erro inesperado: ${e?.stack ?? e}`);
-  process.exit(1);
-});
+export { abrirContexto, acharPlaywright, acharNavegador, lerOpcoes };
+
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((e) => {
+    console.error(`foto: erro inesperado: ${e?.stack ?? e}`);
+    process.exit(1);
+  });
+}

@@ -13,57 +13,6 @@ function CloseLabel() {
   return <span className="sr-only">{t("common.close")}</span>;
 }
 
-/** Montado junto ao conteúdo: acompanha o teclado sem deixar observadores na janela fechada. */
-function MobileSheetViewport() {
-  const marker = React.useRef<HTMLSpanElement>(null);
-  React.useEffect(() => {
-    const surface = marker.current?.parentElement;
-    const viewport = window.visualViewport;
-    if (!surface || !viewport) return;
-    let frame = 0;
-    const clear = () => {
-      surface.style.removeProperty("--dialog-viewport-height");
-      surface.style.removeProperty("--dialog-keyboard-inset");
-    };
-    const update = () => {
-      // O zoom continua sendo controlado pelo navegador, sem encolher a folha novamente.
-      if (window.innerWidth >= 768 || viewport.scale !== 1) {
-        clear();
-        return;
-      }
-      surface.style.setProperty("--dialog-viewport-height", `${viewport.height}px`);
-      surface.style.setProperty(
-        "--dialog-keyboard-inset",
-        `${Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)}px`,
-      );
-      const focused = document.activeElement;
-      if (!(focused instanceof HTMLElement) || !surface.contains(focused)) return;
-      const scroller = focused.closest<HTMLElement>(".dialog-scroll-area");
-      if (!scroller) return;
-      const field = focused.getBoundingClientRect();
-      const area = scroller.getBoundingClientRect();
-      if (field.bottom > area.bottom) scroller.scrollTop += field.bottom - area.bottom + 12;
-      else if (field.top < area.top) scroller.scrollTop -= area.top - field.top + 12;
-    };
-    const schedule = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(update);
-    };
-    update();
-    viewport.addEventListener("resize", schedule);
-    viewport.addEventListener("scroll", schedule);
-    window.addEventListener("resize", schedule);
-    return () => {
-      cancelAnimationFrame(frame);
-      viewport.removeEventListener("resize", schedule);
-      viewport.removeEventListener("scroll", schedule);
-      window.removeEventListener("resize", schedule);
-      clear();
-    };
-  }, []);
-  return <span ref={marker} hidden aria-hidden="true" />;
-}
-
 const Dialog = DialogPrimitive.Root;
 
 const DialogTrigger = DialogPrimitive.Trigger;
@@ -170,7 +119,6 @@ const DialogContent = React.forwardRef<
           {...focus}
         >
           {children}
-          {mobileSheet && <MobileSheetViewport />}
           <DialogPrimitive.Close className="absolute right-1.5 top-1.5 z-20 inline-flex size-11 items-center justify-center rounded-[var(--button-radius)] bg-card/90 text-muted-foreground backdrop-blur-sm ring-offset-background cursor-pointer transition-colors hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
             <X className="h-4 w-4" />
             <CloseLabel />

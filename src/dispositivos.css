@@ -15,3 +15,4 @@
 
 /* Acesso: composição compartilhada e correções de conteúdo encoberto em qualquer largura. */
 @import "./styles/acesso.css";
+@import "./styles/viewport.css";
