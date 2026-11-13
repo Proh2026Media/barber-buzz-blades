@@ -1,5 +1,13 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 13/11/2026 — D0 encerrada; base real de WhatsApp preservada
+
+Recebido e lido integralmente `relatorio-ti-d0-central-whatsapp-compatibilidade-2026-11-13.md` (SHA-256 `f23bb3379d4a806760d1e896e76a6b863ab78585eb5c0ea1e7270f4caf7c9681`). TI somente diagnosticou: frontend iPhone `8b6898b`, backend nº 105–112/115–117 instalados e extensão v2; nº 113/114 e quatro migrations locais não instaladas. Flags de grupo ligadas não provam dois admins nem prontidão. Dispatch ativo, conciliação/expurgo sem agendador. Nenhuma operação real feita pelo Codex.
+
+[Revisão D0](pacotes/2026-11-13-central-whatsapp-revisao-d0-p122.md) compara 14 Edge (10 iguais, 3 diferentes, 1 ausente), confirma hashes e registra riscos da 01000: perda de filtros de pessoal/loja completa, pausa de pessoal e ordem de travas conflitante com nº 115/116. Fontes exatas de nº 111/112/115/116/117 e quatro Edge encontradas na máquina, arquivadas fora do runtime com sufixo `.referencia`, SHA256SUMS e manifesto. Não copiar a versão mais nova do disco como se fosse a instalada. Sem novo pedido à TI; próximo é composição de bancada compatível e D1–D5, depois D6 pronto.
+
+A revisão não instalou, ativou, publicou, alterou grupos, flags ou agendadores. Sem mensagem/OTP real, sem marca/Flow e sem nova homologação física. `.env` intocado e fora da entrega.
+
 ## 13/11/2026 — Página WhatsApp aprovada e impactos preparados para TI
 
 Dono aprovou a página local e pediu análise/diagnóstico convertendo experiência em funções/atividades. Lido integralmente o retorno TI iPhone, inclusive Publicação: `8b6898b` já publicado, homologação física pendente; sem mudança de banco/Evolution. Fonte iPhone comparada à entrega local, arquivos iguais; incorporada main ao ramo local em `3c80b5b`, preservando também o import CSS da Central. Nenhum push.

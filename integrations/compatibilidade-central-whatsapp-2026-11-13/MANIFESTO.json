@@ -1,0 +1,156 @@
+{
+  "estado": "referência de compatibilidade; não instalar",
+  "data": "2026-11-13",
+  "relatorio_sha256": "f23bb3379d4a806760d1e896e76a6b863ab78585eb5c0ea1e7270f4caf7c9681",
+  "arquivos": [
+    {
+      "arquivo": "fontes-instaladas/supabase/migrations/20261112120000_grupos_reconciliacao_sem_ambiguidade.sql.referencia",
+      "sha256": "afb3194af583df2a3e1cd1971e804cbacd133d6c1aa7f6d393a7290e21ea16bf",
+      "origem_local": "/Volumes/Alyson 1TB/OpenDesign/Barba & Cabelo/supabase/migrations/20261112120000_grupos_reconciliacao_sem_ambiguidade.sql",
+      "evidencia_instalacao": "relatorio-ti-d0-central-whatsapp-compatibilidade-2026-11-13.md",
+      "caminho_original": "supabase/migrations/20261112120000_grupos_reconciliacao_sem_ambiguidade.sql"
+    },
+    {
+      "arquivo": "fontes-instaladas/supabase/migrations/20261112150000_grupos_eventos_configuracao.sql.referencia",
+      "sha256": "f886f977e2009883780ea9dd99f589d6dcf130d0fcd92a7cabacd05944e9ced1",
+      "origem_local": "/Volumes/Alyson 1TB/OpenDesign/Barba & Cabelo/supabase/migrations/20261112150000_grupos_eventos_configuracao.sql",
+      "evidencia_instalacao": "relatorio-ti-d0-central-whatsapp-compatibilidade-2026-11-13.md",
+      "caminho_original": "supabase/migrations/20261112150000_grupos_eventos_configuracao.sql"
+    },
+    {
+      "arquivo": "fontes-instaladas/supabase/migrations/20261112210000_whatsapp_numero_pessoal.sql.referencia",
+      "sha256": "21e2ad07cdaf4a1ac6c362bfbedd36fb7a2a1f4420439a65821b2553c9268585",
+      "origem_local": "/Volumes/Alyson 1TB/OpenDesign/Barba & Cabelo/supabase/migrations/20261112210000_whatsapp_numero_pessoal.sql",
+      "evidencia_instalacao": "relatorio-ti-d0-central-whatsapp-compatibilidade-2026-11-13.md",
+      "caminho_original": "supabase/migrations/20261112210000_whatsapp_numero_pessoal.sql"
+    },
+    {
+      "arquivo": "fontes-instaladas/supabase/migrations/20261112220000_whatsapp_reserva_sem_loja.sql.referencia",
+      "sha256": "06fbb92cda41f2c354291de01e0f491ba11064e61be332b9bfd88e43bc899fab",
+      "origem_local": "/private/tmp/bc116-entrega/supabase/migrations/20261112220000_whatsapp_reserva_sem_loja.sql",
+      "evidencia_instalacao": "relatorio-ti-d0-central-whatsapp-compatibilidade-2026-11-13.md",
+      "caminho_original": "supabase/migrations/20261112220000_whatsapp_reserva_sem_loja.sql"
+    },
+    {
+      "arquivo": "fontes-instaladas/supabase/migrations/20261112230000_whatsapp_catalogo_lojas_validas.sql.referencia",
+      "sha256": "a53df8a523fe43ce450051a282bd36320458008bfef277a0d5a3d97cde85ec49",
+      "origem_local": "/private/tmp/bc117-entrega/supabase/migrations/20261112230000_whatsapp_catalogo_lojas_validas.sql",
+      "evidencia_instalacao": "relatorio-ti-d0-central-whatsapp-compatibilidade-2026-11-13.md",
+      "caminho_original": "supabase/migrations/20261112230000_whatsapp_catalogo_lojas_validas.sql"
+    },
+    {
+      "arquivo": "fontes-instaladas/supabase/functions/platform-whatsapp/index.ts.referencia",
+      "sha256": "2ef7a1fb947cad0e381ca7b23e88e4d49318982234ba1e0c1372d4eda0d91b0c",
+      "origem_local": "/private/tmp/bc116-entrega/supabase/functions/platform-whatsapp/index.ts",
+      "evidencia_instalacao": "relatorio-ti-d0-central-whatsapp-compatibilidade-2026-11-13.md",
+      "caminho_original": "supabase/functions/platform-whatsapp/index.ts"
+    },
+    {
+      "arquivo": "fontes-instaladas/supabase/functions/_shared/whatsapp-instance-phone.ts.referencia",
+      "sha256": "56516be155223c66cfe5ed7bcc116c21081b99abc879542aaa0c0bbbde9a265e",
+      "origem_local": "/Volumes/Alyson 1TB/OpenDesign/Barba & Cabelo/supabase/functions/_shared/whatsapp-instance-phone.ts",
+      "evidencia_instalacao": "relatorio-ti-d0-central-whatsapp-compatibilidade-2026-11-13.md",
+      "caminho_original": "supabase/functions/_shared/whatsapp-instance-phone.ts"
+    },
+    {
+      "arquivo": "fontes-instaladas/supabase/functions/whatsapp-groups/handler.ts.referencia",
+      "sha256": "bc2dbf28a1638119502bfe02b12463ae22fcb6640b369add355c86a00e1efe2d",
+      "origem_local": "/Users/alysonviana/Downloads/BC-P120-CORRECAO-112-2026-11-12-45718ff.zip::supabase/functions/whatsapp-groups/handler.ts",
+      "evidencia_instalacao": "relatorio-ti-d0-central-whatsapp-compatibilidade-2026-11-13.md",
+      "caminho_original": "supabase/functions/whatsapp-groups/handler.ts"
+    },
+    {
+      "arquivo": "fontes-instaladas/supabase/functions/whatsapp-channel/index.ts.referencia",
+      "caminho_original": "supabase/functions/whatsapp-channel/index.ts",
+      "sha256": "ceccff84954ff01de471e00fc1b1961ed1ab86cc49dc4d48281a08ab72605f1f",
+      "origem_local": "/Users/alysonviana/Downloads/BC-WHATSAPP-CATALOGO-PESSOAL-115-2026-11-12-e682fea.zip::supabase/functions/whatsapp-channel/index.ts",
+      "evidencia_instalacao": "relatorio-ti-d0-central-whatsapp-compatibilidade-2026-11-13.md"
+    }
+  ],
+  "comparacao_runtime": [
+    {
+      "arquivo": "supabase/functions/_shared/whatsapp-groups.ts",
+      "instalado_sha256": "b699872246c5644b6efa679a6a7ec00720ea76797c6229da039e20b336e82bb6",
+      "ramo_local_sha256": "b699872246c5644b6efa679a6a7ec00720ea76797c6229da039e20b336e82bb6",
+      "estado": "coincide"
+    },
+    {
+      "arquivo": "supabase/functions/_shared/whatsapp-group-login.ts",
+      "instalado_sha256": "9d4c3a21fb85606a833a78299ca1e06b9ab4edeb542a64fbb219c6ed84904b32",
+      "ramo_local_sha256": "9d4c3a21fb85606a833a78299ca1e06b9ab4edeb542a64fbb219c6ed84904b32",
+      "estado": "coincide"
+    },
+    {
+      "arquivo": "supabase/functions/whatsapp-groups/index.ts",
+      "instalado_sha256": "1aad308bcc41b27b683141e3472c6ccad81ae9bb2ff03d451120d75eda08177c",
+      "ramo_local_sha256": "1aad308bcc41b27b683141e3472c6ccad81ae9bb2ff03d451120d75eda08177c",
+      "estado": "coincide"
+    },
+    {
+      "arquivo": "supabase/functions/whatsapp-groups/handler.ts",
+      "instalado_sha256": "bc2dbf28a1638119502bfe02b12463ae22fcb6640b369add355c86a00e1efe2d",
+      "ramo_local_sha256": "790e727e3065b52f09b0c8caed9797e72313c2517e6a4f7b4bfa03c462934fe2",
+      "estado": "diverge"
+    },
+    {
+      "arquivo": "supabase/functions/platform-whatsapp/index.ts",
+      "instalado_sha256": "2ef7a1fb947cad0e381ca7b23e88e4d49318982234ba1e0c1372d4eda0d91b0c",
+      "ramo_local_sha256": "3c58bc3f4606ae90bf4fefc952cd883b34ff030a6eacf62953dcab6af70140e3",
+      "estado": "diverge"
+    },
+    {
+      "arquivo": "supabase/functions/auth-otp/index.ts",
+      "instalado_sha256": "07299f8dda9d2cea7c6516a70d870d109b5379ad973edadc3d2a4b1bf16fbe8a",
+      "ramo_local_sha256": "07299f8dda9d2cea7c6516a70d870d109b5379ad973edadc3d2a4b1bf16fbe8a",
+      "estado": "coincide"
+    },
+    {
+      "arquivo": "supabase/functions/auth-otp/login.ts",
+      "instalado_sha256": "73f885c661a7766673bf5f2a59f2fd527fb12890d4a625ad7d12c3ab7e6fc220",
+      "ramo_local_sha256": "73f885c661a7766673bf5f2a59f2fd527fb12890d4a625ad7d12c3ab7e6fc220",
+      "estado": "coincide"
+    },
+    {
+      "arquivo": "supabase/functions/auth-otp/group-phone.ts",
+      "instalado_sha256": "810eb80bf0e0bd359e665ee0c65ecd674e7033698914bad4a42cd6811aa3ca44",
+      "ramo_local_sha256": "810eb80bf0e0bd359e665ee0c65ecd674e7033698914bad4a42cd6811aa3ca44",
+      "estado": "coincide"
+    },
+    {
+      "arquivo": "supabase/functions/web-push/index.ts",
+      "instalado_sha256": "0ec53fcba2ff99aa99a45e3278475f0f989ae0d0cdf9af7eeb118629748338f7",
+      "ramo_local_sha256": "0ec53fcba2ff99aa99a45e3278475f0f989ae0d0cdf9af7eeb118629748338f7",
+      "estado": "coincide"
+    },
+    {
+      "arquivo": "supabase/functions/_shared/evolution-groups.ts",
+      "instalado_sha256": "7b323b5f69430ea951b9a9adc08189058d5bf69ef709321899221acbcd43d91a",
+      "ramo_local_sha256": "7b323b5f69430ea951b9a9adc08189058d5bf69ef709321899221acbcd43d91a",
+      "estado": "coincide"
+    },
+    {
+      "arquivo": "supabase/functions/_shared/whatsapp-instance-phone.ts",
+      "instalado_sha256": "56516be155223c66cfe5ed7bcc116c21081b99abc879542aaa0c0bbbde9a265e",
+      "ramo_local_sha256": null,
+      "estado": "ausente"
+    },
+    {
+      "arquivo": "supabase/functions/whatsapp-dispatch/index.ts",
+      "instalado_sha256": "aca58e61cccd1eb83291b114ae395df0cfcd1b60d41bc584228a0a0faed2cd91",
+      "ramo_local_sha256": "aca58e61cccd1eb83291b114ae395df0cfcd1b60d41bc584228a0a0faed2cd91",
+      "estado": "coincide"
+    },
+    {
+      "arquivo": "supabase/functions/whatsapp-health/index.ts",
+      "instalado_sha256": "5e8c369af827a0300159fd215cb1d4bcb35dd751100c8f60f4b2bccec4d41ce0",
+      "ramo_local_sha256": "5e8c369af827a0300159fd215cb1d4bcb35dd751100c8f60f4b2bccec4d41ce0",
+      "estado": "coincide"
+    },
+    {
+      "arquivo": "supabase/functions/whatsapp-channel/index.ts",
+      "instalado_sha256": "ceccff84954ff01de471e00fc1b1961ed1ab86cc49dc4d48281a08ab72605f1f",
+      "ramo_local_sha256": "73c3e4f97875750553691303beaf2db347413379905049074eabdc787f74d499",
+      "estado": "diverge"
+    }
+  ]
+}
