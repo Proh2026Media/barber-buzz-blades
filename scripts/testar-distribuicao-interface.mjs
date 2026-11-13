@@ -144,6 +144,11 @@ try {
   await target("nova:general")
     .getByRole("button", { name: "Cancelar alterações", exact: true })
     .click();
+  assert.equal(
+    await page.getByRole("radio", { name: "Retos", exact: true }).count(),
+    0,
+    "sem seletor de cantos próprio da página",
+  );
   for (const corner of ["square", "soft", "round"]) {
     await page.locator(".brand-page").evaluate((el, corner) => {
       el.classList.remove("brand-corners-square", "brand-corners-soft", "brand-corners-round");
@@ -152,6 +157,21 @@ try {
     for (const width of [320, 390, 440, 768, 956, 1024, 1440]) {
       await page.setViewportSize({ width, height: width === 956 ? 440 : 1000 });
       await page.waitForTimeout(80);
+      const cardRadius = await page
+        .locator(".wa-distribution-shop")
+        .first()
+        .evaluate((el) => getComputedStyle(el).borderTopLeftRadius);
+      const buttonRadius = await page
+        .locator(".wa-distribution-customize")
+        .first()
+        .evaluate((el) => getComputedStyle(el).borderTopLeftRadius);
+      if (corner === "square") {
+        assert.equal(cardRadius, "0px");
+        assert.equal(buttonRadius, "0px");
+      } else {
+        assert.notEqual(cardRadius, "0px");
+        assert.notEqual(buttonRadius, "0px");
+      }
       assert.ok(
         await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1),
         `${corner} ${width}: sem rolagem horizontal`,

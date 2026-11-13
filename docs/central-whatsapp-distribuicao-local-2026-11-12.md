@@ -1,5 +1,12 @@
 # Central WhatsApp — distribuição por destino
 
+## Esclarecimento de identidade — cantos compartilhados
+
+A pedido do dono, a prévia não tem seletor nem estado próprio de cantos. Superfícies e ações herdam `--panel-radius`, `--control-radius` e `--button-radius` do sistema/ambiente. Isso supera os raios fixos/pílulas forçadas da rodada visual anterior. Círculos de seleção e trilhas de switch conservam a forma funcional. A validação injeta temporariamente os três modos somente no navegador de testes, sem criar uma preferência paralela de página.
+
+A antiga pílula “Usa o geral” foi renomeada para “Usa números da barbearia”, com ícone de estabelecimento. Indica herança do principal e das reservas da loja pelo profissional sem configuração própria; não é um número global da plataforma nem um indicador de aquecimento. Continuamos sem métrica de aquecimento: conexão e contagem de vínculos não provam volume, entrega ou saúde de conta. A geração local atual não usa esse indicador inexistente.
+
+
 ## Estatísticas primeiro e geração assistida — somente prévia
 
 Estatísticas/sugestões são o primeiro bloco após o cabeçalho. A ação Selecionar barbearia → Gerar distribuição apresenta a proposta antes de Aplicar na prévia. Não grava no servidor, não habilita avisos e preserva profissionais com configuração própria. Duas reservas reais e telemetria de envio continuam pendentes de contrato/implementação.

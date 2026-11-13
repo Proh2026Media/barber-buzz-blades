@@ -50,7 +50,7 @@ export const enUS: Record<MessageKey, string> = {
   "waDistribution.missingPrimary": "No primary",
   "waDistribution.missingBackup": "No backup",
   "waDistribution.wholeShop": "Whole barbershop",
-  "waDistribution.usesGeneral": "Uses shop number",
+  "waDistribution.usesGeneral": "Uses the barbershop numbers",
   "waDistribution.personalized": "Own number",
   "waDistribution.choose": "Choose number",
   "waDistribution.change": "Change",

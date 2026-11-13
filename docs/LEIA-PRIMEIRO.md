@@ -1,5 +1,7 @@
 # Leia primeiro — Barba & Cabelo
 
+**12/11/2026 — Cantos da Central seguem o sistema:** removido seletor próprio da prévia e raios fixos de superfícies/ações; tokens compartilhados restaurados. “Usa o geral” agora “Usa números da barbearia”. Não há indicador de aquecimento implementado. [Registro](central-whatsapp-distribuicao-local-2026-11-12.md). Somente local.
+
 **12/11/2026 — Estatísticas no topo e distribuição assistida local:** escolher barbearia → gerar proposta → revisar/aplicar na prévia. Heurística usa conexão e vínculos, não volume real/aquecimento. Switch redesenhado com círculo centrado. [Critérios e demandas futuras](central-whatsapp-distribuicao-local-2026-11-12.md). Sem publicação, backend ou pacote TI novo.
 
 **12/11/2026 — Prévia da distribuição aprovada, com refinamentos solicitados:** contornos completos, pílulas, switches e opções circulares. Prévia local agora permite um principal e duas reservas; segunda reserva ainda exige ampliar contrato de backend, sem alterar migration nesta rodada. Estatísticas/sugestões são demanda NOVA e não implementada, claramente identificada na prévia. [Registro e próximos requisitos](central-whatsapp-distribuicao-local-2026-11-12.md). Sem publicação nem novo pacote TI.

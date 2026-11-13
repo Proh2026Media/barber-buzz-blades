@@ -1,5 +1,9 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 12/11/2026 — Herança e cantos esclarecidos
+
+Removidos estado/seletor próprios de cantos da prévia e sobrescritas fixas nas superfícies/ações da central. Tokens do sistema prevalecem; círculos/switch conservam forma funcional. Pílula de herança passa a “Usa números da barbearia”, com ícone. Métrica de aquecimento continua inexistente, sem inferência por conexão. Verificação dos modos reto/semi/arredondado no navegador, tipos/montagem/lint; somente local. [Detalhes](central-whatsapp-distribuicao-local-2026-11-12.md).
+
 ## 12/11/2026 — Geração assistida e switches
 
 Estatísticas movidas para o primeiro bloco; protótipo determinístico para sugerir principal e duas reservas conectado à prévia, com revisão, invalidação por mudança de vínculos e aplicação somente em memória com avisos pausados. Telefones desconectados/repetidos excluídos, próprios de profissionais preservados. Switch substitui input pseudo-elemento por botão role=switch com círculo centrado e teclado. Demanda de dados para equidade por carga descrita no [registro](central-whatsapp-distribuicao-local-2026-11-12.md). Sem mudança de produção ou alegação de algoritmo baseado em envios reais.

@@ -49,7 +49,7 @@ export const ptPT: Record<MessageKey, string> = {
   "waDistribution.missingPrimary": "Sem principal",
   "waDistribution.missingBackup": "Sem reserva",
   "waDistribution.wholeShop": "Toda a barbearia",
-  "waDistribution.usesGeneral": "Usa o geral",
+  "waDistribution.usesGeneral": "Usa os números da barbearia",
   "waDistribution.personalized": "Número próprio",
   "waDistribution.choose": "Escolher número",
   "waDistribution.change": "Trocar",

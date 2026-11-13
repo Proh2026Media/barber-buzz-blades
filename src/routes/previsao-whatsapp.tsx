@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { FlaskConical, MessageCircle, RotateCcw, Smartphone } from "lucide-react";
 import { NotFoundPage } from "@/components/NotFoundPage";
-import { ChoiceChips, Notice, StatusBadge } from "@/components/visual";
+import { Notice, StatusBadge } from "@/components/visual";
 import {
   Dialog,
   DialogContent,
@@ -71,13 +71,12 @@ function PreviewRoute() {
 function Preview() {
   const { t } = useI18n();
   const [routes, setRoutes] = useState(initialRoutes);
-  const [corner, setCorner] = useState<"square" | "soft" | "round">("soft");
   const [selectedNumber, setSelectedNumber] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [previewVersion, setPreviewVersion] = useState(0);
   const selected = numbers.find((number) => number.id === selectedNumber);
   return (
-    <div className={`brand-page brand-corners-${corner} min-h-dvh bg-background text-foreground`}>
+    <div className="brand-page min-h-dvh bg-background text-foreground">
       <header className="border-b border-border bg-[#20211f] text-[#f1ede6]">
         <div className="mx-auto flex max-w-[100rem] flex-wrap items-center justify-between gap-3 px-4 py-4 tablet:px-6">
           <div className="flex items-center gap-3">
@@ -156,16 +155,6 @@ function Preview() {
         </section>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <StatusBadge tone="info" icon={FlaskConical} label={t("waPreview.noRemote")} />
-          <ChoiceChips
-            label={t("brand.corners.title")}
-            value={corner}
-            onChange={setCorner}
-            options={[
-              { value: "square", label: t("brand.corner.square") },
-              { value: "soft", label: t("brand.corner.soft") },
-              { value: "round", label: t("brand.corner.round") },
-            ]}
-          />
         </div>
 
         {saved && <Notice tone="success" title={t("waPreview.saved")} />}

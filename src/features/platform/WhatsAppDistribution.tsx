@@ -536,7 +536,10 @@ function DestinationRoute({
           <h5>{name}</h5>
         </div>
         {inherited && !dirty && (
-          <span className="wa-distribution-inherited">{t("waDistribution.usesGeneral")}</span>
+          <span className="wa-distribution-inherited">
+            <Store className="size-3" aria-hidden />
+            {t("waDistribution.usesGeneral")}
+          </span>
         )}
         {inherited && !dirty && (
           <button
