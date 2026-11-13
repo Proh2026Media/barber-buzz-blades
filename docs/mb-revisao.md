@@ -2,6 +2,12 @@
 
 Atualizado em **07/11/2026** (P-49/P-70; entradas anteriores preservadas como histórico). Fonte: [mb-interface.md](mb-interface.md). Regra: `.cursor/rules/mb.mdc`. Skill: `.cursor/skills/mb/`.
 
+## 13/11/2026 — Central, revisão somente local
+
+Cabeçalho com estatísticas/atribuição/distribuição em uma fileira desde 1024 px; larguras menores empilhadas. Ordem dos controles: Principal/Reserva → Avisos → Avisos de retorno; Personalizar com ajustes ao final da linha. Indicador circular animado e redução de movimento respeitada. Três vagas com alça; cartões preenchidos arrastáveis e alternativa Mover para… por toque/teclado. Preserva os modos de canto, rascunho, salvar/cancelar e isolamento entre destinos.
+
+Atividade identificada como **grupos / 30 dias**, exemplos fictícios explícitos, sem confundir ausência de dados com volume zero ou qualidade oficial. Números históricos preservados, sem nova atribuição. Atribuição automática simulada exige dois telefones distintos e preserva configurações existentes. [Prévia e limites](central-whatsapp-distribuicao-local-2026-11-12.md). 17 testes de regras, 21 composições, arraste inclusive Reserva 2, tipos, lint e build verificados. Sem produção, marca ou pacote TI novo.
+
 ## P-119 — barbearias, números e códigos separados (10/11/2026)
 
 Plano pedido pelo dono e executado: [registro completo](plano-central-whatsapp-2026-11-10.md). A entrada agora mostra todas as barbearias, número geral e profissionais (próprio, uso do geral ou sem número). Inventário destaca o telefone, uso, conexão e reserva; cadastros sem telefone ficam fora dessa lista. A autenticação da plataforma tem área própria. A antiga lista de “sem número” foi substituída por busca/filtros na visão completa de barbearias.

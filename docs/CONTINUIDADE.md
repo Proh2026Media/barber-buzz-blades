@@ -1,5 +1,17 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 13/11/2026 — Central: grupos, histórico, ordenação e cabeçalho local
+
+- Métricas limitadas a envios comprovados em grupos. Privado, legado e destino desconhecido não contam; falta de dados fica explícita. Tempo observado não é idade da conta e dias ativos exigem envio.
+- Migrations novas 03000/04000 preparadas e ensaiadas somente no PostgreSQL descartável: histórico agregado, identidade por telefone, separação de escopo, contagem idempotente e privilégios administrativos. Nenhuma instalação na VPS.
+- Principal/Reserva antes de Avisos/Avisos de retorno; Personalizar ao final com ícone de ajustes. Indicador de seleção animado, respeitando redução de movimento.
+- Arraste dos três cartões já vinculados, inclusive Reserva 2; alças visíveis nas três vagas, cartões preenchidos inteiros arrastáveis e opção Mover para… por toque/teclado. Preserva números, isola destinos e exige salvar/cancelar.
+- Prévia com atribuição automática para lojas sem configuração: carga cumulativa, menor uso medido no principal e consistência nas reservas, mínimo de duas contas distintas; escolhas existentes preservadas e avisos pausados. Sem operações em grupos reais.
+- Estatísticas, atribuição e distribuição na mesma faixa desde 1024 px; organização empilhada nas larguras menores. Modos de canto herdados do sistema.
+- Validação: 17 testes do modelo e 606 da suíte geral; SQL transacional (escopo, histórico e permissões), 45 verificações de roteamento; arraste inclusive Reserva 2, atribuição local e 21 composições em sete larguras × três modos de canto; tipos, lint dos arquivos alterados e build aprovados. Sem homologação em aparelho físico ou envio real.
+- Critérios e limites: [atividade](criterios-atividade-whatsapp-2026-11-12.md). Prévia: http://localhost:8090/previsao-whatsapp, sem login, dados fictícios; recarregar descarta alterações.
+- Operação automática real, contrato de duas reservas e integração versionada com grupos continuam pendentes de implementação/homologação após aprovação local. Sem publicação, pacote TI novo, marca ou Flow. `.env` não integra commit.
+
 ## 12/11/2026 — Perfil de atividade e remoção da quina remanescente
 
 Pesquisadas fontes primárias; sem importar limites de marketing como aquecimento oficial. Cartões mostram perfil interno, aceites, dias e incertos; exemplos fictícios explícitos. Sugestão considera perfil após carga e exclui pausados/incertos para revisão. Nova migration local `20261113002000` agrega o diário e protege identidade para telefone novo não herdar histórico antigo. Removido `box-shadow: inset 3px 0` do estado selecionado. [Critérios e limites](criterios-atividade-whatsapp-2026-11-12.md). Testes de modelo, SQL/rollback, permissões, troca de telefone e 45 regressões de distribuição passaram. Nada publicado/instalado na VPS.
@@ -27,7 +39,6 @@ Acesso ao Xcode confirmado; Simulator não disponível para controle nesta sess�
 ## 12/11/2026 — retorno TI nº 117 e primeiro acesso mais claro (somente local)
 
 Relatório `relatorio-ti-p120-conferencia-117-prontidao-login-2026-11-12.md` recebido. A nº 117b já está em `origin/main` (`f785ba8`); não reaplicar cartões. Corrigida a interface do login/grupo: escolhas de primeiro acesso, três passos visuais, convite indisponível, envio incerto, limite de pedidos, adesão expirada e telefone confirmado sem promessa de login pronto. Sete arquivos de frontend/dicionários; sem alteração de backend ou produção. [Devolutiva e pendências](pacotes/2026-11-12-ti-p120-retorno-117-login-claro.md). Cliente permanece Gmail/4593, grupo antigo do administrador não é reaproveitado. Piloto não pronto: dois administradores, extensão no principal e ciclo robusto ainda pendentes. Pasta e prévia da marca intocadas nesta entrega.
-
 
 ## 12/11/2026 — Central: cartões apenas para números identificados
 
@@ -2243,7 +2254,6 @@ description: Orientar mudanças de interface no projeto Barba & Cabelo para uma 
 
 ---
 
-
 ## 12/11/2026 — Web Push, monitor no cabeçalho e atualização consolidada para TI
 
 Pedido do dono: habilitar notificações web, avisar o admin sobre falhas dos números em qualquer área e consolidar o que não foi enviado à TI desde o primeiro pedido. Trabalho em ramo isolado, atualizado sobre `aca86fe`; original e marca preservados. [Roteiro e pacote](pacotes/2026-11-12-ti-bc-push-monitor-login.md).
@@ -2254,16 +2264,13 @@ Confirmação de telefone trata `whatsapp_unavailable` com orientação para o g
 
 Tipos, testes automatizados, SQL em banco descartável, cifra VAPID/aes128gcm, funções Deno e bancada de navegador realizados; resultados finais e limites em `VALIDACAO.md` do pacote. Nenhuma prova de push em aparelho real nem de entrega WhatsApp; homologação operacional com TI permanece necessária. Sem push/main, migrations reais ou segredos no pacote.
 
-
 ## 12/11/2026 — Revisão 2: identidade de cliente é a barbearia
 
 Antes de enviar o pacote, o dono reservou a marca B&C à gestão de donos/administradores. Textos locais de acesso/grupo/push e rodapé público ajustados nos idiomas. Push passa a carregar nome da barbearia do agendamento, resolvido no servidor no envio; worker não força título/logo da plataforma. Teste sem loja usa identificação neutra. Nenhum texto de grupo real mudou: contrato de identidade comercial + filtro de OTP na extensão precisam de implementação coordenada; roteiro TI registra essa dependência e proíbe correção isolada de string/ativação do piloto como se estivesse pronto. Metadados globais/PWA não foram declarados totalmente convertidos. Marca, produção e terceiros não foram tocados. Pacote anterior desta entrega foi substituído pela revisão 2.
 
-
 ## 12/11/2026 — Preferência persistente: entrega pronta à TI
 
 O dono pediu para guardar a orientação para as próximas entregas: enviar à TI implementação concluída, arquivos e roteiro verificáveis, não apenas objetivos para ela resolver. Desenvolvimento pendente permanece com o Codex; diagnóstico/revisão deve ser explicitamente separado de instalação/homologação. Regra registrada no AGENTS.md e referenciada no guia de trabalho. Somente documentação local; nenhum novo envio à TI, atualização de produção ou alteração no pacote v2 já entregue neste registro.
-
 
 ## 12/11/2026 — Retorno TI v2 e dispatch Web Push limitado
 
@@ -2273,7 +2280,6 @@ Correção local: migration nova `20261112232000_web_push_lotes_limitados.sql` l
 
 Validação: 606 testes; tipos; lint sem erros (7 avisos preexistentes); build; Deno check; 31 verificações SQL e três de concorrência real no PostgreSQL descartável. HTTP local lento: 27.265 ms com quatro resultados desconhecidos e zero repetição. Bancada dos módulos na imagem `supabase/edge-runtime:v1.71.2`, compatível Deno 2.1.4, passou sem rede externa. Novo pacote incremental com arquivos completos, patch, hashes, roteiro, retorno e evidências. Nenhum envio real/push/main/instalação VPS, troca de chaves ou alteração de grupo, WhatsApp, marca e Flow.
 
-
 ## 12/11/2026 — Incremental instalado pela TI; estabilidade e operação Web Push
 
 Relatório TI com sufixo `65465` confirma instalação às 21:43–21:44, backup `/root/backup-bc-webpush-dispatch-20261112-214337`, cerca de 2 s de indisponibilidade HTTP medida; supera revisão anterior que ainda dizia não instalado. Não reaplicar migration 20261112232000 nem TypeScript. VAPID/cofre confirmado às 21:01 segundo TI; frontend permanece 04bf927. Push desligado, sem agendador, não homologado.
@@ -2281,7 +2287,6 @@ Relatório TI com sufixo `65465` confirma instalação às 21:43–21:44, backup
 O dono pediu entrega integral, com cada agente cuidando do que seu acesso permite. Testes de orçamento agora usam relógio monotônico/timers controlados e barreira de concorrência sem esperas reais. Nenhuma alteração nos quatro arquivos Edge instalados (hashes idênticos ao relatório). Node 24.22.1 da TI: 50/50 corridas do arquivo, quatro processos simultâneos, suíte completa 606/606. Node 26: 40/40. Tipos, build e lint sem erros (sete avisos preexistentes).
 
 Operador Python pronto para conferência, preparação desligada, ativação expressamente autorizada, pausa e envio agendado. Timer systemd dispara 15 s após término anterior; oneshot + flock + prazos de 50/55 s; sem reenvio HTTP na mesma execução. Segredos em memória, sem valores em logs/argumentos/unidades, sem redirecionamento nem proxy herdado. Preserva chaves/origens, altera só flag de ambiente, confere ambas as configurações e estado SQL, recria somente Edge e pausa se ativação falhar. 17 testes locais e no Linux sem rede; systemd-analyze verify aprovado. Roteiro executável, retorno e homologação visual entregues; operador ainda não instalado e nenhuma ativação/envio real pelo Codex. Marca, Flow, grupos/OTP e frontend não alterados.
-
 
 ## 12/11/2026 — TI confirma operação Web Push ativada; homologação visual pendente
 

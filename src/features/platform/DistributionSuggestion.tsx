@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Circle, Shuffle, Store, ShieldCheck, Radio, AlertTriangle } from "lucide-react";
+import { Check, Shuffle, Store, ShieldCheck, Radio, AlertTriangle } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { suggestDistribution } from "@/lib/whatsapp/distribution-suggestion";
 import type { DistributionNumber, DistributionRoute } from "./WhatsAppDistribution";
@@ -46,11 +46,10 @@ export function DistributionSuggestion({
           >
             <Store className="size-4" aria-hidden />
             {s.name}
-            {shop === s.id ? (
-              <Check className="size-4" aria-hidden />
-            ) : (
-              <Circle className="size-4" aria-hidden />
-            )}
+            <span className="wa-shop-selection" data-selected={shop === s.id} aria-hidden="true">
+              <span className="wa-shop-selection-fill" />
+              <Check className="size-3.5" />
+            </span>
           </button>
         ))}
       </div>
@@ -99,9 +98,9 @@ export function DistributionSuggestion({
           <button
             type="button"
             className="action-button action-confirm"
-            disabled={!plan.primary || stale || applied}
+            disabled={!plan.primary || !plan.backup || stale || applied}
             onClick={() => {
-              if (!plan.primary || snapshot !== JSON.stringify(routes)) return;
+              if (!plan.primary || !plan.backup || snapshot !== JSON.stringify(routes)) return;
               apply(shop, {
                 primary: plan.primary.id,
                 backup: plan.backup?.id ?? null,

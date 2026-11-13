@@ -1,3 +1,4 @@
+import { reorderNumbers, type NumberRole } from "@/lib/whatsapp/distribution-order";
 import { NumberActivity as NumberActivityBadge } from "./NumberActivity";
 import { type NumberActivity } from "@/lib/whatsapp/number-activity";
 import { useId, useRef, useState, type DragEvent } from "react";
@@ -16,6 +17,7 @@ import {
   Search,
   ShieldCheck,
   Smartphone,
+  SlidersHorizontal,
   Store,
   X,
 } from "lucide-react";
@@ -30,6 +32,9 @@ export type DistributionNumber = {
   display_phone: string | null;
   status: string;
   activity?: NumberActivity;
+  historyScope?: "groups";
+  historyAccepted?: number;
+  historyUncertain?: number;
 };
 export type DistributionRoute = {
   id: string;
@@ -67,6 +72,8 @@ type Props = {
   secondReserve?: boolean;
 };
 type Role = "primary" | "backup" | "backup2";
+const historical = (status: string) => ["archived", "restricted", "banned"].includes(status);
+const ORDER_DRAG_TYPE = "application/x-bc-whatsapp-order";
 const DRAG_TYPE = "application/x-bc-whatsapp-number";
 
 /** Só a apresentação muda; o vínculo e o envio conservam o identificador original. */
@@ -91,6 +98,14 @@ function samePhone(a: string | null, b: string | null, numbers: DistributionNumb
 function Connection({ status }: { status: string }) {
   const { t } = useI18n();
   const pending = status === "connecting" || status === "qr";
+  if (historical(status))
+    return (
+      <StatusBadge
+        size="sm"
+        tone={status === "archived" ? "neutral" : "warning"}
+        label={t(status === "archived" ? "waHistory.archived" : "waHistory.restricted")}
+      />
+    );
   return (
     <StatusBadge
       size="sm"
@@ -208,8 +223,9 @@ export function WhatsAppDistribution({
                   data-selected={selected === number.id}
                   aria-pressed={selected === number.id}
                   aria-label={t("waDistribution.selectNumber", { number: number.display_phone! })}
-                  disabled={busy || !supported}
-                  draggable={!busy && supported}
+                  disabled={busy || !supported || historical(number.status)}
+                  data-historical={historical(number.status)}
+                  draggable={!busy && supported && !historical(number.status)}
                   onDragStart={(event) => {
                     event.dataTransfer.setData(DRAG_TYPE, number.id);
                     event.dataTransfer.effectAllowed = "copy";
@@ -240,6 +256,14 @@ export function WhatsAppDistribution({
                     )}
                   </div>
                   <Connection status={number.status} />
+                  {historical(number.status) && (
+                    <span className="wa-distribution-history-note">
+                      {t("waHistory.retained")}
+                      {number.historyScope === "groups" && number.historyAccepted != null && (
+                        <span> · {t("waHistory.accepted", { count: number.historyAccepted })}</span>
+                      )}
+                    </span>
+                  )}
                   <NumberActivityBadge activity={number.activity} />
                   <span className="wa-distribution-role-list">
                     {primaryCount > 0 && (
@@ -445,7 +469,7 @@ function DestinationRoute({
         };
   function assign(role: Role, id: string | null) {
     if (locked) return;
-    if (id && !numbers.some((n) => n.id === id)) {
+    if (id && !numbers.some((n) => n.id === id && !historical(n.status))) {
       setError(t("waDistribution.invalidNumber"));
       return;
     }
@@ -482,6 +506,16 @@ function DestinationRoute({
           name: targetLabel,
         }),
       );
+  }
+  function reorder(from: NumberRole, to: NumberRole, expectedId?: string) {
+    if (locked || (expectedId && draft[from] !== expectedId)) return;
+    setDraft((current) => ({ ...current, ...reorderNumbers(current, from, to) }));
+    setEditing(true);
+    setTechnical(false);
+    setSaved(false);
+    setError("");
+    setConfirmRemove(false);
+    announce(t("waDistribution.orderChanged"));
   }
   async function submit() {
     if (locked || pending.current) return;
@@ -542,28 +576,6 @@ function DestinationRoute({
           )}
           <h5>{name}</h5>
         </div>
-        {inherited && !dirty && (
-          <span className="wa-distribution-inherited">
-            <Store className="size-3" aria-hidden />
-            {t("waDistribution.usesGeneral")}
-          </span>
-        )}
-        {inherited && !dirty && (
-          <button
-            type="button"
-            className="wa-distribution-customize"
-            disabled={locked}
-            onClick={() => {
-              setEditing(true);
-              setSaved(false);
-            }}
-          >
-            <Scissors className="size-3.5" aria-hidden /> {t("waDistribution.customize")}
-          </button>
-        )}
-        {person && route && (
-          <span className="wa-distribution-inherited">{t("waDistribution.personalized")}</span>
-        )}
         <StatusBadge
           size="sm"
           tone={effective.enabled && effective.mode !== "paused" ? "success" : "neutral"}
@@ -576,6 +588,30 @@ function DestinationRoute({
               : "waDistribution.noticesOff",
           )}
         />
+        {inherited && !dirty && (
+          <span className="wa-distribution-inherited">
+            <Store className="size-3" aria-hidden />
+            {t("waDistribution.usesGeneral")}
+          </span>
+        )}
+
+        {person && route && (
+          <span className="wa-distribution-inherited">{t("waDistribution.personalized")}</span>
+        )}
+
+        {inherited && !dirty && (
+          <button
+            type="button"
+            className="wa-distribution-customize"
+            disabled={locked}
+            onClick={() => {
+              setEditing(true);
+              setSaved(false);
+            }}
+          >
+            <SlidersHorizontal className="size-3.5" aria-hidden /> {t("waDistribution.customize")}
+          </button>
+        )}
       </div>
       <div className="wa-distribution-slots">
         <NumberSlot
@@ -588,6 +624,9 @@ function DestinationRoute({
           selected={selected}
           locked={locked}
           assign={assign}
+          secondReserve={secondReserve}
+          reorder={reorder}
+          targetKey={`${shop}:${person ?? "general"}`}
           viewNumber={viewNumber}
         />
         <NumberSlot
@@ -600,6 +639,9 @@ function DestinationRoute({
           selected={selected}
           locked={locked}
           assign={assign}
+          secondReserve={secondReserve}
+          reorder={reorder}
+          targetKey={`${shop}:${person ?? "general"}`}
           viewNumber={viewNumber}
         />
         {secondReserve && (
@@ -613,34 +655,15 @@ function DestinationRoute({
             selected={selected}
             locked={locked}
             assign={assign}
+            secondReserve={secondReserve}
+            reorder={reorder}
+            targetKey={`${shop}:${person ?? "general"}`}
             viewNumber={viewNumber}
           />
         )}
       </div>
       {(route || dirty) && (
         <div className="wa-distribution-controls">
-          <label className="wa-distribution-toggle">
-            <button
-              type="button"
-              role="switch"
-              className="wa-toggle-control"
-              aria-label={t("waDistribution.notices")}
-              aria-checked={draft.enabled && draft.mode !== "paused"}
-              disabled={locked || !draft.primary}
-              onClick={() => {
-                const enabled = !(draft.enabled && draft.mode !== "paused");
-                setDraft({
-                  ...draft,
-                  enabled,
-                  mode: enabled && draft.mode === "paused" ? "primary" : draft.mode,
-                });
-                setSaved(false);
-              }}
-            >
-              <span aria-hidden="true" />
-            </button>
-            {t("waDistribution.notices")}
-          </label>
           <div
             className="wa-distribution-mode"
             role="group"
@@ -669,6 +692,29 @@ function DestinationRoute({
               </button>
             ))}
           </div>
+          <label className="wa-distribution-toggle">
+            <button
+              type="button"
+              role="switch"
+              className="wa-toggle-control"
+              aria-label={t("waDistribution.notices")}
+              aria-checked={draft.enabled && draft.mode !== "paused"}
+              disabled={locked || !draft.primary}
+              onClick={() => {
+                const enabled = !(draft.enabled && draft.mode !== "paused");
+                setDraft({
+                  ...draft,
+                  enabled,
+                  mode: enabled && draft.mode === "paused" ? "primary" : draft.mode,
+                });
+                setSaved(false);
+              }}
+            >
+              <span aria-hidden="true" />
+            </button>
+            {t("waDistribution.notices")}
+          </label>
+
           <label className="wa-distribution-toggle">
             <button
               type="button"
@@ -779,6 +825,9 @@ function NumberSlot({
   selected,
   locked,
   assign,
+  reorder,
+  targetKey,
+  secondReserve,
   viewNumber,
 }: {
   role: Role;
@@ -790,22 +839,38 @@ function NumberSlot({
   selected: string | null;
   locked: boolean;
   assign: (role: Role, id: string | null) => void;
+  reorder: (from: Role, to: Role, expectedId?: string) => void;
+  targetKey: string;
+  secondReserve?: boolean;
   viewNumber: Props["viewNumber"];
 }) {
   const { t } = useI18n();
   const pickerId = useId();
   const [picking, setPicking] = useState(false);
   const [over, setOver] = useState(false);
+  const [moving, setMoving] = useState(false);
   const number = numbers.find((n) => n.id === id);
   const chosen = numbers.find((n) => n.id === selected);
   const roleLabel =
     t(role === "primary" ? "waDistribution.primary" : "waDistribution.backup") +
     (role === "primary" ? "" : role === "backup" ? " 1" : " 2");
-  const canDrop = (event: DragEvent) => !locked && event.dataTransfer.types.includes(DRAG_TYPE);
+  const canDrop = (event: DragEvent) =>
+    !locked &&
+    (event.dataTransfer.types.includes(DRAG_TYPE) ||
+      event.dataTransfer.types.includes(ORDER_DRAG_TYPE));
   return (
     <div
       className={`wa-distribution-slot wa-distribution-slot-${role}`}
       data-role={role}
+      draggable={Boolean(number && !historical(number.status) && !locked)}
+      onDragStart={(event) => {
+        if (!number || historical(number.status) || locked) {
+          event.preventDefault();
+          return;
+        }
+        event.dataTransfer.setData(ORDER_DRAG_TYPE, JSON.stringify({ targetKey, role, id }));
+        event.dataTransfer.effectAllowed = "move";
+      }}
       data-number-id={id ?? ""}
       data-drag-over={over}
       data-selecting={Boolean(chosen)}
@@ -813,7 +878,9 @@ function NumberSlot({
       onDragOver={(event) => {
         if (canDrop(event)) {
           event.preventDefault();
-          event.dataTransfer.dropEffect = "copy";
+          event.dataTransfer.dropEffect = event.dataTransfer.types.includes(ORDER_DRAG_TYPE)
+            ? "move"
+            : "copy";
           setOver(true);
         }
       }}
@@ -823,11 +890,42 @@ function NumberSlot({
       onDrop={(event) => {
         event.preventDefault();
         setOver(false);
+        const order = event.dataTransfer.getData(ORDER_DRAG_TYPE);
+        if (order) {
+          try {
+            const source = JSON.parse(order);
+            if (
+              source.targetKey === targetKey &&
+              ["primary", "backup", "backup2"].includes(source.role)
+            )
+              reorder(source.role, role, source.id);
+          } catch {
+            /* Arraste externo inválido não modifica o rascunho. */
+          }
+          return;
+        }
         const id = event.dataTransfer.getData(DRAG_TYPE);
         if (!locked && id) assign(role, id);
       }}
     >
       <div className="wa-distribution-slot-label">
+        <button
+          type="button"
+          className="wa-distribution-reorder"
+          disabled={locked || !number || historical(number.status)}
+          draggable={Boolean(number && !historical(number.status) && !locked)}
+          aria-label={t("waDistribution.reorder", { role: roleLabel })}
+          aria-expanded={moving}
+          onClick={() => setMoving(!moving)}
+          onDragStart={(event) => {
+            event.stopPropagation();
+            event.dataTransfer.setData(ORDER_DRAG_TYPE, JSON.stringify({ targetKey, role, id }));
+            event.dataTransfer.effectAllowed = "move";
+          }}
+        >
+          <GripVertical className="size-4" aria-hidden />
+        </button>
+
         {role === "primary" ? (
           <Radio className="size-4" aria-hidden />
         ) : (
@@ -904,6 +1002,34 @@ function NumberSlot({
           <span>{t("waDistribution.choose")}</span>
         )}
       </div>
+      {moving && (
+        <div
+          className="wa-distribution-reorder-options"
+          role="group"
+          aria-label={t("waDistribution.order")}
+        >
+          {(["primary", "backup", "backup2"] as Role[])
+            .filter((target) => target !== role && (target !== "backup2" || secondReserve))
+            .map((target) => (
+              <button
+                type="button"
+                key={target}
+                disabled={locked}
+                onClick={() => {
+                  reorder(role, target);
+                  setMoving(false);
+                }}
+              >
+                <ArrowRight className="size-3.5" aria-hidden />
+                {t("waDistribution.moveTo", {
+                  role:
+                    t(target === "primary" ? "waDistribution.primary" : "waDistribution.backup") +
+                    (target === "primary" ? "" : target === "backup" ? " 1" : " 2"),
+                })}
+              </button>
+            ))}
+        </div>
+      )}
       {picking && (
         <div className="wa-distribution-picker" id={pickerId}>
           <span className="sr-only">
@@ -917,6 +1043,7 @@ function NumberSlot({
             {numbers
               .filter(
                 (n) =>
+                  !historical(n.status) &&
                   !samePhone(n.id, other, numbers) &&
                   !excluded.some((e) => samePhone(n.id, e, numbers)),
               )

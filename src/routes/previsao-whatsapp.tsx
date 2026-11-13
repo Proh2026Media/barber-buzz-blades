@@ -1,6 +1,7 @@
 import { DistributionSuggestion } from "@/features/platform/DistributionSuggestion";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { suggestMissingDistributions } from "@/lib/whatsapp/distribution-suggestion";
 import { FlaskConical, MessageCircle, RotateCcw, Smartphone } from "lucide-react";
 import { NotFoundPage } from "@/components/NotFoundPage";
 import { Notice, StatusBadge } from "@/components/visual";
@@ -30,6 +31,7 @@ const numbers: DistributionNumber[] = [
     display_phone: "5511900000101",
     status: "open",
     activity: {
+      scope: "groups",
       accepted: 140,
       uncertain: 0,
       activeDays: 16,
@@ -44,6 +46,7 @@ const numbers: DistributionNumber[] = [
     display_phone: "5511900000202",
     status: "open",
     activity: {
+      scope: "groups",
       accepted: 24,
       uncertain: 0,
       activeDays: 7,
@@ -53,6 +56,22 @@ const numbers: DistributionNumber[] = [
     },
   },
   { id: "numero-c", label: "Número C", display_phone: "5511900000303", status: "disconnected" },
+  {
+    id: "numero-historico",
+    label: "Exemplo histórico",
+    display_phone: "5511900000404",
+    status: "restricted",
+    activity: {
+      scope: "groups",
+      accepted: 210,
+      uncertain: 2,
+      activeDays: 18,
+      observedDays: 27,
+      sampledAt: new Date().toISOString(),
+      source: "simulation",
+      paused: true,
+    },
+  },
 ];
 const shops = [
   { id: "arena", name: "Arena · teste" },
@@ -97,6 +116,30 @@ function PreviewRoute() {
 function Preview() {
   const { t } = useI18n();
   const [routes, setRoutes] = useState(initialRoutes);
+  const [automatic, setAutomatic] = useState(false);
+  const automaticPlan = suggestMissingDistributions(shops, numbers, routes);
+  useEffect(() => {
+    if (!automatic) return;
+    setRoutes((current) => {
+      const { assignments } = suggestMissingDistributions(shops, numbers, current);
+      if (!assignments.length) return current;
+      return [
+        ...current,
+        ...assignments.map((item) => ({
+          id: `rota-${item.shop}-geral`,
+          barbershop_id: item.shop,
+          staff_id: null,
+          channel_id: item.primary,
+          backup_channel_id: item.backup,
+          backup2_channel_id: item.backup2,
+          delivery_mode: "primary" as const,
+          enabled: false,
+          return_notice_enabled: false,
+          version: 1,
+        })),
+      ];
+    });
+  }, [automatic, routes]);
   const [selectedNumber, setSelectedNumber] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [previewVersion, setPreviewVersion] = useState(0);
@@ -118,6 +161,7 @@ function Preview() {
             type="button"
             className="action-button"
             onClick={() => {
+              setAutomatic(false);
               setRoutes(initialRoutes);
               setSaved(false);
               setPreviewVersion((v) => v + 1);
@@ -129,55 +173,93 @@ function Preview() {
         </div>
       </header>
       <main className="mx-auto max-w-[100rem] space-y-5 px-4 py-5 tablet:px-6 tablet:py-6">
-        <section className="wa-future-stats" aria-label={t("waRefine.stats")}>
-          <header>
-            <h2>
-              <Smartphone className="size-5" aria-hidden />
-              {t("waRefine.stats")}
-            </h2>
-            <StatusBadge tone="warning" label={t("waRefine.future")} />
-          </header>
-          <p>{t("waRefine.futureHint")}</p>
-          <div>
-            {["volume", "days", "usage", "suggestions"].map((key) => (
-              <article key={key}>
-                <span>
-                  {key === "usage"
-                    ? t("waAuto.bindings")
-                    : t(("waRefine." + key) as "waRefine.volume")}
-                </span>
-                <strong>{key === "usage" ? routes.length : "—"}</strong>
-                <small>{t(key === "usage" ? "waAuto.sample" : "waRefine.noData")}</small>
-              </article>
-            ))}
+        <section className="wa-future-stats wa-operation-header" aria-label={t("waRefine.stats")}>
+          <div className="wa-operation-row">
+            <section className="wa-operation-stats">
+              <header>
+                <h2>
+                  <Smartphone className="size-5" aria-hidden />
+                  {t("waRefine.stats")}
+                </h2>
+                <StatusBadge tone="warning" label={t("waAuto.sample")} />
+              </header>
+              <p>{t("waRefine.futureHint")}</p>
+              <div>
+                {["volume", "days", "usage", "suggestions"].map((key) => (
+                  <article key={key}>
+                    <span>
+                      {key === "usage"
+                        ? t("waAuto.bindings")
+                        : t(("waRefine." + key) as "waRefine.volume")}
+                    </span>
+                    <strong>{key === "usage" ? routes.length : "—"}</strong>
+                    <small className="sr-only">
+                      {t(key === "usage" ? "waAuto.sample" : "waRefine.noData")}
+                    </small>
+                  </article>
+                ))}
+              </div>
+            </section>
+            <section className="wa-auto-coverage" aria-label={t("waAuto.coverage")}>
+              <div>
+                <label className="wa-distribution-toggle">
+                  <button
+                    type="button"
+                    role="switch"
+                    className="wa-toggle-control"
+                    aria-label={t("waAuto.coverage")}
+                    aria-checked={automatic}
+                    onClick={() => setAutomatic(!automatic)}
+                  >
+                    <span aria-hidden="true" />
+                  </button>
+                  <strong>{t("waAuto.coverage")}</strong>
+                </label>
+                <StatusBadge
+                  tone={automatic ? "info" : "neutral"}
+                  label={t(automatic ? "waAuto.localOn" : "waAuto.localOff")}
+                />
+              </div>
+              <p>{t("waAuto.coverageHint")}</p>
+              <p role="status">
+                {t(
+                  automaticPlan.blocked.length
+                    ? "waAuto.coverageBlocked"
+                    : automaticPlan.assignments.length
+                      ? "waAuto.coveragePending"
+                      : "waAuto.coverageComplete",
+                  { count: automaticPlan.blocked.length || automaticPlan.assignments.length },
+                )}
+              </p>
+            </section>
+            <DistributionSuggestion
+              key={previewVersion}
+              numbers={numbers}
+              shops={shops}
+              routes={routes}
+              apply={(shop, ids) => {
+                setRoutes((all) => {
+                  const current = all.find((r) => r.barbershop_id === shop && r.staff_id === null);
+                  return [
+                    ...all.filter((r) => r.barbershop_id !== shop || r.staff_id !== null),
+                    {
+                      id: current?.id ?? `rota-${shop}-geral`,
+                      barbershop_id: shop,
+                      staff_id: null,
+                      channel_id: ids.primary,
+                      backup_channel_id: ids.backup,
+                      backup2_channel_id: ids.backup2,
+                      delivery_mode: "primary",
+                      enabled: false,
+                      return_notice_enabled: current?.return_notice_enabled ?? false,
+                      version: (current?.version ?? 0) + 1,
+                    },
+                  ];
+                });
+                setSaved(true);
+              }}
+            />
           </div>
-          <DistributionSuggestion
-            key={previewVersion}
-            numbers={numbers}
-            shops={shops}
-            routes={routes}
-            apply={(shop, ids) => {
-              setRoutes((all) => {
-                const current = all.find((r) => r.barbershop_id === shop && r.staff_id === null);
-                return [
-                  ...all.filter((r) => r.barbershop_id !== shop || r.staff_id !== null),
-                  {
-                    id: current?.id ?? `rota-${shop}-geral`,
-                    barbershop_id: shop,
-                    staff_id: null,
-                    channel_id: ids.primary,
-                    backup_channel_id: ids.backup,
-                    backup2_channel_id: ids.backup2,
-                    delivery_mode: "primary",
-                    enabled: false,
-                    return_notice_enabled: current?.return_notice_enabled ?? false,
-                    version: (current?.version ?? 0) + 1,
-                  },
-                ];
-              });
-              setSaved(true);
-            }}
-          />
         </section>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <StatusBadge tone="info" icon={FlaskConical} label={t("waPreview.noRemote")} />

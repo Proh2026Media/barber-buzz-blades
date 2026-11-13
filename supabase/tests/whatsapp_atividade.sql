@@ -15,11 +15,11 @@ select gen_random_uuid(),'bc-'||id,'accepted',now()-interval '40 days' from acti
 do $$declare n uuid; m jsonb;begin
  select id into n from activity_fixture;
  m:=public.platform_whatsapp_number_activity()->n::text;
- if (m->>'accepted')::int<>3 or (m->>'uncertain')::int<>2 or (m->>'activeDays')::int<>2 or (m->>'observedDays')::int<>4 then raise exception 'Agregação incorreta: %',m;end if;
+ if (m->>'accepted')::int<>0 or (m->>'uncertain')::int<>0 or (m->>'activeDays')::int<>0 or (m->>'observedDays')::int<>0 or m->>'scope'<>'groups' then raise exception 'Agregação incorreta: %',m;end if;
  if public.platform_whatsapp_directory()->'number_activity'->n::text is distinct from m then raise exception 'Diretório sem métricas';end if;
  if has_function_privilege('anon','public.platform_whatsapp_number_activity()','execute') then raise exception 'Anônimo autorizado';end if;
  if has_function_privilege('authenticated','public.platform_whatsapp_directory_before_activity()','execute') then raise exception 'Wrapper anterior exposto';end if;
- raise notice 'PASS: aceites, incertos, dias distintos, janela, diretório e privilégios';
+ raise notice 'PASS: diário sem destino comprovado excluído; diretório e privilégios preservados';
  update public.whatsapp_channels set display_phone='+5511900000777' where id=n;
  if ((public.platform_whatsapp_number_activity()->n::text)->>'accepted')::int<>0 then raise exception 'Telefone novo herdou atividade antiga';end if;
  raise notice 'PASS: troca de telefone não herda atividade anterior';

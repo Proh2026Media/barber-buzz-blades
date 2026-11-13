@@ -1,5 +1,7 @@
 # Leia primeiro — Barba & Cabelo
 
+**13/11/2026 — Central somente local:** perfil agora usa apenas envios comprovados em grupos; histórico por telefone preservado, arraste nos três cartões (inclui Reserva 2), controles reordenados, seletor animado e cabeçalho com estatísticas/atribuição/distribuição em uma fileira no computador. Atribuição automática só na prévia fictícia, para barbearias sem configuração, mínimo de duas contas. [Critérios e limites operacionais](criterios-atividade-whatsapp-2026-11-12.md). Segunda reserva, automação no cadastro e composição de grupos reais ainda exigem integração; não publicar/instalar nem alterar o pacote atual da TI. Sem marca/Flow.
+
 **12/11/2026 — Perfil de atividade nos cartões, somente local:** pesquisa registrada; critérios internos de volume/dias/pausa/incerteza, distintos da qualidade oficial do WhatsApp. Dados fictícios na prévia; consulta administrativa e proteção de identidade preparadas na nova migration `20261113002000`, não instalada. Removida a sombra unilateral remanescente no cartão selecionado. [Critérios, fonte e limites](criterios-atividade-whatsapp-2026-11-12.md). Sem produção ou novo pacote TI.
 
 **12/11/2026 — Cantos da Central seguem o sistema:** removido seletor próprio da prévia e raios fixos de superfícies/ações; tokens compartilhados restaurados. “Usa o geral” agora “Usa números da barbearia”. Não há indicador de aquecimento implementado. [Registro](central-whatsapp-distribuicao-local-2026-11-12.md). Somente local.

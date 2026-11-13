@@ -1,14 +1,23 @@
 # Central WhatsApp — distribuição por destino
 
-**Atualização:** perfil de atividade implementado localmente nos cartões e como critério auxiliar da sugestão. Telemetria real depende de instalação futura; exemplos seguem fictícios. [Fonte, regras e limitações](criterios-atividade-whatsapp-2026-11-12.md). Removida a sombra azul unilateral que ainda restava na seleção.
+## 13/11/2026 — Central: grupos, histórico, ordenação e cabeçalho local
 
+- Métricas limitadas a envios comprovados em grupos. Privado, legado e destino desconhecido não contam; falta de dados fica explícita. Tempo observado não é idade da conta e dias ativos exigem envio.
+- Migrations novas 03000/04000 preparadas e ensaiadas somente no PostgreSQL descartável: histórico agregado, identidade por telefone, separação de escopo, contagem idempotente e privilégios administrativos. Nenhuma instalação na VPS.
+- Principal/Reserva antes de Avisos/Avisos de retorno; Personalizar ao final com ícone de ajustes. Indicador de seleção animado, respeitando redução de movimento.
+- Arraste dos três cartões já vinculados, inclusive Reserva 2; alças visíveis nas três vagas, cartões preenchidos inteiros arrastáveis e opção Mover para… por toque/teclado. Preserva números, isola destinos e exige salvar/cancelar.
+- Prévia com atribuição automática para lojas sem configuração: carga cumulativa, menor uso medido no principal e consistência nas reservas, mínimo de duas contas distintas; escolhas existentes preservadas e avisos pausados. Sem operações em grupos reais.
+- Estatísticas, atribuição e distribuição na mesma faixa desde 1024 px; organização empilhada nas larguras menores. Modos de canto herdados do sistema.
+- Critérios e limites: [atividade](criterios-atividade-whatsapp-2026-11-12.md). Prévia: http://localhost:8090/previsao-whatsapp, sem login, dados fictícios; recarregar descarta alterações.
+- Operação automática real, contrato de duas reservas e integração versionada com grupos continuam pendentes de implementação/homologação após aprovação local. Sem publicação, pacote TI novo, marca ou Flow. `.env` não integra commit.
+
+**Atualização:** perfil de atividade implementado localmente nos cartões e como critério auxiliar da sugestão. Telemetria real depende de instalação futura; exemplos seguem fictícios. [Fonte, regras e limitações](criterios-atividade-whatsapp-2026-11-12.md). Removida a sombra azul unilateral que ainda restava na seleção.
 
 ## Esclarecimento de identidade — cantos compartilhados
 
 A pedido do dono, a prévia não tem seletor nem estado próprio de cantos. Superfícies e ações herdam `--panel-radius`, `--control-radius` e `--button-radius` do sistema/ambiente. Isso supera os raios fixos/pílulas forçadas da rodada visual anterior. Círculos de seleção e trilhas de switch conservam a forma funcional. A validação injeta temporariamente os três modos somente no navegador de testes, sem criar uma preferência paralela de página.
 
 A antiga pílula “Usa o geral” foi renomeada para “Usa números da barbearia”, com ícone de estabelecimento. Indica herança do principal e das reservas da loja pelo profissional sem configuração própria; não é um número global da plataforma nem um indicador de aquecimento. Continuamos sem métrica de aquecimento: conexão e contagem de vínculos não provam volume, entrega ou saúde de conta. A geração local atual não usa esse indicador inexistente.
-
 
 ## Estatísticas primeiro e geração assistida — somente prévia
 
@@ -21,7 +30,6 @@ Dados úteis para evolução: atendimentos previstos por profissional/loja, prof
 Ligar/desligar foi reconstruído como botão acessível com `role=switch`, círculo independente e centralizado, trilha 44×26, foco visível, estados desabilitados e operação por teclado. Não depende mais de pseudo-elemento de input para desenhar o círculo.
 
 Verificações reproduzíveis: `npm run test:distribution` e `node scripts/testar-distribuicao-assistida.mjs`, além da matriz de interface existente. Fonte somente local, sem publicação ou nova instalação TI.
-
 
 ## Refinamento aprovado pelo dono — 12/11/2026
 
@@ -41,10 +49,10 @@ A reserva era propriedade exclusiva da conexão física: filtros, banco e alguns
 
 O papel passa a pertencer ao **destino** — barbearia inteira ou profissional. Exemplo implementado na prévia:
 
-| Destino | Principal | Reserva |
-| --- | --- | --- |
-| Arena de teste | Número A | Número B |
-| Barbearia do Centro de teste | Número B | Número A |
+| Destino                      | Principal              | Reserva                        |
+| ---------------------------- | ---------------------- | ------------------------------ |
+| Arena de teste               | Número A               | Número B                       |
+| Barbearia do Centro de teste | Número B               | Número A                       |
 | Outra barbearia/profissional | Pode reutilizar A ou B | Pode reutilizar outro telefone |
 
 Cada par exige dois telefones físicos distintos. Conexões com IDs diferentes do mesmo telefone também não formam um par válido. Profissional sem configuração própria usa o geral; o painel distingue herança de vínculo próprio. Remover um próprio exige confirmação e devolve a herança, sem remover o geral ou vínculos de outras lojas.

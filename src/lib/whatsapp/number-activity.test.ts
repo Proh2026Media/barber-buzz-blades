@@ -4,6 +4,7 @@ import { numberActivityLevel, type NumberActivity } from "./number-activity.ts";
 import { suggestDistribution } from "./distribution-suggestion.ts";
 const now = Date.now();
 const m: NumberActivity = {
+  scope: "groups",
   accepted: 100,
   uncertain: 0,
   activeDays: 14,
@@ -51,4 +52,8 @@ test("atividade desempata carga e não permite recomendar pausados ou incertos",
 test("um pico de envios não substitui os dias ativos necessários", () => {
   assert.equal(numberActivityLevel({ ...m, accepted: 1000, activeDays: 6 }), "initial");
   assert.equal(numberActivityLevel({ ...m, accepted: 99 }), "regular");
+});
+
+test("eventos sem escopo de grupo não classificam o número", () => {
+  assert.equal(numberActivityLevel({ ...m, scope: undefined }), "unknown");
 });

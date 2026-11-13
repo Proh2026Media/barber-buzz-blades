@@ -1,5 +1,6 @@
 /** Medidas observadas, não classificação de qualidade do WhatsApp. */
 export type NumberActivity = {
+  scope?: "groups";
   accepted: number;
   uncertain: number;
   activeDays: number;
@@ -12,7 +13,7 @@ export type ActivityLevel = "unknown" | "initial" | "regular" | "established" | 
 
 /** Critério interno v1, janela de 30 dias; limiares de produto, não recomendação da Meta. */
 export function numberActivityLevel(activity?: NumberActivity, now = Date.now()): ActivityLevel {
-  if (!activity) return "unknown";
+  if (!activity || activity.scope !== "groups") return "unknown";
   const { accepted, uncertain, activeDays, observedDays } = activity;
   if (
     [accepted, uncertain, activeDays, observedDays].some((n) => !Number.isInteger(n) || n < 0) ||

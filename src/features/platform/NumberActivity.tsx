@@ -7,6 +7,7 @@ import {
 } from "@/lib/whatsapp/number-activity";
 
 export function NumberActivity({ activity }: { activity?: Metrics }) {
+  activity = activity?.scope === "groups" ? activity : undefined;
   const { t } = useI18n();
   const level = numberActivityLevel(activity);
   return (

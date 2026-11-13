@@ -52,6 +52,7 @@ type Channel = Tables<"whatsapp_channels">;
 type Directory = {
   destination_routing?: boolean;
   number_activity?: Record<string, NumberActivity>;
+  archived_numbers?: import("./WhatsAppDistribution").DistributionNumber[];
   number_sharing?: boolean;
   links?: (WhatsAppNumberLink & {
     backup_channel_id?: string | null;
@@ -564,11 +565,14 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
               <WhatsAppDistribution
                 shops={data.shops}
                 staff={data.staff}
-                numbers={data.channels.map((n) => ({
-                  ...n,
-                  status: reports[n.id] ?? n.status,
-                  activity: data.number_activity?.[n.id],
-                }))}
+                numbers={[
+                  ...data.channels.map((n) => ({
+                    ...n,
+                    status: reports[n.id] ?? n.status,
+                    activity: data.number_activity?.[n.id],
+                  })),
+                  ...(data.archived_numbers ?? []),
+                ]}
                 routes={distributionRoutes}
                 supported={Boolean(data.destination_routing)}
                 busy={busy}

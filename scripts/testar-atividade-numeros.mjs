@@ -37,7 +37,7 @@ try {
     .click();
   await p.getByRole("button", { name: "Gerar distribuição", exact: true }).click();
   assert.ok(
-    (await p.locator(".wa-auto-proposal article").first().innerText()).includes("5511900000101"),
+    (await p.locator(".wa-auto-proposal article").first().innerText()).includes("5511900000202"),
   );
   await a.scrollIntoViewIfNeeded();
   await p.screenshot({ path: "/tmp/bc-wa-activity-cards.png", fullPage: false });

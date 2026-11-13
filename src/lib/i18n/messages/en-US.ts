@@ -1,22 +1,39 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const enUS: Record<MessageKey, string> = {
+  "waDistribution.reorder": "Reorder {role}",
+  "waDistribution.order": "Number order",
+  "waDistribution.moveTo": "Move to {role}",
+  "waDistribution.orderChanged": "Draft order changed. Save to confirm.",
+  "waAuto.coverage": "Automatic assignment",
+  "waAuto.localOn": "On in this preview",
+  "waAuto.localOff": "Off",
+  "waAuto.coverageHint":
+    "Two accounts per shop. Preserves existing choices and keeps notices paused.",
+  "waAuto.coverageBlocked": "{count} shop(s) waiting for at least two eligible numbers.",
+  "waAuto.coveragePending": "{count} shop(s) ready for number assignment.",
+  "waAuto.coverageComplete": "All shops are configured in this preview.",
+
+  "waHistory.retained": "Preserved in history",
+  "waHistory.archived": "Archived",
+  "waHistory.restricted": "Recorded restriction",
+  "waHistory.accepted": "{count} historical group acceptances",
+
   "waActivity.unknown": "Insufficient history",
   "waActivity.initial": "Initial activity",
   "waActivity.regular": "Regular activity",
   "waActivity.established": "Consistent history",
   "waActivity.review": "Review activity",
-  "waActivity.accepted": "{count} sends accepted by the provider",
-  "waActivity.days": "{count} days with accepted sends",
+  "waActivity.accepted": "{count} group sends accepted by the provider",
+  "waActivity.days": "{count} days with group sends",
   "waActivity.uncertain": "{count} uncertain outcomes",
-  "waActivity.simulated": "Fictional example · 30 days",
-  "waActivity.internal": "Internal criteria · 30 days",
+  "waActivity.simulated": "Fictional example · groups · 30 days",
+  "waActivity.internal": "Groups · last 30 days",
   "waActivity.rule":
-    "Internal criteria: regular from 20 acceptances across 7 active days; consistent from 100 across 14 active days. Uncertain outcomes or pauses require review. Not an official quality rating; definitive failures are not yet measured separately.",
+    "Proven group sends only: regular with 20 acceptances across 7 active days; consistent with 100 across 14 active days. Uncertain outcomes or pauses require review. Private or unknown destinations do not count. Internal criteria, not an official quality rating.",
 
   "waAuto.title": "Assisted distribution",
-  "waAuto.basis":
-    "Local prototype: prioritises distinct connected phones with fewer configured assignments. Uses activity profiles when measured.",
+  "waAuto.basis": "Lower load and usage for the primary; consistent history for backups.",
   "waAuto.shop": "Select barbershop",
   "waAuto.generate": "Generate distribution",
   "waAuto.apply": "Apply to preview",
@@ -29,14 +46,13 @@ export const enUS: Record<MessageKey, string> = {
   "waAuto.sample": "Fictional data in this preview",
   "waAuto.bindings": "Configured destinations",
 
-  "waRefine.stats": "Statistics and suggestions",
+  "waRefine.stats": "Statistics",
   "waRefine.future": "New · not implemented yet",
-  "waRefine.futureHint":
-    "Development proposal: measure sends, active days and uses by destination. “Warm-up” does not guarantee account health or prevent restrictions.",
-  "waRefine.volume": "Sends per period",
+  "waRefine.futureHint": "Demo data; live measurement pending.",
+  "waRefine.volume": "Group sends",
   "waRefine.days": "Active days",
   "waRefine.usage": "Uses by barbershop",
-  "waRefine.suggestions": "Distribution suggestions",
+  "waRefine.suggestions": "Suggestions",
   "waRefine.noData": "Measurement not available yet",
 
   "waDistribution.title": "Number distribution",

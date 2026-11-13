@@ -1,22 +1,39 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const es: Record<MessageKey, string> = {
+  "waDistribution.reorder": "Reordenar {role}",
+  "waDistribution.order": "Orden de los números",
+  "waDistribution.moveTo": "Mover a {role}",
+  "waDistribution.orderChanged": "Orden del borrador actualizado. Guarda para confirmar.",
+  "waAuto.coverage": "Asignación automática",
+  "waAuto.localOn": "Activada en esta vista previa",
+  "waAuto.localOff": "Desactivada",
+  "waAuto.coverageHint":
+    "Dos cuentas por barbería. Conserva las elecciones existentes y mantiene los avisos pausados.",
+  "waAuto.coverageBlocked": "{count} barbería(s) esperando al menos dos números elegibles.",
+  "waAuto.coveragePending": "{count} barbería(s) lista(s) para recibir números.",
+  "waAuto.coverageComplete": "Todas las barberías tienen configuración en esta vista previa.",
+
+  "waHistory.retained": "Conservado en el historial",
+  "waHistory.archived": "Archivado",
+  "waHistory.restricted": "Restricción registrada",
+  "waHistory.accepted": "{count} aceptaciones históricas en grupos",
+
   "waActivity.unknown": "Historial insuficiente",
   "waActivity.initial": "Actividad inicial",
   "waActivity.regular": "Actividad regular",
   "waActivity.established": "Historial constante",
   "waActivity.review": "Revisar actividad",
-  "waActivity.accepted": "{count} envíos aceptados por el proveedor",
-  "waActivity.days": "{count} días con envíos aceptados",
+  "waActivity.accepted": "{count} envíos a grupos aceptados por el proveedor",
+  "waActivity.days": "{count} días con envíos a grupos",
   "waActivity.uncertain": "{count} resultados inciertos",
-  "waActivity.simulated": "Ejemplo ficticio · 30 días",
-  "waActivity.internal": "Criterio interno · 30 días",
+  "waActivity.simulated": "Ejemplo ficticio · grupos · 30 días",
+  "waActivity.internal": "Grupos · últimos 30 días",
   "waActivity.rule":
-    "Criterio interno: regular desde 20 aceptaciones en 7 días activos; constante desde 100 en 14 días activos. Resultados inciertos o pausas requieren revisión. No es una calidad oficial; aún no se miden fallos definitivos por separado.",
+    "Solo envíos comprobados a grupos: regular con 20 aceptaciones en 7 días activos; constante con 100 en 14 días activos. Resultados inciertos o pausas requieren revisión. Los destinos privados o desconocidos no cuentan. Criterio interno, sin clasificación oficial de calidad.",
 
   "waAuto.title": "Distribución asistida",
-  "waAuto.basis":
-    "Prototipo local: prioriza teléfonos conectados distintos con menos vínculos configurados. Usa perfiles de actividad cuando se miden.",
+  "waAuto.basis": "Menor carga y uso para el principal; historial constante para las reservas.",
   "waAuto.shop": "Seleccionar barbería",
   "waAuto.generate": "Generar distribución",
   "waAuto.apply": "Aplicar a la vista previa",
@@ -29,14 +46,13 @@ export const es: Record<MessageKey, string> = {
   "waAuto.sample": "Datos ficticios de esta vista previa",
   "waAuto.bindings": "Destinos configurados",
 
-  "waRefine.stats": "Estadísticas y sugerencias",
+  "waRefine.stats": "Estadísticas",
   "waRefine.future": "Nuevo · aún no implementado",
-  "waRefine.futureHint":
-    "Propuesta de desarrollo: medir envíos, días activos y usos por destino. El “calentamiento” no garantiza la salud de la cuenta ni evita restricciones.",
-  "waRefine.volume": "Envíos por periodo",
+  "waRefine.futureHint": "Datos de demostración; medición real pendiente.",
+  "waRefine.volume": "Envíos a grupos",
   "waRefine.days": "Días activos",
   "waRefine.usage": "Usos por barbería",
-  "waRefine.suggestions": "Sugerencias de distribución",
+  "waRefine.suggestions": "Sugerencias",
   "waRefine.noData": "Medición aún no disponible",
 
   "waDistribution.title": "Distribución de números",

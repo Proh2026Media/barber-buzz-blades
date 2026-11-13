@@ -1,21 +1,38 @@
 /** Dicionário principal (fonte). Toda chave nova nasce aqui, em pt-BR. */
 export const ptBR = {
+  "waDistribution.reorder": "Reordenar {role}",
+  "waDistribution.order": "Ordem dos números",
+  "waDistribution.moveTo": "Mover para {role}",
+  "waDistribution.orderChanged": "Ordem alterada no rascunho. Salve para confirmar.",
+  "waAuto.coverage": "Atribuição automática",
+  "waAuto.localOn": "Ligada nesta prévia",
+  "waAuto.localOff": "Desligada",
+  "waAuto.coverageHint":
+    "Duas contas por barbearia. Preserva escolhas existentes e mantém avisos pausados.",
+  "waAuto.coverageBlocked": "{count} barbearia(s) aguardando pelo menos dois números elegíveis.",
+  "waAuto.coveragePending": "{count} barbearia(s) pronta(s) para receber números.",
+  "waAuto.coverageComplete": "Todas as barbearias têm configuração nesta prévia.",
+
+  "waHistory.retained": "Preservado no histórico",
+  "waHistory.archived": "Arquivado",
+  "waHistory.restricted": "Restrição registrada",
+  "waHistory.accepted": "{count} aceites em grupos no histórico",
+
   "waActivity.unknown": "Sem histórico suficiente",
   "waActivity.initial": "Atividade inicial",
   "waActivity.regular": "Atividade regular",
   "waActivity.established": "Histórico consistente",
   "waActivity.review": "Revisar atividade",
-  "waActivity.accepted": "{count} envios aceitos pelo provedor",
-  "waActivity.days": "{count} dias com envios aceitos",
+  "waActivity.accepted": "{count} envios em grupos aceitos pelo provedor",
+  "waActivity.days": "{count} dias com envios em grupos",
   "waActivity.uncertain": "{count} resultados incertos",
-  "waActivity.simulated": "Exemplo fictício · 30 dias",
-  "waActivity.internal": "Critério interno · 30 dias",
+  "waActivity.simulated": "Exemplo fictício · grupos · 30 dias",
+  "waActivity.internal": "Grupos · últimos 30 dias",
   "waActivity.rule":
-    "Critério interno: regular a partir de 20 aceites em 7 dias ativos; consistente a partir de 100 em 14 dias ativos. Incertos ou pausa exigem revisão. Sem nota oficial de qualidade; falhas definitivas ainda não são medidas separadamente.",
+    "Somente envios comprovados em grupos: regular com 20 aceites em 7 dias ativos; consistente com 100 em 14 dias ativos. Incertos ou pausa exigem revisão. Privado e destino desconhecido não contam. Critério interno, sem nota oficial de qualidade.",
 
   "waAuto.title": "Distribuição assistida",
-  "waAuto.basis":
-    "Protótipo local: prioriza telefones conectados e distintos, com menos vínculos configurados. Usa vínculos e perfil de atividade quando medido.",
+  "waAuto.basis": "Menor carga e uso no principal; histórico consistente nas reservas.",
   "waAuto.shop": "Selecionar barbearia",
   "waAuto.generate": "Gerar distribuição",
   "waAuto.apply": "Aplicar na prévia",
@@ -28,14 +45,13 @@ export const ptBR = {
   "waAuto.sample": "Dados fictícios desta prévia",
   "waAuto.bindings": "Destinos configurados",
 
-  "waRefine.stats": "Estatísticas e sugestões",
+  "waRefine.stats": "Estatísticas",
   "waRefine.future": "Novo · ainda não implementado",
-  "waRefine.futureHint":
-    "Proposta para desenvolvimento: medir envios, dias de atividade e usos por destino. “Aquecimento” não é garantia de saúde ou de ausência de bloqueios.",
-  "waRefine.volume": "Envios por período",
-  "waRefine.days": "Dias com atividade",
+  "waRefine.futureHint": "Dados de demonstração; medição real pendente.",
+  "waRefine.volume": "Envios em grupos",
+  "waRefine.days": "Dias ativos",
   "waRefine.usage": "Usos por barbearia",
-  "waRefine.suggestions": "Sugestões de distribuição",
+  "waRefine.suggestions": "Sugestões",
   "waRefine.noData": "Medição ainda não disponível",
 
   "waDistribution.numberUnavailable":
