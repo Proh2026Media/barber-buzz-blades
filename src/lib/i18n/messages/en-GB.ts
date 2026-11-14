@@ -3,6 +3,10 @@ import type { MessageKey } from "./pt-BR.ts";
 
 export const enGB: Record<MessageKey, string> = {
   ...enUS,
+  "careCycle.oneNumber": "1 authorised number",
+  "careCycle.approve": "Authorise these numbers",
+  "careCycle.numbers": "{count} authorised numbers",
+  "careCycle.customerReview": "The new participants await customer authorisation.",
   "waDistribution.backup2Active": "Backup 2 in use",
   "waDistribution.reorder": "Reorder {role}",
   "waDistribution.order": "Number order",

@@ -279,6 +279,7 @@ function ArenaApp({
   initialTab,
   initialSlot,
   focusWhatsapp = false,
+  focusGroup = false,
   focusReservationToken,
   accessNotice,
 }: {
@@ -289,6 +290,7 @@ function ArenaApp({
   initialSlot?: { day: string; time: string };
   /** Conta aberta pelo link "Número errado?": leva ao cartão do WhatsApp. */
   focusWhatsapp?: boolean;
+  focusGroup?: boolean;
   directBarberSlug?: string;
   directShopSlug?: string;
   /** Vindo do pós-login (?join=1); o diálogo também abre se o Host/?shop= apontar loja nova. */
@@ -322,8 +324,12 @@ function ArenaApp({
   const [focusToken] = useState(focusReservationToken);
   // Foco no WhatsApp só na primeira abertura da Conta pelo link (some ao trocar de aba).
   const [whatsappFocus, setWhatsappFocus] = useState(focusWhatsapp);
+  const [groupFocus, setGroupFocus] = useState(focusGroup);
   useEffect(() => {
-    if (tab !== "perfil") setWhatsappFocus(false);
+    if (tab !== "perfil") {
+      setWhatsappFocus(false);
+      setGroupFocus(false);
+    }
   }, [tab]);
   // Cada aba abre do topo: quem rola é o <main>, que guardava a rolagem da aba anterior.
   // Atalhos que rolam até uma reserva rodam depois (setTimeout) e continuam valendo.
@@ -3233,6 +3239,7 @@ function ArenaApp({
               currentShopId={shopId}
               onOpenShop={(shop) => openCustomerShop(shop.slug, shop.name)}
               focusWhatsapp={whatsappFocus}
+              focusGroup={groupFocus}
             >
               <CustomerRhythm
                 shopId={shopId}

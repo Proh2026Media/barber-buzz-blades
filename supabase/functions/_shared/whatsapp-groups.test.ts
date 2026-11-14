@@ -286,7 +286,8 @@ test("Reentrega de mensagem conserva chave mesmo com outra data do envelope", as
   }
   assert.equal(calls.length, 2);
   assert.equal(calls[0].p_event_key, calls[1].p_event_key);
-  assert.equal(calls[0].p_stop, "marketing");
+  assert.equal(calls[0].p_stop, null);
+  assert.ok(!JSON.stringify(calls).includes("Não quero promoções"));
   assert.ok(!JSON.stringify(calls).includes("NAO-PERSISTIR"));
 });
 

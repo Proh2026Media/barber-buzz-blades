@@ -72,6 +72,11 @@ export function GroupPhoneAccess({
       if (!session) throw new Error();
       if (action === "invite") {
         const { data, error } = await supabase.rpc("care_group_invite", { p_group: groupId });
+        if (!error && data == null) {
+          if (live.current) setError("careCycle.inviteQueued");
+          onRefresh();
+          return;
+        }
         if (
           error ||
           typeof data !== "string" ||
@@ -149,6 +154,15 @@ export function GroupPhoneAccess({
       if (live.current) setBusy(false);
     }
   }
+  const runRef = useRef(run);
+  runRef.current = run;
+  useEffect(() => {
+    if (!waiting || expired || invite || demo) return;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") void runRef.current("invite");
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [waiting, expired, invite, demo, refreshing]);
   return (
     <div className="space-y-3 border-t border-border pt-4">
       {waiting && !expired && (
@@ -207,7 +221,7 @@ export function GroupPhoneAccess({
           </button>
           {requested && (
             <button
-              className="entry-link-button"
+              className="action-button"
               disabled={busy || refreshing || !ready || cooldown > 0}
               onClick={() => void run("request")}
             >
@@ -233,7 +247,13 @@ export function GroupPhoneAccess({
         </div>
       )}
       {confirmed && <Notice tone="info" title={t("care.phoneConfirmed")} />}
-      {error && <Notice id={"group-phone-error-" + groupId} tone="danger" title={t(error)} />}
+      {error && (
+        <Notice
+          id={"group-phone-error-" + groupId}
+          tone={error === "careCycle.inviteQueued" ? "info" : "danger"}
+          title={t(error)}
+        />
+      )}
     </div>
   );
 }

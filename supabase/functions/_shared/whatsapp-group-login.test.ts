@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { cycleHash } from "./care-cycles.ts";
 import { sendGroupLogin } from "./whatsapp-group-login.ts";
 function fixture(
   options: {
@@ -17,12 +18,17 @@ function fixture(
   const bodies: Record<string, unknown>[] = [];
   let started = false;
   const context = {
+    cycle_id: "22222222-2222-4222-8222-222222222222",
+    cycle_revision: 1,
+    cycle_expires_at: new Date(Date.now() + 86400000).toISOString(),
+    first_message_id: "boas-vindas",
+    creator_phone: "+5511888888888",
     group_id: "11111111-1111-4111-8111-111111111111",
     group_jid: "123-456@g.us",
     version: 3,
     instance_name: "plataforma",
     customer_phone: "+5511999999999",
-    platform_phones: ["+5511888888888"],
+    platform_phones: ["+5511888888888", "+5511666666666"],
     sender_phone: "+5511888888888",
     purpose: "login",
     expires_at: new Date(Date.now() + 600000).toISOString(),
@@ -36,7 +42,7 @@ function fixture(
         started = true;
         return {
           data: {
-            attempt_id: "tentativa",
+            attempt_id: "33333333-3333-4333-8333-333333333333",
             group_jid: context.group_jid,
             instance_name: context.instance_name,
           },
@@ -49,7 +55,14 @@ function fixture(
   const transport = async (path: string, init?: RequestInit) => {
     calls.push(path);
     if (path.startsWith("/group/bcCapabilities/"))
-      return { contract: "bc-groups-v2", protectedCodes: true, serializedCommands: true };
+      return {
+        contract: "bc-groups-v3",
+        protectedCodes: true,
+        protectedNotices: true,
+        serializedCommands: true,
+        protectedCycle: true,
+        twoPlatformAdmins: true,
+      };
     if (path.startsWith("/group/bcInspect/"))
       return {
         id: options.wrongGroup ? "999@g.us" : context.group_jid,
@@ -58,13 +71,46 @@ function fixture(
         joinApprovalMode: !options.unknown,
         participants: [
           { id: "5511888888888@s.whatsapp.net", admin: "admin" },
+          { id: "5511666666666@s.whatsapp.net", admin: "admin" },
           { id: "5511999999999@s.whatsapp.net", admin: null },
           ...(options.extra ? [{ id: "5511777777777@s.whatsapp.net", admin: null }] : []),
         ],
       };
+    if (path.startsWith("/group/bcCycle/"))
+      return {
+        ready: true,
+        cycle: {
+          cycleId: context.cycle_id,
+          groupJid: context.group_jid,
+          customerJid: context.customer_phone.slice(1) + "@s.whatsapp.net",
+          creatorJid: context.creator_phone.slice(1) + "@s.whatsapp.net",
+          firstMessageId: context.first_message_id,
+          firstReceived: true,
+          firstSenderJid: "5511666666666@s.whatsapp.net",
+          firstViolation: false,
+          closing: false,
+          closed: false,
+          expiresAt: context.cycle_expires_at,
+          platformJids: context.platform_phones.map((p) => p.slice(1) + "@s.whatsapp.net"),
+        },
+      };
     bodies.push(JSON.parse(String(init?.body)));
     if (options.timeout) throw new Error("timeout depois da transmissão");
-    return { state: "code_accepted", messageId: "mensagem-ficticia" };
+    return {
+      state: "code_accepted",
+      messageId: "mensagem-ficticia",
+      operationKey: "33333333-3333-4333-8333-333333333333",
+      instanceId: "group:" + context.group_jid,
+      groupJid: context.group_jid,
+      requestHash: await cycleHash([
+        "code",
+        context.sender_phone.slice(1) + "@s.whatsapp.net",
+        context.customer_phone.slice(1) + "@s.whatsapp.net",
+        context.platform_phones.map((p) => p.slice(1) + "@s.whatsapp.net").sort(),
+        context.purpose,
+        context.expires_at,
+      ]),
+    };
   };
   return {
     calls,
