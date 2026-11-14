@@ -305,3 +305,35 @@ test("vários números autorizados entram sem adicionar o Cliente automaticament
   assert.equal(await processCareGroup(s.db, s.provider, "operation"), "observed");
   assert.deepEqual(added, ["5511666666666@s.whatsapp.net"]);
 });
+
+test("Evento de configuração preserva o delta para a correção nº 112", async () => {
+  const calls: { name: string; args: Record<string, unknown> }[] = [];
+  const secret = "s".repeat(40);
+  const response = await handleCareGroups(
+    new Request("https://example.invalid", {
+      method: "POST",
+      headers: { "x-bc-group-secret": secret },
+      body: JSON.stringify({
+        instance: "ficticia",
+        event: "groups.update",
+        data: {
+          id: policy.groupJid,
+          joinApprovalMode: true,
+          author: "5511888888888@s.whatsapp.net",
+        },
+      }),
+    }),
+    {
+      rpc: async (name: string, args: Record<string, unknown>) => {
+        calls.push({ name, args });
+        return {};
+      },
+    },
+    scenario().provider,
+    { service: secret, webhook: secret },
+  );
+  assert.equal(response.status, 200);
+  assert.equal(calls[0].name, "care_group_metadata_event");
+  assert.equal((calls[0].args.p_update as { joinApprovalMode: boolean }).joinApprovalMode, true);
+  assert.ok(!calls.some((c) => c.name === "care_group_event"));
+});

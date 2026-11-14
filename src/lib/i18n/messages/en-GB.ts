@@ -3,6 +3,7 @@ import type { MessageKey } from "./pt-BR.ts";
 
 export const enGB: Record<MessageKey, string> = {
   ...enUS,
+  "waDistribution.backup2Active": "Backup 2 in use",
   "waDistribution.reorder": "Reorder {role}",
   "waDistribution.order": "Number order",
   "waDistribution.moveTo": "Move to {role}",

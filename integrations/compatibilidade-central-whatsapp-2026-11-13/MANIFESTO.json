@@ -152,5 +152,6 @@
       "ramo_local_sha256": "73c3e4f97875750553691303beaf2db347413379905049074eabdc787f74d499",
       "estado": "diverge"
     }
-  ]
+  ],
+  "comparacao_runtime_base_local": "81cf8b96e34535ccb256c177fa624cd3aa7f307d"
 }

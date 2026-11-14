@@ -1,6 +1,7 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const ptPT: Record<MessageKey, string> = {
+  "waDistribution.backup2Active": "Reserva 2 em uso",
   "waDistribution.reorder": "Reordenar {role}",
   "waDistribution.order": "Ordem dos números",
   "waDistribution.moveTo": "Mover para {role}",

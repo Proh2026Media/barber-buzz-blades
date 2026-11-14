@@ -43,7 +43,7 @@ export type DistributionRoute = {
   channel_id: string;
   backup_channel_id: string | null;
   backup2_channel_id?: string | null;
-  delivery_mode: "primary" | "backup" | "paused";
+  delivery_mode: "primary" | "backup" | "backup2" | "paused";
   enabled: boolean;
   version: number;
   return_notice_enabled: boolean;
@@ -55,7 +55,7 @@ export type DistributionSave = {
   primary: string | null;
   backup: string | null;
   backup2?: string | null;
-  mode: "primary" | "backup" | "paused";
+  mode: "primary" | "backup" | "backup2" | "paused";
   enabled: boolean;
   returns: boolean;
   technical: boolean;
@@ -454,10 +454,11 @@ function DestinationRoute({
   const locked = busy || saving || !supported;
   const dirty = JSON.stringify(draft) !== JSON.stringify(initial) || editing;
   const needsTechnical =
-    draft.mode === "backup" &&
-    (route?.delivery_mode !== "backup" ||
+    ["backup", "backup2"].includes(draft.mode) &&
+    (route?.delivery_mode !== draft.mode ||
       draft.primary !== initial.primary ||
-      draft.backup !== initial.backup);
+      draft.backup !== initial.backup ||
+      draft.backup2 !== initial.backup2);
   const effective = dirty
     ? draft
     : route
@@ -488,7 +489,11 @@ function DestinationRoute({
     setDraft((current) => ({
       ...current,
       [role]: id,
-      ...(role === "backup" && !id ? { mode: "primary" as const } : {}),
+      ...(((role === "backup" && draft.mode === "backup") ||
+        (role === "backup2" && draft.mode === "backup2")) &&
+      !id
+        ? { mode: "primary" as const }
+        : {}),
       ...(role === "primary" && !id
         ? { backup: null, backup2: null, mode: "paused" as const, enabled: false }
         : {}),
@@ -544,7 +549,7 @@ function DestinationRoute({
         staff: person,
         expectedVersion: route?.version ?? null,
         ...draft,
-        technical: draft.mode === "backup" && (!needsTechnical || technical),
+        technical: ["backup", "backup2"].includes(draft.mode) && (!needsTechnical || technical),
       });
       if (ok) {
         setEditing(false);
@@ -582,9 +587,11 @@ function DestinationRoute({
           icon={effective.enabled && effective.mode !== "paused" ? CheckCircle2 : Pause}
           label={t(
             effective.enabled && effective.mode !== "paused"
-              ? effective.mode === "backup"
-                ? "waDistribution.backupActive"
-                : "waDistribution.noticesOn"
+              ? effective.mode === "backup2"
+                ? "waDistribution.backup2Active"
+                : effective.mode === "backup"
+                  ? "waDistribution.backupActive"
+                  : "waDistribution.noticesOn"
               : "waDistribution.noticesOff",
           )}
         />
@@ -670,27 +677,34 @@ function DestinationRoute({
             aria-label={t("waDistribution.sendUsing")}
           >
             <span>{t("waDistribution.sendUsing")}</span>
-            {(["primary", "backup"] as const).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                aria-pressed={draft.mode === mode}
-                disabled={locked || !draft.primary || (mode === "backup" && !draft.backup)}
-                onClick={() => {
-                  setDraft({ ...draft, mode });
-                  setTechnical(false);
-                  setSaved(false);
-                }}
-              >
-                {mode === "primary" ? (
-                  <Radio className="size-3.5" aria-hidden />
-                ) : (
-                  <ShieldCheck className="size-3.5" aria-hidden />
-                )}
-                {t(mode === "primary" ? "waDistribution.primary" : "waDistribution.backup")}
-                {mode === "backup" && secondReserve ? " 1" : ""}
-              </button>
-            ))}
+            {(["primary", "backup", ...(secondReserve ? ["backup2" as const] : [])] as const).map(
+              (mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  aria-pressed={draft.mode === mode}
+                  disabled={
+                    locked ||
+                    !draft.primary ||
+                    (mode === "backup" && !draft.backup) ||
+                    (mode === "backup2" && !draft.backup2)
+                  }
+                  onClick={() => {
+                    setDraft({ ...draft, mode });
+                    setTechnical(false);
+                    setSaved(false);
+                  }}
+                >
+                  {mode === "primary" ? (
+                    <Radio className="size-3.5" aria-hidden />
+                  ) : (
+                    <ShieldCheck className="size-3.5" aria-hidden />
+                  )}
+                  {t(mode === "primary" ? "waDistribution.primary" : "waDistribution.backup")}
+                  {mode === "backup" && secondReserve ? " 1" : mode === "backup2" ? " 2" : ""}
+                </button>
+              ),
+            )}
           </div>
           <label className="wa-distribution-toggle">
             <button
@@ -801,6 +815,7 @@ function DestinationRoute({
                 locked ||
                 (!draft.primary && !(route && confirmRemove)) ||
                 (draft.mode === "backup" && !draft.backup) ||
+                (draft.mode === "backup2" && !draft.backup2) ||
                 (needsTechnical && !technical)
               }
               onClick={() => void submit()}

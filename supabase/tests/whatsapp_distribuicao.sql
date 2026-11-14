@@ -13,6 +13,13 @@ select a,'Teste Alfa','wa-distribution-'||a from wd union all
 select b,'Teste Beta','wa-distribution-'||b from wd union all
 select c,'Teste Gama','wa-distribution-'||c from wd;
 insert into public.staff(id,barbershop_id,display_name) select staff,a,'Profissional de teste' from wd;
+-- Lojas completas como no cadastro real: dono ativo, configurações e profissional próprio.
+update public.staff set user_id=(select person from wd) where id=(select staff from wd);
+insert into public.staff(barbershop_id,user_id,display_name) select b,person,'Dono Beta' from wd union all select c,person,'Dono Gama' from wd;
+insert into public.barbershop_settings(barbershop_id) select a from wd union all select b from wd union all select c from wd on conflict do nothing;
+insert into public.shop_members(barbershop_id,user_id,staff_id,role,ownership_percent)
+ select st.barbershop_id,d.person,st.id,'owner',100 from public.staff st,wd d where st.barbershop_id in(d.a,d.b,d.c);
+
 select public.platform_create_whatsapp_channel(x,'Principal Alfa') from wd;
 select public.platform_create_whatsapp_channel(y,'Principal Beta') from wd;
 select public.platform_create_whatsapp_channel(personal,'Pessoal, proibido para envio') from wd;
@@ -119,9 +126,7 @@ end $$;
 reset role;
 select pg_temp.check_distribution((select count(*)>=7 from public.whatsapp_number_link_history where channel_id in(select x from wd union all select y from wd)),'Mudanças possuem histórico independente por vínculo');
 -- A entrada de preferências da loja permanece funcional e isolada do número compartilhado.
-alter table public.shop_members disable trigger user;
-insert into public.shop_members(barbershop_id,user_id,staff_id,role,ownership_percent) select a,person,staff,'owner',100 from wd;
-alter table public.shop_members enable trigger user;
+-- A fixture já cria esse dono pelo mesmo modelo de permissões, sem desabilitar guardas.
 select set_config('request.jwt.claim.sub',person::text,true) from wd;
 set local role authenticated;
 select public.shop_update_whatsapp_preferences(a,(public.shop_whatsapp_channel(a)->>'number_link_id')::uuid,(public.shop_whatsapp_channel(a)->>'link_version')::bigint,false,true,false,48) from wd;

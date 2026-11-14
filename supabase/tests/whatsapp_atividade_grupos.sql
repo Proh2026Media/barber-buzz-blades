@@ -1,6 +1,8 @@
 begin;
 create temporary table group_metric_fixture as select gen_random_uuid() n,gen_random_uuid() shop,gen_random_uuid() g,gen_random_uuid() challenge;
 select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',true);
+-- Apenas nesta transação: permite exercer o caminho de desafio real sem rede.
+update public.whatsapp_send_controls set paused=false where scope='global';
 select public.platform_create_whatsapp_channel(n,'Grupo fictício') from group_metric_fixture;
 update public.whatsapp_channels set status='open',display_phone='+5511900000333' where id=(select n from group_metric_fixture);
 update public.whatsapp_activity_identity set observed_since=now()-interval '10 days' where channel_id=(select n from group_metric_fixture);

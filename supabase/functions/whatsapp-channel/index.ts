@@ -1,3 +1,4 @@
+import { readInstancePhone } from "../_shared/whatsapp-instance-phone.ts";
 import { connectWithPairingCode, evolutionQr, pairingPhone } from "../_shared/whatsapp-pairing.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders, evolutionFetch, instanceNameForShop, json } from "../_shared/evolution.ts";
@@ -300,9 +301,17 @@ Deno.serve(async (req) => {
           body.phone!,
           action === "pairing-status" || action === "restart-pairing" ? action : "connect",
         );
+        const displayPhone =
+          result.status === "open"
+            ? await readInstancePhone(
+                evolutionFetch,
+                channel.instance_name,
+                channel.display_phone ?? null,
+              )
+            : (channel.display_phone ?? null);
         const { data: updated, error } = await admin
           .from("whatsapp_channels")
-          .update({ status: result.status, last_error: null })
+          .update({ status: result.status, display_phone: displayPhone, last_error: null })
           .eq("barbershop_id", shopId)
           .eq("id", channel.id)
           .is("staff_id", null)
@@ -411,26 +420,11 @@ Deno.serve(async (req) => {
         }
 
         if (state === "open") {
-          try {
-            const info = (await evolutionFetch(
-              `/instance/fetchInstances?instanceName=${channel.instance_name}`,
-              {
-                method: "GET",
-              },
-            )) as
-              | Array<{ ownerJid?: string; instance?: { ownerJid?: string } }>
-              | {
-                  ownerJid?: string;
-                  instance?: { ownerJid?: string };
-                };
-            const row = Array.isArray(info) ? info[0] : info;
-            const jid = row?.ownerJid ?? row?.instance?.ownerJid;
-            if (typeof jid === "string" && jid.includes("@")) {
-              displayPhone = `+${jid.split("@")[0]}`;
-            }
-          } catch {
-            /* optional */
-          }
+          displayPhone = await readInstancePhone(
+            evolutionFetch,
+            channel.instance_name,
+            displayPhone,
+          );
         }
 
         const nextStatus =

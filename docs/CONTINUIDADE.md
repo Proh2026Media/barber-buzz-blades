@@ -1,5 +1,13 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 13/11/2026 — P-122/D1: três posições persistidas e base compatível ensaiada
+
+Continuação local autorizada após D0. Incorporadas à fonte ativa as cinco migrations já instaladas (111/112/115/116/117) e quatro Edge divergentes/ausentes, com os hashes conferidos, sem tocar produção. Nova nº `20261113005000`: principal/reserva 1/reserva 2 por destino, assinatura de dez parâmetros, CAS, compatibilidade com leitor antigo, identidade por posição e por aviso, fila legada sem atribuição retrospectiva, isolamento de profissionais e histórico de pessoal. Preservados filtros de loja completa/pessoal, reserva sem loja e receptor nº 112; travas administrativas egresso → roteamento. Restrição/classificação do mesmo telefone não é contornada com outro ID.
+
+Bancada dedicada limpa: 118 migrations de base, definição do diretório igual à D0 e cinco incrementais novos em uma transação. 102 verificações SQL/concorrência passaram; cinco corridas reais incluíram classificação pessoal versus distribuição/autorização de grupo. 610 testes gerais (inclui regressão do normalizador/receptor), 17 do modelo e integração da Central com API simulada. Reserva 2 salva/recarrega e aparece no inventário, sem ligar avisos. [Entrega, reprodução e limites](pacotes/2026-11-13-central-whatsapp-d1-local.md).
+
+D1 não conclui P-122 nem libera grupos/login. D2 precisa completar coleta/revisão histórica; D3 automação servidor; D4 composição/ciclo/extensão e avisos de grupo; restante D5/D6 ainda pendente. Nenhum pacote novo para TI, push/main, instalação VPS ou mensagem real. Marca/Flow/.env preservados.
+
 ## 13/11/2026 — D0 encerrada; base real de WhatsApp preservada
 
 Recebido e lido integralmente `relatorio-ti-d0-central-whatsapp-compatibilidade-2026-11-13.md` (SHA-256 `f23bb3379d4a806760d1e896e76a6b863ab78585eb5c0ea1e7270f4caf7c9681`). TI somente diagnosticou: frontend iPhone `8b6898b`, backend nº 105–112/115–117 instalados e extensão v2; nº 113/114 e quatro migrations locais não instaladas. Flags de grupo ligadas não provam dois admins nem prontidão. Dispatch ativo, conciliação/expurgo sem agendador. Nenhuma operação real feita pelo Codex.

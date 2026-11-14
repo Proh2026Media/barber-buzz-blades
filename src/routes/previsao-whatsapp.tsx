@@ -289,10 +289,11 @@ function Preview() {
               ) ||
               (target.primary !== null && !numbers.some((n) => n.id === target.primary)) ||
               (target.backup !== null && !numbers.some((n) => n.id === target.backup)) ||
-              (target.mode === "backup" &&
-                (!target.backup ||
-                  ((current?.delivery_mode !== "backup" ||
-                    current.backup_channel_id !== target.backup) &&
+              (["backup", "backup2"].includes(target.mode) &&
+                (!(target.mode === "backup2" ? target.backup2 : target.backup) ||
+                  ((current?.delivery_mode !== target.mode ||
+                    current.backup_channel_id !== target.backup ||
+                    current.backup2_channel_id !== target.backup2) &&
                     !target.technical)))
             )
               return false;

@@ -118,7 +118,7 @@ export async function handleCareGroups(
     for (const item of list) {
       const jid = kind === "messages.upsert" ? item?.key?.remoteJid : item?.id;
       if (typeof jid !== "string" || !/^[0-9-]+@g\.us$/.test(jid)) continue;
-      const fromMe = item?.key?.fromMe === true;
+      const fromMe = kind === "messages.upsert" && item?.key?.fromMe === true;
       const sender = individualPhone(item?.key?.participant);
       // Não usar participantAlt/phoneNumber quando a origem puder ser um LID não resolvido.
       const content = item?.message?.conversation ?? item?.message?.extendedTextMessage?.text;
@@ -162,6 +162,18 @@ export async function handleCareGroups(
           p_jids: removed,
         });
         if (departure.error) return answer({ error: "Conferência indisponível" }, 503);
+      }
+      // O banco examina o delta completo. Não remover campos desconhecidos: eles
+      // exigem nova conferência. Nome/autor não identificam nem autorizam o grupo.
+      if (kind === "groups.update") {
+        const metadata = await db.rpc("care_group_metadata_event", {
+          p_instance: body.instance,
+          p_group_jid: jid,
+          p_event_key: eventKey,
+          p_update: item,
+        });
+        if (metadata.error) return answer({ error: "Conferência indisponível" }, 503);
+        continue;
       }
       const result = await db.rpc("care_group_event", {
         p_instance: body.instance,

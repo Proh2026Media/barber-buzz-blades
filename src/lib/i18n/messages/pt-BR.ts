@@ -1,5 +1,6 @@
 /** Dicionário principal (fonte). Toda chave nova nasce aqui, em pt-BR. */
 export const ptBR = {
+  "waDistribution.backup2Active": "Reserva 2 em uso",
   "waDistribution.reorder": "Reordenar {role}",
   "waDistribution.order": "Ordem dos números",
   "waDistribution.moveTo": "Mover para {role}",

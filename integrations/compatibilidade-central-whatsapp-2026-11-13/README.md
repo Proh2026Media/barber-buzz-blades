@@ -11,3 +11,7 @@ Limite: não é backup completo da VPS. Definições instaladas descritas apenas
 A pasta principal do projeto contém versões posteriores de `whatsapp-groups/handler.ts` e `platform-whatsapp/index.ts` com hashes diferentes da produção. Não foram escolhidas como base instalada. Para o receptor foi usado o pacote nº 112 exato, não o arquivo mais novo encontrado no disco.
 
 As cópias usam sufixo `.referencia` para não entrarem na compilação, lint ou instalação automática. Isso não altera seus bytes. `MANIFESTO.json` relaciona o caminho original e compara os 14 arquivos Edge da D0: dez coincidem, três divergem e um não existe neste ramo. Todas as nove referências arquivadas coincidem com os hashes informados pela TI.
+
+## Continuação D1 — somente desenvolvimento local
+
+As cinco migrations e os quatro arquivos Edge foram depois incorporados à fonte ativa para reproduzir a base instalada, sem reaplicar nada na produção. As cópias `.referencia` permanecem imutáveis. A comparação de 14 arquivos no manifesto é a fotografia anterior ao D1, sobre `81cf8b9`; não representa novamente o tip após o alinhamento. `scripts/testar-central-d1-banco.py --preparar` confere os hashes dessas cópias contra o histórico ativo antes de ensaiar os incrementais novos apenas no banco dedicado.

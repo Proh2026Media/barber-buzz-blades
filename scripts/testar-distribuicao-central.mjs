@@ -69,8 +69,30 @@ await context.route("**/rest/v1/rpc/platform_whatsapp_directory", (r) =>
   }),
 );
 let attempted = null;
+let saveOK = false;
 await context.route("**/rest/v1/rpc/platform_set_whatsapp_route", (r) => {
   attempted = r.request().postDataJSON();
+  if (saveOK) {
+    directory.links = directory.links.map((link) =>
+      link.barbershop_id === attempted.p_shop && link.staff_id === attempted.p_staff
+        ? {
+            ...link,
+            channel_id: attempted.p_primary_id,
+            backup_channel_id: attempted.p_backup_id,
+            backup2_channel_id: attempted.p_backup2_id,
+            delivery_mode: attempted.p_mode,
+            enabled: attempted.p_enabled,
+            version: link.version + 1,
+          }
+        : link,
+    );
+    return r.fulfill({
+      status: 200,
+      headers,
+      contentType: "application/json",
+      body: JSON.stringify(directory.links[0]),
+    });
+  }
   return r.fulfill({
     status: 400,
     headers,
@@ -138,9 +160,59 @@ try {
     .click();
   assert.ok((await page.locator("body").innerText()).includes("Principal em 1"));
   assert.ok((await page.locator("body").innerText()).includes("Reserva em 1"));
+  // Evolui a capacidade como o diretório real do D1, sem quebrar a base antiga acima.
+  directory.second_reserve = true;
+  directory.channels.push(channel("numero-c", "5511900000303"));
+  directory.links[0].backup2_channel_id = "numero-c";
+  saveOK = true;
+  await page.reload({ waitUntil: "networkidle" });
+  const real = page.locator('[data-target-key="arena:general"]');
+  assert.equal(
+    await real.locator('[data-role="backup2"]').getAttribute("data-number-id"),
+    "numero-c",
+  );
+  await real
+    .locator(".wa-distribution-mode")
+    .getByRole("button", { name: "Reserva 2", exact: true })
+    .click();
+  assert.equal(
+    await real.getByRole("button", { name: "Salvar distribuição", exact: true }).isEnabled(),
+    false,
+  );
+  await real
+    .getByRole("checkbox", { name: "Confirmo uma falha técnica no número principal.", exact: true })
+    .check();
+  await real.getByRole("button", { name: "Salvar distribuição", exact: true }).click();
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('[data-target-key="arena:general"] .wa-distribution-mode button:last-child')
+        ?.getAttribute("aria-pressed") === "true",
+  );
+  assert.equal(attempted.p_backup2_id, "numero-c");
+  assert.equal(attempted.p_mode, "backup2");
+  assert.equal(attempted.p_enabled, false);
+  assert.equal(attempted.p_technical, true);
+  await page.reload({ waitUntil: "networkidle" });
+  assert.equal(
+    await real
+      .locator(".wa-distribution-mode")
+      .getByRole("button", { name: "Reserva 2", exact: true })
+      .getAttribute("aria-pressed"),
+    "true",
+  );
+  await page
+    .getByRole("group", { name: "Organização do WhatsApp" })
+    .getByRole("button", { name: /^Números/ })
+    .click();
+  const reserveCard = page.getByRole("button", { name: /5511900000303/ }).first();
+  assert.ok(
+    (await reserveCard.innerText()).includes("Reserva em 1"),
+    "Reserva 2 aparece vinculada no inventário",
+  );
   assert.deepEqual(errors, []);
   console.log(
-    "PASS: Central real usa contrato novo; RPC CAS correta e sem habilitar envio; erro mantém rascunho; papéis independentes na lista; 5 larguras. Supabase simulado.",
+    "PASS: Central real usa contrato novo; RPC CAS correta e sem habilitar envio; erro mantém rascunho; papéis independentes na lista; 5 larguras; Reserva 2 grava e recarrega com confirmação técnica. Supabase simulado.",
   );
 } catch (e) {
   console.log((await page.locator("body").innerText()).slice(0, 700));

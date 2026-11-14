@@ -51,12 +51,14 @@ type DetailTab = "links" | "connection" | "reserve" | "history";
 type Channel = Tables<"whatsapp_channels">;
 type Directory = {
   destination_routing?: boolean;
+  second_reserve?: boolean;
   number_activity?: Record<string, NumberActivity>;
   archived_numbers?: import("./WhatsAppDistribution").DistributionNumber[];
   number_sharing?: boolean;
   links?: (WhatsAppNumberLink & {
     backup_channel_id?: string | null;
-    delivery_mode?: "primary" | "backup" | "paused";
+    backup2_channel_id?: string | null;
+    delivery_mode?: "primary" | "backup" | "backup2" | "paused";
   })[];
   link_history?: {
     id: string;
@@ -102,6 +104,7 @@ const errors: Record<string, MessageKey> = {
   WA_ROUTE_INVALID: "waDistribution.invalidPair",
   WA_ROUTE_REQUIRED: "waDistribution.byDestination",
   WA_PERSONAL_NUMBER: "waDistribution.personalNumber",
+  WA_ROUTE_UPGRADE_REQUIRED: "waDistribution.byDestination",
   WA_ROUTE_EDITOR_REQUIRED: "waDistribution.byDestination",
   WA_NUMBER_UNAVAILABLE: "waDistribution.numberUnavailable",
   WA_CONTROL_PAUSED: "waDistribution.sendingPaused",
@@ -265,7 +268,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
   });
   async function saveDistribution(target: DistributionSave) {
     // O contrato atual não persiste a segunda reserva: nunca descartar essa escolha.
-    if (target.backup2) {
+    if ((target.backup2 || target.mode === "backup2") && !data?.second_reserve) {
       setError("waRefine.future");
       return false;
     }
@@ -277,6 +280,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
         p_version: target.expectedVersion ?? 0,
         p_primary_id: target.primary,
         p_backup_id: target.backup,
+        ...(data?.second_reserve ? { p_backup2_id: target.backup2 ?? null } : {}),
         p_mode: target.mode,
         p_enabled: target.enabled,
         p_returns: target.returns,
@@ -321,7 +325,12 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
   const numberDestinations = (number: Channel) => {
     if (data?.destination_routing)
       return distributionRoutes
-        .filter((l) => l.channel_id === number.id || l.backup_channel_id === number.id)
+        .filter(
+          (l) =>
+            l.channel_id === number.id ||
+            l.backup_channel_id === number.id ||
+            l.backup2_channel_id === number.id,
+        )
         .map(
           (l) =>
             `${destination(l.barbershop_id, l.staff_id)} · ${t(l.channel_id === number.id ? "waNumbers.primary" : "waNumbers.backup")}`,
@@ -337,7 +346,10 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
   const numberLinks = (number: Channel) => {
     if (data?.destination_routing)
       return distributionRoutes.filter(
-        (l) => l.channel_id === number.id || l.backup_channel_id === number.id,
+        (l) =>
+          l.channel_id === number.id ||
+          l.backup_channel_id === number.id ||
+          l.backup2_channel_id === number.id,
       );
     const owner =
       data?.channels.find((n) => n.backup_instance_name === number.instance_name) ?? number;
@@ -355,7 +367,9 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
         (filter === "all" ||
           (filter === "backup"
             ? data?.destination_routing
-              ? distributionRoutes.some((l) => l.backup_channel_id === c.id)
+              ? distributionRoutes.some(
+                  (l) => l.backup_channel_id === c.id || l.backup2_channel_id === c.id,
+                )
               : (data?.channels ?? []).some((n) => n.backup_instance_name === c.instance_name)
             : filter === "assigned"
               ? numberLinks(c).length > 0
@@ -575,6 +589,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                 ]}
                 routes={distributionRoutes}
                 supported={Boolean(data.destination_routing)}
+                secondReserve={Boolean(data.second_reserve)}
                 busy={busy}
                 save={saveDistribution}
                 viewNumber={chooseNumber}
@@ -699,7 +714,9 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                                     <span>
                                       {t("waDistribution.backupCount", {
                                         count: distributionRoutes.filter(
-                                          (l) => l.backup_channel_id === c.id,
+                                          (l) =>
+                                            l.backup_channel_id === c.id ||
+                                            l.backup2_channel_id === c.id,
                                         ).length,
                                       })}
                                     </span>
@@ -855,7 +872,9 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                             {distributionRoutes
                               .filter(
                                 (l) =>
-                                  l.channel_id === channel.id || l.backup_channel_id === channel.id,
+                                  l.channel_id === channel.id ||
+                                  l.backup_channel_id === channel.id ||
+                                  l.backup2_channel_id === channel.id,
                               )
                               .map((l) => (
                                 <div
