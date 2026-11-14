@@ -1,5 +1,7 @@
 # Pendências — lista única e priorizada
 
+**14/11/2026 — P-122 em desenvolvimento local:** [D2/D3 e faixa operacional verificadas](../central-whatsapp-local-2026-11-14.md). Política automática nasce desligada, proposição/aplicação são persistentes e idempotentes, cadastro sem par permanece válido; revisão histórica exige evidência. D4 e conclusão da cobertura dos emissores, integração final/D6 continuam com o Codex. O dono pediu tudo pronto localmente antes do pacote TI; não encaminhar entrega parcial.
+
 **13/11/2026 — P-122/D1 implementada e testada localmente:** [estado atual](../pacotes/2026-11-13-central-whatsapp-d1-local.md). Três posições persistem, usam versão/identidade e preservam herança/pessoal/completude; cinco concorrências e integração da Central verificadas. Ainda faltam D2 (cobertura/revisão histórica), D3 (automação servidor), D4 (grupos completos), restante de D5 e D6. Não instalar/publicar nem pedir nova D0. A nº 05000 exige conjunto atômico e tratamento explícito da fila anterior.
 
 **13/11/2026 — P-122: D0 concluída, desenvolvimento pendente.** [Devolutiva](../pacotes/2026-11-13-central-whatsapp-revisao-d0-p122.md). Base real confirmada pela TI; fontes instaladas encontradas localmente. Antes do pacote D6, compor bancada compatível com nº 111/112/115/116/117, preservar filtros/pessoal/pausas e resolver ordem concorrente das travas; finalizar D1–D5. Não pedir nova D0 nem enviar a prévia como pacote pronto. Login de grupo e iPhone físico não foram homologados nesta revisão.

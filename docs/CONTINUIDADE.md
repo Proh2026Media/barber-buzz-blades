@@ -1,5 +1,11 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 14/11/2026 — P-122: métricas/revisão, automação transacional e faixa operacional locais
+
+Dono pediu concluir pendências antes de gerar pacote TI. Implementadas as novas `20261114001000`/`02000`: agregados por telefone/prova de grupo, correção tardia sem duplicação, revisão auditada de restrições, conexão observada, política automática desligada, proposta com prazo/fingerprint e aplicação idempotente, integração ao cadastro e worker de leitura da Evolution. Faixa aprovada ligada por capacidade, sem simulação no fluxo autenticado. 614 testes gerais, checagens e build; bancada limpa 149 verificações e quatro corridas D3; navegador com API simulada e 21 composições. [Estado, reprodução e próximos blocos](central-whatsapp-local-2026-11-14.md).
+
+D4 e a cobertura final dos emissores continuam pendentes de desenvolvimento; não há pacote operacional novo nem liberação de login/grupos. Sem publicação/VPS/mensagens/marca/Flow; `.env` intocado.
+
 ## 13/11/2026 — P-122/D1: três posições persistidas e base compatível ensaiada
 
 Continuação local autorizada após D0. Incorporadas à fonte ativa as cinco migrations já instaladas (111/112/115/116/117) e quatro Edge divergentes/ausentes, com os hashes conferidos, sem tocar produção. Nova nº `20261113005000`: principal/reserva 1/reserva 2 por destino, assinatura de dez parâmetros, CAS, compatibilidade com leitor antigo, identidade por posição e por aviso, fila legada sem atribuição retrospectiva, isolamento de profissionais e histórico de pessoal. Preservados filtros de loja completa/pessoal, reserva sem loja e receptor nº 112; travas administrativas egresso → roteamento. Restrição/classificação do mesmo telefone não é contornada com outro ID.

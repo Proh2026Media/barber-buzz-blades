@@ -5276,6 +5276,39 @@ export const ptBR = {
   "team.clients.colLast": "Última visita",
   "bk.found.accountNoName": "O horário entra no app dele.",
   "bk.found.manualHintKept": "Usamos o nome que a barbearia já tinha.",
+  "waOps.apply": "Aplicar distribuição",
+  "waOps.confirm": "Confirmar",
+  "waOps.window": "Últimos 30 dias",
+  "waOps.metricsHint": "Envios comprovados em grupos · aceites não confirmam entrega.",
+  "waOps.accepted": "Aceites em grupos",
+  "waOps.consistent": "Atividade regular",
+  "waOps.assigned": "Barbearias com números",
+  "waOps.waiting": "Aguardando números",
+  "waOps.on": "Ativada no servidor",
+  "waOps.off": "Desativada",
+  "waOps.coverageHint":
+    "Preenche barbearias sem números. Mantém escolhas existentes e avisos desligados.",
+  "waOps.eligible": "{count} números elegíveis",
+  "waOps.stale": "Os dados mudaram. Atualize e gere outra proposta.",
+  "waOps.failed": "Não foi possível confirmar. Tente novamente para consultar o mesmo pedido.",
+  "waOps.applyHint":
+    "Salva esta composição com avisos desligados. Os grupos serão conferidos separadamente.",
+  "waOps.noPair":
+    "Faltam dois números elegíveis. Confira conexão, pausas e controle da plataforma.",
+  "waOps.controlTitle": "Controle dos números",
+  "waOps.controlAck":
+    "Confirmo que somente a plataforma/TI acessa conversas, aparelhos pareados, painel e credenciais deste número. Nenhum profissional tem acesso.",
+  "waOps.review": "Revisar restrição",
+  "waOps.reviewHint":
+    "Exige conferência externa. Não reconecta, não retoma avisos e não reenvia mensagens.",
+  "waOps.evidence": "Conferência realizada",
+  "waOps.inApp": "Revisei a conta no aplicativo",
+  "waOps.provider": "O provedor confirmou a liberação",
+  "waOps.reference": "Referência da conferência (sem dados pessoais)",
+  "waOps.reviewAck":
+    "Conferi a liberação fora do sistema. Conexão ativa, sozinha, não comprova liberação.",
+  "waOps.disable": "Desativar atribuição",
+  "waOps.enable": "Ativar atribuição",
 } as const;
 
 export type MessageKey = keyof typeof ptBR;

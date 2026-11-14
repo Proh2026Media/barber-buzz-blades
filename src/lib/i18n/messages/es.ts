@@ -5314,4 +5314,37 @@ export const es: Record<MessageKey, string> = {
   "team.clients.colLast": "Última visita",
   "bk.found.accountNoName": "La cita entra en su app.",
   "bk.found.manualHintKept": "Usamos el nombre que la barbería ya tenía.",
+  "waOps.apply": "Aplicar distribución",
+  "waOps.confirm": "Confirmar",
+  "waOps.window": "Últimos 30 días",
+  "waOps.metricsHint": "Envíos comprobados a grupos · la aceptación no confirma la entrega.",
+  "waOps.accepted": "Aceptados en grupos",
+  "waOps.consistent": "Actividad regular",
+  "waOps.assigned": "Barberías con números",
+  "waOps.waiting": "Esperando números",
+  "waOps.on": "Activada en el servidor",
+  "waOps.off": "Desactivada",
+  "waOps.coverageHint":
+    "Asigna números a barberías sin configuración. Conserva las opciones existentes y los avisos desactivados.",
+  "waOps.eligible": "{count} números elegibles",
+  "waOps.stale": "Los datos cambiaron. Actualiza y genera otra propuesta.",
+  "waOps.failed": "No se pudo confirmar. Intenta nuevamente para consultar la misma solicitud.",
+  "waOps.applyHint":
+    "Guarda esta composición con avisos desactivados. Los grupos se verifican por separado.",
+  "waOps.noPair":
+    "Se necesitan dos números elegibles. Revisa la conexión, las pausas y el control de la plataforma.",
+  "waOps.controlTitle": "Control de los números",
+  "waOps.controlAck":
+    "Confirmo que solo la plataforma/TI accede a las conversaciones, dispositivos vinculados, panel y credenciales de este número. Ningún profesional tiene acceso.",
+  "waOps.review": "Revisar restricción",
+  "waOps.reviewHint":
+    "Requiere verificación externa. No reconecta, no reanuda avisos ni reenvía mensajes.",
+  "waOps.evidence": "Verificación realizada",
+  "waOps.inApp": "Revisé la cuenta en la aplicación",
+  "waOps.provider": "El proveedor confirmó el levantamiento de la restricción",
+  "waOps.reference": "Referencia de la verificación (sin datos personales)",
+  "waOps.reviewAck":
+    "Verifiqué fuera del sistema que se levantó la restricción. La conexión activa por sí sola no lo demuestra.",
+  "waOps.disable": "Desactivar asignación",
+  "waOps.enable": "Activar asignación",
 };

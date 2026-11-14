@@ -1,5 +1,7 @@
 # Revisão MB — Barba & Cabelo
 
+**14/11/2026 — faixa operacional por capacidade, somente local:** `WhatsAppOperations` integra estatísticas, política persistida e proposta/aplicação do servidor. Reutiliza a composição aprovada, modos de canto e estados; erro de rede conserva a chave do pedido. Revisão de restrição e controle exclusivo com confirmação. Sete larguras/três cantos e API simulada verificados. [Registro e limites](central-whatsapp-local-2026-11-14.md). Grupos completos e pacote TI ainda em desenvolvimento.
+
 Atualizado em **07/11/2026** (P-49/P-70; entradas anteriores preservadas como histórico). Fonte: [mb-interface.md](mb-interface.md). Regra: `.cursor/rules/mb.mdc`. Skill: `.cursor/skills/mb/`.
 
 **13/11/2026 — aprovação do dono:** a nova página da Central WhatsApp foi aprovada visualmente. A integração operacional permanece pendente; [diagnóstico por função e critérios de aceite](pacotes/2026-11-13-ti-central-whatsapp-diagnostico-impactos-p122.md). Aprovação não publica nem habilita grupos/envios.

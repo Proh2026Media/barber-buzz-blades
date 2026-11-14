@@ -1,3 +1,8 @@
+import {
+  WhatsAppOperations,
+  type DistributionState,
+  type OperationalNumber,
+} from "./WhatsAppOperations";
 import { NumberActivity as NumberActivityBadge } from "./NumberActivity";
 import type { NumberActivity } from "@/lib/whatsapp/number-activity";
 import { WhatsAppConnectDialog } from "./WhatsAppConnectDialog";
@@ -48,8 +53,10 @@ import { WhatsAppNumberDestinations, type WhatsAppNumberLink } from "./WhatsAppN
 import { WhatsAppLinkDialog, type WhatsAppLinkRequest } from "./WhatsAppLinkDialog";
 
 type DetailTab = "links" | "connection" | "reserve" | "history";
-type Channel = Tables<"whatsapp_channels">;
+type Channel = Tables<"whatsapp_channels"> & Partial<OperationalNumber>;
 type Directory = {
+  server_distribution?: boolean;
+  distribution?: DistributionState;
   destination_routing?: boolean;
   second_reserve?: boolean;
   number_activity?: Record<string, NumberActivity>;
@@ -267,7 +274,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
     };
   });
   async function saveDistribution(target: DistributionSave) {
-    // O contrato atual não persiste a segunda reserva: nunca descartar essa escolha.
+    // Servidor antigo: não descartar a segunda reserva enquanto a capacidade não estiver instalada.
     if ((target.backup2 || target.mode === "backup2") && !data?.second_reserve) {
       setError("waRefine.future");
       return false;
@@ -469,6 +476,21 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
         <Notice tone="info" title={t("waPair.demo")} />
       ) : (
         <>
+          {data?.server_distribution && data.distribution && (
+            <WhatsAppOperations
+              state={data.distribution}
+              numbers={data.channels}
+              shops={data.shops}
+              activities={data.number_activity ?? {}}
+              routes={distributionRoutes}
+              request={async (name, args) => {
+                const result = await supabase.rpc(name as never, args as never);
+                if (result.error) throw result.error;
+                return result.data;
+              }}
+              refresh={load}
+            />
+          )}
           <WhatsAppSendingControls numbers={data?.channels ?? []} />
           {error && <Notice tone="danger" title={t(error)} />}
           {saved && <Notice tone="success" title={t("waCentral.saved")} />}

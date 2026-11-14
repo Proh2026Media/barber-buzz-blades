@@ -5270,4 +5270,37 @@ export const enUS: Record<MessageKey, string> = {
   "team.clients.colLast": "Last visit",
   "bk.found.accountNoName": "The appointment goes to their app.",
   "bk.found.manualHintKept": "We used the name the barbershop already had.",
+  "waOps.apply": "Apply distribution",
+  "waOps.confirm": "Confirm",
+  "waOps.window": "Last 30 days",
+  "waOps.metricsHint": "Verified group sends · acceptance does not confirm delivery.",
+  "waOps.accepted": "Group acceptances",
+  "waOps.consistent": "Regular activity",
+  "waOps.assigned": "Shops with numbers",
+  "waOps.waiting": "Awaiting numbers",
+  "waOps.on": "Enabled on server",
+  "waOps.off": "Disabled",
+  "waOps.coverageHint":
+    "Fills shops without numbers. Keeps existing choices and notifications off.",
+  "waOps.eligible": "{count} eligible numbers",
+  "waOps.stale": "Data changed. Refresh and generate another proposal.",
+  "waOps.failed": "Could not confirm. Try again to check the same request.",
+  "waOps.applyHint":
+    "Saves this composition with notifications off. Groups are verified separately.",
+  "waOps.noPair":
+    "Two eligible numbers are required. Check connection, pauses and platform control.",
+  "waOps.controlTitle": "Number control",
+  "waOps.controlAck":
+    "I confirm that only the platform/IT can access this number’s conversations, linked devices, dashboard and credentials. No professional has access.",
+  "waOps.review": "Review restriction",
+  "waOps.reviewHint":
+    "Requires external verification. Does not reconnect, resume notifications or resend messages.",
+  "waOps.evidence": "Verification performed",
+  "waOps.inApp": "I reviewed the account in the app",
+  "waOps.provider": "The provider confirmed the restriction was lifted",
+  "waOps.reference": "Verification reference (no personal data)",
+  "waOps.reviewAck":
+    "I verified the restriction was lifted outside the system. An active connection alone is not proof.",
+  "waOps.disable": "Disable assignment",
+  "waOps.enable": "Enable assignment",
 };
