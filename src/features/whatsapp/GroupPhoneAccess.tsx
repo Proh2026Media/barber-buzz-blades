@@ -39,7 +39,9 @@ export function GroupPhoneAccess({
     [invite, setInvite] = useState<string | null>(null),
     [cooldown, setCooldown] = useState(0);
   const pending = useRef(false),
-    live = useRef(true);
+    live = useRef(true),
+    invitationPolling = useRef(false),
+    generation = useRef(0);
   useEffect(() => {
     live.current = true;
     return () => {
@@ -52,19 +54,25 @@ export function GroupPhoneAccess({
       return () => clearTimeout(timer);
     }
   }, [cooldown]);
-  async function run(action: "invite" | "request" | "verify") {
+  async function run(action: "invite" | "request" | "verify", background = false) {
     if (
       demo ||
       pending.current ||
+      (background && invitationPolling.current) ||
       refreshing ||
       expired ||
       (action !== "invite" && !ready) ||
       (action === "request" && cooldown > 0)
     )
       return;
-    pending.current = true;
-    setBusy(true);
-    setError(null);
+    if (background) invitationPolling.current = true;
+    else {
+      pending.current = true;
+      generation.current++;
+      setBusy(true);
+      setError(null);
+    }
+    const requestGeneration = generation.current;
     try {
       const {
         data: { session },
@@ -72,9 +80,12 @@ export function GroupPhoneAccess({
       if (!session) throw new Error();
       if (action === "invite") {
         const { data, error } = await supabase.rpc("care_group_invite", { p_group: groupId });
+        if (requestGeneration !== generation.current) return;
         if (!error && data == null) {
-          if (live.current) setError("careCycle.inviteQueued");
-          onRefresh();
+          if (!background) {
+            if (live.current) setError("careCycle.inviteQueued");
+            onRefresh();
+          }
           return;
         }
         if (
@@ -86,7 +97,12 @@ export function GroupPhoneAccess({
         const {
           data: { session: current },
         } = await supabase.auth.getSession();
-        if (live.current && current?.user.id === session.user.id) setInvite(data);
+        if (
+          live.current &&
+          current?.user.id === session.user.id &&
+          requestGeneration === generation.current
+        )
+          setInvite(data);
         return;
       }
       const response = await guardedFetch(
@@ -136,7 +152,7 @@ export function GroupPhoneAccess({
         onConfirmed();
       }
     } catch {
-      if (live.current) {
+      if (live.current && !background) {
         setError(
           action === "invite"
             ? "care.inviteUnavailable"
@@ -150,8 +166,11 @@ export function GroupPhoneAccess({
         }
       }
     } finally {
-      pending.current = false;
-      if (live.current) setBusy(false);
+      if (background) invitationPolling.current = false;
+      else {
+        pending.current = false;
+        if (live.current) setBusy(false);
+      }
     }
   }
   const runRef = useRef(run);
@@ -159,7 +178,7 @@ export function GroupPhoneAccess({
   useEffect(() => {
     if (!waiting || expired || invite || demo) return;
     const timer = window.setInterval(() => {
-      if (document.visibilityState === "visible") void runRef.current("invite");
+      if (document.visibilityState === "visible") void runRef.current("invite", true);
     }, 5000);
     return () => window.clearInterval(timer);
   }, [waiting, expired, invite, demo, refreshing]);

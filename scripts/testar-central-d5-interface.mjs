@@ -18,6 +18,9 @@ const { context } = await abrirContexto(
 );
 const headers = { "access-control-allow-origin": "*", "access-control-allow-headers": "*" };
 const calls = [];
+let slowRead = false,
+  releaseRead,
+  readCaptured;
 let inviteReady = false,
   failReview = true;
 const customer = {
@@ -96,7 +99,16 @@ await context.route("**/rest/v1/rpc/*", async (r) => {
   const args = r.request().postDataJSON();
   calls.push({ name, args });
   let data = null;
-  if (name === "care_group_read") data = customer;
+  if (name === "care_group_read") {
+    data = structuredClone(customer);
+    if (slowRead) {
+      slowRead = false;
+      await new Promise((resolve) => {
+        releaseRead = resolve;
+        readCaptured?.();
+      });
+    }
+  }
   if (name === "care_group_invite")
     data = inviteReady ? "https://chat.whatsapp.com/FICTICIO123456789" : null;
   if (name === "care_group_customer_update") {
@@ -250,8 +262,27 @@ try {
     "3",
     "atualização não apaga preferências em edição",
   );
+  slowRead = true;
+  await Promise.race([
+    new Promise((resolve) => {
+      readCaptured = resolve;
+    }),
+    new Promise((_, reject) => setTimeout(() => reject(Error("Polling lento não começou")), 12000)),
+  ]);
   await c.getByRole("button", { name: "Salvar preferências", exact: true }).click();
-  assert.equal(customer.preferences.monthly_marketing, 3);
+  await c.getByText("Preferências salvas", { exact: true }).waitFor();
+  assert.equal(
+    customer.preferences.monthly_marketing,
+    3,
+    "clique durante polling lento é executado",
+  );
+  releaseRead();
+  await page.waitForTimeout(200);
+  assert.equal(
+    await c.locator("select").inputValue(),
+    "3",
+    "resposta antiga não substitui o salvamento mais recente",
+  );
   await layouts("cliente");
   customer.group.state = "waiting_customer";
   customer.phone_ready = false;

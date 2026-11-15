@@ -92,7 +92,9 @@ function CareGroupContent({
     [saved, setSaved] = useState(false);
   const live = useRef(true),
     pending = useRef(false),
-    dirty = useRef(false);
+    dirty = useRef(false),
+    polling = useRef(false),
+    generation = useRef(0);
   function apply(value: unknown, reset = false) {
     if (!live.current) return;
     const next = value as Data;
@@ -108,11 +110,13 @@ function CareGroupContent({
         proactive_paused: next.preferences?.proactive_paused ?? false,
       });
   }
-  async function load() {
+  async function load(background = false) {
+    const requestGeneration = generation.current;
     const r = await supabase.rpc("care_group_read", {
       p_shop: shopId,
       ...(customerId ? { p_customer: customerId } : {}),
     });
+    if (background && (pending.current || requestGeneration !== generation.current)) return;
     if (r.error) throw r.error;
     apply(r.data);
     if (live.current) setPhone((r.data as { phone?: string })?.phone ?? "");
@@ -120,6 +124,7 @@ function CareGroupContent({
   async function run(work: () => Promise<void>, propagate = false) {
     if (demo || pending.current) return;
     pending.current = true;
+    generation.current++;
     setBusy(true);
     setError(false);
     setSaved(false);
@@ -152,15 +157,15 @@ function CareGroupContent({
   useEffect(() => {
     if (!groupId || demo || readOnly) return;
     const timer = window.setInterval(() => {
-      if (document.visibilityState !== "visible" || pending.current) return;
-      pending.current = true;
+      if (document.visibilityState !== "visible" || pending.current || polling.current) return;
+      polling.current = true;
       void loadRef
-        .current()
+        .current(true)
         .catch(() => {
           if (live.current) setError(true);
         })
         .finally(() => {
-          pending.current = false;
+          polling.current = false;
         });
     }, 10000);
     return () => window.clearInterval(timer);
