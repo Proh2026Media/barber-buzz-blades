@@ -1,0 +1,51 @@
+name: P-122 — construir Evolution v5 sem publicação
+
+on:
+  push:
+    branches: [ti/p122-evolution-v5-20261114]
+    paths:
+      - .p122/evolution/**
+      - .github/workflows/p122-evolution-v5.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p122-evolution-v5
+  cancel-in-progress: false
+
+jobs:
+  construir:
+    if: github.repository == 'Proh2026Media/barber-buzz-blades'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Obter somente os artefatos de construção
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            /.p122/evolution/
+          sparse-checkout-cone-mode: false
+
+      - name: Obter a revisão oficial e construir sem credenciais GHCR
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd .p122/evolution
+          sha256sum -c SHA256SUMS
+          cd ../..
+          git init evolution-base
+          git -C evolution-base fetch --depth=1 https://github.com/EvolutionAPI/evolution-api.git cd800f2976e1e5b682fbf86a01ee4d85ae61f370
+          git -C evolution-base checkout --detach FETCH_HEAD
+          test "$(git -C evolution-base rev-parse HEAD)" = cd800f2976e1e5b682fbf86a01ee4d85ae61f370
+          python3 .p122/evolution/construir-imagem.py evolution-base "$GITHUB_WORKSPACE/evidencias"
+
+      - name: Guardar a imagem e seus identificadores
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: p122-evolution-v5-imagem
+          path: evidencias/*
+          if-no-files-found: error
+          compression-level: 1
+          retention-days: 3

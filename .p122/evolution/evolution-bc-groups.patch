@@ -1,0 +1,3676 @@
+diff --git a/Dockerfile.bc-groups b/Dockerfile.bc-groups
+new file mode 100644
+index 0000000..d0d8323
+--- /dev/null
++++ b/Dockerfile.bc-groups
+@@ -0,0 +1,26 @@
++# Extensão local sobre a imagem exata relatada pela TI. Nenhuma tag mutável.
++FROM evoapicloud/evolution-api@sha256:1bd8afc4a6cf48822e6cf02469aeae7bd35a12a6b616eacd1291926307f4d339 AS builder
++WORKDIR /evolution
++ARG DATABASE_PROVIDER=postgresql
++COPY package.json package-lock.json tsconfig.json tsup.config.ts tsup.bc.config.ts ./
++COPY src ./src
++COPY prisma ./prisma
++RUN case "$DATABASE_PROVIDER" in postgresql|mysql) ;; *) exit 1 ;; esac && \
++    DATABASE_CONNECTION_URI="$DATABASE_PROVIDER://build:build@127.0.0.1:1/build" \
++    npx --no-install prisma generate --schema "prisma/$DATABASE_PROVIDER-schema.prisma" && \
++    npm run build:bc-runtime
++
++FROM evoapicloud/evolution-api@sha256:1bd8afc4a6cf48822e6cf02469aeae7bd35a12a6b616eacd1291926307f4d339
++WORKDIR /evolution
++ARG BC_PATCH_SHA256=nao-informado
++LABEL org.opencontainers.image.version="2.3.7-bc.groups.5" \
++      org.bc.base-revision="cd800f2976e1e5b682fbf86a01ee4d85ae61f370" \
++      org.bc.patch-sha256="$BC_PATCH_SHA256"
++COPY --from=builder /evolution/dist ./dist
++COPY --from=builder /evolution/node_modules/.prisma ./node_modules/.prisma
++COPY --from=builder /evolution/prisma ./prisma
++COPY --from=builder /evolution/package.json ./package.json
++COPY --from=builder /evolution/package-lock.json ./package-lock.json
++ENV BC_GROUPS_EXTENSION_ENABLED=false
++# Migrations exigem etapa própria autorizada; não imprimir URL de banco nem migrar ao reiniciar.
++ENTRYPOINT ["node", "dist/main.js"]
+diff --git a/package-lock.json b/package-lock.json
+index c45e8fe..b0fa622 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -1,12 +1,12 @@
+ {
+   "name": "evolution-api",
+-  "version": "2.3.7",
++  "version": "2.3.7-bc.groups.5",
+   "lockfileVersion": 3,
+   "requires": true,
+   "packages": {
+     "": {
+       "name": "evolution-api",
+-      "version": "2.3.7",
++      "version": "2.3.7-bc.groups.5",
+       "license": "Apache-2.0",
+       "dependencies": {
+         "@adiwajshing/keyed-db": "^0.2.4",
+diff --git a/package.json b/package.json
+index 56e32fc..2a78013 100644
+--- a/package.json
++++ b/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "evolution-api",
+-  "version": "2.3.7",
++  "version": "2.3.7-bc.groups.5",
+   "description": "Rest api for communication with WhatsApp",
+   "main": "./dist/main.js",
+   "type": "commonjs",
+@@ -20,7 +20,10 @@
+     "db:studio": "node runWithProvider.js \"npx prisma studio --schema ./prisma/DATABASE_PROVIDER-schema.prisma\"",
+     "db:migrate:dev": "node runWithProvider.js \"rm -rf ./prisma/migrations && cp -r ./prisma/DATABASE_PROVIDER-migrations ./prisma/migrations && npx prisma migrate dev --schema ./prisma/DATABASE_PROVIDER-schema.prisma && cp -r ./prisma/migrations/* ./prisma/DATABASE_PROVIDER-migrations\"",
+     "db:migrate:dev:win": "node runWithProvider.js \"xcopy /E /I prisma\\DATABASE_PROVIDER-migrations prisma\\migrations && npx prisma migrate dev --schema prisma\\DATABASE_PROVIDER-schema.prisma\"",
+-    "prepare": "husky"
++    "prepare": "husky",
++    "test:bc-groups": "node --import tsx --test test/bc-groups.test.ts test/bc-group-routes.test.ts test/bc-group-webhook.test.ts test/bc-group-cycle.test.ts test/bc-group-cycle-engine.test.ts test/bc-group-cycle-identity.test.ts test/bc-group-logo.test.ts",
++    "test:bc-groups:db": "node --import tsx --test test/bc-group-database.test.ts test/bc-group-cycle-database.test.ts",
++    "build:bc-runtime": "tsc --noEmit && tsup --config tsup.bc.config.ts"
+   },
+   "repository": {
+     "type": "git",
+diff --git a/prisma/mysql-migrations/20261111190000_bc_group_operations/migration.sql b/prisma/mysql-migrations/20261111190000_bc_group_operations/migration.sql
+new file mode 100644
+index 0000000..d8aba37
+--- /dev/null
++++ b/prisma/mysql-migrations/20261111190000_bc_group_operations/migration.sql
+@@ -0,0 +1,6 @@
++CREATE TABLE `BcGroupOperation` (
++ `id` VARCHAR(191) NOT NULL,`instanceId` VARCHAR(191) NOT NULL,`operationKey` VARCHAR(36) NOT NULL,
++ `requestHash` VARCHAR(64) NOT NULL,`state` VARCHAR(16) NOT NULL,`groupJid` VARCHAR(128),
++ `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),`updatedAt` DATETIME(3) NOT NULL,
++ PRIMARY KEY (`id`), UNIQUE INDEX `BcGroupOperation_instanceId_operationKey_key` (`instanceId`,`operationKey`)
++) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+diff --git a/prisma/mysql-migrations/20261111220000_bc_group_codes/migration.sql b/prisma/mysql-migrations/20261111220000_bc_group_codes/migration.sql
+new file mode 100644
+index 0000000..d009f0b
+--- /dev/null
++++ b/prisma/mysql-migrations/20261111220000_bc_group_codes/migration.sql
+@@ -0,0 +1,2 @@
++ALTER TABLE `BcGroupOperation` ADD COLUMN `messageId` VARCHAR(200);
++CREATE TABLE `BcGroupLease` (`instanceId` VARCHAR(191) NOT NULL PRIMARY KEY, `token` VARCHAR(36) NOT NULL, `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3));
+diff --git a/prisma/mysql-migrations/20261114003000_bc_group_cycles/migration.sql b/prisma/mysql-migrations/20261114003000_bc_group_cycles/migration.sql
+new file mode 100644
+index 0000000..28869d2
+--- /dev/null
++++ b/prisma/mysql-migrations/20261114003000_bc_group_cycles/migration.sql
+@@ -0,0 +1,6 @@
++CREATE TABLE `BcGroupCycle` (`groupJid` VARCHAR(128) NOT NULL,`version` INTEGER NOT NULL DEFAULT 1,`data` JSON NOT NULL,`createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),`updatedAt` DATETIME(3) NOT NULL,PRIMARY KEY(`groupJid`)) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
++CREATE TABLE `BcGroupEvidence` (`groupJid` VARCHAR(128) NOT NULL,`messageId` VARCHAR(200) NOT NULL,`observer` VARCHAR(40) NOT NULL,`author` VARCHAR(40) NOT NULL,`prematureCreator` BOOLEAN NOT NULL DEFAULT false,`createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),PRIMARY KEY(`groupJid`,`messageId`,`observer`,`author`)) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
++
++CREATE TABLE `BcGroupAccountState` (`groupJid` VARCHAR(128) NOT NULL,`accountJid` VARCHAR(40) NOT NULL,`messageTimestamp` BIGINT NOT NULL,`lastMessage` JSON NOT NULL,`updatedAt` DATETIME(3) NOT NULL,PRIMARY KEY(`groupJid`,`accountJid`)) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
++
++CREATE TABLE `BcPlatformAccount` (`instanceId` VARCHAR(191) NOT NULL,`instanceName` VARCHAR(100) NOT NULL UNIQUE,`ownerJid` VARCHAR(40) NOT NULL,`enabled` BOOLEAN NOT NULL DEFAULT false,`sourceVersion` BIGINT NOT NULL,`updatedAt` DATETIME(3) NOT NULL,PRIMARY KEY(`instanceId`)) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+diff --git a/prisma/mysql-schema.prisma b/prisma/mysql-schema.prisma
+index 71b5a74..854d15c 100644
+--- a/prisma/mysql-schema.prisma
++++ b/prisma/mysql-schema.prisma
+@@ -755,3 +755,59 @@ model EvoaiSetting {
+   Instance        Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+   instanceId      String    @unique
+ }
++
++// Registro durável de criação B&C. Sem cascade: excluir instância não apaga evidência.
++model BcGroupOperation {
++  messageId String? @db.VarChar(200)
++  id           String   @id @default(cuid())
++  instanceId   String   @db.VarChar(191)
++  operationKey String   @db.VarChar(36)
++  requestHash  String   @db.VarChar(64)
++  state        String   @db.VarChar(16)
++  groupJid     String?  @db.VarChar(128)
++  createdAt    DateTime @default(now())
++  updatedAt    DateTime @updatedAt
++
++  @@unique([instanceId, operationKey])
++}
++
++model BcGroupLease {
++ instanceId String @id @db.VarChar(191)
++ token String @db.VarChar(36)
++ createdAt DateTime @default(now())
++}
++
++model BcGroupCycle {
++ groupJid String @id @db.VarChar(128)
++ version Int @default(1)
++ data Json
++ createdAt DateTime @default(now())
++ updatedAt DateTime @updatedAt
++}
++model BcGroupEvidence {
++ groupJid String @db.VarChar(128)
++ messageId String @db.VarChar(200)
++ observer String @db.VarChar(40)
++ author String @db.VarChar(40)
++ prematureCreator Boolean @default(false)
++ createdAt DateTime @default(now())
++ @@id([groupJid,messageId,observer,author])
++}
++
++model BcGroupAccountState {
++ groupJid String @db.VarChar(128)
++ accountJid String @db.VarChar(40)
++ messageTimestamp BigInt
++ lastMessage Json
++ updatedAt DateTime @updatedAt
++ @@id([groupJid,accountJid])
++}
++
++model BcPlatformAccount {
++ instanceId String @id @db.VarChar(191)
++ instanceName String @unique @db.VarChar(100)
++ ownerJid String @db.VarChar(40)
++ enabled Boolean @default(false)
++ sourceVersion BigInt
++ updatedAt DateTime @updatedAt
++}
+diff --git a/prisma/postgresql-migrations/20261111190000_bc_group_operations/migration.sql b/prisma/postgresql-migrations/20261111190000_bc_group_operations/migration.sql
+new file mode 100644
+index 0000000..b9c2e03
+--- /dev/null
++++ b/prisma/postgresql-migrations/20261111190000_bc_group_operations/migration.sql
+@@ -0,0 +1,6 @@
++CREATE TABLE "BcGroupOperation" (
++ "id" TEXT NOT NULL PRIMARY KEY,"instanceId" VARCHAR(191) NOT NULL,"operationKey" VARCHAR(36) NOT NULL,
++ "requestHash" VARCHAR(64) NOT NULL,"state" VARCHAR(16) NOT NULL,"groupJid" VARCHAR(128),
++ "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,"updatedAt" TIMESTAMP(3) NOT NULL
++);
++CREATE UNIQUE INDEX "BcGroupOperation_instanceId_operationKey_key" ON "BcGroupOperation"("instanceId","operationKey");
+diff --git a/prisma/postgresql-migrations/20261111220000_bc_group_codes/migration.sql b/prisma/postgresql-migrations/20261111220000_bc_group_codes/migration.sql
+new file mode 100644
+index 0000000..1907265
+--- /dev/null
++++ b/prisma/postgresql-migrations/20261111220000_bc_group_codes/migration.sql
+@@ -0,0 +1,2 @@
++ALTER TABLE "BcGroupOperation" ADD COLUMN "messageId" VARCHAR(200);
++CREATE TABLE "BcGroupLease" ("instanceId" VARCHAR(191) PRIMARY KEY, "token" VARCHAR(36) NOT NULL, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP);
+diff --git a/prisma/postgresql-migrations/20261114003000_bc_group_cycles/migration.sql b/prisma/postgresql-migrations/20261114003000_bc_group_cycles/migration.sql
+new file mode 100644
+index 0000000..68c63d9
+--- /dev/null
++++ b/prisma/postgresql-migrations/20261114003000_bc_group_cycles/migration.sql
+@@ -0,0 +1,6 @@
++CREATE TABLE "BcGroupCycle" ("groupJid" VARCHAR(128) PRIMARY KEY,"version" INTEGER NOT NULL DEFAULT 1,"data" JSONB NOT NULL,"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,"updatedAt" TIMESTAMP(3) NOT NULL);
++CREATE TABLE "BcGroupEvidence" ("groupJid" VARCHAR(128) NOT NULL,"messageId" VARCHAR(200) NOT NULL,"observer" VARCHAR(40) NOT NULL,"author" VARCHAR(40) NOT NULL,"prematureCreator" BOOLEAN NOT NULL DEFAULT false,"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY("groupJid","messageId","observer","author"));
++
++CREATE TABLE "BcGroupAccountState" ("groupJid" VARCHAR(128) NOT NULL,"accountJid" VARCHAR(40) NOT NULL,"messageTimestamp" BIGINT NOT NULL,"lastMessage" JSONB NOT NULL,"updatedAt" TIMESTAMP(3) NOT NULL,PRIMARY KEY("groupJid","accountJid"));
++
++CREATE TABLE "BcPlatformAccount" ("instanceId" VARCHAR(191) PRIMARY KEY,"instanceName" VARCHAR(100) NOT NULL UNIQUE,"ownerJid" VARCHAR(40) NOT NULL,"enabled" BOOLEAN NOT NULL DEFAULT false,"sourceVersion" BIGINT NOT NULL,"updatedAt" TIMESTAMP(3) NOT NULL);
+diff --git a/prisma/postgresql-schema.prisma b/prisma/postgresql-schema.prisma
+index 6b98f88..4881823 100644
+--- a/prisma/postgresql-schema.prisma
++++ b/prisma/postgresql-schema.prisma
+@@ -761,3 +761,59 @@ model EvoaiSetting {
+   Instance        Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+   instanceId      String    @unique
+ }
++
++// Registro durável de criação B&C. Sem cascade: excluir instância não apaga evidência.
++model BcGroupOperation {
++  messageId String? @db.VarChar(200)
++  id           String   @id @default(cuid())
++  instanceId   String   @db.VarChar(191)
++  operationKey String   @db.VarChar(36)
++  requestHash  String   @db.VarChar(64)
++  state        String   @db.VarChar(16)
++  groupJid     String?  @db.VarChar(128)
++  createdAt    DateTime @default(now())
++  updatedAt    DateTime @updatedAt
++
++  @@unique([instanceId, operationKey])
++}
++
++model BcGroupLease {
++ instanceId String @id @db.VarChar(191)
++ token String @db.VarChar(36)
++ createdAt DateTime @default(now())
++}
++
++model BcGroupCycle {
++ groupJid String @id @db.VarChar(128)
++ version Int @default(1)
++ data Json
++ createdAt DateTime @default(now())
++ updatedAt DateTime @updatedAt
++}
++model BcGroupEvidence {
++ groupJid String @db.VarChar(128)
++ messageId String @db.VarChar(200)
++ observer String @db.VarChar(40)
++ author String @db.VarChar(40)
++ prematureCreator Boolean @default(false)
++ createdAt DateTime @default(now())
++ @@id([groupJid,messageId,observer,author])
++}
++
++model BcGroupAccountState {
++ groupJid String @db.VarChar(128)
++ accountJid String @db.VarChar(40)
++ messageTimestamp BigInt
++ lastMessage Json
++ updatedAt DateTime @updatedAt
++ @@id([groupJid,accountJid])
++}
++
++model BcPlatformAccount {
++ instanceId String @id @db.VarChar(191)
++ instanceName String @unique @db.VarChar(100)
++ ownerJid String @db.VarChar(40)
++ enabled Boolean @default(false)
++ sourceVersion BigInt
++ updatedAt DateTime @updatedAt
++}
+diff --git a/src/api/controllers/group.controller.ts b/src/api/controllers/group.controller.ts
+index ebe7c03..bdbee35 100644
+--- a/src/api/controllers/group.controller.ts
++++ b/src/api/controllers/group.controller.ts
+@@ -15,9 +15,23 @@ import {
+ import { InstanceDto } from '@api/dto/instance.dto';
+ import { WAMonitoringService } from '@api/services/monitor.service';
+ 
++import { GroupExtensionError } from '../integrations/channel/whatsapp/bc-groups/core';
++
+ export class GroupController {
+   constructor(private readonly waMonitor: WAMonitoringService) {}
+ 
++  public async bcCommand(instanceName: string, command: string, data: unknown) {
++    const service = this.waMonitor.waInstances[instanceName];
++    if (typeof service?.bcGroupCommand !== 'function')
++      throw { status: 503, message: 'Integração de grupos indisponível' };
++    try {
++      return await service.bcGroupCommand(command, data);
++    } catch (error) {
++      if (error instanceof GroupExtensionError) throw error;
++      throw new GroupExtensionError(503, 'Operação indisponível; conferência necessária');
++    }
++  }
++
+   public async createGroup(instance: InstanceDto, create: CreateGroupDto) {
+     return await this.waMonitor.waInstances[instance.instanceName].createGroup(create);
+   }
+diff --git a/src/api/integrations/channel/whatsapp/bc-groups/content.ts b/src/api/integrations/channel/whatsapp/bc-groups/content.ts
+new file mode 100644
+index 0000000..5b37397
+--- /dev/null
++++ b/src/api/integrations/channel/whatsapp/bc-groups/content.ts
+@@ -0,0 +1,93 @@
++/// <reference lib="es2022.intl" />
++/** Modelos controlados. A identidade apresentada ao cliente é sempre a barbearia. */
++const clean = (value: unknown, limit: number, fallback: string) => {
++  if (typeof value !== 'string') return fallback;
++  const text = value
++    .normalize('NFC')
++    .replace(/[\p{Cc}\p{Cf}]/gu, ' ')
++    .replace(/\s+/gu, ' ')
++    .trim();
++  let out = '';
++  for (const { segment } of new Intl.Segmenter('pt-BR', { granularity: 'grapheme' }).segment(text)) {
++    if (out.length + segment.length > limit) break;
++    out += segment;
++  }
++  return out || fallback;
++};
++export function groupPreferencesUrl(slug: string, origin = 'https://beauty.contheiner.digital') {
++  if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(slug)) throw new Error('GROUP_SLUG_INVALID');
++  const base = new URL(origin);
++  if (
++    base.protocol !== 'https:' ||
++    base.username ||
++    base.password ||
++    base.port ||
++    base.pathname !== '/' ||
++    base.search ||
++    base.hash
++  )
++    throw new Error('GROUP_ORIGIN_INVALID');
++  return `https://${slug}.${base.hostname}/app?tab=conta&focus=grupo`;
++}
++export function annualGroupExpiry(creation: number) {
++  if (!Number.isSafeInteger(creation) || creation <= 0) throw new Error('GROUP_CREATION_UNPROVEN');
++  const date = new Date(creation * 1000);
++  const month = date.getUTCMonth();
++  date.setUTCFullYear(date.getUTCFullYear() + 1);
++  if (date.getUTCMonth() !== month) date.setUTCDate(0);
++  if (!Number.isFinite(date.getTime())) throw new Error('GROUP_CREATION_UNPROVEN');
++  return date.toISOString();
++}
++export type GroupBrand = {
++  shop_name: unknown;
++  customer_name: unknown;
++  slug: string;
++  timezone: string;
++  origin?: string;
++};
++export type GroupContent = GroupBrand & { expires_at: string };
++/** A mesma forma canônica entra no hash, no diário e na mensagem; nunca guarda e-mail. */
++export function careGroupBrand(input: GroupBrand): GroupBrand {
++  if (
++    typeof input.shop_name !== 'string' ||
++    !input.shop_name.trim() ||
++    input.shop_name.length > 120 ||
++    typeof input.customer_name !== 'string' ||
++    input.customer_name.length > 200 ||
++    typeof input.timezone !== 'string'
++  )
++    throw new Error('GROUP_BRAND_INVALID');
++  groupPreferencesUrl(input.slug, input.origin);
++  new Intl.DateTimeFormat('pt-BR', { timeZone: input.timezone }).format(0);
++  return {
++    shop_name: clean(input.shop_name, 80, 'Barbearia'),
++    customer_name: clean(input.customer_name.includes('@') ? null : input.customer_name, 40, 'cliente').split(' ')[0],
++    slug: input.slug,
++    timezone: input.timezone,
++    ...(input.origin ? { origin: input.origin } : {}),
++  };
++}
++export function careGroupContent(input: GroupContent) {
++  const shop = clean(input.shop_name, 80, 'Barbearia');
++  const customer = clean(
++    typeof input.customer_name === 'string' && input.customer_name.includes('@') ? null : input.customer_name,
++    40,
++    'cliente',
++  ).split(' ')[0];
++  const expiry = new Date(input.expires_at);
++  if (!Number.isFinite(expiry.getTime())) throw new Error('GROUP_CYCLE_INVALID');
++  const date = new Intl.DateTimeFormat('pt-BR', {
++    timeZone: input.timezone,
++    day: '2-digit',
++    month: '2-digit',
++    year: 'numeric',
++  }).format(expiry);
++  const link = groupPreferencesUrl(input.slug, input.origin);
++  const welcome = `👋 Olá, ${customer}! Este é seu grupo de notificações da ${shop}.\n\n📅 Confirmações, alterações e lembretes de agendamentos.\n🔐 Códigos de acesso e de confirmação do telefone, somente quando você solicitar.\n🎁 Promoções somente com sua autorização, até o limite escolhido no aplicativo (máximo de 3 por mês).\n\n⚙️ Ative ou desative os avisos e as promoções em Perfil → Grupo de notificações.\n${link}\n\nEste grupo é automático: as preferências são alteradas somente no aplicativo. Sair do grupo interrompe os envios. Você pode solicitar o retorno até ${date}, quando este ciclo termina.`;
++  const description = `Grupo automático da ${shop}. Agendamentos e códigos solicitados. Promoções só com autorização (até 3/mês). Preferências somente no aplicativo: ${link}\nVocê e números autorizados da plataforma. Profissionais não acessam as conversas. Válido até ${date}.`;
++  return { welcome, description, preferences_url: link, version: 'grupos-2026-11-14' };
++}
++export function careGroupCode(shop: unknown, purpose: 'login' | 'verify_phone', code: string) {
++  if (!/^\d{6}$/.test(code) || !['login', 'verify_phone'].includes(purpose)) throw new Error('GROUP_CODE_INVALID');
++  return `${clean(shop, 80, 'Barbearia')}\n${purpose === 'login' ? 'Seu código de acesso' : 'Código para confirmar seu WhatsApp'}: ${code}\nVálido por até 10 minutos. Não compartilhe este código.`;
++}
+diff --git a/src/api/integrations/channel/whatsapp/bc-groups/core.ts b/src/api/integrations/channel/whatsapp/bc-groups/core.ts
+new file mode 100644
+index 0000000..7ddce6b
+--- /dev/null
++++ b/src/api/integrations/channel/whatsapp/bc-groups/core.ts
+@@ -0,0 +1,222 @@
++import { randomUUID } from 'node:crypto';
++
++import type { GroupMetadata, WASocket } from 'baileys';
++
++import type { CycleStore } from './cycle';
++import { type CycleDependencies, executeCycleCommand } from './cycle-engine';
++import { type PhoneResolver, resolveGroupMetadata } from './cycle-identity';
++
++export const BC_GROUP_PROTOCOL = 'bc-groups-v3';
++export class GroupExtensionError extends Error {
++  constructor(
++    public status: number,
++    message: string,
++  ) {
++    super(message);
++  }
++}
++const fail = (status: number, message: string): never => {
++  throw new GroupExtensionError(status, message);
++};
++const groupId = (value: unknown): string =>
++  typeof value === 'string' && value.length <= 128 && /^[0-9-]+@g\.us$/.test(value)
++    ? value
++    : fail(400, 'Identificador de grupo inválido');
++const operationId = (value: unknown): string =>
++  typeof value === 'string' && /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(value)
++    ? value.toLowerCase()
++    : fail(400, 'Identificador de operação inválido');
++const pn = (value: unknown): string | null =>
++  typeof value === 'string' && /^[1-9][0-9]{7,14}@s\.whatsapp\.net$/.test(value) ? value : null;
++const identity = (value: unknown): string | null =>
++  typeof value === 'string' && /^[0-9]+(?::[0-9]+)?@(s\.whatsapp\.net|lid)$/.test(value)
++    ? value.replace(/:[0-9]+@/, '@')
++    : null;
++export function extensionEnabled(instanceName: string, env: NodeJS.ProcessEnv = process.env) {
++  return (
++    (env.BC_GROUPS_EXTENSION_ENABLED === 'true' &&
++      (env.BC_GROUPS_INSTANCES ?? '')
++        .split(',')
++        .map((s) => s.trim())
++        .includes(instanceName)) ||
++    (env.BC_GROUPS_EXTENSION_ENABLED === 'true' &&
++      env.BC_GROUPS_MANAGED_INSTANCES === 'true' &&
++      /^bc-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(instanceName))
++  );
++}
++export function configuredPlatformJids(instanceName: string, env: NodeJS.ProcessEnv = process.env): string[] {
++  try {
++    const values = JSON.parse(env.BC_GROUPS_PLATFORM_JIDS ?? '{}')[instanceName];
++    return Array.isArray(values) && values.length <= 500 && values.every((v) => pn(v))
++      ? ([...new Set(values)] as string[])
++      : [];
++  } catch {
++    return [];
++  }
++}
++export function participantIdentity(value: unknown) {
++  const p =
++    typeof value === 'string' ? { id: value } : (value as { id?: unknown; phoneNumber?: unknown; lid?: unknown });
++  const id = identity(p?.id);
++  const phone = pn(id) ?? pn(p?.phoneNumber);
++  const conflict =
++    Boolean(p?.phoneNumber && (!pn(p.phoneNumber) || (pn(id) && pn(id) !== pn(p.phoneNumber)))) ||
++    Boolean(id?.endsWith('@lid') && p?.lid && id !== p.lid);
++  return {
++    jid: id,
++    conflict,
++    phoneNumber: conflict ? null : phone,
++    lid: typeof p?.lid === 'string' && /^[0-9]+@lid$/.test(p.lid) ? p.lid : id?.endsWith('@lid') ? id : null,
++  };
++}
++export function groupView(group: GroupMetadata) {
++  return {
++    ...group,
++    memberAddMode: typeof group.memberAddMode === 'boolean' ? group.memberAddMode : null,
++    joinApprovalMode: typeof group.joinApprovalMode === 'boolean' ? group.joinApprovalMode : null,
++    addressingMode: group.addressingMode ?? null,
++  };
++}
++export function eventEnvelope(instanceName: string, event: string) {
++  return extensionEnabled(instanceName) && /^(groups\.|group[.-]|message-receipt\.)/.test(event)
++    ? { event_id: randomUUID(), contract_version: BC_GROUP_PROTOCOL }
++    : {};
++}
++export type Operation = {
++  instanceId: string;
++  operationKey: string;
++  requestHash: string;
++  state: string;
++  groupJid: string | null;
++  messageId?: string | null;
++};
++export type OperationStore = {
++  lock: (instanceId: string, token: string) => Promise<boolean>;
++  unlock: (instanceId: string, token: string) => Promise<void>;
++  pinned?: (instanceId: string, key: string, messageId: string) => Promise<void>;
++  accepted: (instanceId: string, key: string, messageId: string) => Promise<void>;
++  find: (instanceId: string, key: string) => Promise<Operation | null>;
++  claim: (value: Operation) => Promise<boolean>;
++  created: (instanceId: string, key: string, jid: string) => Promise<void>;
++};
++type Socket = Pick<
++  WASocket,
++  | 'sendMessage'
++  | 'groupUpdateSubject'
++  | 'groupSettingUpdate'
++  | 'groupParticipantsUpdate'
++  | 'groupInviteCode'
++  | 'groupRevokeInvite'
++  | 'groupMetadata'
++  | 'groupCreate'
++  | 'groupMemberAddMode'
++  | 'groupJoinApprovalMode'
++  | 'groupRequestParticipantsList'
++  | 'groupRequestParticipantsUpdate'
++>;
++export type Dependencies = {
++  authorizePlatform?: (value: unknown) => Promise<unknown>;
++  resolvePhone?: PhoneResolver;
++  cycles?: CycleStore;
++  peersReady?: (phones: string[]) => boolean | Promise<boolean>;
++  instanceId: string;
++  instanceName: string;
++  socket: Socket;
++  self: () => string[];
++  ready: () => boolean;
++  store: OperationStore;
++  platformJids: string[];
++};
++function strictBody(input: unknown, keys: string[]): Record<string, unknown> {
++  if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).some((k) => !keys.includes(k)))
++    return fail(400, 'Campos inválidos');
++  return input as Record<string, unknown>;
++}
++async function asAdmin(d: Dependencies, jid: string) {
++  const group = await resolveGroupMetadata(await d.socket.groupMetadata(jid), d.resolvePhone);
++  if (group?.id !== jid) return fail(409, 'Grupo não confirmado');
++  const self = d.self().map(identity).filter(Boolean);
++  const matches = group.participants.filter((p) => {
++    const resolved = participantIdentity(p);
++    return (
++      !resolved.conflict &&
++      (self.includes(resolved.jid) || (resolved.phoneNumber && self.includes(resolved.phoneNumber)))
++    );
++  });
++  if (matches.length !== 1 || !['admin', 'superadmin'].includes(matches[0].admin))
++    return fail(403, 'Número da Plataforma sem administração confirmada');
++  return group;
++}
++async function executeUnlocked(d: Dependencies, command: string, input: unknown) {
++  if (!extensionEnabled(d.instanceName)) return fail(503, 'Extensão de grupos desativada');
++  if (command === 'authorizePlatform') {
++    if (!d.authorizePlatform) return fail(503, 'Registro indisponível');
++    return d.authorizePlatform(input);
++  }
++  if (!d.ready() || !d.self().some((jid) => d.platformJids.includes(identity(jid))))
++    return fail(503, 'Número da Plataforma indisponível ou não autorizado');
++  if (command === 'capabilities') {
++    if (!d.cycles) return fail(503, 'Diário de ciclos indisponível');
++    await d.cycles.cycle('0@g.us');
++    return {
++      instanceId: d.instanceId,
++      contract: BC_GROUP_PROTOCOL,
++      memberAddControl: true,
++      admissionControl: true,
++      persistentOperations: true,
++      protectedCodes: true,
++      serializedCommands: true,
++      protectedTitles: true,
++      protectedPins: true,
++      protectedCycle: true,
++      twoPlatformAdmins: true,
++      protectedBranding: true,
++      protectedNotices: true,
++      durableWebhook: false,
++    };
++  }
++  if (command === 'createStatus') {
++    const p = strictBody(input, ['operationId']);
++    const key = operationId(p.operationId);
++    return (await d.store.find(d.instanceId, key)) ?? fail(404, 'Operação não encontrada');
++  }
++  if (command === 'inspect') {
++    const p = strictBody(input, ['groupJid']);
++    return groupView(await asAdmin(d, groupId(p.groupJid)));
++  }
++  if (['memberMode', 'approvalMode', 'setting', 'member'].includes(command))
++    return fail(403, 'Use a preparação protegida do ciclo');
++  return executeCycleCommand(d as CycleDependencies, command, input);
++}
++
++/** A trava persistente não expira sozinha: processo perdido exige revisão antes de liberar. */
++export async function executeGroupCommand(d: Dependencies, command: string, input: unknown) {
++  if (['capabilities', 'createStatus'].includes(command)) return executeUnlocked(d, command, input);
++  const token = randomUUID();
++  const raw = input as { groupJid?: unknown };
++  const keys = [d.instanceId];
++  if (typeof raw?.groupJid === 'string' && /^[0-9-]+@g\.us$/.test(raw.groupJid)) keys.push('group:' + raw.groupJid);
++  const acquired: string[] = [];
++  try {
++    for (const key of keys.sort()) {
++      if (!(await d.store.lock(key, token))) return fail(409, 'Operação em andamento; conferir antes de repetir');
++      acquired.push(key);
++    }
++    return await executeUnlocked(d, command, input);
++  } finally {
++    for (const key of acquired.reverse()) await d.store.unlock(key, token);
++  }
++}
++
++/** Não armazenar nem reenviar OTP para webhooks, chats ou integrações secundárias. */
++export function isGroupCodeMessage(message: { key?: { remoteJid?: string }; message?: unknown }) {
++  if (!/@g\.us$/.test(message?.key?.remoteJid ?? '')) return false;
++  let remaining = 1000;
++  const contains = (value: unknown, depth = 0): boolean => {
++    if (--remaining < 0 || depth > 10) return true;
++    if (typeof value === 'string')
++      return /(?:^|\n)(?:Seu código de acesso|Código para confirmar seu WhatsApp): \d{6}(?:\n|$)/.test(value);
++    return Boolean(value && typeof value === 'object' && Object.values(value).some((v) => contains(v, depth + 1)));
++  };
++  return contains(message.message);
++}
+diff --git a/src/api/integrations/channel/whatsapp/bc-groups/cycle-engine.ts b/src/api/integrations/channel/whatsapp/bc-groups/cycle-engine.ts
+new file mode 100644
+index 0000000..db6ff3e
+--- /dev/null
++++ b/src/api/integrations/channel/whatsapp/bc-groups/cycle-engine.ts
+@@ -0,0 +1,950 @@
++import { createHash } from 'node:crypto';
++
++import type { WASocket } from 'baileys';
++
++import { careGroupBrand, careGroupCode, careGroupContent, type GroupBrand } from './content';
++import { type Dependencies, GroupExtensionError, type Operation } from './core';
++import {
++  cycleExpiry,
++  cycleQuorum,
++  cycleSendReady,
++  type CycleStore,
++  type GroupCycle,
++  memberPhone,
++  phoneJid,
++} from './cycle';
++import { resolveGroupMetadata, resolvePhone } from './cycle-identity';
++import { groupPhoto } from './logo';
++export type CycleDependencies = Dependencies & {
++  cycles: CycleStore;
++  socket: Dependencies['socket'] &
++    Pick<
++      WASocket,
++      'updateProfilePicture' | 'groupUpdateDescription' | 'groupLeave' | 'groupFetchAllParticipating' | 'chatModify'
++    >;
++};
++const fail = (status: number, message: string): never => {
++  throw new GroupExtensionError(status, message);
++};
++const record = (input: unknown) =>
++  input && typeof input === 'object' && !Array.isArray(input)
++    ? (input as Record<string, unknown>)
++    : fail(400, 'Campos inválidos');
++const body = (input: unknown, keys: string[]) => {
++  const value = record(input);
++  if (Object.keys(value).some((k) => !keys.includes(k))) fail(400, 'Campos inválidos');
++  return value;
++};
++const uuid = (value: unknown) =>
++  typeof value === 'string' && /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(value)
++    ? value.toLowerCase()
++    : fail(400, 'Operação inválida');
++const jid = (value: unknown) =>
++  typeof value === 'string' && /^[0-9-]+@g\.us$/.test(value) && value.length <= 128
++    ? value
++    : fail(400, 'Grupo inválido');
++const digest = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
++const namespace = (id: string) => 'group:' + id;
++const self = (d: CycleDependencies) =>
++  d
++    .self()
++    .map(phoneJid)
++    .find((p) => p && d.platformJids.includes(p)) ?? fail(503, 'Identidade da conta não comprovada');
++const validPlatform = (d: CycleDependencies, value: unknown) => {
++  if (
++    !Array.isArray(value) ||
++    value.length < 2 ||
++    value.length > 20 ||
++    new Set(value).size !== value.length ||
++    !value.every((p) => phoneJid(p) === p && d.platformJids.includes(p))
++  )
++    return fail(400, 'Dois números distintos da plataforma são obrigatórios');
++  return [...value].sort() as string[];
++};
++const brand = (value: unknown): GroupBrand => {
++  const p = body(value, ['shop_name', 'customer_name', 'slug', 'timezone']);
++  if (
++    typeof p.shop_name !== 'string' ||
++    !p.shop_name.trim() ||
++    p.shop_name.length > 120 ||
++    typeof p.customer_name !== 'string' ||
++    p.customer_name.length > 200 ||
++    typeof p.slug !== 'string' ||
++    typeof p.timezone !== 'string'
++  )
++    return fail(400, 'Identidade da barbearia inválida');
++  try {
++    return careGroupBrand(p as GroupBrand);
++  } catch {
++    return fail(400, 'Identidade da barbearia inválida');
++  }
++};
++async function metadata(d: CycleDependencies, id: string) {
++  const group = await resolveGroupMetadata(await d.socket.groupMetadata(id), d.resolvePhone);
++  if (group?.id !== id) return fail(409, 'Grupo sem confirmação');
++  const matches = group.participants.filter((p) => memberPhone(p) === self(d));
++  if (matches.length !== 1 || !['admin', 'superadmin'].includes(matches[0].admin))
++    return fail(403, 'Conta não administradora');
++  return group;
++}
++async function current(d: CycleDependencies, id: string, closing = false) {
++  const cycle = await d.cycles.cycle(id);
++  if (!cycle) return fail(409, 'Ciclo sem prova; revisão necessária');
++  if (!closing && (cycle.closing || cycle.closed || Date.parse(cycle.expiresAt) <= Date.now() || cycle.firstViolation))
++    return fail(409, 'Ciclo indisponível');
++  if (!cycle.platformJids.includes(self(d))) return fail(403, 'Conta fora da composição consentida');
++  return cycle;
++}
++function publicCycle(c: GroupCycle) {
++  return { ...c };
++}
++async function operation(d: CycleDependencies, c: GroupCycle, key: string, request: unknown, state: string) {
++  const hash = digest(request);
++  const scope = namespace(c.groupJid);
++  const prior = await d.store.find(scope, key);
++  if (prior) {
++    if (prior.requestHash !== hash) return fail(409, 'Operação já utilizada com outros parâmetros');
++    return { prior, scope, hash };
++  }
++  const pending: Operation = { instanceId: scope, operationKey: key, requestHash: hash, state, groupJid: c.groupJid };
++  if (!(await d.store.claim(pending))) return { prior: await d.store.find(scope, key), scope, hash };
++  return { pending, scope, hash };
++}
++function receipt(raw: unknown) {
++  const value = raw as { key?: { id?: unknown } };
++  return typeof value?.key?.id === 'string' && value.key.id.length > 0 && value.key.id.length <= 200
++    ? value.key.id
++    : null;
++}
++async function complete(
++  d: CycleDependencies,
++  op: Awaited<ReturnType<typeof operation>>,
++  key: string,
++  state: string,
++  messageId?: string,
++) {
++  await d.cycles.finish(op.scope, key, state, messageId);
++  return { ...op.pending, state, ...(messageId ? { messageId } : {}) };
++}
++const peers = async (d: CycleDependencies, phones: string[]) => {
++  if (!(await d.peersReady?.(phones))) return fail(503, 'Conexão dos dois administradores não comprovada');
++};
++const cycleBrand = (c: GroupCycle) => {
++  const stored = (c as GroupCycle & { brand?: GroupBrand }).brand;
++  if (!stored) return fail(409, 'Marca da barbearia pendente');
++  return { ...stored, expires_at: c.expiresAt };
++};
++
++async function ensureCycle(
++  d: CycleDependencies,
++  id: string,
++  who: string,
++  creatorInstanceId: string,
++  cycleId: string,
++  customerJid: string,
++  platforms: string[],
++  branding: GroupBrand,
++) {
++  const prior = await d.cycles.cycle(id);
++  if (prior) {
++    if (
++      prior.creatorJid !== who ||
++      prior.customerJid !== customerJid ||
++      (prior as GroupCycle & { cycleId?: string }).cycleId !== cycleId
++    )
++      return fail(409, 'Grupo já pertence a outro ciclo');
++    return;
++  }
++  const raw = await metadata(d, id);
++  if (memberPhone({ id: raw.owner, phoneNumber: raw.ownerPn }) !== who) return fail(409, 'Criador sem prova');
++  const createdAt = new Date(raw.creation * 1000).toISOString(),
++    expiresAt = cycleExpiry(raw.creation);
++  const c: GroupCycle = {
++    version: 1,
++    groupJid: id,
++    customerJid,
++    platformJids: platforms,
++    creatorJid: who,
++    creatorInstanceId,
++    createdAt,
++    expiresAt,
++    firstWelcomeOperation: null,
++    firstSenderJid: null,
++    firstMessageId: null,
++    firstReceived: false,
++    firstViolation: false,
++    logoHash: null,
++    logoApplied: false,
++    prepared: false,
++    descriptionHash: null,
++    lastWelcomeMessageId: null,
++    lastWelcomeOperation: null,
++    pinExpiresAt: null,
++    pinAccepted: false,
++    closing: false,
++    closed: false,
++    leftInstances: [],
++  };
++  Object.assign(c, { brand: branding, cycleId });
++  if (!(await d.cycles.createCycle(c))) return fail(409, 'Grupo já pertence a outro ciclo');
++}
++
++/** As mutações desta função rodam sob as travas persistentes de grupo E instância. */
++export async function executeCycleCommand(d: CycleDependencies, command: string, input: unknown): Promise<unknown> {
++  if (!d.cycles) return fail(503, 'Diário de ciclos indisponível');
++  if (command === 'adoptClosing') {
++    const p = body(input, ['groupJid', 'cycleId', 'customerJid', 'platformJids']);
++    const id = jid(p.groupJid),
++      cycleId = uuid(p.cycleId),
++      who = self(d);
++    if (
++      phoneJid(p.customerJid) !== p.customerJid ||
++      !Array.isArray(p.platformJids) ||
++      p.platformJids.length < 1 ||
++      p.platformJids.length > 20 ||
++      new Set(p.platformJids).size !== p.platformJids.length ||
++      !p.platformJids.every((pn) => phoneJid(pn) === pn && d.platformJids.includes(pn)) ||
++      !p.platformJids.includes(who) ||
++      p.platformJids.includes(p.customerJid)
++    )
++      return fail(400, 'Revisão de encerramento inválida');
++    const old = await d.cycles.cycle(id);
++    if (old) {
++      if (
++        !old.closing ||
++        (old as GroupCycle & { cycleId?: string }).cycleId !== cycleId ||
++        old.customerJid !== p.customerJid
++      )
++        return fail(409, 'Ciclo existente não pode ser substituído');
++      return { state: old.closed ? 'closed' : 'closing' };
++    }
++    const raw = await metadata(d, id);
++    const platforms = p.platformJids as string[];
++    const seen = new Set<string>();
++    for (const member of raw.participants) {
++      const phone = memberPhone(member);
++      if (
++        !phone ||
++        seen.has(phone) ||
++        (!platforms.includes(phone) && phone !== p.customerJid) ||
++        (phone === p.customerJid && member.admin != null)
++      )
++        return fail(409, 'Composição histórica exige revisão');
++      seen.add(phone);
++    }
++    const expiry = cycleExpiry(raw.creation);
++    const c: GroupCycle = {
++      version: 1,
++      groupJid: id,
++      customerJid: p.customerJid as string,
++      platformJids: platforms,
++      creatorJid: memberPhone({ id: raw.owner, phoneNumber: raw.ownerPn }) ?? who,
++      creatorInstanceId: d.instanceId,
++      createdAt: new Date(raw.creation * 1000).toISOString(),
++      expiresAt: expiry,
++      firstWelcomeOperation: null,
++      firstSenderJid: null,
++      firstMessageId: null,
++      firstReceived: false,
++      firstViolation: true,
++      logoHash: null,
++      logoApplied: false,
++      prepared: false,
++      descriptionHash: null,
++      lastWelcomeMessageId: null,
++      lastWelcomeOperation: null,
++      pinExpiresAt: null,
++      pinAccepted: false,
++      closing: true,
++      closed: false,
++      leftInstances: [],
++      closeProof: { lastJid: who, revoked: false, removed: false, leaveOps: {}, deleted: {} },
++    };
++    Object.assign(c, { cycleId });
++    if (!(await d.cycles.createCycle(c))) return fail(409, 'Grupo já registrado');
++    return { state: 'closing' };
++  }
++  if (command === 'creationStatus') {
++    const p = body(input, ['cycleId', 'operationId', 'requestHash', 'creatorInstanceId']);
++    const cycleId = uuid(p.cycleId),
++      key = uuid(p.operationId);
++    if (
++      typeof p.requestHash !== 'string' ||
++      !/^[a-f0-9]{64}$/.test(p.requestHash) ||
++      typeof p.creatorInstanceId !== 'string' ||
++      !/^[A-Za-z0-9_-]{1,191}$/.test(p.creatorInstanceId)
++    )
++      return fail(400, 'Prova de criação inválida');
++    const slot = await d.store.find('cycle:' + cycleId, '00000000-0000-4000-8000-000000000000');
++    if (!slot || slot.requestHash !== digest([key, p.creatorInstanceId, p.requestHash]))
++      return fail(409, 'Criação sem correspondência no diário');
++    return { ...slot, operationKey: key, requestHash: p.requestHash };
++  }
++  if (command === 'recoverCycle') {
++    const p = body(input, [
++      'cycleId',
++      'operationId',
++      'subject',
++      'participants',
++      'customerJid',
++      'brand',
++      'creatorInstanceId',
++    ]);
++    const cycleId = uuid(p.cycleId),
++      key = uuid(p.operationId),
++      who = self(d),
++      branding = brand(p.brand);
++    if (
++      !Array.isArray(p.participants) ||
++      typeof p.subject !== 'string' ||
++      phoneJid(p.customerJid) !== p.customerJid ||
++      typeof p.creatorInstanceId !== 'string' ||
++      !/^[A-Za-z0-9_-]{1,191}$/.test(p.creatorInstanceId)
++    )
++      return fail(400, 'Recuperação inválida');
++    const platforms = validPlatform(d, [who, ...p.participants]);
++    const requestHash = digest([cycleId, who, p.subject, [...p.participants].sort(), p.customerJid, branding]);
++    const slot = await d.store.find('cycle:' + cycleId, '00000000-0000-4000-8000-000000000000');
++    if (!slot || slot.requestHash !== digest([key, p.creatorInstanceId, requestHash]))
++      return fail(409, 'Criação sem correspondência no diário');
++    if (slot.state !== 'created' || !slot.groupJid) return { state: 'unknown' };
++    await ensureCycle(
++      d,
++      slot.groupJid,
++      who,
++      p.creatorInstanceId,
++      cycleId,
++      p.customerJid as string,
++      platforms,
++      branding,
++    );
++    return { state: 'recovered', groupJid: slot.groupJid };
++  }
++  if (command === 'create') {
++    const p = body(input, ['operationId', 'cycleId', 'subject', 'participants', 'customerJid', 'brand']);
++    const key = uuid(p.operationId);
++    const cycleId = uuid(p.cycleId);
++    const who = self(d);
++    const branding = brand(p.brand);
++    if (
++      phoneJid(p.customerJid) !== p.customerJid ||
++      p.customerJid === who ||
++      typeof p.subject !== 'string' ||
++      !p.subject.trim() ||
++      p.subject.length > 100 ||
++      /[\p{Cc}\p{Cf}]/u.test(p.subject)
++    )
++      return fail(400, 'Criação inválida');
++    const platforms = validPlatform(d, Array.isArray(p.participants) ? [who, ...p.participants] : null);
++    if (platforms.includes(p.customerJid as string)) return fail(400, 'Cliente não é número da plataforma');
++    await peers(d, platforms);
++    const requestHash = digest([
++      cycleId,
++      who,
++      p.subject,
++      [...(p.participants as string[])].sort(),
++      p.customerJid,
++      branding,
++    ]);
++    const prior = await d.store.find(d.instanceId, key);
++    if (prior) {
++      if (prior.requestHash !== requestHash) return fail(409, 'Criação já utilizada com outros parâmetros');
++      return prior;
++    }
++    const creationScope = 'cycle:' + cycleId,
++      fixedKey = '00000000-0000-4000-8000-000000000000';
++    const slotHash = digest([key, d.instanceId, requestHash]);
++    const slot = await d.store.find(creationScope, fixedKey);
++    if (slot) return fail(409, 'Este ciclo já iniciou uma criação; consultar o diário, nunca iniciar outra');
++    if (
++      !(await d.store.claim({
++        instanceId: creationScope,
++        operationKey: fixedKey,
++        requestHash: slotHash,
++        state: 'unknown',
++        groupJid: null,
++      }))
++    )
++      return fail(409, 'Criação do ciclo já iniciada');
++    const pending: Operation = {
++      instanceId: d.instanceId,
++      operationKey: key,
++      requestHash,
++      state: 'unknown',
++      groupJid: null,
++    };
++    if (!(await d.store.claim(pending))) return (await d.store.find(d.instanceId, key)) ?? pending;
++    try {
++      if (!d.ready()) return pending;
++      const created = await d.socket.groupCreate(p.subject, [...(p.participants as string[])]);
++      const id = jid(created?.id);
++      await d.store.created(creationScope, fixedKey, id);
++      await d.store.created(d.instanceId, key, id);
++      await ensureCycle(d, id, who, d.instanceId, cycleId, p.customerJid as string, platforms, branding);
++      return { ...pending, state: 'created', groupJid: id };
++    } catch {
++      return pending;
++    }
++  }
++  const p0 = record(input);
++  const id = jid(p0.groupJid);
++  if (command === 'cycleStatus') {
++    body(input, ['groupJid']);
++    const c = await current(d, id, true);
++    return { cycle: publicCycle(c), ready: !c.closed && !c.closing && cycleSendReady(c, await metadata(d, id)) };
++  }
++  if (command === 'operationStatus') {
++    const p = body(input, ['groupJid', 'operationId']);
++    await current(d, id, true);
++    return (await d.store.find(namespace(id), uuid(p.operationId))) ?? fail(404, 'Operação não encontrada');
++  }
++  let c = await current(d, id, command === 'close');
++  if (command === 'close') return closeCycle(d, c, input);
++  if (command === 'brand') {
++    const p = body(input, ['groupJid', 'brand']);
++    const branding = brand(p.brand);
++    if (!cycleQuorum(c, await metadata(d, id), true)) return fail(409, 'Grupo sem quórum');
++    if (JSON.stringify(c.brand) !== JSON.stringify(branding)) {
++      c.brand = branding;
++      c.descriptionHash = null;
++      await d.cycles.saveCycle(c);
++    }
++    return { state: 'brand_synced' };
++  }
++  if (command === 'subject') {
++    const p = body(input, ['groupJid', 'subject', 'customerJid', 'platformJids', 'allowAbsent']);
++    if (
++      p.customerJid !== c.customerJid ||
++      typeof p.allowAbsent !== 'boolean' ||
++      typeof p.subject !== 'string' ||
++      !p.subject.trim() ||
++      p.subject.length > 100 ||
++      /[\p{Cc}\p{Cf}]/u.test(p.subject) ||
++      JSON.stringify(validPlatform(d, p.platformJids)) !== JSON.stringify([...c.platformJids].sort())
++    )
++      return fail(400, 'Título inválido');
++    let raw = await metadata(d, id);
++    if (!cycleQuorum(c, raw, p.allowAbsent)) return fail(409, 'Grupo sem quórum');
++    if (raw.subject !== p.subject) {
++      await d.socket.groupUpdateSubject(id, p.subject);
++      raw = await metadata(d, id);
++      if (raw.subject !== p.subject) return fail(409, 'Título sem confirmação');
++    }
++    return { state: 'title_synced', subject: raw.subject };
++  }
++  if (command === 'prepare') {
++    const p = body(input, ['groupJid', 'operationId', 'subject', 'platformJids', 'brand', 'logoBase64', 'logoHash']);
++    const key = uuid(p.operationId);
++    const platforms = validPlatform(d, p.platformJids);
++    if (!platforms.includes(c.creatorJid) || platforms.includes(c.customerJid))
++      return fail(409, 'Criador histórico deve permanecer até revisão do ciclo');
++    if (self(d) !== c.creatorJid) return fail(403, 'A foto deve ser aplicada pelo criador');
++    const branding = brand(p.brand);
++    await peers(d, platforms);
++    if (
++      typeof p.subject !== 'string' ||
++      !p.subject.trim() ||
++      p.subject.length > 100 ||
++      /[\p{Cc}\p{Cf}]/u.test(p.subject) ||
++      typeof p.logoBase64 !== 'string' ||
++      p.logoBase64.length > 2796204 ||
++      p.logoBase64.length % 4 !== 0 ||
++      !/^[A-Za-z0-9+/]+={0,2}$/.test(p.logoBase64) ||
++      !/^[a-f0-9]{64}$/.test(String(p.logoHash))
++    )
++      return fail(400, 'Preparação inválida');
++    const image = Buffer.from(p.logoBase64, 'base64');
++    if (image.length > 2097152 || createHash('sha256').update(image).digest('hex') !== p.logoHash)
++      return fail(400, 'Logo inválida');
++    const photo = await groupPhoto(image);
++    let raw = await metadata(d, id);
++    const allowed = new Set([c.customerJid, ...c.platformJids, ...platforms]);
++    if (
++      raw.participants.some(
++        (p) => !memberPhone(p) || !allowed.has(memberPhone(p)) || (memberPhone(p) === c.customerJid && p.admin != null),
++      )
++    )
++      return fail(409, 'Composição divergente');
++    // Adiciona e promove antes de considerar retirada. Nunca promove cliente/terceiro.
++    for (const pn of platforms) {
++      let member = raw.participants.find((p) => memberPhone(p) === pn);
++      if (!member) {
++        await d.socket.groupParticipantsUpdate(id, [pn], 'add');
++        raw = await metadata(d, id);
++        member = raw.participants.find((p) => memberPhone(p) === pn);
++      }
++      if (!member) return fail(409, 'Inclusão sem confirmação');
++      if (!['admin', 'superadmin'].includes(member.admin)) {
++        await d.socket.groupParticipantsUpdate(id, [member.id], 'promote');
++        raw = await metadata(d, id);
++      }
++      if (!raw.participants.some((p) => memberPhone(p) === pn && ['admin', 'superadmin'].includes(p.admin)))
++        return fail(409, 'Promoção sem confirmação');
++    }
++    const proposed = { ...c, platformJids: platforms };
++    if (
++      platforms.filter((pn) =>
++        raw.participants.some((p) => memberPhone(p) === pn && ['admin', 'superadmin'].includes(p.admin)),
++      ).length < 2
++    )
++      return fail(409, 'Dois admins não comprovados');
++    for (const old of c.platformJids.filter((pn) => !platforms.includes(pn))) {
++      const member = raw.participants.find((p) => memberPhone(p) === old);
++      if (member) {
++        await d.socket.groupParticipantsUpdate(id, [member.id], 'remove');
++        raw = await metadata(d, id);
++        if (raw.participants.some((p) => memberPhone(p) === old)) return fail(409, 'Retirada sem confirmação');
++      }
++    }
++    if (raw.restrict !== true) {
++      await d.socket.groupSettingUpdate(id, 'locked');
++      raw = await metadata(d, id);
++    }
++    if (raw.memberAddMode !== false) {
++      await d.socket.groupMemberAddMode(id, 'admin_add');
++      raw = await metadata(d, id);
++    }
++    if (raw.joinApprovalMode !== true) {
++      await d.socket.groupJoinApprovalMode(id, 'on');
++      raw = await metadata(d, id);
++    }
++    if (!cycleQuorum(proposed, raw, true)) return fail(409, 'Composição/proteções sem confirmação');
++    if (raw.subject !== p.subject) {
++      await d.socket.groupUpdateSubject(id, p.subject);
++      raw = await metadata(d, id);
++      if (raw.subject !== p.subject) return fail(409, 'Nome sem confirmação');
++    }
++    c = { ...proposed };
++    Object.assign(c, { brand: branding });
++    await d.cycles.saveCycle(c);
++    if (c.logoHash !== p.logoHash) {
++      const previous = (c as GroupCycle & { photoOperation?: string }).photoOperation;
++      if (previous && previous !== key) {
++        const old = await d.store.find(namespace(id), previous);
++        if (old?.state === 'config_unknown') return fail(409, 'Foto anterior com resultado desconhecido');
++      }
++      const op = await operation(d, c, key, ['photo', p.logoHash, c.creatorJid], 'config_unknown');
++      if (op.prior) {
++        if (op.prior.state !== 'config_accepted') return op.prior;
++      } else {
++        c.photoIntent = { key, hash: p.logoHash as string };
++        Object.assign(c, { photoOperation: key });
++        await d.cycles.saveCycle(c);
++        try {
++          if (!d.ready() || Date.parse(c.expiresAt) <= Date.now()) return op.pending;
++          await d.socket.updateProfilePicture(id, photo);
++          await complete(d, op, key, 'config_accepted');
++        } catch {
++          return op.pending;
++        }
++      }
++      c.logoHash = p.logoHash as string;
++      c.logoApplied = true;
++    }
++    c.prepared = true;
++    await d.cycles.saveCycle(c);
++    return { state: 'prepared', cycle: publicCycle(c) };
++  }
++  if (command === 'welcome') {
++    const p = body(input, ['groupJid', 'operationId', 'admissionId']);
++    const key = uuid(p.operationId);
++    if (p.admissionId != null) uuid(p.admissionId);
++    const who = self(d);
++    if (!c.firstReceived) await peers(d, c.platformJids);
++    if (who === c.creatorJid || !c.prepared || !c.logoApplied)
++      return fail(409, 'Boas-vindas aguardando o segundo administrador');
++    const raw = await metadata(d, id);
++    if (!cycleQuorum(c, raw, true)) return fail(409, 'Dois administradores não comprovados');
++    if (!c.firstMessageId && c.firstWelcomeOperation && c.firstWelcomeOperation !== key)
++      return fail(409, 'Primeiro envio incerto; não repetir');
++    const content = careGroupContent(cycleBrand(c));
++    const request = ['welcome', who, p.admissionId ?? null, content.version, digest(content.welcome)];
++    const existing = await d.store.find(namespace(id), key);
++    if (existing) {
++      if (existing.requestHash !== digest(request)) return fail(409, 'Operação incompatível');
++      return existing;
++    }
++    if (c.firstWelcomeOperation && c.firstWelcomeOperation !== key) {
++      if (!p.admissionId || !cycleQuorum(c, raw, false)) return fail(409, 'Nova boas-vindas exige admissão comprovada');
++      const priorAdmission = c.welcomeAdmissions?.[p.admissionId as string];
++      if (priorAdmission && priorAdmission !== key) return fail(409, 'Admissão já acolhida');
++    }
++    if (
++      p.admissionId &&
++      !c.welcomeAdmissions?.[p.admissionId as string] &&
++      Object.keys(c.welcomeAdmissions ?? {}).length >= 100
++    )
++      return fail(409, 'Limite de reentradas exige revisão');
++    if (p.admissionId) {
++      c.welcomeAdmissions = { ...c.welcomeAdmissions, [p.admissionId as string]: key };
++    }
++    if (!c.firstWelcomeOperation) {
++      c.firstWelcomeOperation = key;
++      c.firstSenderJid = who;
++    }
++    c.lastWelcomeOperation = key;
++    c.welcomeAuthorJid = who;
++    await d.cycles.saveCycle(c);
++    const op = await operation(d, c, key, request, 'notice_unknown');
++    if (op.prior) return op.prior;
++    try {
++      if (!d.ready() || Date.parse(c.expiresAt) <= Date.now()) return op.pending;
++      const latest = await current(d, id);
++      if (!cycleQuorum(latest, await metadata(d, id), true) || latest.firstViolation) return op.pending;
++      const message = await d.socket.sendMessage(id, { text: content.welcome });
++      const messageId = receipt(message);
++      if (!messageId) return op.pending;
++      await complete(d, op, key, 'notice_accepted', messageId);
++      if (!c.firstMessageId) c.firstMessageId = messageId;
++      c.lastWelcomeMessageId = messageId;
++      c.lastWelcomeOperation = key;
++      await d.cycles.saveCycle(c);
++      return { ...op.pending, state: 'notice_accepted', messageId };
++    } catch {
++      return op.pending;
++    }
++  }
++  if (command === 'description') {
++    body(input, ['groupJid']);
++    if (self(d) === c.creatorJid || !c.lastWelcomeMessageId)
++      return fail(409, 'Descrição deve ser aplicada pelo segundo administrador após boas-vindas');
++    let raw = await metadata(d, id);
++    if (!cycleQuorum(c, raw, true)) return fail(409, 'Grupo sem quórum');
++    const { description } = careGroupContent(cycleBrand(c));
++    if (description.length > 512) return fail(400, 'Descrição excessiva');
++    if (raw.desc !== description) {
++      await d.socket.groupUpdateDescription(id, description);
++      raw = await metadata(d, id);
++      if (raw.desc !== description) return fail(409, 'Descrição sem confirmação');
++    }
++    c.descriptionHash = digest(description);
++    await d.cycles.saveCycle(c);
++    return { state: 'description_synced', hash: c.descriptionHash };
++  }
++  if (command === 'pinNotice') {
++    const p = body(input, ['groupJid', 'operationId', 'messageId', 'duration']);
++    const key = uuid(p.operationId);
++    const duration = Number(p.duration);
++    if (
++      self(d) === c.creatorJid ||
++      p.messageId !== c.lastWelcomeMessageId ||
++      ![86400, 604800, 2592000].includes(duration) ||
++      Date.now() + duration * 1000 > Date.parse(c.expiresAt)
++    )
++      return fail(409, 'Fixação fora da política/validade');
++    const proof = c.lastWelcomeOperation && (await d.store.find(namespace(id), c.lastWelcomeOperation));
++    if (!proof || proof.state !== 'notice_accepted' || proof.messageId !== p.messageId)
++      return fail(409, 'Boas-vindas sem prova durável');
++    if (!cycleQuorum(c, await metadata(d, id), true)) return fail(409, 'Grupo sem quórum');
++    const request = ['pin', p.messageId, duration, c.expiresAt];
++    const op = await operation(d, c, key, request, 'pin_unknown');
++    if (op.prior) return op.prior;
++    c.pinIntent = { key, duration, requestedAt: new Date().toISOString(), hash: digest(request) };
++    await d.cycles.saveCycle(c);
++    try {
++      if (!d.ready() || Date.now() + duration * 1000 > Date.parse(c.expiresAt)) return op.pending;
++      const message = await d.socket.sendMessage(id, {
++        pin: {
++          remoteJid: id,
++          fromMe: c.welcomeAuthorJid === self(d),
++          id: p.messageId as string,
++          participant: (await metadata(d, id)).participants.find((p) => memberPhone(p) === c.welcomeAuthorJid)?.id,
++        },
++        type: 1,
++        time: duration as 86400 | 604800 | 2592000,
++      });
++      const messageId = receipt(message);
++      if (!messageId) return op.pending;
++      await complete(d, op, key, 'pin_accepted', messageId);
++      c.pinAccepted = true;
++      c.pinExpiresAt = new Date(Date.now() + duration * 1000).toISOString();
++      await d.cycles.saveCycle(c);
++      return { ...op.pending, state: 'pin_accepted', messageId };
++    } catch {
++      return op.pending;
++    }
++  }
++  if (command === 'sendCode' || command === 'sendNotice') {
++    const p = body(
++      input,
++      command === 'sendCode'
++        ? ['groupJid', 'operationId', 'customerJid', 'platformJids', 'purpose', 'expiresAt', 'code']
++        : ['groupJid', 'operationId', 'customerJid', 'platformJids', 'templateKey', 'text'],
++    );
++    const key = uuid(p.operationId);
++    if (
++      p.customerJid !== c.customerJid ||
++      JSON.stringify(validPlatform(d, p.platformJids)) !== JSON.stringify([...c.platformJids].sort()) ||
++      !cycleSendReady(c, await metadata(d, id))
++    )
++      return fail(409, 'Composição, primeira mensagem ou ciclo não confirmados');
++    let text: string;
++    let request: unknown;
++    if (command === 'sendCode') {
++      const expiry = typeof p.expiresAt === 'string' ? Date.parse(p.expiresAt) : NaN;
++      if (
++        !['login', 'verify_phone'].includes(String(p.purpose)) ||
++        typeof p.code !== 'string' ||
++        !/^\d{6}$/.test(p.code) ||
++        !Number.isFinite(expiry) ||
++        expiry <= Date.now() ||
++        expiry > Date.now() + 600000 ||
++        expiry > Date.parse(c.expiresAt)
++      )
++        return fail(400, 'Código inválido/expirado');
++      text = careGroupCode(cycleBrand(c).shop_name, p.purpose as 'login' | 'verify_phone', p.code);
++      request = ['code', self(d), c.customerJid, c.platformJids, p.purpose, p.expiresAt];
++    } else {
++      if (
++        typeof p.templateKey !== 'string' ||
++        !/^(booking\.(confirmed|cancelled|rescheduled|reminder)|notice\.[a-z_]+|customer\.notice|return\.[a-z_]+)$/.test(
++          p.templateKey,
++        ) ||
++        typeof p.text !== 'string' ||
++        !p.text.trim() ||
++        p.text.length > 2000 ||
++        /c[oó]digo.{0,35}\b\d{6}\b/iu.test(p.text)
++      )
++        return fail(400, 'Aviso inválido');
++      text = p.text;
++      request = ['notice', self(d), c.customerJid, c.platformJids, p.templateKey, digest(text)];
++    }
++    const state = command === 'sendCode' ? 'code' : 'message';
++    const op = await operation(d, c, key, request, state + '_unknown');
++    if (op.prior) return op.prior;
++    try {
++      if (
++        !d.ready() ||
++        Date.parse(c.expiresAt) <= Date.now() ||
++        (command === 'sendCode' && Date.parse(p.expiresAt as string) <= Date.now())
++      )
++        return op.pending;
++      const latest = await current(d, id);
++      if (!cycleSendReady(latest, await metadata(d, id))) return op.pending;
++      const messageId = receipt(await d.socket.sendMessage(id, { text }));
++      if (!messageId) return op.pending;
++      return await complete(d, op, key, state + '_accepted', messageId);
++    } catch {
++      return op.pending;
++    }
++  }
++  if (['invite', 'requests', 'decide'].includes(command)) {
++    const p = body(input, command === 'decide' ? ['groupJid', 'participants', 'action'] : ['groupJid']);
++    if (
++      !c.prepared ||
++      !c.firstReceived ||
++      !c.pinAccepted ||
++      Date.parse(c.pinExpiresAt ?? '') <= Date.now() ||
++      !Number.isFinite(Date.parse(c.pinExpiresAt ?? '')) ||
++      !c.descriptionHash ||
++      !cycleQuorum(c, await metadata(d, id), true)
++    )
++      return fail(409, 'Preparação ainda não concluída');
++    if (command === 'invite') {
++      const code = await d.socket.groupInviteCode(id);
++      c.inviteHash = digest(code);
++      await d.cycles.saveCycle(c);
++      return { inviteUrl: 'https://chat.whatsapp.com/' + code };
++    }
++    if (command === 'requests') {
++      const requests = await d.socket.groupRequestParticipantsList(id);
++      return Promise.all(
++        requests.map(async (r) => ({ jid: r.jid, phoneNumber: await resolvePhone(r.jid, d.resolvePhone) })),
++      );
++    }
++    if (
++      !Array.isArray(p.participants) ||
++      p.participants.length !== 1 ||
++      !['approve', 'reject'].includes(String(p.action)) ||
++      typeof p.participants[0] !== 'string'
++    )
++      return fail(400, 'Admissão inválida');
++    const target = await resolvePhone(p.participants[0], d.resolvePhone);
++    if (p.action === 'approve' && !target) return fail(409, 'Identidade do pedido ainda não comprovada');
++    if (p.action === 'approve' && target !== c.customerJid) return fail(403, 'Apenas o titular consentido pode entrar');
++    const pending = await d.socket.groupRequestParticipantsList(id);
++    if (!pending.some((item) => item.jid === p.participants[0])) return fail(409, 'Pedido não está pendente');
++    if (!cycleQuorum(c, await metadata(d, id), true)) return fail(409, 'Composição mudou antes da admissão');
++    const result = await d.socket.groupRequestParticipantsUpdate(
++      id,
++      p.participants as string[],
++      p.action as 'approve' | 'reject',
++    );
++    if (p.action === 'approve' && !cycleQuorum(c, await metadata(d, id), false))
++      return fail(409, 'Entrada ainda não confirmada');
++    return result;
++  }
++  if (command === 'revoke') {
++    body(input, ['groupJid']);
++    await metadata(d, id);
++    await d.socket.groupRevokeInvite(id);
++    return { revoked: true };
++  }
++  return fail(400, 'Operação de ciclo não implementada');
++}
++
++async function closeCycle(d: CycleDependencies, c: GroupCycle, input: unknown) {
++  const p = body(input, ['groupJid', 'operationId', 'stage', 'targetJid']);
++  const key = uuid(p.operationId);
++  const who = self(d);
++  const id = c.groupJid;
++  if (!['start', 'leave', 'final', 'delete', 'withdraw'].includes(String(p.stage)))
++    return fail(400, 'Etapa de encerramento inválida');
++  if (p.stage === 'start') {
++    if (c.closed) return { state: 'closed' };
++    if (!c.closing) {
++      c.closing = true;
++      c.closeProof = { lastJid: who, revoked: false, removed: false, leaveOps: {}, deleted: {} };
++      await d.cycles.saveCycle(c);
++    }
++    if (!c.closeProof || c.closeProof.lastJid !== who)
++      return fail(409, 'Encerramento deve manter o administrador final escolhido');
++    await metadata(d, id);
++    if (!c.closeProof.originalInviteHash) {
++      c.closeProof.originalInviteHash = digest(await d.socket.groupInviteCode(id));
++      await d.cycles.saveCycle(c);
++    }
++    const op = await operation(d, c, key, ['close-start', who], 'close_unknown');
++    if (op.prior) {
++      if (op.prior.state === 'close_accepted') return op.prior;
++      if (digest(await d.socket.groupInviteCode(id)) !== c.closeProof.originalInviteHash) c.closeProof.revoked = true;
++      const raw = await metadata(d, id);
++      if (
++        c.closeProof.revoked &&
++        raw.participants.every((p) => {
++          const phone = memberPhone(p);
++          return phone && c.platformJids.includes(phone);
++        })
++      ) {
++        c.closeProof.removed = true;
++        await d.cycles.saveCycle(c);
++        await d.cycles.finish(namespace(id), key, 'close_accepted');
++        return { ...op.prior, state: 'close_accepted' };
++      }
++      return op.prior;
++    }
++    try {
++      await d.socket.groupRevokeInvite(id);
++      c.closeProof.revoked = true;
++      await d.cycles.saveCycle(c);
++      let raw = await metadata(d, id);
++      if (raw.participants.some((p) => !memberPhone(p))) return op.pending;
++      for (const member of raw.participants) {
++        if (!c.platformJids.includes(memberPhone(member))) {
++          await d.socket.groupParticipantsUpdate(id, [member.id], 'remove');
++          raw = await metadata(d, id);
++          if (raw.participants.some((p) => p.id === member.id)) return op.pending;
++        }
++      }
++      if (raw.participants.some((p) => !c.platformJids.includes(memberPhone(p)))) return op.pending;
++      c.closeProof.removed = true;
++      await d.cycles.saveCycle(c);
++      return complete(d, op, key, 'close_accepted');
++    } catch {
++      return op.pending;
++    }
++  }
++  if (!c.closing || !c.closeProof?.revoked || !c.closeProof?.removed)
++    return fail(409, 'Retirada de participantes/convite ainda não comprovada');
++  if (p.stage === 'delete') {
++    if (!c.leftInstances.includes(who)) return fail(409, 'Conta ainda está no grupo');
++    if (c.closeProof.deleted[who]) {
++      if (!c.minimized && c.platformJids.every((pn) => c.closeProof.deleted[pn])) await d.cycles.minimizeClosed(c);
++      return { state: 'chat_deleted' };
++    }
++    const range = c.lastMessages?.[who];
++    if (!range) return { state: 'cleanup_pending' };
++    const op = await operation(d, c, key, ['delete-chat', who, range.key.id, range.messageTimestamp], 'delete_unknown');
++    if (op.prior) return op.prior;
++    try {
++      await d.socket.chatModify({ delete: true, lastMessages: [range] }, id);
++      await complete(d, op, key, 'delete_accepted');
++      c.closeProof.deleted[who] = true;
++      await d.cycles.saveCycle(c);
++      if (c.platformJids.every((pn) => c.closeProof.deleted[pn])) await d.cycles.minimizeClosed(c);
++      return { ...op.pending, state: 'delete_accepted' };
++    } catch {
++      return op.pending;
++    }
++  }
++  const last = c.closeProof.lastJid;
++  if (p.stage === 'withdraw') {
++    if (who !== last || p.targetJid === last || !c.platformJids.includes(p.targetJid as string))
++      return fail(403, 'Retirada de conta não autorizada');
++    const target = p.targetJid as string;
++    let raw = await metadata(d, id);
++    if (raw.participants.some((p) => !memberPhone(p) || !c.platformJids.includes(memberPhone(p))))
++      return fail(409, 'Cliente/terceiro ainda presente');
++    const member = raw.participants.find((p) => memberPhone(p) === target);
++    if (!member) {
++      if (!c.leftInstances.includes(target)) c.leftInstances.push(target);
++      await d.cycles.saveCycle(c);
++      return { state: 'left' };
++    }
++    const op = await operation(d, c, key, ['withdraw', who, target], 'leave_unknown');
++    if (op.prior) return op.prior;
++    try {
++      await d.socket.groupParticipantsUpdate(id, [member.id], 'remove');
++      raw = await metadata(d, id);
++      if (raw.participants.some((p) => memberPhone(p) === target)) return op.pending;
++      c.leftInstances.push(target);
++      await d.cycles.saveCycle(c);
++      await complete(d, op, key, 'leave_accepted');
++      return { ...op.pending, state: 'left' };
++    } catch {
++      return op.pending;
++    }
++  }
++
++  if ((p.stage === 'final') !== (who === last)) return fail(409, 'Ordem de saída protege o último administrador');
++  if (p.stage === 'final' && c.platformJids.some((p) => p !== who && !c.leftInstances.includes(p)))
++    return fail(409, 'Outra conta ainda não confirmou a saída');
++  // A consulta autoritativa também recupera uma saída aceita cujo retorno se perdeu.
++  const participating = await d.socket.groupFetchAllParticipating();
++  if (!participating || typeof participating !== 'object') return fail(409, 'Participação não comprovada');
++  if (!participating[id]) {
++    if (!c.leftInstances.includes(who)) c.leftInstances.push(who);
++    if (p.stage === 'final') {
++      c.closed = true;
++      delete c.brand;
++    }
++    await d.cycles.saveCycle(c);
++    return { state: c.closed ? 'closed' : 'left' };
++  }
++  const raw = await metadata(d, id);
++  if (
++    raw.participants.some((p) => {
++      const phone = memberPhone(p);
++      return !phone || !c.platformJids.includes(phone);
++    })
++  )
++    return fail(409, 'Não sair enquanto houver cliente ou identidade desconhecida');
++  if (p.stage === 'final' && raw.participants.some((p) => memberPhone(p) !== who))
++    return fail(409, 'Última saída exige somente o administrador final');
++  if (
++    p.stage === 'leave' &&
++    !raw.participants.some((p) => memberPhone(p) === last && ['admin', 'superadmin'].includes(p.admin))
++  )
++    return fail(409, 'Administrador final não comprovado');
++  const priorKey = c.closeProof.leaveOps[who];
++  if (priorKey && priorKey !== key) return fail(409, 'Saída anterior incerta; consultar a mesma operação');
++  const op = await operation(d, c, key, ['leave', who, p.stage], 'leave_unknown');
++  if (op.prior) return op.prior;
++  c.closeProof.leaveOps[who] = key;
++  await d.cycles.saveCycle(c);
++  try {
++    await d.socket.groupLeave(id);
++    const observed = await d.socket.groupFetchAllParticipating();
++    if (!observed || observed[id]) return op.pending;
++    await complete(d, op, key, 'leave_accepted');
++    c.leftInstances.push(who);
++    if (p.stage === 'final') {
++      c.closed = true;
++      delete c.brand;
++    }
++    await d.cycles.saveCycle(c);
++    return { ...op.pending, state: c.closed ? 'closed' : 'left' };
++  } catch {
++    return op.pending;
++  }
++}
+diff --git a/src/api/integrations/channel/whatsapp/bc-groups/cycle-evidence.ts b/src/api/integrations/channel/whatsapp/bc-groups/cycle-evidence.ts
+new file mode 100644
+index 0000000..47b9a47
+--- /dev/null
++++ b/src/api/integrations/channel/whatsapp/bc-groups/cycle-evidence.ts
+@@ -0,0 +1,86 @@
++import { type CycleStore, memberPhone } from './cycle';
++import { type PhoneResolver, resolvePhone } from './cycle-identity';
++const group = (value: unknown): value is string =>
++  typeof value === 'string' && /^[0-9-]+@g\.us$/.test(value) && value.length <= 128;
++const observer = async (self: unknown[], lookup?: PhoneResolver) => {
++  for (const value of self) {
++    if (typeof value === 'string') {
++      const phone = await resolvePhone(value, lookup);
++      if (phone) return phone;
++    }
++  }
++  return null;
++};
++/** Executado no evento interno autenticado do socket, antes de descartar texto de OTP. */
++export async function captureCycleMessage(store: CycleStore, self: unknown[], message: any, lookup?: PhoneResolver) {
++  const id = message?.key?.remoteJid,
++    key = message?.key?.id,
++    who = await observer(self, lookup);
++  if (!group(id) || !who || typeof key !== 'string' || !key || key.length > 200) return;
++  const author = message.key.fromMe
++    ? who
++    : (memberPhone({ id: message.key.participant, phoneNumber: message.key.participantAlt }) ??
++      (message.key.participantAlt == null && typeof message.key.participant === 'string'
++        ? await resolvePhone(message.key.participant, lookup)
++        : null));
++  const body = message?.message;
++  const common = Boolean(
++    body &&
++      [
++        'conversation',
++        'extendedTextMessage',
++        'imageMessage',
++        'videoMessage',
++        'audioMessage',
++        'documentMessage',
++        'stickerMessage',
++        'contactMessage',
++        'locationMessage',
++      ].some((k) => body[k] != null),
++  );
++  const raw = message?.messageTimestamp;
++  const timestamp = typeof raw === 'number' ? raw : typeof raw?.toNumber === 'function' ? raw.toNumber() : null;
++  const source = message.key.participant;
++  const participant =
++    typeof source === 'string' && /^[0-9]+(?::[0-9]+)?@(s\.whatsapp\.net|lid)$/.test(source) && source.length <= 40
++      ? source
++      : undefined;
++  const range =
++    Number.isSafeInteger(timestamp) && timestamp > 0
++      ? {
++          key: { remoteJid: id, id: key, fromMe: message.key.fromMe === true, ...(participant ? { participant } : {}) },
++          messageTimestamp: timestamp,
++        }
++      : undefined;
++  await store.evidence(id, key, who, author ?? '', common, range);
++}
++/** Recibo é prova de recebimento somente quando contém identidade PN e horário válidos. */
++export async function captureCycleReceipts(
++  store: CycleStore,
++  self: unknown[],
++  events: unknown,
++  lookup?: PhoneResolver,
++) {
++  const author = await observer(self, lookup);
++  if (!author || !Array.isArray(events) || events.length > 1000) return;
++  for (const event of events.slice(0, 50)) {
++    const id = event?.key?.remoteJid,
++      key = event?.key?.id,
++      receipt = event?.receipt;
++    const who = typeof receipt?.userJid === 'string' ? await resolvePhone(receipt.userJid, lookup) : null;
++    const at = receipt?.receiptTimestamp ?? receipt?.readTimestamp;
++    if (
++      !group(id) ||
++      !who ||
++      typeof key !== 'string' ||
++      !key ||
++      key.length > 200 ||
++      typeof at !== 'number' ||
++      !Number.isFinite(at) ||
++      at <= 0 ||
++      at * 1000 > Date.now() + 300000
++    )
++      continue;
++    await store.evidence(id, key, who, author, true);
++  }
++}
+diff --git a/src/api/integrations/channel/whatsapp/bc-groups/cycle-identity.ts b/src/api/integrations/channel/whatsapp/bc-groups/cycle-identity.ts
+new file mode 100644
+index 0000000..948d6bb
+--- /dev/null
++++ b/src/api/integrations/channel/whatsapp/bc-groups/cycle-identity.ts
+@@ -0,0 +1,37 @@
++import type { GroupMetadata } from 'baileys';
++
++import { phoneJid } from './cycle';
++export type PhoneResolver = (jid: string) => Promise<string | null>;
++export async function resolvePhone(jid: string, lookup?: PhoneResolver) {
++  const direct = phoneJid(jid);
++  if (direct) return direct;
++  if (!/^[0-9]+@lid$/.test(jid) || !lookup) return null;
++  let timer: ReturnType<typeof setTimeout>;
++  try {
++    const value = await Promise.race([
++      lookup(jid),
++      new Promise<null>((r) => {
++        timer = setTimeout(() => r(null), 1500);
++      }),
++    ]);
++    return phoneJid(value);
++  } catch {
++    return null;
++  } finally {
++    clearTimeout(timer);
++  }
++}
++/** Apenas mapeamento autoritativo do socket. Campos conflitantes nunca são corrigidos por suposição. */
++export async function resolveGroupMetadata(raw: GroupMetadata, lookup?: PhoneResolver) {
++  if (!raw || !Array.isArray(raw.participants) || raw.participants.length > 21)
++    throw new Error('Metadados de grupo não comprovados');
++  const participants = await Promise.all(
++    raw.participants.map(async (p) => {
++      if (p.phoneNumber != null || !/^[0-9]+@lid$/.test(p.id)) return p;
++      const phoneNumber = await resolvePhone(p.id, lookup);
++      return phoneNumber ? { ...p, phoneNumber } : p;
++    }),
++  );
++  const ownerPn = raw.ownerPn ?? (typeof raw.owner === 'string' ? await resolvePhone(raw.owner, lookup) : null);
++  return { ...raw, participants, ...(ownerPn ? { ownerPn } : {}) };
++}
+diff --git a/src/api/integrations/channel/whatsapp/bc-groups/cycle-store.ts b/src/api/integrations/channel/whatsapp/bc-groups/cycle-store.ts
+new file mode 100644
+index 0000000..4c6457a
+--- /dev/null
++++ b/src/api/integrations/channel/whatsapp/bc-groups/cycle-store.ts
+@@ -0,0 +1,190 @@
++import type { Prisma, PrismaClient } from '@prisma/client';
++
++import type { CycleStore, GroupCycle } from './cycle';
++const stored = (value: GroupCycle) => {
++  const copy = { ...value };
++  delete copy.lastMessages;
++  return copy as unknown as Prisma.InputJsonValue;
++};
++/** CAS e provas persistentes, compartilhadas entre as instâncias da mesma composição. */
++export function cycleStore(db: PrismaClient): CycleStore {
++  const cycle: CycleStore['cycle'] = async (groupJid) => {
++    const row = await db.bcGroupCycle.findUnique({ where: { groupJid } });
++    if (!row) return null;
++    const c = { ...(row.data as unknown as GroupCycle), version: row.version };
++    let changed = false;
++    const scope = 'group:' + groupJid;
++    for (const [key, field] of [
++      [c.firstWelcomeOperation, 'firstMessageId'],
++      [c.lastWelcomeOperation, 'lastWelcomeMessageId'],
++    ] as const) {
++      if (!key) continue;
++      const op = await db.bcGroupOperation.findUnique({
++        where: { instanceId_operationKey: { instanceId: scope, operationKey: key } },
++      });
++      if (op?.state === 'notice_accepted' && op.groupJid === groupJid && op.messageId && c[field] !== op.messageId) {
++        c[field] = op.messageId;
++        changed = true;
++      }
++    }
++    if (c.photoIntent) {
++      const op = await db.bcGroupOperation.findUnique({
++        where: { instanceId_operationKey: { instanceId: scope, operationKey: c.photoIntent.key } },
++      });
++      if (op?.state === 'config_accepted' && op.groupJid === groupJid && c.logoHash !== c.photoIntent.hash) {
++        c.logoHash = c.photoIntent.hash;
++        c.logoApplied = true;
++        changed = true;
++      }
++    }
++    if (c.pinIntent) {
++      const op = await db.bcGroupOperation.findUnique({
++        where: { instanceId_operationKey: { instanceId: scope, operationKey: c.pinIntent.key } },
++      });
++      if (op?.state === 'pin_accepted' && op.groupJid === groupJid && op.requestHash === c.pinIntent.hash) {
++        const until = new Date(Date.parse(c.pinIntent.requestedAt) + c.pinIntent.duration * 1000).toISOString();
++        if (c.pinExpiresAt !== until || !c.pinAccepted) {
++          c.pinAccepted = true;
++          c.pinExpiresAt = until;
++          changed = true;
++        }
++      }
++    }
++    if (!c.firstReceived && c.firstMessageId && c.firstSenderJid && c.firstSenderJid !== c.creatorJid) {
++      const proof = await db.bcGroupEvidence.findUnique({
++        where: {
++          groupJid_messageId_observer_author: {
++            groupJid,
++            messageId: c.firstMessageId,
++            observer: c.creatorJid,
++            author: c.firstSenderJid,
++          },
++        },
++      });
++      if (proof) {
++        c.firstReceived = true;
++        changed = true;
++      }
++    }
++    if (
++      !c.firstViolation &&
++      (await db.bcGroupEvidence.findFirst({ where: { groupJid, prematureCreator: true }, select: { messageId: true } }))
++    ) {
++      c.firstViolation = true;
++      changed = true;
++    }
++    if (changed) {
++      const saved = await db.bcGroupCycle.updateMany({
++        where: { groupJid, version: c.version },
++        data: { version: { increment: 1 }, data: stored(c) },
++      });
++      if (saved.count !== 1) throw new Error('Conferência concorrente; consultar novamente');
++      c.version++;
++    }
++    const ranges = await db.bcGroupAccountState.findMany({ where: { groupJid } });
++    c.lastMessages = Object.fromEntries(
++      ranges.map((r) => [r.accountJid, r.lastMessage as unknown as NonNullable<GroupCycle['lastMessages']>[string]]),
++    );
++    return c;
++  };
++  const saveCycle: CycleStore['saveCycle'] = async (value) => {
++    const updated = await db.bcGroupCycle.updateMany({
++      where: { groupJid: value.groupJid, version: value.version },
++      data: { version: { increment: 1 }, data: stored(value) },
++    });
++    if (updated.count !== 1) throw new Error('Ciclo alterado; conferir antes de continuar');
++    value.version++;
++  };
++  return {
++    cycle,
++    saveCycle,
++    minimizeClosed: async (c) => {
++      if (!c.closed || !c.closeProof || !c.platformJids.every((pn) => c.closeProof.deleted[pn]))
++        throw new Error('Limpeza ainda não comprovada');
++      const slim = {
++        ...c,
++        minimized: true,
++        customerJid: '',
++        firstMessageId: null,
++        firstWelcomeOperation: null,
++        firstSenderJid: null,
++        firstReceived: false,
++        lastWelcomeOperation: null,
++        lastWelcomeMessageId: null,
++      };
++      delete slim.brand;
++      delete slim.lastMessages;
++      delete slim.welcomeAdmissions;
++      delete slim.photoIntent;
++      delete slim.pinIntent;
++      await db.$transaction(async (tx) => {
++        const saved = await tx.bcGroupCycle.updateMany({
++          where: { groupJid: c.groupJid, version: c.version },
++          data: { version: { increment: 1 }, data: stored(slim) },
++        });
++        if (saved.count !== 1) throw new Error('Ciclo alterado durante minimização');
++        await tx.bcGroupEvidence.deleteMany({ where: { groupJid: c.groupJid } });
++        await tx.bcGroupAccountState.deleteMany({ where: { groupJid: c.groupJid } });
++      });
++      Object.assign(c, slim, { version: c.version + 1 });
++    },
++    createCycle: async (value) => {
++      try {
++        await db.bcGroupCycle.create({ data: { groupJid: value.groupJid, data: stored(value) } });
++        return true;
++      } catch (error) {
++        if (error?.code === 'P2002') return false;
++        throw error;
++      }
++    },
++    finish: async (instanceId, operationKey, state, messageId) => {
++      await db.bcGroupOperation.update({
++        where: { instanceId_operationKey: { instanceId, operationKey } },
++        data: { state, ...(messageId ? { messageId } : {}) },
++      });
++    },
++    evidence: async (jid, messageId, observer, author, common, range) => {
++      if (!messageId || messageId.length > 200) return;
++      const c = await cycle(jid);
++      if (!c || c.closed || !c.platformJids.includes(observer)) return;
++      if (common && c.platformJids.includes(author)) {
++        const prematureCreator = !c.closed && !c.firstReceived && author === c.creatorJid;
++        await db.bcGroupEvidence.upsert({
++          where: { groupJid_messageId_observer_author: { groupJid: jid, messageId, observer, author } },
++          create: { groupJid: jid, messageId, observer, author, prematureCreator },
++          update: {},
++        });
++      }
++      // Estado de leitura separado: novas mensagens não invalidam a versão das mutações.
++      if (
++        range &&
++        range.key.remoteJid === jid &&
++        range.key.id === messageId &&
++        Number.isSafeInteger(range.messageTimestamp) &&
++        range.messageTimestamp > 0 &&
++        range.messageTimestamp * 1000 <= Date.now() + 300000
++      ) {
++        const changed = await db.bcGroupAccountState.updateMany({
++          where: { groupJid: jid, accountJid: observer, messageTimestamp: { lte: BigInt(range.messageTimestamp) } },
++          data: {
++            lastMessage: range as unknown as Prisma.InputJsonValue,
++            messageTimestamp: BigInt(range.messageTimestamp),
++          },
++        });
++        if (!changed.count)
++          try {
++            await db.bcGroupAccountState.create({
++              data: {
++                groupJid: jid,
++                accountJid: observer,
++                messageTimestamp: BigInt(range.messageTimestamp),
++                lastMessage: range as unknown as Prisma.InputJsonValue,
++              },
++            });
++          } catch (error) {
++            if (error?.code !== 'P2002') throw error;
++          }
++      }
++    },
++  };
++}
+diff --git a/src/api/integrations/channel/whatsapp/bc-groups/cycle.ts b/src/api/integrations/channel/whatsapp/bc-groups/cycle.ts
+new file mode 100644
+index 0000000..410314b
+--- /dev/null
++++ b/src/api/integrations/channel/whatsapp/bc-groups/cycle.ts
+@@ -0,0 +1,152 @@
++/** Ciclo/provas minimizadas. Não armazena texto, código, QR ou convite. */
++export type GroupCycle = {
++  minimized?: boolean;
++  brand?: import('./content').GroupBrand;
++  photoIntent?: { key: string; hash: string };
++  pinIntent?: { key: string; duration: number; requestedAt: string; hash: string };
++  closeProof?: {
++    lastJid: string;
++    originalInviteHash?: string;
++    revoked: boolean;
++    removed: boolean;
++    leaveOps: Record<string, string>;
++    deleted: Record<string, boolean>;
++  };
++  inviteHash?: string;
++  lastMessages?: Record<
++    string,
++    { key: { remoteJid: string; id: string; fromMe: boolean; participant?: string }; messageTimestamp: number }
++  >;
++  welcomeAuthorJid?: string;
++  welcomeAdmissions?: Record<string, string>;
++  version: number;
++  groupJid: string;
++  customerJid: string;
++  platformJids: string[];
++  creatorJid: string;
++  creatorInstanceId: string;
++  createdAt: string;
++  expiresAt: string;
++  firstWelcomeOperation: string | null;
++  firstSenderJid: string | null;
++  firstMessageId: string | null;
++  firstReceived: boolean;
++  firstViolation: boolean;
++  logoHash: string | null;
++  logoApplied: boolean;
++  prepared: boolean;
++  descriptionHash: string | null;
++  lastWelcomeMessageId: string | null;
++  lastWelcomeOperation: string | null;
++  pinExpiresAt: string | null;
++  pinAccepted: boolean;
++  closing: boolean;
++  closed: boolean;
++  leftInstances: string[];
++};
++export type CycleStore = {
++  cycle: (jid: string) => Promise<GroupCycle | null>;
++  createCycle: (cycle: GroupCycle) => Promise<boolean>;
++  saveCycle: (cycle: GroupCycle) => Promise<void>;
++  minimizeClosed: (cycle: GroupCycle) => Promise<void>;
++  finish: (namespace: string, key: string, state: string, messageId?: string) => Promise<void>;
++  evidence: (
++    jid: string,
++    messageId: string,
++    observer: string,
++    author: string,
++    common: boolean,
++    range?: { key: { remoteJid: string; id: string; fromMe: boolean; participant?: string }; messageTimestamp: number },
++  ) => Promise<void>;
++};
++export function cycleExpiry(creation: number) {
++  if (!Number.isSafeInteger(creation) || creation <= 0 || creation * 1000 > Date.now())
++    throw new Error('Criação sem prova');
++  const date = new Date(creation * 1000),
++    month = date.getUTCMonth();
++  date.setUTCFullYear(date.getUTCFullYear() + 1);
++  if (date.getUTCMonth() !== month) date.setUTCDate(0);
++  return date.toISOString();
++}
++export function phoneJid(value: unknown): string | null {
++  if (typeof value !== 'string') return null;
++  const normalized = value.replace(/:\d+@/, '@');
++  return /^[1-9][0-9]{7,14}@s\.whatsapp\.net$/.test(normalized) ? normalized : null;
++}
++export function memberPhone(p: { id?: unknown; phoneNumber?: unknown; lid?: unknown }): string | null {
++  const direct = phoneJid(p.id),
++    linked = phoneJid(p.phoneNumber);
++  const lid = typeof p.id === 'string' && /^[0-9]+@lid$/.test(p.id);
++  if (p.phoneNumber != null && (!linked || (direct && direct !== linked))) return null;
++  if (lid && p.lid != null && p.id !== p.lid) return null;
++  return direct ?? (lid ? linked : null);
++}
++export function cycleQuorum(cycle: GroupCycle, raw: unknown, allowAbsent = false, at = Date.now()) {
++  if (
++    !raw ||
++    typeof raw !== 'object' ||
++    cycle.closed ||
++    cycle.closing ||
++    cycle.firstViolation ||
++    !Number.isFinite(Date.parse(cycle.expiresAt)) ||
++    at >= Date.parse(cycle.expiresAt)
++  )
++    return false;
++  const group = raw as {
++    creation?: unknown;
++    id?: unknown;
++    restrict?: unknown;
++    memberAddMode?: unknown;
++    joinApprovalMode?: unknown;
++    participants?: { id?: unknown; phoneNumber?: unknown; admin?: unknown }[];
++  };
++  if (
++    !phoneJid(cycle.customerJid) ||
++    !phoneJid(cycle.creatorJid) ||
++    !cycle.platformJids.every(phoneJid) ||
++    typeof group.creation !== 'number' ||
++    !Number.isSafeInteger(group.creation) ||
++    group.creation <= 0 ||
++    group.creation * 1000 > Date.now() ||
++    group.creation * 1000 !== Date.parse(cycle.createdAt) ||
++    Date.parse(cycleExpiry(group.creation)) !== Date.parse(cycle.expiresAt)
++  )
++    return false;
++  if (
++    group.id !== cycle.groupJid ||
++    group.restrict !== true ||
++    group.memberAddMode !== false ||
++    group.joinApprovalMode !== true ||
++    !Array.isArray(group.participants) ||
++    cycle.platformJids.length < 2 ||
++    cycle.platformJids.length > 20 ||
++    new Set(cycle.platformJids).size !== cycle.platformJids.length ||
++    cycle.platformJids.includes(cycle.customerJid)
++  )
++    return false;
++  const seen = new Set<string>();
++  for (const p of group.participants) {
++    const pn = memberPhone(p);
++    if (!pn || seen.has(pn)) return false;
++    seen.add(pn);
++    if (cycle.platformJids.includes(pn)) {
++      if (p.admin !== 'admin' && p.admin !== 'superadmin') return false;
++    } else if (pn !== cycle.customerJid || p.admin != null) return false;
++  }
++  return cycle.platformJids.every((p) => seen.has(p)) && (allowAbsent || seen.has(cycle.customerJid));
++}
++export function cycleSendReady(cycle: GroupCycle, raw: unknown, at = Date.now()) {
++  return (
++    cycleQuorum(cycle, raw, false, at) &&
++    cycle.prepared &&
++    cycle.logoApplied &&
++    Boolean(cycle.descriptionHash) &&
++    cycle.pinAccepted &&
++    Number.isFinite(Date.parse(cycle.pinExpiresAt ?? '')) &&
++    Date.parse(cycle.pinExpiresAt!) > at &&
++    cycle.firstReceived &&
++    Boolean(cycle.firstMessageId) &&
++    Boolean(cycle.firstSenderJid) &&
++    cycle.firstSenderJid !== cycle.creatorJid
++  );
++}
+diff --git a/src/api/integrations/channel/whatsapp/bc-groups/logo.ts b/src/api/integrations/channel/whatsapp/bc-groups/logo.ts
+new file mode 100644
+index 0000000..3369451
+--- /dev/null
++++ b/src/api/integrations/channel/whatsapp/bc-groups/logo.ts
+@@ -0,0 +1,219 @@
++import sharp from 'sharp';
++/** Subconjunto vetorial autocontido. Não carrega URL, arquivo, fonte, entidade ou script. */
++export function validateGroupSvg(input: Buffer) {
++  let source = input
++    .toString('utf8')
++    .replace(/^\uFEFF/, '')
++    .trim();
++  if (
++    Buffer.from(source).includes(Buffer.from([0xef, 0xbf, 0xbd])) ||
++    source.length > 200000 ||
++    Array.from(source).some((c) => c.charCodeAt(0) < 32 && ![9, 10, 13].includes(c.charCodeAt(0))) ||
++    source.includes(String.fromCharCode(92)) ||
++    /&(?!(?:amp|lt|gt|apos|quot);)/.test(source)
++  )
++    throw Error('GROUP_LOGO_SVG_INVALID');
++  source = source
++    .replace(/^<\?xml\s+version=["']1\.0["'](?:\s+encoding=["']UTF-8["'])?\s*\?>\s*/i, '')
++    .replace(/<!--[\s\S]*?-->/g, '');
++  if (/<[!?]/.test(source)) throw Error('GROUP_LOGO_SVG_INVALID');
++  const tags = new Set([
++    'svg',
++    'g',
++    'path',
++    'circle',
++    'ellipse',
++    'rect',
++    'line',
++    'polyline',
++    'polygon',
++    'defs',
++    'linearGradient',
++    'radialGradient',
++    'stop',
++    'clipPath',
++    'title',
++    'desc',
++  ]);
++  const geometry = new Set([
++    'x',
++    'y',
++    'x1',
++    'x2',
++    'y1',
++    'y2',
++    'cx',
++    'cy',
++    'r',
++    'rx',
++    'ry',
++    'fx',
++    'fy',
++    'fr',
++    'width',
++    'height',
++    'viewBox',
++    'stroke-width',
++    'stroke-dasharray',
++    'stroke-dashoffset',
++    'stroke-miterlimit',
++    'offset',
++  ]);
++  const enums: Record<string, string[]> = {
++    'fill-rule': ['nonzero', 'evenodd'],
++    'clip-rule': ['nonzero', 'evenodd'],
++    'stroke-linecap': ['butt', 'round', 'square'],
++    'stroke-linejoin': ['miter', 'round', 'bevel'],
++    gradientUnits: ['userSpaceOnUse', 'objectBoundingBox'],
++    clipPathUnits: ['userSpaceOnUse', 'objectBoundingBox'],
++    spreadMethod: ['pad', 'reflect', 'repeat'],
++    'vector-effect': ['none', 'non-scaling-stroke'],
++    display: ['none', 'inline'],
++    visibility: ['visible', 'hidden'],
++  };
++  const ids = new Map<string, string>(),
++    refs: { id: string; kind: string }[] = [],
++    stack: string[] = [];
++  let nodes = 0,
++    cursor = 0,
++    root = false;
++  const numbers = (value: string) =>
++    /^[\d\s.,+eE%-]+$/.test(value) &&
++    (value.match(/[+-]?(?:\d*\.)?\d+(?:[eE][+-]?\d+)?/g) ?? []).every(
++      (n) => Number.isFinite(Number(n)) && Math.abs(Number(n)) <= 1000000,
++    );
++  function attribute(name: string, value: string, tag: string) {
++    if (name === 'xmlns') return tag === 'svg' && value === 'http://www.w3.org/2000/svg';
++    if (name === 'role') return value === 'img';
++    if (['aria-label', 'aria-labelledby'].includes(name)) return value.length <= 200 && !/[<>]/.test(value);
++    if (name === 'id') {
++      if (!/^[A-Za-z_][A-Za-z0-9_.-]{0,99}$/.test(value) || ids.has(value)) return false;
++      ids.set(value, tag);
++      return true;
++    }
++    if (name === 'version') return tag === 'svg' && value === '1.1';
++    if (name === 'preserveAspectRatio')
++      return /^(?:none|x(?:Min|Mid|Max)Y(?:Min|Mid|Max)(?: (?:meet|slice))?)$/.test(value);
++    if (geometry.has(name)) return (value === 'none' && name === 'stroke-dasharray') || numbers(value);
++    if (['opacity', 'fill-opacity', 'stroke-opacity', 'stop-opacity'].includes(name))
++      return /^\d*(?:\.\d+)?$/.test(value) && Number(value) >= 0 && Number(value) <= 1;
++    if (name === 'd')
++      return (
++        value.length <= 100000 &&
++        /^[MmLlHhVvCcSsQqTtAaZz\d\s.,+eE-]+$/.test(value) &&
++        numbers(value.replace(/[MmLlHhVvCcSsQqTtAaZz]/g, ' '))
++      );
++    if (name === 'points') return numbers(value);
++    if (name === 'transform' || name === 'gradientTransform')
++      return (
++        value.length <= 1000 &&
++        /^(?:\s*(?:matrix|translate|scale|rotate|skewX|skewY)\s*\([\d\s.,+eE-]+\)\s*)+$/.test(value) &&
++        numbers(value.replace(/\b(?:matrix|translate|scale|rotate|skewX|skewY)\b|[()]/g, ' '))
++      );
++    if (Object.prototype.hasOwnProperty.call(enums, name)) return enums[name].includes(value);
++    if (['fill', 'stroke', 'stop-color', 'clip-path'].includes(name)) {
++      const ref = /^url\(\s*#([A-Za-z_][A-Za-z0-9_.-]{0,99})\s*\)$/.exec(value);
++      if (ref) {
++        if (
++          stack.includes('clipPath') ||
++          ['clipPath', 'linearGradient', 'radialGradient', 'stop', 'defs'].includes(tag) ||
++          name === 'stop-color'
++        )
++          return false;
++        refs.push({ id: ref[1], kind: name === 'clip-path' ? 'clip' : 'gradient' });
++        return true;
++      }
++      return (
++        name !== 'clip-path' &&
++        /^(?:#[a-fA-F0-9]{3,8}|[a-zA-Z]{1,24}|(?:rgb|rgba|hsl|hsla)\([\d\s.,%+-]+\))$/.test(value)
++      );
++    }
++    if (name === 'style') {
++      const declarations = value.split(';').filter((p) => p.trim());
++      return (
++        declarations.length <= 20 &&
++        declarations.every((p) => {
++          const parts = p.split(':');
++          const key = parts[0].trim();
++          return (
++            parts.length === 2 &&
++            key !== 'style' &&
++            key !== 'id' &&
++            key !== 'xmlns' &&
++            attribute(key, parts[1].trim(), tag)
++          );
++        })
++      );
++    }
++    return false;
++  }
++  const tokens = /<[^<>]*>/g;
++  let token: RegExpExecArray | null;
++  while ((token = tokens.exec(source))) {
++    const text = source.slice(cursor, token.index);
++    if (text.trim() && !['title', 'desc'].includes(stack[stack.length - 1] ?? ''))
++      throw Error('GROUP_LOGO_SVG_INVALID');
++    cursor = tokens.lastIndex;
++    const close = /^<\/([A-Za-z][A-Za-z0-9]*)\s*>$/.exec(token[0]);
++    if (close) {
++      if (stack.pop() !== close[1]) throw Error('GROUP_LOGO_SVG_INVALID');
++      continue;
++    }
++    const open = /^<([A-Za-z][A-Za-z0-9]*)([\s\S]*?)(\/?)>$/.exec(token[0]);
++    if (!open || !tags.has(open[1]) || ++nodes > 1000 || stack.length >= 32) throw Error('GROUP_LOGO_SVG_INVALID');
++    const tag = open[1];
++    if (!root) {
++      if (tag !== 'svg') throw Error('GROUP_LOGO_SVG_INVALID');
++      root = true;
++    } else if (!stack.length || tag === 'svg') throw Error('GROUP_LOGO_SVG_INVALID');
++    const tail = open[2];
++    let at = 0;
++    const seen = new Set<string>();
++    const attrs = /\s+([A-Za-z][A-Za-z0-9:-]*)\s*=\s*(?:"([^"]*)"|'([^']*)')/gy;
++    let match: RegExpExecArray | null;
++    while (at < tail.length) {
++      attrs.lastIndex = at;
++      match = attrs.exec(tail);
++      if (!match) {
++        if (tail.slice(at).trim()) throw Error('GROUP_LOGO_SVG_INVALID');
++        break;
++      }
++      at = attrs.lastIndex;
++      if (seen.has(match[1]) || !attribute(match[1], match[2] ?? match[3], tag)) throw Error('GROUP_LOGO_SVG_INVALID');
++      seen.add(match[1]);
++    }
++    if (!open[3]) stack.push(tag);
++  }
++  if (
++    !root ||
++    stack.length ||
++    source.slice(cursor).trim() ||
++    refs.some((r) =>
++      r.kind === 'clip'
++        ? ids.get(r.id) !== 'clipPath'
++        : !['linearGradient', 'radialGradient'].includes(ids.get(r.id) ?? ''),
++    )
++  )
++    throw Error('GROUP_LOGO_SVG_INVALID');
++  return Buffer.from(source);
++}
++export async function groupPhoto(bytes: Buffer) {
++  if (!bytes.length || bytes.length > 2097152) throw Error('GROUP_LOGO_INVALID');
++  const text = bytes.subarray(0, 512).toString('utf8').trimStart();
++  const input = text.startsWith('<') || text.startsWith('\uFEFF') ? validateGroupSvg(bytes) : bytes;
++  const image = sharp(input, { limitInputPixels: 4194304, failOn: 'error' });
++  const info = await image.metadata();
++  if (
++    !['png', 'jpeg', 'webp', 'svg'].includes(info.format) ||
++    !info.width ||
++    !info.height ||
++    info.width * info.height > 4194304
++  )
++    throw Error('GROUP_LOGO_FORMAT');
++  return image
++    .rotate()
++    .resize(512, 512, { fit: 'contain', background: '#ffffff' })
++    .jpeg({ quality: 90 })
++    .timeout({ seconds: 3 })
++    .toBuffer();
++}
+diff --git a/src/api/integrations/channel/whatsapp/bc-groups/platform-account.ts b/src/api/integrations/channel/whatsapp/bc-groups/platform-account.ts
+new file mode 100644
+index 0000000..23d79af
+--- /dev/null
++++ b/src/api/integrations/channel/whatsapp/bc-groups/platform-account.ts
+@@ -0,0 +1,54 @@
++import type { PrismaClient } from '@prisma/client';
++
++import { phoneJid } from './cycle';
++/** Registro técnico separado de clientes. Sem token, QR ou senha no diário. */
++export async function authorizePlatformAccount(
++  db: PrismaClient,
++  instanceId: string,
++  instanceName: string,
++  live: unknown[],
++  ready: boolean,
++  input: unknown,
++) {
++  const p = input as { ownerJid?: unknown; enabled?: unknown; sourceVersion?: unknown };
++  if (
++    !p ||
++    typeof p !== 'object' ||
++    Object.keys(p).some((k) => !['ownerJid', 'enabled', 'sourceVersion'].includes(k)) ||
++    (p.enabled === true && phoneJid(p.ownerJid) !== p.ownerJid) ||
++    typeof p.enabled !== 'boolean' ||
++    !Number.isSafeInteger(p.sourceVersion) ||
++    Number(p.sourceVersion) < 0
++  )
++    throw new Error('Registro de número inválido');
++  if (p.enabled && (!ready || !live.map(phoneJid).includes(p.ownerJid as string)))
++    throw new Error('Telefone da instância não comprovado');
++  const version = BigInt(Number(p.sourceVersion));
++  const old = await db.bcPlatformAccount.findFirst({ where: { OR: [{ instanceId }, { instanceName }] } });
++  if (old && old.sourceVersion > version) throw new Error('Registro desatualizado');
++  if (old && old.sourceVersion === version && (p.enabled !== old.enabled || (p.enabled && old.ownerJid !== p.ownerJid)))
++    throw new Error('Identidade ou autorização alterada sem revisão');
++  if (!old && !p.enabled) return { enabled: false };
++  if (old) {
++    const updated = await db.bcPlatformAccount.updateMany({
++      where: {
++        instanceId: old.instanceId,
++        sourceVersion: old.sourceVersion,
++        ownerJid: old.ownerJid,
++        enabled: old.enabled,
++      },
++      data: {
++        instanceId,
++        instanceName,
++        enabled: p.enabled,
++        sourceVersion: version,
++        ...(p.enabled ? { ownerJid: p.ownerJid as string } : {}),
++      },
++    });
++    if (updated.count !== 1) throw new Error('Registro desatualizado');
++  } else
++    await db.bcPlatformAccount.create({
++      data: { instanceId, instanceName, ownerJid: p.ownerJid as string, enabled: p.enabled, sourceVersion: version },
++    });
++  return { enabled: p.enabled, sourceVersion: Number(version) };
++}
+diff --git a/src/api/integrations/channel/whatsapp/bc-groups/store.ts b/src/api/integrations/channel/whatsapp/bc-groups/store.ts
+new file mode 100644
+index 0000000..6fc3468
+--- /dev/null
++++ b/src/api/integrations/channel/whatsapp/bc-groups/store.ts
+@@ -0,0 +1,50 @@
++import type { PrismaClient } from '@prisma/client';
++
++import type { OperationStore } from './core';
++
++/** Restrição única no banco: nenhuma posse em memória nem retry após início incerto. */
++export function operationStore(db: PrismaClient): OperationStore {
++  return {
++    lock: async (instanceId, token) => {
++      try {
++        await db.bcGroupLease.create({ data: { instanceId, token } });
++        return true;
++      } catch (error) {
++        if (error?.code === 'P2002') return false;
++        throw error;
++      }
++    },
++    unlock: async (instanceId, token) => {
++      await db.bcGroupLease.deleteMany({ where: { instanceId, token } });
++    },
++    pinned: async (instanceId, operationKey, messageId) => {
++      await db.bcGroupOperation.update({
++        where: { instanceId_operationKey: { instanceId, operationKey } },
++        data: { state: 'pin_accepted', messageId },
++      });
++    },
++    accepted: async (instanceId, operationKey, messageId) => {
++      await db.bcGroupOperation.update({
++        where: { instanceId_operationKey: { instanceId, operationKey } },
++        data: { state: 'code_accepted', messageId },
++      });
++    },
++    find: (instanceId, operationKey) =>
++      db.bcGroupOperation.findUnique({ where: { instanceId_operationKey: { instanceId, operationKey } } }),
++    claim: async (data) => {
++      try {
++        await db.bcGroupOperation.create({ data });
++        return true;
++      } catch (error) {
++        if (error?.code === 'P2002') return false;
++        throw error;
++      }
++    },
++    created: async (instanceId, operationKey, groupJid) => {
++      await db.bcGroupOperation.update({
++        where: { instanceId_operationKey: { instanceId, operationKey } },
++        data: { state: 'created', groupJid },
++      });
++    },
++  };
++}
+diff --git a/src/api/integrations/channel/whatsapp/whatsapp.baileys.service.ts b/src/api/integrations/channel/whatsapp/whatsapp.baileys.service.ts
+index 60e857f..135f802 100644
+--- a/src/api/integrations/channel/whatsapp/whatsapp.baileys.service.ts
++++ b/src/api/integrations/channel/whatsapp/whatsapp.baileys.service.ts
+@@ -153,6 +153,12 @@ import { PassThrough, Readable } from 'stream';
+ import { v4 } from 'uuid';
+ 
+ import { BaileysMessageProcessor } from './baileysMessage.processor';
++import { executeGroupCommand, extensionEnabled, isGroupCodeMessage, participantIdentity } from './bc-groups/core';
++import { captureCycleMessage, captureCycleReceipts } from './bc-groups/cycle-evidence';
++import { resolvePhone as resolveBcPhone } from './bc-groups/cycle-identity';
++import { cycleStore } from './bc-groups/cycle-store';
++import { authorizePlatformAccount } from './bc-groups/platform-account';
++import { operationStore } from './bc-groups/store';
+ import { useVoiceCallsBaileys } from './voiceCalls/useVoiceCallsBaileys';
+ 
+ export interface ExtendedIMessageKey extends proto.IMessageKey {
+@@ -940,6 +946,7 @@ export class BaileysStartupService extends ChannelStartupService {
+       syncType?: proto.HistorySync.HistorySyncType;
+     }) => {
+       try {
++        if (extensionEnabled(this.instance.name)) messages = messages.filter((message) => !isGroupCodeMessage(message));
+         if (syncType === proto.HistorySync.HistorySyncType.ON_DEMAND) {
+           console.log('received on-demand history sync, messages=', messages);
+         }
+@@ -1085,6 +1092,18 @@ export class BaileysStartupService extends ChannelStartupService {
+     ) => {
+       try {
+         for (const received of messages) {
++          if (extensionEnabled(this.instance.name))
++            try {
++              await captureCycleMessage(
++                cycleStore(this.prismaRepository),
++                [this.client?.user?.id, this.client?.user?.lid],
++                received,
++                async (jid) => this.client.signalRepository.lidMapping.getPNForLID(jid),
++              );
++            } catch {
++              /* Prova permanece pendente; nunca inferir recebimento. */
++            }
++          if (extensionEnabled(this.instance.name) && isGroupCodeMessage(received)) continue;
+           if (
+             received?.messageStubParameters?.some?.((param) =>
+               [
+@@ -1750,6 +1769,14 @@ export class BaileysStartupService extends ChannelStartupService {
+       participants: string[];
+       action: ParticipantAction;
+     }) => {
++      if (extensionEnabled(this.instance.name)) {
++        this.sendDataWebhook(Events.GROUP_PARTICIPANTS_UPDATE, {
++          ...participantsUpdate,
++          participantsData: participantsUpdate.participants.map(participantIdentity),
++        });
++        this.updateGroupMetadataCache(participantsUpdate.id);
++        return;
++      }
+       // ENHANCEMENT: Adds participantsData field while maintaining backward compatibility
+       // MAINTAINS: participants: string[] (original JID strings)
+       // ADDS: participantsData: { jid: string, phoneNumber: string, name?: string, imgUrl?: string }[]
+@@ -1887,7 +1914,11 @@ export class BaileysStartupService extends ChannelStartupService {
+                 this.client.rejectCall(call.id, call.from);
+               }
+ 
+-              if (settings?.msgCall?.trim().length > 0 && call.status == 'offer') {
++              if (
++                !extensionEnabled(this.instance.name) &&
++                settings?.msgCall?.trim().length > 0 &&
++                call.status == 'offer'
++              ) {
+                 if (call.from.endsWith('@lid')) {
+                   call.from = await this.client.signalRepository.lidMapping.getPNForLID(call.from as string);
+                 }
+@@ -1926,6 +1957,23 @@ export class BaileysStartupService extends ChannelStartupService {
+ 
+             if (events['message-receipt.update']) {
+               const payload = events['message-receipt.update'] as MessageUserReceiptUpdate[];
++              if (extensionEnabled(this.instance.name))
++                try {
++                  await captureCycleReceipts(
++                    cycleStore(this.prismaRepository),
++                    [this.client?.user?.id, this.client?.user?.lid],
++                    payload,
++                    async (jid) => this.client.signalRepository.lidMapping.getPNForLID(jid),
++                  );
++                } catch {
++                  /* Não liberar primeiro envio sem prova persistida. */
++                }
++              if (extensionEnabled(this.instance.name) && !settings?.groupsIgnore) {
++                const groups = payload.filter(
++                  (e) => typeof e.key.remoteJid === 'string' && e.key.remoteJid.endsWith('@g.us'),
++                );
++                if (groups.length) this.sendDataWebhook(Events.MESSAGE_RECEIPT_UPDATE, groups);
++              }
+               const remotesJidMap: Record<string, number> = {};
+ 
+               for (const event of payload) {
+@@ -1952,6 +2000,9 @@ export class BaileysStartupService extends ChannelStartupService {
+             }
+ 
+             if (!settings?.groupsIgnore) {
++              if (extensionEnabled(this.instance.name) && events['group.join-request']) {
++                this.sendDataWebhook(Events.GROUP_JOIN_REQUEST, events['group.join-request']);
++              }
+               if (events['groups.upsert']) {
+                 const payload = events['groups.upsert'];
+                 this.groupHandler['groups.upsert'](payload);
+@@ -2138,6 +2189,8 @@ export class BaileysStartupService extends ChannelStartupService {
+     contextInfo?: any,
+     // participants?: GroupParticipant[],
+   ) {
++    if (extensionEnabled(this.instance.name))
++      throw new BadRequestException('Use somente o contrato protegido de grupos');
+     sender = sender.toLowerCase();
+ 
+     const option: any = { quoted };
+@@ -2292,6 +2345,8 @@ export class BaileysStartupService extends ChannelStartupService {
+     options?: Options,
+     isIntegration = false,
+   ) {
++    if (extensionEnabled(this.instance.name))
++      throw new BadRequestException('Use somente o contrato protegido de grupos');
+     const isWA = (await this.whatsappNumber({ numbers: [number] }))?.shift();
+ 
+     if (!isWA.exists && !isJidGroup(isWA.jid) && !isWA.jid.includes('@broadcast')) {
+@@ -3769,6 +3824,8 @@ export class BaileysStartupService extends ChannelStartupService {
+   }
+ 
+   public async deleteMessage(del: DeleteMessage) {
++    if (extensionEnabled(this.instance.name))
++      throw new BadRequestException('Use somente o contrato protegido de grupos');
+     try {
+       const response = await this.client.sendMessage(del.remoteJid, { delete: del });
+       if (response) {
+@@ -4157,6 +4214,8 @@ export class BaileysStartupService extends ChannelStartupService {
+   }
+ 
+   public async updateMessage(data: UpdateMessageDto) {
++    if (extensionEnabled(this.instance.name))
++      throw new BadRequestException('Use somente o contrato protegido de grupos');
+     const jid = createJid(data.number);
+ 
+     const options = await this.formatUpdateMessage(data);
+@@ -4326,6 +4385,70 @@ export class BaileysStartupService extends ChannelStartupService {
+     return await this.findGroup({ groupJid }, 'inner');
+   };
+ 
++  public async bcPeerState() {
++    if (!extensionEnabled(this.instance.name) || this.connectionStatus?.state !== 'open')
++      return { jid: null, open: false };
++    for (const raw of [this.client?.user?.id, this.client?.user?.lid]) {
++      if (typeof raw !== 'string') continue;
++      const jid = await resolveBcPhone(raw, async (lid) => this.client.signalRepository.lidMapping.getPNForLID(lid));
++      if (jid) return { jid, open: true };
++    }
++    return { jid: null, open: false };
++  }
++
++  public async bcGroupCommand(command: string, data: unknown) {
++    const registered = await this.prismaRepository.bcPlatformAccount.findMany({ where: { enabled: true } });
++    const rawLive = [this.client?.user?.id, this.client?.user?.lid].filter(Boolean);
++    const mapped = await Promise.all(
++      rawLive.map((jid) =>
++        resolveBcPhone(jid, async (lid) => this.client.signalRepository.lidMapping.getPNForLID(lid)),
++      ),
++    );
++    const live = [...new Set([...rawLive, ...mapped.filter(Boolean)])];
++    const authorized = registered.some(
++      (r) => r.instanceId === this.instanceId && live.some((p) => p.replace(/:\d+@/, '@') === r.ownerJid),
++    );
++    return executeGroupCommand(
++      {
++        instanceId: this.instanceId,
++        instanceName: this.instance.name,
++        socket: this.client,
++        self: () => live,
++        ready: () => this.connectionStatus?.state === 'open',
++        store: operationStore(this.prismaRepository),
++        cycles: cycleStore(this.prismaRepository),
++        resolvePhone: async (jid) => this.client.signalRepository.lidMapping.getPNForLID(jid),
++        peersReady: async (phones) => {
++          const accounts = await this.prismaRepository.bcPlatformAccount.findMany({
++            where: { enabled: true, ownerJid: { in: phones } },
++          });
++          const names = new Set(accounts.map((a) => a.instanceName));
++          const states = await Promise.all(
++            Object.entries(waMonitor.waInstances)
++              .filter(([name]) => names.has(name))
++              .map(async ([, service]: [string, any]) =>
++                typeof service?.bcPeerState === 'function' ? service.bcPeerState() : null,
++              ),
++          );
++          const ready = states.filter((s) => s?.open && s.jid).map((s) => s.jid);
++          return phones.filter((p) => ready.includes(p)).length >= 2;
++        },
++        platformJids: authorized ? [...new Set(registered.map((r) => r.ownerJid))] : [],
++        authorizePlatform: (value) =>
++          authorizePlatformAccount(
++            this.prismaRepository,
++            this.instanceId,
++            this.instance.name,
++            live,
++            this.connectionStatus?.state === 'open',
++            value,
++          ),
++      },
++      command,
++      data,
++    );
++  }
++
+   public async createGroup(create: CreateGroupDto) {
+     try {
+       const participants = (await this.whatsappNumber({ numbers: create.participants }))
+@@ -4432,6 +4555,13 @@ export class BaileysStartupService extends ChannelStartupService {
+         descId: group.descId,
+         restrict: group.restrict,
+         announce: group.announce,
++        ...(extensionEnabled(this.instance.name)
++          ? {
++              memberAddMode: typeof group.memberAddMode === 'boolean' ? group.memberAddMode : null,
++              joinApprovalMode: typeof group.joinApprovalMode === 'boolean' ? group.joinApprovalMode : null,
++              addressingMode: group.addressingMode ?? null,
++            }
++          : {}),
+         participants: group.participants,
+         isCommunity: group.isCommunity,
+         isCommunityAnnounce: group.isCommunityAnnounce,
+@@ -4465,6 +4595,13 @@ export class BaileysStartupService extends ChannelStartupService {
+         descId: group.descId,
+         restrict: group.restrict,
+         announce: group.announce,
++        ...(extensionEnabled(this.instance.name)
++          ? {
++              memberAddMode: typeof group.memberAddMode === 'boolean' ? group.memberAddMode : null,
++              joinApprovalMode: typeof group.joinApprovalMode === 'boolean' ? group.joinApprovalMode : null,
++              addressingMode: group.addressingMode ?? null,
++            }
++          : {}),
+         isCommunity: group.isCommunity,
+         isCommunityAnnounce: group.isCommunityAnnounce,
+         linkedParent: group.linkedParent,
+diff --git a/src/api/integrations/event/event.controller.ts b/src/api/integrations/event/event.controller.ts
+index 39b5218..441cb60 100644
+--- a/src/api/integrations/event/event.controller.ts
++++ b/src/api/integrations/event/event.controller.ts
+@@ -153,8 +153,11 @@ export class EventController {
+     'CHATS_UPSERT',
+     'CHATS_UPDATE',
+     'CHATS_DELETE',
++    'GROUP_JOIN_REQUEST',
++    'MESSAGE_RECEIPT_UPDATE',
+     'GROUPS_UPSERT',
+     'GROUP_UPDATE',
++    'GROUPS_UPDATE',
+     'GROUP_PARTICIPANTS_UPDATE',
+     'CONNECTION_UPDATE',
+     'LABELS_EDIT',
+diff --git a/src/api/integrations/event/webhook/webhook.controller.ts b/src/api/integrations/event/webhook/webhook.controller.ts
+index 7f1dd8d..3a8f88f 100644
+--- a/src/api/integrations/event/webhook/webhook.controller.ts
++++ b/src/api/integrations/event/webhook/webhook.controller.ts
+@@ -1,3 +1,4 @@
++import { eventEnvelope } from '@api/integrations/channel/whatsapp/bc-groups/core';
+ import { EventDto } from '@api/integrations/event/event.dto';
+ import { PrismaRepository } from '@api/repository/repository.service';
+ import { WAMonitoringService } from '@api/services/monitor.service';
+@@ -90,18 +91,22 @@ export class WebhookController extends EventController implements EventControlle
+     const enabledLog = configService.get<Log>('LOG').LEVEL.includes('WEBHOOKS');
+     const regex = /^(https?:\/\/)/;
+ 
++    const groupEnvelope = eventEnvelope(instanceName, event);
+     const webhookData = {
+       ...(extra ?? {}),
+       event,
++      ...groupEnvelope,
+       instance: instanceName,
+       data,
+       destination: instance?.url || `${webhookConfig.GLOBAL.URL}/${transformedWe}`,
+       date_time: dateTime,
+       sender,
+       server_url: serverUrl,
+-      apikey: apiKey,
++      ...(groupEnvelope.event_id ? {} : { apikey: apiKey }),
+     };
+ 
++    if (groupEnvelope.event_id) delete webhookData.apikey;
++
+     if (local && instance?.enabled) {
+       if (Array.isArray(webhookLocal) && webhookLocal.includes(we)) {
+         let baseURL: string;
+@@ -116,7 +121,7 @@ export class WebhookController extends EventController implements EventControlle
+           const logData = {
+             local: `${origin}.sendData-Webhook`,
+             url: baseURL,
+-            ...webhookData,
++            ...(groupEnvelope.event_id ? { event, instance: instanceName, ...groupEnvelope } : webhookData),
+           };
+ 
+           this.logger.log(logData);
+@@ -161,7 +166,7 @@ export class WebhookController extends EventController implements EventControlle
+           const logData = {
+             local: `${origin}.sendData-Webhook-Global`,
+             url: globalURL,
+-            ...webhookData,
++            ...(groupEnvelope.event_id ? { event, instance: instanceName, ...groupEnvelope } : webhookData),
+           };
+ 
+           this.logger.log(logData);
+diff --git a/src/api/routes/bc-exclusive.guard.ts b/src/api/routes/bc-exclusive.guard.ts
+new file mode 100644
+index 0000000..e2d4b8e
+--- /dev/null
++++ b/src/api/routes/bc-exclusive.guard.ts
+@@ -0,0 +1,11 @@
++import type { RequestHandler } from 'express';
++
++import { extensionEnabled } from '../integrations/channel/whatsapp/bc-groups/core';
++/** Instâncias protegidas não aceitam rotas genéricas de chat/envio. */
++export const bcExclusiveGuard: RequestHandler = (req, res, next) => {
++  if (extensionEnabled(req.params.instanceName)) {
++    res.status(403).json({ error: 'Instância exclusiva: utilize o contrato protegido de grupos' });
++    return;
++  }
++  next();
++};
+diff --git a/src/api/routes/bc-group.routes.ts b/src/api/routes/bc-group.routes.ts
+new file mode 100644
+index 0000000..584a123
+--- /dev/null
++++ b/src/api/routes/bc-group.routes.ts
+@@ -0,0 +1,86 @@
++import { timingSafeEqual } from 'node:crypto';
++
++import type { RequestHandler, Router } from 'express';
++import { validate } from 'jsonschema';
++
++import { extensionEnabled } from '../integrations/channel/whatsapp/bc-groups/core';
++import { bcGroupSchemas } from './bc-group.schemas';
++
++/** Reutiliza todas as guardas existentes. Query/body nunca escolhem a instância autenticada. */
++export function registerBcGroupRoutes(
++  router: Router,
++  guards: RequestHandler[],
++  execute: (instance: string, command: string, data: unknown) => Promise<unknown>,
++) {
++  const windows = new Map<string, { start: number; count: number }>();
++  const commands = [
++    ['post', 'updateMemberAddMode', 'memberMode'],
++    ['post', 'updateJoinApprovalMode', 'approvalMode'],
++    ['get', 'joinRequests', 'requests'],
++    ['post', 'joinRequests', 'decide'],
++    ['post', 'bcAdoptClosing', 'adoptClosing'],
++    ['post', 'bcAuthorizePlatform', 'authorizePlatform'],
++    ['get', 'bcCreationStatus', 'creationStatus'],
++    ['post', 'bcRecoverCycle', 'recoverCycle'],
++    ['post', 'bcCreate', 'create'],
++    ['get', 'bcCycle', 'cycleStatus'],
++    ['get', 'bcOperation', 'operationStatus'],
++    ['post', 'bcPrepare', 'prepare'],
++    ['post', 'bcWelcome', 'welcome'],
++    ['post', 'bcDescription', 'description'],
++    ['post', 'bcBrand', 'brand'],
++    ['post', 'bcSendNotice', 'sendNotice'],
++    ['post', 'bcClose', 'close'],
++    ['post', 'bcSendCode', 'sendCode'],
++    ['post', 'bcSetting', 'setting'],
++    ['post', 'bcSubject', 'subject'],
++    ['post', 'bcPinNotice', 'pinNotice'],
++    ['post', 'bcMember', 'member'],
++    ['get', 'bcInvite', 'invite'],
++    ['post', 'bcRevoke', 'revoke'],
++    ['get', 'bcCreateStatus', 'createStatus'],
++    ['get', 'bcCapabilities', 'capabilities'],
++    ['get', 'bcInspect', 'inspect'],
++  ] as const;
++  for (const [method, path, command] of commands) {
++    router[method]('/' + path + '/:instanceName', ...guards, async (req, res, next) => {
++      try {
++        const secret = process.env.BC_GROUPS_API_SECRET ?? '',
++          supplied = req.get('x-bc-group-key') ?? '';
++        if (
++          secret.length < 32 ||
++          Buffer.byteLength(secret) !== Buffer.byteLength(supplied) ||
++          !timingSafeEqual(Buffer.from(secret), Buffer.from(supplied))
++        ) {
++          res.status(403).json({ error: 'Acesso restrito ao B&C' });
++          return;
++        }
++
++        const data = method === 'get' ? req.query : req.body;
++        if (!validate(data, bcGroupSchemas[command]).valid) {
++          res.status(400).json({ error: 'Parâmetros inválidos' });
++          return;
++        }
++        const now = Date.now();
++        for (const [name, window] of windows) if (now - window.start >= 60000) windows.delete(name);
++        const window = windows.get(req.params.instanceName) ?? { start: now, count: 0 };
++        if (++window.count > 60) {
++          res.status(429).json({ error: 'Aguarde antes de tentar novamente' });
++          return;
++        }
++        windows.set(req.params.instanceName, window);
++        const result = await execute(req.params.instanceName, command, data);
++        res.status(200).json(result);
++      } catch (error) {
++        next(error);
++      }
++    });
++  }
++  router.use('/:operation/:instanceName', (req, res, next) => {
++    if (extensionEnabled(req.params.instanceName)) {
++      res.status(403).json({ error: 'Instância exclusiva: use o contrato B&C' });
++      return;
++    }
++    next();
++  });
++}
+diff --git a/src/api/routes/bc-group.schemas.ts b/src/api/routes/bc-group.schemas.ts
+new file mode 100644
+index 0000000..3c9a3ba
+--- /dev/null
++++ b/src/api/routes/bc-group.schemas.ts
+@@ -0,0 +1,133 @@
++import type { JSONSchema7 } from 'json-schema';
++const groupJid = { type: 'string', maxLength: 128, pattern: '^[0-9-]+@g\\.us$' };
++const operationId = {
++  type: 'string',
++  pattern: '^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$',
++};
++const schema = (properties: Record<string, unknown>, required = Object.keys(properties)): JSONSchema7 =>
++  ({ type: 'object', additionalProperties: false, properties, required }) as JSONSchema7;
++const brand = schema({
++  shop_name: { type: 'string', minLength: 1, maxLength: 120 },
++  customer_name: { type: 'string', maxLength: 200 },
++  slug: { type: 'string', maxLength: 63 },
++  timezone: { type: 'string', maxLength: 100 },
++});
++export const bcGroupSchemas: Record<string, JSONSchema7> = {
++  adoptClosing: schema({
++    groupJid,
++    cycleId: operationId,
++    customerJid: { type: 'string' },
++    platformJids: { type: 'array', minItems: 1, maxItems: 20, uniqueItems: true, items: { type: 'string' } },
++  }),
++  capabilities: schema({}),
++  creationStatus: schema({
++    cycleId: operationId,
++    operationId,
++    requestHash: { type: 'string', pattern: '^[a-f0-9]{64}$' },
++    creatorInstanceId: { type: 'string', maxLength: 191 },
++  }),
++  recoverCycle: schema({
++    cycleId: operationId,
++    operationId,
++    subject: { type: 'string', maxLength: 100 },
++    participants: { type: 'array', minItems: 1, maxItems: 19, uniqueItems: true, items: { type: 'string' } },
++    customerJid: { type: 'string' },
++    brand,
++    creatorInstanceId: { type: 'string', maxLength: 191 },
++  }),
++  authorizePlatform: schema(
++    {
++      ownerJid: { type: 'string' },
++      enabled: { type: 'boolean' },
++      sourceVersion: { type: 'integer', minimum: 0, maximum: 9007199254740991 },
++    },
++    ['enabled', 'sourceVersion'],
++  ),
++  cycleStatus: schema({ groupJid }),
++  operationStatus: schema({ groupJid, operationId }),
++  prepare: schema({
++    groupJid,
++    operationId,
++    subject: { type: 'string', maxLength: 100 },
++    platformJids: { type: 'array', minItems: 2, maxItems: 20, uniqueItems: true, items: { type: 'string' } },
++    brand,
++    logoBase64: { type: 'string', maxLength: 2796204 },
++    logoHash: { type: 'string', pattern: '^[a-f0-9]{64}$' },
++  }),
++  welcome: schema({ groupJid, operationId, admissionId: operationId }, ['groupJid', 'operationId']),
++  description: schema({ groupJid }),
++  brand: schema({ groupJid, brand }),
++  close: schema(
++    {
++      groupJid,
++      operationId,
++      stage: { enum: ['start', 'leave', 'final', 'delete', 'withdraw'] },
++      targetJid: { type: 'string' },
++    },
++    ['groupJid', 'operationId', 'stage'],
++  ),
++  sendNotice: schema({
++    groupJid,
++    operationId,
++    customerJid: { type: 'string' },
++    platformJids: { type: 'array', minItems: 2, maxItems: 20, uniqueItems: true, items: { type: 'string' } },
++    templateKey: { type: 'string', maxLength: 80 },
++    text: { type: 'string', minLength: 1, maxLength: 2000 },
++  }),
++  pinNotice: schema({
++    groupJid,
++    operationId,
++    messageId: { type: 'string', minLength: 1, maxLength: 200 },
++    duration: { enum: [86400, 604800, 2592000] },
++  }),
++  sendCode: schema({
++    operationId,
++    groupJid,
++    customerJid: { type: 'string' },
++    platformJids: { type: 'array', minItems: 2, maxItems: 20, uniqueItems: true, items: { type: 'string' } },
++    purpose: { enum: ['login', 'verify_phone'] },
++    expiresAt: { type: 'string', maxLength: 40 },
++    code: { type: 'string', pattern: '^[0-9]{6}$' },
++  }),
++  subject: schema({
++    groupJid,
++    subject: { type: 'string', minLength: 1, maxLength: 100 },
++    customerJid: { type: 'string' },
++    platformJids: { type: 'array', minItems: 2, maxItems: 20, uniqueItems: true, items: { type: 'string' } },
++    allowAbsent: { type: 'boolean' },
++  }),
++  setting: schema({ groupJid }),
++  invite: schema({ groupJid }),
++  revoke: schema({ groupJid }),
++  member: schema({ groupJid, jid: { type: 'string' }, action: { enum: ['add', 'remove'] } }),
++  inspect: schema({ groupJid }),
++  requests: schema({ groupJid }),
++  memberMode: schema({ groupJid, mode: { enum: ['admin_add', 'all_member_add'] } }),
++  approvalMode: schema({ groupJid, mode: { enum: ['on', 'off'] } }),
++  createStatus: schema({ operationId }),
++  create: schema({
++    operationId,
++    cycleId: operationId,
++    subject: { type: 'string', minLength: 1, maxLength: 100 },
++    customerJid: { type: 'string' },
++    brand,
++    participants: {
++      type: 'array',
++      minItems: 1,
++      maxItems: 19,
++      uniqueItems: true,
++      items: { type: 'string', pattern: '^[1-9][0-9]{7,14}@s\\.whatsapp\\.net$' },
++    },
++  }),
++  decide: schema({
++    groupJid,
++    action: { enum: ['approve', 'reject'] },
++    participants: {
++      type: 'array',
++      minItems: 1,
++      maxItems: 200,
++      uniqueItems: true,
++      items: { type: 'string', pattern: '^[0-9]+@(s\\.whatsapp\\.net|lid)$' },
++    },
++  }),
++};
+diff --git a/src/api/routes/chat.router.ts b/src/api/routes/chat.router.ts
+index 158947e..1d809c3 100644
+--- a/src/api/routes/chat.router.ts
++++ b/src/api/routes/chat.router.ts
+@@ -39,11 +39,13 @@ import {
+ } from '@validate/validate.schema';
+ import { RequestHandler, Router } from 'express';
+ 
++import { bcExclusiveGuard } from './bc-exclusive.guard';
+ import { HttpStatus } from './index.router';
+ 
+ export class ChatRouter extends RouterBroker {
+   constructor(...guards: RequestHandler[]) {
+     super();
++    this.router.use('/:operation/:instanceName', bcExclusiveGuard);
+     this.router
+       .post(this.routerPath('whatsappNumbers'), ...guards, async (req, res) => {
+         try {
+diff --git a/src/api/routes/group.router.ts b/src/api/routes/group.router.ts
+index 7086b11..99f830d 100644
+--- a/src/api/routes/group.router.ts
++++ b/src/api/routes/group.router.ts
+@@ -30,11 +30,15 @@ import {
+ } from '@validate/validate.schema';
+ import { RequestHandler, Router } from 'express';
+ 
++import { registerBcGroupRoutes } from './bc-group.routes';
+ import { HttpStatus } from './index.router';
+ 
+ export class GroupRouter extends RouterBroker {
+   constructor(...guards: RequestHandler[]) {
+     super();
++    registerBcGroupRoutes(this.router, guards, (instance, command, data) =>
++      groupController.bcCommand(instance, command, data),
++    );
+     this.router
+       .post(this.routerPath('create'), ...guards, async (req, res) => {
+         const response = await this.dataValidate<CreateGroupDto>({
+diff --git a/src/api/routes/sendMessage.router.ts b/src/api/routes/sendMessage.router.ts
+index cd073db..62b8f2e 100644
+--- a/src/api/routes/sendMessage.router.ts
++++ b/src/api/routes/sendMessage.router.ts
+@@ -33,6 +33,7 @@ import {
+ import { RequestHandler, Router } from 'express';
+ import multer from 'multer';
+ 
++import { bcExclusiveGuard } from './bc-exclusive.guard';
+ import { HttpStatus } from './index.router';
+ 
+ const upload = multer({ storage: multer.memoryStorage() });
+@@ -40,6 +41,7 @@ const upload = multer({ storage: multer.memoryStorage() });
+ export class MessageRouter extends RouterBroker {
+   constructor(...guards: RequestHandler[]) {
+     super();
++    this.router.use('/:operation/:instanceName', bcExclusiveGuard);
+     this.router
+       .post(this.routerPath('sendTemplate'), ...guards, async (req, res) => {
+         const response = await this.dataValidate<SendTemplateDto>({
+diff --git a/src/api/types/wa.types.ts b/src/api/types/wa.types.ts
+index 8f7c6a3..497dd35 100644
+--- a/src/api/types/wa.types.ts
++++ b/src/api/types/wa.types.ts
+@@ -24,6 +24,8 @@ export enum Events {
+   CHATS_UPDATE = 'chats.update',
+   CHATS_UPSERT = 'chats.upsert',
+   CHATS_DELETE = 'chats.delete',
++  GROUP_JOIN_REQUEST = 'group.join-request',
++  MESSAGE_RECEIPT_UPDATE = 'message-receipt.update',
+   GROUPS_UPSERT = 'groups.upsert',
+   GROUPS_UPDATE = 'groups.update',
+   GROUP_PARTICIPANTS_UPDATE = 'group-participants.update',
+diff --git a/test/bc-cycle-fixture.ts b/test/bc-cycle-fixture.ts
+new file mode 100644
+index 0000000..aa49b07
+--- /dev/null
++++ b/test/bc-cycle-fixture.ts
+@@ -0,0 +1,21 @@
++import assert from 'node:assert/strict';import {createHash} from 'node:crypto';import sharp from 'sharp';
++import {executeCycleCommand,type CycleDependencies} from '../src/api/integrations/channel/whatsapp/bc-groups/cycle-engine';
++import type {GroupCycle} from '../src/api/integrations/channel/whatsapp/bc-groups/cycle';
++import type {Operation} from '../src/api/integrations/channel/whatsapp/bc-groups/core';
++export const a='5511800000111@s.whatsapp.net',b='5511800000222@s.whatsapp.net',u='5511999999999@s.whatsapp.net',id='123456-7890@g.us';
++export const key=(n:number)=>`11111111-1111-4111-8111-${String(n).padStart(12,'0')}`;
++export const branding={shop_name:'Arena',customer_name:'Cliente Teste',slug:'arena',timezone:'America/Sao_Paulo'};
++export async function fixture(groupId = id){
++ const id = groupId;
++ const map=new Map<string,Operation>();let cycle:GroupCycle|null=null;let author=a;let photoCalls=0;let creates=0;const locks=new Map<string,string>();const sent:{author:string;text?:string;pin?:unknown}[]=[];
++ const raw:any={id,subject:'Notificações Arena • Cliente',owner:a,creation:Math.floor(Date.now()/1000)-1000,restrict:true,memberAddMode:false,joinApprovalMode:true,participants:[{id:a,admin:'superadmin'},{id:b,admin:null}]};
++ const left=new Set<string>();
++ const d:CycleDependencies={peersReady:()=>true,instanceId:'criador',instanceName:'fixture',self:()=>[author],ready:()=>true,platformJids:[a,b],
++  store:{lock:async(i,t)=>{if(locks.has(i))return false;locks.set(i,t);return true;},unlock:async(i,t)=>{if(locks.get(i)===t)locks.delete(i);},accepted:async()=>{},created:async(i,k,j)=>Object.assign(map.get(i+k)!,{state:'created',groupJid:j}),find:async(i,k)=>map.get(i+k)??null,claim:async value=>{const k=value.instanceId+value.operationKey;if(map.has(k))return false;map.set(k,{...value});return true;}},
++  cycles:{minimizeClosed:async v=>{cycle={...structuredClone(v),minimized:true,customerJid:"",brand:undefined};},cycle:async()=>cycle?structuredClone(cycle):null,createCycle:async v=>{if(cycle)return false;cycle=structuredClone(v);return true;},saveCycle:async v=>{assert.equal(v.version,cycle?.version);cycle=structuredClone({...v,version:v.version+1});v.version++;},finish:async(i,k,state,messageId)=>{Object.assign(map.get(i+k)!,{state,...(messageId?{messageId}:{})});},evidence:async(_g,m,observer,sender)=>{if(cycle?.firstMessageId===m&&cycle?.creatorJid===observer&&cycle?.firstSenderJid===sender)cycle.firstReceived=true;}},
++  socket:{groupMetadata:async()=>structuredClone(raw),groupCreate:async()=>{creates++;return {id} as never;},groupSettingUpdate:async()=>{raw.restrict=true;},groupMemberAddMode:async()=>{raw.memberAddMode=false;},groupJoinApprovalMode:async()=>{raw.joinApprovalMode=true;},groupParticipantsUpdate:async(_id,ids,action)=>{for(const who of ids){if(action==='promote')raw.participants.find(p=>p.id===who).admin='admin';if(action==='add')raw.participants.push({id:who,admin:null});if(action==='remove')raw.participants=raw.participants.filter(p=>p.id!==who);}return [] as never;},groupUpdateSubject:async(_id,s)=>{raw.subject=s;},updateProfilePicture:async()=>{photoCalls++;},groupUpdateDescription:async(_id,desc)=>{raw.desc=desc;},sendMessage:async(_id,value)=>{sent.push({author,...value as any});return {key:{id:'mensagem-'+sent.length}} as never;},groupInviteCode:async()=> 'FICTICIO123456789',groupRevokeInvite:async()=> 'NOVOFICTICIO',groupRequestParticipantsList:async()=>[{jid:u}],groupRequestParticipantsUpdate:async(_id,ids,action)=>{if(action==='approve')for(const pn of ids)raw.participants.push({id:pn,admin:null});return [] as never;},groupLeave:async()=>{left.add(author);raw.participants=raw.participants.filter(p=>p.id!==author);},groupFetchAllParticipating:async()=>left.has(author)?{}:{[id]:raw},chatModify:async()=>{}} as unknown as CycleDependencies['socket']};
++ const bytes=await sharp({create:{width:16,height:16,channels:3,background:'#c6a16a'}}).png().toBuffer();
++ const preparation={groupJid:id,operationId:key(2),subject:raw.subject,platformJids:[a,b],brand:branding,logoBase64:bytes.toString('base64'),logoHash:createHash('sha256').update(bytes).digest('hex')};
++ async function create(){return executeCycleCommand(d,'create',{operationId:key(1),cycleId:key(100),subject:raw.subject,participants:[b],customerJid:u,brand:branding});}
++ return {d,raw,sent,map,create,preparation,creates:()=>creates,cycle:()=>cycle,photos:()=>photoCalls,as:(who:string)=>{author=who;d.instanceId=who===a?'criador':'reserva';}};
++}
+diff --git a/test/bc-group-cycle-database.test.ts b/test/bc-group-cycle-database.test.ts
+new file mode 100644
+index 0000000..b3d78d8
+--- /dev/null
++++ b/test/bc-group-cycle-database.test.ts
+@@ -0,0 +1,60 @@
++import test from 'node:test';import assert from 'node:assert/strict';import {PrismaClient} from '@prisma/client';
++import {cycleStore} from '../src/api/integrations/channel/whatsapp/bc-groups/cycle-store';import {operationStore} from '../src/api/integrations/channel/whatsapp/bc-groups/store';import type {GroupCycle} from '../src/api/integrations/channel/whatsapp/bc-groups/cycle';
++const url=new URL(process.env.DATABASE_CONNECTION_URI??'http://invalid');if(process.env.BC_GROUP_TEST_DATABASE!=='local-only'||url.hostname!=='127.0.0.1'||url.port!=='54340')throw new Error('Somente banco descartável local na porta 54340');
++const a='5511800000111@s.whatsapp.net',b='5511800000222@s.whatsapp.net',u='5511999999999@s.whatsapp.net';
++const jid=(n:number)=>`99887766-${n}@g.us`;const key=(n:number)=>`99999999-9999-4999-8999-${String(n).padStart(12,'0')}`;
++function fixture(n:number):GroupCycle{return {version:1,groupJid:jid(n),customerJid:u,platformJids:[a,b],creatorJid:a,creatorInstanceId:'criador',createdAt:'2026-01-14T00:00:00.000Z',expiresAt:'2027-01-14T00:00:00.000Z',firstWelcomeOperation:null,firstSenderJid:null,firstMessageId:null,firstReceived:false,firstViolation:false,logoHash:null,logoApplied:false,prepared:false,descriptionHash:null,lastWelcomeMessageId:null,lastWelcomeOperation:null,pinExpiresAt:null,pinAccepted:false,closing:false,closed:false,leftInstances:[]};}
++test('PostgreSQL: ciclo persiste após desconexão, sem substituir por nova criação',async()=>{
++ const first=new PrismaClient();try{assert.equal(await cycleStore(first).createCycle(fixture(1)),true);}finally{await first.$disconnect();}
++ const next=new PrismaClient();try{const store=cycleStore(next);assert.equal((await store.cycle(jid(1)))?.creatorJid,a);assert.equal(await store.createCycle({...fixture(1),creatorJid:b}),false);assert.equal((await store.cycle(jid(1)))?.creatorJid,a);}finally{await next.$disconnect();}
++});
++test('PostgreSQL: duas versões do ciclo não sobrescrevem a concorrente',async()=>{
++ const db1=new PrismaClient(),db2=new PrismaClient();try{await cycleStore(db1).createCycle(fixture(2));const x=(await cycleStore(db1).cycle(jid(2)))!,y=(await cycleStore(db2).cycle(jid(2)))!;x.prepared=true;await cycleStore(db1).saveCycle(x);y.logoApplied=true;await assert.rejects(()=>cycleStore(db2).saveCycle(y));assert.equal((await cycleStore(db2).cycle(jid(2)))?.logoApplied,false);}finally{await db1.$disconnect();await db2.$disconnect();}
++});
++test('PostgreSQL: recebimento anterior ao aceite é reconciliado sem retransmissão',async()=>{
++ const first=new PrismaClient();try{const c=fixture(3);c.firstWelcomeOperation=key(3);c.lastWelcomeOperation=key(3);c.firstSenderJid=b;await cycleStore(first).createCycle(c);await cycleStore(first).evidence(jid(3),'welcome-ficticio',a,b,true);assert.equal((await cycleStore(first).cycle(jid(3)))?.firstReceived,false);
++ await operationStore(first).claim({instanceId:'group:'+jid(3),operationKey:key(3),requestHash:'a'.repeat(64),state:'notice_unknown',groupJid:jid(3)});await cycleStore(first).finish('group:'+jid(3),key(3),'notice_accepted','welcome-ficticio');}finally{await first.$disconnect();}
++ const next=new PrismaClient();try{const c=await cycleStore(next).cycle(jid(3));assert.equal(c?.firstReceived,true);assert.equal(c?.firstMessageId,'welcome-ficticio');assert.equal(c?.firstSenderJid,b);}finally{await next.$disconnect();}
++});
++test('PostgreSQL: mensagem observada do criador antes da liberação pausa o ciclo',async()=>{
++ const db=new PrismaClient();try{await cycleStore(db).createCycle(fixture(4));await cycleStore(db).evidence(jid(4),'manual-prematura',b,a,true);assert.equal((await cycleStore(db).cycle(jid(4)))?.firstViolation,true);}finally{await db.$disconnect();}
++});
++test('PostgreSQL: metadata de mensagens não disputa versão de configuração nem recua por evento atrasado',async()=>{
++ const db=new PrismaClient();try{const store=cycleStore(db);await store.createCycle(fixture(5));const now=Math.floor(Date.now()/1000);await store.evidence(jid(5),'nova',a,b,true,{key:{remoteJid:jid(5),id:'nova',fromMe:false,participant:b},messageTimestamp:now});await store.evidence(jid(5),'antiga',a,b,true,{key:{remoteJid:jid(5),id:'antiga',fromMe:false,participant:b},messageTimestamp:now-60});const c=await store.cycle(jid(5));assert.equal(c?.version,1);assert.equal(c?.lastMessages?.[a].key.id,'nova');const raw=await db.bcGroupAccountState.findMany({where:{groupJid:jid(5)}});assert.equal('text' in (raw[0].lastMessage as object),false);}finally{await db.$disconnect();}
++});
++test('PostgreSQL: chave de mensagem global do grupo impede duas instâncias de obterem licença',async()=>{
++ const aDb=new PrismaClient(),bDb=new PrismaClient();try{const request={instanceId:'group:'+jid(6),operationKey:key(6),requestHash:'b'.repeat(64),state:'code_unknown',groupJid:jid(6)};const won=await Promise.all([operationStore(aDb).claim(request),operationStore(bDb).claim(request)]);assert.equal(won.filter(Boolean).length,1);}finally{await aDb.$disconnect();await bDb.$disconnect();}
++});
++test('PostgreSQL: trava de grupo é compartilhada entre contas e resiste a reinício',async()=>{
++ const first=new PrismaClient();await operationStore(first).lock('group:'+jid(7),'titular');await first.$disconnect();const next=new PrismaClient();try{assert.equal(await operationStore(next).lock('group:'+jid(7),'outro'),false);await operationStore(next).unlock('group:'+jid(7),'outro');assert.equal(await operationStore(next).lock('group:'+jid(7),'outro'),false);await operationStore(next).unlock('group:'+jid(7),'titular');assert.equal(await operationStore(next).lock('group:'+jid(7),'outro'),true);await operationStore(next).unlock('group:'+jid(7),'outro');}finally{await next.$disconnect();}
++});
++
++import {authorizePlatformAccount} from '../src/api/integrations/channel/whatsapp/bc-groups/platform-account';
++test('PostgreSQL: registro de plataforma exige identidade viva, preserva versão e acompanha recriação da mesma instância',async()=>{
++ const db=new PrismaClient();try{
++  await assert.rejects(()=>authorizePlatformAccount(db,'registro-1','bc-registro',[a],false,{ownerJid:a,enabled:true,sourceVersion:1}));
++  await assert.rejects(()=>authorizePlatformAccount(db,'registro-1','bc-registro',[b],true,{ownerJid:a,enabled:true,sourceVersion:1}));
++  await authorizePlatformAccount(db,'registro-1','bc-registro',[a],true,{ownerJid:a,enabled:true,sourceVersion:1});
++  await authorizePlatformAccount(db,'registro-2','bc-registro',[a],true,{ownerJid:a,enabled:true,sourceVersion:1});
++  assert.equal((await db.bcPlatformAccount.findUnique({where:{instanceId:'registro-2'}}))?.ownerJid,a);
++  await assert.rejects(()=>authorizePlatformAccount(db,'registro-2','bc-registro',[b],true,{ownerJid:b,enabled:true,sourceVersion:1}));
++  await authorizePlatformAccount(db,'registro-2','bc-registro',[],false,{ownerJid:a,enabled:false,sourceVersion:2});
++  await assert.rejects(()=>authorizePlatformAccount(db,'registro-2','bc-registro',[a],true,{ownerJid:a,enabled:true,sourceVersion:1}));
++  await assert.rejects(()=>authorizePlatformAccount(db,'registro-2','bc-registro',[a],true,{ownerJid:a,enabled:true,sourceVersion:2}));
++  assert.equal((await db.bcPlatformAccount.findUnique({where:{instanceId:'registro-2'}}))?.enabled,false);
++ }finally{await db.$disconnect();}
++});
++test('PostgreSQL: mesma versão concorrente não pode autorizar duas identidades diferentes',async()=>{
++ const first=new PrismaClient(),second=new PrismaClient();try{
++  await authorizePlatformAccount(first,'registro-race','bc-race',[a],true,{ownerJid:a,enabled:true,sourceVersion:1});
++  const results=await Promise.allSettled([authorizePlatformAccount(first,'registro-race','bc-race',[a],true,{ownerJid:a,enabled:true,sourceVersion:2}),authorizePlatformAccount(second,'registro-race','bc-race',[b],true,{ownerJid:b,enabled:true,sourceVersion:2})]);
++  assert.equal(results.filter(r=>r.status==='fulfilled').length,1);assert.equal((await first.bcPlatformAccount.findUnique({where:{instanceId:'registro-race'}}))?.sourceVersion,2n);
++ }finally{await first.$disconnect();await second.$disconnect();}
++});
++
++test('PostgreSQL: minimização só após limpeza comprovada de todas as contas; lápide não perde JID',async()=>{
++ const db=new PrismaClient();try{const store=cycleStore(db);const f=fixture(10);f.brand={shop_name:'Loja',customer_name:'Nome privado',slug:'loja',timezone:'America/Sao_Paulo'};await store.createCycle(f);const c=(await store.cycle(jid(10)))!;
++ await assert.rejects(()=>store.minimizeClosed(c));c.closing=true;c.closed=true;c.closeProof={lastJid:a,revoked:true,removed:true,leaveOps:{},deleted:{[a]:true}};await store.saveCycle(c);await assert.rejects(()=>store.minimizeClosed(c));c.closeProof.deleted[b]=true;await store.saveCycle(c);
++ await db.bcGroupEvidence.create({data:{groupJid:jid(10),messageId:'ficticia',observer:a,author:u,prematureCreator:false}});await store.minimizeClosed(c);const next=(await store.cycle(jid(10)))!;assert.equal(next.customerJid,'');assert.equal(next.brand,undefined);assert.equal(next.groupJid,jid(10));assert.equal(next.closed,true);assert.equal(await db.bcGroupEvidence.count({where:{groupJid:jid(10)}}),0);
++ }finally{await db.$disconnect();}
++});
+diff --git a/test/bc-group-cycle-engine.test.ts b/test/bc-group-cycle-engine.test.ts
+new file mode 100644
+index 0000000..5d44146
+--- /dev/null
++++ b/test/bc-group-cycle-engine.test.ts
+@@ -0,0 +1,79 @@
++import test from 'node:test';import assert from 'node:assert/strict';
++import {executeCycleCommand} from '../src/api/integrations/channel/whatsapp/bc-groups/cycle-engine';
++import {fixture,a,b,u,id,key,branding} from './bc-cycle-fixture';
++test('Criação, promoção e foto pelo criador; primeira mensagem pelo segundo; sem cliente na preparação',async()=>{
++ const f=await fixture();assert.equal((await f.create() as any).state,'created');assert.equal((await executeCycleCommand(f.d,'prepare',f.preparation) as any).state,'prepared');assert.equal(f.raw.participants[1].admin,'admin');assert.equal(f.photos(),1);
++ await assert.rejects(()=>executeCycleCommand(f.d,'welcome',{groupJid:id,operationId:key(3)}));assert.equal(f.sent.length,0);
++ f.as(b);const welcome=await executeCycleCommand(f.d,'welcome',{groupJid:id,operationId:key(3)}) as any;assert.equal(welcome.state,'notice_accepted');assert.equal(f.sent[0].author,b);assert.match(f.sent[0].text!,/Arena/);assert.ok(!f.sent[0].text!.includes('Barba & Cabelo'));
++ assert.equal(f.cycle()?.firstReceived,false);await assert.rejects(()=>executeCycleCommand(f.d,'invite',{groupJid:id}));
++ await executeCycleCommand(f.d,'description',{groupJid:id});await executeCycleCommand(f.d,'pinNotice',{groupJid:id,operationId:key(4),messageId:welcome.messageId,duration:2592000});
++ await f.d.cycles.evidence(id,welcome.messageId,a,b,true);assert.equal((await executeCycleCommand(f.d,'invite',{groupJid:id}) as any).inviteUrl,'https://chat.whatsapp.com/FICTICIO123456789');
++ assert.equal(f.cycle()?.firstSenderJid,b);assert.ok(f.raw.desc.includes('somente no aplicativo'));
++});
++test('Timeout nas boas-vindas conserva chave global e não retransmite por outro número',async()=>{
++ const f=await fixture();await f.create();await executeCycleCommand(f.d,'prepare',f.preparation);f.as(b);let calls=0;f.d.socket.sendMessage=async()=>{calls++;throw new Error('timeout fictício');};
++ const p={groupJid:id,operationId:key(3)};assert.equal((await executeCycleCommand(f.d,'welcome',p) as any).state,'notice_unknown');assert.equal((await executeCycleCommand(f.d,'welcome',p) as any).state,'notice_unknown');assert.equal(calls,1);await assert.rejects(()=>executeCycleCommand(f.d,'welcome',{...p,operationId:key(30)}));
++});
++test('Foto incerta não é reenviada em nova operação e não libera mensagem',async()=>{
++ const f=await fixture();await f.create();let photos=0;f.d.socket.updateProfilePicture=async()=>{photos++;throw new Error('timeout fictício');};
++ assert.equal((await executeCycleCommand(f.d,'prepare',f.preparation) as any).state,'config_unknown');assert.equal((await executeCycleCommand(f.d,'prepare',f.preparation) as any).state,'config_unknown');await assert.rejects(()=>executeCycleCommand(f.d,'prepare',{...f.preparation,operationId:key(20)}));assert.equal(photos,1);
++ f.as(b);await assert.rejects(()=>executeCycleCommand(f.d,'welcome',{groupJid:id,operationId:key(3)}));
++});
++test('Aceite da primeira mensagem não libera código sem recebimento e cliente presente',async()=>{
++ const f=await fixture();await f.create();await executeCycleCommand(f.d,'prepare',f.preparation);f.as(b);const welcome=await executeCycleCommand(f.d,'welcome',{groupJid:id,operationId:key(3)}) as any;await executeCycleCommand(f.d,'description',{groupJid:id});await executeCycleCommand(f.d,'pinNotice',{groupJid:id,operationId:key(4),messageId:welcome.messageId,duration:2592000});
++ const request={groupJid:id,operationId:key(5),customerJid:u,platformJids:[a,b],purpose:'login',expiresAt:new Date(Date.now()+60000).toISOString(),code:'123456'};
++ await assert.rejects(()=>executeCycleCommand(f.d,'sendCode',request));await f.d.cycles.evidence(id,welcome.messageId,a,b,true);await assert.rejects(()=>executeCycleCommand(f.d,'sendCode',request));
++ f.raw.participants.push({id:u,admin:null});assert.equal((await executeCycleCommand(f.d,'sendCode',request) as any).state,'code_accepted');const count=f.sent.length;assert.equal((await executeCycleCommand(f.d,'sendCode',request) as any).state,'code_accepted');assert.equal(f.sent.length,count);
++ f.raw.participants[1].admin=null;await assert.rejects(()=>executeCycleCommand(f.d,'sendCode',{...request,operationId:key(6)}));
++});
++
++test('Encerramento retira cliente, mantém admin final e só então deixa todas as contas saírem',async()=>{
++ const f=await fixture();await f.create();await executeCycleCommand(f.d,'prepare',f.preparation);f.raw.participants.push({id:u,admin:null});
++ await assert.rejects(()=>executeCycleCommand(f.d,'close',{groupJid:id,operationId:key(90),stage:'final'}));
++ assert.equal((await executeCycleCommand(f.d,'close',{groupJid:id,operationId:key(91),stage:'start'}) as any).state,'close_accepted');assert.ok(!f.raw.participants.some(p=>p.id===u));
++ await assert.rejects(()=>executeCycleCommand(f.d,'welcome',{groupJid:id,operationId:key(92)}));
++ await assert.rejects(()=>executeCycleCommand(f.d,'close',{groupJid:id,operationId:key(93),stage:'final'}));
++ f.as(b);assert.equal((await executeCycleCommand(f.d,'close',{groupJid:id,operationId:key(94),stage:'leave'}) as any).state,'left');
++ f.as(a);assert.equal((await executeCycleCommand(f.d,'close',{groupJid:id,operationId:key(95),stage:'final'}) as any).state,'closed');assert.equal(f.cycle()?.closed,true);
++ assert.equal((await executeCycleCommand(f.d,'close',{groupJid:id,operationId:key(96),stage:'delete'}) as any).state,'cleanup_pending','sem intervalo comprovado, não inventa exclusão de conversa');
++});
++test('Repetir saída incerta consulta participação antes de qualquer nova tentativa',async()=>{
++ const f=await fixture();await f.create();await executeCycleCommand(f.d,'prepare',f.preparation);await executeCycleCommand(f.d,'close',{groupJid:id,operationId:key(91),stage:'start'});f.as(b);
++ let calls=0;f.d.socket.groupLeave=async()=>{calls++;throw new Error('timeout fictício');};const request={groupJid:id,operationId:key(94),stage:'leave'};
++ assert.equal((await executeCycleCommand(f.d,'close',request) as any).state,'leave_unknown');assert.equal((await executeCycleCommand(f.d,'close',request) as any).state,'leave_unknown');assert.equal(calls,1);
++ f.d.socket.groupFetchAllParticipating=async()=>({});assert.equal((await executeCycleCommand(f.d,'close',request) as any).state,'left');assert.equal(calls,1);
++});
++
++test('Perda de conexão de outro administrador bloqueia envio, mas permite retirada protegida no encerramento',async()=>{
++ const f=await fixture();await f.create();await executeCycleCommand(f.d,'prepare',f.preparation);f.d.peersReady=()=>false;f.as(b);await assert.rejects(()=>executeCycleCommand(f.d,'welcome',{groupJid:id,operationId:key(3)}));
++ f.as(a);await executeCycleCommand(f.d,'close',{groupJid:id,operationId:key(91),stage:'start'});assert.equal((await executeCycleCommand(f.d,'close',{groupJid:id,operationId:key(92),stage:'withdraw',targetJid:b}) as any).state,'left');assert.equal((await executeCycleCommand(f.d,'close',{groupJid:id,operationId:key(93),stage:'final'}) as any).state,'closed');
++});
++
++test('Trocar nonce depois de criação incerta não concede outra criação no mesmo ciclo',async()=>{
++ const f=await fixture();let calls=0;f.d.socket.groupCreate=async()=>{calls++;throw new Error('timeout fictício');};await f.create();
++ await assert.rejects(()=>executeCycleCommand(f.d,'create',{operationId:key(10),cycleId:key(100),subject:f.raw.subject,participants:[b],customerJid:u,brand:branding}));assert.equal(calls,1);
++});
++
++test('Legado sem prova só pode ser adotado para encerrar; nunca envia ou cria outro grupo',async()=>{
++ const f=await fixture();f.raw.participants=[{id:a,admin:'superadmin'},{id:u,admin:null}];const p={groupJid:id,cycleId:key(100),customerJid:u,platformJids:[a]};
++ assert.equal((await executeCycleCommand(f.d,'adoptClosing',p) as any).state,'closing');assert.equal(f.creates(),0);await assert.rejects(()=>executeCycleCommand(f.d,'sendCode',{groupJid:id,operationId:key(10)}));
++ await executeCycleCommand(f.d,'close',{groupJid:id,operationId:key(91),stage:'start'});assert.equal((await executeCycleCommand(f.d,'close',{groupJid:id,operationId:key(92),stage:'final'}) as any).state,'closed');assert.equal(f.sent.length,0);
++});
++test('Adoção de legado com cliente administrador ou LID sem prova exige revisão',async()=>{
++ for(const mode of ['admin','lid']){const f=await fixture();f.raw.participants=[{id:a,admin:'superadmin'},{id:mode==='lid'?'123456@lid':u,admin:mode==='admin'?'admin':null}];await assert.rejects(()=>executeCycleCommand(f.d,'adoptClosing',{groupJid:id,cycleId:key(100),customerJid:u,platformJids:[a]}));assert.equal(f.cycle(),null);}
++});
++test('Entrada por LID comprovado admite apenas o cliente e nunca o promove',async()=>{
++ const f=await fixture();await f.create();await executeCycleCommand(f.d,'prepare',f.preparation);f.as(b);const w=await executeCycleCommand(f.d,'welcome',{groupJid:id,operationId:key(3)}) as any;await executeCycleCommand(f.d,'description',{groupJid:id});await executeCycleCommand(f.d,'pinNotice',{groupJid:id,operationId:key(4),messageId:w.messageId,duration:2592000});await f.d.cycles.evidence(id,w.messageId,a,b,true);
++ const lid='123456@lid';f.d.resolvePhone=async value=>value===lid?u:null;f.d.socket.groupRequestParticipantsList=async()=>[{jid:lid}] as any;f.d.socket.groupRequestParticipantsUpdate=async()=>{f.raw.participants.push({id:lid,phoneNumber:u,admin:null});return [] as any;};
++ assert.equal((await executeCycleCommand(f.d,'requests',{groupJid:id}) as any)[0].phoneNumber,u);await executeCycleCommand(f.d,'decide',{groupJid:id,participants:[lid],action:'approve'});assert.equal(f.raw.participants.find(p=>p.id===lid).admin,null);
++});
++
++test('Após a primeira prova, reserva manual transmite com principal offline sem exigir duas sessões online',async()=>{
++ const f=await fixture();await f.create();await executeCycleCommand(f.d,'prepare',f.preparation);f.as(b);
++ const w=await executeCycleCommand(f.d,'welcome',{groupJid:id,operationId:key(3)}) as any;await executeCycleCommand(f.d,'description',{groupJid:id});await executeCycleCommand(f.d,'pinNotice',{groupJid:id,operationId:key(4),messageId:w.messageId,duration:2592000});await f.d.cycles.evidence(id,w.messageId,a,b,true);f.raw.participants.push({id:u,admin:null});f.d.peersReady=()=>false;
++ assert.equal((await executeCycleCommand(f.d,'sendCode',{groupJid:id,operationId:key(5),customerJid:u,platformJids:[a,b],purpose:'login',expiresAt:new Date(Date.now()+60000).toISOString(),code:'123456'}) as any).state,'code_accepted');assert.equal(f.sent[f.sent.length-1]?.author,b);
++ await executeCycleCommand(f.d,'brand',{groupJid:id,brand:{...branding,shop_name:'Nome novo da loja'}});await executeCycleCommand(f.d,'description',{groupJid:id});assert.match(f.raw.desc,/Nome novo da loja/);
++});
++test('Preparação inclui mais contas de envio, promove todas e nunca adiciona o cliente por conveniência',async()=>{
++ const f=await fixture();const extras=Array.from({length:4},(_,i)=>`55118000003${i}3@s.whatsapp.net`);f.d.platformJids.push(...extras);await f.create();await executeCycleCommand(f.d,'prepare',{...f.preparation,platformJids:[a,b,...extras]});assert.equal(f.raw.participants.length,6);assert.ok(f.raw.participants.every(p=>['admin','superadmin'].includes(p.admin)));assert.ok(!f.raw.participants.some(p=>p.id===u));
++});
+diff --git a/test/bc-group-cycle-identity.test.ts b/test/bc-group-cycle-identity.test.ts
+new file mode 100644
+index 0000000..5fe292a
+--- /dev/null
++++ b/test/bc-group-cycle-identity.test.ts
+@@ -0,0 +1,26 @@
++import test from 'node:test';import assert from 'node:assert/strict';
++import {resolvePhone,resolveGroupMetadata} from '../src/api/integrations/channel/whatsapp/bc-groups/cycle-identity';
++import {captureCycleMessage,captureCycleReceipts} from '../src/api/integrations/channel/whatsapp/bc-groups/cycle-evidence';
++import type {CycleStore} from '../src/api/integrations/channel/whatsapp/bc-groups/cycle';
++const a='5511800000111@s.whatsapp.net',b='5511800000222@s.whatsapp.net';
++test('LID só resolve pela tabela autoritativa e conflito explícito permanece',async()=>{
++ assert.equal(await resolvePhone('123456@lid'),null);assert.equal(await resolvePhone('123456@lid',async()=>b),b);assert.equal(await resolvePhone('123456@lid',async()=> '123456'),null);
++ const raw={id:'123-456@g.us',owner:'123456@lid',participants:[{id:'123456@lid',admin:'admin'},{id:'654321@lid',phoneNumber:'invalido'}]};const out=await resolveGroupMetadata(raw as never,async()=>b);assert.equal(out.ownerPn,b);assert.equal(out.participants[0].phoneNumber,b);assert.equal(out.participants[1].phoneNumber,'invalido');
++});
++test('Provas não guardam texto, código ou conteúdo citado',async()=>{
++ const calls:unknown[][]=[];const store={evidence:async(...args:unknown[])=>{calls.push(args);}} as unknown as CycleStore;
++ await captureCycleMessage(store,[a],{key:{remoteJid:'123-456@g.us',id:'mensagem',fromMe:false,participant:b},messageTimestamp:Math.floor(Date.now()/1000),message:{conversation:'Arena\nSeu código de acesso: 123456\nNão compartilhar'}});
++ assert.equal(calls.length,1);assert.equal(calls[0][3],b);assert.equal(JSON.stringify(calls).includes('Seu código'),false);assert.equal(calls[0][4],true);
++});
++test('Recibo sem identidade PN/horário não vira recebimento',async()=>{
++ const calls:unknown[][]=[];const store={evidence:async(...args:unknown[])=>{calls.push(args);}} as unknown as CycleStore;
++ const event={key:{remoteJid:'123-456@g.us',id:'mensagem'},receipt:{userJid:a,receiptTimestamp:Math.floor(Date.now()/1000)}};
++ await captureCycleReceipts(store,[b],[{...event,receipt:{...event.receipt,userJid:'123456@lid'}},{...event,receipt:{userJid:a}},{...event,receipt:{...event.receipt,receiptTimestamp:Date.now()}}]);assert.equal(calls.length,0);
++ await captureCycleReceipts(store,[b],[event]);assert.equal(calls.length,1);assert.equal(calls[0][2],a);assert.equal(calls[0][3],b);
++});
++
++test('LID do autor, destinatário e observador exige mapeamento do socket',async()=>{
++ const calls:unknown[][]=[];const store={evidence:async(...args:unknown[])=>{calls.push(args);}} as unknown as CycleStore;const lookup=async(lid:string)=>lid==='11111@lid'?a:lid==='22222@lid'?b:null;
++ await captureCycleMessage(store,['11111@lid'],{key:{remoteJid:'123-456@g.us',id:'welcome',participant:'22222@lid',fromMe:false},message:{conversation:'Boas-vindas'},messageTimestamp:Math.floor(Date.now()/1000)},lookup);assert.equal(calls[0][2],a);assert.equal(calls[0][3],b);
++ await captureCycleReceipts(store,['22222@lid'],[{key:{remoteJid:'123-456@g.us',id:'welcome'},receipt:{userJid:'11111@lid',receiptTimestamp:Math.floor(Date.now()/1000)}}],lookup);assert.equal(calls[1][2],a);assert.equal(calls[1][3],b);
++});
+diff --git a/test/bc-group-cycle.test.ts b/test/bc-group-cycle.test.ts
+new file mode 100644
+index 0000000..de42a95
+--- /dev/null
++++ b/test/bc-group-cycle.test.ts
+@@ -0,0 +1,13 @@
++import test from 'node:test';import assert from 'node:assert/strict';
++import {cycleExpiry,cycleQuorum,cycleSendReady,type GroupCycle} from '../src/api/integrations/channel/whatsapp/bc-groups/cycle';
++const a='5511800000111@s.whatsapp.net',b='5511800000222@s.whatsapp.net',u='5511999999999@s.whatsapp.net';
++const c=()=>({version:1,groupJid:'123456-7890@g.us',customerJid:u,platformJids:[a,b],creatorJid:a,creatorInstanceId:'criador',createdAt:'2026-01-14T00:00:00.000Z',expiresAt:'2027-01-14T00:00:00.000Z',firstWelcomeOperation:'welcome',firstSenderJid:b,firstMessageId:'mensagem',firstReceived:true,firstViolation:false,logoHash:'hash',logoApplied:true,prepared:true,descriptionHash:'desc',lastWelcomeMessageId:'mensagem',lastWelcomeOperation:'welcome',pinExpiresAt:'2027-01-13T00:00:00.000Z',pinAccepted:true,closing:false,closed:false,leftInstances:[]} as GroupCycle);
++const g=()=>({creation:Date.parse(c().createdAt)/1000,id:c().groupJid,restrict:true,memberAddMode:false,joinApprovalMode:true,participants:[{id:a,admin:'superadmin'},{id:b,admin:'admin'},{id:u,admin:null}]});
++test('Grupo utilizável exige pelo menos dois admins distintos e cliente comum',()=>{assert.equal(cycleSendReady(c(),g()),true);for(const index of [0,1]){const raw=g();raw.participants[index].admin=null;assert.equal(cycleQuorum(c(),raw),false);}const raw=g();raw.participants[2].admin='admin';assert.equal(cycleQuorum(c(),raw),false);});
++test('Cliente ausente somente na preparação; nunca para código/aviso',()=>{const raw=g();raw.participants.pop();assert.equal(cycleQuorum(c(),raw,true),true);assert.equal(cycleSendReady(c(),raw),false);});
++test('Duplicado, intruso e LID não comprovado bloqueiam',()=>{const one=c();one.platformJids=[a,a];assert.equal(cycleQuorum(one,g()),false);const raw=g();raw.participants.push({id:'99999999@lid',admin:null});assert.equal(cycleQuorum(c(),raw),false);});
++test('Primeiro aceite não basta: exige recebimento pelo criador e autor não criador',()=>{const one=c();one.firstReceived=false;assert.equal(cycleSendReady(one,g()),false);one.firstReceived=true;one.firstSenderJid=a;assert.equal(cycleSendReady(one,g()),false);one.firstSenderJid=b;one.firstViolation=true;assert.equal(cycleSendReady(one,g()),false);});
++test('Expiração e encerramento bloqueiam sem depender de cron',()=>{assert.equal(cycleSendReady(c(),g(),Date.parse(c().expiresAt)),false);for(const field of ['closing','closed'] as const){const one=c();one[field]=true;assert.equal(cycleSendReady(one,g()),false);}});
++test('Ano civil bissexto e prova de criação',()=>{assert.equal(cycleExpiry(Date.parse('2024-02-29T15:00:00Z')/1000),'2025-02-28T15:00:00.000Z');assert.throws(()=>cycleExpiry(0));assert.throws(()=>cycleExpiry(Math.ceil(Date.now()/1000)+60));});
++
++test('Fixação vencida não libera envio mesmo com aceite anterior',()=>{const one=c();one.pinExpiresAt=new Date(Date.now()-1000).toISOString();assert.equal(cycleSendReady(one,g()),false);});
+diff --git a/test/bc-group-database.test.ts b/test/bc-group-database.test.ts
+new file mode 100644
+index 0000000..29f7c0c
+--- /dev/null
++++ b/test/bc-group-database.test.ts
+@@ -0,0 +1,98 @@
++import {cycleStore} from '../src/api/integrations/channel/whatsapp/bc-groups/cycle-store';
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { PrismaClient } from '@prisma/client';
++import { operationStore } from '../src/api/integrations/channel/whatsapp/bc-groups/store';
++import {
++  executeGroupCommand,
++  type Dependencies,
++  type Operation,
++} from '../src/api/integrations/channel/whatsapp/bc-groups/core';
++const url = new URL(process.env.DATABASE_CONNECTION_URI ?? 'http://invalido');
++if (
++  process.env.BC_GROUP_TEST_DATABASE !== 'local-only' ||
++  url.hostname !== '127.0.0.1' ||
++  !['54332','54340'].includes(url.port) ||
++  url.pathname !== '/postgres'
++)
++  throw new Error('Este teste exige banco local descartável na porta 54332');
++process.env.BC_GROUPS_EXTENSION_ENABLED = 'true';
++process.env.BC_GROUPS_INSTANCES = 'bc-ficticia';
++const self = '5511888888888@s.whatsapp.net',
++  jid = '12345-67890@g.us';
++let creates = 0;
++function deps(db: PrismaClient): Dependencies {
++  return {
++    instanceId: 'teste',
++    instanceName: 'bc-ficticia',
++    platformJids: [self,'5511777777777@s.whatsapp.net'],peersReady:()=>true,cycles:cycleStore(db),
++    ready: () => true,
++    self: () => [self],
++    store: operationStore(db),
++    socket: {
++      groupCreate: async () => {
++        creates++;
++        await new Promise((r) => setTimeout(r, 30));
++        return { id: jid };
++      },
++    } as unknown as Dependencies,
++  };
++}
++test('PostgreSQL: dois clientes disputam uma criação, inclusive depois de reiniciar clientes', async () => {
++  const a = new PrismaClient(),
++    b = new PrismaClient();
++  const request = { operationId: '11111111-1111-4111-8111-111111111111', cycleId:'cccccccc-cccc-4ccc-8ccc-cccccccccccc',subject: 'Fictício', participants: ['5511777777777@s.whatsapp.net'],customerJid:'5511999999999@s.whatsapp.net',brand:{shop_name:'Fictícia',customer_name:'Cliente',slug:'ficticia',timezone:'America/Sao_Paulo'} };
++  try {
++    await Promise.allSettled([
++      executeGroupCommand(deps(a), 'create', request),
++      executeGroupCommand(deps(b), 'create', request),
++    ]);
++    assert.equal(creates, 1);
++    assert.equal(await a.bcGroupOperation.count({where:{instanceId:'teste'}}), 1);
++  } finally {
++    await a.$disconnect();
++    await b.$disconnect();
++  }
++  const next = new PrismaClient();
++  try {
++    assert.equal(((await executeGroupCommand(deps(next), 'create', request)) as Operation).groupJid, jid);
++    assert.equal(creates, 1);
++    assert.equal(await operationStore(next).find('outra', request.operationId), null);
++  } finally {
++    await next.$disconnect();
++  }
++});
++test('PostgreSQL: queda depois da criação mantém desconhecido, sem segunda chamada', async () => {
++  const request = { operationId: '22222222-2222-4222-8222-222222222222', cycleId:'dddddddd-dddd-4ddd-8ddd-dddddddddddd',subject: 'Fictício', participants: ['5511777777777@s.whatsapp.net'],customerJid:'5511999999999@s.whatsapp.net',brand:{shop_name:'Fictícia',customer_name:'Cliente',slug:'ficticia',timezone:'America/Sao_Paulo'} };
++  const a = new PrismaClient();
++  let before = creates;
++  try {
++    const d = deps(a);
++    d.store.created = async () => {
++      throw new Error('Falha fictícia na confirmação');
++    };
++    assert.equal(((await executeGroupCommand(d, 'create', request)) as Operation).state, 'unknown');
++  } finally {
++    await a.$disconnect();
++  }
++  const b = new PrismaClient();
++  try {
++    assert.equal(((await executeGroupCommand(deps(b), 'create', request)) as Operation).state, 'unknown');
++    assert.equal(creates, before + 1);
++    assert.equal(await b.bcGroupOperation.count({where:{instanceId:'teste'}}), 2);
++  } finally {
++    await b.$disconnect();
++  }
++});
++
++test('PostgreSQL: trava sobrevive a desconexão e só o titular a solta',async()=>{
++ const a=new PrismaClient();await operationStore(a).lock('travada','titular');await a.$disconnect();
++ const b=new PrismaClient();try {const store=operationStore(b);assert.equal(await store.lock('travada','outro'),false);await store.unlock('travada','outro');assert.equal(await store.lock('travada','novo'),false);await store.unlock('travada','titular');assert.equal(await store.lock('travada','novo'),true);await store.unlock('travada','novo');}finally{await b.$disconnect();}
++});
++test('PostgreSQL: confirmação de código persiste sem texto nem código',async()=>{
++ const a=new PrismaClient();const key='33333333-3333-4333-8333-333333333333';
++ try{const store=operationStore(a);await store.claim({instanceId:'otp',operationKey:key,requestHash:'a'.repeat(64),state:'code_unknown',groupJid:jid});await store.accepted('otp',key,'mensagem-ficticia');}finally{await a.$disconnect();}
++ const b=new PrismaClient();try {const record=await operationStore(b).find('otp',key);assert.equal(record?.state,'code_accepted');assert.equal(record?.messageId,'mensagem-ficticia');assert.ok(!('code' in record!));}finally{await b.$disconnect();}
++});
++
++test('PostgreSQL: confirmação do pin persiste sem texto ou código',async()=>{const key='44444444-4444-4444-8444-444444444444';const a=new PrismaClient();try {const store=operationStore(a);await store.claim({instanceId:'pin',operationKey:key,requestHash:'b'.repeat(64),state:'pin_unknown',groupJid:jid});await store.pinned!('pin',key,'pin-ficticio');}finally{await a.$disconnect();}const b=new PrismaClient();try{const record=await operationStore(b).find('pin',key);assert.equal(record?.state,'pin_accepted');assert.equal(record?.messageId,'pin-ficticio');}finally{await b.$disconnect();}});
+diff --git a/test/bc-group-logo.test.ts b/test/bc-group-logo.test.ts
+new file mode 100644
+index 0000000..348bf8e
+--- /dev/null
++++ b/test/bc-group-logo.test.ts
+@@ -0,0 +1,5 @@
++import test from 'node:test';import assert from 'node:assert/strict';import {groupPhoto,validateGroupSvg} from '../src/api/integrations/channel/whatsapp/bc-groups/logo';import sharp from 'sharp';
++const safe='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64"><defs><linearGradient id="gold"><stop offset="0" stop-color="#c6a16a"/><stop offset="1" stop-color="#aa8844"/></linearGradient></defs><path d="M8 8 H56 V56 H8 Z" fill="url(#gold)"/></svg>';
++test('SVG vetorial autocontido preserva desenho e produz foto JPEG 512 sem metadados',async()=>{const out=await groupPhoto(Buffer.from(safe));const m=await sharp(out).metadata();assert.equal(m.format,'jpeg');assert.equal(m.width,512);assert.equal(m.height,512);assert.equal(m.exif,undefined);});
++test('Recursos externos, entidades, script, fontes, namespace falso, referência circular e caminho excessivo são recusados',()=>{for(const svg of [safe.replace('<path','<image href="https://example.invalid"/><path'),safe.replace('<path','<script>alert(1)</script><path'),safe.replace('<svg','<!DOCTYPE svg [<!ENTITY x SYSTEM "file:///etc/passwd">]><svg'),safe.replace('fill="url(#gold)"','fill="url(https://example.invalid)"'),safe.replace('fill="url(#gold)"','style="fill:expression(alert(1))"'),safe.replace('<path','<text>Fonte externa</text><path'),safe.replace('viewBox="0 0 64 64"','viewBox="0 0 999999999 64"'),safe.replace('fill="url(#gold)"','fill="url(#missing)"'),safe.replace('<path','<g onload="x"><path'),safe.replace('xmlns="http://www.w3.org/2000/svg"','xmlns="http://example.invalid"')])assert.throws(()=>validateGroupSvg(Buffer.from(svg)));});
++test('Corpo raster falso e área SVG excedida não viram foto',async()=>{await assert.rejects(()=>groupPhoto(Buffer.from('falso')));await assert.rejects(()=>groupPhoto(Buffer.from(safe.replace('width="64" height="64"','width="10000" height="10000"'))));});
+diff --git a/test/bc-group-routes.test.ts b/test/bc-group-routes.test.ts
+new file mode 100644
+index 0000000..4c9fefe
+--- /dev/null
++++ b/test/bc-group-routes.test.ts
+@@ -0,0 +1,125 @@
++import test from 'node:test';
++process.env.BC_GROUPS_API_SECRET='s'.repeat(40);
++import assert from 'node:assert/strict';
++import express from 'express';
++import { registerBcGroupRoutes } from '../src/api/routes/bc-group.routes';
++import { bcGroupSchemas } from '../src/api/routes/bc-group.schemas';
++import { validate } from 'jsonschema';
++import { once } from 'node:events';
++test('Todas as rotas preservam guardas, validação e instância autenticada', async () => {
++  const app = express();
++  app.use(express.json());
++  const router = express.Router();
++  let guards = 0;
++  const calls: any[] = [];
++  registerBcGroupRoutes(
++    router,
++    [
++      (req, res, next) => {
++        guards++;
++        if (req.get('apikey') !== 'ficticia') {
++          res.sendStatus(401);
++          return;
++        }
++        next();
++      },
++    ],
++    async (instance, command, data) => {
++      calls.push({ instance, command, data });
++      return { ok: true };
++    },
++  );
++  app.use('/group', router);
++  const server = app.listen(0, '127.0.0.1');
++  await once(server, 'listening');
++  const port = (server.address() as any).port;
++  const groupJid = '12345@g.us',
++    operationId = '11111111-1111-4111-8111-111111111111';
++  const platforms=['5511888888888@s.whatsapp.net','5511777777777@s.whatsapp.net'];
++  const brand={shop_name:'Arena',customer_name:'Cliente',slug:'arena',timezone:'America/Sao_Paulo'};
++  const creation={cycleId:operationId,operationId,subject:'Teste',participants:[platforms[1]],customerJid:'5511999999999@s.whatsapp.net',brand};
++  const routes: [string, string, Record<string, unknown>][] = [
++    ['POST', 'updateMemberAddMode', { groupJid, mode: 'admin_add' }],
++    ['POST', 'updateJoinApprovalMode', { groupJid, mode: 'on' }],
++    ['GET', 'joinRequests', { groupJid }],
++    ['POST', 'joinRequests', { groupJid, participants: ['5511888888888@s.whatsapp.net'], action: 'reject' }],
++    ['POST','bcCreate',creation],
++    ['POST','bcAdoptClosing',{groupJid,cycleId:operationId,customerJid:creation.customerJid,platformJids:platforms}],
++    ['POST','bcAuthorizePlatform',{ownerJid:platforms[0],enabled:true,sourceVersion:1}],
++    ['GET','bcCreationStatus',{cycleId:operationId,operationId,requestHash:'a'.repeat(64),creatorInstanceId:'teste'}],
++    ['POST','bcRecoverCycle',{...creation,creatorInstanceId:'teste'}],
++    ['GET','bcCycle',{groupJid}],
++    ['GET','bcOperation',{groupJid,operationId}],
++    ['POST','bcPrepare',{groupJid,operationId,subject:'Teste',platformJids:platforms,brand,logoBase64:'YWJj',logoHash:'a'.repeat(64)}],
++    ['POST','bcWelcome',{groupJid,operationId}],
++    ['POST','bcDescription',{groupJid}],
++    ['POST','bcSendNotice',{groupJid,operationId,customerJid:creation.customerJid,platformJids:platforms,templateKey:'booking.confirmed',text:'Agendamento confirmado'}],
++    ['POST','bcClose',{groupJid,operationId,stage:'start'}],
++    ['GET', 'bcCreateStatus', { operationId }],
++    ['GET', 'bcCapabilities', {}],
++    ['GET', 'bcInspect', { groupJid }],
++    ['POST','bcSendCode',{operationId,groupJid,customerJid:'5511999999999@s.whatsapp.net',platformJids:platforms,purpose:'login',expiresAt:new Date(Date.now()+60000).toISOString(),code:'123456'}],
++    ['POST','bcPinNotice',{operationId,groupJid,messageId:'aviso',duration:2592000}],
++    ['POST','bcSetting',{groupJid}],
++    ['POST','bcSubject',{groupJid,subject:'Notificações Teste • Cliente',customerJid:'5511999999999@s.whatsapp.net',platformJids:platforms,allowAbsent:true}],
++    ['POST','bcMember',{groupJid,jid:'5511888888888@s.whatsapp.net',action:'add'}],
++    ['GET','bcInvite',{groupJid}],
++    ['POST','bcRevoke',{groupJid}],
++  ];
++  try {
++    for (const [method, path, body] of routes) {
++      let url = `http://127.0.0.1:${port}/group/${path}/correta`;
++      const options: any = { method, headers: { 'content-type': 'application/json', apikey: 'ficticia', 'x-bc-group-key':'s'.repeat(40) } };
++      if (method === 'GET') url += '?' + new URLSearchParams(body as Record<string, string>);
++      else options.body = JSON.stringify(body);
++      assert.equal((await fetch(url, { ...options, headers: {} })).status, 401);
++      assert.equal((await fetch(url,{...options,headers:{...options.headers,'x-bc-group-key':'incorreta'}})).status,403);
++      assert.equal((await fetch(url, options)).status, 200);
++      const attack = method === 'GET' ? url + (url.includes('?') ? '&' : '?') + 'instanceName=outra' : url;
++      assert.equal(
++        (
++          await fetch(
++            attack,
++            method === 'POST' ? { ...options, body: JSON.stringify({ ...body, instanceName: 'outra' }) } : options,
++          )
++        ).status,
++        400,
++      );
++    }
++    assert.equal(guards, routes.length*4);
++    assert.equal(calls.length, routes.length);
++    assert.ok(calls.every((c) => c.instance === 'correta'));
++    for (let i = 0; i < 60-routes.length; i++)
++      assert.equal(
++        (await fetch(`http://127.0.0.1:${port}/group/bcCapabilities/correta`, { headers: { apikey: 'ficticia', 'x-bc-group-key':'s'.repeat(40) } }))
++          .status,
++        200,
++      );
++    assert.equal(
++      (await fetch(`http://127.0.0.1:${port}/group/bcCapabilities/correta`, { headers: { apikey: 'ficticia', 'x-bc-group-key':'s'.repeat(40) } }))
++        .status,
++      429,
++    );
++  } finally {
++    await new Promise<void>((resolve, reject) => server.close((e) => (e ? reject(e) : resolve())));
++  }
++});
++test('Schemas rejeitam JID solto, promoção e modo não suportado', () => {
++  assert.equal(validate({ groupJid: '12345' }, bcGroupSchemas.inspect).valid, false);
++  assert.equal(validate({ groupJid: '12345@g.us', mode: 'inventado' }, bcGroupSchemas.memberMode).valid, false);
++  assert.equal(
++    validate(
++      { groupJid: '12345@g.us', participants: ['5511888888888@s.whatsapp.net'], action: 'promote' },
++      bcGroupSchemas.decide,
++    ).valid,
++    false,
++  );
++});
++
++import {bcExclusiveGuard} from '../src/api/routes/bc-exclusive.guard';
++test('Envio e chat genéricos ficam bloqueados antes de qualquer efeito em instância protegida',async()=>{
++ process.env.BC_GROUPS_EXTENSION_ENABLED='true';process.env.BC_GROUPS_INSTANCES='protegida';
++ const app=express();let effects=0;app.use('/:operation/:instanceName',bcExclusiveGuard);app.all('/:operation/:instanceName',(_req,res)=>{effects++;res.sendStatus(200);});
++ const server=app.listen(0,'127.0.0.1');await once(server,'listening');const port=(server.address() as any).port;
++ try{for(const [method,route] of [['POST','sendText'],['POST','sendMedia'],['POST','updateMessage'],['DELETE','deleteMessageForEveryone'],['POST','sendPresence']])assert.equal((await fetch(`http://127.0.0.1:${port}/${route}/protegida`,{method})).status,403);assert.equal(effects,0);assert.equal((await fetch(`http://127.0.0.1:${port}/sendText/comum`,{method:'POST'})).status,200);assert.equal(effects,1);}finally{await new Promise<void>(r=>server.close(()=>r()));}
++});
+diff --git a/test/bc-group-webhook.test.ts b/test/bc-group-webhook.test.ts
+new file mode 100644
+index 0000000..9fa4872
+--- /dev/null
++++ b/test/bc-group-webhook.test.ts
+@@ -0,0 +1,112 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import axios from 'axios';
++import { WebhookController } from '../src/api/integrations/event/webhook/webhook.controller';
++import { configService } from '../src/config/env.config';
++process.env.BC_GROUPS_EXTENSION_ENABLED = 'true';
++process.env.BC_GROUPS_INSTANCES = 'bc-ficticia';
++test('Webhook local preserva ID no retry, usa header e omite apikey de grupos B&C', async () => {
++  const originalGet = configService.get,
++    originalCreate = axios.create;
++  const bodies: any[] = [];
++  let headers: any;
++  configService.get = ((key: string) =>
++    key === 'LOG'
++      ? { LEVEL: [] }
++      : {
++          GLOBAL: { ENABLED: false },
++          REQUEST: { TIMEOUT_MS: 1000 },
++          RETRY: { MAX_ATTEMPTS: 2, INITIAL_DELAY_SECONDS: 0 },
++        }) as typeof configService.get;
++  axios.create = ((options: any) => {
++    headers = options.headers;
++    return {
++      post: async (_path: string, body: any) => {
++        bodies.push(structuredClone(body));
++        if (bodies.length === 1) throw { response: { status: 503 } };
++      },
++    };
++  }) as typeof axios.create;
++  try {
++    const db: any = {
++      webhook: {
++        findUnique: async () => ({
++          enabled: true,
++          url: 'https://example.invalid/webhook',
++          events: ['GROUP_PARTICIPANTS_UPDATE'],
++          headers: { 'x-bc-group-secret': 'ficticio' },
++        }),
++      },
++    };
++    const monitor: any = { waInstances: { 'bc-ficticia': { instanceId: 'instancia-ficticia' } } };
++    const controller = new WebhookController(db, monitor);
++    await controller.emit({
++      instanceName: 'bc-ficticia',
++      origin: 'teste',
++      event: 'group-participants.update',
++      data: { id: '12345@g.us', participants: [] },
++      serverUrl: 'https://example.invalid',
++      dateTime: '2026-11-11T00:00:00Z',
++      sender: 'ficticio',
++      apiKey: 'NAO-ENVIAR',
++      extra: { apikey: 'NAO-ENVIAR-EXTRA' },
++      local: true,
++    });
++    assert.equal(bodies.length, 2);
++    assert.equal(bodies[0].event_id, bodies[1].event_id);
++    assert.equal(bodies[0].contract_version, 'bc-groups-v3');
++    assert.equal(headers['x-bc-group-secret'], 'ficticio');
++    assert.equal(bodies[0].apikey, undefined);
++  } finally {
++    configService.get = originalGet;
++    axios.create = originalCreate;
++  }
++});
++test('Recibo encaminhado conserva identidade individual, sem inventar entrega ao Cliente', async () => {
++  const originalGet = configService.get,
++    originalCreate = axios.create;
++  let body: any;
++  configService.get = ((key: string) =>
++    key === 'LOG'
++      ? { LEVEL: [] }
++      : { GLOBAL: { ENABLED: false }, RETRY: { MAX_ATTEMPTS: 1 } }) as typeof configService.get;
++  axios.create = (() => ({
++    post: async (_path: string, value: any) => {
++      body = value;
++    },
++  })) as typeof axios.create;
++  try {
++    const controller = new WebhookController(
++      {
++        webhook: {
++          findUnique: async () => ({
++            enabled: true,
++            url: 'https://example.invalid/webhook',
++            events: ['MESSAGE_RECEIPT_UPDATE'],
++            headers: { 'x-bc-group-secret': 'ficticio' },
++          }),
++        },
++      } as any,
++      { waInstances: { 'bc-ficticia': { instanceId: 'instancia-ficticia' } } } as any,
++    );
++    const receipt = {
++      key: { id: 'mensagem-ficticia', remoteJid: '12345@g.us' },
++      receipt: { userJid: '5511777777777@s.whatsapp.net', readTimestamp: 123 },
++    };
++    await controller.emit({
++      instanceName: 'bc-ficticia',
++      origin: 'teste',
++      event: 'message-receipt.update',
++      data: [receipt],
++      serverUrl: 'https://example.invalid',
++      dateTime: '2026-11-11T00:00:00Z',
++      sender: 'ficticio',
++      local: true,
++    });
++    assert.deepEqual(body.data, [receipt]);
++    assert.equal(body.data[0].deliveredToCustomer, undefined);
++  } finally {
++    configService.get = originalGet;
++    axios.create = originalCreate;
++  }
++});
+diff --git a/test/bc-groups.test.ts b/test/bc-groups.test.ts
+new file mode 100644
+index 0000000..405f428
+--- /dev/null
++++ b/test/bc-groups.test.ts
+@@ -0,0 +1,32 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import {executeGroupCommand,isGroupCodeMessage,participantIdentity,groupView,extensionEnabled,configuredPlatformJids,eventEnvelope} from '../src/api/integrations/channel/whatsapp/bc-groups/core';
++import {fixture,a,b,u,id,key,branding} from './bc-cycle-fixture';
++process.env.BC_GROUPS_EXTENSION_ENABLED='true';process.env.BC_GROUPS_INSTANCES='fixture';
++const request=()=>({operationId:key(1),cycleId:key(100),subject:'Notificações Arena • Cliente',participants:[b],customerJid:u,brand:branding});
++const rejects=(fn:()=>Promise<unknown>,status:number)=>assert.rejects(fn,(e:any)=>e.status===status);
++async function prepared(){const f=await fixture();await f.create();await executeGroupCommand(f.d,'prepare',f.preparation);f.as(b);const w=await executeGroupCommand(f.d,'welcome',{groupJid:id,operationId:key(3)}) as any;await executeGroupCommand(f.d,'description',{groupJid:id});await executeGroupCommand(f.d,'pinNotice',{groupJid:id,operationId:key(4),messageId:w.messageId,duration:2592000});await f.d.cycles.evidence(id,w.messageId,a,b,true);f.raw.participants.push({id:u,admin:null});return f;}
++const code=()=>({operationId:key(5),groupJid:id,customerJid:u,platformJids:[a,b],purpose:'login',expiresAt:new Date(Date.now()+60000).toISOString(),code:'654321'});
++test('Flags fechadas por padrão; instância gerenciada exige UUID exato e duas flags',()=>{
++ assert.equal(extensionEnabled('fixture',{}),false);assert.equal(extensionEnabled('outra'),false);
++ const name='bc-11111111-1111-4111-8111-111111111111';assert.equal(extensionEnabled(name,{BC_GROUPS_EXTENSION_ENABLED:'true'}),false);assert.equal(extensionEnabled(name,{BC_GROUPS_EXTENSION_ENABLED:'true',BC_GROUPS_MANAGED_INSTANCES:'true'}),true);assert.equal(extensionEnabled(name+'x',{BC_GROUPS_EXTENSION_ENABLED:'true',BC_GROUPS_MANAGED_INSTANCES:'true'}),false);
++ assert.deepEqual(configuredPlatformJids('fixture',{BC_GROUPS_PLATFORM_JIDS:'invalido'}),[]);
++});
++test('Instância ou identidade não autorizada nunca chega ao provedor',async()=>{for(const mode of ['instancia','conta','offline']){const f=await fixture();if(mode==='instancia')f.d.instanceName='outra';if(mode==='conta')f.d.platformJids=[];if(mode==='offline')f.d.ready=()=>false;await rejects(()=>executeGroupCommand(f.d,'create',request()),503);assert.equal(f.creates(),0);}});
++test('Cliente não pode ser plataforma; campo extra ou apenas um número são recusados',async()=>{for(const patch of [{participants:[]},{participants:[u]},{promoteParticipants:true}]){const f=await fixture();await rejects(()=>executeGroupCommand(f.d,'create',{...request(),...patch}),400);assert.equal(f.creates(),0);}});
++test('Concorrência e reinício conservam uma única criação',async()=>{const f=await fixture();await Promise.allSettled(Array.from({length:10},()=>executeGroupCommand(f.d,'create',request())));assert.equal(f.creates(),1);assert.equal((await executeGroupCommand({...f.d},'create',request()) as any).groupJid,id);assert.equal(f.creates(),1);});
++test('Nonce não aceita outro conteúdo; banco antes da licença impede criação',async()=>{const f=await fixture();await executeGroupCommand(f.d,'create',request());await rejects(()=>executeGroupCommand(f.d,'create',{...request(),subject:'Outro'}),409);assert.equal(f.creates(),1);const g=await fixture();g.d.store.claim=async()=>{throw Error('falha fictícia');};await assert.rejects(()=>executeGroupCommand(g.d,'create',request()));assert.equal(g.creates(),0);});
++test('Criação incerta ou falha ao persistir o JID não transmite outra vez',async()=>{for(const mode of ['rede','banco']){const f=await fixture();let calls=0;f.d.socket.groupCreate=async()=>{calls++;if(mode==='rede')throw Error('timeout fictício');return {id} as any;};if(mode==='banco')f.d.store.created=async()=>{throw Error('falha fictícia');};assert.equal((await executeGroupCommand(f.d,'create',request()) as any).state,'unknown');await executeGroupCommand(f.d,'create',request());assert.equal(calls,1);}});
++test('Consulta por instância não revela operação de outra conta',async()=>{const f=await fixture();await executeGroupCommand(f.d,'create',request());f.d.instanceId='outra';await rejects(()=>executeGroupCommand(f.d,'createStatus',{operationId:key(1)}),404);});
++test('Rotas genéricas não podem contornar preparação e composição',async()=>{const f=await fixture();for(const command of ['memberMode','approvalMode','setting','member'])await rejects(()=>executeGroupCommand(f.d,command,{groupJid:id}),403);assert.equal(f.creates(),0);});
++test('Inspeção exige JID exato, PN sem conflito e admin real',async()=>{for(const mode of ['id','pn','admin']){const f=await fixture();if(mode==='id')f.raw.id='999@g.us';if(mode==='pn')f.raw.participants[0].phoneNumber=b;if(mode==='admin')f.raw.participants[0].admin=null;await rejects(()=>executeGroupCommand(f.d,'inspect',{groupJid:id}),mode==='id'?409:403);}});
++test('Metadados ausentes não viram proteção; LID sem prova não vira telefone',()=>{assert.equal(groupView({id,participants:[]} as any).joinApprovalMode,null);assert.equal(participantIdentity('123456@lid').phoneNumber,null);assert.equal(participantIdentity({id:'123456@lid',phoneNumber:'123456'}).phoneNumber,null);assert.equal(participantIdentity({id:'123456@lid',phoneNumber:b}).phoneNumber,b);assert.equal(participantIdentity({id:a,phoneNumber:b}).phoneNumber,null);});
++test('Envelope só para eventos/instâncias protegidos, versão nova explícita',()=>{assert.deepEqual(eventEnvelope('outra','groups.update'),{});assert.deepEqual(eventEnvelope('fixture','messages.upsert'),{});const e=eventEnvelope('fixture','group-participants.update');assert.match(e.event_id!,/^[a-f0-9-]{36}$/);assert.equal(e.contract_version,'bc-groups-v3');});
++test('OTP: diário global entre contas; concorrência não duplica nem guarda o código',async()=>{const f=await prepared();const start=f.sent.length;const r=code();await Promise.allSettled(Array.from({length:8},()=>executeGroupCommand(f.d,'sendCode',r)));assert.equal(f.sent.length,start+1);f.as(a);await rejects(()=>executeGroupCommand(f.d,'sendCode',r),409);assert.equal(f.sent.length,start+1);assert.ok(!JSON.stringify([...f.map.values()]).includes('654321'));});
++test('OTP não tolera intruso, cliente admin/ausente, proteção ausente ou validade vencida',async()=>{for(const mode of ['intruso','admin','ausente','controle','expirado']){const f=await prepared();if(mode==='intruso')f.raw.participants.push({id:'5511666666666@s.whatsapp.net',admin:null});if(mode==='admin')f.raw.participants.find(p=>p.id===u).admin='admin';if(mode==='ausente')f.raw.participants=f.raw.participants.filter(p=>p.id!==u);if(mode==='controle')f.raw.joinApprovalMode=false;const r=code();if(mode==='expirado')r.expiresAt='2020-01-01T00:00:00Z';const count=f.sent.length;await assert.rejects(()=>executeGroupCommand(f.d,'sendCode',r));assert.equal(f.sent.length,count);}});
++test('Timeout de OTP permanece incerto depois de reinício, sem reenviar',async()=>{const f=await prepared();let calls=0;f.d.socket.sendMessage=async()=>{calls++;throw Error('timeout fictício');};const r=code();assert.equal((await executeGroupCommand(f.d,'sendCode',r) as any).state,'code_unknown');await executeGroupCommand({...f.d},'sendCode',r);assert.equal(calls,1);});
++test('Trava por grupo impede mutação concorrente por outra conta',async()=>{const f=await prepared();let release:()=>void;const waiting=new Promise<void>(r=>release=r);f.d.socket.sendMessage=async()=>{await waiting;return {key:{id:'x'}} as any;};const running=executeGroupCommand(f.d,'sendCode',code());await new Promise(r=>setTimeout(r,5));const alternate={...f.d,instanceId:'criador',self:()=>[a]};await rejects(()=>executeGroupCommand(alternate,'subject',{groupJid:id,subject:'Outro',customerJid:u,platformJids:[a,b],allowAbsent:false}),409);release!();await running;});
++test('OTP próprio ou citado não entra em histórico/webhook, com qualquer barbearia',()=>{for(const shop of ['Arena','Barba & Cabelo'])assert.equal(isGroupCodeMessage({key:{remoteJid:id},message:{extendedTextMessage:{text:'resposta',contextInfo:{quotedMessage:{conversation:shop+'\nSeu código de acesso: 123456\nVálido'}}}}}),true);assert.equal(isGroupCodeMessage({key:{remoteJid:id},message:{conversation:'Mensagem comum'}}),false);});
++test('Título mantém JID, restaura renomeação e não escreve quando já está correto',async()=>{const f=await prepared();let writes=0;f.d.socket.groupUpdateSubject=async(_id,subject)=>{writes++;f.raw.subject=subject;};const r={groupJid:id,subject:'Seg. 11/01 às 14h00 • Notificações Arena • Cliente',customerJid:u,platformJids:[a,b],allowAbsent:false};await executeGroupCommand(f.d,'subject',r);await executeGroupCommand(f.d,'subject',r);assert.equal(writes,1);f.raw.subject='Manual';await executeGroupCommand(f.d,'subject',r);assert.equal(writes,2);assert.equal(f.creates(),1);});
++test('Título não confirmado não acusa sucesso',async()=>{const f=await prepared();f.d.socket.groupUpdateSubject=async()=>{};await rejects(()=>executeGroupCommand(f.d,'subject',{groupJid:id,subject:'Outro',customerJid:u,platformJids:[a,b],allowAbsent:false}),409);});
++test('Nova fixação exige ID das boas-vindas duráveis; não aceita código ou ID arbitrário',async()=>{const f=await prepared();const count=f.sent.length;await rejects(()=>executeGroupCommand(f.d,'pinNotice',{groupJid:id,operationId:key(9),messageId:'inventado',duration:2592000}),409);assert.equal(f.sent.length,count);});
+diff --git a/tsup.bc.config.ts b/tsup.bc.config.ts
+new file mode 100644
+index 0000000..6cdc9da
+--- /dev/null
++++ b/tsup.bc.config.ts
+@@ -0,0 +1,4 @@
++import base from './tsup.config';
++import { defineConfig } from 'tsup';
++/** Executável do servidor: uma entrada, sem recompilar cada módulo em dois formatos. */
++export default defineConfig({ ...base, entry: ['src/main.ts'], format: ['cjs'], sourcemap: false });
