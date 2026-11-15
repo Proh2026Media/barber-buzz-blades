@@ -1,0 +1,51 @@
+name: P-122 — acolhimento após entrada e imagem v6
+on:
+  push:
+    branches: [ti/p122-acolhimento-v6-20261115]
+    paths:
+      - .p122-acolhimento/**
+      - .github/workflows/p122-acolhimento-v6.yml
+permissions:
+  contents: read
+jobs:
+  validar-construir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            /.p122-acolhimento/
+          sparse-checkout-cone-mode: false
+      - name: Validar o pacote e ensaiar SQL preservando o hotfix
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir evidencias
+          cd .p122-acolhimento
+          sha256sum -c SHA256SUMS
+          unzip -q pacote-v5.zip -d pacote-v5
+          unzip -q pacote-v6.zip -d pacote-v6
+          python3 testar-com-hotfix.py 2>&1 | tee ../evidencias/sql-bancada.log
+      - name: Construir sem autenticação ou publicação no registry
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init evolution-base
+          git -C evolution-base fetch --depth=1 https://github.com/EvolutionAPI/evolution-api.git cd800f2976e1e5b682fbf86a01ee4d85ae61f370
+          git -C evolution-base checkout --detach FETCH_HEAD
+          python3 .p122-acolhimento/construir-imagem.py evolution-base "$GITHUB_WORKSPACE/evidencias/imagem"
+      - name: Guardar imagem, hashes e provas sem dados de produção
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: p122-acolhimento-v6-imagem-e-provas
+          path: evidencias/
+          if-no-files-found: error
+          compression-level: 1
+          retention-days: 3
+      - name: Limpar somente a bancada descartável
+        if: always()
+        shell: bash
+        run: docker rm -f barba-central-d1-local
