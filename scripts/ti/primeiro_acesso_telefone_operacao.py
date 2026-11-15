@@ -114,7 +114,8 @@ def conferir_imagem_base(container):
     config=executar(['docker','inspect','--format','{{.Image}}',identificador(container)]).decode().strip()
     exigir(re.fullmatch('sha256:[a-f0-9]{64}',config),'Configuração de imagem inválida')
     digests=json.loads(executar(['docker','image','inspect','--format','{{json .RepoDigests}}',config]))
-    exigir('ghcr.io/proh2026media/bc-evolution-groups@sha256:bb66b337063aa3fb82500642d0e332ff32f94a6a04692d1652b016ca735c9f3e' in (digests or []),'Imagem instalada diverge do corte 6-brand.1; parar e devolver diagnóstico')
+    known={'ghcr.io/proh2026media/bc-evolution-groups@sha256:bb66b337063aa3fb82500642d0e332ff32f94a6a04692d1652b016ca735c9f3e','ghcr.io/proh2026media/bc-evolution-groups@sha256:e8ce0f84dd4da9807284d1b0c80ae448bf9c37ee9bdfa29d97f604996943ca10'}
+    exigir(config=='sha256:642f12b67e0bca28094255b55a62069f019fb14b112d95232cf72338d9d96e29' and bool(known.intersection(digests or [])),'Imagem instalada diverge do corte 6-brand.1; parar e devolver diagnóstico')
 
 def conferir_imagem_nova(container,evidencia=None):
     value=executar(['docker','inspect','--format','{{index .Config.Labels "org.opencontainers.image.version"}}',identificador(container)]).decode().strip()

@@ -39,10 +39,10 @@ with tempfile.TemporaryDirectory(prefix='bc-pacote-telefone-') as tmp:
  script='''#!/usr/bin/env python3
 import json,os,subprocess,sys
 args=sys.argv[1:]
-if args==['inspect','--format','{{.Image}}','evo-base-ficticia']:print('sha256:'+'a'*64)
+if args==['inspect','--format','{{.Image}}','evo-base-ficticia']:print('sha256:642f12b67e0bca28094255b55a62069f019fb14b112d95232cf72338d9d96e29')
 elif args==['inspect','--format','{{.Image}}','evo-nova-ficticia']:print('sha256:'+'b'*64)
 elif args==['inspect','--format','{{index .Config.Labels "org.opencontainers.image.version"}}','evo-nova-ficticia']:print('2.3.7-bc.groups.7')
-elif args==['image','inspect','--format','{{json .RepoDigests}}','sha256:'+'a'*64]:print(json.dumps(['ghcr.io/proh2026media/bc-evolution-groups@sha256:bb66b337063aa3fb82500642d0e332ff32f94a6a04692d1652b016ca735c9f3e']))
+elif args==['image','inspect','--format','{{json .RepoDigests}}','sha256:642f12b67e0bca28094255b55a62069f019fb14b112d95232cf72338d9d96e29']:print(json.dumps(['ghcr.io/proh2026media/bc-evolution-groups@sha256:bb66b337063aa3fb82500642d0e332ff32f94a6a04692d1652b016ca735c9f3e']))
 elif args==['image','inspect','--format','{{json .RepoDigests}}','sha256:'+'b'*64]:print(json.dumps(['ghcr.io/proh2026media/bc-evolution-groups@sha256:'+'c'*64]))
 else:sys.exit(subprocess.call([os.environ['BC_DOCKER_REAL'],*args]))
 '''

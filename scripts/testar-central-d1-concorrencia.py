@@ -93,8 +93,9 @@ try:
     a,b=race(account,mark_account)
     assert sum(r.returncode==0 for r in (a,b))==1,[r.stderr for r in (a,b)]
     assert not any('deadlock' in r.stderr or 'timeout' in r.stderr for r in (a,b)),[r.stderr for r in (a,b)]
-    assert any('WA_PERSONAL_NUMBER' in r.stderr or 'WA_PERSONAL_REVIEW_REQUIRED' in r.stderr for r in (a,b)),[r.stderr for r in (a,b)]
-    print('PASS: autorização de grupo e classificação pessoal simultâneas não ganham juntas')
+    # Depois de D4, o contrato antigo de autorização é vedado integralmente.
+    assert any('WA_PERSONAL_NUMBER' in r.stderr or 'WA_PERSONAL_REVIEW_REQUIRED' in r.stderr or 'GROUP_PROTECTED_CONTRACT_REQUIRED' in r.stderr for r in (a,b)),[r.stderr for r in (a,b)]
+    print('PASS: autorização pessoal/contrato legado não contorna proteção de grupo')
 
 finally:
     shop_ids = ','.join(f"'{value}'::uuid" for value in shops) or 'null'
