@@ -9,10 +9,23 @@ export type AssistedAccess = {
   next_check_at: string | null;
 };
 /** Intenção explícita inicia a janela; acompanhamento não envia OTP nem troca telefone/números. */
-export async function careAccessRequest(
-  shop: string,
-  start?: { phone: string; accounts: string[]; accept: boolean; group?: string; version?: number },
-) {
+type Start = {
+  phone: string;
+  accounts: string[];
+  accept: boolean;
+  group?: string;
+  version?: number;
+};
+export async function careAccessRequest(shop: string, start?: Start) {
+  return call({ action: start ? "start" : "advance", shop, ...start });
+}
+export async function reviseCarePhone(shop: string, start: Start) {
+  return call({ action: "revise", shop, ...start });
+}
+export async function abortCarePhoneRevision(shop: string, revision: string) {
+  return call({ action: "abort", shop, revision });
+}
+async function call(body: Record<string, unknown>) {
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -26,8 +39,8 @@ export async function careAccessRequest(
         apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         Authorization: `Bearer ${session.access_token}`,
       },
-      body: JSON.stringify({ action: start ? "start" : "advance", shop, ...start }),
-      signal: AbortSignal.timeout(45000),
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(60000),
     },
   );
   const result = await response.json();
@@ -40,3 +53,17 @@ export async function careAccessRequest(
     throw Error("ACCESS_UNAVAILABLE");
   return result.data;
 }
+
+export type PhoneRevisionInfo = {
+  contract: "bc-phone-revision-v1";
+  enabled: boolean;
+  id: string | null;
+  phase: "requested" | "waiting" | "binding" | "bound" | "committed" | "aborted" | null;
+  active: boolean;
+  pending: boolean;
+  expired: boolean;
+  old_phone: string | null;
+  declared_phone: string | null;
+  next_check_at: string | null;
+  deadline: string | null;
+};

@@ -110,6 +110,7 @@ export function evolutionGroupTransport(path: string, init: RequestInit = {}) {
     "bcCreate",
     "bcRecoverCycle",
     "bcPrepare",
+    "bcPhoneRevision",
     "bcWelcome",
     "bcDescription",
     "bcBrand",

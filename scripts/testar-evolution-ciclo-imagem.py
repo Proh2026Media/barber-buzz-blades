@@ -4,9 +4,9 @@ import argparse, json, os, re, subprocess, time, uuid
 from pathlib import Path
 D = 'docker'
 parser=argparse.ArgumentParser(description=__doc__)
-parser.add_argument('--imagem',default='bc-evolution-central-local:2.3.7-bc.groups.5')
+parser.add_argument('--imagem',default='bc-evolution-central-local:2.3.7-bc.groups.7')
 IMAGE=parser.parse_args().imagem
-if not re.fullmatch(r'bc-evolution-central-local:2\.3\.7-bc\.groups\.[56]',IMAGE):raise SystemExit('Somente imagem de bancada v5/v6')
+if not re.fullmatch(r'bc-evolution-central-local:2\.3\.7-bc\.groups\.[567]',IMAGE):raise SystemExit('Somente imagem de bancada v5/v6/v7')
 def run(*args, **kw):
     return subprocess.check_output([D,*args], stderr=subprocess.PIPE, text=True, **kw).strip()
 endpoint=run('context','inspect','--format','{{.Endpoints.docker.Host}}')

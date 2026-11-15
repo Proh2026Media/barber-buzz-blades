@@ -230,3 +230,22 @@ test("Instância duplicada não serve como prova de identidade live", async () =
     .p_observations as Record<string, unknown>[];
   assert.equal(observations[0].status, "unknown");
 });
+
+test("Revisar exige grupo e versão e nunca é tratado como simples cadastro", async () => {
+  const s = setup();
+  const r = await handleCareAccess(
+    new Request("https://example.invalid/access", {
+      method: "POST",
+      body: JSON.stringify({
+        action: "revise",
+        shop,
+        phone: "+5511999999999",
+        accounts: targets.map((t) => t.id),
+        accept: true,
+      }),
+    }),
+    s.deps,
+  );
+  assert.equal(r.status, 400);
+  assert.equal(s.calls.length, 0);
+});

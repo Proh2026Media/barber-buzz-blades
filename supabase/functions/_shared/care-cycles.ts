@@ -31,6 +31,14 @@ export type CareCycleJob = {
   cleanup_pending: boolean;
   cleanup_state: Record<string, string>;
   customer_phone: string;
+  phone_revision?: {
+    id: string;
+    cycleId: string;
+    admissionId: string;
+    oldCustomerJid: string;
+    declaredJid: string;
+    commitHash: string;
+  } | null;
   numbers: NumberIdentity[];
   creator_channel_id: string;
   creator_instance: string;
@@ -60,6 +68,16 @@ type CycleProof = {
   creatorJid: string;
   creatorInstanceId: string;
   customerJid: string;
+  phoneRevision?: {
+    id: string;
+    cycleId: string;
+    admissionId: string;
+    oldCustomerJid: string;
+    declaredJid: string;
+    commitHash: string;
+    resolvedJid: string;
+    phase: string;
+  };
   platformJids: string[];
   createdAt: string;
   expiresAt: string;
@@ -142,6 +160,7 @@ export async function processCareCycle(
   cycleId: string,
   logo: CycleLogo,
   enabled = false,
+  onFailure?: (code: string) => void,
 ): Promise<string> {
   if (!enabled || !uuid(cycleId)) return "blocked";
   const rpc = async (name: string, args: Record<string, unknown>) => {
@@ -244,11 +263,26 @@ export async function processCareCycle(
     const data = record(await get("bcCycle", instance, { groupJid: group! }));
     const c = data.cycle as CycleProof;
     const platforms = job.numbers.map((n) => pn(n.phone)).sort();
+    const correction = c?.phoneRevision;
+    const closingIdentity =
+      (job.state === "closing" || (job.state === "closed" && job.cleanup_pending)) &&
+      job.phone_revision &&
+      correction &&
+      correction.id === job.phone_revision.id &&
+      correction.cycleId === job.id &&
+      correction.admissionId === job.phone_revision.admissionId &&
+      correction.oldCustomerJid === job.phone_revision.oldCustomerJid &&
+      correction.declaredJid === job.phone_revision.declaredJid &&
+      correction.commitHash === job.phone_revision.commitHash &&
+      ["bound", "committed"].includes(correction.phase) &&
+      c.customerJid === correction.resolvedJid &&
+      /^[1-9][0-9]{7,14}@s\.whatsapp\.net$/.test(correction.resolvedJid) &&
+      !platforms.includes(correction.resolvedJid);
     if (
       !c ||
       c.cycleId !== job.id ||
       c.groupJid !== group ||
-      c.customerJid !== pn(job.customer_phone) ||
+      (c.customerJid !== pn(job.customer_phone) && !closingIdentity) ||
       c.creatorInstanceId !== job.provider_creator_id ||
       c.creatorJid !== pn(job.numbers.find((n) => n.instance === job.creator_instance)!.phone) ||
       JSON.stringify([...c.platformJids].sort()) !== JSON.stringify(platforms) ||
@@ -766,6 +800,11 @@ export async function processCareCycle(
     await release(present && !received ? "waiting_first_receipt" : null);
     return present ? (received ? "active" : "waiting_first_receipt") : "waiting_customer";
   } catch (error) {
+    onFailure?.(
+      error instanceof Error && /^GROUP_[A-Z_]+$/.test(error.message)
+        ? error.message
+        : "GROUP_UNEXPECTED",
+    );
     try {
       await release(
         error instanceof Error && error.message === "GROUP_PREPARATION_REQUIRED"

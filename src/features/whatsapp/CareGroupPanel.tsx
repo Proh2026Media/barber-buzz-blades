@@ -1,4 +1,11 @@
-import { careAccessRequest, type AssistedAccess } from "@/lib/whatsapp/care-access-client";
+import { PhoneRevisionPanel } from "./PhoneRevisionPanel";
+import {
+  careAccessRequest,
+  reviseCarePhone,
+  abortCarePhoneRevision,
+  type AssistedAccess,
+  type PhoneRevisionInfo,
+} from "@/lib/whatsapp/care-access-client";
 import {
   careFailure,
   careRpcFailure,
@@ -43,6 +50,7 @@ type Group = {
 };
 type Data = {
   access?: AssistedAccess;
+  phone_revision?: PhoneRevisionInfo;
   enabled: boolean;
   phone?: string;
   phone_confirmed?: boolean;
@@ -116,7 +124,8 @@ function CareGroupContent({
     dirty = useRef(false),
     polling = useRef(false),
     generation = useRef(0),
-    advancing = useRef(false);
+    advancing = useRef(false),
+    nextAdvanceAt = useRef(0);
   function apply(value: unknown, reset = false) {
     if (!live.current) return;
     const next = value as Data;
@@ -218,14 +227,17 @@ function CareGroupContent({
     setAccepted(false);
   }
   const access = data?.access;
+  const revision = data?.phone_revision;
+  const revisionFollow = revision?.enabled === true && revision.pending && revision.active;
   const followAllowed =
-    access?.enabled === true &&
-    access.active &&
-    data?.enabled &&
-    !data.phone_confirmed &&
-    !data.group?.numbers_changed &&
-    !data.group?.closing &&
-    !["closed", "customer_left", "creation_unknown"].includes(data.group?.cycle_state ?? "");
+    revisionFollow ||
+    (access?.enabled === true &&
+      access.active &&
+      data?.enabled &&
+      (!data.phone_confirmed || !data.phone_ready) &&
+      !data.group?.numbers_changed &&
+      !data.group?.closing &&
+      !["closed", "customer_left", "creation_unknown"].includes(data.group?.cycle_state ?? ""));
   const follow = useRef<() => Promise<void>>(async () => {});
   follow.current = async () => {
     if (
@@ -233,18 +245,22 @@ function CareGroupContent({
       demo ||
       readOnly ||
       !live.current ||
+      Date.now() < nextAdvanceAt.current ||
       document.visibilityState !== "visible" ||
       pending.current ||
       advancing.current ||
-      !access
+      (!access && !revision)
     )
       return;
     if (
-      Date.parse(access.expires_at ?? "") <= Date.now() ||
-      Date.parse(access.next_check_at ?? "") > Date.now()
+      (!revisionFollow && Date.parse(access?.expires_at ?? "") <= Date.now()) ||
+      Date.parse((revisionFollow ? revision?.next_check_at : access?.next_check_at) ?? "") >
+        Date.now()
     )
       return;
     advancing.current = true;
+    // Precisão de um segundo sem multiplicar chamadas, inclusive quando a rede falha.
+    nextAdvanceAt.current = Date.now() + 10000;
     const version = ++generation.current;
     try {
       const next = await careAccessRequest(shopId);
@@ -261,7 +277,7 @@ function CareGroupContent({
   useEffect(() => {
     if (!followAllowed || demo || readOnly) return;
     const tick = () => void follow.current();
-    const timer = window.setInterval(tick, 10000);
+    const timer = window.setInterval(tick, 1000);
     document.addEventListener("visibilitychange", tick);
     window.addEventListener("focus", tick);
     return () => {
@@ -350,13 +366,15 @@ function CareGroupContent({
               title={t(
                 group.closing
                   ? "careCycle.closing"
-                  : group.cycle_state === "creation_unknown"
-                    ? "care.unknown"
-                    : !data.enabled && !ended
-                      ? "careFeedback.unavailable"
-                      : group.reason === "waiting_first_receipt"
-                        ? "careCycle.receipt"
-                        : (careStates[group.state] ?? "care.unavailable"),
+                  : data.phone_revision?.pending
+                    ? "carePhone.pending"
+                    : group.cycle_state === "creation_unknown"
+                      ? "care.unknown"
+                      : !data.enabled && !ended
+                        ? "careFeedback.unavailable"
+                        : group.reason === "waiting_first_receipt"
+                          ? "careCycle.receipt"
+                          : (careStates[group.state] ?? "care.unavailable"),
               )}
             />
           ) : (
@@ -378,17 +396,24 @@ function CareGroupContent({
               {(["care.stepRequest", "care.stepJoin", "care.stepPhone"] as const).map(
                 (label, index) => {
                   const completed = [
-                    Boolean(group && ["waiting_customer", "active"].includes(group.state)),
+                    Boolean(
+                      group &&
+                      !data.enrollment_expired &&
+                      ["waiting_customer", "active"].includes(group.state),
+                    ),
                     group?.state === "active",
                     data.phone_confirmed === true,
                   ][index];
-                  const current = !group
-                    ? 0
-                    : group.state === "waiting_customer"
-                      ? 1
-                      : data.phone_ready
-                        ? 2
-                        : 0;
+                  const current =
+                    data.enrollment_expired && !data.phone_confirmed
+                      ? 0
+                      : !group
+                        ? 0
+                        : group.state === "waiting_customer"
+                          ? 1
+                          : data.phone_ready
+                            ? 2
+                            : 0;
                   return (
                     <li
                       key={label}
@@ -564,6 +589,8 @@ function CareGroupContent({
           {!readOnly &&
             group &&
             !ended &&
+            !data.phone_revision?.pending &&
+            !data.phone_revision?.enabled &&
             data.enrollment_expired &&
             !data.phone_confirmed &&
             group.state !== "creation_unknown" && (
@@ -598,12 +625,13 @@ function CareGroupContent({
             )}
           {!readOnly &&
             data.access?.enabled &&
+            !data.phone_revision?.pending &&
             group &&
             !ended &&
             !group.numbers_changed &&
             !group.closing &&
             group.cycle_state !== "creation_unknown" &&
-            !data.phone_confirmed &&
+            (!data.phone_confirmed || !data.phone_ready) &&
             !data.enrollment_expired && (
               <div className="space-y-3 rounded-xl border border-border p-3">
                 <p className="flex items-center gap-2 text-sm font-semibold">
@@ -631,7 +659,47 @@ function CareGroupContent({
                 )}
               </div>
             )}
-          {!readOnly && group && !ended && data.phone && (
+          {!readOnly && group && !ended && data.phone_revision && (
+            <PhoneRevisionPanel
+              key={`${shopId}:${data.phone_revision.id ?? "new"}`}
+              info={data.phone_revision}
+              shopId={shopId}
+              phone={data.phone ?? ""}
+              disabled={busy || !data.enabled}
+              resumeNeeded={data.enrollment_expired === true}
+              onKeep={() =>
+                void run(() => startAccess(data, data.phone ?? "", true), false, "resume")
+              }
+              onStart={(candidate) =>
+                void run(
+                  async () => {
+                    apply(
+                      await reviseCarePhone(shopId, {
+                        phone: candidate,
+                        accept: true,
+                        accounts: data.platform_participants.map((p) => p.id),
+                        group: group.id,
+                        version: group.version,
+                      }),
+                    );
+                  },
+                  false,
+                  "revise",
+                )
+              }
+              onAbort={() =>
+                void run(
+                  async () => {
+                    if (data.phone_revision?.id)
+                      apply(await abortCarePhoneRevision(shopId, data.phone_revision.id));
+                  },
+                  false,
+                  "abort",
+                )
+              }
+            />
+          )}
+          {!readOnly && group && !ended && !data.phone_revision?.pending && data.phone && (
             <GroupPhoneAccess
               key={`${group.id}:${data.phone}`}
               groupId={group.id}
@@ -644,12 +712,23 @@ function CareGroupContent({
               }
               ready={data.phone_ready === true}
               confirmed={data.phone_confirmed === true}
-              waiting={group.state === "waiting_customer"}
+              waiting={
+                group.state === "waiting_customer" && group.reason !== "waiting_first_receipt"
+              }
               expired={data.enrollment_expired === true && data.phone_confirmed !== true}
               refreshing={busy}
               assisted={data.access?.enabled === true && data.access.active}
               onRefresh={() => void run(load)}
-              onConfirmed={() => void run(load)}
+              onConfirmed={() =>
+                void run(
+                  async () => {
+                    await load();
+                    if (data.access?.enabled) apply(await careAccessRequest(shopId));
+                  },
+                  false,
+                  "advance",
+                )
+              }
             />
           )}
           {!readOnly && group && !ended && (

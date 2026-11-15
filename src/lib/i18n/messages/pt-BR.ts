@@ -5362,6 +5362,24 @@ export const ptBR = {
   "careAccess.preparation": "Vamos preparar o grupo e mostrar o convite aqui.",
   "careAccess.ready": "Grupo pronto para confirmar seu telefone.",
   "careAccess.codeHint": "O código chega neste grupo.",
+  "carePhone.busy": "Aguarde a conferência em andamento e tente novamente.",
+  "carePhone.review": "Não foi possível comprovar a correção do número. Seu grupo foi preservado.",
+  "carePhone.failed": "Não foi possível revisar o telefone agora.",
+  "carePhone.cancelFailed":
+    "Não foi possível cancelar agora. Estamos preservando a correção em andamento.",
+  "carePhone.expired": "A revisão expirou. Cancele para informar o número novamente.",
+  "carePhone.join": "Entre no mesmo grupo com este número.",
+  "carePhone.finishing": "Concluindo a correção do telefone.",
+  "carePhone.checking": "Conferindo seu número no WhatsApp.",
+  "carePhone.cancel": "Cancelar revisão",
+  "carePhone.edit": "Corrigir meu número",
+  "carePhone.correct": "Seu WhatsApp correto",
+  "carePhone.sameGroup": "Você continuará na mesma conta e no mesmo grupo.",
+  "carePhone.accept": "Confirmo este número e os números de atendimento apresentados.",
+  "carePhone.continue": "Conferir e continuar",
+  "carePhone.pending": "Revisão do telefone",
+  "carePhone.reviewNumber": "Confira o seu WhatsApp.",
+  "carePhone.keep": "Usar este número",
 } as const;
 
 export type MessageKey = keyof typeof ptBR;

@@ -1426,6 +1426,10 @@ export type Database = {
         };
         Returns: Json;
       };
+      care_phone_revision_invite: {
+        Args: { p_shop: string; p_id: string };
+        Returns: string | null;
+      };
       care_group_read: { Args: { p_shop: string; p_customer?: string }; Returns: Json };
       care_group_begin: {
         Args: { p_shop: string; p_accept: boolean; p_accounts: string[]; p_phone: string };

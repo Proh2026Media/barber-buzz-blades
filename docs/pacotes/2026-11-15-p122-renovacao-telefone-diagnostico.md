@@ -1,5 +1,7 @@
 # P-122 — janela interrompida, diagnóstico e correção de identidade
 
+**Atualização de 15/11:** o plano das seções 4–5 foi implementado e ensaiado localmente na [entrega integrada](2026-11-15-p122-telefone-concluido-local.md). A proposta e as verificações da rodada inicial abaixo ficam como histórico do diagnóstico; não representam pendência atual de desenvolvimento nem mudança na produção. Roteiro TI atual: [primeiro acesso/telefone](2026-11-15-ti-primeiro-acesso-telefone-p122.md).
+
 **Estado: piloto pausado. Não seguir o roteiro anterior de entrada.** Relatório 2 da TI/Guardião, corte **15/11/2026, 15:00:34 BRT**, supera a fotografia de 03:17:41. Instalação preservada, matrícula não renovada e nenhuma entrada/novo acolhimento/código/agendamento comprovados. Arena e retorno/encerramento continuam pendentes.
 
 Este documento reúne análise local e plano de desenvolvimento. Não é ordem para a TI trocar telefone, reativar piloto, executar migração ou pedir novos cliques. Nenhuma alteração de produção foi executada pelo Codex.

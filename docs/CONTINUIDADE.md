@@ -1,5 +1,11 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 15/11/2026 — telefone conciliado no mesmo grupo; entrega local completa
+
+[Resultado e evidências](pacotes/2026-11-15-p122-telefone-concluido-local.md), [roteiro TI](pacotes/2026-11-15-ti-primeiro-acesso-telefone-p122.md). Concluídos os contratos B&C/Evolution7, revisão explícita, consulta autoritativa de um candidato, pedido PN/LID, conciliação CAS com recuperação de bind/finalize, cancelamento com lápide, alias só confirmado após OTP, reconferência pós-OTP e mesma conta em outra loja. Nenhuma nova criação/ano ou equivalência de dígito presumida. Retenção e exclusão de conta cobertas; corrigida ordem de cascata da auditoria. UI com etapas e acompanhamento sem espera extra, intervalo mínimo dez segundos inclusive na falha. Código e imagem testados localmente. Entrega operacional está em validação antes do ZIP final; TI receberá fonte, hashes, scripts, comandos e retorno, não desenvolvimento.
+
+Último corte remoto continua o relatório2 de 15:00:34; não houve nova consulta VPS, publicação, grupo ou envio real. Global pausada/ciclos e distribuição desligados conforme esse relato, não estado atual inferido. Futuro piloto depende de instalação/janela e titular. Não reaplicar bases/105–117/acolhimento/safeupdate, não voltar à imagem6 após revisão iniciada e não usar autossave/push. Marca/Flow/.env preservados. As pendências locais de identidade nas entradas abaixo são histórico superado por esta entrega.
+
 ## 15/11/2026 — automação local de primeiro acesso e situação da TI
 
 [Entrega, limites e responsabilidades](pacotes/2026-11-15-p122-primeiro-acesso-assistido-local.md). Implementado contrato bc-assisted-v1: intenção por titular/loja, aceite explícito, janela fixa de 20 minutos, observação seletiva dos números antes do care_group_begin original, execução pelo motor durável e acompanhamento visível/foco com posse/rate no banco. Interface Preparar/Entrar/Confirmar compacta, convite imediato, menos duplicação de texto, OTP ainda explícito após provas. Novo incremental 20261115002000 + Edge whatsapp-group-access, flag false; nenhuma mudança Evolution necessária para esta parte. Leitura conserva OID/dono/ACL e reflete pausa global. Testes/ensaios detalhados no documento.

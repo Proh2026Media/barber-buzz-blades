@@ -8,7 +8,7 @@
 2. **Piloto real não concluído:** cliente fora do grupo e matrícula vencida no corte. Há variante de telefone divergente da informada pelo titular, sem prova de alias. As observações antigas bloquearam tentativas anteriores; o código/status do último clique não foi capturado. Não atribuir todos os erros à mesma causa.
 3. **Correção local anterior:** erros separados por operação, diagnóstico sanitizado, bloqueio de retomada/convite/código sob indisponibilidade. Não foi publicada.
 4. **Trabalho desta rodada:** automatizar a conferência live e o acompanhamento do primeiro acesso, preservando os gates instalados. Desenvolvimento é responsabilidade do Codex; a TI não precisa inventar essa lógica no servidor.
-5. **Ainda separado e pendente:** implementar e testar a revisão coordenada da identidade no grupo já existente. O [plano de identidade](2026-11-15-p122-renovacao-telefone-diagnostico.md#4-fluxo-suportado-proposto--novo-ainda-não-implementado) continua proposto. Esta automação recusa telefone diferente; não resolve nem mascara essa pendência.
+5. **Atualização da mesma data:** revisão coordenada concluída e ensaiada nas duas camadas, incorporando esta automação. Ver [entrega integrada atual](2026-11-15-p122-telefone-concluido-local.md). A ausência de alteração de identidade nesta etapa isolada permanece registrada como histórico, sem afirmar uma pendência atual.
 
 ## Jornada implementada localmente
 
@@ -58,10 +58,10 @@ A preparação reconstrói exclusivamente `barba-central-d1-local`; exige Docker
 
 ## O que fica com a TI e o que ainda fica com o Codex
 
-**Agora, nada novo para executar no servidor.** O roteiro anterior de entrada continua suspenso. Nenhum novo ZIP operacional foi gerado: a revisão de identidade necessária ao piloto ainda não está implementada, e não será repassada como tarefa de desenvolvimento à TI.
+**Etapa isolada incorporada à entrega completa de telefone.** Consultar o [roteiro TI atual](2026-11-15-ti-primeiro-acesso-telefone-p122.md) e o resultado integrado. Nenhuma operação de produção está autorizada por este documento; o roteiro antigo continua suspenso.
 
-**Codex:** concluir o fluxo seguro de revisão do telefone e sua recuperação nas duas camadas; integrar aos testes/artefatos e entregar um único pacote revisável, com bases, hashes, comandos, verificações e retorno. A automação desta rodada está pronta localmente e deve ser incorporada a essa entrega.
+**Codex:** revisão/recuperação integradas e testadas localmente. A entrega unificada inclui código e material operacional pronto; nenhum desenvolvimento é delegado à TI.
 
-**TI, depois desse pacote e da janela autorizada:** conferir a base real e os hashes; aplicar somente o incremental aprovado; instalar a nova função/frontend conforme o roteiro; manter o piloto restrito e comprovar telefone/entrada/acolhimento/confirmar/login/agendamento no caso consentido. Eventual mudança de imagem/webhook/banco Evolution depende da entrega de identidade, não é requisito presumido desta automação. Sem SQL manual de telefone, novo grupo para contornar, Redeploy Coolify, reenvio de código ou reativação indiscriminada.
+**TI, depois desse pacote e da janela autorizada:** conferir a base real e os hashes; aplicar somente o incremental aprovado; instalar a nova função/frontend conforme o roteiro; manter o piloto restrito e comprovar telefone/entrada/acolhimento/confirmar/login/agendamento no caso consentido. A entrega integrada exige imagem7 e não exige migration Evolution ou mudança de webhook. A afirmação anterior se referia somente à automação isolada. Sem SQL manual de telefone, novo grupo para contornar, Redeploy Coolify, reenvio de código ou reativação indiscriminada.
 
 Brand kit, Flow, `.env`, servidores e WhatsApp reais não foram tocados.

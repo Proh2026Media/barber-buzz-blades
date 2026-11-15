@@ -1,3 +1,4 @@
+import { advancePhoneRevision } from "../_shared/care-phone-revision.ts";
 import { connectionStates } from "../_shared/whatsapp-health.ts";
 import { instancePhone } from "../_shared/whatsapp-instance-phone.ts";
 
@@ -14,6 +15,7 @@ type Dependencies = {
   service: Database;
   observe: (path: string, init: RequestInit) => Promise<unknown>;
   process: (cycleId: string) => Promise<string>;
+  revisionTransport?: (path: string, init?: RequestInit) => Promise<unknown>;
 };
 const headers = {
   "Access-Control-Allow-Origin": "*",
@@ -34,6 +36,8 @@ const allowedErrors = new Set([
   "GROUP_REVIEW_REQUIRED",
   "WA_RATE_LIMIT",
   "42501",
+  "GROUP_BUSY",
+  "GROUP_PHONE_PROOF_INVALID",
 ]);
 /** O JWT do titular escolhe a intenção; o serviço nunca aceita ciclo, instância ou destinatário do navegador. */
 export async function handleCareAccess(req: Request, deps: Dependencies) {
@@ -77,7 +81,7 @@ export async function handleCareAccess(req: Request, deps: Dependencies) {
     } catch {
       return reply({ code: "INVALID_REQUEST" }, 400);
     }
-    if (!uuid(body.shop) || !["start", "advance"].includes(String(body.action)))
+    if (!uuid(body.shop) || !["start", "advance", "revise", "abort"].includes(String(body.action)))
       return reply({ code: "INVALID_REQUEST" }, 400);
     const rpc = async (db: Database, name: string, args: Record<string, unknown>) => {
       const result = await db.rpc(name, args);
@@ -93,7 +97,7 @@ export async function handleCareAccess(req: Request, deps: Dependencies) {
       }
       return result.data;
     };
-    if (body.action === "start") {
+    if (body.action === "start" || body.action === "revise") {
       if (
         body.accept !== true ||
         typeof body.phone !== "string" ||
@@ -106,14 +110,43 @@ export async function handleCareAccess(req: Request, deps: Dependencies) {
         (body.version != null && (!Number.isSafeInteger(body.version) || Number(body.version) < 0))
       )
         return reply({ code: "INVALID_REQUEST" }, 400);
-      await rpc(user.db, "care_access_start", {
-        p_shop: body.shop,
-        p_phone: body.phone,
-        p_accounts: body.accounts,
-        p_accept: true,
-        p_group: body.group ?? null,
-        p_version: body.version ?? null,
-      });
+      if (
+        body.action === "revise" &&
+        (!deps.revisionTransport || !uuid(body.group) || !Number.isSafeInteger(body.version))
+      )
+        return reply({ code: "INVALID_REQUEST" }, 400);
+      await rpc(
+        user.db,
+        body.action === "revise" ? "care_phone_revision_start" : "care_access_start",
+        {
+          p_shop: body.shop,
+          p_phone: body.phone,
+          p_accounts: body.accounts,
+          p_accept: true,
+          p_group: body.group ?? null,
+          p_version: body.version ?? null,
+        },
+      );
+    }
+    if (body.action === "abort") {
+      if (!deps.revisionTransport || !uuid(body.revision))
+        return reply({ code: "INVALID_REQUEST" }, 400);
+      await rpc(user.db, "care_phone_revision_abort", { p_shop: body.shop, p_id: body.revision });
+    }
+    if (deps.revisionTransport) {
+      const revision = await advancePhoneRevision(
+        user.id,
+        body.shop,
+        user.db,
+        deps.service,
+        deps.observe,
+        deps.revisionTransport,
+      );
+      if (revision)
+        return reply({
+          ...revision,
+          data: await rpc(user.db, "care_group_read", { p_shop: body.shop }),
+        });
     }
     const claim = object(
       await rpc(deps.service, "claim_care_access", { p_user: user.id, p_shop: body.shop }),

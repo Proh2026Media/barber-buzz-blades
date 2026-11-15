@@ -30,6 +30,7 @@ Deno.serve(async (req) => {
       return user.error || !user.data.user ? null : { id: user.data.user.id, db };
     },
     observe: evolutionFetch,
+    revisionTransport: evolutionGroupTransport,
     process: (id) =>
       processCareCycle(
         service,
