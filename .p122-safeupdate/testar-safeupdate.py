@@ -6,7 +6,7 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parent
 PACKAGE = ROOT / 'pacote' / 'BC-Central-WhatsApp-P122-2026-11-14'
-PSQL = ['docker', 'exec', '-i', 'barba-central-d1-local', 'psql', '-Xq', '-v', 'ON_ERROR_STOP=1', '-U', 'supabase_admin', '-d', 'postgres']
+PSQL = ['docker', 'exec', '-i', 'barba-central-d1-local', 'sh', '-c', ': "${POSTGRES_PASSWORD:?bancada_sem_senha_local}"; export PGPASSWORD="$POSTGRES_PASSWORD"; exec psql "$@"', 'p122-psql', '-Xq', '-v', 'ON_ERROR_STOP=1', '-U', 'supabase_admin', '-d', 'postgres']
 
 
 def query(path, expected_failure=False):
