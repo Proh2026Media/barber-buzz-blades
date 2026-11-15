@@ -33,7 +33,9 @@ export const Route = createFileRoute("/app")({
     ...(typeof search.day === "string" && DAY_KEY.test(search.day) ? { day: search.day } : {}),
     ...(typeof search.time === "string" && TIME_KEY.test(search.time) ? { time: search.time } : {}),
     // ?tab=conta&focus=whatsapp: abre a Conta com o cartão do WhatsApp em foco.
-    ...(search.focus === "whatsapp" ? { focus: "whatsapp" as const } : {}),
+    ...(search.focus === "whatsapp" || search.focus === "grupo"
+      ? { focus: search.focus as "whatsapp" | "grupo" }
+      : {}),
     // Recusa explicada (painel ou plataforma): o app mostra o motivo.
     ...(parseAccessNotice(search.aviso) ? { aviso: parseAccessNotice(search.aviso) } : {}),
   }),
@@ -114,6 +116,7 @@ function AppRoute() {
       initialTab={initialTabFor(tab, Boolean(day && time))}
       initialSlot={day && time ? { day, time } : undefined}
       focusWhatsapp={focus === "whatsapp"}
+      focusGroup={focus === "grupo"}
       focusReservationToken={reserva}
       accessNotice={aviso}
     />

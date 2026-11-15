@@ -1,3 +1,4 @@
+import { CareCycleOperations, type CareCycleAdminData } from "./CareCycleOperations";
 import { useEffect, useRef, useState } from "react";
 import { UsersRound, ShieldCheck, Pause, RefreshCw } from "lucide-react";
 import { Notice, SectionHeader } from "@/components/visual";
@@ -5,10 +6,11 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { useI18n } from "@/lib/i18n";
 import { useDemo } from "@/features/demo/context";
-import { careStates } from "@/features/whatsapp/CareGroupPanel";
+import { careStates } from "@/features/whatsapp/care-states";
 
 type Payload = {
   enabled: boolean;
+  cycle_contract?: string;
   accounts: { id: string; shop_name: string; number: string; enabled: boolean }[];
   groups: {
     id: string;
@@ -38,7 +40,7 @@ export function CareGroupsAdmin({
     [selected, setSelected] = useState("");
   const live = useRef(true),
     pending = useRef(false);
-  async function action(name: string, values: Json = {}) {
+  async function action(name: string, values: Json = {}, propagate = false) {
     if (demo || pending.current) return;
     pending.current = true;
     setBusy(true);
@@ -49,19 +51,31 @@ export function CareGroupsAdmin({
       if (live.current) setData(r.data as unknown as Payload);
     } catch {
       if (live.current) setError(true);
+      if (propagate) throw Error("GROUP_SAVE_FAILED");
     } finally {
       pending.current = false;
       if (live.current) setBusy(false);
     }
   }
+  const actionRef = useRef(action);
+  actionRef.current = action;
   useEffect(() => {
     live.current = true;
-    void action("read");
+    void actionRef.current("read");
     return () => {
       live.current = false;
     };
   }, [demo]);
   const group = data?.groups.find((g) => g.id === selected);
+  if (data?.cycle_contract === "bc-groups-v3")
+    return (
+      <CareCycleOperations
+        data={data as unknown as CareCycleAdminData}
+        busy={busy}
+        error={error}
+        request={(name, values) => action(name, values, true)}
+      />
+    );
   return (
     <section className="min-w-0 space-y-4" aria-busy={busy}>
       <div className="app-action-card space-y-3 p-4 tablet:p-5">

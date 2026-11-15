@@ -89,6 +89,7 @@ type CustomerProfileProps = {
   userId: string | null;
   /** Aberta pelo link "Número errado?" da entrada: rola e foca o cartão do WhatsApp. */
   focusWhatsapp?: boolean;
+  focusGroup?: boolean;
   onSaved?: (name: string) => void;
   /** "Seu ritmo": exibido logo depois do WhatsApp, num cartão próprio. */
   children?: ReactNode;
@@ -133,6 +134,7 @@ function AccountCustomerProfile({
   shops = [],
   currentShopId = null,
   focusWhatsapp = false,
+  focusGroup = false,
   onOpenShop,
   currentSession,
 }: CustomerProfileProps & { currentSession: RefObject<Session | null> }) {
@@ -201,6 +203,16 @@ function AccountCustomerProfile({
     }, 50);
     return () => window.clearTimeout(timer);
   }, [focusWhatsapp, loading, error, openSection, whatsappReady]);
+
+  const groupFocused = useRef(false);
+  useEffect(() => {
+    if (!focusGroup || !groupAvailable || groupFocused.current || loading || error) return;
+    const timer = window.setTimeout(() => {
+      groupFocused.current = true;
+      openSection(SECTION.groups);
+    }, 50);
+    return () => window.clearTimeout(timer);
+  }, [focusGroup, groupAvailable, loading, error, openSection]);
 
   // Só foca depois que o botão voltou à tela e saiu do "ocupado" (botão desativado não recebe foco).
   useEffect(() => {

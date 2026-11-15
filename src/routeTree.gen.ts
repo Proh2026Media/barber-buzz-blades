@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermosRouteImport } from './routes/termos'
 import { Route as ShopRouteImport } from './routes/shop'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
+import { Route as PrevisaoWhatsappRouteImport } from './routes/previsao-whatsapp'
 import { Route as PoliticaRouteImport } from './routes/politica'
 import { Route as PlatformRouteImport } from './routes/platform'
 import { Route as DemoRouteImport } from './routes/demo'
@@ -41,6 +42,11 @@ const ShopRoute = ShopRouteImport.update({
 const PrivacidadeRoute = PrivacidadeRouteImport.update({
   id: '/privacidade',
   path: '/privacidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrevisaoWhatsappRoute = PrevisaoWhatsappRouteImport.update({
+  id: '/previsao-whatsapp',
+  path: '/previsao-whatsapp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PoliticaRoute = PoliticaRouteImport.update({
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/demo': typeof DemoRoute
   '/platform': typeof PlatformRoute
   '/politica': typeof PoliticaRoute
+  '/previsao-whatsapp': typeof PrevisaoWhatsappRoute
   '/privacidade': typeof PrivacidadeRoute
   '/shop': typeof ShopRoute
   '/termos': typeof TermosRoute
@@ -150,6 +157,7 @@ export interface FileRoutesByTo {
   '/demo': typeof DemoRoute
   '/platform': typeof PlatformRoute
   '/politica': typeof PoliticaRoute
+  '/previsao-whatsapp': typeof PrevisaoWhatsappRoute
   '/privacidade': typeof PrivacidadeRoute
   '/shop': typeof ShopRoute
   '/termos': typeof TermosRoute
@@ -171,6 +179,7 @@ export interface FileRoutesById {
   '/demo': typeof DemoRoute
   '/platform': typeof PlatformRoute
   '/politica': typeof PoliticaRoute
+  '/previsao-whatsapp': typeof PrevisaoWhatsappRoute
   '/privacidade': typeof PrivacidadeRoute
   '/shop': typeof ShopRoute
   '/termos': typeof TermosRoute
@@ -193,6 +202,7 @@ export interface FileRouteTypes {
     | '/demo'
     | '/platform'
     | '/politica'
+    | '/previsao-whatsapp'
     | '/privacidade'
     | '/shop'
     | '/termos'
@@ -213,6 +223,7 @@ export interface FileRouteTypes {
     | '/demo'
     | '/platform'
     | '/politica'
+    | '/previsao-whatsapp'
     | '/privacidade'
     | '/shop'
     | '/termos'
@@ -233,6 +244,7 @@ export interface FileRouteTypes {
     | '/demo'
     | '/platform'
     | '/politica'
+    | '/previsao-whatsapp'
     | '/privacidade'
     | '/shop'
     | '/termos'
@@ -254,6 +266,7 @@ export interface RootRouteChildren {
   DemoRoute: typeof DemoRoute
   PlatformRoute: typeof PlatformRoute
   PoliticaRoute: typeof PoliticaRoute
+  PrevisaoWhatsappRoute: typeof PrevisaoWhatsappRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
   ShopRoute: typeof ShopRoute
   TermosRoute: typeof TermosRoute
@@ -285,6 +298,13 @@ declare module '@tanstack/react-router' {
       path: '/privacidade'
       fullPath: '/privacidade'
       preLoaderRoute: typeof PrivacidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/previsao-whatsapp': {
+      id: '/previsao-whatsapp'
+      path: '/previsao-whatsapp'
+      fullPath: '/previsao-whatsapp'
+      preLoaderRoute: typeof PrevisaoWhatsappRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/politica': {
@@ -406,6 +426,7 @@ const rootRouteChildren: RootRouteChildren = {
   DemoRoute: DemoRoute,
   PlatformRoute: PlatformRoute,
   PoliticaRoute: PoliticaRoute,
+  PrevisaoWhatsappRoute: PrevisaoWhatsappRoute,
   PrivacidadeRoute: PrivacidadeRoute,
   ShopRoute: ShopRoute,
   TermosRoute: TermosRoute,

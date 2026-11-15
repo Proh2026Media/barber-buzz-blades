@@ -1,23 +1,13 @@
+import { careStates } from "./care-states";
 import { GroupPhoneAccess } from "./GroupPhoneAccess";
 import { useEffect, useRef, useState } from "react";
-import { Check, UsersRound, ShieldCheck, RefreshCw, UserMinus } from "lucide-react";
+import { Clock3, Check, UsersRound, ShieldCheck, RefreshCw, UserMinus } from "lucide-react";
 import { Notice, SectionHeader, ConfirmDialog } from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
-import { useI18n, type MessageKey } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n";
 import { useDemo } from "@/features/demo/context";
 
-export const careStates: Record<string, MessageKey> = {
-  requested: "care.requested",
-  creating: "care.creating",
-  waiting_customer: "care.waiting",
-  active: "care.active",
-  paused_divergence: "care.divergence",
-  paused_unavailable: "care.unavailable",
-  customer_left: "care.left",
-  closed: "care.closed",
-  creation_unknown: "care.unknown",
-};
 type Group = {
   id: string;
   state: string;
@@ -26,6 +16,11 @@ type Group = {
   review_invites: boolean;
   return_on: string | null;
   reason: string;
+  cycle_id?: string;
+  cycle_state?: string;
+  expires_at?: string | null;
+  numbers_changed?: boolean;
+  closing?: boolean;
 };
 type Data = {
   enabled: boolean;
@@ -80,7 +75,7 @@ function CareGroupContent({
   onAvailable?: (value: boolean) => void;
 }) {
   const demo = useDemo();
-  const { t } = useI18n();
+  const { t, intlLocale } = useI18n();
   const [data, setData] = useState<Data | null>(null),
     [error, setError] = useState(false),
     [busy, setBusy] = useState(false),
@@ -96,25 +91,32 @@ function CareGroupContent({
   const [closing, setClosing] = useState(false),
     [saved, setSaved] = useState(false);
   const live = useRef(true),
-    pending = useRef(false);
-  function apply(value: unknown) {
+    pending = useRef(false),
+    dirty = useRef(false),
+    polling = useRef(false),
+    generation = useRef(0);
+  function apply(value: unknown, reset = false) {
     if (!live.current) return;
     const next = value as Data;
     setData(next);
     onAvailable?.(next.enabled || Boolean(next.group));
-    setPreferences({
-      notifications: next.group?.notifications ?? false,
-      review_invites: next.group?.review_invites ?? false,
-      return_on: next.group?.return_on ?? "",
-      monthly_marketing: next.preferences?.monthly_marketing ?? 0,
-      proactive_paused: next.preferences?.proactive_paused ?? false,
-    });
+    if (reset) dirty.current = false;
+    if (!dirty.current)
+      setPreferences({
+        notifications: next.group?.notifications ?? false,
+        review_invites: next.group?.review_invites ?? false,
+        return_on: next.group?.return_on ?? "",
+        monthly_marketing: next.preferences?.monthly_marketing ?? 0,
+        proactive_paused: next.preferences?.proactive_paused ?? false,
+      });
   }
-  async function load() {
+  async function load(background = false) {
+    const requestGeneration = generation.current;
     const r = await supabase.rpc("care_group_read", {
       p_shop: shopId,
       ...(customerId ? { p_customer: customerId } : {}),
     });
+    if (background && (pending.current || requestGeneration !== generation.current)) return;
     if (r.error) throw r.error;
     apply(r.data);
     if (live.current) setPhone((r.data as { phone?: string })?.phone ?? "");
@@ -122,6 +124,7 @@ function CareGroupContent({
   async function run(work: () => Promise<void>, propagate = false) {
     if (demo || pending.current) return;
     pending.current = true;
+    generation.current++;
     setBusy(true);
     setError(false);
     setSaved(false);
@@ -135,13 +138,38 @@ function CareGroupContent({
       if (live.current) setBusy(false);
     }
   }
+  const loadRef = useRef(load),
+    runRef = useRef(run);
+  loadRef.current = load;
+  runRef.current = run;
   useEffect(() => {
     live.current = true;
-    void run(load);
+    void runRef.current(() => loadRef.current());
     return () => {
       live.current = false;
     };
   }, [demo]);
+  const groupId = data?.group?.id;
+  const compositionKey = data?.platform_participants.map((p) => `${p.id}:${p.phone}`).join("|");
+  useEffect(() => {
+    setAccepted(false);
+  }, [compositionKey]);
+  useEffect(() => {
+    if (!groupId || demo || readOnly) return;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState !== "visible" || pending.current || polling.current) return;
+      polling.current = true;
+      void loadRef
+        .current(true)
+        .catch(() => {
+          if (live.current) setError(true);
+        })
+        .finally(() => {
+          polling.current = false;
+        });
+    }, 10000);
+    return () => window.clearInterval(timer);
+  }, [groupId, demo, readOnly]);
   async function update(action: string, values: Json = {}) {
     if (!data?.group || readOnly) return;
     await run(async () => {
@@ -152,7 +180,7 @@ function CareGroupContent({
         p_values: values,
       });
       if (r.error) throw r.error;
-      apply(r.data);
+      apply(r.data, action === "preferences");
       if (live.current) {
         setSaved(true);
         setClosing(false);
@@ -188,10 +216,28 @@ function CareGroupContent({
           {group ? (
             <Notice
               tone={group.state === "active" ? "info" : "warning"}
-              title={t(careStates[group.state] ?? "care.unavailable")}
+              title={t(
+                group.closing
+                  ? "careCycle.closing"
+                  : group.cycle_state === "creation_unknown"
+                    ? "care.unknown"
+                    : group.reason === "waiting_first_receipt"
+                      ? "careCycle.receipt"
+                      : (careStates[group.state] ?? "care.unavailable"),
+              )}
             />
           ) : (
             <p className="text-sm text-muted-foreground">{t("care.intro")}</p>
+          )}
+          {group?.expires_at && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Clock3 className="size-4" aria-hidden />
+              <span>
+                {t("careCycle.until", {
+                  date: new Date(group.expires_at).toLocaleDateString(intlLocale),
+                })}
+              </span>
+            </div>
           )}
           {!data.enabled && <Notice tone="info" title={t("care.disabled")} />}
           {!readOnly && !ended && (
@@ -254,6 +300,39 @@ function CareGroupContent({
               </div>
             ))}
           </details>
+          {!readOnly && group?.cycle_id && !ended && group.numbers_changed && (
+            <div className="space-y-3">
+              <Notice tone="warning" title={t("careCycle.changed")} />
+              <label className="flex min-h-11 items-start gap-3 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-1 size-5 shrink-0"
+                  checked={accepted}
+                  onChange={(e) => setAccepted(e.target.checked)}
+                />
+                {t("care.accept")}
+              </label>
+              <button
+                className="action-button action-confirm"
+                disabled={
+                  busy ||
+                  !accepted ||
+                  !data.enabled ||
+                  data.platform_participants.length < 2 ||
+                  data.platform_participants.length > 20
+                }
+                onClick={() =>
+                  void update("approve_numbers", {
+                    accept: true,
+                    accounts: data.platform_participants.map((p) => p.id),
+                  })
+                }
+              >
+                <ShieldCheck aria-hidden />
+                {t("careCycle.approve")}
+              </button>
+            </div>
+          )}
           {!readOnly && (!group || ended) && (
             <div className="space-y-3">
               {!group && (
@@ -284,7 +363,12 @@ function CareGroupContent({
               <button
                 className="action-button action-confirm w-full tablet:w-auto"
                 disabled={
-                  busy || !accepted || !data.enabled || data.platform_participants.length === 0
+                  busy ||
+                  !accepted ||
+                  !data.enabled ||
+                  data.platform_participants.length < 2 ||
+                  data.platform_participants.length > 20 ||
+                  Boolean(group?.closing)
                 }
                 onClick={() => {
                   if (group)
@@ -339,7 +423,7 @@ function CareGroupContent({
             )}
           {!readOnly && group && !ended && data.phone && (
             <GroupPhoneAccess
-              key={`${group.id}:${group.version}:${data.phone}`}
+              key={`${group.id}:${data.phone}`}
               groupId={group.id}
               phone={data.phone}
               ready={data.phone_ready === true}
@@ -362,7 +446,11 @@ function CareGroupContent({
                     type="checkbox"
                     className="size-5 shrink-0"
                     checked={preferences[key]}
-                    onChange={(e) => setPreferences({ ...preferences, [key]: e.target.checked })}
+                    onChange={(e) => {
+                      dirty.current = true;
+                      setSaved(false);
+                      setPreferences({ ...preferences, [key]: e.target.checked });
+                    }}
                   />
                   {t(
                     (
@@ -381,9 +469,11 @@ function CareGroupContent({
                   <select
                     className={field}
                     value={preferences.monthly_marketing}
-                    onChange={(e) =>
+                    onChange={(e) => (
+                      (dirty.current = true),
+                      setSaved(false),
                       setPreferences({ ...preferences, monthly_marketing: Number(e.target.value) })
-                    }
+                    )}
                   >
                     <option value={0}>{t("care.offersNone")}</option>
                     <option value={1}>{t("care.offersOne")}</option>
@@ -396,7 +486,11 @@ function CareGroupContent({
                     type="date"
                     className={field}
                     value={preferences.return_on}
-                    onChange={(e) => setPreferences({ ...preferences, return_on: e.target.value })}
+                    onChange={(e) => {
+                      dirty.current = true;
+                      setSaved(false);
+                      setPreferences({ ...preferences, return_on: e.target.value });
+                    }}
                   />
                 </label>
               </div>

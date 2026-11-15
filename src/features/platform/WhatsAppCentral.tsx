@@ -1,8 +1,19 @@
+import {
+  WhatsAppOperations,
+  type DistributionState,
+  type OperationalNumber,
+} from "./WhatsAppOperations";
+import { NumberActivity as NumberActivityBadge } from "./NumberActivity";
+import type { NumberActivity } from "@/lib/whatsapp/number-activity";
 import { WhatsAppConnectDialog } from "./WhatsAppConnectDialog";
+import {
+  WhatsAppDistribution,
+  type DistributionRoute,
+  type DistributionSave,
+} from "./WhatsAppDistribution";
 import { hasIdentifiedNumber } from "@/lib/whatsapp/directory-model";
 import { CareGroupsAdmin } from "./CareGroupsAdmin";
 import { WhatsAppSendingControls } from "./WhatsAppSendingControls";
-import { WhatsAppShopDirectory } from "./WhatsAppShopDirectory";
 import { useDemo } from "@/features/demo/context";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -42,10 +53,20 @@ import { WhatsAppNumberDestinations, type WhatsAppNumberLink } from "./WhatsAppN
 import { WhatsAppLinkDialog, type WhatsAppLinkRequest } from "./WhatsAppLinkDialog";
 
 type DetailTab = "links" | "connection" | "reserve" | "history";
-type Channel = Tables<"whatsapp_channels">;
+type Channel = Tables<"whatsapp_channels"> & Partial<OperationalNumber>;
 type Directory = {
+  server_distribution?: boolean;
+  distribution?: DistributionState;
+  destination_routing?: boolean;
+  second_reserve?: boolean;
+  number_activity?: Record<string, NumberActivity>;
+  archived_numbers?: import("./WhatsAppDistribution").DistributionNumber[];
   number_sharing?: boolean;
-  links?: WhatsAppNumberLink[];
+  links?: (WhatsAppNumberLink & {
+    backup_channel_id?: string | null;
+    backup2_channel_id?: string | null;
+    delivery_mode?: "primary" | "backup" | "backup2" | "paused";
+  })[];
   link_history?: {
     id: string;
     channel_id: string;
@@ -87,6 +108,13 @@ const errors: Record<string, MessageKey> = {
   WA_RESERVE_ASSIGNED: "waCentral.reserveFirst",
   WA_DELIVERY_BUSY: "waCentral.deliveryBusy",
   WA_LABEL_INVALID: "waCentral.labelInvalid",
+  WA_ROUTE_INVALID: "waDistribution.invalidPair",
+  WA_ROUTE_REQUIRED: "waDistribution.byDestination",
+  WA_PERSONAL_NUMBER: "waDistribution.personalNumber",
+  WA_ROUTE_UPGRADE_REQUIRED: "waDistribution.byDestination",
+  WA_ROUTE_EDITOR_REQUIRED: "waDistribution.byDestination",
+  WA_NUMBER_UNAVAILABLE: "waDistribution.numberUnavailable",
+  WA_CONTROL_PAUSED: "waDistribution.sendingPaused",
 };
 
 export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) {
@@ -229,7 +257,51 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
     setSaved(false);
     setError(null);
   }
-  const reservedBy = data?.channels.find((c) => c.backup_instance_name === channel?.instance_name);
+  const reservedBy = data?.destination_routing
+    ? undefined
+    : data?.channels.find((c) => c.backup_instance_name === channel?.instance_name);
+  const distributionRoutes: DistributionRoute[] = (data?.links ?? []).map((link) => {
+    const primary = data?.channels.find((n) => n.id === link.channel_id);
+    return {
+      ...link,
+      backup_channel_id: data?.destination_routing
+        ? (link.backup_channel_id ?? null)
+        : (data?.channels.find((n) => n.instance_name === primary?.backup_instance_name)?.id ??
+          null),
+      delivery_mode: data?.destination_routing
+        ? (link.delivery_mode ?? "primary")
+        : ((primary?.delivery_mode as "primary" | "backup" | "paused") ?? "primary"),
+    };
+  });
+  async function saveDistribution(target: DistributionSave) {
+    // Servidor antigo: não descartar a segunda reserva enquanto a capacidade não estiver instalada.
+    if ((target.backup2 || target.mode === "backup2") && !data?.second_reserve) {
+      setError("waRefine.future");
+      return false;
+    }
+    let completed = false;
+    await run(async () => {
+      const { error: failed } = await supabase.rpc("platform_set_whatsapp_route", {
+        p_shop: target.shop,
+        p_staff: target.staff,
+        p_version: target.expectedVersion ?? 0,
+        p_primary_id: target.primary,
+        p_backup_id: target.backup,
+        ...(data?.second_reserve ? { p_backup2_id: target.backup2 ?? null } : {}),
+        p_mode: target.mode,
+        p_enabled: target.enabled,
+        p_returns: target.returns,
+        p_technical: target.technical,
+      });
+      if (failed) {
+        throw failed;
+      }
+      await load();
+      completed = true;
+      if (live.current) setSaved(true);
+    });
+    return completed;
+  }
   function configure(number: Channel, configuration: NumberConfiguration) {
     void run(async () => {
       const { error: failed } = await supabase.rpc("platform_configure_whatsapp_number", {
@@ -258,6 +330,19 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
       .join(" · ");
   };
   const numberDestinations = (number: Channel) => {
+    if (data?.destination_routing)
+      return distributionRoutes
+        .filter(
+          (l) =>
+            l.channel_id === number.id ||
+            l.backup_channel_id === number.id ||
+            l.backup2_channel_id === number.id,
+        )
+        .map(
+          (l) =>
+            `${destination(l.barbershop_id, l.staff_id)} · ${t(l.channel_id === number.id ? "waNumbers.primary" : "waNumbers.backup")}`,
+        )
+        .join(" • ");
     const owner =
       data?.channels.find((n) => n.backup_instance_name === number.instance_name) ?? number;
     const links = data?.links?.filter((b) => b.channel_id === owner.id);
@@ -266,6 +351,13 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
       : destination(owner.barbershop_id, owner.staff_id);
   };
   const numberLinks = (number: Channel) => {
+    if (data?.destination_routing)
+      return distributionRoutes.filter(
+        (l) =>
+          l.channel_id === number.id ||
+          l.backup_channel_id === number.id ||
+          l.backup2_channel_id === number.id,
+      );
     const owner =
       data?.channels.find((n) => n.backup_instance_name === number.instance_name) ?? number;
     return data?.number_sharing
@@ -281,11 +373,18 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
       (c) =>
         (filter === "all" ||
           (filter === "backup"
-            ? (data?.channels ?? []).some((n) => n.backup_instance_name === c.instance_name)
+            ? data?.destination_routing
+              ? distributionRoutes.some(
+                  (l) => l.backup_channel_id === c.id || l.backup2_channel_id === c.id,
+                )
+              : (data?.channels ?? []).some((n) => n.backup_instance_name === c.instance_name)
             : filter === "assigned"
               ? numberLinks(c).length > 0
               : numberLinks(c).length === 0 &&
-                !(data?.channels ?? []).some((n) => n.backup_instance_name === c.instance_name))) &&
+                (data?.destination_routing ||
+                  !(data?.channels ?? []).some(
+                    (n) => n.backup_instance_name === c.instance_name,
+                  )))) &&
         `${c.label} ${c.display_phone ?? ""} ${numberDestinations(c)}`
           .toLocaleLowerCase(locale)
           .includes(query.toLocaleLowerCase(locale)),
@@ -377,6 +476,21 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
         <Notice tone="info" title={t("waPair.demo")} />
       ) : (
         <>
+          {data?.server_distribution && data.distribution && (
+            <WhatsAppOperations
+              state={data.distribution}
+              numbers={data.channels}
+              shops={data.shops}
+              activities={data.number_activity ?? {}}
+              routes={distributionRoutes}
+              request={async (name, args) => {
+                const result = await supabase.rpc(name as never, args as never);
+                if (result.error) throw result.error;
+                return result.data;
+              }}
+              refresh={load}
+            />
+          )}
           <WhatsAppSendingControls numbers={data?.channels ?? []} />
           {error && <Notice tone="danger" title={t(error)} />}
           {saved && <Notice tone="success" title={t("waCentral.saved")} />}
@@ -417,17 +531,21 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
               </button>
             ))}
           </div>
-          {data?.number_sharing && view !== "access" && view !== "groups" && (
-            <button
-              type="button"
-              className="action-button action-confirm w-full tablet:w-auto"
-              disabled={busy}
-              onClick={() => openLink()}
-            >
-              <Link2 className="size-5 shrink-0" aria-hidden />
-              {t("waMissing.link")}
-            </button>
-          )}
+          {data?.number_sharing &&
+            !data.destination_routing &&
+            view !== "access" &&
+            view !== "groups" &&
+            view !== "shops" && (
+              <button
+                type="button"
+                className="action-button action-confirm w-full tablet:w-auto"
+                disabled={busy}
+                onClick={() => openLink()}
+              >
+                <Link2 className="size-5 shrink-0" aria-hidden />
+                {t("waMissing.link")}
+              </button>
+            )}
           {data?.number_sharing && linkRequest && (
             <WhatsAppLinkDialog
               request={linkRequest}
@@ -480,25 +598,22 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
             <CareGroupsAdmin shops={data?.shops ?? []} numbers={data?.channels ?? []} />
           ) : view === "shops" ? (
             data ? (
-              <WhatsAppShopDirectory
+              <WhatsAppDistribution
                 shops={data.shops}
                 staff={data.staff}
-                numbers={data.channels.map((n) => ({ ...n, status: reports[n.id] ?? n.status }))}
-                links={
-                  data.number_sharing
-                    ? (data.links ?? [])
-                    : data.channels
-                        .filter((n) => n.barbershop_id)
-                        .map((n) => ({
-                          id: n.id,
-                          channel_id: n.id,
-                          barbershop_id: n.barbershop_id!,
-                          staff_id: n.staff_id,
-                          enabled: n.enabled,
-                        }))
-                }
-                busy={busy || !data.number_sharing}
-                link={(target) => openLink(target)}
+                numbers={[
+                  ...data.channels.map((n) => ({
+                    ...n,
+                    status: reports[n.id] ?? n.status,
+                    activity: data.number_activity?.[n.id],
+                  })),
+                  ...(data.archived_numbers ?? []),
+                ]}
+                routes={distributionRoutes}
+                supported={Boolean(data.destination_routing)}
+                secondReserve={Boolean(data.second_reserve)}
+                busy={busy}
+                save={saveDistribution}
                 viewNumber={chooseNumber}
               />
             ) : busy ? (
@@ -569,9 +684,9 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                   )}
                   <ul aria-label={t("waNumbers.existing")} className="space-y-2">
                     {filtered.map((c) => {
-                      const owner = data?.channels.find(
-                        (n) => n.backup_instance_name === c.instance_name,
-                      );
+                      const owner = data?.destination_routing
+                        ? undefined
+                        : data?.channels.find((n) => n.backup_instance_name === c.instance_name);
                       return (
                         <li key={c.id}>
                           <button
@@ -609,19 +724,40 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                             </span>
                             <span className="flex w-full flex-wrap items-center justify-between gap-2">
                               <span className="text-xs text-muted-foreground">
-                                {owner
-                                  ? t("waNumbers.backup")
-                                  : numberLinks(c).length
-                                    ? t("waOrg.usedShops", {
-                                        count: new Set(numberLinks(c).map((l) => l.barbershop_id))
-                                          .size,
-                                      })
-                                    : t("waOperation.available")}
+                                {data?.destination_routing ? (
+                                  <span className="flex flex-wrap gap-2">
+                                    <span>
+                                      {t("waDistribution.primaryCount", {
+                                        count: distributionRoutes.filter(
+                                          (l) => l.channel_id === c.id,
+                                        ).length,
+                                      })}
+                                    </span>
+                                    <span>
+                                      {t("waDistribution.backupCount", {
+                                        count: distributionRoutes.filter(
+                                          (l) =>
+                                            l.backup_channel_id === c.id ||
+                                            l.backup2_channel_id === c.id,
+                                        ).length,
+                                      })}
+                                    </span>
+                                  </span>
+                                ) : owner ? (
+                                  t("waNumbers.backup")
+                                ) : numberLinks(c).length ? (
+                                  t("waOrg.usedShops", {
+                                    count: new Set(numberLinks(c).map((l) => l.barbershop_id)).size,
+                                  })
+                                ) : (
+                                  t("waOperation.available")
+                                )}
                               </span>
                               <ConnectionBadge
                                 status={reports[c.id] ?? c.status}
                                 pending={!c.display_phone?.trim()}
                               />
+                              <NumberActivityBadge activity={data?.number_activity?.[c.id]} />
                             </span>
                           </button>
                         </li>
@@ -724,6 +860,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                             icon: ShieldCheck,
                             disabled:
                               busy ||
+                              Boolean(data.destination_routing) ||
                               !channel.barbershop_id ||
                               Boolean(reservedBy) ||
                               tab === "reserve",
@@ -736,7 +873,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                             disabled: busy || tab === "history",
                             onSelect: () => setTab("history"),
                           },
-                        ]}
+                        ].filter((action) => !data.destination_routing || action.id !== "reserve")}
                       />
                     </header>
                     {tab !== "links" && (
@@ -750,7 +887,46 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                       </button>
                     )}
                     <div hidden={tab !== "links"} className="min-w-0">
-                      {reservedBy ? (
+                      {data.destination_routing ? (
+                        <section className="space-y-3">
+                          <h4 className="font-bold">{t("waShared.destinations")}</h4>
+                          <div className="divide-y divide-border">
+                            {distributionRoutes
+                              .filter(
+                                (l) =>
+                                  l.channel_id === channel.id ||
+                                  l.backup_channel_id === channel.id ||
+                                  l.backup2_channel_id === channel.id,
+                              )
+                              .map((l) => (
+                                <div
+                                  key={l.id}
+                                  className="flex flex-wrap items-center justify-between gap-2 py-3"
+                                >
+                                  <span className="text-sm font-semibold">
+                                    {destination(l.barbershop_id, l.staff_id)}
+                                  </span>
+                                  <StatusBadge
+                                    size="sm"
+                                    tone={l.channel_id === channel.id ? "info" : "warning"}
+                                    label={t(
+                                      l.channel_id === channel.id
+                                        ? "waNumbers.primary"
+                                        : "waNumbers.backup",
+                                    )}
+                                  />
+                                </div>
+                              ))}
+                          </div>
+                          <button
+                            className="action-button action-confirm"
+                            onClick={() => setView("shops")}
+                          >
+                            <ArrowRightLeft className="size-4" aria-hidden />
+                            {t("waDistribution.editDistribution")}
+                          </button>
+                        </section>
+                      ) : reservedBy ? (
                         <section className="space-y-4 rounded-2xl border border-border bg-card p-5">
                           <ShieldCheck className="size-9 text-primary" aria-hidden />
                           <h3 className="font-bold">
@@ -827,7 +1003,7 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                           }
                         />
                       )}
-                      {hasIdentifiedNumber(channel) && !reservedBy && (
+                      {hasIdentifiedNumber(channel) && !reservedBy && !data.destination_routing && (
                         <button
                           type="button"
                           disabled={busy}
@@ -880,9 +1056,12 @@ export function WhatsAppCentral({ demo: demoProp = false }: { demo?: boolean }) 
                         title={channel.display_phone || t("waOrg.incompleteItem")}
                       />
                     </div>
-                    <div hidden={tab !== "reserve"} className="max-w-3xl space-y-4">
+                    <div
+                      hidden={tab !== "reserve" || data.destination_routing}
+                      className="max-w-3xl space-y-4"
+                    >
                       {shared && <Notice tone="warning" title={t("waShared.connectionHint")} />}
-                      {hasIdentifiedNumber(channel) && !reservedBy && (
+                      {hasIdentifiedNumber(channel) && !reservedBy && !data.destination_routing && (
                         <WhatsAppNumberReserve
                           key={`reserve:${channel.id}:${channel.routing_version}`}
                           number={channel}
