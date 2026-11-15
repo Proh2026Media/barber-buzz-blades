@@ -1,0 +1,27 @@
+# P-122 — implantação pelo Codex, 15/11/2026
+
+O usuário pediu que o Codex executasse a implantação se tivesse acesso, em vez de repassá-la à TI. Depois da conferência, confirmou explicitamente: **“Sim, autorizar a conclusão em produção”**, incluindo as 29 fontes, reinício somente do Edge B&C e frontend. Envios, piloto e timers continuam desligados; criar grupo/enviar mensagem não faz parte desta autorização.
+
+## Backend instalado e conferido
+
+- Acesso ao hPanel autenticado confirmado; ferramentas Hostinger MCP estavam configuradas, mas não carregadas nesta sessão. Operação executada pelo acesso SSH existente `vps-barba`, VPS do B&C documentada. Não foi necessário obter novas credenciais do usuário.
+- Pacote completo **v2**, SHA-256 `5425fd943e6dc1525354843111d68346511dfb71293d00e95433d8b93f6b83cc`. ZIPv1 preservado. V2 corrige somente o verificador para Docker29; funções, SQLs, imagem e frontend são idênticos aos já ensaiados. [Diagnóstico do operador](2026-11-15-p122-operador-docker29.md). A conferência revisada passou na VPS antes de instalar.
+- Backups privados do banco B&C, funções, compose/configurações e estado dos containers criados/validados na própria VPS. Antes da troca da Evolution, banco e volume de sessão copiados com a API parada; dump validado. Segredos não foram exportados para o Mac, chat ou Git. Caminho privado da janela: `/root/bc-p122-telefone-20261115-codex/`.
+- **Somente SQLs novas B&C 02000+03000 aplicadas na mesma transação:** `20261115002000_whatsapp_primeiro_acesso_assistido.sql` e `20261115003000_whatsapp_revisao_telefone_protegida.sql`. Identidades/grupos/JIDs/criação/ano/telefones/composição de consentimento e perfis conferidos por assinaturas antes/depois, sem alteração. Zero intenções, aliases e revisões criados pela instalação. Nenhuma SQL histórica reaplicada.
+- **Evolution `2.3.7-bc.groups.7` instalada**, fonte `e9748ffd3363af89f97996c1a7119d5a4825274d`. Pin: `ghcr.io/proh2026media/bc-evolution-groups@sha256:d4ca39d7c11fddea587d8ae257cb7881484aaac1871050724a0efa397b745495`. Configuração da imagem: `sha256:02bac7182029119b24551388c80837e731337abcb8abe37eeef5b83679605748`. Imagem construída/testada no Mac, transferida por camadas verificadas em túnel SSH/loopback e publicada pela credencial mantida na VPS. Sem reconstrução na VPS, alteração de segredo ou migration Evolution nova.
+- Só o serviço **api** do projeto `ycr9loibkx8iim2swdmbhpgo` foi recriado, depois de comparar configurações e dry-run. Parada/prontidão HTTP real: **36,313 s**, de 20:34:19 a 20:34:57 BRT. Oito instâncias, todas registradas no catálogo B&C, e as mesmas cinco abertas na primeira leitura. Credenciais, volumes, redes, comandos, portas e rótulos do proxy preservados. Nenhum reset/novo pareamento/reconexão manual foi solicitado.
+- **29 fontes Edge instaladas por operador e hashes**, backup próprio `/root/bc-p122-telefone-20261115-codex/backup-edge-operador/`. Só `supabase-edge-functions-z2dbb7dkyzhc8vjiywq34mhn` foi parado/iniciado, preservando o mesmo ID/configuração/volumes. Prontidão real **18,410 s**, 20:39:05–20:39:24 BRT. Nova `whatsapp-group-access` respondeu OPTIONS204 diretamente no runtime e POST sem JWT401, código42501. Todos os 29 hashes novos coincidem com o manifesto.
+- Dois números já consentidos responderam HTTP200 a `bcCapabilities`, contrato `bc-groups-v4`, `protectedPhoneRevision=true`, `postAdmissionWelcome=true`, `twoPlatformAdmins=true`. Só consultas; nenhum candidato de telefone foi pesquisado, grupo criado ou mensagem enviada para esse ensaio.
+- Banco/Auth/proxy/Supabase REST e PostgreSQL/Redis da Evolution não foram reiniciados. Sem Redeploy Coolify, mudança de webhook, Flow, marca ou `.env` do repositório. A comparação dos containers protegidos confirmou IDs/inícios preservados na troca da API.
+
+## Frontend
+
+Fonte revisada, autorização explícita recebida, checagem de tipos e montagem passaram novamente. Publicação no `origin/main` e conferência do site são a etapa seguinte desta execução. Não confundir fonte pronta/commit enviado com site compilado: acompanhar o gatilho do hub, o espelho e a versão efetivamente servida.
+
+## Controles preservados e teste pendente
+
+Último corte de instalação: global pausada v17; ciclos false v12; assistência false; distribuição false v3. `bc-central-grupos.timer`, `bc-central-distribuicao.timer` e `bc-central-expurgo.timer`: inactive/disabled. Nenhuma habilitação do piloto. Conferir de novo ao encerrar e antes de qualquer teste real.
+
+A confirmação/login real ainda depende do titular, do aceite do telefone correto no aplicativo, pedido de entrada no mesmo grupo e leitura do código. A implantação não verifica telefone por conta própria, não altera o cadastro e não remove/adiciona nono dígito por aparência. Ativar assistência/ciclos/despausar global exige a janela de homologação combinada; não usar este registro como autorização de mensagens ou grupos.
+
+Manter a regra de não voltar à imagem6 após revisão iniciada. Operador recusa retorno cego; não apagar diário/alias nem restaurar dump para descartar efeito remoto. Configurações com segredos continuam sendo preservadas nos arquivos da VPS; **não executar Redeploy no Coolify**.
