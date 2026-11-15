@@ -1,0 +1,41 @@
+name: P-122 — comparação semântica da marca v6
+on:
+  push:
+    branches: [ti/p122-brand-v6-20261115]
+    paths:
+      - .p122-brand/**
+      - .github/workflows/p122-brand-v6.yml
+permissions:
+  contents: read
+jobs:
+  testar-construir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            /.p122-brand/
+          sparse-checkout-cone-mode: false
+      - name: Validar, testar e construir sem credenciais GHCR
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir evidencias
+          cd .p122-brand
+          sha256sum -c SHA256SUMS
+          cd ..
+          git init evolution-base
+          git -C evolution-base fetch --depth=1 https://github.com/EvolutionAPI/evolution-api.git cd800f2976e1e5b682fbf86a01ee4d85ae61f370
+          git -C evolution-base checkout --detach FETCH_HEAD
+          python3 .p122-brand/construir-imagem.py evolution-base "$GITHUB_WORKSPACE/evidencias/imagem" 2>&1 | tee evidencias/build-testes.log
+      - name: Preservar imagem e provas sem dados reais
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: p122-brand-v6-imagem-e-provas
+          path: evidencias/
+          if-no-files-found: error
+          compression-level: 1
+          retention-days: 3
