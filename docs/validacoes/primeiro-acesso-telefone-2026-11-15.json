@@ -17,7 +17,7 @@
   "montagem_imagem_amd64": true,
   "recriacao_api_vazia_segundos": 20.6,
   "volume_preservado": true,
-  "operador_unitarios": 11,
+  "operador_unitarios": 16,
   "ensaio_pacote": true,
   "evolution_commit": "e9748ffd3363af89f97996c1a7119d5a4825274d",
   "observacao": "Medições locais não comprovam tempo, entrega ou prontidão em produção. No ensaio operacional, identificação das duas imagens remotas foi fixture; banco, arquivos, SQL e cópia/retorno foram reais em Docker local.",
@@ -35,5 +35,6 @@
     "config": "sha256:02bac7182029119b24551388c80837e731337abcb8abe37eeef5b83679605748",
     "registry_publicado": false,
     "nota": "Índices locais diferem pela atestação de construção; filho AMD64 e config idênticos."
-  }
+  },
+  "compatibilidade_docker29": true
 }

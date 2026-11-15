@@ -44,6 +44,7 @@ elif args==['inspect','--format','{{.Image}}','evo-nova-ficticia']:print('sha256
 elif args==['inspect','--format','{{index .Config.Labels "org.opencontainers.image.version"}}','evo-nova-ficticia']:print('2.3.7-bc.groups.7')
 elif args==['image','inspect','--format','{{json .RepoDigests}}','sha256:642f12b67e0bca28094255b55a62069f019fb14b112d95232cf72338d9d96e29']:print(json.dumps(['ghcr.io/proh2026media/bc-evolution-groups@sha256:bb66b337063aa3fb82500642d0e332ff32f94a6a04692d1652b016ca735c9f3e']))
 elif args==['image','inspect','--format','{{json .RepoDigests}}','sha256:'+'b'*64]:print(json.dumps(['ghcr.io/proh2026media/bc-evolution-groups@sha256:'+'c'*64]))
+elif args==['image','inspect','--format','{{.Architecture}}|{{.Os}}|{{index .Config.Labels \"org.opencontainers.image.version\"}}','sha256:642f12b67e0bca28094255b55a62069f019fb14b112d95232cf72338d9d96e29']:print('amd64|linux|2.3.7-bc.groups.6-brand.1')
 else:sys.exit(subprocess.call([os.environ['BC_DOCKER_REAL'],*args]))
 '''
  (shim/'docker').write_text(script);(shim/'docker').chmod(0o700)

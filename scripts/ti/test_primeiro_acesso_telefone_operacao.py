@@ -70,7 +70,21 @@ class TesteEntrega(unittest.TestCase):
  def test_indice_e_filho_sao_aceitos_somente_com_config_exata(self):
   config=b'sha256:642f12b67e0bca28094255b55a62069f019fb14b112d95232cf72338d9d96e29'
   for digest in ['bb66b337063aa3fb82500642d0e332ff32f94a6a04692d1652b016ca735c9f3e','e8ce0f84dd4da9807284d1b0c80ae448bf9c37ee9bdfa29d97f604996943ca10']:
-   with patch.object(m,'executar',side_effect=[config,json.dumps(['ghcr.io/proh2026media/bc-evolution-groups@sha256:'+digest]).encode()]):m.conferir_imagem_base('evolution-local')
+   with patch.object(m,'executar',side_effect=[config,json.dumps(['ghcr.io/proh2026media/bc-evolution-groups@sha256:'+digest]).encode(),b'amd64|linux|2.3.7-bc.groups.6-brand.1']):m.conferir_imagem_base('evolution-local')
+ def check_base(self,identity,platform=b'amd64|linux|2.3.7-bc.groups.6-brand.1'):
+  refs=b'["ghcr.io/proh2026media/bc-evolution-groups@sha256:bb66b337063aa3fb82500642d0e332ff32f94a6a04692d1652b016ca735c9f3e"]'
+  with patch.object(m,'executar',side_effect=[identity,refs,platform]):m.conferir_imagem_base('evolution-local')
+ def test_docker29_id_manifesto_exato(self):
+  self.check_base(b'sha256:bb66b337063aa3fb82500642d0e332ff32f94a6a04692d1652b016ca735c9f3e')
+ def test_docker29_id_indice_exato(self):
+  self.check_base(b'sha256:e8ce0f84dd4da9807284d1b0c80ae448bf9c37ee9bdfa29d97f604996943ca10')
+ def test_arquitetura_diferente_e_recusada(self):
+  with self.assertRaises(m.Falha):self.check_base(b'sha256:bb66b337063aa3fb82500642d0e332ff32f94a6a04692d1652b016ca735c9f3e',b'arm64|linux|2.3.7-bc.groups.6-brand.1')
+ def test_rotulo_novo_nao_e_base_antiga(self):
+  with self.assertRaises(m.Falha):self.check_base(b'sha256:bb66b337063aa3fb82500642d0e332ff32f94a6a04692d1652b016ca735c9f3e',b'amd64|linux|2.3.7-bc.groups.7')
+ def test_id_desconhecido_com_repodigest_correto_recusa(self):
+  with self.assertRaises(m.Falha):self.check_base(b'sha256:'+b'f'*64)
 if __name__=='__main__':unittest.main()
+
 
 
