@@ -1,0 +1,44 @@
+name: P-122 — regressão singleton com safeupdate
+on:
+  push:
+    branches: [ti/p122-safeupdate-20261115]
+    paths:
+      - .p122-safeupdate/**
+      - .github/workflows/p122-safeupdate.yml
+permissions:
+  contents: read
+jobs:
+  regressao:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            /.p122-safeupdate/
+          sparse-checkout-cone-mode: false
+      - name: Conferir e executar a bancada descartável
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd .p122-safeupdate
+          sha256sum -c SHA256SUMS
+          echo '8003cfbf3436028a1c1070791de32e97d271cd9437fc9045b0925b200a8f4580  pacote-original.zip' | sha256sum -c -
+          mkdir pacote
+          unzip -q pacote-original.zip -d pacote
+          python3 testar-safeupdate.py
+      - name: Preservar resultados sem dados de produção
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: p122-safeupdate-regressao
+          path: |
+            .p122-safeupdate/resultado-safeupdate.json
+            .p122-safeupdate/*.log
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Remover somente o container descartável do ensaio
+        if: always()
+        shell: bash
+        run: docker rm -f barba-central-d1-local

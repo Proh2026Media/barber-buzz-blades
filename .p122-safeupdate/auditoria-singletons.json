@@ -1,0 +1,21 @@
+{
+  "active_function_names_inspected": 98,
+  "missing_where": [
+    {
+      "function": "public.care_group_admin",
+      "file": "20261114009000_whatsapp_ciclos_administracao.sql",
+      "statement": "update public.whatsapp_care_cycle_policy set enabled=policy_enabled,version=version+1,changed_by=auth.uid(),changed_at=now();"
+    },
+    {
+      "function": "public.care_group_admin",
+      "file": "20261114009000_whatsapp_ciclos_administracao.sql",
+      "statement": "update public.whatsapp_group_settings set enrollment_enabled=true,login_enabled=true;"
+    },
+    {
+      "function": "public.platform_set_whatsapp_automatic",
+      "file": "20261114002000_whatsapp_distribuicao_servidor.sql",
+      "statement": "update public.whatsapp_distribution_policy set enabled=p_enabled,version=version+1,changed_by=auth.uid(),changed_at=clock_timestamp() returning * into p;"
+    }
+  ],
+  "limits": "Leitura est\u00e1tica dos incrementais novos; n\u00e3o equivale \u00e0 an\u00e1lise de todos os caminhos legados/SQL din\u00e2mico."
+}

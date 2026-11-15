@@ -1,0 +1,16 @@
+[
+  {
+    "name": "care_group_admin",
+    "signature": "public.care_group_admin(text,jsonb)",
+    "old_md5": "e233ec1503b516c389653f735f77484a",
+    "new_md5": "6a15e4fead26e0347dbba94e15757cdb",
+    "source": "20261114009000_whatsapp_ciclos_administracao.sql"
+  },
+  {
+    "name": "platform_set_whatsapp_automatic",
+    "signature": "public.platform_set_whatsapp_automatic(boolean,bigint)",
+    "old_md5": "b4e0cc3317eefd75cb11b8ed6bd95411",
+    "new_md5": "efe97b1fbc2e68ab67c4fe8630d539fd",
+    "source": "20261114002000_whatsapp_distribuicao_servidor.sql"
+  }
+]
