@@ -1,0 +1,13 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { sameCareGroupBrand, type GroupBrand } from './_shared/care-group-content.ts';
+const base: GroupBrand = { shop_name: 'Loja Teste', customer_name: 'Cliente', slug: 'loja-teste', timezone: 'America/Sao_Paulo' };
+test('Edge ignora somente a ordem das chaves e rejeita mudanças reais', () => {
+  const reordered = { timezone: base.timezone, slug: base.slug, customer_name: base.customer_name, shop_name: base.shop_name };
+  assert.equal(sameCareGroupBrand(reordered, base), true);
+  for (const changed of [{ ...base, shop_name: 'Outra loja' }, { ...base, customer_name: 'Outra' }, { ...base, slug: 'outra' }, { ...base, timezone: 'UTC' }, { ...base, origin: 'https://outra.invalid' }]) {
+    assert.equal(sameCareGroupBrand(base, changed), false);
+  }
+  assert.equal(sameCareGroupBrand(undefined, base), false);
+  assert.throws(() => sameCareGroupBrand({ ...base, slug: '../invalido' }, base));
+});

@@ -1,0 +1,38 @@
+{
+  "origem": "relatório e fontes fornecidos pelo usuário; operações remotas relatadas pelo Guardião, sem nova leitura da VPS",
+  "corte_brt": "2026-11-15T03:17:41-03:00",
+  "zip_sha256": "0aa020671003b7f59631cfbf92f8820eb69e600fbd5ae8323681f3436b4a330d",
+  "imagem_instalada": "ghcr.io/proh2026media/bc-evolution-groups@sha256:bb66b337063aa3fb82500642d0e332ff32f94a6a04692d1652b016ca735c9f3e",
+  "versao": "2.3.7-bc.groups.6-brand.1",
+  "contrato": "bc-groups-v4",
+  "novo_pacote_solicitado": false,
+  "instalar_novamente": false,
+  "arquivos": {
+    "LEIA-PRIMEIRO.md.txt": "79b2776014ba6f76c0118e82ed71daa0f49a1d82b197617334caf1514ea05c0a",
+    "RELATORIO-TI-CONSOLIDADO-P122-2026-11-15.md.txt": "a9c11c3d0e0b0abff8997803f1b4dcf7a261f9e37c0b6d799ae4845b848aa01d",
+    "SHA256SUMS.txt": "b50d29896d3b89dc2de5cd5e75d3ae46c519f74265820cac684e0192c78779b5",
+    "marca/brand-hotfix.patch.txt": "47875a23af5c162812abb191fa31405d76853e99af9f9850bcadae030ef3ff5f",
+    "marca/edge-hotfix/MANIFESTO.json.txt": "a5af646c53c8cc447817b2a0752a408afb3c873e9cfb658d9cf4bb7dc7e07017",
+    "marca/edge-hotfix/funcoes/_shared/care-cycles.ts.txt": "d815b844befe027af64965865410d8fd901b13dd123d687195d1c4121e0d9b82",
+    "marca/edge-hotfix/funcoes/_shared/care-group-content.ts.txt": "189d2f721db7c72bd9d23777e371cbeefdc7a2c3aab7893551270348a38b2e74",
+    "marca/edge-hotfix/operacao/central_whatsapp_operacao.py.txt": "05a0e57e46dd7e443820aaee9342798f44b415e43a4a2a8dd2cb785545b93346",
+    "marca/teste-edge.test.ts.txt": "43275f371588c88d29125c7977e4043f866b714437d4616fda77ae1e53abd485",
+    "marca/teste-evolution.test.ts.txt": "fa97f9aace5eb9b6605494409da4b2673cae6a5524c297f06365373b987bc0bd",
+    "safeupdate/20261115001000_whatsapp_singletons_safeupdate.sql.txt": "1fb1ff300d72c61bc153b9b90a969fe5e0ad404990bbbe727607b5d4bccd1d0c",
+    "safeupdate/source-bindings.json.txt": "495062a188386aeaed338305ac1cad6eb368ceddb69b535cbb4311769c29c0cd"
+  },
+  "arquivo_original_para_referencia": {
+    "LEIA-PRIMEIRO.md": "LEIA-PRIMEIRO.md.txt",
+    "RELATORIO-TI-CONSOLIDADO-P122-2026-11-15.md": "RELATORIO-TI-CONSOLIDADO-P122-2026-11-15.md.txt",
+    "SHA256SUMS": "SHA256SUMS.txt",
+    "marca/brand-hotfix.patch": "marca/brand-hotfix.patch.txt",
+    "marca/edge-hotfix/MANIFESTO.json": "marca/edge-hotfix/MANIFESTO.json.txt",
+    "marca/edge-hotfix/funcoes/_shared/care-cycles.ts": "marca/edge-hotfix/funcoes/_shared/care-cycles.ts.txt",
+    "marca/edge-hotfix/funcoes/_shared/care-group-content.ts": "marca/edge-hotfix/funcoes/_shared/care-group-content.ts.txt",
+    "marca/edge-hotfix/operacao/central_whatsapp_operacao.py": "marca/edge-hotfix/operacao/central_whatsapp_operacao.py.txt",
+    "marca/teste-edge.test.ts": "marca/teste-edge.test.ts.txt",
+    "marca/teste-evolution.test.ts": "marca/teste-evolution.test.ts.txt",
+    "safeupdate/20261115001000_whatsapp_singletons_safeupdate.sql": "safeupdate/20261115001000_whatsapp_singletons_safeupdate.sql.txt",
+    "safeupdate/source-bindings.json": "safeupdate/source-bindings.json.txt"
+  }
+}

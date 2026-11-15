@@ -1,0 +1,143 @@
+diff --git a/src/api/integrations/channel/whatsapp/bc-groups/content.ts b/src/api/integrations/channel/whatsapp/bc-groups/content.ts
+index 5b37397..c22cb22 100644
+--- a/src/api/integrations/channel/whatsapp/bc-groups/content.ts
++++ b/src/api/integrations/channel/whatsapp/bc-groups/content.ts
+@@ -67,6 +67,18 @@ export function careGroupBrand(input: GroupBrand): GroupBrand {
+     ...(input.origin ? { origin: input.origin } : {}),
+   };
+ }
++export function sameCareGroupBrand(left: GroupBrand | undefined, right: GroupBrand) {
++  if (!left) return false;
++  const a = careGroupBrand(left);
++  const b = careGroupBrand(right);
++  return (
++    a.shop_name === b.shop_name &&
++    a.customer_name === b.customer_name &&
++    a.slug === b.slug &&
++    a.timezone === b.timezone &&
++    a.origin === b.origin
++  );
++}
+ export function careGroupContent(input: GroupContent) {
+   const shop = clean(input.shop_name, 80, 'Barbearia');
+   const customer = clean(
+diff --git a/src/api/integrations/channel/whatsapp/bc-groups/cycle-engine.ts b/src/api/integrations/channel/whatsapp/bc-groups/cycle-engine.ts
+index f188e27..f7154ad 100644
+--- a/src/api/integrations/channel/whatsapp/bc-groups/cycle-engine.ts
++++ b/src/api/integrations/channel/whatsapp/bc-groups/cycle-engine.ts
+@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
+ 
+ import type { WASocket } from 'baileys';
+ 
+-import { careGroupBrand, careGroupCode, careGroupContent, type GroupBrand } from './content';
++import { careGroupBrand, careGroupCode, careGroupContent, type GroupBrand, sameCareGroupBrand } from './content';
+ import { type Dependencies, GroupExtensionError, type Operation } from './core';
+ import {
+   cycleExpiry,
+@@ -404,7 +404,7 @@ export async function executeCycleCommand(d: CycleDependencies, command: string,
+     const p = body(input, ['groupJid', 'brand']);
+     const branding = brand(p.brand);
+     if (!cycleQuorum(c, await metadata(d, id), true)) return fail(409, 'Grupo sem quórum');
+-    if (JSON.stringify(c.brand) !== JSON.stringify(branding)) {
++    if (!sameCareGroupBrand(c.brand, branding)) {
+       c.brand = branding;
+       c.descriptionHash = null;
+       await d.cycles.saveCycle(c);
+diff --git a/package.json b/package.json
+index 980be5d..e089fec 100644
+--- a/package.json
++++ b/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "evolution-api",
+-  "version": "2.3.7-bc.groups.6",
++  "version": "2.3.7-bc.groups.6-brand.1",
+   "description": "Rest api for communication with WhatsApp",
+   "main": "./dist/main.js",
+   "type": "commonjs",
+diff --git a/package-lock.json b/package-lock.json
+index 440aa4b..c3ad25f 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -1,12 +1,12 @@
+ {
+   "name": "evolution-api",
+-  "version": "2.3.7-bc.groups.6",
++  "version": "2.3.7-bc.groups.6-brand.1",
+   "lockfileVersion": 3,
+   "requires": true,
+   "packages": {
+     "": {
+       "name": "evolution-api",
+-      "version": "2.3.7-bc.groups.6",
++      "version": "2.3.7-bc.groups.6-brand.1",
+       "license": "Apache-2.0",
+       "dependencies": {
+         "@adiwajshing/keyed-db": "^0.2.4",
+diff --git a/Dockerfile.bc-groups b/Dockerfile.bc-groups
+index 02915d7..14632a3 100644
+--- a/Dockerfile.bc-groups
++++ b/Dockerfile.bc-groups
+@@ -13,7 +13,7 @@ RUN case "$DATABASE_PROVIDER" in postgresql|mysql) ;; *) exit 1 ;; esac && \
+ FROM evoapicloud/evolution-api@sha256:1bd8afc4a6cf48822e6cf02469aeae7bd35a12a6b616eacd1291926307f4d339
+ WORKDIR /evolution
+ ARG BC_PATCH_SHA256=nao-informado
+-LABEL org.opencontainers.image.version="2.3.7-bc.groups.6" \
++LABEL org.opencontainers.image.version="2.3.7-bc.groups.6-brand.1" \
+       org.bc.base-revision="cd800f2976e1e5b682fbf86a01ee4d85ae61f370" \
+       org.bc.patch-sha256="$BC_PATCH_SHA256"
+ COPY --from=builder /evolution/dist ./dist
+diff --git a/test/bc-brand-order-regression.test.ts b/test/bc-brand-order-regression.test.ts
+new file mode 100644
+index 0000000..c2a3a67
+--- /dev/null
++++ b/test/bc-brand-order-regression.test.ts
+@@ -0,0 +1,48 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { executeCycleCommand } from '../src/api/integrations/channel/whatsapp/bc-groups/cycle-engine';
++import { fixture, b, id, branding } from './bc-cycle-fixture';
++
++test('Marca persistida com chaves reordenadas conserva a prova e a versão sem efeitos novos', async () => {
++  const f = await fixture();
++  await f.create();
++  await executeCycleCommand(f.d, 'prepare', f.preparation);
++  const cycle = f.cycle();
++  assert.ok(cycle?.brand);
++  const prior = cycle.brand;
++  cycle.brand = {
++    timezone: prior.timezone,
++    slug: prior.slug,
++    customer_name: prior.customer_name,
++    shop_name: prior.shop_name,
++    ...(prior.origin ? { origin: prior.origin } : {}),
++  };
++  cycle.descriptionHash = 'a'.repeat(64);
++  const snapshot = structuredClone(cycle);
++  const operations = structuredClone([...f.map.entries()]);
++  f.as(b);
++  await executeCycleCommand(f.d, 'brand', { groupJid: id, brand: branding });
++  assert.equal(f.cycle()?.descriptionHash, snapshot.descriptionHash);
++  assert.equal(f.cycle()?.version, snapshot.version);
++  assert.deepEqual(f.cycle(), snapshot);
++  assert.deepEqual([...f.map.entries()], operations);
++  assert.equal(f.creates(), 1);
++  assert.equal(f.photos(), 1);
++  assert.equal(f.sent.length, 0);
++});
++
++
++test('Uma mudança real de nome continua invalidando a prova da descrição', async () => {
++  const f = await fixture();
++  await f.create();
++  await executeCycleCommand(f.d, 'prepare', f.preparation);
++  const cycle = f.cycle();
++  assert.ok(cycle);
++  cycle.descriptionHash = 'b'.repeat(64);
++  const version = cycle.version;
++  f.as(b);
++  await executeCycleCommand(f.d, 'brand', { groupJid: id, brand: { ...branding, shop_name: 'Outra barbearia' } });
++  assert.equal(f.cycle()?.descriptionHash, null);
++  assert.equal(f.cycle()?.version, version + 1);
++  assert.equal(f.sent.length, 0);
++});

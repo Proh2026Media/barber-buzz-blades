@@ -1,0 +1,48 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { executeCycleCommand } from '../src/api/integrations/channel/whatsapp/bc-groups/cycle-engine';
+import { fixture, b, id, branding } from './bc-cycle-fixture';
+
+test('Marca persistida com chaves reordenadas conserva a prova e a versão sem efeitos novos', async () => {
+  const f = await fixture();
+  await f.create();
+  await executeCycleCommand(f.d, 'prepare', f.preparation);
+  const cycle = f.cycle();
+  assert.ok(cycle?.brand);
+  const prior = cycle.brand;
+  cycle.brand = {
+    timezone: prior.timezone,
+    slug: prior.slug,
+    customer_name: prior.customer_name,
+    shop_name: prior.shop_name,
+    ...(prior.origin ? { origin: prior.origin } : {}),
+  };
+  cycle.descriptionHash = 'a'.repeat(64);
+  const snapshot = structuredClone(cycle);
+  const operations = structuredClone([...f.map.entries()]);
+  f.as(b);
+  await executeCycleCommand(f.d, 'brand', { groupJid: id, brand: branding });
+  assert.equal(f.cycle()?.descriptionHash, snapshot.descriptionHash);
+  assert.equal(f.cycle()?.version, snapshot.version);
+  assert.deepEqual(f.cycle(), snapshot);
+  assert.deepEqual([...f.map.entries()], operations);
+  assert.equal(f.creates(), 1);
+  assert.equal(f.photos(), 1);
+  assert.equal(f.sent.length, 0);
+});
+
+
+test('Uma mudança real de nome continua invalidando a prova da descrição', async () => {
+  const f = await fixture();
+  await f.create();
+  await executeCycleCommand(f.d, 'prepare', f.preparation);
+  const cycle = f.cycle();
+  assert.ok(cycle);
+  cycle.descriptionHash = 'b'.repeat(64);
+  const version = cycle.version;
+  f.as(b);
+  await executeCycleCommand(f.d, 'brand', { groupJid: id, brand: { ...branding, shop_name: 'Outra barbearia' } });
+  assert.equal(f.cycle()?.descriptionHash, null);
+  assert.equal(f.cycle()?.version, version + 1);
+  assert.equal(f.sent.length, 0);
+});

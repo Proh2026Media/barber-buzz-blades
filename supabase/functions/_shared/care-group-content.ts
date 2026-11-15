@@ -73,6 +73,18 @@ export function careGroupBrand(input: GroupBrand): GroupBrand {
     ...(input.origin ? { origin: input.origin } : {}),
   };
 }
+export function sameCareGroupBrand(left: GroupBrand | undefined, right: GroupBrand) {
+  if (!left) return false;
+  const a = careGroupBrand(left);
+  const b = careGroupBrand(right);
+  return (
+    a.shop_name === b.shop_name &&
+    a.customer_name === b.customer_name &&
+    a.slug === b.slug &&
+    a.timezone === b.timezone &&
+    a.origin === b.origin
+  );
+}
 export function careGroupContent(input: GroupContent) {
   const shop = clean(input.shop_name, 80, "Barbearia");
   const customer = clean(

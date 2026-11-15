@@ -1,4 +1,4 @@
-import { careGroupBrand, careGroupContent } from "./care-group-content.ts";
+import { careGroupBrand, careGroupContent, sameCareGroupBrand } from "./care-group-content.ts";
 import { careGroupTitle } from "./care-group-title.ts";
 import { groupSnapshot, individualPhone } from "./whatsapp-groups.ts";
 
@@ -630,7 +630,7 @@ export async function processCareCycle(
       await finish(preparation, true);
       c = await proof();
     } else {
-      if (JSON.stringify(c.brand) !== JSON.stringify(branding))
+      if (!sameCareGroupBrand(c.brand, branding))
         await post("bcBrand", observerInstance!, { groupJid: group, brand: branding });
       await post("bcSubject", observerInstance!, {
         groupJid: group,

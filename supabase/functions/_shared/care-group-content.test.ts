@@ -5,6 +5,8 @@ import {
   careGroupCode,
   careGroupContent,
   groupPreferencesUrl,
+  sameCareGroupBrand,
+  type GroupBrand,
 } from "./care-group-content.ts";
 import { loadCareGroupLogo } from "./care-group-logo.ts";
 const shop = "11111111-1111-4111-8111-111111111111";
@@ -122,4 +124,33 @@ test("SVG da logo selecionada segue ao decodificador protegido, sem buscar outro
     return new Response(body, { headers: { "content-type": "image/svg+xml" } });
   });
   assert.equal(atob(result.base64), body);
+});
+
+const regressionBrand: GroupBrand = {
+  shop_name: "Loja Teste",
+  customer_name: "Cliente",
+  slug: "loja-teste",
+  timezone: "America/Sao_Paulo",
+};
+test("Edge ignora somente a ordem das chaves e rejeita mudanças reais", () => {
+  const reordered = {
+    timezone: regressionBrand.timezone,
+    slug: regressionBrand.slug,
+    customer_name: regressionBrand.customer_name,
+    shop_name: regressionBrand.shop_name,
+  };
+  assert.equal(sameCareGroupBrand(reordered, regressionBrand), true);
+  for (const changed of [
+    { ...regressionBrand, shop_name: "Outra loja" },
+    { ...regressionBrand, customer_name: "Outra" },
+    { ...regressionBrand, slug: "outra" },
+    { ...regressionBrand, timezone: "UTC" },
+    { ...regressionBrand, origin: "https://outra.invalid" },
+  ]) {
+    assert.equal(sameCareGroupBrand(regressionBrand, changed), false);
+  }
+  assert.equal(sameCareGroupBrand(undefined, regressionBrand), false);
+  assert.throws(() =>
+    sameCareGroupBrand({ ...regressionBrand, slug: "../invalido" }, regressionBrand),
+  );
 });

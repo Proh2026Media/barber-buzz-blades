@@ -1,0 +1,167 @@
+# P-122 — relatório consolidado da TI
+
+**Barba & Cabelo · 15/11/2026 · Horários de Brasília (UTC−03)**
+
+**Resultado: implantação técnica concluída, duas correções instaladas e aceitação real antes da entrada aprovada. A homologação após entrada, telefone/login WhatsApp, aviso de agendamento e segundo piloto ainda estão pendentes da participação do titular.**
+
+Este é o retorno único da TI para os pacotes da Central WhatsApp e de acolhimento após entrada. A TI revisou os artefatos, preparou as correções, executou testes locais e coordenou o trabalho. Operações autenticadas, produção e credenciais ficaram sob custódia do Guardião de Acessos. Resultados remotos abaixo são sustentados pelos registros e comparações dele; não foram reexecutados independentemente pela TI. Os três relatórios finais de instalação/aceitação tiveram seus hashes relidos pela TI.
+
+**Corte da última evidência real: 15/11/2026, 03:17:41 BRT.** Validades de convite e observação não devem ser presumidas atuais após esse horário.
+
+## 1. Entregas e identificação
+
+| Artefato | Identificação |
+|---|---|
+| Pacote Central v5 | `BC-Central-WhatsApp-P122-2026-11-14.zip` |
+| SHA256 v5 | `8003cfbf3436028a1c1070791de32e97d271cd9437fc9045b0925b200a8f4580` |
+| Commit declarado v5 | `7db853ae0a291d2f16c6525aafc2a3dda222ae0b` |
+| Pacote acolhimento após entrada | `BC-Acolhimento-Grupos-P122-2026-11-15.zip` |
+| SHA256 acolhimento | `87c875b1014656288f2cdffa9ae259e2e5cda1971fdb3ad011f63036fee21802` |
+| Commit declarado acolhimento | `ad66022950b0e747fa36dcc6cbf0492efbe9c470` |
+| Frontend instalado | `e5f3ec0a67d2302d0029c61c2eef6fa0a147f996` |
+| Fontes das correções, anexas | `P122-CORRECOES-FONTES-2026-11-15.zip` |
+| SHA256 das fontes anexas | `0aa020671003b7f59631cfbf92f8820eb69e600fbd5ae8323681f3436b4a330d` |
+
+Os ZIPs originais foram preservados. O pacote adicional muda a ordem do acolhimento; não substitui silenciosamente a entrega anterior. A TI recebeu autorização para executar os pacotes e testar **Loja Teste e Arena — Testes**, em sequência, restritas à conta cliente indicada. O titular confirmou os números dedicados finais **8585 e 5627** e autorizou imagens identificadas como homologação nas duas lojas.
+
+## 2. O que foi instalado
+
+### Central v5 e frontend
+
+- Base instalada conferida antes do corte: 26/26 funções e definições D0 relevantes.
+- Aplicados os **14 incrementais B&C juntos**, em transação, e somente a terceira migration da Evolution. As anteriores, Web Push e nº 113/114 parciais não foram reaplicadas.
+- Substituídas 26 dependências Edge com backup e hashes; recriados apenas os serviços previstos. Ambiente e segredos preservados.
+- Frontend: somente os 30 arquivos canônicos do patch, dependências e `bun.lock` preservados. Publicação por `origin/main → hub → espelho → Hostinger`, sem push direto ao espelho.
+- Build Hostinger `01a1dcfc-3175-7372-8377-9d4e7578005c` concluído em 14/11, 23:18:17: Node 22/Nitro, entrada `.output/server/index.mjs`. Código servido e API de destino conferidos, além de HTTP200. Nenhum artefato local com configuração fictícia foi publicado.
+- Operador e seis unidades systemd instalados e verificados. Os três timers novos permanecem **inativos/desabilitados**; não substituem o dispatch ou o Web Push existentes.
+
+[Commit frontend](https://github.com/Proh2026Media/barber-buzz-blades/commit/e5f3ec0a67d2302d0029c61c2eef6fa0a147f996).
+
+### Acolhimento após entrada — v6
+
+Aplicada **somente** `20261115001000_whatsapp_acolhimento_apos_entrada.sql`, em 15/11, 02:05:36.908–02:05:37.707, pelo operador e com pré/pós-condições. SHA256:
+
+`e24f7dfa79a4160bd8ef26b7290c75822f0132aee44c6e69e5d686137d4d413b`
+
+As duas colunas privadas e as guardas da admissão atual foram instaladas; provas antigas deixaram de autorizar a nova admissão. JID, admissão, ano, consentimento e preferências foram preservados. Foram trocadas as 26 fontes Edge e instalada Evolution v6. **Nenhuma migration Evolution, variável, webhook, timer ou frontend novo foi necessária nesta etapa.**
+
+Contrato privado atual: `bc-groups-v4`, `postAdmissionWelcome=true`; leitura da interface continua `cycle_contract=bc-groups-v3`, por compatibilidade prevista no pacote.
+
+## 3. Correções encontradas na homologação e aplicadas
+
+### A. UPDATE de singleton sem WHERE
+
+A ativação pelo painel falhava com HTTP400 / PostgreSQL21000: `UPDATE requires a WHERE clause`.
+
+Correção: `WHERE singleton` nos dois UPDATE de `care_group_admin` e no UPDATE equivalente de `platform_set_whatsapp_automatic`. A proteção **safeupdate permaneceu ativa**; não foram alterados permissões, travas, controle de versão ou contratos.
+
+Incremental separado: `20261115001000_whatsapp_singletons_safeupdate.sql`, SHA256:
+
+`1fb1ff300d72c61bc153b9b90a969fe5e0ad404990bbbe727607b5d4bccd1d0c`
+
+**Atenção:** este arquivo e o de acolhimento têm o mesmo prefixo numérico, mas nomes e conteúdos distintos. Ambos estão instalados; não inferir estado nem reaplicar por número. Não foi criado histórico artificial de migrations.
+
+[CI aprovado](https://github.com/Proh2026Media/barber-buzz-blades/actions/runs/43672490682): três falhas originais reproduzidas, 18 verificações pós-correção, reaplicação controlada testada e UPDATE sem WHERE ainda bloqueado. Aplicação em produção às 00:31:01–00:31:05 BRT; ativação e pausa reais pelo painel passaram. Ensaios anteriores falharam na instrumentação/autenticação da bancada, e não levaram à aplicação produtiva.
+
+Preservação confirmada após as atualizações seguintes: OID, proprietário e ACL das funções. MD5 de **prosrc** instalado:
+
+- `care_group_admin`: `6a15e4fead26e0347dbba94e15757cdb`.
+- `platform_set_whatsapp_automatic`: `efe97b1fbc2e68ab67c4fe8630d539fd`.
+
+### B. Ordem JSONB confundida com mudança de marca
+
+O worker e a Evolution comparavam a marca por `JSON.stringify`. A mesma marca, com ordem de campos diferente após persistência JSONB, provocava falsa sincronização e anulava `descriptionHash`.
+
+A TI reproduziu a falha antes da alteração e corrigiu as duas camadas com `sameCareGroupBrand`: validação e comparação explícita de nome da loja, nome do cliente, slug, fuso e origem. A ordem das chaves deixa de ser relevante; alterações reais continuam invalidando a prova.
+
+Imagem com identificação distinta **`2.3.7-bc.groups.6-brand.1`**, sem sobrescrever a tag6. Protocolo v4, regra pós-entrada, textos e demais contratos preservados. Apenas duas fontes Edge alteradas; outras 24 exatas. Sem SQL, mudança de segredos ou frontend.
+
+[CI aprovado](https://github.com/Proh2026Media/barber-buzz-blades/actions/runs/43682680872), commit `1a6b4dd58352523d9d12de3dfa922f428dd36128`: 54 testes Evolution + duas regressões, lint e build aprovados. Instalada e verificada às 03:06:41 BRT.
+
+| Fonte final | SHA256 |
+|---|---|
+| `_shared/care-group-content.ts` | `189d2f721db7c72bd9d23777e371cbeefdc7a2c3aab7893551270348a38b2e74` |
+| `_shared/care-cycles.ts` | `d815b844befe027af64965865410d8fd901b13dd123d687195d1c4121e0d9b82` |
+
+Delta Evolution sobre fonte v6: `47875a23af5c162812abb191fa31405d76853e99af9f9850bcadae030ef3ff5f`. Label do patch composto v6+delta: `aa2e1a2fce1fba0e12170c31abf0050fc54765c0bfed7bc0542ea623afcc3b92`. O anexo de fontes explica base e aplicação; **não é nova ordem de instalação**.
+
+## 4. Imagem final em produção
+
+Referência AMD64 fixada no Compose e no runtime:
+
+`ghcr.io/proh2026media/bc-evolution-groups@sha256:bb66b337063aa3fb82500642d0e332ff32f94a6a04692d1652b016ca735c9f3e`
+
+- Índice OCI: `sha256:e8ce0f84dd4da9807284d1b0c80ae448bf9c37ee9bdfa29d97f604996943ca10`.
+- Configuração: `sha256:642f12b67e0bca28094255b55a62069f019fb14b112d95232cf72338d9d96e29`.
+- Base oficial: `cd800f2976e1e5b682fbf86a01ee4d85ae61f370`.
+
+Imagem construída em GitHub Actions e publicada pelo Guardião com o acesso existente. Sem build na VPS, PAT novo em Actions, novo grant ou alteração de vínculo do pacote privado. Cadeia índice→AMD64→configuração e labels conferidos, inclusive releitura com credencial de leitura. Configurações temporárias de escrita removidas.
+
+## 5. Verificação local e isolada
+
+| Verificação | Resultado executado |
+|---|---|
+| Integridade pacote v5 / acolhimento | 1.268 / 1.215 hashes aprovados |
+| Operadores v5 / acolhimento | 8 / 7 testes locais aprovados |
+| B&C com acolhimento | 632 testes locais aprovados, inclusive após correção canônica |
+| Evolution com acolhimento | 54 testes aprovados; lint e build aprovados |
+| Correção canônica | duas regressões do motor + um teste Edge; tipos estritos Edge aprovados; falha anterior reproduzida |
+| Incremental de acolhimento em CI | 25 verificações SQL + operador/cópia/retorno + preservação do hotfix e grupo de fixture aprovados |
+| Restauração inicial | quatro bancos efetivamente restaurados em containers descartáveis isolados, não em produção |
+
+[CI de SQL/imagem v6](https://github.com/Proh2026Media/barber-buzz-blades/actions/runs/43677812400). A ausência de lockfile na bancada foi tratada com dependências congeladas do `bun.lock` da base exata, sem gerar package-lock nem atualizar versões. Adaptações dos ensaios usaram somente fixtures locais; nenhuma identidade/credencial produtiva foi usada em CI.
+
+## 6. Teste real do grupo: passado versus nova regra
+
+**Conteúdo pré-existente:** na v5, sob a sequência anterior, o piloto já tinha criado um grupo, aplicado logo, enviado boas-vindas e fixado a mensagem antes da entrada. Aceite do provedor e prova entre contas da plataforma não foram apresentados como entrega ao cliente. Esses efeitos não foram apagados nem repetidos ao mudar a regra.
+
+Uma falha de confirmação imediata da descrição levou à pausa. Leituras protegidas mostraram a descrição correta; uma única confirmação pelo comando original gravou sua prova, sem nova mensagem. Depois houve uma única primeira fixação. Os registros aceitos de criação/preparo/boas-vindas permaneceram intactos. A causa histórica exata da primeira resposta de erro não foi capturada; a hipótese de confirmação tardia foi reproduzida em bancada, não declarada como causa histórica comprovada.
+
+**Nova regra v6:** acolhimento, descrição e fixação novos somente após presença real do cliente como membro comum. A prova da admissão atual deve preceder confirmação de telefone, login e avisos. Recibo antigo não prova reentrada.
+
+**Aceitação real antes da entrada — PASS:** uma chamada controlada em 15/11, **03:12:04–03:12:11 BRT**, duração7,111s, retornou `waiting_customer`:
+
+- Zero nova criação, acolhimento, descrição, fixação, código ou entrada.
+- Mesmo JID, ciclo, admissão, ano, consentimentos e preferências.
+- Etapas aceitas **4→4**; operações do ciclo **5→5**, globais **6→6**.
+- Marca e conteúdo antigos preservados; `descriptionHash` já nulo permaneceu nulo. Nenhuma prova foi restaurada ou forçada manualmente.
+- Prova de acolhimento da admissão atual ausente e `send_ready=false`.
+- UI autenticada do cliente mostrou **Aguardando sua entrada / Abrir meu grupo**. O agente não abriu nem compartilhou o convite.
+
+A versão Evolution16→17 ocorreu exclusivamente pelo `saveCycle` previsto no GET de convite, com o mesmo `inviteHash`; ficou estável nas leituras posteriores. Não foi nova atualização da marca nem transmissão. O verificador intermediário e a análise dessa diferença foram preservados.
+
+## 7. Estado na última conferência — 03:17:41 BRT
+
+- Piloto **somente Loja Teste + conta cliente autorizada**; Arena — Testes ainda com zero ciclos, para segunda etapa sequencial. Não houve liberação global.
+- Pausa global=false, versão16; política de ciclos=true, versão11; distribuição automática=false. Três timers novos off, sem renovação automática.
+- Cliente ainda fora, nenhum pedido de entrada; dois administradores dedicados autorizados abertos, protocolo v4 e `postAdmissionWelcome=true`.
+- Filas, envios, leases, started e unknown: zero. Grupo legado administrativo distinto preservado.
+- Matrícula então válida até03:34:10 e convite até03:22:11 BRT. Observação de conexão tem validade curta. **Não presumir que essas validades permanecem vigentes ao ler este relatório.**
+
+Falta comprovar: entrada/admissão, acolhimento novo após entrada, recebimento observado pelo titular, confirmação do telefone, login WhatsApp e aviso de agendamento. Saída/reentrada/encerramento e segundo piloto não foram homologados. Não declarar login real ou experiência completa aprovados.
+
+**Próxima ação pessoal:** o titular avisa quando estiver com o WhatsApp final4593 disponível. A TI coordena a atualização legítima da janela; depois, na conta cliente da Loja Teste: Minha conta → Grupos de atendimento → Abrir meu grupo → solicitar entrada. Informar somente “pedido enviado”; não enviar convite, QR ou código no chat. A sequência seguinte permanece no mesmo grupo, sem reenvio de resultado incerto.
+
+## 8. Preservação, tempos e retorno
+
+Ambiente persistente/vivo, VAPID, Auth, SMTP, Google, API/HMAC/webhook e sessões preservados, sem geração/rotação. Dois números pessoais não foram convertidos em envio. Fluxos de terceiros não receberam acesso às conversas. Logos de homologação autorizadas, 512×512 PNG, filtro e GET público aprovados. Webhooks configurados somente nos dois dedicados autorizados; `durableWebhook=false` continua limitação do provedor.
+
+Cron original e Web Push preservados; não houve Redeploy Coolify nem alteração em Flow/EventFlow. Últimas janelas modificaram só Edge/API; 34 outros containers permaneceram iguais.
+
+| Janela medida | Tempo |
+|---|---:|
+| Cron suspenso no corte v5 | 115,650s; restaurado bytes/modo originais |
+| Edge no acolhimento v6 | 8,129s operacionais; falha→retorno HTTP amostrado5,525s |
+| Evolution v6 | 18,815s da recriação ao primeiro HTTP200 |
+| Edge no hotfix canônico | 6,811s operacionais; falha→retorno amostrado5,375s |
+| Evolution no hotfix canônico | 15,751s até HTTP200 |
+
+Esses valores não medem indisponibilidade exata em cada aparelho nem garantem tempo de reconexão. Houve respostas transitórias de capacidade durante prontidão; GETs posteriores validaram ambas, sem nova recriação ou afrouxar guardas. Saúde HTTP não equivale à homologação WhatsApp.
+
+Backups privados mais recentes em `/root/p122-brand-hotfix-20261115/backup-pre-brand-20261115T060235Z`, além dos backups pré-v5 e pré-acolhimento. Dumps consistentes por banco e lidos integralmente; cópias vivas de sessões/Redis não são snapshot global. Restauração real4/4 anterior exigiu preservar o membro GraphQL e sua ACL; complemento/método mantidos. Nenhum restore integral foi feito em produção.
+
+Retorno preparado, não usado: duas fontes exatas pelo operador e imagem v6 anterior `sha256:59eab3c0ffcf3187ceb6dfc6353fafb48b8f5e87a8c9bac4a950fd8bbc4e9f31`, sempre pausado. Não apagar colunas, grupos, diários, JIDs, filas ou resultados incertos; não reativar v5 com regra antiga. Restauração integral exige decisão separada que considere escritas posteriores.
+
+Foram escritos código/artefatos de revisão, branches isoladas de build/correção, backups/evidências privados, SQLs autorizadas, fontes e configuração pontual de imagens/flags, controles pelo painel e logos de teste. Credenciais novas de custódia foram salvas pelo Guardião com os valores originais; nenhum valor secreto, dump, sessão, convite, OTP, telefone completo ou JID está neste relatório/anexo.
+
+**Conclusão:** pacote novo instalado, correções incorporadas e preparação pré-entrada aprovada. Homologação pós-entrada e Arena aguardam o titular; este documento permite devolver o estado real ao desenvolvimento sem confundir instalação com login/entrega homologados.

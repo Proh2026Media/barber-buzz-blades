@@ -1,5 +1,11 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 15/11/2026 — retorno P-122: implantação instalada e pré-entrada aprovada, fontes conciliadas
+
+Recebidos relatório consolidado TI/Guardião e ZIP de correções `0aa02067…`; 11 hashes conferidos. Relatados como instalados v5/14 SQLs, terceira Evolution, frontend e5f, acolhimento 15/11 e safeupdate separado de mesmo prefixo; Evolution6-brand.1/v4 pelo digest AMD64 bb66b337… e dois Edge corrigidos. Corte real 03:17:41 BRT, cliente fora/piloto Loja Teste, timers novos off; convites/observações temporários não presumidos atuais. Pré-entrada passou sem novos efeitos; login real ainda não.
+
+Conciliação local do WHERE singleton e comparação canônica da marca; reproduzida a perda de descriptionHash por ordem JSON antes e aprovada após. 54 testes Evolution + duas regressões, Edge e safeupdate real em PostgreSQL local, preservando OID/ACL/CAS e proteção. Fontes instaladas exatas guardadas inertes; código ativo formatado sem alteração funcional. [Estado e próximo passo pessoal](pacotes/2026-11-15-retorno-ti-p122-conferido.md). Não gerar pacote/reinstalar/republicar ou pedir nova D0; titular combina janela e solicita entrada com final4593. Confirmação/login/aviso, Arena e retorno/encerramento ainda pendentes. Sem VPS, mensagens, .env, marca/Flow ou push nesta conciliação.
+
 ## 15/11/2026 — grupos: descrição e acolhimento depois da entrada, incremental local
 
 Dono informou piloto TI v5 em curso e confirmou nova ordem: antes nome/foto/admins/proteções/convite; após presença comum, outro administrador acolhe, descreve/fixa; prova da admissão/mensagem atuais antes de confirmação/login/avisos. Evolution v6 `ca986dd`/protocolo v4, uma SQL B&C e worker/guardas correspondentes. Mapa durável impede duplicação e prova antiga não libera retorno. Nenhuma SQL Evolution nova ou frontend. Mesmo JID/ano/preferências, sem apagar mensagens legadas.

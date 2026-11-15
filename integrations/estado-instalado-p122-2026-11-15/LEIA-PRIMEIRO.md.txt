@@ -1,0 +1,10 @@
+# P-122 — fontes das correções já instaladas
+
+Entrega de referência para conciliar o desenvolvimento com o estado instalado. NÃO executar automaticamente: as duas correções já foram aplicadas e validadas; nenhuma migração nova está sendo solicitada por este arquivo.
+
+1. safeupdate/: incremental separado com WHERE singleton em care_group_admin (dois UPDATE) e platform_set_whatsapp_automatic (um). Guarda fontes/pausa/ausência de envio, mantém proprietário e permissões. Nome/timestamp 20261115001000 não deve ser confundido com whatsapp_acolhimento_apos_entrada.sql, entregue em outro pacote. Verificar nomes, conteúdos e catálogo; não reaplicar por numeração.
+2. marca/brand-hotfix.patch: delta EXCLUSIVO sobre evolution/fonte do pacote BC-Acolhimento-Grupos-P122-2026-11-15, versão 2.3.7-bc.groups.6. Não é patch direto sobre v5 ou fonte oficial. Introduz comparação semântica validada em vez de ordem JSON e identifica a imagem como 2.3.7-bc.groups.6-brand.1. Protocolo privado continua v4; regra após entrada preservada.
+3. marca/edge-hotfix/: duas fontes finais sobre v6 e manifesto com hashes anteriores/novos. O operador original acompanha somente como referência de instalação/retorno já executados. Outras 24 fontes v6 ficaram intactas. Não executar sobre outra entrega nem substituir .env.
+4. Testes do motor/Edge reproduzem ordem JSON, preservação da prova/versão/journals e invalidação por alteração real. Os imports dependem das respectivas fontes/fixtures dos pacotes originais; não são executáveis isolados deste ZIP.
+
+Os ZIPs originais v5 e acolhimento v6 não foram modificados. Nenhum segredo, sessão, convite, OTP, telefone completo, JID, dump, imagem Docker ou configuração de produção está incluído.
