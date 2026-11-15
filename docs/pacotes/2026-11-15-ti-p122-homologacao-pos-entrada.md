@@ -1,5 +1,7 @@
 # TI/Guardião — P-122: retomar homologação após entrada
 
+**SUSPENSO após o relatório 2 — corte 15/11, 15:00:34 BRT.** Piloto pausado; renovação não concluída e identidade/telefone divergentes. Não seguir a orientação antiga de renovar/entrar. [Diagnóstico atual e plano](2026-11-15-p122-renovacao-telefone-diagnostico.md). O conteúdo abaixo é histórico.
+
 **Pedido do titular: coordenar a continuação do piloto já autorizado, com ele presente. Não é pacote de instalação.** Tudo deve continuar no grupo existente da **Loja Teste**, com a conta cliente já indicada na política e o WhatsApp pessoal final **4593**. A TI coordena; o Guardião mantém operações autenticadas e credenciais sob sua custódia.
 
 ## 1. Base confirmada: não instalar novamente

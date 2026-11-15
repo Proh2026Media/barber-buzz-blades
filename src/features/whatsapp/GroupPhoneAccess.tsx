@@ -11,6 +11,7 @@ import { useI18n, type MessageKey } from "@/lib/i18n";
 /** O convite não autentica: confirmação só pelo desafio vinculado à sessão. */
 export function GroupPhoneAccess({
   groupId,
+  available = true,
   phone,
   ready,
   confirmed,
@@ -21,6 +22,7 @@ export function GroupPhoneAccess({
   onConfirmed,
 }: {
   groupId: string;
+  available?: boolean;
   phone: string;
   ready: boolean;
   confirmed: boolean;
@@ -57,6 +59,7 @@ export function GroupPhoneAccess({
   async function run(action: "invite" | "request" | "verify", background = false) {
     if (
       demo ||
+      !available ||
       pending.current ||
       (background && invitationPolling.current) ||
       refreshing ||
@@ -128,7 +131,12 @@ export function GroupPhoneAccess({
       const {
         data: { session: current },
       } = await supabase.auth.getSession();
-      if (!live.current || current?.user.id !== session.user.id) return;
+      if (
+        !live.current ||
+        current?.user.id !== session.user.id ||
+        requestGeneration !== generation.current
+      )
+        return;
       if (!response.ok || payload.ok !== true) {
         if (payload.error_code === "rate_limited") {
           setError("waLogin.limit");
@@ -152,7 +160,7 @@ export function GroupPhoneAccess({
         onConfirmed();
       }
     } catch {
-      if (live.current && !background) {
+      if (live.current && !background && requestGeneration === generation.current) {
         setError(
           action === "invite"
             ? "care.inviteUnavailable"
@@ -173,18 +181,28 @@ export function GroupPhoneAccess({
       }
     }
   }
+  useEffect(() => {
+    if (!available) {
+      generation.current++;
+      setInvite(null);
+      setCode("");
+      setRequested(false);
+      setError(null);
+    }
+  }, [available]);
   const runRef = useRef(run);
   runRef.current = run;
   useEffect(() => {
-    if (!waiting || expired || invite || demo) return;
+    if (!available || !waiting || expired || invite || demo) return;
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible") void runRef.current("invite", true);
     }, 5000);
     return () => window.clearInterval(timer);
-  }, [waiting, expired, invite, demo, refreshing]);
+  }, [available, waiting, expired, invite, demo, refreshing]);
+  if ((!available || expired) && !confirmed) return null;
   return (
     <div className="space-y-3 border-t border-border pt-4">
-      {waiting && !expired && (
+      {available && waiting && !expired && (
         <>
           <p className="break-all text-sm font-semibold">{phone}</p>
           {invite ? (
@@ -209,7 +227,7 @@ export function GroupPhoneAccess({
           )}
         </>
       )}
-      {!confirmed && ready && !expired && (
+      {available && !confirmed && ready && !expired && (
         <>
           <p className="text-sm">{t("care.verifyHint")}</p>
           <p className="text-sm font-semibold break-all">{phone}</p>
@@ -254,7 +272,7 @@ export function GroupPhoneAccess({
           )}
         </>
       )}
-      {!ready && !expired && (
+      {available && !ready && !expired && (
         <div className="space-y-2">
           <p role="status" className="text-sm text-muted-foreground">
             {t(waiting ? "care.awaitEntry" : "care.awaitPreparation")}
@@ -266,7 +284,7 @@ export function GroupPhoneAccess({
         </div>
       )}
       {confirmed && <Notice tone="info" title={t("care.phoneConfirmed")} />}
-      {error && (
+      {available && error && (
         <Notice
           id={"group-phone-error-" + groupId}
           tone={error === "careCycle.inviteQueued" ? "info" : "danger"}

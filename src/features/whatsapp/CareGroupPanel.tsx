@@ -1,7 +1,23 @@
+import {
+  careFailure,
+  careRpcFailure,
+  careFailureDiagnostic,
+  keepCareFailure,
+  type CareFailure,
+  type CareOperation,
+} from "./care-feedback";
 import { careStates } from "./care-states";
 import { GroupPhoneAccess } from "./GroupPhoneAccess";
 import { useEffect, useRef, useState } from "react";
-import { Clock3, Check, UsersRound, ShieldCheck, RefreshCw, UserMinus } from "lucide-react";
+import {
+  Clock3,
+  Check,
+  UsersRound,
+  ShieldCheck,
+  RefreshCw,
+  UserMinus,
+  ClipboardCopy,
+} from "lucide-react";
 import { Notice, SectionHeader, ConfirmDialog } from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
@@ -77,7 +93,7 @@ function CareGroupContent({
   const demo = useDemo();
   const { t, intlLocale } = useI18n();
   const [data, setData] = useState<Data | null>(null),
-    [error, setError] = useState(false),
+    [error, setError] = useState<CareFailure | null>(null),
     [busy, setBusy] = useState(false),
     [accepted, setAccepted] = useState(false);
   const [preferences, setPreferences] = useState({
@@ -88,6 +104,7 @@ function CareGroupContent({
     return_on: "",
   });
   const [phone, setPhone] = useState("");
+  const [copied, setCopied] = useState<"yes" | "no" | null>(null);
   const [closing, setClosing] = useState(false),
     [saved, setSaved] = useState(false);
   const live = useRef(true),
@@ -117,21 +134,28 @@ function CareGroupContent({
       ...(customerId ? { p_customer: customerId } : {}),
     });
     if (background && (pending.current || requestGeneration !== generation.current)) return;
-    if (r.error) throw r.error;
+    if (r.error) throw careRpcFailure(r.error, r.status);
     apply(r.data);
+    if (background && live.current)
+      setError((current) => (current?.operation === "read" ? null : current));
     if (live.current) setPhone((r.data as { phone?: string })?.phone ?? "");
   }
-  async function run(work: () => Promise<void>, propagate = false) {
+  async function run(
+    work: () => Promise<void>,
+    propagate = false,
+    operation: CareOperation = "read",
+  ) {
     if (demo || pending.current) return;
     pending.current = true;
     generation.current++;
     setBusy(true);
-    setError(false);
+    setError(null);
+    setCopied(null);
     setSaved(false);
     try {
       await work();
-    } catch {
-      if (live.current) setError(true);
+    } catch (failure) {
+      if (live.current) setError(careFailure(operation, failure));
       if (propagate) throw new Error("GROUP_SAVE_FAILED");
     } finally {
       pending.current = false;
@@ -161,8 +185,9 @@ function CareGroupContent({
       polling.current = true;
       void loadRef
         .current(true)
-        .catch(() => {
-          if (live.current) setError(true);
+        .catch((failure) => {
+          if (live.current)
+            setError((current) => keepCareFailure(current, careFailure("read", failure)));
         })
         .finally(() => {
           polling.current = false;
@@ -172,21 +197,25 @@ function CareGroupContent({
   }, [groupId, demo, readOnly]);
   async function update(action: string, values: Json = {}) {
     if (!data?.group || readOnly) return;
-    await run(async () => {
-      const r = await supabase.rpc("care_group_customer_update", {
-        p_group: data.group!.id,
-        p_version: data.group!.version,
-        p_action: action,
-        p_values: values,
-      });
-      if (r.error) throw r.error;
-      apply(r.data, action === "preferences");
-      if (live.current) {
-        setSaved(true);
-        setClosing(false);
-        setAccepted(false);
-      }
-    }, action === "close");
+    await run(
+      async () => {
+        const r = await supabase.rpc("care_group_customer_update", {
+          p_group: data.group!.id,
+          p_version: data.group!.version,
+          p_action: action,
+          p_values: values,
+        });
+        if (r.error) throw careRpcFailure(r.error, r.status);
+        apply(r.data, action === "preferences");
+        if (live.current) {
+          setSaved(true);
+          setClosing(false);
+          setAccepted(false);
+        }
+      },
+      action === "close",
+      action === "close" ? "close" : action === "preferences" ? "save" : "request",
+    );
   }
   if (readOnly && (!data?.group || error)) return null;
   const group = data?.group,
@@ -202,9 +231,36 @@ function CareGroupContent({
       {error && (
         <Notice
           tone="danger"
-          title={t("care.error")}
-          action={{ label: t("visual.retry"), onClick: () => void run(load) }}
-        />
+          title={t(error.message)}
+          action={{
+            label: t("care.refresh"),
+            icon: RefreshCw,
+            disabled: busy,
+            onClick: () => void run(load),
+          }}
+        >
+          <button
+            type="button"
+            className="action-button mt-2 min-h-11"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(careFailureDiagnostic(error));
+                if (live.current) setCopied("yes");
+              } catch {
+                if (live.current) setCopied("no");
+              }
+            }}
+          >
+            <ClipboardCopy aria-hidden />
+            {t(
+              copied === "yes"
+                ? "careFeedback.copied"
+                : copied === "no"
+                  ? "careFeedback.copyFailed"
+                  : "careFeedback.copy",
+            )}
+          </button>
+        </Notice>
       )}
       {saved && (
         <p role="status" className="text-sm">
@@ -215,15 +271,17 @@ function CareGroupContent({
         <>
           {group ? (
             <Notice
-              tone={group.state === "active" ? "info" : "warning"}
+              tone={group.state === "active" && data.enabled ? "info" : "warning"}
               title={t(
                 group.closing
                   ? "careCycle.closing"
                   : group.cycle_state === "creation_unknown"
                     ? "care.unknown"
-                    : group.reason === "waiting_first_receipt"
-                      ? "careCycle.receipt"
-                      : (careStates[group.state] ?? "care.unavailable"),
+                    : !data.enabled && !ended
+                      ? "careFeedback.unavailable"
+                      : group.reason === "waiting_first_receipt"
+                        ? "careCycle.receipt"
+                        : (careStates[group.state] ?? "care.unavailable"),
               )}
             />
           ) : (
@@ -239,7 +297,7 @@ function CareGroupContent({
               </span>
             </div>
           )}
-          {!data.enabled && <Notice tone="info" title={t("care.disabled")} />}
+          {!data.enabled && (!group || ended) && <Notice tone="info" title={t("care.disabled")} />}
           {!readOnly && !ended && (
             <ol aria-label={t("care.steps")} className="grid gap-2 tablet:grid-cols-3">
               {(["care.stepRequest", "care.stepJoin", "care.stepPhone"] as const).map(
@@ -377,17 +435,21 @@ function CareGroupContent({
                       accounts: data.platform_participants.map((p) => p.id),
                     });
                   else
-                    void run(async () => {
-                      const r = await supabase.rpc("care_group_begin", {
-                        p_shop: shopId,
-                        p_accept: accepted,
-                        p_phone: phone,
-                        p_accounts: data.platform_participants.map((p) => p.id),
-                      });
-                      if (r.error) throw r.error;
-                      apply(r.data);
-                      setAccepted(false);
-                    });
+                    void run(
+                      async () => {
+                        const r = await supabase.rpc("care_group_begin", {
+                          p_shop: shopId,
+                          p_accept: accepted,
+                          p_phone: phone,
+                          p_accounts: data.platform_participants.map((p) => p.id),
+                        });
+                        if (r.error) throw careRpcFailure(r.error, r.status);
+                        apply(r.data);
+                        setAccepted(false);
+                      },
+                      false,
+                      "request",
+                    );
                 }}
               >
                 <UsersRound aria-hidden />
@@ -407,17 +469,23 @@ function CareGroupContent({
                 title={t("care.expired")}
                 action={{
                   label: t("care.resume"),
+                  disabled: busy || !data.enabled,
                   onClick: () =>
-                    void run(async () => {
-                      const r = await supabase.rpc("care_group_begin", {
-                        p_shop: shopId,
-                        p_accept: true,
-                        p_phone: data.phone ?? "",
-                        p_accounts: data.platform_participants.map((p) => p.id),
-                      });
-                      if (r.error) throw r.error;
-                      apply(r.data);
-                    }),
+                    void run(
+                      async () => {
+                        if (!data.enabled) return;
+                        const r = await supabase.rpc("care_group_begin", {
+                          p_shop: shopId,
+                          p_accept: true,
+                          p_phone: data.phone ?? "",
+                          p_accounts: data.platform_participants.map((p) => p.id),
+                        });
+                        if (r.error) throw careRpcFailure(r.error, r.status);
+                        apply(r.data);
+                      },
+                      false,
+                      "resume",
+                    ),
                 }}
               />
             )}
@@ -426,6 +494,7 @@ function CareGroupContent({
               key={`${group.id}:${data.phone}`}
               groupId={group.id}
               phone={data.phone}
+              available={data.enabled}
               ready={data.phone_ready === true}
               confirmed={data.phone_confirmed === true}
               waiting={group.state === "waiting_customer"}
@@ -516,6 +585,7 @@ function CareGroupContent({
             </details>
           )}
           {(readOnly ||
+            !data.enabled ||
             !group ||
             ended ||
             !data.phone ||
@@ -542,7 +612,7 @@ function CareGroupContent({
         confirmLabel={t("care.close")}
         cancelLabel={t("common.cancel")}
         confirmDisabled={busy}
-        errorText={t("care.error")}
+        errorText={t(error?.message ?? "care.error")}
         onConfirm={async () => {
           await update("close");
         }}

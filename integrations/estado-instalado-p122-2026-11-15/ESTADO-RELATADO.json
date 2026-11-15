@@ -19,7 +19,8 @@
     "marca/teste-edge.test.ts.txt": "43275f371588c88d29125c7977e4043f866b714437d4616fda77ae1e53abd485",
     "marca/teste-evolution.test.ts.txt": "fa97f9aace5eb9b6605494409da4b2673cae6a5524c297f06365373b987bc0bd",
     "safeupdate/20261115001000_whatsapp_singletons_safeupdate.sql.txt": "1fb1ff300d72c61bc153b9b90a969fe5e0ad404990bbbe727607b5d4bccd1d0c",
-    "safeupdate/source-bindings.json.txt": "495062a188386aeaed338305ac1cad6eb368ceddb69b535cbb4311769c29c0cd"
+    "safeupdate/source-bindings.json.txt": "495062a188386aeaed338305ac1cad6eb368ceddb69b535cbb4311769c29c0cd",
+    "RELATORIO-TI-CONSOLIDADO-P122-2026-11-15-2.md.txt": "fb9c368489660b36a5127f03357a8a9ba60728e1319e24219c6127f4ef12ff61"
   },
   "arquivo_original_para_referencia": {
     "LEIA-PRIMEIRO.md": "LEIA-PRIMEIRO.md.txt",
@@ -34,5 +35,20 @@
     "marca/teste-evolution.test.ts": "marca/teste-evolution.test.ts.txt",
     "safeupdate/20261115001000_whatsapp_singletons_safeupdate.sql": "safeupdate/20261115001000_whatsapp_singletons_safeupdate.sql.txt",
     "safeupdate/source-bindings.json": "safeupdate/source-bindings.json.txt"
+  },
+  "atualizacao_operacional": {
+    "fonte": "RELATORIO-TI-CONSOLIDADO-P122-2026-11-15-2.md.txt",
+    "sha256": "fb9c368489660b36a5127f03357a8a9ba60728e1319e24219c6127f4ef12ff61",
+    "corte_brt": "2026-11-15T15:00:34-03:00",
+    "pausa_global": true,
+    "pausa_versao": 17,
+    "ciclos": false,
+    "ciclos_versao": 12,
+    "distribuicao": false,
+    "distribuicao_versao": 3,
+    "timers_novos": "inactive/disabled",
+    "matricula_renovada": false,
+    "login_real_homologado": false,
+    "cliente_entrou": false
   }
 }

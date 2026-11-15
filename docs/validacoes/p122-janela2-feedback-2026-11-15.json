@@ -1,0 +1,28 @@
+{
+  "data": "2026-11-15",
+  "escopo": "frontend local e análise do retorno 2, sem publicação ou operação VPS",
+  "corte_remoto_reportado_brt": "2026-11-15T15:00:34-03:00",
+  "piloto_reportado_pausado": true,
+  "testes_bc": 638,
+  "tipos_lint_formatacao_montagem": true,
+  "composicoes_ui": 45,
+  "larguras": [320, 390, 768, 1024, 1440],
+  "cantos": ["square", "soft", "round"],
+  "api_sessao_ficticias": true,
+  "fonte_inter_local_real": true,
+  "nenhuma_transmissao_real": true,
+  "telefone_alterado": false,
+  "backend_alterado": false,
+  "causa_do_ultimo_clique_comprovada": false,
+  "fluxo_correcao_telefone": "proposto, ainda não implementado",
+  "testes_navegador": [
+    "data.enabled_false_bloqueia_retomada_convite_codigo",
+    "erro_renovacao_diferente_de_read",
+    "diagnostico_sanitizado",
+    "polling_nao_apaga_erro_da_acao",
+    "read_recuperado_remove_so_erro_read",
+    "pausa_invalida_convite_e_ready_antigo",
+    "sem_alteracao_do_telefone_enviado"
+  ],
+  "evidencias_visuais": "/tmp/bc-p122-feedback-interface"
+}

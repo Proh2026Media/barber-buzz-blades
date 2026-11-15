@@ -1,5 +1,11 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 15/11/2026 — relatório 2: pausa, renovação bloqueada e identidade a conciliar
+
+Corte Guardião/TI 15:00:34: pausa=true v17/ciclos=false v12/distribuição=false v3/timers off. Matrícula não renovada, cliente fora, mesmo grupo/ciclo/JID/ano/preferências e contagens 4/5/6. Telefone cadastrado tem variante sem o nono dígito informado, mas alias, autoria e causa do último clique não comprovados; normalizador preserva ambos. Roteiro anterior suspenso, sem novas tentativas ou UPDATE manual.
+
+Achado local comprovado: CareGroupPanel descartava resposta e confundia read/polling/renovação; retomada e convite ainda disponíveis com data.enabled=false. Corrigidos localmente mensagens por operação/código, cópia sanitizada, preservação da falha da ação durante polling, bloqueio e invalidação de convite/resposta antiga quando indisponível. Dicionários e testes atualizados; sem alteração de telefone, SQL, Evolution ou produção. 638 testes, tipos/lint/montagem e 45 composições com Inter real e API fictícia controlada aprovados; captura visual revisada. Frontend ainda somente local. [Diagnóstico e plano novo de identidade](pacotes/2026-11-15-p122-renovacao-telefone-diagnostico.md). Plano ainda não implementado: consentimento/candidato pendente, prova PN/LID/pedido de entrada, conciliação idempotente das duas camadas e OTP final; não atribuir desenvolvimento à TI nem enviar pacote parcial.
+
 ## 15/11/2026 — roteiro solicitado para retomar o teste real com a TI
 
 Dono pediu instruções para repassar. Preparado [roteiro operacional de homologação pós-entrada](pacotes/2026-11-15-ti-p122-homologacao-pos-entrada.md): titular/pessoal4593, Loja Teste/cliente do piloto existente, renovação pela UI, chamada process por cycle_id sob trava, sem lote global; presença → acolhimento/descrição/pin → provas → confirmação/login → aviso único. Identificadores e endpoint conferidos na fonte, sem credenciais ou operações remotas. Arena/retorno/encerramento continuam para sequência consentida. Arquivo MD entregue em Downloads; nenhum ZIP, instalação, mensagem ou teste real executado nesta entrega.

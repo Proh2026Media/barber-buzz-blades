@@ -1,5 +1,7 @@
 # P-122 — retorno da TI conferido em 15/11/2026
 
+**SUSPENSO após o relatório 2 — corte 15/11, 15:00:34 BRT.** Piloto pausado; renovação não concluída e identidade/telefone divergentes. Não seguir a orientação antiga de renovar/entrar. [Diagnóstico atual e plano](2026-11-15-p122-renovacao-telefone-diagnostico.md). O conteúdo abaixo é histórico.
+
 **Instalação concluída conforme relatório TI/Guardião. Preparação antes da entrada aprovada; login real e sequência após entrada ainda não homologados. Este arquivo é registro de conciliação, não pedido de instalação nem documento para reenviar à TI.**
 
 Fonte recebida: `RELATORIO-TI-CONSOLIDADO-P122-2026-11-15.md` e ZIP `P122-CORRECOES-FONTES-2026-11-15.zip`, SHA256 `0aa020671003b7f59631cfbf92f8820eb69e600fbd5ae8323681f3436b4a330d`. [Evidências preservadas](../../integrations/estado-instalado-p122-2026-11-15/README.md). Integridade dos 11 arquivos conferida. Operações de produção são sustentadas pelo Guardião no relatório da TI; o Codex não consultou a VPS nesta rodada.
