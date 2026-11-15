@@ -31,3 +31,7 @@ Nenhuma imagem foi republicada/reconstruída para produção, nenhum pacote TI n
 O titular precisa estar com o WhatsApp pessoal final 4593 disponível e combinar com a TI a renovação legítima da janela. Na conta cliente autorizada da **Loja Teste**: **Minha conta → Grupos de atendimento → Abrir meu grupo → solicitar entrada**. Avisar somente **“pedido enviado”**; não mandar convite, QR ou código no chat.
 
 Depois, TI observa a admissão e a sequência no mesmo grupo: outro administrador acolhe, escreve a descrição e fixa; titular confirma recebimento; prova técnica da admissão atual libera confirmação de telefone/login. Após isso, homologar um aviso de agendamento. Saída/reentrada/encerramento e Arena — Testes continuam para etapas consentidas posteriores. Não declarar experiência completa aprovada antes desses resultados.
+
+## Roteiro de retomada solicitado pelo titular
+
+Instruções para encaminhar à TI: [homologação pós-entrada](2026-11-15-ti-p122-homologacao-pos-entrada.md). É continuidade do piloto já instalado, com o titular presente; não é pacote de instalação.

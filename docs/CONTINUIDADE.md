@@ -1,5 +1,9 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 15/11/2026 — roteiro solicitado para retomar o teste real com a TI
+
+Dono pediu instruções para repassar. Preparado [roteiro operacional de homologação pós-entrada](pacotes/2026-11-15-ti-p122-homologacao-pos-entrada.md): titular/pessoal4593, Loja Teste/cliente do piloto existente, renovação pela UI, chamada process por cycle_id sob trava, sem lote global; presença → acolhimento/descrição/pin → provas → confirmação/login → aviso único. Identificadores e endpoint conferidos na fonte, sem credenciais ou operações remotas. Arena/retorno/encerramento continuam para sequência consentida. Arquivo MD entregue em Downloads; nenhum ZIP, instalação, mensagem ou teste real executado nesta entrega.
+
 ## 15/11/2026 — retorno P-122: implantação instalada e pré-entrada aprovada, fontes conciliadas
 
 Recebidos relatório consolidado TI/Guardião e ZIP de correções `0aa02067…`; 11 hashes conferidos. Relatados como instalados v5/14 SQLs, terceira Evolution, frontend e5f, acolhimento 15/11 e safeupdate separado de mesmo prefixo; Evolution6-brand.1/v4 pelo digest AMD64 bb66b337… e dois Edge corrigidos. Corte real 03:17:41 BRT, cliente fora/piloto Loja Teste, timers novos off; convites/observações temporários não presumidos atuais. Pré-entrada passou sem novos efeitos; login real ainda não.
