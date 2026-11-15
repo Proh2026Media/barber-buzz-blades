@@ -1,0 +1,9 @@
+[Unit]
+Description=B&C - Central WhatsApp - agendar distribuicao
+[Timer]
+OnActiveSec=60s
+OnUnitInactiveSec=60s
+AccuracySec=1s
+Unit=bc-central-distribuicao.service
+[Install]
+WantedBy=timers.target

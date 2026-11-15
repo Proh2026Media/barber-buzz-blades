@@ -1,4 +1,5 @@
-import { groupSnapshot, inspectGroup } from "./whatsapp-groups.ts";
+import { cycleHash } from "./care-cycles.ts";
+import { inspectProtectedGroup, validProtectedGroupContext } from "./protected-group.ts";
 
 type Database = {
   rpc: (
@@ -8,6 +9,11 @@ type Database = {
 };
 type Transport = (path: string, init?: RequestInit) => Promise<unknown>;
 type Context = {
+  cycle_id: string;
+  cycle_revision: number;
+  cycle_expires_at: string;
+  first_message_id: string;
+  creator_phone: string;
   group_id: string;
   group_jid: string;
   version: number;
@@ -23,6 +29,7 @@ function validContext(value: unknown): value is Context {
   const c = value as Context;
   const phone = (v: unknown) => typeof v === "string" && /^\+[1-9]\d{7,14}$/.test(v);
   return (
+    validProtectedGroupContext(c) &&
     ["login", "verify_phone"].includes(c.purpose) &&
     Date.parse(c.expires_at) > Date.now() &&
     typeof c.group_id === "string" &&
@@ -36,11 +43,21 @@ function validContext(value: unknown): value is Context {
     phone(c.customer_phone) &&
     phone(c.sender_phone) &&
     Array.isArray(c.platform_phones) &&
-    c.platform_phones.length > 0 &&
+    c.platform_phones.length >= 2 &&
+    c.platform_phones.length <= 5 &&
     c.platform_phones.every(phone) &&
     new Set(c.platform_phones).size === c.platform_phones.length &&
     c.platform_phones.includes(c.sender_phone) &&
-    !c.platform_phones.includes(c.customer_phone)
+    !c.platform_phones.includes(c.customer_phone) &&
+    /^[a-f0-9-]{36}$/i.test(c.cycle_id) &&
+    Number.isSafeInteger(c.cycle_revision) &&
+    c.cycle_revision > 0 &&
+    Date.parse(c.cycle_expires_at) > Date.now() &&
+    Date.parse(c.expires_at) <= Date.parse(c.cycle_expires_at) &&
+    typeof c.first_message_id === "string" &&
+    c.first_message_id.length > 0 &&
+    c.first_message_id.length <= 200 &&
+    c.platform_phones.includes(c.creator_phone)
   );
 }
 
@@ -57,37 +74,7 @@ export async function sendGroupLogin(
   if (candidate.error || !validContext(candidate.data)) return "blocked";
   const context = candidate.data;
   const instance = encodeURIComponent(context.instance_name);
-  try {
-    const capabilities = (await transport(`/group/bcCapabilities/${instance}`, {
-      signal: AbortSignal.timeout(5000),
-    })) as { contract?: string; protectedCodes?: boolean; serializedCommands?: boolean };
-    if (
-      capabilities?.contract !== "bc-groups-v2" ||
-      capabilities.protectedCodes !== true ||
-      capabilities.serializedCommands !== true
-    )
-      return "blocked";
-    const snapshot = groupSnapshot(
-      await transport(
-        `/group/bcInspect/${instance}?${new URLSearchParams({ groupJid: context.group_jid })}`,
-        { signal: AbortSignal.timeout(5000) },
-      ),
-    );
-    if (
-      inspectGroup(
-        {
-          groupJid: context.group_jid,
-          customerPhone: context.customer_phone,
-          platformPhones: context.platform_phones,
-          approvedPhones: [],
-        },
-        snapshot,
-      ) !== "verified"
-    )
-      return "blocked";
-  } catch {
-    return "blocked";
-  }
+  if (!(await inspectProtectedGroup(transport, context))) return "blocked";
   // A leitura da rede não concede permissão: conta, versão, pausa e posse são revalidadas no banco.
   const authorized = await db.rpc("authorize_whatsapp_group_login", {
     ...args,
@@ -122,6 +109,18 @@ export async function sendGroupLogin(
     })) as { state?: string; messageId?: unknown };
     if (
       result?.state === "code_accepted" &&
+      (result as Record<string, unknown>).operationKey === permit.attempt_id &&
+      (result as Record<string, unknown>).instanceId === "group:" + context.group_jid &&
+      (result as Record<string, unknown>).groupJid === context.group_jid &&
+      (result as Record<string, unknown>).requestHash ===
+        (await cycleHash([
+          "code",
+          context.sender_phone.slice(1) + "@s.whatsapp.net",
+          context.customer_phone.slice(1) + "@s.whatsapp.net",
+          context.platform_phones.map((p) => p.slice(1) + "@s.whatsapp.net").sort(),
+          context.purpose,
+          context.expires_at,
+        ])) &&
       typeof result.messageId === "string" &&
       result.messageId.length > 0 &&
       result.messageId.length <= 200

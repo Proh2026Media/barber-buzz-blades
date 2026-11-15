@@ -1,9 +1,78 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 14/11/2026 — P-122: desenvolvimento local encerrado, entrega completa para revisão da TI
+
+[fechamento local e evidências](central-whatsapp-local-2026-11-14.md) e [roteiro único TI](pacotes/2026-11-14-ti-central-whatsapp-p122.md). B&C `82570cb` + ajuste de interação `3bccbf4`, Evolution v5 `d020247`/contrato v3, 14 incrementais B&C atômicos e uma migration Evolution nova, sem reaplicar as instaladas. Confirmação/login/avisos só em grupo com composição consentida, dois ou mais administradores, prova da primeira mensagem, ano real/retorno/encerramento/limpeza, escopo de piloto e registros privados. Fonte completa, hashes/base, operador e retorno; sem transferir implementação para TI.
+
+628 testes B&C, tipos/lint/build; 194 verificações SQL, três concorrências D4 e ciclo integrado; 51 Evolution/15 PostgreSQL e imagem AMD64 inicializada/recriada sem rede externa/WhatsApp; 63 composições da interface. Oito testes do operador, seis unidades Linux e instalador real em segunda bancada passaram. Patchs limpos e duas migrations Evolution antigas idênticas. Fonte/instalação de produção não alteradas; `.env`, marca, Flow, iPhone e push preservados. Políticas novas nascem desligadas. Login real continua dependendo da instalação/piloto pela TI e do aparelho consentido. Não executar autossave/push nem reabrir D0. Este registro supera os estados intermediários abaixo.
+
+## 14/11/2026 — P-122: métricas/revisão, automação transacional e faixa operacional locais
+
+Dono pediu concluir pendências antes de gerar pacote TI. Implementadas as novas `20261114001000`/`02000`: agregados por telefone/prova de grupo, correção tardia sem duplicação, revisão auditada de restrições, conexão observada, política automática desligada, proposta com prazo/fingerprint e aplicação idempotente, integração ao cadastro e worker de leitura da Evolution. Faixa aprovada ligada por capacidade, sem simulação no fluxo autenticado. 614 testes gerais, checagens e build; bancada limpa 149 verificações e quatro corridas D3; navegador com API simulada e 21 composições. [Estado, reprodução e próximos blocos](central-whatsapp-local-2026-11-14.md).
+
+D4 e a cobertura final dos emissores continuam pendentes de desenvolvimento; não há pacote operacional novo nem liberação de login/grupos. Sem publicação/VPS/mensagens/marca/Flow; `.env` intocado.
+
+## 13/11/2026 — P-122/D1: três posições persistidas e base compatível ensaiada
+
+Continuação local autorizada após D0. Incorporadas à fonte ativa as cinco migrations já instaladas (111/112/115/116/117) e quatro Edge divergentes/ausentes, com os hashes conferidos, sem tocar produção. Nova nº `20261113005000`: principal/reserva 1/reserva 2 por destino, assinatura de dez parâmetros, CAS, compatibilidade com leitor antigo, identidade por posição e por aviso, fila legada sem atribuição retrospectiva, isolamento de profissionais e histórico de pessoal. Preservados filtros de loja completa/pessoal, reserva sem loja e receptor nº 112; travas administrativas egresso → roteamento. Restrição/classificação do mesmo telefone não é contornada com outro ID.
+
+Bancada dedicada limpa: 118 migrations de base, definição do diretório igual à D0 e cinco incrementais novos em uma transação. 102 verificações SQL/concorrência passaram; cinco corridas reais incluíram classificação pessoal versus distribuição/autorização de grupo. 610 testes gerais (inclui regressão do normalizador/receptor), 17 do modelo e integração da Central com API simulada. Reserva 2 salva/recarrega e aparece no inventário, sem ligar avisos. [Entrega, reprodução e limites](pacotes/2026-11-13-central-whatsapp-d1-local.md).
+
+D1 não conclui P-122 nem libera grupos/login. D2 precisa completar coleta/revisão histórica; D3 automação servidor; D4 composição/ciclo/extensão e avisos de grupo; restante D5/D6 ainda pendente. Nenhum pacote novo para TI, push/main, instalação VPS ou mensagem real. Marca/Flow/.env preservados.
+
+## 13/11/2026 — D0 encerrada; base real de WhatsApp preservada
+
+Recebido e lido integralmente `relatorio-ti-d0-central-whatsapp-compatibilidade-2026-11-13.md` (SHA-256 `f23bb3379d4a806760d1e896e76a6b863ab78585eb5c0ea1e7270f4caf7c9681`). TI somente diagnosticou: frontend iPhone `8b6898b`, backend nº 105–112/115–117 instalados e extensão v2; nº 113/114 e quatro migrations locais não instaladas. Flags de grupo ligadas não provam dois admins nem prontidão. Dispatch ativo, conciliação/expurgo sem agendador. Nenhuma operação real feita pelo Codex.
+
+[Revisão D0](pacotes/2026-11-13-central-whatsapp-revisao-d0-p122.md) compara 14 Edge (10 iguais, 3 diferentes, 1 ausente), confirma hashes e registra riscos da 01000: perda de filtros de pessoal/loja completa, pausa de pessoal e ordem de travas conflitante com nº 115/116. Fontes exatas de nº 111/112/115/116/117 e quatro Edge encontradas na máquina, arquivadas fora do runtime com sufixo `.referencia`, SHA256SUMS e manifesto. Não copiar a versão mais nova do disco como se fosse a instalada. Sem novo pedido à TI; próximo é composição de bancada compatível e D1–D5, depois D6 pronto.
+
+A revisão não instalou, ativou, publicou, alterou grupos, flags ou agendadores. Sem mensagem/OTP real, sem marca/Flow e sem nova homologação física. `.env` intocado e fora da entrega.
+
+## 13/11/2026 — Página WhatsApp aprovada e impactos preparados para TI
+
+Dono aprovou a página local e pediu análise/diagnóstico convertendo experiência em funções/atividades. Lido integralmente o retorno TI iPhone, inclusive Publicação: `8b6898b` já publicado, homologação física pendente; sem mudança de banco/Evolution. Fonte iPhone comparada à entrega local, arquivos iguais; incorporada main ao ramo local em `3c80b5b`, preservando também o import CSS da Central. Nenhum push.
+
+[Documento para TI/desenvolvimento](pacotes/2026-11-13-ti-central-whatsapp-diagnostico-impactos-p122.md): mapa de contratos reais, lacunas comprovadas, métricas somente grupos, distinção distribuição/autorização, três números, atribuição transacional, impacto em admins/OTP/ciclo, critérios de aceite e retorno. Pedido imediato à TI somente D0 de compatibilidade; reutilizar evidência atual e não operar. Desenvolvimento pendente não foi apresentado como pacote pronto. Sem publicação, instalação, novo grupo ou mensagem; marca e Flow intocados. `.env` excluído da entrega.
+
+## 13/11/2026 — Central: grupos, histórico, ordenação e cabeçalho local
+
+- Métricas limitadas a envios comprovados em grupos. Privado, legado e destino desconhecido não contam; falta de dados fica explícita. Tempo observado não é idade da conta e dias ativos exigem envio.
+- Migrations novas 03000/04000 preparadas e ensaiadas somente no PostgreSQL descartável: histórico agregado, identidade por telefone, separação de escopo, contagem idempotente e privilégios administrativos. Nenhuma instalação na VPS.
+- Principal/Reserva antes de Avisos/Avisos de retorno; Personalizar ao final com ícone de ajustes. Indicador de seleção animado, respeitando redução de movimento.
+- Arraste dos três cartões já vinculados, inclusive Reserva 2; alças visíveis nas três vagas, cartões preenchidos inteiros arrastáveis e opção Mover para… por toque/teclado. Preserva números, isola destinos e exige salvar/cancelar.
+- Prévia com atribuição automática para lojas sem configuração: carga cumulativa, menor uso medido no principal e consistência nas reservas, mínimo de duas contas distintas; escolhas existentes preservadas e avisos pausados. Sem operações em grupos reais.
+- Estatísticas, atribuição e distribuição na mesma faixa desde 1024 px; organização empilhada nas larguras menores. Modos de canto herdados do sistema.
+- Validação: 17 testes do modelo e 606 da suíte geral; SQL transacional (escopo, histórico e permissões), 45 verificações de roteamento; arraste inclusive Reserva 2, atribuição local e 21 composições em sete larguras × três modos de canto; tipos, lint dos arquivos alterados e build aprovados. Sem homologação em aparelho físico ou envio real.
+- Critérios e limites: [atividade](criterios-atividade-whatsapp-2026-11-12.md). Prévia: http://localhost:8090/previsao-whatsapp, sem login, dados fictícios; recarregar descarta alterações.
+- Operação automática real, contrato de duas reservas e integração versionada com grupos continuam pendentes de implementação/homologação após aprovação local. Sem publicação, pacote TI novo, marca ou Flow. `.env` não integra commit.
+
+## 12/11/2026 — Perfil de atividade e remoção da quina remanescente
+
+Pesquisadas fontes primárias; sem importar limites de marketing como aquecimento oficial. Cartões mostram perfil interno, aceites, dias e incertos; exemplos fictícios explícitos. Sugestão considera perfil após carga e exclui pausados/incertos para revisão. Nova migration local `20261113002000` agrega o diário e protege identidade para telefone novo não herdar histórico antigo. Removido `box-shadow: inset 3px 0` do estado selecionado. [Critérios e limites](criterios-atividade-whatsapp-2026-11-12.md). Testes de modelo, SQL/rollback, permissões, troca de telefone e 45 regressões de distribuição passaram. Nada publicado/instalado na VPS.
+
+## 12/11/2026 — Herança e cantos esclarecidos
+
+Removidos estado/seletor próprios de cantos da prévia e sobrescritas fixas nas superfícies/ações da central. Tokens do sistema prevalecem; círculos/switch conservam forma funcional. Pílula de herança passa a “Usa números da barbearia”, com ícone. Métrica de aquecimento continua inexistente, sem inferência por conexão. Verificação dos modos reto/semi/arredondado no navegador, tipos/montagem/lint; somente local. [Detalhes](central-whatsapp-distribuicao-local-2026-11-12.md).
+
+## 12/11/2026 — Geração assistida e switches
+
+Estatísticas movidas para o primeiro bloco; protótipo determinístico para sugerir principal e duas reservas conectado à prévia, com revisão, invalidação por mudança de vínculos e aplicação somente em memória com avisos pausados. Telefones desconectados/repetidos excluídos, próprios de profissionais preservados. Switch substitui input pseudo-elemento por botão role=switch com círculo centrado e teclado. Demanda de dados para equidade por carga descrita no [registro](central-whatsapp-distribuicao-local-2026-11-12.md). Sem mudança de produção ou alegação de algoritmo baseado em envios reais.
+
+## 12/11/2026 — Refinamentos após aprovação da prévia
+
+Aplicados contornos completos, separação entre lojas, ações em pílulas com ícones, ligar/desligar e opções circulares. Prévia fictícia com principal e duas reservas distintas, salvamento em memória e verificações de não repetição. Backend atual conserva uma reserva; bloqueio impede descartar silenciosamente uma segunda em chamada real. Estatísticas sem valores inventados, marcadas como proposta nova. [Especificação e limites](central-whatsapp-distribuicao-local-2026-11-12.md). Tipos/build/lint e testes visuais conferidos; sem nova mudança SQL, publicação ou pacote TI.
+
+## 12/11/2026 — Distribuição visual por destino, somente local
+
+O dono pediu papéis cruzados entre números e revisão completa da distribuição, com aprovação local primeiro. Preparado quadro com Principal/Reserva visíveis, catálogo com contadores independentes, destaque dos usos, arrastar/clique/toque/teclado e salvamento explícito. Nova RPC por vínculo/versão e migration `20261113001000` somente local; nenhum dado real alterado. Tipos/build/lint passaram; 21 composições nos três cantos e cinco larguras da Central integrada, 45 PASS SQL/ROLLBACK e três concorrências aprovados. Correções de pausa por instância exata e adiamento sem gastar tentativa incluídas. [Entrega, testes e limites](central-whatsapp-distribuicao-local-2026-11-12.md). Prévia fictícia sem login em `/previsao-whatsapp`, exclusiva de desenvolvimento. Login do localhost teve configuração de API antiga corrigida no `.env` local, preservado fora do commit. Pacote anterior da TI, marca e Flow intocados. Sem autossave/push.
+
+## 12/11/2026 — Área útil do iPhone, somente local
+
+Acesso ao Xcode confirmado; Simulator não disponível para controle nesta sessão. Corrigidos o crescimento da logo sobre o nome da loja quando o topo reserva a câmera, os recuos laterais/inferiores, a altura útil com teclado, as janelas e a reserva do menu medida em vez de fixa. Navegação lateral rola em paisagem curta. Tipos, montagem, lint dos arquivos alterados, diff e 35 combinações Chromium com rede fictícia passaram; teclado e recortes sintéticos, sem homologação iOS real. [Roteiro e pacote TI](pacotes/2026-11-12-ti-interface-iphone.md). Fonte em `/private/tmp/bc-central-concluidos`; sem envio à main/produção. Marca e backend intocados. O recebimento do primeiro push foi confirmado pelo usuário; nome da instalação/“from” e login WhatsApp continuam pendências independentes.
+
 ## 12/11/2026 — retorno TI nº 117 e primeiro acesso mais claro (somente local)
 
 Relatório `relatorio-ti-p120-conferencia-117-prontidao-login-2026-11-12.md` recebido. A nº 117b já está em `origin/main` (`f785ba8`); não reaplicar cartões. Corrigida a interface do login/grupo: escolhas de primeiro acesso, três passos visuais, convite indisponível, envio incerto, limite de pedidos, adesão expirada e telefone confirmado sem promessa de login pronto. Sete arquivos de frontend/dicionários; sem alteração de backend ou produção. [Devolutiva e pendências](pacotes/2026-11-12-ti-p120-retorno-117-login-claro.md). Cliente permanece Gmail/4593, grupo antigo do administrador não é reaproveitado. Piloto não pronto: dois administradores, extensão no principal e ciclo robusto ainda pendentes. Pasta e prévia da marca intocadas nesta entrega.
-
 
 ## 12/11/2026 — Central: cartões apenas para números identificados
 
@@ -2219,7 +2288,6 @@ description: Orientar mudanças de interface no projeto Barba & Cabelo para uma 
 
 ---
 
-
 ## 12/11/2026 — Web Push, monitor no cabeçalho e atualização consolidada para TI
 
 Pedido do dono: habilitar notificações web, avisar o admin sobre falhas dos números em qualquer área e consolidar o que não foi enviado à TI desde o primeiro pedido. Trabalho em ramo isolado, atualizado sobre `aca86fe`; original e marca preservados. [Roteiro e pacote](pacotes/2026-11-12-ti-bc-push-monitor-login.md).
@@ -2230,7 +2298,34 @@ Confirmação de telefone trata `whatsapp_unavailable` com orientação para o g
 
 Tipos, testes automatizados, SQL em banco descartável, cifra VAPID/aes128gcm, funções Deno e bancada de navegador realizados; resultados finais e limites em `VALIDACAO.md` do pacote. Nenhuma prova de push em aparelho real nem de entrega WhatsApp; homologação operacional com TI permanece necessária. Sem push/main, migrations reais ou segredos no pacote.
 
-
 ## 12/11/2026 — Revisão 2: identidade de cliente é a barbearia
 
 Antes de enviar o pacote, o dono reservou a marca B&C à gestão de donos/administradores. Textos locais de acesso/grupo/push e rodapé público ajustados nos idiomas. Push passa a carregar nome da barbearia do agendamento, resolvido no servidor no envio; worker não força título/logo da plataforma. Teste sem loja usa identificação neutra. Nenhum texto de grupo real mudou: contrato de identidade comercial + filtro de OTP na extensão precisam de implementação coordenada; roteiro TI registra essa dependência e proíbe correção isolada de string/ativação do piloto como se estivesse pronto. Metadados globais/PWA não foram declarados totalmente convertidos. Marca, produção e terceiros não foram tocados. Pacote anterior desta entrega foi substituído pela revisão 2.
+
+## 12/11/2026 — Preferência persistente: entrega pronta à TI
+
+O dono pediu para guardar a orientação para as próximas entregas: enviar à TI implementação concluída, arquivos e roteiro verificáveis, não apenas objetivos para ela resolver. Desenvolvimento pendente permanece com o Codex; diagnóstico/revisão deve ser explicitamente separado de instalação/homologação. Regra registrada no AGENTS.md e referenciada no guia de trabalho. Somente documentação local; nenhum novo envio à TI, atualização de produção ou alteração no pacote v2 já entregue neste registro.
+
+## 12/11/2026 — Retorno TI v2 e dispatch Web Push limitado
+
+TI relata revisão 2 instalada/publicada em `04bf9276281c5cd8d7f42f48ecb839d1a4a9b17e`, com VAPID configurado posteriormente às 20:52, `mailto:contato@proh.media`. Push continua desligado no banco/ambiente, sem cron e sem homologação. Não trocar chaves nem reaplicar/renomear as duas migrations instaladas; prefixo repetido com nº 117 permanece apenas como histórico. Não criar ledger de migrations.
+
+Correção local: migration nova `20261112232000_web_push_lotes_limitados.sql` limita claim a quatro, mantém leases/SKIP LOCKED e desconhecidos sem reenvio. Edge executa quatro tarefas em paralelo, isola falhas, aplica orçamento compartilhado de 40 s, consultas de até 5 s e provedor de até 8 s; corpo HTTP também limitado em tempo/tamanho. Recusa lote legado >4 antes de enviar. Processed significa resultado finalizado, não entrega visual. Revalidação por destinatário e pausa preservadas.
+
+Validação: 606 testes; tipos; lint sem erros (7 avisos preexistentes); build; Deno check; 31 verificações SQL e três de concorrência real no PostgreSQL descartável. HTTP local lento: 27.265 ms com quatro resultados desconhecidos e zero repetição. Bancada dos módulos na imagem `supabase/edge-runtime:v1.71.2`, compatível Deno 2.1.4, passou sem rede externa. Novo pacote incremental com arquivos completos, patch, hashes, roteiro, retorno e evidências. Nenhum envio real/push/main/instalação VPS, troca de chaves ou alteração de grupo, WhatsApp, marca e Flow.
+
+## 12/11/2026 — Incremental instalado pela TI; estabilidade e operação Web Push
+
+Relatório TI com sufixo `65465` confirma instalação às 21:43–21:44, backup `/root/backup-bc-webpush-dispatch-20261112-214337`, cerca de 2 s de indisponibilidade HTTP medida; supera revisão anterior que ainda dizia não instalado. Não reaplicar migration 20261112232000 nem TypeScript. VAPID/cofre confirmado às 21:01 segundo TI; frontend permanece 04bf927. Push desligado, sem agendador, não homologado.
+
+O dono pediu entrega integral, com cada agente cuidando do que seu acesso permite. Testes de orçamento agora usam relógio monotônico/timers controlados e barreira de concorrência sem esperas reais. Nenhuma alteração nos quatro arquivos Edge instalados (hashes idênticos ao relatório). Node 24.22.1 da TI: 50/50 corridas do arquivo, quatro processos simultâneos, suíte completa 606/606. Node 26: 40/40. Tipos, build e lint sem erros (sete avisos preexistentes).
+
+Operador Python pronto para conferência, preparação desligada, ativação expressamente autorizada, pausa e envio agendado. Timer systemd dispara 15 s após término anterior; oneshot + flock + prazos de 50/55 s; sem reenvio HTTP na mesma execução. Segredos em memória, sem valores em logs/argumentos/unidades, sem redirecionamento nem proxy herdado. Preserva chaves/origens, altera só flag de ambiente, confere ambas as configurações e estado SQL, recria somente Edge e pausa se ativação falhar. 17 testes locais e no Linux sem rede; systemd-analyze verify aprovado. Roteiro executável, retorno e homologação visual entregues; operador ainda não instalado e nenhuma ativação/envio real pelo Codex. Marca, Flow, grupos/OTP e frontend não alterados.
+
+## 12/11/2026 — TI confirma operação Web Push ativada; homologação visual pendente
+
+Relatório `relatorio-ti-webpush-operacao-homologacao-2026-11-12.md` recebido integralmente. Seção 5 supera os estados de revisão das seções 1–4. TI registra autorização literal do dono para preparar/ativar e homologar no próprio aparelho. Preparação às 22:17:16; ativação 22:17:38–22:17:50 BRT, backup `/root/backup-bc-webpush-ativacao-20261112-221739`, somente flag WEB_PUSH_ENABLED alterada no ambiente, SQL ligado depois de Edge saudável, timer active/enabled. VAPID/subject/origens e funções preservados; nenhum agendador duplicado. Só funções recriadas; TI mediu aproximadamente 2–3 s de indisponibilidade HTTP. Frontend 04bf927 inalterado.
+
+Operador instalado SHA-256 `13cf9a0c24d753a7589203e3aca9953e59fcb57cb71b3a8ec3317282c61ff60c`. TI repetiu 17 testes Python, 20 execuções do arquivo de orçamento e suíte 606/606, todos aprovados. Execuções iniciais do timer processaram zero itens, sem cancelados/incertos: fila sem inscrição/teste do titular naquele momento. Isso não comprova entrega visual.
+
+Estado: conferido/preparado/ativado sim; homologado não. Próximo passo é teste voluntário do titular em “Notificações neste aparelho” → ativar → enviar teste uma vez; depois eventos fictícios consentidos, revogação/troca de conta e combinações de navegador/PWA. Não enviar testes, ativar permissões, criar agendamentos ou pausar produção só por receber este relatório. Nada a reinstalar ou novo pacote a encaminhar para esta ativação. Registro local documental, sem push/main, marca, Flow ou alteração em produção pelo Codex.

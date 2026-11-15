@@ -1,0 +1,5 @@
+Fonte oficial: cd800f2976e1e5b682fbf86a01ee4d85ae61f370
+Imagem-base: evoapicloud/evolution-api@sha256:1bd8afc4a6cf48822e6cf02469aeae7bd35a12a6b616eacd1291926307f4d339
+Versão local: 2.3.7-bc.groups.5
+Contrato: bc-groups-v3
+Commit de fonte local: d020247b3bac9f9f166d19f9b1c21a708f9b43a5

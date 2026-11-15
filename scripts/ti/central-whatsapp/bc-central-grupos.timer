@@ -1,0 +1,9 @@
+[Unit]
+Description=B&C - Central WhatsApp - agendar grupos
+[Timer]
+OnActiveSec=30s
+OnUnitInactiveSec=30s
+AccuracySec=1s
+Unit=bc-central-grupos.service
+[Install]
+WantedBy=timers.target

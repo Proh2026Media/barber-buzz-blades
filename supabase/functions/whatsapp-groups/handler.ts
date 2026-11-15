@@ -1,9 +1,14 @@
 import {
+  processCareCycle,
+  syncCareCycleRegistry,
+  type CycleTransport,
+  type CycleLogo,
+} from "../_shared/care-cycles.ts";
+import {
   groupSnapshot,
   individualPhone,
   processCareGroup,
   recoverCareGroup,
-  stopIntent,
   type GroupProvider,
 } from "../_shared/whatsapp-groups.ts";
 
@@ -33,6 +38,7 @@ export async function handleCareGroups(
   db: Database,
   provider: GroupProvider,
   secrets: { service: string; webhook: string },
+  cycles?: { enabled: boolean; transport: CycleTransport; logo: CycleLogo },
 ) {
   if (req.method !== "POST") return answer({ error: "Método não permitido" }, 405);
   const isWorker = await secretMatches(
@@ -70,11 +76,36 @@ export async function handleCareGroups(
     }
     const text = new TextDecoder().decode(bytes);
     const body = JSON.parse(text);
-    if (isWorker) {
-      if (body.action === "purge") {
-        const result = await db.rpc("purge_care_group_audit", {});
-        return answer({ ok: !result.error }, result.error ? 503 : 200);
+    if (isWorker && body.action === "purge") {
+      const result = await db.rpc("purge_care_group_audit", {});
+      return answer({ ok: !result.error }, result.error ? 503 : 200);
+    }
+    if (isWorker && cycles) {
+      if (!cycles.enabled) return answer({ state: "blocked" });
+      if (body.action === "reconcile") {
+        const registry = await syncCareCycleRegistry(db, cycles.transport, true);
+        const queued = await db.rpc("queue_care_cycles", {});
+        if (queued.error || !Array.isArray(queued.data) || queued.data.length > 5)
+          return answer({ error: "Conferência indisponível" }, 503);
+        const states: string[] = [];
+        for (const id of queued.data) {
+          if (typeof id !== "string" || !/^[a-f0-9-]{36}$/i.test(id))
+            return answer({ error: "Operação inválida" }, 503);
+          states.push(await processCareCycle(db, cycles.transport, id, cycles.logo, true));
+        }
+        return answer({ states, registry });
       }
+      if (
+        body.action === "process" &&
+        typeof body.cycle_id === "string" &&
+        /^[a-f0-9-]{36}$/i.test(body.cycle_id)
+      )
+        return answer({
+          state: await processCareCycle(db, cycles.transport, body.cycle_id, cycles.logo, true),
+        });
+      return answer({ error: "Operação inválida" }, 400);
+    }
+    if (isWorker) {
       if (body.action === "reconcile") {
         if (!provider.canProvision) return answer({ state: "blocked" });
         const pending = await db.rpc("queue_care_group_reconciliation", {});
@@ -118,11 +149,10 @@ export async function handleCareGroups(
     for (const item of list) {
       const jid = kind === "messages.upsert" ? item?.key?.remoteJid : item?.id;
       if (typeof jid !== "string" || !/^[0-9-]+@g\.us$/.test(jid)) continue;
-      const fromMe = item?.key?.fromMe === true;
+      const fromMe = kind === "messages.upsert" && item?.key?.fromMe === true;
       const sender = individualPhone(item?.key?.participant);
       // Não usar participantAlt/phoneNumber quando a origem puder ser um LID não resolvido.
-      const content = item?.message?.conversation ?? item?.message?.extendedTextMessage?.text;
-      const intent = fromMe ? null : stopIntent(content);
+      const intent = null; // Preferências só são alteradas no aplicativo.
       // Reentrega da mesma mensagem pode ganhar outra data de envelope.
       // A finalidade negativa e a identidade resolvida distinguem complementos legítimos.
       const messageId =
@@ -162,6 +192,18 @@ export async function handleCareGroups(
           p_jids: removed,
         });
         if (departure.error) return answer({ error: "Conferência indisponível" }, 503);
+      }
+      // O banco examina o delta completo. Não remover campos desconhecidos: eles
+      // exigem nova conferência. Nome/autor não identificam nem autorizam o grupo.
+      if (kind === "groups.update") {
+        const metadata = await db.rpc("care_group_metadata_event", {
+          p_instance: body.instance,
+          p_group_jid: jid,
+          p_event_key: eventKey,
+          p_update: item,
+        });
+        if (metadata.error) return answer({ error: "Conferência indisponível" }, 503);
+        continue;
       }
       const result = await db.rpc("care_group_event", {
         p_instance: body.instance,

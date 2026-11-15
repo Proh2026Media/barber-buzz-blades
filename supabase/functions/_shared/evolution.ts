@@ -74,7 +74,7 @@ export async function evolutionFetch(path: string, init: RequestInit = {}) {
 export function sendAuthorizedWhatsapp(
   ...args: [Parameters<typeof sendWhatsapp>[0], Parameters<typeof sendWhatsapp>[1]]
 ) {
-  return sendWhatsapp(...args, evolutionRequest);
+  return sendWhatsapp(...args, evolutionGroupTransport, groupCycleEnabled());
 }
 
 export function instanceNameForShop(shopId: string, slug?: string | null) {
@@ -91,12 +91,33 @@ export function digitsOnlyPhone(e164: string) {
   return e164.replace(/\D/g, "");
 }
 
-/** Administração de grupos separada do transporte de mensagens; nenhum endpoint de envio. */
+/** Administração de grupos separada do transporte de mensagens; somente endpoints protegidos de envio. */
 export function evolutionGroupTransport(path: string, init: RequestInit = {}) {
   const match = /^\/group\/([A-Za-z]+)\/[A-Za-z0-9_-]{1,100}(?:\?[^#]*)?$/.exec(path);
-  const get = ["bcCapabilities", "bcInspect", "bcCreateStatus", "joinRequests", "bcInvite"];
+  const get = [
+    "bcCapabilities",
+    "bcInspect",
+    "bcCreateStatus",
+    "joinRequests",
+    "bcInvite",
+    "bcCycle",
+    "bcOperation",
+    "bcCreationStatus",
+  ];
   const post = [
+    "bcSendNotice",
+    "bcSendCode",
     "bcCreate",
+    "bcRecoverCycle",
+    "bcPrepare",
+    "bcWelcome",
+    "bcDescription",
+    "bcBrand",
+    "bcPinNotice",
+    "bcClose",
+    "bcAdoptClosing",
+    "bcAuthorizePlatform",
+    "bcSubject",
     "bcSetting",
     "updateMemberAddMode",
     "updateJoinApprovalMode",
@@ -122,18 +143,7 @@ export function evolutionGroupTransport(path: string, init: RequestInit = {}) {
 export function sendAuthorizedGroupLogin(
   ...args: [Parameters<typeof sendGroupLogin>[0], Parameters<typeof sendGroupLogin>[1]]
 ) {
-  return sendGroupLogin(
-    ...args,
-    (path, init) =>
-      evolutionRequest(path, {
-        ...init,
-        headers: {
-          ...init?.headers,
-          "x-bc-group-key": Deno.env.get("WHATSAPP_GROUP_API_SECRET") ?? "",
-        },
-      }),
-    groupPilotEnabled(),
-  );
+  return sendGroupLogin(...args, evolutionGroupTransport, groupCycleEnabled());
 }
 
 export function groupPilotEnabled() {
@@ -141,4 +151,9 @@ export function groupPilotEnabled() {
     Deno.env.get("WHATSAPP_GROUP_PILOT_ENABLED") === "true" &&
     (Deno.env.get("WHATSAPP_GROUP_API_SECRET") ?? "").length >= 32
   );
+}
+
+/** Contrato novo não herda habilitação de um piloto antigo. */
+export function groupCycleEnabled() {
+  return groupPilotEnabled() && Deno.env.get("WHATSAPP_GROUP_CYCLE_ENABLED") === "true";
 }

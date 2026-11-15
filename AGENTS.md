@@ -21,6 +21,17 @@ A direção atual é uma interface moderna, intuitiva e acessível a diferentes 
 
 Registro da revisão MB em andamento: [docs/mb-revisao.md](docs/mb-revisao.md).
 
+## Entregas para a TI / Guardião (decisão do dono em 12/11/2026)
+
+A TI recebe a implementação pronta para instalar e homologar; não deve receber apenas uma intenção para desenvolver ou improvisar a solução.
+
+- Cabe ao Codex concluir código, migrations, integrações e testes locais necessários antes de apresentar um pacote como pronto para implantação.
+- Entregar arquivos completos, base/versão e hashes, dependências, ordem de instalação, configuração necessária sem segredos, verificações de aceite e procedimento de retorno.
+- À TI cabem conferência de compatibilidade com o ambiente real, configuração operacional, instalação e homologação. Particularidades do servidor podem exigir diagnóstico; isso não transfere o desenvolvimento pendente para ela.
+- O que ainda exigir desenvolvimento permanece com o Codex e deve ser declarado como **pendente de desenvolvimento**, sem ser misturado a instruções executáveis nem anunciado como entregue.
+- Se for necessário pedir somente diagnóstico ou revisão à TI, identificar esse propósito explicitamente. Distinguir **preparado localmente**, **pronto para instalação**, **instalado** e **homologado**.
+- Na próxima entrega, revisar a completude do pacote antes de sugerir que o dono o encaminhe. Não enviar mensagens ou arquivos à TI sem instrução explícita do usuário.
+
 ## Ideias para desenvolvimento futuro
 
 - [Módulo de reembolso e cancelamento](docs/reembolso-futuro.md): registro preliminar solicitado pelo usuário, ainda sem implementação. Consultar antes de desenvolver pagamentos, taxas de cancelamento ou reembolsos. A documentação não autoriza ativar cobranças nem altera os cancelamentos atuais.

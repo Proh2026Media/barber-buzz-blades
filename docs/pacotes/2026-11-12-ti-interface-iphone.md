@@ -1,5 +1,7 @@
 # Interface no iPhone — entrega local para revisão
 
+**Retorno TI recebido em 13/11/2026:** relatório `relatorio-ti-interface-iphone-revisao-2026-11-12.md` confirma publicação autorizada em `8b6898b9c0d3031087d05f243a8430daf3e7512f` em 12/11, às 23:13, com site atualizado às 23:16–23:17. Não reaplicar o pacote. **Homologação no iPhone permanece pendente**; backend/Evolution/Web Push não foram alterados por essa publicação. O texto abaixo preserva o roteiro histórico anterior à publicação.
+
 ## Estado e escopo
 
 Correção do frontend, sem publicação. O Xcode pôde ser inspecionado, mas o Simulator não está exposto nesta sessão. Não foi alterado o projeto nativo provisório aberto no Xcode. O B&C continua sendo uma aplicação web/PWA.

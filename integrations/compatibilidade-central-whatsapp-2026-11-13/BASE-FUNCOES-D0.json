@@ -1,0 +1,20 @@
+{
+  "origem": "relatorio-ti-d0-central-whatsapp-compatibilidade-2026-11-13.md",
+  "relatorio_sha256": "f23bb3379d4a806760d1e896e76a6b863ab78585eb5c0ea1e7270f4caf7c9681",
+  "arquivos": {
+    "_shared/whatsapp-groups.ts": "b699872246c5644b6efa679a6a7ec00720ea76797c6229da039e20b336e82bb6",
+    "_shared/whatsapp-group-login.ts": "9d4c3a21fb85606a833a78299ca1e06b9ab4edeb542a64fbb219c6ed84904b32",
+    "whatsapp-groups/index.ts": "1aad308bcc41b27b683141e3472c6ccad81ae9bb2ff03d451120d75eda08177c",
+    "whatsapp-groups/handler.ts": "bc2dbf28a1638119502bfe02b12463ae22fcb6640b369add355c86a00e1efe2d",
+    "platform-whatsapp/index.ts": "2ef7a1fb947cad0e381ca7b23e88e4d49318982234ba1e0c1372d4eda0d91b0c",
+    "auth-otp/index.ts": "07299f8dda9d2cea7c6516a70d870d109b5379ad973edadc3d2a4b1bf16fbe8a",
+    "auth-otp/login.ts": "73f885c661a7766673bf5f2a59f2fd527fb12890d4a625ad7d12c3ab7e6fc220",
+    "auth-otp/group-phone.ts": "810eb80bf0e0bd359e665ee0c65ecd674e7033698914bad4a42cd6811aa3ca44",
+    "web-push/index.ts": "0ec53fcba2ff99aa99a45e3278475f0f989ae0d0cdf9af7eeb118629748338f7",
+    "_shared/evolution-groups.ts": "7b323b5f69430ea951b9a9adc08189058d5bf69ef709321899221acbcd43d91a",
+    "_shared/whatsapp-instance-phone.ts": "56516be155223c66cfe5ed7bcc116c21081b99abc879542aaa0c0bbbde9a265e",
+    "whatsapp-dispatch/index.ts": "aca58e61cccd1eb83291b114ae395df0cfcd1b60d41bc584228a0a0faed2cd91",
+    "whatsapp-health/index.ts": "5e8c369af827a0300159fd215cb1d4bcb35dd751100c8f60f4b2bccec4d41ce0",
+    "whatsapp-channel/index.ts": "ceccff84954ff01de471e00fc1b1961ed1ab86cc49dc4d48281a08ab72605f1f"
+  }
+}

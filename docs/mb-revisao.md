@@ -1,6 +1,20 @@
 # Revisão MB — Barba & Cabelo
 
+**14/11/2026 — P-122, interface e integração local fechadas:** admin com ativos/preparação/revisão/limpeza, validade e piloto; cliente com convite/confirmar telefone/consentimento por números. Polling conserva código e rascunho. 42 composições dos grupos + 21 da faixa, sete larguras/três cantos, sem erros JS/estouro horizontal. [Fechamento e limites](central-whatsapp-local-2026-11-14.md); [TI somente revisão do pacote](pacotes/2026-11-14-ti-central-whatsapp-p122.md). Sem publicação, iPhone físico ou marca.
+
+**14/11/2026 — faixa operacional por capacidade, somente local:** `WhatsAppOperations` integra estatísticas, política persistida e proposta/aplicação do servidor. Reutiliza a composição aprovada, modos de canto e estados; erro de rede conserva a chave do pedido. Revisão de restrição e controle exclusivo com confirmação. Sete larguras/três cantos e API simulada verificados. [Registro e limites](central-whatsapp-local-2026-11-14.md). Grupos completos e pacote TI ainda em desenvolvimento.
+
 Atualizado em **07/11/2026** (P-49/P-70; entradas anteriores preservadas como histórico). Fonte: [mb-interface.md](mb-interface.md). Regra: `.cursor/rules/mb.mdc`. Skill: `.cursor/skills/mb/`.
+
+**13/11/2026 — aprovação do dono:** a nova página da Central WhatsApp foi aprovada visualmente. A integração operacional permanece pendente; [diagnóstico por função e critérios de aceite](pacotes/2026-11-13-ti-central-whatsapp-diagnostico-impactos-p122.md). Aprovação não publica nem habilita grupos/envios.
+
+**13/11/2026 — D1 local:** a terceira posição agora tem contrato persistente de leitura/escrita e modo de uso manual com confirmação técnica, sem ativar avisos. Central inclui a Reserva 2 nos filtros, contadores e destinos; cliente antigo não a apaga. Fluxo autenticado ensaiado com API simulada. [Entrega e limites](pacotes/2026-11-13-central-whatsapp-d1-local.md). Faixa completa/automação real e grupos ainda pendentes, sem publicação.
+
+## 13/11/2026 — Central, revisão somente local
+
+Cabeçalho com estatísticas/atribuição/distribuição em uma fileira desde 1024 px; larguras menores empilhadas. Ordem dos controles: Principal/Reserva → Avisos → Avisos de retorno; Personalizar com ajustes ao final da linha. Indicador circular animado e redução de movimento respeitada. Três vagas com alça; cartões preenchidos arrastáveis e alternativa Mover para… por toque/teclado. Preserva os modos de canto, rascunho, salvar/cancelar e isolamento entre destinos.
+
+Atividade identificada como **grupos / 30 dias**, exemplos fictícios explícitos, sem confundir ausência de dados com volume zero ou qualidade oficial. Números históricos preservados, sem nova atribuição. Atribuição automática simulada exige dois telefones distintos e preserva configurações existentes. [Prévia e limites](central-whatsapp-distribuicao-local-2026-11-12.md). 17 testes de regras, 21 composições, arraste inclusive Reserva 2, tipos, lint e build verificados. Sem produção, marca ou pacote TI novo.
 
 ## P-119 — barbearias, números e códigos separados (10/11/2026)
 

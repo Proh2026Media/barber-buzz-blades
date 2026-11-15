@@ -1,11 +1,12 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { evolutionGroupTransport, groupPilotEnabled } from "../_shared/evolution.ts";
+import { evolutionGroupTransport, groupCycleEnabled } from "../_shared/evolution.ts";
 import { evolutionGroupProvider } from "../_shared/evolution-groups.ts";
+import { loadCareGroupLogo } from "../_shared/care-group-logo.ts";
 import { handleCareGroups } from "./handler.ts";
 
 // Piloto desligado por padrão; habilitação somente na janela explicitamente autorizada.
 // Somente uma entrega explicitamente autorizada poderá habilitar o piloto real.
-const provider = evolutionGroupProvider(evolutionGroupTransport, groupPilotEnabled());
+const provider = evolutionGroupProvider(evolutionGroupTransport, false);
 Deno.serve(async (req) => {
   const url = Deno.env.get("SUPABASE_URL"),
     key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SERVICE_KEY");
@@ -15,5 +16,10 @@ Deno.serve(async (req) => {
     createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } }),
     provider,
     { service: key, webhook: Deno.env.get("WHATSAPP_GROUP_WEBHOOK_SECRET") ?? "" },
+    {
+      enabled: groupCycleEnabled(),
+      transport: evolutionGroupTransport,
+      logo: (shop, chosen) => loadCareGroupLogo(shop, chosen, url),
+    },
   );
 });

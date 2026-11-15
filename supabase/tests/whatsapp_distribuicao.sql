@@ -1,0 +1,136 @@
+-- Somente banco descartável. Dados fictícios, nenhuma chamada à Evolution.
+begin;
+create function pg_temp.check_distribution(ok boolean,label text) returns void language plpgsql as $$
+begin if ok is distinct from true then raise exception 'FAIL: %',label; end if; raise notice 'PASS: %',label; end $$;
+create temporary table wd as select gen_random_uuid() a,gen_random_uuid() b,gen_random_uuid() c,
+ gen_random_uuid() x,gen_random_uuid() y,gen_random_uuid() personal,gen_random_uuid() person,gen_random_uuid() staff;
+grant select on wd to authenticated;
+select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',true);
+insert into auth.users(id,email,raw_user_meta_data) select person,person||'@example.invalid','{}' from wd;
+update public.profiles set whatsapp_e164='+5511988880003' where id=(select person from wd);
+insert into public.barbershops(id,name,slug)
+select a,'Teste Alfa','wa-distribution-'||a from wd union all
+select b,'Teste Beta','wa-distribution-'||b from wd union all
+select c,'Teste Gama','wa-distribution-'||c from wd;
+insert into public.staff(id,barbershop_id,display_name) select staff,a,'Profissional de teste' from wd;
+-- Lojas completas como no cadastro real: dono ativo, configurações e profissional próprio.
+update public.staff set user_id=(select person from wd) where id=(select staff from wd);
+insert into public.staff(barbershop_id,user_id,display_name) select b,person,'Dono Beta' from wd union all select c,person,'Dono Gama' from wd;
+insert into public.barbershop_settings(barbershop_id) select a from wd union all select b from wd union all select c from wd on conflict do nothing;
+insert into public.shop_members(barbershop_id,user_id,staff_id,role,ownership_percent)
+ select st.barbershop_id,d.person,st.id,'owner',100 from public.staff st,wd d where st.barbershop_id in(d.a,d.b,d.c);
+
+select public.platform_create_whatsapp_channel(x,'Principal Alfa') from wd;
+select public.platform_create_whatsapp_channel(y,'Principal Beta') from wd;
+select public.platform_create_whatsapp_channel(personal,'Pessoal, proibido para envio') from wd;
+update public.whatsapp_channels set display_phone=case id when (select x from wd) then '+5511988880001'
+ when (select y from wd) then '+5511988880002' else '+5511988880003' end,status='open' where id in(select x from wd union all select y from wd union all select personal from wd);
+update public.whatsapp_send_controls set paused=false where scope='global';
+select pg_temp.check_distribution((public.platform_whatsapp_directory()->>'destination_routing')::boolean,'Contrato anuncia distribuição por destino');
+select public.platform_set_whatsapp_route(a,null,0,x,y,'primary',true,false,false) from wd;
+select public.platform_set_whatsapp_route(b,null,0,y,x,'primary',true,false,false) from wd;
+select public.platform_set_whatsapp_route(c,null,0,x,y,'primary',true,false,false) from wd;
+select pg_temp.check_distribution((select count(*)=3 from public.whatsapp_number_links where barbershop_id in(select a from wd union all select b from wd union all select c from wd) and removed_at is null),'Três destinos usam duas conexões');
+select pg_temp.check_distribution((select channel_id=x and backup_channel_id=y from public.whatsapp_number_links,wd where barbershop_id=a),'Alfa tem X principal e Y reserva');
+select pg_temp.check_distribution((select channel_id=y and backup_channel_id=x from public.whatsapp_number_links,wd where barbershop_id=b),'Beta tem Y principal e X reserva');
+select pg_temp.check_distribution((select count(*)=2 from public.whatsapp_channels where id in(select x from wd union all select y from wd)),'Compartilhamento não cria conexão extra');
+do $$ declare d record; begin select * into d from wd;
+ begin perform public.platform_set_whatsapp_route(d.a,null,1,d.x,d.x,'primary',true,false,false); raise exception 'FAIL: mesma conta nos dois papéis'; exception when invalid_parameter_value then raise notice 'PASS: mesma conta nos dois papéis recusada'; end;
+ begin perform public.platform_set_whatsapp_route(d.a,null,0,d.x,d.y,'primary',true,false,false); raise exception 'FAIL: versão antiga'; exception when serialization_failure then raise notice 'PASS: versão antiga recusada'; end;
+ begin perform public.platform_set_whatsapp_route(d.a,null,1,d.x,d.y,'backup',true,false,false); raise exception 'FAIL: reserva sem confirmação'; exception when invalid_parameter_value then raise notice 'PASS: reserva exige confirmação técnica'; end;
+ begin perform public.platform_set_whatsapp_route(d.a,null,1,d.personal,d.y,'primary',true,false,false); raise exception 'FAIL: número pessoal'; exception when invalid_parameter_value then raise notice 'PASS: telefone pessoal não vira emissor'; end;
+ begin perform public.platform_set_whatsapp_route(d.a,null,1,d.x,d.personal,'primary',true,false,false); raise exception 'FAIL: reserva pessoal'; exception when invalid_parameter_value then raise notice 'PASS: telefone pessoal não vira reserva'; end;
+ begin perform public.platform_set_whatsapp_route(d.b,d.staff,0,d.x,d.y,'primary',true,false,false); raise exception 'FAIL: profissional de outra loja'; exception when invalid_parameter_value then raise notice 'PASS: profissional de outra loja recusado'; end;
+end $$;
+update public.whatsapp_channels set display_phone='+5511988880001' where id=(select y from wd);
+do $$ declare d record; begin select * into d from wd;
+ begin perform public.platform_set_whatsapp_route(d.a,null,1,d.x,d.y,'primary',true,false,false); raise exception 'FAIL: mesma conta física em IDs diferentes'; exception when invalid_parameter_value then raise notice 'PASS: IDs diferentes do mesmo telefone não formam principal e reserva'; end;
+end $$;
+update public.whatsapp_channels set display_phone='+5511988880002' where id=(select y from wd);
+select public.platform_set_whatsapp_route(a,null,1,x,y,'backup',true,false,true) from wd;
+select pg_temp.check_distribution((select delivery_mode='backup' and backup_instance_name='bc-'||y from public.whatsapp_delivery_channels,wd where barbershop_id=a),'Alfa usa a reserva escolhida');
+select pg_temp.check_distribution((select delivery_mode='primary' and instance_name='bc-'||y and link_version=1 from public.whatsapp_delivery_channels,wd where barbershop_id=b),'Beta permanece no principal, com versão preservada');
+select pg_temp.check_distribution((select delivery_mode='primary' and instance_name='bc-'||x and link_version=1 from public.whatsapp_delivery_channels,wd where barbershop_id=c),'Gama não segue a troca feita em Alfa');
+insert into public.whatsapp_send_controls(scope,paused,reason) select x::text,true,'restriction' from wd;
+do $$ declare d record; begin select * into d from wd;
+ begin perform public.platform_set_whatsapp_route(d.a,null,2,d.x,d.y,'backup',true,false,true); raise exception 'FAIL: reserva contornou restrição'; exception when invalid_parameter_value then raise notice 'PASS: reserva não contorna restrição do principal'; end;
+end $$;
+select pg_temp.check_distribution(not public.whatsapp_sending_paused('bc-'||y,false),'Restrição em X não pausa Y usado legitimamente como principal em outra loja') from wd;
+delete from public.whatsapp_send_controls where scope=(select x::text from wd);
+-- O orçamento de tentativas e a pausa seguem o emissor efetivo, não os campos globais antigos.
+select public.enqueue_whatsapp_message(a,'+5511999999999','customer.notice','Aviso reserva pausada','wd-pause') from wd;
+update public.whatsapp_outbox set status='sending',attempts=5,lease_token=gen_random_uuid(),lease_until=now()+interval '5 minutes' where dedupe_key='wd-pause';
+insert into public.whatsapp_send_controls(scope,paused,reason) select y::text,true,'maintenance' from wd;
+select public.defer_whatsapp_send(id,lease_token) from public.whatsapp_outbox where dedupe_key='wd-pause';
+select pg_temp.check_distribution((select status='pending' and attempts=4 from public.whatsapp_outbox where dedupe_key='wd-pause'),'Reserva pausada adia aviso sem esgotar tentativas');
+update public.whatsapp_outbox set status='failed' where dedupe_key='wd-pause';
+delete from public.whatsapp_send_controls where scope=(select y::text from wd);
+update public.whatsapp_channels set backup_instance_name='bc-'||(select y from wd) where id=(select x from wd);
+insert into public.whatsapp_send_attempts(outbox_id,instance_name,state,started_at)
+ select gen_random_uuid(),'bc-'||y,'unknown',now()-interval '3 minutes' from wd cross join generate_series(1,3);
+select public.enqueue_whatsapp_message(b,'+5511999999999','customer.notice','Aviso com revisão','wd-review') from wd;
+update public.whatsapp_outbox set status='sending',lease_token=gen_random_uuid(),lease_until=now()+interval '5 minutes' where dedupe_key='wd-review';
+select pg_temp.check_distribution((select public.authorize_whatsapp_send('bc-'||y,o.id,o.lease_token)->>'reason'='review' from public.whatsapp_outbox o,wd where dedupe_key='wd-review'),'Três resultados incertos exigem revisão antes de outra transmissão');
+select pg_temp.check_distribution((select paused and reason='review' from public.whatsapp_send_controls,wd where scope=y::text),'Pausa automática grava a conta que transmitiu, não outro principal que a usa de reserva');
+select pg_temp.check_distribution(public.whatsapp_sending_paused('bc-'||y,false) and not public.whatsapp_sending_paused('bc-'||x,false),'Conta com resultados incertos bloqueada; outra conta preservada') from wd;
+update public.whatsapp_outbox set status='failed' where dedupe_key='wd-review';
+delete from public.whatsapp_send_controls where scope=(select y::text from wd);
+delete from public.whatsapp_send_attempts where instance_name='bc-'||(select y from wd);
+-- Um status físico não pode trazer de volta preferências legadas.
+update public.whatsapp_channels set status='connecting' where id=(select x from wd);
+select pg_temp.check_distribution((select enabled and delivery_mode='backup' and version=2 from public.whatsapp_number_links,wd where barbershop_id=a),'Atualizar status físico preserva configuração do destino');
+update public.whatsapp_channels set status='open' where id=(select x from wd);
+select public.enqueue_whatsapp_message(a,'+5511999999999','customer.notice','Aviso fictício','wd-a') from wd;
+select public.enqueue_whatsapp_message(c,'+5511999999999','customer.notice','Aviso fictício','wd-c') from wd;
+select pg_temp.check_distribution((select o.number_link_version=b.version from public.whatsapp_outbox o join public.whatsapp_number_links b on b.id=o.number_link_id where dedupe_key='wd-a'),'Fila fixa versão do vínculo');
+update public.whatsapp_outbox set status='sending',lease_token=gen_random_uuid(),lease_until=now()+interval '5 minutes' where dedupe_key='wd-a';
+select pg_temp.check_distribution((select public.whatsapp_send_candidate(o.id,o.lease_token)->>'instance_name'='bc-'||y from public.whatsapp_outbox o,wd where dedupe_key='wd-a'),'Prévia seleciona reserva por vínculo');
+select pg_temp.check_distribution((select public.prepare_whatsapp_delivery(o.id)->>'instance_name'='bc-'||y from public.whatsapp_outbox o,wd where dedupe_key='wd-a'),'Autorização final preserva rota por vínculo');
+do $$ declare d record;begin select * into d from wd;
+ begin perform public.platform_set_whatsapp_route(d.a,null,2,d.x,d.y,'primary',true,false,false); raise exception 'FAIL: rota mudou durante envio'; exception when object_not_in_prerequisite_state then raise notice 'PASS: envio em andamento bloqueia edição'; end;
+end $$;
+update public.whatsapp_outbox set status='failed' where dedupe_key='wd-a';
+do $$ declare d record;begin select * into d from wd;
+ begin perform public.platform_set_whatsapp_route(d.a,null,2,d.x,d.y,'primary',true,false,false); raise exception 'FAIL: rota mudou com resultado incerto'; exception when object_not_in_prerequisite_state then raise notice 'PASS: resultado incerto bloqueia edição'; end;
+end $$;
+update public.whatsapp_outbox set status='sent',provider_message_id='ficticio' where dedupe_key='wd-a';
+update public.whatsapp_number_links set notify_booking=false,notify_reminder=false,reminder_hours_before=12 where barbershop_id=(select a from wd) and staff_id is null;
+select public.platform_set_whatsapp_route(a,null,2,x,y,'primary',true,false,false) from wd;
+select pg_temp.check_distribution((select not notify_booking and not notify_reminder and reminder_hours_before=12 from public.whatsapp_number_links,wd where barbershop_id=a and staff_id is null),'Troca de rota preserva avisos e antecedência');
+select pg_temp.check_distribution((select status='pending' from public.whatsapp_outbox where dedupe_key='wd-c'),'Alteração preserva fila de outro destino');
+select public.platform_set_whatsapp_route(c,null,1,y,x,'primary',true,false,false) from wd;
+select pg_temp.check_distribution((select status='failed' from public.whatsapp_outbox where dedupe_key='wd-c'),'Alterar rota cancela somente sua fila pendente');
+update public.whatsapp_outbox set status='sending',lease_token=gen_random_uuid(),lease_until=now()+interval '5 minutes' where dedupe_key='wd-c';
+select pg_temp.check_distribution((select public.whatsapp_send_candidate(o.id,o.lease_token) is null from public.whatsapp_outbox o where dedupe_key='wd-c'),'Trabalhador antigo não usa rota nova');
+select pg_temp.check_distribution((select public.prepare_whatsapp_delivery(o.id) is null from public.whatsapp_outbox o where dedupe_key='wd-c'),'Preparação revalida versão, canal e destino');
+select public.platform_set_whatsapp_route(a,staff,0,y,x,'primary',false,false,false) from wd;
+select pg_temp.check_distribution(public.whatsapp_route_channel(a,jsonb_build_object('staff_id',staff))=y,'Rota própria de profissional prevalece') from wd;
+select public.platform_set_whatsapp_route(a,staff,1,null,null,'paused',false,false,false) from wd;
+select pg_temp.check_distribution(public.whatsapp_route_channel(a,jsonb_build_object('staff_id',staff))=x,'Remover rota própria permite herdar geral') from wd;
+update public.whatsapp_send_controls set paused=true where scope='global';
+do $$ declare d record;begin select * into d from wd;
+ begin perform public.platform_set_whatsapp_route(d.a,null,3,d.x,d.y,'primary',true,true,false); raise exception 'FAIL: pausa global ignorada'; exception when object_not_in_prerequisite_state then raise notice 'PASS: pausa global impede habilitar envio'; end;
+end $$;
+select public.platform_set_whatsapp_route(a,null,3,x,y,'primary',false,false,false) from wd;
+select pg_temp.check_distribution((select not enabled from public.whatsapp_number_links,wd where barbershop_id=a and staff_id is null),'Distribuição pode ser preparada mantendo envios desligados');
+select pg_temp.check_distribution(not has_function_privilege('service_role','public.prepare_whatsapp_delivery(uuid)','execute'),'Worker não chama preparação antiga fora do autorizador');
+select pg_temp.check_distribution(not has_function_privilege('service_role','public.prepare_whatsapp_delivery_before_destinations(uuid)','execute'),'Preparação interna não tem acesso externo');
+select pg_temp.check_distribution(not has_function_privilege('authenticated','public.whatsapp_operational_number(uuid)','execute'),'Cliente não enumera telefones pessoais pelo helper');
+select pg_temp.check_distribution(not has_function_privilege('anon','public.platform_set_whatsapp_route(uuid,uuid,bigint,uuid,uuid,text,boolean,boolean,boolean)','execute'),'Anônimo sem RPC de distribuição');
+select set_config('request.jwt.claim.sub',person::text,true) from wd;
+set local role authenticated;
+select pg_temp.check_distribution((select count(*)=0 from public.whatsapp_number_links),'Cliente não lê distribuição administrativa');
+do $$ declare d record;begin select * into d from wd;
+ begin perform public.platform_set_whatsapp_route(d.a,null,4,d.x,d.y,'primary',false,false,false); raise exception 'FAIL: cliente distribuiu'; exception when insufficient_privilege then raise notice 'PASS: cliente comum não distribui números'; end;
+end $$;
+reset role;
+select pg_temp.check_distribution((select count(*)>=7 from public.whatsapp_number_link_history where channel_id in(select x from wd union all select y from wd)),'Mudanças possuem histórico independente por vínculo');
+-- A entrada de preferências da loja permanece funcional e isolada do número compartilhado.
+-- A fixture já cria esse dono pelo mesmo modelo de permissões, sem desabilitar guardas.
+select set_config('request.jwt.claim.sub',person::text,true) from wd;
+set local role authenticated;
+select public.shop_update_whatsapp_preferences(a,(public.shop_whatsapp_channel(a)->>'number_link_id')::uuid,(public.shop_whatsapp_channel(a)->>'link_version')::bigint,false,true,false,48) from wd;
+reset role;
+select pg_temp.check_distribution((select not l.enabled and l.notify_booking and not l.notify_reminder and l.reminder_hours_before=48 from public.whatsapp_number_links l,wd where l.barbershop_id=a and l.staff_id is null and removed_at is null),'Dono salva avisos e antecedência no próprio vínculo');
+select pg_temp.check_distribution((select l.enabled and l.notify_booking and l.notify_reminder and l.reminder_hours_before=24 from public.whatsapp_number_links l,wd where l.barbershop_id=b and l.staff_id is null and removed_at is null),'Preferências do dono não alteram outro destino do mesmo número');
+rollback;

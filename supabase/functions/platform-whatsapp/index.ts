@@ -1,3 +1,4 @@
+import { readInstancePhone } from "../_shared/whatsapp-instance-phone.ts";
 import { connectWithPairingCode, evolutionQr, pairingPhone } from "../_shared/whatsapp-pairing.ts";
 /** Status/QR do WhatsApp da plataforma (OTP de /cadastrar). Só platform_admin. */
 
@@ -89,7 +90,8 @@ Deno.serve(async (req) => {
       return json({ error: "PAIRING_PHONE_INVALID" }, 400);
 
     let instanceName: string;
-    let managedChannel: { id: string; instance_name: string } | null = null;
+    let managedChannel: { id: string; instance_name: string; display_phone: string | null } | null =
+      null;
     if (body.channel_id !== undefined) {
       if (
         typeof body.channel_id !== "string" ||
@@ -98,23 +100,27 @@ Deno.serve(async (req) => {
         return json({ error: "CHANNEL_INVALID" }, 400);
       const { data, error } = await userClient
         .from("whatsapp_channels")
-        .select("id,instance_name")
+        .select("id,instance_name,display_phone,personal_number,barbershop_id,staff_id")
         .eq("id", body.channel_id)
         .single();
       if (error || !data) return json({ error: "CHANNEL_NOT_FOUND" }, 404);
+      if (data.personal_number) return json({ error: "WA_PERSONAL_NUMBER" }, 409);
       managedChannel = data;
       instanceName = data.instance_name;
-      if (instanceName === (Deno.env.get("PLATFORM_EVOLUTION_INSTANCE") ?? "").trim())
+      if (
+        instanceName === (Deno.env.get("PLATFORM_EVOLUTION_INSTANCE") ?? "").trim() &&
+        (data.barbershop_id || data.staff_id)
+      )
         return json({ error: "CHANNEL_RESERVED" }, 409);
     } else instanceName = platformInstance();
     const admin = createClient(supabaseUrl, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
-    async function saveState(status: string, display_phone: string | null = null) {
+    async function saveState(status: string, display_phone: string | null | undefined = undefined) {
       if (!managedChannel) return;
       const { error } = await admin
         .from("whatsapp_channels")
-        .update({ status, display_phone })
+        .update({ status, ...(display_phone === undefined ? {} : { display_phone }) })
         .eq("id", managedChannel.id);
       if (error) throw new Error("CHANNEL_STATE_UNSAVED");
     }
@@ -130,12 +136,21 @@ Deno.serve(async (req) => {
           body.phone!,
           action === "pairing-status" || action === "restart-pairing" ? action : "connect",
         );
-        await saveState(result.status ?? "disconnected");
+        const displayPhone =
+          result.status === "open"
+            ? await readInstancePhone(
+                evolutionFetch,
+                instanceName,
+                managedChannel?.display_phone ?? null,
+              )
+            : (managedChannel?.display_phone ?? null);
+        await saveState(result.status ?? "disconnected", displayPhone);
         return channelJson({
           ok: true,
           pairing_supported: true,
           instance_name: instanceName,
           ...result,
+          display_phone: displayPhone,
         });
       } catch (error) {
         const code = error instanceof Error ? error.message : "PAIRING_UNAVAILABLE";
@@ -144,7 +159,7 @@ Deno.serve(async (req) => {
     }
 
     let qrcode: string | null = null;
-    let displayPhone: string | null = null;
+    let displayPhone: string | null = managedChannel?.display_phone ?? null;
     let status: "disconnected" | "qr" | "connecting" | "open" = "disconnected";
     let lastError: string | null = null;
 
@@ -172,7 +187,7 @@ Deno.serve(async (req) => {
       } catch (err) {
         if (!isMissingInstance(err)) throw err;
       }
-      await saveState("disconnected");
+      await saveState("disconnected", null);
       return channelJson({
         ok: true,
         instance_name: instanceName,
@@ -226,24 +241,7 @@ Deno.serve(async (req) => {
       }
 
       if (state === "open") {
-        try {
-          const info = (await evolutionFetch(
-            `/instance/fetchInstances?instanceName=${instanceName}`,
-            { method: "GET" },
-          )) as
-            | Array<{ ownerJid?: string; instance?: { ownerJid?: string } }>
-            | {
-                ownerJid?: string;
-                instance?: { ownerJid?: string };
-              };
-          const row = Array.isArray(info) ? info[0] : info;
-          const jid = row?.ownerJid ?? row?.instance?.ownerJid;
-          if (typeof jid === "string" && jid.includes("@")) {
-            displayPhone = `+${jid.split("@")[0]}`;
-          }
-        } catch {
-          /* optional */
-        }
+        displayPhone = await readInstancePhone(evolutionFetch, instanceName, displayPhone);
       }
 
       status =

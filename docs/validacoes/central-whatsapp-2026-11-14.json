@@ -1,0 +1,93 @@
+{
+  "estado": "verificado localmente; produção não alterada",
+  "data": "2026-11-14",
+  "codigo_bc": "3bccbf4",
+  "codigo_evolution": "d020247",
+  "contrato": "bc-groups-v3",
+  "bc": {
+    "tipos": "aprovados",
+    "testes": 628,
+    "falhas": 0,
+    "lint": "aprovado",
+    "formatacao": "aprovada",
+    "montagem_node_nitro": "aprovada"
+  },
+  "edge_contratos_novos": {
+    "typescript_strict": "aprovado"
+  },
+  "banco_bc": {
+    "base": "D0 118 migrations + 14 incrementais novos",
+    "verificacoes_base_d1_d23": 149,
+    "fundamentos_ciclo": 21,
+    "operacao_ciclo": 24,
+    "concorrencias_novas": 3
+  },
+  "integracao": {
+    "banco": "PostgreSQL real descartável",
+    "provedor": "socket fictício",
+    "caminhos": [
+      "logo indisponível bloqueia antes de criar",
+      "criação única e primeiro envio pelo segundo administrador",
+      "recebimento pelo criador e convite autenticado",
+      "admissão somente do cliente",
+      "confirmação do telefone e consumo único",
+      "login pelo grupo e consumo único",
+      "reserva manual com principal offline",
+      "aviso com marca da loja e métrica de grupo",
+      "saída e retorno sem reiniciar ano/marketing",
+      "encerramento com último administrador protegido",
+      "limpeza por conta e minimização",
+      "legado somente para encerrar"
+    ]
+  },
+  "evolution": {
+    "testes_politica_http_eventos_svg_lid": 51,
+    "testes_postgresql": 15,
+    "falhas": 0,
+    "tipos_lint_build": "aprovados",
+    "imagem_amd64": "construída localmente",
+    "api_isolada": "iniciou e reiniciou",
+    "volume": "preservado",
+    "recriacao_local_segundos": 16.898,
+    "observacao": "não mede tempo de retorno dos WhatsApps reais"
+  },
+  "interface": {
+    "grupos": 42,
+    "distribuicao": 21,
+    "larguras": [320, 390, 768, 1024, 1280, 1440, 1920],
+    "cantos": ["square", "soft", "round"],
+    "api_sessao": "fictícias; rede externa bloqueada",
+    "casos": [
+      "confirmação administrativa",
+      "falha recuperável",
+      "encerramento legado",
+      "código e rascunho preservados no polling",
+      "convite pendente sem erro falso",
+      "salvar durante polling lento",
+      "resposta antiga não desfaz salvamento",
+      "busca automática de convite sem bloquear ações"
+    ],
+    "erros_js": 0,
+    "estouro_horizontal": 0
+  },
+  "operador": {
+    "falhas_simuladas": 8,
+    "resultado": "aprovado",
+    "instalador_sql_banco_local": 4,
+    "unidades_systemd_linux": 6,
+    "patch_frontend_base_limpa": "aprovado",
+    "patch_evolution_base_oficial_limpa": "aprovado",
+    "duas_migrations_evolution_instaladas": "idênticas à v2",
+    "integridade_montagem": "aprovada; sem .env/sessões"
+  },
+  "nao_executado": [
+    "publicação main",
+    "publicação registry",
+    "VPS",
+    "migrações reais",
+    "recriação real",
+    "WhatsApp real",
+    "homologação física no iPhone"
+  ],
+  "preservado": ["marca/brand kit", "Flow", ".env", "Web Push instalado", "iPhone publicado"]
+}

@@ -1,3 +1,4 @@
+import { readInstancePhone } from "./whatsapp-instance-phone.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -93,6 +94,13 @@ function fixture(
       if (options.state === "missing") throw new Error("404 not found");
       return { instance: { state: options.state ?? "close" } };
     }
+    if (path.includes("fetchInstances"))
+      return [
+        {
+          name: decodeURIComponent(path.split("instanceName=")[1]),
+          ownerJid: "5511999999999@s.whatsapp.net",
+        },
+      ];
     if (path.includes("connect/")) return { pairingCode: "ABCD1234", base64: "iVBORw0KGgo=" };
     if (path.includes("create")) return { qrcode: { pairingCode: "ABCD1234" } };
     return {};
@@ -115,6 +123,7 @@ function fixture(
     "connectWithPairingCode",
     "evolutionQr",
     "pairingPhone",
+    "readInstancePhone",
     "corsHeaders",
     "json",
     "instanceNameForShop",
@@ -126,6 +135,7 @@ function fixture(
     connectWithPairingCode,
     evolutionQr,
     pairingPhone,
+    readInstancePhone,
     {},
     (body: unknown, status = 200) => Response.json(body, { status }),
     () => "instancia-derivada",
