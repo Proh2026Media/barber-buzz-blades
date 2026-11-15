@@ -1,0 +1,9 @@
+[Unit]
+Description=B&C - Central WhatsApp - agendar expurgo
+[Timer]
+OnActiveSec=24h
+OnUnitInactiveSec=24h
+AccuracySec=1s
+Unit=bc-central-expurgo.service
+[Install]
+WantedBy=timers.target

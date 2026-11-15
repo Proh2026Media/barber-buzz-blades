@@ -1,5 +1,7 @@
 # Revisão MB — Barba & Cabelo
 
+**14/11/2026 — P-122, interface e integração local fechadas:** admin com ativos/preparação/revisão/limpeza, validade e piloto; cliente com convite/confirmar telefone/consentimento por números. Polling conserva código e rascunho. 42 composições dos grupos + 21 da faixa, sete larguras/três cantos, sem erros JS/estouro horizontal. [Fechamento e limites](central-whatsapp-local-2026-11-14.md); [TI somente revisão do pacote](pacotes/2026-11-14-ti-central-whatsapp-p122.md). Sem publicação, iPhone físico ou marca.
+
 **14/11/2026 — faixa operacional por capacidade, somente local:** `WhatsAppOperations` integra estatísticas, política persistida e proposta/aplicação do servidor. Reutiliza a composição aprovada, modos de canto e estados; erro de rede conserva a chave do pedido. Revisão de restrição e controle exclusivo com confirmação. Sete larguras/três cantos e API simulada verificados. [Registro e limites](central-whatsapp-local-2026-11-14.md). Grupos completos e pacote TI ainda em desenvolvimento.
 
 Atualizado em **07/11/2026** (P-49/P-70; entradas anteriores preservadas como histórico). Fonte: [mb-interface.md](mb-interface.md). Regra: `.cursor/rules/mb.mdc`. Skill: `.cursor/skills/mb/`.

@@ -1,5 +1,7 @@
 # Como trabalhar neste projeto — manual para agentes de IA
 
+**Preferência persistente do dono — entregas à TI:** concluir código, decisões de implementação, testes, fontes completas, hashes/base, precondições, comandos e retorno no Codex. Deixar à TI somente operações que dependem do servidor/cofre/registry/aparelhos. Não enviar pedidos vagos de desenvolvimento, pacotes parciais ou instruções sem artefatos. A entrega deve distinguir revisão, instalação e homologação; autorização local não publica nem ativa produção.
+
 Manual de operação para o agente que vai continuar o Barba & Cabelo, principalmente o **Agent do Cursor**. Vale também para Claude Code, Codex e outros. Atualizado em **12/10/2026**; seções 4.1 e 7 revistas em 15/10/2026.
 
 Porta de entrada: [../LEIA-PRIMEIRO.md](../LEIA-PRIMEIRO.md). Regras persistentes: [../../AGENTS.md](../../AGENTS.md). Diário de entregas: [../CONTINUIDADE.md](../CONTINUIDADE.md).

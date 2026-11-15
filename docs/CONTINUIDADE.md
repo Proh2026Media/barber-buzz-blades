@@ -1,5 +1,11 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 14/11/2026 — P-122: desenvolvimento local encerrado, entrega completa para revisão da TI
+
+[fechamento local e evidências](central-whatsapp-local-2026-11-14.md) e [roteiro único TI](pacotes/2026-11-14-ti-central-whatsapp-p122.md). B&C `82570cb` + ajuste de interação `3bccbf4`, Evolution v5 `d020247`/contrato v3, 14 incrementais B&C atômicos e uma migration Evolution nova, sem reaplicar as instaladas. Confirmação/login/avisos só em grupo com composição consentida, dois ou mais administradores, prova da primeira mensagem, ano real/retorno/encerramento/limpeza, escopo de piloto e registros privados. Fonte completa, hashes/base, operador e retorno; sem transferir implementação para TI.
+
+628 testes B&C, tipos/lint/build; 194 verificações SQL, três concorrências D4 e ciclo integrado; 51 Evolution/15 PostgreSQL e imagem AMD64 inicializada/recriada sem rede externa/WhatsApp; 63 composições da interface. Oito testes do operador, seis unidades Linux e instalador real em segunda bancada passaram. Patchs limpos e duas migrations Evolution antigas idênticas. Fonte/instalação de produção não alteradas; `.env`, marca, Flow, iPhone e push preservados. Políticas novas nascem desligadas. Login real continua dependendo da instalação/piloto pela TI e do aparelho consentido. Não executar autossave/push nem reabrir D0. Este registro supera os estados intermediários abaixo.
+
 ## 14/11/2026 — P-122: métricas/revisão, automação transacional e faixa operacional locais
 
 Dono pediu concluir pendências antes de gerar pacote TI. Implementadas as novas `20261114001000`/`02000`: agregados por telefone/prova de grupo, correção tardia sem duplicação, revisão auditada de restrições, conexão observada, política automática desligada, proposta com prazo/fingerprint e aplicação idempotente, integração ao cadastro e worker de leitura da Evolution. Faixa aprovada ligada por capacidade, sem simulação no fluxo autenticado. 614 testes gerais, checagens e build; bancada limpa 149 verificações e quatro corridas D3; navegador com API simulada e 21 composições. [Estado, reprodução e próximos blocos](central-whatsapp-local-2026-11-14.md).
