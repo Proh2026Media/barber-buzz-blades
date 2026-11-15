@@ -2,7 +2,7 @@
 from pathlib import Path
 import json,subprocess,uuid,os
 import argparse
-parser=argparse.ArgumentParser(description='Ensaia o pacote só na segunda bancada local D0, porta 54341, já preparada; não lê .env.')
+parser=argparse.ArgumentParser(description='Ensaia o pacote só na segunda bancada local D0 limpa, porta 54341, já preparada; não lê .env.')
 parser.add_argument('--pacote',required=True,type=Path)
 stage=parser.parse_args().pacote.resolve();container='barba-central-pacote-local'
 assert not os.environ.get('DOCKER_HOST')
@@ -14,6 +14,8 @@ def operador(action,*args,ok=True):
  r=subprocess.run(['python3',str(stage/'operacao/central_whatsapp_operacao.py'),action,'--pacote',str(stage),'--db',container,'--autorizado',*args],capture_output=True,text=True)
  assert (r.returncode==0)==ok,(action,r.stdout,r.stderr)
  return r.stdout.strip()
+sql((stage/'operacao/pausar.sql').read_text())
+operador('sql-bc')
 print('PASS: operador B&C aplicou os 14 incrementais atomicamente na base D0 limpa',flush=True)
 operador('sql-bc',ok=False)
 assert sql('select (not enabled)::text from public.whatsapp_care_cycle_policy;')=='true'

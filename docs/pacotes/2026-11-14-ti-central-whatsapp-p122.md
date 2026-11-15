@@ -57,6 +57,14 @@ node --import /tmp/bc-evolution-revisao-p122/node_modules/tsx/dist/loader.mjs \
 python3 scripts/testar-central-d4-concorrencia.py
 ```
 
+O ensaio do instalador tem segunda bancada própria, sem usar a porta da integração. Em máquina de revisão, criar uma D0 limpa e executar uma única vez (recriar a bancada para repetir):
+
+```bash
+BC_BANCO_LOCAL_NOME=barba-central-pacote-local BC_BANCO_LOCAL_PORTA=54341 \
+  bash scripts/banco-local.sh subir 20261112232000
+python3 scripts/testar-central-d6-pacote.py --pacote /caminho/do/pacote
+```
+
 A cópia Evolution precisa de `npm ci` antes. O ensaio integrado exige bancada D4 recém-preparada e vazia de ciclos; executar antes da concorrência e nunca em paralelo à recriação. Para testes de tela, iniciar Vite local em 8090 com configuração pública fictícia e rodar `testar-central-d23-interface.mjs`/`testar-central-d5-interface.mjs`; as duas sessões bloqueiam banco real e WebSocket externo. Os scripts `foto.mjs` explicam o requisito de Playwright/Chrome.
 
 O manifesto distingue hashes comprovados na D0 de hashes das demais dependências provenientes da main. Antes da cópia real, todos devem coincidir. Divergência exige devolver somente caminhos/hashes e estado observado ao Codex; não sobrescrever, desenvolver substituição ou reaplicar um pacote antigo.
