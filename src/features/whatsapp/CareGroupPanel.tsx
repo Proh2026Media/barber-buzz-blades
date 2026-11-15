@@ -1,3 +1,4 @@
+import { careAccessRequest, type AssistedAccess } from "@/lib/whatsapp/care-access-client";
 import {
   careFailure,
   careRpcFailure,
@@ -17,6 +18,8 @@ import {
   RefreshCw,
   UserMinus,
   ClipboardCopy,
+  Smartphone,
+  ArrowRight,
 } from "lucide-react";
 import { Notice, SectionHeader, ConfirmDialog } from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,6 +42,7 @@ type Group = {
   closing?: boolean;
 };
 type Data = {
+  access?: AssistedAccess;
   enabled: boolean;
   phone?: string;
   phone_confirmed?: boolean;
@@ -111,7 +115,8 @@ function CareGroupContent({
     pending = useRef(false),
     dirty = useRef(false),
     polling = useRef(false),
-    generation = useRef(0);
+    generation = useRef(0),
+    advancing = useRef(false);
   function apply(value: unknown, reset = false) {
     if (!live.current) return;
     const next = value as Data;
@@ -181,7 +186,13 @@ function CareGroupContent({
   useEffect(() => {
     if (!groupId || demo || readOnly) return;
     const timer = window.setInterval(() => {
-      if (document.visibilityState !== "visible" || pending.current || polling.current) return;
+      if (
+        document.visibilityState !== "visible" ||
+        pending.current ||
+        polling.current ||
+        advancing.current
+      )
+        return;
       polling.current = true;
       void loadRef
         .current(true)
@@ -195,6 +206,70 @@ function CareGroupContent({
     }, 10000);
     return () => window.clearInterval(timer);
   }, [groupId, demo, readOnly]);
+  async function startAccess(value: Data, selectedPhone: string, accept: boolean) {
+    if (!value.access?.enabled) return;
+    const next = await careAccessRequest(shopId, {
+      phone: selectedPhone,
+      accept,
+      accounts: value.platform_participants.map((p) => p.id),
+      ...(value.group ? { group: value.group.id, version: value.group.version } : {}),
+    });
+    apply(next);
+    setAccepted(false);
+  }
+  const access = data?.access;
+  const followAllowed =
+    access?.enabled === true &&
+    access.active &&
+    data?.enabled &&
+    !data.phone_confirmed &&
+    !data.group?.numbers_changed &&
+    !data.group?.closing &&
+    !["closed", "customer_left", "creation_unknown"].includes(data.group?.cycle_state ?? "");
+  const follow = useRef<() => Promise<void>>(async () => {});
+  follow.current = async () => {
+    if (
+      !followAllowed ||
+      demo ||
+      readOnly ||
+      !live.current ||
+      document.visibilityState !== "visible" ||
+      pending.current ||
+      advancing.current ||
+      !access
+    )
+      return;
+    if (
+      Date.parse(access.expires_at ?? "") <= Date.now() ||
+      Date.parse(access.next_check_at ?? "") > Date.now()
+    )
+      return;
+    advancing.current = true;
+    const version = ++generation.current;
+    try {
+      const next = await careAccessRequest(shopId);
+      if (!live.current || pending.current || version !== generation.current) return;
+      apply(next);
+      setError((current) => (current?.operation === "advance" ? null : current));
+    } catch (failure) {
+      if (live.current && version === generation.current)
+        setError((current) => keepCareFailure(current, careFailure("advance", failure)));
+    } finally {
+      advancing.current = false;
+    }
+  };
+  useEffect(() => {
+    if (!followAllowed || demo || readOnly) return;
+    const tick = () => void follow.current();
+    const timer = window.setInterval(tick, 10000);
+    document.addEventListener("visibilitychange", tick);
+    window.addEventListener("focus", tick);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", tick);
+      window.removeEventListener("focus", tick);
+    };
+  }, [followAllowed, demo, readOnly]);
   async function update(action: string, values: Json = {}) {
     if (!data?.group || readOnly) return;
     await run(
@@ -299,11 +374,11 @@ function CareGroupContent({
           )}
           {!data.enabled && (!group || ended) && <Notice tone="info" title={t("care.disabled")} />}
           {!readOnly && !ended && (
-            <ol aria-label={t("care.steps")} className="grid gap-2 tablet:grid-cols-3">
+            <ol aria-label={t("care.steps")} className="grid grid-cols-3 gap-2">
               {(["care.stepRequest", "care.stepJoin", "care.stepPhone"] as const).map(
                 (label, index) => {
                   const completed = [
-                    Boolean(group),
+                    Boolean(group && ["waiting_customer", "active"].includes(group.state)),
                     group?.state === "active",
                     data.phone_confirmed === true,
                   ][index];
@@ -313,12 +388,12 @@ function CareGroupContent({
                       ? 1
                       : data.phone_ready
                         ? 2
-                        : -1;
+                        : 0;
                   return (
                     <li
                       key={label}
                       aria-current={!completed && index === current ? "step" : undefined}
-                      className="flex min-w-0 items-center gap-2 rounded-xl border border-border p-3 text-sm"
+                      className="flex min-w-0 flex-col items-start gap-2 rounded-xl border border-border p-2 text-sm aria-[current=step]:border-primary tablet:flex-row tablet:items-center tablet:p-3"
                     >
                       <span
                         className={
@@ -334,7 +409,19 @@ function CareGroupContent({
                           index + 1
                         )}
                       </span>
-                      <span className="min-w-0 break-words">{t(label)}</span>
+                      <span className="min-w-0 break-words">
+                        {t(
+                          data.access?.enabled
+                            ? (
+                                [
+                                  "careAccess.prepare",
+                                  "careAccess.enter",
+                                  "careAccess.confirm",
+                                ] as const
+                              )[index]
+                            : label,
+                        )}
+                      </span>
                     </li>
                   );
                 },
@@ -345,18 +432,28 @@ function CareGroupContent({
             <summary className="min-h-11 cursor-pointer content-center text-sm font-semibold">
               {t("care.people")}
             </summary>
-            <p className="text-sm text-muted-foreground">{t("care.visibility")}</p>
-            {data.platform_participants.map((p) => (
-              <div
-                key={p.id}
-                className="flex min-w-0 items-center gap-2 rounded-xl bg-muted/50 p-3 text-sm"
-              >
-                <ShieldCheck className="size-5 shrink-0" aria-hidden />
-                <span className="break-words">
-                  {t("care.platform")} · {p.name || p.phone}
-                </span>
-              </div>
-            ))}
+            <p className="text-sm text-muted-foreground">
+              {t(data.access?.enabled ? "careAccess.members" : "care.visibility")}
+            </p>
+            <div className={data.access?.enabled ? "grid grid-cols-2 gap-2" : "space-y-2"}>
+              {data.platform_participants.map((p) => (
+                <div
+                  key={p.id}
+                  className="flex min-w-0 items-center gap-2 rounded-xl bg-muted/50 p-3 text-sm"
+                >
+                  <ShieldCheck className="size-5 shrink-0" aria-hidden />
+                  <span className="min-w-0 break-all">
+                    {data.access?.enabled ? (
+                      p.phone
+                    ) : (
+                      <>
+                        {t("care.platform")} · {p.name || p.phone}
+                      </>
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
           </details>
           {!readOnly && group?.cycle_id && !ended && group.numbers_changed && (
             <div className="space-y-3">
@@ -437,6 +534,10 @@ function CareGroupContent({
                   else
                     void run(
                       async () => {
+                        if (data.access?.enabled) {
+                          await startAccess(data, phone, accepted);
+                          return;
+                        }
                         const r = await supabase.rpc("care_group_begin", {
                           p_shop: shopId,
                           p_accept: accepted,
@@ -455,7 +556,9 @@ function CareGroupContent({
                 <UsersRound aria-hidden />
                 {t(group ? "care.rejoin" : "care.request")}
               </button>
-              <p className="text-xs text-muted-foreground">{t("care.preparation")}</p>
+              <p className="text-xs text-muted-foreground">
+                {t(data.access?.enabled ? "careAccess.preparation" : "care.preparation")}
+              </p>
             </div>
           )}
           {!readOnly &&
@@ -474,6 +577,10 @@ function CareGroupContent({
                     void run(
                       async () => {
                         if (!data.enabled) return;
+                        if (data.access?.enabled) {
+                          await startAccess(data, data.phone ?? "", true);
+                          return;
+                        }
                         const r = await supabase.rpc("care_group_begin", {
                           p_shop: shopId,
                           p_accept: true,
@@ -489,17 +596,58 @@ function CareGroupContent({
                 }}
               />
             )}
+          {!readOnly &&
+            data.access?.enabled &&
+            group &&
+            !ended &&
+            !group.numbers_changed &&
+            !group.closing &&
+            group.cycle_state !== "creation_unknown" &&
+            !data.phone_confirmed &&
+            !data.enrollment_expired && (
+              <div className="space-y-3 rounded-xl border border-border p-3">
+                <p className="flex items-center gap-2 text-sm font-semibold">
+                  <Smartphone className="size-5 shrink-0" aria-hidden />
+                  <span className="break-all">{data.phone}</span>
+                </p>
+                <p className="text-sm text-muted-foreground">{t("careAccess.usePhone")}</p>
+                {data.access.active ? (
+                  <p role="status" className="flex items-center gap-2 text-sm">
+                    <RefreshCw className="size-4 shrink-0" aria-hidden />
+                    {t(data.phone_ready ? "careAccess.ready" : "careAccess.following")}
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    className="action-button action-confirm"
+                    disabled={busy || !data.enabled}
+                    onClick={() =>
+                      void run(() => startAccess(data, data.phone ?? "", true), false, "resume")
+                    }
+                  >
+                    <ArrowRight aria-hidden />
+                    {t("careAccess.continue")}
+                  </button>
+                )}
+              </div>
+            )}
           {!readOnly && group && !ended && data.phone && (
             <GroupPhoneAccess
               key={`${group.id}:${data.phone}`}
               groupId={group.id}
               phone={data.phone}
-              available={data.enabled}
+              available={
+                data.enabled &&
+                !group.numbers_changed &&
+                !group.closing &&
+                group.cycle_state !== "creation_unknown"
+              }
               ready={data.phone_ready === true}
               confirmed={data.phone_confirmed === true}
               waiting={group.state === "waiting_customer"}
               expired={data.enrollment_expired === true && data.phone_confirmed !== true}
               refreshing={busy}
+              assisted={data.access?.enabled === true && data.access.active}
               onRefresh={() => void run(load)}
               onConfirmed={() => void run(load)}
             />

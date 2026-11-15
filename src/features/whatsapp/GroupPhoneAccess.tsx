@@ -12,6 +12,7 @@ import { useI18n, type MessageKey } from "@/lib/i18n";
 export function GroupPhoneAccess({
   groupId,
   available = true,
+  assisted = false,
   phone,
   ready,
   confirmed,
@@ -23,6 +24,7 @@ export function GroupPhoneAccess({
 }: {
   groupId: string;
   available?: boolean;
+  assisted?: boolean;
   phone: string;
   ready: boolean;
   confirmed: boolean;
@@ -194,17 +196,19 @@ export function GroupPhoneAccess({
   runRef.current = run;
   useEffect(() => {
     if (!available || !waiting || expired || invite || demo) return;
+    if (assisted && !refreshing && document.visibilityState === "visible")
+      void runRef.current("invite", true);
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible") void runRef.current("invite", true);
     }, 5000);
     return () => window.clearInterval(timer);
-  }, [available, waiting, expired, invite, demo, refreshing]);
+  }, [available, waiting, expired, invite, demo, refreshing, assisted]);
   if ((!available || expired) && !confirmed) return null;
   return (
     <div className="space-y-3 border-t border-border pt-4">
       {available && waiting && !expired && (
         <>
-          <p className="break-all text-sm font-semibold">{phone}</p>
+          {!assisted && <p className="break-all text-sm font-semibold">{phone}</p>}
           {invite ? (
             <a
               className="action-button inline-flex"
@@ -215,6 +219,11 @@ export function GroupPhoneAccess({
               <ExternalLink aria-hidden />
               {t("care.openGroup")}
             </a>
+          ) : assisted ? (
+            <p role="status" className="flex items-center gap-2 text-sm">
+              <RefreshCw className="size-4" aria-hidden />
+              {t("careAccess.preparingInvite")}
+            </p>
           ) : (
             <button
               className="action-button"
@@ -227,10 +236,13 @@ export function GroupPhoneAccess({
           )}
         </>
       )}
+      {available && waiting && invite && assisted && (
+        <p className="text-sm text-muted-foreground">{t("careAccess.joinHint")}</p>
+      )}
       {available && !confirmed && ready && !expired && (
         <>
-          <p className="text-sm">{t("care.verifyHint")}</p>
-          <p className="text-sm font-semibold break-all">{phone}</p>
+          <p className="text-sm">{t(assisted ? "careAccess.codeHint" : "care.verifyHint")}</p>
+          {!assisted && <p className="text-sm font-semibold break-all">{phone}</p>}
           {requested && (
             <CodeInput
               id={"group-code-" + groupId}
@@ -272,7 +284,7 @@ export function GroupPhoneAccess({
           )}
         </>
       )}
-      {available && !ready && !expired && (
+      {available && !ready && !expired && !assisted && (
         <div className="space-y-2">
           <p role="status" className="text-sm text-muted-foreground">
             {t(waiting ? "care.awaitEntry" : "care.awaitPreparation")}

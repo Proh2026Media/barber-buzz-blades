@@ -30,11 +30,13 @@ Correções somente locais, sem alterar regras no servidor:
 
 Isso melhora a clareza e a coleta futura, **não corrige a identidade nem comprova a causa histórica da falha**. Todos os gates de banco/Evolution, timestamps de conexão e regras de consentimento foram preservados.
 
-## 3. Dependência que precisa de desenho próprio
+## 3. Dependência de conferência live — automação local adicionada
 
 Na fonte instalada, `care_group_begin` exige composição live válida antes de renovar a matrícula. Observação live dura dois minutos; matrícula dura uma hora; timers novos estão desligados. Não existe atualização live autônoma garantida para tornar a retomada de qualquer cliente viável. Esse acoplamento está comprovado na fonte e no retorno, mas não substitui a resposta técnica ausente do último clique.
 
 O botão retoma com `data.phone`, lido do grupo, não com um suposto novo valor digitado em outro campo. A função recusa telefone diferente do grupo. Alterar apenas profile, apenas customerJid, apenas matrícula ou apenas frontend deixaria contratos divergentes. Não autorizar UPDATE manual nem equivalência automática entre oito/nove dígitos.
+
+A [automação local de primeiro acesso](2026-11-15-p122-primeiro-acesso-assistido-local.md) agora abre uma intenção delimitada e confere os números live antes de chamar o contrato original, preservando o gate de envio. Ainda não instalada; não corrige a identidade divergente. O fluxo de revisão de telefone da seção 4 permanece proposto.
 
 A retomada de consentimento e a prontidão para operar grupo precisam ser tratadas como etapas diferentes em uma futura mudança coordenada. Qualquer separação deve manter conexão/identidade/proteções revalidadas imediatamente antes dos efeitos; não remover o gate de envio para facilitar matrícula.
 

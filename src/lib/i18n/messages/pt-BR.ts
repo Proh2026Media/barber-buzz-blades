@@ -5346,6 +5346,22 @@ export const ptBR = {
     "Conferi a liberação fora do sistema. Conexão ativa, sozinha, não comprova liberação.",
   "waOps.disable": "Desativar atribuição",
   "waOps.enable": "Ativar atribuição",
+  "careAccess.usePhone": "Use este número para entrar no grupo.",
+  "careAccess.following": "Conferência automática ao voltar do WhatsApp.",
+  "careAccess.continue": "Continuar no WhatsApp",
+  "careAccess.preparingInvite": "Preparando o convite…",
+  "careAccess.joinHint": "No WhatsApp, toque em Solicitar entrada e volte aqui.",
+  "careAccess.followFailed":
+    "Não foi possível continuar a conferência agora. Seu grupo foi preservado.",
+  "careAccess.review": "Este grupo precisa de revisão antes de continuar. Não crie outro grupo.",
+  "careAccess.rate": "Aguarde um momento antes de continuar.",
+  "careAccess.prepare": "Preparar",
+  "careAccess.enter": "Entrar",
+  "careAccess.confirm": "Confirmar",
+  "careAccess.members": "Só você e estes números. Os profissionais não têm acesso às conversas.",
+  "careAccess.preparation": "Vamos preparar o grupo e mostrar o convite aqui.",
+  "careAccess.ready": "Grupo pronto para confirmar seu telefone.",
+  "careAccess.codeHint": "O código chega neste grupo.",
 } as const;
 
 export type MessageKey = keyof typeof ptBR;

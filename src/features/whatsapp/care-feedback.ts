@@ -1,13 +1,17 @@
 import type { MessageKey } from "@/lib/i18n";
 
-export type CareOperation = "read" | "resume" | "request" | "save" | "close";
+export type CareOperation = "advance" | "read" | "resume" | "request" | "save" | "close";
 const known: Record<string, MessageKey> = {
   GROUP_PHONE_UNAVAILABLE: "careFeedback.phoneReview",
   GROUP_PARTICIPANTS_CHANGED: "careFeedback.numbersReview",
   GROUP_UNAVAILABLE: "careFeedback.unavailable",
+  ACCESS_UNAVAILABLE: "careAccess.followFailed",
+  GROUP_REVIEW_REQUIRED: "careAccess.review",
+  WA_RATE_LIMIT: "careAccess.rate",
   GROUP_STALE: "careFeedback.stale",
 };
 const fallback: Record<CareOperation, MessageKey> = {
+  advance: "careAccess.followFailed",
   read: "careFeedback.read",
   resume: "careFeedback.resume",
   request: "careFeedback.request",

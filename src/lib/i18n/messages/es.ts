@@ -5384,4 +5384,21 @@ export const es: Record<MessageKey, string> = {
     "Verifiqué fuera del sistema que se levantó la restricción. La conexión activa por sí sola no lo demuestra.",
   "waOps.disable": "Desactivar asignación",
   "waOps.enable": "Activar asignación",
+  "careAccess.usePhone": "Usa este número para entrar en el grupo.",
+  "careAccess.following": "Comprobación automática al volver de WhatsApp.",
+  "careAccess.continue": "Continuar en WhatsApp",
+  "careAccess.preparingInvite": "Preparando la invitación…",
+  "careAccess.joinHint": "En WhatsApp, pulsa Solicitar unirse y vuelve aquí.",
+  "careAccess.followFailed":
+    "No pudimos continuar la comprobación ahora. Tu grupo se ha conservado.",
+  "careAccess.review": "Este grupo necesita una revisión antes de continuar. No crees otro grupo.",
+  "careAccess.rate": "Espera un momento antes de continuar.",
+  "careAccess.prepare": "Preparar",
+  "careAccess.enter": "Entrar",
+  "careAccess.confirm": "Confirmar",
+  "careAccess.members":
+    "Solo tú y estos números. Los profesionales no tienen acceso a las conversaciones.",
+  "careAccess.preparation": "Prepararemos el grupo y mostraremos la invitación aquí.",
+  "careAccess.ready": "Grupo listo para confirmar tu teléfono.",
+  "careAccess.codeHint": "El código llega a este grupo.",
 };

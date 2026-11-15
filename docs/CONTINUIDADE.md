@@ -1,5 +1,11 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 15/11/2026 — automação local de primeiro acesso e situação da TI
+
+[Entrega, limites e responsabilidades](pacotes/2026-11-15-p122-primeiro-acesso-assistido-local.md). Implementado contrato bc-assisted-v1: intenção por titular/loja, aceite explícito, janela fixa de 20 minutos, observação seletiva dos números antes do care_group_begin original, execução pelo motor durável e acompanhamento visível/foco com posse/rate no banco. Interface Preparar/Entrar/Confirmar compacta, convite imediato, menos duplicação de texto, OTP ainda explícito após provas. Novo incremental 20261115002000 + Edge whatsapp-group-access, flag false; nenhuma mudança Evolution necessária para esta parte. Leitura conserva OID/dono/ACL e reflete pausa global. Testes/ensaios detalhados no documento.
+
+Base local 2d304c9 sobre estado instalado conciliado. Nenhum push, servidor, identidade ou efeito real. Piloto mantém corte remoto 15:00:34, pausado. A divergência do telefone não foi corrigida nem tratada como alias. Revisão segura das duas camadas continua pendente do Codex; não gerar pacote operacional parcial ou delegar desenvolvimento à TI. TI já instalou a entrega anterior; nada novo a executar agora. Preservar marca/Flow/.env e ZIPs antigos.
+
 ## 15/11/2026 — relatório 2: pausa, renovação bloqueada e identidade a conciliar
 
 Corte Guardião/TI 15:00:34: pausa=true v17/ciclos=false v12/distribuição=false v3/timers off. Matrícula não renovada, cliente fora, mesmo grupo/ciclo/JID/ano/preferências e contagens 4/5/6. Telefone cadastrado tem variante sem o nono dígito informado, mas alias, autoria e causa do último clique não comprovados; normalizador preserva ambos. Roteiro anterior suspenso, sem novas tentativas ou UPDATE manual.
