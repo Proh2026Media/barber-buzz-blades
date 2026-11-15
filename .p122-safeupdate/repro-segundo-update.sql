@@ -10,6 +10,8 @@ select public.platform_create_whatsapp_channel(a,'Ciclo A') from d4;
 select public.platform_create_whatsapp_channel(b,'Ciclo B') from d4;
 update public.whatsapp_channels set display_phone=case id when (select a from d4) then '+5511800000111' else '+5511800000222' end,status='open' where id in(select a from d4 union all select b from d4);
 select public.platform_confirm_whatsapp_control(id,routing_version,display_phone,instance_name,true) from public.whatsapp_channels where id in(select a from d4 union all select b from d4);
+select pg_temp.check_d4(public.record_whatsapp_distribution_connection(id,instance_name,display_phone,routing_version,'open',display_phone),'Observação fictícia atual aceita pelo contrato original') from public.whatsapp_channels where id in(select a from d4 union all select b from d4);
+select pg_temp.check_d4((select count(*)=2 from public.whatsapp_distribution_candidates()),'Dois candidatos fictícios com observação fresca');
 select public.platform_plan_whatsapp_distribution(plan,array[shop],false) from d4;
 select public.platform_apply_whatsapp_distribution(plan) from d4;
 select pg_temp.check_d4((select jsonb_array_length(public.care_cycle_composition(shop))=2 from d4),'Composição da loja usa dois telefones físicos com controle confirmado');
@@ -81,7 +83,11 @@ begin
  from public.whatsapp_care_groups listed_g join public.barbershops b on b.id=listed_g.barbershop_id join public.profiles p on p.id=listed_g.customer_id left join public.whatsapp_care_cycles listed_c on listed_c.id=listed_g.current_cycle_id),'[]'),
  'cleanup_orphans',(select count(*) from public.whatsapp_care_cycles where group_id is null and (state<>'closed' or cleanup_pending)));
 end $$;
+select pg_temp.check_d4(public.care_cycle_registry_ready(),'Capacidade fictícia comprovada antes da reprodução');
+reset role;
 load 'safeupdate';
+set role postgres;
 set safeupdate.enabled=1;
+select pg_temp.check_d4(current_setting('safeupdate.enabled')::boolean,'safeupdate ativo com papel postgres');
 select public.care_group_admin('enrollment',jsonb_build_object('enabled',true,'version',1,'confirmed',true));
 rollback;

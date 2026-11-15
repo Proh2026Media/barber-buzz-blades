@@ -10,6 +10,8 @@ select public.platform_create_whatsapp_channel(a,'Ciclo A') from d4;
 select public.platform_create_whatsapp_channel(b,'Ciclo B') from d4;
 update public.whatsapp_channels set display_phone=case id when (select a from d4) then '+5511800000111' else '+5511800000222' end,status='open' where id in(select a from d4 union all select b from d4);
 select public.platform_confirm_whatsapp_control(id,routing_version,display_phone,instance_name,true) from public.whatsapp_channels where id in(select a from d4 union all select b from d4);
+select pg_temp.check_d4(public.record_whatsapp_distribution_connection(id,instance_name,display_phone,routing_version,'open',display_phone),'Observação fictícia atual aceita pelo contrato original') from public.whatsapp_channels where id in(select a from d4 union all select b from d4);
+select pg_temp.check_d4((select count(*)=2 from public.whatsapp_distribution_candidates()),'Dois candidatos fictícios com observação fresca');
 select public.platform_plan_whatsapp_distribution(plan,array[shop],false) from d4;
 select public.platform_apply_whatsapp_distribution(plan) from d4;
 select pg_temp.check_d4((select jsonb_array_length(public.care_cycle_composition(shop))=2 from d4),'Composição da loja usa dois telefones físicos com controle confirmado');
@@ -27,7 +29,11 @@ select pg_temp.check_d4((select public.care_cycle_available(cycle) from d4),'Com
 -- Registro deve ser confirmado na versão atual antes da liberação administrativa.
 select public.care_cycle_registry_ack(instance_name,source_version,true) from public.whatsapp_care_registry;
 update public.whatsapp_care_cycle_policy set pilot_shop_id=(select shop from d4),pilot_customer_id=(select person from d4) where singleton;
+select pg_temp.check_d4(public.care_cycle_registry_ready(),'Capacidade fictícia comprovada antes da reprodução');
+reset role;
 load 'safeupdate';
+set role postgres;
 set safeupdate.enabled=1;
+select pg_temp.check_d4(current_setting('safeupdate.enabled')::boolean,'safeupdate ativo com papel postgres');
 select public.platform_set_whatsapp_automatic(true,1);
 rollback;
