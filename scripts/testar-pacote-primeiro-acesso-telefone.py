@@ -7,7 +7,7 @@ os.chdir(ROOT)
 p=argparse.ArgumentParser(description=__doc__);p.add_argument('--pacote',required=True,type=Path);a=p.parse_args();stage=a.pacote.resolve()
 docker=shutil.which('docker')
 if os.environ.get('DOCKER_HOST') or not subprocess.check_output([docker,'context','inspect','--format','{{.Endpoints.docker.Host}}'],text=True).strip().startswith('unix://'):raise SystemExit('Somente Docker Unix local')
-subprocess.run(['python3','scripts/testar-acolhimento-apos-entrada.py','--preparar'],check=True)
+subprocess.run(['python3','scripts/testar-acolhimento-apos-entrada.py','--preparar'],env=dict(os.environ,BC_TESTAR_CONCORRENCIA_FISICA_APOS_INCREMENTAL='1'),check=True)
 subprocess.run(['python3','scripts/testar-singletons-safeupdate.py'],check=True)
 cmd=[docker,'exec','-i','barba-central-d1-local','psql','-XqAt','-v','ON_ERROR_STOP=1','-U','postgres']
 def sql(text,ok=True):
@@ -59,6 +59,12 @@ else:sys.exit(subprocess.call([os.environ['BC_DOCKER_REAL'],*args]))
   return r.stdout.strip()
  try:
   operator('conferir');operator('base');operator('sql-bc',ok=False);operator('sql-bc','--autorizado')
+  assert json.loads(sql(query))==before
+  subprocess.run(['python3','scripts/testar-central-d1-concorrencia.py'],env={k:v for k,v in os.environ.items() if k!='BC_TESTAR_CONCORRENCIA_FISICA_APOS_INCREMENTAL'},check=True)
+  for suite in ['whatsapp_primeiro_acesso_assistido.sql','whatsapp_revisao_telefone_protegida.sql','whatsapp_revisao_telefone_falhas.sql']:
+   r=subprocess.run(cmd,input=(ROOT/'supabase/tests'/suite).read_text(),text=True,capture_output=True)
+   assert r.returncode==0,r.stderr
+   print(r.stderr.strip(),flush=True)
   assert json.loads(sql(query))==before
   operator('sql-bc','--autorizado',ok=False)
   print('PASS: operador/base/hashs/SQL atômico executados; JID, ano, admissão, telefone, preferências e perfil preservados; reaplicação recusada',flush=True)

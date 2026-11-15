@@ -3,6 +3,7 @@
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import subprocess
+import os
 import threading
 import uuid
 
@@ -79,11 +80,14 @@ try:
     assert not any('deadlock' in r.stderr or 'timeout' in r.stderr for r in (a,b)), [r.stderr for r in (a,b)]
     assert any('WA_PERSONAL_REVIEW_REQUIRED' in r.stderr or 'WA_NUMBER_UNAVAILABLE' in r.stderr for r in (a,b)), [r.stderr for r in (a,b)]
     print('PASS: classificação pessoal e distribuição simultâneas não ganham juntas nem invertem travas')
-    a,b=race(f"update public.whatsapp_channels set status='connecting' where id='{personal}'", marking)
-    assert a.returncode==0,a.stderr
-    assert not any('deadlock' in r.stderr or 'timeout' in r.stderr for r in (a,b)),[r.stderr for r in (a,b)]
-    assert b.returncode==0 or 'WA_PERSONAL_REVIEW_REQUIRED' in b.stderr,b.stderr
-    print('PASS: atualização física de conexão e classificação pessoal não criam inversão de travas')
+    if os.environ.get('BC_TESTAR_CONCORRENCIA_FISICA_APOS_INCREMENTAL')=='1':
+        print('ADIADO: corrida física da base antiga será executada após o incremental que corrige a ordem da trava')
+    else:
+        a,b=race(f"update public.whatsapp_channels set status='connecting' where id='{personal}'", marking)
+        assert a.returncode==0,a.stderr
+        assert not any('deadlock' in r.stderr or 'timeout' in r.stderr for r in (a,b)),[r.stderr for r in (a,b)]
+        assert b.returncode==0 or 'WA_PERSONAL_REVIEW_REQUIRED' in b.stderr,b.stderr
+        print('PASS: atualização física de conexão e classificação pessoal não criam inversão de travas')
     account=f"select public.care_group_admin('authorize_account',jsonb_build_object('shop_id','{shops[0]}','channel_id','{group_candidate}','platform_owned',true))"
     mark_account=f"select pg_advisory_xact_lock(hashtextextended('whatsapp-egress',120)); update public.profiles set whatsapp_e164='+5511900001919' where id='{person}'; select public.platform_mark_whatsapp_personal('{group_candidate}','{person}',0)"
     a,b=race(account,mark_account)

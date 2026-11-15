@@ -376,3 +376,15 @@ begin
 end $$;
 revoke all on function public.care_detach_deleted_audit_actor() from public,anon,authenticated,service_role;
 create trigger care_detach_deleted_audit_actor before delete on auth.users for each row execute function public.care_detach_deleted_audit_actor();
+
+-- Escrita física de conexão também chega via PostgREST direto. A trava de roteamento
+-- no guard por linha chegava DEPOIS da trava da tupla: concorria em ordem inversa
+-- com a classificação pessoal. Antecipar a mesma trava para antes das tuplas não
+-- muda permissões/identidade nem acrescenta inversão egress/routing a RPCs legadas.
+create function public.care_lock_channel_statement() returns trigger language plpgsql security definer set search_path=public as $$
+begin
+ perform pg_advisory_xact_lock(hashtextextended('whatsapp-channel-routing',116));
+ return null;
+end $$;
+revoke all on function public.care_lock_channel_statement() from public,anon,authenticated,service_role;
+create trigger care_lock_channel_statement before insert or update or delete on public.whatsapp_channels for each statement execute function public.care_lock_channel_statement();

@@ -55,11 +55,11 @@ archive(evo,'HEAD','evolution/fonte/')
 put('evolution/evolution-bc-groups.patch',git(evo,'diff','--binary','db5c51b57047beaac1bb83fd8b951bf152bb5d64','HEAD'))
 put('evolution/incremental-6-brand.1-para-7.patch',git(evo,'diff','--binary','ad88eae','HEAD'))
 copy(ROOT/'integrations/evolution/grupos-v7/README.md','evolution/README.md')
-paths=['src','public','supabase','scripts','integrations/compatibilidade-central-whatsapp-2026-11-13','package.json','package-lock.json','tsconfig.json','vite.config.ts','eslint.config.js','components.json','postcss.config.js','index.html']
+paths=['src','public','supabase','scripts','integrations/compatibilidade-central-whatsapp-2026-11-13','package.json','bun.lock','package-lock.json','tsconfig.json','vite.config.ts','eslint.config.js','components.json','postcss.config.js','index.html']
 tracked=git(ROOT,'ls-files','--',*paths).decode().splitlines()
 for name in tracked:
  if allowed(name) and (ROOT/name).is_file():copy(ROOT/name,'bancada/'+name)
-frontend=['src','public','package.json','package-lock.json','tsconfig.json','vite.config.ts','components.json','postcss.config.js','index.html','scripts/copy-pwa.mjs']
+frontend=['src','public','package.json','bun.lock','package-lock.json','tsconfig.json','vite.config.ts','components.json','postcss.config.js','index.html','scripts/copy-pwa.mjs']
 put('frontend/e5f3ec0-para-entrega.patch',git(ROOT,'diff','--binary','e5f3ec0a67d2302d0029c61c2eef6fa0a147f996','HEAD','--',*frontend))
 copy(ROOT/'docs/pacotes/2026-11-15-ti-primeiro-acesso-telefone-p122.md','LEIA-PRIMEIRO.md')
 copy(ROOT/'docs/pacotes/2026-11-15-p122-telefone-concluido-local.md','evidencias/resultado-local.md')

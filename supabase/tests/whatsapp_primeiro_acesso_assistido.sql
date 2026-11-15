@@ -12,6 +12,8 @@ update public.whatsapp_channels set display_phone=case id when (select a from d4
 select public.platform_confirm_whatsapp_control(id,routing_version,display_phone,instance_name,true) from public.whatsapp_channels where id in(select a from d4 union all select b from d4);
 select public.platform_plan_whatsapp_distribution(plan,array[shop],false) from d4;
 select public.platform_apply_whatsapp_distribution(plan) from d4;
+-- Rota explícita da fixture: outros ensaios podem conservar números com a mesma identidade.
+select public.platform_set_whatsapp_route(d.shop,null,(select version from public.whatsapp_number_links where barbershop_id=d.shop and staff_id is null and removed_at is null),d.a,d.b,null,'primary',false,false,false) from d4 d;
 select pg_temp.check_d4((select jsonb_array_length(public.care_cycle_composition(shop))=2 from d4),'Composição da loja usa dois telefones físicos com controle confirmado');
 insert into auth.users(id,email,raw_user_meta_data) select person,person||'@example.invalid','{}' from d4;
 insert into public.memberships(user_id,barbershop_id,role) select person,shop,'customer' from d4;
