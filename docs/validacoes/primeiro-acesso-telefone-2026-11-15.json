@@ -13,12 +13,27 @@
   "tipos": true,
   "lint_erros": 0,
   "lint_avisos_preexistentes": 4,
-  "montagem_bc": "a conferir no encerramento",
+  "montagem_bc": true,
   "montagem_imagem_amd64": true,
   "recriacao_api_vazia_segundos": 20.6,
   "volume_preservado": true,
-  "operador_unitarios": 10,
-  "ensaio_pacote": "a conferir antes do ZIP",
+  "operador_unitarios": 11,
+  "ensaio_pacote": true,
   "evolution_commit": "e9748ffd3363af89f97996c1a7119d5a4825274d",
-  "observacao": "Medições locais não comprovam tempo, entrega ou prontidão em produção."
+  "observacao": "Medições locais não comprovam tempo, entrega ou prontidão em produção. No ensaio operacional, identificação das duas imagens remotas foi fixture; banco, arquivos, SQL e cópia/retorno foram reais em Docker local.",
+  "rollback_atomico_dois_sqls": true,
+  "dados_existentes_preservados": true,
+  "retorno_funcoes_por_hash": true,
+  "retorno_bloqueado_apos_revisao": true,
+  "concorrencia_fisica_apos_incremental": true,
+  "patch_completo_evolution_arquivos": 46,
+  "patch_incremental_evolution_arquivos": 13,
+  "patch_frontend_arquivos": 12,
+  "construtor_do_pacote_local": true,
+  "imagem_local": {
+    "amd64": "sha256:d4ca39d7c11fddea587d8ae257cb7881484aaac1871050724a0efa397b745495",
+    "config": "sha256:02bac7182029119b24551388c80837e731337abcb8abe37eeef5b83679605748",
+    "registry_publicado": false,
+    "nota": "Índices locais diferem pela atestação de construção; filho AMD64 e config idênticos."
+  }
 }
