@@ -16,11 +16,15 @@ O usuário pediu que o Codex executasse a implantação se tivesse acesso, em ve
 
 ## Frontend
 
-Fonte revisada, autorização explícita recebida, checagem de tipos e montagem passaram novamente. Publicação no `origin/main` e conferência do site são a etapa seguinte desta execução. Não confundir fonte pronta/commit enviado com site compilado: acompanhar o gatilho do hub, o espelho e a versão efetivamente servida.
+Fonte revisada, autorização explícita recebida, checagem de tipos e montagem passaram novamente. Publicado sem force no `origin/main`: **`c4659781dbed3eae673c8274bca6721407fe8aeb`**; espelho `PROH-Media/barber-buzz-blades` no mesmo commit. Os dois gatilhos de sincronização concluíram com sucesso ([execução do hub](https://github.com/Proh2026Media/barber-buzz-blades/actions/runs/43776449291)).
+
+O hPanel do site exato `beauty.contheiner.digital` confirmou **Concluído**, fonte c4659781, Node22/Nitro, **3m56s, 15/11/2026 20:49 BRT**. Não foi necessário reimplantar manualmente ou alterar variáveis. A conferência pública às **20:55:09 BRT** verificou HTTP200 em `/app` e no novo `/assets/ArenaApp-CVTdYUKv.js`, com o campo `phone_revision` presente. SHA-256 do bundle: `2c80ae11964ccdf2bcea0ffc2c6471ec495229546a50d844b5bb9546ee54f615`. [Evidência pública sem dados pessoais](../validacoes/implantacao-p122-frontend-2026-11-15.json).
+
+A instalação/publicação está concluída. A TI não precisa reinstalar o pacote; este registro é devolutiva do que já foi executado. Ativação/homologação continuam separadas. O hPanel exibiu aviso de falha na renovação do domínio `contheiner.digital` por saldo insuficiente; o site respondeu normalmente. Nenhuma renovação/compra ou mudança DNS foi realizada.
 
 ## Controles preservados e teste pendente
 
-Último corte de instalação: global pausada v17; ciclos false v12; assistência false; distribuição false v3. `bc-central-grupos.timer`, `bc-central-distribuicao.timer` e `bc-central-expurgo.timer`: inactive/disabled. Nenhuma habilitação do piloto. Conferir de novo ao encerrar e antes de qualquer teste real.
+Corte posterior ao backend às 20:46:51 BRT: global pausada v17; ciclos false v12; assistência false; distribuição false v3. `bc-central-grupos.timer`, `bc-central-distribuicao.timer` e `bc-central-expurgo.timer`: inactive/disabled. Nenhuma habilitação do piloto. Conferência final às **20:56:18 BRT** confirmou novamente pausa global=true v17, ciclos/assistência/distribuição=false, zero acessos/revisões e os três timers inactive/disabled. Conferir novamente antes de qualquer teste real.
 
 A confirmação/login real ainda depende do titular, do aceite do telefone correto no aplicativo, pedido de entrada no mesmo grupo e leitura do código. A implantação não verifica telefone por conta própria, não altera o cadastro e não remove/adiciona nono dígito por aparência. Ativar assistência/ciclos/despausar global exige a janela de homologação combinada; não usar este registro como autorização de mensagens ou grupos.
 

@@ -1,0 +1,15 @@
+{
+  "consultado_em_utc": "2026-11-15T23:55:09Z",
+  "url": "https://beauty.contheiner.digital/app",
+  "http": 200,
+  "commit_hostinger": "c4659781dbed3eae673c8274bca6721407fe8aeb",
+  "hostinger": "Concluído; 3m56s; 15/11/2026 20:49 BRT",
+  "assets": [
+    {
+      "caminho": "/assets/ArenaApp-CVTdYUKv.js",
+      "http": 200,
+      "sha256": "2c80ae11964ccdf2bcea0ffc2c6471ec495229546a50d844b5bb9546ee54f615",
+      "revisao_telefone_presente": true
+    }
+  ]
+}
