@@ -236,22 +236,15 @@ try {
     sql(`select creation_issued_at is null from public.whatsapp_care_cycles where id='${cycle}';`),
     "t",
   );
-  const first = await processCareCycle(db, transport, cycle, asset, true);
-  assert.equal(first, "waiting_first_receipt");
-  assert.equal(createCalls, 1);
-  assert.equal(f.sent.filter((m: any) => m.text).length, 1);
-  assert.equal(f.sent[0].author, b);
-  console.log(
-    "PASS: criação e preparação completas; primeiro envio pelo segundo administrador; código ainda bloqueado",
-  );
-  const c = f.cycle()!;
-  await f.d.cycles.evidence(id, c.firstMessageId, a, b, true);
-  sql(`update public.whatsapp_care_cycles set next_run_at=now() where id='${cycle}';`);
-  // Mantém cliente fora para gerar convite. A admissão será solicitada depois.
+  // Antes da entrada, nenhuma mensagem, descrição ou fixação é permitida.
   f.d.socket.groupRequestParticipantsList = async () => [];
-  const second = await processCareCycle(db, transport, cycle, asset, true);
-  assert.equal(second, "waiting_customer");
-  const sent = f.sent.length;
+  const first = await processCareCycle(db, transport, cycle, asset, true);
+  assert.equal(first, "waiting_customer");
+  assert.equal(createCalls, 1);
+  assert.equal(f.sent.length, 0);
+  assert.equal(f.raw.desc, undefined);
+  assert.equal(f.photos(), 1);
+  assert.ok(f.raw.participants.every((p: any) => p.admin));
   actor = person;
   view = JSON.parse(sql(`select public.care_group_read('${shop}');`));
   assert.equal(view.group.state, "waiting_customer");
@@ -261,25 +254,38 @@ try {
     /^https:\/\/chat.whatsapp.com\//,
   );
   actor = admin;
-  const third = await processCareCycle(db, transport, cycle, asset, true);
-  assert.equal(third, "waiting_customer");
-  assert.equal(f.sent.length, sent, "reconciliação não fixa de novo nem repete boas-vindas");
-  assert.equal(createCalls, 1);
+  assert.equal(await processCareCycle(db, transport, cycle, asset, true), "waiting_customer");
+  assert.equal(f.sent.length, 0);
+  assert.equal(f.raw.desc, undefined);
   console.log(
-    "PASS: convite autenticado disponível; reconciliação conserva JID e não duplica mensagem/fixação",
+    "PASS: nome, foto, administradores e convite antes da entrada; zero mensagens/descrição/fixação; sem ciclo de dependência",
   );
-  f.d.socket.groupRequestParticipantsList = async () => [{ jid: u }];
-  const fourth = await processCareCycle(db, transport, cycle, asset, true);
-  assert.equal(fourth, "active");
+
+  f.d.socket.groupRequestParticipantsList = async () =>
+    f.raw.participants.some((p: any) => p.id === u) ? [] : [{ jid: u }];
+  assert.equal(await processCareCycle(db, transport, cycle, asset, true), "waiting_first_receipt");
   assert.equal(createCalls, 1);
   assert.equal(f.raw.participants.find((p: any) => p.id === u).admin, null);
+  assert.equal(f.sent.filter((m: any) => m.text).length, 1);
+  assert.equal(f.sent[0].author, b);
+  assert.match(f.raw.desc, /somente no aplicativo/);
+  const sent = f.sent.length;
+  actor = person;
+  view = JSON.parse(sql(`select public.care_group_read('${shop}');`));
+  assert.equal(view.phone_ready, false);
+  actor = admin;
+  assert.equal(await processCareCycle(db, transport, cycle, asset, true), "waiting_first_receipt");
+  assert.equal(f.sent.length, sent, "espera de recebimento não repete boas-vindas nem fixação");
+  const c = f.cycle()!;
+  await f.d.cycles.evidence(id, c.lastWelcomeMessageId, a, b, true);
+  assert.equal(await processCareCycle(db, transport, cycle, asset, true), "active");
   actor = person;
   view = JSON.parse(sql(`select public.care_group_read('${shop}');`));
   assert.equal(view.group.state, "active");
   assert.equal(view.phone_confirmed, false);
   assert.equal(view.phone_ready, true);
   console.log(
-    "PASS: somente cliente consentido entra; boas-vindas de entrada e fixação; entrar não confirma telefone",
+    "PASS: após entrada, outro administrador acolhe, descreve e fixa; login/confirmar só após prova do acolhimento atual; entrada não confirma telefone",
   );
   actor = admin;
   const challenge = JSON.parse(
@@ -449,8 +455,17 @@ try {
   assert.equal(view.preferences.monthly_marketing, 3);
   assert.equal(view.group.expires_at, originalExpiry);
   actor = admin;
-  f.d.socket.groupRequestParticipantsList = async () => [{ jid: u }];
+  f.d.socket.groupRequestParticipantsList = async () =>
+    f.raw.participants.some((p: any) => p.id === u) ? [] : [{ jid: u }];
+  assert.equal(await processCareCycle(db, transport, cycle, asset, true), "waiting_first_receipt");
+  actor = person;
+  assert.equal(JSON.parse(sql(`select public.care_group_read('${shop}');`)).phone_ready, false);
+  actor = admin;
+  const reentry = f.cycle()!;
+  await f.d.cycles.evidence(id, reentry.lastWelcomeMessageId, a, b, true);
+  const reentryMessages = f.sent.length;
   assert.equal(await processCareCycle(db, transport, cycle, asset, true), "active");
+  assert.equal(f.sent.length, reentryMessages);
   assert.equal(createCalls, 1);
   console.log(
     "PASS: saída e retorno mantêm grupo, fim do ciclo e limite de marketing, sem criar outro",

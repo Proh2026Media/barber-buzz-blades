@@ -1,5 +1,11 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 15/11/2026 — grupos: descrição e acolhimento depois da entrada, incremental local
+
+Dono informou piloto TI v5 em curso e confirmou nova ordem: antes nome/foto/admins/proteções/convite; após presença comum, outro administrador acolhe, descreve/fixa; prova da admissão/mensagem atuais antes de confirmação/login/avisos. Evolution v6 `ca986dd`/protocolo v4, uma SQL B&C e worker/guardas correspondentes. Mapa durável impede duplicação e prova antiga não libera retorno. Nenhuma SQL Evolution nova ou frontend. Mesmo JID/ano/preferências, sem apagar mensagens legadas.
+
+632 testes B&C, 54 Evolution, 16 PostgreSQL e sete operador; tipos/montagem, banco e ciclo integrado local, imagem AMD64 iniciada/recriada sem WhatsApp, volume conservado e 17,275 s HTTP apenas local. [Resultado e limites](acolhimento-grupos-pos-entrada-2026-11-15.md), [roteiro incremental TI](pacotes/2026-11-15-ti-acolhimento-apos-entrada-p122.md). Frontend main `e5f3ec0` incorporado e preservado. Trabalho em ramos locais, sem push/VPS/registry/mensagens/marca/Flow/.env. ZIP v5 intacto; nova janela deve ser coordenada após ensaio em curso. Login real não homologado.
+
 ## 14/11/2026 — P-122: desenvolvimento local encerrado, entrega completa para revisão da TI
 
 [fechamento local e evidências](central-whatsapp-local-2026-11-14.md) e [roteiro único TI](pacotes/2026-11-14-ti-central-whatsapp-p122.md). B&C `82570cb` + ajuste de interação `3bccbf4`, Evolution v5 `d020247`/contrato v3, 14 incrementais B&C atômicos e uma migration Evolution nova, sem reaplicar as instaladas. Confirmação/login/avisos só em grupo com composição consentida, dois ou mais administradores, prova da primeira mensagem, ano real/retorno/encerramento/limpeza, escopo de piloto e registros privados. Fonte completa, hashes/base, operador e retorno; sem transferir implementação para TI.

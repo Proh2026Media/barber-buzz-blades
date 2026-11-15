@@ -71,6 +71,9 @@ type CycleProof = {
   firstSenderJid: string | null;
   firstMessageId: string | null;
   firstReceived: boolean;
+  lastWelcomeReceived?: boolean;
+  lastWelcomeAdmissionId?: string;
+  welcomeAdmissions?: Record<string, string>;
   firstViolation: boolean;
   lastWelcomeOperation: string | null;
   lastWelcomeMessageId: string | null;
@@ -433,9 +436,10 @@ export async function processCareCycle(
       try {
         const c = record(await get("bcCapabilities", n.instance));
         if (
-          c.contract === "bc-groups-v3" &&
+          c.contract === "bc-groups-v4" &&
           [
             "protectedCycle",
+            "postAdmissionWelcome",
             "twoPlatformAdmins",
             "persistentOperations",
             "serializedCommands",
@@ -658,17 +662,6 @@ export async function processCareCycle(
         hash,
       );
     }
-    if (
-      !job.steps.some(
-        (s) =>
-          s.phase === "welcome" &&
-          s.revision === "initial" &&
-          s.state === "accepted" &&
-          s.provider_id === c.firstMessageId &&
-          s.id === c.firstWelcomeOperation,
-      )
-    )
-      await welcome("initial");
     async function describeAndPin() {
       if (
         c.descriptionHash !==
@@ -716,12 +709,6 @@ export async function processCareCycle(
         hash,
       );
     }
-    await describeAndPin();
-    c = await proof();
-    if (!c.firstReceived) {
-      await release("waiting_first_receipt");
-      return "waiting_first_receipt";
-    }
     if (job.entry_pending) {
       const pending = await get("joinRequests", observerInstance!, { groupJid: group! });
       if (!Array.isArray(pending) || pending.length > 50) throw Error("GROUP_UNVERIFIABLE");
@@ -740,17 +727,19 @@ export async function processCareCycle(
     let raw = await get("bcInspect", observerInstance!, { groupJid: group! });
     let snapshot = groupSnapshot(raw);
     if (!snapshot) throw Error("GROUP_UNVERIFIABLE");
-    const present = snapshot.participants.some(
-      (m) => individualPhone(m.jid) === job.customer_phone,
-    );
-    if (present && job.entry_pending) {
-      await welcome(job.admission_id, job.admission_id);
+    let present = snapshot.participants.some((m) => individualPhone(m.jid) === job.customer_phone);
+    if (present) {
+      // A admissão é a chave durável; repetições não geram uma segunda boas-vindas.
+      if (!c.welcomeAdmissions?.[job.admission_id])
+        await welcome(c.firstWelcomeOperation ? job.admission_id : "initial", job.admission_id);
+      c = await proof();
       await describeAndPin();
     }
     c = await proof();
     raw = await get("bcInspect", observerInstance!, { groupJid: group! });
     snapshot = groupSnapshot(raw);
     if (!snapshot) throw Error("GROUP_UNVERIFIABLE");
+    present = snapshot.participants.some((m) => individualPhone(m.jid) === job.customer_phone);
     let invite: string | null = null;
     if (!present && job.entry_pending) {
       const r = record(await get("bcInvite", observerInstance!, { groupJid: group! }));
@@ -769,8 +758,13 @@ export async function processCareCycle(
       p_snapshot: snapshot,
       p_invite: invite,
     });
-    await release();
-    return present ? "active" : "waiting_customer";
+    const received =
+      present &&
+      c.firstReceived &&
+      c.lastWelcomeReceived === true &&
+      c.lastWelcomeAdmissionId === job.admission_id;
+    await release(present && !received ? "waiting_first_receipt" : null);
+    return present ? (received ? "active" : "waiting_first_receipt") : "waiting_customer";
   } catch (error) {
     try {
       await release(

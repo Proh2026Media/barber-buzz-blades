@@ -1,0 +1,429 @@
+diff --git a/Dockerfile.bc-groups b/Dockerfile.bc-groups
+index d0d8323..02915d7 100644
+--- a/Dockerfile.bc-groups
++++ b/Dockerfile.bc-groups
+@@ -13,7 +13,7 @@ RUN case "$DATABASE_PROVIDER" in postgresql|mysql) ;; *) exit 1 ;; esac && \
+ FROM evoapicloud/evolution-api@sha256:1bd8afc4a6cf48822e6cf02469aeae7bd35a12a6b616eacd1291926307f4d339
+ WORKDIR /evolution
+ ARG BC_PATCH_SHA256=nao-informado
+-LABEL org.opencontainers.image.version="2.3.7-bc.groups.5" \
++LABEL org.opencontainers.image.version="2.3.7-bc.groups.6" \
+       org.bc.base-revision="cd800f2976e1e5b682fbf86a01ee4d85ae61f370" \
+       org.bc.patch-sha256="$BC_PATCH_SHA256"
+ COPY --from=builder /evolution/dist ./dist
+diff --git a/package-lock.json b/package-lock.json
+index b0fa622..440aa4b 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -1,12 +1,12 @@
+ {
+   "name": "evolution-api",
+-  "version": "2.3.7-bc.groups.5",
++  "version": "2.3.7-bc.groups.6",
+   "lockfileVersion": 3,
+   "requires": true,
+   "packages": {
+     "": {
+       "name": "evolution-api",
+-      "version": "2.3.7-bc.groups.5",
++      "version": "2.3.7-bc.groups.6",
+       "license": "Apache-2.0",
+       "dependencies": {
+         "@adiwajshing/keyed-db": "^0.2.4",
+diff --git a/package.json b/package.json
+index 2a78013..980be5d 100644
+--- a/package.json
++++ b/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "evolution-api",
+-  "version": "2.3.7-bc.groups.5",
++  "version": "2.3.7-bc.groups.6",
+   "description": "Rest api for communication with WhatsApp",
+   "main": "./dist/main.js",
+   "type": "commonjs",
+diff --git a/src/api/integrations/channel/whatsapp/bc-groups/core.ts b/src/api/integrations/channel/whatsapp/bc-groups/core.ts
+index 7ddce6b..10e2592 100644
+--- a/src/api/integrations/channel/whatsapp/bc-groups/core.ts
++++ b/src/api/integrations/channel/whatsapp/bc-groups/core.ts
+@@ -6,7 +6,7 @@ import type { CycleStore } from './cycle';
+ import { type CycleDependencies, executeCycleCommand } from './cycle-engine';
+ import { type PhoneResolver, resolveGroupMetadata } from './cycle-identity';
+ 
+-export const BC_GROUP_PROTOCOL = 'bc-groups-v3';
++export const BC_GROUP_PROTOCOL = 'bc-groups-v4';
+ export class GroupExtensionError extends Error {
+   constructor(
+     public status: number,
+@@ -169,6 +169,7 @@ async function executeUnlocked(d: Dependencies, command: string, input: unknown)
+       protectedTitles: true,
+       protectedPins: true,
+       protectedCycle: true,
++      postAdmissionWelcome: true,
+       twoPlatformAdmins: true,
+       protectedBranding: true,
+       protectedNotices: true,
+diff --git a/src/api/integrations/channel/whatsapp/bc-groups/cycle-engine.ts b/src/api/integrations/channel/whatsapp/bc-groups/cycle-engine.ts
+index db6ff3e..f188e27 100644
+--- a/src/api/integrations/channel/whatsapp/bc-groups/cycle-engine.ts
++++ b/src/api/integrations/channel/whatsapp/bc-groups/cycle-engine.ts
+@@ -548,13 +548,13 @@ export async function executeCycleCommand(d: CycleDependencies, command: string,
+   if (command === 'welcome') {
+     const p = body(input, ['groupJid', 'operationId', 'admissionId']);
+     const key = uuid(p.operationId);
+-    if (p.admissionId != null) uuid(p.admissionId);
++    uuid(p.admissionId);
+     const who = self(d);
+     if (!c.firstReceived) await peers(d, c.platformJids);
+     if (who === c.creatorJid || !c.prepared || !c.logoApplied)
+       return fail(409, 'Boas-vindas aguardando o segundo administrador');
+     const raw = await metadata(d, id);
+-    if (!cycleQuorum(c, raw, true)) return fail(409, 'Dois administradores não comprovados');
++    if (!cycleQuorum(c, raw, false)) return fail(409, 'Dois administradores não comprovados');
+     if (!c.firstMessageId && c.firstWelcomeOperation && c.firstWelcomeOperation !== key)
+       return fail(409, 'Primeiro envio incerto; não repetir');
+     const content = careGroupContent(cycleBrand(c));
+@@ -583,6 +583,10 @@ export async function executeCycleCommand(d: CycleDependencies, command: string,
+       c.firstSenderJid = who;
+     }
+     c.lastWelcomeOperation = key;
++    c.lastWelcomeMessageId = null;
++    c.pinAccepted = false;
++    c.pinExpiresAt = null;
++    delete c.pinIntent;
+     c.welcomeAuthorJid = who;
+     await d.cycles.saveCycle(c);
+     const op = await operation(d, c, key, request, 'notice_unknown');
+@@ -590,7 +594,7 @@ export async function executeCycleCommand(d: CycleDependencies, command: string,
+     try {
+       if (!d.ready() || Date.parse(c.expiresAt) <= Date.now()) return op.pending;
+       const latest = await current(d, id);
+-      if (!cycleQuorum(latest, await metadata(d, id), true) || latest.firstViolation) return op.pending;
++      if (!cycleQuorum(latest, await metadata(d, id), false) || latest.firstViolation) return op.pending;
+       const message = await d.socket.sendMessage(id, { text: content.welcome });
+       const messageId = receipt(message);
+       if (!messageId) return op.pending;
+@@ -608,8 +612,11 @@ export async function executeCycleCommand(d: CycleDependencies, command: string,
+     body(input, ['groupJid']);
+     if (self(d) === c.creatorJid || !c.lastWelcomeMessageId)
+       return fail(409, 'Descrição deve ser aplicada pelo segundo administrador após boas-vindas');
++    const welcome = c.lastWelcomeOperation && (await d.store.find(namespace(id), c.lastWelcomeOperation));
++    if (!welcome || welcome.state !== 'notice_accepted' || welcome.messageId !== c.lastWelcomeMessageId)
++      return fail(409, 'Boas-vindas ainda não confirmadas');
+     let raw = await metadata(d, id);
+-    if (!cycleQuorum(c, raw, true)) return fail(409, 'Grupo sem quórum');
++    if (!cycleQuorum(c, raw, false)) return fail(409, 'Grupo sem quórum');
+     const { description } = careGroupContent(cycleBrand(c));
+     if (description.length > 512) return fail(400, 'Descrição excessiva');
+     if (raw.desc !== description) {
+@@ -635,7 +642,7 @@ export async function executeCycleCommand(d: CycleDependencies, command: string,
+     const proof = c.lastWelcomeOperation && (await d.store.find(namespace(id), c.lastWelcomeOperation));
+     if (!proof || proof.state !== 'notice_accepted' || proof.messageId !== p.messageId)
+       return fail(409, 'Boas-vindas sem prova durável');
+-    if (!cycleQuorum(c, await metadata(d, id), true)) return fail(409, 'Grupo sem quórum');
++    if (!cycleQuorum(c, await metadata(d, id), false)) return fail(409, 'Grupo sem quórum');
+     const request = ['pin', p.messageId, duration, c.expiresAt];
+     const op = await operation(d, c, key, request, 'pin_unknown');
+     if (op.prior) return op.prior;
+@@ -643,6 +650,7 @@ export async function executeCycleCommand(d: CycleDependencies, command: string,
+     await d.cycles.saveCycle(c);
+     try {
+       if (!d.ready() || Date.now() + duration * 1000 > Date.parse(c.expiresAt)) return op.pending;
++      if (!cycleQuorum(await current(d, id), await metadata(d, id), false)) return op.pending;
+       const message = await d.socket.sendMessage(id, {
+         pin: {
+           remoteJid: id,
+@@ -730,15 +738,7 @@ export async function executeCycleCommand(d: CycleDependencies, command: string,
+   }
+   if (['invite', 'requests', 'decide'].includes(command)) {
+     const p = body(input, command === 'decide' ? ['groupJid', 'participants', 'action'] : ['groupJid']);
+-    if (
+-      !c.prepared ||
+-      !c.firstReceived ||
+-      !c.pinAccepted ||
+-      Date.parse(c.pinExpiresAt ?? '') <= Date.now() ||
+-      !Number.isFinite(Date.parse(c.pinExpiresAt ?? '')) ||
+-      !c.descriptionHash ||
+-      !cycleQuorum(c, await metadata(d, id), true)
+-    )
++    if (!c.prepared || !c.logoApplied || !cycleQuorum(c, await metadata(d, id), true))
+       return fail(409, 'Preparação ainda não concluída');
+     if (command === 'invite') {
+       const code = await d.socket.groupInviteCode(id);
+diff --git a/src/api/integrations/channel/whatsapp/bc-groups/cycle-store.ts b/src/api/integrations/channel/whatsapp/bc-groups/cycle-store.ts
+index 4c6457a..4bd4305 100644
+--- a/src/api/integrations/channel/whatsapp/bc-groups/cycle-store.ts
++++ b/src/api/integrations/channel/whatsapp/bc-groups/cycle-store.ts
+@@ -4,6 +4,8 @@ import type { CycleStore, GroupCycle } from './cycle';
+ const stored = (value: GroupCycle) => {
+   const copy = { ...value };
+   delete copy.lastMessages;
++  delete copy.lastWelcomeReceived;
++  delete copy.lastWelcomeAdmissionId;
+   return copy as unknown as Prisma.InputJsonValue;
+ };
+ /** CAS e provas persistentes, compartilhadas entre as instâncias da mesma composição. */
+@@ -81,6 +83,20 @@ export function cycleStore(db: PrismaClient): CycleStore {
+       if (saved.count !== 1) throw new Error('Conferência concorrente; consultar novamente');
+       c.version++;
+     }
++    const admissions = Object.entries(c.welcomeAdmissions ?? {}).filter(([, key]) => key === c.lastWelcomeOperation);
++    c.lastWelcomeAdmissionId = admissions.length === 1 ? admissions[0][0] : undefined;
++    c.lastWelcomeReceived = Boolean(
++      c.lastWelcomeMessageId &&
++        c.welcomeAuthorJid &&
++        (await db.bcGroupEvidence.findFirst({
++          where: {
++            groupJid,
++            messageId: c.lastWelcomeMessageId,
++            author: c.welcomeAuthorJid,
++            observer: { in: c.platformJids.filter((p) => p !== c.welcomeAuthorJid) },
++          },
++        })),
++    );
+     const ranges = await db.bcGroupAccountState.findMany({ where: { groupJid } });
+     c.lastMessages = Object.fromEntries(
+       ranges.map((r) => [r.accountJid, r.lastMessage as unknown as NonNullable<GroupCycle['lastMessages']>[string]]),
+diff --git a/src/api/integrations/channel/whatsapp/bc-groups/cycle.ts b/src/api/integrations/channel/whatsapp/bc-groups/cycle.ts
+index 410314b..4f2fa2f 100644
+--- a/src/api/integrations/channel/whatsapp/bc-groups/cycle.ts
++++ b/src/api/integrations/channel/whatsapp/bc-groups/cycle.ts
+@@ -31,6 +31,8 @@ export type GroupCycle = {
+   firstSenderJid: string | null;
+   firstMessageId: string | null;
+   firstReceived: boolean;
++  lastWelcomeReceived?: boolean;
++  lastWelcomeAdmissionId?: string;
+   firstViolation: boolean;
+   logoHash: string | null;
+   logoApplied: boolean;
+@@ -145,6 +147,8 @@ export function cycleSendReady(cycle: GroupCycle, raw: unknown, at = Date.now())
+     Number.isFinite(Date.parse(cycle.pinExpiresAt ?? '')) &&
+     Date.parse(cycle.pinExpiresAt!) > at &&
+     cycle.firstReceived &&
++    cycle.lastWelcomeReceived === true &&
++    Boolean(cycle.lastWelcomeAdmissionId) &&
+     Boolean(cycle.firstMessageId) &&
+     Boolean(cycle.firstSenderJid) &&
+     cycle.firstSenderJid !== cycle.creatorJid
+diff --git a/src/api/routes/bc-group.schemas.ts b/src/api/routes/bc-group.schemas.ts
+index 3c9a3ba..87ee352 100644
+--- a/src/api/routes/bc-group.schemas.ts
++++ b/src/api/routes/bc-group.schemas.ts
+@@ -54,7 +54,7 @@ export const bcGroupSchemas: Record<string, JSONSchema7> = {
+     logoBase64: { type: 'string', maxLength: 2796204 },
+     logoHash: { type: 'string', pattern: '^[a-f0-9]{64}$' },
+   }),
+-  welcome: schema({ groupJid, operationId, admissionId: operationId }, ['groupJid', 'operationId']),
++  welcome: schema({ groupJid, operationId, admissionId: operationId }),
+   description: schema({ groupJid }),
+   brand: schema({ groupJid, brand }),
+   close: schema(
+diff --git a/test/bc-cycle-fixture.ts b/test/bc-cycle-fixture.ts
+index aa49b07..afa9131 100644
+--- a/test/bc-cycle-fixture.ts
++++ b/test/bc-cycle-fixture.ts
+@@ -9,10 +9,10 @@ export async function fixture(groupId = id){
+  const id = groupId;
+  const map=new Map<string,Operation>();let cycle:GroupCycle|null=null;let author=a;let photoCalls=0;let creates=0;const locks=new Map<string,string>();const sent:{author:string;text?:string;pin?:unknown}[]=[];
+  const raw:any={id,subject:'Notificações Arena • Cliente',owner:a,creation:Math.floor(Date.now()/1000)-1000,restrict:true,memberAddMode:false,joinApprovalMode:true,participants:[{id:a,admin:'superadmin'},{id:b,admin:null}]};
+- const left=new Set<string>();
++ const left=new Set<string>();const received=new Set<string>();
+  const d:CycleDependencies={peersReady:()=>true,instanceId:'criador',instanceName:'fixture',self:()=>[author],ready:()=>true,platformJids:[a,b],
+   store:{lock:async(i,t)=>{if(locks.has(i))return false;locks.set(i,t);return true;},unlock:async(i,t)=>{if(locks.get(i)===t)locks.delete(i);},accepted:async()=>{},created:async(i,k,j)=>Object.assign(map.get(i+k)!,{state:'created',groupJid:j}),find:async(i,k)=>map.get(i+k)??null,claim:async value=>{const k=value.instanceId+value.operationKey;if(map.has(k))return false;map.set(k,{...value});return true;}},
+-  cycles:{minimizeClosed:async v=>{cycle={...structuredClone(v),minimized:true,customerJid:"",brand:undefined};},cycle:async()=>cycle?structuredClone(cycle):null,createCycle:async v=>{if(cycle)return false;cycle=structuredClone(v);return true;},saveCycle:async v=>{assert.equal(v.version,cycle?.version);cycle=structuredClone({...v,version:v.version+1});v.version++;},finish:async(i,k,state,messageId)=>{Object.assign(map.get(i+k)!,{state,...(messageId?{messageId}:{})});},evidence:async(_g,m,observer,sender)=>{if(cycle?.firstMessageId===m&&cycle?.creatorJid===observer&&cycle?.firstSenderJid===sender)cycle.firstReceived=true;}},
++  cycles:{minimizeClosed:async v=>{cycle={...structuredClone(v),minimized:true,customerJid:"",brand:undefined};},cycle:async()=>cycle?{...structuredClone(cycle),lastWelcomeReceived:received.has(cycle.lastWelcomeMessageId??""),lastWelcomeAdmissionId:Object.entries(cycle.welcomeAdmissions??{}).find(([,v])=>v===cycle.lastWelcomeOperation)?.[0]}:null,createCycle:async v=>{if(cycle)return false;cycle=structuredClone(v);return true;},saveCycle:async v=>{assert.equal(v.version,cycle?.version);cycle=structuredClone({...v,version:v.version+1});v.version++;},finish:async(i,k,state,messageId)=>{Object.assign(map.get(i+k)!,{state,...(messageId?{messageId}:{})});},evidence:async(_g,m,observer,sender)=>{if(cycle?.lastWelcomeMessageId===m&&cycle?.welcomeAuthorJid===sender&&observer!==sender)received.add(m);if(cycle?.firstMessageId===m&&cycle?.creatorJid===observer&&cycle?.firstSenderJid===sender)cycle.firstReceived=true;}},
+   socket:{groupMetadata:async()=>structuredClone(raw),groupCreate:async()=>{creates++;return {id} as never;},groupSettingUpdate:async()=>{raw.restrict=true;},groupMemberAddMode:async()=>{raw.memberAddMode=false;},groupJoinApprovalMode:async()=>{raw.joinApprovalMode=true;},groupParticipantsUpdate:async(_id,ids,action)=>{for(const who of ids){if(action==='promote')raw.participants.find(p=>p.id===who).admin='admin';if(action==='add')raw.participants.push({id:who,admin:null});if(action==='remove')raw.participants=raw.participants.filter(p=>p.id!==who);}return [] as never;},groupUpdateSubject:async(_id,s)=>{raw.subject=s;},updateProfilePicture:async()=>{photoCalls++;},groupUpdateDescription:async(_id,desc)=>{raw.desc=desc;},sendMessage:async(_id,value)=>{sent.push({author,...value as any});return {key:{id:'mensagem-'+sent.length}} as never;},groupInviteCode:async()=> 'FICTICIO123456789',groupRevokeInvite:async()=> 'NOVOFICTICIO',groupRequestParticipantsList:async()=>[{jid:u}],groupRequestParticipantsUpdate:async(_id,ids,action)=>{if(action==='approve')for(const pn of ids)raw.participants.push({id:pn,admin:null});return [] as never;},groupLeave:async()=>{left.add(author);raw.participants=raw.participants.filter(p=>p.id!==author);},groupFetchAllParticipating:async()=>left.has(author)?{}:{[id]:raw},chatModify:async()=>{}} as unknown as CycleDependencies['socket']};
+  const bytes=await sharp({create:{width:16,height:16,channels:3,background:'#c6a16a'}}).png().toBuffer();
+  const preparation={groupJid:id,operationId:key(2),subject:raw.subject,platformJids:[a,b],brand:branding,logoBase64:bytes.toString('base64'),logoHash:createHash('sha256').update(bytes).digest('hex')};
+diff --git a/test/bc-group-cycle-database.test.ts b/test/bc-group-cycle-database.test.ts
+index b3d78d8..5815193 100644
+--- a/test/bc-group-cycle-database.test.ts
++++ b/test/bc-group-cycle-database.test.ts
+@@ -58,3 +58,16 @@ test('PostgreSQL: minimização só após limpeza comprovada de todas as contas;
+  await db.bcGroupEvidence.create({data:{groupJid:jid(10),messageId:'ficticia',observer:a,author:u,prematureCreator:false}});await store.minimizeClosed(c);const next=(await store.cycle(jid(10)))!;assert.equal(next.customerJid,'');assert.equal(next.brand,undefined);assert.equal(next.groupJid,jid(10));assert.equal(next.closed,true);assert.equal(await db.bcGroupEvidence.count({where:{groupJid:jid(10)}}),0);
+  }finally{await db.$disconnect();}
+ });
++
++test('PostgreSQL: recebimento da admissão é derivado da mensagem atual; reinício não inventa prova nem persiste campos calculados',async()=>{
++ const db=new PrismaClient();try{
++  const store=cycleStore(db),c=fixture(11);c.lastWelcomeOperation=key(11);c.welcomeAdmissions={[key(101)]:key(11)};c.welcomeAuthorJid=b;
++  await store.createCycle(c);await store.evidence(jid(11),'acolhimento-atual',a,b,true);
++  await operationStore(db).claim({instanceId:'group:'+jid(11),operationKey:key(11),requestHash:'c'.repeat(64),state:'notice_unknown',groupJid:jid(11)});
++  await store.finish('group:'+jid(11),key(11),'notice_accepted','acolhimento-atual');
++  const next=(await store.cycle(jid(11)))!;assert.equal(next.lastWelcomeReceived,true);assert.equal(next.lastWelcomeAdmissionId,key(101));await store.saveCycle(next);
++  const raw=(await db.bcGroupCycle.findUnique({where:{groupJid:jid(11)}}))!.data as any;assert.equal(raw.lastWelcomeReceived,undefined);assert.equal(raw.lastWelcomeAdmissionId,undefined);
++  next.lastWelcomeOperation=key(12);next.lastWelcomeMessageId=null;next.welcomeAdmissions![key(102)]=key(12);await store.saveCycle(next);
++ }finally{await db.$disconnect();}
++ const next=new PrismaClient();try{const c=await cycleStore(next).cycle(jid(11));assert.equal(c?.lastWelcomeReceived,false);assert.equal(c?.lastWelcomeAdmissionId,key(102));}finally{await next.$disconnect();}
++});
+diff --git a/test/bc-group-cycle-engine.test.ts b/test/bc-group-cycle-engine.test.ts
+index 5d44146..a7eb811 100644
+--- a/test/bc-group-cycle-engine.test.ts
++++ b/test/bc-group-cycle-engine.test.ts
+@@ -1,29 +1,30 @@
+ import test from 'node:test';import assert from 'node:assert/strict';
+ import {executeCycleCommand} from '../src/api/integrations/channel/whatsapp/bc-groups/cycle-engine';
+ import {fixture,a,b,u,id,key,branding} from './bc-cycle-fixture';
+-test('Criação, promoção e foto pelo criador; primeira mensagem pelo segundo; sem cliente na preparação',async()=>{
+- const f=await fixture();assert.equal((await f.create() as any).state,'created');assert.equal((await executeCycleCommand(f.d,'prepare',f.preparation) as any).state,'prepared');assert.equal(f.raw.participants[1].admin,'admin');assert.equal(f.photos(),1);
+- await assert.rejects(()=>executeCycleCommand(f.d,'welcome',{groupJid:id,operationId:key(3)}));assert.equal(f.sent.length,0);
+- f.as(b);const welcome=await executeCycleCommand(f.d,'welcome',{groupJid:id,operationId:key(3)}) as any;assert.equal(welcome.state,'notice_accepted');assert.equal(f.sent[0].author,b);assert.match(f.sent[0].text!,/Arena/);assert.ok(!f.sent[0].text!.includes('Barba & Cabelo'));
+- assert.equal(f.cycle()?.firstReceived,false);await assert.rejects(()=>executeCycleCommand(f.d,'invite',{groupJid:id}));
+- await executeCycleCommand(f.d,'description',{groupJid:id});await executeCycleCommand(f.d,'pinNotice',{groupJid:id,operationId:key(4),messageId:welcome.messageId,duration:2592000});
+- await f.d.cycles.evidence(id,welcome.messageId,a,b,true);assert.equal((await executeCycleCommand(f.d,'invite',{groupJid:id}) as any).inviteUrl,'https://chat.whatsapp.com/FICTICIO123456789');
+- assert.equal(f.cycle()?.firstSenderJid,b);assert.ok(f.raw.desc.includes('somente no aplicativo'));
++async function prepare(f:any){await executeCycleCommand(f.d,'prepare',f.preparation);f.raw.participants.push({id:u,admin:null});}
++test('Antes da entrada só prepara foto, nome, administradores e convite; após entrada acolhe e fixa',async()=>{
++ const f=await fixture();await f.create();await executeCycleCommand(f.d,'prepare',f.preparation);f.as(b);
++ for(const [command,p] of [['welcome',{groupJid:id,operationId:key(3),admissionId:key(101)}],['description',{groupJid:id}],['pinNotice',{groupJid:id,operationId:key(4),messageId:'nenhuma',duration:2592000}]] as const)await assert.rejects(()=>executeCycleCommand(f.d,command,p));
++ assert.equal(f.sent.length,0);assert.equal(f.raw.desc,undefined);assert.equal(f.photos(),1);assert.equal(f.raw.participants[1].admin,'admin');assert.ok((await executeCycleCommand(f.d,'invite',{groupJid:id}) as any).inviteUrl);
++ await executeCycleCommand(f.d,'decide',{groupJid:id,participants:[u],action:'approve'});
++ const w=await executeCycleCommand(f.d,'welcome',{groupJid:id,operationId:key(3),admissionId:key(101)}) as any;assert.equal(f.sent[0].author,b);
++ await executeCycleCommand(f.d,'description',{groupJid:id});await executeCycleCommand(f.d,'pinNotice',{groupJid:id,operationId:key(4),messageId:w.messageId,duration:2592000});await f.d.cycles.evidence(id,w.messageId,a,b,true);
++ assert.equal((await executeCycleCommand(f.d,'cycleStatus',{groupJid:id}) as any).ready,true);assert.match(f.raw.desc,/somente no aplicativo/);
++ await executeCycleCommand(f.d,'welcome',{groupJid:id,operationId:key(3),admissionId:key(101)});assert.equal(f.sent.filter(x=>x.text).length,1);
+ });
+ test('Timeout nas boas-vindas conserva chave global e não retransmite por outro número',async()=>{
+- const f=await fixture();await f.create();await executeCycleCommand(f.d,'prepare',f.preparation);f.as(b);let calls=0;f.d.socket.sendMessage=async()=>{calls++;throw new Error('timeout fictício');};
+- const p={groupJid:id,operationId:key(3)};assert.equal((await executeCycleCommand(f.d,'welcome',p) as any).state,'notice_unknown');assert.equal((await executeCycleCommand(f.d,'welcome',p) as any).state,'notice_unknown');assert.equal(calls,1);await assert.rejects(()=>executeCycleCommand(f.d,'welcome',{...p,operationId:key(30)}));
++ const f=await fixture();await f.create();await prepare(f);f.as(b);let calls=0;f.d.socket.sendMessage=async()=>{calls++;throw new Error('timeout fictício');};
++ const p={groupJid:id,operationId:key(3),admissionId:key(101)};assert.equal((await executeCycleCommand(f.d,'welcome',p) as any).state,'notice_unknown');assert.equal((await executeCycleCommand(f.d,'welcome',p) as any).state,'notice_unknown');assert.equal(calls,1);await assert.rejects(()=>executeCycleCommand(f.d,'welcome',{...p,operationId:key(30)}));
+ });
+ test('Foto incerta não é reenviada em nova operação e não libera mensagem',async()=>{
+  const f=await fixture();await f.create();let photos=0;f.d.socket.updateProfilePicture=async()=>{photos++;throw new Error('timeout fictício');};
+  assert.equal((await executeCycleCommand(f.d,'prepare',f.preparation) as any).state,'config_unknown');assert.equal((await executeCycleCommand(f.d,'prepare',f.preparation) as any).state,'config_unknown');await assert.rejects(()=>executeCycleCommand(f.d,'prepare',{...f.preparation,operationId:key(20)}));assert.equal(photos,1);
+- f.as(b);await assert.rejects(()=>executeCycleCommand(f.d,'welcome',{groupJid:id,operationId:key(3)}));
++ f.as(b);await assert.rejects(()=>executeCycleCommand(f.d,'welcome',{groupJid:id,operationId:key(3),admissionId:key(101)}));
+ });
+ test('Aceite da primeira mensagem não libera código sem recebimento e cliente presente',async()=>{
+- const f=await fixture();await f.create();await executeCycleCommand(f.d,'prepare',f.preparation);f.as(b);const welcome=await executeCycleCommand(f.d,'welcome',{groupJid:id,operationId:key(3)}) as any;await executeCycleCommand(f.d,'description',{groupJid:id});await executeCycleCommand(f.d,'pinNotice',{groupJid:id,operationId:key(4),messageId:welcome.messageId,duration:2592000});
++ const f=await fixture();await f.create();await prepare(f);f.as(b);const welcome=await executeCycleCommand(f.d,'welcome',{groupJid:id,operationId:key(3),admissionId:key(101)}) as any;await executeCycleCommand(f.d,'description',{groupJid:id});await executeCycleCommand(f.d,'pinNotice',{groupJid:id,operationId:key(4),messageId:welcome.messageId,duration:2592000});
+  const request={groupJid:id,operationId:key(5),customerJid:u,platformJids:[a,b],purpose:'login',expiresAt:new Date(Date.now()+60000).toISOString(),code:'123456'};
+- await assert.rejects(()=>executeCycleCommand(f.d,'sendCode',request));await f.d.cycles.evidence(id,welcome.messageId,a,b,true);await assert.rejects(()=>executeCycleCommand(f.d,'sendCode',request));
+- f.raw.participants.push({id:u,admin:null});assert.equal((await executeCycleCommand(f.d,'sendCode',request) as any).state,'code_accepted');const count=f.sent.length;assert.equal((await executeCycleCommand(f.d,'sendCode',request) as any).state,'code_accepted');assert.equal(f.sent.length,count);
++ await assert.rejects(()=>executeCycleCommand(f.d,'sendCode',request));await f.d.cycles.evidence(id,welcome.messageId,a,b,true);assert.equal((await executeCycleCommand(f.d,'sendCode',request) as any).state,'code_accepted');const count=f.sent.length;assert.equal((await executeCycleCommand(f.d,'sendCode',request) as any).state,'code_accepted');assert.equal(f.sent.length,count);
+  f.raw.participants[1].admin=null;await assert.rejects(()=>executeCycleCommand(f.d,'sendCode',{...request,operationId:key(6)}));
+ });
+ 
+@@ -45,7 +46,7 @@ test('Repetir saída incerta consulta participação antes de qualquer nova tent
+ });
+ 
+ test('Perda de conexão de outro administrador bloqueia envio, mas permite retirada protegida no encerramento',async()=>{
+- const f=await fixture();await f.create();await executeCycleCommand(f.d,'prepare',f.preparation);f.d.peersReady=()=>false;f.as(b);await assert.rejects(()=>executeCycleCommand(f.d,'welcome',{groupJid:id,operationId:key(3)}));
++ const f=await fixture();await f.create();await executeCycleCommand(f.d,'prepare',f.preparation);f.d.peersReady=()=>false;f.as(b);await assert.rejects(()=>executeCycleCommand(f.d,'welcome',{groupJid:id,operationId:key(3),admissionId:key(101)}));
+  f.as(a);await executeCycleCommand(f.d,'close',{groupJid:id,operationId:key(91),stage:'start'});assert.equal((await executeCycleCommand(f.d,'close',{groupJid:id,operationId:key(92),stage:'withdraw',targetJid:b}) as any).state,'left');assert.equal((await executeCycleCommand(f.d,'close',{groupJid:id,operationId:key(93),stage:'final'}) as any).state,'closed');
+ });
+ 
+@@ -62,18 +63,44 @@ test('Legado sem prova só pode ser adotado para encerrar; nunca envia ou cria o
+ test('Adoção de legado com cliente administrador ou LID sem prova exige revisão',async()=>{
+  for(const mode of ['admin','lid']){const f=await fixture();f.raw.participants=[{id:a,admin:'superadmin'},{id:mode==='lid'?'123456@lid':u,admin:mode==='admin'?'admin':null}];await assert.rejects(()=>executeCycleCommand(f.d,'adoptClosing',{groupJid:id,cycleId:key(100),customerJid:u,platformJids:[a]}));assert.equal(f.cycle(),null);}
+ });
+-test('Entrada por LID comprovado admite apenas o cliente e nunca o promove',async()=>{
+- const f=await fixture();await f.create();await executeCycleCommand(f.d,'prepare',f.preparation);f.as(b);const w=await executeCycleCommand(f.d,'welcome',{groupJid:id,operationId:key(3)}) as any;await executeCycleCommand(f.d,'description',{groupJid:id});await executeCycleCommand(f.d,'pinNotice',{groupJid:id,operationId:key(4),messageId:w.messageId,duration:2592000});await f.d.cycles.evidence(id,w.messageId,a,b,true);
++test('Entrada por LID comprovado é possível antes de boas-vindas e nunca promove o cliente',async()=>{
++ const f=await fixture();await f.create();await executeCycleCommand(f.d,'prepare',f.preparation);f.as(b);
+  const lid='123456@lid';f.d.resolvePhone=async value=>value===lid?u:null;f.d.socket.groupRequestParticipantsList=async()=>[{jid:lid}] as any;f.d.socket.groupRequestParticipantsUpdate=async()=>{f.raw.participants.push({id:lid,phoneNumber:u,admin:null});return [] as any;};
+- assert.equal((await executeCycleCommand(f.d,'requests',{groupJid:id}) as any)[0].phoneNumber,u);await executeCycleCommand(f.d,'decide',{groupJid:id,participants:[lid],action:'approve'});assert.equal(f.raw.participants.find(p=>p.id===lid).admin,null);
++ assert.equal((await executeCycleCommand(f.d,'requests',{groupJid:id}) as any)[0].phoneNumber,u);await executeCycleCommand(f.d,'decide',{groupJid:id,participants:[lid],action:'approve'});assert.equal(f.raw.participants.find(p=>p.id===lid).admin,null);assert.equal(f.sent.length,0);
+ });
+-
+ test('Após a primeira prova, reserva manual transmite com principal offline sem exigir duas sessões online',async()=>{
+- const f=await fixture();await f.create();await executeCycleCommand(f.d,'prepare',f.preparation);f.as(b);
+- const w=await executeCycleCommand(f.d,'welcome',{groupJid:id,operationId:key(3)}) as any;await executeCycleCommand(f.d,'description',{groupJid:id});await executeCycleCommand(f.d,'pinNotice',{groupJid:id,operationId:key(4),messageId:w.messageId,duration:2592000});await f.d.cycles.evidence(id,w.messageId,a,b,true);f.raw.participants.push({id:u,admin:null});f.d.peersReady=()=>false;
++ const f=await fixture();await f.create();await prepare(f);f.as(b);
++ const w=await executeCycleCommand(f.d,'welcome',{groupJid:id,operationId:key(3),admissionId:key(101)}) as any;await executeCycleCommand(f.d,'description',{groupJid:id});await executeCycleCommand(f.d,'pinNotice',{groupJid:id,operationId:key(4),messageId:w.messageId,duration:2592000});await f.d.cycles.evidence(id,w.messageId,a,b,true);f.d.peersReady=()=>false;
+  assert.equal((await executeCycleCommand(f.d,'sendCode',{groupJid:id,operationId:key(5),customerJid:u,platformJids:[a,b],purpose:'login',expiresAt:new Date(Date.now()+60000).toISOString(),code:'123456'}) as any).state,'code_accepted');assert.equal(f.sent[f.sent.length-1]?.author,b);
+  await executeCycleCommand(f.d,'brand',{groupJid:id,brand:{...branding,shop_name:'Nome novo da loja'}});await executeCycleCommand(f.d,'description',{groupJid:id});assert.match(f.raw.desc,/Nome novo da loja/);
+ });
+ test('Preparação inclui mais contas de envio, promove todas e nunca adiciona o cliente por conveniência',async()=>{
+  const f=await fixture();const extras=Array.from({length:4},(_,i)=>`55118000003${i}3@s.whatsapp.net`);f.d.platformJids.push(...extras);await f.create();await executeCycleCommand(f.d,'prepare',{...f.preparation,platformJids:[a,b,...extras]});assert.equal(f.raw.participants.length,6);assert.ok(f.raw.participants.every(p=>['admin','superadmin'].includes(p.admin)));assert.ok(!f.raw.participants.some(p=>p.id===u));
+ });
++
++test('Saída antes do efeito impede boas-vindas; nenhuma tentativa incerta é repetida',async()=>{
++ const f=await fixture();await f.create();await prepare(f);f.as(b);let reads=0;const metadata=f.d.socket.groupMetadata;
++ f.d.socket.groupMetadata=async(...args:any[])=>{if(++reads===2)f.raw.participants=f.raw.participants.filter(p=>p.id!==u);return metadata(...args);};
++ const request={groupJid:id,operationId:key(3),admissionId:key(101)};
++ assert.equal((await executeCycleCommand(f.d,'welcome',request) as any).state,'notice_unknown');assert.equal(f.sent.length,0);
++ await assert.rejects(()=>executeCycleCommand(f.d,'welcome',request));assert.equal(f.sent.length,0);
++});
++test('Saída após boas-vindas impede descrição e fixação; não afeta nome, foto ou administradores',async()=>{
++ const f=await fixture();await f.create();await prepare(f);f.as(b);const w=await executeCycleCommand(f.d,'welcome',{groupJid:id,operationId:key(3),admissionId:key(101)}) as any;
++ f.raw.participants=f.raw.participants.filter(p=>p.id!==u);
++ await assert.rejects(()=>executeCycleCommand(f.d,'description',{groupJid:id}));
++ await assert.rejects(()=>executeCycleCommand(f.d,'pinNotice',{groupJid:id,operationId:key(4),messageId:w.messageId,duration:2592000}));
++ assert.equal(f.raw.desc,undefined);assert.equal(f.sent.length,1);assert.equal(f.photos(),1);
++});
++test('Reentrada exige recebimento do acolhimento atual; recibo e pin anteriores não liberam envio',async()=>{
++ const f=await fixture();await f.create();await prepare(f);f.as(b);
++ const first=await executeCycleCommand(f.d,'welcome',{groupJid:id,operationId:key(3),admissionId:key(101)}) as any;
++ await executeCycleCommand(f.d,'description',{groupJid:id});await executeCycleCommand(f.d,'pinNotice',{groupJid:id,operationId:key(4),messageId:first.messageId,duration:2592000});await f.d.cycles.evidence(id,first.messageId,a,b,true);
++ assert.equal((await executeCycleCommand(f.d,'cycleStatus',{groupJid:id}) as any).ready,true);
++ const next=await executeCycleCommand(f.d,'welcome',{groupJid:id,operationId:key(6),admissionId:key(102)}) as any;
++ assert.equal(f.cycle()?.pinIntent,undefined);assert.equal((await executeCycleCommand(f.d,'cycleStatus',{groupJid:id}) as any).ready,false);
++ await executeCycleCommand(f.d,'description',{groupJid:id});await executeCycleCommand(f.d,'pinNotice',{groupJid:id,operationId:key(7),messageId:next.messageId,duration:2592000});
++ await f.d.cycles.evidence(id,first.messageId,a,b,true);assert.equal((await executeCycleCommand(f.d,'cycleStatus',{groupJid:id}) as any).ready,false);
++ await f.d.cycles.evidence(id,next.messageId,a,b,true);assert.equal((await executeCycleCommand(f.d,'cycleStatus',{groupJid:id}) as any).ready,true);
++ await assert.rejects(()=>executeCycleCommand(f.d,'welcome',{groupJid:id,operationId:key(8),admissionId:key(102)}));assert.equal(f.sent.filter(m=>m.text).length,2);
++});
+diff --git a/test/bc-group-cycle.test.ts b/test/bc-group-cycle.test.ts
+index de42a95..6811c21 100644
+--- a/test/bc-group-cycle.test.ts
++++ b/test/bc-group-cycle.test.ts
+@@ -1,7 +1,7 @@
+ import test from 'node:test';import assert from 'node:assert/strict';
+ import {cycleExpiry,cycleQuorum,cycleSendReady,type GroupCycle} from '../src/api/integrations/channel/whatsapp/bc-groups/cycle';
+ const a='5511800000111@s.whatsapp.net',b='5511800000222@s.whatsapp.net',u='5511999999999@s.whatsapp.net';
+-const c=()=>({version:1,groupJid:'123456-7890@g.us',customerJid:u,platformJids:[a,b],creatorJid:a,creatorInstanceId:'criador',createdAt:'2026-01-14T00:00:00.000Z',expiresAt:'2027-01-14T00:00:00.000Z',firstWelcomeOperation:'welcome',firstSenderJid:b,firstMessageId:'mensagem',firstReceived:true,firstViolation:false,logoHash:'hash',logoApplied:true,prepared:true,descriptionHash:'desc',lastWelcomeMessageId:'mensagem',lastWelcomeOperation:'welcome',pinExpiresAt:'2027-01-13T00:00:00.000Z',pinAccepted:true,closing:false,closed:false,leftInstances:[]} as GroupCycle);
++const c=()=>({version:1,groupJid:'123456-7890@g.us',customerJid:u,platformJids:[a,b],creatorJid:a,creatorInstanceId:'criador',createdAt:'2026-01-14T00:00:00.000Z',expiresAt:'2027-01-14T00:00:00.000Z',firstWelcomeOperation:'welcome',firstSenderJid:b,firstMessageId:'mensagem',firstReceived:true,firstViolation:false,logoHash:'hash',logoApplied:true,prepared:true,descriptionHash:'desc',lastWelcomeMessageId:'mensagem',lastWelcomeOperation:'welcome',lastWelcomeReceived:true,lastWelcomeAdmissionId:'entrada',pinExpiresAt:'2027-01-13T00:00:00.000Z',pinAccepted:true,closing:false,closed:false,leftInstances:[]} as GroupCycle);
+ const g=()=>({creation:Date.parse(c().createdAt)/1000,id:c().groupJid,restrict:true,memberAddMode:false,joinApprovalMode:true,participants:[{id:a,admin:'superadmin'},{id:b,admin:'admin'},{id:u,admin:null}]});
+ test('Grupo utilizável exige pelo menos dois admins distintos e cliente comum',()=>{assert.equal(cycleSendReady(c(),g()),true);for(const index of [0,1]){const raw=g();raw.participants[index].admin=null;assert.equal(cycleQuorum(c(),raw),false);}const raw=g();raw.participants[2].admin='admin';assert.equal(cycleQuorum(c(),raw),false);});
+ test('Cliente ausente somente na preparação; nunca para código/aviso',()=>{const raw=g();raw.participants.pop();assert.equal(cycleQuorum(c(),raw,true),true);assert.equal(cycleSendReady(c(),raw),false);});
+diff --git a/test/bc-group-routes.test.ts b/test/bc-group-routes.test.ts
+index 4c9fefe..173585c 100644
+--- a/test/bc-group-routes.test.ts
++++ b/test/bc-group-routes.test.ts
+@@ -51,7 +51,7 @@ test('Todas as rotas preservam guardas, validação e instância autenticada', a
+     ['GET','bcCycle',{groupJid}],
+     ['GET','bcOperation',{groupJid,operationId}],
+     ['POST','bcPrepare',{groupJid,operationId,subject:'Teste',platformJids:platforms,brand,logoBase64:'YWJj',logoHash:'a'.repeat(64)}],
+-    ['POST','bcWelcome',{groupJid,operationId}],
++    ['POST','bcWelcome',{groupJid,operationId,admissionId:operationId}],
+     ['POST','bcDescription',{groupJid}],
+     ['POST','bcSendNotice',{groupJid,operationId,customerJid:creation.customerJid,platformJids:platforms,templateKey:'booking.confirmed',text:'Agendamento confirmado'}],
+     ['POST','bcClose',{groupJid,operationId,stage:'start'}],
+diff --git a/test/bc-group-webhook.test.ts b/test/bc-group-webhook.test.ts
+index 9fa4872..7e581b9 100644
+--- a/test/bc-group-webhook.test.ts
++++ b/test/bc-group-webhook.test.ts
+@@ -54,7 +54,7 @@ test('Webhook local preserva ID no retry, usa header e omite apikey de grupos B&
+     });
+     assert.equal(bodies.length, 2);
+     assert.equal(bodies[0].event_id, bodies[1].event_id);
+-    assert.equal(bodies[0].contract_version, 'bc-groups-v3');
++    assert.equal(bodies[0].contract_version, 'bc-groups-v4');
+     assert.equal(headers['x-bc-group-secret'], 'ficticio');
+     assert.equal(bodies[0].apikey, undefined);
+   } finally {
+diff --git a/test/bc-groups.test.ts b/test/bc-groups.test.ts
+index 405f428..259d5f9 100644
+--- a/test/bc-groups.test.ts
++++ b/test/bc-groups.test.ts
+@@ -5,7 +5,7 @@ import {fixture,a,b,u,id,key,branding} from './bc-cycle-fixture';
+ process.env.BC_GROUPS_EXTENSION_ENABLED='true';process.env.BC_GROUPS_INSTANCES='fixture';
+ const request=()=>({operationId:key(1),cycleId:key(100),subject:'Notificações Arena • Cliente',participants:[b],customerJid:u,brand:branding});
+ const rejects=(fn:()=>Promise<unknown>,status:number)=>assert.rejects(fn,(e:any)=>e.status===status);
+-async function prepared(){const f=await fixture();await f.create();await executeGroupCommand(f.d,'prepare',f.preparation);f.as(b);const w=await executeGroupCommand(f.d,'welcome',{groupJid:id,operationId:key(3)}) as any;await executeGroupCommand(f.d,'description',{groupJid:id});await executeGroupCommand(f.d,'pinNotice',{groupJid:id,operationId:key(4),messageId:w.messageId,duration:2592000});await f.d.cycles.evidence(id,w.messageId,a,b,true);f.raw.participants.push({id:u,admin:null});return f;}
++async function prepared(){const f=await fixture();await f.create();await executeGroupCommand(f.d,'prepare',f.preparation);f.raw.participants.push({id:u,admin:null});f.as(b);const w=await executeGroupCommand(f.d,'welcome',{groupJid:id,operationId:key(3),admissionId:key(101)}) as any;await executeGroupCommand(f.d,'description',{groupJid:id});await executeGroupCommand(f.d,'pinNotice',{groupJid:id,operationId:key(4),messageId:w.messageId,duration:2592000});await f.d.cycles.evidence(id,w.messageId,a,b,true);return f;}
+ const code=()=>({operationId:key(5),groupJid:id,customerJid:u,platformJids:[a,b],purpose:'login',expiresAt:new Date(Date.now()+60000).toISOString(),code:'654321'});
+ test('Flags fechadas por padrão; instância gerenciada exige UUID exato e duas flags',()=>{
+  assert.equal(extensionEnabled('fixture',{}),false);assert.equal(extensionEnabled('outra'),false);
+@@ -21,7 +21,7 @@ test('Consulta por instância não revela operação de outra conta',async()=>{c
+ test('Rotas genéricas não podem contornar preparação e composição',async()=>{const f=await fixture();for(const command of ['memberMode','approvalMode','setting','member'])await rejects(()=>executeGroupCommand(f.d,command,{groupJid:id}),403);assert.equal(f.creates(),0);});
+ test('Inspeção exige JID exato, PN sem conflito e admin real',async()=>{for(const mode of ['id','pn','admin']){const f=await fixture();if(mode==='id')f.raw.id='999@g.us';if(mode==='pn')f.raw.participants[0].phoneNumber=b;if(mode==='admin')f.raw.participants[0].admin=null;await rejects(()=>executeGroupCommand(f.d,'inspect',{groupJid:id}),mode==='id'?409:403);}});
+ test('Metadados ausentes não viram proteção; LID sem prova não vira telefone',()=>{assert.equal(groupView({id,participants:[]} as any).joinApprovalMode,null);assert.equal(participantIdentity('123456@lid').phoneNumber,null);assert.equal(participantIdentity({id:'123456@lid',phoneNumber:'123456'}).phoneNumber,null);assert.equal(participantIdentity({id:'123456@lid',phoneNumber:b}).phoneNumber,b);assert.equal(participantIdentity({id:a,phoneNumber:b}).phoneNumber,null);});
+-test('Envelope só para eventos/instâncias protegidos, versão nova explícita',()=>{assert.deepEqual(eventEnvelope('outra','groups.update'),{});assert.deepEqual(eventEnvelope('fixture','messages.upsert'),{});const e=eventEnvelope('fixture','group-participants.update');assert.match(e.event_id!,/^[a-f0-9-]{36}$/);assert.equal(e.contract_version,'bc-groups-v3');});
++test('Envelope só para eventos/instâncias protegidos, versão nova explícita',()=>{assert.deepEqual(eventEnvelope('outra','groups.update'),{});assert.deepEqual(eventEnvelope('fixture','messages.upsert'),{});const e=eventEnvelope('fixture','group-participants.update');assert.match(e.event_id!,/^[a-f0-9-]{36}$/);assert.equal(e.contract_version,'bc-groups-v4');});
+ test('OTP: diário global entre contas; concorrência não duplica nem guarda o código',async()=>{const f=await prepared();const start=f.sent.length;const r=code();await Promise.allSettled(Array.from({length:8},()=>executeGroupCommand(f.d,'sendCode',r)));assert.equal(f.sent.length,start+1);f.as(a);await rejects(()=>executeGroupCommand(f.d,'sendCode',r),409);assert.equal(f.sent.length,start+1);assert.ok(!JSON.stringify([...f.map.values()]).includes('654321'));});
+ test('OTP não tolera intruso, cliente admin/ausente, proteção ausente ou validade vencida',async()=>{for(const mode of ['intruso','admin','ausente','controle','expirado']){const f=await prepared();if(mode==='intruso')f.raw.participants.push({id:'5511666666666@s.whatsapp.net',admin:null});if(mode==='admin')f.raw.participants.find(p=>p.id===u).admin='admin';if(mode==='ausente')f.raw.participants=f.raw.participants.filter(p=>p.id!==u);if(mode==='controle')f.raw.joinApprovalMode=false;const r=code();if(mode==='expirado')r.expiresAt='2020-01-01T00:00:00Z';const count=f.sent.length;await assert.rejects(()=>executeGroupCommand(f.d,'sendCode',r));assert.equal(f.sent.length,count);}});
+ test('Timeout de OTP permanece incerto depois de reinício, sem reenviar',async()=>{const f=await prepared();let calls=0;f.d.socket.sendMessage=async()=>{calls++;throw Error('timeout fictício');};const r=code();assert.equal((await executeGroupCommand(f.d,'sendCode',r) as any).state,'code_unknown');await executeGroupCommand({...f.d},'sendCode',r);assert.equal(calls,1);});

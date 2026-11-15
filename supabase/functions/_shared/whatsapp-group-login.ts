@@ -9,6 +9,8 @@ type Database = {
 };
 type Transport = (path: string, init?: RequestInit) => Promise<unknown>;
 type Context = {
+  admission_id: string;
+  welcome_message_id: string;
   cycle_id: string;
   cycle_revision: number;
   cycle_expires_at: string;

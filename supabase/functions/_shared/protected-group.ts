@@ -8,6 +8,8 @@ export type ProtectedGroupContext = {
   cycle_expires_at: string;
   creator_phone: string;
   first_message_id: string;
+  admission_id: string;
+  welcome_message_id: string;
   instance_name: string;
   customer_phone: string;
   platform_phones: string[];
@@ -23,6 +25,10 @@ export function validProtectedGroupContext(value: unknown): value is ProtectedGr
   return (
     uuid(c.group_id) &&
     uuid(c.cycle_id) &&
+    uuid(c.admission_id) &&
+    typeof c.welcome_message_id === "string" &&
+    c.welcome_message_id.length > 0 &&
+    c.welcome_message_id.length <= 200 &&
     Number.isSafeInteger(c.version) &&
     c.version > 0 &&
     Number.isSafeInteger(c.cycle_revision) &&
@@ -64,14 +70,16 @@ export async function inspectProtectedGroup(
       protectedNotices?: boolean;
       serializedCommands?: boolean;
       protectedCycle?: boolean;
+      postAdmissionWelcome?: boolean;
       twoPlatformAdmins?: boolean;
     };
     if (
-      capabilities?.contract !== "bc-groups-v3" ||
+      capabilities?.contract !== "bc-groups-v4" ||
       capabilities.protectedCodes !== true ||
       capabilities.protectedNotices !== true ||
       capabilities.serializedCommands !== true ||
       capabilities.protectedCycle !== true ||
+      capabilities.postAdmissionWelcome !== true ||
       capabilities.twoPlatformAdmins !== true
     )
       return false;
@@ -117,6 +125,9 @@ export async function inspectProtectedGroup(
       !context.platform_phones.some(
         (phone) => c.firstSenderJid === phone.slice(1) + "@s.whatsapp.net",
       ) ||
+      c.lastWelcomeReceived !== true ||
+      c.lastWelcomeAdmissionId !== context.admission_id ||
+      c.lastWelcomeMessageId !== context.welcome_message_id ||
       c.firstViolation !== false ||
       c.closing !== false ||
       c.closed !== false ||

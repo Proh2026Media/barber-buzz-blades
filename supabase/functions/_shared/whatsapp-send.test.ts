@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { stripTypeScriptTypes } from "node:module";
+import { inspectProtectedGroup } from "./protected-group.ts";
 import { sendWhatsapp } from "./whatsapp-send.ts";
 import {
   protectedSendContext,
@@ -153,3 +154,31 @@ test("cliente administrativo rejeita tentativa de ignorar a saída comum", async
   await assert.rejects(management("/instance/../message/sendText/teste"), /WA_OUTBOUND_REQUIRED/);
   assert.equal(network, 0);
 });
+
+for (const change of [
+  "contrato anterior",
+  "admissão anterior",
+  "mensagem anterior",
+  "sem recebimento",
+] as const) {
+  test(`Acolhimento pós-entrada bloqueia envio com ${change}`, async () => {
+    const c = protectedSendContext();
+    const transport = async (path: string) => {
+      const response = protectedSendRead(path, c) as {
+        contract?: string;
+        cycle?: Record<string, unknown>;
+      };
+      if (path.includes("/bcCapabilities/") && change === "contrato anterior")
+        response.contract = "bc-groups-v3";
+      if (path.includes("/bcCycle/") && response.cycle) {
+        if (change === "admissão anterior")
+          response.cycle.lastWelcomeAdmissionId = "44444444-4444-4444-8444-444444444444";
+        if (change === "mensagem anterior")
+          response.cycle.lastWelcomeMessageId = "acolhimento-antigo";
+        if (change === "sem recebimento") response.cycle.lastWelcomeReceived = false;
+      }
+      return response;
+    };
+    assert.equal(await inspectProtectedGroup(transport, c), false);
+  });
+}

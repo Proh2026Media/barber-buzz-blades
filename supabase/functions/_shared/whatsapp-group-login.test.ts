@@ -22,6 +22,8 @@ function fixture(
     cycle_revision: 1,
     cycle_expires_at: new Date(Date.now() + 86400000).toISOString(),
     first_message_id: "boas-vindas",
+    admission_id: "44444444-4444-4444-8444-444444444444",
+    welcome_message_id: "boas-vindas",
     creator_phone: "+5511888888888",
     group_id: "11111111-1111-4111-8111-111111111111",
     group_jid: "123-456@g.us",
@@ -56,11 +58,12 @@ function fixture(
     calls.push(path);
     if (path.startsWith("/group/bcCapabilities/"))
       return {
-        contract: "bc-groups-v3",
+        contract: "bc-groups-v4",
         protectedCodes: true,
         protectedNotices: true,
         serializedCommands: true,
         protectedCycle: true,
+        postAdmissionWelcome: true,
         twoPlatformAdmins: true,
       };
     if (path.startsWith("/group/bcInspect/"))
@@ -86,6 +89,9 @@ function fixture(
           creatorJid: context.creator_phone.slice(1) + "@s.whatsapp.net",
           firstMessageId: context.first_message_id,
           firstReceived: true,
+          lastWelcomeReceived: true,
+          lastWelcomeAdmissionId: context.admission_id,
+          lastWelcomeMessageId: context.welcome_message_id,
           firstSenderJid: "5511666666666@s.whatsapp.net",
           firstViolation: false,
           closing: false,

@@ -7,6 +7,8 @@ export function protectedSendContext(instance = "autorizada") {
     cycle_revision: 1,
     cycle_expires_at: new Date(Date.now() + 86400000).toISOString(),
     first_message_id: "welcome",
+    admission_id: "33333333-3333-4333-8333-333333333333",
+    welcome_message_id: "welcome",
     creator_phone: "+5511888888888",
     group_jid: "55555-77777@g.us",
     instance_name: instance,
@@ -19,8 +21,9 @@ export function protectedSendContext(instance = "autorizada") {
 export function protectedSendRead(path: string, c = protectedSendContext()) {
   if (path.includes("/bcCapabilities/"))
     return {
-      contract: "bc-groups-v3",
+      contract: "bc-groups-v4",
       protectedCycle: true,
+      postAdmissionWelcome: true,
       twoPlatformAdmins: true,
       serializedCommands: true,
       protectedCodes: true,
@@ -48,6 +51,9 @@ export function protectedSendRead(path: string, c = protectedSendContext()) {
         firstMessageId: c.first_message_id,
         firstSenderJid: "5511666666666@s.whatsapp.net",
         firstReceived: true,
+        lastWelcomeReceived: true,
+        lastWelcomeAdmissionId: c.admission_id,
+        lastWelcomeMessageId: c.welcome_message_id,
         firstViolation: false,
         closing: false,
         closed: false,
