@@ -1,6 +1,6 @@
 # P-122 — login com conferência recente dos números
 
-**Estado atual: instalado com autorização do titular em16/11/2026.** SQL e três fontes conferidas, apenas Edge reiniciada, piloto liberado somente Loja Teste/Alyson Gmail. Telefone confirmado e grupo ativo preservados. A condição de conexão envelhecida foi reproduzida naturalmente após a instalação. Recebimento do código de login e abertura de sessão ainda aguardam novo teste real do titular. Não reinstalar nem enviar o pacote local anterior à TI como pendência.
+**Estado atual: instalado e login real homologado no piloto Loja Teste/Alyson Gmail em16/11/2026.** Titular recebeu o código no grupo, validou e entrou. Rota/envio/consumo e autenticação foram comprovados no servidor após a condição de recência envelhecida, sem conferência administrativa adicional. Telefone e grupo preservados. Não reinstalar, repetir cadastro ou ampliar o piloto automaticamente.
 
 ## Evidência e causa
 
@@ -48,3 +48,11 @@ Depois de conferir os dois números, o teste foi reativado pela sessão real de 
 Às16:02:23BRT, política33: pausa=false, piloto/background=true, isolamento=true, somente Loja Teste/Alyson Gmail, outras lojas/clientes recusados, distribuição=false, rotina nova ativa e três timers antigos inativos.
 
 Às16:04:12BRT, sem alterar timestamps ou estender prazos, as duas observações expiraram naturalmente: ready=false, recent_numbers=0 e preflight_eligible=true. O estado que falhava foi reproduzido em produção após a instalação, preservando a exigência de nova leitura real. Titular recebeu pedido para uma nova solicitação no login e confirmação do resultado, sem compartilhar código. Não homologar recebimento/sessão apenas com essa elegibilidade; aguardar nova rota/tentativa e consumo real.
+
+## Login real homologado
+
+Titular informou “Recebi o código e consegui entrar”. Consulta16:08:20BRT comprovou pedido16:06:55.930, rota para o mesmo grupo, tentativa accepted finalizada16:07:00.310, desafio consumido e auth.users.last_sign_in_at16:07:12.603. O telefone segue confirmado, grupo/ciclo active e isolamento=true com pausa=false. A solicitação ocorreu após a condição fria comprovada16:04:12, sem nova conferência administrativa dos números.
+
+Não houve leitura de código, hash, token ou cookie pelo Codex. As tabelas auth.sessions e auth.refresh_tokens não trouxeram novo registro para esse usuário nesta consulta; não usar essa ausência como prova de falha nem afirmar criação de linha nelas. A homologação se apoia no envio/consumo, last_sign_in_at atualizado e acesso confirmado pelo titular. Nenhum novo código foi solicitado pelo Codex.
+
+Entrada, confirmação do telefone e login pelo grupo estão homologados neste piloto. Não há implantação pendente desta correção para a TI. O isolamento permanece somente Loja Teste/Alyson Gmail; não liga distribuição nem os três timers antigos e não autoriza ampliar o piloto.

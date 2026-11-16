@@ -25,7 +25,7 @@
   "new_challenge": false,
   "message_sent": false,
   "installed": true,
-  "real_login_homologated": false,
+  "real_login_homologated": true,
   "pilot_active": {
     "version": 33,
     "paused": false,
@@ -43,5 +43,21 @@
     "recent_numbers": 0,
     "preflight_eligible": true,
     "timestamps_modified_for_test": false
+  },
+  "real_login": {
+    "user_confirmed_access": true,
+    "requested_at": "2026-11-16T19:06:55.930322Z",
+    "route_same_group": true,
+    "attempt_state": "accepted",
+    "finished_at": "2026-11-16T19:07:00.310889Z",
+    "challenge_consumed": true,
+    "last_sign_in_at": "2026-11-16T19:07:12.603148Z",
+    "profile_phone_confirmed": true,
+    "group_state": "active",
+    "cycle_state": "active",
+    "paused": false,
+    "isolated": true,
+    "session_table_creation_proven": false,
+    "code_or_token_read": false
   }
 }
