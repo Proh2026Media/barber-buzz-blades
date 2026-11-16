@@ -1,0 +1,47 @@
+{
+  "imagem": {
+    "manifest": "sha256:5046086c347b072fa4052d8ee90f1419100ac5318f1bd65b15ae093d3aad3ea6",
+    "config": "sha256:bab6ab42b0183ee7f5232e3ec5eb5746902db727bd942b17dbbe24f81f21e127",
+    "index": "sha256:2468fc5ea6bedbc7fcd8dbb56c7ae6a71e16735942075230c765a68c211aca30",
+    "version": "2.3.7-bc.groups.7-entry.4",
+    "patch_sha256": "8247f48f98e143d4dcc38d278ef7a819fc285c35913e1b13a316fd82495db606",
+    "published": true,
+    "installed": true
+  },
+  "api_ready_seconds": 26.081,
+  "instances": 8,
+  "open_recovered": 4,
+  "environment_and_mounts_preserved": true,
+  "abort_http": 200,
+  "persisted_compatible_marker": true,
+  "new_intent_started": false,
+  "frontend_build": "01a1e58c-6608-729b-8291-c5b6be1058cf",
+  "frontend_state": "completed",
+  "pilot_paused": false,
+  "frontend_utc": "2026-11-16T18:14:13Z",
+  "frontend_source": "aecc5ed82d71334e1e551c0c952555b99026c412",
+  "public_proof": {
+    "utc": "2026-11-16T18:14:28.682678+00:00",
+    "page_http": 200,
+    "modules": [
+      {
+        "module": "ArenaApp-BYYr1Zil.js",
+        "http": 200,
+        "aborted_checks": 2,
+        "resume_button": true,
+        "sha256": "87cc305de434a9ce4c30a868c1c39a657ba83aab7b621387fdd27da6787e0ffe"
+      }
+    ]
+  },
+  "pilot_scope": "Loja Teste / Alyson Gmail",
+  "real_resume_clicked_by_codex": false,
+  "otp_login_homologados": false,
+  "corte_final_utc": "2026-11-16T18:16:08Z",
+  "policy_version": 29,
+  "isolation": true,
+  "other_shop_allowed": false,
+  "other_customer_allowed": false,
+  "distribution_enabled": false,
+  "new_timer": "active/enabled",
+  "old_timers": "inactive/disabled"
+}
