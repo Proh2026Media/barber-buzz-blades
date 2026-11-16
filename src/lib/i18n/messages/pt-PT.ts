@@ -180,6 +180,22 @@ export const ptPT: Record<MessageKey, string> = {
   "care.profileCodeUnavailable":
     "O código é enviado apenas para o seu grupo de atendimento. Não foi possível enviar agora; confira a preparação e a sua entrada no grupo.",
   "care.openSetup": "Ver o meu grupo e próximos passos",
+  "carePilot.title": "Teste de WhatsApp",
+  "carePilot.active": "Teste disponível",
+  "carePilot.paused": "Teste em pausa",
+  "carePilot.scope": "Os novos envios ficam restritos à barbearia e ao cliente apresentados aqui.",
+  "carePilot.noScope": "Escolha primeiro a barbearia e o cliente autorizados no âmbito do teste.",
+  "carePilot.checkNumbers":
+    "Confira a ligação recente e a autorização dos dois números de atendimento.",
+  "carePilot.activate": "Disponibilizar teste",
+  "carePilot.pause": "Pausar teste",
+  "carePilot.refresh": "Conferir disponibilidade",
+  "carePilot.stale": "A situação mudou. Confira a disponibilidade novamente.",
+  "carePilot.error":
+    "Não foi possível conferir ou alterar a disponibilidade. Atualize e tente novamente.",
+  "carePilot.confirm":
+    "Permite envios apenas deste atendimento. A confirmação do telefone continua a depender da entrada e do código no grupo.",
+
   "care.profileSetup": "Continuar confirmação",
   "care.profileSetupHint": "Confira o seu número, entre no grupo e receba o código por lá.",
   "care.waitRelease":

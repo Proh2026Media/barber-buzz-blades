@@ -1,0 +1,137 @@
+{
+  "contract": "bc-pilot-release-v1",
+  "before": {
+    "claim_care_cycle(uuid)": {
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+      "md5": "3fe09ad5cae512070dd4fd10575f13a1",
+      "owner": "postgres"
+    },
+    "care_group_admin(text,jsonb)": {
+      "acl": ["postgres=X/postgres", "authenticated=X/postgres", "service_role=X/postgres"],
+      "md5": "4c7c2eba770ee87628eb5e8e86d7f619",
+      "owner": "postgres"
+    },
+    "guard_whatsapp_otp_request()": {
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+      "md5": "5c87483c9b7d04bc6ac8826c301c38ad",
+      "owner": "postgres"
+    },
+    "claim_whatsapp_outbox(integer)": {
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+      "md5": "55c2f0f70436fcffb898730becaf3356",
+      "owner": "postgres"
+    },
+    "care_cycle_policy_allows(uuid,uuid)": {
+      "acl": ["postgres=X/postgres"],
+      "md5": "a894f986e4e8751e506c62f4766b82f0",
+      "owner": "postgres"
+    },
+    "whatsapp_destination_route_current(uuid)": {
+      "acl": ["postgres=X/postgres"],
+      "md5": "4d711e30bbd6068e1a1309a30d1142da",
+      "owner": "postgres"
+    },
+    "whatsapp_group_notice_context(uuid,uuid)": {
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+      "md5": "d45d51e3ea809916126d90b8a41a2926",
+      "owner": "postgres"
+    },
+    "request_whatsapp_login_once(text,text,uuid)": {
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+      "md5": "2db88dda0989d288b0b3ac6440a0f7cf",
+      "owner": "postgres"
+    },
+    "authorize_care_cycle(uuid,uuid,boolean,uuid)": {
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+      "md5": "16818f21781ea84187b86829c766d22a",
+      "owner": "postgres"
+    },
+    "whatsapp_group_login_context(uuid,text,boolean)": {
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+      "md5": "081a9358cd2a746ae5e65a21f5e83a54",
+      "owner": "postgres"
+    },
+    "whatsapp_send_candidate(uuid,uuid,uuid,text,text)": {
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+      "md5": "4baa34c5d96c5808ad9e3e04ed113206",
+      "owner": "postgres"
+    }
+  },
+  "after": {
+    "claim_care_cycle(uuid)": {
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+      "md5": "8eab0bc061904faa5e0eb92648019ebc",
+      "owner": "postgres"
+    },
+    "care_group_admin(text,jsonb)": {
+      "acl": ["postgres=X/postgres", "authenticated=X/postgres", "service_role=X/postgres"],
+      "md5": "6ad006ad60f2c961aa21087c31e5eaa7",
+      "owner": "postgres"
+    },
+    "care_pilot_admin(text,jsonb)": {
+      "acl": ["postgres=X/postgres", "authenticated=X/postgres"],
+      "md5": "97c769d9b2e1ed8f635e955a473f628b",
+      "owner": "postgres"
+    },
+    "guard_whatsapp_otp_request()": {
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+      "md5": "9c90e055f0296756cd8780c66cc6da2c",
+      "owner": "postgres"
+    },
+    "care_pilot_preparation_ready()": {
+      "acl": ["postgres=X/postgres"],
+      "md5": "079e161502ed88920a8bf16f7019833d",
+      "owner": "postgres"
+    },
+    "claim_whatsapp_outbox(integer)": {
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+      "md5": "dfdaa0aab5227f1e3b85ff2b9424a043",
+      "owner": "postgres"
+    },
+    "care_cycle_policy_allows(uuid,uuid)": {
+      "acl": ["postgres=X/postgres"],
+      "md5": "b8845e1e449ceaafd1eb2184a9fa91ca",
+      "owner": "postgres"
+    },
+    "whatsapp_destination_route_current(uuid)": {
+      "acl": ["postgres=X/postgres"],
+      "md5": "387e796845427652424cdcb55f23f352",
+      "owner": "postgres"
+    },
+    "whatsapp_group_notice_context(uuid,uuid)": {
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+      "md5": "6ae67cf70d2eebd9b045a3f404439a9b",
+      "owner": "postgres"
+    },
+    "whatsapp_pilot_context_allows(uuid,uuid)": {
+      "acl": ["postgres=X/postgres"],
+      "md5": "db5b7678be8c9911208c76ad1bf03b03",
+      "owner": "postgres"
+    },
+    "whatsapp_pilot_challenge_allows(uuid,uuid)": {
+      "acl": ["postgres=X/postgres"],
+      "md5": "a7377c2bf51a5e86732e729a840da082",
+      "owner": "postgres"
+    },
+    "request_whatsapp_login_once(text,text,uuid)": {
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+      "md5": "dec2c0ccf24a29f3b23b36b2239e5dbc",
+      "owner": "postgres"
+    },
+    "authorize_care_cycle(uuid,uuid,boolean,uuid)": {
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+      "md5": "1f396e6844ed90589301a8bc1ff199b0",
+      "owner": "postgres"
+    },
+    "whatsapp_group_login_context(uuid,text,boolean)": {
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+      "md5": "7d8e85d4d5fa18fa8f36c625aaa5406c",
+      "owner": "postgres"
+    },
+    "whatsapp_send_candidate(uuid,uuid,uuid,text,text)": {
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+      "md5": "5ee1435629e58cafc59eaf0126fa7399",
+      "owner": "postgres"
+    }
+  }
+}

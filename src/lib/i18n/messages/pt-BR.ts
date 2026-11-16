@@ -180,6 +180,22 @@ export const ptBR = {
   "care.profileCodeUnavailable":
     "O código é enviado somente ao seu grupo de atendimento. Não foi possível enviar agora; confira a preparação e sua entrada no grupo.",
   "care.openSetup": "Ver meu grupo e próximos passos",
+  "carePilot.title": "Teste de WhatsApp",
+  "carePilot.active": "Teste liberado",
+  "carePilot.paused": "Teste pausado",
+  "carePilot.scope": "Os novos envios ficam restritos à barbearia e ao cliente mostrados aqui.",
+  "carePilot.noScope": "Escolha primeiro a barbearia e o cliente autorizados no escopo do teste.",
+  "carePilot.checkNumbers":
+    "Confira a conexão recente e a autorização dos dois números de atendimento.",
+  "carePilot.activate": "Liberar teste",
+  "carePilot.pause": "Pausar teste",
+  "carePilot.refresh": "Conferir liberação",
+  "carePilot.stale": "A situação mudou. Confira a liberação novamente.",
+  "carePilot.error":
+    "Não foi possível conferir ou alterar a liberação. Atualize e tente novamente.",
+  "carePilot.confirm":
+    "Libera os envios somente deste atendimento. A confirmação do telefone continua dependendo da entrada e do código no grupo.",
+
   "care.profileSetup": "Continuar confirmação",
   "care.profileSetupHint": "Confira seu número, entre no grupo e receba o código por lá.",
   "care.waitRelease":

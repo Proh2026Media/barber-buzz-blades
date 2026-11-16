@@ -182,6 +182,21 @@ export const enUS: Record<MessageKey, string> = {
   "care.profileCodeUnavailable":
     "The code is sent only to your care group. We could not send it now; check group setup and your membership.",
   "care.openSetup": "View my group and next steps",
+  "carePilot.title": "WhatsApp test",
+  "carePilot.active": "Test enabled",
+  "carePilot.paused": "Test paused",
+  "carePilot.scope": "New sends are restricted to the barbershop and customer shown here.",
+  "carePilot.noScope": "First configure the authorized barbershop and customer for this test.",
+  "carePilot.checkNumbers":
+    "Check the recent connection and authorization of both service numbers.",
+  "carePilot.activate": "Enable test",
+  "carePilot.pause": "Pause test",
+  "carePilot.refresh": "Check availability",
+  "carePilot.stale": "The status changed. Check availability again.",
+  "carePilot.error": "Unable to check or change availability. Refresh and try again.",
+  "carePilot.confirm":
+    "Allows sends only for this service group. Phone confirmation still requires joining and entering the group code.",
+
   "care.profileSetup": "Continue confirmation",
   "care.profileSetupHint": "Check your number, join the group and receive your code there.",
   "care.waitRelease":

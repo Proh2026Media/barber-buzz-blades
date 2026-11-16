@@ -183,6 +183,22 @@ export const es: Record<MessageKey, string> = {
   "care.profileCodeUnavailable":
     "El código se envía solo a tu grupo de atención. No pudimos enviarlo ahora; revisa la preparación y tu entrada al grupo.",
   "care.openSetup": "Ver mi grupo y próximos pasos",
+  "carePilot.title": "Prueba de WhatsApp",
+  "carePilot.active": "Prueba habilitada",
+  "carePilot.paused": "Prueba pausada",
+  "carePilot.scope": "Los nuevos envíos se limitan a la barbería y al cliente que aparecen aquí.",
+  "carePilot.noScope": "Primero configura la barbería y el cliente autorizados para la prueba.",
+  "carePilot.checkNumbers":
+    "Comprueba la conexión reciente y la autorización de ambos números de atención.",
+  "carePilot.activate": "Habilitar prueba",
+  "carePilot.pause": "Pausar prueba",
+  "carePilot.refresh": "Comprobar disponibilidad",
+  "carePilot.stale": "La situación cambió. Comprueba la disponibilidad de nuevo.",
+  "carePilot.error":
+    "No se pudo comprobar o cambiar la disponibilidad. Actualiza e inténtalo de nuevo.",
+  "carePilot.confirm":
+    "Permite envíos solo para esta atención. Confirmar el teléfono aún requiere entrar y escribir el código del grupo.",
+
   "care.profileSetup": "Continuar confirmación",
   "care.profileSetupHint": "Revisa tu número, entra en el grupo y recibe el código allí.",
   "care.waitRelease":

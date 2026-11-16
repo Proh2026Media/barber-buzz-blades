@@ -1,0 +1,76 @@
+{
+  "data": "2026-11-15",
+  "escopo": "somente local; produção não alterada nesta correção",
+  "evidencia_ti_sha256": "6c07a39864d749a97a8aab6b0a8e97b2404bab8edc706bcee81154acd82275c3",
+  "base_fontes": {
+    "anexo_ti_coincide_bancada": 26,
+    "hashes_adicionais_vps_coincidem": 7
+  },
+  "unitarios_app": {
+    "passaram": 659,
+    "falhas": 0
+  },
+  "tipos": "aprovado",
+  "montagem": "aprovada, SSR e PWA incluídos",
+  "sql": {
+    "passaram": 188,
+    "inclui_preservacao_oid_owner_acl": 11,
+    "rollback_integral": true,
+    "fixture_somente_local": true
+  },
+  "concorrencia_fisica": {
+    "passou": true,
+    "conexoes_concorrentes": 2,
+    "evento_fora_criado_durante_ativacao_permaneceu_pendente": true,
+    "otp_outro_cliente_recusado": true,
+    "pausa_retorno_aprovada": true,
+    "clone_removido": true,
+    "acl_clone": "proprietário local único; ACLs verificadas na bancada original e no ensaio do instalador"
+  },
+  "instalador": {
+    "conferir_sem_instalar": true,
+    "exige_autorizacao": true,
+    "backup_real_validado": true,
+    "permissoes_backup_privadas": true,
+    "identidades_preservadas": true,
+    "oid_owner_acl_preservados": true,
+    "reaplicacao_recusada": true,
+    "hash_adulterado_recusado": true,
+    "clone_removido": true
+  },
+  "interface": {
+    "composicoes": 45,
+    "cantos": ["square", "soft", "round"],
+    "larguras": [320, 390, 768, 1024, 1440],
+    "estados": ["pausado", "pronto", "liberado"],
+    "leitura_nao_ativa": true,
+    "cancelar_nao_ativa": true,
+    "cas_erro_nao_vira_sucesso": true,
+    "pausa_validada": true,
+    "captura_390_inspecionada": true,
+    "api_sessao_ficticias": true,
+    "rede_externa_bloqueada": true
+  },
+  "limites": [
+    "Não é homologação física de iPhone",
+    "Nenhuma mensagem/grupo/código real",
+    "Novo incremental e frontend não instalados/publicados",
+    "Não prova causa dos cliques antigos",
+    "Gates de envio não ignoram pausa global"
+  ],
+  "lint": {
+    "erros": 0,
+    "avisos_preexistentes": 4
+  },
+  "verificar_sh": "verificar: tudo ok — tipos, 659 testes, eslint, prettier e montagem",
+  "corte_remoto_somente_leitura": {
+    "brt": "2026-11-15 22:45:04",
+    "pausa": true,
+    "pausa_versao": 17,
+    "ciclos": false,
+    "assistencia": false,
+    "politica_versao": 12,
+    "distribuicao": false,
+    "novo_contrato_instalado": false
+  }
+}

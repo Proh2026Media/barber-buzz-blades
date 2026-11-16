@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CarePilotRelease } from "./CarePilotRelease";
 import {
   UsersRound,
   ShieldCheck,
@@ -100,6 +101,7 @@ export function CareCycleOperations({
           </div>
         ))}
       </div>
+      {data.pilot && <CarePilotRelease onChanged={() => void request("read").catch(() => {})} />}
       <div className="app-action-card space-y-3 p-4 tablet:p-5">
         <SectionHeader icon={UsersRound} title={t("care.adminTitle")} />
         <div className="flex flex-wrap items-center gap-2">
@@ -108,14 +110,16 @@ export function CareCycleOperations({
             label={t(data.enabled ? "waOps.on" : "waOps.off")}
           />
           {data.pilot && <StatusBadge tone="warning" label={t("careCycle.pilot")} />}
-          <button
-            className="action-button"
-            disabled={busy || (!data.enabled && !data.capabilities_ready)}
-            onClick={() => setPolicy(true)}
-          >
-            <Power aria-hidden />
-            {t(data.enabled ? "careCycle.disable" : "careCycle.enable")}
-          </button>
+          {!data.pilot && (
+            <button
+              className="action-button"
+              disabled={busy || (!data.enabled && !data.capabilities_ready)}
+              onClick={() => setPolicy(true)}
+            >
+              <Power aria-hidden />
+              {t(data.enabled ? "careCycle.disable" : "careCycle.enable")}
+            </button>
+          )}
           <button
             className="action-button"
             disabled={busy}
@@ -125,7 +129,9 @@ export function CareCycleOperations({
             {t("waCentral.refresh")}
           </button>
         </div>
-        {!data.capabilities_ready && <Notice tone="warning" title={t("careCycle.requireTwo")} />}
+        {!data.pilot && !data.capabilities_ready && (
+          <Notice tone="warning" title={t("careCycle.requireTwo")} />
+        )}
         {error && <Notice tone="danger" title={t("care.error")} />}
       </div>
       <div className="grid gap-3 min-[1100px]:grid-cols-2">
