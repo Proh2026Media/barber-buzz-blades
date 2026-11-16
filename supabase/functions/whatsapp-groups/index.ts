@@ -11,15 +11,21 @@ Deno.serve(async (req) => {
   const url = Deno.env.get("SUPABASE_URL"),
     key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SERVICE_KEY");
   if (!url || !key) return new Response(null, { status: 503 });
+  const service = createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
   return handleCareGroups(
     req,
-    createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } }),
+    service,
     provider,
     { service: key, webhook: Deno.env.get("WHATSAPP_GROUP_WEBHOOK_SECRET") ?? "" },
     {
       enabled: groupCycleEnabled(),
       transport: evolutionGroupTransport,
       logo: (shop, chosen) => loadCareGroupLogo(shop, chosen, url),
+      wake: async (instance, jid) => {
+        await service.rpc("care_entry_background_wake", { p_instance: instance, p_group_jid: jid });
+      },
     },
   );
 });

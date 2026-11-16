@@ -5403,6 +5403,11 @@ export const ptPT: Record<MessageKey, string> = {
   "careAccess.following": "Verificação automática ao voltar do WhatsApp.",
   "careAccess.continue": "Continuar no WhatsApp",
   "careAccess.preparingInvite": "A preparar o convite…",
+  "careBackground.join":
+    "No WhatsApp, toque em Pedir para aderir. Acompanhamos a aprovação automaticamente.",
+  "careBackground.identity": "O WhatsApp ainda está a identificar o seu pedido de entrada.",
+  "careBackground.following": "Continuamos a preparar o seu atendimento. Pode voltar ao WhatsApp.",
+  "careBackground.review": "A entrada precisa de verificação. O seu grupo foi preservado.",
   "careAccess.joinHint": "No WhatsApp, toque em Pedir para aderir e volte aqui.",
   "careAccess.followFailed":
     "Não foi possível continuar a verificação agora. O seu grupo foi preservado.",

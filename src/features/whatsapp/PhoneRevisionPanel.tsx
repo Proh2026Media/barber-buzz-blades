@@ -12,6 +12,7 @@ export function PhoneRevisionPanel({
   phone,
   disabled,
   resumeNeeded,
+  background = false,
   onKeep,
   onStart,
   onAbort,
@@ -21,6 +22,7 @@ export function PhoneRevisionPanel({
   phone: string;
   disabled: boolean;
   resumeNeeded: boolean;
+  background?: boolean;
   onKeep: () => void;
   onStart: (phone: string) => void;
   onAbort: () => void;
@@ -113,7 +115,9 @@ export function PhoneRevisionPanel({
           </a>
         )}
         {info.phase === "waiting" && !info.expired && (
-          <p className="text-sm text-muted-foreground">{t("careAccess.joinHint")}</p>
+          <p className="text-sm text-muted-foreground">
+            {t(background ? "careBackground.join" : "careAccess.joinHint")}
+          </p>
         )}
         {["requested", "waiting"].includes(info.phase ?? "") && (
           <button

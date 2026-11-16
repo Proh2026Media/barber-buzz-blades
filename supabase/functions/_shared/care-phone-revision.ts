@@ -157,6 +157,13 @@ export async function advancePhoneRevision(
       await record(result);
       if (result.requestPresent !== true) {
         failed = false;
+        const diagnostic = object(result.requestStatus);
+        if (
+          Number.isSafeInteger(diagnostic.unresolved) &&
+          Number(diagnostic.unresolved) > 0 &&
+          Number(diagnostic.unresolved) <= 100
+        )
+          return { state: "phone_request_unresolved" };
         return { state: "phone_waiting" };
       }
       await rpc(db, "authorize_care_phone_binding", args);

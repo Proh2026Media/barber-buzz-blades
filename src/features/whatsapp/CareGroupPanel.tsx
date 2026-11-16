@@ -49,6 +49,12 @@ type Group = {
   closing?: boolean;
 };
 type Data = {
+  background?: {
+    enabled: boolean;
+    active: boolean;
+    state: string | null;
+    checked_at: string | null;
+  };
   access?: AssistedAccess;
   phone_revision?: PhoneRevisionInfo;
   enabled: boolean;
@@ -194,27 +200,30 @@ function CareGroupContent({
   }, [compositionKey]);
   useEffect(() => {
     if (!groupId || demo || readOnly) return;
-    const timer = window.setInterval(() => {
-      if (
-        document.visibilityState !== "visible" ||
-        pending.current ||
-        polling.current ||
-        advancing.current
-      )
-        return;
-      polling.current = true;
-      void loadRef
-        .current(true)
-        .catch((failure) => {
-          if (live.current)
-            setError((current) => keepCareFailure(current, careFailure("read", failure)));
-        })
-        .finally(() => {
-          polling.current = false;
-        });
-    }, 10000);
+    const timer = window.setInterval(
+      () => {
+        if (
+          document.visibilityState !== "visible" ||
+          pending.current ||
+          polling.current ||
+          advancing.current
+        )
+          return;
+        polling.current = true;
+        void loadRef
+          .current(true)
+          .catch((failure) => {
+            if (live.current)
+              setError((current) => keepCareFailure(current, careFailure("read", failure)));
+          })
+          .finally(() => {
+            polling.current = false;
+          });
+      },
+      data?.background?.enabled ? 3000 : 10000,
+    );
     return () => window.clearInterval(timer);
-  }, [groupId, demo, readOnly]);
+  }, [groupId, demo, readOnly, data?.background?.enabled]);
   async function startAccess(value: Data, selectedPhone: string, accept: boolean) {
     if (!value.access?.enabled) return;
     const next = await careAccessRequest(shopId, {
@@ -227,6 +236,12 @@ function CareGroupContent({
     setAccepted(false);
   }
   const access = data?.access;
+  const backgroundMessage =
+    data?.background?.state === "review" || data?.background?.state === "phone_review"
+      ? "careBackground.review"
+      : data?.background?.state === "phone_request_unresolved"
+        ? "careBackground.identity"
+        : "careBackground.following";
   const revision = data?.phone_revision;
   const revisionFollow = revision?.enabled === true && revision.pending && revision.active;
   const followAllowed =
@@ -242,6 +257,7 @@ function CareGroupContent({
   follow.current = async () => {
     if (
       !followAllowed ||
+      data?.background?.enabled ||
       demo ||
       readOnly ||
       !live.current ||
@@ -648,7 +664,13 @@ function CareGroupContent({
                 {data.access.active ? (
                   <p role="status" className="flex items-center gap-2 text-sm">
                     <RefreshCw className="size-4 shrink-0" aria-hidden />
-                    {t(data.phone_ready ? "careAccess.ready" : "careAccess.following")}
+                    {t(
+                      data.phone_ready
+                        ? "careAccess.ready"
+                        : data.background?.enabled
+                          ? backgroundMessage
+                          : "careAccess.following",
+                    )}
                   </p>
                 ) : (
                   <button
@@ -665,6 +687,16 @@ function CareGroupContent({
                 )}
               </div>
             )}
+          {!readOnly &&
+            !ended &&
+            data.background?.active &&
+            !data.phone_ready &&
+            (!group || data.phone_revision?.pending) && (
+              <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
+                <RefreshCw className="size-4 shrink-0" aria-hidden />
+                {t(backgroundMessage)}
+              </p>
+            )}
           {!readOnly && group && !ended && data.phone_revision && (
             <PhoneRevisionPanel
               key={`${shopId}:${data.phone_revision.id ?? "new"}`}
@@ -673,6 +705,7 @@ function CareGroupContent({
               phone={data.phone ?? ""}
               disabled={busy || !data.enabled}
               resumeNeeded={data.enrollment_expired === true}
+              background={data.background?.enabled === true}
               onKeep={() =>
                 void run(() => startAccess(data, data.phone ?? "", true), false, "resume")
               }
@@ -724,12 +757,14 @@ function CareGroupContent({
               expired={data.enrollment_expired === true && data.phone_confirmed !== true}
               refreshing={busy}
               assisted={data.access?.enabled === true && data.access.active}
+              background={data.background?.enabled === true}
               onRefresh={() => void run(load)}
               onConfirmed={() =>
                 void run(
                   async () => {
                     await load();
-                    if (data.access?.enabled) apply(await careAccessRequest(shopId));
+                    if (data.access?.enabled && !data.background?.enabled)
+                      apply(await careAccessRequest(shopId));
                   },
                   false,
                   "advance",

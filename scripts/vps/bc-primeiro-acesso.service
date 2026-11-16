@@ -1,0 +1,20 @@
+[Unit]
+Description=B&C acompanhamento restrito do primeiro acesso consentido
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/bc-primeiro-acesso.env
+ExecStart=/usr/bin/curl --silent --show-error --fail --max-time 75 --request POST --header @/etc/bc-primeiro-acesso.headers --header Content-Type:application/json --data {} ${BC_ENTRY_URL}
+TimeoutStartSec=80
+User=root
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+StandardOutput=null
+
+[Install]
+WantedBy=multi-user.target

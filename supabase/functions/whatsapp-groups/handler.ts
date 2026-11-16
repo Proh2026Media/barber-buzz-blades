@@ -38,7 +38,12 @@ export async function handleCareGroups(
   db: Database,
   provider: GroupProvider,
   secrets: { service: string; webhook: string },
-  cycles?: { enabled: boolean; transport: CycleTransport; logo: CycleLogo },
+  cycles?: {
+    enabled: boolean;
+    transport: CycleTransport;
+    logo: CycleLogo;
+    wake?: (instance: string, jid: string) => Promise<void>;
+  },
 ) {
   if (req.method !== "POST") return answer({ error: "Método não permitido" }, 405);
   const isWorker = await secretMatches(
@@ -220,6 +225,13 @@ export async function handleCareGroups(
         p_from_me: fromMe,
       });
       if (result.error) return answer({ error: "Conferência indisponível" }, 503);
+      if (cycles?.enabled && cycles.wake) {
+        try {
+          await cycles.wake(body.instance, jid);
+        } catch {
+          /* O timer limitado recupera a perda deste aviso; o evento já está durável. */
+        }
+      }
     }
     return answer({ ok: true });
   } catch {

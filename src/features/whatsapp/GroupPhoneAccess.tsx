@@ -13,6 +13,7 @@ export function GroupPhoneAccess({
   groupId,
   available = true,
   assisted = false,
+  background = false,
   phone,
   ready,
   confirmed,
@@ -25,6 +26,7 @@ export function GroupPhoneAccess({
   groupId: string;
   available?: boolean;
   assisted?: boolean;
+  background?: boolean;
   phone: string;
   ready: boolean;
   confirmed: boolean;
@@ -237,7 +239,9 @@ export function GroupPhoneAccess({
         </>
       )}
       {available && waiting && invite && assisted && (
-        <p className="text-sm text-muted-foreground">{t("careAccess.joinHint")}</p>
+        <p className="text-sm text-muted-foreground">
+          {t(background ? "careBackground.join" : "careAccess.joinHint")}
+        </p>
       )}
       {available && !confirmed && ready && !expired && (
         <>

@@ -5422,6 +5422,11 @@ export const es: Record<MessageKey, string> = {
   "careAccess.following": "Comprobación automática al volver de WhatsApp.",
   "careAccess.continue": "Continuar en WhatsApp",
   "careAccess.preparingInvite": "Preparando la invitación…",
+  "careBackground.join":
+    "En WhatsApp, pulsa Solicitar unirse. Seguimos la aprobación automáticamente.",
+  "careBackground.identity": "WhatsApp aún está identificando tu solicitud de entrada.",
+  "careBackground.following": "Seguimos preparando tu atención. Puedes volver a WhatsApp.",
+  "careBackground.review": "La entrada necesita revisión. Tu grupo se ha conservado.",
   "careAccess.joinHint": "En WhatsApp, pulsa Solicitar unirse y vuelve aquí.",
   "careAccess.followFailed":
     "No pudimos continuar la comprobación ahora. Tu grupo se ha conservado.",

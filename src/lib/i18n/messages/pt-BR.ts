@@ -5385,6 +5385,12 @@ export const ptBR = {
   "careAccess.following": "Conferência automática ao voltar do WhatsApp.",
   "careAccess.continue": "Continuar no WhatsApp",
   "careAccess.preparingInvite": "Preparando o convite…",
+  "careBackground.join":
+    "No WhatsApp, toque em Solicitar entrada. Acompanhamos a aprovação automaticamente.",
+  "careBackground.identity": "O WhatsApp ainda está identificando seu pedido de entrada.",
+  "careBackground.following":
+    "Continuamos preparando seu atendimento. Você pode voltar ao WhatsApp.",
+  "careBackground.review": "A entrada precisa de conferência. Seu grupo foi preservado.",
   "careAccess.joinHint": "No WhatsApp, toque em Solicitar entrada e volte aqui.",
   "careAccess.followFailed":
     "Não foi possível continuar a conferência agora. Seu grupo foi preservado.",

@@ -1,0 +1,52 @@
+{
+  "data": "2026-11-16",
+  "situacao": "somente local; não instalado nem publicado",
+  "ramo": "codex/entrada-servidor-p122-2026-11-16",
+  "base": "6a2ac0b",
+  "verificacoes": {
+    "testes_bc": 714,
+    "tipos_lint_formato_montagem": true,
+    "sql_novos_com_rollback": 66,
+    "sql_regressoes_anteriores_com_rollback": 117,
+    "migration_completa_atomica_rollback": true,
+    "composicoes_ui_sessao_ficticia_rede_externa_bloqueada": 45,
+    "evolution_motor_identidade_revisao_foto_sem_rede": 56,
+    "testes_diagnostico_pedidos": 5,
+    "systemd_analyze_verify_local": true
+  },
+  "imagem_local": {
+    "versao": "2.3.7-bc.groups.7-entry.1",
+    "indice_oci": "sha256:434412e1667cb0678efc42f90bcfa605b25a5dc159286b80c07e0d29a00269c4",
+    "configuracao": "sha256:f342849aaf7110df2ae63980acb54ca877be8f5f59c7d04bf0b6e7a227ecd10e",
+    "patch_helper_sha256": "7b70d618826d1d5572e0c719b95186e2be64b56bc3f3c2870a6847e7a8b18c57",
+    "smoke": {
+      "version": "2.3.7-bc.groups.7-entry.1",
+      "extension": "false",
+      "diagnostic": true
+    },
+    "publicada": false,
+    "instalada": false
+  },
+  "operacao_real": {
+    "somente_leitura": true,
+    "pedido_recebido": "2026-11-16T13:18:42-03:00",
+    "evolution_reconheceu_pedido_correspondente": false,
+    "causa_especifica_comprovada": false,
+    "aprovacao_bind_finalize": false,
+    "mensagem_codigo_grupo_novo": false,
+    "homologacao_login_real": false
+  },
+  "sha256": {
+    "supabase/migrations/20261116002000_whatsapp_entrada_servidor.sql": "43e4503a18842d770a927ad1690a29ae40b8edbd0cbdea3a9f0ca7e91e4e8adf",
+    "supabase/functions/_shared/care-entry-background.ts": "86932af168c4f60cde34906dce394d4218d7a8966df66987ecdc8042d8eddf7a",
+    "supabase/functions/_shared/care-phone-revision.ts": "4096719ec5da8310554ce44ac36d5b5826f05ad59d106e854fe364697d2cc2df",
+    "supabase/functions/whatsapp-groups/handler.ts": "4ecd844919616756b88d9f49578425a506f4982f5375db8dec6244fe6b556610",
+    "supabase/functions/whatsapp-groups/index.ts": "e7ab916fe536be32a7b7a0722b1e1f73dd320e91d5fb00da84ac3af20520449b",
+    "supabase/functions/whatsapp-entry-background/handler.ts": "0f66e56d4ce113801f4f80d8521712cbfb313a2d724623f113d6dceeda11b68e",
+    "supabase/functions/whatsapp-entry-background/index.ts": "a616168f1f0d189af03ea48bc2348ff4ac1e3ecf73b1e582d940596f104d3fce",
+    "scripts/vps/bc-primeiro-acesso.service": "dccb742d418bb451828a6a4f172fb990ede9b6dc7c431e394774c3aa29862477",
+    "scripts/vps/bc-primeiro-acesso.timer": "ba9f4a52da3739866484643eaa9b9a82ff27fecec8c2858b38ce57ce3f8cf5b1",
+    "integrations/evolution/grupos-v7-diagnostico/phone-revision.patch": "64900bb069329e3e868316d637a1c56ddcdf3742a1eeb6a74263ed54794463cf",
+    "integrations/evolution/grupos-v7-diagnostico/join-request-diagnostics.ts": "e280fdf76c6773482727d2ffd25e21dba8cb72f0235147a45cefe368870b67e2"
+  }
+}

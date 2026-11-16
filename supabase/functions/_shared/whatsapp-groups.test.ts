@@ -338,3 +338,80 @@ test("Evento de configuração preserva o delta para a correção nº 112", asyn
   assert.equal((calls[0].args.p_update as { joinApprovalMode: boolean }).joinApprovalMode, true);
   assert.ok(!calls.some((c) => c.name === "care_group_event"));
 });
+
+test("Pedido autenticado apenas desperta a intenção; falha no despertador conserva o evento", async () => {
+  const secret = "s".repeat(40);
+  const calls: string[] = [];
+  const request = (event = "group.join-request") =>
+    new Request("https://example.invalid", {
+      method: "POST",
+      headers: { "x-bc-group-secret": secret },
+      body: JSON.stringify({
+        instance: "ficticia",
+        event,
+        data: { id: policy.groupJid },
+      }),
+    });
+  for (const event of ["group.join-request", "group-participants.update"])
+    for (const fail of [false, true]) {
+      const response = await handleCareGroups(
+        request(event),
+        {
+          rpc: async (name) => {
+            calls.push(name);
+            return {};
+          },
+        },
+        scenario().provider,
+        { service: secret, webhook: secret },
+        {
+          enabled: true,
+          transport: async () => null,
+          logo: async () => {
+            throw Error("não usar logo");
+          },
+          wake: async (instance, jid) => {
+            assert.equal(instance, "ficticia");
+            assert.equal(jid, policy.groupJid);
+            calls.push("wake");
+            if (fail) throw Error("falha temporária");
+          },
+        },
+      );
+      assert.equal(response.status, 200);
+    }
+  assert.deepEqual(calls, Array(4).fill(["care_group_event", "wake"]).flat());
+});
+test("Pedido sem autenticação nunca desperta trabalho", async () => {
+  let woke = false;
+  const secret = "s".repeat(40);
+  const response = await handleCareGroups(
+    new Request("https://example.invalid", {
+      method: "POST",
+      body: JSON.stringify({
+        instance: "ficticia",
+        event: "group.join-request",
+        data: { id: policy.groupJid },
+      }),
+    }),
+    {
+      rpc: async () => {
+        throw Error("não consultar");
+      },
+    },
+    scenario().provider,
+    { service: secret, webhook: secret },
+    {
+      enabled: true,
+      transport: async () => null,
+      logo: async () => {
+        throw Error("não usar");
+      },
+      wake: async () => {
+        woke = true;
+      },
+    },
+  );
+  assert.equal(response.status, 401);
+  assert.equal(woke, false);
+});

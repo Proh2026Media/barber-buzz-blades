@@ -5377,6 +5377,10 @@ export const enUS: Record<MessageKey, string> = {
   "careAccess.following": "Automatic checks when you return from WhatsApp.",
   "careAccess.continue": "Continue in WhatsApp",
   "careAccess.preparingInvite": "Preparing your invitation…",
+  "careBackground.join": "In WhatsApp, tap Request to join. We follow the approval automatically.",
+  "careBackground.identity": "WhatsApp is still identifying your request to join.",
+  "careBackground.following": "We are preparing your service group. You can return to WhatsApp.",
+  "careBackground.review": "Your entry needs review. Your group has been preserved.",
   "careAccess.joinHint": "In WhatsApp, tap Request to join, then return here.",
   "careAccess.followFailed":
     "We could not continue checking right now. Your group has been preserved.",

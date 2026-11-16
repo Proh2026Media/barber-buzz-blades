@@ -1,0 +1,32 @@
+--- a/src/api/integrations/channel/whatsapp/bc-groups/phone-revision.ts
++++ b/src/api/integrations/channel/whatsapp/bc-groups/phone-revision.ts
+@@ -3,6 +3,7 @@
+ import type { CycleDependencies } from './cycle-engine';
+ import { cycleQuorum, memberPhone, phoneJid, type GroupCycle } from './cycle';
+ import { resolveGroupMetadata, resolvePhone } from './cycle-identity';
++import { inspectJoinRequests } from './join-request-diagnostics';
+ 
+ export type PhoneRevision = {
+   id: string;
+@@ -222,10 +223,9 @@
+   await onlyAdmins(d, c);
+   const requests = await d.socket.groupRequestParticipantsList(c.groupJid);
+   if (!Array.isArray(requests) || requests.length > 100) fail('Pedidos de entrada sem prova');
+-  const matches = [];
+-  for (const request of requests) {
+-    if ((await resolvePhone(request.jid, d.resolvePhone)) === r.resolvedJid) matches.push(request.jid);
+-  }
++  const { matches, diagnostic } = await inspectJoinRequests(
++    requests, r.resolvedJid, (jid) => resolvePhone(jid, d.resolvePhone),
++  );
+   if (matches.length > 1) fail('Pedido de entrada ambíguo');
+   if (p.action === 'bind') {
+     if (matches.length !== 1) fail('Pedido do titular ainda não comprovado');
+@@ -248,6 +248,7 @@
+   return {
+     revision: proof(c, r),
+     requestPresent: matches.length === 1,
++    requestStatus: diagnostic,
+     inviteUrl: 'https://chat.whatsapp.com/' + code,
+   };
+ }

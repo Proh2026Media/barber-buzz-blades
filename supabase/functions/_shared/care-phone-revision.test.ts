@@ -23,6 +23,7 @@ function setup(phase = "requested", remote = "pending") {
     payload: { action: "prepare", revisionId: id },
   };
   let requestPresent = false;
+  let diagnostic: unknown;
   const db = {
     rpc: async (name: string, args: Record<string, unknown>) => {
       calls.push({ name, args });
@@ -64,6 +65,7 @@ function setup(phase = "requested", remote = "pending") {
                 : remote,
       },
       requestPresent,
+      requestStatus: diagnostic,
       inviteUrl: "https://chat.whatsapp.com/FICTICIO123456789",
     };
   };
@@ -73,6 +75,9 @@ function setup(phase = "requested", remote = "pending") {
     db,
     observe,
     transport,
+    diagnostic: (value: unknown) => {
+      diagnostic = value;
+    },
     present: () => {
       requestPresent = true;
     },
@@ -183,4 +188,25 @@ test("Sem contrato novo não faz lookup, convite ou bind", async () => {
     s.calls.some((c) => c.name === "prepare"),
     false,
   );
+});
+
+test("Pedido LID sem prova retorna pendência explícita sem autorizar vínculo", async () => {
+  const s = setup();
+  s.diagnostic({ total: 1, unresolved: 1, matching: 0, other: 0 });
+  assert.equal((await s.run())!.state, "phone_request_unresolved");
+  assert.equal(
+    s.calls.some((c) => c.name === "bind" || c.name === "authorize_care_phone_binding"),
+    false,
+  );
+});
+test("Diagnóstico ausente ou inválido não fabrica pedido nem vínculo", async () => {
+  for (const value of [null, { unresolved: "1" }, { unresolved: -1 }, { unresolved: 101 }]) {
+    const s = setup();
+    s.diagnostic(value);
+    assert.equal((await s.run())!.state, "phone_waiting");
+    assert.equal(
+      s.calls.some((c) => c.name === "bind"),
+      false,
+    );
+  }
 });
