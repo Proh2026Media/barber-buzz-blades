@@ -1,0 +1,53 @@
+{
+  "source_commit": "886d0f0b69b317137ac2b3b862a7833d197f5253",
+  "package_sha256": "43901c3d3ea07b14083674b53fa404350e83721cff650cbc5e6ca51f5b0e7670",
+  "migration_sha256": "3a9b486f58c2294ccf4ce4166eaa8e4930e6fe439c7c9c23d54601618bafae27",
+  "backup_sha256": "b6443d3ca311bea148c93c65d913a934114680d419a15868cd0b88c3319a3477",
+  "migration_installed": true,
+  "previous_functions_preserved": true,
+  "containers_restarted": 0,
+  "frontend": {
+    "utc": "2026-11-16T15:59:26.034852+00:00",
+    "source": "886d0f0b69b317137ac2b3b862a7833d197f5253",
+    "page_http": 200,
+    "modules": [
+      {
+        "path": "/assets/PlatformShell-C3extEGY.js",
+        "http": 200,
+        "new_check": true,
+        "sha256": "970e901e0e844098a30ba9f6e552146803d6a46bc27007d26caaff8e69101eec"
+      }
+    ],
+    "served": true
+  },
+  "activation": {
+    "utc": "2026-11-16T16:02:27.311339+00:00",
+    "state": {
+      "shop": "Loja Teste",
+      "cycles": true,
+      "paused": false,
+      "sending": 0,
+      "isolated": true,
+      "uncertain": 0,
+      "assistance": true,
+      "distribution": false,
+      "pause_version": 24,
+      "policy_version": 20,
+      "selected_allowed": true,
+      "other_shops_denied": true,
+      "customer_is_expected": true,
+      "other_customers_denied": true,
+      "activation_by_expected_admin": true
+    },
+    "timers": {
+      "bc-central-grupos.timer": ["inactive", "disabled"],
+      "bc-central-distribuicao.timer": ["inactive", "disabled"],
+      "bc-central-expurgo.timer": ["inactive", "disabled"]
+    },
+    "all_containers_unchanged": true,
+    "activation_method": "interface, sessão administrativa real, contrato atômico existente"
+  },
+  "new_real_groups_created": 0,
+  "messages_or_codes_sent_by_codex": 0,
+  "customer_confirmation_login_homologated": false
+}

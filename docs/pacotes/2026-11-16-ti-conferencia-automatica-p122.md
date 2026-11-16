@@ -1,5 +1,7 @@
 # P-122 — conferir os números sem trocar de tela
 
+**Já instalado/publicado e piloto liberado com autorização:** ver [devolutiva final](2026-11-16-codex-conferencia-instalada-piloto-liberado.md). O plano abaixo é histórico; não reinstalar nem pausar automaticamente.
+
 **Entrega local pronta para revisão. Ainda não instalada ou publicada.** O pedido autoriza desenvolver a conferência automática. A nova SQL precisa de autorização própria para produção. Não ativar o piloto como parte da instalação.
 
 ## Resultado implementado
