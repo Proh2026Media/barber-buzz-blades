@@ -377,9 +377,7 @@ function AccountCustomerProfile({
       label: "WhatsApp",
       badge: whatsBadge ? <StatusBadge {...whatsBadge} size="sm" /> : undefined,
     },
-    ...(currentShopId && groupAvailable
-      ? [{ id: SECTION.groups, icon: MessageCircle, label: t("care.nav") }]
-      : []),
+    ...(currentShopId ? [{ id: SECTION.groups, icon: MessageCircle, label: t("care.nav") }] : []),
     { id: SECTION.push, icon: MessageCircle, label: t("push.title") },
     ...(children ? [{ id: SECTION.rhythm, icon: Repeat, label: t("rhythm.title") }] : []),
     ...(otherShops.length > 0
@@ -576,7 +574,11 @@ function AccountCustomerProfile({
                   <button
                     type="button"
                     className={chipClass}
-                    onClick={() => openSection(SECTION.whatsapp)}
+                    onClick={() =>
+                      openSection(
+                        currentShopId && !whatsappVerified ? SECTION.groups : SECTION.whatsapp,
+                      )
+                    }
                   >
                     <StatusBadge {...whatsBadge} />
                   </button>
@@ -622,7 +624,7 @@ function AccountCustomerProfile({
                 title={t("conta.whats.consequence")}
                 action={{
                   label: t("conta.attention.confirmWhats"),
-                  onClick: () => openSection(SECTION.whatsapp),
+                  onClick: () => openSection(currentShopId ? SECTION.groups : SECTION.whatsapp),
                 }}
               />
             )}
@@ -671,15 +673,13 @@ function AccountCustomerProfile({
             initialNumber={whatsapp}
             initialOptIn={whatsappOptIn}
             initialVerified={whatsappVerified}
-            onOpenGroup={
-              currentShopId && groupAvailable ? () => openSection(SECTION.groups) : undefined
-            }
+            onOpenGroup={currentShopId ? () => openSection(SECTION.groups) : undefined}
             onStatusChange={setWhats}
           />
         )}
 
         {currentShopId && userId && (
-          <div id={SECTION.groups} hidden={!groupAvailable}>
+          <div id={SECTION.groups} className="scroll-mt-24">
             <CareGroupPanel
               shopId={currentShopId}
               customerId={userId}

@@ -180,6 +180,11 @@ export const ptBR = {
   "care.profileCodeUnavailable":
     "O código é enviado somente ao seu grupo de atendimento. Não foi possível enviar agora; confira a preparação e sua entrada no grupo.",
   "care.openSetup": "Ver meu grupo e próximos passos",
+  "care.profileSetup": "Continuar confirmação",
+  "care.profileSetupHint": "Confira seu número, entre no grupo e receba o código por lá.",
+  "care.waitRelease":
+    "A confirmação por WhatsApp ainda não está liberada. Continue usando sua conta por e-mail ou Google.",
+  "care.groupUntil": "Grupo válido até {date}",
 
   "waLogin.haveGroup": "Já ativei meu grupo",
   "waLogin.haveGroupHint": "Meu telefone já está confirmado no aplicativo.",

@@ -275,6 +275,12 @@ function AccountWhatsappForm({
   }
 
   async function sendCode(number: string) {
+    // No perfil da loja, o atendimento é a única entrada para preparação e OTP.
+    // Este cartão não pode contornar pausa, revisão de telefone ou entrada no grupo.
+    if (onOpenGroup && !verified) {
+      onOpenGroup();
+      return;
+    }
     if (step === "code" && cooldown > 0) return;
     if (!beginAction("send")) return;
     setCodeError(null);
@@ -488,6 +494,41 @@ function AccountWhatsappForm({
       className="rounded-2xl border border-border bg-background/60 px-3"
     />
   );
+
+  if (onOpenGroup && !verified && !demo)
+    return (
+      <section
+        id={id}
+        className={bare ? "space-y-4" : "app-action-card scroll-mt-24 space-y-4 p-4 sm:p-5"}
+        aria-labelledby={bare ? undefined : titleId}
+      >
+        {!bare && (
+          <SectionHeader
+            icon={MessageCircle}
+            id={titleId}
+            title="WhatsApp"
+            aside={<StatusBadge {...badge} size="sm" />}
+          />
+        )}
+        {bare && <StatusBadge {...badge} size="sm" />}
+        {savedNumber && (
+          <p className="flex items-center gap-2 text-base font-semibold tabular-nums">
+            <MessageCircle className="size-5 shrink-0" aria-hidden />
+            {formatBr(savedNumber)}
+          </p>
+        )}
+        <p className="text-sm text-muted-foreground">{t("care.profileSetupHint")}</p>
+        <button
+          type="button"
+          className="action-button action-confirm w-full tablet:w-auto"
+          disabled={locked}
+          onClick={onOpenGroup}
+        >
+          <MessageCircle aria-hidden />
+          {t("care.profileSetup")}
+        </button>
+      </section>
+    );
 
   return (
     <section

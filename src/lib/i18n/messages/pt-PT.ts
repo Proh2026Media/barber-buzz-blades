@@ -180,6 +180,11 @@ export const ptPT: Record<MessageKey, string> = {
   "care.profileCodeUnavailable":
     "O código é enviado apenas para o seu grupo de atendimento. Não foi possível enviar agora; confira a preparação e a sua entrada no grupo.",
   "care.openSetup": "Ver o meu grupo e próximos passos",
+  "care.profileSetup": "Continuar confirmação",
+  "care.profileSetupHint": "Confira o seu número, entre no grupo e receba o código por lá.",
+  "care.waitRelease":
+    "A confirmação por WhatsApp ainda não está disponível. Continue a usar a sua conta por e-mail ou Google.",
+  "care.groupUntil": "Grupo válido até {date}",
 
   "waLogin.haveGroup": "Já ativei o meu grupo",
   "waLogin.haveGroupHint": "O meu telefone já está confirmado na aplicação.",

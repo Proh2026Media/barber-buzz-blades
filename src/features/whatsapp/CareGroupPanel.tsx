@@ -384,14 +384,19 @@ function CareGroupContent({
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Clock3 className="size-4" aria-hidden />
               <span>
-                {t("careCycle.until", {
+                {t("care.groupUntil", {
                   date: new Date(group.expires_at).toLocaleDateString(intlLocale),
                 })}
               </span>
             </div>
           )}
           {!data.enabled && (!group || ended) && <Notice tone="info" title={t("care.disabled")} />}
-          {!readOnly && !ended && (
+          {!readOnly && !data.enabled && !ended && (
+            <p role="status" className="text-sm text-muted-foreground">
+              {t("care.waitRelease")}
+            </p>
+          )}
+          {!readOnly && data.enabled && !ended && (
             <ol aria-label={t("care.steps")} className="grid grid-cols-3 gap-2">
               {(["care.stepRequest", "care.stepJoin", "care.stepPhone"] as const).map(
                 (label, index) => {
@@ -513,7 +518,7 @@ function CareGroupContent({
               </button>
             </div>
           )}
-          {!readOnly && (!group || ended) && (
+          {!readOnly && data.enabled && (!group || ended) && (
             <div className="space-y-3">
               {!group && (
                 <label className="grid gap-1 text-sm font-semibold">
@@ -587,6 +592,7 @@ function CareGroupContent({
             </div>
           )}
           {!readOnly &&
+            data.enabled &&
             group &&
             !ended &&
             !data.phone_revision?.pending &&

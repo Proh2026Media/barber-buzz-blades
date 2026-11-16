@@ -6,6 +6,7 @@ const base = process.argv[2] ?? "http://127.0.0.1:8091";
 assert.match(base, /^http:\/\/(127\.0\.0\.1|localhost):8091$/);
 const { mod: pw } = await acharPlaywright();
 const browser = await pw.chromium.launch({ executablePath: acharNavegador(), headless: true });
+console.log("Bancada: Chromium iniciado");
 const { context } = await abrirContexto(
   browser,
   lerOpcoes(["/previsao-whatsapp", "--base", base, "--largura", "1440", "--altura", "1000"]),
@@ -132,6 +133,7 @@ async function layouts(label) {
 }
 try {
   await page.goto(base + "/qa-p122-feedback", { waitUntil: "networkidle" });
+  console.log("Bancada: página fictícia carregada");
   await page.addStyleTag({ url: base + "/qa-inter.css" });
   await page.evaluate(async () => {
     const { injectIntoGlobalHook } = await import("/@react-refresh");
@@ -149,17 +151,47 @@ try {
     el.className = "brand-page brand-corners-soft min-h-dvh bg-background p-4 text-foreground";
     document.body.append(el);
     const { CareGroupPanel } = await import("/src/features/whatsapp/CareGroupPanel.tsx");
-    createRoot(el).render(React.createElement(CareGroupPanel, { shopId: "loja-ficticia" }));
+    const { WhatsappProfileCard } = await import("/src/features/customer/WhatsappProfileCard.tsx");
+    window.__grupoAberto = 0;
+    createRoot(el).render(
+      React.createElement(
+        React.Fragment,
+        null,
+        React.createElement(WhatsappProfileCard, {
+          userId: "cliente-ficticio",
+          accountSession: { current: { user: { id: "cliente-ficticio" } } },
+          demo: false,
+          disabled: false,
+          initialNumber: "+5511999999999",
+          initialOptIn: false,
+          initialVerified: false,
+          onOpenGroup: () => {
+            window.__grupoAberto++;
+          },
+        }),
+        React.createElement(CareGroupPanel, { shopId: "loja-ficticia" }),
+      ),
+    );
   });
   const root = page.locator("#qa-feedback");
+  console.log("Bancada: componentes montados");
   const resume = root.getByRole("button", { name: "Retomar confirmação", exact: true });
   const refresh = () =>
     root.getByRole("button", { name: "Atualizar situação", exact: true }).last().click();
-  await resume.waitFor();
   await root.getByText("Este atendimento está indisponível no momento.", { exact: true }).waitFor();
+  await root
+    .getByText(
+      "A confirmação por WhatsApp ainda não está liberada. Continue usando sua conta por e-mail ou Google.",
+      { exact: true },
+    )
+    .waitFor();
   assert.equal(await root.getByText("Aguardando sua entrada", { exact: true }).count(), 0);
   await page.evaluate(() => document.fonts.ready);
-  assert.equal(await resume.isDisabled(), true);
+  assert.equal(await resume.count(), 0);
+  assert.equal(await root.getByRole("button", { name: "Enviar código", exact: true }).count(), 0);
+  assert.equal(await root.getByLabel("Ativar acesso pelo grupo", { exact: true }).count(), 0);
+  await root.getByRole("button", { name: "Continuar confirmação", exact: true }).click();
+  assert.equal(await page.evaluate(() => window.__grupoAberto), 1);
   await page.waitForTimeout(5500);
   assert.equal(
     calls.filter((x) => ["care_group_begin", "care_group_invite", "auth-otp"].includes(x.name))
@@ -167,7 +199,7 @@ try {
     0,
   );
   console.log(
-    "PASS: pausa informada pela leitura impede renovação, convite e código; sem polling de convite",
+    "PASS: pausa impede renovação, convite e código; cartão do perfil abre atendimento sem disparar OTP; sem etapas contraditórias",
   );
   await layouts("pausado");
   customer.enabled = true;

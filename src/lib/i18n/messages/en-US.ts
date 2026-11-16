@@ -182,6 +182,11 @@ export const enUS: Record<MessageKey, string> = {
   "care.profileCodeUnavailable":
     "The code is sent only to your care group. We could not send it now; check group setup and your membership.",
   "care.openSetup": "View my group and next steps",
+  "care.profileSetup": "Continue confirmation",
+  "care.profileSetupHint": "Check your number, join the group and receive your code there.",
+  "care.waitRelease":
+    "WhatsApp confirmation is not available yet. Keep using your account with email or Google.",
+  "care.groupUntil": "Group valid until {date}",
 
   "waLogin.haveGroup": "I already activated my group",
   "waLogin.haveGroupHint": "My phone is already verified in the app.",
