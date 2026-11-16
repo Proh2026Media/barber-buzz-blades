@@ -1,0 +1,68 @@
+-- Bancada descartável. Nenhuma mensagem, nenhuma chamada de rede; rollback integral.
+begin;
+create temporary table d4 as select gen_random_uuid() shop,gen_random_uuid() person,gen_random_uuid() a,gen_random_uuid() b,gen_random_uuid() plan,gen_random_uuid() grp,gen_random_uuid() cycle,null::jsonb job,null::jsonb body,null::jsonb step;
+create function pg_temp.check_d4(ok boolean,label text) returns void language plpgsql as $$begin if ok is distinct from true then raise exception 'FAIL: %',label;end if;raise notice 'PASS: %',label;end $$;
+select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',true);
+select pg_temp.check_d4((select not enabled from public.whatsapp_care_cycle_policy),'Contrato novo não herda liberação do piloto anterior');
+update public.whatsapp_send_controls set paused=false where scope='global';
+update d4 set shop=(public.register_my_barbershop(gen_random_uuid(),'Ciclo Fictício','America/Sao_Paulo','single',true,'teste','teste','teste')->>'shop_id')::uuid;
+select public.platform_create_whatsapp_channel(a,'Ciclo A') from d4;
+select public.platform_create_whatsapp_channel(b,'Ciclo B') from d4;
+update public.whatsapp_channels set display_phone=case id when (select a from d4) then '+5511800000111' else '+5511800000222' end,status='open' where id in(select a from d4 union all select b from d4);
+select public.platform_confirm_whatsapp_control(id,routing_version,display_phone,instance_name,true) from public.whatsapp_channels where id in(select a from d4 union all select b from d4);
+select public.platform_plan_whatsapp_distribution(plan,array[shop],false) from d4;
+select public.platform_apply_whatsapp_distribution(plan) from d4;
+select pg_temp.check_d4((select jsonb_array_length(public.care_cycle_composition(shop))=2 from d4),'Composição da loja usa dois telefones físicos com controle confirmado');
+insert into auth.users(id,email,raw_user_meta_data) select person,person||'@example.invalid','{}' from d4;
+insert into public.memberships(user_id,barbershop_id,role) select person,shop,'customer' from d4;
+insert into public.whatsapp_care_groups(id,barbershop_id,customer_id,customer_phone) select grp,shop,person,'+5511999999999' from d4;
+insert into public.whatsapp_group_enrollments(group_id,profile_phone,profile_verified_at) select grp,null,null from d4;
+insert into public.whatsapp_care_cycles(id,group_id,customer_phone,consented_numbers,creator_channel_id,creator_instance)
+ select cycle,grp,'+5511999999999',public.care_cycle_composition(shop),(public.care_cycle_composition(shop)->0->>'id')::uuid,public.care_cycle_composition(shop)->0->>'instance' from d4;
+update public.whatsapp_care_groups set current_cycle_id=(select cycle from d4) where id=(select grp from d4);
+
+-- Somente no banco descartável: simula perfil já confirmado, sem OTP real.
+select set_config('request.jwt.claim.role','service_role',true);
+update public.profiles set whatsapp_e164='+5511999999999',whatsapp_verified_at=clock_timestamp() where id=(select person from d4);
+update public.whatsapp_group_settings set enrollment_enabled=true,login_enabled=true;
+update public.whatsapp_care_cycle_policy set enabled=true,pilot_isolation_required=true,pilot_shop_id=(select shop from d4),pilot_customer_id=(select person from d4);
+insert into public.whatsapp_group_accounts(barbershop_id,channel_id,authorized_by) select shop,a,'11111111-1111-4111-8111-111111111111'::uuid from d4 on conflict(barbershop_id,channel_id) do update set enabled=true;
+update public.whatsapp_care_cycles set group_jid='99887766-7777@g.us',state='active',prepared=true,first_received=true,first_message_id='acolhimento-ficticio',created_at=now()-interval '1 hour',expires_at=now()+interval '364 days',observed_at=clock_timestamp(),observation=jsonb_build_object('pin_expires_at',clock_timestamp()+interval '1 day'),admission_welcome_id=admission_id,admission_welcome_message_id='acolhimento-ficticio',reason='verified' where id=(select cycle from d4);
+update public.whatsapp_care_groups set group_jid='99887766-7777@g.us',state='active',controls_verified=true,entry_pending=false,reason='verified',account_id=(select ga.id from public.whatsapp_group_accounts ga,d4 where ga.barbershop_id=d4.shop and ga.channel_id=d4.a) where id=(select grp from d4);
+alter table d4 add challenge uuid default gen_random_uuid();alter table d4 add preflight jsonb;alter table d4 add observations jsonb;
+update public.whatsapp_channels set connection_observed_at=clock_timestamp()-interval '1 hour' where id in(select a from d4 union all select b from d4);
+update d4 set challenge=(public.request_whatsapp_group_login('+5511999999999',repeat('a',64),gen_random_uuid())->>'challenge_id')::uuid;
+select pg_temp.check_d4((select not public.care_cycle_send_ready(grp) and public.care_login_preflight_ready(grp) from d4),'Conexão envelhecida bloqueia envio, mas permite conferência seletiva');
+update d4 set preflight=public.whatsapp_login_preflight(challenge,repeat('a',64));
+select pg_temp.check_d4((select preflight is not null and jsonb_array_length(preflight->'targets')=2 from d4),'Desafio do titular confirmado escolhe exatamente os dois números do grupo');
+select pg_temp.check_d4(not exists(select 1 from public.whatsapp_group_login_routes),'Pedido real com observação antiga não tinha rota; preparar não concede envio');
+select pg_temp.check_d4((select public.whatsapp_login_preflight(challenge,repeat('b',64)) is null from d4),'Hash diferente não revela os números');
+update d4 set observations=(select jsonb_agg(n||jsonb_build_object('status','open','observed_phone',n->>'phone')) from jsonb_array_elements(preflight->'targets') n);
+select pg_temp.check_d4((select not public.complete_whatsapp_login_preflight(challenge,repeat('a',64),preflight,observations-0) from d4),'Observação incompleta não grava rota');
+select pg_temp.check_d4((select not public.complete_whatsapp_login_preflight(challenge,repeat('a',64),preflight||jsonb_build_object('version',999),observations) from d4),'Versão antiga não renova conexão ou cria rota');
+
+update public.auth_otp_challenges set consumed_at=clock_timestamp() where id=(select challenge from d4);
+select pg_temp.check_d4((select not public.complete_whatsapp_login_preflight(challenge,repeat('a',64),preflight,observations) from d4),'Desafio consumido durante a leitura não ganha rota');
+update public.auth_otp_challenges set consumed_at=null,expires_at=clock_timestamp()-interval '1 second' where id=(select challenge from d4);
+select pg_temp.check_d4((select public.whatsapp_login_preflight(challenge,repeat('a',64)) is null from d4),'Desafio vencido não observa números nem renova prazo');
+update public.auth_otp_challenges set expires_at=clock_timestamp()+interval '10 minutes' where id=(select challenge from d4);
+update public.whatsapp_care_groups set version=version+1 where id=(select grp from d4);
+select pg_temp.check_d4((select not public.complete_whatsapp_login_preflight(challenge,repeat('a',64),preflight,observations) from d4),'Grupo alterado durante a rede bloqueia conclusão CAS');
+update public.whatsapp_care_groups set version=(select (preflight->>'version')::bigint from d4) where id=(select grp from d4);
+select pg_temp.check_d4((select not public.complete_whatsapp_login_preflight(challenge,repeat('a',64),preflight,(select jsonb_agg(n||jsonb_build_object('status','unknown','observed_phone',null)) from jsonb_array_elements(observations) n)) from d4),'Conexão desconhecida não vira pronta e não cria rota');
+select pg_temp.check_d4(not exists(select 1 from public.whatsapp_group_login_routes),'Falhas anteriores não deixaram rota disponível');
+select pg_temp.check_d4((select public.complete_whatsapp_login_preflight(challenge,repeat('a',64),preflight,observations) from d4),'Leitura real dos dois números anexa rota ao mesmo desafio sem gerar outro código');
+select pg_temp.check_d4((select public.care_cycle_send_ready(grp) from d4),'Prontidão original volta a exigir observação real recente');
+select pg_temp.check_d4((select count(*)=1 from public.whatsapp_group_login_routes r,d4 where r.challenge_id=d4.challenge and r.group_id=d4.grp),'Uma rota aponta para o mesmo grupo consentido');
+select pg_temp.check_d4((select public.complete_whatsapp_login_preflight(challenge,repeat('a',64),preflight,observations) from d4),'Reentrega só confirma a mesma rota');
+select pg_temp.check_d4((select count(*)=1 from public.auth_otp_challenges),'Conferência não cria outro desafio');
+update public.whatsapp_send_controls set paused=true where scope='global';
+select pg_temp.check_d4((select public.whatsapp_login_preflight(challenge,repeat('a',64)) is null from d4),'Pausa global impede conferência e rota');
+update public.whatsapp_send_controls set paused=false where scope='global';
+update public.whatsapp_care_cycle_policy set pilot_customer_id=gen_random_uuid();
+select pg_temp.check_d4((select public.whatsapp_login_preflight(challenge,repeat('a',64)) is null from d4),'Outro cliente do piloto não recebe preflight');
+update public.whatsapp_care_cycle_policy set pilot_customer_id=(select person from d4);
+update public.whatsapp_care_groups set controls_verified=false where id=(select grp from d4);
+select pg_temp.check_d4((select public.whatsapp_login_preflight(challenge,repeat('a',64)) is null from d4),'Controles do grupo inválidos continuam bloqueando');
+select pg_temp.check_d4(not has_function_privilege('authenticated','public.whatsapp_login_preflight(uuid,text)','execute') and not has_function_privilege('anon','public.complete_whatsapp_login_preflight(uuid,text,jsonb,jsonb)','execute'),'APIs públicas não podem escolher ou renovar os números');
+rollback;

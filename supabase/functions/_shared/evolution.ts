@@ -144,7 +144,7 @@ export function evolutionGroupTransport(path: string, init: RequestInit = {}) {
 export function sendAuthorizedGroupLogin(
   ...args: [Parameters<typeof sendGroupLogin>[0], Parameters<typeof sendGroupLogin>[1]]
 ) {
-  return sendGroupLogin(...args, evolutionGroupTransport, groupCycleEnabled());
+  return sendGroupLogin(...args, evolutionGroupTransport, groupCycleEnabled(), evolutionFetch);
 }
 
 export function groupPilotEnabled() {

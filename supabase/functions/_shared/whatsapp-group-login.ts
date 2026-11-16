@@ -1,5 +1,6 @@
 import { cycleHash } from "./care-cycles.ts";
 import { inspectProtectedGroup, validProtectedGroupContext } from "./protected-group.ts";
+import { refreshWhatsappLoginRoute } from "./whatsapp-login-preflight.ts";
 
 type Database = {
   rpc: (
@@ -69,10 +70,15 @@ export async function sendGroupLogin(
   input: { challengeId: string; codeHash: string; code: string },
   transport: Transport,
   enabled = false,
+  observe?: Transport,
 ): Promise<"blocked" | "accepted" | "unknown"> {
   if (!enabled || !/^\d{6}$/.test(input.code)) return "blocked";
   const args = { p_challenge_id: input.challengeId, p_code_hash: input.codeHash };
-  const candidate = await db.rpc("whatsapp_group_login_context", args);
+  let candidate = await db.rpc("whatsapp_group_login_context", args);
+  if (!candidate.error && !validContext(candidate.data) && observe) {
+    if (!(await refreshWhatsappLoginRoute(db, args, observe))) return "blocked";
+    candidate = await db.rpc("whatsapp_group_login_context", args);
+  }
   if (candidate.error || !validContext(candidate.data)) return "blocked";
   const context = candidate.data;
   const instance = encodeURIComponent(context.instance_name);

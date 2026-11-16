@@ -12,11 +12,14 @@ function fixture(
     timeout?: boolean;
     enabled?: boolean;
     recordFails?: boolean;
+    stale?: boolean;
+    preflightBlocked?: boolean;
   } = {},
 ) {
   const calls: string[] = [];
   const bodies: Record<string, unknown>[] = [];
   let started = false;
+  let refreshed = false;
   const context = {
     cycle_id: "22222222-2222-4222-8222-222222222222",
     cycle_revision: 1,
@@ -38,7 +41,24 @@ function fixture(
   const db = {
     rpc: async (name: string) => {
       calls.push(name);
-      if (name === "whatsapp_group_login_context") return { data: options.absent ? null : context };
+      if (name === "whatsapp_group_login_context")
+        return { data: options.absent || (options.stale && !refreshed) ? null : context };
+      if (name === "whatsapp_login_preflight")
+        return {
+          data: {
+            challenge: "desafio",
+            targets: context.platform_phones.map((phone, i) => ({
+              id: i === 0 ? context.group_id : context.cycle_id,
+              instance: i === 0 ? "plataforma" : "reserva",
+              phone,
+              version: 1,
+            })),
+          },
+        };
+      if (name === "complete_whatsapp_login_preflight") {
+        refreshed = !options.preflightBlocked;
+        return { data: refreshed };
+      }
       if (name === "authorize_whatsapp_group_login") {
         if (options.changed || started) return { data: null };
         started = true;
@@ -127,6 +147,14 @@ function fixture(
         { challengeId: "desafio", codeHash: "hash", code: "123456" },
         transport,
         options.enabled ?? true,
+        options.stale
+          ? async () =>
+              context.platform_phones.map((phone, i) => ({
+                name: i === 0 ? "plataforma" : "reserva",
+                connectionStatus: "open",
+                ownerJid: phone.slice(1) + "@s.whatsapp.net",
+              }))
+          : undefined,
       ),
   };
 }
@@ -169,4 +197,18 @@ test("duas chamadas concorrentes compartilham autorização de tentativa única"
   const f = fixture();
   assert.deepEqual((await Promise.all([f.run(), f.run()])).sort(), ["accepted", "blocked"]);
   assert.equal(f.bodies.length, 1);
+});
+
+test("Login com observação envelhecida revalida a rota e envia uma única vez ao mesmo grupo", async () => {
+  const f = fixture({ stale: true });
+  assert.equal(await f.run(), "accepted");
+  assert.equal(f.calls.filter((c) => c === "whatsapp_login_preflight").length, 1);
+  assert.equal(f.calls.filter((c) => c === "whatsapp_group_login_context").length, 2);
+  assert.equal(f.bodies.length, 1);
+});
+test("Falha no preflight não dispara código nem usa a observação anterior", async () => {
+  const f = fixture({ stale: true, preflightBlocked: true });
+  assert.equal(await f.run(), "blocked");
+  assert.equal(f.bodies.length, 0);
+  assert.equal(f.calls.includes("authorize_whatsapp_group_login"), false);
 });

@@ -1,0 +1,19 @@
+{
+  "somente_local": true,
+  "telefone_confirmado_producao": true,
+  "grupo_ativo_producao": true,
+  "pedido_login_utc": "2026-11-16T18:37:21.518771Z",
+  "rota_existia": false,
+  "tentativa_envio_existia": false,
+  "causa": "conexões sem observação recente antes da seleção da rota",
+  "janela_recencia_preservada": true,
+  "sql_nova": "20261116003000_whatsapp_login_conferencia_recente.sql",
+  "fontes": 3,
+  "testes": 725,
+  "sql_novos": 22,
+  "sql_regressoes": 96,
+  "instalacao_atomica_com_rollback": true,
+  "interface_ou_evolution_alterados": false,
+  "instalado": false,
+  "otp_login_reais_homologados": false
+}
