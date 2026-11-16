@@ -5429,6 +5429,7 @@ export const ptPT: Record<MessageKey, string> = {
   "carePhone.join": "Entre no mesmo grupo com este número.",
   "carePhone.finishing": "A concluir a correção do telefone.",
   "carePhone.checking": "A verificar o seu número no WhatsApp.",
+  "carePhone.resumeSame": "Retomar com este número",
   "carePhone.cancel": "Cancelar revisão",
   "carePhone.edit": "Corrigir o meu número",
   "carePhone.correct": "O seu WhatsApp correto",

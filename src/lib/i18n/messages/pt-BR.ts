@@ -5412,6 +5412,7 @@ export const ptBR = {
   "carePhone.join": "Entre no mesmo grupo com este número.",
   "carePhone.finishing": "Concluindo a correção do telefone.",
   "carePhone.checking": "Conferindo seu número no WhatsApp.",
+  "carePhone.resumeSame": "Retomar com este número",
   "carePhone.cancel": "Cancelar revisão",
   "carePhone.edit": "Corrigir meu número",
   "carePhone.correct": "Seu WhatsApp correto",

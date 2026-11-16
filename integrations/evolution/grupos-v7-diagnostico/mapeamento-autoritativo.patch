@@ -1,0 +1,23 @@
+--- a/src/api/integrations/channel/whatsapp/bc-groups/core.ts
++++ b/src/api/integrations/channel/whatsapp/bc-groups/core.ts
+@@ -118,6 +118,7 @@
+   authorizePlatform?: (value: unknown) => Promise<unknown>;
+   resolvePhone?: PhoneResolver;
+   resolveCandidate?: PhoneResolver;
++  ensurePhoneMapping?: (pn: string) => Promise<void>;
+   cycles?: CycleStore;
+   peersReady?: (phones: string[]) => boolean | Promise<boolean>;
+   instanceId: string;
+--- a/src/api/integrations/channel/whatsapp/whatsapp.baileys.service.ts
++++ b/src/api/integrations/channel/whatsapp/whatsapp.baileys.service.ts
+@@ -4418,6 +4418,10 @@
+         store: operationStore(this.prismaRepository),
+         cycles: cycleStore(this.prismaRepository),
+         resolvePhone: async (jid) => this.client.signalRepository.lidMapping.getPNForLID(jid),
++        ensurePhoneMapping: async (pn) => {
++          // getLIDForPN consulta USync na falta de cache e grava o par autoritativo nas duas direções.
++          await this.client.signalRepository.lidMapping.getLIDForPN(pn);
++        },
+         resolveCandidate: async (jid) => {
+           // Chamado somente pelo fluxo privado de revisão, após quórum/admins/aceite delimitado.
+           const found = await this.client.onWhatsApp(jid);

@@ -1,6 +1,6 @@
 --- a/test/bc-phone-revision.test.ts
 +++ b/test/bc-phone-revision.test.ts
-@@ -73,3 +73,20 @@
+@@ -73,3 +73,51 @@
   const replay:any=await executeGroupCommand(f.d,'phoneRevision',f.request);assert.equal(replay.revision.phase,'aborted');assert.equal(lookups,1);
   assert.equal(f.cycle()!.customerJid,u);assert.equal(f.sent.length,0);
  });
@@ -20,4 +20,35 @@
 + assert.equal(f.cycle()!.phoneRevision!.phase,'pending');
 + assert.equal(f.cycle()!.phoneRevision!.deadline,before.phoneRevision!.deadline);
 + assert.equal(f.cycle()!.customerJid,before.customerJid);assert.equal(f.sent.length,0);
++});
++
++
++test('Identidade fria consulta somente PN consentido e resolve pedido LID pelo repositório autoritativo',async()=>{
++ const f=await setup(u);await executeGroupCommand(f.d,'phoneRevision',f.request);
++ const lid='12345678@lid';let mapped:string|null=null;const queried:string[]=[];
++ f.d.ensurePhoneMapping=async pn=>{queried.push(pn);assert.equal(pn,u);mapped=pn;};
++ f.d.resolvePhone=async jid=>jid===lid?mapped:null;
++ f.d.socket.groupRequestParticipantsList=async()=>[{jid:lid}];
++ const before=f.cycle()!;const status:any=await f.call('status');
++ assert.equal(status.requestPresent,true);assert.equal(status.requestStatus.matching,1);
++ assert.deepEqual(queried,[u]);assert.equal(f.cycle()!.version,before.version);assert.equal(f.sent.length,0);
++ await f.call('bind');assert.equal(f.cycle()!.phoneRevision!.requestJid,lid);
++ assert.ok(queried.every(pn=>pn===u));assert.equal(f.sent.length,0);
++});
++test('Consulta sem prova ou com falha nunca aprova pedido por suposição',async()=>{
++ const f=await setup();await executeGroupCommand(f.d,'phoneRevision',f.request);
++ const lid='12345678@lid';const queried:string[]=[];
++ f.d.ensurePhoneMapping=async pn=>{queried.push(pn);};f.d.resolvePhone=async()=>null;
++ f.d.socket.groupRequestParticipantsList=async()=>[{jid:lid}];
++ assert.equal((await f.call('status') as any).requestPresent,false);
++ await assert.rejects(()=>f.call('bind'),/Pedido do titular/);
++ f.d.ensurePhoneMapping=async()=>{throw Error('Consulta indisponível');};
++ await assert.rejects(()=>f.call('status'),/Consulta indisponível/);
++ assert.ok(queried.every(pn=>pn===candidate));assert.equal(f.cycle()!.phoneRevision!.phase,'pending');assert.equal(f.sent.length,0);
++});
++test('Intruso no grupo bloqueia antes da consulta autoritativa do candidato',async()=>{
++ const f=await setup();await executeGroupCommand(f.d,'phoneRevision',f.request);
++ let queries=0;f.d.ensurePhoneMapping=async()=>{queries++;};
++ f.raw.participants.push({id:candidate,admin:null});
++ await assert.rejects(()=>f.call('status'));assert.equal(queries,0);assert.equal(f.sent.length,0);
 +});

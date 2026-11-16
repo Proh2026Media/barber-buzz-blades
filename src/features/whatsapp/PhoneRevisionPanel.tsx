@@ -16,6 +16,7 @@ export function PhoneRevisionPanel({
   onKeep,
   onStart,
   onAbort,
+  onResume,
 }: {
   info: PhoneRevisionInfo;
   shopId: string;
@@ -26,6 +27,7 @@ export function PhoneRevisionPanel({
   onKeep: () => void;
   onStart: (phone: string) => void;
   onAbort: () => void;
+  onResume?: () => void;
 }) {
   const { t } = useI18n(),
     demo = useDemo();
@@ -120,15 +122,28 @@ export function PhoneRevisionPanel({
           </p>
         )}
         {["requested", "waiting"].includes(info.phase ?? "") && (
-          <button
-            className="action-button"
-            type="button"
-            disabled={disabled || !info.enabled}
-            onClick={onAbort}
-          >
-            <X aria-hidden />
-            {t("carePhone.cancel")}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            {info.expired && onResume && (
+              <button
+                className="action-button action-confirm"
+                type="button"
+                disabled={disabled || !info.enabled}
+                onClick={onResume}
+              >
+                <RefreshCw aria-hidden />
+                {t("carePhone.resumeSame")}
+              </button>
+            )}
+            <button
+              className="action-button"
+              type="button"
+              disabled={disabled || !info.enabled}
+              onClick={onAbort}
+            >
+              <X aria-hidden />
+              {t("carePhone.cancel")}
+            </button>
+          </div>
         )}
       </div>
     );

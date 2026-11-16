@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { Notice, SectionHeader, ConfirmDialog } from "@/components/visual";
 import { supabase } from "@/integrations/supabase/client";
+import { resumeExpiredPhoneRevision } from "@/lib/whatsapp/resume-phone-revision";
 import type { Json } from "@/integrations/supabase/types";
 import { useI18n } from "@/lib/i18n";
 import { useDemo } from "@/features/demo/context";
@@ -734,6 +735,25 @@ function CareGroupContent({
                   },
                   false,
                   "abort",
+                )
+              }
+              onResume={() =>
+                void run(
+                  async () => {
+                    apply(
+                      await resumeExpiredPhoneRevision(data, {
+                        read: async () => {
+                          const r = await supabase.rpc("care_group_read", { p_shop: shopId });
+                          if (r.error) throw careRpcFailure(r.error, r.status);
+                          return r.data as unknown as Data;
+                        },
+                        abort: (id) => abortCarePhoneRevision(shopId, id),
+                        revise: (start) => reviseCarePhone(shopId, start),
+                      }),
+                    );
+                  },
+                  false,
+                  "revise",
                 )
               }
             />

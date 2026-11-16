@@ -205,11 +205,32 @@ try {
     ).length,
     0,
   );
+  customer.phone_ready = false;
+  customer.access.active = false;
+  customer.background.active = false;
+  customer.group.state = "waiting_customer";
+  customer.group.cycle_state = "waiting_customer";
+  customer.phone_revision = {
+    contract: "bc-phone-revision-v1",
+    enabled: true,
+    id: "44444444-4444-4444-8444-444444444444",
+    phase: "waiting",
+    active: false,
+    pending: true,
+    expired: true,
+    old_phone: customer.phone,
+    declared_phone: customer.phone,
+    next_check_at: null,
+    deadline: new Date(Date.now() - 60000).toISOString(),
+  };
+  await root.getByRole("button", { name: "Retomar com este número", exact: true }).waitFor();
+  await layouts("04-retomada-explicita");
+  assert.equal(calls.filter((c) => c.name === "access" || c.name === "auth-otp").length, 0);
   assert.deepEqual(errors, []);
   console.log(
     "PASS: leitura automática periódica; navegador não avança etapas ou solicita OTP; pendência real e prontidão distintas",
   );
-  console.log("PASS: 45 composições — 3 estados × 3 cantos × 5 larguras, rede externa bloqueada");
+  console.log("PASS: 60 composições — 4 estados × 3 cantos × 5 larguras, rede externa bloqueada");
 } finally {
   await browser.close();
 }

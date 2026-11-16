@@ -5402,6 +5402,7 @@ export const enUS: Record<MessageKey, string> = {
   "carePhone.join": "Join the same group using this number.",
   "carePhone.finishing": "Finishing the phone correction.",
   "carePhone.checking": "Checking your number with WhatsApp.",
+  "carePhone.resumeSame": "Resume with this number",
   "carePhone.cancel": "Cancel review",
   "carePhone.edit": "Correct my number",
   "carePhone.correct": "Your correct WhatsApp number",

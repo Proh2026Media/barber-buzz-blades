@@ -8,7 +8,7 @@
  
  export type PhoneRevision = {
    id: string;
-@@ -218,15 +219,16 @@
+@@ -218,15 +219,18 @@
      return { revision: proof(c, r) };
    }
    if (r.phase !== 'pending') return { revision: proof(c, r) };
@@ -16,6 +16,8 @@
 +  const expired = Date.parse(r.deadline) <= Date.now();
 +  if (expired && p.action !== 'status') return { revision: proof(c, r), expired: true };
    await onlyAdmins(d, c);
++  // Consulta somente o PN já comprovado para esta intenção; o evento/LID não escolhe o alvo.
++  await d.ensurePhoneMapping?.(r.resolvedJid);
    const requests = await d.socket.groupRequestParticipantsList(c.groupJid);
    if (!Array.isArray(requests) || requests.length > 100) fail('Pedidos de entrada sem prova');
 -  const matches = [];
@@ -30,7 +32,7 @@
    if (p.action === 'bind') {
      if (matches.length !== 1) fail('Pedido do titular ainda não comprovado');
      // Gravação CAS única. Resultado perdido recupera este mesmo estado, nunca cria outro grupo.
-@@ -248,6 +250,7 @@
+@@ -248,6 +252,7 @@
    return {
      revision: proof(c, r),
      requestPresent: matches.length === 1,
