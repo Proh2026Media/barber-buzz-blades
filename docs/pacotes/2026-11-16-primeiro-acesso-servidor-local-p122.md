@@ -49,9 +49,9 @@ Nenhuma medição local de compilação prevê indisponibilidade das instâncias
 
 ## Antes de produção
 
-Esta é uma alteração nova: uma SQL, quatro fontes Edge novas e três fontes existentes alteradas, frontend, um timer novo e um incremental de imagem Evolution para diagnóstico. Não estão cobertos pela instalação anterior da conferência administrativa.
+Esta é uma alteração nova: uma SQL, três fontes Edge novas e três fontes existentes alteradas, frontend, um timer novo e um incremental de imagem Evolution para diagnóstico. Não estão cobertos pela instalação anterior da conferência administrativa.
 
-A instalação exige janela explícita. Preservar fontes/digests/controles anteriores e backup do banco validado; aplicar SQL em transação única; trocar somente as sete fontes incrementais e reiniciar somente funções; publicar frontend verificado. Para imagem Evolution, fixar digest e preparar retorno para a imagem atual, preservando volumes e configuração. Não usar Redeploy/Restart do serviço inteiro no Coolify. Não reinstalar migrations antigas ou migrations Evolution: este incremental não acrescenta schema Evolution.
+A instalação exige janela explícita. Preservar fontes/digests/controles anteriores e backup do banco validado; aplicar SQL em transação única; trocar somente as seis fontes incrementais e reiniciar somente funções; publicar frontend verificado. Para imagem Evolution, fixar digest e preparar retorno para a imagem atual, preservando volumes e configuração. Não usar Redeploy/Restart do serviço inteiro no Coolify. Não reinstalar migrations antigas ou migrations Evolution: este incremental não acrescenta schema Evolution.
 
 As duas unidades passaram em systemd-analyze verify na bancada Linux local; não foram instaladas ou habilitadas.
 

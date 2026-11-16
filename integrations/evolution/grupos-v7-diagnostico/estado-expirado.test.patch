@@ -1,0 +1,23 @@
+--- a/test/bc-phone-revision.test.ts
++++ b/test/bc-phone-revision.test.ts
+@@ -73,3 +73,20 @@
+  const replay:any=await executeGroupCommand(f.d,'phoneRevision',f.request);assert.equal(replay.revision.phase,'aborted');assert.equal(lookups,1);
+  assert.equal(f.cycle()!.customerJid,u);assert.equal(f.sent.length,0);
+ });
++
++
++test('Status vencido só diagnostica: não renova prazo, não fornece convite e bind continua bloqueado', async()=>{
++ const f=await setup();f.request.deadline=new Date(Date.now()+500).toISOString();
++ await executeGroupCommand(f.d,'phoneRevision',f.request);
++ f.d.socket.groupRequestParticipantsList=async()=>[{jid:'12345678@lid'}];
++ await new Promise(r=>setTimeout(r,600));
++ const before=f.cycle()!;
++ const result:any=await f.call('status');
++ assert.equal(result.expired,true);assert.equal(result.requestPresent,false);
++ assert.deepEqual(result.requestStatus,{total:1,matching:0,unresolved:1,other:0});
++ assert.equal(result.inviteUrl,undefined);
++ const bind:any=await f.call('bind');assert.equal(bind.expired,true);
++ assert.equal(f.cycle()!.phoneRevision!.phase,'pending');
++ assert.equal(f.cycle()!.phoneRevision!.deadline,before.phoneRevision!.deadline);
++ assert.equal(f.cycle()!.customerJid,before.customerJid);assert.equal(f.sent.length,0);
++});

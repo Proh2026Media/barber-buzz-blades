@@ -8,7 +8,13 @@
  
  export type PhoneRevision = {
    id: string;
-@@ -222,10 +223,9 @@
+@@ -218,15 +219,16 @@
+     return { revision: proof(c, r) };
+   }
+   if (r.phase !== 'pending') return { revision: proof(c, r) };
+-  if (Date.parse(r.deadline) <= Date.now()) return { revision: proof(c, r), expired: true };
++  const expired = Date.parse(r.deadline) <= Date.now();
++  if (expired && p.action !== 'status') return { revision: proof(c, r), expired: true };
    await onlyAdmins(d, c);
    const requests = await d.socket.groupRequestParticipantsList(c.groupJid);
    if (!Array.isArray(requests) || requests.length > 100) fail('Pedidos de entrada sem prova');
@@ -20,9 +26,11 @@
 +    requests, r.resolvedJid, (jid) => resolvePhone(jid, d.resolvePhone),
 +  );
    if (matches.length > 1) fail('Pedido de entrada ambíguo');
++  if (expired) return { revision: proof(c, r), expired: true, requestPresent: matches.length === 1, requestStatus: diagnostic };
    if (p.action === 'bind') {
      if (matches.length !== 1) fail('Pedido do titular ainda não comprovado');
-@@ -248,6 +248,7 @@
+     // Gravação CAS única. Resultado perdido recupera este mesmo estado, nunca cria outro grupo.
+@@ -248,6 +250,7 @@
    return {
      revision: proof(c, r),
      requestPresent: matches.length === 1,
