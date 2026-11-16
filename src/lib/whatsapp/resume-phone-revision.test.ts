@@ -135,3 +135,23 @@ test("Falha no cancelamento ou mudança posterior não inicia nova intenção", 
     assert.equal(started, false);
   }
 });
+
+test("Retoma cancelamento já comprovado após falha de resposta, com novo clique e mesma identidade", async () => {
+  const s = snapshot();
+  s.phone_revision.phase = "aborted";
+  s.phone_revision.expired = false;
+  let started = false;
+  await resumeExpiredPhoneRevision(s, {
+    read: async () => structuredClone(s),
+    abort: async () => {
+      throw Error("não cancelar novamente");
+    },
+    revise: async (intent) => {
+      started = true;
+      assert.equal(intent.phone, s.phone_revision.declared_phone);
+      assert.equal(intent.group, s.group.id);
+      return s;
+    },
+  });
+  assert.equal(started, true);
+});

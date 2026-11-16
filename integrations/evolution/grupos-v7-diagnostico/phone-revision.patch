@@ -8,6 +8,33 @@
  
  export type PhoneRevision = {
    id: string;
+@@ -131,7 +132,7 @@
+       },
+     });
+     if (marker) {
+-      if (marker.state !== 'phone_revision_aborted' || marker.requestHash !== requestHash)
++      if (!['phone_rev_abort', 'phone_revision_aborted'].includes(marker.state) || marker.requestHash !== requestHash)
+         fail('Revisão já usada com outros parâmetros');
+       if (r?.id === p.revisionId) {
+         if (!['pending', 'aborted'].includes(r.phase)) fail('Conciliação já iniciada; revisão necessária');
+@@ -151,7 +152,7 @@
+           instanceId: 'group:' + c.groupJid,
+           operationKey: p.revisionId as string,
+           requestHash,
+-          state: 'phone_revision_aborted',
++          state: 'phone_rev_abort',
+           groupJid: c.groupJid,
+         }))
+       )
+@@ -198,7 +199,7 @@
+         instanceId: 'group:' + c.groupJid,
+         operationKey: r.id,
+         requestHash: r.requestHash,
+-        state: 'phone_revision_aborted',
++        state: 'phone_rev_abort',
+         groupJid: c.groupJid,
+       }))
+     )
 @@ -218,15 +219,18 @@
      return { revision: proof(c, r) };
    }

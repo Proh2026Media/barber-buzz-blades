@@ -47,11 +47,11 @@ export async function resumeExpiredPhoneRevision<T extends Snapshot>(
   if (
     !initial.enabled ||
     !revision?.enabled ||
-    !revision.expired ||
+    (!revision.expired && revision.phase !== "aborted") ||
     !revision.id ||
     !revision.declared_phone ||
     !group ||
-    !["requested", "waiting"].includes(revision.phase ?? "") ||
+    !["requested", "waiting", "aborted"].includes(revision.phase ?? "") ||
     group.closing ||
     group.numbers_changed ||
     ["closing", "closed", "customer_left", "creation_unknown"].includes(group.cycle_state ?? "")
@@ -73,12 +73,16 @@ export async function resumeExpiredPhoneRevision<T extends Snapshot>(
       r.declared_phone !== revision.declared_phone ||
       (aborted
         ? r.phase !== "aborted"
-        : !r.expired || !r.enabled || r.phase !== revision.phase || g.version !== group.version)
+        : (revision.phase !== "aborted" && !r.expired) ||
+          !r.enabled ||
+          r.phase !== revision.phase ||
+          g.version !== group.version)
     )
       return stale();
   };
-  check(await actions.read(), false);
-  const after = await actions.abort(revision.id);
+  const current = await actions.read();
+  check(current, false);
+  const after = revision.phase === "aborted" ? current : await actions.abort(revision.id);
   check(after, true);
   return actions.revise({
     phone: revision.declared_phone,

@@ -226,11 +226,20 @@ try {
   await root.getByRole("button", { name: "Retomar com este número", exact: true }).waitFor();
   await layouts("04-retomada-explicita");
   assert.equal(calls.filter((c) => c.name === "access" || c.name === "auth-otp").length, 0);
+  customer.phone_revision.phase = "aborted";
+  customer.phone_revision.expired = false;
+  customer.phone_revision.pending = false;
+  await root
+    .getByRole("button", { name: "Cancelar revisão", exact: true })
+    .waitFor({ state: "hidden" });
+  await layouts("05-cancelamento-recuperado");
+  await root.getByRole("button", { name: "Retomar com este número", exact: true }).waitFor();
+  assert.equal(calls.filter((c) => c.name === "access" || c.name === "auth-otp").length, 0);
   assert.deepEqual(errors, []);
   console.log(
     "PASS: leitura automática periódica; navegador não avança etapas ou solicita OTP; pendência real e prontidão distintas",
   );
-  console.log("PASS: 60 composições — 4 estados × 3 cantos × 5 larguras, rede externa bloqueada");
+  console.log("PASS: 75 composições — 5 estados × 3 cantos × 5 larguras, rede externa bloqueada");
 } finally {
   await browser.close();
 }

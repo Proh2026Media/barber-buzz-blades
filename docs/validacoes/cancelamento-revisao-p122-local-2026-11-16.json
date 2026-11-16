@@ -1,0 +1,23 @@
+{
+  "erro": "ACCESS_UNAVAILABLE",
+  "operacao": "abort",
+  "ocorrido_em": "2026-11-16T17:43:20.250Z",
+  "causa": "estado phone_revision_aborted de 22 caracteres em campo varchar(16)",
+  "limite_producao_confirmado": 16,
+  "correcao": "phone_rev_abort, 15 caracteres, aceita marcador legado na leitura",
+  "recuperacao_producao": "prova aborted já existente gravada pelo RPC protegido após abort_requested=true; sem nova intenção, convite, admissão ou envio",
+  "imagem_local": {
+    "manifest": "sha256:5046086c347b072fa4052d8ee90f1419100ac5318f1bd65b15ae093d3aad3ea6",
+    "config": "sha256:bab6ab42b0183ee7f5232e3ec5eb5746902db727bd942b17dbbe24f81f21e127",
+    "index": "sha256:2468fc5ea6bedbc7fcd8dbb56c7ae6a71e16735942075230c765a68c211aca30",
+    "version": "2.3.7-bc.groups.7-entry.4",
+    "patch_sha256": "8247f48f98e143d4dcc38d278ef7a819fc285c35913e1b13a316fd82495db606",
+    "published": false,
+    "installed": false
+  },
+  "testes_bc": 719,
+  "regressoes_evolution": 32,
+  "composicoes_ui": 75,
+  "publicado": false,
+  "instalado": false
+}

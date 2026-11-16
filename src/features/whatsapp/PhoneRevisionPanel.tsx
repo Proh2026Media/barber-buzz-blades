@@ -149,6 +149,17 @@ export function PhoneRevisionPanel({
     );
   return (
     <div className="space-y-3">
+      {!editing && info.phase === "aborted" && onResume && (
+        <button
+          className="action-button action-confirm"
+          type="button"
+          disabled={disabled || !info.enabled}
+          onClick={onResume}
+        >
+          <RefreshCw aria-hidden />
+          {t("carePhone.resumeSame")}
+        </button>
+      )}
       {!editing && resumeNeeded && (
         <div className="space-y-3">
           <p className="text-sm font-semibold">{t("carePhone.reviewNumber")}</p>
