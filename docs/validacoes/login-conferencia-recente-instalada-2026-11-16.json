@@ -1,0 +1,47 @@
+{
+  "utc": "2026-11-16T19:00:13.794937+00:00",
+  "source": "c37afbe4aa27b450f927371f59eaa3c61cc0494d",
+  "sql_sha256": "f5a9b3dfa1dd32a0536d894e9df898d2644feaa7e36249a1f6ebe06017fc1fa7",
+  "backup_sha256": "c7820cb37c695d08a343aea623c22e1145528a0ac78b099b1df819861df0cf51",
+  "functions": 3,
+  "only_edge_restarted": true,
+  "container_started_at": "2026-11-16T18:58:35.555953477Z",
+  "outage_measured": false,
+  "mount_order_only_false_alarm": true,
+  "all_mount_fields_and_config_preserved": true,
+  "all_old_contracts_policy_phones_preserved": true,
+  "options_http": 200,
+  "missing_challenge_smoke_null": true,
+  "state": {
+    "paused": true,
+    "enabled": false,
+    "confirmed": true,
+    "isolation": true,
+    "same_shop": true,
+    "assistance": false,
+    "group_active": true,
+    "same_customer": true
+  },
+  "new_challenge": false,
+  "message_sent": false,
+  "installed": true,
+  "real_login_homologated": false,
+  "pilot_active": {
+    "version": 33,
+    "paused": false,
+    "isolation": true,
+    "scope": "Loja Teste / Alyson Gmail",
+    "other_shop_allowed": false,
+    "other_customer_allowed": false,
+    "distribution": false,
+    "new_timer": "active",
+    "old_timers": "inactive"
+  },
+  "cold_condition": {
+    "utc": "2026-11-16T19:04:12Z",
+    "ready": false,
+    "recent_numbers": 0,
+    "preflight_eligible": true,
+    "timestamps_modified_for_test": false
+  }
+}
