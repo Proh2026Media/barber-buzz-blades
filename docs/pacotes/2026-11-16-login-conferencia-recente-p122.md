@@ -1,12 +1,14 @@
 # P-122 — login com conferência recente dos números
 
+**Estado atual: instalado com autorização do titular em16/11/2026.** SQL e três fontes conferidas, apenas Edge reiniciada, piloto liberado somente Loja Teste/Alyson Gmail. Telefone confirmado e grupo ativo preservados. A condição de conexão envelhecida foi reproduzida naturalmente após a instalação. Recebimento do código de login e abertura de sessão ainda aguardam novo teste real do titular. Não reinstalar nem enviar o pacote local anterior à TI como pendência.
+
 ## Evidência e causa
 
 Consulta de16/11/2026 confirmou telefone verificado às15:21:18BRT, grupo/ciclo active/verified, controles válidos, alias verificado e mesma identidade física. Pedido de login de15:37:21BRT usou o número confirmado, mas não ganhou rota nem tentativa de envio. Não é evidência de falha de entrega da Meta/Evolution: não houve transmissão desse código.
 
 Causa comprovada: care_cycle_send_ready=false/care_cycle_available=false por conexão envelhecida; as mesmas verificações com p_live=false eram verdadeiras. Alias, acolhimento, recibo e fixação estavam válidos. A primeira entrada deixa de renovar status depois de terminar; o login exigia observação recente sem atualizá-la antes de escolher a rota. A janela de dois minutos não foi ampliada.
 
-## Correção local pronta
+## Correção implementada
 
 Uma SQL nova `20261116003000_whatsapp_login_conferencia_recente.sql` e três fontes compartilhadas: nova `_shared/whatsapp-login-preflight.ts`, alteradas `_shared/whatsapp-group-login.ts` e `_shared/evolution.ts`. Nenhuma interface, imagem Evolution, configuração de ambiente ou timer novo.
 
@@ -18,7 +20,7 @@ A conclusão exige mesma composição/versão/grupo/ciclo/admissão, duas conex�
 
 725 testes, tipos, lint, formatação e montagem aprovados. Dezesseis testes focados de transporte/preflight incluídos no total. Banco Docker limpo, sem dados reais: 22 verificações SQL, reproduzindo a solicitação real sem rota com observação antiga e sua recuperação; 96 regressões de piloto/telefone/acompanhamento; instalação atômica preservou todos os OIDs/owners/ACLs/corpos dos contratos anteriores e a política, com rollback integral. Funções-base e hashes das duas fontes instaladas coincidem com a versão usada na implementação.
 
-## Implantação pendente de autorização
+## Situação anterior à autorização — histórico
 
 Somente consultas foram feitas no servidor nesta entrega. A autorização anterior abrangia imagem7-entry.4 e interface; a nova SQL não fazia parte dela. Nenhuma publicação/instalação desta correção foi realizada. Telefone confirmado, grupo e piloto permanecem como estavam. Não usar “Conferir liberação” manualmente como solução permanente nem pedir novo cadastro/grupo/retomada ao cliente.
 
