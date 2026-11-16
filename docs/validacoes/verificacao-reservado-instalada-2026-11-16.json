@@ -1,0 +1,70 @@
+{
+  "source": "06e0d9c0dbe5eb8874a5e672db982abd482e6eb8",
+  "server": {
+    "started_utc": "2026-11-16T04:18:09.111074+00:00",
+    "verified_utc": "2026-11-16T04:18:18.760868+00:00",
+    "sha256": "5eefc86c22d752f95b2ded0727972885f7abeb5b2dcfea883171435b67f6914a",
+    "restart_to_options_seconds": 8.245,
+    "health": {
+      "options_http": 200
+    },
+    "state": {
+      "cycles": false,
+      "leases": 0,
+      "paused": true,
+      "sending": 0,
+      "uncertain": 0,
+      "assistance": false,
+      "distribution": false
+    },
+    "timers": {
+      "bc-central-grupos.timer": ["inactive", "disabled"],
+      "bc-central-distribuicao.timer": ["inactive", "disabled"],
+      "bc-central-expurgo.timer": ["inactive", "disabled"]
+    },
+    "other_containers_unchanged": true,
+    "edge_container_id_preserved": true,
+    "backup_sha256": "2ef7a1fb947cad0e381ca7b23e88e4d49318982234ba1e0c1372d4eda0d91b0c",
+    "final_state": {
+      "cycles": false,
+      "leases": 0,
+      "paused": true,
+      "sending": 0,
+      "uncertain": 0,
+      "assistance": false,
+      "distribution": false
+    },
+    "final_verified_utc": "2026-11-16T04:23:37.285034+00:00"
+  },
+  "frontend": {
+    "utc": "2026-11-16T04:23:14.280239+00:00",
+    "page_http": 200,
+    "source": "06e0d9c",
+    "modules": [
+      {
+        "path": "/assets/index-CVfMM8c1.js",
+        "http": 200,
+        "reserved_dictionary": true,
+        "sha256": "da75b52b89c84011448a3336b572876d3bfc65f7729869f1dda4fd915b7b772f"
+      },
+      {
+        "path": "/assets/PlatformShell-DyeK82fz.js",
+        "http": 200,
+        "reserved_message": false,
+        "sha256": "6aba12e072075a832aed36a03dc319c2ebc31d7bdd8959cf639ffca365f9913b"
+      },
+      {
+        "path": "/assets/shop-number-CNAbmIEn.js",
+        "http": 200,
+        "reserved_message": true,
+        "sha256": "98a4a76e542f74365b028954812c4b3bc3a4c17ed85cbcfba7eb9ad5030c480f"
+      }
+    ],
+    "served": true
+  },
+  "local_tests": 669,
+  "sql_changes": false,
+  "messages_sent": false,
+  "groups_created": false,
+  "browser_validation": "Sessão existente expirada; sem renovar credenciais ou simular JWT. Conferência funcional autenticada ainda pendente."
+}

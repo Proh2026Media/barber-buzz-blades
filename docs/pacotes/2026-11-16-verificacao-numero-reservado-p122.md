@@ -1,5 +1,7 @@
 # P-122 — verificação administrativa do número reservado
 
+**Já instalado e publicado com autorização:** ver [devolutiva final](2026-11-16-codex-verificacao-reservado-instalada.md). As instruções abaixo registram o plano anterior; não executar de novo.
+
 Estado: correção local, sem publicação ou instalação. Não ativa piloto ou envios.
 
 ## Diagnóstico comprovado
