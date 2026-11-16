@@ -43,5 +43,20 @@
   "other_customer_allowed": false,
   "distribution_enabled": false,
   "new_timer": "active/enabled",
-  "old_timers": "inactive/disabled"
+  "old_timers": "inactive/disabled",
+  "retomada_real": {
+    "clique_do_titular": true,
+    "requested_at": "2026-11-16T18:19:14.420276Z",
+    "checked_at": "2026-11-16T18:20:43.494741Z",
+    "revision_phase": "committed",
+    "group_state": "active",
+    "cycle_state": "active",
+    "reason": "verified",
+    "entry_pending": false,
+    "controls_verified": true,
+    "same_group": true,
+    "phone_confirmed": false,
+    "service_result": "success",
+    "service_exit": 0
+  }
 }

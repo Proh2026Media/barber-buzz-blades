@@ -43,3 +43,9 @@ Conferência automática dos dois números na sessão real do admin passou; libe
 Instalação concluída; não há pacote para a TI instalar ou motivo para repetir SQL/Edge. Próximo passo: na sessão Gmail da Loja Teste, atualizar e tocar “Retomar com este número”; pergunta enviada ao titular para acompanhar o teste real. A interface e a retomada no mesmo grupo foram verificadas localmente, e a elegibilidade real foi conferida sem iniciar intenção em nome do cliente. Não afirmar OTP/login reais homologados sem retorno do titular e evidência de conclusão.
 
 Corte final15:16:08 BRT: pausa=false, ciclos/assistência/background=true, política29, isolamento=true; par autorizado aceito, outra loja/cliente recusados, distribuição=false. Novo timer active/enabled; três antigos inactive/disabled. Liberação persistiu após reload na sessão admin real.
+
+## Retomada real concluída
+
+Titular confirmou o clique em “Retomar com este número”. Consulta somente leitura às15:20:43 BRT comprovou nova intenção iniciada15:19:14BRT, revisão committed e ainda vigente, mesmo grupo, grupo/ciclo active/verified, entrada não pendente e controles verificados. Rotina Result=success/ExecMainStatus=0. Pausa=false, piloto/background=true, isolamento=true e contexto autorizado. O Codex não iniciou a nova intenção nem solicitou OTP.
+
+A retomada e a entrada estão homologadas neste piloto. O telefone continua sem confirmação no perfil; recebimento/validação do código e login reais seguem pendentes. Próximo passo do titular: solicitar “Receber código no grupo”, ler o código no mesmo grupo e confirmá-lo na plataforma. Não criar outro grupo ou repetir o pedido de entrada.
