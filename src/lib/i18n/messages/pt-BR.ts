@@ -180,6 +180,15 @@ export const ptBR = {
   "care.profileCodeUnavailable":
     "O código é enviado somente ao seu grupo de atendimento. Não foi possível enviar agora; confira a preparação e sua entrada no grupo.",
   "care.openSetup": "Ver meu grupo e próximos passos",
+  "carePilot.checking": "Conferindo…",
+  "carePilot.checked": "Conferência concluída",
+  "carePilot.timeout": "Tempo esgotado. Confira sua conexão e tente novamente.",
+  "carePilot.incomplete": "Teste parcialmente desativado",
+  "carePilot.incompleteHint":
+    "A pausa global está desligada, mas o atendimento não está liberado. Use “Pausar teste” antes de preparar uma nova liberação.",
+  "carePilot.checkedReady":
+    "Pré-requisitos conferidos. O teste continua pausado até você confirmar “Liberar teste”.",
+  "carePilot.checkedActive": "O teste está liberado somente para este atendimento.",
   "carePilot.title": "Teste de WhatsApp",
   "carePilot.active": "Teste liberado",
   "carePilot.paused": "Teste pausado",

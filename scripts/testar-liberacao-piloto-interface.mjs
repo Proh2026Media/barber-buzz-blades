@@ -44,10 +44,21 @@ const data = {
 };
 const calls = [];
 let stale = false;
-await context.route("**/rest/v1/rpc/care_pilot_admin", (route) => {
+let readFailure = false,
+  delayed = false;
+await context.route("**/rest/v1/rpc/care_pilot_admin", async (route) => {
   if (route.request().method() === "OPTIONS") return route.fulfill({ status: 204, headers });
   const args = route.request().postDataJSON();
   calls.push(args);
+  if (args.p_action === "read" && delayed)
+    await new Promise((resolve) => setTimeout(resolve, 16000));
+  if (args.p_action === "read" && readFailure)
+    return route.fulfill({
+      status: 500,
+      headers,
+      contentType: "application/json",
+      body: '{"message":"falha simulada"}',
+    });
   if (args.p_action !== "read") {
     assert.equal(args.p_values.confirmed, true);
     assert.equal(args.p_values.shop_id, data.shop_id);
@@ -126,6 +137,21 @@ try {
   assert.equal(await release().isDisabled(), true);
   assert.ok(calls.every((r) => r.p_action === "read"));
   await layouts("pausado");
+  await refresh();
+  await page.getByText("Conferência concluída", { exact: true }).waitFor();
+  await page
+    .getByText("Confira a conexão recente e a autorização dos dois números de atendimento.", {
+      exact: true,
+    })
+    .first()
+    .waitFor();
+  data.paused = false;
+  await refresh();
+  await page.getByText("Teste parcialmente desativado", { exact: true }).waitFor();
+  assert.equal(await release().count(), 0);
+  await page.getByRole("button", { name: "Pausar teste", exact: true }).waitFor();
+  assert.ok(calls.every((r) => r.p_action === "read"));
+  data.paused = true;
   data.preparation_ready = true;
   await refresh();
   await release().click();
@@ -156,6 +182,29 @@ try {
   assert.equal(data.paused, true);
   assert.equal(data.cycles, false);
   assert.equal(data.assistance, false);
+  readFailure = true;
+  await refresh();
+  await page
+    .getByText("Não foi possível conferir ou alterar a liberação. Atualize e tente novamente.", {
+      exact: true,
+    })
+    .waitFor();
+  assert.equal(await release().count(), 0);
+  readFailure = false;
+  await refresh();
+  await release().waitFor();
+  delayed = true;
+  await refresh();
+  await page.getByRole("button", { name: "Conferindo…", exact: true }).waitFor();
+  await page
+    .getByText("Tempo esgotado. Confira sua conexão e tente novamente.", { exact: true })
+    .first()
+    .waitFor({ timeout: 20000 });
+  assert.equal(await release().count(), 0);
+  delayed = false;
+  await refresh();
+  await release().waitFor();
+  assert.equal(data.paused, true);
   assert.deepEqual(errors, []);
   console.log(
     "PASS: leitura não ativa; pré-requisitos/CAS/confirmar/cancelar/pausar; identidade e versões enviadas pelo contrato atômico",

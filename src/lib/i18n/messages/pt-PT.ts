@@ -180,6 +180,15 @@ export const ptPT: Record<MessageKey, string> = {
   "care.profileCodeUnavailable":
     "O código é enviado apenas para o seu grupo de atendimento. Não foi possível enviar agora; confira a preparação e a sua entrada no grupo.",
   "care.openSetup": "Ver o meu grupo e próximos passos",
+  "carePilot.checking": "A verificar…",
+  "carePilot.checked": "Verificação concluída",
+  "carePilot.timeout": "Tempo esgotado. Verifique a ligação e tente novamente.",
+  "carePilot.incomplete": "Teste parcialmente desativado",
+  "carePilot.incompleteHint":
+    "A pausa global está desligada, mas o atendimento não está autorizado. Use “Pausar teste” antes de preparar uma nova autorização.",
+  "carePilot.checkedReady":
+    "Pré-requisitos verificados. O teste continua pausado até confirmar “Autorizar teste”.",
+  "carePilot.checkedActive": "O teste está autorizado apenas para este atendimento.",
   "carePilot.title": "Teste de WhatsApp",
   "carePilot.active": "Teste disponível",
   "carePilot.paused": "Teste em pausa",

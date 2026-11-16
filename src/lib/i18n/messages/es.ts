@@ -183,6 +183,15 @@ export const es: Record<MessageKey, string> = {
   "care.profileCodeUnavailable":
     "El código se envía solo a tu grupo de atención. No pudimos enviarlo ahora; revisa la preparación y tu entrada al grupo.",
   "care.openSetup": "Ver mi grupo y próximos pasos",
+  "carePilot.checking": "Comprobando…",
+  "carePilot.checked": "Comprobación completada",
+  "carePilot.timeout": "Se agotó el tiempo. Revisa la conexión e inténtalo de nuevo.",
+  "carePilot.incomplete": "Prueba parcialmente desactivada",
+  "carePilot.incompleteHint":
+    "La pausa global está desactivada, pero la atención no está habilitada. Usa “Pausar prueba” antes de preparar una nueva habilitación.",
+  "carePilot.checkedReady":
+    "Requisitos comprobados. La prueba sigue pausada hasta confirmar “Habilitar prueba”.",
+  "carePilot.checkedActive": "La prueba está habilitada solo para esta atención.",
   "carePilot.title": "Prueba de WhatsApp",
   "carePilot.active": "Prueba habilitada",
   "carePilot.paused": "Prueba pausada",

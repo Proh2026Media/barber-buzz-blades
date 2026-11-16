@@ -182,6 +182,15 @@ export const enUS: Record<MessageKey, string> = {
   "care.profileCodeUnavailable":
     "The code is sent only to your care group. We could not send it now; check group setup and your membership.",
   "care.openSetup": "View my group and next steps",
+  "carePilot.checking": "Checking…",
+  "carePilot.checked": "Check completed",
+  "carePilot.timeout": "The check timed out. Check your connection and try again.",
+  "carePilot.incomplete": "Test partially disabled",
+  "carePilot.incompleteHint":
+    "The global pause is off, but this service is not enabled. Use “Pause test” before preparing a new release.",
+  "carePilot.checkedReady":
+    "Prerequisites checked. The test remains paused until you confirm “Enable test”.",
+  "carePilot.checkedActive": "The test is enabled only for this service.",
   "carePilot.title": "WhatsApp test",
   "carePilot.active": "Test enabled",
   "carePilot.paused": "Test paused",
