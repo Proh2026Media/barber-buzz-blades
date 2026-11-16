@@ -1,0 +1,28 @@
+{
+  "data": "2026-11-16",
+  "fonte": "ca3c01631a6bb4ae6c3299d16f6561580b75c693",
+  "frontend_build": "01a1e568-caf4-723f-a644-233644335ee8",
+  "frontend_state": "completed",
+  "corte_utc": "2026-11-16T17:37:08Z",
+  "paused": false,
+  "cycles": true,
+  "assistance": true,
+  "background": true,
+  "isolation": true,
+  "policy_version": 25,
+  "allowed_scope": "Loja Teste / Alyson Gmail",
+  "other_shop_allowed": false,
+  "other_customer_allowed": false,
+  "new_timer": "active/enabled",
+  "old_timers": "inactive/disabled",
+  "pending_request": {
+    "matching": 1,
+    "unresolved": 0,
+    "expired": true,
+    "journal_and_deadline_unchanged": true
+  },
+  "otp_login_homologado": false,
+  "testes_bc": 718,
+  "composicoes_ui": 60,
+  "regressoes_evolution": 60
+}

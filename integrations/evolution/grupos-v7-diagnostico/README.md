@@ -9,3 +9,11 @@ Não trocar imagem por tag mutável, construir no meio do piloto, desligar as gu
 ## Pedido expirado —7-entry.2
 
 O titular autorizou implantação e conferência do pedido pendente em16/11. A operação status agora pode ler as contagens de um pedido pending após o prazo, ainda exigindo quórum/admins conectados. Não devolve convite, não modifica o diário nem renova prazo. Prepare/bind continuam bloqueados depois do prazo. O teste adicional cobre explicitamente esses limites; patch de teste em estado-expirado.test.patch. Fonte e imagem final de bancada em7-entry.2, compilação completa e oito testes focados de revisão aprovados.
+
+## Implantação final — 7-entry.3, 16/11/2026
+
+Instalada na janela autorizada, fixada no índice OCI `sha256:5b9093e6ab17fe7f82dfbc7be45a17eac7ab72f2bb072bce7ab640350747e001`. Filho AMD64 `sha256:c540fe5fc71fa1c7f5b13e187fa0886af5a97552691b3ed683b062e1e847bd2d`. Config `sha256:47e4b2376344d526ed5612d574dac3ec72e552e683389932a267641ddc16b13f`. Não confundir índice, filho e config.
+
+A causa comprovada do pedido não reconhecido era o reverse lookup PN/LID depender exclusivamente do cache. `mapeamento-autoritativo.patch` acrescenta `ensurePhoneMapping` usando USync `getLIDForPN`, somente para o PN já comprovado na intenção. A status consulta as contagens sob quórum/admins; nenhuma equivalência por dígitos, nome ou evento. O pedido real passou de unresolved=1 para matching=1, sem alterar diário ou prazo, devolver convite, aprovar, fazer bind ou enviar mensagem.
+
+Sessenta regressões do motor passaram sem rede, além de cinco testes de contagens; compilação completa aprovada. A tentativa anterior venceu e requer clique explícito do cliente em “Retomar com este número”; a rotina não renova consentimento. Consulte a devolutiva de implantação em `docs/pacotes/2026-11-16-codex-entrada-automatica-instalada-p122.md`.
