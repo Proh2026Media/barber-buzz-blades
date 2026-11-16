@@ -189,13 +189,16 @@ export const ptBR = {
   "carePilot.checkedReady":
     "Pré-requisitos conferidos. O teste continua pausado até você confirmar “Liberar teste”.",
   "carePilot.checkedActive": "O teste está liberado somente para este atendimento.",
+  "carePilot.pending": "Ainda há pendências",
+  "carePilot.connectionFailed":
+    "Não foi possível confirmar os dois números. Confira a conexão deles e tente novamente.",
   "carePilot.title": "Teste de WhatsApp",
   "carePilot.active": "Teste liberado",
   "carePilot.paused": "Teste pausado",
   "carePilot.scope": "Os novos envios ficam restritos à barbearia e ao cliente mostrados aqui.",
   "carePilot.noScope": "Escolha primeiro a barbearia e o cliente autorizados no escopo do teste.",
   "carePilot.checkNumbers":
-    "Confira a conexão recente e a autorização dos dois números de atendimento.",
+    "Os números precisam estar conectados e autorizados para este atendimento.",
   "carePilot.activate": "Liberar teste",
   "carePilot.pause": "Pausar teste",
   "carePilot.refresh": "Conferir liberação",

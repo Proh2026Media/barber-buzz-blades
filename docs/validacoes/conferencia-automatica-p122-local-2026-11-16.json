@@ -1,0 +1,17 @@
+{
+  "status": "somente_local",
+  "base": "b063019",
+  "migration": "20261116001000_whatsapp_conferencia_piloto.sql",
+  "tests": 695,
+  "orchestration_tests": 26,
+  "sql_checks": 19,
+  "sql_rolled_back": true,
+  "interface_compositions": 45,
+  "widths": [320, 390, 768, 1024, 1440],
+  "corner_modes": ["square", "soft", "round"],
+  "operator_tested_in_disposable_clone": true,
+  "production_changes": false,
+  "pilot_activated": false,
+  "real_messages_sent": false,
+  "real_groups_created": false
+}

@@ -85,6 +85,53 @@ await context.route("**/rest/v1/rpc/care_pilot_admin", async (route) => {
     body: JSON.stringify(data),
   });
 });
+const targetCalls = [];
+const targets = [
+  { id: "33333333-3333-4333-8333-333333333333", phone: "+5511800000001", version: 7 },
+  { id: "44444444-4444-4444-8444-444444444444", phone: "+5511800000002", version: 8 },
+];
+await context.route("**/rest/v1/rpc/care_pilot_connection_check", async (route) => {
+  if (route.request().method() === "OPTIONS") return route.fulfill({ status: 204, headers });
+  assert.deepEqual(route.request().postDataJSON(), {});
+  if (delayed) await new Promise((resolve) => setTimeout(resolve, 31000));
+  if (readFailure)
+    return route.fulfill({
+      status: 500,
+      headers,
+      contentType: "application/json",
+      body: '{"message":"falha simulada"}',
+    });
+  return route.fulfill({
+    status: 200,
+    headers,
+    contentType: "application/json",
+    body: JSON.stringify({
+      contract: "bc-pilot-connection-check-v1",
+      state: data,
+      targets,
+      fingerprint: "a".repeat(32),
+    }),
+  });
+});
+await context.route("**/functions/v1/platform-whatsapp", async (route) => {
+  if (route.request().method() === "OPTIONS") return route.fulfill({ status: 204, headers });
+  const args = route.request().postDataJSON();
+  targetCalls.push(args);
+  assert.equal(args.action, "status");
+  assert.deepEqual(Object.keys(args).sort(), ["action", "channel_id"]);
+  const target = targets.find((t) => t.id === args.channel_id);
+  assert.ok(target);
+  return route.fulfill({
+    status: 200,
+    headers,
+    contentType: "application/json",
+    body: JSON.stringify({
+      managed_channel_id: target.id,
+      status: "open",
+      display_phone: target.phone,
+    }),
+  });
+});
 const page = await context.newPage();
 page.setDefaultTimeout(12000);
 const errors = [];
@@ -136,11 +183,13 @@ try {
   await release().waitFor();
   assert.equal(await release().isDisabled(), true);
   assert.ok(calls.every((r) => r.p_action === "read"));
+  assert.equal(targetCalls.length, 0, "Carregar painel não dispara consultas de conexão");
   await layouts("pausado");
   await refresh();
-  await page.getByText("Conferência concluída", { exact: true }).waitFor();
+  await page.getByText("Ainda há pendências", { exact: true }).waitFor();
+  assert.equal(targetCalls.length, 2);
   await page
-    .getByText("Confira a conexão recente e a autorização dos dois números de atendimento.", {
+    .getByText("Os números precisam estar conectados e autorizados para este atendimento.", {
       exact: true,
     })
     .first()
@@ -199,7 +248,7 @@ try {
   await page
     .getByText("Tempo esgotado. Confira sua conexão e tente novamente.", { exact: true })
     .first()
-    .waitFor({ timeout: 20000 });
+    .waitFor({ timeout: 35000 });
   assert.equal(await release().count(), 0);
   delayed = false;
   await refresh();
@@ -208,6 +257,9 @@ try {
   assert.deepEqual(errors, []);
   console.log(
     "PASS: leitura não ativa; pré-requisitos/CAS/confirmar/cancelar/pausar; identidade e versões enviadas pelo contrato atômico",
+  );
+  console.log(
+    "PASS: cada clique consulta somente os dois números do atendimento e relê os requisitos, sem parear, despausar ou enviar",
   );
   console.log(
     "PASS: 45 composições, três cantos e cinco larguras; somente API/sessão fictícias, nenhuma liberação produtiva",

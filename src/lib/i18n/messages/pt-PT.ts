@@ -189,13 +189,16 @@ export const ptPT: Record<MessageKey, string> = {
   "carePilot.checkedReady":
     "Pré-requisitos verificados. O teste continua pausado até confirmar “Autorizar teste”.",
   "carePilot.checkedActive": "O teste está autorizado apenas para este atendimento.",
+  "carePilot.pending": "Ainda há requisitos pendentes",
+  "carePilot.connectionFailed":
+    "Não foi possível confirmar os dois números. Verifique a ligação e tente novamente.",
   "carePilot.title": "Teste de WhatsApp",
   "carePilot.active": "Teste disponível",
   "carePilot.paused": "Teste em pausa",
   "carePilot.scope": "Os novos envios ficam restritos à barbearia e ao cliente apresentados aqui.",
   "carePilot.noScope": "Escolha primeiro a barbearia e o cliente autorizados no âmbito do teste.",
   "carePilot.checkNumbers":
-    "Confira a ligação recente e a autorização dos dois números de atendimento.",
+    "Os números precisam de estar ligados e autorizados para este atendimento.",
   "carePilot.activate": "Disponibilizar teste",
   "carePilot.pause": "Pausar teste",
   "carePilot.refresh": "Conferir disponibilidade",

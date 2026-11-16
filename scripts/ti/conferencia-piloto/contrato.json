@@ -1,0 +1,51 @@
+{
+  "before": {
+    "care_pilot_admin(text,jsonb)": {
+      "acl": ["postgres=X/postgres", "authenticated=X/postgres"],
+      "md5": "97c769d9b2e1ed8f635e955a473f628b",
+      "owner": "postgres"
+    },
+    "care_pilot_preparation_ready()": {
+      "acl": ["postgres=X/postgres"],
+      "md5": "079e161502ed88920a8bf16f7019833d",
+      "owner": "postgres"
+    },
+    "care_cycle_composition(uuid,uuid)": {
+      "acl": ["postgres=X/postgres"],
+      "md5": "7c095b0bd3e65e6ff78d6d8e17fdbfb5",
+      "owner": "postgres"
+    },
+    "record_whatsapp_distribution_connection(uuid,text,text,bigint,text,text)": {
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+      "md5": "ab25179dfb38973b52a3c206c4206664",
+      "owner": "postgres"
+    }
+  },
+  "after": {
+    "care_pilot_admin(text,jsonb)": {
+      "acl": ["postgres=X/postgres", "authenticated=X/postgres"],
+      "md5": "97c769d9b2e1ed8f635e955a473f628b",
+      "owner": "postgres"
+    },
+    "care_pilot_connection_check()": {
+      "acl": ["postgres=X/postgres", "authenticated=X/postgres"],
+      "md5": "5e0c740c0f66127be9f248219c84e925",
+      "owner": "postgres"
+    },
+    "care_pilot_preparation_ready()": {
+      "acl": ["postgres=X/postgres"],
+      "md5": "079e161502ed88920a8bf16f7019833d",
+      "owner": "postgres"
+    },
+    "care_cycle_composition(uuid,uuid)": {
+      "acl": ["postgres=X/postgres"],
+      "md5": "7c095b0bd3e65e6ff78d6d8e17fdbfb5",
+      "owner": "postgres"
+    },
+    "record_whatsapp_distribution_connection(uuid,text,text,bigint,text,text)": {
+      "acl": ["postgres=X/postgres", "service_role=X/postgres"],
+      "md5": "ab25179dfb38973b52a3c206c4206664",
+      "owner": "postgres"
+    }
+  }
+}

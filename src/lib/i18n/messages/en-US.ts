@@ -191,13 +191,15 @@ export const enUS: Record<MessageKey, string> = {
   "carePilot.checkedReady":
     "Prerequisites checked. The test remains paused until you confirm “Enable test”.",
   "carePilot.checkedActive": "The test is enabled only for this service.",
+  "carePilot.pending": "Some requirements are still pending",
+  "carePilot.connectionFailed":
+    "We could not confirm both numbers. Check their connections and try again.",
   "carePilot.title": "WhatsApp test",
   "carePilot.active": "Test enabled",
   "carePilot.paused": "Test paused",
   "carePilot.scope": "New sends are restricted to the barbershop and customer shown here.",
   "carePilot.noScope": "First configure the authorized barbershop and customer for this test.",
-  "carePilot.checkNumbers":
-    "Check the recent connection and authorization of both service numbers.",
+  "carePilot.checkNumbers": "The numbers must be connected and authorized for this service.",
   "carePilot.activate": "Enable test",
   "carePilot.pause": "Pause test",
   "carePilot.refresh": "Check availability",

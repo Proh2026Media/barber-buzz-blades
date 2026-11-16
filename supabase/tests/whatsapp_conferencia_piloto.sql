@@ -1,0 +1,56 @@
+begin;
+-- Fixtures explícitas: conexão/identidades falsas; nada representa WhatsApp real.
+create temporary table d4 as select gen_random_uuid() shop,gen_random_uuid() other_shop,gen_random_uuid() person,gen_random_uuid() other_person,gen_random_uuid() a,gen_random_uuid() b,gen_random_uuid() grp,gen_random_uuid() cycle;
+create function pg_temp.check_pilot(ok boolean,label text) returns void language plpgsql as $$begin if ok is distinct from true then raise exception 'FAIL: %',label;end if;raise notice 'PASS: %',label;end $$;
+create function pg_temp.denied(query text,expected text,label text) returns void language plpgsql as $$begin
+ begin execute query;raise exception 'FAIL: %',label;exception when others then if sqlerrm like 'FAIL:%' or sqlerrm<>expected then raise;end if;raise notice 'PASS: %',label;end;
+end $$;
+select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',true);
+update public.whatsapp_send_controls set paused=false where scope='global';
+update d4 set shop=(public.register_my_barbershop(gen_random_uuid(),'Piloto fictício','America/Sao_Paulo','single',true,'teste','teste','teste')->>'shop_id')::uuid;
+update d4 set other_shop=(public.register_my_barbershop(gen_random_uuid(),'Outra fictícia','America/Sao_Paulo','single',true,'teste','teste','teste')->>'shop_id')::uuid;
+select public.platform_create_whatsapp_channel(a,'Fictício A') from d4;
+select public.platform_create_whatsapp_channel(b,'Fictício B') from d4;
+update public.whatsapp_channels set display_phone=case id when (select a from d4) then '+5511800000111' else '+5511800000222' end,status='open',connection_observed_at=clock_timestamp() where id in(select a from d4 union all select b from d4);
+select public.platform_confirm_whatsapp_control(id,routing_version,display_phone,instance_name,true) from public.whatsapp_channels where id in(select a from d4 union all select b from d4);
+select public.platform_set_whatsapp_route(shop,null,0,a,b,null,'primary',false,false,false) from d4;
+select public.platform_set_whatsapp_route(other_shop,null,0,a,b,null,'primary',false,false,false) from d4;
+insert into auth.users(id,email,raw_user_meta_data) select person,person||'@example.invalid','{}'::jsonb from d4 union all select other_person,other_person||'@example.invalid','{}'::jsonb from d4;
+insert into public.memberships(user_id,barbershop_id,role) select person,shop,'customer'::public.app_role from d4 union all select other_person,shop,'customer'::public.app_role from d4 union all select person,other_shop,'customer'::public.app_role from d4;
+insert into public.whatsapp_care_groups(id,barbershop_id,customer_id,customer_phone) select grp,shop,person,'+5511998888777' from d4;
+insert into public.whatsapp_group_enrollments(group_id,profile_phone,profile_verified_at) select grp,null,null from d4;
+insert into public.whatsapp_care_cycles(id,group_id,customer_phone,consented_numbers,creator_channel_id,creator_instance)
+ select cycle,grp,'+5511998888777',public.care_cycle_composition(shop),a,'bc-'||a from d4;
+update public.whatsapp_care_groups set current_cycle_id=(select cycle from d4) where id=(select grp from d4);
+select public.care_cycle_registry_ack(instance_name,source_version,true) from public.whatsapp_care_registry;
+update public.whatsapp_care_cycle_policy set enabled=false,assisted_access_enabled=false,pilot_shop_id=(select shop from d4),pilot_customer_id=(select person from d4) where singleton;
+update public.whatsapp_send_controls set paused=true where scope='global';
+
+create temporary table before_check as select public.care_pilot_admin('read') state,(select count(*) from public.whatsapp_care_audit) audits;
+create temporary table snap_check as select public.care_pilot_connection_check() j;
+select pg_temp.check_pilot((select j->>'contract'='bc-pilot-connection-check-v1' and jsonb_array_length(j->'targets')=2 from snap_check),'Plano contém somente duas contas do atendimento configurado');
+select pg_temp.check_pilot((select not exists(select 1 from jsonb_array_elements(j->'targets') n where (n->>'id')::uuid not in(select a from d4 union all select b from d4)) from snap_check),'Nenhum número de outro destino é consultado');
+select pg_temp.check_pilot((select j->'state'->>'shop_id'=shop::text and j->'state'->>'customer_id'=person::text from snap_check,d4),'Escopo é lido da política, sem loja ou cliente enviados pelo navegador');
+select pg_temp.check_pilot(has_function_privilege('authenticated','public.care_pilot_connection_check()','execute') and not has_function_privilege('anon','public.care_pilot_connection_check()','execute') and not has_function_privilege('service_role','public.care_pilot_connection_check()','execute'),'RPC de plano concedida somente à sessão autenticada, sem anon ou service_role');
+select pg_temp.check_pilot((select public.care_pilot_admin('read')=state and (select count(*) from public.whatsapp_care_audit)=audits from before_check),'Leitura não altera controles, versões ou auditoria de operações');
+select set_config('request.jwt.claim.sub',(select person::text from d4),true);
+select pg_temp.denied('select public.care_pilot_connection_check()','Sem permissão','Cliente autenticado não consulta o plano administrativo');
+select set_config('request.jwt.claim.sub','',true);
+select pg_temp.denied('select public.care_pilot_connection_check()','Sem permissão','Ausência de sessão não recebe plano');
+select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',true);
+update public.whatsapp_channels set connection_observed_at=clock_timestamp()-interval '3 minutes' where id in(select a from d4 union all select b from d4);
+select pg_temp.check_pilot(not public.care_pilot_preparation_ready(),'Plano não inventa evidência quando a observação expirou');
+select pg_temp.check_pilot((select j->>'fingerprint'=public.care_pilot_connection_check()->>'fingerprint' from snap_check),'Vencimento de observação não altera a identidade estável da consulta');
+select pg_temp.check_pilot(public.record_whatsapp_distribution_connection(c.id,c.instance_name,c.display_phone,c.routing_version,'open',c.display_phone),'RPC existente registra observação CAS real simulada') from public.whatsapp_channels c where id in(select a from d4 union all select b from d4);
+select pg_temp.check_pilot(public.care_pilot_preparation_ready(),'Releitura reconhece as duas observações sem despausar');
+select pg_temp.check_pilot((select j->>'fingerprint'=public.care_pilot_connection_check()->>'fingerprint' from snap_check),'Consulta de conexão não invalida o plano por atualizar o horário');
+select pg_temp.check_pilot((select public.care_pilot_admin('read')=state and (select count(*) from public.whatsapp_care_audit)=audits from before_check),'Conferência não ativa enrollment, assistência, envio, timer ou grupo');
+select pg_temp.check_pilot(not public.record_whatsapp_distribution_connection(c.id,c.instance_name,c.display_phone,c.routing_version-1,'open',c.display_phone),'Versão antiga continua recusada na gravação') from public.whatsapp_channels c where id=(select a from d4);
+select pg_temp.check_pilot(not public.record_whatsapp_distribution_connection(c.id,c.instance_name,c.display_phone,c.routing_version,'open','+5511777777777'),'Telefone divergente continua recusado') from public.whatsapp_channels c where id=(select a from d4);
+update public.whatsapp_care_cycle_policy set pilot_customer_id=(select other_person from d4);
+select pg_temp.check_pilot((select j->>'fingerprint'<>public.care_pilot_connection_check()->>'fingerprint' from snap_check),'Troca de cliente muda impressão do plano mesmo na mesma loja');
+update public.whatsapp_care_cycle_policy set pilot_customer_id=(select person from d4),pilot_shop_id=(select other_shop from d4);
+select pg_temp.check_pilot((select j->>'fingerprint'<>public.care_pilot_connection_check()->>'fingerprint' from snap_check),'Troca de loja muda plano mesmo compartilhando números');
+update public.whatsapp_care_cycle_policy set pilot_shop_id=null,pilot_customer_id=null;
+select pg_temp.check_pilot((public.care_pilot_connection_check()->'state'->>'scoped')::boolean=false,'Escopo incompleto não é tratado como piloto preparado');
+rollback;

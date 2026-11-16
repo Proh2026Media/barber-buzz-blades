@@ -192,13 +192,15 @@ export const es: Record<MessageKey, string> = {
   "carePilot.checkedReady":
     "Requisitos comprobados. La prueba sigue pausada hasta confirmar “Habilitar prueba”.",
   "carePilot.checkedActive": "La prueba está habilitada solo para esta atención.",
+  "carePilot.pending": "Aún hay requisitos pendientes",
+  "carePilot.connectionFailed":
+    "No pudimos confirmar ambos números. Revisa sus conexiones e inténtalo de nuevo.",
   "carePilot.title": "Prueba de WhatsApp",
   "carePilot.active": "Prueba habilitada",
   "carePilot.paused": "Prueba pausada",
   "carePilot.scope": "Los nuevos envíos se limitan a la barbería y al cliente que aparecen aquí.",
   "carePilot.noScope": "Primero configura la barbería y el cliente autorizados para la prueba.",
-  "carePilot.checkNumbers":
-    "Comprueba la conexión reciente y la autorización de ambos números de atención.",
+  "carePilot.checkNumbers": "Los números deben estar conectados y autorizados para esta atención.",
   "carePilot.activate": "Habilitar prueba",
   "carePilot.pause": "Pausar prueba",
   "carePilot.refresh": "Comprobar disponibilidad",

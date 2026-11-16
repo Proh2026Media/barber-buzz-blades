@@ -11,21 +11,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { useDemo } from "@/features/demo/context";
 
-type State = {
-  contract: "bc-pilot-release-v1";
-  scoped: boolean;
-  isolated: boolean;
-  shop_id: string | null;
-  customer_id: string | null;
-  shop_name: string | null;
-  customer_name: string | null;
-  policy_version: number;
-  pause_version: number;
-  paused: boolean;
-  cycles: boolean;
-  assistance: boolean;
-  preparation_ready: boolean;
-};
+import {
+  checkPilotConnections,
+  pilotState,
+  type PilotState as State,
+} from "@/lib/whatsapp/pilot-check";
+import { guardedFetch } from "@/lib/demo-guard";
 
 /** Leitura nunca ativa. Liberação/pausa passam pelo mesmo contrato atômico e CAS. */
 export function CarePilotRelease({ onChanged }: { onChanged: () => void }) {
@@ -38,7 +29,11 @@ export function CarePilotRelease({ onChanged }: { onChanged: () => void }) {
   const [confirm, setConfirm] = useState(false);
   const live = useRef(false),
     pending = useRef(false);
-  async function action(name: "read" | "activate" | "pause", propagate = false) {
+  async function action(
+    name: "read" | "activate" | "pause",
+    propagate = false,
+    connections = false,
+  ) {
     if (demo || pending.current) return;
     pending.current = true;
     setBusy(true);
@@ -51,6 +46,50 @@ export function CarePilotRelease({ onChanged }: { onChanged: () => void }) {
         (async () => {
           const before = (await supabase.auth.getSession()).data.session?.user.id;
           if (!before) throw Error("SESSION_REQUIRED");
+          if (name === "read" && connections) {
+            return checkPilotConnections(
+              {
+                current: async () =>
+                  live.current &&
+                  !demo &&
+                  (await supabase.auth.getSession()).data.session?.user.id === before,
+                read: async () => {
+                  const result = await supabase
+                    .rpc("care_pilot_connection_check")
+                    .abortSignal(controller.signal);
+                  if (result.error) throw result.error;
+                  return result.data;
+                },
+                verify: async (target) => {
+                  const session = (await supabase.auth.getSession()).data.session;
+                  if (!session || session.user.id !== before) throw Error("SESSION_REQUIRED");
+                  const response = await guardedFetch(
+                    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/platform-whatsapp`,
+                    {
+                      method: "POST",
+                      signal: controller.signal,
+                      headers: {
+                        Authorization: `Bearer ${session.access_token}`,
+                        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "",
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({ action: "status", channel_id: target.id }),
+                    },
+                  );
+                  const result = await response.json();
+                  if (!response.ok)
+                    throw Error(
+                      response.status === 401 || response.status === 403
+                        ? "SESSION_REQUIRED"
+                        : "PILOT_CONNECTION_CHECK_FAILED",
+                    );
+                  return result;
+                },
+              },
+              controller.signal,
+              data?.scoped ? data : null,
+            );
+          }
           const r = await supabase
             .rpc("care_pilot_admin", {
               p_action: name,
@@ -67,28 +106,19 @@ export function CarePilotRelease({ onChanged }: { onChanged: () => void }) {
             })
             .abortSignal(controller.signal);
           if (r.error) throw r.error;
-          const next = r.data as unknown as State;
-          if (
-            next?.contract !== "bc-pilot-release-v1" ||
-            [
-              next.paused,
-              next.cycles,
-              next.assistance,
-              next.preparation_ready,
-              next.scoped,
-              next.isolated,
-            ].some((value) => typeof value !== "boolean")
-          )
-            throw Error("CONTRACT_REQUIRED");
+          const next = pilotState(r.data);
           const current = (await supabase.auth.getSession()).data.session?.user.id;
           if (current !== before) throw Error("SESSION_REQUIRED");
           return next;
         })(),
         new Promise<never>((_, reject) => {
-          timer = setTimeout(() => {
-            reject(Error("PILOT_TIMEOUT"));
-            controller.abort();
-          }, 15000);
+          timer = setTimeout(
+            () => {
+              reject(Error("PILOT_TIMEOUT"));
+              controller.abort();
+            },
+            connections ? 30000 : 15000,
+          );
         }),
       ]);
       if (!live.current) return;
@@ -103,11 +133,17 @@ export function CarePilotRelease({ onChanged }: { onChanged: () => void }) {
         setError(
           code === "PILOT_TIMEOUT"
             ? "carePilot.timeout"
-            : code === "GROUP_STALE"
-              ? "carePilot.stale"
-              : code === "GROUP_CAPABILITY_REQUIRED"
-                ? "carePilot.checkNumbers"
-                : "carePilot.error",
+            : code === "PILOT_CONNECTION_CHECK_FAILED"
+              ? "carePilot.connectionFailed"
+              : code === "PILOT_SCOPE_REQUIRED"
+                ? "carePilot.noScope"
+                : code === "SESSION_REQUIRED"
+                  ? "errors.integration.session"
+                  : code === "GROUP_STALE"
+                    ? "carePilot.stale"
+                    : code === "GROUP_CAPABILITY_REQUIRED"
+                      ? "carePilot.checkNumbers"
+                      : "carePilot.error",
         );
       }
       if (propagate) throw Error("PILOT_CONTROL_FAILED");
@@ -150,37 +186,46 @@ export function CarePilotRelease({ onChanged }: { onChanged: () => void }) {
             </span>
           </div>
           <p className="text-sm text-muted-foreground">{t("carePilot.scope")}</p>
-          {!data.paused && !active && (
+          {!checked && !busy && !data.paused && !active && (
             <Notice tone="warning" title={t("carePilot.incompleteHint")} />
           )}
-          {!data.scoped ? (
-            <Notice tone="warning" title={t("carePilot.noScope")} />
-          ) : (
-            data.paused &&
-            !data.preparation_ready && <Notice tone="warning" title={t("carePilot.checkNumbers")} />
-          )}
+          {!checked &&
+            !busy &&
+            (!data.scoped ? (
+              <Notice tone="warning" title={t("carePilot.noScope")} />
+            ) : (
+              data.paused &&
+              !data.preparation_ready && (
+                <Notice tone="warning" title={t("carePilot.checkNumbers")} />
+              )
+            ))}
         </>
       )}
       {!data && !error && <p role="status">{t("shop.loading")}</p>}
       <ActionResult
-        state={error ? "error" : busy ? "saving" : checked ? "saved" : null}
+        state={error ? "error" : busy ? "saving" : null}
         text={t(error ?? (busy ? "carePilot.checking" : "carePilot.checked"))}
-        detail={
-          !busy && !error && checked && data
-            ? t(
-                active
-                  ? "carePilot.checkedActive"
-                  : !data.paused
-                    ? "carePilot.incompleteHint"
-                    : !data.scoped
-                      ? "carePilot.noScope"
-                      : !data.preparation_ready
-                        ? "carePilot.checkNumbers"
-                        : "carePilot.checkedReady",
-              )
-            : undefined
-        }
       />
+      {!busy && !error && checked && data && (
+        <Notice
+          tone={active || canActivate ? "success" : "warning"}
+          title={t(
+            active ? "carePilot.active" : canActivate ? "carePilot.checked" : "carePilot.pending",
+          )}
+        >
+          {t(
+            active
+              ? "carePilot.checkedActive"
+              : !data.paused
+                ? "carePilot.incompleteHint"
+                : !data.scoped
+                  ? "carePilot.noScope"
+                  : !data.preparation_ready
+                    ? "carePilot.checkNumbers"
+                    : "carePilot.checkedReady",
+          )}
+        </Notice>
+      )}
       <div className="flex flex-wrap gap-2">
         {data?.paused ? (
           <button
@@ -209,7 +254,7 @@ export function CarePilotRelease({ onChanged }: { onChanged: () => void }) {
           type="button"
           className="action-button"
           disabled={busy}
-          onClick={() => void action("read")}
+          onClick={() => void action("read", false, true)}
         >
           <RefreshCw aria-hidden className={busy ? "motion-safe:animate-spin" : undefined} />
           {t(busy ? "carePilot.checking" : "carePilot.refresh")}
