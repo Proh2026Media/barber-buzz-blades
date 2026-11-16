@@ -2555,6 +2555,8 @@ export const ptBR = {
   "plat.wa.waitingScan": "Esperando a leitura do código",
   "plat.wa.consequence": "Clientes novos não recebem o código do cadastro",
   "plat.wa.showCode": "Mostrar código",
+  "plat.wa.reserved":
+    "Este número é reservado para os códigos de acesso. A conexão pode ser verificada; trocar ou desconectar exige uma operação própria da plataforma.",
   "plat.wa.check": "Verificar",
   "plat.wa.more": "Mais opções do WhatsApp",
   "plat.wa.swap": "Trocar número",

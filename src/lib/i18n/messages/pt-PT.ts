@@ -2566,6 +2566,8 @@ export const ptPT: Record<MessageKey, string> = {
   "plat.wa.waitingScan": "À espera da leitura do código",
   "plat.wa.consequence": "Clientes novos não recebem o código do registo",
   "plat.wa.showCode": "Mostrar código",
+  "plat.wa.reserved":
+    "Este número está reservado aos códigos de acesso. Pode verificar a ligação; trocar ou desligar exige uma operação própria da plataforma.",
   "plat.wa.check": "Verificar",
   "plat.wa.more": "Mais opções do WhatsApp",
   "plat.wa.swap": "Trocar número",

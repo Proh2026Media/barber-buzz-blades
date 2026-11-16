@@ -13,6 +13,11 @@ function rawText(raw: unknown): string {
 }
 
 const PATTERNS: Array<{ test: RegExp; message: MessageKey }> = [
+  { test: /CHANNEL_RESERVED/, message: "plat.wa.reserved" },
+  {
+    test: /CHANNEL_IDENTITY_UNCONFIRMED|CHANNEL_STATE_UNSAVED/,
+    message: "errors.integration.unavailable",
+  },
   { test: /WA_PERSONAL_NUMBER/, message: "waOrg.personalNumber" },
   // Antes de "sessão": o token do Google venceu ou foi revogado — reconectar o Google, não entrar no app de novo.
   {

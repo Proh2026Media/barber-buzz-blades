@@ -90,8 +90,12 @@ Deno.serve(async (req) => {
       return json({ error: "PAIRING_PHONE_INVALID" }, 400);
 
     let instanceName: string;
-    let managedChannel: { id: string; instance_name: string; display_phone: string | null } | null =
-      null;
+    let managedChannel: {
+      id: string;
+      instance_name: string;
+      display_phone: string | null;
+      routing_version: number;
+    } | null = null;
     if (body.channel_id !== undefined) {
       if (
         typeof body.channel_id !== "string" ||
@@ -100,7 +104,9 @@ Deno.serve(async (req) => {
         return json({ error: "CHANNEL_INVALID" }, 400);
       const { data, error } = await userClient
         .from("whatsapp_channels")
-        .select("id,instance_name,display_phone,personal_number,barbershop_id,staff_id")
+        .select(
+          "id,instance_name,display_phone,personal_number,barbershop_id,staff_id,routing_version",
+        )
         .eq("id", body.channel_id)
         .single();
       if (error || !data) return json({ error: "CHANNEL_NOT_FOUND" }, 404);
@@ -109,7 +115,8 @@ Deno.serve(async (req) => {
       instanceName = data.instance_name;
       if (
         instanceName === (Deno.env.get("PLATFORM_EVOLUTION_INSTANCE") ?? "").trim() &&
-        (data.barbershop_id || data.staff_id)
+        (data.barbershop_id || data.staff_id) &&
+        !(action === "status" && !body.method)
       )
         return json({ error: "CHANNEL_RESERVED" }, 409);
     } else instanceName = platformInstance();
@@ -241,7 +248,11 @@ Deno.serve(async (req) => {
       }
 
       if (state === "open") {
-        displayPhone = await readInstancePhone(evolutionFetch, instanceName, displayPhone);
+        displayPhone = await readInstancePhone(
+          evolutionFetch,
+          instanceName,
+          action === "status" && !body.method && managedChannel ? null : displayPhone,
+        );
       }
 
       status =
@@ -267,7 +278,23 @@ Deno.serve(async (req) => {
       );
     }
 
-    await saveState(status, displayPhone);
+    if (managedChannel?.display_phone && action === "status" && !body.method) {
+      // Observação real com identidade/versão; não troca o número nem inicia pareamento.
+      const observed = status === "open" ? displayPhone : null;
+      if (status === "open" && (!observed || observed !== managedChannel.display_phone))
+        return channelJson({ error: "CHANNEL_IDENTITY_UNCONFIRMED" }, 409);
+      const recorded = await admin.rpc("record_whatsapp_distribution_connection", {
+        p_id: managedChannel.id,
+        p_instance: instanceName,
+        p_phone: managedChannel.display_phone,
+        p_version: managedChannel.routing_version,
+        p_status:
+          status === "open" ? "open" : status === "disconnected" ? "disconnected" : "unknown",
+        p_observed_phone: observed,
+      });
+      if (recorded.error || recorded.data !== true)
+        return channelJson({ error: "CHANNEL_STATE_UNSAVED" }, 409);
+    } else await saveState(status, displayPhone);
     return channelJson({
       ok: true,
       instance_name: instanceName,

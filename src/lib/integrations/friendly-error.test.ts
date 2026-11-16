@@ -51,3 +51,9 @@ test("mensagem do Google já traduzida não vira a mensagem do WhatsApp", () => 
 test("número pessoal orienta sem pedir novo pareamento", () => {
   assert.match(friendlyIntegrationError("WA_PERSONAL_NUMBER", FALLBACK), /WhatsApp é pessoal/);
 });
+
+test("número reservado informa proteção sem atribuir falha ao pareamento do servidor", () => {
+  const message = friendlyIntegrationError("CHANNEL_RESERVED", FALLBACK);
+  assert.match(message, /reservado/);
+  assert.doesNotMatch(message, /CHANNEL_RESERVED|habilitada no servidor/);
+});

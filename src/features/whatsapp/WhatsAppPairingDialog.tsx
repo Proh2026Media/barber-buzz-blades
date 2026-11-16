@@ -178,7 +178,9 @@ function PairingForm({
           const scope = await check.json();
           if (!current()) return;
           if (!check.ok || scope.managed_channel_id !== channelId) {
-            setError("waPair.needsUpdate");
+            setError(
+              scope.error === "CHANNEL_RESERVED" ? "plat.wa.reserved" : "waPair.needsUpdate",
+            );
             return;
           }
         }

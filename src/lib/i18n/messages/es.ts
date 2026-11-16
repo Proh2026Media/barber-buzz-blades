@@ -2577,6 +2577,8 @@ export const es: Record<MessageKey, string> = {
   "plat.wa.waitingScan": "Esperando la lectura del código",
   "plat.wa.consequence": "Los clientes nuevos no reciben el código del registro",
   "plat.wa.showCode": "Mostrar código",
+  "plat.wa.reserved":
+    "Este número está reservado para códigos de acceso. Puedes verificar la conexión; cambiarlo o desconectarlo requiere una operación específica de la plataforma.",
   "plat.wa.check": "Comprobar",
   "plat.wa.more": "Más opciones de WhatsApp",
   "plat.wa.swap": "Cambiar número",

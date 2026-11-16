@@ -2561,6 +2561,8 @@ export const enUS: Record<MessageKey, string> = {
   "plat.wa.waitingScan": "Waiting for the code scan",
   "plat.wa.consequence": "New customers don't get the sign-up code",
   "plat.wa.showCode": "Show code",
+  "plat.wa.reserved":
+    "This number is reserved for access codes. Its connection can be checked; changing or disconnecting it requires a dedicated platform operation.",
   "plat.wa.check": "Check",
   "plat.wa.more": "More WhatsApp options",
   "plat.wa.swap": "Change number",

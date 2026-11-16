@@ -17,6 +17,8 @@ function fixture(
     instance?: string;
     shared?: boolean;
     sharedError?: boolean;
+    observationSaved?: boolean;
+    observedPhone?: string;
   } = {},
 ) {
   const calls: string[] = [];
@@ -29,6 +31,8 @@ function fixture(
           id: "11111111-1111-4111-8111-111111111111",
           instance_name: options.instance ?? "instancia-da-loja",
           status: "disconnected",
+          display_phone: "+5511999999999",
+          routing_version: 7,
           delivery_mode: options.mode ?? "primary",
           backup_instance_name: options.mode === "backup" ? "reserva-da-loja" : null,
         };
@@ -36,6 +40,10 @@ function fixture(
     auth: { getUser: async () => ({ data: { user: { id: "usuario-ficticio" } }, error: null }) },
     rpc: async (name: string, args?: Record<string, unknown>) => {
       calls.push(name);
+      if (name === "record_whatsapp_distribution_connection") {
+        writes.push(args);
+        return { data: options.observationSaved !== false, error: null };
+      }
       if (name === "shop_whatsapp_channel")
         return options.sharedError
           ? { data: null, error: { code: "42501", message: "negado" } }
@@ -98,7 +106,7 @@ function fixture(
       return [
         {
           name: decodeURIComponent(path.split("instanceName=")[1]),
-          ownerJid: "5511999999999@s.whatsapp.net",
+          ownerJid: (options.observedPhone ?? "5511999999999") + "@s.whatsapp.net",
         },
       ];
     if (path.includes("connect/")) return { pairingCode: "ABCD1234", base64: "iVBORw0KGgo=" };
@@ -462,3 +470,71 @@ test("salvar preferências da reserva consulta o estado dela sem conectar", asyn
   assert.ok(f.calls.includes("/instance/connectionState/reserva-da-loja"));
   assert.ok(!f.calls.some((c) => c.includes("/connect/") || c.includes("/create")));
 });
+
+for (const action of [
+  "connect",
+  "logout",
+  "restart-pairing",
+  "pairing-status",
+  "status",
+] as const) {
+  test(`reservado: ${action} com pedido de pareamento continua bloqueado`, async () => {
+    const f = fixture("platform-whatsapp", { instance: "instancia-plataforma", state: "open" });
+    const r = await f.request({
+      action,
+      method: "qr",
+      phone: "5511999999999",
+      channel_id: "11111111-1111-4111-8111-111111111111",
+    });
+    assert.equal(r.status, 409);
+    assert.equal(r.body.error, "CHANNEL_RESERVED");
+    assert.equal(f.writes.length, 0);
+    assert.ok(!f.calls.some((c) => c.startsWith("/instance/")));
+  });
+}
+test("reservado: admin verifica sem criar, conectar, trocar telefone ou despausar", async () => {
+  const f = fixture("platform-whatsapp", { instance: "instancia-plataforma", state: "open" });
+  const r = await f.request({
+    action: "status",
+    channel_id: "11111111-1111-4111-8111-111111111111",
+  });
+  assert.equal(r.status, 200);
+  assert.equal(r.body.status, "open");
+  assert.deepEqual(f.writes, [
+    {
+      p_id: "11111111-1111-4111-8111-111111111111",
+      p_instance: "instancia-plataforma",
+      p_phone: "+5511999999999",
+      p_version: 7,
+      p_status: "open",
+      p_observed_phone: "+5511999999999",
+    },
+  ]);
+  assert.ok(
+    f.calls
+      .filter((c) => c.startsWith("/instance/"))
+      .every((c) => c.includes("/connectionState/") || c.includes("/fetchInstances?")),
+  );
+});
+for (const option of [
+  { observedPhone: "5511888888888" },
+  { observedPhone: "invalido" },
+  { observationSaved: false },
+]) {
+  test(
+    "reservado: identidade ausente/divergente ou versão antiga não vira conferência válida " +
+      JSON.stringify(option),
+    async () => {
+      const f = fixture("platform-whatsapp", {
+        instance: "instancia-plataforma",
+        state: "open",
+        ...option,
+      });
+      const r = await f.request({
+        action: "status",
+        channel_id: "11111111-1111-4111-8111-111111111111",
+      });
+      assert.equal(r.status, 409);
+    },
+  );
+}
