@@ -1,0 +1,94 @@
+{
+  "autorizacao": "Sim, Codex aplica e mantém tudo pausado",
+  "fonte_funcional": "9cf643e38932523024d6567fcc3da87c98197622",
+  "pacote_sha256": "1db992feddf15fd4770cf1a8c66ad1f69f97258d73d4eee5c2d7d1fcada9d4b1",
+  "sql_sha256": "609e599e69a0e22a93cba3b953e3bffc4c6cc24f110387dd05a8cf09b6caa8d1",
+  "backup_validado": true,
+  "identidades_preservadas": true,
+  "oid_owner_acl_preservados": true,
+  "rpc_anonimo": {
+    "http": 401,
+    "codigo": "42501"
+  },
+  "frontend": {
+    "utc": "2026-11-16T02:02:04Z",
+    "pages": [
+      {
+        "path": "/app",
+        "http": 200
+      },
+      {
+        "path": "/platform?aba=whatsapp",
+        "http": 200
+      }
+    ],
+    "assets": [
+      {
+        "path": "/assets/index-CHV3Bfto.js",
+        "http": 200,
+        "sha256": "5b87f2f62a81bce4acbf17044470d12eeebc087bfbf49661c712bbb1c54fbc0b",
+        "new_pilot_admin": false,
+        "new_profile_setup": true
+      },
+      {
+        "path": "/assets/ArenaApp-gCFsKKgX.js",
+        "http": 200,
+        "sha256": "993a0299f9909994d4af7732434d05861d60e4bd062f8f81211a9c134d5f43d1",
+        "new_pilot_admin": false,
+        "new_profile_setup": false
+      },
+      {
+        "path": "/assets/platform-CuMMVWxC.js",
+        "http": 200,
+        "sha256": "b9c09ff0fcab3618fc781a87e4d7ce0530e746b4e5c9c34068b5616cdba37a63",
+        "new_pilot_admin": false,
+        "new_profile_setup": false
+      },
+      {
+        "path": "/assets/PlatformShell-Ctf9guJ_.js",
+        "http": 200,
+        "sha256": "70628b9243de57fc082938af31b918cde5360be0c8fac95e6ebab06f14166453",
+        "new_pilot_admin": true,
+        "new_profile_setup": false
+      }
+    ],
+    "new_admin_served": true,
+    "new_profile_served": true,
+    "profile_function_modules": [
+      {
+        "path": "/assets/MyAreas-Bng0ZwZj.js",
+        "http": 200,
+        "sha256": "73eec15c1af03fdf43fb5fcb4d34112f93504accf8d5a10fa07ddccc188b9ab5",
+        "profile_function_call": true
+      }
+    ],
+    "profile_function_verified": true,
+    "verified_at_utc": "2026-11-16T02:06:01Z",
+    "source_commit": "9cf643e38932523024d6567fcc3da87c98197622",
+    "mirror_commit": "9cf643e38932523024d6567fcc3da87c98197622"
+  },
+  "servidor_final": {
+    "utc": "2026-11-16T02:08:24.425976+00:00",
+    "state": {
+      "cycles": false,
+      "leases": 0,
+      "paused": true,
+      "accesses": 0,
+      "isolated": true,
+      "revisions": 0,
+      "uncertain": 0,
+      "assistance": false,
+      "distribution": false,
+      "pause_version": 17,
+      "policy_version": 12
+    },
+    "timers": {
+      "bc-central-grupos.timer": ["inactive", "disabled"],
+      "bc-central-distribuicao.timer": ["inactive", "disabled"],
+      "bc-central-expurgo.timer": ["inactive", "disabled"]
+    },
+    "all_containers_unchanged": true
+  },
+  "nenhum_activate_pause_executado": true,
+  "piloto_real_homologado": false
+}

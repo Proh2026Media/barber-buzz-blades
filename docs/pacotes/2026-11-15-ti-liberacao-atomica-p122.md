@@ -1,5 +1,7 @@
 # P-122 — correção da liberação do teste, 15/11/2026
 
+**Atualização posterior:** pacote já instalado/publicado pelo Codex sob autorização específica; [registro final](2026-11-15-codex-implantacao-liberacao-p122.md). O texto abaixo documenta a entrega antes da instalação. Não é nova ordem para a TI reaplicar ou ativar.
+
 ## Resultado e escopo
 
 **Correção concluída/testada localmente; ainda não instalada ou publicada.** O relato da TI comprovou uma falha no roteiro entregue pelo Codex: enrollment exige números sem pausa, enquanto o roteiro mandava habilitá-lo sob pausa global. A orientação anterior de apenas aguardar a liberação não considerou essa dependência. A TI preservou a pausa corretamente. O titular não deve tentar código/convite antes da nova janela.
