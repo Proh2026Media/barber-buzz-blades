@@ -37,7 +37,21 @@
   "foto_loja_teste_b": {
     "presente": true,
     "copiada_da_loja_teste": true,
-    "autorizacao_especifica_recebida": true
+    "autorizacao_especifica_recebida": true,
+    "http": 200
   },
-  "homologacao_segunda_loja": "pendente do titular"
+  "homologacao_segunda_loja": "pendente do titular",
+  "controle_global_publicado": {
+    "fonte": "c91ef75d500d9a3262c0e2aa8a5efe0927ae099c",
+    "build": "01a1eb09-fa59-705e-bd7c-e248d679959b",
+    "concluido": true
+  },
+  "verificacoes_adicionais": {
+    "testes_focados": 9,
+    "falhas": 0,
+    "composicoes_controle_global": 45,
+    "tipos_ultimo_texto": true,
+    "montagem_ultimo_texto": true
+  },
+  "intencoes_segunda_loja_no_ultimo_corte": 0
 }

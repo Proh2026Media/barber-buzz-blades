@@ -188,7 +188,7 @@ export const ptPT: Record<MessageKey, string> = {
     "A pausa global está desligada, mas o atendimento não está autorizado. Use “Pausar teste” antes de preparar uma nova autorização.",
   "carePilot.checkedReady":
     "Pré-requisitos verificados. O teste continua pausado até confirmar “Autorizar teste”.",
-  "carePilot.checkedActive": "O teste está autorizado apenas para este atendimento.",
+  "carePilot.checkedActive": "Os acessos autorizados estão ativos.",
   "carePilot.pending": "Ainda há requisitos pendentes",
   "carePilot.connectionFailed":
     "Não foi possível confirmar os dois números. Verifique a ligação e tente novamente.",

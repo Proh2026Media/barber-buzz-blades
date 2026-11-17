@@ -191,7 +191,7 @@ export const es: Record<MessageKey, string> = {
     "La pausa global está desactivada, pero la atención no está habilitada. Usa “Pausar prueba” antes de preparar una nueva habilitación.",
   "carePilot.checkedReady":
     "Requisitos comprobados. La prueba sigue pausada hasta confirmar “Habilitar prueba”.",
-  "carePilot.checkedActive": "La prueba está habilitada solo para esta atención.",
+  "carePilot.checkedActive": "Los accesos autorizados están activos.",
   "carePilot.pending": "Aún hay requisitos pendientes",
   "carePilot.connectionFailed":
     "No pudimos confirmar ambos números. Revisa sus conexiones e inténtalo de nuevo.",

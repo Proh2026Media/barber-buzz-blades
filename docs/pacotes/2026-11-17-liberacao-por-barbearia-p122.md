@@ -52,3 +52,7 @@ O controle global se distingue das liberações por loja, sem mudar RPCs ou sua 
 ## Medição de duração
 
 Ainda não existe média real homologada para criar um grupo completo do zero. No segundo teste, separar: solicitação até foto/nome/dois administradores prontos; espera pela entrada do titular; entrada comprovada até descrição/boas-vindas/fixação prontas; pedido do código até aceitação e confirmação no site. Não somar espera humana como latência do servidor. O login anterior levou4,4s até aceite do código pelo provedor com grupo já pronto; esse valor não mede criação nem garante entrega no aparelho.
+
+## Conferência do fechamento
+
+Controle global publicado em `c91ef75d500d9a3262c0e2aa8a5efe0927ae099c`, montagem `01a1eb09-fa59-705e-bd7c-e248d679959b` concluída em3m49s. Módulo público `PlatformShell-BVFX8KP5.js` contém a ligação das liberações com o controle global; navegação nova na sessão real confirmou “Operação dos grupos” e os dois pares liberados. A última frase de resultado deixou de afirmar escopo singular nos quatro dicionários; tipos/montagem foram repetidos e aprovados para essa correção. Nove testes focados de contrato/tradução passaram, sem falhas. Foto aprovada da B respondeuHTTP200. Além de grupoB0, a consulta posterior confirmou intenções de primeiro acesso0/progresso ausente: ainda não houve pedido real do segundo teste nesse corte.

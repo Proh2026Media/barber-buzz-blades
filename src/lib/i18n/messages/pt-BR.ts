@@ -188,7 +188,7 @@ export const ptBR = {
     "A pausa global está desligada, mas o atendimento não está liberado. Use “Pausar teste” antes de preparar uma nova liberação.",
   "carePilot.checkedReady":
     "Pré-requisitos conferidos. O teste continua pausado até você confirmar “Liberar teste”.",
-  "carePilot.checkedActive": "O teste está liberado somente para este atendimento.",
+  "carePilot.checkedActive": "Os acessos autorizados estão ativos.",
   "carePilot.pending": "Ainda há pendências",
   "carePilot.connectionFailed":
     "Não foi possível confirmar os dois números. Confira a conexão deles e tente novamente.",

@@ -190,7 +190,7 @@ export const enUS: Record<MessageKey, string> = {
     "The global pause is off, but this service is not enabled. Use “Pause test” before preparing a new release.",
   "carePilot.checkedReady":
     "Prerequisites checked. The test remains paused until you confirm “Enable test”.",
-  "carePilot.checkedActive": "The test is enabled only for this service.",
+  "carePilot.checkedActive": "Approved access is active.",
   "carePilot.pending": "Some requirements are still pending",
   "carePilot.connectionFailed":
     "We could not confirm both numbers. Check their connections and try again.",
