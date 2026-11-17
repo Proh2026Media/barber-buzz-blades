@@ -1445,6 +1445,8 @@ export type Database = {
       };
       care_group_admin: { Args: { p_action: string; p_values?: Json }; Returns: Json };
       care_pilot_connection_check: { Args: Record<PropertyKey, never>; Returns: Json };
+      care_shop_release_admin: { Args: { p_action?: string; p_values?: Json }; Returns: Json };
+      care_shop_release_check: { Args: { p_shop: string; p_customer: string }; Returns: Json };
       care_pilot_admin: { Args: { p_action: string; p_values?: Json }; Returns: Json };
       care_group_invite: { Args: { p_group: string }; Returns: string };
       platform_whatsapp_directory: { Args: Record<string, never>; Returns: Json };

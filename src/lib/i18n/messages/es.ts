@@ -195,6 +195,24 @@ export const es: Record<MessageKey, string> = {
   "carePilot.pending": "Aún hay requisitos pendientes",
   "carePilot.connectionFailed":
     "No pudimos confirmar ambos números. Revisa sus conexiones e inténtalo de nuevo.",
+  "careRelease.title": "Acceso por barbería",
+  "careRelease.scope":
+    "Solo los clientes autorizados aquí pueden usar grupos, confirmar su teléfono e iniciar sesión por WhatsApp.",
+  "careRelease.enginePaused":
+    "Los envíos están pausados. Reanuda la prueba antes de ampliar el acceso.",
+  "careRelease.released": "Habilitada",
+  "careRelease.blocked": "Sin autorización",
+  "careRelease.pause": "Pausar esta barbería",
+  "careRelease.empty": "No hay clientes registrados.",
+  "careRelease.allowed": "Cliente autorizado",
+  "careRelease.check": "Comprobar números",
+  "careRelease.revoke": "Retirar acceso",
+  "careRelease.allow": "Autorizar este cliente",
+  "careRelease.needsCheck":
+    "Comprueba ambos números y la autorización de la plataforma antes de autorizar.",
+  "careRelease.confirmScope":
+    "El cambio solo afecta a la barbería y al cliente indicados. No crea grupos ni envía mensajes.",
+  "careRelease.confirm": "Confirmar cambio",
   "carePilot.title": "Prueba de WhatsApp",
   "carePilot.active": "Prueba habilitada",
   "carePilot.paused": "Prueba pausada",

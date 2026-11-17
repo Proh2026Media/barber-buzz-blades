@@ -194,6 +194,22 @@ export const enUS: Record<MessageKey, string> = {
   "carePilot.pending": "Some requirements are still pending",
   "carePilot.connectionFailed":
     "We could not confirm both numbers. Check their connections and try again.",
+  "careRelease.title": "Access by barbershop",
+  "careRelease.scope":
+    "Only customers approved here can use groups, phone verification and WhatsApp sign-in.",
+  "careRelease.enginePaused": "Sending is paused. Resume the test before expanding access.",
+  "careRelease.released": "Enabled",
+  "careRelease.blocked": "Not approved",
+  "careRelease.pause": "Pause this barbershop",
+  "careRelease.empty": "No customers registered.",
+  "careRelease.allowed": "Customer approved",
+  "careRelease.check": "Check numbers",
+  "careRelease.revoke": "Remove access",
+  "careRelease.allow": "Approve this customer",
+  "careRelease.needsCheck": "Check both numbers and platform authorization before approving.",
+  "careRelease.confirmScope":
+    "This change applies only to the indicated barbershop and customer. It does not create groups or send messages.",
+  "careRelease.confirm": "Confirm change",
   "carePilot.title": "WhatsApp test",
   "carePilot.active": "Test enabled",
   "carePilot.paused": "Test paused",

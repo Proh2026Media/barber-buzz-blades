@@ -192,6 +192,23 @@ export const ptPT: Record<MessageKey, string> = {
   "carePilot.pending": "Ainda há requisitos pendentes",
   "carePilot.connectionFailed":
     "Não foi possível confirmar os dois números. Verifique a ligação e tente novamente.",
+  "careRelease.title": "Libertação por barbearia",
+  "careRelease.scope":
+    "Apenas os clientes autorizados aqui podem usar grupos, confirmação e início de sessão pelo WhatsApp.",
+  "careRelease.enginePaused": "O envio está em pausa. Retome o teste antes de alargar o acesso.",
+  "careRelease.released": "Autorizada",
+  "careRelease.blocked": "Não autorizado",
+  "careRelease.pause": "Pausar nesta barbearia",
+  "careRelease.empty": "Nenhum cliente registado.",
+  "careRelease.allowed": "Cliente autorizado",
+  "careRelease.check": "Verificar números",
+  "careRelease.revoke": "Retirar acesso",
+  "careRelease.allow": "Autorizar este cliente",
+  "careRelease.needsCheck":
+    "Verifique os dois números e a autorização da plataforma antes de autorizar.",
+  "careRelease.confirmScope":
+    "A alteração aplica-se apenas à barbearia e ao cliente indicados. Não cria grupos nem envia mensagens.",
+  "careRelease.confirm": "Confirmar alteração",
   "carePilot.title": "Teste de WhatsApp",
   "carePilot.active": "Teste disponível",
   "carePilot.paused": "Teste em pausa",

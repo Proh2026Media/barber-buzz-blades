@@ -192,6 +192,23 @@ export const ptBR = {
   "carePilot.pending": "Ainda há pendências",
   "carePilot.connectionFailed":
     "Não foi possível confirmar os dois números. Confira a conexão deles e tente novamente.",
+  "careRelease.title": "Liberação por barbearia",
+  "careRelease.scope":
+    "Somente os clientes liberados aqui podem usar grupos, confirmação e login pelo WhatsApp.",
+  "careRelease.enginePaused": "O envio está pausado. Retome o teste antes de ampliar o acesso.",
+  "careRelease.released": "Liberada",
+  "careRelease.blocked": "Não liberado",
+  "careRelease.pause": "Pausar nesta barbearia",
+  "careRelease.empty": "Nenhum cliente cadastrado.",
+  "careRelease.allowed": "Cliente liberado",
+  "careRelease.check": "Conferir números",
+  "careRelease.revoke": "Retirar acesso",
+  "careRelease.allow": "Liberar este cliente",
+  "careRelease.needsCheck":
+    "Confira os dois números e a autorização da plataforma antes de liberar.",
+  "careRelease.confirmScope":
+    "A mudança vale somente para a barbearia e o cliente indicados. Não cria grupos nem envia mensagens.",
+  "careRelease.confirm": "Confirmar alteração",
   "carePilot.title": "Teste de WhatsApp",
   "carePilot.active": "Teste liberado",
   "carePilot.paused": "Teste pausado",

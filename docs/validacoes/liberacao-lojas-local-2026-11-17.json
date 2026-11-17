@@ -1,0 +1,26 @@
+{
+  "codigo": {
+    "testes": 729,
+    "falhas": 0,
+    "tipos": true,
+    "lint": true,
+    "montagem": true
+  },
+  "sql": {
+    "novos": 24,
+    "regressoes": 86,
+    "instalacao_atomica": true,
+    "rollback": true,
+    "oids_owners_acls_preservados": true,
+    "ampliacao_na_instalacao": false
+  },
+  "interface": {
+    "larguras": [320, 390, 768, 1024, 1440],
+    "cantos": ["square", "soft", "round"],
+    "composicoes": 15,
+    "rede_producao": false,
+    "acoes": ["leitura_sem_ativar", "cancelar", "liberar_uma_loja", "recusar_versao_antiga"]
+  },
+  "piloto_segunda_loja": "ainda nao homologado",
+  "liberacao_geral": false
+}

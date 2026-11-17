@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CareShopRelease } from "./CareShopRelease";
 import { CarePilotRelease } from "./CarePilotRelease";
 import {
   UsersRound,
@@ -102,6 +103,7 @@ export function CareCycleOperations({
         ))}
       </div>
       {data.pilot && <CarePilotRelease onChanged={() => void request("read").catch(() => {})} />}
+      <CareShopRelease onChanged={() => void request("read").catch(() => {})} />
       <div className="app-action-card space-y-3 p-4 tablet:p-5">
         <SectionHeader icon={UsersRound} title={t("care.adminTitle")} />
         <div className="flex flex-wrap items-center gap-2">

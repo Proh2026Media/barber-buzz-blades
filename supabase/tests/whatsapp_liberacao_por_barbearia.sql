@@ -1,0 +1,81 @@
+begin;
+-- Fixtures explícitas: conexão/identidades falsas; nada representa WhatsApp real.
+create temporary table d4 as select gen_random_uuid() shop,gen_random_uuid() other_shop,gen_random_uuid() person,gen_random_uuid() other_person,gen_random_uuid() a,gen_random_uuid() b,gen_random_uuid() grp,gen_random_uuid() cycle;
+create function pg_temp.check_pilot(ok boolean,label text) returns void language plpgsql as $$begin if ok is distinct from true then raise exception 'FAIL: %',label;end if;raise notice 'PASS: %',label;end $$;
+create function pg_temp.denied(query text,expected text,label text) returns void language plpgsql as $$begin
+ begin execute query;raise exception 'FAIL: %',label;exception when others then if sqlerrm like 'FAIL:%' or sqlerrm<>expected then raise;end if;raise notice 'PASS: %',label;end;
+end $$;
+select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',true);
+update public.whatsapp_send_controls set paused=false where scope='global';
+update d4 set shop=(public.register_my_barbershop(gen_random_uuid(),'Piloto fictício','America/Sao_Paulo','single',true,'teste','teste','teste')->>'shop_id')::uuid;
+update d4 set other_shop=(public.register_my_barbershop(gen_random_uuid(),'Outra fictícia','America/Sao_Paulo','single',true,'teste','teste','teste')->>'shop_id')::uuid;
+select public.platform_create_whatsapp_channel(a,'Fictício A') from d4;
+select public.platform_create_whatsapp_channel(b,'Fictício B') from d4;
+update public.whatsapp_channels set display_phone=case id when (select a from d4) then '+5511800000111' else '+5511800000222' end,status='open',connection_observed_at=clock_timestamp() where id in(select a from d4 union all select b from d4);
+select public.platform_confirm_whatsapp_control(id,routing_version,display_phone,instance_name,true) from public.whatsapp_channels where id in(select a from d4 union all select b from d4);
+select public.platform_set_whatsapp_route(shop,null,0,a,b,null,'primary',false,false,false) from d4;
+select public.platform_set_whatsapp_route(other_shop,null,0,a,b,null,'primary',false,false,false) from d4;
+insert into auth.users(id,email,raw_user_meta_data) select person,person||'@example.invalid','{}'::jsonb from d4 union all select other_person,other_person||'@example.invalid','{}'::jsonb from d4;
+insert into public.memberships(user_id,barbershop_id,role) select person,shop,'customer'::public.app_role from d4 union all select other_person,shop,'customer'::public.app_role from d4 union all select person,other_shop,'customer'::public.app_role from d4;
+insert into public.whatsapp_care_groups(id,barbershop_id,customer_id,customer_phone) select grp,shop,person,'+5511998888777' from d4;
+insert into public.whatsapp_group_enrollments(group_id,profile_phone,profile_verified_at) select grp,null,null from d4;
+insert into public.whatsapp_care_cycles(id,group_id,customer_phone,consented_numbers,creator_channel_id,creator_instance)
+ select cycle,grp,'+5511998888777',public.care_cycle_composition(shop),a,'bc-'||a from d4;
+update public.whatsapp_care_groups set current_cycle_id=(select cycle from d4) where id=(select grp from d4);
+select public.care_cycle_registry_ack(instance_name,source_version,true) from public.whatsapp_care_registry;
+update public.whatsapp_care_cycle_policy set enabled=false,assisted_access_enabled=false,pilot_shop_id=(select shop from d4),pilot_customer_id=(select person from d4) where singleton;
+update public.whatsapp_send_controls set paused=true where scope='global';
+select pg_temp.check_pilot(not (public.care_shop_release_admin()->>'managed')::boolean,'Instalação não migra nem amplia o piloto');
+update public.whatsapp_care_cycle_policy set enabled=true,assisted_access_enabled=true,background_access_enabled=true,pilot_isolation_required=true;
+update public.whatsapp_send_controls set paused=false where scope='global';
+create function pg_temp.change_release(action text,s uuid,c uuid,delta bigint default 0) returns jsonb language sql as $$
+ select public.care_shop_release_admin(action,jsonb_build_object('shop_id',s,'customer_id',c,'version',coalesce((select version from public.whatsapp_shop_releases where barbershop_id=s),0)+delta,'policy_version',p.version,'pause_version',t.version,'confirmed',true)) from public.whatsapp_care_cycle_policy p,public.whatsapp_send_controls t where p.singleton and t.scope='global';
+$$;
+select pg_temp.check_pilot((select not public.whatsapp_pilot_context_allows(other_shop,person) from d4),'Segunda loja permanece bloqueada antes do ato');
+select pg_temp.denied(format('select pg_temp.change_release(''allow'',%L,%L,1)',other_shop,person),'GROUP_STALE','Versão antiga não amplia liberação') from d4;
+select pg_temp.denied(format('select pg_temp.change_release(''allow'',%L,%L)',other_shop,other_person),'GROUP_CAPABILITY_REQUIRED','Não membro não recebe liberação') from d4;
+select pg_temp.change_release('allow',other_shop,person) from d4;
+select pg_temp.check_pilot((select public.whatsapp_pilot_context_allows(shop,person) and public.whatsapp_pilot_context_allows(other_shop,person) from d4),'Mesmo cliente liberado em duas lojas, primeira preservada');
+select pg_temp.check_pilot((select not public.whatsapp_pilot_context_allows(shop,other_person) and not public.whatsapp_pilot_context_allows(null,person) from d4),'Outros clientes e contexto sem loja continuam negados');
+select pg_temp.check_pilot((select public.whatsapp_pilot_challenge_allows(person,null) and not public.whatsapp_pilot_challenge_allows(other_person,null) from d4),'Login global permite somente titular com loja liberada');
+select pg_temp.check_pilot((select public.care_entry_background_allowed(person,other_shop) from d4),'Acompanhamento do servidor aceita segunda loja');
+select pg_temp.check_pilot((select public.claim_care_cycle(cycle) is not null from d4),'Grupo original mantém motor e autorização');
+update public.whatsapp_care_cycles set lease_until=null;
+-- Muitas intenções na primeira loja não consomem todas as vagas antes da segunda.
+create temporary table fair_people as select gen_random_uuid() person from generate_series(1,4);
+insert into auth.users(id,email,raw_user_meta_data) select person,person||'@example.invalid','{}' from fair_people;
+insert into public.memberships(user_id,barbershop_id,role) select f.person,d.shop,'customer' from fair_people f,d4 d;
+select pg_temp.change_release('allow',d.shop,f.person) from fair_people f,d4 d;
+insert into public.whatsapp_care_access(barbershop_id,customer_id,phone,numbers,requested_at)
+ select d.shop,f.person,'+5511998888000',public.care_cycle_composition(d.shop),now()-interval '2 minutes' from fair_people f,d4 d;
+insert into public.whatsapp_care_access(barbershop_id,customer_id,phone,numbers,requested_at)
+ select other_shop,person,'+5511998888777',public.care_cycle_composition(other_shop),now() from d4;
+select pg_temp.check_pilot(jsonb_array_length(public.care_entry_background_queue())=4,'Fila mantém teto de quatro trabalhos');
+select pg_temp.check_pilot((select count(*)=1 from jsonb_array_elements(public.care_entry_background_queue()) q,d4 d where q->>'shop'=d.other_shop::text),'Segunda loja ganha vaga mesmo com primeira loja cheia');
+delete from public.whatsapp_care_access;
+select pg_temp.change_release('pause',other_shop,null) from d4;
+select pg_temp.check_pilot((select not public.whatsapp_pilot_context_allows(other_shop,person) and public.whatsapp_pilot_context_allows(shop,person) from d4),'Pausar segunda loja não interrompe a primeira');
+select pg_temp.check_pilot((select not public.care_entry_background_allowed(person,other_shop) from d4),'Pausa local bloqueia tarefas já enfileiradas');
+select pg_temp.change_release('allow',other_shop,person) from d4;
+select pg_temp.change_release('revoke',other_shop,person) from d4;
+select pg_temp.check_pilot((select not public.whatsapp_pilot_context_allows(other_shop,person) from d4),'Revogação remove autorização sem apagar grupo');
+update public.whatsapp_send_controls set paused=true where scope='global';
+select pg_temp.denied(format('select pg_temp.change_release(''allow'',%L,%L)',other_shop,person),'WA_SENDING_PAUSED','Liberação local não despausa globalmente') from d4;
+select pg_temp.check_pilot((select not public.care_entry_background_allowed(person,shop) from d4),'Pausa global continua acima das liberações locais');
+update public.whatsapp_send_controls set paused=false where scope='global';
+select pg_temp.change_release('allow',other_shop,person) from d4;
+update public.whatsapp_channels set connection_observed_at=now()-interval '3 minutes' where id=(select b from d4);
+select pg_temp.denied(format('select pg_temp.change_release(''allow'',%L,%L)',other_shop,person),'GROUP_CAPABILITY_REQUIRED','Conexão antiga não habilita ampliação') from d4;
+update public.whatsapp_channels set connection_observed_at=clock_timestamp() where id=(select b from d4);
+select pg_temp.check_pilot((select jsonb_array_length(public.care_shop_release_check(other_shop,person)->'targets')=2 from d4),'Conferência usa composição da segunda loja');
+select set_config('request.jwt.claim.sub',(select person::text from d4),true);
+select pg_temp.denied('select public.care_shop_release_admin()','Sem permissão','Cliente não lê lista administrativa');
+select pg_temp.denied(format('select public.care_shop_release_check(%L,%L)',other_shop,person),'Sem permissão','Cliente não enumera números') from d4;
+select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',true);
+delete from public.memberships where barbershop_id=(select other_shop from d4) and user_id=(select person from d4);
+select pg_temp.check_pilot((select not public.whatsapp_pilot_context_allows(other_shop,person) from d4),'Retirada do vínculo bloqueia autorização antiga');
+delete from auth.users where id=(select person from d4);
+select pg_temp.check_pilot((select shop_release_mode and not public.whatsapp_pilot_challenge_allows((select person from d4),null) from public.whatsapp_care_cycle_policy),'Exclusão do titular nunca cai em liberação geral');
+select pg_temp.check_pilot(not has_function_privilege('service_role','public.care_shop_release_admin(text,jsonb)','execute') and not has_function_privilege('anon','public.care_shop_release_check(uuid,uuid)','execute'),'Privilégios administrativos fechados');
+select pg_temp.check_pilot(not has_table_privilege('authenticated','public.whatsapp_shop_releases','select') and not has_function_privilege('authenticated','public.care_shop_scope_allows(uuid,uuid)','execute'),'Tabelas e predicados privados');
+rollback;
