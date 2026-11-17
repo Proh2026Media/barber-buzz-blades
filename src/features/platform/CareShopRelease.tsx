@@ -24,7 +24,13 @@ type Decision = {
   customer?: ReleaseCustomer;
 };
 /** Ampliação sempre explícita; leitura e conferência não concedem acesso. */
-export function CareShopRelease({ onChanged }: { onChanged: () => void }) {
+export function CareShopRelease({
+  onChanged,
+  onManaged,
+}: {
+  onChanged: () => void;
+  onManaged?: (managed: boolean) => void;
+}) {
   const { t } = useI18n(),
     demo = useDemo();
   const [data, setData] = useState<ShopReleaseState | null>(null),
@@ -100,7 +106,9 @@ export function CareShopRelease({ onChanged }: { onChanged: () => void }) {
       if (r.error) throw r.error;
       if (!live.current || (await supabase.auth.getSession()).data.session?.user.id !== user)
         throw Error("SESSION_REQUIRED");
-      setData(shopReleaseState(r.data));
+      const next = shopReleaseState(r.data);
+      setData(next);
+      onManaged?.(next.managed);
       setDecision(null);
       if (choice) onChanged();
     } catch (e) {

@@ -195,6 +195,15 @@ export const es: Record<MessageKey, string> = {
   "carePilot.pending": "Aún hay requisitos pendientes",
   "carePilot.connectionFailed":
     "No pudimos confirmar ambos números. Revisa sus conexiones e inténtalo de nuevo.",
+  "careRelease.globalTitle": "Operación de grupos",
+  "careRelease.globalScope":
+    "La pausa general afecta a todas las barberías. Los clientes autorizados aparecen en el acceso por barbería de abajo.",
+  "careRelease.globalActive": "Operación activa",
+  "careRelease.globalPaused": "Operación pausada",
+  "careRelease.globalResume": "Reanudar operación",
+  "careRelease.globalPause": "Pausar todos los grupos",
+  "careRelease.globalConfirm":
+    "Solo reanuda accesos ya autorizados. No autoriza ninguna barbería ni cliente nuevo.",
   "careRelease.title": "Acceso por barbería",
   "careRelease.scope":
     "Solo los clientes autorizados aquí pueden usar grupos, confirmar su teléfono e iniciar sesión por WhatsApp.",

@@ -194,6 +194,15 @@ export const enUS: Record<MessageKey, string> = {
   "carePilot.pending": "Some requirements are still pending",
   "carePilot.connectionFailed":
     "We could not confirm both numbers. Check their connections and try again.",
+  "careRelease.globalTitle": "Group operations",
+  "careRelease.globalScope":
+    "The global pause applies to all barbershops. Approved customers are listed in access by barbershop below.",
+  "careRelease.globalActive": "Operations active",
+  "careRelease.globalPaused": "Operations paused",
+  "careRelease.globalResume": "Resume operations",
+  "careRelease.globalPause": "Pause all groups",
+  "careRelease.globalConfirm":
+    "Resumes only previously approved access. No new barbershop or customer is approved.",
   "careRelease.title": "Access by barbershop",
   "careRelease.scope":
     "Only customers approved here can use groups, phone verification and WhatsApp sign-in.",

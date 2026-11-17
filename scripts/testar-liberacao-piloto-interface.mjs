@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 import { mkdirSync, readFileSync, readdirSync } from "node:fs";
 import { abrirContexto, acharPlaywright, acharNavegador, lerOpcoes } from "./foto.mjs";
 const base = process.argv[2] ?? "http://127.0.0.1:8091";
+const rollout = process.argv.includes("--rollout");
+const releaseLabel = rollout ? "Retomar operação" : "Liberar teste";
+const pauseLabel = rollout ? "Pausar todos os grupos" : "Pausar teste";
 assert.match(base, /^http:\/\/(127\.0\.0\.1|localhost):8091$/);
 const { mod: pw } = await acharPlaywright();
 const browser = await pw.chromium.launch({ executablePath: acharNavegador(), headless: true });
@@ -158,7 +161,7 @@ async function layouts(state) {
 try {
   await page.goto(base + "/qa-pilot-release", { waitUntil: "networkidle" });
   await page.addStyleTag({ url: base + "/qa-inter.css" });
-  await page.evaluate(async () => {
+  await page.evaluate(async (rollout) => {
     const { injectIntoGlobalHook } = await import("/@react-refresh");
     injectIntoGlobalHook(window);
     window.$RefreshReg$ = () => {};
@@ -173,11 +176,11 @@ try {
     el.className = "brand-page brand-corners-soft min-h-dvh bg-background p-4 text-foreground";
     document.body.append(el);
     (dom.createRoot ?? dom.default.createRoot)(el).render(
-      React.createElement(CarePilotRelease, { onChanged: () => {} }),
+      React.createElement(CarePilotRelease, { onChanged: () => {}, rollout }),
     );
-  });
+  }, rollout);
   const release = () =>
-    page.locator("#qa-pilot").getByRole("button", { name: "Liberar teste", exact: true });
+    page.locator("#qa-pilot").getByRole("button", { name: releaseLabel, exact: true });
   const refresh = () =>
     page.getByRole("button", { name: "Conferir liberação", exact: true }).click();
   await release().waitFor();
@@ -198,7 +201,7 @@ try {
   await refresh();
   await page.getByText("Teste parcialmente desativado", { exact: true }).waitFor();
   assert.equal(await release().count(), 0);
-  await page.getByRole("button", { name: "Pausar teste", exact: true }).waitFor();
+  await page.getByRole("button", { name: pauseLabel, exact: true }).waitFor();
   assert.ok(calls.every((r) => r.p_action === "read"));
   data.paused = true;
   data.preparation_ready = true;
@@ -214,7 +217,7 @@ try {
   await layouts("pronto");
   await release().click();
   stale = true;
-  await dialog.getByRole("button", { name: "Liberar teste", exact: true }).click();
+  await dialog.getByRole("button", { name: releaseLabel, exact: true }).click();
   await dialog
     .getByText("A situação mudou. Confira a liberação novamente.", { exact: true })
     .waitFor();
@@ -223,11 +226,11 @@ try {
   stale = false;
   await refresh();
   await release().click();
-  await dialog.getByRole("button", { name: "Liberar teste", exact: true }).click();
-  await page.getByText("Teste liberado", { exact: true }).waitFor();
+  await dialog.getByRole("button", { name: releaseLabel, exact: true }).click();
+  await page.getByText(rollout ? "Operação ativa" : "Teste liberado", { exact: true }).waitFor();
   await layouts("liberado");
-  await page.getByRole("button", { name: "Pausar teste", exact: true }).click();
-  await page.getByText("Teste pausado", { exact: true }).waitFor();
+  await page.getByRole("button", { name: pauseLabel, exact: true }).click();
+  await page.getByText(rollout ? "Operação pausada" : "Teste pausado", { exact: true }).waitFor();
   assert.equal(data.paused, true);
   assert.equal(data.cycles, false);
   assert.equal(data.assistance, false);

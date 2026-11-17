@@ -1,0 +1,43 @@
+{
+  "sql_instalada_em_utc": "2026-11-17T19:16:25Z",
+  "fonte_funcional": "f3d2f8ac66945e2acd17310ebaa9ae1cbed8ecb2",
+  "build_funcional": "01a1eaf3-3814-7094-b036-08810e260511",
+  "build_concluido": true,
+  "http_segunda_loja": 200,
+  "estado_apos_liberacao": {
+    "mode": true,
+    "paused": false,
+    "enabled": true,
+    "unknown": 0,
+    "isolated": true,
+    "releases": 2,
+    "assistance": true,
+    "background": true,
+    "distribution": false,
+    "arena_allowed": false,
+    "first_allowed": true,
+    "pause_version": 30,
+    "second_groups": 0,
+    "policy_version": 34,
+    "second_allowed": true
+  },
+  "pares_liberados": ["Loja Teste / conta Gmail", "Loja Teste B / mesma conta Gmail"],
+  "sessao_admin_real": true,
+  "grupo_novo_criado_pelo_codex": false,
+  "codigo_solicitado_pelo_codex": false,
+  "perfil_preservado": true,
+  "numero_principal": "final8585",
+  "numero_reserva": "final5627",
+  "timers": {
+    "primeiro_acesso": "active",
+    "grupos_geral": "inactive",
+    "expurgo": "inactive",
+    "distribuicao": "inactive"
+  },
+  "foto_loja_teste_b": {
+    "presente": true,
+    "copiada_da_loja_teste": true,
+    "autorizacao_especifica_recebida": true
+  },
+  "homologacao_segunda_loja": "pendente do titular"
+}

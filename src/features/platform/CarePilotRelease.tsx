@@ -19,7 +19,13 @@ import {
 import { guardedFetch } from "@/lib/demo-guard";
 
 /** Leitura nunca ativa. Liberação/pausa passam pelo mesmo contrato atômico e CAS. */
-export function CarePilotRelease({ onChanged }: { onChanged: () => void }) {
+export function CarePilotRelease({
+  onChanged,
+  rollout = false,
+}: {
+  onChanged: () => void;
+  rollout?: boolean;
+}) {
   const { t } = useI18n();
   const demo = useDemo();
   const [data, setData] = useState<State | null>(null);
@@ -167,7 +173,10 @@ export function CarePilotRelease({ onChanged }: { onChanged: () => void }) {
     data?.scoped && data.paused && !data.cycles && !data.assistance && data.preparation_ready;
   return (
     <div className="app-action-card min-w-0 space-y-3 p-4 tablet:p-5" aria-busy={busy}>
-      <SectionHeader icon={ShieldCheck} title={t("carePilot.title")} />
+      <SectionHeader
+        icon={ShieldCheck}
+        title={t(rollout ? "careRelease.globalTitle" : "carePilot.title")}
+      />
       {data && (
         <>
           <div className="flex flex-wrap items-center gap-2">
@@ -175,17 +184,25 @@ export function CarePilotRelease({ onChanged }: { onChanged: () => void }) {
               tone={active ? "success" : "warning"}
               label={t(
                 active
-                  ? "carePilot.active"
+                  ? rollout
+                    ? "careRelease.globalActive"
+                    : "carePilot.active"
                   : data.paused
-                    ? "carePilot.paused"
+                    ? rollout
+                      ? "careRelease.globalPaused"
+                      : "carePilot.paused"
                     : "carePilot.incomplete",
               )}
             />
-            <span className="min-w-0 break-words text-sm font-semibold">
-              {data.shop_name} · {data.customer_name}
-            </span>
+            {!rollout && (
+              <span className="min-w-0 break-words text-sm font-semibold">
+                {data.shop_name} · {data.customer_name}
+              </span>
+            )}
           </div>
-          <p className="text-sm text-muted-foreground">{t("carePilot.scope")}</p>
+          <p className="text-sm text-muted-foreground">
+            {t(rollout ? "careRelease.globalScope" : "carePilot.scope")}
+          </p>
           {!checked && !busy && !data.paused && !active && (
             <Notice tone="warning" title={t("carePilot.incompleteHint")} />
           )}
@@ -210,7 +227,13 @@ export function CarePilotRelease({ onChanged }: { onChanged: () => void }) {
         <Notice
           tone={active || canActivate ? "success" : "warning"}
           title={t(
-            active ? "carePilot.active" : canActivate ? "carePilot.checked" : "carePilot.pending",
+            active
+              ? rollout
+                ? "careRelease.globalActive"
+                : "carePilot.active"
+              : canActivate
+                ? "carePilot.checked"
+                : "carePilot.pending",
           )}
         >
           {t(
@@ -235,7 +258,7 @@ export function CarePilotRelease({ onChanged }: { onChanged: () => void }) {
             onClick={() => setConfirm(true)}
           >
             <Power aria-hidden />
-            {t("carePilot.activate")}
+            {t(rollout ? "careRelease.globalResume" : "carePilot.activate")}
           </button>
         ) : (
           data && (
@@ -246,7 +269,7 @@ export function CarePilotRelease({ onChanged }: { onChanged: () => void }) {
               onClick={() => void action("pause")}
             >
               <Pause aria-hidden />
-              {t("carePilot.pause")}
+              {t(rollout ? "careRelease.globalPause" : "carePilot.pause")}
             </button>
           )
         )}
@@ -264,9 +287,9 @@ export function CarePilotRelease({ onChanged }: { onChanged: () => void }) {
         open={confirm}
         tone="warning"
         onOpenChange={setConfirm}
-        title={t("carePilot.activate")}
+        title={t(rollout ? "careRelease.globalResume" : "carePilot.activate")}
         icon={ShieldCheck}
-        confirmLabel={t("carePilot.activate")}
+        confirmLabel={t(rollout ? "careRelease.globalResume" : "carePilot.activate")}
         cancelLabel={t("common.cancel")}
         confirmDisabled={busy || !canActivate}
         errorText={t(error ?? "carePilot.error")}
@@ -274,9 +297,15 @@ export function CarePilotRelease({ onChanged }: { onChanged: () => void }) {
           {
             key: "scope",
             icon: UsersRound,
-            text: `${data?.shop_name ?? ""} · ${data?.customer_name ?? ""}`,
+            text: rollout
+              ? t("careRelease.globalScope")
+              : `${data?.shop_name ?? ""} · ${data?.customer_name ?? ""}`,
           },
-          { key: "sending", icon: ShieldCheck, text: t("carePilot.confirm") },
+          {
+            key: "sending",
+            icon: ShieldCheck,
+            text: t(rollout ? "careRelease.globalConfirm" : "carePilot.confirm"),
+          },
         ]}
         onConfirm={() => action("activate", true)}
       />

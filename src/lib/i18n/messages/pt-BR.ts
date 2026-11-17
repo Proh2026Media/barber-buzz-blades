@@ -192,6 +192,15 @@ export const ptBR = {
   "carePilot.pending": "Ainda há pendências",
   "carePilot.connectionFailed":
     "Não foi possível confirmar os dois números. Confira a conexão deles e tente novamente.",
+  "careRelease.globalTitle": "Operação dos grupos",
+  "careRelease.globalScope":
+    "A pausa geral vale para todas as barbearias. Os clientes autorizados estão na liberação por barbearia abaixo.",
+  "careRelease.globalActive": "Operação ativa",
+  "careRelease.globalPaused": "Operação pausada",
+  "careRelease.globalResume": "Retomar operação",
+  "careRelease.globalPause": "Pausar todos os grupos",
+  "careRelease.globalConfirm":
+    "Retoma somente os acessos já liberados. Nenhuma nova barbearia ou cliente é autorizado.",
   "careRelease.title": "Liberação por barbearia",
   "careRelease.scope":
     "Somente os clientes liberados aqui podem usar grupos, confirmação e login pelo WhatsApp.",

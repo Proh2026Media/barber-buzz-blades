@@ -54,6 +54,7 @@ export function CareCycleOperations({
 }) {
   const { t, intlLocale } = useI18n();
   const [policy, setPolicy] = useState(false);
+  const [managed, setManaged] = useState(false);
   const [legacy, setLegacy] = useState<CareCycleAdminData["groups"][number] | null>(null);
   const stats = [
     {
@@ -102,8 +103,17 @@ export function CareCycleOperations({
           </div>
         ))}
       </div>
-      {data.pilot && <CarePilotRelease onChanged={() => void request("read").catch(() => {})} />}
-      <CareShopRelease onChanged={() => void request("read").catch(() => {})} />
+      {data.pilot && (
+        <CarePilotRelease
+          key={data.policy_version}
+          rollout={managed}
+          onChanged={() => void request("read").catch(() => {})}
+        />
+      )}
+      <CareShopRelease
+        onManaged={setManaged}
+        onChanged={() => void request("read").catch(() => {})}
+      />
       <div className="app-action-card space-y-3 p-4 tablet:p-5">
         <SectionHeader icon={UsersRound} title={t("care.adminTitle")} />
         <div className="flex flex-wrap items-center gap-2">

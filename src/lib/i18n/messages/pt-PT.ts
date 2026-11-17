@@ -192,6 +192,15 @@ export const ptPT: Record<MessageKey, string> = {
   "carePilot.pending": "Ainda há requisitos pendentes",
   "carePilot.connectionFailed":
     "Não foi possível confirmar os dois números. Verifique a ligação e tente novamente.",
+  "careRelease.globalTitle": "Operação dos grupos",
+  "careRelease.globalScope":
+    "A pausa geral aplica-se a todas as barbearias. Os clientes autorizados estão na lista de acesso por barbearia abaixo.",
+  "careRelease.globalActive": "Operação ativa",
+  "careRelease.globalPaused": "Operação em pausa",
+  "careRelease.globalResume": "Retomar operação",
+  "careRelease.globalPause": "Pausar todos os grupos",
+  "careRelease.globalConfirm":
+    "Retoma apenas os acessos já autorizados. Nenhuma nova barbearia ou cliente é autorizado.",
   "careRelease.title": "Libertação por barbearia",
   "careRelease.scope":
     "Apenas os clientes autorizados aqui podem usar grupos, confirmação e início de sessão pelo WhatsApp.",

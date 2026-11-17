@@ -38,3 +38,17 @@ Para interromper apenas a segunda loja, usar `care_shop_release_admin('pause', .
 ## Registro da implantação
 
 17/11 às 16:16:25 BRT: SQL instalada pelo Codex sob a autorização de liberação por loja/segundo teste. Cinco OIDs/owners/ACLs e política/pausa anteriores preservados pelo verificador dentro da transação. Nenhum reinício. Instalação ainda não amplia o escopo. Backup privado: `/root/bc-liberacao-lojas-20261117/before.json`, SHA-256 `7907be320a8f742ec0ac5cd5f825f50cfe4877328c18a81d9137c05f51dd9aa9`. SQL fonte: `470b5998dd3c87072afae152dc54b23783ce0c9dc6d33e599cc70822eaa6d16b`; instalador com verificação: `aa3491b45cfca3c8b5ddf807e3d911c82ee27c19121a1cc19f17875a54e5c494`. O mesmo instalador também passou no segundo clone limpo de140 migrations e foi integralmente revertido.
+
+## Segundo par liberado e próximo teste
+
+Frontend funcional `f3d2f8ac66945e2acd17310ebaa9ae1cbed8ecb2` publicado pela montagem `01a1eaf3-3814-7094-b036-08810e260511`, concluída em 3m36s. Pela sessão administrativa real, o Codex conferiu os dois números, revisou a janela e liberou apenas Loja Teste B/Alyson Gmail. Leitura posterior: modo por lojas=true, política34, pausa=false v30, dois pares autorizados, Arena recusada, incertos0, grupoB0 e distribuição=false. Grupo original apareceu ativo após a observação dos números. Perfil e telefone confirmado preservados ao criar o vínculo de cliente B. Endereço público B respondeu200.
+
+A foto B estava vazia. A cópia foi inicialmente recusada pela revisão automática por faltar autorização visual específica; nenhuma alteração ocorreu nessa tentativa. O titular escolheu explicitamente usar a imagem da Loja Teste. A foto fictícia foi então copiada somente para o campo vazio da B, sem tocar na pasta da marca, criar grupos ou enviar mensagens. Não há essa pendência de autorização.
+
+O titular agora precisa abrir `https://loja-teste-b.beauty.contheiner.digital/`, entrar na conta Gmail, solicitar o grupo no perfil, entrar pelo número pessoal final4593 e concluir as etapas de confirmação/login. Nenhuma homologação real B foi declarada. Continuar o acompanhamento nesta tarefa quando chegar o resultado.
+
+O controle global se distingue das liberações por loja, sem mudar RPCs ou sua segurança. Releitura acompanha mudança da versão global. Mais45 composições de interface fictícia verificam retomar, cancelar, CAS, pausar, falha e timeout; o teste existente aceita `--rollout`. Não executar esse teste contra produção.
+
+## Medição de duração
+
+Ainda não existe média real homologada para criar um grupo completo do zero. No segundo teste, separar: solicitação até foto/nome/dois administradores prontos; espera pela entrada do titular; entrada comprovada até descrição/boas-vindas/fixação prontas; pedido do código até aceitação e confirmação no site. Não somar espera humana como latência do servidor. O login anterior levou4,4s até aceite do código pelo provedor com grupo já pronto; esse valor não mede criação nem garante entrega no aparelho.
