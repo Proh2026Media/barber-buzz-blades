@@ -340,6 +340,7 @@ function CareGroupContent({
   if (readOnly && (!data?.group || error)) return null;
   const group = data?.group,
     ended = group && ["closed", "customer_left"].includes(group.state);
+  const simple = !readOnly && !demo && shopId === "bc8595cb-72a7-4428-8a9c-97fe12c18222";
   const firstAccessView = !group || (ended && !group.closing);
   return (
     <section className="app-action-card min-w-0 space-y-4 p-4 tablet:p-5" aria-busy={busy}>
@@ -410,13 +411,15 @@ function CareGroupContent({
                         ? "careFeedback.unavailable"
                         : group.reason === "waiting_first_receipt"
                           ? "careCycle.receipt"
-                          : (careStates[group.state] ?? "care.unavailable"),
+                          : simple && group.state === "active"
+                            ? "care.inGroup"
+                            : (careStates[group.state] ?? "care.unavailable"),
               )}
             />
           ) : (
             <p className="text-sm text-muted-foreground">{t("care.intro")}</p>
           )}
-          {!firstAccessView && group?.expires_at && (
+          {!simple && !firstAccessView && group?.expires_at && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Clock3 className="size-4" aria-hidden />
               <span>
@@ -432,7 +435,7 @@ function CareGroupContent({
               {t("care.waitRelease")}
             </p>
           )}
-          {!readOnly && data.enabled && (!ended || firstAccessView) && (
+          {!readOnly && !simple && data.enabled && (!ended || firstAccessView) && (
             <ol aria-label={t("care.steps")} className="grid grid-cols-3 gap-2">
               {(["care.stepRequest", "care.stepJoin", "care.stepPhone"] as const).map(
                 (label, index) => {
@@ -494,7 +497,7 @@ function CareGroupContent({
               )}
             </ol>
           )}
-          <details className="space-y-2" open={Boolean(firstAccessView)}>
+          <details className="space-y-2" open={!simple && Boolean(firstAccessView)}>
             <summary className="min-h-11 cursor-pointer content-center text-sm font-semibold">
               {t("care.people")}
             </summary>
@@ -681,6 +684,7 @@ function CareGroupContent({
           )}
           {!readOnly &&
             !resumeGroupEntry &&
+            !(simple && data.access?.active) &&
             data.access?.enabled &&
             !data.phone_revision?.pending &&
             group &&
@@ -792,43 +796,51 @@ function CareGroupContent({
               }
             />
           )}
-          {!readOnly && group && !ended && !data.phone_revision?.pending && data.phone && (
-            <GroupPhoneAccess
-              key={`${group.id}:${data.phone}`}
-              groupId={group.id}
-              phone={data.phone}
-              available={
-                data.enabled &&
-                !group.numbers_changed &&
-                !group.closing &&
-                group.cycle_state !== "creation_unknown"
-              }
-              ready={data.phone_ready === true}
-              confirmed={data.phone_confirmed === true}
-              waiting={
-                group.state === "waiting_customer" && group.reason !== "waiting_first_receipt"
-              }
-              expired={
-                Boolean(resumeGroupEntry) ||
-                (data.enrollment_expired === true && data.phone_confirmed !== true)
-              }
-              refreshing={busy}
-              assisted={data.access?.enabled === true && data.access.active}
-              background={data.background?.enabled === true}
-              onRefresh={() => void run(load)}
-              onConfirmed={() =>
-                void run(
-                  async () => {
-                    await load();
-                    if (data.access?.enabled && !data.background?.enabled)
-                      apply(await careAccessRequest(shopId));
-                  },
-                  false,
-                  "advance",
-                )
-              }
-            />
-          )}
+          {!readOnly &&
+            group &&
+            !ended &&
+            !data.phone_revision?.pending &&
+            data.phone &&
+            (!simple ||
+              group.state === "waiting_customer" ||
+              (!data.phone_confirmed && data.phone_ready)) && (
+              <GroupPhoneAccess
+                simple={simple}
+                key={`${group.id}:${data.phone}`}
+                groupId={group.id}
+                phone={data.phone}
+                available={
+                  data.enabled &&
+                  !group.numbers_changed &&
+                  !group.closing &&
+                  group.cycle_state !== "creation_unknown"
+                }
+                ready={data.phone_ready === true}
+                confirmed={data.phone_confirmed === true}
+                waiting={
+                  group.state === "waiting_customer" && group.reason !== "waiting_first_receipt"
+                }
+                expired={
+                  Boolean(resumeGroupEntry) ||
+                  (data.enrollment_expired === true && data.phone_confirmed !== true)
+                }
+                refreshing={busy}
+                assisted={data.access?.enabled === true && data.access.active}
+                background={data.background?.enabled === true}
+                onRefresh={() => void run(load)}
+                onConfirmed={() =>
+                  void run(
+                    async () => {
+                      await load();
+                      if (data.access?.enabled && !data.background?.enabled)
+                        apply(await careAccessRequest(shopId));
+                    },
+                    false,
+                    "advance",
+                  )
+                }
+              />
+            )}
           {!readOnly && group && !ended && (
             <details className="space-y-4 border-t border-border pt-4">
               <summary className="min-h-11 cursor-pointer content-center font-semibold">
@@ -909,18 +921,19 @@ function CareGroupContent({
               <p className="text-xs text-muted-foreground">{t("care.receipt")}</p>
             </details>
           )}
-          {(readOnly ||
-            !data.enabled ||
-            !group ||
-            ended ||
-            !data.phone ||
-            data.phone_ready ||
-            data.enrollment_expired) && (
-            <button className="action-button" disabled={busy} onClick={() => void run(load)}>
-              <RefreshCw aria-hidden />
-              {t("care.refresh")}
-            </button>
-          )}
+          {!simple &&
+            (readOnly ||
+              !data.enabled ||
+              !group ||
+              ended ||
+              !data.phone ||
+              data.phone_ready ||
+              data.enrollment_expired) && (
+              <button className="action-button" disabled={busy} onClick={() => void run(load)}>
+                <RefreshCw aria-hidden />
+                {t("care.refresh")}
+              </button>
+            )}
         </>
       )}
       <ConfirmDialog

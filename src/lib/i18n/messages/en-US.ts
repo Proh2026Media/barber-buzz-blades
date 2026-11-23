@@ -306,6 +306,8 @@ export const enUS: Record<MessageKey, string> = {
   "care.requested": "Request recorded",
   "care.creating": "Preparing your group",
   "care.waiting": "Waiting for you to join",
+  "care.inGroup": "You’re in the group",
+  "care.enterGroup": "Join the group",
   "care.active": "Care group active",
   "care.divergence": "Participants under review; notifications paused",
   "care.unavailable": "Group care unavailable",

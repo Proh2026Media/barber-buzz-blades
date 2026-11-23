@@ -308,6 +308,8 @@ export const ptPT: Record<MessageKey, string> = {
   "care.requested": "Solicitação registrada",
   "care.creating": "Preparando seu grupo",
   "care.waiting": "Aguardando sua entrada",
+  "care.inGroup": "Já está no grupo",
+  "care.enterGroup": "Entrar no grupo",
   "care.active": "Grupo de atendimento ativo",
   "care.divergence": "Participantes em revisão; avisos pausados",
   "care.unavailable": "Atendimento por grupo indisponível",

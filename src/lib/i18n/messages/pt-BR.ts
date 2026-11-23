@@ -307,6 +307,8 @@ export const ptBR = {
   "care.requested": "Solicitação registrada",
   "care.creating": "Preparando seu grupo",
   "care.waiting": "Aguardando sua entrada",
+  "care.inGroup": "Você já está no grupo",
+  "care.enterGroup": "Entrar no grupo",
   "care.active": "Grupo de atendimento ativo",
   "care.divergence": "Participantes em revisão; avisos pausados",
   "care.unavailable": "Atendimento por grupo indisponível",

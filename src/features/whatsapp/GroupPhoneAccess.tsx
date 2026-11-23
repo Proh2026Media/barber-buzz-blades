@@ -10,6 +10,7 @@ import { useI18n, type MessageKey } from "@/lib/i18n";
 
 /** O convite não autentica: confirmação só pelo desafio vinculado à sessão. */
 export function GroupPhoneAccess({
+  simple = false,
   groupId,
   available = true,
   assisted = false,
@@ -23,6 +24,7 @@ export function GroupPhoneAccess({
   onRefresh,
   onConfirmed,
 }: {
+  simple?: boolean;
   groupId: string;
   available?: boolean;
   assisted?: boolean;
@@ -198,13 +200,13 @@ export function GroupPhoneAccess({
   runRef.current = run;
   useEffect(() => {
     if (!available || !waiting || expired || invite || demo) return;
-    if (assisted && !refreshing && document.visibilityState === "visible")
+    if ((simple || assisted) && !refreshing && document.visibilityState === "visible")
       void runRef.current("invite", true);
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible") void runRef.current("invite", true);
     }, 5000);
     return () => window.clearInterval(timer);
-  }, [available, waiting, expired, invite, demo, refreshing, assisted]);
+  }, [available, waiting, expired, invite, demo, refreshing, assisted, simple]);
   if ((!available || expired) && !confirmed) return null;
   return (
     <div className="space-y-3 border-t border-border pt-4">
@@ -219,9 +221,9 @@ export function GroupPhoneAccess({
               rel="noopener noreferrer"
             >
               <ExternalLink aria-hidden />
-              {t("care.openGroup")}
+              {t(simple ? "care.enterGroup" : "care.openGroup")}
             </a>
-          ) : assisted ? (
+          ) : assisted || simple ? (
             <p role="status" className="flex items-center gap-2 text-sm">
               <RefreshCw className="size-4" aria-hidden />
               {t("careAccess.preparingInvite")}
@@ -288,7 +290,7 @@ export function GroupPhoneAccess({
           )}
         </>
       )}
-      {available && !ready && !expired && !assisted && (
+      {!simple && available && !ready && !expired && !assisted && (
         <div className="space-y-2">
           <p role="status" className="text-sm text-muted-foreground">
             {t(waiting ? "care.awaitEntry" : "care.awaitPreparation")}
@@ -299,7 +301,7 @@ export function GroupPhoneAccess({
           </button>
         </div>
       )}
-      {confirmed && <Notice tone="info" title={t("care.phoneConfirmed")} />}
+      {!simple && confirmed && <Notice tone="info" title={t("care.phoneConfirmed")} />}
       {available && error && (
         <Notice
           id={"group-phone-error-" + groupId}
