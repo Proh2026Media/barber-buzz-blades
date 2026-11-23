@@ -244,6 +244,11 @@ function CareGroupContent({
         ? "careBackground.identity"
         : "careBackground.following";
   const revision = data?.phone_revision;
+  const resumeGroupEntry =
+    data?.enabled && data.phone_confirmed && !data.phone_ready &&
+    access?.enabled && !access.active && !revision?.pending &&
+    data.group?.state === "waiting_customer" && data.group.cycle_state === "waiting_customer" &&
+    !data.group.numbers_changed && !data.group.closing;
   const revisionFollow = revision?.enabled === true && revision.pending && revision.active;
   const followAllowed =
     revisionFollow ||
@@ -646,7 +651,19 @@ function CareGroupContent({
                 }}
               />
             )}
+          {!readOnly && resumeGroupEntry && data.phone && (
+            <button
+              type="button"
+              className="action-button action-confirm"
+              disabled={busy}
+              onClick={() => void run(() => startAccess(data, data.phone ?? "", true), false, "resume")}
+            >
+              <ArrowRight aria-hidden />
+              {t("carePhone.resumeSame")}
+            </button>
+          )}
           {!readOnly &&
+            !resumeGroupEntry &&
             data.access?.enabled &&
             !data.phone_revision?.pending &&
             group &&
@@ -705,7 +722,7 @@ function CareGroupContent({
               shopId={shopId}
               phone={data.phone ?? ""}
               disabled={busy || !data.enabled}
-              resumeNeeded={data.enrollment_expired === true}
+              resumeNeeded={!resumeGroupEntry && data.enrollment_expired === true}
               background={data.background?.enabled === true}
               onKeep={() =>
                 void run(() => startAccess(data, data.phone ?? "", true), false, "resume")
@@ -774,7 +791,7 @@ function CareGroupContent({
               waiting={
                 group.state === "waiting_customer" && group.reason !== "waiting_first_receipt"
               }
-              expired={data.enrollment_expired === true && data.phone_confirmed !== true}
+              expired={Boolean(resumeGroupEntry) || (data.enrollment_expired === true && data.phone_confirmed !== true)}
               refreshing={busy}
               assisted={data.access?.enabled === true && data.access.active}
               background={data.background?.enabled === true}
