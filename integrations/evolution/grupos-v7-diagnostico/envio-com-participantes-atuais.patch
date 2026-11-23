@@ -1,0 +1,29 @@
+--- a/src/api/integrations/channel/whatsapp/bc-groups/cycle-engine.ts
++++ b/src/api/integrations/channel/whatsapp/bc-groups/cycle-engine.ts
+@@ -606,7 +606,7 @@
+       if (!d.ready() || Date.parse(c.expiresAt) <= Date.now()) return op.pending;
+       const latest = await current(d, id);
+       if (!cycleQuorum(latest, await metadata(d, id), false) || latest.firstViolation) return op.pending;
+-      const message = await d.socket.sendMessage(id, { text: content.welcome });
++      const message = await d.socket.sendMessage(id, { text: content.welcome }, { useCachedGroupMetadata: false });
+       const messageId = receipt(message);
+       if (!messageId) return op.pending;
+       await complete(d, op, key, 'notice_accepted', messageId);
+@@ -671,7 +671,7 @@
+         },
+         type: 1,
+         time: duration as 86400 | 604800 | 2592000,
+-      });
++      }, { useCachedGroupMetadata: false });
+       const messageId = receipt(message);
+       if (!messageId) return op.pending;
+       await complete(d, op, key, 'pin_accepted', messageId);
+@@ -740,7 +740,7 @@
+         return op.pending;
+       const latest = await current(d, id);
+       if (!cycleSendReady(latest, await metadata(d, id))) return op.pending;
+-      const messageId = receipt(await d.socket.sendMessage(id, { text }));
++      const messageId = receipt(await d.socket.sendMessage(id, { text }, { useCachedGroupMetadata: false }));
+       if (!messageId) return op.pending;
+       return await complete(d, op, key, state + '_accepted', messageId);
+     } catch {
