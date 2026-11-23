@@ -1,0 +1,13 @@
+--- a/src/api/integrations/channel/whatsapp/bc-groups/cycle-engine.ts
++++ b/src/api/integrations/channel/whatsapp/bc-groups/cycle-engine.ts
+@@ -759,6 +759,10 @@
+     }
+     if (command === 'requests') {
+       const requests = await d.socket.groupRequestParticipantsList(id);
++      if (requests.length > 50) return fail(409, 'Pedidos excedem o limite de conferência');
++      if (requests.some((request) => typeof request.jid === 'string' && request.jid.endsWith('@lid'))) {
++        await d.ensurePhoneMapping?.(c.customerJid);
++      }
+       return Promise.all(
+         requests.map(async (r) => ({ jid: r.jid, phoneNumber: await resolvePhone(r.jid, d.resolvePhone) })),
+       );
