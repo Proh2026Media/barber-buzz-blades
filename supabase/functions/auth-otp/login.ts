@@ -5,6 +5,7 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1
 export async function whatsappLogin(
   admin: SupabaseClient,
   body: {
+    recovery_shop?: string;
     channel?: string;
     action?: string;
     destination?: string;
@@ -33,11 +34,15 @@ export async function whatsappLogin(
   if (action === "request") {
     const code = randomOtp();
     const codeHash = await hash(code);
-    const { data, error } = await admin.rpc("request_whatsapp_group_login", {
-      p_destination: phone,
-      p_code_hash: codeHash,
-      p_request_id: body.request_id ?? null,
-    });
+    const { data, error } = await admin.rpc(
+      body.recovery_shop ? "request_scoped_group_login" : "request_whatsapp_group_login",
+      {
+        ...(body.recovery_shop ? { p_slug: body.recovery_shop } : {}),
+        p_destination: phone,
+        p_code_hash: codeHash,
+        p_request_id: body.request_id ?? null,
+      },
+    );
     if (error)
       return fail(
         error.message?.includes("WA_RATE_LIMIT") ? "rate_limited" : "whatsapp_unavailable",

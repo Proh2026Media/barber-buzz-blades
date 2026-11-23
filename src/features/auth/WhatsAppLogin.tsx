@@ -24,10 +24,12 @@ import {
 
 export function WhatsAppLogin({
   disabled,
+  recoveryShop,
   onAuthenticated,
   onUseEmail,
 }: {
   disabled: boolean;
+  recoveryShop?: string;
   onAuthenticated: () => Promise<void>;
   onUseEmail: () => void;
 }) {
@@ -74,6 +76,7 @@ export function WhatsAppLogin({
           <DialogBody>
             {open && (
               <LoginForm
+                recoveryShop={recoveryShop}
                 onAuthenticated={onAuthenticated}
                 onVerifying={setVerifying}
                 onUseEmail={() => {
@@ -90,10 +93,12 @@ export function WhatsAppLogin({
 }
 
 function LoginForm({
+  recoveryShop,
   onAuthenticated,
   onUseEmail,
   onVerifying,
 }: {
+  recoveryShop?: string;
   onAuthenticated: () => Promise<void>;
   onUseEmail: () => void;
   onVerifying: (value: boolean) => void;
@@ -152,6 +157,7 @@ function LoginForm({
           body: otpRequestBody({
             action,
             purpose: "login",
+            ...(recoveryShop ? { recovery_shop: recoveryShop } : {}),
             channel: "whatsapp",
             destination: normalized,
             ...(action === "verify" ? { code } : {}),
@@ -280,7 +286,7 @@ function LoginForm({
       ) : (
         <>
           <Notice tone="info" title={t("waLogin.requested")}>
-            <p className="mb-1">{t("waLogin.sent")}</p>
+            <p className="mb-1">{t(recoveryShop ? "recovery.checkShop" : "waLogin.sent")}</p>
             <span className="break-all">{destination}</span>
           </Notice>
           <CodeInput
@@ -324,7 +330,7 @@ function LoginForm({
             disabled={busy || cooldown > 0}
             onClick={() => void submit("request")}
           >
-            {t("waLogin.resend")}
+            {t(recoveryShop ? "recovery.newCode" : "waLogin.resend")}
           </button>
           <button
             type="button"

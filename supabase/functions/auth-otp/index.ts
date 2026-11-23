@@ -8,6 +8,7 @@ type Purpose = "login" | "recovery" | "verify_phone";
 
 type Body = {
   request_id?: string;
+  recovery_shop?: string;
   action?: "request" | "verify";
   shop?: string;
   channel?: "whatsapp" | "email";
@@ -116,7 +117,11 @@ Deno.serve(async (req) => {
       const result = await whatsappLogin(admin, body, {
         hash: codeVerifier,
         send: async (code, challengeId, codeHash) => {
-          await sendAuthorizedGroupLogin(admin, { code, challengeId, codeHash });
+          await sendAuthorizedGroupLogin(
+            admin,
+            { code, challengeId, codeHash },
+            Boolean(body.recovery_shop),
+          );
         },
       });
       return json(result.body, result.status);

@@ -25,6 +25,14 @@ export async function reviseCarePhone(shop: string, start: Start) {
 export async function abortCarePhoneRevision(shop: string, revision: string) {
   return call({ action: "abort", shop, revision });
 }
+export async function groupWelcome(
+  shop: string,
+  request?: string,
+): Promise<{ welcome?: string | null; state?: string }> {
+  return call(
+    request ? { shop, action: "resend_welcome", request_id: request } : { shop, action: "welcome" },
+  );
+}
 async function call(body: Record<string, unknown>) {
   const {
     data: { session },
@@ -49,6 +57,7 @@ async function call(body: Record<string, unknown>) {
   } = await supabase.auth.getSession();
   if (current?.user.id !== session.user.id) throw { code: "42501", httpStatus: 401 };
   if (!response.ok) throw { code: result.code, httpStatus: response.status };
+  if (body.action === "welcome" || body.action === "resend_welcome") return result;
   if (!result.data || result.data.access?.contract !== "bc-assisted-v1")
     throw Error("ACCESS_UNAVAILABLE");
   return result.data;

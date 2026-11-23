@@ -1,3 +1,5 @@
+import { careGroupContent, type GroupContent } from "../_shared/care-group-content.ts";
+import { recoverWelcome } from "../_shared/care-welcome-recovery.ts";
 import { advancePhoneRevision } from "../_shared/care-phone-revision.ts";
 import { connectionStates } from "../_shared/whatsapp-health.ts";
 import { instancePhone } from "../_shared/whatsapp-instance-phone.ts";
@@ -81,7 +83,12 @@ export async function handleCareAccess(req: Request, deps: Dependencies) {
     } catch {
       return reply({ code: "INVALID_REQUEST" }, 400);
     }
-    if (!uuid(body.shop) || !["start", "advance", "revise", "abort"].includes(String(body.action)))
+    if (
+      !uuid(body.shop) ||
+      !["start", "advance", "revise", "abort", "welcome", "resend_welcome"].includes(
+        String(body.action),
+      )
+    )
       return reply({ code: "INVALID_REQUEST" }, 400);
     const rpc = async (db: Database, name: string, args: Record<string, unknown>) => {
       const result = await db.rpc(name, args);
@@ -97,6 +104,30 @@ export async function handleCareAccess(req: Request, deps: Dependencies) {
       }
       return result.data;
     };
+    if (body.action === "welcome" || body.action === "resend_welcome") {
+      if (body.action === "welcome") {
+        const brand = (await rpc(user.db, "care_recovery_welcome_view", {
+          p_shop: body.shop,
+        })) as GroupContent | null;
+        return reply({ welcome: brand ? careGroupContent(brand).welcome : null });
+      }
+      const request = body.request_id;
+      if (
+        !deps.revisionTransport ||
+        (request !== null && !uuid(request)) ||
+        (body.action === "resend_welcome" && !request)
+      )
+        return reply({ code: "INVALID_REQUEST" }, 400);
+      return reply(
+        await recoverWelcome(
+          user.id,
+          body.shop,
+          request as string | null,
+          (name, args) => rpc(deps.service, name, args),
+          deps.revisionTransport,
+        ),
+      );
+    }
     if (body.action === "start" || body.action === "revise") {
       if (
         body.accept !== true ||

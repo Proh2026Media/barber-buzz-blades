@@ -1,3 +1,4 @@
+import { recoverableGroupTransport } from "./recoverable-group-transport.ts";
 import { sendGroupLogin } from "./whatsapp-group-login.ts";
 import { sendWhatsapp } from "./whatsapp-send.ts";
 
@@ -52,7 +53,15 @@ async function evolutionRequest(path: string, init: RequestInit = {}) {
         message = Array.isArray(nested) ? nested.map(String).join(" ") : String(nested);
       }
     }
-    throw new Error(message);
+    if (
+      response.status === 409 &&
+      data &&
+      typeof data === "object" &&
+      "error" in data &&
+      data.error === "Operação em andamento; conferir antes de repetir"
+    )
+      message = data.error;
+    throw Object.assign(new Error(message), { status: response.status });
   }
   return data;
 }
@@ -142,9 +151,17 @@ export function evolutionGroupTransport(path: string, init: RequestInit = {}) {
 
 /** Não liberar por variável de ambiente antes do piloto de composição/isolamento. */
 export function sendAuthorizedGroupLogin(
-  ...args: [Parameters<typeof sendGroupLogin>[0], Parameters<typeof sendGroupLogin>[1]]
+  db: Parameters<typeof sendGroupLogin>[0],
+  input: Parameters<typeof sendGroupLogin>[1],
+  recovery = false,
 ) {
-  return sendGroupLogin(...args, evolutionGroupTransport, groupCycleEnabled(), evolutionFetch);
+  return sendGroupLogin(
+    db,
+    input,
+    recovery ? recoverableGroupTransport(evolutionGroupTransport) : evolutionGroupTransport,
+    groupCycleEnabled(),
+    evolutionFetch,
+  );
 }
 
 export function groupPilotEnabled() {

@@ -2590,6 +2590,9 @@ function AuthPage() {
 
                 <div className="grid gap-3">
                   <WhatsAppLogin
+                    recoveryShop={
+                      effectiveShopRef === "loja-teste-b" ? effectiveShopRef : undefined
+                    }
                     disabled={busy || googleBusy}
                     onAuthenticated={goAfterAuth}
                     onUseEmail={() => {
