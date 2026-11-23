@@ -333,6 +333,7 @@ function CareGroupContent({
   if (readOnly && (!data?.group || error)) return null;
   const group = data?.group,
     ended = group && ["closed", "customer_left"].includes(group.state);
+  const firstAccessView = !group || (ended && !group.closing);
   return (
     <section className="app-action-card min-w-0 space-y-4 p-4 tablet:p-5" aria-busy={busy}>
       <SectionHeader icon={UsersRound} title={t("care.title")} />
@@ -382,7 +383,7 @@ function CareGroupContent({
       )}
       {data && (
         <>
-          {group ? (
+          {group && !firstAccessView ? (
             <Notice
               tone={group.state === "active" && data.enabled ? "info" : "warning"}
               title={t(
@@ -402,7 +403,7 @@ function CareGroupContent({
           ) : (
             <p className="text-sm text-muted-foreground">{t("care.intro")}</p>
           )}
-          {group?.expires_at && (
+          {!firstAccessView && group?.expires_at && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Clock3 className="size-4" aria-hidden />
               <span>
@@ -413,12 +414,12 @@ function CareGroupContent({
             </div>
           )}
           {!data.enabled && (!group || ended) && <Notice tone="info" title={t("care.disabled")} />}
-          {!readOnly && !data.enabled && !ended && (
+          {!readOnly && !data.enabled && (!ended || firstAccessView) && (
             <p role="status" className="text-sm text-muted-foreground">
               {t("care.waitRelease")}
             </p>
           )}
-          {!readOnly && data.enabled && !ended && (
+          {!readOnly && data.enabled && (!ended || firstAccessView) && (
             <ol aria-label={t("care.steps")} className="grid grid-cols-3 gap-2">
               {(["care.stepRequest", "care.stepJoin", "care.stepPhone"] as const).map(
                 (label, index) => {
@@ -480,7 +481,7 @@ function CareGroupContent({
               )}
             </ol>
           )}
-          <details className="space-y-2" open={!group}>
+          <details className="space-y-2" open={Boolean(firstAccessView)}>
             <summary className="min-h-11 cursor-pointer content-center text-sm font-semibold">
               {t("care.people")}
             </summary>
@@ -540,15 +541,16 @@ function CareGroupContent({
               </button>
             </div>
           )}
-          {!readOnly && data.enabled && (!group || ended) && (
+          {!readOnly && data.enabled && firstAccessView && (
             <div className="space-y-3">
-              {!group && (
+              {(!group || data.phone) && (
                 <label className="grid gap-1 text-sm font-semibold">
                   {t("waPair.phone")}
                   <input
                     type="tel"
                     autoComplete="tel"
-                    value={phone}
+                    value={group ? data.phone ?? "" : phone}
+                    readOnly={Boolean(group)}
                     disabled={busy}
                     onChange={(e) => setPhone(e.target.value)}
                     className={field}
@@ -606,7 +608,7 @@ function CareGroupContent({
                 }}
               >
                 <UsersRound aria-hidden />
-                {t(group ? "care.rejoin" : "care.request")}
+                {t("care.stepRequest")}
               </button>
               <p className="text-xs text-muted-foreground">
                 {t(data.access?.enabled ? "careAccess.preparation" : "care.preparation")}

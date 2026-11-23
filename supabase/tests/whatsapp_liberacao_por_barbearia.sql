@@ -28,6 +28,17 @@ update public.whatsapp_send_controls set paused=true where scope='global';
 select pg_temp.check_pilot(not (public.care_shop_release_admin()->>'managed')::boolean,'Instalação não migra nem amplia o piloto');
 update public.whatsapp_care_cycle_policy set enabled=true,assisted_access_enabled=true,background_access_enabled=true,pilot_isolation_required=true;
 update public.whatsapp_send_controls set paused=false where scope='global';
+-- Retorno após encerramento com a última conferência das conexões vencida.
+savepoint retorno;
+update public.whatsapp_care_cycles set state='closed',cleanup_pending=false where id=(select cycle from d4);
+update public.whatsapp_care_groups set state='closed',reason='customer_request',revoked_at=now() where id=(select grp from d4);
+update public.whatsapp_channels set connection_observed_at=now()-interval '1 day' where id in(select a from d4 union all select b from d4);
+select set_config('request.jwt.claim.sub',(select person::text from d4),true);
+select pg_temp.denied(format('select public.care_group_customer_update(%L,%s,''rejoin'',%L)',grp,g.version,jsonb_build_object('accept',true,'accounts',array[a,a])),'GROUP_PARTICIPANTS_CHANGED','Recusa composição diferente') from d4 join public.whatsapp_care_groups g on g.id=grp;
+select public.care_group_customer_update(grp,g.version,'rejoin',jsonb_build_object('accept',true,'accounts',array[a,b])) is not null from d4 join public.whatsapp_care_groups g on g.id=grp;
+select pg_temp.check_pilot((select count(*)=1 from public.whatsapp_care_access ca join d4 on ca.customer_id=person and ca.barbershop_id=shop),'Uma solicitação para conferir os números');
+select pg_temp.check_pilot((select count(*)=1 from public.whatsapp_care_cycles c join d4 on c.group_id=grp where state='draft' and creation_issued_at is null),'Um rascunho sem criação externa');
+rollback to retorno;
 create function pg_temp.change_release(action text,s uuid,c uuid,delta bigint default 0) returns jsonb language sql as $$
  select public.care_shop_release_admin(action,jsonb_build_object('shop_id',s,'customer_id',c,'version',coalesce((select version from public.whatsapp_shop_releases where barbershop_id=s),0)+delta,'policy_version',p.version,'pause_version',t.version,'confirmed',true)) from public.whatsapp_care_cycle_policy p,public.whatsapp_send_controls t where p.singleton and t.scope='global';
 $$;
