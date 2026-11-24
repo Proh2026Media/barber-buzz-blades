@@ -1,3 +1,4 @@
+import { MarcaPlataforma } from "@/components/MarcaPlataforma";
 import { WhatsAppHealthIndicator } from "./WhatsAppHealthIndicator";
 import { WhatsAppCentral } from "./WhatsAppCentral";
 import { PwaInstallBanner } from "@/components/pwa-install-banner";
@@ -480,7 +481,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
         <div className="min-w-0">
           <p className="text-xs font-bold text-gold">{t("plat.header.eyebrow")}</p>
           <h1 className="break-words text-lg font-extrabold leading-tight tracking-tight max-[379px]:text-base">
-            {demoMode || demoChrome ? t("plat.header.titleDemo") : <><img src="/marca/bc-horizontal-cor-sem-parafuso.svg" alt={t("plat.header.title")} className="block h-8 max-w-full dark:hidden" /><img src="/marca/bc-horizontal-inversa-sem-parafuso.svg" alt={t("plat.header.title")} className="hidden h-8 max-w-full dark:block" /></>}
+            {demoMode || demoChrome ? t("plat.header.titleDemo") : <MarcaPlataforma composicao="horizontal" alt={t("plat.header.title")} className="h-8 max-w-full" />}
           </h1>
         </div>
 

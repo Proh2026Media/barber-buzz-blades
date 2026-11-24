@@ -1,3 +1,4 @@
+import { MarcaPlataforma } from "@/components/MarcaPlataforma";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -188,7 +189,7 @@ function CadastrarPage() {
           </aside>
           <div className="platform-register-panel">
             <div className="platform-register-brand">
-              <img src="/marca/bc-horizontal-cor-sem-parafuso.svg" className="w-48 max-w-full" alt="Barba &amp; Cabelo" />
+              <MarcaPlataforma composicao="horizontal" className="w-48 max-w-full" alt="Barba &amp; Cabelo" />
             </div>
             <Steps
               label={t("entry.cad.stepsLabel")}

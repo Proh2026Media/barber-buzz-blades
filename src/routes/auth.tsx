@@ -1,3 +1,4 @@
+import { MarcaPlataforma } from "@/components/MarcaPlataforma";
 import { SeloBarbearia } from "@/components/SeloBarbearia";
 import { isPlatformApexHost } from "@/lib/shop/host";
 import { customerAuthReturn } from "@/lib/auth/customer-return";
@@ -1829,7 +1830,7 @@ function AuthPage() {
             ) : brand.shopId ? (
               <SeloBarbearia lojaId={brand.shopId} nome={brand.displayName} tamanho={44} />
             ) : (
-              !brandLoading && isPlatformApexHost() ? <img src="/marca/bc-simbolo-cor-sem-parafuso.svg" alt="" /> : null
+              !brandLoading && isPlatformApexHost() ? <MarcaPlataforma composicao="simbolo"  /> : null
             )}
           </div>
           <p className="auth-brand-name">{brand.displayName}</p>
@@ -1856,7 +1857,7 @@ function AuthPage() {
                 ) : brand.shopId ? (
                   <SeloBarbearia lojaId={brand.shopId} nome={brand.displayName} tamanho={44} />
                 ) : (
-                  !brandLoading && isPlatformApexHost() ? <img src="/marca/bc-simbolo-cor-sem-parafuso.svg" alt="" /> : null
+                  !brandLoading && isPlatformApexHost() ? <MarcaPlataforma composicao="simbolo"  /> : null
                 )}
               </div>
               <p

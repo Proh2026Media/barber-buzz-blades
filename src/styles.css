@@ -4418,3 +4418,11 @@ body:has(.arena-workspace) .entry-code input:not(#entry-code-x):focus {
     }
   }
 }
+
+/* O SVG oficial inclui a proteção do desenho. O quadro reserva mais 10% em cada borda. */
+.marca-plataforma { display: block; object-fit: contain; }
+.auth-photo-copy-logo:has(> .marca-plataforma-simbolo) { width: 2.75rem; height: 2.75rem; }
+.marca-plataforma[data-base] { background-color: #f7f5ef; border-radius: var(--control-radius); }
+:is(.auth-brand-logo, .auth-photo-copy-logo, .platform-landing-mark) img.marca-plataforma-simbolo {
+  width: 80%; height: 80%; padding: 0; margin: auto; object-fit: contain;
+}
