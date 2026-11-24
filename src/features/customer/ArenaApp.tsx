@@ -1,3 +1,4 @@
+import { SeloBarbearia } from "@/components/SeloBarbearia";
 import { WhatsAppHealthIndicator } from "@/features/platform/WhatsAppHealthIndicator";
 import { PwaInstallBanner } from "@/components/pwa-install-banner";
 import { WorkspaceFrame, WorkspaceHeading } from "@/components/visual/WorkspaceHeader";
@@ -3010,7 +3011,7 @@ function ArenaApp({
                   : undefined
               }
             >
-              <Scissors className="size-6" />
+              <SeloBarbearia nome={shopSettings.display_name?.trim() || shopName || ""} tamanho={44} />
             </span>
           )}
           {/* Container: as linhas do nome e o slogan dependem do espaço que sobra ao lado dos

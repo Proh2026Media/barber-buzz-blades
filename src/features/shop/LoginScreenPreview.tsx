@@ -1,6 +1,7 @@
+import { SeloBarbearia } from "@/components/SeloBarbearia";
 import { AuthFrame } from "@/features/auth/AuthFrame";
 import type { CSSProperties } from "react";
-import { ArrowRight, Eye, Lock, LockKeyhole, Mail, Scissors } from "lucide-react";
+import { ArrowRight, Eye, Lock, LockKeyhole, Mail } from "lucide-react";
 import { GoogleMark } from "@/features/auth/entry";
 import {
   brandCornerClass,
@@ -87,7 +88,7 @@ export function LoginScreenPreview({
                 className="auth-photo-copy-logo"
                 style={{ backgroundColor: logoBackgroundColor ?? "rgba(255,255,255,.92)" }}
               >
-                {logoUrl ? <img src={logoUrl} alt="" /> : <Scissors className="size-7" />}
+                {logoUrl ? <img src={logoUrl} alt="" /> : <SeloBarbearia nome={shopName} tamanho={44} />}
               </div>
               <p className="auth-brand-name">{shopName}</p>
               <h2>{t("auth.hero.title")}</h2>
@@ -110,7 +111,7 @@ export function LoginScreenPreview({
                     {logoUrl ? (
                       <img src={logoUrl} alt="" className="size-full object-contain p-2" />
                     ) : (
-                      <Scissors className="size-5 text-gold" />
+                      <SeloBarbearia nome={shopName} tamanho={44} />
                     )}
                   </div>
                   <p className="auth-brand-name min-w-0 truncate text-sm font-bold">{shopName}</p>

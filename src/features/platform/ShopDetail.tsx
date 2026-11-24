@@ -175,7 +175,7 @@ export function ShopDetail({
     // As classes plat-shop-* só agem com largura (src/styles/plataforma.css): blocos lado a lado.
     <div className="plat-shop-detail space-y-5">
       <div className="plat-shop-head flex items-start gap-3">
-        <ShopLogo name={shop.name} seed={shop.id} logo={logo} size="md" />
+        <ShopLogo name={shop.name} logo={logo} size="md" />
         <div className="min-w-0 flex-1">
           <h3 id={headingId} className="break-words text-lg font-bold leading-tight">
             {shop.name}

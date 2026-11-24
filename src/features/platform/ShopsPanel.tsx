@@ -295,7 +295,7 @@ export function ShopsPanel({
           data-shop-id={row.shop.id}
           data-selected={selectedId === row.shop.id ? "true" : undefined}
         >
-          <ShopLogo name={row.shop.name} seed={row.shop.id} logo={logos[row.shop.id]} />
+          <ShopLogo name={row.shop.name} logo={logos[row.shop.id]} />
           <span className="min-w-0">
             <span className="block font-bold leading-snug [overflow-wrap:anywhere]">
               {row.shop.name}
@@ -472,7 +472,7 @@ export function ShopsPanel({
                           highlightId === shop.id && "ring-4 ring-[color:var(--tone-success-line)]",
                         )}
                       >
-                        <ShopLogo name={shop.name} seed={shop.id} logo={logos[shop.id]} />
+                        <ShopLogo name={shop.name} logo={logos[shop.id]} />
                         <span className="plat-shop-summary min-w-0 flex-1 space-y-1">
                           <span className="block break-words text-sm font-bold leading-snug">
                             {shop.name}

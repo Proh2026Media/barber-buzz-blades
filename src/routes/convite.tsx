@@ -1,3 +1,4 @@
+import { SeloBarbearia } from "@/components/SeloBarbearia";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { CircleAlert, Clock3, KeyRound, LogIn, Users } from "lucide-react";
@@ -118,6 +119,8 @@ function InvitePage() {
                   alt=""
                   className="size-12 shrink-0 rounded-[var(--control-radius)] object-cover"
                 />
+              ) : info.shop?.name ? (
+                <SeloBarbearia nome={info.shop.name} tamanho={48} />
               ) : (
                 <span className="flex size-12 shrink-0 items-center justify-center rounded-[var(--control-radius)] bg-gold/15 text-gold">
                   <Users className="size-6" aria-hidden />

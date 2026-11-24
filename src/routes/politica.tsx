@@ -1,3 +1,5 @@
+import { SeloBarbearia } from "@/components/SeloBarbearia";
+import { Store } from "lucide-react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import {
@@ -9,7 +11,6 @@ import {
   LogIn,
   RefreshCw,
   Scissors,
-  Store,
   Trophy,
   type LucideIcon,
 } from "lucide-react";
@@ -218,7 +219,7 @@ function PoliticaClube() {
           ) : (
             <div className="mx-auto flex size-16 items-center justify-center rounded-2xl border border-border bg-muted text-foreground">
               {shopName ? (
-                <Store className="size-8" aria-hidden="true" />
+                <SeloBarbearia nome={shopName} tamanho={64} />
               ) : (
                 <Crown className="size-8" aria-hidden="true" />
               )}

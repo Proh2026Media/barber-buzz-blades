@@ -1,5 +1,5 @@
+import { SeloBarbearia } from "@/components/SeloBarbearia";
 import { useState } from "react";
-import { PersonAvatar } from "@/components/visual";
 import { cn } from "@/lib/utils";
 
 export type ShopLogoInfo = { url: string | null; background: string | null };
@@ -12,18 +12,16 @@ const SIZE = { sm: "size-8", md: "size-12" } as const;
  */
 export function ShopLogo({
   name,
-  seed,
   logo,
   size = "sm",
 }: {
   name: string;
-  seed: string;
   logo?: ShopLogoInfo | null;
   size?: keyof typeof SIZE;
 }) {
   const [broken, setBroken] = useState<string | null>(null);
   const url = logo?.url?.trim() || null;
-  if (!url || broken === url) return <PersonAvatar name={name} size={size} seed={seed} />;
+  if (!url || broken === url) return <SeloBarbearia nome={name} tamanho={size === "md" ? 48 : 32} className="shrink-0" />;
   return (
     <span
       aria-hidden

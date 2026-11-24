@@ -1,3 +1,4 @@
+import { SeloBarbearia } from "@/components/SeloBarbearia";
 import { isPlatformApexHost } from "@/lib/shop/host";
 import { customerAuthReturn } from "@/lib/auth/customer-return";
 import { otpRequestBody } from "@/lib/auth/otp-request";
@@ -1825,6 +1826,8 @@ function AuthPage() {
           >
             {brand.logoUrl ? (
               <img src={brand.logoUrl} alt="" />
+            ) : brand.shopId ? (
+              <SeloBarbearia nome={brand.displayName} tamanho={44} />
             ) : (
               <Scissors className="size-7" aria-hidden="true" />
             )}
@@ -1850,6 +1853,8 @@ function AuthPage() {
                     alt={t("auth.logoAlt", { name: brand.displayName })}
                     className="size-full object-contain p-2"
                   />
+                ) : brand.shopId ? (
+                  <SeloBarbearia nome={brand.displayName} tamanho={44} />
                 ) : (
                   <Scissors className="size-5 text-gold" aria-hidden="true" />
                 )}
