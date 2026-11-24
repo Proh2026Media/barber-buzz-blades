@@ -45,6 +45,10 @@ export default {
         const { shopIdentity } = await import("./lib/shop/installation");
         return shopIdentity(url);
       }
+      if (["/avisos/abertura/email", "/avisos/abertura/push"].includes(url.pathname)) {
+        const { noticeOpen } = await import("./lib/notice-open.server");
+        return noticeOpen(request, url);
+      }
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);

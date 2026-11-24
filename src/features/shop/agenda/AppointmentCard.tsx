@@ -1,3 +1,4 @@
+import { AppointmentNotices } from "./AppointmentNotices";
 import { useState } from "react";
 import {
   CalendarCheck,
@@ -336,6 +337,7 @@ function FullCard({
             {cancellation.reason ? ` · ${cancellationReasonLabel(cancellation.reason)}` : ""}
           </Tag>
         )}
+      {withAccount && <AppointmentNotices id={row.id} />}
       </article>
     );
   }
@@ -690,6 +692,7 @@ function FullCard({
           onSaved={handlers.onChanged}
         />
       )}
-    </article>
+    {withAccount && <AppointmentNotices id={row.id} />}
+      </article>
   );
 }

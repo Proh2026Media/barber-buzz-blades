@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
       const jobs = await rpc("web_push_claim");
       const result = await dispatchPushBatch(
         jobs ?? [],
-        (job) => rpc("web_push_authorize", { p_id: job.id, p_lease: job.lease }),
+        (job) => rpc("web_push_authorize_receipt", { p_id: job.id, p_lease: job.lease }),
         (context) =>
           deliverWebPush(
             context,
@@ -77,6 +77,7 @@ Deno.serve(async (req) => {
                     context.id,
                     context.shop_name,
                   ),
+                  receipt: context.receipt,
                   shop_icon: context.shop_icon === true,
                 }),
                 {

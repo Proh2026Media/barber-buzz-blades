@@ -134,3 +134,28 @@ test("Push da loja usa o ícone da própria origem mesmo com imagem externa no p
   assert.equal(f.shown[0][0], "Loja Teste B");
   assert.equal((f.shown[0][1] as {icon?: string}).icon, "/identidade/icone?dominio=beauty.example.invalid");
 });
+
+test("Só o toque registra abertura e o aviso continua abrindo o app", async () => {
+  const handlers: Record<string, (event: any) => void> = {};
+  const chamadas: string[] = [], janelas: string[] = [];
+  let dados: any;
+  const worker = {
+    addEventListener: (tipo: string, fn: typeof handlers[string]) => { handlers[tipo] = fn; },
+    registration: { showNotification: (_: string, options: {data: unknown}) => { dados = options.data; } },
+    location: {origin: "https://loja.example.invalid"},
+    clients: {matchAll: async () => [], openWindow: async (url: string) => { janelas.push(url); }},
+  };
+  vm.runInNewContext(source, { self: worker, URL, fetch: async (url: string) => {
+    chamadas.push(url);
+    throw new Error("Sem conexão");
+  }});
+  const token = "95db929d-831e-4634-b864-f82c194cbd2f";
+  const tarefas: Promise<unknown>[] = [];
+  const waitUntil = (p: Promise<unknown>) => tarefas.push(p);
+  handlers.push({data: {json: () => ({receipt: token})}, waitUntil});
+  assert.equal(chamadas.length, 0);
+  handlers.notificationclick({notification: {data: dados, close() {}}, waitUntil});
+  await Promise.all(tarefas);
+  assert.deepEqual(chamadas, ["/avisos/abertura/push?t=" + token]);
+  assert.deepEqual(janelas, ["https://loja.example.invalid/app"]);
+});

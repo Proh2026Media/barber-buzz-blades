@@ -1,6 +1,21 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const enUS: Record<MessageKey, string> = {
+  "receipt.title": "Customer notifications",
+  "receipt.error": "Notifications could not be loaded.",
+  "receipt.loading": "Loading notifications…",
+  "receipt.empty": "No notifications recorded.",
+  "receipt.created": "Confirmation",
+  "receipt.changed": "Rescheduling",
+  "receipt.cancelled": "Cancellation",
+  "receipt.reminder": "Reminder",
+  "receipt.sent": "Sent",
+  "receipt.pending": "Awaiting dispatch",
+  "receipt.unconfirmed": "Sending unconfirmed",
+  "receipt.signal": "Open signal",
+  "receipt.opened": "Opened",
+  "receipt.help": "Push records a tap on the notification. Email images can load automatically or be blocked. Reading cannot be confirmed.",
+
   "waDistribution.backup2Active": "Backup 2 in use",
   "waDistribution.reorder": "Reorder {role}",
   "waDistribution.order": "Number order",
@@ -177,7 +192,7 @@ export const enUS: Record<MessageKey, string> = {
     "Test requested. Allow up to a minute; delivery depends on your browser and connection.",
   "push.error": "We could not update notifications. Check your connection and try again.",
   "push.device":
-    "This choice applies to this account and device. No promotions or sign-in codes are sent.",
+    "This choice applies to this account and device. No promotions or sign-in codes are sent. Tapping a notification lets the shop see that it was opened.",
 
   "care.profileCodeUnavailable":
     "The code is sent only to your care group. We could not send it now; check group setup and your membership.",

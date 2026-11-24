@@ -1,6 +1,21 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const es: Record<MessageKey, string> = {
+  "receipt.title": "Avisos al cliente",
+  "receipt.error": "No se pudieron consultar los avisos.",
+  "receipt.loading": "Consultando avisos…",
+  "receipt.empty": "Sin avisos registrados.",
+  "receipt.created": "Confirmación",
+  "receipt.changed": "Cambio de horario",
+  "receipt.cancelled": "Cancelación",
+  "receipt.reminder": "Recordatorio",
+  "receipt.sent": "Enviado",
+  "receipt.pending": "Pendiente de envío",
+  "receipt.unconfirmed": "Envío sin confirmar",
+  "receipt.signal": "Señal de apertura",
+  "receipt.opened": "Apertura registrada",
+  "receipt.help": "Push registra el toque en el aviso. Las imágenes del correo pueden cargarse automáticamente o bloquearse. No se puede confirmar la lectura.",
+
   "waDistribution.backup2Active": "Reserva 2 en uso",
   "waDistribution.reorder": "Reordenar {role}",
   "waDistribution.order": "Orden de los números",
@@ -178,7 +193,7 @@ export const es: Record<MessageKey, string> = {
   "push.error":
     "No pudimos actualizar las notificaciones. Revisa tu conexión e inténtalo de nuevo.",
   "push.device":
-    "La elección se aplica a esta cuenta y dispositivo. No envía promociones ni códigos de acceso.",
+    "La elección se aplica a esta cuenta y dispositivo. No envía promociones ni códigos de acceso. Al tocar el aviso, la barbería puede ver su apertura.",
 
   "care.profileCodeUnavailable":
     "El código se envía solo a tu grupo de atención. No pudimos enviarlo ahora; revisa la preparación y tu entrada al grupo.",

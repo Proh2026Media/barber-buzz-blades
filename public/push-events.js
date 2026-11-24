@@ -17,12 +17,16 @@ self.addEventListener("push", (event) => {
       ),
       ...(message.shop_icon === true ? { icon: "/identidade/icone?dominio=" + encodeURIComponent(new URL(self.location.origin).hostname) } : {}),
       tag: text(message.tag, "bc-update", 100),
-      data: { url: message.url === "/shop" ? "/shop" : "/app" },
+      data: { receipt: message.receipt, url: message.url === "/shop" ? "/shop" : "/app" },
     }),
   );
 });
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+  const receipt = event.notification.data?.receipt;
+  if (typeof receipt === "string" && /^[a-f0-9-]{36}$/i.test(receipt)) {
+    event.waitUntil(fetch("/avisos/abertura/push?t=" + receipt, { method: "POST", credentials: "omit" }).catch(() => {}));
+  }
   const path = event.notification.data?.url === "/shop" ? "/shop" : "/app";
   const url = new URL(path, self.location.origin).href;
   event.waitUntil(

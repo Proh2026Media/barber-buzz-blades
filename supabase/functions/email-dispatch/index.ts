@@ -105,7 +105,34 @@ Deno.serve(async (req) => {
         continue;
       }
       try {
+        const { data: receipt } = await admin.rpc("email_open_token", { p_id: row.id });
+        const safeBody = row.body
+          .split(/(https?:\/\/[^\s<>"']+)/g)
+          .map((part, index) => {
+            const escaped = part
+              .replaceAll("&", "&amp;")
+              .replaceAll("<", "&lt;")
+              .replaceAll(">", "&gt;");
+            return index % 2 === 1
+              ? '<a href="' + escaped + '">' + escaped + "</a>"
+              : escaped.replaceAll("\n", "<br>");
+          })
+          .join("");
+        const publicOrigin = new URL(
+          Deno.env.get("NOTICE_PUBLIC_ORIGIN") || "https://beauty.contheiner.digital",
+        ).origin;
         await client.send({
+          ...(receipt
+            ? {
+                html:
+                  safeBody +
+                  '<p><small>Ao carregar imagens, seu aplicativo de e-mail pode registrar um sinal de abertura para a barbearia.</small></p><img width="1" height="1" alt="" src="' +
+                  publicOrigin +
+                  "/avisos/abertura/email?t=" +
+                  encodeURIComponent(receipt) +
+                  '">',
+              }
+            : {}),
           from: `${fromName} <${from}>`,
           to: row.to_email,
           subject: row.subject,

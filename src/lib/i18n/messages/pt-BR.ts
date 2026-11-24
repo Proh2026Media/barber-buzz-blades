@@ -1,5 +1,20 @@
 /** Dicionário principal (fonte). Toda chave nova nasce aqui, em pt-BR. */
 export const ptBR = {
+  "receipt.title": "Avisos ao cliente",
+  "receipt.error": "Não foi possível consultar os avisos.",
+  "receipt.loading": "Consultando avisos…",
+  "receipt.empty": "Nenhum aviso registrado.",
+  "receipt.created": "Confirmação",
+  "receipt.changed": "Remarcação",
+  "receipt.cancelled": "Cancelamento",
+  "receipt.reminder": "Lembrete",
+  "receipt.sent": "Enviado",
+  "receipt.pending": "Aguardando envio",
+  "receipt.unconfirmed": "Envio sem confirmação",
+  "receipt.signal": "Sinal de abertura",
+  "receipt.opened": "Abertura registrada",
+  "receipt.help": "Push registra o toque no aviso. No e-mail, o carregamento da imagem pode ser automático ou bloqueado. A leitura do conteúdo não pode ser confirmada.",
+
   "waDistribution.backup2Active": "Reserva 2 em uso",
   "waDistribution.reorder": "Reordenar {role}",
   "waDistribution.order": "Ordem dos números",
@@ -175,7 +190,7 @@ export const ptBR = {
   "push.error":
     "Não foi possível atualizar as notificações. Confira sua conexão e tente novamente.",
   "push.device":
-    "A escolha vale para esta conta e este aparelho. Não envia promoções nem códigos de login.",
+    "A escolha vale para esta conta e este aparelho. Não envia promoções nem códigos de login. Ao tocar no aviso, a barbearia pode ver a abertura.",
 
   "care.profileCodeUnavailable":
     "O código é enviado somente ao seu grupo de atendimento. Não foi possível enviar agora; confira a preparação e sua entrada no grupo.",
