@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 
 const DEFAULT_FAVICON = "/icons/icon-192.png";
-const DEFAULT_APPLE = "/icons/icon-180.png";
+
 
 function iconMime(href: string): string | undefined {
   if (href.startsWith("data:image/svg")) return "image/svg+xml";
@@ -37,10 +37,8 @@ export function applyShopFavicon(logoUrl: string | null | undefined) {
   if (typeof document === "undefined") return;
   const custom = (logoUrl ?? "").trim();
   const href = custom || DEFAULT_FAVICON;
-  const apple = custom || DEFAULT_APPLE;
   const type = custom ? iconMime(href) : "image/png";
   upsertFaviconLink("icon", href, type);
-  upsertFaviconLink("apple-touch-icon", apple, custom ? type : "image/png");
 }
 
 /** Aplica favicon da loja enquanto a tela estiver montada. */

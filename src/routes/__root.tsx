@@ -122,8 +122,8 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
         <HeadContent />
-        {domain && <link rel="manifest" href={`/identidade/manifesto?dominio=${encodeURIComponent(domain)}`} />}
-        {domain && <link rel="apple-touch-icon" href={`/identidade/icone?dominio=${encodeURIComponent(domain)}`} />}
+        <link rel="manifest" href={domain ? `/identidade/manifesto?dominio=${encodeURIComponent(domain)}` : "/identidade/manifesto"} />
+        <link rel="apple-touch-icon" sizes="180x180" type="image/png" href={domain ? `/apple-touch-icon.png?dominio=${encodeURIComponent(domain)}` : "/apple-touch-icon.png"} />
       </head>
       <body>
         {children}

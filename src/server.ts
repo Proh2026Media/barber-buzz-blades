@@ -41,7 +41,7 @@ export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const url = new URL(request.url);
-      if (url.pathname === "/identidade/manifesto" || url.pathname === "/identidade/icone") {
+      if (url.pathname === "/identidade/manifesto" || url.pathname === "/identidade/icone" || url.pathname === "/apple-touch-icon.png") {
         const { shopIdentity } = await import("./lib/shop/installation");
         return shopIdentity(url);
       }

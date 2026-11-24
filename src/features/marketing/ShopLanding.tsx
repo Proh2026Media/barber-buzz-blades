@@ -450,14 +450,14 @@ export function ShopLandingView({
           className="absolute inset-0 -z-10 size-full object-cover opacity-55"
         />
         <div
-          className="absolute inset-0 -z-10 bg-gradient-to-b from-black/30 via-black/50 to-[#141412]"
+          className="absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,#141412_0,rgba(20,20,18,.92)_env(safe-area-inset-top,0px),rgba(0,0,0,.45)_calc(env(safe-area-inset-top,0px)_+_5rem),#141412_100%)]"
           aria-hidden
         />
         <div
           className={cn(
             "mx-auto flex max-w-3xl items-center justify-between gap-3 px-4",
             wide && "lg:max-w-6xl",
-            preview ? "pt-4" : "pt-[max(1rem,env(safe-area-inset-top))]",
+            preview ? "pt-4" : "pt-[calc(1rem+env(safe-area-inset-top,0px))]",
           )}
         >
           <div className="flex min-w-0 items-center gap-3">
