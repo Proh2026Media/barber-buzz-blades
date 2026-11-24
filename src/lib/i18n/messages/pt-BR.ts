@@ -5120,6 +5120,8 @@ export const ptBR = {
   "entry.cad.shopLead": "Nome, horário e quem é dono.",
   "entry.cad.accessTitle": "Seu acesso",
   "entry.cad.accessLead": "Com estes dados você entra no painel.",
+  "register.instagram": "Instagram da barbearia (opcional)",
+  "register.instagramAddress": "Usar “{slug}” no endereço da página",
   "entry.cad.linkLabel": "Link da sua página",
   "entry.cad.linkNote": "Se o nome já estiver em uso: {slug}",
   "entry.cad.clockLabel": "Horário da barbearia",

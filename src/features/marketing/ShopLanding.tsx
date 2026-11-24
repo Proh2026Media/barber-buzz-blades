@@ -135,17 +135,6 @@ export function ShopLanding({
 
   // Aba do navegador com o nome e a logo da barbearia.
   useShopFavicon(data?.shop.logo_url ?? null, data?.shop.display_name || data?.shop.name);
-  const tabName = data ? data.shop.display_name || data.shop.name : null;
-  const tabTitle = tabName ? t("shopLanding.docTitle", { name: tabName }) : null;
-  useEffect(() => {
-    if (!tabTitle) return;
-    const previous = document.title;
-    document.title = tabTitle;
-    return () => {
-      document.title = previous;
-    };
-  }, [tabTitle]);
-
   // Atualiza na hora quando a agenda muda; o recarregamento a cada minuto fica como reserva.
   useAvailabilitySignal(data?.shop.id, () => void load());
 

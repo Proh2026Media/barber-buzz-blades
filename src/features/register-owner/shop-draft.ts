@@ -1,6 +1,8 @@
 /** Só dados da loja na aba atual; nunca senha, código ou token de sessão. */
 export type ShopDraft = {
   name: string;
+  instagram?: string;
+  usarInstagram?: boolean;
   timezone: string;
   society: "single" | "majority" | "equal" | "minority";
   request: { userId: string; id: string } | null;
@@ -15,6 +17,7 @@ export function readShopDraft(): ShopDraft | null {
       typeof value.savedAt !== "number" ||
       typeof value.name !== "string" ||
       value.name.length > 120 ||
+      (value.instagram !== undefined && (typeof value.instagram !== "string" || value.instagram.length > 31)) ||
       typeof value.timezone !== "string" ||
       value.timezone.length > 64 ||
       !["single", "majority", "equal", "minority"].includes(value.society)

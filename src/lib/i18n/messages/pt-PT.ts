@@ -5138,6 +5138,8 @@ export const ptPT: Record<MessageKey, string> = {
   "entry.cad.shopLead": "Nome, horário e quem é dono.",
   "entry.cad.accessTitle": "O seu acesso",
   "entry.cad.accessLead": "Com estes dados entra no painel.",
+  "register.instagram": "Instagram da barbearia (opcional)",
+  "register.instagramAddress": "Usar «{slug}» no endereço da página",
   "entry.cad.linkLabel": "Link da sua página",
   "entry.cad.linkNote": "Se o nome já estiver em uso: {slug}",
   "entry.cad.clockLabel": "Horário da barbearia",

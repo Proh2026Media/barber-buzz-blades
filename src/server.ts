@@ -43,6 +43,10 @@ export default {
       const url = new URL(request.url);
       if (url.pathname === "/identidade/manifesto" || url.pathname === "/identidade/icone" || url.pathname === "/apple-touch-icon.png") {
         const { shopIdentity } = await import("./lib/shop/installation");
+        if (!url.searchParams.has("dominio")) {
+          const host = request.headers.get("x-forwarded-host")?.split(",")[0].trim().split(":")[0];
+          if (host) url.searchParams.set("dominio", host);
+        }
         return shopIdentity(url);
       }
       if (["/avisos/abertura/email", "/avisos/abertura/push", "/avisos/toque"].includes(url.pathname)) {

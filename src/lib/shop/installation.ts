@@ -1,3 +1,12 @@
+export async function nomeDaInstalacao(host: string): Promise<string> {
+  if ([import.meta.env.VITE_PLATFORM_BASE_HOST || "beauty.contheiner.digital", "localhost", "127.0.0.1"].includes(host)) return "Barba & Cabelo";
+  try {
+    const resposta = await shopIdentity(new URL("/identidade/manifesto", "https://" + host));
+    if (resposta.ok) return (await resposta.json()).name || host;
+  } catch { /* Mantém o domínio como identificação caso o cadastro esteja indisponível. */ }
+  return host;
+}
+
 /** Identidade pública da instalação. A loja é resolvida exclusivamente pelo domínio. */
 export async function shopIdentity(url: URL): Promise<Response> {
   const apple = url.pathname === "/apple-touch-icon.png";

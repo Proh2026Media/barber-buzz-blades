@@ -46,7 +46,6 @@ export const Route = createFileRoute("/politica")({
   },
   head: () => ({
     meta: [
-      { title: "Clube de fidelidade — Barba & Cabelo" },
       {
         name: "description",
         content:

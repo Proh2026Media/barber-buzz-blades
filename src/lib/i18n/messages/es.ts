@@ -5158,6 +5158,8 @@ export const es: Record<MessageKey, string> = {
   "entry.cad.shopLead": "Nombre, horario y quién es dueño.",
   "entry.cad.accessTitle": "Tu acceso",
   "entry.cad.accessLead": "Con estos datos entras al panel.",
+  "register.instagram": "Instagram de la barbería (opcional)",
+  "register.instagramAddress": "Usar «{slug}» en la dirección de la página",
   "entry.cad.linkLabel": "Enlace de tu página",
   "entry.cad.linkNote": "Si el nombre ya está en uso: {slug}",
   "entry.cad.clockLabel": "Horario de la barbería",

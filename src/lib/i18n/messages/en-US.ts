@@ -5113,6 +5113,8 @@ export const enUS: Record<MessageKey, string> = {
   "entry.cad.shopLead": "Name, time zone and who owns it.",
   "entry.cad.accessTitle": "Your access",
   "entry.cad.accessLead": "You'll use these details to open the dashboard.",
+  "register.instagram": "Barbershop Instagram (optional)",
+  "register.instagramAddress": "Use “{slug}” in the page address",
   "entry.cad.linkLabel": "Your page link",
   "entry.cad.linkNote": "If the name is taken: {slug}",
   "entry.cad.clockLabel": "Barbershop time",

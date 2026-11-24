@@ -24,7 +24,24 @@ import { Toaster } from "../components/ui/sonner";
 
 import { loadLocale } from "../lib/i18n/translate";
 
-const APP_NAME = "Barba & Cabelo";
+import { createIsomorphicFn } from "@tanstack/react-start";
+import { getRequestHost } from "@tanstack/react-start/server";
+
+const nomeDaPagina = createIsomorphicFn()
+  .server(async () => {
+    const host = getRequestHost({ xForwardedHost: true }).split(",")[0].trim().split(":")[0].toLowerCase();
+    const { nomeDaInstalacao } = await import("../lib/shop/installation");
+    return nomeDaInstalacao(host);
+  })
+  .client(async () => {
+    const host = window.location.hostname;
+    if ([import.meta.env.VITE_PLATFORM_BASE_HOST || "beauty.contheiner.digital", "localhost", "127.0.0.1"].includes(host)) return "Barba & Cabelo";
+    try {
+      const resposta = await fetch("/identidade/manifesto?dominio=" + encodeURIComponent(host), {signal: AbortSignal.timeout(5000)});
+      if (resposta.ok) return (await resposta.json()).name || host;
+    } catch { /* O domínio identifica a loja durante uma indisponibilidade. */ }
+    return host;
+  });
 const APP_DESCRIPTION =
   "Agendamento, fidelidade e gestão para barbearias: reserve seu horário, acompanhe pontos e organize a agenda da equipe.";
 
@@ -73,22 +90,23 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     const lang = new URLSearchParams(location.searchStr).get("lang");
     await loadLocale(localeFromTag(lang) ?? DEFAULT_LOCALE);
   },
-  head: () => ({
+  loader: () => nomeDaPagina(),
+  head: ({loaderData}) => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: APP_NAME },
+      { title: loaderData || "Agendamento" },
       { name: "description", content: APP_DESCRIPTION },
-      { name: "application-name", content: APP_NAME },
+      { name: "application-name", content: loaderData || "Agendamento" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "apple-mobile-web-app-title", content: APP_NAME },
+      { name: "apple-mobile-web-app-title", content: loaderData || "Agendamento" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "format-detection", content: "telephone=no" },
       { name: "color-scheme", content: "light dark" },
       // HeadContent dedupes meta by name, so a single browser-chrome color is declared.
       { name: "theme-color", content: "#20211f" },
-      { property: "og:title", content: APP_NAME },
+      { property: "og:title", content: loaderData || "Agendamento" },
       { property: "og:description", content: APP_DESCRIPTION },
       { property: "og:type", content: "website" },
       { property: "og:locale", content: "pt_BR" },

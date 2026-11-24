@@ -34,6 +34,10 @@ function CadastrarPage() {
   const { session, currentSession, loading } = useAuthSession();
   const [draft] = useState(() => readShopDraft());
   const [shopName, setShopName] = useState(draft?.name ?? "");
+  const [instagram, setInstagram] = useState(draft?.instagram ?? "");
+  const [usarInstagram, setUsarInstagram] = useState(draft?.usarInstagram === true);
+  const perfil = instagram.trim().replace(/^@/, "").toLowerCase();
+  const perfilValido = /^[a-z0-9._]{1,30}$/.test(perfil) && /[a-z0-9]/.test(perfil);
   const [detectedTimeZone] = useState(() => detectDeviceTimeZone());
   const [timeZone, setTimeZone] = useState(draft?.timezone ?? detectedTimeZone);
   const [timeZoneOpen, setTimeZoneOpen] = useState(false);
@@ -52,7 +56,7 @@ function CadastrarPage() {
   const request = useRef(draft?.request ?? null);
   const timeZoneName = useTimeZoneName();
   const zoneName = timeZoneName(timeZone);
-  const previewSlug = shopName.trim() ? slugifyShopName(shopName) : "";
+  const previewSlug = usarInstagram && perfilValido ? slugifyShopName(perfil) : shopName.trim() ? slugifyShopName(shopName) : "";
   const userId = session?.user.id;
   useEffect(() => {
     alive.current = true;
@@ -72,7 +76,7 @@ function CadastrarPage() {
 
   function remember() {
     saveShopDraft({
-      name: shopName,
+      name: shopName, instagram, usarInstagram,
       timezone: timeZone,
       society: hasSociety ? societyType : "single",
       request: request.current,
@@ -117,6 +121,8 @@ function CadastrarPage() {
           body: JSON.stringify({
             p_request_id: request.current.id,
             p_name: shopName.trim(),
+            p_instagram: perfil || null,
+            p_usar_instagram: !!perfil && usarInstagram,
             p_timezone: timeZone,
             p_society_intent: hasSociety ? societyType : "single",
             p_terms_accepted: termsAccepted,
@@ -238,6 +244,17 @@ function CadastrarPage() {
                         placeholder={t("register.shopNamePlaceholder")}
                       />
 
+                    </div>
+                    <div className="grid gap-1.5">
+                      <label className="platform-register-label" htmlFor="cad-instagram">{t("register.instagram")}</label>
+                      <input id="cad-instagram" className="platform-register-input" value={instagram}
+                        autoCapitalize="none" spellCheck={false} placeholder="@perfil" maxLength={31}
+                        pattern="@?(?=[A-Za-z0-9._]*[A-Za-z0-9])[A-Za-z0-9._]{1,30}"
+                        onChange={(e) => setInstagram(e.target.value.trim())} />
+                      {perfilValido && <label className="flex min-h-11 items-center gap-2">
+                        <input type="checkbox" checked={usarInstagram} onChange={(e) => setUsarInstagram(e.target.checked)} />
+                        {t("register.instagramAddress", {slug: slugifyShopName(perfil)})}
+                      </label>}
                       {previewSlug && (
                         <LinkPill
                           id="cad-shopName-link"
