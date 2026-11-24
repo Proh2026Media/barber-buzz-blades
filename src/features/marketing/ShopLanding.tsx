@@ -432,6 +432,7 @@ export function ShopLandingView({
     >
       <BrandFontFace url={shop.custom_font_url} />
       {topBar}
+      {!preview && <div className="shop-status-bar" aria-hidden="true" />}
       <header className="relative isolate overflow-hidden bg-[#141412] text-[#f7f5f0]">
         <img
           src={shop.hero_image_url || DEFAULT_LOGIN_IMAGE}

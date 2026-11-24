@@ -140,3 +140,25 @@
     font-size: max(1rem, 16px);
   }
 }
+
+/* No iPhone, a barra do sistema lê a superfície fixa no topo da janela.
+   A capa continua abaixo da ilha e os controles mantêm o recuo da área segura. */
+.shop-status-bar {
+  display: none;
+}
+
+@supports (-webkit-touch-callout: none) {
+  html:has(.shop-status-bar),
+  body:has(.shop-status-bar) {
+    background-color: #141412;
+  }
+  .shop-status-bar {
+    display: block;
+    position: fixed;
+    inset: 0 0 auto;
+    height: env(safe-area-inset-top, 0px);
+    z-index: 25;
+    pointer-events: none;
+    background-color: #141412;
+  }
+}
