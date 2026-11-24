@@ -1822,7 +1822,7 @@ function AuthPage() {
           <div
             className="auth-photo-copy-logo"
             style={{
-              backgroundColor: brand.logoBackgroundColor ?? "rgba(255,255,255,.92)",
+              backgroundColor: brand.shopId || brand.logoUrl ? brand.logoBackgroundColor ?? "rgba(255,255,255,.92)" : undefined,
             }}
           >
             {brand.logoUrl ? (
@@ -1830,7 +1830,7 @@ function AuthPage() {
             ) : brand.shopId ? (
               <SeloBarbearia lojaId={brand.shopId} nome={brand.displayName} tamanho={44} />
             ) : (
-              !brandLoading && isPlatformApexHost() ? <MarcaPlataforma composicao="simbolo"  /> : null
+              !brandLoading && isPlatformApexHost() ? <MarcaPlataforma composicao="simbolo" fotoEscura /> : null
             )}
           </div>
           <p className="auth-brand-name">{brand.displayName}</p>
@@ -1844,8 +1844,8 @@ function AuthPage() {
                 className="auth-brand-logo flex size-11 shrink-0 items-center justify-center overflow-hidden"
                 style={{
                   backgroundColor:
-                    brand.logoBackgroundColor ??
-                    "color-mix(in oklab, var(--brand-primary) 8%, white)",
+                    brand.shopId || brand.logoUrl ? brand.logoBackgroundColor ??
+                    "color-mix(in oklab, var(--brand-primary) 8%, white)" : undefined,
                 }}
               >
                 {brand.logoUrl ? (
@@ -1857,7 +1857,7 @@ function AuthPage() {
                 ) : brand.shopId ? (
                   <SeloBarbearia lojaId={brand.shopId} nome={brand.displayName} tamanho={44} />
                 ) : (
-                  !brandLoading && isPlatformApexHost() ? <MarcaPlataforma composicao="simbolo"  /> : null
+                  !brandLoading && isPlatformApexHost() ? <MarcaPlataforma composicao="simbolo" /> : null
                 )}
               </div>
               <p

@@ -105,9 +105,7 @@ export function PlatformLanding() {
         }}
       >
         <header className="platform-landing-top">
-          <span className="platform-landing-mark" aria-hidden="true">
-            <MarcaPlataforma composicao="simbolo" fotoEscura  />
-          </span>
+          <MarcaPlataforma composicao="simbolo" fotoEscura className="size-9" />
           <div className="flex items-center gap-2">
             <Link
               to="/auth"

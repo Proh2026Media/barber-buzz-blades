@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { contrastRatio } from "@/lib/shop/branding";
 
-type Variante = "cor" | "inversa" | "base";
+type Variante = "cor" | "inversa" | "preta" | "branca";
 
 /** Compõe os fundos translúcidos até a primeira superfície opaca. */
 function varianteNoFundo(elemento: Element, pixel: CanvasRenderingContext2D): Variante {
@@ -9,7 +9,7 @@ function varianteNoFundo(elemento: Element, pixel: CanvasRenderingContext2D): Va
   let restante = 1;
   for (let pai = elemento.parentElement; pai; pai = pai.parentElement) {
     const estilo = getComputedStyle(pai);
-    if (estilo.backgroundImage !== "none") return "base";
+    if (estilo.backgroundImage !== "none") return "inversa";
     pixel.clearRect(0, 0, 1, 1);
     pixel.fillStyle = estilo.backgroundColor;
     pixel.fillRect(0, 0, 1, 1);
@@ -19,11 +19,13 @@ function varianteNoFundo(elemento: Element, pixel: CanvasRenderingContext2D): Va
     restante -= cobertura;
     if (restante < 0.001) break;
   }
-  if (restante > 0.05) return "base";
+  if (restante > 0.05) return "inversa";
   const fundo = "#" + rgb.map(c => Math.round(c + restante * 255).toString(16).padStart(2, "0")).join("");
   const escura = contrastRatio("#20231F", fundo);
   const clara = contrastRatio("#F7F5EF", fundo);
-  if (Math.max(escura, clara) < 4.5) return "base";
+  if (Math.max(escura, clara) < 4.5) {
+    return contrastRatio("#000000", fundo) >= contrastRatio("#FFFFFF", fundo) ? "preta" : "branca";
+  }
   return clara > escura ? "inversa" : "cor";
 }
 
@@ -35,7 +37,7 @@ export function MarcaPlataforma({ composicao, fotoEscura = false, className = ""
   alt?: string;
 }) {
   const ref = useRef<HTMLImageElement>(null);
-  const [variante, definir] = useState<Variante>("base");
+  const [variante, definir] = useState<Variante>("cor");
   useLayoutEffect(() => {
     const img = ref.current;
     if (!img || fotoEscura) return;
@@ -58,7 +60,7 @@ export function MarcaPlataforma({ composicao, fotoEscura = false, className = ""
     };
   }, [fotoEscura]);
   const uso = fotoEscura ? "inversa" : variante;
-  return <img ref={ref} alt={alt} data-base={uso === "base" || undefined}
+  return <img ref={ref} alt={alt}
     className={`marca-plataforma marca-plataforma-${composicao} ${className}`}
-    src={`/marca/bc-${composicao}-${uso === "inversa" ? "inversa" : "cor"}-sem-parafuso.svg`} />;
+    src={`/marca/bc-${composicao}-${uso}-sem-parafuso.svg`} />;
 }

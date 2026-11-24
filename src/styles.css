@@ -3793,18 +3793,6 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
   align-items: center;
   gap: 0.75rem;
 }
-.platform-landing-mark {
-  display: inline-flex;
-  size: 2.5rem;
-  width: 2.5rem;
-  height: 2.5rem;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--control-radius, 0.75rem);
-  background: color-mix(in oklab, #f4f1ea 12%, transparent);
-  border: 1px solid color-mix(in oklab, #f4f1ea 22%, transparent);
-  color: #f4f1ea;
-}
 /* Botão de ícone sobre capa fotográfica (sempre escura): não muda com o tema.
    Mantém 44px e o raio do modo de canto herdados de .app-icon-button. */
 .hero-icon-button {
@@ -4022,11 +4010,6 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
 }
 .platform-register-brand {
   margin-bottom: 1.25rem;
-}
-.platform-register-brand .platform-landing-mark {
-  background: #1c1b18;
-  border-color: transparent;
-  color: #f4f1ea;
 }
 .platform-register-brand-name {
   color: #1c1b18;
@@ -4419,10 +4402,16 @@ body:has(.arena-workspace) .entry-code input:not(#entry-code-x):focus {
   }
 }
 
-/* O SVG oficial inclui a proteção do desenho. O quadro reserva mais 10% em cada borda. */
+/* A marca da plataforma usa a área de proteção do próprio vetor. */
 .marca-plataforma { display: block; object-fit: contain; }
-.auth-photo-copy-logo:has(> .marca-plataforma-simbolo) { width: 2.75rem; height: 2.75rem; }
-.marca-plataforma[data-base] { background-color: #f7f5ef; border-radius: var(--control-radius); }
-:is(.auth-brand-logo, .auth-photo-copy-logo, .platform-landing-mark) img.marca-plataforma-simbolo {
+:is(.auth-brand-logo, .auth-photo-copy-logo):has(> .marca-plataforma-simbolo) {
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+:is(.auth-brand-logo, .auth-photo-copy-logo) img.marca-plataforma-simbolo {
   width: 80%; height: 80%; padding: 0; margin: auto; object-fit: contain;
 }
