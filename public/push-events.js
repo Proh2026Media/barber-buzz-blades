@@ -15,7 +15,7 @@ self.addEventListener("push", (event) => {
         "Há uma atualização no seu agendamento. Abra o aplicativo para conferir.",
         200,
       ),
-      ...(message.shop_icon === true ? { icon: "/identidade/icone" } : {}),
+      ...(message.shop_icon === true ? { icon: "/identidade/icone?dominio=" + encodeURIComponent(new URL(self.location.origin).hostname) } : {}),
       tag: text(message.tag, "bc-update", 100),
       data: { url: message.url === "/shop" ? "/shop" : "/app" },
     }),

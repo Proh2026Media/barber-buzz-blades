@@ -6,7 +6,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { NotFoundPage } from "../components/NotFoundPage";
 
 import appCss from "../styles.css?url";
@@ -106,9 +106,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       // CSS por dispositivo (src/dispositivos.css → src/styles/*.css) depois do styles.css:
       // vence em igualdade de especificidade.
       { rel: "stylesheet", href: deviceCss },
-      { rel: "manifest", href: "/identidade/manifesto" },
       { rel: "icon", href: "/icons/icon-192.png", type: "image/png" },
-      { rel: "apple-touch-icon", href: "/identidade/icone" },
     ],
   }),
   shellComponent: RootShell,
@@ -118,10 +116,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
+  const [domain, setDomain] = useState("");
+  useEffect(() => setDomain(window.location.hostname), []);
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
         <HeadContent />
+        {domain && <link rel="manifest" href={`/identidade/manifesto?dominio=${encodeURIComponent(domain)}`} />}
+        {domain && <link rel="apple-touch-icon" href={`/identidade/icone?dominio=${encodeURIComponent(domain)}`} />}
       </head>
       <body>
         {children}

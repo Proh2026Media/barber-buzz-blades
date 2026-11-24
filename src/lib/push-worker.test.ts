@@ -132,5 +132,5 @@ test("Push da loja usa o ícone da própria origem mesmo com imagem externa no p
   });
   await pending!;
   assert.equal(f.shown[0][0], "Loja Teste B");
-  assert.equal((f.shown[0][1] as {icon?: string}).icon, "/identidade/icone");
+  assert.equal((f.shown[0][1] as {icon?: string}).icon, "/identidade/icone?dominio=beauty.example.invalid");
 });

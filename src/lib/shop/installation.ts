@@ -2,18 +2,17 @@
 export async function shopIdentity(url: URL): Promise<Response> {
   const icon = url.pathname === "/identidade/icone";
   const platform = import.meta.env.VITE_PLATFORM_BASE_HOST || "beauty.contheiner.digital";
-  if ([platform, "localhost", "127.0.0.1"].includes(url.hostname)) {
-    return Response.redirect(
-      new URL(icon ? "/icons/icon-180.png" : "/manifest.webmanifest", url),
-      302,
-    );
+  const domain = (url.searchParams.get("dominio") || url.hostname).toLowerCase();
+  if (!/^[a-z0-9.-]+$/.test(domain)) return new Response(null, {status: 400});
+  if ([platform, "localhost", "127.0.0.1"].includes(domain)) {
+    return new Response(null, {status: 302, headers: {Location: icon ? "/icons/icon-180.png" : "/manifest.webmanifest"}});
   }
   const api = process.env.SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
   const key = process.env.SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
   const res = await fetch(new URL("/rest/v1/rpc/get_public_shop_branding_by_host", api), {
     method: "POST",
     headers: { apikey: key, "Content-Type": "application/json" },
-    body: JSON.stringify({ p_host: url.hostname }),
+    body: JSON.stringify({ p_host: domain }),
     signal: AbortSignal.timeout(5000),
   });
   if (!res.ok) return new Response(null, { status: 503 });
@@ -23,8 +22,8 @@ export async function shopIdentity(url: URL): Promise<Response> {
   const logo =
     typeof shop.logo_url === "string" && shop.logo_url.startsWith("https://")
       ? shop.logo_url
-      : new URL("/icons/loja.png", url).href;
-  if (icon) return Response.redirect(logo, 302);
+      : "/icons/loja.png";
+  if (icon) return new Response(null, { status: 302, headers: { Location: logo } });
   return Response.json(
     {
       id: "/",
