@@ -68,6 +68,7 @@ type LoadState =
   | { status: "error" }
   | {
       status: "ready";
+      shopId: string;
       shopName: string;
       logoUrl: string | null;
       logoBackground: string | null;
@@ -109,6 +110,7 @@ function useShopProgram(shopRef: string | undefined, attempt: number): LoadState
         const shopName = row.display_name?.trim() || row.shop_name;
         const corner = parseCorner(row.corner_style);
         const logo = {
+          shopId: row.shop_id,
           logoUrl: row.logo_url ?? null,
           logoBackground: row.logo_background_color ?? null,
         };
@@ -219,7 +221,7 @@ function PoliticaClube() {
           ) : (
             <div className="mx-auto flex size-16 items-center justify-center rounded-2xl border border-border bg-muted text-foreground">
               {shopName ? (
-                <SeloBarbearia nome={shopName} tamanho={64} />
+                <SeloBarbearia lojaId={state.status === "ready" ? state.shopId : null} nome={shopName} tamanho={64} />
               ) : (
                 <Crown className="size-8" aria-hidden="true" />
               )}

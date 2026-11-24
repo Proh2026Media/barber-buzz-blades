@@ -1,8 +1,9 @@
+import { SeloBarbearia } from "@/components/SeloBarbearia";
 import { initialPairingCountry, normalizePairingPhone } from "@/features/whatsapp/pairing-phone";
 import { otpRequestBody } from "@/lib/auth/otp-request";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { KeyRound, Loader2, LogIn, MessageCircle, Scissors, Send } from "lucide-react";
+import { KeyRound, Loader2, LogIn, MessageCircle, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { guardedFetch } from "@/lib/demo-guard";
 import { friendlyAuthError, serverError } from "@/lib/auth/friendly-error";
@@ -276,7 +277,7 @@ export function ReservationAccessGate({
           {shop?.logo ? (
             <img src={shop.logo} alt="" className="size-full object-contain" />
           ) : (
-            <Scissors className="size-6" aria-hidden />
+            <SeloBarbearia lojaId={lookup.barbershop_id} nome={shopName} tamanho={48} />
           )}
         </span>
         <div className="min-w-0">

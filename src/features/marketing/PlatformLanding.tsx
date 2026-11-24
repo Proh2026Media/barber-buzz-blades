@@ -6,7 +6,6 @@ import {
   Clock3,
   Crown,
   LogIn,
-  Scissors,
   Share2,
   Store,
   UserPlus,
@@ -106,7 +105,7 @@ export function PlatformLanding() {
       >
         <header className="platform-landing-top">
           <span className="platform-landing-mark" aria-hidden="true">
-            <Scissors className="size-5" />
+            <img src="/marca/bc-simbolo-inversa-sem-parafuso.svg" className="size-10 object-contain" alt="" />
           </span>
           <div className="flex items-center gap-2">
             <Link
@@ -127,7 +126,7 @@ export function PlatformLanding() {
           <div className="platform-landing-intro-and-actions space-y-6">
             <section className="platform-landing-intro" aria-labelledby="platform-landing-title">
               <h1 id="platform-landing-title" className="platform-landing-title">
-                Barba &amp; Cabelo
+                <img src="/marca/bc-principal-inversa-sem-parafuso.svg" className="w-72 max-w-full" alt="Barba &amp; Cabelo" />
               </h1>
               <p className="platform-landing-lead">{t("landing.lead")}</p>
             </section>

@@ -9,6 +9,8 @@ import { PageSketch, PageStatusBadge, type PageBlocks } from "./brand-bits";
  * para que "qual link eu divulgo?" tenha uma só resposta.
  */
 export function ShopLinkCard({
+  lojaId,
+  nome,
   publicUrl,
   openHref,
   autoUrl,
@@ -24,6 +26,8 @@ export function ShopLinkCard({
   className,
 }: {
   /** Link da página (origem pública: domínio próprio no ar ou o automático). */
+  lojaId: string;
+  nome: string;
   publicUrl: string;
   /**
    * "Ver como cliente": a página neste mesmo endereço e na mesma aba, sem sair da conta (a
@@ -52,7 +56,7 @@ export function ShopLinkCard({
       <SectionHeader icon={Link2} title={t("shopLink.title")} />
       {/* Desenho da página + como ela aparece + o que dá para fazer, lado a lado. */}
       <div className="flex items-start gap-3">
-        <PageSketch
+        <PageSketch lojaId={lojaId} nome={nome}
           full={landingEnabled}
           blocks={blocks}
           photo={photo}

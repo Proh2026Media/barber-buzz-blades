@@ -3011,7 +3011,7 @@ function ArenaApp({
                   : undefined
               }
             >
-              <SeloBarbearia nome={shopSettings.display_name?.trim() || shopName || ""} tamanho={44} />
+              <SeloBarbearia lojaId={shopId} nome={shopSettings.display_name?.trim() || shopName || ""} tamanho={44} />
             </span>
           )}
           {/* Container: as linhas do nome e o slogan dependem do espaço que sobra ao lado dos

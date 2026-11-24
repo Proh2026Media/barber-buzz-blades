@@ -213,7 +213,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
         supabase
           .from("barbershop_settings")
           .select(
-            "barbershop_id, sports_enabled, loyalty_enabled, logo_url, logo_background_color",
+            "barbershop_id, sports_enabled, loyalty_enabled, display_name, logo_url, logo_background_color",
           ),
         supabase.rpc("list_platform_shop_owners"),
       ]);
@@ -247,7 +247,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
           Object.fromEntries(
             (modulesResult.data ?? []).map((row) => [
               row.barbershop_id,
-              { url: row.logo_url, background: row.logo_background_color },
+              { nome: row.display_name, url: row.logo_url, background: row.logo_background_color },
             ]),
           ),
         );
@@ -480,7 +480,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
         <div className="min-w-0">
           <p className="text-xs font-bold text-gold">{t("plat.header.eyebrow")}</p>
           <h1 className="break-words text-lg font-extrabold leading-tight tracking-tight max-[379px]:text-base">
-            {demoMode || demoChrome ? t("plat.header.titleDemo") : t("plat.header.title")}
+            {demoMode || demoChrome ? t("plat.header.titleDemo") : <><img src="/marca/bc-horizontal-cor-sem-parafuso.svg" alt={t("plat.header.title")} className="block h-8 max-w-full dark:hidden" /><img src="/marca/bc-horizontal-inversa-sem-parafuso.svg" alt={t("plat.header.title")} className="hidden h-8 max-w-full dark:block" /></>}
           </h1>
         </div>
 
@@ -895,6 +895,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
           open={loginTourOpen}
           onOpenChange={setLoginTourOpen}
           preview={{
+            lojaId: loginTourSettings.barbershop_id,
             layout: normalizeLoginLayout(loginTourSettings.login_layout),
             shopName:
               loginTourSettings.display_name?.trim() ||

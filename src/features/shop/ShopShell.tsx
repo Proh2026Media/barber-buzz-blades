@@ -82,6 +82,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
+import { SeloBarbearia } from "@/components/SeloBarbearia";
 import { ShopAccountMenu, ShopList, ShopSwitcher } from "./ShopAccountMenu";
 import { useMyAreas, useRememberArea } from "@/features/account/useAreas";
 import { PLATFORM_META, isOwnerRole } from "./roles-model";
@@ -2004,12 +2005,19 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
               </>
             ) : (
               <>
+                <div className="flex min-w-0 items-center gap-2">
+                  {shop && (settings?.logo_url ? (
+                    <img src={settings.logo_url} alt="" className="size-8 shrink-0 object-contain" />
+                  ) : (
+                    <SeloBarbearia lojaId={shop.id} nome={settings?.display_name || shop.name} tamanho={32} />
+                  ))}
                 <ShopSwitcher
-                  name={shop?.name ?? t("shop.header.shopFallback")}
+                  name={settings?.display_name || shop?.name || t("shop.header.shopFallback")}
                   shops={shopChoices}
                   currentId={actor?.id ?? ""}
                   onSwitch={switchShop}
                 />
+                </div>
                 {/* Selo do papel tocável ("Dono · 50%" + modo da sociedade): abre "Seu acesso".
                     shop_admin antigo: dono legítimo da loja que abriu (antes da equipe existir). */}
                 <RoleAccessButton
@@ -2531,6 +2539,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       : undefined
                   }
                   overview={{
+                    shopName: shop.name,
                     settings,
                     publicUrl: shopPublicOrigin({
                       slug: shop.slug,
@@ -2566,7 +2575,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     const shopLink = (withDomainShortcut: boolean) => {
                       const landing = parseLandingConfig(settings.landing);
                       return (
-                        <ShopLinkCard
+                        <ShopLinkCard lojaId={shop.id} nome={settings.display_name || shop.name}
                           publicUrl={shopPublicOrigin({
                             slug: shop.slug,
                             customDomain: shop.custom_domain,

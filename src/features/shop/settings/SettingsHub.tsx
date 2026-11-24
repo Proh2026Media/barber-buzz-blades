@@ -94,6 +94,7 @@ const SECTION_LINKS: Partial<Record<SettingsSection, string>> = { pontos: "/shop
 
 /** Dados que o painel já tem e que viram o resumo vivo de cada item do menu. */
 export type SettingsOverview = {
+  shopName?: string;
   settings: Tables<"barbershop_settings"> | null;
   /** Link da página da barbearia (origem pública). */
   publicUrl: string;
@@ -371,7 +372,7 @@ export function SettingsHub({
     if (id === "aparencia" && settings) {
       return (
         <>
-          <LogoChip logoUrl={settings.logo_url} background={settings.logo_background_color} />
+          <LogoChip lojaId={settings.barbershop_id} nome={settings.display_name || overview?.shopName} logoUrl={settings.logo_url} background={settings.logo_background_color} />
           <ColorDots
             primary={normalizeBrandColor(settings.primary_color, DEFAULT_PRIMARY_COLOR)}
             accent={normalizeBrandColor(settings.accent_color, DEFAULT_ACCENT_COLOR)}

@@ -1,3 +1,4 @@
+import { SeloBarbearia } from "@/components/SeloBarbearia";
 import {
   useCallback,
   useEffect,
@@ -469,7 +470,7 @@ export function ShopLandingView({
               />
             ) : (
               <span className="flex size-12 shrink-0 items-center justify-center rounded-[var(--control-radius)] bg-[#f7f5f0] text-[#141412]">
-                <Scissors className="size-5" aria-hidden />
+                <SeloBarbearia lojaId={shop.id} nome={name} tamanho={48} />
               </span>
             )}
           </div>

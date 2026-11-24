@@ -22,8 +22,14 @@ export async function shopIdentity(url: URL): Promise<Response> {
   const logo =
     typeof shop.logo_url === "string" && shop.logo_url.startsWith("https://")
       ? shop.logo_url
-      : "/icons/loja.png";
-  if (icon) return new Response(null, { status: 302, headers: { Location: logo } });
+      : null;
+  if (icon) {
+    if (logo) return new Response(null, { status: 302, headers: { Location: logo } });
+    const { iconeDeIniciais } = await import("./selo-png.server");
+    return new Response(await iconeDeIniciais(name, shop.shop_id), {headers: {
+      "Content-Type": "image/png", "Cache-Control": "private, max-age=300",
+    }});
+  }
   return Response.json(
     {
       id: "/",
@@ -35,7 +41,7 @@ export async function shopIdentity(url: URL): Promise<Response> {
       short_name: name,
       theme_color: "#20211f",
       background_color: "#e9e5de",
-      icons: [{ src: logo, purpose: "any" }],
+      icons: [{ src: logo || "/identidade/icone?dominio=" + encodeURIComponent(domain), purpose: "any" }],
     },
     {
       headers: {

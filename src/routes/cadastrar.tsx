@@ -5,7 +5,6 @@ import {
   ArrowRight,
   Clock,
   Loader2,
-  Scissors,
   Store,
   UserRound,
   Users,
@@ -189,10 +188,7 @@ function CadastrarPage() {
           </aside>
           <div className="platform-register-panel">
             <div className="platform-register-brand">
-              <span className="platform-landing-mark" aria-hidden="true">
-                <Scissors className="size-5" />
-              </span>
-              <p className="platform-register-brand-name">Barba &amp; Cabelo</p>
+              <img src="/marca/bc-horizontal-cor-sem-parafuso.svg" className="w-48 max-w-full" alt="Barba &amp; Cabelo" />
             </div>
             <Steps
               label={t("entry.cad.stepsLabel")}

@@ -1,3 +1,4 @@
+import { SeloBarbearia } from "@/components/SeloBarbearia";
 import { useEffect, useId, useMemo, useRef, useState, type DragEvent } from "react";
 import {
   Bell,
@@ -10,7 +11,6 @@ import {
   Palette,
   Pipette,
   RotateCcw,
-  Scissors,
   Shapes,
   ShieldCheck,
   Sparkles,
@@ -362,7 +362,7 @@ export function BrandIdentityEditor({
     draft.custom_font_url;
   // No celular, mantém a amostra reduzida; em telas maiores usa o viewport escolhido.
   const loginScreen = (
-    <LoginScreenPreview
+    <LoginScreenPreview lojaId={settings.barbershop_id}
       framed={isMobile}
       layout={draft.login_layout}
       shopName={previewName}
@@ -672,7 +672,7 @@ export function BrandIdentityEditor({
                 {previewLogo ? (
                   <img src={previewLogo} alt="" className="size-full object-contain p-[12.5%]" />
                 ) : (
-                  <Scissors className="size-5 text-primary" />
+                  <SeloBarbearia lojaId={settings.barbershop_id} nome={previewName} tamanho={44} />
                 )}
               </span>
               <div className="min-w-0 flex-1">
@@ -746,7 +746,7 @@ export function BrandIdentityEditor({
               {previewLogo ? (
                 <img src={previewLogo} alt="" className="size-full object-contain p-[12.5%]" />
               ) : (
-                <Scissors className="size-4 text-primary" />
+                <SeloBarbearia lojaId={settings.barbershop_id} nome={previewName} tamanho={36} />
               )}
             </span>
             <span className="min-w-0 flex-1">
@@ -837,7 +837,7 @@ export function BrandIdentityEditor({
               label: t(option.labelKey),
               description: t(option.hintKey),
               media: (
-                <LoginLayoutPreview
+                <LoginLayoutPreview lojaId={settings.barbershop_id}
                   compact
                   layout={option.value}
                   imageUrl={previewLoginImage}
@@ -964,7 +964,7 @@ export function BrandIdentityEditor({
                       className="size-full object-contain p-2"
                     />
                   ) : (
-                    <ImagePlus className="size-8 text-muted-foreground" aria-hidden="true" />
+                    <SeloBarbearia lojaId={settings.barbershop_id} nome={previewName} tamanho={112} />
                   )}
                 </span>
                 <span className="flex items-center gap-1.5 text-sm font-semibold">
@@ -1395,6 +1395,7 @@ export function BrandIdentityEditor({
         fontFaces={previewFontFaces}
         onOpenChange={setLoginPreviewOpen}
         preview={{
+          lojaId: settings.barbershop_id,
           layout: draft.login_layout,
           shopName: previewName,
           logoUrl: previewLogo,

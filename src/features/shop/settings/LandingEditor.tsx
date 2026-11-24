@@ -507,7 +507,7 @@ export function LandingEditor({
                   label: t("landingEditor.modeFull"),
                   description: t("landingEditor.enabledHint"),
                   media: (
-                    <PageSketch
+                    <PageSketch lojaId={shopId} nome={settings.display_name || shopSlug}
                       full
                       blocks={blocks}
                       photo={photo}
@@ -520,7 +520,7 @@ export function LandingEditor({
                   value: "brand",
                   label: t("landingEditor.modeBrand"),
                   media: (
-                    <PageSketch
+                    <PageSketch lojaId={shopId} nome={settings.display_name || shopSlug}
                       full={false}
                       photo={photo}
                       logoUrl={settings.logo_url}

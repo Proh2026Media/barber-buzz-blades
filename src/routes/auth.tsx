@@ -1827,9 +1827,9 @@ function AuthPage() {
             {brand.logoUrl ? (
               <img src={brand.logoUrl} alt="" />
             ) : brand.shopId ? (
-              <SeloBarbearia nome={brand.displayName} tamanho={44} />
+              <SeloBarbearia lojaId={brand.shopId} nome={brand.displayName} tamanho={44} />
             ) : (
-              <Scissors className="size-7" aria-hidden="true" />
+              !brandLoading && isPlatformApexHost() ? <img src="/marca/bc-simbolo-cor-sem-parafuso.svg" alt="" /> : null
             )}
           </div>
           <p className="auth-brand-name">{brand.displayName}</p>
@@ -1854,9 +1854,9 @@ function AuthPage() {
                     className="size-full object-contain p-2"
                   />
                 ) : brand.shopId ? (
-                  <SeloBarbearia nome={brand.displayName} tamanho={44} />
+                  <SeloBarbearia lojaId={brand.shopId} nome={brand.displayName} tamanho={44} />
                 ) : (
-                  <Scissors className="size-5 text-gold" aria-hidden="true" />
+                  !brandLoading && isPlatformApexHost() ? <img src="/marca/bc-simbolo-cor-sem-parafuso.svg" alt="" /> : null
                 )}
               </div>
               <p

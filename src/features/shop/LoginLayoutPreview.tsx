@@ -1,4 +1,5 @@
-import { LockKeyhole, Mail, Scissors } from "lucide-react";
+import { SeloBarbearia } from "@/components/SeloBarbearia";
+import { LockKeyhole, Mail } from "lucide-react";
 import { GoogleMark } from "@/features/auth/entry";
 import { useI18n } from "@/lib/i18n";
 import { DEFAULT_LOGIN_IMAGE, type BrandLoginLayout } from "@/lib/shop/branding";
@@ -8,6 +9,7 @@ export function LoginLayoutPreview({
   imageUrl,
   logoUrl,
   logoBackgroundColor,
+  lojaId,
   shopName,
   compact = false,
 }: {
@@ -15,6 +17,7 @@ export function LoginLayoutPreview({
   imageUrl?: string | null;
   logoUrl?: string | null;
   logoBackgroundColor?: string | null;
+  lojaId?: string;
   shopName: string;
   compact?: boolean;
 }) {
@@ -31,7 +34,7 @@ export function LoginLayoutPreview({
           className="login-model-preview-logo"
           style={{ backgroundColor: logoBackgroundColor || "rgba(255,255,255,.92)" }}
         >
-          {logoUrl ? <img src={logoUrl} alt="" /> : <Scissors className="size-3.5" />}
+          {logoUrl ? <img src={logoUrl} alt="" /> : <SeloBarbearia lojaId={lojaId} nome={shopName} tamanho={24} />}
         </span>
         <span>{shopName}</span>
       </div>

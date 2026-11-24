@@ -12,7 +12,7 @@ type InviteSearch = { t?: string };
 
 type InviteInfo = {
   status?: "invalid" | "expired" | "has_password" | "ready";
-  shop?: { name: string; slug: string; logo_url: string | null };
+  shop?: { id?: string; name: string; slug: string; logo_url: string | null };
   role?: string;
   email_hint?: string;
   token_hash?: string;
@@ -61,7 +61,11 @@ function InvitePage() {
     }
     let cancelled = false;
     callInvite("info", token)
-      .then((payload) => {
+      .then(async (payload) => {
+        if (payload.shop?.slug && !payload.shop.logo_url) {
+          const { data } = await supabase.rpc("get_public_shop_branding", {p_shop_ref: payload.shop.slug});
+          payload.shop.id = data?.[0]?.shop_id;
+        }
         if (!cancelled) setInfo(payload);
       })
       .catch(() => {
@@ -120,7 +124,7 @@ function InvitePage() {
                   className="size-12 shrink-0 rounded-[var(--control-radius)] object-cover"
                 />
               ) : info.shop?.name ? (
-                <SeloBarbearia nome={info.shop.name} tamanho={48} />
+                <SeloBarbearia lojaId={info.shop.id} nome={info.shop.name} tamanho={48} />
               ) : (
                 <span className="flex size-12 shrink-0 items-center justify-center rounded-[var(--control-radius)] bg-gold/15 text-gold">
                   <Users className="size-6" aria-hidden />
