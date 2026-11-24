@@ -1685,6 +1685,7 @@ export type Database = {
         Returns: Json;
       };
       cancel_appointment: { Args: { p_id: string; p_reason?: string | null }; Returns: undefined };
+      get_my_shop_cancellations: { Args: { p_shop_id: string }; Returns: Json };
       get_appointment_cancellations: { Args: { p_shop_id?: string | null }; Returns: Json };
       export_my_data: { Args: Record<string, never>; Returns: Json };
       list_privacy_requests: { Args: { p_admin: boolean }; Returns: Json };

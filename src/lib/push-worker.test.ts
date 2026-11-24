@@ -122,3 +122,15 @@ test("Clique reutiliza janela da mesma origem e respeita destino profissional", 
   assert.deepEqual(actions, ["https://beauty.example.invalid/shop", "foco"]);
   assert.equal(f.opened.length, 0);
 });
+
+test("Push da loja usa o ícone da própria origem mesmo com imagem externa no payload", async () => {
+  const f = fixture();
+  let pending: Promise<unknown>;
+  f.handlers.push({
+    data: { json: () => ({ title: "Loja Teste B", shop_icon: true, icon: "https://outro.invalid/logo" }) },
+    waitUntil(p: Promise<unknown>) { pending = p; },
+  });
+  await pending!;
+  assert.equal(f.shown[0][0], "Loja Teste B");
+  assert.equal((f.shown[0][1] as {icon?: string}).icon, "/identidade/icone");
+});

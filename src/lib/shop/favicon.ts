@@ -44,9 +44,17 @@ export function applyShopFavicon(logoUrl: string | null | undefined) {
 }
 
 /** Aplica favicon da loja enquanto a tela estiver montada. */
-export function useShopFavicon(logoUrl: string | null | undefined) {
+export function useShopFavicon(logoUrl: string | null | undefined, shopName?: string | null) {
   useEffect(() => {
-    applyShopFavicon(logoUrl);
-    return () => applyShopFavicon(null);
-  }, [logoUrl]);
+    applyShopFavicon(logoUrl || (shopName ? "/identidade/icone" : null));
+    const title = document.querySelector<HTMLMetaElement>(
+      'meta[name="apple-mobile-web-app-title"]',
+    );
+    const previous = title?.content;
+    if (title && shopName) title.content = shopName;
+    return () => {
+      applyShopFavicon(null);
+      if (title && previous) title.content = previous;
+    };
+  }, [logoUrl, shopName]);
 }

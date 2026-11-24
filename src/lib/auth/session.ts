@@ -53,6 +53,33 @@ export function pickPrimaryRole(memberships: Membership[]): AppRole {
   return "customer";
 }
 
+/** Área de cliente: lê apenas a própria conta, sem buscar vínculos e dados de outras lojas. */
+export async function getCustomerSessionProfile(): Promise<SessionProfile | null> {
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession();
+  if (error) throw error;
+  if (!session) return null;
+  const profile = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", session.user.id)
+    .maybeSingle();
+  if (profile.error) throw profile.error;
+  return {
+    user: session.user,
+    session,
+    profile: profile.data,
+    memberships: [],
+    shopActors: [],
+    activeShopActor: null,
+    capabilities: null,
+    governanceMode: null,
+    primaryRole: "customer",
+  };
+}
+
 export async function getSessionProfile(): Promise<SessionProfile | null> {
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
   if (sessionError) throw sessionError;

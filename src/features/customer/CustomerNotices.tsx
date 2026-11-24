@@ -82,6 +82,7 @@ const WAIT_EVENT: Record<string, { tone: Tone; icon: LucideIcon }> = {
  * quando aconteceu ("há 5 min") e um botão que leva ao lugar certo.
  */
 export function CustomerNotices({
+  shopName,
   session,
   waiting,
   staffName,
@@ -96,6 +97,7 @@ export function CustomerNotices({
   onOpenRewards,
   onClaimed,
 }: {
+  shopName: string;
   session: SessionNotice[];
   waiting: WaitingController;
   staffName: (staffId: string) => string;
@@ -248,7 +250,7 @@ export function CustomerNotices({
           {sorted.map((entry) => (
             <NoticeItem
               key={entry.id}
-              entry={entry}
+              entry={{ ...entry, title: shopName ? shopName + " · " + entry.title : entry.title }}
               time={
                 entry.at ? timeAgo(new Date(entry.at), now, t("notices.now"), intlLocale) : null
               }

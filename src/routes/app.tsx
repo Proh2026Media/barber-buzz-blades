@@ -1,9 +1,14 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArenaApp } from "@/features/customer/ArenaApp";
-import { requireSession } from "@/lib/auth/guards";
+import { supabase } from "@/integrations/supabase/client";
 import { parseAccessNotice } from "@/lib/auth/destination";
-import { maybeRedirectToCanonical, resolveShopFromCurrentHost } from "@/lib/shop/host";
+import {
+  isPlatformApexHost,
+  platformSubdomainUrl,
+  maybeRedirectToCanonical,
+  resolveShopFromCurrentHost,
+} from "@/lib/shop/host";
 import { useI18n } from "@/lib/i18n";
 
 /** Dia (AAAA-MM-DD) e hora (HH:MM) no fuso da barbearia, como a página pública mostra. */
@@ -40,7 +45,9 @@ export const Route = createFileRoute("/app")({
   beforeLoad: async ({ location, search }) => {
     const searchStr =
       typeof location.searchStr === "string" && location.searchStr ? location.searchStr : "";
-    await requireSession(`/app${searchStr}`);
+    if (!(await supabase.auth.getSession()).data.session) {
+      throw redirect({ to: "/auth", search: { next: `/app${searchStr}` } });
+    }
   },
   component: AppRoute,
 });
@@ -49,12 +56,22 @@ function AppRoute() {
   const { barber, shop, join, tab, reserva, day, time, focus, aviso } = Route.useSearch();
   const { t } = useI18n();
   const [hostShop, setHostShop] = useState<string | undefined>(undefined);
-  const [ready, setReady] = useState(Boolean(shop));
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      if (shop) {
+      if (isPlatformApexHost()) {
+        if (
+          shop &&
+          /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(shop) &&
+          window.location.protocol === "https:"
+        ) {
+          window.location.replace(
+            platformSubdomainUrl(shop, window.location.pathname + window.location.search),
+          );
+          return;
+        }
         setReady(true);
         return;
       }
@@ -77,10 +94,11 @@ function AppRoute() {
     );
   }
 
-  const effectiveShop = shop || hostShop;
+  const effectiveShop = hostShop || (isPlatformApexHost() ? shop : undefined);
 
   return (
     <ArenaApp
+      key={effectiveShop ?? "sem-loja"}
       directBarberSlug={barber}
       directShopSlug={effectiveShop}
       promptJoin={Boolean(join)}

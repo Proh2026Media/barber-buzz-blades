@@ -1,3 +1,4 @@
+import { isPlatformApexHost } from "@/lib/shop/host";
 import { customerAuthReturn } from "@/lib/auth/customer-return";
 import { otpRequestBody } from "@/lib/auth/otp-request";
 import { WhatsAppLogin } from "@/features/auth/WhatsAppLogin";
@@ -479,7 +480,7 @@ function AuthPage() {
   const [phoneResendIn, setPhoneResendIn] = useState(0);
   const shopContext = resolveShopContext(next, shop, demo);
   const [hostShopSlug, setHostShopSlug] = useState<string | null>(null);
-  const effectiveShopRef = shopContext.shopRef || hostShopSlug;
+  const effectiveShopRef = hostShopSlug || (isPlatformApexHost() ? shopContext.shopRef : undefined);
   // A volta do Google no app instalado guarda a função da primeira renderização (antes de achar a
   // loja pelo endereço): ela lê a loja daqui, sempre atual.
   const effectiveShopRefLatest = useRef(effectiveShopRef);
@@ -502,7 +503,7 @@ function AuthPage() {
     [],
   );
 
-  useShopFavicon(brand.logoUrl);
+  useShopFavicon(brand.logoUrl, brand.shopName);
 
   // App instalado: espera do Google guardada no aparelho (a tela pode ter sido recarregada).
   useEffect(() => {
@@ -713,7 +714,7 @@ function AuthPage() {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      if (shopContext.shopRef || shopContext.demo) return;
+      if (shopContext.demo) return;
       const { resolveShopFromCurrentHost, maybeRedirectToCanonical } =
         await import("@/lib/shop/host");
       const resolved = await resolveShopFromCurrentHost();

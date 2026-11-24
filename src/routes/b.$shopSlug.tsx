@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { currentHostname, isPlatformApexHost } from "@/lib/shop/host";
 import { ShopLanding } from "@/features/marketing/ShopLanding";
 import { SignedInBar } from "@/features/marketing/SignedInBar";
 
@@ -12,6 +13,6 @@ function ShopLandingRoute() {
   return (
     // "Ver como cliente" do painel abre aqui: a barra leva de volta ao painel. Ela fica dentro
     // da página para seguir o modo de canto da loja.
-    <ShopLanding shopRef={shopSlug} topBar={<SignedInBar />} />
+    <ShopLanding shopRef={isPlatformApexHost() ? shopSlug : undefined} host={isPlatformApexHost() ? undefined : currentHostname()} topBar={<SignedInBar />} />
   );
 }

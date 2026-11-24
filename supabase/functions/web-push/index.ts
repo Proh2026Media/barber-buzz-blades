@@ -69,15 +69,16 @@ Deno.serve(async (req) => {
             () =>
               webpush.generateRequestDetails(
                 context,
-                JSON.stringify(
-                  pushMessage(
+                JSON.stringify({
+                  ...pushMessage(
                     context.locale,
                     context.kind,
                     context.target,
                     context.id,
                     context.shop_name,
                   ),
-                ),
+                  shop_icon: context.shop_icon === true,
+                }),
                 {
                   TTL: 300,
                   contentEncoding: "aes128gcm",
@@ -100,7 +101,11 @@ Deno.serve(async (req) => {
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean);
-    if (!allowedPushOrigin(origin, allowed)) return reply({ error_code: "origin" }, 403);
+    if (!allowedPushOrigin(origin, allowed)) {
+      if (!/^https:\/\/[a-z0-9.-]+$/.test(origin)) return reply({ error_code: "origin" }, 403);
+      const shop = await rpc("resolve_shop_by_host", { p_host: new URL(origin).hostname });
+      if (!shop?.shop_id) return reply({ error_code: "origin" }, 403);
+    }
     // session_id só é lido depois da validação criptográfica do JWT pelo Auth.
     const claims = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
     const session = claims.session_id;

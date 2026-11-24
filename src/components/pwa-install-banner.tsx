@@ -116,7 +116,7 @@ export function PwaInstallBanner({ fallback = false }: { fallback?: boolean }) {
       >
         <div className="flex items-start gap-3">
           <img
-            src="/icons/icon-192.png"
+            src="/identidade/icone"
             alt=""
             className="pwa-install-icon size-12 shrink-0 rounded-[var(--control-radius)]"
           />

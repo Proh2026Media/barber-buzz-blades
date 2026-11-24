@@ -106,9 +106,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       // CSS por dispositivo (src/dispositivos.css → src/styles/*.css) depois do styles.css:
       // vence em igualdade de especificidade.
       { rel: "stylesheet", href: deviceCss },
-      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "manifest", href: "/identidade/manifesto" },
       { rel: "icon", href: "/icons/icon-192.png", type: "image/png" },
-      { rel: "apple-touch-icon", href: "/icons/icon-180.png" },
+      { rel: "apple-touch-icon", href: "/identidade/icone" },
     ],
   }),
   shellComponent: RootShell,

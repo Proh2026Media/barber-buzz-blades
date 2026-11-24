@@ -8,6 +8,7 @@ export type PushContext = WebSubscription & {
   kind: string;
   target: string;
   shop_name?: string;
+  shop_icon?: boolean;
 };
 export type PushOutcome = "accepted" | "gone" | "failed" | "unknown";
 

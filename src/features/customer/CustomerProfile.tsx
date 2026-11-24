@@ -93,11 +93,7 @@ type CustomerProfileProps = {
   onSaved?: (name: string) => void;
   /** "Seu ritmo": exibido logo depois do WhatsApp, num cartão próprio. */
   children?: ReactNode;
-  /** Barbearias em que o cliente entrou; com mais de uma, aparece "Minhas barbearias". */
-  shops?: CustomerShop[];
-  currentShopId?: string | null;
-  /** Abre outra barbearia com a tela "Abrindo …" (sem isso, o link abre direto). */
-  onOpenShop?: (shop: CustomerShop) => void;
+
 };
 
 export function CustomerProfile(props: CustomerProfileProps) {
@@ -131,11 +127,8 @@ function AccountCustomerProfile({
   userId,
   onSaved,
   children,
-  shops = [],
-  currentShopId = null,
   focusWhatsapp = false,
   focusGroup = false,
-  onOpenShop,
   currentSession,
 }: CustomerProfileProps & { currentSession: RefObject<Session | null> }) {
   const demo = useDemo();
@@ -350,7 +343,7 @@ function AccountCustomerProfile({
   const nameChanged = nameDraft.trim() !== name.trim();
   const chipClass =
     "inline-flex min-h-11 items-center rounded-xl transition hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold";
-  const otherShops = shops.filter((shop) => shop.id !== currentShopId);
+
   // Índice das seções (tablet e computador): cada linha leva à seção, com o estado ao lado.
   const sectionIndex: {
     id: string;
@@ -366,18 +359,6 @@ function AccountCustomerProfile({
     },
     { id: SECTION.push, icon: MessageCircle, label: t("push.title") },
     ...(children ? [{ id: SECTION.rhythm, icon: Repeat, label: t("rhythm.title") }] : []),
-    ...(otherShops.length > 0
-      ? [
-          {
-            id: SECTION.shops,
-            icon: Store,
-            label: t("conta.shops.title"),
-            badge: (
-              <StatusBadge tone="neutral" icon={null} size="sm" label={String(shops.length)} />
-            ),
-          },
-        ]
-      : []),
     {
       id: SECTION.language,
       icon: Languages,
@@ -647,53 +628,6 @@ function AccountCustomerProfile({
           </section>
         )}
 
-        {otherShops.length > 0 && (
-          <section
-            id={SECTION.shops}
-            aria-labelledby={`${uid}-shops`}
-            className="app-action-card scroll-mt-24 space-y-3 p-4 sm:p-5"
-          >
-            <SectionHeader
-              icon={Store}
-              id={`${uid}-shops`}
-              title={t("conta.shops.title")}
-              aside={
-                <StatusBadge tone="neutral" icon={null} size="sm" label={String(shops.length)} />
-              }
-            />
-            <ul className="divide-y divide-border rounded-2xl border border-border bg-background/60 px-3">
-              {shops.map((shop) => {
-                const here = shop.id === currentShopId;
-                return (
-                  <li key={shop.id} className="flex min-h-14 items-center gap-3 py-2">
-                    <PersonAvatar name={shop.name} seed={shop.id} size="sm" />
-                    <span className="min-w-0 flex-1 break-words text-sm font-semibold">
-                      {shop.name}
-                    </span>
-                    {here ? (
-                      <StatusBadge {...STATE.active} size="sm" label={t("conta.shops.here")} />
-                    ) : (
-                      <a
-                        href={customerShopHref(shop.slug)}
-                        onClick={(event) => {
-                          if (!onOpenShop) return;
-                          event.preventDefault();
-                          onOpenShop(shop);
-                        }}
-                        aria-label={t("conta.shops.openAria", { shop: shop.name })}
-                        className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-border px-3 text-sm font-semibold transition hover:border-primary/40"
-                      >
-                        {t("conta.shops.open")}
-                      </a>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        )}
-
-        {/* Idioma recolhido numa linha; abre as opções no próprio lugar. */}
         <section
           id={SECTION.language}
           aria-labelledby={`${uid}-language`}
