@@ -1930,18 +1930,11 @@ function AuthPage() {
               </div>
             )}
 
-            {!resultScreen && effectiveShopRef && (mode === "signin" || mode === "signup") && (
+            {!resultScreen && isPlatformApexHost() && !effectiveShopRef && !shopContext.demo && mode === "signup" && (
               <Notice
                 tone="info"
                 title={t("auth.sharedAccountTitle")}
-                {...(mode === "signup"
-                  ? {
-                      action: {
-                        label: t("auth.useExistingAccount"),
-                        onClick: () => switchMode("signin"),
-                      },
-                    }
-                  : {})}
+                action={{ label: t("auth.useExistingAccount"), onClick: () => switchMode("signin") }}
               >
                 {t("auth.sharedAccountHint")}
               </Notice>

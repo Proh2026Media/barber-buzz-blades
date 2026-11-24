@@ -277,7 +277,7 @@ export const ptPT: Record<MessageKey, string> = {
 
   "auth.sharedAccountTitle": "Já tem registo noutra barbearia?",
   "auth.sharedAccountHint":
-    "Use a mesma conta e o mesmo WhatsApp pessoal. Depois de entrar, poderá associar-se a esta barbearia. Os seus pontos e marcações ficam separados por loja.",
+    "Entre com a conta que já utiliza. As suas marcações e pontos ficam separados por barbearia.",
   "auth.useExistingAccount": "Usar a minha conta existente",
   "auth.useExistingAccountHint":
     "Entre com a sua conta existente para continuar nesta barbearia. Se não se lembra da palavra-passe, use a recuperação por e-mail.",

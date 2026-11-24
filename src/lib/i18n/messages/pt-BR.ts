@@ -277,7 +277,7 @@ export const ptBR = {
 
   "auth.sharedAccountTitle": "Já tem cadastro em outra barbearia?",
   "auth.sharedAccountHint":
-    "Use a mesma conta e o mesmo WhatsApp pessoal. Depois de entrar, você poderá se vincular a esta barbearia. Seus pontos e agendamentos ficam separados por loja.",
+    "Entre com a conta que você já usa. Seus agendamentos e pontos ficam separados por barbearia.",
   "auth.useExistingAccount": "Usar minha conta existente",
   "auth.useExistingAccountHint":
     "Entre com sua conta existente para continuar nesta barbearia. Se esqueceu a senha, use a recuperação por e-mail.",

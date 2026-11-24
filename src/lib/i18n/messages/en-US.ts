@@ -276,7 +276,7 @@ export const enUS: Record<MessageKey, string> = {
 
   "auth.sharedAccountTitle": "Already have an account at another barbershop?",
   "auth.sharedAccountHint":
-    "Use the same account and personal WhatsApp number. After signing in, you can join this barbershop. Your points and appointments stay separate for each shop.",
+    "Sign in with your existing account. Each barbershop has its own appointments and points.",
   "auth.useExistingAccount": "Use my existing account",
   "auth.useExistingAccountHint":
     "Sign in with your existing account to continue at this barbershop. If you forgot your password, recover it by email.",
