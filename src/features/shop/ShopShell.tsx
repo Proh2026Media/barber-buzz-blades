@@ -1804,7 +1804,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     shopId: shop?.id,
     active: tab === "configuracoes" && settingsSection === null,
     demo: Boolean(demo),
-    channels: canManageShopChannels,
+    channels: false,
     loyalty: canManageShopSettings && settings?.loyalty_enabled === true,
   });
   // Passo do guia "Deixe sua barbearia pronta" (Agenda e "Precisa da sua atenção" em Ajustes).
@@ -2033,11 +2033,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
 
           <div className="workspace-header-actions flex shrink-0 items-center gap-1.5 sm:gap-2">
             <ThemeToggle />
-            {!demo && profile.memberships.some((m) => m.role === "platform_admin") && (
-              <WhatsAppHealthIndicator
-                onOpenCentral={() => window.location.assign("/platform?aba=whatsapp")}
-              />
-            )}
+
             {headerActions}
             {/* Na demonstração a visão Plataforma e a saída ficam no frasco e no menu da conta. */}
             {!demo && (
@@ -2506,13 +2502,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     </WorkspaceHeading>
                   </div>
                 </div>
-                {powers.ownerLike && (
-                  <WhatsappConfirmBanner
-                    userId={viewerId}
-                    disabled={Boolean(demo)}
-                    variant="owner"
-                  />
-                )}
+
                 <SettingsHub
                   sections={settingsSections}
                   section={settingsSection}
@@ -2733,9 +2723,6 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     if (section === "avisos") {
                       return (
                         <>
-                          {canManageShopChannels && (
-                            <WhatsAppChannelCard shopId={shop.id} shopTimeZone={shop.timezone} />
-                          )}
                           {(canManageShopChannels || powers.googleOwn) && (
                             <GoogleConnectionCard
                               shopId={shop.id}

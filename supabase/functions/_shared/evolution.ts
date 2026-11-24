@@ -16,54 +16,9 @@ export function json(body: unknown, status = 200) {
   });
 }
 
-export function evolutionConfig() {
-  const url = (
-    Deno.env.get("EVOLUTION_API_URL") ?? "https://evolutionapi.contheiner.digital"
-  ).replace(/\/$/, "");
-  const apiKey = Deno.env.get("EVOLUTION_API_KEY") ?? Deno.env.get("AUTHENTICATION_API_KEY");
-  if (!apiKey) throw new Error("Missing EVOLUTION_API_KEY");
-  return { url, apiKey };
-}
-
-async function evolutionRequest(path: string, init: RequestInit = {}) {
-  const { url, apiKey } = evolutionConfig();
-  const response = await fetch(`${url}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      apikey: apiKey,
-      ...(init.headers ?? {}),
-    },
-  });
-  const text = await response.text();
-  let data: unknown = null;
-  try {
-    data = text ? JSON.parse(text) : null;
-  } catch {
-    data = { raw: text };
-  }
-  if (!response.ok) {
-    let message = text.slice(0, 300) || response.statusText;
-    if (typeof data === "object" && data && "message" in data) {
-      const raw = (data as { message: unknown }).message;
-      message = Array.isArray(raw) ? raw.map(String).join(" ") : String(raw);
-    } else if (typeof data === "object" && data && "response" in data) {
-      const nested = (data as { response?: { message?: unknown } }).response?.message;
-      if (nested != null) {
-        message = Array.isArray(nested) ? nested.map(String).join(" ") : String(nested);
-      }
-    }
-    if (
-      response.status === 409 &&
-      data &&
-      typeof data === "object" &&
-      "error" in data &&
-      data.error === "Operação em andamento; conferir antes de repetir"
-    )
-      message = data.error;
-    throw Object.assign(new Error(message), { status: response.status });
-  }
-  return data;
+// O contato direto usa wa.me no navegador. Clientes antigos não podem recriar sessões no servidor.
+async function evolutionRequest(_path: string, _init: RequestInit = {}): Promise<unknown> {
+  throw Object.assign(new Error("WhatsApp automatizado descontinuado"), { status: 410 });
 }
 
 export async function evolutionFetch(path: string, init: RequestInit = {}) {
@@ -165,10 +120,7 @@ export function sendAuthorizedGroupLogin(
 }
 
 export function groupPilotEnabled() {
-  return (
-    Deno.env.get("WHATSAPP_GROUP_PILOT_ENABLED") === "true" &&
-    (Deno.env.get("WHATSAPP_GROUP_API_SECRET") ?? "").length >= 32
-  );
+  return false;
 }
 
 /** Contrato novo não herda habilitação de um piloto antigo. */

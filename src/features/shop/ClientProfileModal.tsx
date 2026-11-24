@@ -50,6 +50,7 @@ export type ClientHistoryRow = {
 };
 
 export type ClientProfilePayload = {
+  contact_phone?: string | null;
   customer_id: string;
   customer_name: string | null;
   /** Migration 20261016130000 (ausentes antes dela): apelido e horário recorrente ativo. */
@@ -384,7 +385,7 @@ function AccountClientModal({
 
     void (async () => {
       try {
-        const result = await supabase.rpc("get_client_profile", {
+        const result = await supabase.rpc("get_client_profile_with_contact", {
           p_shop_id: shopId,
           p_customer_id: customerId,
         });
@@ -507,6 +508,13 @@ function AccountClientModal({
               {/* Os dois blocos (resumo | histórico) ficam lado a lado a partir de 1024 px
                   (src/styles/agenda.css); antes disso, a mesma pilha de sempre. */}
               <div className="agenda-client-aside space-y-5">
+                {profile.contact_phone && (
+                  <a href={whatsappLink(profile.contact_phone, "")} target="_blank" rel="noreferrer"
+                    className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border px-4 text-sm font-semibold">
+                    <MessageCircle className="size-4" aria-hidden />
+                    {t("client.walkIn.openChat")}
+                  </a>
+                )}
                 {nicknameReady && (
                   <NicknameEditor value={profile.nickname ?? null} onSave={saveNickname} />
                 )}
@@ -849,21 +857,6 @@ function WalkInClientModal({
                         · {t("client.walkIn.openChat")}
                       </span>
                     </a>
-                    <label className="flex min-h-11 items-center gap-3">
-                      <BellRing className="size-4 shrink-0 text-gold" aria-hidden />
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-semibold">{t("bk.notify")}</span>
-                        <span className="block text-xs text-muted-foreground">
-                          {t("bk.notifyHint")}
-                        </span>
-                      </span>
-                      <Switch
-                        checked={client.notify_whatsapp}
-                        onCheckedChange={(value) => void toggleNotify(value)}
-                        aria-label={t("bk.notify")}
-                      />
-                    </label>
-                    <InlineStatus state={notifyState} onRetry={() => setNotifyState(null)} />
                   </div>
                 )}
 

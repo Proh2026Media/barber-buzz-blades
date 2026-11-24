@@ -1436,7 +1436,7 @@ function AuthPage() {
       // Rede de segurança: qualquer outra regra nativa que tenha passado.
       if (!form.reportValidity()) return;
       const signupPhone = phoneCheck.ok ? phoneCheck : null;
-      const signupOptIn = Boolean(signupPhone) && phoneOptIn;
+      const signupOptIn = false;
 
       const emailRedirectTo = needsAuthOriginBridge()
         ? buildPlatformAuthUrl({
@@ -1526,11 +1526,9 @@ function AuthPage() {
       setEmailResult({
         kind: "signup",
         email: email.trim(),
-        withWhatsapp: Boolean(signupWhatsapp),
+        withWhatsapp: false,
       });
-      announce(
-        signupWhatsapp ? tNow("cad.cliente.confirmEmailWhatsapp") : tNow("auth.info.confirmEmail"),
-      );
+      announce(tNow("auth.info.confirmEmail"));
     } catch (err) {
       setError(friendlyAuthError(err, tNow("auth.error.signinFailed")));
     } finally {
@@ -2326,7 +2324,7 @@ function AuthPage() {
                 {mode === "signup" && (
                   <div className="auth-whatsapp-group">
                     <label className={labelClass}>
-                      <span>{t("auth.field.whatsappSignupShop")}</span>
+                      <span>{t("integr.google.phone")}</span>
                       <span className={fieldClass}>
                         <MessageCircle
                           className="ml-4 size-[18px] shrink-0 text-muted-foreground"
@@ -2365,28 +2363,8 @@ function AuthPage() {
                       </FieldMessage>
                     )}
                     <p id="signup-whatsapp-hint" className="sr-only">
-                      {t("cad.cliente.whatsappHint")}
+                      {t("integr.google.phone")}
                     </p>
-                    <div className="auth-whatsapp-optin auth-brand-control grid gap-3 border border-border/70 bg-background/50 px-3.5 py-3">
-                      <label className="flex min-h-11 cursor-pointer items-center justify-between gap-3 text-sm font-semibold text-foreground">
-                        <span className="flex min-w-0 items-center gap-2">
-                          <Bell className="size-4 shrink-0 text-gold" aria-hidden="true" />
-                          {t("entry.reminders.title")}
-                        </span>
-                        <Switch
-                          checked={phoneOptIn}
-                          onCheckedChange={setPhoneOptIn}
-                          aria-label={t("cad.cliente.optInLabel")}
-                        />
-                      </label>
-                      {phoneOptIn && (
-                        <ExampleBubble
-                          sender={brand.displayName}
-                          message={t("entry.reminders.example")}
-                          exampleLabel={t("entry.example")}
-                        />
-                      )}
-                    </div>
                   </div>
                 )}
 
@@ -2589,16 +2567,6 @@ function AuthPage() {
                 </div>
 
                 <div className="grid gap-3">
-                  <WhatsAppLogin
-                    recoveryShop={
-                      effectiveShopRef === "loja-teste-b" ? effectiveShopRef : undefined
-                    }
-                    disabled={busy || googleBusy}
-                    onAuthenticated={goAfterAuth}
-                    onUseEmail={() => {
-                      emailInputRef.current?.focus();
-                    }}
-                  />
                   <button
                     type="button"
                     onClick={() => void handleGoogle()}

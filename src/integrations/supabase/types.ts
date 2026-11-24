@@ -1656,6 +1656,10 @@ export type Database = {
       };
       get_partner_wallet: { Args: { p_shop_id: string }; Returns: Json };
       get_partner_clients: { Args: { p_shop_id: string }; Returns: Json };
+      get_client_profile_with_contact: {
+        Args: { p_shop_id: string; p_customer_id: string };
+        Returns: Json;
+      }
       get_client_profile: {
         Args: { p_shop_id: string; p_customer_id: string };
         Returns: Json;

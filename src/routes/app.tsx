@@ -1,9 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArenaApp } from "@/features/customer/ArenaApp";
-import { ReservationAccessGate } from "@/features/customer/ReservationAccessGate";
 import { requireSession } from "@/lib/auth/guards";
-import { getSessionProfile } from "@/lib/auth/session";
 import { parseAccessNotice } from "@/lib/auth/destination";
 import { maybeRedirectToCanonical, resolveShopFromCurrentHost } from "@/lib/shop/host";
 import { useI18n } from "@/lib/i18n";
@@ -42,24 +40,16 @@ export const Route = createFileRoute("/app")({
   beforeLoad: async ({ location, search }) => {
     const searchStr =
       typeof location.searchStr === "string" && location.searchStr ? location.searchStr : "";
-    // Link de reserva: permite entrar sem sessão; o gate pede WhatsApp + OTP.
-    if (search.reserva) {
-      const profile = await getSessionProfile();
-      if (!profile) return { guestReservation: true as const };
-    }
     await requireSession(`/app${searchStr}`);
-    return { guestReservation: false as const };
   },
   component: AppRoute,
 });
 
 function AppRoute() {
   const { barber, shop, join, tab, reserva, day, time, focus, aviso } = Route.useSearch();
-  const ctx = Route.useRouteContext() as { guestReservation?: boolean };
   const { t } = useI18n();
   const [hostShop, setHostShop] = useState<string | undefined>(undefined);
   const [ready, setReady] = useState(Boolean(shop));
-  const [guestDone, setGuestDone] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,25 +78,6 @@ function AppRoute() {
   }
 
   const effectiveShop = shop || hostShop;
-
-  if (ctx.guestReservation && reserva && !guestDone) {
-    return (
-      <div className="min-h-dvh bg-background text-foreground">
-        <ReservationAccessGate
-          token={reserva}
-          shopSlug={effectiveShop}
-          onAuthenticated={() => {
-            setGuestDone(true);
-            window.location.replace(
-              `/app?tab=reservas&reserva=${encodeURIComponent(reserva)}${
-                effectiveShop ? `&shop=${encodeURIComponent(effectiveShop)}` : ""
-              }`,
-            );
-          }}
-        />
-      </div>
-    );
-  }
 
   return (
     <ArenaApp

@@ -1,47 +1,8 @@
-import { otpRequestBody } from "@/lib/auth/otp-request";
-import { useEffect, useId, useRef, useState, type RefObject } from "react";
+import { useEffect, useState, type RefObject } from "react";
 import type { Session } from "@supabase/supabase-js";
-import {
-  Bell,
-  KeyRound,
-  Loader2,
-  MessageCircle,
-  Pencil,
-  Send,
-  ShieldCheck,
-  Trash2,
-  X,
-} from "lucide-react";
-import { Switch } from "@/components/ui/switch";
-import {
-  ActionResult,
-  FieldMessage,
-  IconList,
-  IconTile,
-  Notice,
-  SectionHeader,
-  SettingRow,
-  STATE,
-  StatusBadge,
-  Steps,
-  type ActionState,
-} from "@/components/visual";
-import { CodeInput, ResendButton } from "@/features/auth/entry";
+import { checkSignupPhone } from "@/lib/auth/signup-phone";
 import { supabase } from "@/integrations/supabase/client";
-import { guardedFetch } from "@/lib/demo-guard";
-import { friendlyAuthError } from "@/lib/auth/friendly-error";
-import { useAuthSession } from "@/lib/auth/use-auth-session";
-import { useI18n } from "@/lib/i18n";
-
-/**
- * WhatsApp do perfil com confirmação por código.
- *
- * Número novo ou ainda não confirmado → auth-otp (purpose 'verify_phone') envia
- * um código de 6 dígitos no grupo exclusivo validado; ao confirmar, o servidor
- * grava o número como verificado. Só ligar/desligar avisos ou apagar o número
- * continua pela RPC save_my_whatsapp (sem código).
- */
-
+import { useI18n, type MessageKey } from "@/lib/i18n";
 export type WhatsappStatus = { number: string; verified: boolean; optIn: boolean };
 
 type Props = {
@@ -65,702 +26,82 @@ type Props = {
   onOpenGroup?: () => void;
 };
 
-type OtpPayload = {
-  ok?: boolean;
-  error?: string;
-  error_code?: string;
-  attempts_left?: number;
-  already_verified?: boolean;
-  resend_after_seconds?: number;
-  delivery_state?: "accepted" | "unknown";
-  whatsapp_e164?: string | null;
-  whatsapp_opt_in_at?: string | null;
-};
-
-const RESEND_SECONDS = 60;
-
-/** Dígitos com DDI 55 (comparação aproximada; o servidor normaliza de verdade). */
-function brDigits(value: string) {
-  const digits = value.replace(/\D/g, "");
-  if (digits.length === 10 || digits.length === 11) return `55${digits}`;
-  return digits;
-}
-
-/** +5511999990000 → (11) 99999-0000 para leitura no celular. */
-function formatBr(value: string) {
-  const digits = value.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "");
-  if (digits.length === 11)
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
-  if (digits.length === 10)
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
-  return value;
-}
-
-async function callVerifyPhone(body: Record<string, unknown>, token: string): Promise<OtpPayload> {
-  const base = import.meta.env.VITE_SUPABASE_URL || "";
-  const response = await guardedFetch(`${base}/functions/v1/auth-otp`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "",
-      Authorization: `Bearer ${token}`,
-    },
-    body: otpRequestBody({ purpose: "verify_phone", channel: "whatsapp", ...body }),
-  });
-  let payload: OtpPayload = {};
-  try {
-    payload = (await response.json()) as OtpPayload;
-  } catch {
-    payload = {};
-  }
-  if (!response.ok && !payload.error_code) {
-    payload.error_code = response.status === 429 ? "rate_limited" : "internal_error";
-  }
-  if (!response.ok) payload.ok = false;
-  return payload;
-}
-
-export function WhatsappProfileCard(props: Props) {
-  const observed = useAuthSession(props.demo || Boolean(props.accountSession));
-  const session = props.accountSession ? props.accountSession.current : observed.session;
-  const currentSession = props.accountSession ?? observed.currentSession;
-  if (!props.demo && (!props.userId || session?.user.id !== props.userId)) return null;
-  return (
-    <AccountWhatsappForm
-      key={props.demo ? "demo" : props.userId}
-      {...props}
-      currentSession={currentSession}
-    />
-  );
-}
-
-function AccountWhatsappForm({
+export function WhatsappProfileCard({
   userId,
-  currentSession,
+  accountSession,
   demo,
   disabled,
   initialNumber,
-  initialOptIn,
-  initialVerified,
-  onStatusChange,
   id,
-  bare = false,
-  loginOnly = false,
-  onOpenGroup,
-}: Props & { currentSession: RefObject<Session | null> }) {
-  const { t } = useI18n();
-  const uid = useId();
-  const titleId = `${uid}-title`;
-  const numberId = `${uid}-number`;
-  const optInId = `${uid}-optin`;
-  const codeId = `${uid}-code`;
-  const codeMsgId = `${uid}-code-msg`;
-  const [whatsapp, setWhatsapp] = useState(initialNumber ? formatBr(initialNumber) : "");
-  const [savedNumber, setSavedNumber] = useState(initialNumber);
-  const [verified, setVerified] = useState(initialVerified);
-  const [optIn, setOptIn] = useState(initialOptIn);
-  const [step, setStep] = useState<"edit" | "code">("edit");
-  // Com número gravado, o cartão mostra o resumo; "Trocar número" abre o campo.
-  const [editing, setEditing] = useState(false);
-  const [uncertainSend, setUncertainSend] = useState(false);
-  const [pendingNumber, setPendingNumber] = useState("");
-  const [code, setCode] = useState("");
-  const [busy, setBusy] = useState<"save" | "send" | "verify" | null>(null);
-  const [cooldown, setCooldown] = useState(0);
-  const [codeError, setCodeError] = useState<string | null>(null);
-  const [attemptsLeft, setAttemptsLeft] = useState<number | null>(null);
-  const [result, setResult] = useState<{ state: ActionState; text: string } | null>(null);
-  const [groupUnavailable, setGroupUnavailable] = useState(false);
-  const [retryNumber, setRetryNumber] = useState<string | null>(null);
-  const [toggleState, setToggleState] = useState<ActionState | null>(null);
-  const [toggleText, setToggleText] = useState<string | undefined>(undefined);
-  // Acabou de confirmar por código nesta tela: as três etapas aparecem concluídas.
-  const [justVerified, setJustVerified] = useState(false);
-  const active = useRef(false);
-  const inFlight = useRef(false);
-
+}: Props) {
+  const { t, locale } = useI18n();
+  const [number, setNumber] = useState(initialNumber);
+  const [saved, setSaved] = useState(initialNumber);
+  const [feedback, setFeedback] = useState<MessageKey | null>(null);
+  const [busy, setBusy] = useState(false);
   useEffect(() => {
-    active.current = true;
-    return () => {
-      active.current = false;
-    };
-  }, []);
-
-  function isCurrent() {
-    return active.current && (demo || currentSession.current?.user.id === userId);
-  }
-
-  /** A trava síncrona cobre clique duplo e preenchimento automático seguido de Enter. */
-  function beginAction(kind: "save" | "send" | "verify") {
-    if (demo || disabled || inFlight.current || !isCurrent()) return false;
-    inFlight.current = true;
-    setBusy(kind);
-    return true;
-  }
-
-  function endAction() {
-    inFlight.current = false;
-    if (isCurrent()) setBusy(null);
-  }
-
-  async function sessionToken() {
-    if (!isCurrent()) throw { error_code: "unauthorized" } as OtpPayload;
-    const { data, error } = await supabase.auth.getSession();
-    if (error || !data.session?.access_token || data.session.user.id !== userId || !isCurrent()) {
-      throw { error_code: "unauthorized" } as OtpPayload;
-    }
-    return data.session.access_token;
-  }
-
-  useEffect(() => {
-    if (cooldown <= 0) return;
-    const timer = window.setTimeout(() => setCooldown((value) => value - 1), 1000);
-    return () => window.clearTimeout(timer);
-  }, [cooldown]);
-
-  useEffect(() => {
-    if (!demo && currentSession.current?.user.id !== userId) return;
-    onStatusChange?.({ number: savedNumber, verified, optIn });
-  }, [onStatusChange, savedNumber, verified, optIn, demo, userId, currentSession]);
-
-  function showResult(state: ActionState, text: string, againNumber?: string) {
-    setResult({ state, text });
-    setRetryNumber(againNumber ?? null);
-  }
-
-  function errorText(payload: OtpPayload | null, err?: unknown) {
-    switch (payload?.error_code) {
-      case "otp_invalid":
-        return typeof payload.attempts_left === "number" && payload.attempts_left > 0
-          ? t("fix2.whats.errInvalidLeft", { count: payload.attempts_left })
-          : t("fix2.whats.errInvalid");
-      case "otp_expired":
-        return t("fix2.whats.errExpired");
-      case "otp_too_many_attempts":
-        return t("fix2.whats.errTooManyAttempts");
-      case "rate_limited":
-        return t("fix2.whats.errRateLimited");
-      case "whatsapp_unavailable":
-        return t("care.profileCodeUnavailable");
-      case "phone_in_use":
-        return t("fix2.whats.errPhoneInUse");
-      case "invalid_whatsapp":
-        return t("fix2.whats.errInvalidNumber");
-      case "unauthorized":
-        return t("errors.sessionExpired");
-      default:
-        return friendlyAuthError(err ?? payload?.error ?? null, t("profile.errorWhatsapp"));
-    }
-  }
-
-  /** Liga/desliga avisos ou apaga o número (sem código). */
-  async function saveWithoutCode(raw: string, nextOptIn: boolean) {
-    const token = await sessionToken();
-    if (!isCurrent()) return;
-    // A autorização acompanha esta ação: uma troca de sessão não muda a conta da gravação.
-    const { data, error: rpcError } = await supabase
-      .rpc("save_my_whatsapp", { p_raw: raw, p_opt_in: nextOptIn })
-      .setHeader("Authorization", `Bearer ${token}`);
-    if (!isCurrent()) return;
-    if (rpcError) {
-      if (rpcError.code === "23505") throw { error_code: "phone_in_use" } as OtpPayload;
-      throw rpcError;
-    }
-    const number = data?.whatsapp_e164 ?? "";
-    setSavedNumber(number);
-    setWhatsapp(number ? formatBr(number) : "");
-    setOptIn(Boolean(data?.whatsapp_opt_in_at));
-    if (!number) setVerified(false);
-    return data;
-  }
-
-  async function sendCode(number: string) {
-    // No perfil da loja, o atendimento é a única entrada para preparação e OTP.
-    // Este cartão não pode contornar pausa, revisão de telefone ou entrada no grupo.
-    if (onOpenGroup && !verified) {
-      onOpenGroup();
+    setNumber(initialNumber);
+    setSaved(initialNumber);
+    setFeedback(null);
+  }, [initialNumber, userId]);
+  async function save() {
+    if (!userId || busy || disabled || demo) return;
+    if (number.trim() && !checkSignupPhone(number, locale).ok) {
+      setFeedback("cad.cliente.phoneLengthError");
       return;
     }
-    if (step === "code" && cooldown > 0) return;
-    if (!beginAction("send")) return;
-    setCodeError(null);
-    setResult(null);
-    setJustVerified(false);
-    setGroupUnavailable(false);
+    setBusy(true);
+    setFeedback(null);
     try {
-      const token = await sessionToken();
-      if (!isCurrent()) return;
-      const payload = await callVerifyPhone({ action: "request", destination: number }, token);
-      if (!isCurrent()) return;
-      if (!payload.ok) {
-        const unavailable = payload.error_code === "whatsapp_unavailable";
-        setGroupUnavailable(unavailable);
-        showResult("error", errorText(payload), unavailable ? undefined : number);
-        return;
-      }
-      if (payload.already_verified) {
-        // Mesmo número já confirmado: só grava a preferência de avisos.
-        const data = await saveWithoutCode(number, optIn);
-        if (!isCurrent()) return;
-        setVerified(true);
-        setStep("edit");
-        setEditing(false);
-        showResult(
-          "saved",
-          data?.whatsapp_opt_in_at ? t("profile.whatsappSavedOptIn") : t("profile.whatsappSaved"),
-        );
-        return;
-      }
-      setUncertainSend(payload.delivery_state === "unknown");
-      setPendingNumber(number);
-      setCode("");
-      setAttemptsLeft(null);
-      setStep("code");
-      setCooldown(payload.resend_after_seconds ?? RESEND_SECONDS);
-    } catch (err) {
-      if (isCurrent()) {
-        showResult("error", errorText(err as OtpPayload, err), number);
-      }
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (
+        !session ||
+        session.user.id !== userId ||
+        (accountSession && accountSession.current?.user.id !== userId)
+      )
+        throw Error();
+      const { data, error } = await supabase
+        .rpc("save_my_whatsapp", { p_raw: number.trim(), p_opt_in: false })
+        .setHeader("Authorization", "Bearer " + session.access_token);
+      if (error || (number.trim() && !data?.whatsapp_e164)) throw Error();
+      setNumber(data?.whatsapp_e164 ?? "");
+      setSaved(data?.whatsapp_e164 ?? "");
+      setFeedback("plat.shop.saved");
+    } catch {
+      setFeedback("profile.errorSave");
     } finally {
-      endAction();
+      setBusy(false);
     }
   }
-
-  async function submitNumber(event: React.FormEvent) {
-    event.preventDefault();
-    if (disabled || inFlight.current || !isCurrent()) return;
-    if (demo) {
-      showResult("saved", t("profile.whatsappDemo"));
-      return;
-    }
-    const raw = whatsapp.trim();
-    // Campo vazio com número gravado: apaga o número (sem código).
-    if (!raw) {
-      if (!beginAction("save")) return;
-      setResult(null);
-      try {
-        const data = await saveWithoutCode("", optIn);
-        if (!isCurrent()) return;
-        setEditing(false);
-        showResult(
-          "saved",
-          data?.whatsapp_opt_in_at ? t("profile.whatsappSavedOptIn") : t("profile.whatsappSaved"),
-        );
-      } catch (err) {
-        if (isCurrent()) showResult("error", errorText(err as OtpPayload, err));
-      } finally {
-        endAction();
-      }
-      return;
-    }
-    if (brDigits(raw).length < 12) {
-      showResult("error", t("fix2.whats.errInvalidNumber"));
-      return;
-    }
-    await sendCode(raw);
-  }
-
-  /** Interruptor dos lembretes no resumo: grava na hora quando não precisa de código. */
-  async function changeOptIn(next: boolean) {
-    if (disabled || inFlight.current || !isCurrent()) return;
-    setToggleState(null);
-    setToggleText(undefined);
-    if (demo || !savedNumber || editing || (next && !verified)) {
-      // Sem número, editando, ou ligando num número sem confirmar: nada é gravado agora; o
-      // pedido vai junto com o código. A linha mostra "pendente" (optInPending), não "salvo".
-      setOptIn(next);
-      return;
-    }
-    if (!beginAction("save")) return;
-    const before = optIn;
-    setOptIn(next);
-    setToggleState("saving");
-    setToggleText(undefined);
-    try {
-      const data = await saveWithoutCode(savedNumber, next);
-      if (!isCurrent()) return;
-      setToggleState("saved");
-      setToggleText(
-        data?.whatsapp_opt_in_at ? t("conta.whats.remindersOn") : t("conta.whats.remindersOff"),
-      );
-    } catch (err) {
-      if (isCurrent()) {
-        setOptIn(before);
-        setToggleState("error");
-        setToggleText(errorText(err as OtpPayload, err));
-      }
-    } finally {
-      endAction();
-    }
-  }
-
-  async function verifyCode(value: string) {
-    if (!/^\d{6}$/.test(value) || !beginAction("verify")) return;
-    setCodeError(null);
-    setResult(null);
-    try {
-      const token = await sessionToken();
-      if (!isCurrent()) return;
-      const payload = await callVerifyPhone(
-        { action: "verify", destination: pendingNumber, code: value, opt_in: optIn },
-        token,
-      );
-      if (!isCurrent()) return;
-      if (!payload.ok) {
-        setCodeError(errorText(payload));
-        if (typeof payload.attempts_left === "number") setAttemptsLeft(payload.attempts_left);
-        if (payload.error_code === "otp_invalid") setCode("");
-        return;
-      }
-      const number = payload.whatsapp_e164 ?? pendingNumber;
-      setSavedNumber(number);
-      setWhatsapp(formatBr(number));
-      setVerified(true);
-      setOptIn(Boolean(payload.whatsapp_opt_in_at));
-      setStep("edit");
-      setEditing(false);
-      setCode("");
-      setPendingNumber("");
-      setAttemptsLeft(null);
-      setJustVerified(true);
-      showResult(
-        "saved",
-        payload.whatsapp_opt_in_at ? t("fix2.whats.verifiedOptIn") : t("fix2.whats.verified"),
-      );
-    } catch (err) {
-      if (isCurrent()) setCodeError(errorText(null, err));
-    } finally {
-      endAction();
-    }
-  }
-
-  const locked = disabled || busy !== null;
-  const changed = brDigits(whatsapp) !== brDigits(savedNumber);
-  const showSummary = Boolean(savedNumber) && !editing && step === "edit";
-  const removing = Boolean(savedNumber) && !whatsapp.trim();
-  const canSubmit = demo ? changed : removing || (Boolean(whatsapp.trim()) && changed);
-  const badge = !savedNumber
-    ? { ...STATE.paused, label: t("conta.whats.none") }
-    : verified
-      ? { ...STATE.active, label: t("fix2.whats.badgeVerified") }
-      : { ...STATE.attention, label: t("fix2.whats.badgeUnverified") };
-  // Avisos ligados num número sem confirmar só passam a valer com o código: mostra pendente.
-  const optInPending = optIn && !demo && (!savedNumber || !verified);
-
-  /** Enviar código → Digitar código → Confirmado, a partir da etapa em que o cartão está. */
-  const confirmSteps = (phase: 0 | 1 | 2) => (
-    <Steps
-      label={t("conta.whats.stepsLabel")}
-      steps={[
-        {
-          key: "send",
-          label: t("conta.whats.stepSend"),
-          icon: Send,
-          status: phase > 0 ? "done" : "current",
-        },
-        {
-          key: "type",
-          label: t("conta.whats.stepType"),
-          icon: KeyRound,
-          status: phase > 1 ? "done" : phase === 1 ? (codeError ? "error" : "current") : "upcoming",
-        },
-        {
-          key: "confirmed",
-          label: t("conta.whats.stepConfirmed"),
-          icon: ShieldCheck,
-          status: phase > 1 ? "done" : "upcoming",
-        },
-      ]}
-    />
-  );
-
-  const optInRow = (
-    <SettingRow
-      icon={Bell}
-      title={t("profile.whatsappOptIn")}
-      description={t("profile.whatsappOptInHint")}
-      controlId={optInId}
-      control={
-        <Switch
-          id={optInId}
-          checked={optIn}
-          disabled={locked}
-          onCheckedChange={(next) => void changeOptIn(next)}
-        />
-      }
-      status={toggleState ?? (optInPending ? "pending" : null)}
-      statusText={toggleState ? toggleText : t("conta.whats.optInPending")}
-      onRetry={() => void changeOptIn(!optIn)}
-      className="rounded-2xl border border-border bg-background/60 px-3"
-    />
-  );
-
-  if (onOpenGroup && !verified && !demo)
-    return (
-      <section
-        id={id}
-        className={bare ? "space-y-4" : "app-action-card scroll-mt-24 space-y-4 p-4 sm:p-5"}
-        aria-labelledby={bare ? undefined : titleId}
-      >
-        {!bare && (
-          <SectionHeader
-            icon={MessageCircle}
-            id={titleId}
-            title="WhatsApp"
-            aside={<StatusBadge {...badge} size="sm" />}
-          />
-        )}
-        {bare && <StatusBadge {...badge} size="sm" />}
-        {savedNumber && (
-          <p className="flex items-center gap-2 text-base font-semibold tabular-nums">
-            <MessageCircle className="size-5 shrink-0" aria-hidden />
-            {formatBr(savedNumber)}
-          </p>
-        )}
-        <p className="text-sm text-muted-foreground">{t("care.profileSetupHint")}</p>
-        <button
-          type="button"
-          className="action-button action-confirm w-full tablet:w-auto"
-          disabled={locked}
-          onClick={onOpenGroup}
-        >
-          <MessageCircle aria-hidden />
-          {t("care.profileSetup")}
-        </button>
-      </section>
-    );
-
   return (
-    <section
+    <form
       id={id}
-      className={bare ? "space-y-4" : "app-action-card scroll-mt-24 space-y-4 p-4 sm:p-5"}
-      aria-labelledby={bare ? undefined : titleId}
+      className="app-action-card space-y-3 p-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void save();
+      }}
     >
-      {!bare && (
-        <SectionHeader
-          icon={MessageCircle}
-          id={titleId}
-          title="WhatsApp"
-          aside={step === "edit" ? <StatusBadge {...badge} size="sm" /> : null}
-        />
-      )}
-
-      {loginOnly && step === "edit" && <StatusBadge {...badge} size="sm" />}
-
-      {!loginOnly && step === "edit" && (
-        // Para que serve o número, em duas dicas com ícone (no lugar do parágrafo).
-        <IconList
-          size="sm"
-          label={t("conta.whats.usesLabel")}
-          className="flex flex-wrap gap-x-4 gap-y-1 space-y-0"
-          items={[
-            { icon: Bell, text: t("conta.whats.useReminders"), key: "reminders" },
-            { icon: KeyRound, text: t("conta.whats.useCodes"), key: "codes" },
-          ]}
-        />
-      )}
-
-      {step === "code" ? (
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            void verifyCode(code);
+      <label className="grid gap-2">
+        {t("integr.google.phone")}
+        <input
+          type="tel"
+          autoComplete="tel"
+          value={number}
+          disabled={disabled || busy || demo}
+          onChange={(e) => {
+            setNumber(e.target.value);
+            setFeedback(null);
           }}
-          className="space-y-4"
-        >
-          {confirmSteps(1)}
-          {uncertainSend && <Notice tone="warning" title={t("waSafety.otpUnknown")} />}
-          <p className="text-sm">
-            {t("conta.whats.sentTo")}{" "}
-            <strong className="whitespace-nowrap tabular-nums">{formatBr(pendingNumber)}</strong>
-          </p>
-          <div className="space-y-2">
-            <label htmlFor={codeId} className="block text-sm font-semibold">
-              {t("fix2.whats.codeLabel")}
-            </label>
-            <CodeInput
-              id={codeId}
-              value={code}
-              autoFocus
-              disabled={locked}
-              invalid={Boolean(codeError)}
-              describedBy={codeMsgId}
-              onChange={(next) => {
-                setCode(next);
-                setCodeError(null);
-              }}
-              onComplete={(next) => void verifyCode(next)}
-            />
-            <FieldMessage id={codeMsgId} tone={codeError ? "error" : "hint"}>
-              {codeError ?? t("fix2.whats.codeHint")}
-            </FieldMessage>
-            {codeError && attemptsLeft !== null && attemptsLeft > 0 && (
-              <span className="flex items-center gap-1.5" aria-hidden>
-                {Array.from({ length: Math.min(attemptsLeft, 5) }, (_, index) => (
-                  <span key={index} className="size-2.5 rounded-full bg-gold" />
-                ))}
-              </span>
-            )}
-          </div>
-          <button
-            type="submit"
-            disabled={locked || code.length !== 6}
-            aria-busy={busy === "verify" || undefined}
-            className="action-button action-confirm w-full"
-          >
-            {busy === "verify" && <Loader2 className="motion-safe:animate-spin" aria-hidden />}
-            {busy === "verify" ? t("fix2.whats.verifying") : t("fix2.whats.confirm")}
-          </button>
-          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-            <ResendButton
-              secondsLeft={cooldown}
-              totalSeconds={RESEND_SECONDS}
-              busy={busy === "send"}
-              disabled={locked}
-              onClick={() => void sendCode(pendingNumber)}
-              label={t("fix2.whats.resend")}
-              waitLabel={t("fix2.whats.resendIn", { seconds: cooldown })}
-              busyLabel={t("fix2.whats.sending")}
-            />
-            <button
-              type="button"
-              disabled={locked}
-              onClick={() => {
-                setStep("edit");
-                setEditing(true);
-                setCode("");
-                setCodeError(null);
-                setResult(null);
-              }}
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl px-2 text-sm font-semibold text-muted-foreground transition hover:text-foreground disabled:opacity-50"
-            >
-              <Pencil className="size-4" aria-hidden />
-              {t("fix2.whats.changeNumber")}
-            </button>
-          </div>
-        </form>
-      ) : showSummary ? (
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-background/60 p-3">
-            <IconTile icon={MessageCircle} tone={verified ? "success" : "warning"} size="sm" />
-            <p className="flex-1 whitespace-nowrap text-base font-bold tabular-nums">
-              {formatBr(savedNumber)}
-            </p>
-            <button
-              type="button"
-              disabled={locked}
-              onClick={() => {
-                setEditing(true);
-                setWhatsapp(formatBr(savedNumber));
-                setResult(null);
-                setToggleState(null);
-                setJustVerified(false);
-              }}
-              className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-border px-3 text-sm font-semibold transition hover:border-primary/40 disabled:opacity-50"
-            >
-              <Pencil className="size-4" aria-hidden />
-              {t("fix2.whats.changeNumber")}
-            </button>
-          </div>
-          {!demo && !verified && confirmSteps(0)}
-          {!demo && verified && justVerified && confirmSteps(2)}
-          {!verified && !demo && (
-            <Notice
-              tone="warning"
-              role="none"
-              title={t(loginOnly ? "account.whatsapp.loginPending" : "conta.whats.consequence")}
-              action={{
-                // Mesmo verbo da 1ª etapa logo acima ("Enviar código").
-                label: t(busy === "send" ? "fix2.whats.sending" : "fix2.whats.sendCode"),
-                disabled: locked,
-                busy: busy === "send",
-                icon: Send,
-                onClick: () => void sendCode(savedNumber),
-              }}
-            />
-          )}
-          {!loginOnly && optInRow}
-        </div>
-      ) : (
-        <form onSubmit={(event) => void submitNumber(event)} className="space-y-3">
-          <div className="space-y-2">
-            <label htmlFor={numberId} className="block text-sm font-semibold">
-              {t("profile.whatsappNumber")}
-            </label>
-            <input
-              id={numberId}
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-              placeholder="(11) 99999-0000"
-              value={whatsapp}
-              disabled={locked}
-              onChange={(event) => {
-                setWhatsapp(event.target.value);
-                setResult(null);
-              }}
-              className="min-h-11 w-full rounded-xl border border-border bg-background px-3 py-2"
-            />
-          </div>
-          {!loginOnly && !savedNumber && optInRow}
-          {/* Número novo: as etapas mostram que vem um código (no lugar da frase). */}
-          {!demo && !removing && changed && whatsapp.trim() && confirmSteps(0)}
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="submit"
-              disabled={locked || !canSubmit}
-              aria-busy={busy === "send" || busy === "save" || undefined}
-              className={`action-button flex-1 basis-48 ${removing ? "action-danger" : "action-confirm"}`}
-            >
-              {busy ? (
-                <Loader2 className="motion-safe:animate-spin" aria-hidden />
-              ) : removing ? (
-                <Trash2 aria-hidden />
-              ) : (
-                <Send aria-hidden />
-              )}
-              {busy === "send"
-                ? t("fix2.whats.sending")
-                : busy
-                  ? t("common.saving")
-                  : removing
-                    ? t("conta.whats.remove")
-                    : demo
-                      ? t("profile.saveWhatsapp")
-                      : t("fix2.whats.sendCode")}
-            </button>
-            {editing && (
-              <button
-                type="button"
-                disabled={locked}
-                onClick={() => {
-                  setEditing(false);
-                  setWhatsapp(formatBr(savedNumber));
-                  setResult(null);
-                }}
-                className="inline-flex min-h-11 flex-1 basis-32 items-center justify-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold transition hover:border-primary/40 disabled:opacity-50"
-              >
-                <X className="size-4" aria-hidden />
-                {t("conta.whats.keepNumber")}
-              </button>
-            )}
-          </div>
-        </form>
-      )}
-
-      {groupUnavailable && onOpenGroup && (
-        <button type="button" className="action-button" disabled={locked} onClick={onOpenGroup}>
-          <MessageCircle aria-hidden />
-          {t("care.openSetup")}
-        </button>
-      )}
-      <ActionResult
-        state={result?.state}
-        text={result?.text}
-        onRetry={!locked && retryNumber !== null ? () => void sendCode(retryNumber) : undefined}
-        onDismiss={() => setResult(null)}
-        autoHideMs={groupUnavailable ? 0 : 6000}
-      />
-    </section>
+          className="rounded-xl border p-3"
+        />
+      </label>
+      <button className="action-button" disabled={disabled || busy || demo || number === saved}>
+        {t("profile.save")}
+      </button>
+      {feedback && <p role="status">{t(feedback)}</p>}
+    </form>
   );
 }

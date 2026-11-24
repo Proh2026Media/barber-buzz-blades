@@ -174,7 +174,7 @@ function AccountCustomerProfile({
   }, []);
   const desktop = useViewportAtLeast(1024);
   const [groupAvailable, setGroupAvailable] = useState(false);
-  const [activeSection, setActiveSection] = useState<string>(SECTION.whatsapp);
+  const [activeSection, setActiveSection] = useState<string>(SECTION.push);
   const openSection = useCallback(
     (id: string) => {
       setActiveSection(id);
@@ -194,7 +194,7 @@ function AccountCustomerProfile({
 
   // Link "Número errado?": assim que o cartão do WhatsApp aparece, ele vem para a tela com foco.
   const whatsappFocused = useRef(false);
-  const whatsappReady = whats !== null;
+  const whatsappReady = !loading && !error;
   useEffect(() => {
     if (!focusWhatsapp || loading || error || !whatsappReady || whatsappFocused.current) return;
     const timer = window.setTimeout(() => {
@@ -348,18 +348,6 @@ function AccountCustomerProfile({
 
   const ready = Boolean(demo) || Boolean(userId);
   const nameChanged = nameDraft.trim() !== name.trim();
-  const whatsNeedsConfirm = Boolean(whats?.number) && !whats?.verified && !demo;
-  // No resumo, o WhatsApp só aparece quando pede algo (sem número, sem confirmar ou lembretes
-  // desligados); confirmado e com lembretes já está dito no cabeçalho do cartão logo abaixo.
-  const whatsBadge = !whats
-    ? null
-    : !whats.number
-      ? { ...STATE.paused, label: t("conta.whats.none") }
-      : whatsNeedsConfirm
-        ? { ...STATE.attention, label: t("conta.whats.pending") }
-        : whats.optIn
-          ? null
-          : { ...STATE.paused, label: t("conta.whats.off") };
   const chipClass =
     "inline-flex min-h-11 items-center rounded-xl transition hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold";
   const otherShops = shops.filter((shop) => shop.id !== currentShopId);
@@ -374,10 +362,8 @@ function AccountCustomerProfile({
     {
       id: SECTION.whatsapp,
       icon: MessageCircle,
-      label: "WhatsApp",
-      badge: whatsBadge ? <StatusBadge {...whatsBadge} size="sm" /> : undefined,
+      label: t("integr.google.phone"),
     },
-    ...(currentShopId ? [{ id: SECTION.groups, icon: MessageCircle, label: t("care.nav") }] : []),
     { id: SECTION.push, icon: MessageCircle, label: t("push.title") },
     ...(children ? [{ id: SECTION.rhythm, icon: Repeat, label: t("rhythm.title") }] : []),
     ...(otherShops.length > 0
@@ -569,21 +555,6 @@ function AccountCustomerProfile({
 
             {/* Resumo em selos: cada um leva à seção certa. */}
             <ul aria-label={t("conta.summary")} className="flex flex-wrap gap-x-1.5">
-              {whatsBadge && (
-                <li>
-                  <button
-                    type="button"
-                    className={chipClass}
-                    onClick={() =>
-                      openSection(
-                        currentShopId && !whatsappVerified ? SECTION.groups : SECTION.whatsapp,
-                      )
-                    }
-                  >
-                    <StatusBadge {...whatsBadge} />
-                  </button>
-                </li>
-              )}
               <li>
                 <button
                   type="button"
@@ -616,18 +587,6 @@ function AccountCustomerProfile({
                 </li>
               )}
             </ul>
-
-            {whatsNeedsConfirm && (
-              <Notice
-                tone="warning"
-                role="none"
-                title={t("conta.whats.consequence")}
-                action={{
-                  label: t("conta.attention.confirmWhats"),
-                  onClick: () => openSection(currentShopId ? SECTION.groups : SECTION.whatsapp),
-                }}
-              />
-            )}
           </div>
         )}
 
@@ -673,19 +632,8 @@ function AccountCustomerProfile({
             initialNumber={whatsapp}
             initialOptIn={whatsappOptIn}
             initialVerified={whatsappVerified}
-            onOpenGroup={currentShopId ? () => openSection(SECTION.groups) : undefined}
             onStatusChange={setWhats}
           />
-        )}
-
-        {currentShopId && userId && (
-          <div id={SECTION.groups} className="scroll-mt-24">
-            <CareGroupPanel
-              shopId={currentShopId}
-              customerId={userId}
-              onAvailable={setGroupAvailable}
-            />
-          </div>
         )}
 
         {children && (

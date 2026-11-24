@@ -3169,11 +3169,7 @@ function ArenaApp({
               />
             </span>
           </button>
-          {!demo && account?.memberships.some((m) => m.role === "platform_admin") && (
-            <WhatsAppHealthIndicator
-              onOpenCentral={() => window.location.assign("/platform?aba=whatsapp")}
-            />
-          )}
+
           {headerActions}
           {demoChrome ? (
             <>

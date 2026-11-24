@@ -483,7 +483,7 @@ export function BookClientDialog({
         const keep = found?.limited ? existing : undefined;
         const savedNick = found?.limited ? (existing?.nickname ?? nick) : nick;
         const savedName = keep ? keep.full_name : nameValue;
-        const savedNotify = keep ? keep.notify_whatsapp : notify;
+        const savedNotify = false;
         demo.dispatch({
           type: "client.book",
           appointment: {
@@ -510,7 +510,7 @@ export function BookClientDialog({
                 full_name: null,
                 whatsapp_e164: null,
                 nickname: savedNick,
-                notify_whatsapp: true,
+                notify_whatsapp: false,
               }
             : {
                 id: manualId!,
@@ -654,14 +654,7 @@ export function BookClientDialog({
                 )}
               </div>
             </div>
-            <p className="flex items-start gap-2 text-sm text-muted-foreground">
-              <BellRing className="mt-0.5 size-4 shrink-0 text-gold" aria-hidden />
-              {booked.kind === "account"
-                ? t("bk.notifyAccount")
-                : booked.notify
-                  ? t("bk.done.whatsapp")
-                  : t("bk.done.whatsappOff")}
-            </p>
+
             {booked.kind === "manual" && (
               <>
                 <Notice tone="info" icon={Repeat} title={t("bk.noRecurring.title")} role="none">
@@ -999,33 +992,6 @@ export function BookClientDialog({
                     )}
                   </div>
                 </div>
-
-                {/* 5. Avisos */}
-                {isManual ? (
-                  <label className="agenda-book-notify flex min-h-11 items-center gap-3 rounded-2xl border border-border bg-background/60 p-3">
-                    <BellRing className="size-4 shrink-0 text-gold" aria-hidden />
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-semibold">{t("bk.notify")}</span>
-                      <span className="block text-xs text-muted-foreground">
-                        {t("bk.notifyHint")}
-                      </span>
-                    </span>
-                    <Switch
-                      checked={notify}
-                      onCheckedChange={(value) => {
-                        notifyByHandRef.current = value;
-                        setNotify(value);
-                      }}
-                      disabled={manualLocked}
-                      aria-label={t("bk.notify")}
-                    />
-                  </label>
-                ) : (
-                  <p className="flex items-start gap-2 text-sm text-muted-foreground">
-                    <BellRing className="mt-0.5 size-4 shrink-0 text-gold" aria-hidden />
-                    {t("bk.notifyAccount")}
-                  </p>
-                )}
 
                 {isManual && e164 && found?.kind !== "account" && (
                   <p className="flex items-start gap-2 text-sm text-muted-foreground">

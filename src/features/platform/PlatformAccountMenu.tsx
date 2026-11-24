@@ -92,7 +92,7 @@ export function PlatformAccountMenu({
             </button>
             <button type="button" className={ITEM} onClick={() => openPanel("whatsapp")}>
               <MenuIcon icon={MessageCircle} />
-              {t("account.whatsapp.title")}
+              {t("integr.google.phone")}
             </button>
             <button type="button" className={ITEM} onClick={() => openPanel("password")}>
               <MenuIcon icon={KeyRound} />
@@ -139,7 +139,7 @@ export function PlatformAccountMenu({
               : panel === "language"
                 ? t("language.title")
                 : panel === "whatsapp"
-                  ? t("account.whatsapp.title")
+                  ? t("integr.google.phone")
                   : t("plat.account.password")}
           </DialogTitle>
           {panel === "push" && <PushNotificationsCard bare />}
@@ -147,7 +147,6 @@ export function PlatformAccountMenu({
           {panel === "language" && <LanguageSettingsCard hideHeading />}
           {panel === "whatsapp" && (
             <DialogBody className="-mx-5 px-5">
-              <p className="text-sm text-muted-foreground">{t("account.whatsapp.description")}</p>
               <PersonalWhatsappSettings userId={userId} />
             </DialogBody>
           )}

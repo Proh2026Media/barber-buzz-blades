@@ -433,17 +433,6 @@ export function SettingsHub({
         </>
       );
     }
-    if (id === "avisos" && whatsapp) {
-      const meta = CONNECTION_META[whatsapp];
-      return (
-        <StatusBadge
-          tone={meta.tone}
-          icon={meta.icon}
-          size="sm"
-          label={t("settingsHub.summary.whatsapp", { state: t(meta.label) })}
-        />
-      );
-    }
     if (id === "idioma") {
       const ThemeIcon =
         themePreference === "dark" ? Moon : themePreference === "light" ? Sun : Monitor;
@@ -494,36 +483,6 @@ export function SettingsHub({
     }
   }
 
-  if (sections.includes("avisos") && (whatsapp === "disconnected" || whatsapp === "attention")) {
-    attention.push({
-      id: "whatsapp-down",
-      // Mesmo tom e ícone do selo da linha "Avisos e integrações".
-      tone: CONNECTION_META[whatsapp].tone,
-      icon: CONNECTION_META[whatsapp].icon,
-      title: t("settingsHub.attention.whatsappDown"),
-      description: t("settingsHub.attention.whatsappDownHint"),
-      action: {
-        label: t("settingsHub.attention.reconnect"),
-        icon: Wrench,
-        onClick: () => onSectionChange("avisos"),
-      },
-    });
-  } else if (sections.includes("avisos") && whatsapp === "waitingQr") {
-    // Começou a conectar e o QR não foi lido: as mensagens ainda não saem.
-    attention.push({
-      id: "whatsapp-waiting",
-      tone: CONNECTION_META.waitingQr.tone,
-      icon: CONNECTION_META.waitingQr.icon,
-      // Mesmo nome do selo da linha "Avisos" (um estado, um rótulo).
-      title: t("settingsHub.summary.whatsapp", { state: t(CONNECTION_META.waitingQr.label) }),
-      description: t("settingsHub.attention.whatsappWaitingHint"),
-      action: {
-        label: t("settingsHub.attention.finishConnection"),
-        icon: QrCode,
-        onClick: () => onSectionChange("avisos"),
-      },
-    });
-  }
   // Guia "Deixe sua barbearia pronta": o anel "3/5" e o próximo passo, com o botão que leva lá.
   if (setupGuide && setup?.next && !setup.hidden) {
     const next = setup.next;

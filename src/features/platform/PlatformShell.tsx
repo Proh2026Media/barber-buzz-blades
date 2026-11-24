@@ -415,44 +415,6 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
   const attention: AttentionItem[] = useMemo(() => {
     if (loading) return [];
     const items: AttentionItem[] = [];
-    if (!demoMode && waStatus === "error") {
-      items.push({
-        id: "wa",
-        tone: "danger",
-        icon: MessageCircleOff,
-        title: t("plat.att.waError"),
-        description: t("plat.att.waErrorHint"),
-        action: {
-          label: t("visual.retry"),
-          onClick: () => waRef.current?.recheck(),
-          icon: RefreshCw,
-        },
-      });
-    }
-    // "Conectando" também é pendência: é o estado enquanto ninguém leu o código, e pode durar.
-    if (
-      !demoMode &&
-      (waStatus === "disconnected" || waStatus === "qr" || waStatus === "connecting")
-    ) {
-      const waiting = waStatus !== "disconnected";
-      items.push({
-        id: "wa",
-        tone: waiting ? "pending" : "danger",
-        icon: waiting ? QrCode : MessageCircleOff,
-        title:
-          waStatus === "qr"
-            ? t("plat.att.waQr")
-            : waStatus === "connecting"
-              ? t("plat.att.waConnecting")
-              : t("plat.att.waOff"),
-        description: t("plat.wa.consequence"),
-        action: {
-          label: waiting ? t("plat.wa.showCode") : t("plat.att.waConnect"),
-          onClick: () => waRef.current?.connect(),
-          icon: QrCode,
-        },
-      });
-    }
     for (const shop of activeShopsWithoutAdmin(shops, counts)) {
       items.push({
         id: `admin-${shop.id}`,
@@ -495,7 +457,6 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
     { id: "overview" as const, label: t("plat.tabs.home"), icon: LayoutDashboard },
     { id: "shops" as const, label: t("plat.tabs.shops"), icon: Store },
     { id: "permissions" as const, label: t("plat.tabs.permissions"), icon: KeyRound },
-    { id: "whatsapp" as const, label: t("waCentral.tab"), icon: QrCode },
     { id: "insights" as const, label: t("plat.tabs.insights"), icon: BarChart3 },
   ];
   const activeNavIndex = navItems.findIndex((item) => item.id === platformTab);
@@ -550,12 +511,6 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
         </nav>
 
         <div className="workspace-header-actions flex shrink-0 items-center gap-2 sm:gap-3">
-          {!demoMode && !demoChrome && (
-            <WhatsAppHealthIndicator
-              key={profile.user.id}
-              onOpenCentral={() => setPlatformTab("whatsapp")}
-            />
-          )}
           <ThemeToggle />
           {headerActions}
           {demoMode || demoChrome ? (
@@ -609,9 +564,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
               <AttentionList
                 className="plat-overview-attention"
                 items={attention}
-                allClear={
-                  !loading && !loadError && shops.length > 0 && (demoMode || waStatus === "open")
-                }
+                allClear={!loading && !loadError && shops.length > 0}
                 max={3}
               />
               <PlatformDashboard
@@ -631,7 +584,6 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
             </>
           )}
 
-          {platformTab === "whatsapp" && <WhatsAppCentral demo={demoMode} />}
           {platformTab === "insights" && (
             <div className="platform-reports space-y-6">
               <div className="workspace-section-title app-section-title">
@@ -720,13 +672,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
         {(platformTab === "overview" || !demoMode) && (
           <div className={platformTab === "overview" ? "plat-overview-extras space-y-6" : "hidden"}>
             {demoMode && platformTab === "overview" && <RefundPolicySimulator />}
-            {!demoMode && (
-              <PlatformWhatsAppCard
-                ref={waRef}
-                onStatusChange={setWaStatus}
-                className={platformTab === "overview" ? "plat-wa-card" : "hidden"}
-              />
-            )}
+
             {/* Sem barbearias por falha de carga, o "Testar como…" não tem com o que testar. */}
             {platformTab === "overview" && !(loadError && shops.length === 0) && (
               <div className="scroll-mt-4">
