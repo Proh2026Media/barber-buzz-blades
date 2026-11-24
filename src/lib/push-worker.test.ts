@@ -156,6 +156,40 @@ test("Só o toque registra abertura e o aviso continua abrindo o app", async () 
   assert.equal(chamadas.length, 0);
   handlers.notificationclick({notification: {data: dados, close() {}}, waitUntil});
   await Promise.all(tarefas);
-  assert.deepEqual(chamadas, ["/avisos/abertura/push?t=" + token]);
-  assert.deepEqual(janelas, ["https://loja.example.invalid/app"]);
+  assert.deepEqual(chamadas, ["https://loja.example.invalid/avisos/abertura/push?t=" + token]);
+  assert.deepEqual(janelas, ["https://loja.example.invalid/app#bc-toque=" + token]);
+});
+
+test("Recupera o recibo pela etiqueta e repete somente o toque pendente", async () => {
+  const token = "95db929d-831e-4634-b864-f82c194cbd2f";
+  const url = "https://loja.example.invalid/avisos/abertura/push?t=" + token;
+  const pendentes = new Set<string>(), chamadas: string[] = [];
+  let disponivel = false;
+  const cache = {
+    put: async (key: string) => pendentes.add(key),
+    delete: async (key: string) => pendentes.delete(key),
+    keys: async () => Array.from(pendentes, key => ({url:key})),
+  };
+  const handlers: Record<string, (event: any) => void> = {};
+  const worker = {
+    location: {origin:"https://loja.example.invalid"},
+    addEventListener: (name: string, fn: typeof handlers[string]) => { handlers[name] = fn; },
+    clients: { matchAll: async () => [], openWindow: async () => {} },
+  };
+  vm.runInNewContext(source, {self:worker, URL, Response,
+    caches: {open: async () => cache, has: async () => true},
+    fetch: async (key: string) => { chamadas.push(key); return {ok:disponivel}; },
+  });
+  const tarefas: Promise<unknown>[] = [];
+  const waitUntil = (p: Promise<unknown>) => tarefas.push(p);
+  handlers.notificationclick({notification:{tag:"bc-open-"+token,close(){}},waitUntil});
+  await Promise.all(tarefas);
+  assert.deepEqual([...pendentes],[url]);
+  disponivel = true;
+  handlers.message({data:"retomar-toques-push",waitUntil});
+  await Promise.all(tarefas);
+  handlers.message({data:"retomar-toques-push",waitUntil});
+  await Promise.all(tarefas);
+  assert.deepEqual(chamadas,[url,url]);
+  assert.equal(pendentes.size,0);
 });

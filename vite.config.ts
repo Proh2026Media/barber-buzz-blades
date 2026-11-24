@@ -5,6 +5,8 @@
 //     error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
@@ -40,7 +42,7 @@ export default defineConfig({
         // diferentes, e o Workbox abortava o service worker (sem cache nem modo offline).
         manifest: false,
         workbox: {
-          importScripts: ["/push-events.js"],
+          importScripts: ["/push-events.js?v=" + createHash("sha256").update(readFileSync("public/push-events.js")).digest("hex").slice(0, 12)],
           // O client bundle do Nitro fica em .output/public; o plugin gera o SW em dist/.
           // Precache mínimo dos estáticos públicos; fontes são empacotadas localmente.
           globPatterns: ["icons/*", "manifest.webmanifest"],
