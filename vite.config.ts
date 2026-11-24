@@ -52,7 +52,7 @@ export default defineConfig({
           runtimeCaching: [
             {
               urlPattern: ({ request, sameOrigin }) =>
-                sameOrigin && request.destination === "document",
+                sameOrigin && request.destination === "document" && new URL(request.url).pathname !== "/avisos/toque",
               handler: "NetworkFirst",
               options: {
                 cacheName: "pages",

@@ -193,3 +193,17 @@ test("Recupera o recibo pela etiqueta e repete somente o toque pendente", async 
   assert.deepEqual(chamadas,[url,url]);
   assert.equal(pendentes.size,0);
 });
+
+test("Toque nativo no iPhone usa a loja do aparelho e só o recibo desse aviso", async () => {
+  const f = fixture();
+  const token = "95db929d-831e-4634-b864-f82c194cbd2f";
+  for (const receipt of [token, "invalido"]) {
+    let work: Promise<unknown>;
+    f.handlers.push({data: {json: () => ({receipt, url:"/app", navigate:"https://externo.invalid/"})},
+      waitUntil(p: Promise<unknown>) { work = p; }});
+    await work!;
+  }
+  const options = f.shown.map(row => row[1] as {navigate?: string});
+  assert.equal(options[0].navigate, "https://beauty.example.invalid/avisos/toque?t=" + token);
+  assert.equal(options[1].navigate, undefined);
+});

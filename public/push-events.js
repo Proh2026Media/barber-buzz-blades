@@ -50,6 +50,9 @@ self.addEventListener("push", (event) => {
         200,
       ),
       ...(message.shop_icon === true ? { icon: "/identidade/icone?dominio=" + encodeURIComponent(new URL(self.location.origin).hostname) } : {}),
+      ...(message.url !== "/shop" && receiptPattern.test(message.receipt) ? {
+        navigate: new URL("/avisos/toque?t=" + message.receipt, self.location.origin).href,
+      } : {}),
       tag: receiptPattern.test(message.receipt) ? "bc-open-" + message.receipt : text(message.tag, "bc-update", 100),
       data: { receipt: message.receipt, url: message.url === "/shop" ? "/shop" : "/app" },
     }),

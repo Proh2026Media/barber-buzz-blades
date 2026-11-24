@@ -45,7 +45,7 @@ export default {
         const { shopIdentity } = await import("./lib/shop/installation");
         return shopIdentity(url);
       }
-      if (["/avisos/abertura/email", "/avisos/abertura/push"].includes(url.pathname)) {
+      if (["/avisos/abertura/email", "/avisos/abertura/push", "/avisos/toque"].includes(url.pathname)) {
         const { noticeOpen } = await import("./lib/notice-open.server");
         return noticeOpen(request, url);
       }
