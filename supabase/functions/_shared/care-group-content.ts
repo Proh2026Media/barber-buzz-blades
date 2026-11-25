@@ -16,7 +16,7 @@ const clean = (value: unknown, limit: number, fallback: string) => {
   }
   return out || fallback;
 };
-export function groupPreferencesUrl(slug: string, origin = "https://beauty.contheiner.digital") {
+export function groupPreferencesUrl(slug: string, origin = "https://aurset.app") {
   if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(slug)) throw new Error("GROUP_SLUG_INVALID");
   const base = new URL(origin);
   if (

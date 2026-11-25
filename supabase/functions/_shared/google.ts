@@ -28,7 +28,7 @@ export function googleOAuthConfig() {
   const appUrl = (
     Deno.env.get("APP_URL") ??
     Deno.env.get("SITE_URL") ??
-    "https://beauty.contheiner.digital"
+    "https://aurset.app"
   ).replace(/\/$/, "");
   const redirectUri = Deno.env.get("GOOGLE_OAUTH_REDIRECT_URI") ?? `${appUrl}/auth/google-apps`;
   const stateSecret =
@@ -127,7 +127,7 @@ export function isSafeAppsReturnOrigin(origin: string, appUrl: string): boolean 
       return false;
     }
     if (host === "localhost" || host === "127.0.0.1") return true;
-    let appHost = "beauty.contheiner.digital";
+    let appHost = "aurset.app";
     try {
       appHost = new URL(appUrl).hostname.toLowerCase();
     } catch {

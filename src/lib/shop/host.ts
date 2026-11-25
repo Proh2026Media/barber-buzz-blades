@@ -2,9 +2,9 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-export const PLATFORM_BASE_HOST =
-  (import.meta.env.VITE_PLATFORM_BASE_HOST as string | undefined)?.trim() ||
-  "beauty.contheiner.digital";
+import { dominioDaPlataforma } from "./platform-domain";
+
+export const PLATFORM_BASE_HOST = dominioDaPlataforma;
 
 export type ShopHostResolution = {
   shop_id: string;

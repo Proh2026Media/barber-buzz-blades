@@ -9,6 +9,7 @@ import {
 import { useEffect, useState, type ReactNode } from "react";
 import { NotFoundPage } from "../components/NotFoundPage";
 
+import { dominioDaPlataforma, redirecionarEnderecoAntigo } from "../lib/shop/platform-domain";
 import appCss from "../styles.css?url";
 import deviceCss from "../dispositivos.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -35,7 +36,7 @@ const nomeDaPagina = createIsomorphicFn()
   })
   .client(async () => {
     const host = window.location.hostname;
-    if ([import.meta.env.VITE_PLATFORM_BASE_HOST || "beauty.contheiner.digital", "localhost", "127.0.0.1"].includes(host)) return "Barba & Cabelo";
+    if ([dominioDaPlataforma, "localhost", "127.0.0.1"].includes(host)) return "Barba & Cabelo";
     try {
       const resposta = await fetch("/identidade/manifesto?dominio=" + encodeURIComponent(host), {signal: AbortSignal.timeout(5000)});
       if (resposta.ok) return (await resposta.json()).name || host;
@@ -115,6 +116,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     // Aplica o tema salvo, o idioma e a faixa de dispositivo antes da primeira pintura
     // (em sincronia com `useTheme`, `useI18n` e `useDevice`).
     scripts: [
+      { children: `(${redirecionarEnderecoAntigo.toString()})();` },
       { children: themeBootstrapScript },
       { children: localeBootstrapScript },
       { children: deviceBootstrapScript },

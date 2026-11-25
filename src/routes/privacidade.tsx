@@ -174,7 +174,7 @@ function PrivacidadePage() {
             app: <strong>Barba &amp; Cabelo</strong>,
             site: (
               <a href={PLATFORM_OPERATOR.siteUrl} className={legalLinkClass}>
-                beauty.contheiner.digital
+                aurset.app
               </a>
             ),
           })}

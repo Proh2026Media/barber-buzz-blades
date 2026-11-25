@@ -25,7 +25,7 @@ test("Cliente vê somente a barbearia e preferências no aplicativo", () => {
   assert.ok(text.description.length <= 512);
   assert.match(
     text.preferences_url,
-    /^https:\/\/arena\.beauty\.contheiner\.digital\/app\?tab=conta&focus=grupo$/,
+    /^https:\/\/arena\.aurset\.app\/app\?tab=conta&focus=grupo$/,
   );
 });
 test("Aniversário civil preserva hora e trata ano bissexto sem renovar ciclo", () => {

@@ -1,5 +1,5 @@
 /** Conexão da loja ou do parceiro independente; não cria cobranças ou devoluções. */
-export const MERCADO_PAGO_APP_ORIGIN = "https://beauty.contheiner.digital";
+export const MERCADO_PAGO_APP_ORIGIN = "https://aurset.app";
 export const MERCADO_PAGO_REDIRECT_URI = `${MERCADO_PAGO_APP_ORIGIN}/auth/mercado-pago`;
 
 export type Environment = "test" | "production";

@@ -29,8 +29,8 @@ test("relay code accepts the Auth code shape and nothing with spaces or symbols"
 
 test("return address always points to the platform auth return page", () => {
   assert.equal(
-    relayReturnUrl("https://beauty.contheiner.digital/", ID),
-    `https://beauty.contheiner.digital/auth/retorno?relay=${ID}`,
+    relayReturnUrl("https://aurset.app/", ID),
+    `https://aurset.app/auth/retorno?relay=${ID}`,
   );
 });
 

@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
           })
           .join("");
         const publicOrigin = new URL(
-          Deno.env.get("NOTICE_PUBLIC_ORIGIN") || "https://beauty.contheiner.digital",
+          Deno.env.get("NOTICE_PUBLIC_ORIGIN") || "https://aurset.app",
         ).origin;
         await client.send({
           ...(receipt

@@ -87,8 +87,8 @@ test("WhatsApp and signup links carry only digits and the encoded message", () =
     "https://wa.me/5511999990000?text=Ol%C3%A1%2C%20tudo%20bem%3F",
   );
   assert.equal(
-    signupLink("https://arena.beauty.contheiner.digital/", "+5511999990000"),
-    "https://arena.beauty.contheiner.digital/auth?cadastro=1&whatsapp=5511999990000",
+    signupLink("https://arena.aurset.app/", "+5511999990000"),
+    "https://arena.aurset.app/auth?cadastro=1&whatsapp=5511999990000",
   );
   assert.equal(signupLink("https://x.test", null), "https://x.test/auth?cadastro=1");
 });

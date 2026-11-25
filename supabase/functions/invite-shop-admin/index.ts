@@ -57,7 +57,7 @@ function shopOrigin(shop: {
   }
   // No servidor, PLATFORM_BASE_HOST aponta para o alvo dos domínios próprios
   // ("dominios.<base>"), que não atende as lojas pelo subdomínio.
-  const base = (Deno.env.get("PLATFORM_BASE_HOST") ?? "beauty.contheiner.digital")
+  const base = (Deno.env.get("PLATFORM_BASE_HOST") ?? "aurset.app")
     .trim()
     .toLowerCase()
     .replace(/\.$/, "")

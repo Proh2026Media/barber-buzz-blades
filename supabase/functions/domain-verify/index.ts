@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
     const serviceKey =
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SERVICE_KEY");
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
-    const platformHost = (Deno.env.get("PLATFORM_BASE_HOST") ?? "beauty.contheiner.digital")
+    const platformHost = (Deno.env.get("PLATFORM_BASE_HOST") ?? "aurset.app")
       .toLowerCase()
       .replace(/\.$/, "");
     const cnameTargets = (

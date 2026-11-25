@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Certificado por loja em <slug>.beauty.contheiner.digital (P-27). Roda NA VPS, como root.
+# Certificado por loja em <slug>.aurset.app (P-27). Roda NA VPS, como root.
 #
 # O roteador curinga (wildcard-beauty.yaml, HostRegexp) não pede certificado por host, e o
 # Traefik entrega o "TRAEFIK DEFAULT CERT". Cada loja precisa de um roteador Host(...) em
-# beauty-shop-certs.yaml. Este script lê as lojas ativas no banco e acrescenta só os
+# aurset-shop-certs.yaml. Este script lê as lojas ativas no banco e acrescenta só os
 # roteadores que faltam, no mesmo formato dos existentes. Não remove nada e não toca DNS.
 #
 # Uso:
@@ -19,10 +19,10 @@
 
 set -euo pipefail
 
-CERT_FILE="${CERT_FILE:-/data/coolify/proxy/dynamic/beauty-shop-certs.yaml}"
+CERT_FILE="${CERT_FILE:-/data/coolify/proxy/dynamic/aurset-shop-certs.yaml}"
 DB_CONTAINER="${DB_CONTAINER:-supabase-db-z2dbb7dkyzhc8vjiywq34mhn}"
 BACKUP_DIR="${BACKUP_DIR:-/root}"
-BASE_HOST="${BASE_HOST:-beauty.contheiner.digital}"
+BASE_HOST="${BASE_HOST:-aurset.app}"
 ESPERA_CERT="${ESPERA_CERT:-120}"
 LOCK_FILE="/run/lock/barba-cert-lojas.lock"
 
@@ -147,11 +147,11 @@ fi
 
 bloco() {
   cat <<YAML
-    beauty-shop-$1:
+    aurset-shop-$1:
       rule: Host(\`$1.$BASE_HOST\`)
       entryPoints:
         - https
-      service: hostinger-beauty@file
+      service: hostinger-aurset@file
       priority: 30
       tls:
         certResolver: letsencrypt
@@ -209,7 +209,7 @@ want = set(os.environ["ESPERADOS"].split())
 got = set()
 for name, r in routers.items():
     assert r["entryPoints"] == ["https"], name
-    assert r["service"] == "hostinger-beauty@file", name
+    assert r["service"] == "hostinger-aurset@file", name
     assert r["tls"]["certResolver"] == "letsencrypt", name
     got.add(r["rule"][len("Host(`"):-len("`)")])
 assert got == want, (sorted(got), sorted(want))

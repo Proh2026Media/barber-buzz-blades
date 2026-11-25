@@ -1,5 +1,7 @@
+import { dominioDaPlataforma } from "./platform-domain";
+
 export async function nomeDaInstalacao(host: string): Promise<string> {
-  if ([import.meta.env.VITE_PLATFORM_BASE_HOST || "beauty.contheiner.digital", "localhost", "127.0.0.1"].includes(host)) return "Barba & Cabelo";
+  if ([dominioDaPlataforma, "localhost", "127.0.0.1"].includes(host)) return "Barba & Cabelo";
   try {
     const resposta = await shopIdentity(new URL("/identidade/manifesto", "https://" + host));
     if (resposta.ok) return (await resposta.json()).name || host;
@@ -11,7 +13,7 @@ export async function nomeDaInstalacao(host: string): Promise<string> {
 export async function shopIdentity(url: URL): Promise<Response> {
   const apple = url.pathname === "/apple-touch-icon.png";
   const icon = apple || url.pathname === "/identidade/icone";
-  const platform = import.meta.env.VITE_PLATFORM_BASE_HOST || "beauty.contheiner.digital";
+  const platform = dominioDaPlataforma;
   const domain = (url.searchParams.get("dominio") || url.hostname).toLowerCase();
   if (!/^[a-z0-9.-]+$/.test(domain)) return new Response(null, {status: 400});
   if ([platform, "localhost", "127.0.0.1"].includes(domain)) {

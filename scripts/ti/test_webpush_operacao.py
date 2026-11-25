@@ -24,7 +24,7 @@ class OperationTests(unittest.TestCase):
         m.UNITS.mkdir()
         self.env = {'WEB_PUSH_ENABLED': 'false', 'WEB_PUSH_PUBLIC_KEY': 'publica-ficticia',
                     'WEB_PUSH_PRIVATE_KEY': 'privada-ficticia', 'WEB_PUSH_SUBJECT': 'mailto:contato@proh.media',
-                    'WEB_PUSH_ALLOWED_ORIGINS': 'https://beauty.contheiner.digital',
+                    'WEB_PUSH_ALLOWED_ORIGINS': 'https://aurset.app',
                     'SUPABASE_SERVICE_ROLE_KEY': 'servico-ficticio'}
     def tearDown(self):
         for p in reversed(self.patches): p.stop()

@@ -2,13 +2,13 @@
 # Gera / atualiza Traefik dynamic config para domínios próprios ativos.
 # Requer: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY
 # Opcional: TRAEFIK_DYNAMIC_DIR (default no VPS: /data/coolify/proxy/dynamic)
-#           HOSTINGER_BEAUTY_URL (default: http://beauty.contheiner.digital)
+#           HOSTINGER_BEAUTY_URL (default: http://aurset.app)
 
 set -euo pipefail
 URL="${SUPABASE_URL:?}"
 KEY="${SUPABASE_SERVICE_ROLE_KEY:?}"
 OUT_DIR="${TRAEFIK_DYNAMIC_DIR:-/data/coolify/proxy/dynamic}"
-BACKEND="${HOSTINGER_BEAUTY_URL:-http://beauty.contheiner.digital}"
+BACKEND="${HOSTINGER_BEAUTY_URL:-http://aurset.app}"
 OUT_FILE="${OUT_DIR}/custom-shop-domains.yaml"
 
 payload=$(curl -sS "${URL%/}/rest/v1/rpc/list_active_custom_domains" \
