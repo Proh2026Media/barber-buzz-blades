@@ -32,11 +32,6 @@ Deno.serve(async (req) => {
     const pass = Deno.env.get("SMTP_PASS") ?? Deno.env.get("GOTRUE_SMTP_PASS");
     const from =
       Deno.env.get("SMTP_ADMIN_EMAIL") ?? Deno.env.get("GOTRUE_SMTP_ADMIN_EMAIL") ?? user;
-    const fromName =
-      Deno.env.get("SMTP_SENDER_NAME") ??
-      Deno.env.get("GOTRUE_SMTP_SENDER_NAME") ??
-      "Barba & Cabelo";
-
     const admin = createClient(supabaseUrl, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
@@ -62,6 +57,7 @@ Deno.serve(async (req) => {
     const rows = (batch ?? []) as Array<{
       id: string;
       attempts: number;
+      barbershop_id: string;
       to_email: string;
       subject: string;
       body: string;
@@ -69,6 +65,18 @@ Deno.serve(async (req) => {
 
     if (rows.length === 0) {
       return json({ ok: true, sent: 0, failed: 0 });
+    }
+
+    const shopIds = [...new Set(rows.map((row) => row.barbershop_id))];
+    const { data: shops, error: shopError } = await admin
+      .from("barbershops")
+      .select("id, name")
+      .in("id", shopIds);
+    const senderNames = new Map<string, string>();
+    for (const shop of shops ?? []) {
+      // O nome é texto de exibição. Os delimitadores do endereço pertencem ao SMTP.
+      const name = shop.name.replace(/[<>\p{Cc}\p{Zl}\p{Zp}]/gu, " ").replace(/\s+/gu, " ").trim();
+      if (name) senderNames.set(shop.id, name);
     }
 
     let sent = 0;
@@ -96,7 +104,8 @@ Deno.serve(async (req) => {
       let iniciouSmtp = false;
       let aceito = false;
       try {
-        if (interromperLote) {
+        const fromName = senderNames.get(row.barbershop_id);
+        if (interromperLote || shopError || !fromName) {
           await concluir("antes_smtp");
           failed++;
           continue;
