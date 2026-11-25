@@ -41,6 +41,13 @@ export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const url = new URL(request.url);
+      const hosts = [url.hostname, request.headers.get("host"), request.headers.get("x-forwarded-host")];
+      if (hosts.some((host) => host?.split(",")[0].trim().toLowerCase().replace(/:443$|:80$/, "") === "www.aurset.app")) {
+        url.protocol = "https:";
+        url.host = "aurset.app";
+        url.port = "";
+        return Response.redirect(url.href, 308);
+      }
       if (url.pathname === "/identidade/manifesto" || url.pathname === "/identidade/icone" || url.pathname === "/apple-touch-icon.png") {
         const { shopIdentity } = await import("./lib/shop/installation");
         if (!url.searchParams.has("dominio")) {

@@ -13,17 +13,6 @@ function json(body: unknown, status = 200) {
   });
 }
 
-// denomailer devolve "invalid cmd" quando o servidor recusa o login (535).
-function describeSmtpError(raw: string) {
-  if (/invalid cmd|535|auth/i.test(raw)) {
-    return "O servidor de e-mail recusou o login. Confira usuário e senha do SMTP.";
-  }
-  if (/timed? ?out|connect|dns|refused/i.test(raw)) {
-    return "Não foi possível falar com o servidor de e-mail. Nova tentativa em alguns minutos.";
-  }
-  return `Falha no envio do e-mail: ${raw.slice(0, 200)}`;
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -63,7 +52,7 @@ Deno.serve(async (req) => {
       return json({ ok: true, skipped: true, reason: "SMTP not configured" });
     }
 
-    const { data: batch, error: claimError } = await admin.rpc("claim_email_outbox", {
+    const { data: batch, error: claimError } = await admin.rpc("claim_email_dispatch", {
       p_limit: 20,
     });
     if (claimError) {
@@ -72,6 +61,7 @@ Deno.serve(async (req) => {
 
     const rows = (batch ?? []) as Array<{
       id: string;
+      attempts: number;
       to_email: string;
       subject: string;
       body: string;
@@ -83,7 +73,8 @@ Deno.serve(async (req) => {
 
     let sent = 0;
     let failed = 0;
-    let connectionError: string | null = null;
+    let interromperLote = false;
+    let pendentesDeConferencia = 0;
 
     const client = new SMTPClient({
       connection: {
@@ -95,16 +86,21 @@ Deno.serve(async (req) => {
     });
 
     for (const row of rows) {
-      if (connectionError) {
-        await admin.rpc("complete_email_outbox", {
-          p_id: row.id,
-          p_ok: false,
-          p_error: connectionError,
+      const tentativa = { p_id: row.id, p_attempt: row.attempts };
+      async function concluir(resultado: string) {
+        const { data, error } = await admin.rpc("finish_email_dispatch", {
+          ...tentativa, p_result: resultado,
         });
-        failed += 1;
-        continue;
+        if (error || data !== true) throw new Error("Conclusão da tentativa pendente.");
       }
+      let iniciouSmtp = false;
+      let aceito = false;
       try {
+        if (interromperLote) {
+          await concluir("antes_smtp");
+          failed++;
+          continue;
+        }
         const { data: receipt } = await admin.rpc("email_open_token", { p_id: row.id });
         const safeBody = row.body
           .split(/(https?:\/\/[^\s<>"']+)/g)
@@ -121,6 +117,9 @@ Deno.serve(async (req) => {
         const publicOrigin = new URL(
           Deno.env.get("NOTICE_PUBLIC_ORIGIN") || "https://aurset.app",
         ).origin;
+        const inicio = await admin.rpc("start_email_smtp", tentativa);
+        if (inicio.error || inicio.data !== true) throw new Error("Tentativa indisponível.");
+        iniciouSmtp = true;
         await client.send({
           ...(receipt
             ? {
@@ -138,18 +137,20 @@ Deno.serve(async (req) => {
           subject: row.subject,
           content: row.body,
         });
-        await admin.rpc("complete_email_outbox", { p_id: row.id, p_ok: true });
-        sent += 1;
-      } catch (err) {
-        const raw = err instanceof Error ? err.message : String(err);
-        const message = describeSmtpError(raw);
-        if (sent === 0) connectionError = message;
-        await admin.rpc("complete_email_outbox", {
-          p_id: row.id,
-          p_ok: false,
-          p_error: message,
-        });
-        failed += 1;
+        aceito = true;
+        await concluir("aceito");
+        sent++;
+      } catch {
+        interromperLote = true;
+        try {
+          await concluir(aceito ? "aceito" : iniciouSmtp ? "incerto" : "antes_smtp");
+          if (aceito) sent++;
+          else if (iniciouSmtp) pendentesDeConferencia++;
+          else failed++;
+        } catch {
+          pendentesDeConferencia++;
+        }
+        console.warn("Conferir tentativa de e-mail", row.id, row.attempts, { iniciouSmtp, aceito });
       }
     }
 
@@ -159,7 +160,7 @@ Deno.serve(async (req) => {
       /* ignore */
     }
 
-    return json({ ok: true, sent, failed, error: connectionError ?? undefined });
+    return json({ ok: pendentesDeConferencia === 0, sent, failed, pendentesDeConferencia }, pendentesDeConferencia ? 503 : 200);
   } catch (err) {
     return json({ error: err instanceof Error ? err.message : "Erro" }, 500);
   }
