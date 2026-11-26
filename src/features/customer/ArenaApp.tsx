@@ -2983,7 +2983,7 @@ function ArenaApp({
         </defs>
       </svg>
       {/* Header */}
-      <header className="workspace-header-grid brand-header sticky top-0 z-30 bg-background/90 backdrop-blur-xl border-b border-border/50 p-4 flex items-center justify-between gap-2 max-[359px]:gap-1 max-[359px]:px-3">
+      <header className="workspace-header-grid brand-header sticky top-0 z-30 bg-card border-b border-border/50 p-4 flex items-center justify-between gap-2 max-[359px]:gap-1 max-[359px]:px-3">
         <div className="flex min-w-0 flex-1 items-center pl-[4.5rem]">
           {shopSettings.logo_url ? (
             <span

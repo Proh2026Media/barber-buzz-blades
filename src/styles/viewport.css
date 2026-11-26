@@ -137,6 +137,27 @@
   }
 }
 
+/* No app instalado a tela do cliente ocupa a janela. Só o teclado aberto
+   precisa da altura menor informada por visualViewport. */
+@media (display-mode: standalone) and (max-width: 767.98px) {
+  :root:not([data-keyboard-open="true"]) .customer-workspace:not(.demo-content *) {
+    position: fixed;
+    inset: 0;
+    height: auto;
+  }
+
+  .customer-workspace:not(.brand-chrome-floating) > header {
+    position: sticky;
+    top: 0;
+    background-color: var(--card);
+  }
+
+  :root:not([data-keyboard-open="true"]) .customer-workspace:not(.demo-content *) > .app-mobile-nav {
+    position: absolute;
+    bottom: var(--app-floating-bottom) !important;
+  }
+}
+
 /* Campos pequenos disparam ampliação automática no iOS; não bloquear o zoom do usuário. */
 @media (pointer: coarse) and (max-width: 1279.98px) {
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),

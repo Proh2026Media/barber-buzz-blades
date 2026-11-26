@@ -8,9 +8,11 @@ export function WorkspaceFrame({ children, ...props }: HTMLAttributes<HTMLDivEle
     if (!surface) return;
     const measure = () => {
       const nav = surface.querySelector<HTMLElement>(":scope > .app-mobile-nav");
-      if (nav && nav.offsetHeight > 0 && getComputedStyle(nav).position === "fixed") {
+      const position = nav && getComputedStyle(nav).position;
+      const sobreposta = position === "fixed" || position === "absolute";
+      if (nav && nav.offsetHeight > 0 && sobreposta) {
         surface.style.setProperty("--app-nav-height", `${nav.offsetHeight}px`);
-      } else if (!nav || getComputedStyle(nav).position !== "fixed") {
+      } else if (!sobreposta) {
         surface.style.removeProperty("--app-nav-height");
       }
     };
