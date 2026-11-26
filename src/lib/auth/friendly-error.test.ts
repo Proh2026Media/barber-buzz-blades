@@ -147,7 +147,7 @@ test("edge error codes map to everyday messages instead of the raw server text",
     ["rate_limited", /Muitas tentativas/],
     ["phone_in_use", /já está em uma conta/],
     ["invalid_whatsapp", /WhatsApp/],
-    ["shop_not_found", /Barbearia não encontrada/],
+    ["shop_not_found", /Estabelecimento não encontrado/],
     ["missing_fields", /Preencha/],
   ];
   for (const [code, expected] of cases) {

@@ -41,7 +41,7 @@ export const enGB: Record<MessageKey, string> = {
 
   "waAuto.title": "Assisted distribution",
   "waAuto.basis": "Lower load and usage for the primary; consistent history for backups.",
-  "waAuto.shop": "Select barbershop",
+  "waAuto.shop": "Select business",
   "waAuto.generate": "Generate distribution",
   "waAuto.apply": "Apply to preview",
   "waAuto.effect":
@@ -58,7 +58,7 @@ export const enGB: Record<MessageKey, string> = {
   "waRefine.futureHint": "Demo data; live measurement pending.",
   "waRefine.volume": "Group sends",
   "waRefine.days": "Active days",
-  "waRefine.usage": "Uses by barbershop",
+  "waRefine.usage": "Uses by business",
   "waRefine.suggestions": "Suggestions",
   "waRefine.noData": "Measurement not available yet",
 
@@ -67,8 +67,8 @@ export const enGB: Record<MessageKey, string> = {
     "Select a number, then tap Primary or Backup. On a computer, you can also drag it.",
   "waDistribution.numbers": "Your numbers",
   "waDistribution.numberSearch": "Search number or name",
-  "waDistribution.destinations": "Barbershops and team",
-  "waDistribution.destinationSearch": "Search barbershop or professional",
+  "waDistribution.destinations": "Businesses and team",
+  "waDistribution.destinationSearch": "Search business or professional",
   "waDistribution.primary": "Primary",
   "waDistribution.backup": "Backup",
   "waDistribution.primaryCount": "Primary for {count}",
@@ -81,12 +81,12 @@ export const enGB: Record<MessageKey, string> = {
   "waDistribution.clearSelection": "Cancel selection",
   "waDistribution.emptyNumbers": "No phone numbers registered.",
   "waDistribution.emptySearch": "No results for this search.",
-  "waDistribution.emptyShops": "No barbershops registered.",
+  "waDistribution.emptyShops": "No businesses registered.",
   "waDistribution.allShops": "All",
   "waDistribution.missingPrimary": "No primary",
   "waDistribution.missingBackup": "No backup",
-  "waDistribution.wholeShop": "Whole barbershop",
-  "waDistribution.usesGeneral": "Uses the barbershop numbers",
+  "waDistribution.wholeShop": "Whole business",
+  "waDistribution.usesGeneral": "Uses the business numbers",
   "waDistribution.personalized": "Own number",
   "waDistribution.choose": "Choose number",
   "waDistribution.change": "Change",
@@ -125,12 +125,11 @@ export const enGB: Record<MessageKey, string> = {
   "waDistribution.technicalRequired": "Confirm the technical failure before using the backup.",
   "waDistribution.primaryRequired": "Choose a primary number before saving.",
   "waDistribution.confirmRemove": "Remove the configuration for this destination.",
-  "waDistribution.removeGeneralHint": "The barbershop will have no general number.",
-  "waDistribution.removeOwnHint":
-    "This professional will use the barbershop’s general number again.",
+  "waDistribution.removeGeneralHint": "The business will have no general number.",
+  "waDistribution.removeOwnHint": "This professional will use the business’s general number again.",
   "waDistribution.editDistribution": "Edit distribution",
   "waDistribution.invalidPair": "Choose different primary and backup numbers.",
-  "waDistribution.byDestination": "Set primary and backup numbers in the barbershop distribution.",
+  "waDistribution.byDestination": "Set primary and backup numbers in the business distribution.",
   "waDistribution.personalNumber":
     "This is a personal phone number and cannot send system notifications.",
   "waDistribution.numberUnavailable":
@@ -144,11 +143,11 @@ export const enGB: Record<MessageKey, string> = {
   "waPreview.saved": "Distribution saved in this preview.",
   "waPreview.number": "Fictional number. This preview does not connect accounts or send messages.",
   "waOrg.shops": "Distribution",
-  "waOrg.shopsHint": "Primary and backup numbers by barbershop or professional.",
+  "waOrg.shopsHint": "Primary and backup numbers by business or professional.",
   "waOrg.numbersHint": "Connections and uses of each phone number.",
 
   "legal.club.heroBodyGeneric":
-    "The loyalty club is an optional programme run by each barbershop that uses Barba & Cabelo. The exact rules — points, levels, perks and rewards — depend on each barbershop.",
+    "The loyalty club is an optional programme run by each barbershop that uses Aurset. The exact rules — points, levels, perks and rewards — depend on each barbershop.",
   "legal.club.earnNote":
     "Points are added when the barbershop marks the appointment as completed. Cancelled or missed appointments don't earn points.",
   "auth.field.whatsapp": "WhatsApp number with area code",
@@ -160,7 +159,7 @@ export const enGB: Record<MessageKey, string> = {
   "errors.integration.googleNotReady":
     "The Google connection isn't ready in this environment yet. Please contact support.",
   "errors.rateLimit": "Too many attempts in a row. Please wait a minute and try again.",
-  "register.shopNamePlaceholder": "E.g.: High Street Barbers",
+  "register.shopNamePlaceholder": "E.g.: High Street Studio",
   "register.whatsapp": "WhatsApp (with dialling code)",
   "register.errorWhatsapp": "Enter your WhatsApp number with dialling code.",
   "profile.whatsappNumber": "Number with dialling code",
@@ -194,7 +193,7 @@ export const enGB: Record<MessageKey, string> = {
   "legal.privacy.s10Item3":
     "anonymisation, blocking or deletion of unnecessary or excessive data, or data processed in breach of the law;",
   "legal.privacy.s11Item4":
-    "**Revoke at Google:** you can also remove Barba & Cabelo's access directly at Google, at any time, at {link}.",
+    "**Revoke at Google:** you can also remove Aurset's access directly at Google, at any time, at {link}.",
   "plat.shell.brandOpenError": "Couldn't open the customisation. Please try again.",
   "plat.shops.customize": "Customise",
   "plat.newShop.customizeNow": "Customise now",
@@ -204,6 +203,15 @@ export const enGB: Record<MessageKey, string> = {
   "brand.icon.barbaEBigode": "Beard and moustache",
   "brand.icon.bigode": "Moustache",
   "brand.icon.cores": "Colours",
+  "brand.theme.title": "Colour theme",
+  "brand.theme.hint":
+    "Pick a theme. It colours the buttons, the details and the background of your page.",
+  "brand.theme.customNote": "Your colours",
+  "brand.theme.customSummary": "Use another colour",
+  "brand.theme.customHint":
+    "Does your brand have its own colour? Pick it here. The theme stops applying and the page uses shades of your colour.",
+  "brand.validate.reservedColor": "This colour is reserved for Aurset. Try the {theme} theme.",
+  "brand.preview.serviceTime": "Today, 14:30",
   "brand.icon.pincelDeCor": "Colour brush",
   "brand.icon.tenis": "Trainer",
   "brand.icon.refrigerante": "Soft drink",
@@ -226,7 +234,7 @@ export const enGB: Record<MessageKey, string> = {
   "brand.crop.zoomValue": "{value} per cent",
   "brand.crop.recenter": "Re-centre",
   "landingEditor.description":
-    "This is what customers see when they open your barbershop's address. Logo, colours and photo come from your brand identity.",
+    "This is what customers see when they open your business's address. Logo, colours and photo come from your brand identity.",
   "fix.ajustes-marca.domainNothingPending": "No domain is awaiting verification.",
   "fix2.edge.otpTooManyAttempts": "Too many incorrect codes. Request a new code to continue.",
   "fix2.edge.whatsappUnavailable":
@@ -240,7 +248,7 @@ export const enGB: Record<MessageKey, string> = {
   "fix3.auth.phoneError":
     "We couldn't confirm your WhatsApp at the moment. Try again or confirm it later in My profile.",
   "fix3.errors.accountWithoutEmail":
-    "This account doesn't have an email yet. Contact the barbershop to complete your registration.",
+    "This account doesn't have an email yet. Contact the business to complete your registration.",
   "legal.privacy.s11Item5":
     "When you **delete your account**, we ask Google to revoke the authorisation (if a connection exists) and delete the connection, the tokens and the imported events. To check, visit {link}. Questions or deletion requests: {email}.",
   "legal.terms.s3Item4":
@@ -256,9 +264,9 @@ export const enGB: Record<MessageKey, string> = {
     "We've sent a link to your email. Open it and sign in, then we'll confirm your WhatsApp with a code.",
   "cad.cliente.terms.age":
     "and confirm you are 18 or over (or use it with a parent or guardian's permission).",
-  "cad.cliente.ownerLink": "Register your barbershop",
+  "cad.cliente.ownerLink": "Register your business",
   "cad.dono.termsText":
-    "I have read and accept the {terms}, the {privacy} and the {dpa} for barbershops. I am 18 or over and authorised to represent this barbershop.",
+    "I have read and accept the {terms}, the {privacy} and the {dpa} for businesses. I am 18 or over and authorised to represent this business.",
   "cad.dono.errTerms": "To create the account, tick the acceptance box.",
   "cad.guia.hoursHint": "We've set Monday to Saturday, 9:00 to 19:00.",
   "cad.guia.hoursOk": "That's right",

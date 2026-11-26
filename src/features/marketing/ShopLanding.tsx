@@ -20,7 +20,7 @@ import {
   MapPin,
   Moon,
   RefreshCw,
-  Scissors,
+  ListChecks,
   Users,
   WifiOff,
 } from "lucide-react";
@@ -31,7 +31,7 @@ import { EmptyState, LoadingState, Notice, StatusBadge, type Tone } from "@/comp
 import { StaffPhoto } from "@/components/ui/staff-photo";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-import { brandCornerClass, brandVariables, DEFAULT_LOGIN_IMAGE } from "@/lib/shop/branding";
+import { brandCornerClass, brandVariables } from "@/lib/shop/branding";
 import { useShopFavicon } from "@/lib/shop/favicon";
 import { BrandFontFace } from "@/features/shop/BrandFontFace";
 import { useAvailabilitySignal } from "@/lib/shop/availability-signal";
@@ -152,15 +152,19 @@ export function ShopLanding({
   }, [load]);
 
   if (state === "loading") {
-    // Esqueleto com o desenho da página (capa escura + cartões) e o verbo visível.
+    // Esqueleto com o desenho da página (capa + cartões) e o verbo visível.
     return (
       <main className="public-page min-h-dvh bg-background">
-        <div aria-hidden className="bg-[#141412] px-4 pb-8 pt-[max(1rem,env(safe-area-inset-top))]">
+        <div
+          aria-hidden
+          className="shop-hero shop-hero-skeleton px-4 pb-8 pt-[max(1rem,env(safe-area-inset-top))]"
+        >
+          <span className="shop-hero-quarter" />
           <div className="mx-auto max-w-3xl space-y-4">
-            <span className="block size-12 rounded-[var(--control-radius)] bg-white/10" />
-            <span className="mt-8 block h-9 w-2/3 rounded-md bg-white/10 motion-safe:animate-pulse" />
-            <span className="block h-4 w-1/2 rounded-md bg-white/10 motion-safe:animate-pulse" />
-            <span className="block h-36 rounded-[var(--panel-radius)] bg-white/10 motion-safe:animate-pulse" />
+            <span className="block size-12 rounded-[var(--control-radius)] bg-foreground/10" />
+            <span className="mt-8 block h-9 w-2/3 rounded-md bg-foreground/10 motion-safe:animate-pulse" />
+            <span className="block h-4 w-1/2 rounded-md bg-foreground/10 motion-safe:animate-pulse" />
+            <span className="block h-36 rounded-[var(--panel-radius)] bg-foreground/10 motion-safe:animate-pulse" />
           </div>
         </div>
         <div className="mx-auto max-w-3xl px-4 py-6">
@@ -189,20 +193,12 @@ export function ShopLanding({
             description={t(missing ? "shopLanding.checkLink" : "shopLanding.errorText")}
             action={
               missing ? (
-                <Link
-                  to="/auth"
-                  search={{ next: "" }}
-                  className="action-button action-confirm min-h-12 w-full"
-                >
+                <Link to="/auth" search={{ next: "" }} className="shop-cta w-full">
                   <LogIn aria-hidden />
                   {t("shopLanding.signIn")}
                 </Link>
               ) : (
-                <button
-                  type="button"
-                  className="action-button action-confirm min-h-12 w-full"
-                  onClick={retry}
-                >
+                <button type="button" className="shop-cta w-full" onClick={retry}>
                   <RefreshCw aria-hidden />
                   {t("shopLanding.retry")}
                 </button>
@@ -405,10 +401,7 @@ export function ShopLandingView({
         tabIndex={-1}
         className={cn("scroll-mt-6 space-y-3 outline-none", wide && !aside && "lg:hidden")}
       >
-        <h2
-          id={aside ? "landing-hours-aside" : "landing-hours"}
-          className="flex items-center gap-2 text-lg font-extrabold tracking-tight"
-        >
+        <h2 id={aside ? "landing-hours-aside" : "landing-hours"} className="shop-section-title">
           <Clock3 className={`size-5 ${accentIconClass}`} aria-hidden />
           {t("shopLanding.hoursTitle")}
         </h2>
@@ -428,21 +421,18 @@ export function ShopLandingView({
         !preview && "brand-page min-h-dvh",
         brandCornerClass(shop.corner_style),
       )}
+      data-tema-loja={(style as Record<string, string>)["--brand-esquema"]}
       style={style}
     >
       <BrandFontFace url={shop.custom_font_url} />
       {topBar}
       {!preview && <div className="shop-status-bar" aria-hidden="true" />}
-      <header className="relative isolate overflow-hidden bg-[#141412] text-[#f7f5f0]">
-        <img
-          src={shop.hero_image_url || DEFAULT_LOGIN_IMAGE}
-          alt=""
-          className="absolute inset-0 -z-10 size-full object-cover opacity-55"
-        />
-        <div
-          className="absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,#141412_0,rgba(20,20,18,.92)_env(safe-area-inset-top,0px),rgba(0,0,0,.45)_calc(env(safe-area-inset-top,0px)_+_5rem),#141412_100%)]"
-          aria-hidden
-        />
+      <header className={cn("shop-hero", shop.hero_image_url && "shop-hero-with-photo")}>
+        {/* Formas chapadas na cor da loja: quarto de círculo (com a foto da capa, se houver) e anel. */}
+        <span className="shop-hero-quarter" aria-hidden>
+          {shop.hero_image_url && <img src={shop.hero_image_url} alt="" />}
+        </span>
+        <span className="shop-hero-ring" aria-hidden />
         <div
           className={cn(
             "mx-auto flex max-w-3xl items-center justify-between gap-3 px-4",
@@ -455,11 +445,15 @@ export function ShopLandingView({
               <img
                 src={shop.logo_url}
                 alt={t("shopLanding.logoAlt", { name })}
-                className="size-12 shrink-0 rounded-[var(--control-radius)] object-contain p-1"
-                style={{ background: shop.logo_background_color || "#f7f5f0" }}
+                className="shop-hero-logo size-12 shrink-0 rounded-[var(--control-radius)] object-contain p-1"
+                style={
+                  shop.logo_background_color
+                    ? { background: shop.logo_background_color }
+                    : undefined
+                }
               />
             ) : (
-              <span className="flex size-12 shrink-0 items-center justify-center rounded-[var(--control-radius)] bg-[#f7f5f0] text-[#141412]">
+              <span className="shop-hero-logo flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-[var(--control-radius)]">
                 <SeloBarbearia lojaId={shop.id} nome={name} tamanho={48} />
               </span>
             )}
@@ -473,26 +467,26 @@ export function ShopLandingView({
         </div>
         <div
           className={cn(
-            "mx-auto max-w-3xl px-4 pb-6 pt-8",
+            "shop-hero-body mx-auto max-w-3xl px-4 pb-6 pt-8",
             // A partir de 768 px (tablet) a capa fica em duas colunas: texto | cartão "Hoje".
             wide &&
               "tablet:grid tablet:grid-cols-[minmax(0,1fr)_22rem] tablet:items-end tablet:gap-8 tablet:pb-10 lg:max-w-6xl lg:grid-cols-[minmax(0,1fr)_25rem] lg:gap-10",
           )}
         >
           <div className="min-w-0 space-y-4">
-            <h1 className="text-4xl leading-tight sm:text-5xl" style={brandFont}>
+            <h1 className="shop-hero-title" style={brandFont}>
               {name}
             </h1>
-            <p className="max-w-xl text-base text-[#f7f5f0]/85">{headline}</p>
+            <p className="max-w-xl text-lg leading-snug">{headline}</p>
             {showHours ? (
               <button
                 type="button"
                 onClick={scrollToHours}
                 aria-label={`${statusLabel}. ${t("shopLanding.seeWeek")}`}
-                className="inline-flex min-h-11 max-w-full items-center gap-1 rounded-[var(--button-radius)] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+                className="shop-hero-focus inline-flex min-h-11 max-w-full items-center gap-1 rounded-[var(--button-radius)] text-left"
               >
                 {statusBadge}
-                <ChevronDown className="size-4 shrink-0 text-[#f7f5f0]/80" aria-hidden />
+                <ChevronDown className="size-4 shrink-0" aria-hidden />
               </button>
             ) : (
               <p>{statusBadge}</p>
@@ -504,12 +498,11 @@ export function ShopLandingView({
                 whatsapp={contact.whatsapp}
                 instagram={contact.instagram}
                 instagramHandle={landing.instagram.trim()}
-                className="max-w-md"
               />
             )}
             {address && (
-              <p className="flex max-w-md items-start gap-1.5 text-xs leading-snug text-[#f7f5f0]/80">
-                <MapPin className="mt-px size-3.5 shrink-0" aria-hidden />
+              <p className="flex max-w-md items-start gap-1.5 text-sm leading-snug">
+                <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden />
                 <span className="min-w-0 [overflow-wrap:anywhere]">{address}</span>
               </p>
             )}
@@ -544,10 +537,7 @@ export function ShopLandingView({
           {showStaff && (
             <section aria-labelledby="landing-staff" className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2
-                  id="landing-staff"
-                  className="flex items-center gap-2 text-lg font-extrabold tracking-tight"
-                >
+                <h2 id="landing-staff" className="shop-section-title">
                   <Users className={`size-5 ${accentIconClass}`} aria-hidden />
                   {t("shopLanding.staffTitle")}
                 </h2>
@@ -643,11 +633,8 @@ export function ShopLandingView({
 
           {showServices && (
             <section aria-labelledby="landing-services" className="space-y-3">
-              <h2
-                id="landing-services"
-                className="flex items-center gap-2 text-lg font-extrabold tracking-tight"
-              >
-                <Scissors className={`size-5 ${accentIconClass}`} aria-hidden />
+              <h2 id="landing-services" className="shop-section-title">
+                <ListChecks className={`size-5 ${accentIconClass}`} aria-hidden />
                 {t("shopLanding.servicesTitle")}
               </h2>
               <ul
@@ -672,10 +659,7 @@ export function ShopLandingView({
 
           {showAbout && (
             <section aria-labelledby="landing-about" className="space-y-2">
-              <h2
-                id="landing-about"
-                className="flex items-center gap-2 text-lg font-extrabold tracking-tight"
-              >
+              <h2 id="landing-about" className="shop-section-title">
                 <Info className={`size-5 ${accentIconClass}`} aria-hidden />
                 {t("shopLanding.about")}
               </h2>
@@ -687,7 +671,9 @@ export function ShopLandingView({
 
           {!preview && (
             <footer className="space-y-2 border-t border-border pt-6 text-center text-xs text-muted-foreground">
-              <p>{t("shopLanding.footer")}</p>
+              <p className="flex justify-center">
+                {t("shopLanding.footer")}
+              </p>
               <p className="flex justify-center gap-2">
                 <Link
                   to="/privacidade"
@@ -718,7 +704,7 @@ export function ShopLandingView({
                   slug={shop.slug}
                   preview={preview}
                   signedIn={signedIn}
-                  className="action-button action-confirm min-h-12 w-full text-sm"
+                  className="shop-cta w-full"
                 >
                   <CalendarPlus aria-hidden />
                   {t("shopLanding.bookCta")}
@@ -731,13 +717,13 @@ export function ShopLandingView({
       </div>
 
       {!preview && !ctaVisible && (
-        <div className="public-sticky-bar public-card fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl lg:hidden">
+        <div className="public-sticky-bar public-card fixed inset-x-0 bottom-0 z-20 border-t border-border p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden">
           <div className="mx-auto max-w-3xl">
             <BookLink
               slug={shop.slug}
               preview={preview}
               signedIn={signedIn}
-              className="action-button action-confirm min-h-12 w-full text-sm"
+              className="shop-cta w-full"
             >
               <CalendarPlus aria-hidden />
               {t("shopLanding.bookCta")}

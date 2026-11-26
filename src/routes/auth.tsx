@@ -1,10 +1,11 @@
-import { MarcaPlataforma } from "@/components/MarcaPlataforma";
+import { MarcaAurset } from "@/features/auth/acesso/MarcaAurset";
+import { Campo } from "@/features/auth/acesso/Campo";
+import { PainelAcesso } from "@/features/auth/acesso/PainelAcesso";
 import { SeloBarbearia } from "@/components/SeloBarbearia";
 import { isPlatformApexHost } from "@/lib/shop/host";
 import { customerAuthReturn } from "@/lib/auth/customer-return";
 import { otpRequestBody } from "@/lib/auth/otp-request";
 import { WhatsAppLogin } from "@/features/auth/WhatsAppLogin";
-import { AuthFrame } from "@/features/auth/AuthFrame";
 import {
   ArrowLeft,
   ArrowRight,
@@ -21,8 +22,8 @@ import {
   MailOpen,
   MessageCircle,
   MousePointerClick,
-  Scissors,
   ShieldCheck,
+  Smartphone,
   UserRound,
 } from "lucide-react";
 import { Link, createFileRoute, useSearch } from "@tanstack/react-router";
@@ -59,7 +60,6 @@ import {
   DEFAULT_FONT_FAMILY,
   DEFAULT_HEADER_FONT_STYLE,
   DEFAULT_HEADER_FONT_WEIGHT,
-  DEFAULT_LOGIN_IMAGE,
   DEFAULT_LOGIN_LAYOUT,
   DEFAULT_PRIMARY_COLOR,
   normalizeLoginLayout,
@@ -70,10 +70,10 @@ import { BrandFontFace } from "@/features/shop/BrandFontFace";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { t as tNow, useI18n } from "@/lib/i18n";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { PaletaToggle } from "@/components/PaletaToggle";
 import { Switch } from "@/components/ui/switch";
 import {
   announce,
-  FieldMessage,
   Hint,
   Notice,
   StatusBadge,
@@ -84,7 +84,6 @@ import {
 import {
   CodeInput,
   CodeSentCard,
-  ConsentNote,
   ExampleBubble,
   GoogleMark,
   PasswordRules,
@@ -129,8 +128,8 @@ type AuthBrand = {
 
 const DEFAULT_AUTH_BRAND: AuthBrand = {
   shopId: null,
-  shopName: "Barba & Cabelo",
-  displayName: "Barba & Cabelo",
+  shopName: "Aurset",
+  displayName: "Aurset",
   logoUrl: null,
   logoBackgroundColor: null,
   fontFamily: DEFAULT_FONT_FAMILY,
@@ -236,7 +235,13 @@ const NEW_ACCOUNT_WINDOW_MS = 60 * 60 * 1000;
 /** WhatsApp do cadastro que ficou só nos metadados (confirmação do e-mail): vale por 7 dias. */
 const SIGNUP_WHATSAPP_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
-type SignupFieldErrors = { name?: string; email?: string; whatsapp?: string; password?: string };
+type SignupFieldErrors = {
+  name?: string;
+  email?: string;
+  whatsapp?: string;
+  password?: string;
+  confirm?: string;
+};
 
 /** Espera sugerida antes de reenviar o código, se o servidor não informar. */
 const PHONE_RESEND_SECONDS = 60;
@@ -471,6 +476,7 @@ function AuthPage() {
   const nameInputRef = useRef<HTMLInputElement>(null);
   const signupPhoneRef = useRef<HTMLInputElement>(null);
   const passwordInputRef = useRef<HTMLInputElement>(null);
+  const confirmInputRef = useRef<HTMLInputElement>(null);
   // Conferências do primeiro acesso (aceite e WhatsApp guardado no cadastro): uma vez por tela.
   const firstAccessCheckedRef = useRef(false);
   const [otpCode, setOtpCode] = useState("");
@@ -1298,6 +1304,40 @@ function AuthPage() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
+    // Entrar, esqueci a senha (por e-mail) e nova senha: as mesmas regras que o navegador já
+    // aplicava (campo obrigatório, formato do e-mail, senha com 6 ou mais), agora com a mensagem
+    // junto do campo e no idioma da tela. Nada é enviado enquanto houver campo a corrigir.
+    if (
+      mode === "signin" ||
+      mode === "recovery" ||
+      (mode === "forgot" && !(recoveryChannel === "whatsapp" && effectiveShopRef))
+    ) {
+      const nextErrors: SignupFieldErrors = {};
+      if (mode !== "recovery" && (!email.trim() || emailInputRef.current?.validity.typeMismatch)) {
+        nextErrors.email = tNow("acesso.erro.email");
+      }
+      if (mode === "signin") {
+        if (!password) nextErrors.password = tNow("acesso.erro.senhaVazia");
+        else if (password.length < 6) nextErrors.password = tNow("errors.passwordShort");
+      }
+      if (mode === "recovery") {
+        if (password.length < 6) nextErrors.password = tNow("errors.passwordShort");
+        else if (password !== passwordConfirm) nextErrors.confirm = tNow("acesso.erro.confirmar");
+      }
+      setFieldErrors(nextErrors);
+      const firstInvalid = nextErrors.email
+        ? emailInputRef.current
+        : nextErrors.password
+          ? passwordInputRef.current
+          : nextErrors.confirm
+            ? confirmInputRef.current
+            : null;
+      if (firstInvalid) {
+        setError(null);
+        firstInvalid.focus();
+        return;
+      }
+    }
     setBusy(true);
     setError(null);
     setInfo(null);
@@ -1412,13 +1452,13 @@ function AuthPage() {
         nextErrors.name = tNow("cad.cliente.nameError");
       }
       if (!email.trim() || emailInputRef.current?.validity.typeMismatch) {
-        nextErrors.email = tNow("cad.dono.errEmail");
+        nextErrors.email = tNow("acesso.erro.email");
       }
       if (!phoneCheck.ok) {
         if (phoneCheck.reason === "ddd") nextErrors.whatsapp = tNow("cad.cliente.phoneDddError");
         else if (phoneCheck.reason === "length")
           nextErrors.whatsapp = tNow("cad.cliente.phoneLengthError");
-        else nextErrors.whatsapp = tNow("cad.cliente.phoneRequired");
+        else nextErrors.whatsapp = tNow("acesso.erro.telefone");
       }
       if (password.length < 6) nextErrors.password = tNow("errors.passwordShort");
       setFieldErrors(nextErrors);
@@ -1643,12 +1683,12 @@ function AuthPage() {
     mode === "verifyPhone"
       ? t("fix3.auth.phoneTitle")
       : mode === "signup"
-        ? t("auth.title.signup")
+        ? t("acesso.titulo.cadastro")
         : mode === "forgot"
-          ? t("auth.title.forgot")
+          ? t("acesso.titulo.esqueci")
           : mode === "recovery"
-            ? t("auth.title.recovery")
-            : t("auth.title.signin");
+            ? t("acesso.titulo.nova")
+            : t("acesso.titulo.entrar");
 
   // Esqueci a senha pelo WhatsApp (só no login de uma barbearia).
   const whatsappRecovery = recoveryChannel === "whatsapp" && Boolean(effectiveShopRef);
@@ -1728,38 +1768,97 @@ function AuthPage() {
   })();
   const SubmitIcon = submit.icon;
 
-  // Frase do aceite com os nomes dos documentos em texto; os links ficam logo abaixo, em pílulas.
-  const docNames = (
-    <>
-      <strong className="font-semibold text-foreground">{t("auth.terms.link")}</strong>{" "}
+  // Acesso de uma loja (cliente da loja): neutros + marca da loja. Sem loja: a Aurset, com as
+  // cores da marca-mãe, que são exclusivas da plataforma. Enquanto a loja ainda carrega (ou em
+  // domínio próprio), já vale o modo loja, para a marca-mãe não piscar numa tela de cliente.
+  const modoLoja =
+    Boolean(brand.shopId) || Boolean(effectiveShopRef) || shopContext.demo || !isPlatformApexHost();
+  const lang = encodeURIComponent(locale);
+
+  // Frase do aceite: os nomes dos documentos são os próprios links (abrem em nova aba).
+  const aceite = (comIdade: boolean) => (
+    <p className="acesso-aceite">
+      {t("auth.terms.before")}{" "}
+      <a href={`/termos?lang=${lang}`} target="_blank" rel="noopener noreferrer">
+        {t("auth.terms.link")}
+        <span className="sr-only"> {t("cad.cliente.newTab")}</span>
+      </a>{" "}
       {t("auth.terms.and")}{" "}
-      <strong className="font-semibold text-foreground">{t("auth.privacy.link")}</strong>
-    </>
+      <a href={`/privacidade?lang=${lang}`} target="_blank" rel="noopener noreferrer">
+        {t("auth.privacy.link")}
+        <span className="sr-only"> {t("cad.cliente.newTab")}</span>
+      </a>
+      {comIdade ? <> {t("cad.cliente.terms.age")}</> : "."}
+    </p>
   );
 
-  // Caminho de volta: à página da barbearia (ou ao início da plataforma).
+  // Caminho de volta: à página da loja (ou ao início da plataforma).
   const backTarget = shopContext.demo
     ? null
     : shopContext.shopRef
-      ? { href: `/b/${encodeURIComponent(shopContext.shopRef)}`, label: t("entry.back.shop") }
+      ? { href: `/b/${encodeURIComponent(shopContext.shopRef)}`, label: t("acesso.voltar.loja") }
       : hostShopSlug
-        ? { href: "/", label: t("entry.back.shop") }
+        ? { href: "/", label: t("acesso.voltar.loja") }
         : { href: "/", label: t("entry.back.home") };
 
-  const fieldClass =
-    "auth-input-wrap auth-brand-control flex min-h-[3.25rem] items-center border border-border/70 transition-[border-color,box-shadow] duration-200 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10";
-  const inputClass =
-    "min-h-[3.25rem] min-w-0 flex-1 bg-transparent px-3 py-3 text-[15px] text-foreground outline-none placeholder:text-muted-foreground/60";
-  const labelClass = "block space-y-2 text-sm font-semibold text-foreground/85";
-  // Botão principal do /auth (enviar e telas de resultado): sempre na cor da marca da loja.
-  const primaryActionClass =
-    "auth-primary-action auth-brand-button flex min-h-[3.25rem] w-full items-center justify-center gap-2 bg-primary px-4 text-[15px] font-semibold text-primary-foreground shadow-[0_10px_24px_color-mix(in_oklch,var(--brand-primary)_22%,transparent)] transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_14px_28px_color-mix(in_oklch,var(--brand-primary)_28%,transparent)] active:translate-y-0 active:scale-[0.99] aria-busy:cursor-wait [&:disabled:not([aria-busy=true])]:opacity-60";
+  const subtitle =
+    mode === "signin"
+      ? t("acesso.sub.entrar")
+      : mode === "signup"
+        ? t("acesso.sub.cadastro")
+        : mode === "forgot"
+          ? whatsappRecovery
+            ? null
+            : t("acesso.sub.esqueci")
+          : mode === "recovery"
+            ? t("acesso.sub.nova")
+            : null;
+
+  const marcaAurset = <MarcaAurset titulo={t("acesso.marca")} className="acesso-marca-aurset" />;
+
+  /** Entrar com Google e os avisos que andam com ele (espera, app instalado). */
+  const googleBlock = (label: string) => (
+    <>
+      <button
+        type="button"
+        onClick={() => void handleGoogle()}
+        disabled={busy}
+        aria-busy={googleBusy ? true : undefined}
+        className="acesso-google"
+      >
+        {googleBusy ? (
+          <Loader2 className="size-5 motion-safe:animate-spin" aria-hidden="true" />
+        ) : (
+          <GoogleMark />
+        )}
+        {label}
+      </button>
+      {googleInstalledWarning && !googleWaiting && (
+        <Notice tone="warning" role="none" title={t("relay.unavailableTitle")}>
+          {t("relay.unavailableLine")}
+        </Notice>
+      )}
+      {googleWaiting && (
+        <Notice
+          tone="progress"
+          title={relayPending ? t("relay.waitTitle") : t("entry.google.waitTitle")}
+          action={{
+            label: relayPending ? t("relay.cancel") : t("entry.google.waitClosed"),
+            onClick: stopWaitingGoogle,
+          }}
+        >
+          {relayPending ? t("relay.waitLine") : null}
+        </Notice>
+      )}
+    </>
+  );
 
   if (popup) {
     return (
-      <main className="mb-page flex min-h-dvh items-center justify-center bg-background px-4 text-foreground">
-        <div className="entry-result-card w-full max-w-sm space-y-5 p-6 sm:p-8">
-          <p className="flex items-center justify-center gap-2 text-sm font-semibold">
+      <main className="acesso acesso-aurset acesso-janela mb-page">
+        <div className="acesso-cartao">
+          {marcaAurset}
+          <p className="acesso-janela-titulo">
             <GoogleMark />
             {t("entry.popup.title")}
           </p>
@@ -1772,15 +1871,11 @@ function AuthPage() {
               tone={notice?.tone === "success" ? "success" : "progress"}
               title={info || t("auth.popup.connecting")}
             >
-              {t("auth.popup.autoClose")}
+              {t("acesso.janela.fecha")}
             </ResultHero>
           )}
           {(error || popupSlow) && (
-            <button
-              type="button"
-              className="action-button entry-submit"
-              onClick={() => window.close()}
-            >
+            <button type="button" className="acesso-botao" onClick={() => window.close()}>
               {t("entry.popup.close")}
             </button>
           )}
@@ -1789,366 +1884,340 @@ function AuthPage() {
     );
   }
 
+  const tabs = [
+    ["signin", t("auth.tab.signin")],
+    ["signup", t("auth.tab.signup")],
+  ] as const;
+  const showTabs = !resultScreen && (mode === "signin" || mode === "signup");
+  const noNativeValidation =
+    mode === "signup" ||
+    mode === "signin" ||
+    mode === "recovery" ||
+    (mode === "forgot" && !whatsappRecovery);
+  const emailError = fieldErrors.email;
+  const passwordError = fieldErrors.password;
+
   return (
     <main
-      className={`auth-entry-host auth-workspace auth-page brand-page auth-layout-${brand.loginLayout} mb-page min-h-dvh text-foreground ${brandCornerClass(brand.cornerStyle)}`}
+      className={`acesso ${
+        modoLoja ? `acesso-loja acesso-${brand.loginLayout}` : "acesso-aurset acesso-split"
+      } brand-page mb-page ${brandCornerClass(brand.cornerStyle)}`}
       style={
-        brandVariables(
-          brand.primaryColor,
-          brand.accentColor,
-          brand.fontFamily,
-          brand.customFontUrl,
-          brand.headerFontWeight,
-          brand.headerFontStyle,
-          brand.cornerStyle,
-        ) as CSSProperties
+        modoLoja
+          ? (brandVariables(
+              brand.primaryColor,
+              brand.accentColor,
+              brand.fontFamily,
+              brand.customFontUrl,
+              brand.headerFontWeight,
+              brand.headerFontStyle,
+              brand.cornerStyle,
+            ) as CSSProperties)
+          : undefined
       }
       data-brand-shop={brand.shopId ?? undefined}
     >
       <BrandFontFace url={brand.customFontUrl} />
-      <div className="auth-theme-toggle">
-        <LanguageSwitcher />
-        <ThemeToggle />
-      </div>
-      <AuthFrame>
-        <div className="auth-photo-layer" aria-hidden="true">
-          <img src={brand.loginImageUrl || DEFAULT_LOGIN_IMAGE} alt="" />
-          <span />
-        </div>
-        <section
-          className="auth-photo-copy"
-          aria-label={t("auth.welcomeRegion", { name: brand.displayName })}
-        >
-          <div
-            className="auth-photo-copy-logo"
-            style={{
-              backgroundColor: brand.shopId || brand.logoUrl ? brand.logoBackgroundColor ?? "rgba(255,255,255,.92)" : undefined,
-            }}
-          >
-            {brand.logoUrl ? (
-              <img src={brand.logoUrl} alt="" />
-            ) : brand.shopId ? (
-              <SeloBarbearia lojaId={brand.shopId} nome={brand.displayName} tamanho={44} />
-            ) : (
-              !brandLoading && isPlatformApexHost() ? <MarcaPlataforma composicao="simbolo" fotoEscura /> : null
-            )}
-          </div>
-          <p className="auth-brand-name">{brand.displayName}</p>
-          <h2>{t("auth.hero.title")}</h2>
-          <p>{t("auth.hero.text")}</p>
-        </section>
-        <div className="auth-brand-panel mb-panel w-full max-w-md overflow-hidden border border-border/70 bg-card shadow-[0_24px_60px_color-mix(in_oklch,#1c1d19_14%,transparent)]">
-          <div className="auth-brand-header px-6 pt-8 sm:px-10 sm:pt-12">
-            <div className="auth-brand-identity flex items-center gap-3">
-              <div
-                className="auth-brand-logo flex size-11 shrink-0 items-center justify-center overflow-hidden"
-                style={{
-                  backgroundColor:
-                    brand.shopId || brand.logoUrl ? brand.logoBackgroundColor ??
-                    "color-mix(in oklab, var(--brand-primary) 8%, white)" : undefined,
-                }}
-              >
-                {brand.logoUrl ? (
-                  <img
-                    src={brand.logoUrl}
-                    alt={t("auth.logoAlt", { name: brand.displayName })}
-                    className="size-full object-contain p-2"
-                  />
-                ) : brand.shopId ? (
-                  <SeloBarbearia lojaId={brand.shopId} nome={brand.displayName} tamanho={44} />
-                ) : (
-                  !brandLoading && isPlatformApexHost() ? <MarcaPlataforma composicao="simbolo" /> : null
-                )}
-              </div>
-              <p
-                className="auth-brand-name min-w-0 flex-1 truncate text-sm font-bold"
-                aria-live="polite"
-                aria-busy={brandLoading}
-              >
-                {brand.displayName}
-              </p>
+      <div className="acesso-grade">
+        <PainelAcesso
+          loja={
+            modoLoja
+              ? {
+                  shopId: brand.shopId,
+                  nome: brand.displayName,
+                  logoUrl: brand.logoUrl,
+                  fotoUrl: brand.loginImageUrl,
+                  capa: brand.loginLayout === "cover",
+                }
+              : null
+          }
+        />
+        <div className="acesso-lado-form">
+          <div className="acesso-cartao">
+            <div className="acesso-topo">
+              {modoLoja ? (
+                <div className="acesso-marca">
+                  {(brand.logoUrl || brand.shopId) && (
+                    <span
+                      className="acesso-marca-logo"
+                      style={{ backgroundColor: brand.logoBackgroundColor ?? undefined }}
+                    >
+                      {brand.logoUrl ? (
+                        <img
+                          src={brand.logoUrl}
+                          alt={t("auth.logoAlt", { name: brand.displayName })}
+                        />
+                      ) : (
+                        <SeloBarbearia
+                          lojaId={brand.shopId}
+                          nome={brand.displayName}
+                          tamanho={44}
+                        />
+                      )}
+                    </span>
+                  )}
+                  <p className="acesso-marca-nome" aria-live="polite" aria-busy={brandLoading}>
+                    {brandLoading && !brand.shopId && !shopContext.demo ? "" : brand.displayName}
+                  </p>
+                </div>
+              ) : (
+                <div className="acesso-marca">{marcaAurset}</div>
+              )}
+              {backTarget && (mode === "signin" || mode === "signup") && (
+                <a href={backTarget.href} className="acesso-link acesso-link-suave">
+                  <ArrowLeft aria-hidden="true" />
+                  {backTarget.label}
+                </a>
+              )}
             </div>
 
             {!resultScreen && (
-              <div className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2">
-                <h1
-                  ref={titleRef}
-                  tabIndex={-1}
-                  className="auth-title text-[1.85rem] font-bold leading-[1.05] tracking-tight text-foreground outline-none sm:text-[2.2rem]"
-                >
-                  {title}
-                </h1>
-                {shopContext.demo && (
-                  <StatusBadge tone="highlight" size="sm" label={t("common.demo")} />
+              <div className="acesso-cabeca">
+                <div className="acesso-titulo-linha">
+                  <h1 ref={titleRef} tabIndex={-1} className="acesso-titulo">
+                    {title}
+                  </h1>
+                  {shopContext.demo && (
+                    <StatusBadge tone="highlight" size="sm" label={t("common.demo")} />
+                  )}
+                </div>
+                {subtitle && <p className="acesso-sub">{subtitle}</p>}
+                {mode !== "forgot" && mode !== "recovery" && (
+                  <PickedSlotChip next={preferredNext} who={who} />
+                )}
+                {flowSteps && mode !== "signup" && (
+                  <Steps
+                    steps={flowSteps}
+                    label={
+                      mode === "verifyPhone"
+                        ? t("entry.phone.stepsLabel")
+                        : t("entry.forgot.stepsLabel")
+                    }
+                    className="mt-3"
+                  />
                 )}
               </div>
             )}
-            {!resultScreen && mode !== "forgot" && mode !== "recovery" && (
-              <PickedSlotChip next={preferredNext} who={who} />
-            )}
-            {!resultScreen && flowSteps && mode !== "signup" && (
-              <Steps
-                steps={flowSteps}
-                label={
-                  mode === "verifyPhone"
-                    ? t("entry.phone.stepsLabel")
-                    : t("entry.forgot.stepsLabel")
-                }
-                className="mt-5"
-              />
-            )}
-          </div>
 
-          <div className="auth-form-body auth-form-stack px-6 pb-8 pt-8 sm:px-10 sm:pb-10">
-            {!resultScreen && (mode === "signin" || mode === "signup") && (
-              <div
-                className="auth-mode-tabs auth-brand-control grid grid-cols-2 gap-1 bg-muted/70 p-1"
-                role="tablist"
-                aria-label={t("auth.modeTabs")}
-              >
-                {(
-                  [
-                    ["signin", t("auth.tab.signin")],
-                    ["signup", t("auth.tab.signup")],
-                  ] as const
-                ).map(([id, label]) => (
-                  <button
-                    key={id}
-                    type="button"
-                    role="tab"
-                    aria-selected={mode === id}
-                    onClick={() => switchMode(id)}
-                    className={`auth-brand-button min-h-11 px-3 py-2.5 text-sm font-semibold transition-[background-color,color,box-shadow] duration-300 ease-out ${
-                      mode === id
-                        ? "bg-card text-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
+            <div className="acesso-corpo">
+              {showTabs && (
+                <div className="acesso-abas" role="tablist" aria-label={t("auth.modeTabs")}>
+                  {tabs.map(([id, label]) => (
+                    <button
+                      key={id}
+                      id={`acesso-aba-${id}`}
+                      type="button"
+                      role="tab"
+                      aria-selected={mode === id}
+                      aria-controls="acesso-conteudo"
+                      tabIndex={mode === id ? 0 : -1}
+                      onClick={() => switchMode(id)}
+                      onKeyDown={(event) => {
+                        if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+                        event.preventDefault();
+                        const other = id === "signin" ? "signup" : "signin";
+                        switchMode(other);
+                        window.requestAnimationFrame(() =>
+                          document.getElementById(`acesso-aba-${other}`)?.focus(),
+                        );
+                      }}
+                      className="acesso-aba"
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {emailResult && (
+                <section className="acesso-resultado" aria-labelledby="auth-result-title">
+                  <ResultHero
+                    ref={titleRef}
+                    id="auth-result-title"
+                    tone="success"
+                    icon={MailCheck}
+                    title={
+                      emailResult.kind === "signup"
+                        ? t("entry.email.title")
+                        : t("entry.reset.title")
+                    }
                   >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {!resultScreen && isPlatformApexHost() && !effectiveShopRef && !shopContext.demo && mode === "signup" && (
-              <Notice
-                tone="info"
-                title={t("auth.sharedAccountTitle")}
-                action={{ label: t("auth.useExistingAccount"), onClick: () => switchMode("signin") }}
-              >
-                {t("auth.sharedAccountHint")}
-              </Notice>
-            )}
-
-            {emailResult && (
-              <section className="grid gap-5" aria-labelledby="auth-result-title">
-                <ResultHero
-                  ref={titleRef}
-                  id="auth-result-title"
-                  tone="success"
-                  icon={MailCheck}
-                  title={
-                    emailResult.kind === "signup" ? t("entry.email.title") : t("entry.reset.title")
-                  }
-                >
-                  {emailResult.kind === "reset" && <p>{t("entry.reset.line")}</p>}
-                  <p className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-xl border border-border bg-background px-3 py-1.5 text-sm font-semibold text-foreground [overflow-wrap:anywhere]">
-                    <Mail className="size-4 shrink-0 text-gold" aria-hidden="true" />
-                    {emailResult.email}
-                  </p>
-                </ResultHero>
-                <Steps
-                  orientation="vertical"
-                  label={t("entry.email.stepsLabel")}
-                  className="rounded-2xl border border-border bg-background/60 p-4"
-                  steps={[
-                    {
-                      key: "open",
-                      label: t("entry.email.stepOpen"),
-                      icon: MailOpen,
-                      status: "upcoming",
-                    },
-                    {
-                      key: "tap",
-                      label: t("entry.email.stepTap"),
-                      icon: MousePointerClick,
-                      status: "upcoming",
-                    },
-                    ...(emailResult.kind === "reset"
-                      ? [
-                          {
-                            key: "new",
-                            label: t("entry.reset.stepNew"),
-                            icon: KeyRound,
-                            status: "upcoming" as const,
-                          },
-                        ]
-                      : emailResult.withWhatsapp
+                    {emailResult.kind === "reset" && <p>{t("entry.reset.line")}</p>}
+                    <p className="acesso-email">
+                      <Mail aria-hidden="true" />
+                      {emailResult.email}
+                    </p>
+                  </ResultHero>
+                  <Steps
+                    orientation="vertical"
+                    label={t("entry.email.stepsLabel")}
+                    className="acesso-passos"
+                    steps={[
+                      {
+                        key: "open",
+                        label: t("entry.email.stepOpen"),
+                        icon: MailOpen,
+                        status: "upcoming",
+                      },
+                      {
+                        key: "tap",
+                        label: t("entry.email.stepTap"),
+                        icon: MousePointerClick,
+                        status: "upcoming",
+                      },
+                      ...(emailResult.kind === "reset"
                         ? [
                             {
-                              key: "code",
-                              label: t("entry.email.stepCode"),
-                              icon: MessageCircle,
+                              key: "new",
+                              label: t("entry.reset.stepNew"),
+                              icon: KeyRound,
                               status: "upcoming" as const,
                             },
                           ]
-                        : []),
-                  ]}
-                />
-                <Hint>{t("entry.email.spam")}</Hint>
-                {error && <Notice tone="danger" title={error} />}
-                <div className="grid gap-2">
-                  <button
-                    type="button"
-                    onClick={() => switchMode("signin")}
-                    className={primaryActionClass}
-                  >
-                    {emailResult.kind === "signup"
-                      ? t("entry.email.confirmed")
-                      : t("auth.backToSignin")}
-                    <ArrowRight className="size-4" aria-hidden="true" />
-                  </button>
-                  {emailResult.kind === "signup" ? (
+                        : emailResult.withWhatsapp
+                          ? [
+                              {
+                                key: "code",
+                                label: t("entry.email.stepCode"),
+                                icon: MessageCircle,
+                                status: "upcoming" as const,
+                              },
+                            ]
+                          : []),
+                    ]}
+                  />
+                  <Hint>{t("entry.email.spam")}</Hint>
+                  {error && <Notice tone="danger" title={error} />}
+                  <div className="acesso-resultado-acoes">
                     <button
                       type="button"
-                      onClick={() => switchMode("signup")}
-                      className="entry-link-button"
+                      onClick={() => switchMode("signin")}
+                      className="acesso-botao"
                     >
-                      {t("entry.email.other")}
+                      {emailResult.kind === "signup"
+                        ? t("entry.email.confirmed")
+                        : t("acesso.voltar.entrar")}
+                      <ArrowRight aria-hidden="true" />
                     </button>
-                  ) : (
-                    <ResendButton
-                      className="justify-center"
-                      secondsLeft={resetResendIn}
-                      totalSeconds={PHONE_RESEND_SECONDS}
-                      busy={busy}
-                      onClick={() => void resendFromForgot("link")}
-                      label={t("entry.reset.resend")}
-                      waitLabel={t("entry.reset.resendIn", { seconds: resetResendIn })}
-                      busyLabel={t("entry.busy.sendLink")}
+                    {emailResult.kind === "signup" ? (
+                      <button
+                        type="button"
+                        onClick={() => switchMode("signup")}
+                        className="acesso-link"
+                      >
+                        {t("entry.email.other")}
+                      </button>
+                    ) : (
+                      <ResendButton
+                        className="justify-center"
+                        secondsLeft={resetResendIn}
+                        totalSeconds={PHONE_RESEND_SECONDS}
+                        busy={busy}
+                        onClick={() => void resendFromForgot("link")}
+                        label={t("entry.reset.resend")}
+                        waitLabel={t("entry.reset.resendIn", { seconds: resetResendIn })}
+                        busyLabel={t("entry.busy.sendLink")}
+                      />
+                    )}
+                  </div>
+                </section>
+              )}
+
+              {mode === "verifyPhone" && phoneUnavailable && (
+                <section className="acesso-resultado" aria-labelledby="auth-result-title">
+                  <ResultHero
+                    ref={titleRef}
+                    id="auth-result-title"
+                    tone="success"
+                    title={t("entry.phone.step.created")}
+                  >
+                    <StatusBadge
+                      tone="pending"
+                      icon={Hourglass}
+                      label={t("entry.phone.unavailableBadge")}
                     />
-                  )}
-                </div>
-              </section>
-            )}
-
-            {mode === "verifyPhone" && phoneUnavailable && (
-              <section className="grid gap-5" aria-labelledby="auth-result-title">
-                <ResultHero
-                  ref={titleRef}
-                  id="auth-result-title"
-                  tone="success"
-                  title={t("entry.phone.step.created")}
-                >
-                  <StatusBadge
-                    tone="pending"
-                    icon={Hourglass}
-                    label={t("entry.phone.unavailableBadge")}
-                  />
-                  <p className="mt-2">{t("entry.phone.unavailableLine")}</p>
-                </ResultHero>
-                {error && <Notice tone="danger" title={error} />}
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void skipPhoneVerification()}
-                  aria-busy={busy ? true : undefined}
-                  className={primaryActionClass}
-                >
-                  {busy ? (
-                    <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden="true" />
-                  ) : null}
-                  {busy ? t("auth.info.signingIn") : t("entry.phone.enterApp")}
-                  {!busy && <ArrowRight className="size-4" aria-hidden="true" />}
-                </button>
-              </section>
-            )}
-
-            {!resultScreen && mode === "signup" && (
-              <div className="grid gap-3">
-                {/* Um só aceite, antes dos dois caminhos ("Ao continuar…" cobre Google e e-mail). */}
-                <ConsentNote>
-                  {t("auth.terms.before")} {docNames} {t("cad.cliente.terms.age")}
-                </ConsentNote>
-                <button
-                  type="button"
-                  onClick={() => void handleGoogle()}
-                  disabled={busy}
-                  className="auth-brand-button auth-google-action flex min-h-[3.25rem] w-full items-center justify-center gap-3 border border-border/70 px-3 text-[15px] font-semibold text-foreground transition-colors hover:border-foreground/25 hover:bg-muted/50 disabled:opacity-60"
-                >
-                  {googleBusy ? (
-                    <Loader2 className="size-5 motion-safe:animate-spin" aria-hidden="true" />
-                  ) : (
-                    <GoogleMark />
-                  )}
-                  {t("entry.signup.google")}
-                </button>
-                {googleInstalledWarning && !googleWaiting && (
-                  <Notice tone="warning" role="none" title={t("relay.unavailableTitle")}>
-                    {t("relay.unavailableLine")}
-                  </Notice>
-                )}
-                {googleWaiting && (
-                  <Notice
-                    tone="progress"
-                    title={relayPending ? t("relay.waitTitle") : t("entry.google.waitTitle")}
-                    action={{
-                      label: relayPending ? t("relay.cancel") : t("entry.google.waitClosed"),
-                      onClick: stopWaitingGoogle,
-                    }}
+                    <p className="mt-2">{t("entry.phone.unavailableLine")}</p>
+                  </ResultHero>
+                  {error && <Notice tone="danger" title={error} />}
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void skipPhoneVerification()}
+                    aria-busy={busy ? true : undefined}
+                    className="acesso-botao"
                   >
-                    {relayPending ? t("relay.waitLine") : null}
-                  </Notice>
-                )}
-                <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground">
-                  <span className="h-px flex-1 bg-border" aria-hidden />
-                  <span>{t("entry.signup.orEmail")}</span>
-                  <span className="h-px flex-1 bg-border" aria-hidden />
-                </div>
-                {flowSteps && <Steps steps={flowSteps} label={t("entry.signup.stepsLabel")} />}
-              </div>
-            )}
+                    {busy ? (
+                      <Loader2 className="motion-safe:animate-spin" aria-hidden="true" />
+                    ) : null}
+                    {busy ? t("auth.info.signingIn") : t("entry.phone.enterApp")}
+                    {!busy && <ArrowRight aria-hidden="true" />}
+                  </button>
+                </section>
+              )}
 
-            {!resultScreen && (
-              <form
-                onSubmit={(e) => void handleSubmit(e)}
-                noValidate={mode === "signup"}
-                className={`auth-form-fields${mode === "signup" ? " is-signup" : ""}`}
-              >
-                {mode === "forgot" && linkExpired && (
-                  <Notice
-                    tone="warning"
-                    title={t("entry.link.expiredTitle")}
-                    action={{
-                      label: t("entry.link.expiredAction"),
-                      onClick: () => {
-                        setRecoveryChannel("email");
-                        window.requestAnimationFrame(() => emailInputRef.current?.focus());
-                      },
-                    }}
+              {!resultScreen && (
+                <div
+                  id="acesso-conteudo"
+                  className="acesso-corpo"
+                  role={showTabs ? "tabpanel" : undefined}
+                  aria-labelledby={showTabs ? `acesso-aba-${mode}` : undefined}
+                >
+                  {isPlatformApexHost() &&
+                    !effectiveShopRef &&
+                    !shopContext.demo &&
+                    mode === "signup" && (
+                      <Notice
+                        tone="info"
+                        title={t("acesso.conta.titulo")}
+                        action={{
+                          label: t("auth.useExistingAccount"),
+                          onClick: () => switchMode("signin"),
+                        }}
+                      >
+                        {t("acesso.conta.texto")}
+                      </Notice>
+                    )}
+
+                  <form
+                    onSubmit={(e) => void handleSubmit(e)}
+                    noValidate={noNativeValidation}
+                    className="acesso-form"
                   >
-                    {t("entry.link.expiredDetail")}
-                  </Notice>
-                )}
+                    {mode === "forgot" && linkExpired && (
+                      <Notice
+                        tone="warning"
+                        title={t("entry.link.expiredTitle")}
+                        action={{
+                          label: t("entry.link.expiredAction"),
+                          onClick: () => {
+                            setRecoveryChannel("email");
+                            window.requestAnimationFrame(() => emailInputRef.current?.focus());
+                          },
+                        }}
+                      >
+                        {t("entry.link.expiredDetail")}
+                      </Notice>
+                    )}
 
-                {mode === "signup" && (
-                  <div className="auth-field-name space-y-1.5">
-                    <label className={labelClass}>
-                      <span>{t("cad.cliente.nameLabel")}</span>
-                      <span className={fieldClass}>
-                        <UserRound
-                          className="ml-4 size-[18px] shrink-0 text-muted-foreground"
-                          aria-hidden="true"
-                        />
+                    {mode === "signup" && (
+                      <Campo
+                        id="acesso-nome"
+                        rotulo={t("acesso.nome.rotulo")}
+                        icone={UserRound}
+                        erro={fieldErrors.name}
+                        erroId="signup-name-error"
+                        className="acesso-campo-nome"
+                      >
                         <input
+                          id="acesso-nome"
                           ref={nameInputRef}
                           type="text"
-                          // Sem validação nativa: o erro traduzido aparece ao lado do campo.
+                          // Sem validação nativa: o erro traduzido aparece junto do campo.
                           aria-required="true"
                           maxLength={NAME_MAX}
                           autoComplete="name"
                           autoCapitalize="words"
-                          placeholder={t("cad.cliente.namePlaceholder")}
+                          placeholder={t("acesso.nome.exemplo")}
                           value={fullName}
                           onChange={(e) => {
                             setFullName(e.target.value);
@@ -2157,34 +2226,33 @@ function AuthPage() {
                           }}
                           aria-invalid={fieldErrors.name ? true : undefined}
                           aria-describedby={fieldErrors.name ? "signup-name-error" : undefined}
-                          className={inputClass}
                         />
-                      </span>
-                    </label>
-                    {fieldErrors.name && (
-                      <FieldMessage id="signup-name-error" tone="error">
-                        <span role="alert">{fieldErrors.name}</span>
-                      </FieldMessage>
+                      </Campo>
                     )}
-                  </div>
-                )}
 
-                {mode !== "recovery" &&
-                  mode !== "verifyPhone" &&
-                  !(mode === "forgot" && recoveryChannel === "whatsapp" && effectiveShopRef) && (
-                    <div className="auth-field-email space-y-1.5">
-                      <label className={labelClass}>
-                        <span>{t("auth.field.email")}</span>
-                        <span className={fieldClass}>
-                          <Mail
-                            className="ml-4 size-[18px] shrink-0 text-muted-foreground"
-                            aria-hidden="true"
-                          />
+                    {mode !== "recovery" &&
+                      mode !== "verifyPhone" &&
+                      !(
+                        mode === "forgot" &&
+                        recoveryChannel === "whatsapp" &&
+                        effectiveShopRef
+                      ) && (
+                        <Campo
+                          id="acesso-email"
+                          rotulo={t("auth.field.email")}
+                          icone={Mail}
+                          erro={emailError}
+                          erroId="signup-email-error"
+                        >
                           <input
+                            id="acesso-email"
                             ref={emailInputRef}
                             type="email"
-                            required
-                            autoComplete="email"
+                            inputMode="email"
+                            aria-required="true"
+                            autoComplete={mode === "signin" ? "username" : "email"}
+                            autoCapitalize="none"
+                            spellCheck={false}
                             placeholder={t("auth.field.emailPlaceholder")}
                             value={email}
                             onChange={(e) => {
@@ -2192,145 +2260,23 @@ function AuthPage() {
                               if (fieldErrors.email)
                                 setFieldErrors((prev) => ({ ...prev, email: undefined }));
                             }}
-                            aria-invalid={mode === "signup" && fieldErrors.email ? true : undefined}
-                            aria-describedby={
-                              mode === "signup" && fieldErrors.email
-                                ? "signup-email-error"
-                                : undefined
-                            }
-                            className={inputClass}
+                            aria-invalid={emailError ? true : undefined}
+                            aria-describedby={emailError ? "signup-email-error" : undefined}
                           />
-                        </span>
-                      </label>
-                      {mode === "signup" && fieldErrors.email && (
-                        <FieldMessage id="signup-email-error" tone="error">
-                          <span role="alert">{fieldErrors.email}</span>
-                        </FieldMessage>
+                        </Campo>
                       )}
-                    </div>
-                  )}
 
-                {mode === "forgot" && whatsappRecovery && !otpSent && (
-                  <label className={labelClass}>
-                    <span>{t("auth.field.whatsapp")}</span>
-                    <span className={fieldClass}>
-                      <MessageCircle
-                        className="ml-4 size-[18px] shrink-0 text-muted-foreground"
-                        aria-hidden="true"
-                      />
-                      <input
-                        type="tel"
-                        required
-                        inputMode="tel"
-                        autoComplete="tel"
-                        placeholder="(11) 99999-0000"
-                        value={whatsapp}
-                        onChange={(e) => setWhatsapp(e.target.value)}
-                        className={inputClass}
-                      />
-                    </span>
-                  </label>
-                )}
-
-                {mode === "forgot" && whatsappRecovery && otpSent && (
-                  <div className="grid gap-3">
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl border border-border bg-background/60 p-3 text-sm">
-                      <MessageCircle className="size-4 shrink-0 text-gold" aria-hidden="true" />
-                      <span className="rounded-xl border border-border bg-card px-2 py-0.5 font-bold tabular-nums">
-                        {formatBrPhone(whatsapp)}
-                      </span>
-                      <button
-                        type="button"
-                        className="entry-link-button ms-auto"
-                        onClick={() => {
-                          setOtpSent(false);
-                          setOtpCode("");
-                          setError(null);
-                          setInfo(null);
-                        }}
+                    {mode === "signup" && (
+                      <Campo
+                        id="acesso-telefone"
+                        rotulo={t("acesso.telefone.rotulo")}
+                        icone={Smartphone}
+                        erro={fieldErrors.whatsapp}
+                        erroId="signup-whatsapp-error"
+                        className="acesso-campo-telefone"
                       >
-                        {t("fix2.whats.changeNumber")}
-                      </button>
-                      {info && <p className="w-full text-xs text-muted-foreground">{info}</p>}
-                    </div>
-                    <label
-                      htmlFor="recovery-code"
-                      className="text-sm font-semibold text-foreground/85"
-                    >
-                      {t("auth.field.otp")}
-                    </label>
-                    <CodeInput
-                      id="recovery-code"
-                      value={otpCode}
-                      onChange={(value) => {
-                        setOtpCode(value);
-                        setError(null);
-                      }}
-                      autoFocus
-                      invalid={Boolean(error)}
-                      describedBy={error ? "auth-code-error" : undefined}
-                    />
-                    {error && <Notice id="auth-code-error" tone="danger" title={error} />}
-                    <ResendButton
-                      className="justify-self-start"
-                      secondsLeft={recoveryResendIn}
-                      totalSeconds={PHONE_RESEND_SECONDS}
-                      busy={busy}
-                      onClick={() => void resendFromForgot("code")}
-                      label={t("fix2.whats.resend")}
-                      waitLabel={t("fix2.whats.resendIn", { seconds: recoveryResendIn })}
-                      busyLabel={t("fix2.whats.sending")}
-                    />
-                  </div>
-                )}
-
-                {mode === "verifyPhone" && !phoneUnavailable && (
-                  <div className="grid gap-3">
-                    <CodeSentCard
-                      toLabel={t("entry.code.sentTo")}
-                      number={formatBrPhone(phoneNumber)}
-                      sender={brand.displayName}
-                      message={t("entry.code.example")}
-                      exampleLabel={t("entry.example")}
-                      hideExample={phoneCode.length > 0}
-                    />
-                    <label
-                      htmlFor="phone-code"
-                      className="text-sm font-semibold text-foreground/85"
-                    >
-                      {t("fix2.whats.codeLabel")}
-                    </label>
-                    <CodeInput
-                      id="phone-code"
-                      value={phoneCode}
-                      onChange={(value) => {
-                        setPhoneCode(value);
-                        setError(null);
-                      }}
-                      autoFocus
-                      invalid={Boolean(error)}
-                      describedBy={error ? "auth-code-error" : "phone-code-hint"}
-                    />
-                    {error ? (
-                      <Notice id="auth-code-error" tone="danger" title={error} />
-                    ) : (
-                      <Hint icon={Hourglass} className="text-xs">
-                        <span id="phone-code-hint">{t("fix2.whats.codeHint")}</span>
-                      </Hint>
-                    )}
-                  </div>
-                )}
-
-                {mode === "signup" && (
-                  <div className="auth-whatsapp-group">
-                    <label className={labelClass}>
-                      <span>{t("integr.google.phone")}</span>
-                      <span className={fieldClass}>
-                        <MessageCircle
-                          className="ml-4 size-[18px] shrink-0 text-muted-foreground"
-                          aria-hidden="true"
-                        />
                         <input
+                          id="acesso-telefone"
                           ref={signupPhoneRef}
                           type="tel"
                           aria-required="true"
@@ -2345,45 +2291,128 @@ function AuthPage() {
                           }}
                           aria-invalid={fieldErrors.whatsapp ? true : undefined}
                           aria-describedby={
-                            fieldErrors.whatsapp
-                              ? "signup-whatsapp-error signup-whatsapp-hint"
-                              : "signup-whatsapp-hint"
+                            fieldErrors.whatsapp ? "signup-whatsapp-error" : undefined
                           }
-                          className={inputClass}
                         />
-                      </span>
-                    </label>
-                    {fieldErrors.whatsapp && (
-                      <FieldMessage
-                        id="signup-whatsapp-error"
-                        tone="error"
-                        className="auth-whatsapp-error"
-                      >
-                        <span role="alert">{fieldErrors.whatsapp}</span>
-                      </FieldMessage>
+                      </Campo>
                     )}
-                    <p id="signup-whatsapp-hint" className="sr-only">
-                      {t("integr.google.phone")}
-                    </p>
-                  </div>
-                )}
 
-                {(mode === "signin" || mode === "signup" || mode === "recovery") && (
-                  <div className="auth-field-password">
-                    <label className={labelClass}>
-                      <span>
-                        {mode === "recovery"
-                          ? t("auth.field.newPassword")
-                          : t("auth.field.password")}
-                      </span>
-                      <span className={fieldClass}>
-                        <LockKeyhole
-                          className="ml-4 size-[18px] shrink-0 text-muted-foreground"
-                          aria-hidden="true"
-                        />
+                    {mode === "forgot" && whatsappRecovery && !otpSent && (
+                      <Campo
+                        id="acesso-telefone-rec"
+                        rotulo={t("acesso.telefone.rotulo")}
+                        icone={Smartphone}
+                      >
                         <input
-                          type={showPassword ? "text" : "password"}
+                          id="acesso-telefone-rec"
+                          type="tel"
                           required
+                          inputMode="tel"
+                          autoComplete="tel"
+                          placeholder="(11) 99999-0000"
+                          value={whatsapp}
+                          onChange={(e) => setWhatsapp(e.target.value)}
+                        />
+                      </Campo>
+                    )}
+
+                    {mode === "forgot" && whatsappRecovery && otpSent && (
+                      <div className="grid gap-3">
+                        <div className="acesso-passos flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                          <Smartphone className="size-4 shrink-0" aria-hidden="true" />
+                          <span className="font-bold tabular-nums">{formatBrPhone(whatsapp)}</span>
+                          <button
+                            type="button"
+                            className="acesso-link ms-auto"
+                            onClick={() => {
+                              setOtpSent(false);
+                              setOtpCode("");
+                              setError(null);
+                              setInfo(null);
+                            }}
+                          >
+                            {t("fix2.whats.changeNumber")}
+                          </button>
+                          {info && <p className="acesso-ajuda w-full">{info}</p>}
+                        </div>
+                        <label htmlFor="recovery-code" className="acesso-rotulo">
+                          {t("auth.field.otp")}
+                        </label>
+                        <CodeInput
+                          id="recovery-code"
+                          value={otpCode}
+                          onChange={(value) => {
+                            setOtpCode(value);
+                            setError(null);
+                          }}
+                          autoFocus
+                          invalid={Boolean(error)}
+                          describedBy={error ? "auth-code-error" : undefined}
+                        />
+                        {error && <Notice id="auth-code-error" tone="danger" title={error} />}
+                        <ResendButton
+                          className="justify-self-start"
+                          secondsLeft={recoveryResendIn}
+                          totalSeconds={PHONE_RESEND_SECONDS}
+                          busy={busy}
+                          onClick={() => void resendFromForgot("code")}
+                          label={t("fix2.whats.resend")}
+                          waitLabel={t("fix2.whats.resendIn", { seconds: recoveryResendIn })}
+                          busyLabel={t("fix2.whats.sending")}
+                        />
+                      </div>
+                    )}
+
+                    {mode === "verifyPhone" && !phoneUnavailable && (
+                      <div className="grid gap-3">
+                        <CodeSentCard
+                          toLabel={t("entry.code.sentTo")}
+                          number={formatBrPhone(phoneNumber)}
+                          sender={brand.displayName}
+                          message={t("entry.code.example")}
+                          exampleLabel={t("entry.example")}
+                          hideExample={phoneCode.length > 0}
+                        />
+                        <label htmlFor="phone-code" className="acesso-rotulo">
+                          {t("fix2.whats.codeLabel")}
+                        </label>
+                        <CodeInput
+                          id="phone-code"
+                          value={phoneCode}
+                          onChange={(value) => {
+                            setPhoneCode(value);
+                            setError(null);
+                          }}
+                          autoFocus
+                          invalid={Boolean(error)}
+                          describedBy={error ? "auth-code-error" : "phone-code-hint"}
+                        />
+                        {error ? (
+                          <Notice id="auth-code-error" tone="danger" title={error} />
+                        ) : (
+                          <Hint icon={Hourglass} className="text-xs">
+                            <span id="phone-code-hint">{t("fix2.whats.codeHint")}</span>
+                          </Hint>
+                        )}
+                      </div>
+                    )}
+
+                    {(mode === "signin" || mode === "signup" || mode === "recovery") && (
+                      <Campo
+                        id="acesso-senha"
+                        rotulo={
+                          mode === "recovery"
+                            ? t("auth.field.newPassword")
+                            : t("auth.field.password")
+                        }
+                        icone={LockKeyhole}
+                        erro={passwordError}
+                        erroId="signup-password-error"
+                      >
+                        <input
+                          id="acesso-senha"
+                          type={showPassword ? "text" : "password"}
+                          aria-required="true"
                           minLength={6}
                           autoComplete={mode === "signin" ? "current-password" : "new-password"}
                           placeholder={
@@ -2398,247 +2427,202 @@ function AuthPage() {
                             if (fieldErrors.password)
                               setFieldErrors((prev) => ({ ...prev, password: undefined }));
                           }}
-                          aria-invalid={
-                            mode === "signup" && fieldErrors.password ? true : undefined
-                          }
+                          aria-invalid={passwordError ? true : undefined}
                           aria-describedby={
-                            mode === "signup"
-                              ? fieldErrors.password
-                                ? "signup-password-error auth-password-rules"
-                                : "auth-password-rules"
-                              : undefined
+                            [
+                              passwordError ? "signup-password-error" : null,
+                              mode !== "signin" ? "auth-password-rules" : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" ") || undefined
                           }
-                          className={inputClass}
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword((current) => !current)}
-                          className="auth-brand-button mr-1.5 flex size-11 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
+                          className="acesso-olho"
                           aria-label={
                             showPassword ? t("auth.hidePassword") : t("auth.showPassword")
                           }
                           aria-pressed={showPassword}
                         >
                           {showPassword ? (
-                            <EyeOff className="size-[18px]" aria-hidden="true" />
+                            <EyeOff aria-hidden="true" />
                           ) : (
-                            <Eye className="size-[18px]" aria-hidden="true" />
+                            <Eye aria-hidden="true" />
                           )}
                         </button>
-                      </span>
-                    </label>
-                    {mode === "signup" && fieldErrors.password && (
-                      <FieldMessage id="signup-password-error" tone="error" className="mt-1.5">
-                        <span role="alert">{fieldErrors.password}</span>
-                      </FieldMessage>
+                      </Campo>
                     )}
                     {mode === "signup" && (
                       <PasswordRules
                         id="auth-password-rules"
                         password={password}
                         showErrors={Boolean(fieldErrors.password)}
-                        className="mt-2"
+                        className="-mt-2"
                       />
                     )}
                     {mode === "signin" && (
-                      <div className="auth-forgot-password">
+                      <div className="acesso-linha-fim">
                         <button
                           type="button"
                           onClick={() => switchMode("forgot")}
-                          className="inline-flex min-h-11 items-center px-1 text-xs font-semibold text-primary underline-offset-4 transition-colors hover:underline"
+                          className="acesso-link"
                         >
                           {t("auth.forgot")}
                         </button>
                       </div>
                     )}
-                  </div>
-                )}
 
-                {mode === "recovery" && (
-                  <label className={labelClass}>
-                    <span>{t("auth.field.confirmPassword")}</span>
-                    <span className={fieldClass}>
-                      <LockKeyhole
-                        className="ml-4 size-[18px] shrink-0 text-muted-foreground"
-                        aria-hidden="true"
-                      />
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        required
-                        minLength={6}
-                        autoComplete="new-password"
-                        placeholder={t("auth.field.confirmPlaceholder")}
-                        value={passwordConfirm}
-                        onChange={(e) => setPasswordConfirm(e.target.value)}
-                        aria-describedby="auth-password-rules"
-                        className={inputClass}
-                      />
-                    </span>
-                  </label>
-                )}
-                {mode === "recovery" && (
-                  <PasswordRules
-                    id="auth-password-rules"
-                    password={password}
-                    confirm={passwordConfirm}
-                    className="-mt-1"
-                  />
-                )}
-
-                {/* Resultado da ação logo acima do botão (no código, ele fica sob as caixas). */}
-                {error && !codeStep && <Notice tone="danger" title={error} />}
-                {notice && !(mode === "forgot" && whatsappRecovery && otpSent) && (
-                  <Notice tone={notice.tone} title={notice.text} />
-                )}
-
-                <button
-                  type="submit"
-                  disabled={busy}
-                  aria-busy={busy && !googleBusy ? true : undefined}
-                  className={`${primaryActionClass} mt-1`}
-                >
-                  {busy && !googleBusy && (
-                    <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden="true" />
-                  )}
-                  <span>{busy && !googleBusy ? submit.busy : submit.label}</span>
-                  {!(busy && !googleBusy) && <SubmitIcon className="size-4" aria-hidden="true" />}
-                </button>
-                {mode === "verifyPhone" && !phoneUnavailable && (
-                  <div className="grid justify-items-center gap-1">
-                    <ResendButton
-                      secondsLeft={phoneResendIn}
-                      totalSeconds={PHONE_RESEND_SECONDS}
-                      busy={busy}
-                      onClick={() => void resendPhoneCode()}
-                      label={t("fix2.whats.resend")}
-                      waitLabel={t("fix2.whats.resendIn", { seconds: phoneResendIn })}
-                      busyLabel={t("fix2.whats.sending")}
-                    />
-                    {/* "Confirmar depois" entra no app; "Número errado?" entra direto na Conta, com
-                      o cartão do WhatsApp em foco (a troca é feita lá, não aqui). */}
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void skipPhoneVerification()}
-                      aria-describedby="phone-later-notes"
-                      className="entry-link-button text-muted-foreground"
-                    >
-                      {t("fix3.auth.phoneSkip")}
-                      <ArrowRight className="size-4" aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void fixNumberInProfile()}
-                      className="entry-link-button text-muted-foreground"
-                    >
-                      <UserRound className="size-4" aria-hidden="true" />
-                      {t("entry.phone.wrongNumberLink")}
-                      <ArrowRight className="size-4" aria-hidden="true" />
-                    </button>
-                    <div id="phone-later-notes" className="grid gap-1">
-                      <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                        <LockKeyhole className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-                        {t("entry.phone.laterNote")}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </form>
-            )}
-
-            {!resultScreen && (mode === "forgot" || mode === "recovery") && (
-              <button
-                type="button"
-                onClick={() => switchMode("signin")}
-                className="entry-link-button w-full text-muted-foreground"
-              >
-                <ArrowLeft className="size-4" aria-hidden="true" />
-                {t("auth.backToSignin")}
-              </button>
-            )}
-
-            {!resultScreen && mode === "signin" && (
-              <>
-                <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground">
-                  <span className="h-px flex-1 bg-border" aria-hidden />
-                  <span>{t("auth.orContinue")}</span>
-                  <span className="h-px flex-1 bg-border" aria-hidden />
-                </div>
-
-                <div className="grid gap-3">
-                  <button
-                    type="button"
-                    onClick={() => void handleGoogle()}
-                    disabled={busy}
-                    className="auth-brand-button auth-google-action flex min-h-[3.25rem] w-full items-center justify-center gap-3 border border-border/70 px-3 text-[15px] font-semibold text-foreground transition-colors hover:border-foreground/25 hover:bg-muted/50 disabled:opacity-60"
-                  >
-                    {googleBusy ? (
-                      <Loader2 className="size-5 motion-safe:animate-spin" aria-hidden="true" />
-                    ) : (
-                      <GoogleMark />
+                    {mode === "recovery" && (
+                      <Campo
+                        id="acesso-confirmar"
+                        rotulo={t("auth.field.confirmPassword")}
+                        icone={LockKeyhole}
+                        erro={fieldErrors.confirm}
+                        erroId="recovery-confirm-error"
+                      >
+                        <input
+                          id="acesso-confirmar"
+                          ref={confirmInputRef}
+                          type={showPassword ? "text" : "password"}
+                          aria-required="true"
+                          minLength={6}
+                          autoComplete="new-password"
+                          placeholder={t("auth.field.confirmPlaceholder")}
+                          value={passwordConfirm}
+                          onChange={(e) => {
+                            setPasswordConfirm(e.target.value);
+                            if (fieldErrors.confirm)
+                              setFieldErrors((prev) => ({ ...prev, confirm: undefined }));
+                          }}
+                          aria-invalid={fieldErrors.confirm ? true : undefined}
+                          aria-describedby={
+                            fieldErrors.confirm
+                              ? "recovery-confirm-error auth-password-rules"
+                              : "auth-password-rules"
+                          }
+                        />
+                      </Campo>
                     )}
-                    {t("auth.google")}
-                  </button>
-                  {googleInstalledWarning && !googleWaiting && (
-                    <Notice tone="warning" role="none" title={t("relay.unavailableTitle")}>
-                      {t("relay.unavailableLine")}
-                    </Notice>
-                  )}
-                  {googleWaiting && (
-                    <Notice
-                      tone="progress"
-                      title={relayPending ? t("relay.waitTitle") : t("entry.google.waitTitle")}
-                      action={{
-                        label: relayPending ? t("relay.cancel") : t("entry.google.waitClosed"),
-                        onClick: stopWaitingGoogle,
-                      }}
+                    {mode === "recovery" && (
+                      <PasswordRules
+                        id="auth-password-rules"
+                        password={password}
+                        confirm={passwordConfirm}
+                        className="-mt-2"
+                      />
+                    )}
+
+                    {/* Resultado da ação logo acima do botão (no código, ele fica sob as caixas). */}
+                    {error && !codeStep && <Notice tone="danger" title={error} />}
+                    {notice && !(mode === "forgot" && whatsappRecovery && otpSent) && (
+                      <Notice tone={notice.tone} title={notice.text} />
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={busy}
+                      aria-busy={busy && !googleBusy ? true : undefined}
+                      className="acesso-botao"
                     >
-                      {relayPending ? t("relay.waitLine") : null}
-                    </Notice>
+                      {busy && !googleBusy && (
+                        <Loader2 className="motion-safe:animate-spin" aria-hidden="true" />
+                      )}
+                      <span>{busy && !googleBusy ? submit.busy : submit.label}</span>
+                      {!(busy && !googleBusy) && <SubmitIcon aria-hidden="true" />}
+                    </button>
+                    {mode === "verifyPhone" && !phoneUnavailable && (
+                      <div className="grid justify-items-center gap-1">
+                        <ResendButton
+                          secondsLeft={phoneResendIn}
+                          totalSeconds={PHONE_RESEND_SECONDS}
+                          busy={busy}
+                          onClick={() => void resendPhoneCode()}
+                          label={t("fix2.whats.resend")}
+                          waitLabel={t("fix2.whats.resendIn", { seconds: phoneResendIn })}
+                          busyLabel={t("fix2.whats.sending")}
+                        />
+                        {/* "Confirmar depois" entra no app; "Número errado?" entra direto na Conta
+                          (a troca é feita lá, não aqui). */}
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void skipPhoneVerification()}
+                          aria-describedby="phone-later-notes"
+                          className="acesso-link acesso-link-suave"
+                        >
+                          {t("fix3.auth.phoneSkip")}
+                          <ArrowRight aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void fixNumberInProfile()}
+                          className="acesso-link acesso-link-suave"
+                        >
+                          <UserRound aria-hidden="true" />
+                          {t("entry.phone.wrongNumberLink")}
+                          <ArrowRight aria-hidden="true" />
+                        </button>
+                        <p id="phone-later-notes" className="acesso-ajuda flex items-start gap-1.5">
+                          <LockKeyhole className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+                          {t("entry.phone.laterNote")}
+                        </p>
+                      </div>
+                    )}
+                  </form>
+
+                  {(mode === "forgot" || mode === "recovery") && (
+                    <button
+                      type="button"
+                      onClick={() => switchMode("signin")}
+                      className="acesso-link acesso-link-suave acesso-link-centro"
+                    >
+                      <ArrowLeft aria-hidden="true" />
+                      {t("acesso.voltar.entrar")}
+                    </button>
                   )}
-                  <ConsentNote>
-                    {t("auth.terms.before")} {docNames} {t("cad.cliente.terms.age")}
-                  </ConsentNote>
+
+                  {(mode === "signin" || mode === "signup") && (
+                    <>
+                      <p className="acesso-ou">{t("acesso.ou")}</p>
+                      {googleBlock(mode === "signup" ? t("entry.signup.google") : t("auth.google"))}
+                      {/* Um só aceite, perto dos dois caminhos ("Ao continuar…" cobre Google e e-mail). */}
+                      {aceite(true)}
+                    </>
+                  )}
+
+                  {mode === "signup" && (
+                    <p className="acesso-rodape">
+                      {t("acesso.dono.pergunta")}
+                      <Link to="/cadastrar" className="acesso-link">
+                        {t("acesso.dono.link")}
+                      </Link>
+                    </p>
+                  )}
+
+                  {(mode === "forgot" || mode === "recovery") && aceite(false)}
                 </div>
-              </>
-            )}
+              )}
+            </div>
 
-            {!resultScreen && mode === "signup" && !effectiveShopRef && (
-              <p className="flex flex-wrap items-center justify-center gap-x-1 border-t border-border/70 pt-4 text-center text-sm text-muted-foreground">
-                {t("cad.cliente.ownerQuestion")}
-                <Link to="/cadastrar" className="entry-link-button font-semibold text-primary">
-                  <Scissors className="size-4" aria-hidden="true" />
-                  {t("cad.cliente.ownerLink")}
-                </Link>
-              </p>
-            )}
-
-            {(mode === "forgot" || mode === "recovery") && !emailResult && (
-              <ConsentNote className="auth-panel-footer">
-                {t("auth.terms.before")} {docNames}.
-              </ConsentNote>
-            )}
-            {backTarget && (mode === "signin" || mode === "signup") && (
-              <a
-                href={backTarget.href}
-                className="entry-link-button auth-panel-footer self-center text-muted-foreground"
-              >
-                <ArrowLeft className="size-4" aria-hidden="true" />
-                {backTarget.label}
-              </a>
-            )}
-            {mode === "signup" && effectiveShopRef && (
-              <p className="auth-panel-footer flex flex-wrap items-center justify-center gap-x-1 text-center text-xs text-muted-foreground">
-                {t("cad.cliente.ownerQuestion")}
-                <Link to="/cadastrar" className="entry-link-button text-xs">
-                  {t("cad.cliente.ownerLink")}
-                </Link>
+            {modoLoja && (
+              <p className="acesso-selo">
+                {t("acesso.selo")}
+                <MarcaAurset titulo={t("acesso.marca")} />
               </p>
             )}
           </div>
         </div>
-      </AuthFrame>
+      </div>
+      {/* Idioma, paleta e tema ficam no canto de cima (posição absoluta), mas depois do
+          formulário na ordem do teclado: o Tab chega primeiro ao que a pessoa veio fazer. */}
+      <div className="acesso-barra" role="group" aria-label={t("acesso.opcoes")}>
+        <LanguageSwitcher />
+        {!modoLoja && <PaletaToggle />}
+        <ThemeToggle />
+      </div>
     </main>
   );
 }

@@ -23,29 +23,36 @@ import { VisibleViewport } from "../lib/visible-viewport";
 import { PwaInstallBanner, PwaInstallProvider } from "../components/pwa-install-banner";
 import { Toaster } from "../components/ui/sonner";
 
-import { loadLocale } from "../lib/i18n/translate";
+import { loadLocale, translate } from "../lib/i18n/translate";
+import { APP_DESCRIPTION_KEY, APP_NAME, themeColorBootstrapScript } from "../lib/brand";
+import { paletaBootstrapScript } from "../lib/paleta";
 
 import { createIsomorphicFn } from "@tanstack/react-start";
 import { getRequestHost } from "@tanstack/react-start/server";
 
 const nomeDaPagina = createIsomorphicFn()
   .server(async () => {
-    const host = getRequestHost({ xForwardedHost: true }).split(",")[0].trim().split(":")[0].toLowerCase();
+    const host = getRequestHost({ xForwardedHost: true })
+      .split(",")[0]
+      .trim()
+      .split(":")[0]
+      .toLowerCase();
     const { nomeDaInstalacao } = await import("../lib/shop/installation");
     return nomeDaInstalacao(host);
   })
   .client(async () => {
     const host = window.location.hostname;
-    if ([dominioDaPlataforma, "localhost", "127.0.0.1"].includes(host)) return "Barba & Cabelo";
+    if ([dominioDaPlataforma, "localhost", "127.0.0.1"].includes(host)) return APP_NAME;
     try {
-      const resposta = await fetch("/identidade/manifesto?dominio=" + encodeURIComponent(host), {signal: AbortSignal.timeout(5000)});
+      const resposta = await fetch("/identidade/manifesto?dominio=" + encodeURIComponent(host), {
+        signal: AbortSignal.timeout(5000),
+      });
       if (resposta.ok) return (await resposta.json()).name || host;
-    } catch { /* O domínio identifica a loja durante uma indisponibilidade. */ }
+    } catch {
+      /* O domínio identifica a loja durante uma indisponibilidade. */
+    }
     return host;
   });
-const APP_DESCRIPTION =
-  "Agendamento, fidelidade e gestão para barbearias: reserve seu horário, acompanhe pontos e organize a agenda da equipe.";
-
 // Página 404 compartilhada com as rotas só do navegador (ver NotFoundPage).
 const NotFoundComponent = NotFoundPage;
 
@@ -92,43 +99,49 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     await loadLocale(localeFromTag(lang) ?? DEFAULT_LOCALE);
   },
   loader: () => nomeDaPagina(),
-  head: ({loaderData}) => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: loaderData || "Agendamento" },
-      { name: "description", content: APP_DESCRIPTION },
-      { name: "application-name", content: loaderData || "Agendamento" },
-      { name: "apple-mobile-web-app-capable", content: "yes" },
-      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "apple-mobile-web-app-title", content: loaderData || "Agendamento" },
-      { name: "mobile-web-app-capable", content: "yes" },
-      { name: "format-detection", content: "telephone=no" },
-      { name: "color-scheme", content: "light dark" },
-      // HeadContent dedupes meta by name, so a single browser-chrome color is declared.
-      { name: "theme-color", content: "#20211f" },
-      { property: "og:title", content: loaderData || "Agendamento" },
-      { property: "og:description", content: APP_DESCRIPTION },
-      { property: "og:type", content: "website" },
-      { property: "og:locale", content: "pt_BR" },
-      { name: "twitter:card", content: "summary" },
-    ],
-    // Aplica o tema salvo, o idioma e a faixa de dispositivo antes da primeira pintura
-    // (em sincronia com `useTheme`, `useI18n` e `useDevice`).
-    scripts: [
-      { children: `(${redirecionarEnderecoAntigo.toString()})();` },
-      { children: themeBootstrapScript },
-      { children: localeBootstrapScript },
-      { children: deviceBootstrapScript },
-    ],
-    links: [
-      { rel: "stylesheet", href: appCss },
-      // CSS por dispositivo (src/dispositivos.css → src/styles/*.css) depois do styles.css:
-      // vence em igualdade de especificidade.
-      { rel: "stylesheet", href: deviceCss },
-      { rel: "icon", href: "/icons/icon-192.png", type: "image/png" },
-    ],
-  }),
+  head: ({ loaderData, match }) => {
+    // Descrição no idioma de `?lang=` já no HTML do servidor (o mesmo critério do beforeLoad).
+    const lang = (match.search as { lang?: unknown }).lang;
+    const description = translate(localeFromTag(lang) ?? DEFAULT_LOCALE, APP_DESCRIPTION_KEY);
+    return {
+      meta: [
+        { charSet: "utf-8" },
+        { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+        { title: loaderData || "Agendamento" },
+        { name: "description", content: description },
+        { name: "application-name", content: loaderData || "Agendamento" },
+        { name: "apple-mobile-web-app-capable", content: "yes" },
+        { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+        { name: "apple-mobile-web-app-title", content: loaderData || "Agendamento" },
+        { name: "mobile-web-app-capable", content: "yes" },
+        { name: "format-detection", content: "telephone=no" },
+        { name: "color-scheme", content: "light dark" },
+        // A meta theme-color é criada e mantida só pelo themeColorBootstrapScript (src/lib/brand.ts).
+        { property: "og:title", content: loaderData || "Agendamento" },
+        { property: "og:description", content: description },
+        { property: "og:type", content: "website" },
+        { property: "og:locale", content: "pt_BR" },
+        { name: "twitter:card", content: "summary" },
+      ],
+      // Aplica o tema salvo, o idioma e a faixa de dispositivo antes da primeira pintura
+      // (em sincronia com `useTheme`, `useI18n` e `useDevice`).
+      scripts: [
+        { children: `(${redirecionarEnderecoAntigo.toString()})();` },
+        { children: themeBootstrapScript },
+        { children: paletaBootstrapScript },
+        { children: themeColorBootstrapScript },
+        { children: localeBootstrapScript },
+        { children: deviceBootstrapScript },
+      ],
+      links: [
+        { rel: "stylesheet", href: appCss },
+        // CSS por dispositivo (src/dispositivos.css → src/styles/*.css) depois do styles.css:
+        // vence em igualdade de especificidade.
+        { rel: "stylesheet", href: deviceCss },
+        { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+      ],
+    };
+  },
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
@@ -142,8 +155,24 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
         <HeadContent />
-        <link rel="manifest" href={domain ? `/identidade/manifesto?dominio=${encodeURIComponent(domain)}` : "/identidade/manifesto"} />
-        <link rel="apple-touch-icon" sizes="180x180" type="image/png" href={domain ? `/apple-touch-icon.png?dominio=${encodeURIComponent(domain)}` : "/apple-touch-icon.png"} />
+        <link
+          rel="manifest"
+          href={
+            domain
+              ? `/identidade/manifesto?dominio=${encodeURIComponent(domain)}`
+              : "/identidade/manifesto"
+          }
+        />
+        <link
+          rel="apple-touch-icon"
+          sizes="180x180"
+          type="image/png"
+          href={
+            domain
+              ? `/apple-touch-icon.png?dominio=${encodeURIComponent(domain)}`
+              : "/apple-touch-icon.png"
+          }
+        />
       </head>
       <body>
         {children}

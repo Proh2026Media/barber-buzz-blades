@@ -1,0 +1,29 @@
+import type { MessageKey } from "./i18n/translate.ts";
+
+/**
+ * Marca do produto num lugar só.
+ *
+ * Só o que é visível mora aqui. Identificadores técnicos (domínios, tabelas, chaves de
+ * armazenamento "arena:*", remetentes de e-mail) continuam com os nomes antigos de propósito.
+ */
+export const APP_NAME = "Aurset";
+export const APP_SHORT_NAME = "Aurset";
+
+/** Descrição do produto (meta description, og:description). O texto mora no dicionário. */
+export const APP_DESCRIPTION_KEY = "app.description" satisfies MessageKey;
+
+/** Cores do navegador e do PWA (as mesmas de --bg-canvas em src/styles.css: Céu no claro, Tinta no escuro). */
+export const APP_THEME_COLOR = {
+  light: "#9CD8D4",
+  dark: "#14221F",
+  /** Fundo do ícone do app (public/icons). */
+  icon: "#14221F",
+} as const;
+
+/**
+ * A meta theme-color não entra no `head()` da rota: se entrasse, a hidratação recriaria a
+ * versão clara ao lado da que o script já trocou. Este script é o único dono dela: garante uma
+ * só (cria se faltar, remove as repetidas) e a acompanha lendo a classe `dark` do <html>, antes
+ * da primeira pintura e a cada troca de tema.
+ */
+export const themeColorBootstrapScript = `(function(){try{var r=document.documentElement;var f=function(){var loja=r.hasAttribute("data-tema-loja")&&r.style.getPropertyValue("--brand-chao-meio").trim();var c=loja||(r.classList.contains("dark")?${JSON.stringify(APP_THEME_COLOR.dark)}:${JSON.stringify(APP_THEME_COLOR.light)});var l=document.querySelectorAll('meta[name="theme-color"]');var m=l[0];if(!m){m=document.createElement("meta");m.setAttribute("name","theme-color");document.head.appendChild(m);}for(var i=1;i<l.length;i++){l[i].parentNode.removeChild(l[i]);}if(m.getAttribute("content")!==c)m.setAttribute("content",c);};f();new MutationObserver(f).observe(r,{attributes:true,attributeFilter:["class","style","data-tema-loja"]});document.addEventListener("DOMContentLoaded",f);}catch(e){}})();`;

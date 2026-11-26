@@ -2,16 +2,35 @@ import type { Tables } from "@/integrations/supabase/types";
 import type { Json } from "@/integrations/supabase/types";
 import { t, type MessageKey } from "../i18n/index.ts";
 import { normalizeFontFaces, type BrandFontFaceRecord } from "./font-files.ts";
+import {
+  KIT_NEUTRALS,
+  MOTHER_EXCLUSIVE_COLORS,
+  SHOP_THEMES,
+  colorDistance,
+  defaultShopTheme,
+  findShopTheme,
+  isMotherColor,
+  nearestShopTheme,
+  type ShopTheme,
+  type ShopThemeLeque,
+} from "./themes.ts";
 
-export const DEFAULT_PRIMARY_COLOR = "#292925";
-export const DEFAULT_ACCENT_COLOR = "#8A602F";
+/** Loja sem tema escolhido usa o tema neutro claro (nunca as cores da marca-mãe). */
+export const DEFAULT_PRIMARY_COLOR = defaultShopTheme().primary;
+export const DEFAULT_ACCENT_COLOR = defaultShopTheme().accent;
+/**
+ * Par que o banco grava sozinho em toda loja nova (padrão da coluna, de antes dos temas).
+ * Quem tem exatamente este par nunca escolheu cor: é lido como o tema neutro claro.
+ */
+export const LEGACY_DEFAULT_PRIMARY_COLOR = "#292925";
+export const LEGACY_DEFAULT_ACCENT_COLOR = "#8A602F";
 export const DEFAULT_FONT_FAMILY = "inter";
 export const DEFAULT_FONT_SCOPE = "header";
 export const DEFAULT_HEADER_FONT_WEIGHT = 700;
 export const DEFAULT_HEADER_FONT_STYLE = "normal";
 export const DEFAULT_CORNER_STYLE = "soft";
 export const DEFAULT_LOGIN_LAYOUT = "split";
-export const DEFAULT_LOGIN_IMAGE = "/images/login-barbershop-default.png";
+export const DEFAULT_LOGIN_IMAGE = "/images/aurset/espaco.webp";
 /** Fundo padrão do quadrado da logo (null = transparente). */
 export const DEFAULT_LOGO_BACKGROUND_COLOR: string | null = null;
 
@@ -133,25 +152,20 @@ export const BRAND_FONT_SCOPE_OPTIONS: {
   },
 ];
 
-/** Paleta curada para barbearias: tons escuros para a cor principal e quentes para destaque. */
-export const BRAND_PALETTE = [
-  { value: "#292925", nameKey: "brand.palette.charcoal" },
-  { value: "#111827", nameKey: "brand.palette.graphite" },
-  { value: "#1F4E5F", nameKey: "brand.palette.petrol" },
-  { value: "#234E70", nameKey: "brand.palette.navy" },
-  { value: "#3D5A40", nameKey: "brand.palette.moss" },
-  { value: "#4A3728", nameKey: "brand.palette.coffee" },
-  { value: "#553C9A", nameKey: "brand.palette.amethyst" },
-  { value: "#7C2D12", nameKey: "brand.palette.rust" },
-  { value: "#9F1239", nameKey: "brand.palette.wine" },
-  { value: "#0F766E", nameKey: "brand.palette.emerald" },
-  { value: "#8A602F", nameKey: "brand.palette.bronze" },
-  { value: "#C58B36", nameKey: "brand.palette.gold" },
-  { value: "#B45309", nameKey: "brand.palette.amber" },
-  { value: "#C2410C", nameKey: "brand.palette.copper" },
-  { value: "#4F46E5", nameKey: "brand.palette.indigo" },
-  { value: "#0284C7", nameKey: "brand.palette.sky" },
-] as const;
+/**
+ * Amostras do seletor de cor livre: o tom de botão de cada família do kit e quatro neutros.
+ * Nenhuma é cor da marca-mãe.
+ */
+export const BRAND_PALETTE: readonly { value: string; nameKey: MessageKey }[] = [
+  ...SHOP_THEMES.filter((theme) => theme.kind === "familia").map((theme) => ({
+    value: theme.primary,
+    nameKey: theme.nameKey,
+  })),
+  { value: KIT_NEUTRALS.chumbo, nameKey: "brand.palette.lead" },
+  { value: KIT_NEUTRALS.ardosia, nameKey: "brand.palette.slate" },
+  { value: KIT_NEUTRALS.grafite, nameKey: "brand.palette.graphite" },
+  { value: KIT_NEUTRALS.breu, nameKey: "brand.palette.pitch" },
+];
 
 export const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
 export const LOGO_MAX_BYTES = 2 * 1024 * 1024;
@@ -303,7 +317,19 @@ function mixHex(color: string, target: "#000000" | "#FFFFFF", amount: number) {
  * Mantém a cor escolhida quando ela já é legível. Caso contrário, preserva o matiz
  * tanto quanto possível e aproxima a cor de preto ou branco até atingir WCAG AA.
  */
-export function readableBrandColor(color: string, background = "#F7F5F0", minimumRatio = 4.5) {
+/**
+ * Superfícies de leitura das telas de um estabelecimento (src/styles.css, bloco
+ * `[data-tema-loja]`): no claro, cartões em Sal e áreas suaves até #F2F2F2; no escuro, cartões
+ * #161616, chão Grafite e áreas suaves #333333. O contraste é calculado contra a mais exigente.
+ */
+export const SHOP_LIGHT_READING_SURFACE = "#F2F2F2";
+export const SHOP_DARK_READING_SURFACE = "#333333";
+
+export function readableBrandColor(
+  color: string,
+  background: string = SHOP_LIGHT_READING_SURFACE,
+  minimumRatio = 4.5,
+) {
   const normalized = normalizeBrandColor(color, DEFAULT_ACCENT_COLOR);
   if (contrastRatio(normalized, background) >= minimumRatio) return normalized;
 
@@ -323,6 +349,110 @@ export function readableBrandColor(color: string, background = "#F7F5F0", minimu
   return contrastingForeground(background);
 }
 
+/**
+ * Cores que valem para a loja. Valor inválido cai no tema neutro claro, e o par antigo que o
+ * banco grava sozinho (loja que nunca escolheu cor) também.
+ */
+export function resolveBrandColors(primary?: string | null, accent?: string | null) {
+  const resolvedPrimary = normalizeBrandColor(primary, DEFAULT_PRIMARY_COLOR);
+  const resolvedAccent = normalizeBrandColor(accent, DEFAULT_ACCENT_COLOR);
+  if (
+    resolvedPrimary === LEGACY_DEFAULT_PRIMARY_COLOR &&
+    resolvedAccent === LEGACY_DEFAULT_ACCENT_COLOR
+  ) {
+    return { primary: DEFAULT_PRIMARY_COLOR, accent: DEFAULT_ACCENT_COLOR };
+  }
+  // Cor da marca-mãe gravada por outro caminho (o banco não tem a regra) conta como não
+  // escolhida: a loja aparece no neutro claro, nunca com as cores da Aurset.
+  if (isMotherColor(resolvedPrimary) || isMotherColor(resolvedAccent)) {
+    return { primary: DEFAULT_PRIMARY_COLOR, accent: DEFAULT_ACCENT_COLOR };
+  }
+  return { primary: resolvedPrimary, accent: resolvedAccent };
+}
+
+/** A loja ainda não escolheu cor (padrão novo, padrão antigo do banco ou valor vazio)? */
+export function isUnchosenBrandColors(primary?: string | null, accent?: string | null) {
+  const colors = resolveBrandColors(primary, accent);
+  return colors.primary === DEFAULT_PRIMARY_COLOR && colors.accent === DEFAULT_ACCENT_COLOR;
+}
+
+/** Tema que a loja usa, ou null quando as cores são personalizadas. */
+export function brandTheme(primary?: string | null, accent?: string | null): ShopTheme | null {
+  const colors = resolveBrandColors(primary, accent);
+  return findShopTheme(colors.primary, colors.accent);
+}
+
+/**
+ * Um chão derivado de cor livre não pode cair perto do Céu, da Água, da Bruma ou da Areia.
+ * Folga em ΔE (CIE Lab), mais larga que a da cor gravada porque o chão ocupa a tela toda.
+ */
+export const MOTHER_FLOOR_TOLERANCE = 10;
+
+/** O tom parece um dos chãos ou a forma da marca-mãe (Céu, Água, Bruma ou Areia)? */
+export function isMotherFloor(tone: string) {
+  const { ceu, agua, bruma, areia } = MOTHER_EXCLUSIVE_COLORS;
+  return [ceu, agua, bruma, areia].some(
+    (mother) => colorDistance(tone, mother) <= MOTHER_FLOOR_TOLERANCE,
+  );
+}
+
+/**
+ * Leque de uma cor personalizada (fora dos temas): tons calculados da cor principal e da cor de
+ * destaque, no mesmo formato do leque de um tema. Se o chão calculado ficar parecido com o da
+ * marca-mãe, usa o chão neutro.
+ */
+export function customBrandLeque(primary: string, accent: string): ShopThemeLeque {
+  const neutral = defaultShopTheme().leque;
+  let claro = mixHex(primary, "#FFFFFF", 0.72);
+  let meio = mixHex(primary, "#FFFFFF", 0.8);
+  let base = mixHex(primary, "#FFFFFF", 0.88);
+  if ([claro, meio, base].some(isMotherFloor)) {
+    ({ claro, meio, base } = neutral);
+  }
+  let forma = mixHex(accent, "#FFFFFF", 0.45);
+  if (isMotherFloor(forma)) forma = neutral.forma;
+  const profundo = mixHex(primary, "#000000", 0.7);
+  return {
+    claro,
+    meio,
+    base,
+    forma,
+    detalhe: readableBrandColor(accent, claro, 3),
+    medio: primary,
+    medioUi: readableBrandColor(primary, base, 3),
+    profundo,
+    par: mixHex(accent, "#FFFFFF", 0.8),
+    borda: mixHex(primary, "#FFFFFF", 0.6),
+    sombra: mixHex(primary, "#FFFFFF", 0.4),
+    texto: readableBrandColor(profundo, claro, 4.5),
+  };
+}
+
+/** Variáveis do leque (chão, forma, detalhe, par, borda e sombra) para os shells usarem. */
+function lequeVariables(theme: ShopTheme | null, leque: ShopThemeLeque) {
+  return {
+    "--brand-tema": theme?.id ?? "personalizado",
+    "--brand-esquema": theme?.scheme ?? "claro",
+    "--brand-chao-claro": leque.claro,
+    "--brand-chao-meio": leque.meio,
+    "--brand-chao-base": leque.base,
+    "--brand-sobre-chao": leque.texto,
+    "--brand-forma": leque.forma,
+    "--brand-detalhe": leque.detalhe,
+    "--brand-medio": leque.medio,
+    "--brand-medio-ui": leque.medioUi,
+    "--brand-profundo": leque.profundo,
+    "--brand-par": leque.par,
+    "--brand-borda": leque.borda,
+    "--brand-sombra": leque.sombra,
+  };
+}
+
+/** Texto sobre um fundo colorido: o tom profundo da família se ler bem, senão preto ou branco. */
+function readableOn(background: string, preferred: string) {
+  return contrastRatio(preferred, background) >= 4.5 ? preferred : contrastingForeground(background);
+}
+
 export function brandVariables(
   primary?: string | null,
   accent?: string | null,
@@ -332,17 +462,25 @@ export function brandVariables(
   headerFontStyle?: string | null,
   cornerStyle?: string | null,
 ) {
-  const normalizedPrimary = normalizeBrandColor(primary, DEFAULT_PRIMARY_COLOR);
-  const normalizedAccent = normalizeBrandColor(accent, DEFAULT_ACCENT_COLOR);
+  const { primary: normalizedPrimary, accent: normalizedAccent } = resolveBrandColors(
+    primary,
+    accent,
+  );
+  const theme = findShopTheme(normalizedPrimary, normalizedAccent);
+  const leque = theme?.leque ?? customBrandLeque(normalizedPrimary, normalizedAccent);
   const foreground = contrastingForeground(normalizedPrimary);
   const accentForeground = contrastingForeground(normalizedAccent);
-  const primaryReadable = readableBrandColor(normalizedPrimary);
-  const accentReadable = readableBrandColor(normalizedAccent);
-  // #222320 é o --card/--popover do tema escuro; legível nele também passa sobre #171816.
-  const accentReadableDark = readableBrandColor(normalizedAccent, "#222320");
-  // Fundo da página no tema claro (fora dos cartões off-white), no ponto mais escuro dos brilhos
-  // de fundo (#D8D0C6, perto do cabeçalho): legível ali, legível na página toda.
-  const accentReadablePage = readableBrandColor(normalizedAccent, "#D8D0C6");
+  const darkScheme = theme?.scheme === "escuro";
+  // Texto na cor da loja sobre as superfícies escuras (modo escuro e tema Neutro escuro).
+  const primaryReadableDark = readableBrandColor(normalizedPrimary, SHOP_DARK_READING_SURFACE);
+  const accentReadableDark = readableBrandColor(normalizedAccent, SHOP_DARK_READING_SURFACE);
+  // Num tema de chão escuro, a versão "legível" é sempre a calculada contra o escuro.
+  const primaryReadable = darkScheme ? primaryReadableDark : readableBrandColor(normalizedPrimary);
+  const accentReadable = darkScheme ? accentReadableDark : readableBrandColor(normalizedAccent);
+  // Destaque como texto direto sobre o chão da página: contra o tom mais forte do chão.
+  const accentReadablePage = darkScheme
+    ? accentReadableDark
+    : readableBrandColor(normalizedAccent, leque.claro);
   const corners = BRAND_CORNER_OPTIONS.find(
     (option) => option.value === normalizeCornerStyle(cornerStyle),
   )!;
@@ -350,6 +488,19 @@ export function brandVariables(
   const fontStack = customFamily
     ? `"${customFamily}", ${brandFontStack(fontFamily)}`
     : brandFontStack(fontFamily);
+  // Ação principal sobre superfície escura: o tom médio da família, clareado até ler como texto
+  // (4,5:1 contra a superfície escura mais clara). Neutros e cores sem matiz usam Sal, porque
+  // um cinza intermediário parece botão desabilitado.
+  const actionSeed = theme ? theme.leque.medio : normalizedPrimary;
+  const colourless =
+    theme?.kind === "neutro" ||
+    Math.max(...hexChannels(actionSeed)) - Math.min(...hexChannels(actionSeed)) < 24;
+  const actionDark = colourless
+    ? "#FFFFFF"
+    : readableBrandColor(actionSeed, SHOP_DARK_READING_SURFACE);
+  const actionDarkForeground = colourless ? "#262626" : readableOn(actionDark, leque.profundo);
+  // Destaque usado como fundo (selo, ponto): o mesmo tom legível da página, com o texto certo.
+  const accentPageForeground = contrastingForeground(accentReadablePage);
 
   return {
     "--brand-primary": normalizedPrimary,
@@ -357,13 +508,17 @@ export function brandVariables(
     "--brand-accent": normalizedAccent,
     "--brand-accent-foreground": accentForeground,
     "--brand-primary-readable": primaryReadable,
+    "--brand-primary-readable-dark": primaryReadableDark,
     "--brand-accent-readable": accentReadable,
     "--brand-accent-readable-dark": accentReadableDark,
     "--brand-accent-readable-page": accentReadablePage,
-    "--primary": normalizedPrimary,
-    "--primary-foreground": foreground,
-    "--gold": normalizedAccent,
-    "--gold-foreground": accentForeground,
+    "--brand-accent-readable-page-foreground": accentPageForeground,
+    "--brand-acao-escuro": actionDark,
+    "--brand-sobre-acao-escuro": actionDarkForeground,
+    ...lequeVariables(theme, leque),
+    // `--primary` e `--gold` não saem mais daqui: o estilo em linha vencia o CSS e deixava o
+    // botão escuro sobre fundo escuro. Quem escolhe o valor por modo é src/styles.css
+    // (blocos `[data-tema-loja]`), a partir das variáveis `--brand-*`.
     "--brand-font": fontStack,
     "--brand-header-font-weight": String(normalizeHeaderFontWeight(headerFontWeight)),
     "--brand-header-font-style": normalizeHeaderFontStyle(headerFontStyle),
@@ -422,6 +577,7 @@ type BrandSource = Pick<
   >;
 
 export function brandDraftFromSettings(settings: BrandSource): BrandDraft {
+  const colors = resolveBrandColors(settings.primary_color, settings.accent_color);
   return {
     display_name: settings.display_name ?? "",
     tagline: settings.tagline,
@@ -438,8 +594,8 @@ export function brandDraftFromSettings(settings: BrandSource): BrandDraft {
     header_font_style: normalizeHeaderFontStyle(settings.header_font_style),
     corner_style: normalizeCornerStyle(settings.corner_style),
     floating_chrome: settings.floating_chrome === true,
-    primary_color: normalizeBrandColor(settings.primary_color, DEFAULT_PRIMARY_COLOR),
-    accent_color: normalizeBrandColor(settings.accent_color, DEFAULT_ACCENT_COLOR),
+    primary_color: colors.primary,
+    accent_color: colors.accent,
   };
 }
 
@@ -467,11 +623,37 @@ export function isBrandDraftDirty(draft: BrandDraft, settings: BrandSource) {
   );
 }
 
+/**
+ * Recusa as cores exclusivas da marca-mãe (Céu, Areia, Água, Bruma, Tinta, Asa e Sombra) e as
+ * parecidas a olho como cor de loja.
+ * Devolve o tema mais próximo para sugerir, ou null quando a cor pode ser usada.
+ * Vale só no aplicativo: o banco não tem essa regra.
+ */
+export function reservedBrandColor(color: string | null | undefined) {
+  if (!isMotherColor(color)) return null;
+  const theme = nearestShopTheme(color);
+  return { theme, message: t("brand.validate.reservedColor", { theme: t(theme.nameKey) }) };
+}
+
+function reservedBrandColorMessage(...colors: (string | null | undefined)[]) {
+  for (const color of colors) {
+    const reserved = reservedBrandColor(color);
+    if (reserved) return reserved.message;
+  }
+  return null;
+}
+
 /** Retorna a mensagem de erro do rascunho ou null quando está pronto para salvar. */
 export function validateBrandDraft(draft: BrandDraft) {
   if (!HEX_COLOR_PATTERN.test(draft.primary_color) || !HEX_COLOR_PATTERN.test(draft.accent_color)) {
     return t("brand.validate.colors");
   }
+  const reserved = reservedBrandColorMessage(
+    draft.primary_color,
+    draft.accent_color,
+    draft.logo_background_color,
+  );
+  if (reserved) return reserved;
   if (
     draft.logo_background_color !== null &&
     !HEX_COLOR_PATTERN.test(draft.logo_background_color)

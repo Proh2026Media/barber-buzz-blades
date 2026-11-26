@@ -1,328 +1,1640 @@
+/* ACESSO (login, cadastro de conta, recuperação de senha, janela do Google).
+   Tudo desta tela mora aqui, em classes `acesso-*`.
+
+   Regra de cor (dono, 25/11/2026):
+   - `.acesso-aurset` (sem loja): cores da marca-mãe. Claro: Céu no chão, Areia na forma, Tinta no
+     detalhe e no texto, Papel no cartão. Escuro: Tinta no chão, Céu na forma, Areia no detalhe,
+     Papel no texto.
+   - `.acesso-loja` (acesso do cliente de uma loja): neutros (Sal, Gelo, Seixo, Pedra, Chumbo,
+     Ardósia, Grafite, Breu) + a cor da própria loja. As cores da mãe NÃO entram aqui.
+   Retorno (sucesso, alerta, erro, informação): valores da holding (retorno.*) e os derivados
+   escuros de Aurset/build/paleta_holding.py.
+   Os tokens ficam locais (`--ac-*`) e também alimentam os nomes que os componentes compartilhados
+   leem (--card, --foreground, --primary, --tone-*), só dentro desta tela. */
+
+.acesso {
+  /* marca-mãe, modo claro */
+  --ac-chao: #9cd8d4;
+  --ac-chao-2: #afdfda;
+  --ac-chao-3: #bee4dc;
+  --ac-forma: #f5e0bc;
+  --ac-detalhe: #14221f;
+  --ac-luz: #fdfbf6;
+  --ac-sobre-chao: #14221f;
+  --ac-cartao: #fdfbf6;
+  --ac-campo: #ffffff;
+  --ac-texto: #14221f;
+  --ac-texto-2: #555f5b;
+  --ac-borda: #b1c5c7;
+  --ac-borda-campo: #7b827e;
+  --ac-suave: #eef3ee;
+  --ac-acao: #14221f;
+  --ac-acao-texto: #fdfbf6;
+  --ac-acao-hover: #2b3835;
+  --ac-foco: #14221f;
+  --ac-trilho: #bee4dc;
+  --ac-sombra: 0 1px 0 rgb(131 160 162 / 0.35), 0 18px 44px rgb(131 160 162 / 0.38);
+  --ac-erro: #803134;
+  --ac-erro-fundo: #fbe4df;
+  --ac-erro-linha: #cb6565;
+  --ac-fonte-titulo:
+    "Instrument Sans Variable", "Instrument Sans", "Inter Variable", system-ui, sans-serif;
+  --ac-raio-campo: 14px;
+  --ac-raio-botao: 999px;
+  --ac-raio-cartao: 22px;
+
+  --background: var(--ac-suave);
+  --foreground: var(--ac-texto);
+  --card: var(--ac-cartao);
+  --card-foreground: var(--ac-texto);
+  --muted: var(--ac-suave);
+  --muted-foreground: var(--ac-texto-2);
+  --secondary: var(--ac-suave);
+  --secondary-foreground: var(--ac-texto);
+  --accent: var(--ac-suave);
+  --accent-foreground: var(--ac-texto);
+  --border: var(--ac-borda);
+  --input: var(--ac-borda-campo);
+  --ring: var(--ac-foco);
+  --destructive: var(--ac-erro);
+  --tone-on-ink: #fdfbf6;
+  --tone-success-ink: #025732;
+  --tone-success-bg: #dcf0e3;
+  --tone-success-soft: #dcf0e3;
+  --tone-success-line: #359764;
+  --tone-info-ink: #10516e;
+  --tone-info-bg: #dfe9f7;
+  --tone-info-soft: #dfe9f7;
+  --tone-info-line: #1e8dbe;
+  --tone-warning-ink: #6e481c;
+  --tone-warning-bg: #fbefcf;
+  --tone-warning-soft: #fbefcf;
+  --tone-warning-line: #b57d3e;
+  --tone-pending-ink: #6e481c;
+  --tone-pending-bg: #fbefcf;
+  --tone-pending-soft: #fbefcf;
+  --tone-pending-line: #b57d3e;
+  --tone-danger-ink: #803134;
+  --tone-danger-bg: #fbe4df;
+  --tone-danger-soft: #fbe4df;
+  --tone-danger-line: #cb6565;
+  --tone-neutral-ink: #555f5b;
+  --tone-neutral-bg: #e4eae5;
+  --tone-neutral-soft: #eef3ee;
+  --tone-neutral-line: #7b827e;
+  --tone-highlight-ink: #14221f;
+
+  position: relative;
+  min-height: 100dvh;
+  background: var(--ac-chao);
+  color: var(--ac-texto);
+  font-family: var(--font-sans);
+  color-scheme: light;
+  padding-left: var(--app-safe-left, 0px);
+  padding-right: var(--app-safe-right, 0px);
+}
+.acesso.acesso-aurset {
+  --primary: var(--ac-acao);
+  --primary-foreground: var(--ac-acao-texto);
+  --gold: #405453;
+  --radius: 14px;
+  --control-radius: var(--ac-raio-campo);
+  --button-radius: var(--ac-raio-botao);
+  --panel-radius: var(--ac-raio-cartao);
+}
+.dark .acesso,
+.dark .acesso.acesso-cadastro :is(.platform-register-panel, .entry-result-card) {
+  /* marca-mãe, modo escuro (o painel do cadastro repete os tons: uma regra antiga do
+     styles.css devolvia a ele os tons claros no tema escuro) */
+  --ac-chao: #14221f;
+  --ac-chao-2: #1d2e2a;
+  --ac-chao-3: #24362f;
+  --ac-forma: #9cd8d4;
+  --ac-detalhe: #f5e0bc;
+  --ac-luz: #fdfbf6;
+  --ac-sobre-chao: #fdfbf6;
+  --ac-cartao: #1d2e2a;
+  --ac-campo: #14221f;
+  --ac-texto: #fdfbf6;
+  --ac-texto-2: #bcbeba;
+  --ac-borda: #3c4b47;
+  --ac-borda-campo: #7f8682;
+  --ac-suave: #263732;
+  --ac-acao: #9cd8d4;
+  --ac-acao-texto: #14221f;
+  --ac-acao-hover: #bee4dc;
+  --ac-foco: #9cd8d4;
+  --ac-trilho: #14221f;
+  --ac-sombra: 0 1px 0 rgb(0 0 0 / 0.3), 0 18px 44px rgb(0 0 0 / 0.35);
+  --ac-erro: #fbe4df;
+  --ac-erro-fundo: #3a2726;
+  --ac-erro-linha: #cb6565;
+  --tone-on-ink: #14221f;
+  --tone-success-ink: #dcf0e3;
+  --tone-success-bg: #0e3526;
+  --tone-success-soft: #0e3526;
+  --tone-info-ink: #dfe9f7;
+  --tone-info-bg: #13323b;
+  --tone-info-soft: #13323b;
+  --tone-warning-ink: #fbefcf;
+  --tone-warning-bg: #342f1e;
+  --tone-warning-soft: #342f1e;
+  --tone-pending-ink: #fbefcf;
+  --tone-pending-bg: #342f1e;
+  --tone-pending-soft: #342f1e;
+  --tone-danger-ink: #fbe4df;
+  --tone-danger-bg: #3a2726;
+  --tone-danger-soft: #3a2726;
+  --tone-neutral-ink: #bcbeba;
+  --tone-neutral-bg: #2f403b;
+  --tone-neutral-soft: #263732;
+  --tone-neutral-line: #7f8682;
+  --tone-highlight-ink: #f5e0bc;
+  color-scheme: dark;
+}
+.dark .acesso.acesso-aurset {
+  --gold: #9cd8d4;
+}
+/* Opção neutra da plataforma (data-paleta="neutra" no <html>): só os neutros do kit. */
+html[data-paleta="neutra"] .acesso.acesso-aurset {
+  --ac-chao: #e6e6e6;
+  --ac-chao-2: #eeeeee;
+  --ac-chao-3: #f2f2f2;
+  --ac-forma: #cacaca;
+  --ac-detalhe: #262626;
+  --ac-luz: #ffffff;
+  --ac-sobre-chao: #262626;
+  --ac-cartao: #ffffff;
+  --ac-campo: #ffffff;
+  --ac-texto: #262626;
+  --ac-texto-2: #666666;
+  --ac-borda: #cacaca;
+  --ac-borda-campo: #838383;
+  --ac-suave: #f2f2f2;
+  --ac-acao: #262626;
+  --ac-acao-texto: #ffffff;
+  --ac-acao-hover: #4a4a4a;
+  --ac-foco: #262626;
+  --ac-trilho: #e6e6e6;
+  --ac-sombra: 0 1px 0 rgb(0 0 0 / 0.06), 0 18px 44px rgb(0 0 0 / 0.14);
+  --gold: #4a4a4a;
+}
+html.dark[data-paleta="neutra"] .acesso.acesso-aurset {
+  --ac-chao: #262626;
+  --ac-chao-2: #333333;
+  --ac-chao-3: #333333;
+  --ac-forma: #666666;
+  --ac-detalhe: #e6e6e6;
+  --ac-sobre-chao: #ffffff;
+  --ac-cartao: #161616;
+  --ac-campo: #000000;
+  --ac-texto: #ffffff;
+  --ac-texto-2: #cacaca;
+  --ac-borda: #4a4a4a;
+  --ac-borda-campo: #838383;
+  --ac-suave: #333333;
+  --ac-acao: #ffffff;
+  --ac-acao-texto: #262626;
+  --ac-acao-hover: #e6e6e6;
+  --ac-foco: #ffffff;
+  --ac-trilho: #262626;
+  --ac-sombra: 0 1px 0 rgb(0 0 0 / 0.4), 0 18px 44px rgb(0 0 0 / 0.5);
+  --gold: #e6e6e6;
+}
+html[data-paleta="neutra"] body:has(.acesso-aurset) {
+  background: #e6e6e6;
+}
+html.dark[data-paleta="neutra"] body:has(.acesso-aurset) {
+  background: #262626;
+}
+
+/* Loja: neutros + a cor da loja (vinda de brandVariables, no style do <main>). */
+.acesso.acesso-loja {
+  --ac-chao: #e6e6e6;
+  --ac-chao-2: #cacaca;
+  --ac-chao-3: #ffffff;
+  --ac-forma: var(--brand-accent, #838383);
+  --ac-detalhe: var(--brand-primary-foreground, #ffffff);
+  --ac-luz: #ffffff;
+  --ac-sobre-chao: #262626;
+  --ac-cartao: #ffffff;
+  --ac-campo: #ffffff;
+  --ac-texto: #262626;
+  --ac-texto-2: #666666;
+  --ac-borda: #cacaca;
+  --ac-borda-campo: #838383;
+  --ac-suave: #f1f1f1;
+  --ac-acao: var(--brand-primary, #262626);
+  --ac-acao-texto: var(--brand-primary-foreground, #ffffff);
+  --ac-acao-hover: color-mix(in oklab, var(--brand-primary, #262626) 86%, #000);
+  --ac-foco: #262626;
+  --ac-trilho: #e6e6e6;
+  --ac-sombra: 0 1px 0 rgb(0 0 0 / 0.06), 0 18px 44px rgb(0 0 0 / 0.14);
+  --ac-fonte-titulo: var(--font-sans);
+  --ac-raio-campo: var(--control-radius, 14px);
+  --ac-raio-botao: var(--button-radius, 14px);
+  --ac-raio-cartao: var(--panel-radius, 22px);
+  --tone-neutral-ink: #666666;
+  --tone-neutral-bg: #e6e6e6;
+  --tone-neutral-soft: #f1f1f1;
+  --tone-neutral-line: #838383;
+  --tone-highlight-ink: #262626;
+}
+.dark .acesso.acesso-loja {
+  --ac-chao: #000000;
+  --ac-chao-2: #262626;
+  --ac-chao-3: #262626;
+  --ac-sobre-chao: #ffffff;
+  --ac-cartao: #262626;
+  --ac-campo: #000000;
+  --ac-texto: #ffffff;
+  --ac-texto-2: #cacaca;
+  --ac-borda: #4a4a4a;
+  --ac-borda-campo: #838383;
+  --ac-suave: #333333;
+  --ac-acao: #ffffff;
+  --ac-acao-texto: #262626;
+  --ac-acao-hover: #e6e6e6;
+  --ac-foco: #ffffff;
+  --ac-trilho: #000000;
+  --ac-sombra: 0 1px 0 rgb(0 0 0 / 0.4), 0 18px 44px rgb(0 0 0 / 0.5);
+  --tone-neutral-ink: #cacaca;
+  --tone-neutral-bg: #4a4a4a;
+  --tone-neutral-soft: #333333;
+  --tone-neutral-line: #838383;
+  --tone-highlight-ink: #ffffff;
+}
+/* No cartão da loja, "principal" segue a ação legível do tema (no escuro, a cor crua da loja
+   pode sumir sobre o Grafite); o style do <main> não alcança esta declaração. */
+.acesso.acesso-loja :is(.acesso-cartao, .acesso-barra) {
+  --primary: var(--ac-acao);
+  --primary-foreground: var(--ac-acao-texto);
+  --gold: var(--ac-texto-2);
+}
+body:has(.acesso) {
+  background: #9cd8d4;
+}
+.dark body:has(.acesso) {
+  background: #14221f;
+}
+body:has(.acesso-loja) {
+  background: #e6e6e6;
+}
+.dark body:has(.acesso-loja) {
+  background: #000000;
+}
+
+/* ---------- Grade: formulário de um lado, painel ilustrado do outro ---------- */
+.acesso-grade {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  min-height: 100dvh;
+}
+.acesso-lado-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  padding: 0 0.75rem max(1rem, var(--app-safe-bottom, 0px));
+  margin-top: -1.75rem;
+  position: relative;
+  z-index: 1;
+}
+.acesso-barra {
+  position: absolute;
+  z-index: 3;
+  top: max(0.75rem, var(--app-safe-top, 0px));
+  right: max(0.75rem, var(--app-safe-right, 0px));
+  display: flex;
+  gap: 0.5rem;
+}
+.acesso .acesso-barra .app-icon-button {
+  background: var(--ac-cartao);
+  border-color: var(--ac-borda);
+  color: var(--ac-texto);
+  border-radius: 999px;
+}
+.acesso.acesso-loja .acesso-barra .app-icon-button {
+  border-radius: var(--ac-raio-botao);
+}
+
+/* ---------- Cartão do formulário ---------- */
+.acesso-cartao {
+  width: 100%;
+  max-width: 30rem;
+  min-width: 0;
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.5rem 1.25rem 1.5rem;
+  background: var(--ac-cartao);
+  color: var(--ac-texto);
+  border: 1px solid var(--ac-borda);
+  border-radius: var(--ac-raio-cartao);
+  box-shadow: var(--ac-sombra);
+}
+.acesso-cartao > * {
+  min-width: 0;
+}
+.acesso-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 2.75rem;
+}
+.acesso-marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+  color: var(--ac-texto);
+}
+.acesso-marca-aurset {
+  height: 1.875rem;
+  width: auto;
+  display: block;
+}
+.acesso-marca-logo {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: none;
+  overflow: hidden;
+  border-radius: var(--ac-raio-campo);
+  background: var(--ac-suave);
+}
+.acesso-marca-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.acesso-marca-nome {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--brand-font, var(--font-sans));
+  font-weight: var(--brand-header-font-weight, 700);
+  font-style: var(--brand-header-font-style, normal);
+  font-size: 1rem;
+}
+.acesso-cabeca {
+  display: grid;
+  gap: 0.375rem;
+}
+.acesso-titulo-linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+.acesso-titulo {
+  font-family: var(--ac-fonte-titulo);
+  font-size: clamp(1.625rem, 1.2rem + 1.6vw, 2rem);
+  line-height: 1.1;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--ac-texto);
+  outline: none;
+  overflow-wrap: anywhere;
+}
+.acesso-sub {
+  font-size: 1rem;
+  line-height: 1.45;
+  color: var(--ac-texto-2);
+}
+.acesso-corpo {
+  display: grid;
+  gap: 1rem;
+}
+.acesso-corpo > * {
+  min-width: 0;
+}
+
+/* Entrar | Cadastrar: trilho em pílula, a escolhida vira figura. */
+.acesso-abas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: var(--ac-trilho);
+  border-radius: var(--ac-raio-botao);
+}
+.dark .acesso-abas {
+  border: 1px solid var(--ac-borda);
+}
+.acesso-aba {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--ac-raio-botao);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ac-texto);
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+.acesso-aba[aria-selected="true"] {
+  background: var(--ac-acao);
+  color: var(--ac-acao-texto);
+}
+@media (hover: hover) {
+  .acesso-aba[aria-selected="false"]:hover {
+    background: color-mix(in oklab, var(--ac-cartao) 60%, transparent);
+  }
+}
+
+/* Campos: rótulo sempre visível, 16px, moldura única com ícone. */
+.acesso-form {
+  display: grid;
+  gap: 1rem;
+}
+.acesso-campo {
+  display: grid;
+  gap: 0.375rem;
+  min-width: 0;
+}
+.acesso-rotulo {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ac-texto);
+}
+.acesso-entrada {
+  display: flex;
+  align-items: center;
+  min-height: 3.25rem;
+  min-width: 0;
+  background: var(--ac-campo);
+  border: 1.5px solid var(--ac-borda-campo);
+  border-radius: var(--ac-raio-campo);
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+.acesso-entrada > svg {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-left: 0.875rem;
+  color: var(--ac-texto-2);
+}
+.acesso .acesso-entrada input {
+  flex: 1;
+  min-width: 0;
+  min-height: 3.125rem;
+  padding: 0.75rem 0.875rem 0.75rem 0.625rem;
+  background: transparent;
+  border: 0;
+  border-radius: inherit;
+  font-size: 1rem;
+  line-height: 1.4;
+  color: var(--ac-texto);
+  outline: none;
+  scroll-margin-block: 6rem;
+}
+.acesso .acesso-entrada input::placeholder {
+  color: var(--ac-texto-2);
+  opacity: 0.8;
+}
+.acesso-entrada:focus-within {
+  border-color: var(--ac-foco);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ac-foco) 28%, transparent);
+}
+.acesso-entrada[data-invalido="true"] {
+  border-color: var(--ac-erro-linha);
+  background: color-mix(in oklab, var(--ac-erro-fundo) 45%, var(--ac-campo));
+}
+.acesso-entrada[data-invalido="true"]:focus-within {
+  border-color: var(--ac-erro);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ac-erro-linha) 40%, transparent);
+}
+/* A moldura mostra o erro; o campo interno não ganha a faixa da regra global de aria-invalid. */
+body .acesso .acesso-entrada input[aria-invalid="true"][aria-invalid],
+body .acesso .acesso-entrada input[aria-invalid="true"][aria-invalid]:focus {
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+.acesso .acesso-entrada input:-webkit-autofill {
+  -webkit-text-fill-color: var(--ac-texto);
+  box-shadow: 0 0 0 100px var(--ac-campo) inset;
+  caret-color: var(--ac-texto);
+}
+.acesso-olho {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin-right: 0.25rem;
+  border-radius: 999px;
+  color: var(--ac-texto-2);
+}
+.acesso-olho svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+@media (hover: hover) {
+  .acesso-olho:hover {
+    background: var(--ac-suave);
+    color: var(--ac-texto);
+  }
+}
+.acesso-ajuda {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--ac-texto-2);
+}
+.acesso-erro {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  font-weight: 600;
+  color: var(--ac-erro);
+}
+.acesso-erro svg {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.125rem;
+}
+.acesso-linha-fim {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -0.625rem;
+  margin-bottom: -0.5rem;
+}
+.acesso-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-height: 2.75rem;
+  padding: 0 0.375rem;
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--ac-texto);
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 4px;
+  text-decoration-color: color-mix(in oklab, currentColor 45%, transparent);
+}
+.acesso-link svg {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+}
+.acesso-link:hover:not(:disabled) {
+  text-decoration-color: currentColor;
+}
+.acesso-link-suave {
+  color: var(--ac-texto-2);
+}
+.acesso-link-centro {
+  justify-self: center;
+}
+
+/* Botão principal: um só em toda a jornada. */
+.acesso-botao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--ac-raio-botao);
+  background: var(--ac-acao);
+  color: var(--ac-acao-texto);
+  font-size: 1rem;
+  font-weight: 650;
+  transition:
+    background-color 140ms ease,
+    transform 140ms ease;
+}
+.acesso-botao svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: none;
+}
+@media (hover: hover) {
+  .acesso-botao:hover:not(:disabled) {
+    background: var(--ac-acao-hover);
+  }
+}
+.acesso-botao:active:not(:disabled) {
+  transform: scale(0.99);
+}
+.acesso-botao:disabled:not([aria-busy="true"]) {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.acesso-botao[aria-busy="true"] {
+  cursor: wait;
+}
+
+/* Foco visível, igual em tudo que recebe teclado nesta tela. */
+.acesso :is(button, a, [role="tab"], [role="switch"]):focus-visible {
+  outline: 3px solid var(--ac-foco);
+  outline-offset: 2px;
+}
+.acesso .acesso-painel :is(button, a):focus-visible {
+  outline-color: var(--ac-sobre-chao);
+}
+
+/* Divisor "ou". */
+.acesso-ou {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--ac-texto-2);
+}
+.acesso-ou::before,
+.acesso-ou::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--ac-borda);
+}
+
+/* Entrar com Google, no padrão da marca Google (claro: branco, traço #747775, texto #1F1F1F;
+   escuro: #131314, traço #8E918F, texto #E3E3E3; Roboto médio; "G" colorido sem alteração). */
+.acesso-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0.625rem 1rem;
+  background: #ffffff;
+  border: 1px solid #747775;
+  border-radius: var(--ac-raio-botao);
+  color: #1f1f1f;
+  font-family: "Roboto Variable", "Roboto", var(--font-sans);
+  font-size: 1rem;
+  font-weight: 500;
+  transition: background-color 140ms ease;
+}
+.dark .acesso-google {
+  background: #131314;
+  border-color: #8e918f;
+  color: #e3e3e3;
+}
+/* Na Aurset em modo escuro o botão fica na família da Tinta (superfície escura da marca, traço
+   Asa), não em preto puro. Na paleta neutra, na superfície neutra. O "G" não muda. */
+.dark .acesso-aurset .acesso-google {
+  background: #1d2e2a;
+  border-color: #b1c5c7;
+  color: #fdfbf6;
+}
+html.dark[data-paleta="neutra"] .acesso-aurset .acesso-google {
+  background: #161616;
+  border-color: #838383;
+  color: #ffffff;
+}
+.acesso-google svg {
+  flex: none;
+}
+@media (hover: hover) {
+  .acesso-google:hover:not(:disabled) {
+    background: #f2f2f2;
+  }
+  .dark .acesso-google:hover:not(:disabled) {
+    background: #1f1f20;
+  }
+  .dark .acesso-aurset .acesso-google:hover:not(:disabled) {
+    background: #263a35;
+  }
+  html.dark[data-paleta="neutra"] .acesso-aurset .acesso-google:hover:not(:disabled) {
+    background: #262626;
+  }
+}
+.acesso-google:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Aceite: uma frase, com os documentos como links dentro dela. */
+.acesso-aceite {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--ac-texto-2);
+}
+.acesso-aceite a {
+  color: var(--ac-texto);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  border-radius: 4px;
+}
+.acesso-rodape {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0 0.375rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--ac-borda);
+  font-size: 0.9375rem;
+  color: var(--ac-texto-2);
+  text-align: center;
+}
+.acesso-selo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  justify-self: center;
+  font-size: 0.75rem;
+  color: var(--ac-texto-2);
+}
+.acesso-selo svg {
+  height: 1rem;
+  width: auto;
+  color: var(--ac-texto);
+}
+.acesso-email {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  max-width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--ac-borda);
+  border-radius: 999px;
+  background: var(--ac-suave);
+  color: var(--ac-texto);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.acesso-email svg {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+}
+.acesso-passos {
+  padding: 1rem;
+  border: 1px solid var(--ac-borda);
+  border-radius: var(--ac-raio-campo);
+  background: var(--ac-suave);
+}
+.acesso-resultado {
+  display: grid;
+  gap: 1.25rem;
+}
+.acesso-resultado-acoes {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: center;
+}
+.acesso .acesso-cartao h1,
+.acesso .acesso-cartao h2 {
+  font-family: var(--ac-fonte-titulo);
+}
+
+/* Peças compartilhadas, dentro do acesso: caixas do código e links seguem o tema da tela. */
+.acesso .entry-code-slot {
+  background: var(--ac-campo);
+  color: var(--ac-texto);
+  border-color: var(--ac-borda-campo);
+  border-radius: var(--ac-raio-campo);
+}
+.acesso .entry-code-slot[data-active] {
+  border-color: var(--ac-foco);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ac-foco) 28%, transparent);
+}
+.acesso .entry-code-slot[data-state="error"] {
+  border-color: var(--ac-erro-linha);
+}
+.acesso .entry-link-button {
+  color: var(--ac-texto);
+  font-size: 0.9375rem;
+}
+
+/* ---------- Painel ilustrado ---------- */
+.acesso-painel {
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  height: 9.5rem;
+  background: var(--ac-chao);
+  color: var(--ac-sobre-chao);
+}
+.acesso.acesso-loja .acesso-painel {
+  background: var(--brand-primary, #262626);
+  color: var(--brand-primary-foreground, #ffffff);
+}
+.acesso-forma {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+}
+/* Quarto de círculo: a forma grande, no canto de cima. */
+.acesso-forma-quarto {
+  top: 0;
+  right: 0;
+  width: 13rem;
+  height: 13rem;
+  background: var(--ac-forma);
+  border-radius: 0 0 0 100%;
+}
+/* Anel: o detalhe. */
+.acesso-forma-anel {
+  left: 1.25rem;
+  bottom: 2.75rem;
+  width: 4.25rem;
+  height: 4.25rem;
+  border: 1.125rem solid var(--ac-detalhe);
+  border-radius: 999px;
+}
+.acesso-forma-pilula {
+  left: 6.25rem;
+  top: 4.5rem;
+  width: 3.5rem;
+  height: 1.5rem;
+  background: var(--ac-luz);
+  border-radius: 999px;
+}
+/* Aurset: a pílula é um selo de estado, com ponto e texto. No celular a faixa é baixa e fica só
+   com o quarto de círculo e o anel: sem foto atrás dos botões e sem pílula solta. */
+.acesso-aurset .acesso-forma-pilula {
+  display: none;
+  align-items: center;
+  gap: 0.4375rem;
+  width: auto;
+  height: auto;
+  min-height: 2.25rem;
+  padding: 0.375rem 1rem 0.375rem 0.875rem;
+  color: #14221f;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+html[data-paleta="neutra"] .acesso-aurset .acesso-forma-pilula {
+  color: #262626;
+}
+.acesso-aurset .acesso-forma-pilula i {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: #359764;
+  box-shadow: 0 0 0 3px rgb(53 151 100 / 22%);
+}
+@media (min-width: 40rem) {
+  .acesso-aurset .acesso-forma-pilula {
+    display: inline-flex;
+  }
+}
+@media (max-width: 39.99rem) {
+  .acesso-aurset .acesso-cena {
+    display: none;
+  }
+  .acesso-aurset .acesso-forma-anel {
+    left: 1.5rem;
+    bottom: 3.5rem;
+  }
+}
+.acesso-forma-meia {
+  display: none;
+  background: var(--ac-chao-3);
+  border-radius: 999px 999px 0 0;
+}
+.acesso.acesso-loja .acesso-forma-pilula {
+  background: color-mix(in oklab, var(--brand-primary-foreground, #fff) 22%, transparent);
+}
+.acesso.acesso-loja .acesso-forma-meia {
+  background: color-mix(in oklab, var(--brand-primary-foreground, #fff) 12%, transparent);
+}
+.acesso.acesso-loja .acesso-forma-anel {
+  border-color: color-mix(in oklab, var(--brand-primary-foreground, #fff) 85%, transparent);
+}
+.acesso-cena {
+  position: absolute;
+  right: 8rem;
+  bottom: 1.25rem;
+  width: 5.25rem;
+}
+.acesso-arco {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  aspect-ratio: 3 / 4;
+  border: 4px solid var(--ac-luz);
+  border-radius: 999px 999px 14px 14px;
+  background: var(--ac-chao-3);
+}
+.acesso.acesso-loja .acesso-arco {
+  background: var(--ac-forma);
+  border-color: var(--brand-primary-foreground, #fff);
+}
+.acesso-arco > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.acesso-arco > .acesso-arco-logo {
+  width: 62%;
+  height: auto;
+  max-height: 62%;
+  object-fit: contain;
+  border-radius: 10px;
+}
+.acesso-agenda,
+.acesso-frase {
+  display: none;
+}
+
+/* Sem foto nem painel: só o cartão no centro (leiaute "cartão" escolhido pela loja). */
+.acesso-card .acesso-painel {
+  height: 7rem;
+}
+.acesso-card .acesso-cena {
+  display: none;
+}
+/* Foto por trás de tudo (leiaute "capa" escolhido pela loja). */
+.acesso-capa-foto {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.acesso-capa-veu {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--brand-primary, #262626) 35%, transparent),
+    color-mix(in oklab, var(--brand-primary, #262626) 78%, transparent)
+  );
+}
+
+/* Tablet em pé e celulares largos: faixa maior, com a frase. */
+@media (min-width: 40rem) {
+  .acesso-painel {
+    height: 17rem;
+  }
+  .acesso-lado-form {
+    margin-top: -3rem;
+  }
+  .acesso-cartao {
+    padding: 2rem 2.25rem 1.75rem;
+  }
+  .acesso-forma-quarto {
+    width: 24rem;
+    height: 24rem;
+  }
+  .acesso-forma-anel {
+    left: auto;
+    right: 19.5rem;
+    bottom: 4.75rem;
+    width: 5.5rem;
+    height: 5.5rem;
+    border-width: 1.5rem;
+  }
+  .acesso-forma-pilula {
+    left: 2.5rem;
+    top: 2.25rem;
+    width: 6.5rem;
+    height: 2.25rem;
+  }
+  .acesso-cena {
+    right: 8.75rem;
+    bottom: 3.75rem;
+    width: 9.5rem;
+  }
+  .acesso-arco {
+    border-width: 5px;
+  }
+  .acesso-frase {
+    display: grid;
+    gap: 0.375rem;
+    position: absolute;
+    left: 2.5rem;
+    top: 5.75rem;
+    max-width: 19rem;
+  }
+  .acesso-frase-titulo {
+    font-family: var(--ac-fonte-titulo);
+    font-size: 1.75rem;
+    line-height: 1.08;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+  }
+  .acesso-frase-texto {
+    display: none;
+  }
+  .acesso-frase-loja {
+    font-family: var(--brand-font, var(--font-sans));
+    font-weight: var(--brand-header-font-weight, 700);
+    font-size: 0.9375rem;
+    overflow-wrap: anywhere;
+  }
+  .acesso-card .acesso-painel {
+    height: 9rem;
+  }
+  .acesso-card .acesso-frase {
+    display: none;
+  }
+}
+
+/* Computador e tablet deitado: duas colunas. */
+@media (min-width: 56.25rem) {
+  .acesso-grade {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: 1fr;
+  }
+  .acesso-lado-form {
+    order: 1;
+    justify-content: center;
+    margin-top: 0;
+    padding: 1.5rem;
+  }
+  .acesso-painel {
+    order: 2;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    min-height: 34rem;
+  }
+  .acesso-forma-quarto {
+    width: min(78%, 34rem);
+    height: auto;
+    aspect-ratio: 1;
+  }
+  .acesso-forma-anel {
+    right: auto;
+    left: 12%;
+    bottom: auto;
+    top: 46%;
+    width: clamp(5.5rem, 9vw, 8rem);
+    height: clamp(5.5rem, 9vw, 8rem);
+    border-width: clamp(1.5rem, 2.5vw, 2.25rem);
+  }
+  .acesso-forma-pilula {
+    left: 10%;
+    top: 12%;
+    width: 7.5rem;
+    height: 2.5rem;
+  }
+  .acesso-forma-meia {
+    display: block;
+    left: 10%;
+    bottom: 0;
+    width: 9rem;
+    height: 4.5rem;
+    opacity: 0;
+  }
+  .acesso-cena {
+    right: 14%;
+    bottom: auto;
+    top: 11%;
+    width: min(48%, 19rem);
+  }
+  .acesso-arco {
+    border-width: 6px;
+    border-radius: 999px 999px 22px 22px;
+    box-shadow: var(--ac-sombra);
+  }
+  .acesso-agenda {
+    display: grid;
+    gap: 0.625rem;
+    position: absolute;
+    right: -16%;
+    bottom: -9%;
+    width: max-content;
+    max-width: 19rem;
+    white-space: nowrap;
+    padding: 0.875rem 1rem;
+    background: var(--ac-cartao);
+    color: var(--ac-texto);
+    border: 1px solid var(--ac-borda);
+    border-radius: 14px;
+    box-shadow: var(--ac-sombra);
+    font-size: 0.8125rem;
+    line-height: 1.3;
+  }
+  .acesso-agenda-topo {
+    font-family: var(--ac-fonte-titulo);
+    font-size: 0.9375rem;
+    font-weight: 650;
+  }
+  .acesso-agenda-linha {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .acesso-agenda-linha + .acesso-agenda-linha {
+    padding-top: 0.625rem;
+    border-top: 1px solid var(--ac-borda);
+  }
+  .acesso-agenda-hora {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .acesso-agenda-selo {
+    padding: 0.125rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 650;
+    background: #9cd8d4;
+    color: #14221f;
+  }
+  .acesso-agenda-selo-2 {
+    background: #f5e0bc;
+    color: #14221f;
+  }
+  .acesso-frase {
+    left: 10%;
+    right: 10%;
+    top: auto;
+    bottom: 9%;
+    max-width: 26rem;
+    gap: 0.625rem;
+  }
+  .acesso-frase-titulo {
+    font-size: clamp(2rem, 1.2rem + 1.9vw, 3rem);
+    line-height: 1.04;
+  }
+  .acesso-frase-texto {
+    display: block;
+    font-size: 1.0625rem;
+    line-height: 1.45;
+    max-width: 24rem;
+  }
+  .acesso-frase-loja {
+    font-size: 1.0625rem;
+  }
+  .acesso-barra {
+    top: 1.25rem;
+    right: 1.25rem;
+  }
+
+  /* Loja, leiaute "cartão": sem painel, cartão no centro sobre o neutro. */
+  .acesso-card .acesso-grade {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .acesso-card .acesso-painel {
+    display: none;
+  }
+  /* Loja, leiaute "capa": a foto ou a cor da loja ocupa a tela; o cartão flutua. */
+  .acesso-cover .acesso-grade {
+    grid-template-columns: minmax(0, 1fr);
+    position: relative;
+  }
+  .acesso-cover .acesso-painel {
+    position: absolute;
+    inset: 0;
+    height: auto;
+    order: 0;
+  }
+  .acesso-cover .acesso-lado-form {
+    align-items: flex-start;
+    padding-left: max(1.5rem, 8vw);
+    min-height: 100dvh;
+  }
+  .acesso-cover .acesso-frase {
+    left: auto;
+    right: 6%;
+    max-width: 22rem;
+  }
+  .acesso-cover .acesso-cena {
+    right: 10%;
+    width: min(26%, 17rem);
+  }
+}
+@media (min-width: 56.25rem) and (max-height: 52rem) {
+  .acesso-lado-form {
+    padding: 0.75rem 1.5rem;
+  }
+  .acesso-cena {
+    top: 9%;
+    width: min(42%, 15rem);
+  }
+  .acesso-frase {
+    bottom: 7%;
+  }
+  .acesso-cartao {
+    padding: 1.25rem 2rem 1.25rem;
+    gap: 0.875rem;
+  }
+  .acesso-corpo,
+  .acesso-form {
+    gap: 0.75rem;
+  }
+  .acesso-entrada {
+    min-height: 3rem;
+  }
+  .acesso .acesso-entrada input {
+    min-height: 2.875rem;
+    padding-top: 0.625rem;
+    padding-bottom: 0.625rem;
+  }
+  .acesso-botao,
+  .acesso-google {
+    min-height: 3rem;
+  }
+}
+
+/* Com foto de capa, as formas saem da frente da imagem. */
+.acesso-painel.tem-capa .acesso-forma,
+.acesso-painel.tem-capa .acesso-cena {
+  display: none;
+}
+
+/* Cadastro de conta em telas largas: nome e celular lado a lado poupam altura. */
+@media (min-width: 40rem) {
+  .acesso-form.e-cadastro {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 0.875rem;
+  }
+  .acesso-form.e-cadastro > * {
+    grid-column: 1 / -1;
+  }
+  .acesso-form.e-cadastro > :is(.acesso-campo-nome, .acesso-campo-telefone) {
+    grid-column: auto;
+  }
+}
+
+/* Entrada curta do painel; quem pede menos movimento não recebe nenhuma. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes acesso-sobe {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .acesso-cartao {
+    animation: acesso-sobe 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .acesso-agenda {
+    animation: acesso-sobe 420ms 160ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .acesso *,
+  .acesso *::before,
+  .acesso *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* Janela do Google (?popup=1): só o cartão, no centro. */
+.acesso.acesso-janela {
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+.acesso-janela .acesso-cartao {
+  max-width: 24rem;
+  justify-items: center;
+  text-align: center;
+}
+.acesso-janela-titulo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+/* ---------- Cadastro do estabelecimento (/cadastrar): mesma linguagem do acesso ---------- */
+.acesso.acesso-cadastro {
+  isolation: isolate;
+  overflow: clip;
+  color: var(--ac-texto);
+}
+.acesso-cadastro-fundo {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.acesso-cadastro-fundo .acesso-forma-quarto {
+  width: min(70vw, 34rem);
+  height: auto;
+  aspect-ratio: 1;
+}
+.acesso-cadastro-fundo .acesso-forma-anel {
+  left: auto;
+  right: 3%;
+  bottom: 6%;
+  top: auto;
+  width: 7rem;
+  height: 7rem;
+  border-width: 2rem;
+  display: none;
+}
+.acesso-cadastro-fundo .acesso-forma-pilula {
+  display: none;
+}
+@media (min-width: 64rem) {
+  .acesso-cadastro-fundo .acesso-forma-anel {
+    display: block;
+  }
+  /* Resumo e formulário numa peça só: o lado do resumo fica num tom do chão. */
+  .acesso.acesso-cadastro .entry-cad-layout {
+    background: var(--ac-chao-2);
+    border-color: var(--ac-borda);
+    border-radius: var(--ac-raio-cartao);
+    box-shadow: var(--ac-sombra);
+  }
+  .acesso.acesso-cadastro .entry-cad-layout > .platform-register-panel {
+    border-left: 1px solid var(--ac-borda);
+  }
+}
+.acesso-cadastro .platform-register-back {
+  color: var(--ac-sobre-chao);
+  font-size: 0.9375rem;
+  border-radius: 10px;
+  padding: 0 0.375rem;
+  background: color-mix(in oklab, var(--ac-chao) 80%, transparent);
+}
+.acesso-cadastro-opcoes {
+  display: flex;
+  gap: 0.5rem;
+}
+.acesso .acesso-cadastro-opcoes .app-icon-button {
+  background: var(--ac-cartao);
+  border-color: var(--ac-borda);
+  color: var(--ac-texto);
+  border-radius: 999px;
+}
+.acesso-cadastro-chamada {
+  font-family: var(--ac-fonte-titulo);
+  font-size: 2.25rem;
+  line-height: 1.05;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--ac-sobre-chao);
+}
+/* Lado do resumo: prévia viva da página do estabelecimento e uma cena ilustrada, no lugar do
+   cartão solitário que deixava a coluna vazia. */
+.cad-previa {
+  display: grid;
+  gap: 0.5rem;
+}
+.cad-previa-rotulo {
+  justify-self: start;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: var(--ac-detalhe);
+  color: var(--ac-chao);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.cad-previa-tela {
+  display: grid;
+  gap: 0.375rem;
+  padding: 0.625rem 0.625rem 0.875rem;
+  border-radius: 22px;
+  background: var(--ac-cartao);
+  color: var(--ac-texto);
+  box-shadow: var(--ac-sombra);
+  font-size: 0.875rem;
+  line-height: 1.3;
+}
+.cad-previa-capa {
+  position: relative;
+  height: 5.5rem;
+  margin-bottom: 1rem;
+  border-radius: 14px;
+  background: var(--ac-chao);
+}
+.cad-previa-capa span {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 58%;
+  border-radius: 0 14px 14px 100%;
+  background: var(--ac-forma);
+}
+.cad-previa-capa em {
+  position: absolute;
+  left: 0.75rem;
+  bottom: -0.875rem;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 3px solid var(--ac-cartao);
+  border-radius: 999px;
+  background: var(--ac-acao);
+  color: var(--ac-acao-texto);
+  font-family: var(--ac-fonte-titulo);
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 650;
+}
+.cad-previa-tela b {
+  padding-inline: 0.375rem;
+  font-family: var(--ac-fonte-titulo);
+  font-size: 1.125rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+.cad-previa-tela small {
+  padding-inline: 0.375rem;
+  color: var(--ac-texto-2);
+  font-size: 0.8125rem;
+}
+.cad-previa-escolha {
+  margin-top: 0.375rem;
+  font-weight: 600;
+}
+.cad-previa-horas {
+  display: flex;
+  gap: 0.375rem;
+  padding-inline: 0.375rem;
+}
+.cad-previa-horas i {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  min-height: 2rem;
+  border: 1px solid var(--ac-borda);
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-style: normal;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.cad-previa-horas i[data-on] {
+  border-color: transparent;
+  background: var(--ac-forma);
+  color: #14221f;
+}
+.cad-previa-botao {
+  display: grid;
+  place-items: center;
+  min-height: 2.5rem;
+  margin: 0.375rem 0.375rem 0;
+  border-radius: 999px;
+  background: var(--ac-acao);
+  color: var(--ac-acao-texto);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.cad-previa-nota {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0;
+  color: var(--ac-sobre-chao);
+  font-size: 0.9375rem;
+  line-height: 1.4;
+}
+.cad-cena {
+  position: relative;
+  display: none;
+  height: 13rem;
+  margin: 0.5rem -2rem -2rem;
+  overflow: hidden;
+}
+.cad-cena-quarto {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 13rem;
+  height: 13rem;
+  border-radius: 0 100% 0 0;
+  background: var(--ac-forma);
+}
+.cad-cena-anel {
+  position: absolute;
+  top: 1rem;
+  right: 2rem;
+  width: 4.5rem;
+  height: 4.5rem;
+  border: 1.25rem solid var(--ac-detalhe);
+  border-radius: 999px;
+}
+.cad-cena img {
+  position: absolute;
+  left: 2.25rem;
+  bottom: 0;
+  width: 9.5rem;
+  height: 11rem;
+  object-fit: cover;
+  object-position: 30% 50%;
+  border: 5px solid var(--ac-luz);
+  border-bottom: 0;
+  border-radius: 999px 999px 0 0;
+}
+.dark .cad-previa-capa {
+  background: #2f4741;
+}
+html.dark[data-paleta="neutra"] .cad-previa-capa {
+  background: #333333;
+}
+@media (min-width: 64rem) and (min-height: 56rem) {
+  /* A coluna vai até o fim do cartão e a cena encosta embaixo. */
+  .acesso.acesso-cadastro .entry-cad-aside {
+    position: static;
+    align-self: stretch;
+    grid-template-rows: auto auto auto 1fr;
+  }
+  .cad-cena {
+    display: block;
+    align-self: end;
+  }
+}
+/* O painel e o cartão de resumo seguem o tema (antes eram claros à força também no escuro). */
+.acesso.acesso-cadastro .platform-register-panel,
+.acesso.acesso-cadastro .entry-result-card {
+  --card: var(--ac-cartao);
+  --card-foreground: var(--ac-texto);
+  --foreground: var(--ac-texto);
+  --background: var(--ac-suave);
+  --primary: var(--ac-acao);
+  --primary-foreground: var(--ac-acao-texto);
+  --muted: var(--ac-suave);
+  --muted-foreground: var(--ac-texto-2);
+  --border: var(--ac-borda);
+  --input: var(--ac-borda-campo);
+  --accent: var(--ac-suave);
+  --accent-foreground: var(--ac-texto);
+  --ring: var(--ac-foco);
+  --destructive: var(--ac-erro);
+  --gold: var(--ac-texto-2);
+  color-scheme: inherit;
+  background: var(--ac-cartao);
+  color: var(--ac-texto);
+  border: 1px solid var(--ac-borda);
+  border-radius: var(--ac-raio-cartao);
+  box-shadow: var(--ac-sombra);
+}
+.acesso.acesso-cadastro .entry-result-card {
+  border-radius: var(--ac-raio-campo);
+}
+.acesso-cadastro .platform-register-title {
+  font-family: var(--ac-fonte-titulo);
+  font-size: 1.75rem;
+  font-weight: 650;
+  color: var(--ac-texto);
+}
+.acesso-cadastro .platform-register-label {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--ac-texto);
+}
+.acesso-cadastro .platform-register-input {
+  min-height: 3.25rem;
+  font-size: 1rem;
+  color: var(--ac-texto);
+  background: var(--ac-campo);
+  border: 1.5px solid var(--ac-borda-campo);
+  border-radius: var(--ac-raio-campo);
+}
+.acesso-cadastro .platform-register-input::placeholder {
+  color: var(--ac-texto-2);
+  opacity: 0.8;
+}
+.acesso-cadastro .platform-register-input:focus {
+  border-color: var(--ac-foco);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ac-foco) 28%, transparent);
+}
+.acesso-cadastro :is(.platform-register-note, .platform-register-footer) {
+  color: var(--ac-texto-2);
+}
+.acesso-cadastro a.acesso-botao {
+  text-decoration: none;
+}
+
+/* ======================================================================================
+   LEGADO: regras antigas (`auth-*`), mantidas só porque a prévia do login em Ajustes
+   (src/features/shop/LoginScreenPreview.tsx) ainda usa essas classes. A tela real não usa mais.
+   ====================================================================================== */
 /* Acesso real e prévia por dispositivo. A moldura participa do leiaute: a foto cresce com
    a marca e as colunas cedem quando a largura útil ou a ampliação do texto pede isso. */
 .auth-entry-frame {
   display: contents;
 }
-.auth-entry-host {
-  container: auth-entry / inline-size;
-  min-width: 0;
-  --auth-entry-head-top: 2.25rem;
-  --auth-entry-body-top: 1.5rem;
-  --auth-entry-body-bottom: 2rem;
-}
-.auth-entry-host > .auth-entry-frame,
-.auth-entry-host .auth-brand-panel,
-.auth-entry-host .auth-brand-header {
-  min-width: 0;
-}
-.auth-entry-host .auth-brand-header {
-  container: auth-heading / inline-size;
-}
-.auth-entry-host :is(.auth-brand-name, .auth-title) {
-  overflow-wrap: anywhere;
-}
-.auth-entry-host .auth-photo-copy h2 {
-  overflow-wrap: anywhere;
-}
-.auth-entry-host .auth-field-password .auth-forgot-password {
-  max-width: calc(100% - 5rem);
-}
-.auth-entry-host.auth-layout-split::after {
-  content: none;
-}
-
-/* No celular, a mesma faixa de foto e o mesmo cartão. A altura da faixa deixa de cortar
-   a apresentação quando o nome da barbearia ocupa mais linhas. */
-.auth-entry-host.auth-layout-split > .auth-entry-frame {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto auto;
-  width: 100%;
-}
-.auth-entry-host.auth-layout-split .auth-entry-frame > .auth-photo-layer {
-  position: relative;
-  inset: auto;
-  grid-column: 1;
-  grid-row: 1;
-  height: auto;
-  min-height: calc(9rem + var(--app-safe-top, env(safe-area-inset-top)));
-  align-self: stretch;
-}
-.auth-entry-host.auth-layout-split .auth-photo-layer > img {
-  position: absolute;
-  inset: 0;
-}
-.auth-entry-host.auth-layout-split .auth-photo-copy {
-  position: relative;
-  inset: auto;
-  grid-column: 1;
-  grid-row: 1;
-  align-self: start;
-  width: 100%;
-  max-width: none;
-  min-width: 0;
-}
-.auth-entry-host.auth-layout-split .auth-brand-panel {
-  grid-column: 1;
-  grid-row: 2;
-  justify-self: center;
-}
-.auth-entry-host:is(.auth-layout-cover, .auth-layout-card) > .auth-entry-frame {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: inherit;
-  width: 100%;
-}
-.auth-entry-host:is(.auth-layout-cover, .auth-layout-card) .auth-photo-layer {
-  position: fixed;
-  inset: 0;
-}
-
-/* Em uma área realmente estreita (inclusive texto ampliado), os controles ficam acima da
-   marca, sem reservar uma faixa lateral que reduza o nome da loja a poucas letras. */
-@media (width < 768px) {
-  @container auth-entry (max-width: 19rem) {
-    .auth-entry-host.auth-layout-split .auth-photo-copy {
-      padding-top: 4.25rem;
-      padding-right: 1.25rem;
-    }
-    .auth-entry-host.auth-layout-cover .auth-photo-copy {
-      padding: 4.25rem 0 0.5rem;
-    }
-    .auth-entry-host:is(.auth-layout-split, .auth-layout-cover) .auth-photo-copy h2 {
-      display: none;
-    }
-    .auth-entry-host .auth-brand-panel {
-      --auth-pad-x: clamp(0.5rem, 4cqi, 1rem);
-    }
-    .auth-entry-host .auth-brand-identity {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-    .auth-entry-host .auth-brand-identity .auth-brand-name {
-      flex: none;
-      width: 100%;
-      overflow: visible;
-      white-space: normal;
-      text-overflow: clip;
-    }
-    .auth-entry-host.auth-layout-split .auth-brand-panel {
-      width: calc(100% - 1.5rem);
-      margin-inline: 0.75rem;
-      padding-inline: 0;
-    }
-  }
-}
 
 @media (min-width: 768px) {
-  .auth-entry-host .auth-theme-toggle {
-    top: 1.25rem;
-    right: max(2rem, calc((100% - 76rem) / 2));
-  }
-  .auth-entry-host.auth-layout-split {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    align-content: center;
-    gap: 0;
-    padding: 5.5rem 2rem 2rem;
-    background: var(--background);
-  }
-  .auth-entry-host.auth-layout-split > .auth-entry-frame {
-    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-    grid-template-rows: auto;
-    width: min(76rem, 100%);
-    margin-inline: auto;
-    min-height: min(42rem, calc(100dvh - 7.5rem));
-    isolation: isolate;
-    overflow: clip;
-    border: 1px solid var(--border);
-    border-radius: var(--panel-radius);
-    background: var(--card);
-    box-shadow: 0 24px 60px color-mix(in oklab, #1c1d19 14%, transparent);
-  }
-  .auth-entry-host.auth-layout-split .auth-entry-frame > .auth-photo-layer {
-    min-height: 0;
-  }
-  .auth-entry-host.auth-layout-split .auth-photo-copy {
-    position: relative;
-    bottom: auto;
-    align-self: end;
-    padding: 2.25rem;
-  }
-  .auth-entry-host.auth-layout-split:has(.auth-form-fields.is-signup) .auth-photo-copy {
-    position: sticky;
-    top: 2rem;
-    align-self: start;
-  }
-  .auth-entry-host.auth-layout-split .auth-photo-copy h2 {
-    font-size: clamp(2.5rem, 3.75vw, 3.5rem);
-  }
-  .auth-entry-host.auth-layout-split .auth-brand-panel {
-    --auth-pad-x: clamp(1.5rem, 3vw, 3rem);
-    --auth-head-top: var(--auth-entry-head-top);
-    --auth-body-top: var(--auth-entry-body-top);
-    --auth-body-bottom: var(--auth-entry-body-bottom);
-    grid-column: 2;
-    grid-row: 1;
-    width: auto;
-    max-width: none;
-    margin: 0;
-    padding: 0;
-    align-self: stretch;
-    justify-self: stretch;
-    border: 0;
-    border-radius: 0 !important;
-    background: var(--card);
-    box-shadow: none;
-  }
-  .auth-entry-host.auth-layout-split .auth-brand-panel > :is(.auth-brand-header, .auth-form-body) {
-    width: 100%;
-    max-width: 36rem;
-    margin-inline: auto;
-  }
-  .auth-entry-host.auth-layout-split .auth-brand-header {
-    padding: var(--auth-head-top) var(--auth-pad-x) 0;
-  }
-  .auth-entry-host.auth-layout-split .auth-brand-header > .mt-6 {
-    margin-top: 0;
-  }
-  .auth-entry-host.auth-layout-split .auth-form-body {
-    padding: var(--auth-body-top) var(--auth-pad-x) var(--auth-body-bottom);
-  }
-
-  .auth-entry-host.auth-layout-cover {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0;
-  }
-  .auth-entry-host.auth-layout-cover > .auth-entry-frame {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(22rem, 34rem);
-    align-items: center;
-    gap: clamp(2rem, 6vw, 7rem);
-    width: min(76rem, 100%);
-    margin-inline: auto;
-  }
-  .auth-entry-host.auth-layout-cover .auth-photo-copy {
-    grid-column: 1;
-    grid-row: 1;
-    min-width: 0;
-  }
-  .auth-entry-host.auth-layout-cover .auth-brand-panel {
-    grid-column: 2;
-    grid-row: 1;
-    width: 100%;
-    max-width: 34rem;
-  }
-  .auth-entry-host.auth-layout-card > .auth-entry-frame {
-    display: grid;
-    place-items: center;
-    width: min(32rem, 100%);
-    margin-inline: auto;
-  }
-  .auth-entry-host.auth-layout-card .auth-brand-panel {
-    width: 100%;
-    max-width: none;
-  }
-
   /* O tamanho da fonte conta para a decisão; uma janela larga também pode pedir uma coluna. */
   @container auth-entry (max-width: 58rem) {
     .auth-entry-frame {
       min-width: 0;
     }
-    .auth-entry-host.auth-layout-split > .auth-entry-frame {
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-rows: auto auto;
-      width: min(36rem, 100%);
-      min-height: 0;
-    }
-    .auth-entry-host.auth-layout-split .auth-entry-frame > .auth-photo-layer {
-      grid-column: 1;
-      grid-row: 1;
-      min-height: 6rem;
-    }
-    .auth-entry-host.auth-layout-split .auth-photo-copy,
-    .auth-entry-host.auth-layout-split:has(.auth-form-fields.is-signup) .auth-photo-copy {
-      position: relative;
-      inset: auto;
-      align-self: start;
-      display: grid;
-      grid-template-columns: 3rem minmax(0, 1fr);
-      align-items: center;
-      gap: 0.25rem 1rem;
-      padding: 1.25rem;
-    }
-    .auth-entry-host.auth-layout-split .auth-photo-copy-logo {
-      display: grid;
-      grid-column: 1;
-      grid-row: 1 / span 2;
-      width: 3rem;
-      height: 3rem;
-      margin: 0;
-    }
-    .auth-entry-host.auth-layout-split .auth-photo-copy .auth-brand-name {
-      grid-column: 2;
-      grid-row: 1;
-    }
-    .auth-entry-host.auth-layout-split .auth-photo-copy h2 {
-      grid-column: 2;
-      grid-row: 2;
-      margin: 0;
-      font-size: 1.5rem;
-      line-height: 1.15;
-    }
-    .auth-entry-host.auth-layout-split .auth-photo-copy > p:last-child {
-      display: none;
-    }
-    .auth-entry-host.auth-layout-split .auth-brand-panel {
-      --auth-pad-x: clamp(1rem, 4cqi, 2rem);
-      grid-column: 1;
-      grid-row: 2;
-    }
-    .auth-entry-host.auth-layout-cover > .auth-entry-frame {
-      grid-template-columns: minmax(0, 1fr);
-      gap: 1rem;
-      width: min(36rem, 100%);
-    }
-    .auth-entry-host.auth-layout-cover .auth-photo-copy {
-      position: relative;
-      inset: auto;
-      width: 100%;
-      max-width: none;
-      padding: 0;
-    }
-    .auth-entry-host.auth-layout-cover .auth-photo-copy-logo,
-    .auth-entry-host.auth-layout-cover .auth-photo-copy > p:last-child {
-      display: none;
-    }
-    .auth-entry-host.auth-layout-cover .auth-photo-copy h2 {
-      font-size: 1.75rem;
-    }
-    .auth-entry-host.auth-layout-cover .auth-brand-panel {
-      grid-column: 1;
-      grid-row: 2;
-      max-width: none;
-    }
-  }
-}
-@media (min-width: 1024px) {
-  .auth-entry-host.auth-layout-card > .auth-entry-frame {
-    width: min(36rem, 100%);
-  }
-}
-@media (min-width: 768px) and (max-height: 860px) {
-  .auth-entry-host {
-    --auth-entry-head-top: 1.5rem;
-    --auth-entry-body-top: 1rem;
-    --auth-entry-body-bottom: 1.5rem;
-  }
-  .auth-entry-host.auth-layout-split {
-    padding-block: 4.75rem 1.5rem;
-  }
-  .auth-entry-host.auth-layout-split > .auth-entry-frame {
-    min-height: min(42rem, calc(100dvh - 6.25rem));
   }
 }
 
@@ -332,16 +1644,8 @@
     font-size: 1.5rem !important;
   }
 }
-@container auth-form (max-width: 12rem) {
-  .auth-entry-host :is(.auth-mode-tabs, .entry-channel-tabs) {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .auth-entry-host .auth-field-password:has(.auth-forgot-password) {
-    margin-top: 0;
-  }
-  .auth-entry-host .auth-field-password .auth-forgot-password {
-    position: static;
-    max-width: none;
-    margin-top: 0.25rem;
-  }
+
+/* Cadastro: respiro entre os passos e o título, que ficavam encostados. */
+.platform-register .platform-register-title {
+  margin-top: 0.875rem;
 }

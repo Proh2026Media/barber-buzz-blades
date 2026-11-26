@@ -1,4 +1,4 @@
-import { MarcaPlataforma } from "@/components/MarcaPlataforma";
+import { AursetLogo } from "@/components/visual/AursetLogo";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -195,7 +195,7 @@ function CadastrarPage() {
           </aside>
           <div className="platform-register-panel">
             <div className="platform-register-brand">
-              <MarcaPlataforma composicao="horizontal" className="w-48 max-w-full" alt="Barba &amp; Cabelo" />
+              <AursetLogo className="w-48 max-w-full" title="Aurset" />
             </div>
             <Steps
               label={t("entry.cad.stepsLabel")}

@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 
-const DEFAULT_FAVICON = "/icons/icon-192.png";
-
+const DEFAULT_FAVICON = "/favicon.svg";
 
 function iconMime(href: string): string | undefined {
   if (href.startsWith("data:image/svg")) return "image/svg+xml";
@@ -30,21 +29,26 @@ function upsertFaviconLink(rel: string, href: string, type?: string) {
 }
 
 /**
- * Usa a logo da identidade visual da barbearia como favicon (aba / PWA ícone).
- * Sem logo, volta aos ícones padrão do Barba & Cabelo.
+ * Usa a logo da identidade visual do estabelecimento como favicon (aba / PWA ícone).
+ * Sem logo, volta ao favicon padrão da Aurset.
  */
 export function applyShopFavicon(logoUrl: string | null | undefined) {
   if (typeof document === "undefined") return;
   const custom = (logoUrl ?? "").trim();
   const href = custom || DEFAULT_FAVICON;
-  const type = custom ? iconMime(href) : "image/png";
+  const type = custom ? iconMime(href) : "image/svg+xml";
   upsertFaviconLink("icon", href, type);
 }
 
 /** Aplica favicon da loja enquanto a tela estiver montada. */
 export function useShopFavicon(logoUrl: string | null | undefined, shopName?: string | null) {
   useEffect(() => {
-    applyShopFavicon(logoUrl || (shopName ? `/identidade/icone?dominio=${encodeURIComponent(window.location.hostname)}` : null));
+    applyShopFavicon(
+      logoUrl ||
+        (shopName
+          ? `/identidade/icone?dominio=${encodeURIComponent(window.location.hostname)}`
+          : null),
+    );
     // A rota raiz resolve o título pelo domínio, inclusive durante a troca de telas.
     return () => applyShopFavicon(null);
   }, [logoUrl, shopName]);

@@ -1,11 +1,16 @@
 import { dominioDaPlataforma } from "./platform-domain";
+import { APP_NAME } from "../brand";
+
+import { brandTheme, customBrandLeque, resolveBrandColors } from "./branding";
 
 export async function nomeDaInstalacao(host: string): Promise<string> {
-  if ([dominioDaPlataforma, "localhost", "127.0.0.1"].includes(host)) return "Barba & Cabelo";
+  if ([dominioDaPlataforma, "localhost", "127.0.0.1"].includes(host)) return APP_NAME;
   try {
     const resposta = await shopIdentity(new URL("/identidade/manifesto", "https://" + host));
     if (resposta.ok) return (await resposta.json()).name || host;
-  } catch { /* Mantém o domínio como identificação caso o cadastro esteja indisponível. */ }
+  } catch {
+    /* Mantém o domínio como identificação caso o cadastro esteja indisponível. */
+  }
   return host;
 }
 
@@ -15,9 +20,12 @@ export async function shopIdentity(url: URL): Promise<Response> {
   const icon = apple || url.pathname === "/identidade/icone";
   const platform = dominioDaPlataforma;
   const domain = (url.searchParams.get("dominio") || url.hostname).toLowerCase();
-  if (!/^[a-z0-9.-]+$/.test(domain)) return new Response(null, {status: 400});
+  if (!/^[a-z0-9.-]+$/.test(domain)) return new Response(null, { status: 400 });
   if ([platform, "localhost", "127.0.0.1"].includes(domain)) {
-    return new Response(null, {status: 302, headers: {Location: icon ? "/icons/icon-180.png" : "/manifest.webmanifest"}});
+    return new Response(null, {
+      status: 302,
+      headers: { Location: icon ? "/icons/icon-180.png" : "/manifest.webmanifest" },
+    });
   }
   const api = process.env.SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
   const key = process.env.SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -36,23 +44,46 @@ export async function shopIdentity(url: URL): Promise<Response> {
       ? shop.logo_url
       : null;
   if (icon) {
-    const origemPermitida = new Set([new URL(api).origin, "https://supabase-barbearia.proh.media", "https://supabasebeauty.contheiner.digital"]);
+    const origemPermitida = new Set([
+      new URL(api).origin,
+      "https://supabase-barbearia.proh.media",
+      "https://supabasebeauty.contheiner.digital",
+    ]);
     const origemLogo = logo ? new URL(logo) : null;
-    if (apple && origemLogo && origemPermitida.has(origemLogo.origin) && origemLogo.pathname.startsWith("/storage/v1/object/public/barbershop-logos/")) {
-      const arquivo = await fetch(origemLogo, { redirect: "error", signal: AbortSignal.timeout(5000) });
+    if (
+      apple &&
+      origemLogo &&
+      origemPermitida.has(origemLogo.origin) &&
+      origemLogo.pathname.startsWith("/storage/v1/object/public/barbershop-logos/")
+    ) {
+      const arquivo = await fetch(origemLogo, {
+        redirect: "error",
+        signal: AbortSignal.timeout(5000),
+      });
       const tipo = arquivo.headers.get("content-type")?.split(";")[0];
       if (arquivo.ok && tipo && ["image/svg+xml", "image/jpeg", "image/png"].includes(tipo)) {
         const { iconeDeLogo } = await import("./selo-png.server");
-        const png = await iconeDeLogo(await arquivo.arrayBuffer(), tipo, shop.logo_background_color);
-        return new Response(png, { headers: { "Content-Type": "image/png", "Cache-Control": "private, max-age=300" } });
+        const png = await iconeDeLogo(
+          await arquivo.arrayBuffer(),
+          tipo,
+          shop.logo_background_color,
+        );
+        return new Response(png, {
+          headers: { "Content-Type": "image/png", "Cache-Control": "private, max-age=300" },
+        });
       }
     }
     if (logo) return new Response(null, { status: 302, headers: { Location: logo } });
     const { iconeDeIniciais } = await import("./selo-png.server");
-    return new Response(await iconeDeIniciais(name, shop.shop_id), {headers: {
-      "Content-Type": "image/png", "Cache-Control": "private, max-age=300",
-    }});
+    return new Response(await iconeDeIniciais(name, shop.shop_id), {
+      headers: {
+        "Content-Type": "image/png",
+        "Cache-Control": "private, max-age=300",
+      },
+    });
   }
+  const cores = resolveBrandColors(shop.primary_color, shop.accent_color);
+  const leque = brandTheme(cores.primary, cores.accent)?.leque ?? customBrandLeque(cores.primary, cores.accent);
   return Response.json(
     {
       id: "/",
@@ -62,9 +93,12 @@ export async function shopIdentity(url: URL): Promise<Response> {
       lang: "pt-BR",
       name,
       short_name: name,
-      theme_color: "#20211f",
-      background_color: "#e9e5de",
-      icons: [{ src: "/apple-touch-icon.png?dominio=" + encodeURIComponent(domain), purpose: "any" }, { src: logo || "/identidade/icone?dominio=" + encodeURIComponent(domain), purpose: "any" }],
+      theme_color: leque.meio,
+      background_color: leque.meio,
+      icons: [
+        { src: "/apple-touch-icon.png?dominio=" + encodeURIComponent(domain), purpose: "any" },
+        { src: logo || "/identidade/icone?dominio=" + encodeURIComponent(domain), purpose: "any" },
+      ],
     },
     {
       headers: {

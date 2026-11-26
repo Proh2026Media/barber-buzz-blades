@@ -76,6 +76,11 @@
         (var(--app-visible-height, 100dvh) - var(--dialog-safe-top) - var(--dialog-safe-bottom)) / 2
     );
   }
+  /* Folha de ações (⋯): presa embaixo, com a altura do conteúdo. Sem isto o `top` acima
+     esticava a folha e abria vãos entre os itens. */
+  [role="dialog"].more-actions-sheet {
+    top: auto;
+  }
   [role="alertdialog"] {
     overflow-y: auto;
   }

@@ -14,7 +14,7 @@ import {
   MessageCircle,
   Moon,
   Pointer,
-  Scissors,
+  ListChecks,
   SquareCheckBig,
   type LucideIcon,
 } from "lucide-react";
@@ -151,7 +151,7 @@ export function BookingSteps({ className }: { className?: string }) {
       className={className}
       steps={[
         { label: t("shopLanding.step1"), icon: LogIn },
-        { label: t("shopLanding.step2"), icon: Scissors },
+        { label: t("shopLanding.step2"), icon: ListChecks },
         { label: t("shopLanding.step3"), icon: SquareCheckBig },
       ]}
     />
@@ -199,7 +199,7 @@ export function TodayCard({
     <section
       aria-labelledby="landing-today"
       className={cn(
-        "public-card space-y-3 rounded-[var(--panel-radius)] border border-border p-4 shadow-[0_18px_44px_rgb(0_0_0/0.28)]",
+        "public-card space-y-3 rounded-[var(--panel-radius)] shop-today-card border border-border p-4",
         className,
       )}
     >
@@ -283,12 +283,7 @@ export function TodayCard({
       )}
 
       <div ref={ctaRef}>
-        <BookLink
-          slug={slug}
-          preview={preview}
-          signedIn={signedIn}
-          className="action-button action-confirm min-h-12 w-full text-sm"
-        >
+        <BookLink slug={slug} preview={preview} signedIn={signedIn} className="shop-cta w-full">
           {noneToday ? <CalendarSearch aria-hidden /> : <CalendarPlus aria-hidden />}
           {noneToday ? t("shopLanding.otherDays") : t("shopLanding.bookCta")}
         </BookLink>
@@ -367,7 +362,7 @@ export function SlotPills({
               className={cn(pill, index === 0 && "public-slot-next font-extrabold leading-none")}
             >
               {index === 0 && (
-                <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                <span className="text-xs font-bold leading-none text-muted-foreground">
                   {t("shopLanding.nextMark")}
                 </span>
               )}
@@ -480,7 +475,7 @@ export function WeekHours({
               )}
               <span>{label}</span>
               {isToday && (
-                <span className="rounded-[var(--button-radius)] bg-card px-2 py-0.5 text-[11px] font-bold">
+                <span className="rounded-[var(--button-radius)] bg-card px-2 py-0.5 text-xs font-bold">
                   {t("shopLanding.today")}
                 </span>
               )}
@@ -504,7 +499,7 @@ export function WeekHours({
 
 /**
  * Como chegar, WhatsApp e Instagram em botões do mesmo tamanho logo abaixo do nome, só com os
- * canais que existem. Sobre a capa escura.
+ * canais que existem, em pílulas sobre a capa da loja.
  */
 export function QuickActions({
   preview,
@@ -539,20 +534,18 @@ export function QuickActions({
   ].filter(Boolean) as { href: string; icon: LucideIcon; label: string; title?: string }[];
   if (!items.length) return null;
   const itemClass =
-    "hero-quick-action flex min-h-14 flex-col items-center justify-center gap-1 rounded-[var(--control-radius)] px-2 py-2 text-center text-xs font-semibold leading-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80";
+    "hero-quick-action shop-hero-focus inline-flex min-h-11 items-center gap-2 rounded-[var(--button-radius)] px-4 py-2 text-sm font-semibold leading-tight";
   return (
     <ul
       aria-label={t("shopLanding.contactLabel")}
-      className={cn("grid gap-2", className)}
-      style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
+      className={cn("flex flex-wrap gap-2", className)}
     >
       {items.map(({ href, icon: Icon, label, title }) => (
         <li key={label}>
           {preview ? (
             <span className={itemClass}>
-              <Icon className="size-5" aria-hidden />
-              {label}
-              {title && <span className="block max-w-full truncate text-[10px]">{title}</span>}
+              <Icon className="size-4 shrink-0" aria-hidden />
+              {title ?? label}
             </span>
           ) : (
             <a
@@ -562,15 +555,10 @@ export function QuickActions({
               className={itemClass}
               title={title}
             >
-              <Icon className="size-5" aria-hidden />
-              <span className="block min-w-0 max-w-full">
-                {label}
-                {title && (
-                  <span className="block truncate text-[10px] font-medium">
-                    <span className="sr-only"> </span>
-                    {title}
-                  </span>
-                )}
+              <Icon className="size-4 shrink-0" aria-hidden />
+              <span className="min-w-0 max-w-[14rem] truncate">
+                {title ? <span className="sr-only">{label}: </span> : null}
+                {title ?? label}
                 <span className="sr-only"> ({t("shopLanding.externalHint")})</span>
               </span>
             </a>

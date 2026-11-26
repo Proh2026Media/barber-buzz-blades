@@ -38,6 +38,11 @@ type BrandColorPickerProps = {
   /** Permite valor vazio (transparente), exibindo um estado "Sem fundo". */
   allowEmpty?: boolean;
   onChange: (value: string) => void;
+  /**
+   * Cor recusada por quem usa o seletor (ex.: cor reservada): o motivo aparece aqui dentro,
+   * junto do campo, com a saída sugerida. Sem isso o valor voltava sem explicação.
+   */
+  refusal?: { message: string; actionLabel?: string; onAction?: () => void };
 };
 
 /**
@@ -52,6 +57,7 @@ export function BrandColorPicker({
   sampleText,
   allowEmpty = false,
   onChange,
+  refusal,
 }: BrandColorPickerProps) {
   const { t, intlLocale } = useI18n();
   const sample = sampleText ?? t("brand.color.sample");
@@ -196,7 +202,7 @@ export function BrandColorPicker({
                       }
                       onChange((next.startsWith("#") ? next : `#${next}`).toUpperCase());
                     }}
-                    className="min-h-11 w-full rounded-xl border border-border bg-background px-3 font-mono text-sm font-semibold uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="min-h-11 w-full rounded-xl border border-border bg-background px-3 tabular-nums text-sm font-semibold uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     placeholder={defaultValue}
                   />
                 </div>
@@ -224,6 +230,21 @@ export function BrandColorPicker({
                 </FieldMessage>
               )}
             </MoreDetails>
+
+            {refusal && (
+              <div role="alert" className="space-y-2">
+                <FieldMessage tone="error">{refusal.message}</FieldMessage>
+                {refusal.actionLabel && refusal.onAction && (
+                  <button
+                    type="button"
+                    onClick={refusal.onAction}
+                    className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-background px-3 text-sm font-bold transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    {refusal.actionLabel}
+                  </button>
+                )}
+              </div>
+            )}
 
             <div className="flex gap-2">
               <button
