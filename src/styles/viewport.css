@@ -158,6 +158,25 @@
   }
 }
 
+/* O iOS suaviza também a faixa logo abaixo da área de status. A superfície
+   continua até a borda; o conteúdo começa depois dessa faixa no app instalado. */
+@supports (-webkit-touch-callout: none) {
+  @media (display-mode: standalone) and (orientation: portrait) and (max-width: 767.98px) {
+    .customer-workspace {
+      --recuo-status-ios: min(24px, var(--app-safe-top));
+    }
+    .customer-workspace:not(.brand-chrome-floating) > header {
+      padding-top: calc(var(--app-safe-top) + var(--recuo-status-ios) + 0.75rem);
+    }
+    .customer-workspace:not(.brand-chrome-floating) .brand-header-logo-wrap {
+      top: calc(var(--app-safe-top) + min(30px, var(--app-safe-top)));
+    }
+    .customer-workspace.brand-chrome-floating > header {
+      margin-top: calc(var(--app-safe-top) + var(--recuo-status-ios) + 0.5rem);
+    }
+  }
+}
+
 /* Campos pequenos disparam ampliação automática no iOS; não bloquear o zoom do usuário. */
 @media (pointer: coarse) and (max-width: 1279.98px) {
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
