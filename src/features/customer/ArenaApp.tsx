@@ -99,7 +99,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTheme } from "@/lib/use-theme";
 import { brandCornerClass, brandFontScopeClass, brandVariables } from "@/lib/shop/branding";
 import { useShopFavicon } from "@/lib/shop/favicon";
-import { BrandFontFace } from "@/features/shop/BrandFontFace";
+import { FontesDaPagina } from "@/features/shop/FontesDaPagina";
 import { BrandRootVariables } from "@/features/shop/BrandRootVariables";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useState, useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from "react";
@@ -3038,7 +3038,13 @@ function ArenaApp({
       style={brandStyle as React.CSSProperties}
     >
       <BrandRootVariables vars={brandStyle} />
-      <BrandFontFace url={shopSettings.custom_font_url} faces={shopSettings.custom_font_faces} />
+      <FontesDaPagina
+        familia={shopSettings.font_family}
+        peso={shopSettings.header_font_weight}
+        estilo={shopSettings.header_font_style}
+        url={shopSettings.custom_font_url}
+        faces={shopSettings.custom_font_faces}
+      />
       <PasswordChangeGate userId={userId} disabled={Boolean(demoShopId)} />
       <TermsUpdateGate userId={userId} disabled={Boolean(demoShopId)} />
       <CancellationDialog

@@ -1,5 +1,7 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+**27/11/2026.** A abertura usa a identidade pública do domínio já no HTML. A vitrine, o perfil profissional, o acesso e o agendamento preparam as fontes antes de exibir os textos. Em rede indisponível a página abre com uma fonte local estável. A gestão aguarda o cadastro visual da loja. Na vitrine, no perfil e no agendamento, as imagens de serviço medem 72 × 72 px. O recuo superior e lateral de 12 px define o canto interno conforme o capítulo Cantos do brand kit.
+
 **27/11/2026.** As vitrines da loja e do profissional e as etapas de escolha e resumo do agendamento mostram a descrição completa do serviço. Quando o cadastro está vazio, os serviços reconhecidos usam uma descrição traduzida do catálogo. O retrato do profissional e as miniaturas de serviços acompanham o formato de canto da loja, inclusive quando a foto é substituída pelas iniciais ou por um ícone.
 
 27/11/2026 — Serviços mostram uma ilustração por vez. Em Serviços → Editar serviço → Aparência por seção, a loja pode escolher uma foto própria, uma das sete fotos sugeridas ou um ícone da biblioteca, e restaurar o padrão por seção. O parceiro personaliza o próprio perfil e o próprio agendamento. O ensaio com reversão conferiu a herança entre loja e profissional e o isolamento entre titulares. Na demonstração, o formulário salvou e reabriu as escolhas em janelas de 390 e 1280 px.

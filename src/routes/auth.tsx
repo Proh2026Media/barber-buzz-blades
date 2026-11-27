@@ -69,7 +69,7 @@ import {
   type BrandLoginLayout,
 } from "@/lib/shop/branding";
 import { useShopFavicon } from "@/lib/shop/favicon";
-import { PublicBrandFontFace } from "@/features/shop/PublicBrandFontFace";
+import { FontesDaPagina } from "@/features/shop/FontesDaPagina";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { t as tNow, useI18n } from "@/lib/i18n";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -1938,7 +1938,13 @@ function AuthPage() {
       }
       data-brand-shop={brand.shopId ?? undefined}
     >
-      <PublicBrandFontFace shopId={brand.shopId} url={brand.customFontUrl} />
+      <FontesDaPagina
+        shopId={brand.shopId}
+        url={brand.customFontUrl}
+        familia={brand.fontFamily}
+        peso={brand.headerFontWeight}
+        estilo={brand.headerFontStyle}
+      />
       <div className="acesso-grade">
         <PainelAcesso
           loja={

@@ -1,5 +1,4 @@
 import { dominioDaPlataforma } from "./platform-domain";
-import { APP_NAME } from "../brand";
 
 import {
   brandTheme,
@@ -8,17 +7,6 @@ import {
   LOGO_MIME_TYPES,
   resolveBrandColors,
 } from "./branding";
-
-export async function nomeDaInstalacao(host: string): Promise<string> {
-  if ([dominioDaPlataforma, "localhost", "127.0.0.1"].includes(host)) return APP_NAME;
-  try {
-    const resposta = await shopIdentity(new URL("/identidade/manifesto", "https://" + host));
-    if (resposta.ok) return (await resposta.json()).name || host;
-  } catch {
-    /* Mantém o domínio como identificação caso o cadastro esteja indisponível. */
-  }
-  return host;
-}
 
 /** Identidade pública da instalação. A loja é resolvida exclusivamente pelo domínio. */
 export async function shopIdentity(url: URL): Promise<Response> {
@@ -59,12 +47,12 @@ export async function shopIdentity(url: URL): Promise<Response> {
     typeof shop.logo_url === "string" && shop.logo_url.startsWith("https://")
       ? shop.logo_url
       : null;
+  const origemPermitida = new Set([
+    new URL(api).origin,
+    "https://supabase-barbearia.proh.media",
+    "https://supabasebeauty.contheiner.digital",
+  ]);
   if (icon) {
-    const origemPermitida = new Set([
-      new URL(api).origin,
-      "https://supabase-barbearia.proh.media",
-      "https://supabasebeauty.contheiner.digital",
-    ]);
     const origemLogo = logo ? new URL(logo) : null;
     if (
       origemLogo &&
@@ -129,6 +117,19 @@ export async function shopIdentity(url: URL): Promise<Response> {
   const cores = resolveBrandColors(shop.primary_color, shop.accent_color);
   const leque =
     brandTheme(cores.primary, cores.accent)?.leque ?? customBrandLeque(cores.primary, cores.accent);
+  // O servidor aproveita a mesma consulta pública para antecipar a fonte no HTML.
+  let fonte: URL | null = null;
+  try {
+    const url = new URL(shop.custom_font_url);
+    if (
+      url.protocol === "https:" &&
+      origemPermitida.has(url.origin) &&
+      url.pathname.startsWith("/storage/v1/object/public/barbershop-fonts/")
+    )
+      fonte = url;
+  } catch {
+    // Uma loja pode usar somente as famílias incluídas no aplicativo.
+  }
   return Response.json(
     {
       id: "/",
@@ -151,6 +152,7 @@ export async function shopIdentity(url: URL): Promise<Response> {
     },
     {
       headers: {
+        ...(fonte && { Link: "<" + fonte.href + ">; rel=preload; as=font; crossorigin=anonymous" }),
         "Content-Type": "application/manifest+json",
         "Cache-Control": "private, max-age=60",
       },

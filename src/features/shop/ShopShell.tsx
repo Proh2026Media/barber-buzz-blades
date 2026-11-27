@@ -133,7 +133,8 @@ import {
 } from "@/lib/auth/shop-acting";
 import { brandCornerClass, brandFontScopeClass, brandVariables } from "@/lib/shop/branding";
 import { useShopFavicon } from "@/lib/shop/favicon";
-import { BrandFontFace } from "@/features/shop/BrandFontFace";
+import { Abertura } from "@/components/Abertura";
+import { FontesDaPagina } from "@/features/shop/FontesDaPagina";
 import { BrandRootVariables } from "@/features/shop/BrandRootVariables";
 import { ChangePasswordCard } from "@/features/auth/ChangePasswordCard";
 import { LanguageSettingsCard } from "@/components/LanguageSettingsCard";
@@ -458,6 +459,8 @@ export function ShopShell({ profile, headerActions, managedShop }: ShopShellProp
   const [businessHours, setBusinessHours] = useState<Tables<"business_hours">[]>([]);
   const [blocks, setBlocks] = useState<AvailabilityBlock[]>([]);
   const [settings, setSettings] = useState<Tables<"barbershop_settings"> | null>(null);
+  const [lojaConsultada, setLojaConsultada] = useState<string | null>(null);
+  const [erroDaMarca, setErroDaMarca] = useState<string | null>(null);
   useShopFavicon(settings?.logo_url);
   const [settingsSection, setSettingsSection] = useSettingsSection(tab === "configuracoes");
   const [bookingItem, setBookingItem] = useSettingsItem(settingsSection, "agendamento");
@@ -621,6 +624,8 @@ export function ShopShell({ profile, headerActions, managedShop }: ShopShellProp
           .sort((a, b) => a.starts_at.localeCompare(b.starts_at)),
       );
       setSettings(demo.settings);
+      setLojaConsultada(demo.shop.id);
+      setErroDaMarca(null);
       setCatalogLoadError(null);
       setAppointments(
         demo.appointments
@@ -670,7 +675,7 @@ export function ShopShell({ profile, headerActions, managedShop }: ShopShellProp
         .eq("barbershop_id", shop.id)
         .order("weekday", { ascending: true }),
       fetchUpcomingShopBlocks(shop.id),
-      supabase.from("barbershop_settings").select("*").eq("barbershop_id", shop.id).single(),
+      supabase.from("barbershop_settings").select("*").eq("barbershop_id", shop.id).maybeSingle(),
     ]);
     if (requestId !== catalogRequestRef.current) return;
     let catalogFailure: string | null = null;
@@ -715,8 +720,9 @@ export function ShopShell({ profile, headerActions, managedShop }: ShopShellProp
           ? friendlyAuthError(blocksResult.error)
           : null,
     );
-    if (settingsResult.error) setError(friendlyAuthError(settingsResult.error));
-    else setSettings(settingsResult.data);
+    setLojaConsultada(shop.id);
+    setErroDaMarca(settingsResult.error ? friendlyAuthError(settingsResult.error) : null);
+    setSettings(settingsResult.data);
     setLoading(false);
   }
 
@@ -1966,15 +1972,22 @@ export function ShopShell({ profile, headerActions, managedShop }: ShopShellProp
       )
     : null;
 
+  if (entryStep === "host" || (shop && lojaConsultada !== shop.id)) return <Abertura />;
+  if (shop && erroDaMarca) return <Abertura erro={erroDaMarca} tentar={() => void loadCatalog()} />;
+
   return (
     <WorkspaceFrame
       className={`arena-workspace shop-workspace min-h-screen bg-background text-foreground ${brandFontScopeClass(settings?.font_scope)} ${brandCornerClass(settings?.corner_style)} ${settings?.floating_chrome ? "brand-chrome-floating" : ""}`}
       style={brandStyle ? (brandStyle as CSSProperties) : undefined}
     >
       <BrandRootVariables vars={brandStyle} />
-      {settings && (
-        <BrandFontFace url={settings.custom_font_url} faces={settings.custom_font_faces} />
-      )}
+      <FontesDaPagina
+        familia={settings?.font_family}
+        peso={settings?.header_font_weight}
+        estilo={settings?.header_font_style}
+        url={settings?.custom_font_url}
+        faces={settings?.custom_font_faces}
+      />
       <PasswordChangeGate userId={viewerId} disabled={Boolean(demo)} />
       {!demo && actor && shop && (
         <ShopWelcomeDialog
@@ -2131,10 +2144,6 @@ export function ShopShell({ profile, headerActions, managedShop }: ShopShellProp
         <PwaInstallBanner />
         <ApprovalNoteContext.Provider value={approvalNote}>
           <div key={tab} className="mb-panel space-y-6">
-            {/* Entrada: a loja do domínio ainda está sendo conferida. */}
-            {entryStep === "host" && (
-              <LoadingState variant="cards" count={2} label={t("shop.entry.opening")} />
-            )}
             {/* 2 ou mais lojas e nenhuma escolha salva: a pessoa escolhe (e fica lembrado). */}
             {entryStep === "choose" && (
               <section className="app-action-card space-y-3 p-4 sm:p-5">

@@ -431,8 +431,8 @@ export function ServiceRow({
   const { t } = useI18n();
   const conteudo = (
     <>
-      <FotoServico nome={service.name} icone={service.icon} className="foto-servico-vitrine" />
-      <span className="flex min-w-0 flex-1 flex-col items-start gap-1.5 py-1">
+      <FotoServico nome={service.name} icone={service.icon} className="foto-servico-catalogo" />
+      <span className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
         <strong className="leading-snug [overflow-wrap:anywhere]">{service.name}</strong>
         <DescricaoServico nome={service.name} descricao={service.description} />
         <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -442,12 +442,12 @@ export function ServiceRow({
           <span className="text-sm font-bold tabular-nums">{price}</span>
         </span>
       </span>
-      {reserva && <ChevronRight className="mr-1 size-4 shrink-0" aria-hidden />}
+      {reserva && <ChevronRight className="size-4 shrink-0 self-center" aria-hidden />}
     </>
   );
-  const classe = "flex h-full min-w-0 items-center gap-3 p-2 sm:gap-4";
+  const classe = "conteudo-servico flex h-full min-w-0 items-start gap-3 sm:gap-4";
   return (
-    <li className="public-card min-w-0 rounded-[var(--panel-radius)] border border-border">
+    <li className="public-card cartao-catalogo min-w-0 rounded-[var(--panel-radius)] border border-border">
       {reserva ? (
         <Link
           to="/app"

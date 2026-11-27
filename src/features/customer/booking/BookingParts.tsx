@@ -183,7 +183,7 @@ function SelectCheck({ selected }: { selected: boolean }) {
 }
 
 const SELECT_CARD =
-  "relative flex w-full min-w-0 rounded-2xl border p-3 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold";
+  "cartao-catalogo relative flex w-full min-w-0 rounded-2xl border text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold";
 const SELECT_ON = "border-primary bg-primary/5";
 const SELECT_OFF = "border-border bg-card hover:border-primary/40";
 
@@ -246,11 +246,7 @@ export function ServiceChoices<S extends ServicoVisivel>({
         const selected = index === selectedIndex;
         const terms = termsFor(service);
         const icon = (
-          <FotoServico
-            nome={service.name}
-            icone={service.icon}
-            className="size-12 rounded-[var(--detail-radius)]"
-          />
+          <FotoServico nome={service.name} icone={service.icon} className="foto-servico-catalogo" />
         );
         return (
           <button
@@ -311,12 +307,8 @@ export function ServiceSummary({
 }) {
   const { t } = useI18n();
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-border bg-background/60 p-3">
-      <FotoServico
-        nome={service.name}
-        icone={service.icon}
-        className="size-10 rounded-[var(--detail-radius)]"
-      />
+    <div className="cartao-catalogo flex items-center gap-3 rounded-2xl border border-border bg-background/60">
+      <FotoServico nome={service.name} icone={service.icon} className="foto-servico-catalogo" />
       <span className="min-w-0 flex-1 space-y-1">
         <span className="block break-normal text-sm font-bold hyphens-auto">{service.name}</span>
         <DescricaoServico nome={service.name} descricao={service.description} />
@@ -429,7 +421,7 @@ export function StaffChoices({
             )}
           >
             {view === "grid" && (
-              <span className="absolute right-2 top-2">
+              <span className="absolute end-[var(--recuo-catalogo)] top-[var(--recuo-catalogo)]">
                 <SelectCheck selected={selected} />
               </span>
             )}
@@ -477,7 +469,7 @@ export function StaffSummary({
 }) {
   const { t } = useI18n();
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-border bg-background/60 p-3">
+    <div className="cartao-catalogo flex items-center gap-3 rounded-2xl border border-border bg-background/60">
       {any || !member ? (
         <IconTile icon={Users} size="md" tone="muted" />
       ) : (

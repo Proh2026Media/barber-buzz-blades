@@ -11,7 +11,7 @@ import { WorkspaceFrame, WorkspaceHeading } from "@/components/visual/WorkspaceH
 import { AppointmentTicket } from "./booking/ticket";
 import { SeloBarbearia } from "@/components/SeloBarbearia";
 import { BrandRootVariables } from "@/features/shop/BrandRootVariables";
-import { PublicBrandFontFace } from "@/features/shop/PublicBrandFontFace";
+import { FontesDaPagina } from "@/features/shop/FontesDaPagina";
 import { supabase } from "@/integrations/supabase/client";
 import { useDevice, useViewportAtLeast } from "@/lib/device";
 import { useI18n } from "@/lib/i18n";
@@ -258,7 +258,13 @@ function AgendaDaLoja({
       style={estilo as CSSProperties}
     >
       <BrandRootVariables vars={estilo} />
-      <PublicBrandFontFace shopId={marca.id} url={marca.custom_font_url} />
+      <FontesDaPagina
+        shopId={marca.id}
+        url={marca.custom_font_url}
+        familia={marca.font_family}
+        peso={marca.header_font_weight}
+        estilo={marca.header_font_style}
+      />
       <header className="workspace-header-grid brand-header sticky top-0 z-30 bg-card border-b border-border/50 p-4 flex items-center justify-between gap-2">
         <a href="/" className="flex min-w-0 flex-1 items-center pl-[4.5rem]">
           <span

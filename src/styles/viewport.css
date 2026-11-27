@@ -288,6 +288,28 @@
   background: #fafafa;
   color: #343434;
 }
+/* Mantém as medidas para o cabeçalho e a navegação sem exibir texto em uma fonte provisória. */
+:is(.brand-page, .arena-workspace):has(> .tipografia-em-preparo) {
+  visibility: hidden;
+}
+.tipografia-em-preparo {
+  visibility: visible;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: auto;
+}
+:is(.brand-page, .arena-workspace):has(> .tipografia-do-aparelho),
+:is(.brand-page, .arena-workspace):has(> .tipografia-do-aparelho)
+  :is(h1, h2, h3, h4, button, input, label, p, span, strong) {
+  font-family: system-ui, sans-serif !important;
+}
+.abertura-contexto:has(.abertura-marca) {
+  background-color: var(--fundo-abertura-loja, #fafafa);
+}
+.dark .abertura-contexto:has(.abertura-marca) {
+  background-color: var(--fundo-abertura-loja, #191919);
+}
 .abertura-marca img {
   display: block;
   width: 4rem;

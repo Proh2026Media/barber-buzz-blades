@@ -299,7 +299,7 @@
     max-height: 15rem;
   }
   .customer-booking-choices .booking-choice-list > button {
-    padding: 0.625rem;
+    padding: var(--recuo-catalogo, 0.625rem);
     align-items: center;
   }
   .customer-booking-choices .booking-service-facts {

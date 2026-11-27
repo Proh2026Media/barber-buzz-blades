@@ -210,9 +210,27 @@
 .retrato-profissional {
   border-radius: var(--detail-radius);
 }
-.foto-servico-vitrine {
-  width: clamp(4.25rem, 17vw, 6rem);
-  aspect-ratio: 1;
+.cartao-catalogo {
+  --recuo-catalogo: 12px;
+  --borda-catalogo: 1px;
+  --canto-midia: max(
+    var(--detail-radius),
+    calc(var(--panel-radius) - var(--recuo-catalogo) - var(--borda-catalogo))
+  );
+  border-width: var(--borda-catalogo);
+}
+.cartao-catalogo > .conteudo-servico,
+.arena-workspace .cartao-catalogo {
+  padding: var(--recuo-catalogo);
+}
+.cartao-catalogo :is(.foto-servico, .retrato-profissional) {
+  border-radius: var(--canto-midia);
+}
+.foto-servico-catalogo {
+  width: 72px;
+  height: 72px;
+  flex: none;
+  align-self: flex-start;
 }
 .perfil-capa {
   overflow: hidden;

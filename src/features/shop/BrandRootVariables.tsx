@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useLayoutEffect } from "react";
 
 /**
  * Copia só as variáveis `--brand-*` do estabelecimento para `<html>`: janelas, menus e avisos
@@ -9,7 +9,7 @@ import { useEffect } from "react";
 export function BrandRootVariables({ vars }: { vars: Record<string, string> | null | undefined }) {
   const entries = vars ? Object.entries(vars).filter(([key]) => key.startsWith("--brand-")) : [];
   const key = JSON.stringify(entries);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (typeof document === "undefined") return;
     const parsed = JSON.parse(key) as Array<[string, string]>;
     if (!parsed.length) return;

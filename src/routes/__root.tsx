@@ -6,11 +6,13 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { NotFoundPage } from "../components/NotFoundPage";
 
 import { dominioDaPlataforma, redirecionarEnderecoAntigo } from "../lib/shop/platform-domain";
 import appCss from "../styles.css?url";
+import fonteTexto from "@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url";
+import fonteTitulos from "@fontsource-variable/instrument-sans/files/instrument-sans-latin-wght-normal.woff2?url";
 import deviceCss from "../dispositivos.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { themeBootstrapScript } from "../lib/theme";
@@ -30,29 +32,47 @@ import { paletaBootstrapScript } from "../lib/paleta";
 import { createIsomorphicFn } from "@tanstack/react-start";
 import { getRequestHost } from "@tanstack/react-start/server";
 
-const nomeDaPagina = createIsomorphicFn()
+async function identidadeInicial(dominio: string, consultar: (url: URL) => Promise<Response>) {
+  const plataforma = [dominioDaPlataforma, "localhost", "127.0.0.1"].includes(dominio);
+  const inicial = { dominio, nome: plataforma ? APP_NAME : dominio, fundo: "", fonte: "" };
+  if (plataforma) return inicial;
+  try {
+    const url = new URL("/identidade/manifesto", "https://" + dominio);
+    url.searchParams.set("dominio", dominio);
+    const resposta = await consultar(url);
+    if (resposta.ok) {
+      const manifesto = await resposta.json();
+      inicial.fonte =
+        resposta.headers.get("Link")?.match(/^<(https:\/\/[^>]+)>; rel=preload; as=font;/)?.[1] ??
+        "";
+      if (typeof manifesto.name === "string" && manifesto.name.trim())
+        inicial.nome = manifesto.name;
+      if (/^#[0-9a-f]{6}$/i.test(manifesto.background_color))
+        inicial.fundo = manifesto.background_color;
+    }
+  } catch {
+    // O domínio ainda identifica a loja quando o cadastro está indisponível.
+  }
+  return inicial;
+}
+
+const identidadeDaPagina = createIsomorphicFn()
   .server(async () => {
     const host = getRequestHost({ xForwardedHost: true })
       .split(",")[0]
       .trim()
       .split(":")[0]
       .toLowerCase();
-    const { nomeDaInstalacao } = await import("../lib/shop/installation");
-    return nomeDaInstalacao(host);
+    const { shopIdentity } = await import("../lib/shop/installation");
+    return identidadeInicial(host, shopIdentity);
   })
-  .client(async () => {
-    const host = window.location.hostname;
-    if ([dominioDaPlataforma, "localhost", "127.0.0.1"].includes(host)) return APP_NAME;
-    try {
-      const resposta = await fetch("/identidade/manifesto?dominio=" + encodeURIComponent(host), {
+  .client(() =>
+    identidadeInicial(window.location.hostname, (url) =>
+      fetch(url.pathname + url.search, {
         signal: AbortSignal.timeout(5000),
-      });
-      if (resposta.ok) return (await resposta.json()).name || host;
-    } catch {
-      /* O domínio identifica a loja durante uma indisponibilidade. */
-    }
-    return host;
-  });
+      }),
+    ),
+  );
 // Página 404 compartilhada com as rotas só do navegador (ver NotFoundPage).
 const NotFoundComponent = NotFoundPage;
 
@@ -98,26 +118,29 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     const lang = new URLSearchParams(location.searchStr).get("lang");
     await loadLocale(localeFromTag(lang) ?? DEFAULT_LOCALE);
   },
-  loader: () => nomeDaPagina(),
+  loader: () => identidadeDaPagina(),
   head: ({ loaderData, match }) => {
     // Descrição no idioma de `?lang=` já no HTML do servidor (o mesmo critério do beforeLoad).
     const lang = (match.search as { lang?: unknown }).lang;
+    const consultaDominio = loaderData?.dominio
+      ? "?dominio=" + encodeURIComponent(loaderData.dominio)
+      : "";
     const description = translate(localeFromTag(lang) ?? DEFAULT_LOCALE, APP_DESCRIPTION_KEY);
     return {
       meta: [
         { charSet: "utf-8" },
         { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-        { title: loaderData || "Agendamento" },
+        { title: loaderData?.nome || "Agendamento" },
         { name: "description", content: description },
-        { name: "application-name", content: loaderData || "Agendamento" },
+        { name: "application-name", content: loaderData?.nome || "Agendamento" },
         { name: "apple-mobile-web-app-capable", content: "yes" },
         { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-        { name: "apple-mobile-web-app-title", content: loaderData || "Agendamento" },
+        { name: "apple-mobile-web-app-title", content: loaderData?.nome || "Agendamento" },
         { name: "mobile-web-app-capable", content: "yes" },
         { name: "format-detection", content: "telephone=no" },
         { name: "color-scheme", content: "light dark" },
         // A meta theme-color é criada e mantida só pelo themeColorBootstrapScript (src/lib/brand.ts).
-        { property: "og:title", content: loaderData || "Agendamento" },
+        { property: "og:title", content: loaderData?.nome || "Agendamento" },
         { property: "og:description", content: description },
         { property: "og:type", content: "website" },
         { property: "og:locale", content: "pt_BR" },
@@ -127,18 +150,47 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       // (em sincronia com `useTheme`, `useI18n` e `useDevice`).
       scripts: [
         { children: `(${redirecionarEnderecoAntigo.toString()})();` },
-        { children: `try {
+        {
+          children: `try {
           if (location.pathname === "/" && (matchMedia("(display-mode: standalone)").matches || navigator.standalone ||
             ([${JSON.stringify(dominioDaPlataforma)}, "localhost", "127.0.0.1"].includes(location.hostname) && localStorage.getItem("sb-supabasebeauty-auth-token"))))
             document.documentElement.setAttribute("data-resolver-entrada", "");
-        } catch {}` },
+        } catch {}`,
+        },
         { children: themeBootstrapScript },
         { children: paletaBootstrapScript },
         { children: themeColorBootstrapScript },
         { children: localeBootstrapScript },
         { children: deviceBootstrapScript },
       ],
+      styles: loaderData?.fundo
+        ? [{ children: ":root{--fundo-abertura-loja:" + loaderData.fundo + "}" }]
+        : [],
       links: [
+        { rel: "manifest", href: "/identidade/manifesto" + consultaDominio },
+        {
+          rel: "apple-touch-icon",
+          sizes: "180x180",
+          type: "image/png",
+          href: "/apple-touch-icon.png" + consultaDominio,
+        },
+        ...(loaderData?.fonte
+          ? [
+              {
+                rel: "preload",
+                as: "font",
+                crossOrigin: "anonymous" as const,
+                href: loaderData.fonte,
+              },
+            ]
+          : []),
+        ...[fonteTexto, fonteTitulos].map((href) => ({
+          rel: "preload",
+          as: "font",
+          type: "font/woff2",
+          crossOrigin: "anonymous" as const,
+          href,
+        })),
         { rel: "stylesheet", href: appCss },
         // CSS por dispositivo (src/dispositivos.css → src/styles/*.css) depois do styles.css:
         // vence em igualdade de especificidade.
@@ -154,30 +206,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
-  const [domain, setDomain] = useState("");
-  useEffect(() => setDomain(window.location.hostname), []);
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
         <HeadContent />
-        <link
-          rel="manifest"
-          href={
-            domain
-              ? `/identidade/manifesto?dominio=${encodeURIComponent(domain)}`
-              : "/identidade/manifesto"
-          }
-        />
-        <link
-          rel="apple-touch-icon"
-          sizes="180x180"
-          type="image/png"
-          href={
-            domain
-              ? `/apple-touch-icon.png?dominio=${encodeURIComponent(domain)}`
-              : "/apple-touch-icon.png"
-          }
-        />
       </head>
       <body>
         {children}

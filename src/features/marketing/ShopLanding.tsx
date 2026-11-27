@@ -36,7 +36,7 @@ import { brandCornerClass, brandVariables } from "@/lib/shop/branding";
 import { useShopFavicon } from "@/lib/shop/favicon";
 import { BrandRootVariables } from "@/features/shop/BrandRootVariables";
 import { BrandFontFace } from "@/features/shop/BrandFontFace";
-import { PublicBrandFontFace } from "@/features/shop/PublicBrandFontFace";
+import { FontesDaPagina } from "@/features/shop/FontesDaPagina";
 import { useAvailabilitySignal } from "@/lib/shop/availability-signal";
 import {
   BookLink,
@@ -415,7 +415,13 @@ export function ShopLandingView({
       {preview ? (
         <BrandFontFace url={shop.custom_font_url} faces={previewFontFaces} />
       ) : (
-        <PublicBrandFontFace shopId={shop.id} url={shop.custom_font_url} />
+        <FontesDaPagina
+          shopId={shop.id}
+          url={shop.custom_font_url}
+          familia={shop.font_family}
+          peso={shop.header_font_weight}
+          estilo={shop.header_font_style}
+        />
       )}
       <CabecalhoVitrine
         foto={shop.hero_image_url}

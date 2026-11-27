@@ -4,7 +4,7 @@ import { ArrowLeft, CalendarDays, ListChecks } from "lucide-react";
 import { PersonAvatar } from "@/components/visual";
 import { SeloBarbearia } from "@/components/SeloBarbearia";
 import { BrandRootVariables } from "@/features/shop/BrandRootVariables";
-import { PublicBrandFontFace } from "@/features/shop/PublicBrandFontFace";
+import { FontesDaPagina } from "@/features/shop/FontesDaPagina";
 import { useI18n } from "@/lib/i18n";
 import { brandCornerClass, brandVariables } from "@/lib/shop/branding";
 import { useShopFavicon } from "@/lib/shop/favicon";
@@ -72,7 +72,13 @@ export function PerfilProfissional({ perfil }: { perfil: PerfilPublico }) {
       <BrandRootVariables
         vars={{ ...cores, "--brand-capa-navegador": cores["--brand-chao-claro"] }}
       />
-      <PublicBrandFontFace shopId={loja.id} url={loja.arquivoFonte} />
+      <FontesDaPagina
+        shopId={loja.id}
+        url={loja.arquivoFonte}
+        familia={loja.fonte}
+        peso={loja.peso}
+        estilo={loja.estilo}
+      />
       <CabecalhoVitrine
         identidade={
           <Link
