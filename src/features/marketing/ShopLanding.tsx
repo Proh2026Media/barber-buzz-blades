@@ -425,19 +425,17 @@ export function ShopLandingView({
       style={style}
     >
       <BrandFontFace url={shop.custom_font_url} />
-      {topBar}
-      {!preview && <div className="shop-status-bar" aria-hidden="true" />}
       <header className={cn("shop-hero", shop.hero_image_url && "shop-hero-with-photo")}>
         {/* Formas chapadas na cor da loja: quarto de círculo (com a foto da capa, se houver) e anel. */}
         <span className="shop-hero-quarter" aria-hidden>
           {shop.hero_image_url && <img src={shop.hero_image_url} alt="" />}
         </span>
         <span className="shop-hero-ring" aria-hidden />
+        {topBar}
         <div
           className={cn(
-            "mx-auto flex max-w-3xl items-center justify-between gap-3 px-4",
+            "mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 pt-4",
             wide && "lg:max-w-6xl",
-            preview ? "pt-4" : "pt-[calc(1rem+env(safe-area-inset-top,0px))]",
           )}
         >
           <div className="flex min-w-0 items-center gap-3">
@@ -454,7 +452,7 @@ export function ShopLandingView({
               />
             ) : (
               <span className="shop-hero-logo flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-[var(--control-radius)]">
-                <SeloBarbearia lojaId={shop.id} nome={name} tamanho={48} />
+                <SeloBarbearia lojaId={shop.id} tema={shop} nome={name} tamanho={48} />
               </span>
             )}
           </div>

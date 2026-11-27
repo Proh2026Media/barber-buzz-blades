@@ -1,3 +1,4 @@
+import type { RequestAppearanceChanges, ShopAppearanceSettings } from "@/lib/shop/branding";
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   CalendarClock,
@@ -34,7 +35,6 @@ import {
 } from "@/components/visual";
 import { useViewportAtLeast } from "@/lib/device";
 import { supabase } from "@/integrations/supabase/client";
-import type { Tables } from "@/integrations/supabase/types";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import { Switch } from "@/components/ui/switch";
@@ -108,13 +108,14 @@ function nearLimit(value: string, max: number) {
   return value.length >= Math.floor(max * 0.8);
 }
 
-export function LandingEditor({
+export function LandingEditor<S extends ShopAppearanceSettings>({
   shopId,
   shopSlug,
   publicUrl,
   settings,
   timeZone,
   onSaved,
+  requestChanges,
   guard,
   onChangePhoto,
   onOpenDomain,
@@ -122,10 +123,11 @@ export function LandingEditor({
   shopId: string;
   shopSlug: string;
   publicUrl: string;
-  settings: Tables<"barbershop_settings">;
+  settings: S;
   /** Fuso da loja: decide se o "Preencher pelo CEP" aparece (só fora de Portugal). */
   timeZone?: string | null;
-  onSaved: (settings: Tables<"barbershop_settings">) => void;
+  onSaved: (settings: S) => void;
+  requestChanges?: RequestAppearanceChanges;
   /** Proteção da janela contra fechar com mudanças não salvas. */
   guard?: EditorGuard;
   /** Abre a identidade visual na etapa "Tela de entrada" (a foto da capa vem de lá). */
@@ -293,8 +295,17 @@ export function LandingEditor({
     setError(null);
     setResult(null);
     const landing = cleanLandingConfig(draft);
-    if (demo) {
-      const next = { ...settings, landing, updated_at: new Date().toISOString() };
+    if (requestChanges) {
+      try {
+        await requestChanges(shopId, { landing });
+      } catch (error) {
+        setError(friendlyAuthError(error, t("landingEditor.saveError")));
+        setResult("error");
+        setBusy(false);
+        return false;
+      }
+    } else if (demo) {
+      const next = { ...demo.settings, ...settings, landing, updated_at: new Date().toISOString() };
       demo.dispatch({ type: "settings.save", settings: next });
       onSaved(next);
     } else {
@@ -310,7 +321,7 @@ export function LandingEditor({
         setBusy(false);
         return false;
       }
-      onSaved(data);
+      onSaved({ ...settings, ...data });
     }
     setDraft(landing);
     setBusy(false);
@@ -507,7 +518,7 @@ export function LandingEditor({
                   label: t("landingEditor.modeFull"),
                   description: t("landingEditor.enabledHint"),
                   media: (
-                    <PageSketch lojaId={shopId} nome={settings.display_name || shopSlug}
+                    <PageSketch tema={settings} lojaId={shopId} nome={settings.display_name || shopSlug}
                       full
                       blocks={blocks}
                       photo={photo}
@@ -520,7 +531,7 @@ export function LandingEditor({
                   value: "brand",
                   label: t("landingEditor.modeBrand"),
                   media: (
-                    <PageSketch lojaId={shopId} nome={settings.display_name || shopSlug}
+                    <PageSketch tema={settings} lojaId={shopId} nome={settings.display_name || shopSlug}
                       full={false}
                       photo={photo}
                       logoUrl={settings.logo_url}
@@ -770,7 +781,7 @@ export function LandingEditor({
             state={result}
             stateText={
               result === "saved"
-                ? t("landingEditor.savedLive")
+                ? t(requestChanges ? "plat.appearance.submitted" : "landingEditor.savedLive")
                 : result === "error"
                   ? (error ?? undefined)
                   : undefined
@@ -781,7 +792,7 @@ export function LandingEditor({
               setError(null);
               setResult(null);
             }}
-            saveLabel={problem ? t("landingEditor.fixToSave") : t("landingEditor.save")}
+            saveLabel={problem ? t("landingEditor.fixToSave") : t(requestChanges ? "plat.appearance.submit" : "landingEditor.save")}
           />
         </form>
 

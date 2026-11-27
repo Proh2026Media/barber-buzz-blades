@@ -129,7 +129,8 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
-import { getCustomerSessionProfile, type SessionProfile } from "@/lib/auth/session";
+import { isPlatformApexHost } from "@/lib/shop/host";
+import { getCustomerSessionProfile, getSessionProfile, type SessionProfile } from "@/lib/auth/session";
 import type { AccessNotice } from "@/lib/auth/destination";
 import { useAreaSwitch, useMyAreas, useRememberArea } from "@/features/account/useAreas";
 import { CUSTOMER_META } from "@/features/shop/roles-model";
@@ -381,7 +382,8 @@ function ArenaApp({
   const [refusal, setRefusal] = useState<AccessNotice | undefined>(accessNotice);
   const outsideDemo = !demo && !demoChrome;
   const shopSwitch = useAreaSwitch();
-  const myAreas = useMyAreas(outsideDemo && !directShopSlug ? account : null);
+  const contaNaPlataforma = !directShopSlug && !directBarberSlug && isPlatformApexHost();
+  const myAreas = useMyAreas(outsideDemo && contaNaPlataforma ? account : null);
   useRememberArea(outsideDemo ? (account?.user.id ?? null) : null, "app");
   const dismissRefusal = () => {
     setRefusal(undefined);
@@ -889,7 +891,7 @@ function ArenaApp({
       setDirectShopMissing(false);
       setDirectLinkBroken(false);
       try {
-        const profile = await getCustomerSessionProfile();
+        const profile = await (contaNaPlataforma ? getSessionProfile() : getCustomerSessionProfile());
         if (!cancelled) {
           setCustomerName(profile?.profile?.full_name?.trim() || "");
           setAccount(profile);
@@ -1213,7 +1215,7 @@ function ArenaApp({
     return () => {
       cancelled = true;
     };
-  }, [demoShopId, directBarberSlug, directShopSlug, promptJoin, catalogRevision]);
+  }, [demoShopId, directBarberSlug, directShopSlug, promptJoin, catalogRevision, contaNaPlataforma]);
 
   async function confirmShopJoin() {
     if (!joinShopRef) return;
@@ -3011,7 +3013,7 @@ function ArenaApp({
                   : undefined
               }
             >
-              <SeloBarbearia lojaId={shopId} nome={shopSettings.display_name?.trim() || shopName || ""} tamanho={44} />
+              <SeloBarbearia lojaId={shopId} tema={shopSettings} nome={shopSettings.display_name?.trim() || shopName || ""} tamanho={44} />
             </span>
           )}
           {/* Container: as linhas do nome e o slogan dependem do espaço que sobra ao lado dos

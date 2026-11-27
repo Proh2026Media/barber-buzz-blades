@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Check, Store } from "lucide-react";
 import { StatusBadge } from "@/components/visual";
 import { RoleBadge } from "@/features/shop/roles";
-import { CUSTOMER_META, PLATFORM_META } from "@/features/shop/roles-model";
+import { CUSTOMER_META, MANAGER_META, PLATFORM_META } from "@/features/shop/roles-model";
 import { isCurrentArea, type AreaItem, type CurrentArea } from "@/lib/auth/areas";
 import { isPlatformApexHost } from "@/lib/shop/host";
 import { useI18n } from "@/lib/i18n";
@@ -11,13 +11,14 @@ import { cn } from "@/lib/utils";
 const ITEM =
   "flex min-h-12 w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-semibold transition hover:bg-muted";
 
+function metaDaArea(area: AreaItem) {
+  if (area.kind === "platform") return PLATFORM_META;
+  if (area.kind === "manager") return MANAGER_META;
+  return CUSTOMER_META;
+}
+
 function AreaIcon({ area }: { area: AreaItem }) {
-  const Icon =
-    area.kind === "platform"
-      ? PLATFORM_META.icon
-      : area.kind === "customer"
-        ? CUSTOMER_META.icon
-        : Store;
+  const Icon = area.kind === "shop" ? Store : metaDaArea(area).icon;
   return (
     <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-muted">
       <Icon className="size-4 text-gold" aria-hidden />
@@ -68,7 +69,9 @@ export function MyAreasSection({
                       ? area.name
                       : area.kind === "platform"
                         ? t("area.platformTitle")
-                        : t("area.customerTitle")}
+                        : area.kind === "manager"
+                          ? t("area.managerTitle")
+                          : t("area.customerTitle")}
                   </span>
                   <span className="mt-0.5 flex flex-wrap items-center gap-1.5">
                     {area.kind === "shop" ? (
@@ -76,18 +79,18 @@ export function MyAreasSection({
                     ) : (
                       <StatusBadge
                         size="sm"
-                        tone={area.kind === "platform" ? PLATFORM_META.tone : CUSTOMER_META.tone}
-                        icon={area.kind === "platform" ? PLATFORM_META.icon : CUSTOMER_META.icon}
-                        label={t(
-                          area.kind === "platform" ? PLATFORM_META.label : CUSTOMER_META.label,
-                        )}
+                        tone={metaDaArea(area).tone}
+                        icon={metaDaArea(area).icon}
+                        label={t(metaDaArea(area).label)}
                       />
                     )}
-                    {area.kind === "platform" && otherAddress && !here && (
-                      <span className="text-[11px] font-medium text-muted-foreground">
-                        {t("area.otherAddress")}
-                      </span>
-                    )}
+                    {(area.kind === "platform" || area.kind === "manager") &&
+                      otherAddress &&
+                      !here && (
+                        <span className="text-[11px] font-medium text-muted-foreground">
+                          {t("area.otherAddress")}
+                        </span>
+                      )}
                   </span>
                 </span>
                 {here && (

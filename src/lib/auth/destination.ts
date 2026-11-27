@@ -12,9 +12,10 @@
  * Arquivo sem dependências do navegador nem do banco, para os testes rodarem no Node.
  */
 
-export type AreaKind = "app" | "shop" | "platform";
+export type AreaKind = "app" | "shop" | "platform" | "manager";
 
-export const AREA_PATH: Record<AreaKind, "/app" | "/shop" | "/platform"> = {
+export const AREA_PATH: Record<AreaKind, "/app" | "/shop" | "/platform" | "/gerencia/estabelecimentos"> = {
+  manager: "/gerencia/estabelecimentos",
   app: "/app",
   shop: "/shop",
   platform: "/platform",
@@ -66,6 +67,7 @@ const KNOWN_DESTINATIONS: Record<string, Record<string, Check>> = {
       /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v),
     receiver_scope: oneOf("shop", "professional"),
   },
+  "/gerencia/estabelecimentos": {},
   "/platform": { aba: SLUG },
   "/demo": { view: SLUG, shop: REF },
   "/politica": { shop: REF, lang: (v) => /^[A-Za-z-]{2,12}$/.test(v) },
@@ -129,11 +131,13 @@ export function hasClientIntent(destination: string): boolean {
 export type AreaAccess = {
   /** Admin da plataforma. */
   platform: boolean;
+  manager: boolean;
   /** Tem painel de barbearia (vínculo de equipe ou shop_admin antigo). */
   shop: boolean;
 };
 
 export function canOpenArea(area: AreaKind, access: AreaAccess) {
+  if (area === "manager") return access.manager && !access.platform;
   if (area === "platform") return access.platform;
   if (area === "shop") return access.shop;
   return true;
@@ -143,6 +147,7 @@ export function canOpenArea(area: AreaKind, access: AreaAccess) {
 export function entryArea(access: AreaAccess, lastArea: AreaKind | null): AreaKind {
   if (lastArea && canOpenArea(lastArea, access)) return lastArea;
   if (access.platform) return "platform";
+  if (access.manager) return "manager";
   if (access.shop) return "shop";
   return "app";
 }
@@ -160,6 +165,10 @@ export function decidePostAuthPath(input: {
     // O /app genérico (padrão de vários fluxos de entrada) não rebaixa ninguém; com pedido
     // de cliente, a pessoa vai ao agendamento mesmo tendo papel profissional.
     return hasClientIntent(next) || home === "/app" ? next : home;
+  }
+  if (path === "/gerencia/estabelecimentos") {
+    if (input.access.platform) return "/platform?aba=barbearias";
+    return input.access.manager ? next : home;
   }
   if (path === "/auth/mercado-pago") return input.access.shop ? next : home;
   if (path === "/shop" || path.startsWith("/shop/")) return input.access.shop ? next : home;
@@ -188,7 +197,7 @@ function browserStorage(): StorageLike | null {
 }
 
 function isArea(value: unknown): value is AreaKind {
-  return value === "app" || value === "shop" || value === "platform";
+  return value === "app" || value === "shop" || value === "platform" || value === "manager";
 }
 
 export function readLastArea(

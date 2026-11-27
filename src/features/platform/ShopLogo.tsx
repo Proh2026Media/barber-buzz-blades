@@ -2,7 +2,7 @@ import { SeloBarbearia } from "@/components/SeloBarbearia";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
-export type ShopLogoInfo = { url: string | null; nome?: string | null; background: string | null };
+export type ShopLogoInfo = { url: string | null; nome?: string | null; background: string | null; primary_color?: string | null; accent_color?: string | null };
 
 const SIZE = { sm: "size-8", md: "size-12" } as const;
 
@@ -46,7 +46,7 @@ export function ShopLogo({
   const [amostra, setAmostra] = useState<{ url: string; fundo?: string } | null>(null);
   const [semCors, setSemCors] = useState<string | null>(null);
   const analisar = Boolean(url && !logo?.background && url.includes("/storage/v1/object/public/") && semCors !== url);
-  if (!url || broken === url) return <SeloBarbearia lojaId={lojaId} nome={logo?.nome?.trim() || name} tamanho={size === "md" ? 48 : 32} className="shrink-0" />;
+  if (!url || broken === url) return <SeloBarbearia lojaId={lojaId} tema={logo} nome={logo?.nome?.trim() || name} tamanho={size === "md" ? 48 : 32} className="shrink-0" />;
   return (
     <span
       aria-hidden

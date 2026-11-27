@@ -2031,6 +2031,14 @@ export type Database = {
         };
         Returns: Json;
       };
+      list_managed_brand_shops: {
+        Args: Record<string, never>;
+        Returns: Pick<Database["public"]["Tables"]["barbershops"]["Row"], "id" | "name" | "slug" | "timezone" | "custom_domain" | "custom_domain_status">[];
+      };
+      get_managed_brand_settings: {
+        Args: { p_shop_id: string };
+        Returns: Json;
+      };
       get_public_shop_branding_by_host: {
         Args: { p_host: string };
         Returns: Json;

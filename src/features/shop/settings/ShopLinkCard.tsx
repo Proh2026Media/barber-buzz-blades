@@ -20,6 +20,7 @@ export function ShopLinkCard({
   logoUrl,
   logoBackground,
   primary,
+  accent,
   hideLink,
   onEditPage,
   onOpenDomain,
@@ -41,6 +42,7 @@ export function ShopLinkCard({
   photo?: string | null;
   logoUrl?: string | null;
   logoBackground?: string | null;
+  accent?: string | null;
   primary?: string;
   /** Demonstração: o link real não existe, então não aparece para copiar. */
   hideLink?: boolean;
@@ -56,7 +58,7 @@ export function ShopLinkCard({
       <SectionHeader icon={Link2} title={t("shopLink.title")} />
       {/* Desenho da página + como ela aparece + o que dá para fazer, lado a lado. */}
       <div className="flex items-start gap-3">
-        <PageSketch lojaId={lojaId} nome={nome}
+        <PageSketch tema={{primary_color: primary, accent_color: accent}} lojaId={lojaId} nome={nome}
           full={landingEnabled}
           blocks={blocks}
           photo={photo}

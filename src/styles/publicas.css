@@ -266,6 +266,27 @@
   border-end-start-radius: calc(var(--panel-radius) * 1.5);
   border-end-end-radius: calc(var(--panel-radius) * 1.5);
 }
+.shop-landing.brand-page > .shop-hero {
+  padding-top: var(--app-safe-top);
+}
+@supports (-webkit-touch-callout: none) {
+  @media (display-mode: standalone) and (orientation: portrait) and (max-width: 767.98px) {
+    .shop-landing.brand-page > .shop-hero {
+      padding-top: calc(var(--app-safe-top) + min(24px, var(--app-safe-top)));
+    }
+    /* A hora e os sinais do iOS precisam de contraste também sobre fotos claras.
+       O degradê acompanha a tela e deixa a capa e as seções visíveis ao rolar. */
+    .shop-landing.brand-page::before {
+      content: "";
+      position: fixed;
+      inset: 0 0 auto;
+      height: var(--app-safe-top);
+      z-index: 25;
+      pointer-events: none;
+      background: linear-gradient(to bottom, rgb(0 0 0 / 58%) 0%, rgb(0 0 0 / 54%) 60%, transparent);
+    }
+  }
+}
 /* Quarto de círculo no canto de cima: bloco largo e chapado, com a foto da capa quando existe. */
 .shop-hero-quarter {
   position: absolute;

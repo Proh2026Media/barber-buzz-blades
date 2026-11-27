@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   brandVariables,
   contrastRatio,
+  coresDoSelo,
   contrastingForeground,
   readableBrandColor,
   SHOP_DARK_READING_SURFACE,
@@ -206,4 +207,16 @@ test("cores da mãe são reconhecidas e ganham a sugestão do tema mais próximo
   assert.equal(nearestShopTheme("#9CD8D4").id, "menta");
   assert.equal(nearestShopTheme("#F5E0BC").id, "pessego");
   assert.equal(nearestShopTheme(null).id, DEFAULT_SHOP_THEME_ID);
+});
+
+test("selos acompanham as cores da loja e mantêm as duas iniciais legíveis", () => {
+  for (const tema of SHOP_THEMES) {
+    const selo = coresDoSelo("loja", tema.primary, tema.accent);
+    assert.ok(contrastRatio(selo.fundo, selo.letra1) >= 4.5);
+    assert.ok(contrastRatio(selo.fundo, selo.letra2) >= 4.5);
+    assert.ok(contrastRatio(selo.fundo, selo.anel) >= 3);
+    assert.equal(selo.fundo, tema.leque.claro);
+  }
+  assert.deepEqual(coresDoSelo("loja-a"), coresDoSelo("loja-a", "#292925", "#8A602F"));
+  assert.notDeepEqual(coresDoSelo("loja-a"), coresDoSelo("loja-b"));
 });

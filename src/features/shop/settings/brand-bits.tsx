@@ -1,4 +1,4 @@
-import { SeloBarbearia } from "@/components/SeloBarbearia";
+import { SeloBarbearia, type TemaDoSelo } from "@/components/SeloBarbearia";
 import { CalendarClock, Clock3, Scissors, Users } from "lucide-react";
 import { StatusBadge } from "@/components/visual";
 import { useI18n } from "@/lib/i18n";
@@ -47,12 +47,14 @@ export function ColorDots({
 /** Miniatura da logo no quadrado com o fundo escolhido (ou a tesoura quando não há logo). */
 export function LogoChip({
   lojaId,
+  tema,
   nome,
   logoUrl,
   background,
   className,
 }: {
   lojaId?: string;
+  tema?: TemaDoSelo;
   nome?: string | null;
   logoUrl?: string | null;
   background?: string | null;
@@ -71,7 +73,7 @@ export function LogoChip({
       {logoUrl ? (
         <img src={logoUrl} alt="" className="size-full object-contain p-[12%]" />
       ) : (
-        <SeloBarbearia lojaId={lojaId} nome={nome || ""} tamanho={24} />
+        <SeloBarbearia tema={tema} lojaId={lojaId} nome={nome || ""} tamanho={24} />
       )}
     </span>
   );
@@ -102,6 +104,7 @@ export type PageBlocks = { staff: boolean; today: boolean; services: boolean; ho
  */
 export function PageSketch({
   lojaId,
+  tema,
   nome,
   full,
   blocks = { staff: true, today: true, services: true, hours: true },
@@ -116,6 +119,7 @@ export function PageSketch({
   blocks?: PageBlocks;
   photo?: string | null;
   lojaId?: string;
+  tema?: TemaDoSelo;
   nome?: string | null;
   logoUrl?: string | null;
   logoBackground?: string | null;
@@ -145,7 +149,7 @@ export function PageSketch({
         />
         <span className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-black/5" />
         <span className="absolute inset-x-2 bottom-1.5 flex items-center gap-1.5">
-          <LogoChip lojaId={lojaId} nome={nome}
+          <LogoChip tema={tema} lojaId={lojaId} nome={nome}
             logoUrl={logoUrl}
             background={logoBackground}
             className={md ? "size-7" : "size-4 rounded-sm"}

@@ -146,10 +146,35 @@
     height: auto;
   }
 
-  .customer-workspace:not(.brand-chrome-floating) > header {
+  .arena-workspace:not(.brand-chrome-floating) > header {
     position: sticky;
     top: 0;
-    background-color: var(--card);
+    isolation: isolate;
+    background: transparent;
+    border-bottom-color: transparent;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .arena-workspace:not(.brand-chrome-floating) > main {
+    margin-top: calc(-1 * var(--altura-menu-instalado, 0px));
+    padding-top: calc(var(--altura-menu-instalado, 0px) + 1rem);
+    scroll-padding-top: calc(var(--altura-menu-instalado, 0px) + 1rem);
+  }
+
+  .arena-workspace:not(.brand-chrome-floating) > header::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 -1rem;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(to bottom, var(--background), color-mix(in srgb, var(--background) 96%, transparent) calc(100% - 2rem), transparent);
+    opacity: 0;
+  }
+
+  .arena-workspace[data-conteudo-sob-menu]:not(.brand-chrome-floating) > header::before {
+    opacity: 1;
   }
 
   :root:not([data-keyboard-open="true"]) .customer-workspace:not(.demo-content *) > .app-mobile-nav {
@@ -183,27 +208,5 @@
   textarea,
   select {
     font-size: max(1rem, 16px);
-  }
-}
-
-/* No iPhone, a barra do sistema lê a superfície fixa no topo da janela.
-   A capa continua abaixo da ilha e os controles mantêm o recuo da área segura. */
-.shop-status-bar {
-  display: none;
-}
-
-@supports (-webkit-touch-callout: none) {
-  html:has(.shop-status-bar),
-  body:has(.shop-status-bar) {
-    background-color: #141412;
-  }
-  .shop-status-bar {
-    display: block;
-    position: fixed;
-    inset: 0 0 auto;
-    height: env(safe-area-inset-top, 0px);
-    z-index: 25;
-    pointer-events: none;
-    background-color: #141412;
   }
 }

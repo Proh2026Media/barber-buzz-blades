@@ -34,7 +34,7 @@ function refuse(profile: SessionProfile, notice: AccessNotice): never {
 export async function requireRole(nextPath: string, roles: AppRole[]): Promise<SessionProfile> {
   const profile = await requireSession(nextPath);
   if (!hasAnyRole(profile.memberships, roles)) {
-    refuse(profile, roles.includes("platform_admin") ? "sem-plataforma" : "sem-acesso");
+    refuse(profile, roles.length === 1 && roles[0] === "platform_admin" ? "sem-plataforma" : "sem-acesso");
   }
   return profile;
 }

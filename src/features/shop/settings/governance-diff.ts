@@ -2,6 +2,7 @@ import {
   CalendarX2,
   Clock3,
   Globe2,
+  Palette,
   Repeat,
   Scissors,
   SlidersHorizontal,
@@ -14,10 +15,12 @@ import {
 import type { Json, Tables } from "@/integrations/supabase/types";
 import type { MessageKey } from "@/lib/i18n";
 
+import { appearanceDiff } from "./appearance-diff.ts";
+
 type T = (key: MessageKey, vars?: Record<string, string | number>) => string;
 
 /** Uma linha "o que muda": rótulo, valor novo e (se mudou) o valor de antes. */
-export type DiffRow = { key: string; label: string; value: string; previous?: string };
+export type DiffRow = { key: string; label: string; value: string; previous?: string; image?: string; previousImage?: string };
 
 /** Um dia da semana no pedido de horários: antes e depois ("" = fechado). */
 export type WeekDiffDay = {
@@ -45,6 +48,7 @@ export type DiffContext = {
   t: T;
   locale: string;
   timeZone?: string;
+  logoBucketUrl?: string;
   services?: Tables<"services">[];
   staff?: Tables<"staff">[];
   businessHours?: Tables<"business_hours">[];
@@ -62,6 +66,7 @@ export type DiffContext = {
 };
 
 const KIND: Record<string, { icon: LucideIcon; title: MessageKey; destructive?: boolean }> = {
+  "identity.update": { icon: Palette, title: "plat.appearance.requestTitle" },
   "service.create": { icon: Scissors, title: "eq.kind.serviceCreate" },
   "service.update": { icon: Scissors, title: "eq.kind.serviceUpdate" },
   "service.toggle": { icon: Scissors, title: "eq.kind.serviceToggle" },
@@ -154,6 +159,10 @@ export function describeChange(
       previous: previous != null && previous !== value ? previous : undefined,
     });
   };
+
+  if (kind === "identity.update") {
+    return { ...view, rows: appearanceDiff(asRecord(payload.changes), asRecord(payload.previous), ctx) };
+  }
 
   if (kind.startsWith("service.")) {
     const id = str(payload.id);

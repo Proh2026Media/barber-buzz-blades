@@ -75,7 +75,7 @@ export async function shopIdentity(url: URL): Promise<Response> {
     }
     if (logo) return new Response(null, { status: 302, headers: { Location: logo } });
     const { iconeDeIniciais } = await import("./selo-png.server");
-    return new Response(await iconeDeIniciais(name, shop.shop_id), {
+    return new Response(await iconeDeIniciais(name, shop.shop_id, shop.primary_color, shop.accent_color), {
       headers: {
         "Content-Type": "image/png",
         "Cache-Control": "private, max-age=300",

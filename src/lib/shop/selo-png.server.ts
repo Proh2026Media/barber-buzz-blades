@@ -1,3 +1,4 @@
+import { coresDoSelo } from "./branding";
 import { tipoDeSelo } from "../marca/parceria";
 import { initWasm, Resvg } from "@resvg/resvg-wasm";
 import modulo from "@resvg/resvg-wasm/index_bg.wasm?url&inline";
@@ -5,8 +6,15 @@ import { gerarSelo } from "../marca/selo.mjs";
 
 let pronto: Promise<void> | undefined;
 
-export async function iconeDeIniciais(nome: string, lojaId: string) {
-  return renderizar(gerarSelo({nome, tamanho: 512, formato: "quadrado", tipo: tipoDeSelo(lojaId), simples: false}));
+export async function iconeDeIniciais(nome: string, lojaId: string, primaria?: string | null, destaque?: string | null) {
+  return renderizar(gerarSelo({
+    nome,
+    tamanho: 512,
+    formato: "quadrado",
+    tipo: tipoDeSelo(lojaId),
+    simples: false,
+    cores: coresDoSelo(lojaId, primaria, destaque),
+  }));
 }
 
 export function iconeDeLogo(bytes: ArrayBuffer, tipo: string, fundo?: string) {

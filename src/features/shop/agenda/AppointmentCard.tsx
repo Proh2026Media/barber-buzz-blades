@@ -500,7 +500,7 @@ function FullCard({
     });
   }
 
-  const stripe = showStaff ? personColor(row.staff_id).fg : undefined;
+  const stripe = showStaff ? personColor(row.staff_id).linha : undefined;
 
   return (
     <article

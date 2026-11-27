@@ -30,16 +30,15 @@ import {
   UserX,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Dialog, DialogContent, DialogScrollArea, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   AttentionList,
   CountBadge,
-  LoadingState,
   Notice,
   PersonAvatar,
   type AttentionItem,
 } from "@/components/visual";
-import { BrandIdentityEditor } from "@/features/shop/BrandIdentityEditor";
+import { ShopAppearanceDialog, type ShopAppearanceTarget } from "./ShopAppearanceDialog";
 import { BrandFontFace } from "@/features/shop/BrandFontFace";
 import { BrandRootVariables } from "@/features/shop/BrandRootVariables";
 import {
@@ -75,7 +74,6 @@ import type { Tables } from "@/integrations/supabase/types";
 import type { SessionProfile } from "@/lib/auth/session";
 import { useMyAreas, useRememberArea } from "@/features/account/useAreas";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
-import { useDevice } from "@/lib/device";
 import { t as tNow, useI18n } from "@/lib/i18n";
 import {
   brandCornerClass,
@@ -155,10 +153,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
   const [sportsModules, setSportsModules] = useState<Record<string, boolean>>({});
   const [loyaltyModules, setLoyaltyModules] = useState<Record<string, boolean>>({});
   const [shopLogos, setShopLogos] = useState<Record<string, ShopLogoInfo>>({});
-  const [brandShop, setBrandShop] = useState<Tables<"barbershops"> | null>(null);
-  const [brandSettings, setBrandSettings] = useState<Tables<"barbershop_settings"> | null>(null);
-  const [brandLoading, setBrandLoading] = useState(false);
-  const [brandError, setBrandError] = useState<string | null>(null);
+  const [appearance, setAppearance] = useState<ShopAppearanceTarget | null>(null);
   const [newShopOpen, setNewShopOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteShopId, setInviteShopId] = useState<string | null>(null);
@@ -200,6 +195,8 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
           [demoState.shop.id]: {
             url: demoState.settings.logo_url,
             background: demoState.settings.logo_background_color,
+            primary_color: demoState.settings.primary_color,
+            accent_color: demoState.settings.accent_color,
           },
         });
         setUpdatedAt(new Date());
@@ -214,7 +211,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
         supabase
           .from("barbershop_settings")
           .select(
-            "barbershop_id, sports_enabled, loyalty_enabled, display_name, logo_url, logo_background_color",
+            "barbershop_id, sports_enabled, loyalty_enabled, display_name, logo_url, logo_background_color, primary_color, accent_color",
           ),
         supabase.rpc("list_platform_shop_owners"),
       ]);
@@ -248,7 +245,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
           Object.fromEntries(
             (modulesResult.data ?? []).map((row) => [
               row.barbershop_id,
-              { nome: row.display_name, url: row.logo_url, background: row.logo_background_color },
+              { nome: row.display_name, url: row.logo_url, background: row.logo_background_color, primary_color: row.primary_color, accent_color: row.accent_color },
             ]),
           ),
         );
@@ -278,30 +275,8 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
     window.history.replaceState(window.history.state, "", url);
   }, [demoMode]);
 
-  useEffect(() => {
-    if (brandShop && demoState) setBrandSettings(demoState.settings);
-  }, [brandShop, demoState]);
-
-  async function openBranding(shop: Tables<"barbershops">) {
-    setBrandError(null);
-    setBrandShop(shop);
-    if (demoState) {
-      setBrandSettings(demoState.settings);
-      return;
-    }
-    setBrandLoading(true);
-    setBrandSettings(null);
-    const { data, error: settingsError } = await supabase
-      .from("barbershop_settings")
-      .select("*")
-      .eq("barbershop_id", shop.id)
-      .single();
-    if (settingsError) {
-      setBrandError(t("plat.shell.brandOpenError"));
-    } else {
-      setBrandSettings(data);
-    }
-    setBrandLoading(false);
+  function openBranding(shop: Tables<"barbershops">) {
+    setAppearance({ shop, editor: "identity" });
   }
 
   async function openLoginTour() {
@@ -453,7 +428,6 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
       )
     : null;
 
-  const device = useDevice();
   const navItems = [
     { id: "overview" as const, label: t("plat.tabs.home"), icon: LayoutDashboard },
     { id: "shops" as const, label: t("plat.tabs.shops"), icon: Store },
@@ -636,7 +610,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
               onFilterChange={setShopFilter}
               selectedId={selectedShopId}
               detailTaskOpen={
-                newShopOpen || inviteOpen || !!brandShop || !!testAsShopId || loginTourOpen
+                newShopOpen || inviteOpen || !!appearance || !!testAsShopId || loginTourOpen
               }
               onSelect={setSelectedShopId}
               highlightId={highlightId}
@@ -841,56 +815,19 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
         </DialogContent>
       </Dialog>
 
-      <Dialog
-        open={!!brandShop}
-        onOpenChange={(open) => {
-          if (!open) {
-            setBrandShop(null);
-            setBrandSettings(null);
-            setBrandError(null);
-          }
-        }}
-      >
-        <DialogContent
-          size={device === "celular" ? "md" : "lg"}
-          aria-describedby={undefined}
-          className="flex max-h-[92dvh] w-[calc(100vw-1.5rem)] max-w-2xl flex-col gap-0 overflow-hidden rounded-3xl border-border bg-card p-0 tablet:grid tablet:max-w-[44rem]"
-        >
-          {/* Cabeçalho fixo fora da rolagem: o X não cobre a prévia, que gruda logo abaixo. */}
-          <div className="flex min-h-14 shrink-0 items-center border-b border-border px-5 pr-14 sm:px-6">
-            <DialogTitle className="text-lg font-extrabold leading-tight tracking-tight">
-              {t("plat.brand.title", { name: brandShop?.name ?? t("plat.brand.shopFallback") })}
-            </DialogTitle>
-          </div>
-          <DialogScrollArea className="grid min-h-0 flex-1 gap-4 overflow-y-auto p-5 sm:p-6">
-            {brandError ? (
-              <Notice
-                tone="danger"
-                title={brandError}
-                action={{
-                  label: t("visual.retry"),
-                  onClick: () => brandShop && void openBranding(brandShop),
-                  icon: RefreshCw,
-                }}
-              />
-            ) : brandLoading || !brandShop || !brandSettings ? (
-              <LoadingState variant="cards" count={2} label={t("plat.brand.loading")} />
-            ) : (
-              <BrandIdentityEditor
-                key={brandShop.id}
-                audience="platform"
-                shopName={brandShop.name}
-                settings={brandSettings}
-                mode={demoDispatch ? "demo" : "supabase"}
-                onSaved={(next) => {
-                  setBrandSettings(next);
-                  if (demoDispatch) demoDispatch({ type: "settings.save", settings: next });
-                }}
-              />
-            )}
-          </DialogScrollArea>
-        </DialogContent>
-      </Dialog>
+      {appearance && (
+        <ShopAppearanceDialog
+          key={appearance.shop.id}
+          target={appearance}
+          onOpen={setAppearance}
+          onClose={() => setAppearance(null)}
+          demoSettings={demoState?.settings}
+          onSaved={(next) => {
+            if (demoDispatch && demoState) demoDispatch({ type: "settings.save", settings: { ...demoState.settings, ...next } });
+            else void loadShops("refresh").catch(() => setLoadError(t("plat.shell.loadError")));
+          }}
+        />
+      )}
       {loginTourSettings && (
         <LoginPreviewDialog
           open={loginTourOpen}

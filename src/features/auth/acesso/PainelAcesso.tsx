@@ -2,6 +2,8 @@ import { SeloBarbearia } from "@/components/SeloBarbearia";
 import { useI18n } from "@/lib/i18n";
 
 export type LojaDoPainel = {
+  primary_color?: string | null;
+  accent_color?: string | null;
   shopId: string | null;
   nome: string;
   logoUrl: string | null;
@@ -51,6 +53,7 @@ export function PainelAcesso({ loja }: { loja: LojaDoPainel | null }) {
               // arco nunca ficar vazio.
               <SeloBarbearia
                 lojaId={loja.shopId}
+                tema={loja}
                 nome={loja.nome}
                 tamanho={96}
                 className="acesso-arco-logo"

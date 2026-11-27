@@ -34,7 +34,7 @@ export const FOUNDER_META = {
 };
 
 /** Gerente de conta da plataforma (pedidos com prazo). */
-export const MANAGER_META = { icon: Headset, tone: "neutral" as Tone, label: "eq.role.manager" };
+export const MANAGER_META = { icon: Headset, tone: "neutral" as Tone, label: "eq.role.manager" } as const;
 
 /** Admin da plataforma (fora da equipe da loja): mesmo ícone do seletor da demonstração. */
 export const PLATFORM_META = {

@@ -50,6 +50,7 @@ export function GuardedEditorDialog({
   descriptionHidden,
   className,
   size = "page",
+  saveExitLabel,
   children,
 }: {
   open: boolean;
@@ -66,6 +67,7 @@ export function GuardedEditorDialog({
    * os tamanhos viram a janela de antes (92dvh).
    */
   size?: DialogSize;
+  saveExitLabel?: string;
   children: (guard: EditorGuard) => ReactNode;
 }) {
   const { t } = useI18n();
@@ -233,7 +235,7 @@ export function GuardedEditorDialog({
                 ) : (
                   <Save aria-hidden />
                 )}
-                {saving ? t("visual.result.saving") : t("editorGuard.saveExit")}
+                {saving ? t("visual.result.saving") : (saveExitLabel ?? t("editorGuard.saveExit"))}
               </button>
             )}
           </AlertDialogFooter>

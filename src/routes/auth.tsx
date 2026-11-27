@@ -120,8 +120,8 @@ type AuthBrand = {
   headerFontWeight: number;
   headerFontStyle: string;
   cornerStyle: string;
-  primaryColor: string;
-  accentColor: string;
+  primaryColor: string | null;
+  accentColor: string | null;
   loginLayout: BrandLoginLayout;
   loginImageUrl: string | null;
 };
@@ -780,8 +780,8 @@ function AuthPage() {
           headerFontWeight: row.header_font_weight ?? DEFAULT_HEADER_FONT_WEIGHT,
           headerFontStyle: row.header_font_style || DEFAULT_HEADER_FONT_STYLE,
           cornerStyle: row.corner_style || DEFAULT_CORNER_STYLE,
-          primaryColor: row.primary_color || DEFAULT_PRIMARY_COLOR,
-          accentColor: row.accent_color || DEFAULT_ACCENT_COLOR,
+          primaryColor: row.primary_color || null,
+          accentColor: row.accent_color || null,
           loginLayout: normalizeLoginLayout(row.login_layout),
           loginImageUrl: row.login_image_url,
         });
@@ -1924,6 +1924,8 @@ function AuthPage() {
             modoLoja
               ? {
                   shopId: brand.shopId,
+                  primary_color: brand.primaryColor,
+                  accent_color: brand.accentColor,
                   nome: brand.displayName,
                   logoUrl: brand.logoUrl,
                   fotoUrl: brand.loginImageUrl,
@@ -1950,6 +1952,7 @@ function AuthPage() {
                       ) : (
                         <SeloBarbearia
                           lojaId={brand.shopId}
+                          tema={{ primary_color: brand.primaryColor, accent_color: brand.accentColor }}
                           nome={brand.displayName}
                           tamanho={44}
                         />

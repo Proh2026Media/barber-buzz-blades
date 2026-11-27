@@ -1,7 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { Tables } from "@/integrations/supabase/types";
 import { t } from "@/lib/i18n";
-import { brandDraftToSettings, type BrandDraft } from "./branding";
+import {
+  brandDraftToSettings,
+  brandDraftFromSettings,
+  type BrandDraft,
+  type ShopAppearanceSettings,
+  type RequestAppearanceChanges,
+} from "./branding";
 import {
   normalizeFontFaces,
   type BrandFontFaceRecord,
@@ -150,18 +155,19 @@ export async function removeShopFonts(
  * Persiste a identidade visual de uma barbearia.
  * No modo demo o logo vira Data URL e nada toca o Supabase.
  * Os arquivos novos sobem em caminhos versionados; os antigos só são apagados
- * depois que o banco aceitar a mudança. Se a gravação falhar (rede, sessão,
- * aprovação de sócio), os arquivos recém-enviados são removidos e os publicados
- * continuam intactos.
+ * depois que o banco confirmar a mudança. Os arquivos de um pedido para aprovação
+ * continuam disponíveis. Se a resposta se perder, conserva os arquivos que o banco
+ * pode já ter referenciado.
  */
-export async function persistBrandIdentity(
-  settings: Tables<"barbershop_settings">,
+export async function persistBrandIdentity<S extends ShopAppearanceSettings>(
+  settings: S,
   draft: BrandDraft,
   logoFile: File | null,
   fontFaces: PendingBrandFontFace[] | null,
   mode: "supabase" | "demo",
   loginImageFile: File | null = null,
-): Promise<Tables<"barbershop_settings">> {
+  requestChanges?: RequestAppearanceChanges,
+): Promise<S> {
   const values = brandDraftToSettings(draft);
   if (mode === "demo") {
     if (logoFile) values.logo_url = await fileAsDataUrl(logoFile);
@@ -189,6 +195,7 @@ export async function persistBrandIdentity(
   let newFontRecords: BrandFontFaceRecord[] = [];
   const oldLogoUrls: Array<string | null | undefined> = [];
   let removeOldFonts = false;
+  let mayHaveBeenRecorded = false;
 
   try {
     if (logoFile) {
@@ -217,13 +224,31 @@ export async function persistBrandIdentity(
       removeOldFonts = true;
     }
 
+    const original = brandDraftToSettings(brandDraftFromSettings(settings));
+    const changes: Partial<typeof values> = Object.fromEntries(
+      Object.entries(values).filter(
+        ([key, value]) =>
+          JSON.stringify(value) !== JSON.stringify(original[key as keyof typeof original]),
+      ),
+    );
+    if (!Object.keys(changes).length) return settings;
+    mayHaveBeenRecorded = true;
+    if (requestChanges) {
+      await requestChanges(shopId, changes);
+      return settings;
+    }
+
     const { data, error } = await supabase
       .from("barbershop_settings")
-      .update(values)
+      .update(changes)
       .eq("barbershop_id", shopId)
       .select("*")
       .single();
-    if (error) throw error;
+    if (error) {
+      // O PostgreSQL recusou a escrita na transação. Erros de rede ficam inconclusivos.
+      if (/^(22|23|42|P0)[0-9A-Z]{3}$/.test(error.code)) mayHaveBeenRecorded = false;
+      throw error;
+    }
 
     // Só agora, com o banco apontando para os arquivos novos, limpa os antigos.
     // O mesmo caminho nunca é apagado se continuar em uso (caso legado).
@@ -240,9 +265,10 @@ export async function persistBrandIdentity(
         settings.custom_font_url,
       );
     }
-    return data;
+    return { ...settings, ...data };
   } catch (error) {
-    // Desfaz os envios desta tentativa; o que já estava publicado fica como estava.
+    // Em caso de resposta inconclusiva, os arquivos podem estar em um pedido ou na loja.
+    if (mayHaveBeenRecorded) throw error;
     await removeLogoBucketFiles(newLogoUrls);
     if (newFontRecords.length) await removeShopFonts(newFontRecords);
     throw error;

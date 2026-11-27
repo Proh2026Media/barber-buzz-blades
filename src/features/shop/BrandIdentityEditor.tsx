@@ -1,3 +1,4 @@
+import type { RequestAppearanceChanges, ShopAppearanceSettings } from "@/lib/shop/branding";
 import { SeloBarbearia } from "@/components/SeloBarbearia";
 import { useEffect, useId, useMemo, useRef, useState, type DragEvent } from "react";
 import {
@@ -32,7 +33,6 @@ import {
   focusFirstInvalid,
 } from "@/components/visual";
 import { useDevice } from "@/lib/device";
-import type { Tables } from "@/integrations/supabase/types";
 import { useI18n, type MessageKey } from "@/lib/i18n";
 import {
   BRAND_FONT_OPTIONS,
@@ -76,13 +76,14 @@ import { LoginPreviewDialog } from "./LoginPreviewDialog";
 import { PhoneFitFrame } from "./PhoneFitFrame";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 
-type BrandIdentityEditorProps = {
+type BrandIdentityEditorProps<S extends ShopAppearanceSettings> = {
   /** Nome cadastrado da barbearia, usado quando o nome do cabeçalho fica vazio. */
   shopName: string;
-  settings: Tables<"barbershop_settings">;
+  settings: S;
   mode: "supabase" | "demo";
-  onSaved: (settings: Tables<"barbershop_settings">) => void;
+  onSaved: (settings: S) => void;
   /** Quem está editando muda apenas os textos de apoio. */
+  requestChanges?: RequestAppearanceChanges;
   audience?: "shop" | "platform";
   /** Proteção da janela contra fechar com mudanças não salvas. */
   guard?: EditorGuard;
@@ -201,15 +202,16 @@ function ChromeSketch({ floating }: { floating: boolean }) {
   );
 }
 
-export function BrandIdentityEditor({
+export function BrandIdentityEditor<S extends ShopAppearanceSettings>({
   shopName,
   settings,
   mode,
   onSaved,
+  requestChanges,
   audience = "shop",
   guard,
   initialStep = "logo",
-}: BrandIdentityEditorProps) {
+}: BrandIdentityEditorProps<S>) {
   const { t } = useI18n();
   const nameId = useId();
   const taglineId = useId();
@@ -567,8 +569,9 @@ export function BrandIdentityEditor({
         pendingFontFaces,
         mode,
         loginImageFile,
+        requestChanges,
       );
-      onSaved(next);
+      if (!requestChanges) onSaved(next);
       setSaved(true);
       setShowErrors(false);
       return true;
@@ -672,7 +675,7 @@ export function BrandIdentityEditor({
                 {previewLogo ? (
                   <img src={previewLogo} alt="" className="size-full object-contain p-[12.5%]" />
                 ) : (
-                  <SeloBarbearia lojaId={settings.barbershop_id} nome={previewName} tamanho={44} />
+                  <SeloBarbearia lojaId={settings.barbershop_id} tema={draft} nome={previewName} tamanho={44} />
                 )}
               </span>
               <div className="min-w-0 flex-1">
@@ -746,7 +749,7 @@ export function BrandIdentityEditor({
               {previewLogo ? (
                 <img src={previewLogo} alt="" className="size-full object-contain p-[12.5%]" />
               ) : (
-                <SeloBarbearia lojaId={settings.barbershop_id} nome={previewName} tamanho={36} />
+                <SeloBarbearia lojaId={settings.barbershop_id} tema={draft} nome={previewName} tamanho={36} />
               )}
             </span>
             <span className="min-w-0 flex-1">
@@ -837,7 +840,7 @@ export function BrandIdentityEditor({
               label: t(option.labelKey),
               description: t(option.hintKey),
               media: (
-                <LoginLayoutPreview lojaId={settings.barbershop_id}
+                <LoginLayoutPreview tema={draft} lojaId={settings.barbershop_id}
                   compact
                   layout={option.value}
                   imageUrl={previewLoginImage}
@@ -964,7 +967,7 @@ export function BrandIdentityEditor({
                       className="size-full object-contain p-2"
                     />
                   ) : (
-                    <SeloBarbearia lojaId={settings.barbershop_id} nome={previewName} tamanho={112} />
+                    <SeloBarbearia lojaId={settings.barbershop_id} tema={draft} nome={previewName} tamanho={112} />
                   )}
                 </span>
                 <span className="flex items-center gap-1.5 text-sm font-semibold">
@@ -1375,10 +1378,10 @@ export function BrandIdentityEditor({
           dirty={dirty}
           saving={busy}
           state={busy ? "saving" : saved ? "saved" : error && !validationError ? "error" : null}
-          stateText={saved ? t("brand.save.saved") : (error ?? undefined)}
+          stateText={saved ? t(requestChanges ? "plat.appearance.submitted" : "brand.save.saved") : (error ?? undefined)}
           onSave={() => void persist()}
           onDiscard={discard}
-          saveLabel={t("brand.save.submit")}
+          saveLabel={t(requestChanges ? "plat.appearance.submit" : "brand.save.submit")}
         />
       </div>
       <ServiceImageCropDialog

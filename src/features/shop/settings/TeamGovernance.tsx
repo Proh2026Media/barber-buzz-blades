@@ -144,6 +144,12 @@ function WeekDiff({ week }: { week: WeekDiffDay[] }) {
 /** "O que muda": ícone do tipo, item afetado e as linhas antes → depois. */
 function ChangeSummary({ view }: { view: ChangeView }) {
   const { t } = useI18n();
+  const diffValue = (label: string, src?: string) => src ? (
+    <span className="inline-flex flex-col items-center gap-1">
+      <img src={src} alt="" width={80} height={52} loading="lazy" referrerPolicy="no-referrer" className="h-12 w-20 rounded-md object-contain" />
+      {label}
+    </span>
+  ) : label;
   const empty = !view.rows.length && !view.week && !view.note;
   return (
     <div className="space-y-2">
@@ -157,7 +163,14 @@ function ChangeSummary({ view }: { view: ChangeView }) {
         </div>
       </div>
       {view.rows.length > 0 && (
-        <DetailList items={view.rows} className="rounded-xl bg-background/70 px-3 py-2" />
+        <DetailList
+          items={view.rows.map(row => ({
+            ...row,
+            value: diffValue(row.value, row.image),
+            previous: row.previous && diffValue(row.previous, row.previousImage),
+          }))}
+          className="rounded-xl bg-background/70 px-3 py-2 [overflow-wrap:anywhere]"
+        />
       )}
       {view.week && (
         <div className="rounded-xl bg-background/70 px-3 py-2">
@@ -397,6 +410,7 @@ export function TeamGovernance({
     const view = describeChange(request.kind, request.payload, {
       t,
       locale: intlLocale,
+      logoBucketUrl: supabase.storage.from("barbershop-logos").getPublicUrl(shopId + "/").data.publicUrl,
       timeZone,
       services,
       staff,

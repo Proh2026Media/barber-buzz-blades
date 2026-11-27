@@ -7,20 +7,13 @@ export function readableLink(url: string) {
 }
 
 const PERSON_PALETTE = [
-  { bg: "#e8d5b9", fg: "#5c3d14" },
-  { bg: "#d9e2d0", fg: "#2f4a24" },
-  { bg: "#e5d0c8", fg: "#6b2e1f" },
-  { bg: "#d6dbe4", fg: "#2b3a55" },
-  { bg: "#e9dcc0", fg: "#5a4510" },
-  { bg: "#cfe0dd", fg: "#1f4a45" },
-  { bg: "#e2d6cc", fg: "#4e3b2c" },
-  { bg: "#dcdcd3", fg: "#3d3d33" },
+  { bg: "var(--au-forma)", fg: "var(--au-sobre-forma)", linha: "var(--au-detalhe)" },
+  { bg: "var(--action-primary)", fg: "var(--ink-on-primary)", linha: "var(--action-primary)" },
+  { bg: "var(--bg-subtle)", fg: "var(--ink-primary)", linha: "var(--ink-primary)" },
+  { bg: "var(--au-chao-meio)", fg: "var(--ink-primary)", linha: "var(--accent-editorial)" },
 ] as const;
 
-/**
- * Cor fixa de uma pessoa (mesma pessoa = mesma cor em toda tela), dentro da paleta quente da
- * marca e com texto acima de 6,5:1. Serve ao avatar de iniciais e à faixa lateral dos cartões.
- */
+/** Cada pessoa mantém o mesmo par de papéis de cor ao trocar o tema do menu. */
 export function personColor(seed: string) {
   let hash = 0;
   for (const char of seed.trim().toLocaleLowerCase()) {

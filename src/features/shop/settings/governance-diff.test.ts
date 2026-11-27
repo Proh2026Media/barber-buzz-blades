@@ -107,3 +107,37 @@ test("pausa da loja mostra dias e horário aprovados, inclusive na remoção", (
     assert.equal(JSON.stringify(view).includes("interno"), false);
   }
 });
+
+test("o dono vê o texto, o contato e a visibilidade que mudam na página, inclusive quando um bloco volta ao padrão", () => {
+  const view = describeChange("identity.update", {
+    previous: { landing: { headline: "Anterior", instagram: "antes", show_hours: false } },
+    changes: { landing: { headline: "Novo destaque", instagram: "depois", show_staff: false } },
+  }, base);
+  assert.equal(view.title, "plat.appearance.requestTitle");
+  assert.deepEqual(view.rows.map(({ key, previous, value }) => [key, previous, value]), [
+    ["landing.headline", "Anterior", "Novo destaque"],
+    ["landing.instagram", "antes", "depois"],
+    ["landing.show_staff", "eq.diff.on", "eq.diff.off"],
+    ["landing.show_hours", "eq.diff.off", "eq.diff.on"],
+  ]);
+});
+
+test("a arte proposta e a anterior têm prévias somente no armazenamento da loja e fontes mostram o nome do arquivo", () => {
+  const logoBucketUrl = "https://arquivos.example/storage/v1/object/public/barbershop-logos/a/";
+  const next = logoBucketUrl + "logo-2?v=2";
+  const before = logoBucketUrl + "logo-1?v=1";
+  const view = describeChange("identity.update", {
+    previous: { logo_url: before, login_image_url: null, custom_font_faces: [], corner_style: "square" },
+    changes: { logo_url: next, login_image_url: logoBucketUrl + "../b/capa.webp",
+      custom_font_faces: [{ url: "https://arquivos.example/fonte", file_name: "Nova.woff2" }],
+      corner_style: "round" },
+  }, { ...base, logoBucketUrl });
+  const byKey = Object.fromEntries(view.rows.map(row => [row.key, row]));
+  assert.equal(byKey.logo_url.image, next);
+  assert.equal(byKey.logo_url.previousImage, before);
+  assert.equal(byKey.login_image_url.image, undefined);
+  assert.equal(byKey.custom_font_faces.value, "Nova.woff2");
+  assert.equal(byKey.corner_style.previous, "brand.corner.square");
+  assert.equal(byKey.corner_style.value, "brand.corner.round");
+  assert.ok(view.rows.every(row => !row.value.includes("https:") && !row.value.includes("[object")));
+});

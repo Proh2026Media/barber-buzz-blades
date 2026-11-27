@@ -259,9 +259,12 @@ const ponto = (cx, cy, cor) => `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(ALTUR
 export function gerarSelo(o = {}) {
   const tipo = o.tipo || 'parceria';
   if (tipo !== 'parceria' && tipo !== 'iniciais') throw new Error(`tipo inválido: "${tipo}". Use "parceria" ou "iniciais".`);
-  // A parceria é sempre nas cores da marca; a cor só vale para o tipo "iniciais".
+  // A plataforma fornece as cores do estabelecimento; o kit isolado mantém sua paleta original.
   const chave = tipo === 'parceria' ? COR_DA_PARCERIA : o.cor || corDe(o.nome);
-  const cor = PALETA[chave];
+  const cor = o.cores ?? PALETA[chave];
+  if (o.cores && !['fundo', 'anel', 'letra1', 'letra2'].every(k => /^#[0-9a-f]{6}$/i.test(cor[k]))) {
+    throw new Error('As cores do selo devem ser hexadecimais.');
+  }
   if (!cor) throw new Error(`cor inválida: "${chave}". Use ${Object.keys(PALETA).join(', ')}.`);
 
   const texto = o.iniciais != null && limparIniciais(o.iniciais) ? limparIniciais(o.iniciais) : iniciaisDe(o.nome);

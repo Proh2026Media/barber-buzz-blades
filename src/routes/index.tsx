@@ -13,7 +13,7 @@ import { PlatformLanding } from "@/features/marketing/PlatformLanding";
 import { ShopLanding } from "@/features/marketing/ShopLanding";
 import { SignedInBar } from "@/features/marketing/SignedInBar";
 
-type PanelHome = "/app" | "/shop" | "/platform";
+type PanelHome = "/app" | "/shop" | "/platform" | "/gerencia/estabelecimentos";
 
 /**
  * "/" com sessão: no endereço principal e no app instalado, abre a última área usada neste

@@ -123,7 +123,7 @@ const ACCOUNTS: Record<string, Account> = {
   shopAdminAntigo: { memberships: [{ role: "shop_admin", barbershop: loja }], shopActors: [] },
   // shop_admin sem loja: o painel não tem o que abrir, então não conta como painel.
   shopAdminSemLoja: { memberships: [{ role: "shop_admin", barbershop: null }], shopActors: [] },
-  // Gerente de conta não tem tela própria: entra pelo app comum.
+  // Gerente abre a área de lojas atribuídas.
   gerenteDeConta: { memberships: [{ role: "account_manager" }], shopActors: [] },
   // Vínculo de cliente nunca abre painel.
   cliente: { memberships: [{ role: "customer", barbershop: loja }], shopActors: [] },
@@ -139,16 +139,16 @@ const ACCESS: Record<string, AreaAccess> = Object.fromEntries(
 
 test("vínculos → acesso: cada papel abre só as áreas que tem", () => {
   const expected: Record<string, AreaAccess> = {
-    adminOwner: { platform: true, shop: true },
-    admin: { platform: true, shop: false },
-    dono: { platform: false, shop: true },
-    parceiro: { platform: false, shop: true },
-    contratado: { platform: false, shop: true },
-    shopAdminAntigo: { platform: false, shop: true },
-    shopAdminSemLoja: { platform: false, shop: false },
-    gerenteDeConta: { platform: false, shop: false },
-    cliente: { platform: false, shop: false },
-    duasLojas: { platform: false, shop: true },
+    adminOwner: { platform: true, shop: true, manager: false },
+    admin: { platform: true, shop: false, manager: false },
+    dono: { platform: false, shop: true, manager: false },
+    parceiro: { platform: false, shop: true, manager: false },
+    contratado: { platform: false, shop: true, manager: false },
+    shopAdminAntigo: { platform: false, shop: true, manager: false },
+    shopAdminSemLoja: { platform: false, shop: false, manager: false },
+    gerenteDeConta: { platform: false, shop: false, manager: true },
+    cliente: { platform: false, shop: false, manager: false },
+    duasLojas: { platform: false, shop: true, manager: false },
   };
   for (const [who, access] of Object.entries(expected)) {
     assert.deepEqual(ACCESS[who], access, who);
@@ -188,10 +188,10 @@ test("vínculos → acesso → destino: agendar vence a hierarquia; o resto segu
     shopAdminSemLoja: { [BOOKING]: BOOKING, "/app": "/app", "/shop": "/app", "": "/app" },
     gerenteDeConta: {
       [BOOKING]: BOOKING,
-      "/app": "/app",
-      "/shop": "/app",
-      "/platform": "/app",
-      "": "/app",
+      "/app": "/gerencia/estabelecimentos",
+      "/shop": "/gerencia/estabelecimentos",
+      "/platform": "/gerencia/estabelecimentos",
+      "": "/gerencia/estabelecimentos",
     },
     duasLojas: { [BOOKING]: BOOKING, "/app": "/shop", "/shop": "/shop", "": "/shop" },
     cliente: {
@@ -503,4 +503,41 @@ test("conexão Mercado Pago retoma o recebedor após login sem carregar segredos
     sanitizeNext("/auth/mercado-pago?shop=incorreto&receiver_scope=outro&code=segredo"),
     "/auth/mercado-pago",
   );
+});
+
+test("gerência exige o papel e preserva o isolamento das demais áreas", () => {
+  assert.equal(
+    decidePostAuthPath({ next: "/gerencia/estabelecimentos", access: ACCESS.cliente }),
+    "/app",
+  );
+  assert.equal(
+    decidePostAuthPath({ next: "/gerencia/estabelecimentos", access: ACCESS.admin }),
+    "/platform?aba=barbearias",
+  );
+  const dupla = { ...ACCESS.dono, manager: true };
+  assert.equal(decidePostAuthPath({ access: dupla, lastArea: "shop" }), "/shop");
+  assert.equal(
+    decidePostAuthPath({ next: "/gerencia/estabelecimentos", access: dupla }),
+    "/gerencia/estabelecimentos",
+  );
+  const areas = listAreas({
+    memberships: [{ role: "account_manager" }],
+    shopActors: [],
+    shopFallback: "Loja",
+  });
+  assert.deepEqual(areas.map(areaHref), ["/gerencia/estabelecimentos", "/app"]);
+});
+
+test("administrador que também é gerente abre a lista global e tem uma única entrada para gestão", () => {
+  const memberships = [{ role: "platform_admin" }, { role: "account_manager" }];
+  const access = areaAccessFor({ memberships, shopActors: [] });
+  assert.equal(
+    decidePostAuthPath({ next: "/gerencia/estabelecimentos", access }),
+    "/platform?aba=barbearias",
+  );
+  assert.equal(entryArea(access, "manager"), "platform");
+  assert.deepEqual(listAreas({ memberships, shopActors: [], shopFallback: "Loja" }).map(areaHref), [
+    "/platform",
+    "/app",
+  ]);
 });

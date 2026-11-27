@@ -24,6 +24,7 @@ import { Route as AcordoDeDadosRouteImport } from './routes/acordo-de-dados'
 import { Route as BarberSlugRouteImport } from './routes/$barberSlug'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShopPontosRouteImport } from './routes/shop_.pontos'
+import { Route as GerenciaEstabelecimentosRouteImport } from './routes/gerencia.estabelecimentos'
 import { Route as BShopSlugRouteImport } from './routes/b.$shopSlug'
 import { Route as AuthRetornoRouteImport } from './routes/auth_.retorno'
 import { Route as AuthMercadoPagoRouteImport } from './routes/auth_.mercado-pago'
@@ -104,6 +105,12 @@ const ShopPontosRoute = ShopPontosRouteImport.update({
   path: '/shop/pontos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GerenciaEstabelecimentosRoute =
+  GerenciaEstabelecimentosRouteImport.update({
+    id: '/gerencia/estabelecimentos',
+    path: '/gerencia/estabelecimentos',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const BShopSlugRoute = BShopSlugRouteImport.update({
   id: '/b/$shopSlug',
   path: '/b/$shopSlug',
@@ -144,6 +151,7 @@ export interface FileRoutesByFullPath {
   '/auth/mercado-pago': typeof AuthMercadoPagoRoute
   '/auth/retorno': typeof AuthRetornoRoute
   '/b/$shopSlug': typeof BShopSlugRoute
+  '/gerencia/estabelecimentos': typeof GerenciaEstabelecimentosRoute
   '/shop/pontos': typeof ShopPontosRoute
 }
 export interface FileRoutesByTo {
@@ -165,6 +173,7 @@ export interface FileRoutesByTo {
   '/auth/mercado-pago': typeof AuthMercadoPagoRoute
   '/auth/retorno': typeof AuthRetornoRoute
   '/b/$shopSlug': typeof BShopSlugRoute
+  '/gerencia/estabelecimentos': typeof GerenciaEstabelecimentosRoute
   '/shop/pontos': typeof ShopPontosRoute
 }
 export interface FileRoutesById {
@@ -187,6 +196,7 @@ export interface FileRoutesById {
   '/auth_/mercado-pago': typeof AuthMercadoPagoRoute
   '/auth_/retorno': typeof AuthRetornoRoute
   '/b/$shopSlug': typeof BShopSlugRoute
+  '/gerencia/estabelecimentos': typeof GerenciaEstabelecimentosRoute
   '/shop_/pontos': typeof ShopPontosRoute
 }
 export interface FileRouteTypes {
@@ -210,6 +220,7 @@ export interface FileRouteTypes {
     | '/auth/mercado-pago'
     | '/auth/retorno'
     | '/b/$shopSlug'
+    | '/gerencia/estabelecimentos'
     | '/shop/pontos'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -231,6 +242,7 @@ export interface FileRouteTypes {
     | '/auth/mercado-pago'
     | '/auth/retorno'
     | '/b/$shopSlug'
+    | '/gerencia/estabelecimentos'
     | '/shop/pontos'
   id:
     | '__root__'
@@ -252,6 +264,7 @@ export interface FileRouteTypes {
     | '/auth_/mercado-pago'
     | '/auth_/retorno'
     | '/b/$shopSlug'
+    | '/gerencia/estabelecimentos'
     | '/shop_/pontos'
   fileRoutesById: FileRoutesById
 }
@@ -274,6 +287,7 @@ export interface RootRouteChildren {
   AuthMercadoPagoRoute: typeof AuthMercadoPagoRoute
   AuthRetornoRoute: typeof AuthRetornoRoute
   BShopSlugRoute: typeof BShopSlugRoute
+  GerenciaEstabelecimentosRoute: typeof GerenciaEstabelecimentosRoute
   ShopPontosRoute: typeof ShopPontosRoute
 }
 
@@ -384,6 +398,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShopPontosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/gerencia/estabelecimentos': {
+      id: '/gerencia/estabelecimentos'
+      path: '/gerencia/estabelecimentos'
+      fullPath: '/gerencia/estabelecimentos'
+      preLoaderRoute: typeof GerenciaEstabelecimentosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/b/$shopSlug': {
       id: '/b/$shopSlug'
       path: '/b/$shopSlug'
@@ -434,6 +455,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthMercadoPagoRoute: AuthMercadoPagoRoute,
   AuthRetornoRoute: AuthRetornoRoute,
   BShopSlugRoute: BShopSlugRoute,
+  GerenciaEstabelecimentosRoute: GerenciaEstabelecimentosRoute,
   ShopPontosRoute: ShopPontosRoute,
 }
 export const routeTree = rootRouteImport

@@ -48,7 +48,7 @@ export function BrandSummaryCard({
         aria-hidden
         className="flex items-center gap-3 rounded-2xl border border-black/10 bg-[#f7f5f0] p-3 text-[#242421] shadow-sm"
       >
-        <LogoChip lojaId={settings.barbershop_id} nome={name}
+        <LogoChip tema={settings} lojaId={settings.barbershop_id} nome={name}
           logoUrl={settings.logo_url}
           background={settings.logo_background_color}
           className="size-11 rounded-xl"

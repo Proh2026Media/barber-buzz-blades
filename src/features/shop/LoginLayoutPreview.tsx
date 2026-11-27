@@ -11,6 +11,7 @@ export function LoginLayoutPreview({
   logoBackgroundColor,
   lojaId,
   shopName,
+  tema,
   compact = false,
 }: {
   layout: BrandLoginLayout;
@@ -19,6 +20,7 @@ export function LoginLayoutPreview({
   logoBackgroundColor?: string | null;
   lojaId?: string;
   shopName: string;
+  tema?: { primary_color?: string | null; accent_color?: string | null };
   compact?: boolean;
 }) {
   const { t } = useI18n();
@@ -34,7 +36,7 @@ export function LoginLayoutPreview({
           className="login-model-preview-logo"
           style={{ backgroundColor: logoBackgroundColor || "rgba(255,255,255,.92)" }}
         >
-          {logoUrl ? <img src={logoUrl} alt="" /> : <SeloBarbearia lojaId={lojaId} nome={shopName} tamanho={24} />}
+          {logoUrl ? <img src={logoUrl} alt="" /> : <SeloBarbearia tema={tema} lojaId={lojaId} nome={shopName} tamanho={24} />}
         </span>
         <span>{shopName}</span>
       </div>

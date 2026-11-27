@@ -372,7 +372,7 @@ export function SettingsHub({
     if (id === "aparencia" && settings) {
       return (
         <>
-          <LogoChip lojaId={settings.barbershop_id} nome={settings.display_name || overview?.shopName} logoUrl={settings.logo_url} background={settings.logo_background_color} />
+          <LogoChip tema={settings} lojaId={settings.barbershop_id} nome={settings.display_name || overview?.shopName} logoUrl={settings.logo_url} background={settings.logo_background_color} />
           <ColorDots
             primary={normalizeBrandColor(settings.primary_color, DEFAULT_PRIMARY_COLOR)}
             accent={normalizeBrandColor(settings.accent_color, DEFAULT_ACCENT_COLOR)}

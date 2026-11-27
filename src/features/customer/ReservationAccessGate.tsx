@@ -34,6 +34,8 @@ type Lookup = {
 };
 
 type ShopLook = {
+  primary_color?: string | null;
+  accent_color?: string | null;
   name: string | null;
   logo: string | null;
   logoBackground: string | null;
@@ -108,6 +110,8 @@ export function ReservationAccessGate({
               display_name?: string | null;
               logo_url?: string | null;
               logo_background_color?: string | null;
+              primary_color?: string | null;
+              accent_color?: string | null;
               corner_style?: string | null;
             };
           } | null
@@ -117,6 +121,8 @@ export function ReservationAccessGate({
           name: info?.display_name?.trim() || info?.name || found.shop_name,
           logo: info?.logo_url ?? null,
           logoBackground: info?.logo_background_color ?? null,
+          primary_color: info?.primary_color,
+          accent_color: info?.accent_color,
           corner: info?.corner_style ?? null,
         });
         setLookup(found);
@@ -277,7 +283,7 @@ export function ReservationAccessGate({
           {shop?.logo ? (
             <img src={shop.logo} alt="" className="size-full object-contain" />
           ) : (
-            <SeloBarbearia lojaId={lookup.barbershop_id} nome={shopName} tamanho={48} />
+            <SeloBarbearia tema={shop} lojaId={lookup.barbershop_id} nome={shopName} tamanho={48} />
           )}
         </span>
         <div className="min-w-0">

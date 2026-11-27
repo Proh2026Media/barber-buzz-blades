@@ -199,7 +199,7 @@ export function TeamDayBoard({
                 <header
                   key={member.id}
                   className="flex h-[4.5rem] min-w-0 items-center gap-2 border-b border-e border-border px-2.5 last:border-e-0"
-                  style={{ borderTop: `4px solid ${color.fg}` }}
+                  style={{ borderTop: `4px solid ${color.linha}` }}
                 >
                   <PersonAvatar
                     name={member.display_name}

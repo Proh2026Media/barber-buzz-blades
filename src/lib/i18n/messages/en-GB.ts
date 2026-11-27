@@ -195,6 +195,12 @@ export const enGB: Record<MessageKey, string> = {
   "legal.privacy.s11Item4":
     "**Revoke at Google:** you can also remove Aurset's access directly at Google, at any time, at {link}.",
   "plat.shell.brandOpenError": "Couldn't open the customisation. Please try again.",
+  "plat.appearance.requestTitle": "Change the shop’s appearance",
+  "plat.appearance.fontStyle": "Header font style",
+  "plat.appearance.previousFile": "Current file",
+  "plat.appearance.nextFile": "Proposed file",
+  "plat.appearance.submit": "Submit for approval",
+  "plat.appearance.submitted": "Request submitted for approval.",
   "plat.shops.customize": "Customise",
   "plat.newShop.customizeNow": "Customise now",
   "plat.brand.title": "Customise {name}",

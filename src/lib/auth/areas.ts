@@ -9,6 +9,7 @@ import { hasShopToOpen, type ShopMemberRole } from "./shop-acting.ts";
  * vê a lista. Uma conta só de cliente não vê nada novo.
  */
 export type AreaItem =
+  | { kind: "manager"; key: "manager" }
   | { kind: "platform"; key: "platform" }
   | {
       kind: "shop";
@@ -25,6 +26,7 @@ export type AreaItem =
 
 /** Onde a pessoa está agora (para marcar a área atual). */
 export type CurrentArea =
+  | { kind: "manager" }
   | { kind: "platform" }
   | { kind: "shop"; shopId: string | null }
   | { kind: "customer" };
@@ -46,6 +48,8 @@ export function listAreas(input: {
   const areas: AreaItem[] = [];
   if (input.memberships.some((m) => m.role === "platform_admin")) {
     areas.push({ kind: "platform", key: "platform" });
+  } else if (input.memberships.some((m) => m.role === "account_manager")) {
+    areas.push({ kind: "manager", key: "manager" });
   }
   const seen = new Set<string>();
   for (const actor of input.shopActors) {
@@ -96,6 +100,7 @@ export function isCurrentArea(area: AreaItem, current: CurrentArea | null | unde
 
 /** Endereço que abre a área (a loja escolhida vai no endereço, para valer sobre o domínio). */
 export function areaHref(area: AreaItem) {
+  if (area.kind === "manager") return "/gerencia/estabelecimentos";
   if (area.kind === "platform") return "/platform";
   if (area.kind === "customer") return "/app";
   return area.actorId ? `/shop?unidade=${encodeURIComponent(area.actorId)}` : "/shop";
@@ -103,7 +108,7 @@ export function areaHref(area: AreaItem) {
 
 /**
  * Áreas que a conta pode abrir, a partir dos vínculos (sem banco, para testar no Node).
- * Plataforma: só platform_admin (o gerente de conta não tem tela própria). Painel: vínculo de
+ * Plataforma: só platform_admin. Painel: vínculo de
  * equipe ativo ou shop_admin antigo com loja (a mesma regra que o painel usa para abrir).
  */
 export function areaAccessFor(input: {
@@ -111,6 +116,7 @@ export function areaAccessFor(input: {
   shopActors: readonly { id: string; role: ShopMemberRole }[];
 }): AreaAccess {
   return {
+    manager: input.memberships.some((m) => m.role === "account_manager"),
     platform: input.memberships.some((m) => m.role === "platform_admin"),
     shop: hasShopToOpen({ actors: input.shopActors, memberships: input.memberships }),
   };

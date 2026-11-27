@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ChevronRight,
   LayoutList,
+  Palette,
   Plus,
   RefreshCw,
   Search,
@@ -284,6 +285,14 @@ export function ShopsPanel({
       month: "2-digit",
       year: "numeric",
     });
+  function customizeButton(shop: Tables<"barbershops">) {
+    const label = t("plat.brand.title", { name: shop.name });
+    return (
+      <button type="button" className="app-icon-button shrink-0" aria-label={label} title={label} onClick={() => onCustomize(shop)}>
+        <Palette aria-hidden className="size-4" />
+      </button>
+    );
+  }
   const tableColumns: DataListColumn<ShopRow>[] = [
     {
       key: "name",
@@ -368,6 +377,7 @@ export function ShopsPanel({
       width: "6.5rem",
       cell: (row) => <span className="tabular-nums">{dateOf(row.shop.created_at)}</span>,
     },
+    { key: "identity", header: t("shop.settings.brand"), width: "5rem", align: "center", cell: ({ shop }) => customizeButton(shop) },
   ];
 
   return (
@@ -460,14 +470,14 @@ export function ShopsPanel({
                   const isSelected = wide && selectedId === shop.id;
                   const noAdmin = withoutAdmin.has(shop.id);
                   return (
-                    <li key={shop.id}>
+                    <li key={shop.id} className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => onSelect(shop.id)}
                         data-shop-id={shop.id}
                         aria-current={isSelected ? "true" : undefined}
                         className={cn(
-                          "plat-shop-card flex min-h-16 w-full items-center gap-3 rounded-2xl border bg-card px-3 py-3 text-left transition hover:border-primary/40",
+                          "plat-shop-card flex min-h-16 min-w-0 flex-1 items-center gap-3 rounded-2xl border bg-card px-3 py-3 text-left transition hover:border-primary/40",
                           isSelected ? "border-primary ring-2 ring-primary/20" : "border-border",
                           highlightId === shop.id && "ring-4 ring-[color:var(--tone-success-line)]",
                         )}
@@ -522,6 +532,7 @@ export function ShopsPanel({
                           aria-hidden
                         />
                       </button>
+                      {customizeButton(shop)}
                     </li>
                   );
                 })}

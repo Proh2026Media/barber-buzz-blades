@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { capabilitiesFor, type ShopCapabilities, type ShopPermissionMap } from "./capabilities";
 import { hasShopToOpen, sortShopActors } from "./shop-acting";
 import { areaAccessFor } from "./areas";
+import { isPlatformApexHost } from "../shop/host";
 import {
   decidePostAuthPath,
   readLastArea,
@@ -38,9 +39,8 @@ export type SessionProfile = {
   primaryRole: AppRole;
 };
 
-export function homeForRole(role: AppRole): "/app" | "/shop" | "/platform" {
-  // /platform aceita só platform_admin; mandar o gerente de conta para lá criava um ciclo de
-  // redirecionamento. Sem tela própria ainda, ele entra pela área comum (/app).
+export function homeForRole(role: AppRole): "/app" | "/shop" | "/platform" | "/gerencia/estabelecimentos" {
+  if (role === "account_manager") return "/gerencia/estabelecimentos";
   if (role === "platform_admin") return "/platform";
   if (role === "shop_admin") return "/shop";
   return "/app";
@@ -198,7 +198,10 @@ export async function resolvePostAuthPath(preferredNext?: string): Promise<strin
   if (!profile) return "/auth";
   return decidePostAuthPath({
     next: preferredNext,
-    access: areaAccessOf(profile),
+    access: {
+      ...areaAccessOf(profile),
+      manager: isPlatformApexHost() && hasAnyRole(profile.memberships, ["account_manager"]),
+    },
     lastArea: readLastArea(profile.user.id),
   });
 }

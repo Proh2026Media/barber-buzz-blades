@@ -2009,7 +2009,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                   {shop && (settings?.logo_url ? (
                     <img src={settings.logo_url} alt="" className="size-8 shrink-0 object-contain" />
                   ) : (
-                    <SeloBarbearia lojaId={shop.id} nome={settings?.display_name || shop.name} tamanho={32} />
+                    <SeloBarbearia lojaId={shop.id} tema={settings} nome={settings?.display_name || shop.name} tamanho={32} />
                   ))}
                 <ShopSwitcher
                   name={settings?.display_name || shop?.name || t("shop.header.shopFallback")}
@@ -2575,7 +2575,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                     const shopLink = (withDomainShortcut: boolean) => {
                       const landing = parseLandingConfig(settings.landing);
                       return (
-                        <ShopLinkCard lojaId={shop.id} nome={settings.display_name || shop.name}
+                        <ShopLinkCard accent={settings.accent_color} lojaId={shop.id} nome={settings.display_name || shop.name}
                           publicUrl={shopPublicOrigin({
                             slug: shop.slug,
                             customDomain: shop.custom_domain,

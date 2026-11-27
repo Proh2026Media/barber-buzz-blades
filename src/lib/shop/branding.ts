@@ -428,6 +428,32 @@ export function customBrandLeque(primary: string, accent: string): ShopThemeLequ
   };
 }
 
+/** Sem tema salvo, distribui os selos pelas famílias do menu de cores, com escolha estável por loja. */
+const familiasDoSelo = SHOP_THEMES.filter((tema) => tema.kind === "familia");
+
+export function coresDoSelo(chave: string, primaria?: string | null, destaque?: string | null) {
+  const { primary, accent } = resolveBrandColors(primaria, destaque);
+  let leque: ShopThemeLeque;
+  const semEscolha =
+    (!primaria && !destaque) ||
+    (primaria?.toUpperCase() === LEGACY_DEFAULT_PRIMARY_COLOR &&
+      destaque?.toUpperCase() === LEGACY_DEFAULT_ACCENT_COLOR);
+  if (semEscolha) {
+    let indice = 0;
+    for (const letra of chave) indice = (Math.imul(indice, 31) + letra.charCodeAt(0)) >>> 0;
+    leque = familiasDoSelo[indice % familiasDoSelo.length].leque;
+  } else {
+    leque = findShopTheme(primary, accent)?.leque ?? customBrandLeque(primary, accent);
+  }
+  const fundo = leque.claro;
+  return {
+    fundo,
+    anel: readableBrandColor(leque.detalhe, fundo, 3),
+    letra1: readableBrandColor(leque.profundo, fundo),
+    letra2: readableBrandColor(leque.detalhe, fundo),
+  };
+}
+
 /** Variáveis do leque (chão, forma, detalhe, par, borda e sombra) para os shells usarem. */
 function lequeVariables(theme: ShopTheme | null, leque: ShopThemeLeque) {
   return {
@@ -549,6 +575,11 @@ export type BrandDraft = {
   primary_color: string;
   accent_color: string;
 };
+
+export type ShopAppearanceSettings = Pick<
+  Tables<"barbershop_settings">, keyof BrandDraft | "barbershop_id" | "updated_at" | "landing"
+>;
+export type RequestAppearanceChanges = (shopId: string, patch: Record<string, unknown>) => Promise<void>;
 
 type BrandSource = Pick<
   Tables<"barbershop_settings">,

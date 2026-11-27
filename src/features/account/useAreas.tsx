@@ -39,7 +39,9 @@ export function useAreaName() {
       ? area.name
       : area.kind === "platform"
         ? t("area.platform")
-        : t("area.customerOpening");
+        : area.kind === "manager"
+          ? t("area.managerTitle")
+          : t("area.customerOpening");
 }
 
 /**
