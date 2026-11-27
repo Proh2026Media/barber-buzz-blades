@@ -13,6 +13,6 @@ function ShopLandingRoute() {
   return (
     // "Ver como cliente" do painel abre aqui: a barra leva de volta ao painel. Ela fica dentro
     // da página para seguir o modo de canto da loja.
-    <ShopLanding shopRef={isPlatformApexHost() ? shopSlug : undefined} host={isPlatformApexHost() ? undefined : currentHostname()} topBar={<SignedInBar />} />
+    <ShopLanding key={shopSlug} shopRef={isPlatformApexHost() ? shopSlug : undefined} host={isPlatformApexHost() ? undefined : currentHostname()} topBar={<SignedInBar />} />
   );
 }

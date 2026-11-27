@@ -136,7 +136,7 @@ export function MemberDayBadge({
       icon={meta.icon}
       label={t(meta.key as Parameters<typeof t>[0])}
       size={size}
-      className={className}
+      className={cn("shop-badge", className)}
     />
   );
 }
@@ -213,6 +213,7 @@ export function TodayCard({
         </h2>
         {showToday && next ? (
           <StatusBadge
+            className="shop-badge"
             tone="success"
             icon={CalendarCheck}
             size="sm"
@@ -238,7 +239,7 @@ export function TodayCard({
             time: formatClock(next.time, intlLocale),
             name: next.member.name,
           })}`}
-          className="flex min-h-16 items-center gap-3 rounded-[var(--control-radius)] border-2 border-foreground/80 bg-background/60 p-3 transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="flex min-h-16 items-center gap-3 shop-inner-card border-2 border-foreground/80 bg-background p-3 hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <StaffPhoto
             src={next.member.avatar_url}
@@ -332,7 +333,7 @@ export function SlotPills({
       <p className="flex flex-wrap items-center gap-2 text-xs font-semibold text-muted-foreground">
         <span>{t("shopLanding.todayTitle")}</span>
         {member.min_duration_minutes && (
-          <Tag icon={Clock3}>{t("shopLanding.forMinutes", { n: member.min_duration_minutes })}</Tag>
+          <Tag className="shop-badge" icon={Clock3}>{t("shopLanding.forMinutes", { n: member.min_duration_minutes })}</Tag>
         )}
         {/* O toque abre a agenda do profissional; ainda não reserva o horário escolhido. */}
         {!preview && (
@@ -409,7 +410,7 @@ export function ServiceRow({ service, price }: { service: LandingService; price:
   const { t } = useI18n();
   return (
     <li className="public-card flex items-center gap-3 rounded-[var(--panel-radius)] border border-border p-3">
-      <span className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-[var(--control-radius)] bg-muted text-muted-foreground">
+      <span className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-[var(--canto-detalhe)] bg-muted text-muted-foreground">
         {/* Sem ícone escolhido vira a tesoura padrão: iniciais ficam só para pessoas. */}
         <ServiceIcon
           icon={service.icon}
@@ -422,7 +423,7 @@ export function ServiceRow({ service, price }: { service: LandingService; price:
         {service.description && (
           <p className="text-xs leading-snug text-muted-foreground">{service.description}</p>
         )}
-        <Tag icon={Clock3}>{t("shopLanding.minutes", { n: service.duration_minutes })}</Tag>
+        <Tag className="shop-badge" icon={Clock3}>{t("shopLanding.minutes", { n: service.duration_minutes })}</Tag>
       </div>
       <p className="shrink-0 text-base font-extrabold tabular-nums">{price}</p>
     </li>
@@ -475,7 +476,7 @@ export function WeekHours({
               )}
               <span>{label}</span>
               {isToday && (
-                <span className="rounded-[var(--button-radius)] bg-card px-2 py-0.5 text-xs font-bold">
+                <span className="shop-badge bg-card px-2 py-0.5 text-xs font-bold">
                   {t("shopLanding.today")}
                 </span>
               )}
@@ -488,7 +489,7 @@ export function WeekHours({
                 })}
               </span>
             ) : (
-              <StatusBadge tone="neutral" icon={Moon} size="sm" label={t("shopLanding.closed")} />
+              <StatusBadge className="shop-badge" tone="neutral" icon={Moon} size="sm" label={t("shopLanding.closed")} />
             )}
           </li>
         );

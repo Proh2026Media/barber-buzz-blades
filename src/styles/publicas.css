@@ -263,8 +263,8 @@
   overflow: hidden;
   background: var(--loja-chao);
   color: var(--loja-chao-tinta);
-  border-end-start-radius: calc(var(--panel-radius) * 1.5);
-  border-end-end-radius: calc(var(--panel-radius) * 1.5);
+  border-end-start-radius: var(--panel-radius);
+  border-end-end-radius: var(--panel-radius);
 }
 .shop-landing.brand-page > .shop-hero {
   padding-top: var(--app-safe-top);
@@ -361,7 +361,7 @@
 }
 /* Como chegar, WhatsApp e Instagram: pílulas de contorno na tinta da capa. */
 .shop-landing .hero-quick-action {
-  background: color-mix(in oklab, var(--loja-chao-tinta) 10%, transparent);
+  background: color-mix(in oklab, var(--loja-chao-tinta) 10%, var(--loja-chao));
   border: 1.5px solid color-mix(in oklab, var(--loja-chao-tinta) 55%, transparent);
   color: var(--loja-chao-tinta);
 }
@@ -390,9 +390,7 @@
   font-weight: 650;
   line-height: 1.25;
   text-align: center;
-  transition:
-    transform var(--duration-fast, 180ms) var(--ease-out, ease-out),
-    box-shadow var(--duration-fast, 180ms) var(--ease-soft, ease);
+  transition: transform var(--dur-ui-micro) var(--ease-entrada);
 }
 .shop-cta > svg {
   width: 1.125rem;

@@ -214,14 +214,22 @@ export function ShopDetail({
         />
       </div>
 
+      <div className="plat-shop-customize grid gap-2">
+        {!demoMode && (
+          <a href={`/shop?gestao=${shop.id}`} className="action-button action-confirm w-full">
+            <LayoutGrid className="size-4" aria-hidden />
+            {t("plat.shop.manage")}
+          </a>
+        )}
       <button
         type="button"
         onClick={onCustomize}
-        className="plat-shop-customize flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
+        className={SECONDARY}
       >
         <Palette className="size-4" aria-hidden />
         {t("plat.shops.customize")}
       </button>
+      </div>
 
       <section className="plat-shop-modules space-y-2">
         <SectionHeader as="h4" icon={LayoutGrid} title={t("plat.shop.modules")} />

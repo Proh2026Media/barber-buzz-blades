@@ -1,3 +1,4 @@
+import { Abertura } from "@/components/Abertura";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArenaApp } from "@/features/customer/ArenaApp";
@@ -80,18 +81,15 @@ function AppRoute() {
       if (maybeRedirectToCanonical(resolved)) return;
       if (resolved?.shop_slug) setHostShop(resolved.shop_slug);
       setReady(true);
-    })();
+    })().catch(() => { if (!cancelled) setReady(true); });
     return () => {
       cancelled = true;
     };
   }, [shop]);
 
-  if (!ready) {
-    return (
-      <div className="flex min-h-dvh items-center justify-center text-sm text-muted-foreground">
-        {t("app.loading")}
-      </div>
-    );
+  if (!ready) return <Abertura />;
+  if (!isPlatformApexHost() && !hostShop) {
+    return <Abertura erro={t("shopLanding.errorTitle")} tentar={() => window.location.reload()} />;
   }
 
   const effectiveShop = hostShop || (isPlatformApexHost() ? shop : undefined);

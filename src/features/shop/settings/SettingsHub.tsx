@@ -206,6 +206,7 @@ function HubRow({
 }
 
 export function SettingsHub({
+  manterClubeNoPainel = false,
   sections,
   section,
   onSectionChange,
@@ -216,6 +217,7 @@ export function SettingsHub({
   overview,
   onBack,
 }: {
+  manterClubeNoPainel?: boolean;
   sections: SettingsSection[];
   section: SettingsSection | null;
   onSectionChange: (next: SettingsSection | null) => void;
@@ -538,7 +540,8 @@ export function SettingsHub({
       action: {
         label: t("settingsHub.attention.seeRedemptions"),
         onClick: () => {
-          window.location.href = "/shop/pontos?parte=resgates";
+          if (manterClubeNoPainel) onSectionChange("pontos");
+          else window.location.href = "/shop/pontos?parte=resgates";
         },
       },
     });
@@ -579,7 +582,7 @@ export function SettingsHub({
                     : id === "avisos" && overview?.avisosHint
                       ? overview.avisosHint
                       : t(`settingsHub.hint.${id}` as const);
-                const href = wide ? undefined : SECTION_LINKS[id];
+                const href = wide || manterClubeNoPainel ? undefined : SECTION_LINKS[id];
                 if (href) {
                   return (
                     <LinkRow

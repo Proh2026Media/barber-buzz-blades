@@ -1,3 +1,4 @@
+import { Abertura } from "@/components/Abertura";
 import { SeloBarbearia } from "@/components/SeloBarbearia";
 import { WhatsAppHealthIndicator } from "@/features/platform/WhatsAppHealthIndicator";
 import { PwaInstallBanner } from "@/components/pwa-install-banner";
@@ -497,6 +498,7 @@ function ArenaApp({
       window.removeEventListener("waiting-changed", changed);
     };
   }, []);
+  const [primeiraCargaPronta, setPrimeiraCargaPronta] = useState(false);
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [joinOpen, setJoinOpen] = useState(false);
@@ -842,6 +844,7 @@ function ArenaApp({
   useEffect(() => {
     const demo = demoShopId ? demoRef.current : null;
     if (demo) {
+      setPrimeiraCargaPronta(true);
       setShopId(demo.shop.id);
       setCustomerName(demo.customerName);
       setShopName(demo.shop.name);
@@ -1209,7 +1212,7 @@ function ArenaApp({
           setCatalogError(friendlyAuthError(err, tNow("cust.catalogLoadError")));
         }
       } finally {
-        if (!cancelled) setCatalogLoading(false);
+        if (!cancelled) { setPrimeiraCargaPronta(true); setCatalogLoading(false); }
       }
     })();
     return () => {
@@ -2640,7 +2643,10 @@ function ArenaApp({
   const [navLevel, setNavLevel] = useState<0 | 1 | 2>(0);
   const navLastActive = useRef(-1);
   const navLabelLevel: 0 | 1 | 2 = isPhone ? navLevel : device === "tablet" ? 1 : 0;
-  const bookingsLabel = navLabelLevel === 0 ? t("nav.bookings") : t("nav.bookingsShort");
+  const variosHorarios = upcomingAppointments.length > 1;
+  const nomeHorarios = t(variosHorarios ? "nav.bookings" : "nav.booking");
+  const nomeCurtoHorarios = t(variosHorarios ? "nav.bookingsShort" : "nav.bookingShort");
+  const bookingsLabel = navLabelLevel === 0 ? nomeHorarios : nomeCurtoHorarios;
   const navItems: NavItemProps[] = [
     { id: "dashboard", icon: Compass, label: t("nav.home") },
     { id: "agenda", icon: Calendar, label: t("nav.book") },
@@ -2649,8 +2655,8 @@ function ArenaApp({
       icon: Clock3,
       label: bookingsLabel,
       // Nome completo para o leitor de tela quando a barra mostra o curto (que está contido nele).
-      ariaLabel: bookingsLabel === t("nav.bookings") ? undefined : t("nav.bookings"),
-      measure: { short: t("nav.bookingsShort"), long: t("nav.bookings") },
+      ariaLabel: nomeHorarios,
+      measure: { short: nomeCurtoHorarios, long: nomeHorarios },
     },
     ...(sportsTab ? [{ id: "esportes" as const, icon: Trophy, label: t("nav.sports") }] : []),
   ];
@@ -2721,7 +2727,7 @@ function ArenaApp({
       cancelAnimationFrame(frame);
     };
     // O modo de cantos (raio da pílula) pode chegar depois da primeira medida, sem mudar tamanho.
-  }, [activeNavIndex, navItems.length, navLevel, isPhone, shopSettings.corner_style]);
+  }, [primeiraCargaPronta, shopId, nomeHorarios, activeNavIndex, navItems.length, navLevel, isPhone, shopSettings.corner_style]);
   const brandStyle = brandVariables(
     shopSettings.primary_color,
     shopSettings.accent_color,
@@ -2876,6 +2882,10 @@ function ArenaApp({
     </p>
   );
 
+  if (!primeiraCargaPronta || (!shopId && catalogLoading)) return <Abertura />;
+  if (!shopId && catalogError) {
+    return <Abertura erro={catalogError} tentar={() => setCatalogRevision((v) => v + 1)} />;
+  }
   return (
     <WorkspaceFrame
       className={`arena-workspace customer-workspace bg-background text-foreground font-sans selection:bg-primary/20 transition-colors duration-300 ${brandFontScopeClass(shopSettings.font_scope)} ${brandCornerClass(shopSettings.corner_style)} ${shopSettings.floating_chrome ? "brand-chrome-floating" : ""}`}
@@ -3336,6 +3346,7 @@ function ArenaApp({
               ) : bookingDone ? (
                 <div className="mx-auto max-w-xl">
                   <BookingDone
+                          variosHorarios={variosHorarios}
                     title={
                       bookingDone.rescheduled ? t("booking.rescheduled") : t("booking.reserved")
                     }
@@ -3755,7 +3766,7 @@ function ArenaApp({
                         tone="pending"
                         title={t("booking.uncertainTitle")}
                         action={{
-                          label: t("booking.track"),
+                          label: t(variosHorarios ? "booking.track" : "booking.trackOne"),
                           icon: CalendarCheckIcon,
                           onClick: () => {
                             setReservationFilter("upcoming");
@@ -3763,7 +3774,7 @@ function ArenaApp({
                           },
                         }}
                       >
-                        {t("booking.uncertainHint")}
+                        {t("booking.uncertainHint", { aba: nomeHorarios })}
                       </Notice>
                     )}
                   </BookingSummaryBar>
@@ -3784,7 +3795,7 @@ function ArenaApp({
                 <div className="workspace-section-title app-section-title min-w-0 flex-1 tablet:min-w-[16rem]">
                   <WorkspaceHeading>
                     <Clock3 />
-                    <h2>{t("bookings.title")}</h2>
+                    <h2>{nomeHorarios}</h2>
                   </WorkspaceHeading>
                 </div>
                 {!isPhone && reservationFilters}

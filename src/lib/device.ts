@@ -9,6 +9,11 @@
  *   do tablet, onde o quadro da equipe e a ficha ao lado cabem.
  * - `deviceBootstrapScript` põe `data-dispositivo` no <html> antes da hidratação, para o CSS
  *   que precisar do atributo; o módulo mantém o atributo em dia quando a largura muda.
+ * - O mesmo script grava o sistema do aparelho em `data-sistema` ("apple" | "android" | "outro"),
+ *   mais `data-instalado="sim"` (aberto pelo ícone) e `data-desempenho="baixo"` (2 GB ou menos).
+ *   Só o CSS lê esses atributos, para escolher o acabamento das barras de navegação
+ *   (brand kit: Aurset/brandkit/cantos.html, seções Material e Aparelho). Sistema não é
+ *   capacidade: desfoque e menos transparência se perguntam no CSS. Nunca decidir por versão.
  */
 import { useSyncExternalStore } from "react";
 
@@ -91,12 +96,66 @@ export function useViewportAtLeast(px: number): boolean {
   return useSyncExternalStore(subscribe, read, serverFalse);
 }
 
+export type DeviceSystem = "apple" | "android" | "outro";
+
+/** O que o navegador informa sobre si; tudo opcional, para testar sem navegador. */
+export type SystemHints = {
+  userAgent?: string;
+  platform?: string;
+  maxTouchPoints?: number;
+  /** `navigator.userAgentData.platform`, só em navegador de base Chromium. */
+  uaDataPlatform?: string;
+};
+
+const SYSTEM_ATTRIBUTE = "data-sistema";
+/** Só para teste: força um sistema neste navegador (`localStorage`). */
+export const SYSTEM_OVERRIDE_KEY = "aurset:sistema";
+
+/**
+ * Sistema do aparelho, parando na primeira regra que der certo: Android; iPhone e iPod; iPad
+ * (que pode se apresentar como Mac com tela de toque); Mac; e "outro" para o resto.
+ */
+export function systemFor(hints: SystemHints): DeviceSystem {
+  const text = hints.userAgent ?? "";
+  const dataPlatform = hints.uaDataPlatform ?? "";
+  if (/android/i.test(dataPlatform) || /Android/i.test(text)) return "android";
+  if (/iPhone|iPod/i.test(text)) return "apple";
+  if (/iPad/i.test(text) || (hints.platform === "MacIntel" && (hints.maxTouchPoints ?? 0) > 1)) {
+    return "apple";
+  }
+  if (/mac/i.test(dataPlatform || hints.platform || "") || /Macintosh|Mac OS X/i.test(text)) return "apple";
+  return "outro";
+}
+
 /**
  * Script inline (modelo: `themeBootstrapScript` em src/lib/theme.ts) executado antes da primeira
- * pintura: grava `data-dispositivo="celular|tablet|computador"` no <html>. Precisa bater com
- * `deviceForWidth`.
+ * pintura: grava `data-dispositivo="celular|tablet|computador"` no <html> (precisa bater com
+ * `deviceForWidth`) e, em seguida, `data-sistema`, `data-instalado` e `data-desempenho`
+ * (precisa bater com `systemFor`; o teste em device.test.ts roda o script e compara).
  */
-export const deviceBootstrapScript = `(function(){try{var w=window.innerWidth;document.documentElement.setAttribute(${JSON.stringify(DEVICE_ATTRIBUTE)},w>=${DEVICE_MIN.computador}?"computador":w>=${DEVICE_MIN.tablet}?"tablet":"celular");}catch(e){}})();`;
+export const deviceBootstrapScript = `(function () {
+  try {
+    var root = document.documentElement;
+    var width = window.innerWidth;
+    root.setAttribute(${JSON.stringify(DEVICE_ATTRIBUTE)}, width >= ${DEVICE_MIN.computador} ? "computador" : width >= ${DEVICE_MIN.tablet} ? "tablet" : "celular");
+    var override;
+    try { override = localStorage.getItem(${JSON.stringify(SYSTEM_OVERRIDE_KEY)}); } catch (e) {}
+    var detectar = (${systemFor.toString()});
+    var sistema = override === "apple" || override === "android" || override === "outro" ? override : detectar({
+      userAgent: navigator.userAgent,
+      platform: navigator.platform,
+      maxTouchPoints: navigator.maxTouchPoints,
+      uaDataPlatform: navigator.userAgentData && navigator.userAgentData.platform
+    });
+    root.setAttribute(${JSON.stringify(SYSTEM_ATTRIBUTE)}, sistema);
+    if (navigator.standalone === true || (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches)) {
+      root.setAttribute("data-instalado", "sim");
+    }
+    if (typeof navigator.deviceMemory === "number" && navigator.deviceMemory <= 2) {
+      root.setAttribute("data-desempenho", "baixo");
+    }
+  } catch (e) {}
+})();`;
 
 /** Mantém o atributo do <html> em dia quando a largura muda (um listener só por página). */
 function syncDeviceAttribute() {

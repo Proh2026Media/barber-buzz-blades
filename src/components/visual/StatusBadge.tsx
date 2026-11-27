@@ -102,7 +102,7 @@ export function StatusBadge({
       className={cn(
         TONE_CLASS[tone],
         TONE_BADGE,
-        "inline-flex max-w-full items-center rounded-[var(--button-radius)] border font-semibold leading-tight",
+        "selo-estado inline-flex max-w-full items-center rounded-[var(--button-radius)] border font-semibold leading-tight",
         SIZE[size].box,
         className,
       )}

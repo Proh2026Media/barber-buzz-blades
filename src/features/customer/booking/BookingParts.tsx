@@ -1306,6 +1306,7 @@ export function RescheduleFromTo({
 /* -------------------------------------------------------------------------------------------- */
 
 export function BookingDone({
+  variosHorarios,
   title,
   data,
   previous,
@@ -1322,6 +1323,7 @@ export function BookingDone({
   repeatLabel?: string | null;
   now: Date;
   timeZone: string;
+  variosHorarios: boolean;
   onSeeBookings: () => void;
   onAnother: () => void;
 }) {
@@ -1361,7 +1363,7 @@ export function BookingDone({
           <StatusBadge tone="info" icon={CalendarCheck} label={t("status.confirmed")} size="sm" />
         }
       />
-      <IconList items={[{ key: "manage", icon: CalendarClock, text: t("booking.doneHint") }]} />
+      <IconList items={[{ key: "manage", icon: CalendarClock, text: t("booking.doneHint", { aba: t(variosHorarios ? "nav.bookings" : "nav.booking") }) }]} />
       <div className="grid gap-2 sm:grid-cols-2">
         <button
           type="button"
@@ -1369,7 +1371,7 @@ export function BookingDone({
           className="action-button action-confirm min-h-12 w-full"
         >
           <CalendarCheck className="size-4" aria-hidden />
-          {t("booking.track")}
+          {t(variosHorarios ? "booking.track" : "booking.trackOne")}
         </button>
         <button
           type="button"

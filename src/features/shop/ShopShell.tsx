@@ -168,6 +168,7 @@ import { WhatsappConfirmBanner } from "@/features/customer/WhatsappConfirmBanner
 type ShopShellProps = {
   profile: SessionProfile;
   headerActions?: ReactNode;
+  managedShop?: Tables<"barbershops"> | null;
 };
 
 type AvailabilityBlock = ShopBlock;
@@ -264,7 +265,7 @@ function rememberRequestedShop(actorId: string) {
   window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
 }
 
-export function ShopShell({ profile, headerActions }: ShopShellProps) {
+export function ShopShell({ profile, headerActions, managedShop }: ShopShellProps) {
   const device = useDevice();
   useScrollIndicators();
   const { t } = useI18n();
@@ -275,7 +276,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   // em que a pessoa está, a escolha salva no aparelho (por conta) ou, com 2 ou mais lojas e
   // nenhuma escolha, a pergunta "Em qual barbearia…?". Na demonstração não lê nem grava nada.
   const [initialEntry] = useState<ShopEntry>(() =>
-    initialShopEntry({
+    managedShop ? { step: "ready", selected: null } : initialShopEntry({
       actors: profile.shopActors,
       requested: demo ? null : readRequestedShop(),
       saved: demo ? null : readSavedShopActor(profile.user.id),
@@ -289,7 +290,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   // Domínio de uma barbearia em que a pessoa não trabalha: avisa e oferece o endereço certo.
   const [foreignHost, setForeignHost] = useState<{ id: string; name: string } | null>(null);
   useEffect(() => {
-    if (demo) return;
+    if (demo || managedShop) return;
     if (isPlatformApexHost()) return;
     let active = true;
     const decide = (hostShopId: string | null) => {
@@ -330,6 +331,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     memberships: profile.memberships,
     selectedActorId,
     demoShop: demo?.shop ?? null,
+    managedShop,
   });
   const acting: typeof resolvedActing = pendingEntry
     ? { kind: "none", actor: null, shop: null, reason: "no-shop" }
@@ -518,7 +520,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   // "esperam o OK de Ana", como no real).
   const accessCapabilities = capabilities;
   // Barbearias de quem está logado, com o papel em cada uma (troca pelo nome no cabeçalho).
-  const shopChoices = demo
+  const shopChoices = demo || managedShop
     ? []
     : profile.shopActors.map((candidate) => ({
         id: candidate.id,
@@ -528,7 +530,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       }));
   // "Minhas áreas" no menu da conta e a última área usada neste aparelho (fora da demonstração).
   const myAreas = useMyAreas(demo ? null : profile);
-  useRememberArea(!demo && acting.kind !== "none" ? viewerId : null, "shop");
+  useRememberArea(!managedShop && !demo && acting.kind !== "none" ? viewerId : null, "shop");
   const waiting = useWaiting(shop?.id, true);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -1203,6 +1205,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
 
   /** Liga/desliga "aparece para clientes". Erro sobe com frase amigável (nunca a do banco). */
   async function toggleService(row: Tables<"services">): Promise<SaveOutcome> {
+    if (!shop?.id) throw new Error(t("shop.error.shopNotFound"));
     if (demo && powers.ownCatalog && actor?.staff_id && shop) {
       // Parceiro: liga/desliga só no próprio catálogo.
       saveDemoOwnCatalog({
@@ -1257,7 +1260,10 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     const { error: updateError } = await supabase
       .from("services")
       .update({ active: !row.active })
-      .eq("id", row.id);
+      .eq("barbershop_id", shop.id)
+      .eq("id", row.id)
+      .select("id")
+      .single();
     if (updateError) throw new Error(friendlyAuthError(updateError, t("shop.error.toggleService")));
     await loadCatalog();
     return "applied";
@@ -1324,6 +1330,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   }
 
   async function toggleStaff(row: Tables<"staff">): Promise<SaveOutcome> {
+    if (!shop?.id) throw new Error(t("shop.error.shopNotFound"));
     if (demo) {
       if (!canManageTeam) throw new Error(t("shop.error.roleTeam"));
       demo.dispatch({ type: "staff.toggle", id: row.id });
@@ -1345,7 +1352,10 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     const { error: updateError } = await supabase
       .from("staff")
       .update({ active: !row.active })
-      .eq("id", row.id);
+      .eq("barbershop_id", shop.id)
+      .eq("id", row.id)
+      .select("id")
+      .single();
     if (updateError) throw new Error(friendlyAuthError(updateError, t("shop.error.toggleStaff")));
     await loadCatalog();
     return "applied";
@@ -1516,6 +1526,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   }
 
   async function deleteBlock(id: string): Promise<SaveOutcome> {
+    if (!shop?.id) throw new Error(t("shop.error.shopNotFound"));
     try {
       if (demo) {
         // Como no real: quem só cuida da própria agenda remove só os próprios bloqueios.
@@ -1533,6 +1544,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         const { error: deleteError } = await supabase
           .from("availability_blocks")
           .delete()
+          .eq("barbershop_id", shop.id)
           .eq("id", id)
           .eq("staff_id", actor.staff_id);
         if (deleteError) throw deleteError;
@@ -1542,6 +1554,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
         const { error: deleteError } = await supabase
           .from("availability_blocks")
           .delete()
+          .eq("barbershop_id", shop.id)
           .eq("id", id);
         if (deleteError) throw deleteError;
       }
@@ -1793,10 +1806,10 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
     ...(powers.ownProfile && ownStaffRow ? (["perfil"] as const) : []),
     // Equipe e sociedade: todo papel vê "Seu acesso nesta barbearia" (e, quando pode, a saída).
     // Na demonstração também (sociedade fictícia e saída simulada).
-    ...(actor ? (["equipe"] as const) : []),
+    ...(actor || managedShop ? (["equipe"] as const) : []),
     "idioma",
     // Troca de senha: fica em Ajustes, no grupo "Sua conta" (fora da demonstração).
-    ...(!demo ? (["conta"] as const) : []),
+    ...(!demo && !managedShop ? (["conta"] as const) : []),
   ];
   // A aba Ajustes aparece sempre que houver alguma seção permitida ao papel (idioma, no mínimo).
   const canOpenSettings = !!shop && powers.ready && settingsSections.length > 0;
@@ -1841,7 +1854,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
   }
   const teamSectionOpen = settingsSections.includes("equipe");
   // "Ver pedido" (Serviços/Equipe/Horários): leva direto às decisões entre donos.
-  const openApprovals = teamSectionOpen ? () => openTeamSection("team-decisions") : undefined;
+  const openApprovals = teamSectionOpen && !managedShop ? () => openTeamSection("team-decisions") : undefined;
   // Pessoas e papéis, convites e permissões (dono/sócio). Com nome: abre o convite já preenchido.
   const openTeamAccess =
     teamSectionOpen && powers.society
@@ -1969,7 +1982,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
       <TermsUpdateGate
         userId={viewerId}
         disabled={Boolean(demo)}
-        withDpa={powers.ownerLike}
+        withDpa={!managedShop && powers.ownerLike}
         onPendingChange={setEntryTerms}
       />
       <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur-xl px-4 py-3">
@@ -2020,7 +2033,11 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 </div>
                 {/* Selo do papel tocável ("Dono · 50%" + modo da sociedade): abre "Seu acesso".
                     shop_admin antigo: dono legítimo da loja que abriu (antes da equipe existir). */}
-                <RoleAccessButton
+                {managedShop ? (
+                  <a className="inline-flex min-h-11 items-center gap-1 rounded-full px-2 text-sm" href="/platform?aba=barbearias">
+                    <ArrowLeft className="size-4" aria-hidden /> {t(PLATFORM_META.label)}
+                  </a>
+                ) : <RoleAccessButton
                   role={actor?.role ?? "owner"}
                   percent={actor?.ownership_percent}
                   mode={governanceMode}
@@ -2034,7 +2051,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       : undefined
                   }
                   className="mt-0.5"
-                />
+                />}
               </>
             )}
           </div>
@@ -2512,6 +2529,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                 </div>
 
                 <SettingsHub
+                  manterClubeNoPainel={Boolean(managedShop)}
                   sections={settingsSections}
                   section={settingsSection}
                   onSectionChange={setSettingsSection}
@@ -2709,10 +2727,11 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                       );
                     }
                     if (section === "pontos") {
-                      return device !== "celular" ? (
+                      return managedShop || device !== "celular" ? (
                         <LoyaltyAdminPage
                           key={shop.id}
                           profile={effectiveProfile}
+                          managedShop={managedShop}
                           selectedActorId={actor?.id ?? null}
                           embedded
                         />
@@ -2735,7 +2754,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                           {(canManageShopChannels || powers.googleOwn) && (
                             <GoogleConnectionCard
                               shopId={shop.id}
-                              returnPath="/shop?secao=avisos"
+                              returnPath={managedShop ? `/shop?gestao=${managedShop.id}&secao=avisos` : "/shop?secao=avisos"}
                               canCopyWholeShop={powers.googleWholeShop}
                             />
                           )}
@@ -2778,6 +2797,15 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
                           onSave={saveOwnProfile}
                           onUploadPhoto={(file) => uploadCatalogPicture(file, "staff")}
                         />
+                      );
+                    }
+                    if (section === "equipe" && managedShop) {
+                      return (
+                        <TeamInviteContext.Provider value={teamInviteContext}>
+                          <ShopTeamAccessCard shopId={shop.id} canApplyProtected canEditSociety
+                            staff={staff} currentUserId={viewerId} timeZone={shopTimeZone}
+                            onChanged={() => { setGovernanceRevision((v) => v + 1); void loadCatalog(); }} />
+                        </TeamInviteContext.Provider>
                       );
                     }
                     if (section === "equipe" && actor) {

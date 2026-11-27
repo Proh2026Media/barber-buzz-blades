@@ -129,10 +129,12 @@ export function LoyaltyAdminPage({
   profile,
   embedded = false,
   selectedActorId,
+  managedShop,
 }: {
   profile: SessionProfile;
   embedded?: boolean;
   selectedActorId?: string | null;
+  managedShop?: Tables<"barbershops"> | null;
 }) {
   const { t, intlLocale } = useI18n();
   // Mesma regra do painel (lib/auth/shop-acting): a loja escolhida no aparelho por esta conta,
@@ -142,10 +144,11 @@ export function LoyaltyAdminPage({
       resolveShopActing({
         actors: profile.shopActors,
         memberships: profile.memberships,
+        managedShop,
         selectedActorId:
           selectedActorId === undefined ? readSavedShopActor(profile.user.id) : selectedActorId,
       }),
-    [profile, selectedActorId],
+    [profile, selectedActorId, managedShop],
   );
   const actor = acting.actor;
   const shop = acting.shop;

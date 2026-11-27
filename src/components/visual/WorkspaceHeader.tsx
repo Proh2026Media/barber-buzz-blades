@@ -1,22 +1,23 @@
-import { useEffect, useRef, type ReactNode, type HTMLAttributes } from "react";
+import { useLayoutEffect, useRef, type ReactNode, type HTMLAttributes } from "react";
 
 /** Mantém uma única casca e o estado das seções ao redimensionar. */
 export function WorkspaceFrame({ children, ...props }: HTMLAttributes<HTMLDivElement>) {
   const frame = useRef<HTMLDivElement>(null);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const surface = frame.current;
     if (!surface) return;
-    const instalado = window.matchMedia("(display-mode: standalone) and (max-width: 767.98px)");
+    const celular = window.matchMedia("(max-width: 767.98px)");
     let main: HTMLElement | null = null;
     let header: HTMLElement | null = null;
     const acompanharRolagem = () => {
       surface.toggleAttribute("data-conteudo-sob-menu", Boolean(main && main.scrollTop > 1));
     };
     const measure = () => {
-      if (header && instalado.matches) {
-        surface.style.setProperty("--altura-menu-instalado", `${header.offsetHeight}px`);
+      if (header && celular.matches) {
+        const margem = parseFloat(getComputedStyle(header).marginTop) || 0;
+        surface.style.setProperty("--altura-menu-mobile", `${header.offsetHeight + margem}px`);
       } else {
-        surface.style.removeProperty("--altura-menu-instalado");
+        surface.style.removeProperty("--altura-menu-mobile");
       }
       const nav = surface.querySelector<HTMLElement>(":scope > .app-mobile-nav");
       const position = nav && getComputedStyle(nav).position;
@@ -31,8 +32,8 @@ export function WorkspaceFrame({ children, ...props }: HTMLAttributes<HTMLDivEle
     const watch = () => {
       observer.disconnect();
       main?.removeEventListener("scroll", acompanharRolagem);
-      main = instalado.matches ? surface.querySelector(":scope > main") : null;
-      header = instalado.matches ? surface.querySelector(":scope > header") : null;
+      main = celular.matches ? surface.querySelector(":scope > main") : null;
+      header = celular.matches ? surface.querySelector(":scope > header") : null;
       if (header) observer.observe(header, { box: "border-box" });
       main?.addEventListener("scroll", acompanharRolagem, { passive: true });
       acompanharRolagem();
@@ -42,10 +43,10 @@ export function WorkspaceFrame({ children, ...props }: HTMLAttributes<HTMLDivEle
     };
     const childrenObserver = new MutationObserver(watch);
     childrenObserver.observe(surface, { childList: true });
-    instalado.addEventListener("change", watch);
+    celular.addEventListener("change", watch);
     watch();
     return () => {
-      instalado.removeEventListener("change", watch);
+      celular.removeEventListener("change", watch);
       main?.removeEventListener("scroll", acompanharRolagem);
       observer.disconnect();
       childrenObserver.disconnect();

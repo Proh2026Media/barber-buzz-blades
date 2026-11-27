@@ -199,7 +199,7 @@ function ClubSheet(props: ClubProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-end justify-center bg-background/80 p-3 backdrop-blur-md animate-in fade-in duration-200 sm:items-center sm:p-4"
+      className="fixed inset-0 z-[100] flex items-end justify-center bg-background/80 p-3 animate-in fade-in duration-200 sm:items-center sm:p-4"
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}

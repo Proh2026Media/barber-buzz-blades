@@ -6,6 +6,7 @@ import { capabilitiesFor, type ProfessionalActor, type ShopCapabilities } from "
  * - `member`: vínculo de equipe (shop_members). Os poderes vêm das capacidades da loja.
  * - `legacy-admin`: vínculo antigo `shop_admin` (quem abriu a barbearia antes da equipe).
  *   Continua com os poderes de dono de hoje, para ninguém perder acesso.
+ * - `platform-admin`: administrador global na loja explicitamente aberta pela gestão.
  * - `none`: sem vínculo de equipe nem `shop_admin`. Não há loja nem poder nenhum
  *   (nunca cai numa loja vinda de vínculo de cliente).
  */
@@ -22,7 +23,7 @@ type MembershipLike<S> = { role: string; barbershop?: S | null };
 
 export type ShopActing<A, S> =
   | { kind: "member"; actor: A; shop: S | null }
-  | { kind: "legacy-admin"; actor: null; shop: S }
+  | { kind: "legacy-admin" | "platform-admin"; actor: null; shop: S }
   | { kind: "none"; actor: null; shop: null; reason: "platform-admin" | "no-shop" };
 
 /** Dono e sócio valem o mesmo ("Dono · %"); depois Parceiro e Contratado. */
@@ -58,7 +59,14 @@ export function resolveShopActing<S, A extends ActorLike<S>>(input: {
   selectedActorId?: string | null;
   /** Na demonstração a loja é sempre a fictícia. */
   demoShop?: S | null;
+  managedShop?: S | null;
 }): ShopActing<A, S> {
+  if (input.managedShop) {
+    if (input.memberships.some((m) => m.role === "platform_admin")) {
+      return { kind: "platform-admin", actor: null, shop: input.managedShop };
+    }
+    return { kind: "none", actor: null, shop: null, reason: "no-shop" };
+  }
   const actor =
     input.actors.find((candidate) => candidate.id === input.selectedActorId) ??
     input.actors[0] ??
@@ -85,7 +93,7 @@ export function hasShopToOpen<S>(input: {
 }
 
 export type ShopWriteMode =
-  /** Grava direto nas tabelas (só o shop_admin antigo, como sempre foi). */
+  /** Grava direto com as permissões da conta autenticada no banco. */
   | "direct"
   /** Pede a mudança pela governança (aplica ou vai para aprovação dos donos). */
   | "governed"
@@ -178,8 +186,8 @@ export function shopPowers(
   capabilities: ShopCapabilities | null,
 ): ShopPowers {
   if (acting.kind === "none") return { ...NO_POWERS, ready: true };
-  if (acting.kind === "legacy-admin") {
-    // shop_admin antigo: mesmos poderes de dono de hoje (grava direto, sem governança).
+  if (acting.kind === "legacy-admin" || acting.kind === "platform-admin") {
+    // Gestão direta da loja. A conta global também vê a equipe e as áreas administrativas.
     return {
       ready: true,
       ownerLike: true,
@@ -195,9 +203,9 @@ export function shopPowers(
       viewMoney: true,
       manageBranding: true,
       manageShopChannels: true,
-      seeTeam: false,
+      seeTeam: acting.kind === "platform-admin",
       // Sem vínculo de equipe não há cartão de profissional nem sociedade registrada.
-      society: false,
+      society: acting.kind === "platform-admin",
       ownPayments: false,
       ownCatalog: false,
       suggestions: false,

@@ -284,3 +284,18 @@ test("entrada no domínio de uma loja: abre a loja do endereço quando a pessoa 
     selected: "a1",
   });
 });
+
+test("a gestão global usa a loja pedida e a identidade atual, mesmo havendo outro vínculo", () => {
+  const dados = { actors: [actor("dono-a", "owner", shopA)], managedShop: shopB };
+  const gestao = resolveShopActing({ ...dados, memberships: [{ role: "platform_admin" }] });
+  assert.equal(gestao.shop, shopB);
+  assert.equal(gestao.actor, null);
+  const poderes = shopPowers(gestao, null);
+  assert.equal(poderes.writeMode, "direct");
+  assert.ok(poderes.createServices && poderes.manageTeam && poderes.editBusinessHours && poderes.seeTeam);
+  for (const role of ["customer", "shop_admin", "account_manager"]) {
+    const recusado = resolveShopActing({ ...dados, memberships: [{ role }] });
+    assert.equal(recusado.kind, "none");
+    assert.equal(recusado.shop, null);
+  }
+});

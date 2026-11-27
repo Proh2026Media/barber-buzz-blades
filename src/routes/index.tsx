@@ -1,3 +1,6 @@
+import { createIsomorphicFn } from "@tanstack/react-start";
+import { getRequestHost } from "@tanstack/react-start/server";
+import { Abertura } from "@/components/Abertura";
 import { useEffect, useState } from "react";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { resolvePostAuthPath } from "@/lib/auth/session";
@@ -24,13 +27,17 @@ function opensArea() {
   return isPlatformApexHost() || isStandalone();
 }
 
+const dominioInicial = createIsomorphicFn()
+  .server(() => getRequestHost({ xForwardedHost: true }).split(",")[0].trim().toLowerCase().split(":")[0])
+  .client(currentHostname);
+
 export const Route = createFileRoute("/")({
   // SSR ligado para crawlers (verificação OAuth Google) lerem a landing e os links legais.
   beforeLoad: async () => {
     // A sessão fica no navegador: no servidor nunca há perfil (o IndexPage confere depois).
     if (typeof window === "undefined") return;
     const onShopHost = !isPlatformApexHost();
-    if (onShopHost && maybeRedirectToCanonical(await resolveShopFromCurrentHost())) return;
+    if (onShopHost && opensArea() && maybeRedirectToCanonical(await resolveShopFromCurrentHost())) return;
     if (opensArea()) {
       let home = "/auth";
       try {
@@ -48,14 +55,15 @@ export const Route = createFileRoute("/")({
         });
       }
     }
-    if (onShopHost) return { shopHost: currentHostname() };
   },
+  loader: () => dominioInicial(),
   component: IndexPage,
 });
 
 function IndexPage() {
-  const context = Route.useRouteContext() as { shopHost?: string };
-  const [shopHost, setShopHost] = useState<string | null>(context.shopHost ?? null);
+  const host = Route.useLoaderData();
+  const shopHost = host && !isPlatformApexHost(host) ? host : null;
+  const [destinoResolvido, setDestinoResolvido] = useState(false);
   const navigate = useNavigate();
 
   // Primeira carga vinda do servidor (ex.: app instalado abrindo "/"): o beforeLoad rodou sem
@@ -79,31 +87,33 @@ function IndexPage() {
             search: { next: pending.next ?? "", ...(pending.shop ? { shop: pending.shop } : {}) },
             replace: true,
           });
+          return;
         }
+        setDestinoResolvido(true);
       })
       .catch(() => {
-        /* sem sessão legível: continua na landing */
+        if (active) setDestinoResolvido(true);
       });
     return () => {
       active = false;
     };
   }, [navigate]);
 
-  // Na primeira carga renderizada no servidor o endereço só é conhecido no navegador.
   useEffect(() => {
-    if (shopHost || isPlatformApexHost()) return;
-    let active = true;
-    void resolveShopFromCurrentHost().then((resolved) => {
-      if (!active || maybeRedirectToCanonical(resolved)) return;
-      setShopHost(currentHostname());
+    if (!shopHost) return;
+    let atual = true;
+    void resolveShopFromCurrentHost().then((loja) => {
+      if (atual) maybeRedirectToCanonical(loja);
     });
-    return () => {
-      active = false;
-    };
+    return () => { atual = false; };
   }, [shopHost]);
 
-  if (shopHost) {
-    return <ShopLanding host={shopHost} topBar={<SignedInBar />} />;
-  }
-  return <PlatformLanding />;
+  return (
+    <div className={destinoResolvido ? undefined : "entrada-pendente"}>
+      <div className="entrada-espera"><Abertura /></div>
+      <div className="entrada-publica">
+        {shopHost ? <ShopLanding key={shopHost} host={shopHost} topBar={<SignedInBar />} /> : <PlatformLanding />}
+      </div>
+    </div>
+  );
 }

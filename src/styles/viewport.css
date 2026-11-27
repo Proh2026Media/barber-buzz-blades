@@ -146,41 +146,7 @@
     height: auto;
   }
 
-  .arena-workspace:not(.brand-chrome-floating) > header {
-    position: sticky;
-    top: 0;
-    isolation: isolate;
-    background: transparent;
-    border-bottom-color: transparent;
-    box-shadow: none;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
 
-  .arena-workspace:not(.brand-chrome-floating) > main {
-    margin-top: calc(-1 * var(--altura-menu-instalado, 0px));
-    padding-top: calc(var(--altura-menu-instalado, 0px) + 1rem);
-    scroll-padding-top: calc(var(--altura-menu-instalado, 0px) + 1rem);
-  }
-
-  .arena-workspace:not(.brand-chrome-floating) > header::before {
-    content: "";
-    position: absolute;
-    inset: 0 0 -1rem;
-    z-index: -1;
-    pointer-events: none;
-    background: linear-gradient(to bottom, var(--background), color-mix(in srgb, var(--background) 96%, transparent) calc(100% - 2rem), transparent);
-    opacity: 0;
-  }
-
-  .arena-workspace[data-conteudo-sob-menu]:not(.brand-chrome-floating) > header::before {
-    opacity: 1;
-  }
-
-  :root:not([data-keyboard-open="true"]) .customer-workspace:not(.demo-content *) > .app-mobile-nav {
-    position: absolute;
-    bottom: var(--app-floating-bottom) !important;
-  }
 }
 
 /* O iOS suaviza também a faixa logo abaixo da área de status. A superfície
@@ -210,3 +176,68 @@
     font-size: max(1rem, 16px);
   }
 }
+
+/* O conteúdo começa abaixo dos controles, mas pode rolar até a borda da tela.
+   A altura inclui o recorte do aparelho e a margem do cabeçalho flutuante. */
+@media (max-width: 767.98px) {
+  .customer-workspace {
+    position: relative;
+    --app-floating-bottom: max(10px, var(--app-safe-bottom));
+    --recuo-lateral-menu: max(10px, var(--app-safe-left), var(--app-safe-right));
+  }
+  .customer-workspace > .app-mobile-nav,
+  .customer-workspace.brand-chrome-floating > .app-mobile-nav {
+    position: absolute;
+    inset-inline: var(--recuo-lateral-menu);
+    bottom: var(--app-floating-bottom) !important;
+    width: auto;
+    margin: 0 auto;
+  }
+  .arena-workspace:has(> header) > main {
+    margin-top: calc(-1 * var(--altura-menu-mobile, 0px));
+    padding-top: calc(var(--altura-menu-mobile, 0px) + 1rem);
+    scroll-padding-top: calc(var(--altura-menu-mobile, 0px) + 1rem);
+  }
+  .arena-workspace > header,
+  .arena-workspace.brand-chrome-floating > header {
+    z-index: 30;
+    isolation: isolate;
+    background: transparent !important;
+    border-color: transparent;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .arena-workspace[data-conteudo-sob-menu] > header::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 0 0 -0.75rem;
+    pointer-events: none;
+    background: linear-gradient(to bottom, color-mix(in srgb, var(--background) 58%, transparent), color-mix(in srgb, var(--background) 75%, transparent) 55%, color-mix(in srgb, var(--background) 58%, transparent) 78%, transparent);
+  }
+  .arena-workspace.brand-chrome-floating[data-conteudo-sob-menu] > header::before {
+    inset: 0;
+    border-radius: inherit;
+    background: color-mix(in srgb, var(--card) 80%, transparent);
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .arena-workspace[data-conteudo-sob-menu] > header::before { inset: 0; background: var(--card); }
+  }
+}
+
+.abertura-contexto {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  background: #fafafa;
+  color: #343434;
+}
+.dark .abertura-contexto { background: #191919; color: #ededed; }
+.abertura-contexto button { border: 1px solid currentColor; border-radius: 2rem; padding: .65rem 1.25rem; }
+.entrada-espera { display: none; }
+[data-resolver-entrada] .entrada-pendente > .entrada-publica { display: none; }
+[data-resolver-entrada] .entrada-pendente > .entrada-espera { display: block; }

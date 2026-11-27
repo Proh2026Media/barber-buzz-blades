@@ -1,3 +1,4 @@
+import { Abertura } from "@/components/Abertura";
 import { MarcaAurset } from "@/features/auth/acesso/MarcaAurset";
 import { Campo } from "@/features/auth/acesso/Campo";
 import { PainelAcesso } from "@/features/auth/acesso/PainelAcesso";
@@ -487,7 +488,8 @@ function AuthPage() {
   const [phoneUnavailable, setPhoneUnavailable] = useState(false);
   const [phoneResendIn, setPhoneResendIn] = useState(0);
   const shopContext = resolveShopContext(next, shop, demo);
-  const [hostShopSlug, setHostShopSlug] = useState<string | null>(null);
+  const [hostShopSlug, setHostShopSlug] = useState<string | null | undefined>(undefined);
+  const [marcaConsultada, setMarcaConsultada] = useState<string | null>(null);
   const effectiveShopRef = hostShopSlug || (isPlatformApexHost() ? shopContext.shopRef : undefined);
   // A volta do Google no app instalado guarda a função da primeira renderização (antes de achar a
   // loja pelo endereço): ela lê a loja daqui, sempre atual.
@@ -728,8 +730,8 @@ function AuthPage() {
       const resolved = await resolveShopFromCurrentHost();
       if (cancelled) return;
       if (maybeRedirectToCanonical(resolved)) return;
-      if (resolved?.shop_slug) setHostShopSlug(resolved.shop_slug);
-    })();
+      setHostShopSlug(resolved?.shop_slug ?? null);
+    })().catch(() => { if (!cancelled) setHostShopSlug(null); });
     return () => {
       cancelled = true;
     };
@@ -788,7 +790,7 @@ function AuthPage() {
       } catch {
         if (!cancelled) setBrand(fallback);
       } finally {
-        if (!cancelled) setBrandLoading(false);
+        if (!cancelled) { setMarcaConsultada(effectiveShopRef); setBrandLoading(false); }
       }
     })();
     return () => {
@@ -1882,6 +1884,14 @@ function AuthPage() {
         </div>
       </main>
     );
+  }
+
+  if (!shopContext.demo && (!isPlatformApexHost() || effectiveShopRef)) {
+    const aguardando =
+      (!isPlatformApexHost() && hostShopSlug === undefined) ||
+      (!!effectiveShopRef && (brandLoading || marcaConsultada !== effectiveShopRef));
+    if (aguardando) return <Abertura />;
+    if (!brand.shopId) return <Abertura erro={t("shopLanding.errorTitle")} tentar={() => window.location.reload()} />;
   }
 
   const tabs = [

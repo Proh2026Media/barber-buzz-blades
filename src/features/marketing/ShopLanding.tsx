@@ -1,3 +1,4 @@
+import { Abertura } from "@/components/Abertura";
 import { SeloBarbearia } from "@/components/SeloBarbearia";
 import {
   useCallback,
@@ -27,12 +28,13 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { EmptyState, LoadingState, Notice, StatusBadge, type Tone } from "@/components/visual";
+import { EmptyState, Notice, StatusBadge, type Tone } from "@/components/visual";
 import { StaffPhoto } from "@/components/ui/staff-photo";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { brandCornerClass, brandVariables } from "@/lib/shop/branding";
 import { useShopFavicon } from "@/lib/shop/favicon";
+import { BrandRootVariables } from "@/features/shop/BrandRootVariables";
 import { BrandFontFace } from "@/features/shop/BrandFontFace";
 import { PublicBrandFontFace } from "@/features/shop/PublicBrandFontFace";
 import { useAvailabilitySignal } from "@/lib/shop/availability-signal";
@@ -152,40 +154,14 @@ export function ShopLanding({
     };
   }, [load]);
 
-  if (state === "loading") {
-    // Esqueleto com o desenho da página (capa + cartões) e o verbo visível.
-    return (
-      <main className="public-page min-h-dvh bg-background">
-        <div
-          aria-hidden
-          className="shop-hero shop-hero-skeleton px-4 pb-8 pt-[max(1rem,env(safe-area-inset-top))]"
-        >
-          <span className="shop-hero-quarter" />
-          <div className="mx-auto max-w-3xl space-y-4">
-            <span className="block size-12 rounded-[var(--control-radius)] bg-foreground/10" />
-            <span className="mt-8 block h-9 w-2/3 rounded-md bg-foreground/10 motion-safe:animate-pulse" />
-            <span className="block h-4 w-1/2 rounded-md bg-foreground/10 motion-safe:animate-pulse" />
-            <span className="block h-36 rounded-[var(--panel-radius)] bg-foreground/10 motion-safe:animate-pulse" />
-          </div>
-        </div>
-        <div className="mx-auto max-w-3xl px-4 py-6">
-          <LoadingState
-            label={t("shopLanding.loading")}
-            variant="cards"
-            count={2}
-            onRetry={retry}
-          />
-        </div>
-      </main>
-    );
-  }
+  if (state === "loading") return <Abertura />;
   if (state !== "ready" || !data) {
     const missing = state === "missing";
     // "Endereço errado" e "sem internet" com desenhos e saídas diferentes.
     return (
       <>
         {topBar}
-        <main className="public-page flex min-h-dvh items-center justify-center bg-background p-4">
+        <main className="shop-landing public-page flex min-h-dvh items-center justify-center bg-background p-4">
           <EmptyState
             className="public-card w-full max-w-sm"
             status={missing ? "neutral" : "warning"}
@@ -372,7 +348,7 @@ export function ShopLandingView({
     target.focus({ preventScroll: true });
   };
 
-  const style = brandVariables(
+  const style: Record<string, string> = brandVariables(
     shop.primary_color,
     shop.accent_color,
     shop.font_family,
@@ -380,7 +356,7 @@ export function ShopLandingView({
     shop.header_font_weight,
     shop.header_font_style,
     shop.corner_style,
-  ) as CSSProperties;
+  );
   const brandFont: CSSProperties = {
     fontFamily: "var(--brand-font)",
     fontWeight: "var(--brand-header-font-weight)" as CSSProperties["fontWeight"],
@@ -389,6 +365,7 @@ export function ShopLandingView({
 
   const statusBadge = (
     <StatusBadge
+      className="shop-badge"
       tone={statusTone}
       icon={statusIcon}
       live={open.kind === "open"}
@@ -424,9 +401,15 @@ export function ShopLandingView({
         !preview && "brand-page min-h-dvh",
         brandCornerClass(shop.corner_style),
       )}
-      data-tema-loja={(style as Record<string, string>)["--brand-esquema"]}
-      style={style}
+      data-tema-loja={style["--brand-esquema"]}
+      style={style as CSSProperties}
     >
+      {!preview && (
+        <BrandRootVariables vars={{
+          ...style,
+          "--brand-capa-navegador": style["--brand-chao-claro"],
+        }} />
+      )}
       {preview ? (
         <BrandFontFace url={shop.custom_font_url} faces={previewFontFaces} />
       ) : (
@@ -716,7 +699,7 @@ export function ShopLandingView({
       </div>
 
       {!preview && !ctaVisible && (
-        <div className="public-sticky-bar public-card fixed inset-x-0 bottom-0 z-20 border-t border-border p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden">
+        <div className="public-sticky-bar shop-booking-bar fixed z-20 lg:hidden">
           <div className="mx-auto max-w-3xl">
             <BookLink
               slug={shop.slug}

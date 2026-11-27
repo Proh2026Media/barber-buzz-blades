@@ -34,6 +34,7 @@ export function parseAccessNotice(value: unknown): AccessNotice | undefined {
 type Check = (value: string) => boolean;
 
 const REF: Check = (v) => /^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$/.test(v);
+export const idLojaGerenciada = (id: string) => /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(id);
 const ID: Check = (v) => /^[A-Za-z0-9-]{1,64}$/.test(v);
 const DAY: Check = (v) => /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(v);
 const TIME: Check = (v) => /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
@@ -57,6 +58,7 @@ const KNOWN_DESTINATIONS: Record<string, Record<string, Check>> = {
     focus: oneOf("whatsapp"),
   },
   "/shop": {
+    gestao: idLojaGerenciada,
     secao: SLUG,
     // Loja pedida em "Minhas áreas" (id do vínculo de equipe).
     unidade: ID,
@@ -171,6 +173,9 @@ export function decidePostAuthPath(input: {
     return input.access.manager ? next : home;
   }
   if (path === "/auth/mercado-pago") return input.access.shop ? next : home;
+  if (path === "/shop" && new URL(next, BASE).searchParams.has("gestao")) {
+    return input.access.platform ? next : home;
+  }
   if (path === "/shop" || path.startsWith("/shop/")) return input.access.shop ? next : home;
   if (path === "/platform" || path === "/demo") return input.access.platform ? next : home;
   // Páginas comuns conhecidas (política do clube, abrir barbearia).

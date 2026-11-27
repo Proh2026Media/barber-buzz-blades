@@ -127,6 +127,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       // (em sincronia com `useTheme`, `useI18n` e `useDevice`).
       scripts: [
         { children: `(${redirecionarEnderecoAntigo.toString()})();` },
+        { children: `try {
+          if (location.pathname === "/" && (matchMedia("(display-mode: standalone)").matches || navigator.standalone ||
+            ([${JSON.stringify(dominioDaPlataforma)}, "localhost", "127.0.0.1"].includes(location.hostname) && localStorage.getItem("sb-supabasebeauty-auth-token"))))
+            document.documentElement.setAttribute("data-resolver-entrada", "");
+        } catch {}` },
         { children: themeBootstrapScript },
         { children: paletaBootstrapScript },
         { children: themeColorBootstrapScript },
