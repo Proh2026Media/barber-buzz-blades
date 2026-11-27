@@ -1,6 +1,14 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const enUS: Record<MessageKey, string> = {
+  "perfil.capa": "Profile cover",
+  "perfil.adicionarCapa": "Add cover",
+  "perfil.trocarCapa": "Change cover",
+  "perfil.removerCapa": "Remove cover",
+  "perfil.dicaCapa":
+    "Use a landscape photo (16:9), up to 2 MB. The shop cover is used until you add your own.",
+  "perfil.foto": "Add profile photo",
+  "perfil.abrir": "Open my profile",
   "rodizio.mudou": "The turn has changed. Review your professional and time before confirming.",
   "rodizio.painel":
     "On the shop link, we suggest the eligible professional with an opening that day who has waited longest for a booking through rotation. Professionals without one go first. The rotation advances when a suggested booking is confirmed. Direct choices and favorites do not count.",

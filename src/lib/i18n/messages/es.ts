@@ -1,6 +1,14 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const es: Record<MessageKey, string> = {
+  "perfil.capa": "Portada del perfil",
+  "perfil.adicionarCapa": "Añadir portada",
+  "perfil.trocarCapa": "Cambiar portada",
+  "perfil.removerCapa": "Quitar portada",
+  "perfil.dicaCapa":
+    "Usa una foto horizontal (16:9) de hasta 2 MB. Si no añades una, se usa la portada de la barbería.",
+  "perfil.foto": "Añadir foto de perfil",
+  "perfil.abrir": "Abrir mi perfil",
   "rodizio.mudou": "El turno ha cambiado. Revisa el profesional y la hora antes de confirmar.",
   "rodizio.painel":
     "En el enlace general, sugerimos a quien lleva más tiempo sin una reserva por rotación entre quienes realizan el servicio y tienen disponibilidad ese día. Tienen prioridad quienes aún no han recibido ninguna. El turno avanza cuando se confirma la reserva sugerida. Las elecciones directas y los favoritos quedan fuera del recuento.",

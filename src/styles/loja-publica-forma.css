@@ -204,3 +204,38 @@
   :is([role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"]) {
   border-radius: max(var(--detail-radius), calc(var(--window-radius) - 0.25rem - 1px));
 }
+
+/* Perfil público do profissional. A capa mantém a proporção no celular e no computador. */
+.perfil-publico .perfil-conteudo {
+  padding: max(0.75rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+    max(2rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+}
+.perfil-capa {
+  aspect-ratio: 16 / 9;
+  background-color: var(--muted);
+  overflow: hidden;
+}
+.perfil-capa img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.perfil-capa-sem-foto {
+  aspect-ratio: auto;
+  height: clamp(5rem, 14vw, 8rem);
+  background: var(--brand-primary, var(--muted));
+}
+.perfil-retrato {
+  margin-top: -2.25rem;
+  border: 4px solid var(--card);
+  border-radius: 50%;
+  background: var(--card);
+}
+.perfil-publico .perfil-retrato > *,
+.perfil-publico .perfil-miniatura .rounded-full {
+  border-radius: 50%;
+}
+.perfil-miniatura[aria-current="page"] {
+  border-color: currentColor;
+  background: var(--muted);
+}

@@ -432,6 +432,7 @@ export type Database = {
           booking_slug: string | null;
           bio?: string | null;
           avatar_url?: string | null;
+          cover_url?: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -444,6 +445,7 @@ export type Database = {
           booking_slug?: string | null;
           bio?: string | null;
           avatar_url?: string | null;
+          cover_url?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -456,6 +458,7 @@ export type Database = {
           booking_slug?: string | null;
           bio?: string | null;
           avatar_url?: string | null;
+          cover_url?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1634,6 +1637,7 @@ export type Database = {
           accent_color: string | null;
         }[];
       };
+      perfil_publico_profissional: { Args: { p_host: string; p_slug: string }; Returns: Json };
       regras_sugestao_agenda: {
         Args: { p_loja: string; p_host: string; p_barber?: string };
         Returns: Json;

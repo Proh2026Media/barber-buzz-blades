@@ -1,4 +1,14 @@
-import { Camera, Eye, ImageOff, Link2, Loader2, Lock, Plus, Save } from "lucide-react";
+import {
+  Camera,
+  Image as IconeCapa,
+  Eye,
+  ImageOff,
+  Link2,
+  Loader2,
+  Lock,
+  Plus,
+  Save,
+} from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ActionResult,
@@ -97,6 +107,9 @@ export function StaffForm({
   const { t } = useI18n();
   const wide = useDevice() !== "celular";
   const formRef = useRef<HTMLFormElement>(null);
+  const capaRef = useRef<HTMLInputElement>(null);
+  const [capa, setCapa] = useState<string | null>(null);
+  const [erroCapa, setErroCapa] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -118,6 +131,8 @@ export function StaffForm({
     setSlugTouched(Boolean(editing));
     setBio(editing?.bio ?? "");
     setAvatar(editing?.avatar_url ?? null);
+    setCapa(editing?.cover_url ?? null);
+    setErroCapa(null);
     setPhotoError(null);
     setErrors({});
     setState(null);
@@ -139,7 +154,7 @@ export function StaffForm({
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (saving) return;
+    if (saving || uploading) return;
     const found = validate();
     setErrors(found);
     if (Object.keys(found).length) {
@@ -154,6 +169,7 @@ export function StaffForm({
       booking_slug: slugLocked ? (editing?.booking_slug ?? finalSlug) : finalSlug,
       bio: bio.trim() || null,
       avatar_url: avatar,
+      cover_url: capa,
     };
     setState("saving");
     setSubmitError(null);
@@ -180,6 +196,26 @@ export function StaffForm({
     setPhotoToCrop(file);
   }
 
+  async function escolherCapa(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || uploading || saving) return;
+    const erro = validateServiceImage(file);
+    if (erro) {
+      setErroCapa(erro);
+      return;
+    }
+    setErroCapa(null);
+    setUploading(true);
+    try {
+      setCapa(await onUploadPhoto(file));
+    } catch (err) {
+      setErroCapa(err instanceof Error ? err.message : t("shop.error.uploadStaffPhoto"));
+    } finally {
+      setUploading(false);
+    }
+  }
+
   async function applyCropped(file: File) {
     setUploading(true);
     try {
@@ -197,6 +233,13 @@ export function StaffForm({
 
   const previewPanel = (
     <PreviewPanel title={t("catalog.preview.title")} icon={Eye} badge={t("catalog.preview.badge")}>
+      {capa && (
+        <img
+          src={capa}
+          alt={t("perfil.capa")}
+          className="aspect-video w-full rounded-[var(--detail-radius)] object-cover"
+        />
+      )}
       <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3">
         {photoLocked ? (
           <PersonAvatar
@@ -209,9 +252,9 @@ export function StaffForm({
         ) : (
           <button
             type="button"
-            disabled={uploading}
+            disabled={uploading || saving}
             onClick={() => fileRef.current?.click()}
-            aria-label={avatar ? t("catalog.image.changePhoto") : t("catalog.staff.addPhoto")}
+            aria-label={avatar ? t("catalog.image.changePhoto") : t("perfil.foto")}
             className="shrink-0 rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
           >
             <PersonAvatar
@@ -250,12 +293,12 @@ export function StaffForm({
           <div className={cn("flex flex-wrap gap-2", wide && "catalog-form-media")}>
             <button
               type="button"
-              disabled={uploading}
+              disabled={uploading || saving}
               onClick={() => fileRef.current?.click()}
               className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-semibold transition hover:border-primary/40 disabled:opacity-60"
             >
               <Camera className="size-4 text-gold" aria-hidden />
-              {avatar ? t("catalog.image.changePhoto") : t("catalog.staff.addPhoto")}
+              {avatar ? t("catalog.image.changePhoto") : t("perfil.foto")}
             </button>
             {avatar && (
               <button
@@ -276,6 +319,44 @@ export function StaffForm({
               aria-hidden
               onChange={pickFile}
             />
+          </div>
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="action-button min-h-11"
+                disabled={uploading || saving}
+                onClick={() => capaRef.current?.click()}
+              >
+                <IconeCapa className="size-4" aria-hidden />
+                {t(capa ? "perfil.trocarCapa" : "perfil.adicionarCapa")}
+              </button>
+              {capa && (
+                <button
+                  type="button"
+                  className="action-button min-h-11"
+                  disabled={uploading || saving}
+                  onClick={() => setCapa(null)}
+                >
+                  <ImageOff className="size-4" aria-hidden />
+                  {t("perfil.removerCapa")}
+                </button>
+              )}
+            </div>
+            <input
+              type="file"
+              ref={capaRef}
+              accept={SERVICE_IMAGE_ACCEPT}
+              className="sr-only"
+              tabIndex={-1}
+              aria-hidden
+              onChange={escolherCapa}
+            />
+            {erroCapa ? (
+              <FieldMessage tone="error">{erroCapa}</FieldMessage>
+            ) : (
+              <p className="text-xs text-muted-foreground">{t("perfil.dicaCapa")}</p>
+            )}
           </div>
           {photoError ? (
             <FieldMessage tone="error">{photoError}</FieldMessage>

@@ -28,6 +28,7 @@ export type StaffDraft = {
   booking_slug: string;
   bio: string | null;
   avatar_url: string | null;
+  cover_url: string | null;
 };
 
 /** Mudanças à espera dos sócios, por id do serviço/profissional. */

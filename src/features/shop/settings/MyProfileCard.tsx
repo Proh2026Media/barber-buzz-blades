@@ -67,6 +67,13 @@ export function MyProfileCard({
             icon={Eye}
             badge={t("catalog.preview.badge")}
           >
+            {staff.cover_url && (
+              <img
+                src={staff.cover_url}
+                alt={t("perfil.capa")}
+                className="aspect-video w-full rounded-[var(--detail-radius)] object-cover"
+              />
+            )}
             <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3">
               <PersonAvatar
                 name={staff.display_name}
@@ -87,7 +94,13 @@ export function MyProfileCard({
       >
         <div className="space-y-4">
           {link ? (
-            <CopyField label={t("myProfile.link")} value={link} shareTitle={staff.display_name} />
+            <CopyField
+              label={t("myProfile.link")}
+              value={link}
+              href={link}
+              openLabel={t("perfil.abrir")}
+              shareTitle={staff.display_name}
+            />
           ) : null}
           <button
             type="button"

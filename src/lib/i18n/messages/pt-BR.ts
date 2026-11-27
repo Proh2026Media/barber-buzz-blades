@@ -1,5 +1,13 @@
 /** Dicionário principal (fonte). Toda chave nova nasce aqui, em pt-BR. */
 export const ptBR = {
+  "perfil.capa": "Capa do perfil",
+  "perfil.adicionarCapa": "Adicionar capa",
+  "perfil.trocarCapa": "Trocar capa",
+  "perfil.removerCapa": "Remover capa",
+  "perfil.dicaCapa":
+    "Use uma foto horizontal (16:9), de até 2 MB. Sem capa própria, o perfil usa a capa da barbearia.",
+  "perfil.foto": "Adicionar foto de perfil",
+  "perfil.abrir": "Abrir meu perfil",
   "rodizio.mudou": "A vez mudou. Confira o profissional e o horário antes de confirmar.",
   "rodizio.painel":
     "No link geral, sugerimos quem está há mais tempo sem receber uma reserva pelo rodízio, entre quem faz o serviço e tem vaga no dia. Quem ainda não recebeu entra primeiro. A vez só muda quando o cliente confirma a reserva sugerida. Escolhas diretas e favoritos ficam fora da contagem.",

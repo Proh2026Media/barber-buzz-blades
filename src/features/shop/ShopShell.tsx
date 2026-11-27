@@ -1278,6 +1278,7 @@ export function ShopShell({ profile, headerActions, managedShop }: ShopShellProp
         active: editingStaff?.active ?? true,
         bio: draft.bio,
         avatar_url: draft.avatar_url,
+        cover_url: draft.cover_url,
       };
       if (demo) {
         if (!canManageTeam) throw new Error(t("shop.error.roleTeam"));
@@ -1365,6 +1366,7 @@ export function ShopShell({ profile, headerActions, managedShop }: ShopShellProp
       display_name: draft.display_name,
       bio: draft.bio,
       avatar_url: powers.ownPhoto ? draft.avatar_url : own.avatar_url,
+      cover_url: powers.ownPhoto ? draft.cover_url : own.cover_url,
     };
     if (demo) {
       demo.dispatch({

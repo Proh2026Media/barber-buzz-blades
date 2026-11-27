@@ -1,6 +1,14 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const ptPT: Record<MessageKey, string> = {
+  "perfil.capa": "Capa do perfil",
+  "perfil.adicionarCapa": "Adicionar capa",
+  "perfil.trocarCapa": "Alterar capa",
+  "perfil.removerCapa": "Remover capa",
+  "perfil.dicaCapa":
+    "Use uma fotografia horizontal (16:9) até 2 MB. Sem capa própria, o perfil usa a capa da barbearia.",
+  "perfil.foto": "Adicionar fotografia de perfil",
+  "perfil.abrir": "Abrir o meu perfil",
   "rodizio.mudou": "A vez mudou. Confira o profissional e a hora antes de confirmar.",
   "rodizio.painel":
     "Na ligação geral, sugerimos quem aguarda há mais tempo uma marcação por rotação, entre quem presta o serviço e tem vaga nesse dia. Quem nunca recebeu tem prioridade. A rotação avança quando o cliente confirma a sugestão. Escolhas diretas e favoritos ficam fora da contagem.",

@@ -581,7 +581,20 @@ export function ShopLandingView({
                           }
                         />
                         <div className="min-w-0 flex-1 space-y-1.5">
-                          <h3 className="font-bold leading-snug">{member.name}</h3>
+                          <h3 className="font-bold leading-snug">
+                            {member.booking_slug && !preview ? (
+                              <Link
+                                to="/$barberSlug"
+                                params={{ barberSlug: member.booking_slug }}
+                                className="relative z-10 inline-flex min-h-11 items-center gap-1 rounded-[var(--button-radius)] focus-visible:outline-2"
+                              >
+                                {member.name}
+                                <ChevronRight className="size-4" aria-hidden />
+                              </Link>
+                            ) : (
+                              member.name
+                            )}
+                          </h3>
                           {(showToday || !bookable) && (
                             <MemberDayBadge state={showToday ? day : "noOnline"} />
                           )}

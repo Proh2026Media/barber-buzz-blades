@@ -1,3 +1,4 @@
+import { PerfilProfissional, type PerfilPublico } from "@/features/marketing/PerfilProfissional";
 import { createFileRoute, Link, redirect, notFound } from "@tanstack/react-router";
 import { CalendarSearch, UserX, Users } from "lucide-react";
 import { Abertura } from "@/components/Abertura";
@@ -42,6 +43,13 @@ export const Route = createFileRoute("/$barberSlug")({
       throw notFound();
     }
 
+    const perfil = await supabase.rpc("perfil_publico_profissional", {
+      p_host: window.location.hostname,
+      p_slug: raw,
+    });
+    if (perfil.error) throw new Error(perfil.error.message);
+    if (perfil.data) return { perfil: perfil.data as unknown as PerfilPublico };
+    // Uma equipe privada ou um endereço antigo conserva o fluxo de agendamento existente.
     const { data, error } = await supabase.rpc("shop_has_booking_slug", {
       p_shop_id: resolution.shop_id,
       p_booking_slug: raw,
@@ -61,11 +69,20 @@ export const Route = createFileRoute("/$barberSlug")({
     });
   },
   pendingComponent: Abertura,
-  component: BarberLinkMissing,
+  component: PaginaDoBarbeiro,
   // A 404 desta rota fica nela mesma: a rota é só do navegador (ssr: false), e a 404 da raiz,
   // desenhada já na hidratação, não batia com o HTML do servidor (aviso de hidratação).
   notFoundComponent: NotFoundPage,
 });
+
+function PaginaDoBarbeiro() {
+  const { perfil } = Route.useRouteContext();
+  return perfil ? (
+    <PerfilProfissional key={perfil.loja.id + perfil.profissional.slug} perfil={perfil} />
+  ) : (
+    <BarberLinkMissing />
+  );
+}
 
 function BarberLinkMissing() {
   const { t } = useI18n();
