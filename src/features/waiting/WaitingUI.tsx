@@ -194,6 +194,7 @@ export function WaitingCards({
                       <span aria-hidden>·</span>
                       <span className="inline-flex items-center gap-1.5">
                         <PersonAvatar
+                          profissional
                           name={staffName}
                           src={member?.avatar_url}
                           seed={w.staff_id}
@@ -312,6 +313,7 @@ export function WaitingCards({
                 <span className="font-semibold">{day}</span>
                 <span className="flex items-center gap-1.5 text-muted-foreground">
                   <PersonAvatar
+                    profissional
                     name={staffName}
                     src={member?.avatar_url}
                     seed={w.staff_id}

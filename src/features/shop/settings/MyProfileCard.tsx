@@ -76,6 +76,7 @@ export function MyProfileCard({
             )}
             <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3">
               <PersonAvatar
+                profissional
                 name={staff.display_name}
                 src={staff.avatar_url}
                 seed={staff.id}

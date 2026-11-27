@@ -423,6 +423,7 @@ function WeeklyBreaksEditor({
               label: member.display_name,
               media: (
                 <PersonAvatar
+                  profissional
                   name={member.display_name}
                   src={member.avatar_url}
                   seed={member.id}
@@ -543,6 +544,7 @@ function WeeklyBreaksEditor({
                   <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
                     {rule.staff_id ? (
                       <PersonAvatar
+                        profissional
                         name={nameOf(rule.staff_id)}
                         src={staff.find((member) => member.id === rule.staff_id)?.avatar_url}
                         seed={rule.staff_id}

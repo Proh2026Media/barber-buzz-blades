@@ -173,6 +173,7 @@ export function BlocksCard({
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
                 {block.staffId ? (
                   <PersonAvatar
+                    profissional
                     name={block.staffName ?? ""}
                     src={member?.avatar_url}
                     seed={block.staffId}

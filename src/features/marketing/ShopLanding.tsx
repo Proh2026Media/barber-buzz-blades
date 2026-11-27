@@ -554,10 +554,10 @@ export function ShopLandingView({
                       <div className="flex items-start gap-3">
                         <StaffPhoto
                           src={member.avatar_url}
-                          className={cn("size-14 rounded-full", !bookable && "opacity-70")}
+                          className={cn("size-14 retrato-profissional", !bookable && "opacity-70")}
                           fallback={
                             <span
-                              className="flex size-14 shrink-0 items-center justify-center rounded-full bg-muted text-lg font-bold"
+                              className="flex size-14 shrink-0 items-center justify-center retrato-profissional bg-muted text-lg font-bold"
                               aria-hidden
                             >
                               {member.name.slice(0, 1).toUpperCase()}

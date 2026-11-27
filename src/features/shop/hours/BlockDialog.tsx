@@ -327,6 +327,7 @@ export function BlockDialog({
           </p>
           <span className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-3 text-sm font-semibold">
             <PersonAvatar
+              profissional
               name={ownStaff.display_name}
               src={ownStaff.avatar_url}
               seed={ownStaff.id}
@@ -349,6 +350,7 @@ export function BlockDialog({
               label: member.display_name,
               media: (
                 <PersonAvatar
+                  profissional
                   name={member.display_name}
                   src={member.avatar_url}
                   seed={member.id}

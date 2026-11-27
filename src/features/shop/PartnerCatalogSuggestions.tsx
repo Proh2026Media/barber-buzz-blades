@@ -280,6 +280,7 @@ export function PartnerCatalogSuggestions({
             >
               <div className="flex items-center gap-3">
                 <PersonAvatar
+                  profissional
                   name={fromName}
                   src={row.fromAvatar}
                   seed={row.from_staff_id}

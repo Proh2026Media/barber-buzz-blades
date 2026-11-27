@@ -1,3 +1,4 @@
+import { DescricaoServico } from "@/components/ui/DescricaoServico";
 import {
   Camera,
   Check,
@@ -55,6 +56,7 @@ import { FotoServico } from "@/components/ui/FotoServico";
 import {
   modelosDeServico,
   fotoDoModelo,
+  descricaoDoServico,
   normalizarServico,
   ilustracaoDoServico,
   lerIlustracoes,
@@ -419,7 +421,7 @@ export function ServiceForm({
         onClick={() => setPickerOpen((value) => !value)}
         aria-label={t("catalog.service.changeImage")}
         aria-expanded={pickerOpen}
-        className="relative grid size-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-muted text-gold ring-offset-2 transition hover:ring-2 hover:ring-primary/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+        className="relative grid size-14 shrink-0 place-items-center overflow-hidden rounded-[var(--detail-radius)] bg-muted text-gold ring-offset-2 transition hover:ring-2 hover:ring-primary/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
       >
         <FotoServico nome={name} icone={icon} className="size-full" />
       </button>
@@ -432,11 +434,7 @@ export function ServiceForm({
         >
           {shownName}
         </span>
-        {description.trim() ? (
-          <span className="line-clamp-2 block text-xs text-muted-foreground">
-            {description.trim()}
-          </span>
-        ) : null}
+        <DescricaoServico nome={name} descricao={description} />
         <span className="flex flex-wrap items-center gap-1.5">
           <Tag icon={Clock3}>{durationLabel(safeDuration)}</Tag>
           <span className="text-sm font-bold tabular-nums">
@@ -665,7 +663,9 @@ export function ServiceForm({
                 {...props}
                 value={description}
                 onChange={(event) => setDescription(event.target.value.slice(0, DESCRIPTION_MAX))}
-                placeholder={t("catalog.service.descriptionPlaceholder")}
+                placeholder={
+                  descricaoDoServico(name, null, t) || t("catalog.service.descriptionPlaceholder")
+                }
                 rows={3}
                 maxLength={DESCRIPTION_MAX}
                 className="w-full resize-y rounded-xl border border-border bg-background px-3 py-2 text-sm"

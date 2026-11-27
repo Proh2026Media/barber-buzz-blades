@@ -113,6 +113,7 @@ export function PerfilProfissional({ perfil }: { perfil: PerfilPublico }) {
           <div className="perfil-apresentacao min-w-0">
             <div className="flex min-w-0 items-center gap-3 sm:gap-4">
               <PersonAvatar
+                profissional
                 className="perfil-retrato shrink-0"
                 size="xl"
                 name={profissional.nome}

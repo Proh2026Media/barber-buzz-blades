@@ -355,7 +355,7 @@ export function SettingsHub({
       const own = overview.ownProfile;
       return (
         <>
-          <PersonAvatar name={own.name} src={own.avatarUrl} seed={own.id} size="xs" />
+          <PersonAvatar profissional name={own.name} src={own.avatarUrl} seed={own.id} size="xs" />
           <span className="min-w-0 max-w-full truncate text-xs font-semibold text-muted-foreground">
             {own.link ? readableLink(own.link) : own.name}
           </span>
@@ -374,7 +374,13 @@ export function SettingsHub({
     if (id === "aparencia" && settings) {
       return (
         <>
-          <LogoChip tema={settings} lojaId={settings.barbershop_id} nome={settings.display_name || overview?.shopName} logoUrl={settings.logo_url} background={settings.logo_background_color} />
+          <LogoChip
+            tema={settings}
+            lojaId={settings.barbershop_id}
+            nome={settings.display_name || overview?.shopName}
+            logoUrl={settings.logo_url}
+            background={settings.logo_background_color}
+          />
           <ColorDots
             primary={normalizeBrandColor(settings.primary_color, DEFAULT_PRIMARY_COLOR)}
             accent={normalizeBrandColor(settings.accent_color, DEFAULT_ACCENT_COLOR)}

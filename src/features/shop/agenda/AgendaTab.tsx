@@ -913,6 +913,7 @@ export function AgendaTab({
                         label: member.display_name,
                         media: (
                           <PersonAvatar
+                            profissional
                             name={member.display_name}
                             src={member.avatar_url}
                             seed={member.id}
@@ -1271,6 +1272,7 @@ export function AgendaTab({
           >
             <DialogTitle className="flex min-h-11 items-center gap-2 pe-12 ps-1 text-base font-bold">
               <PersonAvatar
+                profissional
                 name={boardRow.staff?.display_name ?? t("shop.staffFallback")}
                 src={staffById.get(boardRow.staff_id)?.avatar_url}
                 seed={boardRow.staff_id}

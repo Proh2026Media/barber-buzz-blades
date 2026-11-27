@@ -206,10 +206,13 @@
 }
 
 /* Vitrines da loja e do profissional usam a mesma identidade e o mesmo catálogo. */
+.foto-servico,
+.retrato-profissional {
+  border-radius: var(--detail-radius);
+}
 .foto-servico-vitrine {
   width: clamp(4.25rem, 17vw, 6rem);
   aspect-ratio: 1;
-  border-radius: max(var(--detail-radius), calc(var(--panel-radius) - 0.5rem - 1px));
 }
 .perfil-capa {
   overflow: hidden;
@@ -225,9 +228,11 @@
   border: 3px solid var(--card);
   background: var(--card);
 }
-.perfil-publico .perfil-retrato,
-.perfil-publico .perfil-retrato > * {
-  border-radius: 50%;
+.perfil-publico .perfil-retrato {
+  border-radius: var(--control-radius);
+}
+.perfil-publico .perfil-retrato > :first-child {
+  border-radius: max(0px, calc(var(--control-radius) - 3px));
 }
 @media (min-width: 768px) {
   .perfil-hero-conteudo:has(.perfil-capa) {

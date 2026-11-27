@@ -347,6 +347,7 @@ export function ServicesTab({
         <span className="flex gap-0.5" aria-hidden>
           {doers.slice(0, 4).map(({ member }) => (
             <PersonAvatar
+              profissional
               key={member.id}
               name={member.display_name}
               src={member.avatar_url}
@@ -453,7 +454,7 @@ export function ServicesTab({
           <>
             <span
               className={cn(
-                "grid size-10 shrink-0 place-items-center overflow-hidden rounded-xl bg-muted text-gold",
+                "grid size-10 shrink-0 place-items-center overflow-hidden rounded-[var(--detail-radius)] bg-muted text-gold",
                 !service.active && "opacity-55 grayscale",
               )}
             >
@@ -670,7 +671,7 @@ export function ServicesTab({
                 openLabel={t("shop.editAria", { name: service.name })}
                 media={
                   <span
-                    className={`grid shrink-0 place-items-center overflow-hidden rounded-xl bg-muted text-gold ${view === "grid" ? "size-12" : "size-10"}`}
+                    className={`grid shrink-0 place-items-center overflow-hidden rounded-[var(--detail-radius)] bg-muted text-gold ${view === "grid" ? "size-12" : "size-10"}`}
                   >
                     <FotoServico nome={service.name} icone={service.icon} className="size-full" />
                   </span>
@@ -748,7 +749,7 @@ export function ServicesTab({
         summary={
           deleteTarget ? (
             <span className="flex items-center gap-3">
-              <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-xl bg-muted text-gold">
+              <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-[var(--detail-radius)] bg-muted text-gold">
                 <FotoServico
                   nome={deleteTarget.name}
                   icone={deleteTarget.icon}

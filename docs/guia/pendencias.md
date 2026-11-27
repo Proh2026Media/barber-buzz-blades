@@ -1,5 +1,7 @@
 # Pendências — lista única e priorizada
 
+**27/11/2026.** Descrições dos serviços e cantos configuráveis nos retratos profissionais e nas miniaturas da vitrine e do agendamento.
+
 **Feito em 27/11/2026.** Miniaturas dos serviços com uma ilustração por vez, personalização por seção e ícone de reserva para foto indisponível.
 
 **Acesso rápido em 27/11/2026.** O titular confirmou o Face ID no iPhone físico da Loja Teste B. O fluxo passou a resolver o estabelecimento pelo domínio canônico, inclusive quando a loja usa domínio próprio. [Configuração da autenticação](../../integrations/auth-lojas/README.md).

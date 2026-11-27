@@ -243,6 +243,7 @@ export function StaffForm({
       <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3">
         {photoLocked ? (
           <PersonAvatar
+            profissional
             name={shownName}
             src={avatar}
             size="lg"
@@ -258,6 +259,7 @@ export function StaffForm({
             className="shrink-0 rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
           >
             <PersonAvatar
+              profissional
               name={shownName}
               src={avatar}
               size="lg"

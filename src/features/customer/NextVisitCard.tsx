@@ -218,6 +218,7 @@ export function NextVisitCard({
             </p>
             <p className="flex items-center gap-2 text-sm text-muted-foreground">
               <PersonAvatar
+                profissional
                 name={visit.staffName}
                 src={visit.staffPhoto}
                 seed={visit.staffId ?? undefined}

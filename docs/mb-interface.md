@@ -323,6 +323,8 @@ Não usar emojis como único identificador de ação, ilustrações que sugiram 
 
 ## 4. Linguagem, orientação e acessibilidade
 
+O retrato do profissional e a miniatura do serviço usam os cantos da loja. As iniciais ou o ícone que substituem uma foto ocupam o mesmo contorno.
+
 Use os ícones do catálogo do sistema nas ilustrações e nos controles. Cada miniatura de serviço mostra uma foto ou um ícone por vez. Quando uma foto falha, o ícone correspondente ocupa o mesmo espaço. A loja pode definir um padrão do serviço e substituí-lo na página inicial, no perfil profissional ou no agendamento. A personalização de uma seção preserva as demais.
 
 ### Mostrar em vez de explicar (diretriz do dono, 05/10/2026)

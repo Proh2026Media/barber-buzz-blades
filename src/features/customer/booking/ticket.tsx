@@ -239,6 +239,7 @@ export function AppointmentTicket({
             </span>
           ) : (
             <PersonAvatar
+              profissional
               name={data.staffName}
               src={data.staffPhoto}
               seed={data.staffId ?? undefined}

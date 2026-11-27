@@ -1,6 +1,7 @@
 import {
   ilustracaoDoServico,
   lerIlustracoes,
+  descricaoDoServico,
   modeloDaFoto,
   modeloDoServico,
   fotoDoModelo,
@@ -193,4 +194,15 @@ test("fotos de exemplo respeitam o nome, a escolha explícita e a ilustração e
     ilustracaoDoServico("Corte", secoes.agendamento),
     "/images/servicos-modelo/corte.webp",
   );
+});
+
+test("a descrição da barbearia precede o modelo e serviços desconhecidos mantêm seu texto próprio", () => {
+  const traduzir = (chave: string) => "texto " + chave;
+  assert.equal(descricaoDoServico("Corte", "  Corte à tesoura.  ", traduzir), "Corte à tesoura.");
+  assert.equal(
+    descricaoDoServico("Cabelo + Barba", "   ", traduzir),
+    "texto modelo.descricao.cabelo-e-barba",
+  );
+  assert.equal(descricaoDoServico("Pacote pessoal", null, traduzir), "");
+  assert.equal(descricaoDoServico("Pacote pessoal", "Duas sessões.", traduzir), "Duas sessões.");
 });

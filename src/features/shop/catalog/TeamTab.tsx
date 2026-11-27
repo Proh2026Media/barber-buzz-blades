@@ -680,6 +680,7 @@ export function TeamTab({
           className="catalog-table-item flex min-w-0 items-center gap-3 rounded-xl text-left transition hover:bg-muted/30"
         >
           <PersonAvatar
+            profissional
             name={member.display_name}
             src={member.avatar_url}
             seed={member.id}
@@ -897,6 +898,7 @@ export function TeamTab({
               openLabel={t("shop.editAria", { name: member.display_name })}
               media={
                 <PersonAvatar
+                  profissional
                   name={member.display_name}
                   src={member.avatar_url}
                   seed={member.id}
@@ -980,6 +982,7 @@ export function TeamTab({
           deleteTarget ? (
             <span className="flex items-center gap-3">
               <PersonAvatar
+                profissional
                 name={deleteTarget.display_name}
                 src={deleteTarget.avatar_url}
                 seed={deleteTarget.id}

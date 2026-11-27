@@ -80,6 +80,17 @@ const modelosPorNome = new Map(
   modelosDeServico.flatMap((m) => m.nomes.map((nome) => [normalizarServico(nome), m] as const)),
 );
 export const modeloDoServico = (nome: string) => modelosPorNome.get(normalizarServico(nome));
+/** O texto da barbearia prevalece. Nomes sem modelo exigem uma descrição própria. */
+export function descricaoDoServico(
+  nome: string,
+  cadastrada: string | null | undefined,
+  traduzir: (chave: `modelo.descricao.${Modelo["id"]}`) => string,
+): string {
+  const texto = cadastrada?.trim();
+  if (texto) return texto;
+  const modelo = modeloDoServico(nome);
+  return modelo ? traduzir(`modelo.descricao.${modelo.id}`) : "";
+}
 const modelosPorFoto = new Map(modelosDeServico.map((m) => [fotoDoModelo(m), m]));
 export const modeloDaFoto = (foto?: string | null) => (foto ? modelosPorFoto.get(foto) : undefined);
 

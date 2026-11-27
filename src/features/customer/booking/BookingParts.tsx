@@ -1,3 +1,4 @@
+import { DescricaoServico } from "@/components/ui/DescricaoServico";
 import {
   ArrowDown,
   ArrowLeft,
@@ -276,16 +277,7 @@ export function ServiceChoices<S extends ServicoVisivel>({
               <span className="brand-content-title line-clamp-2 block break-normal text-sm font-bold hyphens-auto">
                 {service.name}
               </span>
-              {service.description ? (
-                <span
-                  className={cn(
-                    "block text-xs text-muted-foreground",
-                    view === "list" ? "line-clamp-1" : "line-clamp-2",
-                  )}
-                >
-                  {service.description}
-                </span>
-              ) : null}
+              <DescricaoServico nome={service.name} descricao={service.description} />
               <ServiceFacts terms={terms} formatMoney={formatMoney} />
               {selected && suggested ? (
                 <StatusBadge
@@ -327,6 +319,7 @@ export function ServiceSummary({
       />
       <span className="min-w-0 flex-1 space-y-1">
         <span className="block break-normal text-sm font-bold hyphens-auto">{service.name}</span>
+        <DescricaoServico nome={service.name} descricao={service.description} />
         <ServiceFacts terms={terms} formatMoney={formatMoney} />
         {suggested ? (
           <StatusBadge tone="highlight" icon={Sparkles} label={t("booking.suggested")} size="sm" />
@@ -410,6 +403,7 @@ export function StaffChoices({
         const favorite = favoriteId === member.id;
         const avatar = (
           <PersonAvatar
+            profissional
             name={member.display_name}
             src={member.avatar_url}
             seed={member.id}
@@ -488,6 +482,7 @@ export function StaffSummary({
         <IconTile icon={Users} size="md" tone="muted" />
       ) : (
         <PersonAvatar
+          profissional
           name={member.display_name}
           src={member.avatar_url}
           seed={member.id}

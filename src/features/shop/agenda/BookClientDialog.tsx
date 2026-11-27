@@ -894,6 +894,7 @@ export function BookClientDialog({
                         label: row.display_name,
                         media: (
                           <PersonAvatar
+                            profissional
                             name={row.display_name}
                             src={row.avatar_url}
                             seed={row.id}
@@ -1066,6 +1067,7 @@ export function BookClientDialog({
                           {member ? (
                             <>
                               <PersonAvatar
+                                profissional
                                 name={member.display_name}
                                 src={member.avatar_url}
                                 seed={member.id}

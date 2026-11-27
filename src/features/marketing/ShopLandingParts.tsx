@@ -1,3 +1,4 @@
+import { DescricaoServico } from "@/components/ui/DescricaoServico";
 import { useEffect, useRef, useState, type ReactNode, type Ref } from "react";
 import { emDominioDeLoja } from "@/lib/auth/agendamento-rapido";
 import { Link } from "@tanstack/react-router";
@@ -253,10 +254,10 @@ export function TodayCard({
         >
           <StaffPhoto
             src={next.member.avatar_url}
-            className="size-11 rounded-full"
+            className="size-11 retrato-profissional"
             fallback={
               <span
-                className="flex size-11 shrink-0 items-center justify-center rounded-full bg-muted text-base font-bold"
+                className="flex size-11 shrink-0 items-center justify-center retrato-profissional bg-muted text-base font-bold"
                 aria-hidden
               >
                 {next.member.name.slice(0, 1).toUpperCase()}
@@ -433,9 +434,7 @@ export function ServiceRow({
       <FotoServico nome={service.name} icone={service.icon} className="foto-servico-vitrine" />
       <span className="flex min-w-0 flex-1 flex-col items-start gap-1.5 py-1">
         <strong className="leading-snug [overflow-wrap:anywhere]">{service.name}</strong>
-        {service.description && (
-          <span className="text-xs leading-snug text-muted-foreground">{service.description}</span>
-        )}
+        <DescricaoServico nome={service.name} descricao={service.description} />
         <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <Tag className="shop-badge" icon={Clock3}>
             {t("shopLanding.minutes", { n: service.duration_minutes })}
