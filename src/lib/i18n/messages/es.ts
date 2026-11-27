@@ -1,6 +1,13 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const es: Record<MessageKey, string> = {
+  "midia.secao": "Apariencia por sección",
+  "midia.geral": "Predeterminado del servicio",
+  "midia.loja": "Página de la barbería",
+  "midia.profissional": "Perfil del profesional",
+  "midia.agendamento": "Reserva",
+  "midia.restaurar": "Restablecer",
+  "midia.galeria": "Fotos e iconos",
   "modelo.fotos": "Fotos sugeridas",
   "modelo.acabamento": "Perfilado de nuca",
   "modelo.nasal": "Depilación nasal",

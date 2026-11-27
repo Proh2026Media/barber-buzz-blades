@@ -1,3 +1,4 @@
+import { lerIlustracoes } from "@/lib/shop/modelos-servico";
 import type { RequestAppearanceChanges, ShopAppearanceSettings } from "@/lib/shop/branding";
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import {
@@ -218,7 +219,7 @@ export function LandingEditor<S extends ShopAppearanceSettings>({
             description: row.description ?? "",
             duration_minutes: row.duration_minutes,
             price_cents: row.price_cents,
-            icon: row.icon ?? null,
+            icon: lerIlustracoes(row.midia_secoes).loja ?? row.icon ?? null,
           })),
       });
       return;
@@ -518,7 +519,10 @@ export function LandingEditor<S extends ShopAppearanceSettings>({
                   label: t("landingEditor.modeFull"),
                   description: t("landingEditor.enabledHint"),
                   media: (
-                    <PageSketch tema={settings} lojaId={shopId} nome={settings.display_name || shopSlug}
+                    <PageSketch
+                      tema={settings}
+                      lojaId={shopId}
+                      nome={settings.display_name || shopSlug}
                       full
                       blocks={blocks}
                       photo={photo}
@@ -531,7 +535,10 @@ export function LandingEditor<S extends ShopAppearanceSettings>({
                   value: "brand",
                   label: t("landingEditor.modeBrand"),
                   media: (
-                    <PageSketch tema={settings} lojaId={shopId} nome={settings.display_name || shopSlug}
+                    <PageSketch
+                      tema={settings}
+                      lojaId={shopId}
+                      nome={settings.display_name || shopSlug}
                       full={false}
                       photo={photo}
                       logoUrl={settings.logo_url}
@@ -792,7 +799,11 @@ export function LandingEditor<S extends ShopAppearanceSettings>({
               setError(null);
               setResult(null);
             }}
-            saveLabel={problem ? t("landingEditor.fixToSave") : t(requestChanges ? "plat.appearance.submit" : "landingEditor.save")}
+            saveLabel={
+              problem
+                ? t("landingEditor.fixToSave")
+                : t(requestChanges ? "plat.appearance.submit" : "landingEditor.save")
+            }
           />
         </form>
 
@@ -808,7 +819,12 @@ export function LandingEditor<S extends ShopAppearanceSettings>({
           </p>
           {viewportPreview && previewData ? (
             <DevicePreview>
-              <ShopLandingView data={previewData} previewFontFaces={settings.custom_font_faces} preview viewportPreview />
+              <ShopLandingView
+                data={previewData}
+                previewFontFaces={settings.custom_font_faces}
+                preview
+                viewportPreview
+              />
             </DevicePreview>
           ) : (
             <div
@@ -816,7 +832,11 @@ export function LandingEditor<S extends ShopAppearanceSettings>({
               className="relative max-h-[70dvh] overflow-y-auto rounded-2xl border border-border shadow-sm tablet:max-h-[calc(100dvh-14rem)]"
             >
               {previewData ? (
-                <ShopLandingView data={previewData} previewFontFaces={settings.custom_font_faces} preview />
+                <ShopLandingView
+                  data={previewData}
+                  previewFontFaces={settings.custom_font_faces}
+                  preview
+                />
               ) : previewFailed ? (
                 <EmptyState
                   variant="plain"

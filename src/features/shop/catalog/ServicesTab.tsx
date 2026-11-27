@@ -30,7 +30,7 @@ import {
   Tag,
   type DataListColumn,
 } from "@/components/visual";
-import { ServiceIcon } from "@/components/ui/service-icon";
+import { FotoServico } from "@/components/ui/FotoServico";
 import { useViewportAtLeast } from "@/lib/device";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -457,11 +457,7 @@ export function ServicesTab({
                 !service.active && "opacity-55 grayscale",
               )}
             >
-              <ServiceIcon
-                icon={service.icon}
-                className="size-5"
-                imageClassName="size-10 object-cover !rounded-none !p-0"
-              />
+              <FotoServico nome={service.name} icone={service.icon} className="size-full" />
             </span>
             <span className="brand-content-title min-w-0 truncate text-sm font-bold">
               {service.name}
@@ -676,11 +672,7 @@ export function ServicesTab({
                   <span
                     className={`grid shrink-0 place-items-center overflow-hidden rounded-xl bg-muted text-gold ${view === "grid" ? "size-12" : "size-10"}`}
                   >
-                    <ServiceIcon
-                      icon={service.icon}
-                      className="size-5"
-                      imageClassName={`${view === "grid" ? "size-12" : "size-10"} object-cover !rounded-none !p-0`}
-                    />
+                    <FotoServico nome={service.name} icone={service.icon} className="size-full" />
                   </span>
                 }
                 title={service.name}
@@ -757,10 +749,10 @@ export function ServicesTab({
           deleteTarget ? (
             <span className="flex items-center gap-3">
               <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-xl bg-muted text-gold">
-                <ServiceIcon
-                  icon={deleteTarget.icon}
-                  className="size-5"
-                  imageClassName="size-10 object-cover !rounded-none !p-0"
+                <FotoServico
+                  nome={deleteTarget.name}
+                  icone={deleteTarget.icon}
+                  className="size-full"
                 />
               </span>
               <span className="min-w-0 space-y-1">

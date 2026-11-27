@@ -1,5 +1,12 @@
 /** Dicionário principal (fonte). Toda chave nova nasce aqui, em pt-BR. */
 export const ptBR = {
+  "midia.secao": "Aparência por seção",
+  "midia.geral": "Padrão do serviço",
+  "midia.loja": "Página da barbearia",
+  "midia.profissional": "Perfil do profissional",
+  "midia.agendamento": "Agendamento",
+  "midia.restaurar": "Restaurar padrão",
+  "midia.galeria": "Fotos e ícones",
   "modelo.fotos": "Fotos sugeridas",
   "modelo.acabamento": "Acabamento",
   "modelo.nasal": "Depilação nasal",

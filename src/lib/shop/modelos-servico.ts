@@ -2,7 +2,7 @@
 export const modelosDeServico = [
   {
     id: "corte",
-    emoji: "✂️",
+    icone: "Scissors",
     rotulo: "catalog.starter.cut",
     nomes: [
       "corte",
@@ -16,13 +16,13 @@ export const modelosDeServico = [
   },
   {
     id: "barba",
-    emoji: "🧔",
+    icone: "glyph:beard",
     rotulo: "catalog.starter.beard",
     nomes: ["barba", "aparar barba", "corte de barba", "beard trim", "arreglo de barba"],
   },
   {
     id: "cabelo-e-barba",
-    emoji: "💈",
+    icone: "lab:scissors-hair-comb",
     rotulo: "catalog.starter.combo",
     nomes: [
       "cabelo barba",
@@ -36,19 +36,19 @@ export const modelosDeServico = [
   },
   {
     id: "acabamento",
-    emoji: "🪒",
+    icone: "glyph:trimmer",
     rotulo: "modelo.acabamento",
     nomes: ["acabamento", "pezinho", "contorno", "acabamento de nuca", "neckline trim"],
   },
   {
     id: "sobrancelha",
-    emoji: "👁️",
+    icone: "Eye",
     rotulo: "catalog.starter.brows",
     nomes: ["sobrancelha", "sobrancelhas", "design de sobrancelhas", "eyebrow shaping", "cejas"],
   },
   {
     id: "depilacao-nasal",
-    emoji: "👃",
+    icone: "Sparkles",
     rotulo: "modelo.nasal",
     nomes: [
       "depilação do nariz com cera",
@@ -61,7 +61,7 @@ export const modelosDeServico = [
   },
   {
     id: "barboterapia",
-    emoji: "🧖",
+    icone: "lab:towel-folded",
     rotulo: "modelo.barboterapia",
     nomes: ["barboterapia", "barba com toalha quente", "hot towel shave"],
   },
@@ -83,11 +83,31 @@ export const modeloDoServico = (nome: string) => modelosPorNome.get(normalizarSe
 const modelosPorFoto = new Map(modelosDeServico.map((m) => [fotoDoModelo(m), m]));
 export const modeloDaFoto = (foto?: string | null) => (foto ? modelosPorFoto.get(foto) : undefined);
 
-export function ehEmojiDeServico(icone?: string | null) {
+export const secoesDaIlustracao = ["loja", "profissional", "agendamento"] as const;
+export type SecaoDaIlustracao = (typeof secoesDaIlustracao)[number];
+export type IlustracoesDoServico = Partial<Record<SecaoDaIlustracao, string>>;
+
+/** Cada seção substitui uma única ilustração. Uma seção ausente acompanha o padrão do serviço. */
+export function lerIlustracoes(valor: unknown): IlustracoesDoServico {
+  const resultado: IlustracoesDoServico = {};
+  if (!valor || typeof valor !== "object") return resultado;
+  for (const secao of secoesDaIlustracao) {
+    const item = (valor as Record<string, unknown>)[secao];
+    if (typeof item === "string" && item.trim()) resultado[secao] = item;
+  }
+  return resultado;
+}
+
+export function imagemDeServico(valor?: string | null): valor is string {
   return Boolean(
-    icone &&
-    /^\p{Extended_Pictographic}[\uFE0E\uFE0F\p{Emoji_Modifier}]*(?:\u200D\p{Extended_Pictographic}[\uFE0E\uFE0F\p{Emoji_Modifier}]*)*$/u.test(
-      icone,
-    ),
+    valor &&
+    (/^https?:\/\//i.test(valor) || valor.startsWith("data:image/") || modeloDaFoto(valor)),
   );
+}
+
+export function ilustracaoDoServico(nome: string, escolha?: string | null) {
+  const modelo = modeloDoServico(nome);
+  if (escolha && (imagemDeServico(escolha) || /^[a-zA-Z][a-zA-Z0-9:-]*$/.test(escolha)))
+    return escolha;
+  return modelo ? fotoDoModelo(modelo) : "Scissors";
 }

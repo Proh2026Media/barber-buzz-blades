@@ -1,5 +1,6 @@
 import {
-  ehEmojiDeServico,
+  ilustracaoDoServico,
+  lerIlustracoes,
   modeloDaFoto,
   modeloDoServico,
   fotoDoModelo,
@@ -169,7 +170,7 @@ test("contact links are built safely", () => {
   assert.equal(whatsappUrl("123"), null);
 });
 
-test("fotos de exemplo respeitam o nome, a escolha explícita e os emojis do catálogo", () => {
+test("fotos de exemplo respeitam o nome, a escolha explícita e a ilustração exclusiva de cada seção", () => {
   const combo = modeloDoServico("  CABELO + BARBA 💈  ");
   assert.equal(combo?.id, "cabelo-e-barba");
   assert.equal(modeloDoServico("Depilação do nariz com cera")?.id, "depilacao-nasal");
@@ -178,6 +179,18 @@ test("fotos de exemplo respeitam o nome, a escolha explícita e os emojis do cat
   assert.equal(modeloDaFoto("https://barbearia.example/foto.webp"), undefined);
   assert.ok(combo);
   assert.equal(modeloDaFoto(fotoDoModelo(combo)), combo);
-  assert.equal(ehEmojiDeServico("👨🏾‍🦱"), true);
-  assert.equal(ehEmojiDeServico("Scissors"), false);
+  assert.equal(ilustracaoDoServico("Corte", "glyph:comb"), "glyph:comb");
+  assert.equal(ilustracaoDoServico("Corte", "👨🏾‍🦱"), "/images/servicos-modelo/corte.webp");
+  assert.equal(ilustracaoDoServico("Ritual", "💈"), "Scissors");
+  const secoes = lerIlustracoes({
+    loja: "Eye",
+    profissional: fotoDoModelo(combo),
+    agendamento: null,
+    outro: "Smile",
+  });
+  assert.deepEqual({ ...secoes }, { loja: "Eye", profissional: fotoDoModelo(combo) });
+  assert.equal(
+    ilustracaoDoServico("Corte", secoes.agendamento),
+    "/images/servicos-modelo/corte.webp",
+  );
 });

@@ -1,5 +1,7 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+27/11/2026 — Serviços mostram uma ilustração por vez. Em Serviços → Editar serviço → Aparência por seção, a loja pode escolher uma foto própria, uma das sete fotos sugeridas ou um ícone da biblioteca, e restaurar o padrão por seção. O parceiro personaliza o próprio perfil e o próprio agendamento. O ensaio com reversão conferiu a herança entre loja e profissional e o isolamento entre titulares. Na demonstração, o formulário salvou e reabriu as escolhas em janelas de 390 e 1280 px.
+
 27/11/2026 — A vitrine da loja e a do profissional compartilham cabeçalho e cartões de serviços. A consulta do link pessoal inclui o ícone e a descrição dos serviços oferecidos pelo titular. Fotos ilustrativas por categoria aparecem quando falta foto própria e ficam disponíveis no seletor de imagens. A equipe continua apenas na página geral.
 
 27/11/2026 — O link pessoal de cada barbeiro, incluindo parceiros e sócios, apresenta apenas o titular, os serviços dele e o agendamento direcionado. A página geral da barbearia concentra a escolha entre profissionais e mostra as fotos da equipe. A função pública do perfil devolve a lista de equipe vazia para manter compatibilidade com a versão anterior.

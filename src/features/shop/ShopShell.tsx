@@ -1,3 +1,4 @@
+import { lerIlustracoes } from "@/lib/shop/modelos-servico";
 import { WhatsAppHealthIndicator } from "@/features/platform/WhatsAppHealthIndicator";
 import { PwaInstallBanner } from "@/components/pwa-install-banner";
 import { SettingsPanel, SettingsPanels } from "./settings/SettingsPanels";
@@ -217,7 +218,13 @@ function defaultHours(shopId: string): Tables<"business_hours">[] {
 
 type OwnCatalogRow = Pick<
   Tables<"staff_services">,
-  "service_id" | "display_name" | "duration_minutes" | "price_cents" | "active"
+  | "service_id"
+  | "display_name"
+  | "duration_minutes"
+  | "price_cents"
+  | "active"
+  | "icon"
+  | "midia_secoes"
 >;
 
 /** Catálogo do Parceiro: o que ele personalizou (próprio catálogo) por cima do da loja. */
@@ -228,12 +235,15 @@ function withOwnCatalog(services: Tables<"services">[], own: OwnCatalogRow[]) {
     return mine
       ? {
           ...service,
+          midia_da_loja: lerIlustracoes(service.midia_secoes),
+          midia_secoes: lerIlustracoes(mine.midia_secoes),
+          icon: mine.icon || service.icon,
           name: mine.display_name || service.name,
           duration_minutes: mine.duration_minutes,
           price_cents: mine.price_cents,
           active: mine.active,
         }
-      : service;
+      : { ...service, midia_da_loja: lerIlustracoes(service.midia_secoes), midia_secoes: {} };
   });
 }
 
@@ -1011,6 +1021,7 @@ export function ShopShell({ profile, headerActions, managedShop }: ShopShellProp
         price_cents: draft.price_cents,
         active: editingService?.active ?? true,
         icon: draft.icon,
+        midia_secoes: draft.midia_secoes,
         ...(prepSupported ? { prep_minutes: draft.prep_minutes } : {}),
       };
       let suggestion: ServiceSaveResult["suggestion"];
@@ -1027,10 +1038,16 @@ export function ShopShell({ profile, headerActions, managedShop }: ShopShellProp
           duration_minutes: service.duration_minutes,
           price_cents: service.price_cents,
           active: service.active,
-          icon: service.icon,
+          midia_secoes: draft.midia_secoes,
         };
         if (demo) {
-          saveDemoOwnCatalog(own);
+          saveDemoOwnCatalog({
+            ...own,
+            icon:
+              demo.staffServices.find(
+                (row) => row.staff_id === own.staff_id && row.service_id === own.service_id,
+              )?.icon ?? null,
+          });
           // Na demonstração a sugestão aos colegas é só simulada.
           if (draft.suggestToPartners) suggestion = "sent";
           return { outcome: "applied", suggestion };
@@ -1208,7 +1225,10 @@ export function ShopShell({ profile, headerActions, managedShop }: ShopShellProp
         duration_minutes: row.duration_minutes,
         price_cents: row.price_cents,
         active: !row.active,
-        icon: row.icon,
+        icon:
+          demo.staffServices.find((s) => s.staff_id === actor.staff_id && s.service_id === row.id)
+            ?.icon ?? null,
+        midia_secoes: row.midia_secoes,
       });
       return "applied";
     }

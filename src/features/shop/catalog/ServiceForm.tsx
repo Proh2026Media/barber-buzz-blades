@@ -3,7 +3,7 @@ import {
   Check,
   Clock3,
   Eye,
-  ImageOff,
+  RotateCcw,
   Loader2,
   Plus,
   Save,
@@ -52,7 +52,16 @@ import {
   validateServiceImage,
 } from "@/lib/shop/service-image";
 import { FotoServico } from "@/components/ui/FotoServico";
-import { modelosDeServico, fotoDoModelo, normalizarServico } from "@/lib/shop/modelos-servico";
+import {
+  modelosDeServico,
+  fotoDoModelo,
+  normalizarServico,
+  ilustracaoDoServico,
+  lerIlustracoes,
+  secoesDaIlustracao,
+  type SecaoDaIlustracao,
+  type IlustracoesDoServico,
+} from "@/lib/shop/modelos-servico";
 import { PREP_OPTIONS } from "@/lib/shop/appointments";
 import { useDevice } from "@/lib/device";
 import { useI18n } from "@/lib/i18n";
@@ -141,7 +150,22 @@ export function ServiceForm({
   const [duration, setDuration] = useState<number>(30);
   const [price, setPrice] = useState("");
   const [prep, setPrep] = useState<number>(PREP_SHOP);
-  const [icon, setIcon] = useState("Scissors");
+  const [padrao, setPadrao] = useState<string | null>(null);
+  const [secao, setSecao] = useState<"geral" | SecaoDaIlustracao>("geral");
+  const [midia, setMidia] = useState<IlustracoesDoServico>({});
+  const escolha = secao === "geral" ? padrao : midia[secao];
+  const herdada = secao === "geral" ? null : (editing?.midia_da_loja?.[secao] ?? padrao);
+  const icon = ilustracaoDoServico(name, escolha ?? herdada);
+  function setIcon(valor: string | null) {
+    if (secao === "geral") setPadrao(valor);
+    else
+      setMidia((anterior) => {
+        const nova = { ...anterior };
+        if (valor) nova[secao] = valor;
+        else delete nova[secao];
+        return nova;
+      });
+  }
   const [iconQuery, setIconQuery] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [imageToCrop, setImageToCrop] = useState<File | null>(null);
@@ -161,7 +185,9 @@ export function ServiceForm({
     setDuration(editing?.duration_minutes ?? 30);
     setPrice(editing ? priceInputFromCents(editing.price_cents) : "");
     setPrep(editing?.prep_minutes == null ? PREP_SHOP : editing.prep_minutes);
-    setIcon(editing?.icon || "Scissors");
+    setPadrao(editing?.icon ?? null);
+    setMidia(lerIlustracoes(editing?.midia_secoes));
+    setSecao(ownCatalog ? "profissional" : "geral");
     setIconQuery("");
     setPickerOpen(false);
     setImageError(null);
@@ -169,7 +195,7 @@ export function ServiceForm({
     setErrors({});
     setState(null);
     setSubmitError(null);
-  }, [open, editing]);
+  }, [open, editing, ownCatalog]);
 
   const priceCents = parsePriceInput(price);
   const hasImage = isServiceImageSource(icon);
@@ -211,7 +237,8 @@ export function ServiceForm({
       duration_minutes: duration,
       price_cents: priceCents ?? 0,
       prep_minutes: prep === PREP_SHOP ? null : prep,
-      icon,
+      icon: padrao,
+      midia_secoes: midia,
       suggestToPartners: canSuggest && suggest,
     };
     setState("saving");
@@ -276,7 +303,7 @@ export function ServiceForm({
               onClick={() => {
                 setName(t(starter.key));
                 setDuration(starter.minutes);
-                setIcon(starter.icon);
+                setPadrao(null);
                 setErrors((current) => ({ ...current, name: undefined }));
               }}
               className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-3 text-sm font-semibold transition hover:border-primary/40"
@@ -435,16 +462,40 @@ export function ServiceForm({
       {hasImage ? t("catalog.image.changePhoto") : t("catalog.image.usePhoto")}
     </button>
   );
-  const removePhotoButton = (
+  const secaoField = (
+    <label className="grid gap-1 text-sm font-semibold">
+      {t("midia.secao")}
+      <select
+        value={secao}
+        disabled={uploading}
+        onChange={(evento) => {
+          setSecao(evento.target.value as typeof secao);
+          setPickerOpen(false);
+          setIconQuery("");
+        }}
+        className="min-h-11 rounded-[var(--control-radius)] border border-border bg-background px-3"
+      >
+        {!ownCatalog && <option value="geral">{t("midia.geral")}</option>}
+        {secoesDaIlustracao
+          .filter((item) => !ownCatalog || item !== "loja")
+          .map((item) => (
+            <option key={item} value={item}>
+              {t(`midia.${item}`)}
+            </option>
+          ))}
+      </select>
+    </label>
+  );
+  const restaurar = escolha ? (
     <button
       type="button"
-      onClick={() => setIcon("Scissors")}
+      onClick={() => setIcon(null)}
       className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-semibold transition hover:border-primary/40"
     >
-      <ImageOff className="size-4 text-gold" aria-hidden />
-      {t("catalog.image.removePhoto")}
+      <RotateCcw className="size-4 text-gold" aria-hidden />
+      {t("midia.restaurar")}
     </button>
-  );
+  ) : null;
   const chooseIconButton = (
     <button
       type="button"
@@ -458,7 +509,7 @@ export function ServiceForm({
       )}
     >
       <Shapes className={cn("size-4", !pickerOpen && "text-gold")} aria-hidden />
-      {t("catalog.image.chooseIcon")}
+      {t("midia.galeria")}
     </button>
   );
   const fileInput = (
@@ -479,8 +530,6 @@ export function ServiceForm({
       {hasImage
         ? t("catalog.image.photoChosen")
         : t("catalog.image.current", { name: serviceIconLabel(icon) })}
-      {" · "}
-      {t("catalog.image.photoHint")}
     </p>
   );
 
@@ -782,10 +831,12 @@ export function ServiceForm({
               icon={Eye}
               badge={t("catalog.preview.badge")}
             >
+              {secaoField}
               {previewCard}
               <div className="flex flex-wrap gap-2">
                 {photoButton}
-                {hasImage ? removePhotoButton : chooseIconButton}
+                {chooseIconButton}
+                {restaurar}
                 {fileInput}
               </div>
               {imageHint}
@@ -850,16 +901,14 @@ export function ServiceForm({
                 icon={Eye}
                 badge={t("catalog.preview.badge")}
               >
+                {secaoField}
                 {previewCard}
                 <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
                   <PopoverAnchor asChild>
                     <div className="catalog-form-media flex flex-wrap gap-2">
                       {photoButton}
-                      {hasImage ? (
-                        removePhotoButton
-                      ) : (
-                        <PopoverTrigger asChild>{chooseIconButton}</PopoverTrigger>
-                      )}
+                      <PopoverTrigger asChild>{chooseIconButton}</PopoverTrigger>
+                      {restaurar}
                       {fileInput}
                     </div>
                   </PopoverAnchor>

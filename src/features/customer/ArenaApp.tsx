@@ -1,3 +1,4 @@
+import { lerIlustracoes } from "@/lib/shop/modelos-servico";
 import { useRegrasAgenda, useVezAgenda } from "./booking/sugestoes";
 import { AtivarChave } from "@/features/auth/AcessoRapido";
 import { emDominioDeLoja } from "@/lib/auth/agendamento-rapido";
@@ -458,6 +459,9 @@ function ArenaApp({
   useShopFavicon(shopSettings.logo_url);
   const [userId, setUserId] = useState<string | null>(null);
   const [services, setServices] = useState<Tables<"services">[]>([]);
+  const [midiaEquipe, setMidiaEquipe] = useState<
+    Pick<Tables<"staff_services">, "staff_id" | "service_id" | "icon" | "midia_secoes">[]
+  >([]);
   const [staff, setStaff] = useState<Tables<"staff">[]>([]);
   // A demonstração resolve o catálogo local pela mesma regra de get_booking_terms.
   const [loadedServiceTerms, setServiceTerms] = useState<ServiceTerms[] | null>(null);
@@ -637,9 +641,21 @@ function ArenaApp({
       favorito ??
       (turno ? staff.find((m) => m.booking_slug === turno.barber) : null) ??
       null);
-  const servicosVisiveis = pickedStaff
-    ? services.filter((s) => termsFor(serviceTerms, pickedStaff.id, s))
-    : services;
+  const catalogoPessoal = new Map(
+    (demo ? demo.staffServices.filter((s) => s.active) : midiaEquipe)
+      .filter((s) => s.staff_id === pickedStaff?.id)
+      .map((s) => [s.service_id, s]),
+  );
+  const servicosVisiveis = (
+    pickedStaff ? services.filter((s) => termsFor(serviceTerms, pickedStaff.id, s)) : services
+  ).map((s) => {
+    const propria = catalogoPessoal.get(s.id);
+    const icon =
+      lerIlustracoes(propria?.midia_secoes).agendamento ??
+      lerIlustracoes(s.midia_secoes).agendamento ??
+      (propria?.icon || s.icon);
+    return icon === s.icon ? s : { ...s, icon };
+  });
   const selectedService =
     servicosVisiveis.find((s) => s.id === services[serviceIdx]?.id) ??
     servicosVisiveis.find((s) => s.id === regras.data?.servico) ??
@@ -1082,6 +1098,7 @@ function ArenaApp({
           settingsResult,
           shopResult,
           termsResult,
+          ilustracoesResult,
         ] = await Promise.all([
           supabase
             .from("services")
@@ -1110,6 +1127,13 @@ function ArenaApp({
             .single(),
           supabase.from("barbershops").select("timezone").eq("id", catalogShopId).maybeSingle(),
           supabase.rpc("get_booking_terms", { p_shop_id: catalogShopId }),
+          supabase
+            .from("staff_services")
+            .select(
+              "staff_id,service_id,icon,midia_secoes,display_name,duration_minutes,price_cents",
+            )
+            .eq("barbershop_id", catalogShopId)
+            .eq("active", true),
         ]);
         if (servicesResult.error) throw servicesResult.error;
         if (staffResult.error) throw staffResult.error;
@@ -1148,14 +1172,11 @@ function ArenaApp({
         const terms: ServiceTerms[] | null = termsResult.error ? null : (termsResult.data ?? []);
         let availableServices = servicesResult.data ?? [];
         if (directStaffId) {
-          const professionalCatalog = await supabase
-            .from("staff_services")
-            .select("*")
-            .eq("staff_id", directStaffId)
-            .eq("active", true);
-          if (professionalCatalog.error) throw professionalCatalog.error;
+          if (ilustracoesResult.error) throw ilustracoesResult.error;
           const overrides = new Map(
-            (professionalCatalog.data ?? []).map((row) => [row.service_id, row]),
+            (ilustracoesResult.data ?? [])
+              .filter((row) => row.staff_id === directStaffId)
+              .map((row) => [row.service_id, row]),
           );
           availableServices = availableServices
             .filter((service) =>
@@ -1181,6 +1202,7 @@ function ArenaApp({
           setUserId(profile.user.id);
           setServices(availableServices);
           setServiceTerms(terms);
+          setMidiaEquipe(ilustracoesResult.data ?? []);
           const availableStaff = staffResult.data ?? [];
           setStaff(availableStaff);
           setPoints(loyaltyResult.error ? 0 : (loyaltyResult.data?.points ?? 0));
@@ -3744,7 +3766,9 @@ function ArenaApp({
                             suggested={sugerirServico}
                             disabled={bookingBusy}
                             onPick={(index) =>
-                              pickService(services.indexOf(servicosVisiveis[index]))
+                              pickService(
+                                services.findIndex((s) => s.id === servicosVisiveis[index]?.id),
+                              )
                             }
                           />
                         )}

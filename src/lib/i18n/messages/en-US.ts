@@ -1,6 +1,13 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const enUS: Record<MessageKey, string> = {
+  "midia.secao": "Appearance by section",
+  "midia.geral": "Service default",
+  "midia.loja": "Shop page",
+  "midia.profissional": "Professional profile",
+  "midia.agendamento": "Booking",
+  "midia.restaurar": "Restore default",
+  "midia.galeria": "Photos and icons",
   "modelo.fotos": "Suggested photos",
   "modelo.acabamento": "Neckline trim",
   "modelo.nasal": "Nose waxing",

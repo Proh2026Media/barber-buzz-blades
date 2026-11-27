@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ServiceIcon } from "@/components/ui/service-icon";
 import { isServiceImageSource } from "@/lib/shop/service-image";
-import { modeloDaFoto, modeloDoServico, fotoDoModelo } from "@/lib/shop/modelos-servico";
+import { modeloDaFoto, modeloDoServico, ilustracaoDoServico } from "@/lib/shop/modelos-servico";
 import { cn } from "@/lib/utils";
 
 export function FotoServico({
@@ -13,13 +13,11 @@ export function FotoServico({
   icone?: string | null;
   className?: string;
 }) {
-  const [falhas, setFalhas] = useState<string[]>([]);
-  const modelo = modeloDaFoto(icone) ?? modeloDoServico(nome);
-  const propria = isServiceImageSource(icone);
-  const foto = [propria ? icone : null, modelo && fotoDoModelo(modelo)].find(
-    (url) => url && !falhas.includes(url),
-  );
-  const simbolo = (!propria && icone) || modelo?.emoji || "💈";
+  const [falha, setFalha] = useState<string | null>(null);
+  const valor = ilustracaoDoServico(nome, icone);
+  const foto = isServiceImageSource(valor) ? valor : null;
+  const modelo = modeloDaFoto(valor) ?? modeloDoServico(nome);
+  const simbolo = foto ? (modelo?.icone ?? "Scissors") : valor;
 
   return (
     <span
@@ -29,19 +27,18 @@ export function FotoServico({
         className,
       )}
     >
-      {foto ? (
+      {foto && foto !== falha ? (
         <img
           src={foto}
           alt=""
           loading="lazy"
           decoding="async"
-          onError={() => setFalhas((atual) => [...atual, foto])}
+          onError={() => setFalha(foto)}
           className="size-full object-cover"
         />
-      ) : null}
-      <span className={foto ? "foto-servico-simbolo" : "grid place-items-center"}>
+      ) : (
         <ServiceIcon icon={simbolo} className="size-5" />
-      </span>
+      )}
     </span>
   );
 }

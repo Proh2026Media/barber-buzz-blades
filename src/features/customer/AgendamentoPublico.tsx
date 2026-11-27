@@ -47,6 +47,7 @@ type Opcao = {
   nome: string;
   descricao: string | null;
   icone: string | null;
+  icone_profissional?: string | null;
   profissional: string;
   pessoa: string;
   foto: string | null;
@@ -159,7 +160,12 @@ function AgendaDaLoja({
     new Map(
       opcoesServico.map((o) => [
         o.servico,
-        { id: o.servico, name: o.nome, description: o.descricao, icon: o.icone },
+        {
+          id: o.servico,
+          name: o.nome,
+          description: o.descricao,
+          icon: profissional ? (o.icone_profissional ?? o.icone) : o.icone,
+        },
       ]),
     ).values(),
   );

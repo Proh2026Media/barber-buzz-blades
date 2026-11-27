@@ -211,23 +211,6 @@
   aspect-ratio: 1;
   border-radius: max(var(--detail-radius), calc(var(--panel-radius) - 0.5rem - 1px));
 }
-.foto-servico-simbolo {
-  position: absolute;
-  inset: auto auto 3px 3px;
-  display: grid;
-  place-items: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  font-size: 0.94rem;
-  line-height: 1;
-  border-radius: var(--detail-radius);
-  background: var(--card);
-  color: var(--card-foreground);
-}
-.foto-servico-simbolo > svg {
-  width: 1rem;
-  height: 1rem;
-}
 .perfil-capa {
   overflow: hidden;
   aspect-ratio: 16 / 9;

@@ -353,6 +353,7 @@ export type Database = {
           price_cents: number;
           active: boolean;
           icon: string | null;
+          midia_secoes?: Json;
           created_at: string;
           updated_at: string;
         };
@@ -366,6 +367,7 @@ export type Database = {
           price_cents: number;
           active?: boolean;
           icon?: string | null;
+          midia_secoes?: Json;
           created_at?: string;
           updated_at?: string;
         };
@@ -381,6 +383,7 @@ export type Database = {
           price_cents: number;
           active: boolean;
           icon: string | null;
+          midia_secoes?: Json;
           prep_minutes: number | null;
           description: string | null;
           created_at: string;
@@ -394,6 +397,7 @@ export type Database = {
           price_cents?: number;
           active?: boolean;
           icon?: string | null;
+          midia_secoes?: Json;
           prep_minutes?: number | null;
           description?: string | null;
           created_at?: string;
@@ -407,6 +411,7 @@ export type Database = {
           price_cents?: number;
           active?: boolean;
           icon?: string | null;
+          midia_secoes?: Json;
           prep_minutes?: number | null;
           description?: string | null;
           created_at?: string;

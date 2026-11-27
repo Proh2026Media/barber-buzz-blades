@@ -1,3 +1,4 @@
+import type { IlustracoesDoServico } from "@/lib/shop/modelos-servico";
 import type { Tables } from "@/integrations/supabase/types";
 
 /** "applied": já valeu. "pending": foi para a aprovação dos sócios. */
@@ -11,7 +12,8 @@ export type ServiceDraft = {
   price_cents: number;
   /** null = usa a folga da barbearia. */
   prep_minutes: number | null;
-  icon: string;
+  icon: string | null;
+  midia_secoes: IlustracoesDoServico;
   /** Só parceiro: sugerir o mesmo preço/duração aos outros parceiros. */
   suggestToPartners?: boolean;
 };
@@ -50,7 +52,7 @@ export type TeamAccess = {
   active: boolean;
 };
 
-export type ServiceRow = Tables<"services">;
+export type ServiceRow = Tables<"services"> & { midia_da_loja?: IlustracoesDoServico };
 export type StaffRow = Tables<"staff">;
 
 /** Exclusão recusada porque o item tem agendamentos no histórico. */

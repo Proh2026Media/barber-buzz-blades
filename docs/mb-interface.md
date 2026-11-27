@@ -323,6 +323,8 @@ Não usar emojis como único identificador de ação, ilustrações que sugiram 
 
 ## 4. Linguagem, orientação e acessibilidade
 
+Use os ícones do catálogo do sistema nas ilustrações e nos controles. Cada miniatura de serviço mostra uma foto ou um ícone por vez. Quando uma foto falha, o ícone correspondente ocupa o mesmo espaço. A loja pode definir um padrão do serviço e substituí-lo na página inicial, no perfil profissional ou no agendamento. A personalização de uma seção preserva as demais.
+
 ### Mostrar em vez de explicar (diretriz do dono, 05/10/2026)
 
 O sistema deve ser visual, intuitivo e autoexplicativo. Mesmo no primeiro acesso, uma pessoa sem conhecimento técnico precisa entender onde está, o que está acontecendo, o que fazer e qual é o próximo passo. Princípio: **se for preciso explicar demais como usar uma funcionalidade, a experiência ainda precisa melhorar.**

@@ -154,7 +154,6 @@ import {
 
 import { ServiceGlyph, type ServiceGlyphId } from "./service-glyphs";
 import { t, type MessageKey } from "@/lib/i18n";
-import { ehEmojiDeServico } from "@/lib/shop/modelos-servico";
 import { isServiceImageSource } from "@/lib/shop/service-image";
 import { cn } from "@/lib/utils";
 
@@ -505,7 +504,6 @@ export function searchServiceIcons(query: string): ServiceIconEntry[] {
 
 export function serviceIconLabel(id: string | null | undefined) {
   if (!id) return t("brand.icon.tesoura");
-  if (ehEmojiDeServico(id)) return id;
   if (isServiceImageSource(id)) return t("brand.icon.imagemPersonalizada");
   return ICON_BY_ID.get(id)?.label ?? t("brand.icon.tesoura");
 }
@@ -542,16 +540,6 @@ export function ServiceIcon({
       />
     );
   }
-
-  if (ehEmojiDeServico(icon))
-    return (
-      <span
-        aria-hidden="true"
-        className={cn("inline-grid place-items-center leading-none", className)}
-      >
-        {icon}
-      </span>
-    );
 
   if (entry?.glyph) return <ServiceGlyph glyph={entry.glyph} className={className} />;
 
