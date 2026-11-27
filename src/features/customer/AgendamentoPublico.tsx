@@ -1,7 +1,9 @@
+import { useRegrasAgenda, useVezAgenda } from "./booking/sugestoes";
 import { useMemo, useState, type CSSProperties } from "react";
 import { Link, Navigate, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar, CalendarDays, LogIn, Scissors, User } from "lucide-react";
+import { sanitizeNext } from "@/lib/auth/destination";
 import { Abertura } from "@/components/Abertura";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { EmptyState } from "@/components/visual";
@@ -32,7 +34,14 @@ import {
   TimeGrid,
 } from "./booking/BookingParts";
 
-type Contexto = { loja: string; service?: string; barber?: string; day?: string; time?: string };
+type Contexto = {
+  turno?: string;
+  loja: string;
+  service?: string;
+  barber?: string;
+  day?: string;
+  time?: string;
+};
 type Opcao = {
   servico: string;
   nome: string;
@@ -88,10 +97,14 @@ export function AgendamentoPublico(contexto: Contexto) {
   });
   if (catalogo.isError)
     return <Abertura erro={t("shopLanding.errorTitle")} tentar={() => void catalogo.refetch()} />;
-  if (catalogo.data === null)
-    return (
-      <Navigate to="/auth" replace search={{ shop: contexto.loja, next: "/app?tab=agendar" }} />
-    );
+  if (catalogo.data === null) {
+    const parametros = new URLSearchParams({ tab: "agendar", shop: contexto.loja });
+    for (const chave of ["barber", "service", "day", "time", "turno"] as const) {
+      if (contexto[chave]) parametros.set(chave, contexto[chave]);
+    }
+    const next = sanitizeNext("/app?" + parametros) ?? "/app?tab=agendar";
+    return <Navigate to="/auth" replace search={{ shop: contexto.loja, next }} />;
+  }
   if (!catalogo.data) return <Abertura />;
   return <AgendaDaLoja {...contexto} host={host} catalogo={catalogo.data} />;
 }
@@ -100,6 +113,7 @@ function AgendaDaLoja({
   loja,
   host,
   service,
+  turno,
   barber,
   day,
   time,
@@ -110,43 +124,56 @@ function AgendaDaLoja({
   const expandida = useDevice() !== "celular";
   const resumoLateral = useViewportAtLeast(1024);
   const { marca, fuso } = catalogo;
-  const direto =
-    barber && catalogo.opcoes.some((o) => o.profissional === barber) ? barber : undefined;
+  const direto = turno ? undefined : barber;
   const opcoes = useMemo(
     () => (direto ? catalogo.opcoes.filter((o) => o.profissional === direto) : catalogo.opcoes),
     [catalogo.opcoes, direto],
   );
-  const inicial =
-    opcoes.find((o) => o.servico === service) ??
-    (direto ? [...opcoes].sort((a, b) => a.duracao - b.duracao)[0] : opcoes[0]);
-  const [idServico, escolherServico] = useState(inicial?.servico);
-  const [idProfissional, escolherProfissional] = useState<string | undefined>(
-    inicial?.profissional,
+  const [idServico, escolherServico] = useState(service);
+  const [escolhido, escolherProfissional] = useState<{ slug: string; turno?: string } | null>(
+    barber && catalogo.opcoes.some((o) => o.profissional === barber)
+      ? { slug: barber, turno }
+      : null,
   );
   const diaInicial = day && day >= catalogo.inicio && day <= catalogo.fim ? day : catalogo.inicio;
   const [dia, definirDia] = useState(diaInicial);
   const [hora, definirHora] = useState(diaInicial === day ? time : undefined);
   const [servicoAberto, abrirServico] = useState(!time);
   const [equipeAberta, abrirEquipe] = useState(!time);
-  const [tocouServico, marcarServico] = useState(Boolean(service));
-  const [tocouEquipe, marcarEquipe] = useState(Boolean(direto));
-
+  const regras = useRegrasAgenda(marca.id, escolhido?.slug);
+  const permite = regras.data?.manual === false;
+  const vez = useVezAgenda(marca.id, idServico, dia, permite && !direto && !escolhido);
+  const indicacao = permite && !escolhido && !direto ? vez.data : null;
+  const profissional =
+    escolhido && (!escolhido.turno || permite) ? escolhido.slug : indicacao?.slug;
+  const turnoAtual = permite ? (escolhido?.turno ?? indicacao?.turno) : undefined;
+  const equipe = Array.from(new Map(opcoes.map((o) => [o.profissional, o])).values());
+  const membros = equipe.map((o, index) => ({
+    index,
+    member: { id: o.profissional, display_name: o.pessoa, avatar_url: o.foto, bio: o.bio },
+  }));
+  const opcoesServico = profissional
+    ? opcoes.filter((o) => o.profissional === profissional)
+    : opcoes;
   const servicos = Array.from(
     new Map(
-      opcoes.map((o) => [
+      opcoesServico.map((o) => [
         o.servico,
         { id: o.servico, name: o.nome, description: o.descricao, icon: o.icone },
       ]),
     ).values(),
   );
-  const servico = servicos.find((s) => s.id === idServico) ?? servicos[0];
-  const equipe = opcoes.filter((o) => o.servico === servico?.id);
-  const escolha = equipe.find((o) => o.profissional === idProfissional) ?? equipe[0];
-  const profissional = escolha?.profissional;
-  const membros = equipe.map((o, index) => ({
-    index,
-    member: { id: o.profissional, display_name: o.pessoa, avatar_url: o.foto, bio: o.bio },
-  }));
+  // Um horário anunciado no perfil representa a duração mínima publicada daquele profissional.
+  const servicoDoHorario =
+    direto && time ? [...opcoesServico].sort((a, b) => a.duracao - b.duracao)[0]?.servico : null;
+  const servico = servicos.find(
+    (s) => s.id === (idServico ?? servicoDoHorario ?? regras.data?.servico),
+  );
+  const escolha = opcoesServico.find(
+    (o) => o.servico === servico?.id && o.profissional === profissional,
+  );
+  const tocouServico = Boolean(idServico || servicoDoHorario);
+  const tocouEquipe = Boolean(escolhido);
   const datas = useMemo(() => {
     const dias: string[] = [];
     for (let d = catalogo.inicio; d <= catalogo.fim; d = shiftDateKey(d, 1)) dias.push(d);
@@ -178,9 +205,12 @@ function AgendaDaLoja({
   );
   const posicao = grade.isError ? -1 : (grade.data?.indexOf(hora ?? "") ?? -1);
   const horario = horarios[posicao];
+  const equipeDefinida = Boolean(profissional && (tocouEquipe || horario));
+  const servicoDefinido = Boolean(servico && (tocouServico || horario));
   const destino = new URLSearchParams({ tab: "agendar", shop: loja });
-  if (servico && profissional) {
-    destino.set("service", servico.id);
+  if (servico) destino.set("service", servico.id);
+  if (profissional) {
+    if (turnoAtual) destino.set("turno", turnoAtual);
     destino.set("barber", profissional);
     destino.set("day", dia);
     if (horario && hora) destino.set("time", hora);
@@ -207,7 +237,7 @@ function AgendaDaLoja({
       opcoes.find((o) => o.servico === id)!;
     return { price_cents: opcao.preco, duration_minutes: opcao.duracao };
   }
-  const indiceMembro = equipe.indexOf(escolha);
+  const indiceMembro = equipe.findIndex((o) => o.profissional === profissional);
   const quando = horario
     ? formatShopDate(
         horario,
@@ -266,61 +296,19 @@ function AgendaDaLoja({
               <h2>{t("booking.title")}</h2>
             </WorkspaceHeading>
           </div>
-          {!servico || !escolha ? (
+          {!opcoes.length ? (
             <EmptyState variant="plain" title={t("booking.noServices")} />
           ) : (
             <div className="customer-booking-layout grid grid-cols-[minmax(0,1fr)] items-start gap-4 tablet:gap-6 pc:grid-cols-[minmax(0,1fr)_20rem]">
               <div className="booking-workspace-content min-w-0 space-y-4">
                 <div className="customer-booking-choices space-y-4 tablet:grid tablet:grid-cols-2 tablet:items-start tablet:gap-4 tablet:space-y-0">
                   <StepCard
-                    id="booking-step-service"
-                    index={1}
-                    title={t("booking.service")}
-                    state={tocouServico || horario ? "done" : "current"}
-                    aside={
-                      !expandida && !servicoAberto ? (
-                        <ChangeButton
-                          label={t("booking.change")}
-                          onClick={() => abrirServico(true)}
-                        />
-                      ) : null
-                    }
-                  >
-                    {!expandida && !servicoAberto ? (
-                      <ServiceSummary
-                        service={servico}
-                        terms={termos(servico.id)}
-                        formatMoney={dinheiro}
-                      />
-                    ) : (
-                      <ServiceChoices
-                        services={servicos}
-                        selectedIndex={servicos.indexOf(servico)}
-                        view="list"
-                        termsFor={(s) => termos(s.id)}
-                        formatMoney={dinheiro}
-                        suggested={!tocouServico}
-                        onPick={(i) => {
-                          const id = servicos[i].id;
-                          if (id !== servico.id) definirHora(undefined);
-                          escolherServico(id);
-                          escolherProfissional(
-                            opcoes.find((o) => o.servico === id && o.profissional === profissional)
-                              ?.profissional ?? opcoes.find((o) => o.servico === id)?.profissional,
-                          );
-                          abrirServico(false);
-                          marcarServico(true);
-                        }}
-                      />
-                    )}
-                  </StepCard>
-                  <StepCard
                     id="booking-step-staff"
-                    index={2}
+                    index={1}
                     title={t("booking.staff")}
-                    state={tocouEquipe || horario ? "done" : "current"}
+                    state={equipeDefinida ? "done" : "current"}
                     aside={
-                      !direto && !expandida && !equipeAberta ? (
+                      profissional && !direto && !expandida && !equipeAberta ? (
                         <ChangeButton
                           label={t("booking.changeStaff")}
                           onClick={() => abrirEquipe(true)}
@@ -328,7 +316,7 @@ function AgendaDaLoja({
                       ) : null
                     }
                   >
-                    {direto || (!expandida && !equipeAberta) ? (
+                    {indiceMembro >= 0 && (direto || (!expandida && !equipeAberta)) ? (
                       <StaffSummary
                         member={membros[indiceMembro].member}
                         locked={Boolean(direto)}
@@ -341,12 +329,60 @@ function AgendaDaLoja({
                         anyOption={false}
                         anyActive={false}
                         favoriteId={null}
-                        suggested={!tocouEquipe}
+                        suggested={Boolean(turnoAtual)}
                         onPick={(i) => {
                           if (equipe[i].profissional !== profissional) definirHora(undefined);
-                          escolherProfissional(equipe[i].profissional);
+                          const slug = equipe[i].profissional;
+                          escolherProfissional({
+                            slug,
+                            turno: slug === profissional ? turnoAtual : undefined,
+                          });
+                          if (
+                            idServico &&
+                            !opcoes.some((o) => o.profissional === slug && o.servico === idServico)
+                          )
+                            escolherServico(undefined);
+                          abrirServico(true);
                           abrirEquipe(false);
-                          marcarEquipe(true);
+                        }}
+                      />
+                    )}
+                  </StepCard>
+                  <StepCard
+                    id="booking-step-service"
+                    index={2}
+                    title={t("booking.service")}
+                    state={servicoDefinido ? "done" : equipeDefinida ? "current" : "upcoming"}
+                    aside={
+                      servico && !expandida && !servicoAberto ? (
+                        <ChangeButton
+                          label={t("booking.change")}
+                          onClick={() => abrirServico(true)}
+                        />
+                      ) : null
+                    }
+                  >
+                    {servico && !expandida && !servicoAberto ? (
+                      <ServiceSummary
+                        service={servico}
+                        terms={termos(servico.id)}
+                        formatMoney={dinheiro}
+                      />
+                    ) : (
+                      <ServiceChoices
+                        services={servicos}
+                        selectedIndex={servico ? servicos.indexOf(servico) : -1}
+                        view="list"
+                        termsFor={(s) => termos(s.id)}
+                        formatMoney={dinheiro}
+                        suggested={Boolean(
+                          !tocouServico && servico && regras.data?.servico === servico.id,
+                        )}
+                        onPick={(i) => {
+                          const id = servicos[i].id;
+                          if (id !== servico?.id) definirHora(undefined);
+                          escolherServico(id);
+                          abrirServico(false);
                         }}
                       />
                     )}
@@ -356,7 +392,9 @@ function AgendaDaLoja({
                   id="booking-step-when"
                   index={3}
                   title={t("booking.step.when")}
-                  state={horario ? "done" : "current"}
+                  state={
+                    horario ? "done" : equipeDefinida && servicoDefinido ? "current" : "upcoming"
+                  }
                 >
                   <BookingDateChoices
                     expandedBooking={expandida}
@@ -371,18 +409,23 @@ function AgendaDaLoja({
                   >
                     <TimeGrid
                       state={
-                        grade.isError
-                          ? "error"
-                          : grade.isPending
-                            ? "loading"
-                            : horarios.length
-                              ? "ready"
-                              : "empty"
+                        !servico || !profissional
+                          ? "needChoice"
+                          : grade.isError
+                            ? "error"
+                            : grade.isPending
+                              ? "loading"
+                              : horarios.length
+                                ? "ready"
+                                : "empty"
                       }
                       onRetry={() => void grade.refetch()}
                       slots={horarios}
                       selectedIso={horario?.toISOString() ?? null}
                       onSelect={(iso) => {
+                        if (profissional)
+                          escolherProfissional({ slug: profissional, turno: turnoAtual });
+                        if (servico) escolherServico(servico.id);
                         definirHora(
                           grade.data?.[horarios.findIndex((h) => h.toISOString() === iso)],
                         );
@@ -402,7 +445,7 @@ function AgendaDaLoja({
                     title={t("booking.step.review")}
                     state={horario ? "current" : "upcoming"}
                   >
-                    {horario ? (
+                    {horario && escolha && servico ? (
                       <div className="space-y-2 rounded-2xl border border-border bg-background/60 p-3">
                         <AppointmentTicket
                           variant="mini"
@@ -430,8 +473,18 @@ function AgendaDaLoja({
               </div>
               <BookingSummaryBar
                 pills={[
-                  { key: "servico", icon: Scissors, label: servico.name },
-                  { key: "equipe", icon: User, label: escolha.pessoa },
+                  {
+                    key: "servico",
+                    icon: Scissors,
+                    label: servico?.name ?? t("booking.service"),
+                    pending: !servico,
+                  },
+                  {
+                    key: "equipe",
+                    icon: User,
+                    label: membros[indiceMembro]?.member.display_name ?? t("booking.staff"),
+                    pending: !profissional,
+                  },
                   {
                     key: "quando",
                     icon: CalendarDays,
@@ -445,10 +498,10 @@ function AgendaDaLoja({
                   state: horario ? "current" : "upcoming",
                   title: t("booking.step.review"),
                 }}
-                price={dinheiro(escolha.preco)}
+                price={escolha ? dinheiro(escolha.preco) : null}
                 buttonLabel={t("rapido.entrarConfirmar")}
                 buttonIcon={LogIn}
-                ready={Boolean(horario)}
+                ready={Boolean(horario && escolha)}
                 busy={false}
                 onConfirm={() => {
                   if (horario) void navigate({ to: "/auth", search: acesso });

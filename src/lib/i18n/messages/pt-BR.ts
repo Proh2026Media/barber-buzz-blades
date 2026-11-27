@@ -1,5 +1,12 @@
 /** Dicionário principal (fonte). Toda chave nova nasce aqui, em pt-BR. */
 export const ptBR = {
+  "rodizio.mudou": "A vez mudou. Confira o profissional e o horário antes de confirmar.",
+  "rodizio.painel":
+    "No link geral, sugerimos quem está há mais tempo sem receber uma reserva pelo rodízio, entre quem faz o serviço e tem vaga no dia. Quem ainda não recebeu entra primeiro. A vez só muda quando o cliente confirma a reserva sugerida. Escolhas diretas e favoritos ficam fora da contagem.",
+  "rodizio.painelManual":
+    "No link geral, o cliente escolhe o profissional ou usa o favorito escolhido por ele. O link pessoal abre direto com o profissional.",
+  "rodizio.painelServico":
+    "O destaque de serviço é o mais realizado nos últimos 90 dias, entre os serviços disponíveis. Empates e ausência de histórico ficam sem destaque.",
   "rapido.entrarConfirmar": "Entrar para confirmar",
   "rapido.codigoSeis": "Código do e-mail (6 dígitos)",
   "rapido.formatoCodigo": "Digite ou cole os 6 números do código enviado por e-mail.",
@@ -1427,6 +1434,7 @@ export const ptBR = {
   "booking.anyStaffHint": "Quem estiver livre",
   "booking.anyStaffFavorite": "Tentamos primeiro {name}",
   "booking.favorite": "Favorito",
+  "booking.salvarFavorito": "Salvar como meu favorito",
   "booking.favoriteSaved": "{name} agora é seu favorito",
   "booking.directWith": "Você vai agendar com {name}",
   "booking.tomorrow": "Amanhã",
@@ -2102,7 +2110,7 @@ export const ptBR = {
   "approval.before": "Vai para aprovação de {names}",
   "approval.beforeOwners": "Vai para aprovação dos outros donos",
   "myProfile.title": "Meu perfil e link",
-  "myProfile.hint": "Assim seus clientes veem você.",
+  "myProfile.hint": "Compartilhe seu link para o cliente agendar diretamente com você.",
   "myProfile.noBio": "Sem apresentação ainda",
   "myProfile.link": "Seu link de agendamento",
   "myProfile.edit": "Editar meu perfil",
@@ -4229,9 +4237,9 @@ export const ptBR = {
   "bookingRules.staff.favorite_then_pick.title": "Começa pelo favorito",
   "bookingRules.staff.favorite_then_pick.text":
     "Já vem marcado o profissional de sempre do cliente.",
-  "bookingRules.staff.random_available.title": "Começa em qualquer um",
+  "bookingRules.staff.random_available.title": "Permitir qualquer disponível",
   "bookingRules.staff.random_available.text":
-    "Já vem marcado “Qualquer profissional” com horário livre.",
+    "O cliente pode escolher “Qualquer profissional” para usar um horário livre.",
   "bookingRules.staff.always": "Em todos os casos o cliente pode trocar de profissional.",
   "bookingRules.staff.anyone": "Qualquer um",
   "bookingRules.staff.sampleA": "Rafael",

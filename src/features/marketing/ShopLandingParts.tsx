@@ -10,12 +10,12 @@ import {
   ChevronRight,
   Clock3,
   Instagram,
-  LogIn,
+  UserRound,
   MapPin,
   MessageCircle,
   Moon,
   Pointer,
-  ListChecks,
+  Scissors,
   SquareCheckBig,
   type LucideIcon,
 } from "lucide-react";
@@ -151,9 +151,10 @@ export function BookingSteps({ className }: { className?: string }) {
       label={t("shopLanding.stepsLabel")}
       className={className}
       steps={[
-        { label: t("shopLanding.step1"), icon: LogIn },
-        { label: t("shopLanding.step2"), icon: ListChecks },
-        { label: t("shopLanding.step3"), icon: SquareCheckBig },
+        { label: t("booking.staff"), icon: UserRound },
+        { label: t("booking.service"), icon: Scissors },
+        { label: t("booking.step.when"), icon: CalendarCheck },
+        { label: t("booking.step.review"), icon: SquareCheckBig },
       ]}
     />
   );
@@ -168,6 +169,7 @@ export function TodayCard({
   preview,
   signedIn,
   showToday,
+  escolhaLivre,
   next,
   day,
   freeCount,
@@ -180,6 +182,7 @@ export function TodayCard({
   preview: boolean;
   signedIn: boolean;
   showToday: boolean;
+  escolhaLivre: boolean;
   /** Horário livre mais cedo de hoje e com quem. */
   next: { time: string; member: LandingStaff } | null;
   /** Data de hoje no fuso da loja (AAAA-MM-DD): o horário tocado segue escolhido para o app. */
@@ -229,7 +232,13 @@ export function TodayCard({
         ) : null}
       </div>
 
-      {showToday && next && (
+      {showToday && next && escolhaLivre && (
+        <p className="flex items-center gap-2">
+          <CalendarCheck className="size-4" aria-hidden />
+          {t("shopLanding.nextFree")} <strong>{formatClock(next.time, intlLocale)}</strong>
+        </p>
+      )}
+      {showToday && next && !escolhaLivre && (
         <BookLink
           slug={slug}
           preview={preview}

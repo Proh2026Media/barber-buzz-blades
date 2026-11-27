@@ -1,6 +1,13 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const es: Record<MessageKey, string> = {
+  "rodizio.mudou": "El turno ha cambiado. Revisa el profesional y la hora antes de confirmar.",
+  "rodizio.painel":
+    "En el enlace general, sugerimos a quien lleva más tiempo sin una reserva por rotación entre quienes realizan el servicio y tienen disponibilidad ese día. Tienen prioridad quienes aún no han recibido ninguna. El turno avanza cuando se confirma la reserva sugerida. Las elecciones directas y los favoritos quedan fuera del recuento.",
+  "rodizio.painelManual":
+    "En el enlace de la tienda, el cliente elige al profesional o usa su favorito. El enlace personal abre con ese profesional seleccionado.",
+  "rodizio.painelServico":
+    "Destacamos el servicio disponible más realizado en los últimos 90 días. Si hay empate o falta historial, no se destaca ninguno.",
   "rapido.entrarConfirmar": "Entrar para confirmar",
   "rapido.codigoSeis": "Código del correo (6 dígitos)",
   "rapido.formatoCodigo": "Escribe o pega los 6 dígitos del código enviado por correo.",
@@ -1439,6 +1446,7 @@ export const es: Record<MessageKey, string> = {
   "booking.anyStaffHint": "Quien esté libre",
   "booking.anyStaffFavorite": "Primero intentamos con {name}",
   "booking.favorite": "Favorito",
+  "booking.salvarFavorito": "Guardar como mi favorito",
   "booking.favoriteSaved": "{name} ahora es tu favorito",
   "booking.directWith": "Vas a reservar con {name}",
   "booking.tomorrow": "Mañana",
@@ -2116,7 +2124,7 @@ export const es: Record<MessageKey, string> = {
   "approval.before": "Va a aprobación de {names}",
   "approval.beforeOwners": "Va a aprobación de los demás dueños",
   "myProfile.title": "Mi perfil y enlace",
-  "myProfile.hint": "Así te ven tus clientes.",
+  "myProfile.hint": "Comparte tu enlace para que tus clientes reserven directamente contigo.",
   "myProfile.noBio": "Sin presentación todavía",
   "myProfile.link": "Tu enlace de reservas",
   "myProfile.edit": "Editar mi perfil",
@@ -4258,9 +4266,9 @@ export const es: Record<MessageKey, string> = {
   "bookingRules.staff.favorite_then_pick.title": "Empieza por el favorito",
   "bookingRules.staff.favorite_then_pick.text":
     "Ya viene marcado el profesional habitual del cliente.",
-  "bookingRules.staff.random_available.title": "Empieza con cualquiera",
+  "bookingRules.staff.random_available.title": "Permitir cualquier disponible",
   "bookingRules.staff.random_available.text":
-    "Ya viene marcado “Cualquier profesional” con horario libre.",
+    "El cliente puede elegir «Cualquier profesional» para reservar un horario libre.",
   "bookingRules.staff.always": "En todos los casos el cliente puede cambiar de profesional.",
   "bookingRules.staff.anyone": "Cualquiera",
   "bookingRules.staff.sampleA": "Rafael",

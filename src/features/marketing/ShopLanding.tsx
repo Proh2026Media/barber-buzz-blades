@@ -1,3 +1,4 @@
+import { useRegrasAgenda } from "@/features/customer/booking/sugestoes";
 import { Abertura } from "@/components/Abertura";
 import { SeloBarbearia } from "@/components/SeloBarbearia";
 import {
@@ -224,6 +225,7 @@ export function ShopLandingView({
 }) {
   const { t, intlLocale } = useI18n();
   const { shop, landing, today } = data;
+  const politica = useRegrasAgenda(preview ? null : shop.id);
   const name = shop.display_name || shop.name;
   const headline = landing.headline || shop.tagline || t("shopLanding.defaultHeadline");
   // A moldura responsiva usa o mesmo leiaute público, mantendo as ações desativadas.
@@ -498,6 +500,7 @@ export function ShopLandingView({
             preview={preview}
             signedIn={signedIn}
             showToday={showToday}
+            escolhaLivre={politica.data?.manual !== false}
             next={nextSlot}
             day={today.date || undefined}
             freeCount={freeStaff.length}

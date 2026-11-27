@@ -1,3 +1,4 @@
+import { useRegrasAgenda, useVezAgenda } from "./booking/sugestoes";
 import { AtivarChave } from "@/features/auth/AcessoRapido";
 import { emDominioDeLoja } from "@/lib/auth/agendamento-rapido";
 import { Abertura } from "@/components/Abertura";
@@ -275,6 +276,7 @@ function ArenaApp({
   initialTab,
   initialSlot,
   initialService,
+  escolhaPublica,
   focusWhatsapp = false,
   focusGroup = false,
   focusReservationToken,
@@ -286,6 +288,7 @@ function ArenaApp({
   /** Horário tocado na página pública (dia AAAA-MM-DD e HH:MM no fuso da loja): só pré-escolhe. */
   initialSlot?: { day: string; time: string };
   initialService?: string;
+  escolhaPublica?: { barber: string; turno: string };
   /** Conta aberta pelo link "Número errado?": leva ao cartão do WhatsApp. */
   focusWhatsapp?: boolean;
   focusGroup?: boolean;
@@ -341,14 +344,15 @@ function ArenaApp({
   const [pointsVersion, setPointsVersion] = useState(0);
   const { isDark: isDarkMode } = useTheme();
   const [showVipInfo, setShowVipInfo] = useState(false);
-  const [serviceIdx, setServiceIdx] = useState(0);
+  const [serviceIdx, setServiceIdx] = useState(-1);
   // Veio de um horário tocado na página pública: o serviço sugerido é o mais curto do profissional.
   const fromPublicSlot = useRef(Boolean(initialSlot));
   const servicoInicialIndisponivel = useRef(false);
   // Horário do link que não dá para manter (dia que já passou ou fora do prazo de agendamento).
   const [pickedSlotLost, setPickedSlotLost] = useState<"past" | "far" | null>(null);
-  const [staffIdx, setStaffIdx] = useState(0);
-  const [anyAvailable, setAnyAvailable] = useState(false);
+  const [staffIdx, setStaffIdx] = useState(-1);
+  const [aceite, setAceite] = useState(escolhaPublica ?? null);
+  const [semPreferencia, setAnyAvailable] = useState(false);
   const [favoriteStaffId, setFavoriteStaffId] = useState<string | null>(null);
   const [staffAssignmentMode, setStaffAssignmentMode] = useState<
     "client_pick" | "favorite_then_pick" | "random_available"
@@ -372,6 +376,7 @@ function ArenaApp({
     service?: string | null;
     staff?: string | null;
   } | null>(null);
+  const [salvandoFavorito, setSalvandoFavorito] = useState(false);
   const [favoriteSaved, setFavoriteSaved] = useState<string | null>(null);
   const [bookingDone, setBookingDone] = useState<{
     ticket: TicketData;
@@ -460,7 +465,6 @@ function ArenaApp({
     () => (demo ? demoBookingTerms(demo) : loadedServiceTerms),
     [demo, loadedServiceTerms],
   );
-  const staffPickedByUser = useRef(false);
 
   useEffect(() => {
     if (!shopId) return;
@@ -598,7 +602,51 @@ function ArenaApp({
     };
   }, [demo, userId, shopId, appointmentVersion]);
 
-  const selectedService = services[serviceIdx] ?? null;
+  const regras = useRegrasAgenda(shopId, directBarberSlug ?? staff[staffIdx]?.booking_slug);
+  const manual = Boolean(demo) || regras.data?.manual !== false;
+  const anyAvailable = semPreferencia && !manual;
+  const rodizio = useVezAgenda(
+    shopId,
+    services[serviceIdx]?.id,
+    selectedDay,
+    tab === "agenda" &&
+      !demo &&
+      !manual &&
+      !directLinkActive &&
+      !anyAvailable &&
+      staffIdx < 0 &&
+      !aceite,
+  );
+  const turno =
+    !manual && !directLinkActive && !anyAvailable && !rescheduleId
+      ? (aceite ??
+        (staffIdx < 0 && rodizio.data
+          ? { barber: rodizio.data.slug, turno: rodizio.data.turno }
+          : null))
+      : null;
+  const favorito =
+    favoriteStaffId &&
+    (manual || staffAssignmentMode === "favorite_then_pick") &&
+    !staffChosen &&
+    !aceite
+      ? staff.find((m) => m.id === favoriteStaffId)
+      : null;
+  const pickedStaff = anyAvailable
+    ? null
+    : (staff[staffIdx] ??
+      favorito ??
+      (turno ? staff.find((m) => m.booking_slug === turno.barber) : null) ??
+      null);
+  const servicosVisiveis = pickedStaff
+    ? services.filter((s) => termsFor(serviceTerms, pickedStaff.id, s))
+    : services;
+  const selectedService =
+    servicosVisiveis.find((s) => s.id === services[serviceIdx]?.id) ??
+    servicosVisiveis.find((s) => s.id === regras.data?.servico) ??
+    null;
+  const sugerirServico =
+    !serviceChosen && selectedService != null && selectedService.id === regras.data?.servico;
+  const sugerirEquipe = Boolean(turno && !favorito && pickedStaff?.booking_slug === turno.barber);
   const sportsTab = showSportsTab(shopSettings.sports_enabled, sportsMatches(Boolean(demo)));
   useEffect(() => {
     if (tab === "esportes" && !sportsTab) setTab("dashboard");
@@ -619,7 +667,6 @@ function ArenaApp({
       cancelled = true;
     };
   }, [demo, shopId, availabilityVersion]);
-  const pickedStaff = anyAvailable ? null : (staff[staffIdx] ?? null);
   const pickedStaffTerms =
     pickedStaff && selectedService ? termsFor(serviceTerms, pickedStaff.id, selectedService) : null;
   const selectedStaff = pickedStaff && (!selectedService || pickedStaffTerms) ? pickedStaff : null;
@@ -631,7 +678,7 @@ function ArenaApp({
       : selectedService;
   const staffChoices = staff
     .map((m, i) => ({ m, i }))
-    .filter(({ m }) => !selectedService || termsFor(serviceTerms, m.id, selectedService));
+    .filter(({ m }) => services.some((s) => termsFor(serviceTerms, m.id, s)));
   const selectedServiceId = selectedService?.id;
   const selectedServiceDuration = bookingService?.duration_minutes;
   const selectedStaffId = anyAvailable ? null : selectedStaff?.id;
@@ -710,13 +757,6 @@ function ArenaApp({
   useEffect(() => {
     if (firstBookingDay && selectedDay < firstBookingDay) setSelectedDay(firstBookingDay);
   }, [firstBookingDay, selectedDay]);
-  useEffect(() => {
-    if (anyAvailable || !selectedService || staffPickedByUser.current) return;
-    const current = staff[staffIdx];
-    if (current && termsFor(serviceTerms, current.id, selectedService)) return;
-    const next = staff.findIndex((m) => termsFor(serviceTerms, m.id, selectedService));
-    if (next >= 0) setStaffIdx(next);
-  }, [anyAvailable, selectedService, staff, staffIdx, serviceTerms]);
   const availableSlots =
     slotsFor === selectionKey
       ? slots.filter((slot) => slot.getTime() > (demo?.now.getTime() ?? Date.now()))
@@ -861,19 +901,16 @@ function ArenaApp({
       setCustomerName(demo.customerName);
       setShopName(demo.shop.name);
       setShopSettings(demo.settings);
-      // O modo de escolher profissional que o dono definiu, como na loja real: com
-      // "Começa em qualquer um", o Agendar já abre em "Qualquer profissional".
       const demoMode = demo.settings.staff_assignment_mode;
       const mode =
         demoMode === "favorite_then_pick" || demoMode === "random_available"
           ? demoMode
           : "client_pick";
       setStaffAssignmentMode(mode);
-      setAnyAvailable(mode === "random_available" && !directBarberSlug);
+      setAnyAvailable(false);
       setUserId(DEMO_CUSTOMER_ID);
       setServices(demo.services.filter((row) => row.active));
       setServiceTerms(null);
-      staffPickedByUser.current = false;
       const demoStaff = demo.staff.filter((row) => row.active);
       setStaff(demoStaff);
       setCatalogLoading(false);
@@ -886,15 +923,10 @@ function ArenaApp({
               demoBookingTerms(demo),
               demoStaff.find((row) => row.booking_slug === directBarberSlug)?.id ?? "",
             )
-          : 0,
+          : -1,
       );
       setStaffIdx(
-        directBarberSlug
-          ? Math.max(
-              0,
-              demoStaff.findIndex((row) => row.booking_slug === directBarberSlug),
-            )
-          : 0,
+        directBarberSlug ? demoStaff.findIndex((row) => row.booking_slug === directBarberSlug) : -1,
       );
       return;
     }
@@ -1149,7 +1181,6 @@ function ArenaApp({
           setUserId(profile.user.id);
           setServices(availableServices);
           setServiceTerms(terms);
-          staffPickedByUser.current = false;
           const availableStaff = staffResult.data ?? [];
           setStaff(availableStaff);
           setPoints(loyaltyResult.error ? 0 : (loyaltyResult.data?.points ?? 0));
@@ -1205,8 +1236,8 @@ function ArenaApp({
             const indice = availableServices.findIndex((s) => s.id === initialService);
             const escolhido = availableServices[indice];
             const corresponde =
-              escolhido && directStaffId && termsFor(terms, directStaffId, escolhido);
-            setServiceIdx(corresponde ? indice : 0);
+              escolhido && (!directStaffId || termsFor(terms, directStaffId, escolhido));
+            setServiceIdx(corresponde ? indice : -1);
             servicoInicialIndisponivel.current = !corresponde;
             if (!corresponde) {
               initialSlotIso.current = null;
@@ -1217,27 +1248,17 @@ function ArenaApp({
             setServiceIdx(
               directStaffId && fromPublicSlot.current
                 ? shortestServiceIndex(availableServices, terms, directStaffId)
-                : 0,
+                : -1,
             );
           }
           if (directStaffId) {
             setAnyAvailable(false);
-            setStaffIdx(
-              Math.max(
-                0,
-                availableStaff.findIndex((row) => row.id === directStaffId),
-              ),
-            );
-          } else if (mode === "random_available") {
-            setAnyAvailable(true);
-            setStaffIdx(0);
-          } else if (mode === "favorite_then_pick" && favoriteId) {
-            const favIdx = availableStaff.findIndex((row) => row.id === favoriteId);
-            setAnyAvailable(false);
-            setStaffIdx(favIdx >= 0 ? favIdx : 0);
+            const indiceTitular = availableStaff.findIndex((row) => row.id === directStaffId);
+            if (indiceTitular < 0) throw new Error(tNow("cust.staffLinkUnavailable"));
+            setStaffIdx(indiceTitular);
           } else {
             setAnyAvailable(false);
-            setStaffIdx(0);
+            setStaffIdx(-1);
           }
         }
       } catch (err) {
@@ -1405,6 +1426,15 @@ function ArenaApp({
       setAvailabilityVersion((v) => v + 1);
       return;
     }
+    if (aceite && !rescheduleId && !sugerirEquipe) {
+      setBookingError(t("rodizio.mudou"));
+      setAceite(null);
+      setSelectedSlotAt(null);
+      setStaffIdx(-1);
+      setStaffChosen(false);
+      setStaffOpen(true);
+      return;
+    }
     recordUsage("booking_started");
     bookingLock.current = true;
     setBookingBusy(true);
@@ -1568,6 +1598,27 @@ function ArenaApp({
           p_ends_at: booking.ends_at,
         });
         if (error) throw error;
+      } else if (sugerirEquipe && turno) {
+        const { error } = await supabase.rpc("reservar_sugestao_agenda", {
+          p_loja: shopId,
+          p_servico: booking.service_id,
+          p_profissional: staffId,
+          p_inicio: booking.starts_at,
+          p_turno: turno.turno,
+          p_direto: Boolean(escolhaPublica),
+          ...(!escolhaPublica && repeatEnabled
+            ? {
+                p_serie: repeatKind,
+                p_intervalo: repeatKind === "interval_days" ? repeatInterval : undefined,
+              }
+            : {}),
+        });
+        if (error) throw error;
+        repeatApplied = !escolhaPublica && repeatEnabled;
+        setAceite(null);
+        setStaffIdx(-1);
+        setStaffChosen(false);
+        void rodizio.refetch();
       } else if (directLinkActive && directBarberSlug && directShopSlug) {
         const { error } = await supabase.rpc("create_direct_appointment", {
           p_shop_slug: directShopSlug,
@@ -1598,6 +1649,17 @@ function ArenaApp({
       recordUsage("booking_failed");
       const code = err && typeof err === "object" && "code" in err ? err.code : null;
       const message = err && typeof err === "object" && "message" in err ? String(err.message) : "";
+      if (message.includes("AGENDA_RODADA_ATUALIZADA")) {
+        setSelectedSlotAt(null);
+        setAceite(null);
+        setStaffIdx(-1);
+        setStaffChosen(false);
+        setStaffOpen(true);
+        setBookingError(t("rodizio.mudou"));
+        void regras.refetch();
+        void rodizio.refetch();
+        return;
+      }
       // Erro da própria tela (sem profissional livre etc.): a frase já diz o que fazer.
       if (err instanceof Error && !code) {
         setBookingError(err.message || t("booking.errorGeneric"));
@@ -1777,8 +1839,8 @@ function ArenaApp({
       setAppointmentsNotice(t("fix.cliente-app.rescheduleUnavailable"));
       return;
     }
+    setAceite(null);
     setServiceIdx(serviceIndex);
-    staffPickedByUser.current = true;
     setAnyAvailable(false);
     setStaffIdx(staffIndex);
     setRepeatEnabled(false);
@@ -1860,11 +1922,17 @@ function ArenaApp({
     // O horário fica se continuar livre; senão a grade avisa (ver slotGone).
     setBookingError(null);
     setBookingUncertain(false);
-    if (!staffChosen && !directLinkActive) setStaffOpen(true);
+    if (!pickedStaff && !directLinkActive) setStaffOpen(true);
   };
   const pickStaff = (index: number) => {
     const member = staff[index];
-    staffPickedByUser.current = true;
+    setAceite(sugerirEquipe && member?.booking_slug === turno?.barber ? turno : null);
+    if (pickedStaff?.id !== member?.id) setSelectedSlotAt(null);
+    if (member && selectedService && !termsFor(serviceTerms, member.id, selectedService)) {
+      setServiceIdx(-1);
+      setServiceChosen(false);
+    }
+    setServiceOpen(true);
     setAnyAvailable(false);
     setStaffIdx(index);
     setStaffChosen(true);
@@ -1872,13 +1940,28 @@ function ArenaApp({
     setAgainMissing((prev) => (prev?.service !== undefined ? { service: prev.service } : null));
     setBookingError(null);
     setBookingUncertain(false);
-    if (member && !demo && shopId && userId && staffAssignmentMode === "favorite_then_pick") {
-      void supabase.rpc("set_favorite_staff", { p_shop_id: shopId, p_staff_id: member.id });
-      setFavoriteStaffId(member.id);
-      setFavoriteSaved(member.display_name);
+  };
+  const salvarFavorito = async () => {
+    if (!shopId || !userId || !selectedStaff || salvandoFavorito) return;
+    setSalvandoFavorito(true);
+    try {
+      const { error } = await supabase.rpc("set_favorite_staff", {
+        p_shop_id: shopId,
+        p_staff_id: selectedStaff.id,
+      });
+      if (error) throw error;
+      setFavoriteStaffId(selectedStaff.id);
+      setFavoriteSaved(selectedStaff.display_name);
+    } catch {
+      setBookingError(t("ins.att.saveErrorShort"));
+    } finally {
+      setSalvandoFavorito(false);
     }
   };
   const pickAnyStaff = () => {
+    if (manual) return;
+    setAceite(null);
+    setSelectedSlotAt(null);
     setAnyAvailable(true);
     setStaffChosen(true);
     setStaffOpen(false);
@@ -1974,16 +2057,16 @@ function ArenaApp({
   // tocar num horário). O primeiro que falta é o único "agora"; os seguintes ficam "a fazer".
   const staffHasValue = Boolean(selectedStaff) || anyAvailable;
   const stepsDone = [
-    Boolean(selectedService) && (serviceChosen || !serviceOpen),
     staffHasValue && (staffChosen || !staffOpen || directLinkActive),
+    Boolean(selectedService) && (serviceChosen || !serviceOpen),
     Boolean(selectedSlot),
     false,
   ];
   const firstOpenStep = stepsDone.indexOf(false);
   const stepStateAt = (index: number): StepState =>
     stepsDone[index] ? "done" : index === firstOpenStep ? "current" : "upcoming";
-  const serviceStep = stepStateAt(0);
-  const staffStep = stepStateAt(1);
+  const staffStep = stepStateAt(0);
+  const serviceStep = stepStateAt(1);
   const whenStep = stepStateAt(2);
   const reviewStep = stepStateAt(3);
   const repeatChoice: RepeatChoice = !repeatEnabled
@@ -2427,11 +2510,11 @@ function ArenaApp({
     const serviceIndex = services.findIndex((item) => item.id === row.service_id);
     const staffIndex = staff.findIndex((item) => item.id === row.staff_id);
     // Só vem marcado (✓ e recolhido) o que ainda existe; o que saiu abre o passo com aviso.
+    setAceite(null);
     if (serviceIndex >= 0) setServiceIdx(serviceIndex);
     setServiceChosen(serviceIndex >= 0);
     setServiceOpen(serviceIndex < 0);
     if (staffIndex >= 0) {
-      staffPickedByUser.current = true;
       setAnyAvailable(false);
       setStaffIdx(staffIndex);
     }
@@ -2800,6 +2883,7 @@ function ArenaApp({
       slots={availableSlots}
       selectedIso={selectedSlot ? selectedSlotAt : null}
       onSelect={(iso) => {
+        if (sugerirEquipe && turno) setAceite(turno);
         setSelectedSlotAt(iso);
         setPickedSlotLost(null);
         setBookingError(null);
@@ -3370,7 +3454,7 @@ function ArenaApp({
           )}
 
           {tab === "agenda" && (
-            // Agendar em passos numa página só: 1 Serviço → 2 Profissional → 3 Dia e horário →
+            // Agendar em passos numa página só: 1 Profissional → 2 Serviço → 3 Dia e horário →
             // 4 Conferir. O resumo com o botão fica sempre à vista (fixo no celular, coluna da
             // direita no computador).
             <div className="space-y-5">
@@ -3410,7 +3494,9 @@ function ArenaApp({
                       setAgainMissing(null);
                       setServiceOpen(true);
                       setStaffOpen(!directLinkActive);
-                      scrollToStep("booking-step-service");
+                      scrollToStep(
+                        directLinkActive ? "booking-step-service" : "booking-step-staff",
+                      );
                     }}
                   />
                   {outsideDemo && emDominioDeLoja() && shopId && directShopSlug && <AtivarChave />}
@@ -3456,8 +3542,119 @@ function ArenaApp({
                         uma coluna própria com listas roláveis junto ao calendário. */}
                     <div className="customer-booking-choices space-y-4 tablet:grid tablet:grid-cols-2 tablet:items-start tablet:gap-4 tablet:space-y-0">
                       <StepCard
-                        id="booking-step-service"
+                        id="booking-step-staff"
                         index={1}
+                        title={t("booking.staff")}
+                        state={staffStep}
+                        aside={
+                          directLinkActive || expandedBooking ? null : !staffOpen &&
+                            staffHasValue ? (
+                            <ChangeButton
+                              label={t("booking.changeStaff")}
+                              disabled={bookingBusy}
+                              onClick={() => setStaffOpen(true)}
+                            />
+                          ) : staffChoices.length > SHORT_CHOICE_LIST ? (
+                            <CatalogViewToggle
+                              viewMode={staffView}
+                              onViewMode={changeStaffView}
+                              className="booking-view-toggle"
+                            />
+                          ) : null
+                        }
+                      >
+                        {!catalogLoading && !catalogError && staffChoices.length === 0 && (
+                          <EmptyState variant="plain" tone="people" title={t("booking.noStaff")} />
+                        )}
+                        {staffNotForService && pickedStaff && !directLinkActive && (
+                          <Notice
+                            tone="warning"
+                            role="none"
+                            title={t("booking.staffNotForService", {
+                              name: pickedStaff.display_name,
+                            })}
+                          />
+                        )}
+                        {againMissing?.staff !== undefined && (
+                          <Notice
+                            tone="warning"
+                            role="none"
+                            title={
+                              againMissing.staff
+                                ? t("booking.againStaffGone", { name: againMissing.staff })
+                                : t("booking.againStaffGoneAny")
+                            }
+                          />
+                        )}
+                        {favoriteSaved && (
+                          <Notice
+                            tone="success"
+                            icon={StarIcon}
+                            title={t("booking.favoriteSaved", { name: favoriteSaved })}
+                          />
+                        )}
+                        {directLinkActive && selectedStaff ? (
+                          <StaffSummary member={selectedStaff} locked />
+                        ) : !expandedBooking && !staffOpen && staffHasValue ? (
+                          <StaffSummary
+                            member={anyAvailable ? null : selectedStaff}
+                            any={anyAvailable}
+                            favorite={Boolean(
+                              selectedStaff && selectedStaff.id === favoriteStaffId,
+                            )}
+                            suggested={sugerirEquipe}
+                          />
+                        ) : (
+                          <StaffChoices
+                            choices={staffChoices.map(({ m, i }) => ({ member: m, index: i }))}
+                            selectedIndex={pickedStaff ? staff.indexOf(pickedStaff) : null}
+                            anyOption={
+                              !manual &&
+                              (staffAssignmentMode === "random_available" ||
+                                staffAssignmentMode === "favorite_then_pick")
+                            }
+                            anyActive={anyAvailable}
+                            favoriteId={favoriteStaffId}
+                            favoriteName={
+                              staffAssignmentMode === "favorite_then_pick"
+                                ? staff.find((member) => member.id === favoriteStaffId)
+                                    ?.display_name
+                                : null
+                            }
+                            view={
+                              expandedBooking
+                                ? "list"
+                                : staffChoices.length > SHORT_CHOICE_LIST
+                                  ? staffView
+                                  : "grid"
+                            }
+                            suggested={sugerirEquipe}
+                            disabled={bookingBusy}
+                            onPick={pickStaff}
+                            onAny={pickAnyStaff}
+                          />
+                        )}
+                        {!demo &&
+                          regras.data &&
+                          (regras.data.manual || staffAssignmentMode === "favorite_then_pick") &&
+                          selectedStaff &&
+                          (staffChosen || directLinkActive) &&
+                          !aceite &&
+                          selectedStaff.id !== favoriteStaffId && (
+                            <button
+                              type="button"
+                              className="action-button min-h-11"
+                              disabled={salvandoFavorito || bookingBusy}
+                              onClick={() => void salvarFavorito()}
+                            >
+                              <StarIcon className="size-4" aria-hidden />
+                              {t("booking.salvarFavorito")}
+                            </button>
+                          )}
+                      </StepCard>
+                      <StepCard
+                        id="booking-step-service"
+                        index={2}
                         title={t("booking.service")}
                         state={serviceStep}
                         aside={
@@ -3526,12 +3723,14 @@ function ArenaApp({
                             service={selectedService}
                             terms={bookingService}
                             formatMoney={formatMoney}
-                            suggested={!serviceChosen}
+                            suggested={sugerirServico}
                           />
                         ) : (
                           <ServiceChoices
-                            services={services}
-                            selectedIndex={serviceIdx}
+                            services={servicosVisiveis}
+                            selectedIndex={
+                              selectedService ? servicosVisiveis.indexOf(selectedService) : -1
+                            }
                             view={
                               expandedBooking || services.length <= SHORT_CHOICE_LIST
                                 ? "list"
@@ -3542,103 +3741,11 @@ function ArenaApp({
                               service
                             }
                             formatMoney={formatMoney}
-                            suggested={!serviceChosen}
+                            suggested={sugerirServico}
                             disabled={bookingBusy}
-                            onPick={pickService}
-                          />
-                        )}
-                      </StepCard>
-
-                      <StepCard
-                        id="booking-step-staff"
-                        index={2}
-                        title={t("booking.staff")}
-                        state={staffStep}
-                        aside={
-                          directLinkActive || expandedBooking ? null : !staffOpen &&
-                            staffHasValue ? (
-                            <ChangeButton
-                              label={t("booking.changeStaff")}
-                              disabled={bookingBusy}
-                              onClick={() => setStaffOpen(true)}
-                            />
-                          ) : staffChoices.length > SHORT_CHOICE_LIST ? (
-                            <CatalogViewToggle
-                              viewMode={staffView}
-                              onViewMode={changeStaffView}
-                              className="booking-view-toggle"
-                            />
-                          ) : null
-                        }
-                      >
-                        {!catalogLoading && !catalogError && staffChoices.length === 0 && (
-                          <EmptyState variant="plain" tone="people" title={t("booking.noStaff")} />
-                        )}
-                        {staffNotForService && pickedStaff && !directLinkActive && (
-                          <Notice
-                            tone="warning"
-                            role="none"
-                            title={t("booking.staffNotForService", {
-                              name: pickedStaff.display_name,
-                            })}
-                          />
-                        )}
-                        {againMissing?.staff !== undefined && (
-                          <Notice
-                            tone="warning"
-                            role="none"
-                            title={
-                              againMissing.staff
-                                ? t("booking.againStaffGone", { name: againMissing.staff })
-                                : t("booking.againStaffGoneAny")
+                            onPick={(index) =>
+                              pickService(services.indexOf(servicosVisiveis[index]))
                             }
-                          />
-                        )}
-                        {favoriteSaved && (
-                          <Notice
-                            tone="success"
-                            icon={StarIcon}
-                            title={t("booking.favoriteSaved", { name: favoriteSaved })}
-                          />
-                        )}
-                        {directLinkActive && selectedStaff ? (
-                          <StaffSummary member={selectedStaff} locked />
-                        ) : !expandedBooking && !staffOpen && staffHasValue ? (
-                          <StaffSummary
-                            member={anyAvailable ? null : selectedStaff}
-                            any={anyAvailable}
-                            favorite={Boolean(
-                              selectedStaff && selectedStaff.id === favoriteStaffId,
-                            )}
-                            suggested={!staffChosen}
-                          />
-                        ) : (
-                          <StaffChoices
-                            choices={staffChoices.map(({ m, i }) => ({ member: m, index: i }))}
-                            selectedIndex={anyAvailable ? null : staffIdx}
-                            anyOption={
-                              staffAssignmentMode === "random_available" ||
-                              staffAssignmentMode === "favorite_then_pick"
-                            }
-                            anyActive={anyAvailable}
-                            favoriteId={favoriteStaffId}
-                            favoriteName={
-                              staffAssignmentMode === "favorite_then_pick"
-                                ? staff.find((member) => member.id === favoriteStaffId)
-                                    ?.display_name
-                                : null
-                            }
-                            view={
-                              expandedBooking
-                                ? "list"
-                                : staffChoices.length > SHORT_CHOICE_LIST
-                                  ? staffView
-                                  : "grid"
-                            }
-                            suggested={!staffChosen}
-                            disabled={bookingBusy}
-                            onPick={pickStaff}
-                            onAny={pickAnyStaff}
                           />
                         )}
                       </StepCard>

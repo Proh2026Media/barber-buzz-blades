@@ -1634,6 +1634,27 @@ export type Database = {
           accent_color: string | null;
         }[];
       };
+      regras_sugestao_agenda: {
+        Args: { p_loja: string; p_host: string; p_barber?: string };
+        Returns: Json;
+      };
+      consultar_rodizio_agenda: {
+        Args: { p_loja: string; p_host: string; p_servico?: string; p_dia: string };
+        Returns: Json;
+      };
+      reservar_sugestao_agenda: {
+        Args: {
+          p_loja: string;
+          p_servico: string;
+          p_profissional: string;
+          p_inicio: string;
+          p_turno: string;
+          p_direto: boolean;
+          p_serie?: string;
+          p_intervalo?: number;
+        };
+        Returns: string;
+      };
       consultar_agenda_publica: {
         Args: { p_host: string; p_servico?: string; p_profissional?: string; p_dia?: string };
         Returns: Json;

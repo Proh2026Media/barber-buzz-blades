@@ -1,3 +1,4 @@
+import { useRegrasAgenda } from "@/features/customer/booking/sugestoes";
 import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import {
   AlarmClock,
@@ -393,6 +394,8 @@ export function BookingRulesSettings({
   const { t } = useI18n();
   const groupId = useId();
   // Só os campos deste formulário: salvar outro cartão não mexe no rascunho.
+  const politica = useRegrasAgenda(settings.barbershop_id);
+  const escolhaManual = useDemo() ? true : politica.data?.manual;
   const savedMode = staffModeOf(settings);
   const savedDraft = useMemo<BookingRulesDraft>(
     () => ({
@@ -471,7 +474,7 @@ export function BookingRulesSettings({
     ),
     random_available: (
       <ul className="flex flex-wrap gap-1.5" aria-label={t("bookingRules.staff.exampleAria")}>
-        <StaffPill name={anyone} icon={Shuffle} selected />
+        <StaffPill name={anyone} icon={Shuffle} />
         <StaffPill name={sample[0]} />
         <StaffPill name={sample[1]} />
       </ul>
@@ -562,22 +565,36 @@ export function BookingRulesSettings({
             title={t("bookingRules.staff.title")}
             description={t("bookingRules.staff.text")}
           />
-          <ChoiceCards
-            legend={t("bookingRules.staff.title")}
-            name={`${groupId}-staff-mode`}
-            columns={3}
-            value={draft.staff_assignment_mode}
-            disabled={saving}
-            onChange={(mode) => update({ staff_assignment_mode: mode })}
-            options={STAFF_MODES.map((mode) => ({
-              value: mode,
-              icon: staffIcon[mode],
-              title: t(`bookingRules.staff.${mode}.title` as const),
-              description: t(`bookingRules.staff.${mode}.text` as const),
-              content: staffExample[mode],
-            }))}
+          {escolhaManual === false && (
+            <ChoiceCards
+              legend={t("bookingRules.staff.title")}
+              name={`${groupId}-staff-mode`}
+              columns={3}
+              value={draft.staff_assignment_mode}
+              disabled={saving}
+              onChange={(mode) => update({ staff_assignment_mode: mode })}
+              options={STAFF_MODES.map((mode) => ({
+                value: mode,
+                icon: staffIcon[mode],
+                title: t(`bookingRules.staff.${mode}.title` as const),
+                description: t(`bookingRules.staff.${mode}.text` as const),
+                content: staffExample[mode],
+              }))}
+            />
+          )}
+          <IconList
+            items={[
+              ...(escolhaManual === undefined
+                ? []
+                : [
+                    {
+                      icon: UserCheck,
+                      text: t(escolhaManual ? "rodizio.painelManual" : "rodizio.painel"),
+                    },
+                  ]),
+              { icon: Star, text: t("rodizio.painelServico") },
+            ]}
           />
-          <IconList items={[{ icon: UserCheck, text: t("bookingRules.staff.always") }]} />
         </section>
       )}
 

@@ -32,6 +32,9 @@ export const Route = createFileRoute("/app")({
     ...(typeof search.service === "string" && idLojaGerenciada(search.service)
       ? { service: search.service }
       : {}),
+    ...(typeof search.turno === "string" && idLojaGerenciada(search.turno)
+      ? { turno: search.turno }
+      : {}),
     barber: typeof search.barber === "string" ? search.barber : undefined,
     shop: typeof search.shop === "string" ? search.shop : undefined,
     join: search.join === "1" || search.join === true || search.join === "true" ? true : undefined,
@@ -84,6 +87,7 @@ function AppRoute() {
         key={visitante + JSON.stringify(contexto ?? {})}
         loja={visitante}
         service={contexto?.service}
+        turno={contexto?.turno}
         barber={contexto?.barber}
         day={contexto?.day}
         time={contexto?.time}
@@ -94,7 +98,19 @@ function AppRoute() {
 }
 
 function AppAutenticado() {
-  const { barber, shop, join, tab, reserva, day, time, focus, aviso, service } = Route.useSearch();
+  const {
+    barber,
+    shop,
+    join,
+    tab,
+    reserva,
+    day,
+    time,
+    focus,
+    aviso,
+    service,
+    turno: searchTurno,
+  } = Route.useSearch();
   const { t } = useI18n();
   const [hostShop, setHostShop] = useState<string | undefined>(undefined);
   const [ready, setReady] = useState(false);
@@ -139,8 +155,16 @@ function AppAutenticado() {
 
   return (
     <ArenaApp
-      key={effectiveShop ?? "sem-loja"}
-      directBarberSlug={daLoja ? barber : undefined}
+      key={JSON.stringify([
+        effectiveShop,
+        daLoja && barber,
+        daLoja && searchTurno,
+        daLoja && service,
+        daLoja && day,
+        daLoja && time,
+      ])}
+      directBarberSlug={daLoja && !searchTurno ? barber : undefined}
+      escolhaPublica={daLoja && searchTurno && barber ? { barber, turno: searchTurno } : undefined}
       directShopSlug={effectiveShop}
       promptJoin={Boolean(join)}
       initialTab={initialTabFor(tab, Boolean(day && time))}

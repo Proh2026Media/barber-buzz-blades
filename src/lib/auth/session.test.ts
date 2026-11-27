@@ -299,6 +299,14 @@ test("destino só aceita caminho interno conhecido e parâmetros conhecidos", ()
   assert.equal(sanitizeNext(42), null);
 });
 
+test("o retorno à agenda mantém o barbeiro do link e distingue a vez do rodízio", () => {
+  const pessoal = "/app?tab=agendar&shop=minha-loja&barber=ana";
+  const turno = "00000000-0000-0000-0000-000000000000";
+  assert.equal(sanitizeNext(pessoal), pessoal);
+  assert.equal(sanitizeNext(pessoal + "&turno=" + turno), pessoal + "&turno=" + turno);
+  assert.equal(sanitizeNext(pessoal + "&turno=invalido"), pessoal);
+});
+
 test("motivo da recusa no endereço: só os conhecidos", () => {
   assert.equal(parseAccessNotice("removido"), "removido");
   assert.equal(parseAccessNotice("sem-plataforma"), "sem-plataforma");

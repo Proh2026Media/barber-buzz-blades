@@ -1,6 +1,13 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const enUS: Record<MessageKey, string> = {
+  "rodizio.mudou": "The turn has changed. Review your professional and time before confirming.",
+  "rodizio.painel":
+    "On the shop link, we suggest the eligible professional with an opening that day who has waited longest for a booking through rotation. Professionals without one go first. The rotation advances when a suggested booking is confirmed. Direct choices and favorites do not count.",
+  "rodizio.painelManual":
+    "On the shop link, clients choose a professional or use their saved favorite. A personal link opens with that professional selected.",
+  "rodizio.painelServico":
+    "The featured service is the available service completed most often in the last 90 days. Ties and missing history have no highlight.",
   "rapido.entrarConfirmar": "Sign in to confirm",
   "rapido.codigoSeis": "Email code (6 digits)",
   "rapido.formatoCodigo": "Enter or paste all 6 digits from the email.",
@@ -1419,6 +1426,7 @@ export const enUS: Record<MessageKey, string> = {
   "booking.anyStaffHint": "Whoever is free",
   "booking.anyStaffFavorite": "We try {name} first",
   "booking.favorite": "Favorite",
+  "booking.salvarFavorito": "Save as my favorite",
   "booking.favoriteSaved": "{name} is now your favorite",
   "booking.directWith": "You're booking with {name}",
   "booking.tomorrow": "Tomorrow",
@@ -2096,7 +2104,7 @@ export const enUS: Record<MessageKey, string> = {
   "approval.before": "Goes to {names} for approval",
   "approval.beforeOwners": "Goes to the other owners for approval",
   "myProfile.title": "My profile and link",
-  "myProfile.hint": "This is how your clients see you.",
+  "myProfile.hint": "Share your link so clients can book directly with you.",
   "myProfile.noBio": "No introduction yet",
   "myProfile.link": "Your booking link",
   "myProfile.edit": "Edit my profile",
@@ -4214,9 +4222,9 @@ export const enUS: Record<MessageKey, string> = {
   "bookingRules.staff.favorite_then_pick.title": "Start with the favorite",
   "bookingRules.staff.favorite_then_pick.text":
     "The client's usual professional comes pre-selected.",
-  "bookingRules.staff.random_available.title": "Start with anyone",
+  "bookingRules.staff.random_available.title": "Allow any available professional",
   "bookingRules.staff.random_available.text":
-    "“Any professional” with a free slot comes pre-selected.",
+    "Clients can choose “Any professional” to book an available time.",
   "bookingRules.staff.always": "In every case the client can switch professional.",
   "bookingRules.staff.anyone": "Anyone",
   "bookingRules.staff.sampleA": "Rafael",

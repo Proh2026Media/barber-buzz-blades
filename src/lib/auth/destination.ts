@@ -55,6 +55,7 @@ const KNOWN_DESTINATIONS: Record<string, Record<string, Check>> = {
     shop: REF,
     barber: REF,
     service: idLojaGerenciada,
+    turno: idLojaGerenciada,
     join: oneOf("1", "true"),
     tab: oneOf("reservas", "conta", "perfil", "agendar", "agenda"),
     reserva: TOKEN,

@@ -1,6 +1,13 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const ptPT: Record<MessageKey, string> = {
+  "rodizio.mudou": "A vez mudou. Confira o profissional e a hora antes de confirmar.",
+  "rodizio.painel":
+    "Na ligação geral, sugerimos quem aguarda há mais tempo uma marcação por rotação, entre quem presta o serviço e tem vaga nesse dia. Quem nunca recebeu tem prioridade. A rotação avança quando o cliente confirma a sugestão. Escolhas diretas e favoritos ficam fora da contagem.",
+  "rodizio.painelManual":
+    "Na ligação geral, o cliente escolhe o profissional ou usa o favorito que guardou. A ligação pessoal abre diretamente com o profissional.",
+  "rodizio.painelServico":
+    "O serviço em destaque é o mais realizado nos últimos 90 dias entre os disponíveis. Empates e ausência de histórico ficam sem destaque.",
   "rapido.entrarConfirmar": "Entrar para confirmar",
   "rapido.codigoSeis": "Código do e-mail (6 dígitos)",
   "rapido.formatoCodigo": "Introduza ou cole os 6 algarismos do código enviado por e-mail.",
@@ -1432,6 +1439,7 @@ export const ptPT: Record<MessageKey, string> = {
   "booking.anyStaffHint": "Quem estiver livre",
   "booking.anyStaffFavorite": "Tentamos primeiro {name}",
   "booking.favorite": "Favorito",
+  "booking.salvarFavorito": "Guardar como meu favorito",
   "booking.favoriteSaved": "{name} é agora o seu favorito",
   "booking.directWith": "Vai marcar com {name}",
   "booking.tomorrow": "Amanhã",
@@ -2107,7 +2115,7 @@ export const ptPT: Record<MessageKey, string> = {
   "approval.before": "Vai para aprovação de {names}",
   "approval.beforeOwners": "Vai para aprovação dos outros donos",
   "myProfile.title": "O meu perfil e link",
-  "myProfile.hint": "É assim que os seus clientes o veem.",
+  "myProfile.hint": "Partilhe a sua ligação para o cliente marcar diretamente consigo.",
   "myProfile.noBio": "Ainda sem apresentação",
   "myProfile.link": "O seu link de marcação",
   "myProfile.edit": "Editar o meu perfil",
@@ -4239,9 +4247,9 @@ export const ptPT: Record<MessageKey, string> = {
   "bookingRules.staff.favorite_then_pick.title": "Começa pelo favorito",
   "bookingRules.staff.favorite_then_pick.text":
     "Já vem selecionado o profissional habitual do cliente.",
-  "bookingRules.staff.random_available.title": "Começa em qualquer um",
+  "bookingRules.staff.random_available.title": "Permitir qualquer disponível",
   "bookingRules.staff.random_available.text":
-    "Já vem selecionado “Qualquer profissional” com horário livre.",
+    "O cliente pode escolher «Qualquer profissional» para marcar uma hora livre.",
   "bookingRules.staff.always": "Em todos os casos o cliente pode trocar de profissional.",
   "bookingRules.staff.anyone": "Qualquer um",
   "bookingRules.staff.sampleA": "Rafael",

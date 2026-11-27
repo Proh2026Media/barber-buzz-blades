@@ -55,7 +55,7 @@ export const Route = createFileRoute("/$barberSlug")({
         barber: raw,
         shop: resolution.shop_slug,
         join: undefined,
-        tab: undefined,
+        tab: "agendar",
         reserva: undefined,
       },
     });
