@@ -1,11 +1,11 @@
 # PWA (app instalável)
 
-O Barba & Cabelo pode ser instalado na tela inicial (Android/Chrome e iOS Safari).
+A Aurset e os aplicativos dos estabelecimentos podem ser instalados na tela inicial do Android e do iPhone. O domínio aberto determina o nome e a marca da instalação.
 
 ## O que já está no projeto
 
-- Manifesto: `public/manifest.webmanifest`
-- Ícones: `public/icons/` (180, 192, 512 + maskable)
+- O domínio da plataforma usa `public/manifest.webmanifest` e os arquivos de `public/icons/`.
+- Nos domínios dos estabelecimentos, `/identidade/manifesto` indica os ícones PNG de 192 e 512 px. A aba usa 32 px e o iPhone usa 180 px em `/apple-touch-icon.png`. A logo fica centralizada e mantém a proporção original. A versão `maskable` reserva espaço para a máscara do dispositivo. Uma loja sem logo usa o selo com suas iniciais e cores.
 - Service worker: `vite-plugin-pwa` (build gera `sw.js`)
 - Convite “Instalar o app” quando o navegador oferecer: desde 09/11/2026, ocupa espaço no conteúdo rolável da loja, cliente, administração e pontos; nas páginas públicas, acompanha o fluxo da página. Não sobrepõe os controles. O evento é capturado uma vez na raiz, inclusive durante a entrada nas áreas autenticadas. Fechar adia por 30 dias neste aparelho.
 - Metas Apple/Android no `__root.tsx`
