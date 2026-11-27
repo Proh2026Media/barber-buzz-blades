@@ -123,11 +123,9 @@ function InvitePage() {
           <>
             <div className="flex items-center gap-3">
               {info.shop?.logo_url ? (
-                <img
-                  src={info.shop.logo_url}
-                  alt=""
-                  className="size-12 shrink-0 rounded-[var(--control-radius)] object-cover"
-                />
+                <span className="quadro-logo-loja size-12">
+                  <img src={info.shop.logo_url} alt="" />
+                </span>
               ) : info.shop?.name ? (
                 <SeloBarbearia tema={info.shop} lojaId={info.shop.id} nome={info.shop.name} tamanho={48} />
               ) : (

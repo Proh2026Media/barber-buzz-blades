@@ -1,0 +1,4 @@
+__pycache__/
+referencia*.json
+*.csv
+*.xlsx

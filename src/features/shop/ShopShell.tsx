@@ -2007,7 +2007,7 @@ export function ShopShell({ profile, headerActions }: ShopShellProps) {
               <>
                 <div className="flex min-w-0 items-center gap-2">
                   {shop && (settings?.logo_url ? (
-                    <img src={settings.logo_url} alt="" className="size-8 shrink-0 object-contain" />
+                    <span className="quadro-logo-loja size-8"><img src={settings.logo_url} alt="" /></span>
                   ) : (
                     <SeloBarbearia lojaId={shop.id} tema={settings} nome={settings?.display_name || shop.name} tamanho={32} />
                   ))}

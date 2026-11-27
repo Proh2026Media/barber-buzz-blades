@@ -33,7 +33,7 @@ export function LoginLayoutPreview({
       <div className="login-model-preview-shade" />
       <div className="login-model-preview-brand">
         <span
-          className="login-model-preview-logo"
+          className="login-model-preview-logo quadro-logo-loja size-6"
           style={{ backgroundColor: logoBackgroundColor || "rgba(255,255,255,.92)" }}
         >
           {logoUrl ? <img src={logoUrl} alt="" /> : <SeloBarbearia tema={tema} lojaId={lojaId} nome={shopName} tamanho={24} />}

@@ -667,13 +667,13 @@ export function BrandIdentityEditor<S extends ShopAppearanceSettings>({
           >
             <div className="brand-preview-header flex items-center gap-3 border-b border-border/60 py-3 pr-4">
               <span
-                className="brand-preview-logo flex size-12 shrink-0 items-center justify-center overflow-hidden"
+                className="brand-preview-logo quadro-logo-loja size-12"
                 style={{
                   backgroundColor: draft.logo_background_color || "#ffffff",
                 }}
               >
                 {previewLogo ? (
-                  <img src={previewLogo} alt="" className="size-full object-contain p-[12.5%]" />
+                  <img src={previewLogo} alt="" />
                 ) : (
                   <SeloBarbearia lojaId={settings.barbershop_id} tema={draft} nome={previewName} tamanho={44} />
                 )}
@@ -743,11 +743,11 @@ export function BrandIdentityEditor<S extends ShopAppearanceSettings>({
             style={previewStyle}
           >
             <span
-              className="brand-preview-logo flex size-9 shrink-0 items-center justify-center overflow-hidden"
+              className="brand-preview-logo quadro-logo-loja size-9"
               style={{ backgroundColor: draft.logo_background_color || "#ffffff" }}
             >
               {previewLogo ? (
-                <img src={previewLogo} alt="" className="size-full object-contain p-[12.5%]" />
+                <img src={previewLogo} alt="" />
               ) : (
                 <SeloBarbearia lojaId={settings.barbershop_id} tema={draft} nome={previewName} tamanho={36} />
               )}

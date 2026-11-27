@@ -2629,18 +2629,24 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
 .brand-corners-round .brand-header-logo-wrap {
   border-radius: 999px;
 }
-.brand-header-logo {
-  box-sizing: border-box;
-  width: 100%;
-  height: 100%;
-  padding: 25%;
+/* A arte ocupa o quadrado inscrito no círculo. Até uma logo quadrada com tinta nos
+   quatro cantos cabe inteira no modo de cantos arredondados. A margem é do quadro. */
+.quadro-logo-loja {
+  display: inline-grid;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  place-items: center;
+  flex-shrink: 0;
+}
+.quadro-logo-loja > img {
+  display: block;
+  width: 70%;
+  height: 70%;
+  min-width: 0;
+  min-height: 0;
   object-fit: contain;
-  background: transparent;
+  object-position: center;
 }
 .brand-header-logo-fallback {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   background: var(--primary);
   color: var(--primary-foreground);
 }

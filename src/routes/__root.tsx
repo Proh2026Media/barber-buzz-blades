@@ -138,7 +138,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         // CSS por dispositivo (src/dispositivos.css → src/styles/*.css) depois do styles.css:
         // vence em igualdade de especificidade.
         { rel: "stylesheet", href: deviceCss },
-        { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+        { rel: "icon", href: "/identidade/icone?tamanho=32" },
       ],
     };
   },

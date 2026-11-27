@@ -215,12 +215,10 @@ function PoliticaClube() {
 
         <section className="space-y-3 text-center">
           {logoUrl ? (
-            <img
-              src={logoUrl}
-              alt=""
-              className="mx-auto size-16 rounded-2xl border border-border object-contain p-1.5"
-              style={{ background: logoBackground || "#f7f5f0" }}
-            />
+            <span className="quadro-logo-loja size-16 rounded-2xl border border-border"
+              style={{ background: logoBackground || "#f7f5f0" }}>
+              <img src={logoUrl} alt="" />
+            </span>
           ) : (
             <div className="mx-auto flex size-16 items-center justify-center rounded-2xl border border-border bg-muted text-foreground">
               {shopName ? (

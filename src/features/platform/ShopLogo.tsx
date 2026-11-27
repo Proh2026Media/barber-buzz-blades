@@ -4,7 +4,11 @@ import { cn } from "@/lib/utils";
 
 export type ShopLogoInfo = { url: string | null; nome?: string | null; background: string | null; primary_color?: string | null; accent_color?: string | null };
 
-const SIZE = { sm: "size-8", md: "size-12" } as const;
+const SIZE = {
+  xs: { classe: "size-6", pixels: 24 },
+  sm: { classe: "size-8", pixels: 32 },
+  md: { classe: "size-12", pixels: 48 },
+} as const;
 
 /** Para desenhos transparentes e claros, usa um fundo grafite se a loja não escolheu um. */
 function fundoDaMiniatura(img: HTMLImageElement): string | undefined {
@@ -46,13 +50,13 @@ export function ShopLogo({
   const [amostra, setAmostra] = useState<{ url: string; fundo?: string } | null>(null);
   const [semCors, setSemCors] = useState<string | null>(null);
   const analisar = Boolean(url && !logo?.background && url.includes("/storage/v1/object/public/") && semCors !== url);
-  if (!url || broken === url) return <SeloBarbearia lojaId={lojaId} tema={logo} nome={logo?.nome?.trim() || name} tamanho={size === "md" ? 48 : 32} className="shrink-0" />;
+  if (!url || broken === url) return <SeloBarbearia lojaId={lojaId} tema={logo} nome={logo?.nome?.trim() || name} tamanho={SIZE[size].pixels} className="shrink-0" />;
   return (
     <span
       aria-hidden
       className={cn(
-        "inline-flex shrink-0 items-center justify-center",
-        SIZE[size],
+        "quadro-logo-loja",
+        SIZE[size].classe,
       )}
       style={{ backgroundColor: logo?.background || (amostra?.url === url ? amostra.fundo : undefined) || "#ffffff", borderRadius: "var(--control-radius)" }}
     >
@@ -67,7 +71,6 @@ export function ShopLogo({
           if (analisar) setAmostra({ url, fundo: fundoDaMiniatura(event.currentTarget) });
         }}
         onError={() => analisar ? setSemCors(url) : setBroken(url)}
-        className="block size-4/5 min-h-0 min-w-0 object-contain object-center"
       />
     </span>
   );

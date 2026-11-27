@@ -87,7 +87,7 @@ export function LoginScreenPreview({
           {showPhotoCopy && (
             <section className="auth-photo-copy">
               <div
-                className="auth-photo-copy-logo"
+                className="auth-photo-copy-logo quadro-logo-loja size-11"
                 style={{ backgroundColor: logoBackgroundColor ?? "rgba(255,255,255,.92)" }}
               >
                 {logoUrl ? <img src={logoUrl} alt="" /> : <SeloBarbearia lojaId={lojaId} tema={{primary_color: primaryColor, accent_color: accentColor}} nome={shopName} tamanho={44} />}
@@ -103,7 +103,7 @@ export function LoginScreenPreview({
               {showPanelBrand && (
                 <div className="auth-brand-identity flex items-center gap-3 pb-4">
                   <div
-                    className="auth-brand-logo flex size-11 shrink-0 items-center justify-center overflow-hidden"
+                    className="auth-brand-logo quadro-logo-loja size-11"
                     style={{
                       backgroundColor:
                         logoBackgroundColor ??
@@ -111,7 +111,7 @@ export function LoginScreenPreview({
                     }}
                   >
                     {logoUrl ? (
-                      <img src={logoUrl} alt="" className="size-full object-contain p-2" />
+                      <img src={logoUrl} alt="" />
                     ) : (
                       <SeloBarbearia lojaId={lojaId} tema={{primary_color: primaryColor, accent_color: accentColor}} nome={shopName} tamanho={44} />
                     )}

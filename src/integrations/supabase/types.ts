@@ -1656,6 +1656,10 @@ export type Database = {
       };
       get_partner_wallet: { Args: { p_shop_id: string }; Returns: Json };
       get_partner_clients: { Args: { p_shop_id: string }; Returns: Json };
+      emails_informados_agendamentos_externa: {
+        Args: { p_loja: string; p_ficha?: string; p_conta?: string };
+        Returns: { reserva: string; inicio: string; email: string }[];
+      };
       get_client_profile_with_contact: {
         Args: { p_shop_id: string; p_customer_id: string };
         Returns: Json;
@@ -2034,6 +2038,10 @@ export type Database = {
       list_managed_brand_shops: {
         Args: Record<string, never>;
         Returns: Pick<Database["public"]["Tables"]["barbershops"]["Row"], "id" | "name" | "slug" | "timezone" | "custom_domain" | "custom_domain_status">[];
+      };
+      platform_externa_sync_status: {
+        Args: { p_shop_id: string };
+        Returns: Json;
       };
       get_managed_brand_settings: {
         Args: { p_shop_id: string };

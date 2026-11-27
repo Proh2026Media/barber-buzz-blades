@@ -1,18 +1,7 @@
 import { useEffect } from "react";
 
-const DEFAULT_FAVICON = "/favicon.svg";
-
-function iconMime(href: string): string | undefined {
-  if (href.startsWith("data:image/svg")) return "image/svg+xml";
-  if (href.startsWith("data:image/png")) return "image/png";
-  if (href.startsWith("data:image/jpeg") || href.startsWith("data:image/jpg")) return "image/jpeg";
-  if (href.startsWith("data:image/webp")) return "image/webp";
-  if (/\.svg(\?|#|$)/i.test(href)) return "image/svg+xml";
-  if (/\.png(\?|#|$)/i.test(href)) return "image/png";
-  if (/\.jpe?g(\?|#|$)/i.test(href)) return "image/jpeg";
-  if (/\.webp(\?|#|$)/i.test(href)) return "image/webp";
-  return undefined;
-}
+const ICONE_DO_DOMINIO = "/identidade/icone?tamanho=32";
+let revisao = 0;
 
 function upsertFaviconLink(rel: string, href: string, type?: string) {
   const selector = `link[rel="${rel}"]`;
@@ -28,28 +17,37 @@ function upsertFaviconLink(rel: string, href: string, type?: string) {
   else el.removeAttribute("type");
 }
 
-/**
- * Usa a logo da identidade visual do estabelecimento como favicon (aba / PWA ícone).
- * Sem logo, volta ao favicon padrão da Aurset.
- */
+/** A aba usa o mesmo enquadramento que o ícone instalado. Uma arte em edição
+ * ainda é local, por isso sua miniatura é montada no navegador. */
 export function applyShopFavicon(logoUrl: string | null | undefined) {
   if (typeof document === "undefined") return;
-  const custom = (logoUrl ?? "").trim();
-  const href = custom || DEFAULT_FAVICON;
-  const type = custom ? iconMime(href) : "image/svg+xml";
-  upsertFaviconLink("icon", href, type);
+  const agora = ++revisao;
+  const url = logoUrl?.trim() || "";
+  if (!url.startsWith("blob:") && !url.startsWith("data:image/")) {
+    const versao = url.match(/[?&]v=([0-9]+)/)?.[1];
+    upsertFaviconLink("icon", ICONE_DO_DOMINIO + (versao ? "&v=" + versao : ""));
+    return;
+  }
+  const imagem = new Image();
+  imagem.onload = () => {
+    if (revisao !== agora || !imagem.naturalWidth || !imagem.naturalHeight) return;
+    const tela = document.createElement("canvas");
+    tela.width = tela.height = 32;
+    const ctx = tela.getContext("2d");
+    if (!ctx) return;
+    const escala = 22 / Math.max(imagem.naturalWidth, imagem.naturalHeight);
+    const largura = escala * imagem.naturalWidth,
+      altura = escala * imagem.naturalHeight;
+    ctx.drawImage(imagem, (32 - largura) / 2, (32 - altura) / 2, largura, altura);
+    upsertFaviconLink("icon", tela.toDataURL(), "image/png");
+  };
+  imagem.src = url;
 }
 
-/** Aplica favicon da loja enquanto a tela estiver montada. */
-export function useShopFavicon(logoUrl: string | null | undefined, shopName?: string | null) {
+/** Aplica a marca salva da loja enquanto a tela estiver montada. */
+export function useShopFavicon(logoUrl: string | null | undefined) {
   useEffect(() => {
-    applyShopFavicon(
-      logoUrl ||
-        (shopName
-          ? `/identidade/icone?dominio=${encodeURIComponent(window.location.hostname)}`
-          : null),
-    );
-    // A rota raiz resolve o título pelo domínio, inclusive durante a troca de telas.
+    applyShopFavicon(logoUrl);
     return () => applyShopFavicon(null);
-  }, [logoUrl, shopName]);
+  }, [logoUrl]);
 }

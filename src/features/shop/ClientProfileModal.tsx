@@ -36,6 +36,7 @@ import { useViewportAtLeast } from "@/lib/device";
 import { ClientNoticeBell } from "./ClientNoticeBell";
 import { AGENDA_STATE } from "./agenda/types";
 import { InviteCard } from "./clients/InviteCard";
+import { EmailsDasReservas } from "./clients/EmailsDasReservas";
 import { NicknameEditor } from "./clients/NicknameEditor";
 import { clientDisplay, whatsappLink } from "./clients/model";
 import { t as tNow, useI18n } from "@/lib/i18n";
@@ -508,6 +509,7 @@ function AccountClientModal({
               {/* Os dois blocos (resumo | histórico) ficam lado a lado a partir de 1024 px
                   (src/styles/agenda.css); antes disso, a mesma pilha de sempre. */}
               <div className="agenda-client-aside space-y-5">
+                <EmailsDasReservas shopId={shopId} conta={customerId} />
                 {profile.contact_phone && (
                   <a href={whatsappLink(profile.contact_phone, "")} target="_blank" rel="noreferrer"
                     className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border px-4 text-sm font-semibold">
@@ -841,6 +843,7 @@ function WalkInClientModal({
           ) : (
             <>
               <div className="agenda-client-aside space-y-5">
+                <EmailsDasReservas shopId={shopId} ficha={shopClientId} />
                 <NicknameEditor value={client.nickname} onSave={saveNickname} />
 
                 {phone && client.whatsapp && (

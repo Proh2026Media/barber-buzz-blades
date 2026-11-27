@@ -34,6 +34,8 @@ import {
 import type { Tables } from "@/integrations/supabase/types";
 import { useI18n } from "@/lib/i18n";
 import { shopPublicOrigin } from "@/lib/shop/host";
+import { ExternaSyncCard } from "./ExternaSyncCard";
+import { LOJA_COM_PLANILHA } from "./externa-sync-status";
 import { AccountManagersPanel } from "./AccountManagersPanel";
 import { ShopTeamList } from "./ShopTeamList";
 import { DEFAULT_TIMEZONE, SHOP_STATUS, friendlyTimeZone, type ShopCounts } from "./shopStats";
@@ -307,6 +309,10 @@ export function ShopDetail({
           {active ? t("plat.status.suspendConfirm") : t("plat.status.reactivateConfirm")}
         </button>
       </div>
+
+      {!demoMode && shop.id === LOJA_COM_PLANILHA && (
+        <ExternaSyncCard shopId={shop.id} timezone={shop.timezone || DEFAULT_TIMEZONE} />
+      )}
 
       <ConfirmDialog
         open={confirmLoyaltyOff}

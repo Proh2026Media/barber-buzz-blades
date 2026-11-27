@@ -1,7 +1,13 @@
 import { dominioDaPlataforma } from "./platform-domain";
 import { APP_NAME } from "../brand";
 
-import { brandTheme, customBrandLeque, resolveBrandColors } from "./branding";
+import {
+  brandTheme,
+  customBrandLeque,
+  LOGO_MAX_BYTES,
+  LOGO_MIME_TYPES,
+  resolveBrandColors,
+} from "./branding";
 
 export async function nomeDaInstalacao(host: string): Promise<string> {
   if ([dominioDaPlataforma, "localhost", "127.0.0.1"].includes(host)) return APP_NAME;
@@ -18,13 +24,22 @@ export async function nomeDaInstalacao(host: string): Promise<string> {
 export async function shopIdentity(url: URL): Promise<Response> {
   const apple = url.pathname === "/apple-touch-icon.png";
   const icon = apple || url.pathname === "/identidade/icone";
+  const pedido = Number(url.searchParams.get("tamanho"));
+  const tamanho = apple ? 180 : [32, 192, 512].includes(pedido) ? pedido : 192;
+  const mascaravel = !apple && url.searchParams.get("mascara") === "1";
   const platform = dominioDaPlataforma;
   const domain = (url.searchParams.get("dominio") || url.hostname).toLowerCase();
   if (!/^[a-z0-9.-]+$/.test(domain)) return new Response(null, { status: 400 });
   if ([platform, "localhost", "127.0.0.1"].includes(domain)) {
     return new Response(null, {
       status: 302,
-      headers: { Location: icon ? "/icons/icon-180.png" : "/manifest.webmanifest" },
+      headers: {
+        Location: !icon
+          ? "/manifest.webmanifest"
+          : tamanho === 32
+            ? "/favicon.svg"
+            : `/icons/icon-${tamanho}${mascaravel ? "-maskable" : ""}.png`,
+      },
     });
   }
   const api = process.env.SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
@@ -51,7 +66,6 @@ export async function shopIdentity(url: URL): Promise<Response> {
     ]);
     const origemLogo = logo ? new URL(logo) : null;
     if (
-      apple &&
       origemLogo &&
       origemPermitida.has(origemLogo.origin) &&
       origemLogo.pathname.startsWith("/storage/v1/object/public/barbershop-logos/")
@@ -61,29 +75,54 @@ export async function shopIdentity(url: URL): Promise<Response> {
         signal: AbortSignal.timeout(5000),
       });
       const tipo = arquivo.headers.get("content-type")?.split(";")[0];
-      if (arquivo.ok && tipo && ["image/svg+xml", "image/jpeg", "image/png"].includes(tipo)) {
-        const { iconeDeLogo } = await import("./selo-png.server");
-        const png = await iconeDeLogo(
-          await arquivo.arrayBuffer(),
-          tipo,
-          shop.logo_background_color,
-        );
-        return new Response(png, {
-          headers: { "Content-Type": "image/png", "Cache-Control": "private, max-age=300" },
-        });
+      if (
+        arquivo.ok &&
+        tipo &&
+        LOGO_MIME_TYPES.some((mime) => mime === tipo) &&
+        Number(arquivo.headers.get("content-length")) <= LOGO_MAX_BYTES
+      ) {
+        const bytes = await arquivo.arrayBuffer();
+        if (bytes.byteLength <= LOGO_MAX_BYTES) {
+          const { iconeDeLogo } = await import("./selo-png.server");
+          try {
+            const png = await iconeDeLogo(
+              bytes,
+              tipo,
+              shop.logo_background_color,
+              tamanho,
+              mascaravel,
+            );
+            return new Response(png, {
+              headers: { "Content-Type": "image/png", "Cache-Control": "private, max-age=300" },
+            });
+          } catch {
+            // Um formato legado ou inválido conserva a exibição direta já usada para essas URLs.
+          }
+        }
       }
     }
     if (logo) return new Response(null, { status: 302, headers: { Location: logo } });
     const { iconeDeIniciais } = await import("./selo-png.server");
-    return new Response(await iconeDeIniciais(name, shop.shop_id, shop.primary_color, shop.accent_color), {
-      headers: {
-        "Content-Type": "image/png",
-        "Cache-Control": "private, max-age=300",
+    return new Response(
+      await iconeDeIniciais(
+        name,
+        shop.shop_id,
+        shop.primary_color,
+        shop.accent_color,
+        tamanho,
+        mascaravel,
+      ),
+      {
+        headers: {
+          "Content-Type": "image/png",
+          "Cache-Control": "private, max-age=300",
+        },
       },
-    });
+    );
   }
   const cores = resolveBrandColors(shop.primary_color, shop.accent_color);
-  const leque = brandTheme(cores.primary, cores.accent)?.leque ?? customBrandLeque(cores.primary, cores.accent);
+  const leque =
+    brandTheme(cores.primary, cores.accent)?.leque ?? customBrandLeque(cores.primary, cores.accent);
   return Response.json(
     {
       id: "/",
@@ -95,10 +134,14 @@ export async function shopIdentity(url: URL): Promise<Response> {
       short_name: name,
       theme_color: leque.meio,
       background_color: leque.meio,
-      icons: [
-        { src: "/apple-touch-icon.png?dominio=" + encodeURIComponent(domain), purpose: "any" },
-        { src: logo || "/identidade/icone?dominio=" + encodeURIComponent(domain), purpose: "any" },
-      ],
+      icons: [192, 512].flatMap((lado) =>
+        ["any", "maskable"].map((purpose) => ({
+          src: `/identidade/icone?dominio=${encodeURIComponent(domain)}&tamanho=${lado}${purpose === "maskable" ? "&mascara=1" : ""}`,
+          sizes: `${lado}x${lado}`,
+          type: "image/png",
+          purpose,
+        })),
+      ),
     },
     {
       headers: {

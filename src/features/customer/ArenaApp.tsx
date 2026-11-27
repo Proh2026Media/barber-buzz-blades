@@ -443,7 +443,7 @@ function ArenaApp({
     survey_program_enabled: true,
     sports_enabled: false,
   });
-  useShopFavicon(shopSettings.logo_url, shopSettings.display_name || shopName);
+  useShopFavicon(shopSettings.logo_url);
   const [userId, setUserId] = useState<string | null>(null);
   const [services, setServices] = useState<Tables<"services">[]>([]);
   const [staff, setStaff] = useState<Tables<"staff">[]>([]);
@@ -2989,7 +2989,7 @@ function ArenaApp({
         <div className="flex min-w-0 flex-1 items-center pl-[4.5rem]">
           {shopSettings.logo_url ? (
             <span
-              className="brand-header-logo-wrap"
+              className="brand-header-logo-wrap quadro-logo-loja"
               style={
                 shopSettings.logo_background_color
                   ? { backgroundColor: shopSettings.logo_background_color }
@@ -3001,12 +3001,11 @@ function ArenaApp({
                 alt={t("cust.logoAlt", {
                   name: shopSettings.display_name?.trim() || shopName || t("cust.shopFallback"),
                 })}
-                className="brand-header-logo"
               />
             </span>
           ) : (
             <span
-              className="brand-header-logo-wrap brand-header-logo-fallback"
+              className="brand-header-logo-wrap quadro-logo-loja brand-header-logo-fallback"
               style={
                 shopSettings.logo_background_color
                   ? { backgroundColor: shopSettings.logo_background_color }

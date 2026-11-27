@@ -277,11 +277,11 @@ export function ReservationAccessGate({
     <>
       <header className="flex items-center gap-3">
         <span
-          className="grid size-12 shrink-0 place-items-center overflow-hidden rounded-[var(--control-radius)] bg-foreground text-background"
+          className="quadro-logo-loja size-12 rounded-[var(--control-radius)] bg-foreground text-background"
           style={shop?.logoBackground ? { backgroundColor: shop.logoBackground } : undefined}
         >
           {shop?.logo ? (
-            <img src={shop.logo} alt="" className="size-full object-contain" />
+            <img src={shop.logo} alt="" />
           ) : (
             <SeloBarbearia tema={shop} lojaId={lookup.barbershop_id} nome={shopName} tamanho={48} />
           )}

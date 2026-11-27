@@ -134,7 +134,7 @@ export function ShopLanding({
   }, [load]);
 
   // Aba do navegador com o nome e a logo da barbearia.
-  useShopFavicon(data?.shop.logo_url ?? null, data?.shop.display_name || data?.shop.name);
+  useShopFavicon(data?.shop.logo_url);
   // Atualiza na hora quando a agenda muda; o recarregamento a cada minuto fica como reserva.
   useAvailabilitySignal(data?.shop.id, () => void load());
 
@@ -440,18 +440,12 @@ export function ShopLandingView({
         >
           <div className="flex min-w-0 items-center gap-3">
             {shop.logo_url ? (
-              <img
-                src={shop.logo_url}
-                alt={t("shopLanding.logoAlt", { name })}
-                className="shop-hero-logo size-12 shrink-0 rounded-[var(--control-radius)] object-contain p-1"
-                style={
-                  shop.logo_background_color
-                    ? { background: shop.logo_background_color }
-                    : undefined
-                }
-              />
+              <span className="quadro-logo-loja shop-hero-logo size-12 rounded-[var(--control-radius)]"
+                style={{ backgroundColor: shop.logo_background_color ?? undefined }}>
+                <img src={shop.logo_url} alt={t("shopLanding.logoAlt", { name })} />
+              </span>
             ) : (
-              <span className="shop-hero-logo flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-[var(--control-radius)]">
+              <span className="quadro-logo-loja shop-hero-logo size-12 rounded-[var(--control-radius)]">
                 <SeloBarbearia lojaId={shop.id} tema={shop} nome={name} tamanho={48} />
               </span>
             )}

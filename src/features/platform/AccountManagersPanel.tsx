@@ -34,6 +34,7 @@ import { guardedFetch } from "@/lib/demo-guard";
 import { friendlyAuthError } from "@/lib/auth/friendly-error";
 import type { Tables } from "@/integrations/supabase/types";
 import { useI18n } from "@/lib/i18n";
+import { ShopLogo, type ShopLogoInfo } from "./ShopLogo";
 import { TempPasswordClose } from "./TempPasswordClose";
 import { useTempPasswordClose } from "./use-temp-password-close";
 
@@ -55,11 +56,13 @@ type Assignment = {
  */
 export function AccountManagersPanel({
   shops,
+  logos,
   shopId: fixedShopId,
   disabled = false,
   headingAs = "h4",
 }: {
   shops: Tables<"barbershops">[];
+  logos?: Record<string, ShopLogoInfo>;
   shopId?: string;
   /** Barbearia suspensa: não vincula ninguém novo (a ficha diz como liberar). */
   disabled?: boolean;
@@ -434,7 +437,7 @@ export function AccountManagersPanel({
                         key={row.barbershop_id}
                         className="account-manager-assignment flex items-center gap-2"
                       >
-                        <PersonAvatar name={shopLabel} size="xs" seed={row.barbershop_id} />
+                        <ShopLogo name={shopLabel} size="xs" lojaId={row.barbershop_id} logo={logos?.[row.barbershop_id]} />
                         <span className="min-w-0 flex-1">
                           <span className="block break-words text-sm">{shopLabel}</span>
                           {row.can_view_dashboard && <SeesNumbers className="mt-0.5" />}

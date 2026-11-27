@@ -64,14 +64,14 @@ export function LogoChip({
     <span
       aria-hidden
       className={cn(
-        "grid size-6 shrink-0 place-items-center overflow-hidden rounded-md border border-black/10",
+        "quadro-logo-loja size-6 rounded-md border border-black/10",
         !background && !logoUrl && "bg-white",
         className,
       )}
       style={{ backgroundColor: background || "#ffffff" }}
     >
       {logoUrl ? (
-        <img src={logoUrl} alt="" className="size-full object-contain p-[12%]" />
+        <img src={logoUrl} alt="" />
       ) : (
         <SeloBarbearia tema={tema} lojaId={lojaId} nome={nome || ""} tamanho={24} />
       )}

@@ -511,7 +511,7 @@ function AuthPage() {
     [],
   );
 
-  useShopFavicon(brand.logoUrl, brand.shopName);
+  useShopFavicon(brand.logoUrl);
 
   // App instalado: espera do Google guardada no aparelho (a tela pode ter sido recarregada).
   useEffect(() => {
@@ -1941,7 +1941,7 @@ function AuthPage() {
                 <div className="acesso-marca">
                   {(brand.logoUrl || brand.shopId) && (
                     <span
-                      className="acesso-marca-logo"
+                      className="acesso-marca-logo quadro-logo-loja"
                       style={{ backgroundColor: brand.logoBackgroundColor ?? undefined }}
                     >
                       {brand.logoUrl ? (

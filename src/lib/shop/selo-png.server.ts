@@ -6,21 +6,50 @@ import { gerarSelo } from "../marca/selo.mjs";
 
 let pronto: Promise<void> | undefined;
 
-export async function iconeDeIniciais(nome: string, lojaId: string, primaria?: string | null, destaque?: string | null) {
-  return renderizar(gerarSelo({
+export async function iconeDeIniciais(
+  nome: string,
+  lojaId: string,
+  primaria: string | null,
+  destaque: string | null,
+  tamanho: number,
+  mascaravel: boolean,
+) {
+  const cores = coresDoSelo(lojaId, primaria, destaque);
+  const selo = gerarSelo({
     nome,
-    tamanho: 512,
+    tamanho,
     formato: "quadrado",
     tipo: tipoDeSelo(lojaId),
-    simples: false,
-    cores: coresDoSelo(lojaId, primaria, destaque),
-  }));
+    simples: tamanho < 56,
+    cores,
+  });
+  return mascaravel
+    ? iconeDeLogo(Buffer.from(selo), "image/svg+xml", cores.fundo, tamanho, true)
+    : renderizar(selo);
 }
 
-export function iconeDeLogo(bytes: ArrayBuffer, tipo: string, fundo?: string) {
+export async function iconeDeLogo(
+  bytes: ArrayBuffer | Uint8Array,
+  tipo: string,
+  fundo: string | null,
+  tamanho: number,
+  mascaravel: boolean,
+) {
   const cor = fundo && /^#[0-9a-f]{6}$/i.test(fundo) ? fundo : "#252522";
-  const dado = Buffer.from(bytes).toString("base64");
-  return renderizar(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="180" height="180"><rect width="180" height="180" fill="${cor}"/><image x="18" y="18" width="144" height="144" preserveAspectRatio="xMidYMid meet" xlink:href="data:${tipo};base64,${dado}"/></svg>`);
+  let imagem = Buffer.from(new Uint8Array(bytes));
+  if (tipo === "image/webp") {
+    const { converterWebp } = await import("./webp-png.server");
+    imagem = Buffer.from(await converterWebp(imagem));
+    tipo = "image/png";
+  }
+  // Na máscara do sistema, a área garantida é o círculo central de diâmetro 80%.
+  // A diagonal da arte quadrada deve caber nele mesmo quando há tinta nos quatro cantos.
+  const lado = Math.floor(tamanho * (mascaravel ? 0.56 : 0.7));
+  const margem = (tamanho - lado) / 2;
+  const dado = imagem.toString("base64");
+  return renderizar(
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${tamanho}" height="${tamanho}"><rect width="100%" height="100%" fill="${cor}"/><image x="${margem}" y="${margem}" width="${lado}" height="${lado}" preserveAspectRatio="xMidYMid meet" xlink:href="data:${tipo};base64,${dado}"/></svg>`,
+  );
 }
 
 async function renderizar(svg: string) {

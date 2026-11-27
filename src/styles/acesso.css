@@ -365,11 +365,6 @@ body:has(.acesso-loja) {
   border-radius: var(--ac-raio-campo);
   background: var(--ac-suave);
 }
-.acesso-marca-logo img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
 .acesso-marca-nome {
   min-width: 0;
   overflow: hidden;
@@ -944,10 +939,8 @@ html[data-paleta="neutra"] .acesso-aurset .acesso-forma-pilula {
 }
 .acesso-arco > .acesso-arco-logo {
   width: 62%;
-  height: auto;
-  max-height: 62%;
+  height: 62%;
   object-fit: contain;
-  border-radius: 10px;
 }
 .acesso-agenda,
 .acesso-frase {

@@ -35,7 +35,6 @@ import {
   AttentionList,
   CountBadge,
   Notice,
-  PersonAvatar,
   type AttentionItem,
 } from "@/components/visual";
 import { ShopAppearanceDialog, type ShopAppearanceTarget } from "./ShopAppearanceDialog";
@@ -54,7 +53,7 @@ import { ShopsPanel } from "./ShopsPanel";
 import { NewShopDialog } from "./NewShopDialog";
 import { InviteMemberDialog } from "./InviteMemberDialog";
 import type { ShopModule } from "./ShopDetail";
-import type { ShopLogoInfo } from "./ShopLogo";
+import { ShopLogo, type ShopLogoInfo } from "./ShopLogo";
 import {
   activeShopsWithoutAdmin,
   countByShop,
@@ -590,7 +589,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
           {/* Todos os gerentes de conta juntos: quem cuida de quais barbearias, num lugar só. */}
           {platformTab === "permissions" && !demoMode && shops.length > 0 && (
             <section className="rounded-3xl border border-border bg-card p-4 sm:p-5">
-              <AccountManagersPanel shops={shops} headingAs="h2" />
+              <AccountManagersPanel shops={shops} logos={shopLogos} headingAs="h2" />
             </section>
           )}
 
@@ -666,10 +665,11 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
                   >
                     {shops.length > 0 && (
                       <label className="flex min-h-12 items-center gap-2 rounded-2xl border border-border bg-background ps-3">
-                        <PersonAvatar
+                        <ShopLogo
                           name={demoShop?.name ?? "?"}
                           size="xs"
-                          seed={demoShopId || undefined}
+                          lojaId={demoShopId || ""}
+                          logo={demoShopId ? shopLogos[demoShopId] : null}
                         />
                         <span className="sr-only">{t("demo.hub.shopLabel")}</span>
                         <select
