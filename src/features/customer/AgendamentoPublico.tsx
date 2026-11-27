@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, Navigate } from "@tanstack/react-router";
 import { Abertura } from "@/components/Abertura";
 import { supabase } from "@/integrations/supabase/client";
-import { lojaPiloto } from "@/lib/auth/piloto-agendamento";
+
+import { brandCornerClass } from "@/lib/shop/branding";
 import { useI18n } from "@/lib/i18n";
 
 type Opcao = {
@@ -12,13 +13,15 @@ type Opcao = {
   pessoa: string;
   duracao: number;
 };
-type Catalogo = { inicio: string; fim: string; opcoes: Opcao[] };
+type Catalogo = { cantos: string; inicio: string; fim: string; opcoes: Opcao[] };
 
-export function AgendamentoPublicoPiloto({
+export function AgendamentoPublico({
+  loja,
   barber,
   day,
   time,
 }: {
+  loja: string;
   barber?: string;
   day?: string;
   time?: string;
@@ -30,39 +33,47 @@ export function AgendamentoPublicoPiloto({
   const [dia, setDia] = useState("");
   const [hora, setHora] = useState(time ?? "");
   const [grade, setGrade] = useState<{ chave: string; horas: string[] } | null>(null);
+  const [restrita, setRestrita] = useState(false);
   const [falha, setFalha] = useState(false);
   const [tentativa, setTentativa] = useState(0);
 
   useEffect(() => {
     let vigente = true;
     setFalha(false);
-    void supabase.rpc("consultar_agenda_piloto", {}).then(({ data, error }) => {
-      if (!vigente) return;
-      const lista = data as unknown as Catalogo | null;
-      if (error || !lista || !Array.isArray(lista.opcoes)) {
-        setFalha(true);
-        return;
-      }
-      const primeira =
-        lista.opcoes
-          .filter((o) => o.profissional === barber)
-          .sort((a, b) => a.duracao - b.duracao)[0] ?? lista.opcoes[0];
-      setServico(primeira?.servico ?? "");
-      setProfissional(primeira?.profissional ?? "");
-      setDia(day && day >= lista.inicio && day <= lista.fim ? day : lista.inicio);
-      setCatalogo(lista);
-    });
+    void supabase
+      .rpc("consultar_agenda_publica", { p_host: window.location.hostname })
+      .then(({ data, error }) => {
+        if (!vigente) return;
+        const lista = data as unknown as Catalogo | null;
+        if (!error && lista === null) {
+          setRestrita(true);
+          return;
+        }
+        if (error || !lista || !Array.isArray(lista.opcoes)) {
+          setFalha(true);
+          return;
+        }
+        const primeira =
+          lista.opcoes
+            .filter((o) => o.profissional === barber)
+            .sort((a, b) => a.duracao - b.duracao)[0] ?? lista.opcoes[0];
+        setServico(primeira?.servico ?? "");
+        setProfissional(primeira?.profissional ?? "");
+        setDia(day && day >= lista.inicio && day <= lista.fim ? day : lista.inicio);
+        setCatalogo(lista);
+      });
     return () => {
       vigente = false;
     };
-  }, [barber, day, tentativa]);
+  }, [barber, day, loja, tentativa]);
 
   const chave = [servico, profissional, dia].join("/");
   useEffect(() => {
     if (!servico || !profissional || !dia) return;
     let vigente = true;
     void supabase
-      .rpc("consultar_agenda_piloto", {
+      .rpc("consultar_agenda_publica", {
+        p_host: window.location.hostname,
         p_servico: servico,
         p_profissional: profissional,
         p_dia: dia,
@@ -80,6 +91,8 @@ export function AgendamentoPublicoPiloto({
     };
   }, [servico, profissional, dia, chave, tentativa]);
 
+  if (restrita)
+    return <Navigate to="/auth" replace search={{ shop: loja, next: "/app?tab=agendar" }} />;
   if (falha)
     return (
       <Abertura erro={t("shopLanding.errorTitle")} tentar={() => setTentativa((v) => v + 1)} />
@@ -92,14 +105,14 @@ export function AgendamentoPublicoPiloto({
     "/app?" +
     new URLSearchParams({
       tab: "agendar",
-      shop: lojaPiloto.slug,
+      shop: loja,
       service: servico,
       barber: profissional,
       day: dia,
       time: hora,
     });
   return (
-    <main className="public-page min-h-dvh p-4">
+    <main className={`public-page brand-page min-h-dvh p-4 ${brandCornerClass(catalogo.cantos)}`}>
       <section className="public-card mx-auto grid max-w-md gap-4 rounded-[var(--panel-radius)] p-5">
         <img src="/identidade/icone?tamanho=192" width="48" height="48" alt="" />
         <h1 className="text-xl font-bold">{t("shopLanding.bookCta")}</h1>
@@ -183,7 +196,7 @@ export function AgendamentoPublicoPiloto({
               <Link
                 className="action-button action-confirm min-h-12 justify-center"
                 to="/auth"
-                search={{ next, shop: lojaPiloto.slug }}
+                search={{ next, shop: loja }}
               >
                 {t("rapido.continuar")}
               </Link>
@@ -195,7 +208,7 @@ export function AgendamentoPublicoPiloto({
         <Link
           className="action-button min-h-11 justify-center"
           to="/auth"
-          search={{ next: "/app?tab=conta", shop: lojaPiloto.slug }}
+          search={{ next: "/app?tab=conta", shop: loja }}
         >
           {t("auth.submit.signin")}
         </Link>

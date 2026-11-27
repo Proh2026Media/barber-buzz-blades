@@ -1,6 +1,6 @@
 import { Abertura } from "@/components/Abertura";
 import { AcessoRapido } from "@/features/auth/AcessoRapido";
-import { lojaPiloto, noPiloto } from "@/lib/auth/piloto-agendamento";
+import { emDominioDeLoja } from "@/lib/auth/agendamento-rapido";
 import { MarcaAurset } from "@/features/auth/acesso/MarcaAurset";
 import { Campo } from "@/features/auth/acesso/Campo";
 import { PainelAcesso } from "@/features/auth/acesso/PainelAcesso";
@@ -432,7 +432,7 @@ function AuthPage() {
   });
   const { t, locale } = useI18n();
   // Convite da barbearia ("Cadastre-se no app"): abre em Cadastrar, com o WhatsApp preenchido.
-  const [usarSenhaPiloto, setUsarSenhaPiloto] = useState(false);
+  const [usarSenha, setUsarSenha] = useState(false);
   const [mode, setMode] = useState<AuthMode>(
     recovery ? "recovery" : cadastro ? "signup" : "signin",
   );
@@ -2206,13 +2206,14 @@ function AuthPage() {
                     )}
 
                   {mode === "signin" &&
-                  !usarSenhaPiloto &&
+                  !usarSenha &&
                   !shopContext.demo &&
-                  noPiloto() &&
-                  brand.shopId === lojaPiloto.id ? (
+                  emDominioDeLoja() &&
+                  hostShopSlug &&
+                  brand.shopId ? (
                     <AcessoRapido
                       aoEntrar={goAfterAuthLocal}
-                      usarSenha={() => setUsarSenhaPiloto(true)}
+                      usarSenha={() => setUsarSenha(true)}
                     />
                   ) : (
                     <form

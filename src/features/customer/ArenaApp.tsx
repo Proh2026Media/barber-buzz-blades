@@ -1,5 +1,5 @@
 import { AtivarChave } from "@/features/auth/AcessoRapido";
-import { lojaPiloto, noPiloto } from "@/lib/auth/piloto-agendamento";
+import { emDominioDeLoja } from "@/lib/auth/agendamento-rapido";
 import { Abertura } from "@/components/Abertura";
 import { SeloBarbearia } from "@/components/SeloBarbearia";
 import { WhatsAppHealthIndicator } from "@/features/platform/WhatsAppHealthIndicator";
@@ -1204,7 +1204,7 @@ function ArenaApp({
             setFavoriteStaffId(favoriteId);
           }
 
-          if (initialService && noPiloto() && catalogShopId === lojaPiloto.id) {
+          if (initialService && emDominioDeLoja() && directShopSlug) {
             const indice = availableServices.findIndex((s) => s.id === initialService);
             const escolhido = availableServices[indice];
             const corresponde =
@@ -3425,7 +3425,7 @@ function ArenaApp({
                       scrollToStep("booking-step-service");
                     }}
                   />
-                  {outsideDemo && noPiloto() && shopId === lojaPiloto.id && <AtivarChave />}
+                  {outsideDemo && emDominioDeLoja() && shopId && directShopSlug && <AtivarChave />}
                 </div>
               ) : (
                 <div className="customer-booking-layout grid grid-cols-[minmax(0,1fr)] items-start gap-4 tablet:gap-6 pc:grid-cols-[minmax(0,1fr)_20rem]">

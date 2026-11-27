@@ -1634,6 +1634,10 @@ export type Database = {
           accent_color: string | null;
         }[];
       };
+      consultar_agenda_publica: {
+        Args: { p_host: string; p_servico?: string; p_profissional?: string; p_dia?: string };
+        Returns: Json;
+      };
       consultar_agenda_piloto: {
         Args: { p_servico?: string; p_profissional?: string; p_dia?: string };
         Returns: Json;

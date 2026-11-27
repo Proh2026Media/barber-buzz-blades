@@ -1,0 +1,312 @@
+diff --git a/internal/api/mail.go b/internal/api/mail.go
+index c29f62e..82cac06 100644
+--- a/internal/api/mail.go
++++ b/internal/api/mail.go
+@@ -1,6 +1,7 @@
+ package api
+ 
+ import (
++	"context"
+ 	"net/http"
+ 	"regexp"
+ 	"strings"
+@@ -889,6 +890,15 @@ func (a *API) sendEmail(r *http.Request, tx *storage.Connection, u *models.User,
+ 	case mail.SignupVerification:
+ 		err = mr.ConfirmationMail(r, u, otp, referrerURL, externalURL)
+ 	case mail.MagicLinkVerification:
++		if origem := r.Header.Get("Origin"); origem != "" {
++			loja, lookupErr := lojaDaOrigem(tx, origem)
++			if lookupErr != nil {
++				return lookupErr
++			}
++			if loja.Loja != "" {
++				r = r.WithContext(context.WithValue(r.Context(), mail.ContextoLoja{}, loja.Nome))
++			}
++		}
+ 		err = mr.MagicLinkMail(r, u, otp, referrerURL, externalURL)
+ 	case mail.ReauthenticationVerification:
+ 		err = mr.ReauthenticateMail(r, u, otp)
+diff --git a/internal/api/passkey_authentication.go b/internal/api/passkey_authentication.go
+index 6967d3f..111e287 100644
+--- a/internal/api/passkey_authentication.go
++++ b/internal/api/passkey_authentication.go
+@@ -34,9 +34,9 @@ func (a *API) PasskeyAuthenticationOptions(w http.ResponseWriter, r *http.Reques
+ 	config := a.config
+ 	db := a.db.WithContext(r.Context())
+ 
+-	webAuthn, err := a.getPasskeyWebAuthn()
++	webAuthn, _, err := a.chaveDaLoja(r)
+ 	if err != nil {
+-		return apierrors.NewInternalServerError("Failed to initialize WebAuthn").WithInternalError(err)
++		return err
+ 	}
+ 
+ 	// Discoverable flow: empty allowCredentials, no user binding
+@@ -110,12 +110,15 @@ func (a *API) PasskeyAuthenticationVerify(w http.ResponseWriter, r *http.Request
+ 		return apierrors.NewBadRequestError(apierrors.ErrorCodeWebAuthnVerificationFailed, "Invalid credential response").WithInternalError(err)
+ 	}
+ 
+-	webAuthn, err := a.getPasskeyWebAuthn()
++	webAuthn, loja, err := a.chaveDaLoja(r)
+ 	if err != nil {
+-		return apierrors.NewInternalServerError("Failed to initialize WebAuthn").WithInternalError(err)
++		return err
+ 	}
+ 
+ 	sessionData := *challenge.SessionData.SessionData
++	if sessionData.RelyingPartyID != loja.Host {
++		return apierrors.NewBadRequestError(apierrors.ErrorCodeWebAuthnVerificationFailed, "Domínio diferente do desafio")
++	}
+ 
+ 	// Discoverable login: resolve user from userHandle in the assertion
+ 	handler := func(rawID, userHandle []byte) (webauthn.User, error) {
+@@ -129,7 +132,7 @@ func (a *API) PasskeyAuthenticationVerify(w http.ResponseWriter, r *http.Request
+ 			return nil, uerr
+ 		}
+ 
+-		creds, uerr := models.FindWebAuthnCredentialsByUserID(db, u.ID)
++		creds, uerr := models.ChavesDaLoja(db, u.ID, loja.Host, loja.Loja)
+ 		if uerr != nil {
+ 			return nil, uerr
+ 		}
+diff --git a/internal/api/passkey_manage.go b/internal/api/passkey_manage.go
+index 5ce86d2..e567889 100644
+--- a/internal/api/passkey_manage.go
++++ b/internal/api/passkey_manage.go
+@@ -37,7 +37,11 @@ func (a *API) PasskeyList(w http.ResponseWriter, r *http.Request) error {
+ 	user := getUser(ctx)
+ 	db := a.db.WithContext(ctx)
+ 
+-	creds, err := models.FindWebAuthnCredentialsByUserID(db, user.ID)
++	_, loja, err := a.chaveDaLoja(r)
++	if err != nil {
++		return err
++	}
++	creds, err := models.ChavesDaLoja(db, user.ID, loja.Host, loja.Loja)
+ 	if err != nil {
+ 		return apierrors.NewInternalServerError("Database error loading passkeys").WithInternalError(err)
+ 	}
+@@ -87,6 +91,10 @@ func (a *API) PasskeyUpdate(w http.ResponseWriter, r *http.Request) error {
+ 		return apierrors.NewInternalServerError("Database error loading passkey").WithInternalError(err)
+ 	}
+ 
++	_, loja, verr := a.chaveDaLoja(r)
++	if verr != nil || cred.RPID != loja.Host || cred.ShopID.String() != loja.Loja {
++		return apierrors.NewNotFoundError(apierrors.ErrorCodeValidationFailed, "Chave não encontrada")
++	}
+ 	err = db.Transaction(func(tx *storage.Connection) error {
+ 		if terr := cred.UpdateFriendlyName(tx, params.FriendlyName); terr != nil {
+ 			return terr
+@@ -133,6 +141,10 @@ func (a *API) PasskeyDelete(w http.ResponseWriter, r *http.Request) error {
+ 		return apierrors.NewInternalServerError("Database error loading passkey").WithInternalError(err)
+ 	}
+ 
++	_, loja, verr := a.chaveDaLoja(r)
++	if verr != nil || cred.RPID != loja.Host || cred.ShopID.String() != loja.Loja {
++		return apierrors.NewNotFoundError(apierrors.ErrorCodeValidationFailed, "Chave não encontrada")
++	}
+ 	err = db.Transaction(func(tx *storage.Connection) error {
+ 		if terr := cred.Delete(tx); terr != nil {
+ 			return terr
+diff --git a/internal/api/passkey_registration.go b/internal/api/passkey_registration.go
+index 4f772d7..442bec7 100644
+--- a/internal/api/passkey_registration.go
++++ b/internal/api/passkey_registration.go
+@@ -54,21 +54,17 @@ func (a *API) PasskeyRegistrationOptions(w http.ResponseWriter, r *http.Request)
+ 		return err
+ 	}
+ 
+-	// Check passkey limit
+-	count, err := models.CountWebAuthnCredentialsByUserID(db, user.ID)
++	webAuthn, loja, err := a.chaveDaLoja(r)
+ 	if err != nil {
+-		return apierrors.NewInternalServerError("Database error counting passkeys").WithInternalError(err)
+-	}
+-	if count >= config.Passkey.MaxPasskeysPerUser {
+-		return apierrors.NewUnprocessableEntityError(apierrors.ErrorCodeTooManyPasskeys, "Maximum number of passkeys reached")
++		return err
+ 	}
+-
+-	// Load existing passkeys to build exclusion list
+-	existingCreds, err := models.FindWebAuthnCredentialsByUserID(db, user.ID)
++	existingCreds, err := models.ChavesDaLoja(db, user.ID, loja.Host, loja.Loja)
+ 	if err != nil {
+-		return apierrors.NewInternalServerError("Database error loading passkeys").WithInternalError(err)
++		return apierrors.NewInternalServerError("Falha ao consultar chaves").WithInternalError(err)
++	}
++	if len(existingCreds) >= config.Passkey.MaxPasskeysPerUser {
++		return apierrors.NewUnprocessableEntityError(apierrors.ErrorCodeTooManyPasskeys, "Limite de chaves atingido")
+ 	}
+-
+ 	excludeList := make([]protocol.CredentialDescriptor, len(existingCreds))
+ 	for i, cred := range existingCreds {
+ 		excludeList[i] = protocol.CredentialDescriptor{
+@@ -77,11 +73,6 @@ func (a *API) PasskeyRegistrationOptions(w http.ResponseWriter, r *http.Request)
+ 		}
+ 	}
+ 
+-	webAuthn, err := a.getPasskeyWebAuthn()
+-	if err != nil {
+-		return apierrors.NewInternalServerError("Failed to initialize WebAuthn").WithInternalError(err)
+-	}
+-
+ 	webAuthnUser := newWebAuthnUser(user, existingCreds)
+ 	options, webAuthnSessionData, err := webAuthn.BeginRegistration(webAuthnUser, webauthn.WithExclusions(excludeList))
+ 	if err != nil {
+@@ -165,13 +156,13 @@ func (a *API) PasskeyRegistrationVerify(w http.ResponseWriter, r *http.Request)
+ 		return apierrors.NewBadRequestError(apierrors.ErrorCodeWebAuthnVerificationFailed, "Invalid credential response").WithInternalError(err)
+ 	}
+ 
+-	webAuthn, err := a.getPasskeyWebAuthn()
++	webAuthn, loja, err := a.chaveDaLoja(r)
+ 	if err != nil {
+-		return apierrors.NewInternalServerError("Failed to initialize WebAuthn").WithInternalError(err)
++		return err
+ 	}
+ 
+ 	// Load existing passkeys for the user adapter
+-	existingCreds, err := models.FindWebAuthnCredentialsByUserID(db, user.ID)
++	existingCreds, err := models.ChavesDaLoja(db, user.ID, loja.Host, loja.Loja)
+ 	if err != nil {
+ 		return apierrors.NewInternalServerError("Database error loading passkeys").WithInternalError(err)
+ 	}
+@@ -179,6 +170,9 @@ func (a *API) PasskeyRegistrationVerify(w http.ResponseWriter, r *http.Request)
+ 	webAuthnUser := newWebAuthnUser(user, existingCreds)
+ 	sessionData := *challenge.SessionData.SessionData
+ 
++	if sessionData.RelyingPartyID != loja.Host {
++		return apierrors.NewBadRequestError(apierrors.ErrorCodeWebAuthnVerificationFailed, "Domínio diferente do desafio")
++	}
+ 	credential, err := webAuthn.CreateCredential(webAuthnUser, sessionData, parsedResponse)
+ 	if err != nil {
+ 		return apierrors.NewBadRequestError(apierrors.ErrorCodeWebAuthnVerificationFailed, "Credential verification failed").WithInternalError(err)
+@@ -187,8 +181,13 @@ func (a *API) PasskeyRegistrationVerify(w http.ResponseWriter, r *http.Request)
+ 	friendlyName := utilities.PasskeyFriendlyName(credential.Authenticator.AAGUID)
+ 	passkeyCredential := models.NewWebAuthnCredential(user.ID, credential, friendlyName)
+ 
++	passkeyCredential.RPID = loja.Host
++	passkeyCredential.ShopID = uuid.FromStringOrNil(loja.Loja)
+ 	err = db.Transaction(func(tx *storage.Connection) error {
+-		count, terr := models.CountWebAuthnCredentialsByUserID(tx, user.ID)
++		if terr := tx.RawQuery("select pg_advisory_xact_lock(hashtextextended(?, 0))", user.ID.String()+loja.Host).Exec(); terr != nil {
++			return terr
++		}
++		count, terr := tx.Q().Where("user_id = ? AND rp_id = ? AND shop_id = ?", user.ID, loja.Host, loja.Loja).Count(&models.WebAuthnCredential{})
+ 		if terr != nil {
+ 			return terr
+ 		}
+diff --git a/internal/api/passkey_webauthn.go b/internal/api/passkey_webauthn.go
+index 104eda5..40d2b7a 100644
+--- a/internal/api/passkey_webauthn.go
++++ b/internal/api/passkey_webauthn.go
+@@ -1,6 +1,11 @@
+ package api
+ 
+ import (
++	"github.com/supabase/auth/internal/storage"
++	"net/http"
++	"net/url"
++	"strings"
++
+ 	"github.com/go-webauthn/webauthn/protocol"
+ 	"github.com/go-webauthn/webauthn/webauthn"
+ 	"github.com/supabase/auth/internal/api/apierrors"
+@@ -22,6 +27,40 @@ func requirePasskeyManagementAAL(user *models.User, session *models.Session) err
+ }
+ 
+ // getPasskeyWebAuthn creates a *webauthn.WebAuthn instance from the shared server-side WebAuthn configuration.
++type dominioDaLoja struct {
++	Host string
++	Nome string `db:"nome"`
++	Loja string `db:"loja"`
++}
++
++func lojaDaOrigem(db *storage.Connection, origem string) (dominioDaLoja, error) {
++	var loja dominioDaLoja
++	u, err := url.Parse(origem)
++	if err != nil || u.Scheme != "https" || u.User != nil || u.Hostname() == "" || origem != "https://"+u.Hostname() || strings.HasSuffix(u.Hostname(), ".") {
++		return loja, nil
++	}
++	err = db.RawQuery("select coalesce(case when r->>'canonical_host' = ? then r->>'shop_name' end,'') as nome, coalesce(case when r->>'canonical_host' = ? then r->>'shop_id' end,'') as loja from (select public.resolve_shop_by_host(?) as r) s", u.Hostname(), u.Hostname(), u.Hostname()).First(&loja)
++	if err != nil {
++		return loja, err
++	}
++	loja.Host = u.Hostname()
++	return loja, nil
++}
++
++func (a *API) chaveDaLoja(r *http.Request) (*webauthn.WebAuthn, dominioDaLoja, error) {
++	loja, err := lojaDaOrigem(a.db.WithContext(r.Context()), r.Header.Get("Origin"))
++	if err != nil || loja.Loja == "" || loja.Nome == "" {
++		return nil, loja, apierrors.NewForbiddenError(apierrors.ErrorCodeValidationFailed, "Origem de estabelecimento indisponível")
++	}
++	wn, err := webauthn.New(&webauthn.Config{
++		RPID: loja.Host, RPDisplayName: loja.Nome, RPOrigins: []string{"https://" + loja.Host},
++		AttestationPreference:  protocol.PreferNoAttestation,
++		AuthenticatorSelection: protocol.AuthenticatorSelection{ResidentKey: protocol.ResidentKeyRequirementRequired, UserVerification: protocol.VerificationRequired},
++	})
++	return wn, loja, err
++}
++
++// Configuração original utilizada pelos ensaios unitários do upstream.
+ func (a *API) getPasskeyWebAuthn() (*webauthn.WebAuthn, error) {
+ 	rpConfig := a.config.WebAuthn
+ 
+diff --git a/internal/mailer/mailer.go b/internal/mailer/mailer.go
+index a65efa0..fa406aa 100644
+--- a/internal/mailer/mailer.go
++++ b/internal/mailer/mailer.go
+@@ -74,3 +74,6 @@ type EmailData struct {
+ 	Provider        string `json:"provider"`
+ 	FactorType      string `json:"factor_type"`
+ }
++
++// ContextoLoja identifica a barbearia verificada para esta mensagem.
++type ContextoLoja struct{}
+diff --git a/internal/mailer/templatemailer/templatemailer.go b/internal/mailer/templatemailer/templatemailer.go
+index 72ef42c..4f1d447 100644
+--- a/internal/mailer/templatemailer/templatemailer.go
++++ b/internal/mailer/templatemailer/templatemailer.go
+@@ -8,6 +8,7 @@ import (
+ 	"strings"
+ 
+ 	"github.com/supabase/auth/internal/conf"
++	"github.com/supabase/auth/internal/mailer"
+ 	"github.com/supabase/auth/internal/models"
+ )
+ 
+@@ -367,6 +368,8 @@ func (m *Mailer) MagicLinkMail(r *http.Request, user *models.User, otp, referrer
+ 		"Data":            user.UserMetaData,
+ 		"RedirectTo":      referrerURL,
+ 	}
++	nome, _ := r.Context().Value(mailer.ContextoLoja{}).(string)
++	data["Barbearia"] = nome
+ 	return m.mail(r.Context(), m.cfg, MagicLinkTemplate, user.GetEmail(), data)
+ }
+ 
+diff --git a/internal/models/webauthn_credential.go b/internal/models/webauthn_credential.go
+index b7dc60e..8c7763d 100644
+--- a/internal/models/webauthn_credential.go
++++ b/internal/models/webauthn_credential.go
+@@ -47,6 +47,8 @@ func (t WebAuthnTransports) Value() (driver.Value, error) {
+ 
+ // WebAuthnCredential maps to the webauthn_credentials table.
+ type WebAuthnCredential struct {
++	RPID            string             `json:"-" db:"rp_id"`
++	ShopID          uuid.UUID          `json:"-" db:"shop_id"`
+ 	ID              uuid.UUID          `json:"id" db:"id"`
+ 	UserID          uuid.UUID          `json:"user_id" db:"user_id"`
+ 	CredentialID    []byte             `json:"-" db:"credential_id"`
+@@ -124,6 +126,12 @@ func FindWebAuthnCredentialsByUserID(conn *storage.Connection, userID uuid.UUID)
+ 	return creds, nil
+ }
+ 
++func ChavesDaLoja(conn *storage.Connection, userID uuid.UUID, host, loja string) ([]*WebAuthnCredential, error) {
++	var chaves []*WebAuthnCredential
++	err := conn.Q().Where("user_id = ? AND rp_id = ? AND shop_id = ?", userID, host, loja).Order("created_at asc").All(&chaves)
++	return chaves, err
++}
++
+ func FindWebAuthnCredentialByCredentialID(conn *storage.Connection, credentialID []byte) (*WebAuthnCredential, error) {
+ 	var cred WebAuthnCredential
+ 	err := conn.Q().Where("credential_id = ?", credentialID).First(&cred)

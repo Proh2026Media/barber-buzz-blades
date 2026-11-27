@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Fingerprint, Mail, KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
-import { lojaPiloto, suportaChave } from "@/lib/auth/piloto-agendamento";
+import { suportaChave } from "@/lib/auth/agendamento-rapido";
 
 export function AcessoRapido({
   aoEntrar,
@@ -50,7 +50,7 @@ export function AcessoRapido({
       email: alvo,
       options: {
         shouldCreateUser: false,
-        emailRedirectTo: lojaPiloto.origem + "/auth",
+        emailRedirectTo: window.location.origin + "/auth",
       },
     });
     if (error && !["user_not_found", "signup_disabled", "otp_disabled"].includes(error.code ?? ""))

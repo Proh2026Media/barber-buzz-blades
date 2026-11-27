@@ -1,6 +1,6 @@
 # Pendências — lista única e priorizada
 
-**Piloto de acesso rápido em 27/11/2026.** Validar em iPhone real a ativação da chave depois da reserva e um segundo acesso pelo link da Loja Teste B. A ampliação depende de configurar e validar a origem de cada estabelecimento.
+**Acesso rápido em 27/11/2026.** O titular confirmou o Face ID no iPhone físico da Loja Teste B. O fluxo passou a resolver o estabelecimento pelo domínio canônico, inclusive quando a loja usa domínio próprio. [Configuração da autenticação](../../integrations/auth-lojas/README.md).
 
 **Feito em 27/11/2026.** Entrada do administrador global na gestão pelo link da loja e transição do fundo do cabeçalho móvel ao rolar e ao voltar ao topo.
 

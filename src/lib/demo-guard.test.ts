@@ -92,11 +92,11 @@ const OUTSIDE_DEMO = new Map<string, string>([
   ],
   [
     "features/auth/AcessoRapido.tsx",
-    "Autenticação real da Loja Teste B. Oferta de chave protegida por outsideDemo",
+    "Autenticação no domínio real da barbearia. Oferta de chave protegida por outsideDemo",
   ],
   [
-    "features/customer/AgendamentoPublicoPiloto.tsx",
-    "Somente /app para visitante na origem da Loja Teste B",
+    "features/customer/AgendamentoPublico.tsx",
+    "Somente /app para visitante no domínio de uma loja resolvida",
   ],
   ["features/auth/ChangePasswordCard.tsx", "Ajustes → Conta só fora da demonstração"],
   ["features/customer/AskShopLink.tsx", "rota /app: só sem barbearia (a demonstração tem loja)"],

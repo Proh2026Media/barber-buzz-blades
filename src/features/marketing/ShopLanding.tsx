@@ -405,10 +405,12 @@ export function ShopLandingView({
       style={style as CSSProperties}
     >
       {!preview && (
-        <BrandRootVariables vars={{
-          ...style,
-          "--brand-capa-navegador": style["--brand-chao-claro"],
-        }} />
+        <BrandRootVariables
+          vars={{
+            ...style,
+            "--brand-capa-navegador": style["--brand-chao-claro"],
+          }}
+        />
       )}
       {preview ? (
         <BrandFontFace url={shop.custom_font_url} faces={previewFontFaces} />
@@ -430,8 +432,10 @@ export function ShopLandingView({
         >
           <div className="flex min-w-0 items-center gap-3">
             {shop.logo_url ? (
-              <span className="quadro-logo-loja shop-hero-logo size-12 rounded-[var(--control-radius)]"
-                style={{ backgroundColor: shop.logo_background_color ?? undefined }}>
+              <span
+                className="quadro-logo-loja shop-hero-logo size-12 rounded-[var(--control-radius)]"
+                style={{ backgroundColor: shop.logo_background_color ?? undefined }}
+              >
                 <img src={shop.logo_url} alt={t("shopLanding.logoAlt", { name })} />
               </span>
             ) : (
@@ -598,7 +602,7 @@ export function ShopLandingView({
                           preview={preview}
                           signedIn={signedIn}
                           barber={member.booking_slug}
-                          className="public-accent mt-auto inline-flex min-h-11 items-center gap-1 self-start text-sm font-bold after:absolute after:inset-0 after:rounded-[var(--panel-radius)] after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
+                          className="shop-acao-profissional public-accent mt-auto inline-flex min-h-11 items-center gap-1 self-start text-sm font-bold after:absolute after:inset-0 after:rounded-[var(--panel-radius)] after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
                         >
                           {showToday && day !== "free"
                             ? t("shopLanding.otherDays")
@@ -653,9 +657,7 @@ export function ShopLandingView({
 
           {!preview && (
             <footer className="space-y-2 border-t border-border pt-6 text-center text-xs text-muted-foreground">
-              <p className="flex justify-center">
-                {t("shopLanding.footer")}
-              </p>
+              <p className="flex justify-center">{t("shopLanding.footer")}</p>
               <p className="flex justify-center gap-2">
                 <Link
                   to="/privacidade"

@@ -1,0 +1,7 @@
+# Chaves de acesso por barbearia
+
+O domínio canônico de uma barbearia ativa identifica a chave de acesso. O Auth consulta `resolve_shop_by_host` para cada operação WebAuthn, usa o nome da loja no dispositivo e exige verificação local do usuário. A conta no Auth é única. Listagem, cadastro, entrada e gestão de chaves consideram o domínio e o identificador da loja. O modelo de e-mail recebe o nome verificado no servidor.
+
+A imagem usa o Supabase Auth v2.199.0 com a revisão exata no Dockerfile. Para reconstruir, execute `docker build -t aurset/auth:v2.199.0-lojas.1 integrations/auth-lojas` na arquitetura da VPS. Antes da troca, faça backup do schema de autenticação e do compose do serviço. Aplique `estrutura.sql` como proprietário do schema Auth e a migração `20261127160000_agendamento_rapido_por_dominio.sql` com o papel de migrações da aplicação. Recrie somente o serviço de autenticação e valide sua saúde. A função pública anterior continua disponível aos dispositivos com a versão anterior em cache.
+
+A credencial emitida pelo piloto mantém o domínio da Loja Teste B. Cada cliente pode ativar uma chave em outro estabelecimento usando a mesma conta. O código por e-mail, o Google e a senha continuam disponíveis. O catálogo público respeita as opções de visibilidade e mostra somente serviços, profissionais e horários livres. A reserva depende da sessão e da confirmação explícita do cliente.

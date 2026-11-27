@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode, type Ref } from "react";
-import { lojaPiloto, noPiloto } from "@/lib/auth/piloto-agendamento";
+import { emDominioDeLoja } from "@/lib/auth/agendamento-rapido";
 import { Link } from "@tanstack/react-router";
 import {
   CalendarCheck,
@@ -81,11 +81,11 @@ export function BookLink({
     shop: slug,
     barber: barber ?? undefined,
     join: undefined,
-    tab: slug === lojaPiloto.slug && noPiloto() ? "agendar" : undefined,
+    tab: emDominioDeLoja() ? "agendar" : undefined,
     reserva: undefined,
     ...(slot ? { day: slot.day, time: slot.time } : {}),
   };
-  if (signedIn || (slug === lojaPiloto.slug && noPiloto()))
+  if (signedIn || emDominioDeLoja())
     return (
       <Link to="/app" search={search} className={className} aria-label={ariaLabel}>
         {children}

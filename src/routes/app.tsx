@@ -1,5 +1,5 @@
-import { AgendamentoPublicoPiloto } from "@/features/customer/AgendamentoPublicoPiloto";
-import { noPiloto } from "@/lib/auth/piloto-agendamento";
+import { AgendamentoPublico } from "@/features/customer/AgendamentoPublico";
+import { emDominioDeLoja } from "@/lib/auth/agendamento-rapido";
 import { Abertura } from "@/components/Abertura";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -53,13 +53,15 @@ export const Route = createFileRoute("/app")({
       typeof location.searchStr === "string" && location.searchStr ? location.searchStr : "";
     if (!(await supabase.auth.getSession()).data.session) {
       if (
-        noPiloto() &&
+        emDominioDeLoja() &&
         (!search.tab || ["agenda", "agendar"].includes(search.tab)) &&
         !search.reserva &&
         !search.focus &&
         !search.aviso
-      )
-        return { visitante: true };
+      ) {
+        const loja = await resolveShopFromCurrentHost();
+        if (loja && !maybeRedirectToCanonical(loja)) return { visitante: loja.shop_slug };
+      }
       throw redirect({ to: "/auth", search: { next: `/app${searchStr}` } });
     }
     if (!isPlatformApexHost()) {
@@ -67,7 +69,7 @@ export const Route = createFileRoute("/app")({
       if (error) throw error;
       if (admin === true) throw redirect({ to: "/shop", replace: true });
     }
-    return { visitante: false };
+    return { visitante: null };
   },
   component: AppRoute,
 });
@@ -75,8 +77,17 @@ export const Route = createFileRoute("/app")({
 function AppRoute() {
   const { visitante } = Route.useRouteContext();
   const search = Route.useSearch();
-  if (visitante)
-    return <AgendamentoPublicoPiloto barber={search.barber} day={search.day} time={search.time} />;
+  if (visitante) {
+    const contexto = !search.shop || search.shop === visitante ? search : undefined;
+    return (
+      <AgendamentoPublico
+        loja={visitante}
+        barber={contexto?.barber}
+        day={contexto?.day}
+        time={contexto?.time}
+      />
+    );
+  }
   return <AppAutenticado />;
 }
 
@@ -131,7 +142,7 @@ function AppAutenticado() {
       directShopSlug={effectiveShop}
       promptJoin={Boolean(join)}
       initialTab={initialTabFor(tab, Boolean(day && time))}
-      initialService={daLoja && noPiloto() ? service : undefined}
+      initialService={daLoja && emDominioDeLoja() ? service : undefined}
       initialSlot={daLoja && day && time ? { day, time } : undefined}
       focusWhatsapp={focus === "whatsapp"}
       focusGroup={focus === "grupo"}
